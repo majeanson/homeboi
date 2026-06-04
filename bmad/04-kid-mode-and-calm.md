@@ -173,8 +173,24 @@ tasks; until then, keep new code from assuming single-owner.
   records a contribution (role from audience; `complete:false` = help without
   finishing); `/board` returns today's `helpers` per chore; parent board shows
   "aidé par"; toddler Aujourd'hui has "I helped" chore tiles. OD-5 first cut.
-- ⏳ Next: deepen **Aujourd'hui** (parent + toddler), then per-tab parent-preview
-  control, then fold the routine builder out of Réglages.
+- ✅ **Aujourd'hui deepened** (informed by competitor scan — see below): toddler
+  view is now a size-hierarchy (supper hero → events → chores) that re-orders by
+  time-of-day; parent view has a time-of-day greeting; per-member colour dots on
+  events + chore turns (`timeOfDay` helper, `today` greetings, BigTiles `color`).
+- ⏳ Next: per-tab parent-preview control; fold the routine builder out of
+  Réglages; promote audience/calm to a households column.
+
+### Competitor scan (2026-06, for positioning)
+
+- **Skylight / Cozi / Hearth** (family wall calendars): per-member colours +
+  everything-at-a-glance are table stakes. Skylight pushes **stars/rewards** for
+  kid chores — the dopamine loop Babillard deliberately rejects (our edge).
+- **DAKboard**: ships "different screens for different times of day" — validates
+  the time-of-day axis we just built.
+- **Choiceworks / Tiimo** (kid visual routines): build-your-own schedule, images
+  + **read-aloud**, morning/day/night, "without nagging" — exactly our toddler
+  model. These are separate apps from the family calendar; nobody does the
+  **dual-audience-on-one-tablet** Babillard is built around. Plus FR-CA + Loi 25.
 
 The calm-tenets test now scans **all** migrations, so the structural guarantees
 (no points/streaks/push) stay enforced as the schema grows.

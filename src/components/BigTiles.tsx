@@ -12,6 +12,7 @@ export interface Tile {
   sub?: string
   narration?: string
   done?: boolean
+  color?: string // member colour (avatar_ref) — whose thing this is
   onTap?: () => void
 }
 
@@ -34,6 +35,9 @@ export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
           aria-pressed={tile.onTap ? !!tile.done : undefined}
           aria-label={tile.label}
         >
+          {tile.color && (
+            <span className="bigtile__dot" aria-hidden="true" style={{ background: tile.color }} />
+          )}
           <span className="bigtile__icon" aria-hidden="true">
             {tile.icon ?? '•'}
           </span>

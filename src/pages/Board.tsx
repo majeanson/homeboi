@@ -4,6 +4,8 @@ import { CaptureBar } from '../components/CaptureBar'
 import { BigTiles, type Tile } from '../components/BigTiles'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
+import { useSpeak } from '../lib/speak'
+import { timeOfDay } from '../lib/timeofday'
 import { api, ApiError } from '../lib/api'
 import { formatClock, formatTime } from '../lib/format'
 
@@ -33,6 +35,7 @@ export function Board() {
   const t = useT()
   const { lang } = useLang()
   const { audience } = useAudience()
+  const speak = useSpeak()
   const [data, setData] = useState<BoardData | null>(null)
   const [stale, setStale] = useState(false)
   const [unauth, setUnauth] = useState(false)
@@ -66,6 +69,7 @@ export function Board() {
   }, [lang])
 
   const memberName = (id: string | null) => data?.members.find((m) => m.id === id)?.display_name ?? null
+  const memberColor = (id: string | null) => data?.members.find((m) => m.id === id)?.avatar_ref
 
   async function toggleList(item: ListRow) {
     // Optimistic: drop it from the open list immediately, then persist.
@@ -97,45 +101,75 @@ export function Board() {
     )
   }
 
-  // Toddler lens on the same board data: a few big, read-aloud tiles for what's
-  // happening today. No capture bar, no admin — glance + tap to hear.
+  // Toddler lens on the same board data. Not a flat tile dump: a hierarchy a
+  // pre-reader can read by SIZE — a hero for tonight's supper, then sized-down
+  // sections for events and chores. Time-of-day decides emphasis: in the evening
+  // supper leads; earlier the day's events lead. Each tile reads itself aloud;
+  // member colour says whose it is.
   if (audience === 'toddler') {
-    const tiles: Tile[] = []
-    if (data?.tonight) {
-      tiles.push({
-        key: 'tonight',
-        icon: '🍽',
-        label: data.tonight.title,
-        sub: t.board.tonight,
-        narration: `${t.board.tonight}: ${data.tonight.title}`,
-      })
-    }
-    for (const e of data?.today ?? []) {
-      tiles.push({
-        key: e.id,
-        icon: '📌',
-        label: e.title,
-        sub: e.all_day ? t.board.allDay : formatTime(e.start_at, lang),
-        narration: e.title,
-      })
-    }
-    // Chores a toddler can help with: tapping logs "I helped" (shared-task).
-    for (const c of data?.chores ?? []) {
-      tiles.push({
-        key: `chore-${c.id}`,
-        icon: '🧹',
-        label: c.title,
-        sub: t.board.help,
-        narration: c.title,
-        onTap: () => helpChore(c),
-      })
-    }
+    const tod = timeOfDay(Date.now())
+    const eventTiles: Tile[] = (data?.today ?? []).map((e) => ({
+      key: e.id,
+      icon: '📌',
+      label: e.title,
+      sub: e.all_day ? t.board.allDay : formatTime(e.start_at, lang),
+      narration: e.title,
+      color: memberColor(e.member_id) ?? undefined,
+    }))
+    const choreTiles: Tile[] = (data?.chores ?? []).map((c) => ({
+      key: `chore-${c.id}`,
+      icon: '🧹',
+      label: c.title,
+      sub: t.board.help,
+      narration: c.title,
+      onTap: () => helpChore(c),
+    }))
+
+    const hero = data?.tonight ? (
+      <button
+        type="button"
+        className="today-hero"
+        onClick={() => speak(`${t.board.tonight}: ${data.tonight!.title}`)}
+        aria-label={`${t.board.tonight}: ${data.tonight.title}`}
+      >
+        <span className="today-hero__icon" aria-hidden="true">
+          🍽
+        </span>
+        <span className="today-hero__label">{data.tonight.title}</span>
+        <span className="today-hero__sub mono">{t.board.tonight}</span>
+      </button>
+    ) : null
+
+    const events = eventTiles.length > 0 && (
+      <section className="today-kid__section">
+        <h2 className="today-kid__h">{t.board.today}</h2>
+        <BigTiles tiles={eventTiles} />
+      </section>
+    )
+    const chores = choreTiles.length > 0 && (
+      <section className="today-kid__section">
+        <h2 className="today-kid__h">{t.board.chores}</h2>
+        <BigTiles tiles={choreTiles} />
+      </section>
+    )
+
     return (
-      <main className="kid__main">
+      <main className="kid__main today-kid">
+        <p className="today-kid__greet">{t.today[tod]}</p>
         {!data ? (
           <p className="loading mono">{t.common.loading}</p>
+        ) : tod === 'evening' ? (
+          <>
+            {hero}
+            {events}
+            {chores}
+          </>
         ) : (
-          <BigTiles tiles={tiles} empty={t.board.today} />
+          <>
+            {events}
+            {chores}
+            {hero}
+          </>
         )}
       </main>
     )
@@ -144,7 +178,10 @@ export function Board() {
   return (
     <>
       <main className="board__main">
-        <div className="board__clock mono">{clock}</div>
+        <div className="board__topline">
+          <span className="board__greet">{t.today[timeOfDay(Date.now())]}</span>
+          <span className="board__clock mono">{clock}</span>
+        </div>
         <CaptureBar onCaptured={load} />
 
         {!data ? (
@@ -165,7 +202,14 @@ export function Board() {
                       </span>
                       <span className="board__event-title">{e.title}</span>
                       {memberName(e.member_id) && (
-                        <span className="board__event-who mono">{memberName(e.member_id)}</span>
+                        <span className="board__event-who mono">
+                          <span
+                            className="board__who-dot"
+                            aria-hidden="true"
+                            style={{ background: memberColor(e.member_id) }}
+                          />
+                          {memberName(e.member_id)}
+                        </span>
                       )}
                     </li>
                   ))}
@@ -227,6 +271,11 @@ export function Board() {
                           <span className="board__chore-title">{c.title}</span>
                           {whoId && (
                             <span className="board__chore-turn mono">
+                              <span
+                                className="board__who-dot"
+                                aria-hidden="true"
+                                style={{ background: memberColor(whoId) }}
+                              />
                               {t.board.turn} {memberName(whoId)}
                             </span>
                           )}

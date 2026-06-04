@@ -805,6 +805,82 @@ a {
   margin-top: 0.2rem;
 }
 
+/* --- Aujourd'hui: time-of-day greeting + per-member colour --------------- */
+.board__topline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.board__greet {
+  font-size: 1.3rem;
+  font-weight: 650;
+}
+.board__who-dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+.bigtile__dot {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.7rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+}
+
+/* --- Aujourd'hui (toddler): hierarchy by size --------------------------- */
+.today-kid {
+  justify-content: flex-start;
+  gap: 1.5rem;
+}
+.today-kid__greet {
+  font-size: 1.6rem;
+  font-weight: 650;
+  margin: 0;
+}
+.today-kid__section {
+  width: 100%;
+  max-width: 52rem;
+}
+.today-kid__h {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem;
+}
+.today-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 52rem;
+  padding: 2.5rem 1.5rem;
+  border: 2px solid var(--accent);
+  border-radius: 20px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.today-hero__icon {
+  font-size: 5rem;
+  line-height: 1;
+}
+.today-hero__label {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+}
+.today-hero__sub {
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
