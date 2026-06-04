@@ -1,0 +1,22 @@
+# deps
+node_modules/
+.pnp.*
+
+# build
+dist/
+.vite/
+.wrangler/
+.wrangler-e2e/
+
+# cloudflare / local secrets — never commit (see portal CLAUDE.md rationale)
+.dev.vars
+.env
+.env.local
+.env.*.local
+
+# editor / os
+.DS_Store
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
