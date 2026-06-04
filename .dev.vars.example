@@ -1,0 +1,6 @@
+# Shape of .dev.vars (gitignored — never commit the real file).
+# Copy to .dev.vars and fill in. For local dev `wrangler pages dev` loads these.
+
+# HMAC key for the operator session cookie + device tokens. MUST be >= 32 chars.
+# Generate one: `openssl rand -hex 32`
+SESSION_SECRET=replace-with-at-least-32-random-characters-xx

@@ -1,0 +1,114 @@
+import type { Env } from '../_lib/env'
+import { badRequest, ok, readJson } from '../_lib/json'
+import { requireActor, type Actor } from '../_lib/household'
+import { classifyCapture, type Intent } from '../_lib/ai'
+import { newId, nowSec } from '../_lib/ids'
+import { parseWhen } from '../_lib/whenparse'
+
+// THE SPINE. One free-text (or already-transcribed voice) capture in; the
+// intent-router classifies it; we route it to the right table. Every capture
+// is logged raw first, so a misroute never loses the words and can be
+// re-classified later. Works for both operator and kiosk actors.
+//
+// If `forceType` is sent (the manual type-picker shown when AI is degraded, or
+// a correction of a misroute), we skip classification and use it directly.
+export const onRequestPost: PagesFunction<Env> = async (ctx) => {
+  const actor = await requireActor(ctx.env, ctx.request)
+  if (actor instanceof Response) return actor
+
+  const body = await readJson<{ text?: string; source?: string; forceType?: Intent['type'] }>(ctx.request)
+  const text = body?.text?.trim()
+  if (!text) return badRequest('Texte vide.')
+  const source = body?.source === 'voice' ? 'voice' : 'text'
+
+  const intent: Intent = body?.forceType
+    ? { type: body.forceType, payload: { text, title: text, item: text } }
+    : await classifyCapture(ctx.env, text)
+
+  const ts = nowSec()
+  await ctx.env.DB.prepare(
+    'INSERT INTO captures (id, household_id, raw_text, source, resolved_type, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+  )
+    .bind(newId(), actor.householdId, text, source, intent.type, ts)
+    .run()
+
+  const routed = await route(ctx.env, actor, intent, text, ts)
+
+  return ok({ type: intent.type, degraded: intent.degraded ?? false, routed })
+}
+
+async function route(
+  env: Env,
+  actor: Actor,
+  intent: Intent,
+  raw: string,
+  ts: number,
+): Promise<{ kind: string; label: string }> {
+  const hh = actor.householdId
+  const p = intent.payload
+
+  switch (intent.type) {
+    case 'event': {
+      const { startAt, allDay } = parseWhen(p.when, Date.now())
+      const title = p.title || raw
+      await env.DB.prepare(
+        'INSERT INTO events (id, household_id, title, start_at, all_day, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      )
+        .bind(newId(), hh, title, startAt, allDay ? 1 : 0, ts)
+        .run()
+      return { kind: 'event', label: title }
+    }
+    case 'task': {
+      const title = p.title || raw
+      await env.DB.prepare(
+        'INSERT INTO tasks (id, household_id, title, created_at) VALUES (?, ?, ?, ?)',
+      )
+        .bind(newId(), hh, title, ts)
+        .run()
+      return { kind: 'task', label: title }
+    }
+    case 'list-item': {
+      const itemText = p.item || p.text || raw
+      await env.DB.prepare(
+        'INSERT INTO list_items (id, household_id, text, source, created_at) VALUES (?, ?, ?, ?, ?)',
+      )
+        .bind(newId(), hh, itemText, 'capture', ts)
+        .run()
+      return { kind: 'list-item', label: itemText }
+    }
+    case 'pantry-low': {
+      // Two writes: record the "low" flag AND drop it on the shared list, so a
+      // running-low item shows up where someone will actually buy it.
+      const item = p.item || raw
+      await env.DB.batch([
+        env.DB.prepare('INSERT INTO pantry_low (id, household_id, item, marked_at) VALUES (?, ?, ?, ?)').bind(
+          newId(),
+          hh,
+          item,
+          ts,
+        ),
+        env.DB.prepare(
+          'INSERT INTO list_items (id, household_id, text, source, created_at) VALUES (?, ?, ?, ?, ?)',
+        ).bind(newId(), hh, item, 'pantry-low', ts),
+      ])
+      return { kind: 'pantry-low', label: item }
+    }
+    case 'meal': {
+      const { startAt } = parseWhen(p.when, Date.now())
+      const title = p.title || raw
+      await env.DB.prepare(
+        'INSERT INTO meals (id, household_id, date, slot, title, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      )
+        .bind(newId(), hh, startAt, p.slot || 'supper', title, ts)
+        .run()
+      return { kind: 'meal', label: title }
+    }
+    case 'note':
+    default: {
+      // A note has no home table in the prototype; it lives in `captures` as
+      // the audit row we already wrote. Surfaced to the operator for a one-tap
+      // re-classify. Returning it here lets the UI offer that correction.
+      return { kind: 'note', label: p.text || raw }
+    }
+  }
+}

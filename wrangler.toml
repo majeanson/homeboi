@@ -1,0 +1,32 @@
+# Cloudflare Pages config for Babillard.
+#
+# Plaintext config lives here, not in the dashboard (same constraint as the
+# portal). Secrets (SESSION_SECRET) go through `wrangler secret put` for prod
+# and `.dev.vars` for local dev (see .dev.vars.example).
+
+name = "babillard"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+
+# --- D1: all household state --------------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "babillard"
+# database_id is filled in after `wrangler d1 create babillard`. Left blank so
+# a fresh clone doesn't accidentally point at someone else's DB.
+database_id = "REPLACE_WITH_D1_ID"
+migrations_dir = "functions/db/migrations"
+
+# --- Workers AI: the one AI feature (capture intent-router + weekly recap) ----
+# Optional binding. With AI unset (or local dev without `wrangler login`), the
+# capture bar degrades to a manual type-picker — the rest of the app is fine.
+# NOTE: wrangler 4.x `pages dev` may start a remote-proxy for [ai] that needs
+# CF auth; local dev without login simply hits the graceful-degrade path.
+[ai]
+binding = "AI"
+
+[vars]
+# Public, build-time + runtime config. Nothing secret here.
+APP_NAME = "Babillard"
+DEFAULT_LANG = "fr"
