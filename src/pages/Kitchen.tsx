@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TopBar } from '../components/TopBar'
+import { BigTiles, type Tile } from '../components/BigTiles'
 import { useLang, useT } from '../i18n'
+import { useAudience } from '../lib/audience'
 import { api, ApiError } from '../lib/api'
 import { formatWeekday } from '../lib/format'
 
@@ -14,6 +15,7 @@ interface LowRow { id: string; item: string; marked_at: number }
 export function Kitchen() {
   const t = useT()
   const { lang } = useLang()
+  const { audience } = useAudience()
   const [days, setDays] = useState<MealRow[]>([])
   const [weekStart, setWeekStart] = useState<number>(0)
   const [low, setLow] = useState<LowRow[]>([])
@@ -89,24 +91,34 @@ export function Kitchen() {
 
   if (unauth) {
     return (
-      <div className="page">
-        <TopBar />
-        <main className="narrow">
-          <Link to="/pair" className="btn btn--primary">
-            {t.home.ctaPair}
-          </Link>
-        </main>
-      </div>
+      <main className="narrow">
+        <Link to="/pair" className="btn btn--primary">
+          {t.home.ctaPair}
+        </Link>
+      </main>
+    )
+  }
+
+  // Toddler lens: just "what's for supper" this week, big and read-aloud.
+  if (audience === 'toddler') {
+    const tiles: Tile[] = week
+      .filter((d) => d.meal)
+      .map((d) => ({
+        key: String(d.date),
+        icon: '🍽',
+        label: d.meal!.title,
+        sub: formatWeekday(d.date, lang),
+        narration: `${formatWeekday(d.date, lang)}: ${d.meal!.title}`,
+      }))
+    return (
+      <main className="kid__main">
+        <BigTiles tiles={tiles} empty={t.board.nothingTonight} />
+      </main>
     )
   }
 
   return (
-    <div className="page">
-      <TopBar>
-        <Link to="/board" className="btn btn--ghost mono">
-          {t.nav.board}
-        </Link>
-      </TopBar>
+    <>
       <main className="kitchen">
         <h1>{t.kitchen.title}</h1>
 
@@ -196,6 +208,6 @@ export function Kitchen() {
           )}
         </section>
       </main>
-    </div>
+    </>
   )
 }

@@ -77,7 +77,7 @@ export function KidView() {
 
   if (unauth) {
     return (
-      <div className="page kid">
+      <div className="kid">
         <main className="narrow">
           <Link to="/pair" className="btn btn--primary">
             {t.home.ctaPair}
@@ -91,7 +91,7 @@ export function KidView() {
 
   if (routines.length === 0) {
     return (
-      <div className="page kid">
+      <div className="kid">
         <main className="narrow kid__none">
           <p>{t.kid.none}</p>
           <Link to="/board" className="btn">
@@ -106,7 +106,7 @@ export function KidView() {
   const picked = routines.find((r) => r.id === pickedId)
   if (!picked) {
     return (
-      <div className="page kid">
+      <div className="kid">
         <main className="kid__pick">
           <h1 className="kid__pick-title">{t.kid.pick}</h1>
           <div className="kid__faces">
@@ -134,7 +134,7 @@ export function KidView() {
   const allDone = picked.cards.length > 0 && picked.doneIdx.length >= picked.cards.length
 
   return (
-    <div className="page kid">
+    <div className="kid">
       <main className="kid__main">
         {allDone ? (
           <div className="kid__alldone">

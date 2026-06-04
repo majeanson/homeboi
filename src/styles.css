@@ -706,6 +706,100 @@ a {
   min-width: 100%;
 }
 
+/* --- Hub: tab bar + the Parent/Toddler audience switch -------------------- */
+.tabbar {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.4rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.tabbar__tab {
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+.tabbar__tab:hover {
+  background: var(--surface);
+}
+.tabbar__tab.is-active {
+  color: var(--ink);
+  background: var(--surface);
+  border-bottom-color: var(--accent);
+}
+.audience-switch {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.audience-switch__opt {
+  padding: 0.4rem 0.7rem;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+.audience-switch__opt.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* --- Toddler big tiles (shared toddler primitive, see BigTiles.tsx) ------- */
+.bigtiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 52rem;
+}
+.bigtile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 10rem;
+  padding: 1.5rem 1rem;
+  border: 2px solid var(--line-strong);
+  border-radius: 16px;
+  background: var(--surface);
+  cursor: pointer;
+  position: relative;
+  transition: opacity 0.18s ease;
+}
+.bigtile__icon {
+  font-size: 3.4rem;
+  line-height: 1;
+}
+.bigtile__label {
+  font-size: 1.3rem;
+  font-weight: 650;
+  text-align: center;
+}
+.bigtile__sub {
+  color: var(--ink-soft);
+}
+.bigtile.is-done {
+  /* Deterministic, identical every time — a calm fade, no jackpot (NFR-CALM-2). */
+  opacity: 0.4;
+}
+.bigtile__check {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.7rem;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+.bigtiles__empty {
+  padding: 2rem;
+  color: var(--ink-soft);
+  font-size: 1.2rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

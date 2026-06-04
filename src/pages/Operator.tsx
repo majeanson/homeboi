@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { TopBar } from '../components/TopBar'
+import { useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -50,33 +49,25 @@ export function Operator() {
   if (loading || !signedIn) return <p className="loading mono">{t.common.loading}</p>
 
   return (
-    <div className="page">
-      <TopBar>
-        <Link to="/board" className="btn btn--ghost mono">
-          {t.nav.board}
-        </Link>
-        <button type="button" className="btn btn--ghost mono" onClick={() => signOut().then(() => nav('/'))}>
-          {t.nav.logout}
-        </button>
-      </TopBar>
-
-      <main className="operator">
-        <div className="operator__head">
-          <h1>{t.operator.title}</h1>
-          <div className="operator__meta mono">
-            <span>{household?.name}</span>
-            <span className={`tag ${ai ? 'tag--on' : 'tag--off'}`}>{ai ? t.operator.aiOn : t.operator.aiOff}</span>
-          </div>
+    <main className="operator">
+      <div className="operator__head">
+        <h1>{t.operator.title}</h1>
+        <div className="operator__meta mono">
+          <span>{household?.name}</span>
+          <span className={`tag ${ai ? 'tag--on' : 'tag--off'}`}>{ai ? t.operator.aiOn : t.operator.aiOff}</span>
+          <button type="button" className="btn btn--ghost mono" onClick={() => signOut().then(() => nav('/'))}>
+            {t.nav.logout}
+          </button>
         </div>
+      </div>
 
-        <ClaimTablet onClaimed={load} />
+      <ClaimTablet onClaimed={load} />
 
-        <MembersSection members={members} onChange={load} />
-        <DevicesSection devices={devices} onChange={load} />
-        <ChoresSection chores={chores} members={members} onChange={load} />
-        <RoutinesSection routines={routines} members={members} onChange={load} />
-      </main>
-    </div>
+      <MembersSection members={members} onChange={load} />
+      <DevicesSection devices={devices} onChange={load} />
+      <ChoresSection chores={chores} members={members} onChange={load} />
+      <RoutinesSection routines={routines} members={members} onChange={load} />
+    </main>
   )
 }
 

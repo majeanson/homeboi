@@ -8,7 +8,8 @@ export type Lang = 'fr' | 'en'
 export const FR = {
   appName: 'Babillard',
   tagline: 'Le planificateur familial calme.',
-  nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion' },
+  nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion', today: 'Aujourd’hui', routines: 'Routines', list: 'La liste' },
+  audience: { parent: 'Parent', kid: 'Enfant', kidView: 'Vue enfant', parentView: 'Vue parent', editInSettings: 'Modifier dans les réglages' },
   home: {
     eyebrow: 'Une tablette au mur, pis c’est tout',
     title: 'Toute la maisonnée, d’un coup d’œil.',
@@ -114,7 +115,8 @@ export const FR = {
 export const EN: typeof FR = {
   appName: 'Babillard',
   tagline: 'The calm family planner.',
-  nav: { board: 'The board', kitchen: 'Kitchen', kid: 'Kid mode', operator: 'Settings', login: 'Sign in', logout: 'Sign out' },
+  nav: { board: 'The board', kitchen: 'Kitchen', kid: 'Kid mode', operator: 'Settings', login: 'Sign in', logout: 'Sign out', today: 'Today', routines: 'Routines', list: 'The list' },
+  audience: { parent: 'Parent', kid: 'Kid', kidView: 'Kid view', parentView: 'Parent view', editInSettings: 'Edit in settings' },
   home: {
     eyebrow: 'One tablet on the wall, that’s it',
     title: 'The whole household, at a glance.',

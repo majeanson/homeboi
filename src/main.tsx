@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AppRoutes } from './router'
 import { AuthProvider } from './lib/auth'
 import { LangContext, type Lang } from './i18n'
+import { AudienceContext, type Audience } from './lib/audience'
 import './styles.css'
 
 function Root() {
@@ -28,13 +29,35 @@ function Root() {
     document.documentElement.lang = l
   }
 
+  // `?kid=1` (a kiosk boot lock) wins; else the last manual choice; else parent.
+  const [audience, setAudienceState] = useState<Audience>(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get('kid') === '1') return 'toddler'
+      const saved = localStorage.getItem('babillard-audience')
+      if (saved === 'parent' || saved === 'toddler') return saved
+    } catch {
+      /* noop */
+    }
+    return 'parent'
+  })
+  function setAudience(a: Audience) {
+    setAudienceState(a)
+    try {
+      localStorage.setItem('babillard-audience', a)
+    } catch {
+      /* noop */
+    }
+  }
+
   return (
     <LangContext.Provider value={{ lang, setLang }}>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
+      <AudienceContext.Provider value={{ audience, setAudience }}>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
+      </AudienceContext.Provider>
     </LangContext.Provider>
   )
 }

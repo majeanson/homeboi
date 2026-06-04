@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TopBar } from '../components/TopBar'
 import { CaptureBar } from '../components/CaptureBar'
+import { BigTiles, type Tile } from '../components/BigTiles'
 import { useLang, useT } from '../i18n'
+import { useAudience } from '../lib/audience'
 import { api, ApiError } from '../lib/api'
 import { formatClock, formatTime } from '../lib/format'
 
@@ -30,6 +31,7 @@ const POLL_MS = 20000
 export function Board() {
   const t = useT()
   const { lang } = useLang()
+  const { audience } = useAudience()
   const [data, setData] = useState<BoardData | null>(null)
   const [stale, setStale] = useState(false)
   const [unauth, setUnauth] = useState(false)
@@ -77,29 +79,50 @@ export function Board() {
 
   if (unauth) {
     return (
-      <div className="page">
-        <TopBar />
-        <main className="narrow">
-          <p className="lead">{t.pair.lead}</p>
-          <Link to="/pair" className="btn btn--primary">
-            {t.home.ctaPair}
-          </Link>
-        </main>
-      </div>
+      <main className="narrow">
+        <p className="lead">{t.pair.lead}</p>
+        <Link to="/pair" className="btn btn--primary">
+          {t.home.ctaPair}
+        </Link>
+      </main>
+    )
+  }
+
+  // Toddler lens on the same board data: a few big, read-aloud tiles for what's
+  // happening today. No capture bar, no admin — glance + tap to hear.
+  if (audience === 'toddler') {
+    const tiles: Tile[] = []
+    if (data?.tonight) {
+      tiles.push({
+        key: 'tonight',
+        icon: '🍽',
+        label: data.tonight.title,
+        sub: t.board.tonight,
+        narration: `${t.board.tonight}: ${data.tonight.title}`,
+      })
+    }
+    for (const e of data?.today ?? []) {
+      tiles.push({
+        key: e.id,
+        icon: '📌',
+        label: e.title,
+        sub: e.all_day ? t.board.allDay : formatTime(e.start_at, lang),
+        narration: e.title,
+      })
+    }
+    return (
+      <main className="kid__main">
+        {!data ? (
+          <p className="loading mono">{t.common.loading}</p>
+        ) : (
+          <BigTiles tiles={tiles} empty={t.board.today} />
+        )}
+      </main>
     )
   }
 
   return (
-    <div className="page board">
-      <TopBar>
-        <Link to="/kitchen" className="btn btn--ghost mono">
-          {t.nav.kitchen}
-        </Link>
-        <Link to="/kid" className="btn btn--ghost mono">
-          {t.nav.kid}
-        </Link>
-      </TopBar>
-
+    <>
       <main className="board__main">
         <div className="board__clock mono">{clock}</div>
         <CaptureBar onCaptured={load} />
@@ -218,7 +241,7 @@ export function Board() {
           {stale ? t.board.offline : `${t.board.synced} ${clock}`}
         </p>
       </main>
-    </div>
+    </>
   )
 }
 
