@@ -1,7 +1,7 @@
 import type { Env } from '../_lib/env'
 import { badRequest, ok, readJson } from '../_lib/json'
 import { requireActor, type Actor } from '../_lib/household'
-import { classifyCapture, type Intent } from '../_lib/ai'
+import { classifyCapture, resolveLang, type Intent } from '../_lib/ai'
 import { newId, nowSec } from '../_lib/ids'
 import { parseWhen } from '../_lib/whenparse'
 
@@ -23,7 +23,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
 
   const intent: Intent = body?.forceType
     ? { type: body.forceType, payload: { text, title: text, item: text } }
-    : await classifyCapture(ctx.env, text)
+    : await classifyCapture(ctx.env, text, resolveLang(ctx.env, ctx.request))
 
   const ts = nowSec()
   await ctx.env.DB.prepare(

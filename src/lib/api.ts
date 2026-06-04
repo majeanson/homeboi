@@ -16,6 +16,17 @@ function readCsrfCookie(): string | null {
   return m ? decodeURIComponent(m[1]) : null
 }
 
+// The UI's active locale, persisted by main.tsx. Sent so server-side AI
+// (capture router, meal suggestion) answers in the language the user sees.
+function readLang(): string | null {
+  try {
+    const l = localStorage.getItem('babillard-lang')
+    return l === 'fr' || l === 'en' ? l : null
+  } catch {
+    return null
+  }
+}
+
 type Options = { method?: string; body?: unknown }
 
 export async function api<T = unknown>(path: string, opts: Options = {}): Promise<T> {
@@ -28,6 +39,10 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   // (the server prefers the cookie when both are present).
   const deviceToken = getDeviceToken()
   if (deviceToken) headers['X-Device-Token'] = deviceToken
+
+  // Tell the server which language to answer AI calls in.
+  const lang = readLang()
+  if (lang) headers['X-Lang'] = lang
 
   // CSRF double-submit for state-changing operator requests.
   if (method !== 'GET' && method !== 'HEAD') {

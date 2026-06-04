@@ -1,7 +1,7 @@
 import type { Env } from '../_lib/env'
 import { ok, serviceUnavailable } from '../_lib/json'
 import { requireActor } from '../_lib/household'
-import { suggestMeal } from '../_lib/ai'
+import { suggestMeal, resolveLang } from '../_lib/ai'
 import { dayStart } from '../_lib/ids'
 
 // "Qu'est-ce qu'on mange?" — one on-demand AI call, never on a loop. Reads
@@ -28,6 +28,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     ctx.env,
     low.results.map((r) => r.item),
     recent.results.map((r) => r.title),
+    resolveLang(ctx.env, ctx.request),
   )
   if (!suggestion) return serviceUnavailable('Pas de suggestion pour le moment.')
   return ok({ suggestion })
