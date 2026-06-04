@@ -1,0 +1,6 @@
+# Normalize line endings: LF in the repo, checked out native. Keeps the diff
+# clean across the Windows dev box and Linux CI (quiets the CRLF churn warnings).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
