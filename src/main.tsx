@@ -7,6 +7,7 @@ import { AppRoutes } from './router'
 import { AuthProvider } from './lib/auth'
 import { LangContext, type Lang } from './i18n'
 import { AudienceContext, type Audience } from './lib/audience'
+import { CalmContext } from './lib/calm'
 import './styles.css'
 
 function Root() {
@@ -49,14 +50,33 @@ function Root() {
     }
   }
 
+  // Calm mode defaults ON (the tenet); only an explicit opt-out persists.
+  const [calm, setCalmState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('babillard-calm') !== 'off'
+    } catch {
+      return true
+    }
+  })
+  function setCalm(c: boolean) {
+    setCalmState(c)
+    try {
+      localStorage.setItem('babillard-calm', c ? 'on' : 'off')
+    } catch {
+      /* noop */
+    }
+  }
+
   return (
     <LangContext.Provider value={{ lang, setLang }}>
       <AudienceContext.Provider value={{ audience, setAudience }}>
-        <AuthProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </AuthProvider>
+        <CalmContext.Provider value={{ calm, setCalm }}>
+          <AuthProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </AuthProvider>
+        </CalmContext.Provider>
       </AudienceContext.Provider>
     </LangContext.Provider>
   )

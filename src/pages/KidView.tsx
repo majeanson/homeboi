@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
+import { useCalm } from '../lib/calm'
 import { api, ApiError } from '../lib/api'
 
 // The pre-reader surface. Big picture cards, no reading required to USE it.
@@ -24,6 +25,7 @@ interface Routine {
 export function KidView() {
   const t = useT()
   const { lang } = useLang()
+  const { calm } = useCalm()
   const [routines, setRoutines] = useState<Routine[] | null>(null)
   const [unauth, setUnauth] = useState(false)
   const [pickedId, setPickedId] = useState<string | null>(null)
@@ -132,11 +134,14 @@ export function KidView() {
   }
 
   const allDone = picked.cards.length > 0 && picked.doneIdx.length >= picked.cards.length
+  // Calm ON (default): the routine finishes and STOPS on a calm "all done".
+  // Calm OFF: never dead-end — keep the cards visible and re-tappable.
+  const showAllDone = allDone && calm
 
   return (
     <div className="kid">
       <main className="kid__main">
-        {allDone ? (
+        {showAllDone ? (
           <div className="kid__alldone">
             <div className="kid__alldone-mark" aria-hidden="true">
               ✿

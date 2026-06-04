@@ -1,16 +1,19 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 // NFR-CALM-1/3 enforced structurally: the schema must have nowhere to store a
-// hoardable score or a push subscription. If a future migration adds one of
-// these tables, this test fails loudly — the anti-addiction stance can't drift
-// in by accident.
+// hoardable score or a push subscription. This scans EVERY migration (not just
+// the initial one), so a future migration that adds such a table fails loudly —
+// the anti-addiction stance can't drift in by accident as the schema grows.
 const here = dirname(fileURLToPath(import.meta.url))
 // Strip `-- ...` comment lines first: the schema's own comments NAME the
 // forbidden tables to explain their absence, and we only care about real DDL.
-const schema = readFileSync(join(here, '0001_init.sql'), 'utf8')
+const schema = readdirSync(here)
+  .filter((f) => f.endsWith('.sql'))
+  .map((f) => readFileSync(join(here, f), 'utf8'))
+  .join('\n')
   .split('\n')
   .filter((line) => !line.trim().startsWith('--'))
   .join('\n')

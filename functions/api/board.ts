@@ -50,6 +50,30 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     .bind(hh, tomorrow, weekEnd)
     .all()
 
+  // Recent helpers per chore (shared-task attribution). Today's contributions
+  // only, so "aidé par" reflects who pitched in on the current run, not history.
+  const helps = await ctx.env.DB.prepare(
+    `SELECT tp.task_id, tp.role, m.display_name AS name
+       FROM task_participants tp
+       LEFT JOIN members m ON m.id = tp.member_id
+      WHERE tp.contributed_at >= ?
+        AND tp.task_id IN (SELECT id FROM tasks WHERE household_id = ?)
+      ORDER BY tp.contributed_at DESC`,
+  )
+    .bind(today, hh)
+    .all<{ task_id: string; role: string; name: string | null }>()
+
+  const helpersByTask = new Map<string, { name: string | null; role: string }[]>()
+  for (const h of helps.results) {
+    const list = helpersByTask.get(h.task_id) ?? []
+    if (list.length < 5) list.push({ name: h.name, role: h.role })
+    helpersByTask.set(h.task_id, list)
+  }
+  const choresOut = (chores.results as { id: string }[]).map((c) => ({
+    ...c,
+    helpers: helpersByTask.get(c.id) ?? [],
+  }))
+
   return ok({
     syncedAt: Math.floor(Date.now() / 1000),
     scope: actor.scope,
@@ -58,6 +82,6 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     upcoming: upcoming.results,
     tonight: tonightMeal.results[0] ?? null,
     list: openList.results,
-    chores: chores.results,
+    chores: choresOut,
   })
 }

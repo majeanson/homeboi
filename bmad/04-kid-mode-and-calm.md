@@ -161,6 +161,24 @@ tasks; until then, keep new code from assuming single-owner.
   routines share it or keep their own per-card completion. Decide when tasks get
   touched; data is still disposable, so reshape freely.
 
+## Status (implemented so far)
+
+- ✅ `useAudience()` context + `?kid=1` + HubLayout tab bar (Decision 1 & 3 shell).
+- ✅ `useSpeak()` extracted; `BigTiles` toddler primitive; each tab renders both
+  audiences; Réglages parent-only.
+- ✅ **Calm toggle** — `useCalm()` (localStorage `babillard-calm`, default ON),
+  toggle in Réglages; KidView no longer dead-ends when OFF. OD-1 resolved as
+  localStorage for now.
+- ✅ **Shared-task model** — migration `0002_task_participants.sql`; chores PATCH
+  records a contribution (role from audience; `complete:false` = help without
+  finishing); `/board` returns today's `helpers` per chore; parent board shows
+  "aidé par"; toddler Aujourd'hui has "I helped" chore tiles. OD-5 first cut.
+- ⏳ Next: deepen **Aujourd'hui** (parent + toddler), then per-tab parent-preview
+  control, then fold the routine builder out of Réglages.
+
+The calm-tenets test now scans **all** migrations, so the structural guarantees
+(no points/streaks/push) stay enforced as the schema grows.
+
 ## Build order (when greenlit)
 
 1. `useKidMode()` context + `localStorage` + `?kid=1`, mirroring `LangContext`.

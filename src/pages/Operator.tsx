@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { useCalm } from '../lib/calm'
 
 // Operator hub (phone/laptop, logged in). The control surface that a kiosk is
 // NOT allowed to reach: members, device pairing approval + revocation, chores,
@@ -63,6 +64,8 @@ export function Operator() {
 
       <ClaimTablet onClaimed={load} />
 
+      <CalmSection />
+
       <MembersSection members={members} onChange={load} />
       <DevicesSection devices={devices} onChange={load} />
       <ChoresSection chores={chores} members={members} onChange={load} />
@@ -121,6 +124,29 @@ function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
       </form>
       {ok && <p className="capture__routed mono">{t.pair.claimOk}</p>}
       {err && <p className="error mono">{err}</p>}
+    </section>
+  )
+}
+
+// The "anti-addiction" opt-out. Default ON (the calm tenet holds); a parent can
+// switch it off to stop the kid routine from dead-ending. Only governs that
+// interaction friction — the structural guarantees aren't toggleable. Stored in
+// localStorage for now (see bmad/04, OD-1).
+function CalmSection() {
+  const t = useT()
+  const { calm, setCalm } = useCalm()
+  return (
+    <section className="surface operator__section">
+      <h2>{t.operator.calmTitle}</h2>
+      <p className="lead">{t.operator.calmHint}</p>
+      <button
+        type="button"
+        className={`btn${calm ? ' btn--primary' : ''}`}
+        onClick={() => setCalm(!calm)}
+        aria-pressed={calm}
+      >
+        {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}
+      </button>
     </section>
   )
 }

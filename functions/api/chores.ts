@@ -32,12 +32,18 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   return ok({ id, title })
 }
 
-// Mark done: stamp the current person, then advance the rotation. Both kiosk
-// and operator can do this (tap-to-complete on the wall).
+// Mark done / record help. Two shapes, both append a contribution to
+// task_participants (the shared-task "who pitched in" log):
+//   - complete (default): a parent finishing — stamps last_done + advances the
+//     rotation, AND logs the contribution.
+//   - complete:false: a helper (typically a toddler in kid view) pitching in —
+//     logs the contribution only, does NOT advance the rotation or "finish" it.
+// `role` ('parent'|'child') comes from the caller's audience; `memberId`
+// defaults to whoever's turn it is. Both kiosk and operator can call this.
 export const onRequestPatch: PagesFunction<Env> = async (ctx) => {
   const actor = await requireActor(ctx.env, ctx.request)
   if (actor instanceof Response) return actor
-  const body = await readJson<{ id?: string }>(ctx.request)
+  const body = await readJson<{ id?: string; role?: string; memberId?: string; complete?: boolean }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
   const chore = await ctx.env.DB.prepare(
@@ -53,15 +59,28 @@ export const onRequestPatch: PagesFunction<Env> = async (ctx) => {
   } catch {
     rotation = []
   }
-  const doneBy = rotation.length ? rotation[chore.current_idx % rotation.length] : null
+  const turnMember = rotation.length ? rotation[chore.current_idx % rotation.length] : null
   const nextIdx = rotation.length ? (chore.current_idx + 1) % rotation.length : 0
 
-  await ctx.env.DB.prepare(
-    'UPDATE tasks SET last_done_at = ?, last_done_by = ?, current_idx = ? WHERE id = ? AND household_id = ?',
-  )
-    .bind(nowSec(), doneBy, nextIdx, body.id, actor.householdId)
-    .run()
-  return ok({ ok: true, nextIdx })
+  const complete = body.complete !== false // default: a parent completing
+  const role = body.role === 'child' ? 'child' : 'parent'
+  const memberId = body.memberId ?? turnMember
+  const ts = nowSec()
+
+  const writes = [
+    ctx.env.DB.prepare(
+      'INSERT INTO task_participants (id, task_id, member_id, role, contributed_at) VALUES (?, ?, ?, ?, ?)',
+    ).bind(newId(), body.id, memberId, role, ts),
+  ]
+  if (complete) {
+    writes.push(
+      ctx.env.DB.prepare(
+        'UPDATE tasks SET last_done_at = ?, last_done_by = ?, current_idx = ? WHERE id = ? AND household_id = ?',
+      ).bind(ts, turnMember, nextIdx, body.id, actor.householdId),
+    )
+  }
+  await ctx.env.DB.batch(writes)
+  return ok({ ok: true, complete, nextIdx })
 }
 
 export const onRequestDelete: PagesFunction<Env> = async (ctx) => {

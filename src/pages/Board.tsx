@@ -14,7 +14,8 @@ import { formatClock, formatTime } from '../lib/format'
 interface Member { id: string; display_name: string; avatar_ref: string; is_child: number }
 interface EventRow { id: string; title: string; start_at: number; all_day: number; member_id: string | null }
 interface ListRow { id: string; text: string; source: string }
-interface ChoreRow { id: string; title: string; rotation_json: string; current_idx: number; last_done_at: number | null }
+interface Helper { name: string | null; role: string }
+interface ChoreRow { id: string; title: string; rotation_json: string; current_idx: number; last_done_at: number | null; helpers?: Helper[] }
 interface BoardData {
   syncedAt: number
   scope: string
@@ -73,7 +74,15 @@ export function Board() {
   }
 
   async function doneChore(chore: ChoreRow) {
-    await api('chores', { method: 'PATCH', body: { id: chore.id } }).catch(() => {})
+    // Parent completing: advances the rotation + logs a parent contribution.
+    await api('chores', { method: 'PATCH', body: { id: chore.id, role: 'parent' } }).catch(() => {})
+    load()
+  }
+
+  async function helpChore(chore: ChoreRow) {
+    // Toddler "I helped": logs a child contribution WITHOUT finishing the chore
+    // (complete:false) — the shared-task model, where both roles can pitch in.
+    await api('chores', { method: 'PATCH', body: { id: chore.id, role: 'child', complete: false } }).catch(() => {})
     load()
   }
 
@@ -108,6 +117,17 @@ export function Board() {
         label: e.title,
         sub: e.all_day ? t.board.allDay : formatTime(e.start_at, lang),
         narration: e.title,
+      })
+    }
+    // Chores a toddler can help with: tapping logs "I helped" (shared-task).
+    for (const c of data?.chores ?? []) {
+      tiles.push({
+        key: `chore-${c.id}`,
+        icon: '🧹',
+        label: c.title,
+        sub: t.board.help,
+        narration: c.title,
+        onTap: () => helpChore(c),
       })
     }
     return (
@@ -208,6 +228,11 @@ export function Board() {
                           {whoId && (
                             <span className="board__chore-turn mono">
                               {t.board.turn} {memberName(whoId)}
+                            </span>
+                          )}
+                          {c.helpers && c.helpers.length > 0 && (
+                            <span className="board__chore-helped mono">
+                              {t.board.helpedBy} {c.helpers.map((h) => h.name ?? (h.role === 'child' ? '👶' : '🧑')).join(', ')}
                             </span>
                           )}
                         </div>
