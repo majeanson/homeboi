@@ -7,6 +7,7 @@ import { tintInk } from '../lib/colors'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { api, isUnauthorized } from '../lib/api'
+import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { PriceMatchSheet } from '../components/PriceMatchSheet'
 import { DealsBrowser } from '../components/DealsBrowser'
@@ -57,7 +58,7 @@ export function Liste() {
   const [browseOpen, setBrowseOpen] = useState(false)
   const [auto, setAuto] = useState(false)
 
-  const { data: board, error } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board') })
+  const { data: board, error } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board'), ...live })
   // Ghost suggestions are a quiet best-effort layer — a failure just means no
   // strip, never a broken list. So: no retry, and errors fall back to [].
   const { data: ghostsData } = useQuery({ queryKey: GHOSTS_KEY, queryFn: () => fetchGhosts(), retry: false })

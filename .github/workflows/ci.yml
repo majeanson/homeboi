@@ -1,0 +1,53 @@
+name: CI & Deploy
+
+# CI (typecheck · test · build) runs on every push and PR. Deploy to the
+# Cloudflare Worker runs only after CI passes on a push to main — the same
+# `npm run deploy` you run locally, just gated behind green checks.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# One run per ref. Cancel superseded branch/PR runs, but never cancel a deploy
+# mid-flight (main runs are left to finish).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  ci:
+    name: Typecheck · Test · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    name: Deploy to Cloudflare
+    needs: ci
+    # Only the real branch advancing — not PRs, not feature branches.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # `npm run deploy` == build (tsc + vite) then `wrangler deploy`. Wrangler
+      # reads the API token + account id from these env vars; D1/R2/AI bindings
+      # and the runtime secrets (SESSION_SECRET, LOGIN_PASSWORD) already live in
+      # the Cloudflare project, so they are NOT needed here.
+      - run: npm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -91,6 +91,20 @@ describe('parseRecipeJsonLd', () => {
     const html = wrap({ '@type': 'Recipe', name: 'X', recipeIngredient: ['a'], recipeInstructions: 'Do A.\nDo B.' })
     expect(parseRecipeJsonLd(html)!.steps).toEqual(['Do A.', 'Do B.'])
   })
+
+  it('strips inline HTML (links, bold) from steps and ingredients', () => {
+    const html = wrap({
+      '@type': 'Recipe',
+      name: 'X',
+      recipeIngredient: ['<strong>400 g</strong> de p&acirc;tes'.replace('&acirc;', 'â')],
+      recipeInstructions: [
+        { '@type': 'HowToStep', text: 'Chauffer une <a href="https://shop.example.com/poele?utm=x">poêle</a> à feu moyen.' },
+      ],
+    })
+    const r = parseRecipeJsonLd(html)!
+    expect(r.steps).toEqual(['Chauffer une poêle à feu moyen.'])
+    expect(r.ingredients).toEqual(['400 g de pâtes'])
+  })
 })
 
 describe('htmlToText', () => {

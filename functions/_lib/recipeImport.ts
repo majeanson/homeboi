@@ -67,7 +67,26 @@ export function findRecipeNode(value: unknown): Record<string, unknown> | null {
   return null
 }
 
-const clean = (s: string): string => s.replace(/\s+/g, ' ').trim()
+// Decode the handful of HTML entities that survive in JSON-LD text. Shared by
+// clean() (per-field) and htmlToText() (whole-page fallback).
+const decodeEntities = (s: string): string =>
+  s
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+
+// Many sites embed inline HTML inside JSON-LD instruction/ingredient text —
+// Ricardo wraps words in <a href> links, others use <strong>/<em>/<br>. Strip
+// tags first (keeping the inner words), then decode entities, then collapse
+// whitespace, so a step reads "Chauffer une poêle…" not "Chauffer une <a
+// href=…>poêle</a>…".
+const clean = (s: string): string =>
+  decodeEntities(s.replace(/<[^>]+>/g, ' '))
+    .replace(/\s+/g, ' ')
+    .trim()
 
 function asStringList(value: unknown, max: number): string[] {
   if (!value) return []
@@ -160,14 +179,12 @@ export function parseRecipeJsonLd(html: string): ParsedRecipe | null {
 // Crude HTML→text for the AI fallback when there's no JSON-LD: drop scripts/styles,
 // strip tags, collapse whitespace. Good enough to feed structureRecipe.
 export function htmlToText(html: string, max = 6000): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&quot;/gi, '"')
+  return decodeEntities(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' '),
+  )
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, max)

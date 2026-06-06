@@ -226,6 +226,49 @@ ${raw}`
   }
 }
 
+// Vision model for READING a recipe out of a photo (a cookbook page, a hand-
+// written card, a screenshot). Separate from the 8B text model — this one
+// accepts image bytes. Same free Neuron tier, in-network (Loi 25).
+const VISION_MODEL = '@cf/meta/llama-3.2-11b-vision-instruct'
+
+// Read a recipe from a PHOTO: OCR the image, then structure what's actually
+// written into a clean card — title + ingredient lines + steps — WITHOUT
+// inventing anything not visible. Mirrors structureRecipe's contract
+// (RecipeStructured) so the caller treats a photo and pasted text identically.
+// `bytes` is the raw image (already resized client-side). Returns nulls/empties
+// on no-AI or any failure so the form just opens for manual entry (degrade).
+export async function recipeFromImage(
+  env: Env,
+  bytes: Uint8Array,
+  lang: Lang = 'fr',
+): Promise<RecipeStructured> {
+  if (!env.AI || bytes.length === 0) return { title: null, ingredients: [], steps: [] }
+  const prompt =
+    lang === 'en'
+      ? `This image is a recipe (a cookbook page, a handwritten card, or a screenshot). Read ALL the text in it and organize it WITHOUT inventing anything that isn't written.
+Reply ONLY with JSON: {"title": string, "ingredients": string[], "steps": string[]}.
+Keep ingredient lines as written (with quantities). Split the method into short steps. At most 30 ingredients, 20 steps. Leave a field empty if it isn't legible.`
+      : `Cette image est une recette (page de livre, fiche manuscrite ou capture d'écran). Lis TOUT le texte qu'elle contient et organise-le SANS rien inventer qui n'est pas écrit.
+Réponds UNIQUEMENT avec du JSON : {"title": string, "ingredients": string[], "steps": string[]}.
+Garde les lignes d'ingrédients telles quelles (avec quantités). Découpe la préparation en étapes courtes. 30 ingrédients et 20 étapes au maximum. Laisse un champ vide s'il est illisible.`
+  try {
+    const res = (await env.AI.run(VISION_MODEL, {
+      // Workers AI vision wants the image as an array of 0-255 byte values.
+      image: [...bytes],
+      prompt,
+      max_tokens: 1200,
+    })) as { response?: string }
+    const parsed = extractJson(res.response ?? '') as
+      | { title?: unknown; ingredients?: unknown; steps?: unknown }
+      | null
+    if (!parsed) return { title: null, ingredients: [], steps: [] }
+    const title = typeof parsed.title === 'string' ? parsed.title.trim() || null : null
+    return { title, ingredients: cleanLines(parsed.ingredients, 30), steps: cleanLines(parsed.steps, 20) }
+  } catch {
+    return { title: null, ingredients: [], steps: [] }
+  }
+}
+
 // Coerce an unknown model field into a clean, de-duped, capped string[] — used by
 // draftRecipe for both the ingredient and step arrays. Never throws.
 function cleanLines(value: unknown, max: number): string[] {

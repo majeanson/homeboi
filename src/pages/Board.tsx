@@ -10,6 +10,7 @@ import { useAudience } from '../lib/audience'
 import { useSpeak } from '../lib/speak'
 import { timeOfDay } from '../lib/timeofday'
 import { api, isUnauthorized } from '../lib/api'
+import { live } from '../lib/query'
 import { weatherEmoji, type Weather } from '../lib/weather'
 import { imgUrl } from '../lib/image'
 import { formatClock, formatDay, formatTime } from '../lib/format'
@@ -37,7 +38,6 @@ interface BoardData {
   chores: ChoreRow[]
 }
 
-const POLL_MS = 20000
 const BOARD_KEY = ['board']
 
 export function Board() {
@@ -47,13 +47,15 @@ export function Board() {
   const speak = useSpeak()
   const [clock, setClock] = useState(() => formatClock(lang, Date.now()))
 
-  // The whole board in one polled read. TanStack keeps the last good frame when a
-  // poll fails, so on wifi loss we keep rendering it and just flip the "offline"
-  // stamp. No retry → the stale stamp appears promptly; the next poll recovers.
+  // The whole board in one live read (see `live` in lib/query: polls + refetches
+  // on focus so another phone's change lands here within a tick). TanStack keeps
+  // the last good frame when a poll fails, so on wifi loss we keep rendering it
+  // and just flip the "offline" stamp. retry:false overrides the default → the
+  // stale stamp appears promptly and the next poll recovers.
   const { data, error, isError } = useQuery({
     queryKey: BOARD_KEY,
     queryFn: () => api<BoardData>('board'),
-    refetchInterval: POLL_MS,
+    ...live,
     retry: false,
   })
   const unauth = isUnauthorized(error)
@@ -251,7 +253,7 @@ function PhotoFrame() {
   const { data } = useQuery({
     queryKey: ['photos'],
     queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
-    staleTime: 5 * 60 * 1000,
+    ...live,
   })
   const photos = data?.photos ?? []
   const [idx, setIdx] = useState(0)

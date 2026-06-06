@@ -2493,12 +2493,50 @@ a {
 .flyer-detail {
   flex: 0 0 auto;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
   padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
   border-top: 1.5px solid var(--line);
   background: var(--paper);
   box-shadow: 0 -6px 18px rgba(44, 39, 34, 0.12);
+}
+.flyer-detail__info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.flyer-detail__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.flyer-detail__nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.flyer-detail__step {
+  flex: 0 0 auto;
+  min-width: 40px;
+  height: 36px;
+  font-size: 22px;
+  line-height: 1;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.flyer-detail__step:active {
+  background: var(--line);
+}
+.flyer-detail__count {
+  flex: 0 0 auto;
+  min-width: 38px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-soft);
 }
 .flyer-detail__img {
   flex: 0 0 auto;
@@ -3149,6 +3187,7 @@ a {
 .flyer-detail__add {
   flex: 0 0 auto;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 /* Settings ▸ La maisonnée — each member is a boxed card: avatar on top, name,

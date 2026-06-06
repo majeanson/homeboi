@@ -6,10 +6,12 @@ import { resizeImage, PHOTO_MAX } from '../lib/image'
 import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
 import { Icon } from './Icon'
 
-// Create / edit a recipe. Three ways to fill it fast, then free editing:
-//   ✨ AI draft from the title · 🔗 import from a URL or pasted text · 📷 a photo.
+// Create / edit a recipe. Two ways to fill it fast, then free editing:
+//   📷 read a photo (the vision model OCRs a cookbook page / handwritten card
+//   into title+ingredients+steps) · 🔗 import from a URL or pasted text.
 // Owns its own POST/PATCH + image upload; calls onSaved() when done. A modal
-// overlay (opened from the Kitchen recipes section).
+// overlay (opened from the Kitchen recipes section). The dish's display picture
+// is a separate control at the top — distinct from "read a photo".
 type LineKind = 'ingredients' | 'steps'
 
 export function RecipeForm({
@@ -35,10 +37,10 @@ export function RecipeForm({
   const [image, setImage] = useState<string | null>(value?.image ?? null)
 
   const [busy, setBusy] = useState(false)
-  const [drafting, setDrafting] = useState(false)
+  const [reading, setReading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [aiOff, setAiOff] = useState(false)
+  const [readMsg, setReadMsg] = useState<string | null>(null)
   const [showImport, setShowImport] = useState(false)
   const [importUrl, setImportUrl] = useState('')
   const [importText, setImportText] = useState('')
@@ -71,20 +73,26 @@ export function RecipeForm({
     if (d.steps?.length && steps.every((x) => !x.trim())) setSteps(d.steps)
   }
 
-  async function draft() {
-    if (!title.trim() || drafting) return
-    setDrafting(true)
-    setAiOff(false)
+  // Read a recipe out of a photo (cookbook page, handwritten card, screenshot):
+  // the vision model OCRs + structures it, then we drop the result into the
+  // empty fields (applyDraft never clobbers what's already typed). The picked
+  // file is only sent for reading — it does NOT become the dish's display photo.
+  async function readPhoto(file: File) {
+    if (reading) return
+    setReading(true)
+    setReadMsg(null)
     try {
-      const d = await api<{ ingredients: string[]; steps: string[] }>('recipe-draft', {
+      const blob = await resizeImage(file, PHOTO_MAX)
+      const r = await api<{ title: string | null; ingredients: string[]; steps: string[] }>('recipe-vision', {
         method: 'POST',
-        body: { title: title.trim() },
+        body: blob,
       })
-      applyDraft(d)
+      if (!r.title && !r.ingredients.length && !r.steps.length) setReadMsg(t.recipes.readFail)
+      else applyDraft(r)
     } catch (e) {
-      if (isStatus(e, 503)) setAiOff(true)
+      setReadMsg(isStatus(e, 503) ? t.recipes.aiOff : t.recipes.readFail)
     } finally {
-      setDrafting(false)
+      setReading(false)
     }
   }
 
@@ -238,9 +246,20 @@ export function RecipeForm({
 
           {/* Fast-fill helpers */}
           <div className="recipe-helpers">
-            <button type="button" className="btn btn--ghost mono" onClick={draft} disabled={!title.trim() || drafting}>
-              {drafting ? t.recipes.draftThinking : t.recipes.draft}
-            </button>
+            <label className={'btn btn--ghost mono' + (reading ? ' is-busy' : '')}>
+              {reading ? t.recipes.reading : t.recipes.readPhoto}
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                disabled={reading}
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) readPhoto(f)
+                  e.target.value = ''
+                }}
+              />
+            </label>
             <button
               type="button"
               className="btn btn--ghost mono"
@@ -250,7 +269,7 @@ export function RecipeForm({
               {t.recipes.import}
             </button>
           </div>
-          {aiOff && <p className="recipe-aioff mono">{t.recipes.aiOff}</p>}
+          {readMsg && <p className="recipe-aioff mono">{readMsg}</p>}
 
           {showImport && (
             <div className="recipe-import">

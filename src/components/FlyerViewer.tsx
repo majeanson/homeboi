@@ -88,21 +88,41 @@ export function FlyerViewer({
       : data.pages.length && data.items.length
         ? 'ok'
         : 'empty'
-  // The selected item drives the ring, the directions banner, and the detail card.
-  const [selectedId, setSelectedId] = useState<number | null>(highlightId ?? null)
+  // The selected item drives the ring, the directions banner, and the detail
+  // card. We track it by ARRAY INDEX, not id: many flyer items come back with a
+  // null id, so id-based selection would collapse them all into "nothing
+  // selected" and the detail card would never open.
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
   const selectedRef = useRef<HTMLButtonElement | null>(null)
+
+  // Once the flyer loads, pre-select the item the proof card sent us (by id).
+  useEffect(() => {
+    if (highlightId == null || !data) return
+    const idx = data.items.findIndex((i) => i.id === highlightId)
+    if (idx >= 0) setSelectedIdx(idx)
+  }, [data, highlightId])
 
   // Bring the selected item into view whenever it changes (incl. first paint).
   useEffect(() => {
     if (state === 'ok' && selectedRef.current) {
       selectedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }, [state, selectedId])
+  }, [state, selectedIdx])
 
   const selected = useMemo(
-    () => (data && selectedId != null ? data.items.find((i) => i.id === selectedId) ?? null : null),
-    [data, selectedId],
+    () => (data && selectedIdx != null ? data.items[selectedIdx] ?? null : null),
+    [data, selectedIdx],
   )
+
+  // Step through items in flyer order so you can walk the whole circular item by
+  // item without hunting for the next clipping. Wraps around both ends.
+  const step = (delta: number) => {
+    if (!data || !data.items.length) return
+    setSelectedIdx((cur) => {
+      const n = data.items.length
+      return (((cur ?? 0) + delta) % n + n) % n
+    })
+  }
 
   // Where in the flyer the selected item sits: page number + a 3x3 position
   // (top/middle/bottom × left/center/right) so you can find it at a glance.
@@ -160,18 +180,20 @@ export function FlyerViewer({
             const pageW = page.right - page.left
             const pageH = page.top - page.bottom
             if (pageW <= 0 || pageH <= 0) return null
-            const onPage = data!.items.filter((it) => {
-              const cx = (it.left + it.right) / 2
-              return cx >= page.left && cx < page.right
-            })
+            const onPage = data!.items
+              .map((it, idx) => ({ it, idx }))
+              .filter(({ it }) => {
+                const cx = (it.left + it.right) / 2
+                return cx >= page.left && cx < page.right
+              })
             return (
               <div key={page.id ?? page.page} className="flyer-page-wrap">
                 <div className="flyer-page-label mono">
                   {t.shop.page} {page.page}
                 </div>
                 <div className="flyer-page" style={{ aspectRatio: `${pageW} / ${pageH}` }}>
-                  {onPage.map((it) => {
-                    const isHit = selectedId != null && it.id === selectedId
+                  {onPage.map(({ it, idx }) => {
+                    const isHit = selectedIdx === idx
                     const style: React.CSSProperties = {
                       left: `${((it.left - page.left) / pageW) * 100}%`,
                       top: `${((page.top - it.top) / pageH) * 100}%`,
@@ -181,11 +203,11 @@ export function FlyerViewer({
                     return (
                       <button
                         type="button"
-                        key={it.id ?? `${it.left},${it.top}`}
+                        key={idx}
                         ref={isHit ? selectedRef : undefined}
                         className={`flyer-item${isHit ? ' is-hit' : ''}`}
                         style={style}
-                        onClick={() => setSelectedId(it.id)}
+                        onClick={() => setSelectedIdx(idx)}
                         aria-label={it.price != null ? `${it.name} — ${money(it.price)}` : it.name}
                       >
                         {it.image && <img src={it.image} alt={it.name} loading="lazy" />}
@@ -209,37 +231,54 @@ export function FlyerViewer({
           over the flyer; close it to keep browsing. */}
       {selected && (
         <div className="flyer-detail">
-          {selected.image && <ZoomableImg className="flyer-detail__img" src={selected.image} alt={selected.name} />}
-          <div className="flyer-detail__body">
-            <span className="flyer-detail__name">{selected.name || '—'}</span>
-            <span className="flyer-detail__meta mono">
-              {selected.unitPrice != null
-                ? `${money(selected.unitPrice)}${selected.unitLabel}`
-                : t.shop.noUnit}
-              {selected.validTo ? ` · ${t.shop.until} ${fmtDate(selected.validTo)}` : ''}
-            </span>
+          <div className="flyer-detail__info">
+            {selected.image && <ZoomableImg className="flyer-detail__img" src={selected.image} alt={selected.name} />}
+            <div className="flyer-detail__body">
+              <span className="flyer-detail__name">{selected.name || '—'}</span>
+              <span className="flyer-detail__meta mono">
+                {selected.unitPrice != null
+                  ? `${money(selected.unitPrice)}${selected.unitLabel}`
+                  : t.shop.noUnit}
+                {selected.validTo ? ` · ${t.shop.until} ${fmtDate(selected.validTo)}` : ''}
+              </span>
+            </div>
+            <span className="flyer-detail__price">{money(selected.price)}</span>
           </div>
-          <span className="flyer-detail__price">{money(selected.price)}</span>
-          {onAddToList && selected.name && (
+          <div className="flyer-detail__actions">
+            {data && data.items.length > 1 && (
+              <div className="flyer-detail__nav mono">
+                <button type="button" className="flyer-detail__step" onClick={() => step(-1)} aria-label={t.shop.prev}>
+                  ‹
+                </button>
+                <span className="flyer-detail__count">
+                  {(selectedIdx ?? 0) + 1}/{data.items.length}
+                </span>
+                <button type="button" className="flyer-detail__step" onClick={() => step(1)} aria-label={t.shop.next}>
+                  ›
+                </button>
+              </div>
+            )}
+            {onAddToList && selected.name && (
+              <button
+                type="button"
+                className="btn btn--ghost mono flyer-detail__add"
+                onClick={() => {
+                  onAddToList(selected.name)
+                  setAddedName(selected.name)
+                }}
+              >
+                {addedName === selected.name ? `✓ ${t.shop.addToList}` : `+ ${t.shop.addToList}`}
+              </button>
+            )}
             <button
               type="button"
-              className="btn btn--ghost mono flyer-detail__add"
-              onClick={() => {
-                onAddToList(selected.name)
-                setAddedName(selected.name)
-              }}
+              className="flyer-detail__close btn btn--ghost mono"
+              onClick={() => setSelectedIdx(null)}
+              aria-label={t.shop.close}
             >
-              {addedName === selected.name ? `✓ ${t.shop.addToList}` : `+ ${t.shop.addToList}`}
+              ✕
             </button>
-          )}
-          <button
-            type="button"
-            className="flyer-detail__close btn btn--ghost mono"
-            onClick={() => setSelectedId(null)}
-            aria-label={t.shop.close}
-          >
-            ✕
-          </button>
+          </div>
         </div>
       )}
     </div>

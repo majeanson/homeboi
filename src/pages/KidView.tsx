@@ -9,6 +9,7 @@ import { Loading, PairPrompt } from '../components/Fallback'
 import { tintInk } from '../lib/colors'
 import { imgUrl } from '../lib/image'
 import { api, isUnauthorized } from '../lib/api'
+import { live } from '../lib/query'
 
 // The pre-reader surface, in Pip's calm "right now / then" picture story: ONE
 // big card at a time, narrated on tap, with the next thing shown small and a
@@ -41,7 +42,14 @@ export function KidView() {
   const qc = useQueryClient()
   const [pickedId, setPickedId] = useState<string | null>(null)
 
-  const { data, error } = useQuery({ queryKey: ROUTINES_KEY, queryFn: () => api<RoutinesData>('routines') })
+  // Left-on toddler kiosk: a parent's change from another device (ticking a
+  // routine, editing cards) must land here without a manual reload. `live` polls
+  // + refetches on focus — same freshness model as the board.
+  const { data, error } = useQuery({
+    queryKey: ROUTINES_KEY,
+    queryFn: () => api<RoutinesData>('routines'),
+    ...live,
+  })
 
   // Toggle one card done for today. Optimistic so the tap feels instant on a
   // cheap tablet; on failure we roll back and resync from the server.

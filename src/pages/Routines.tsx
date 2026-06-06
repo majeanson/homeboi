@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { api, isUnauthorized } from '../lib/api'
+import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { KidView } from './KidView'
 
@@ -29,6 +30,7 @@ function RoutinesParent() {
   const { data, error } = useQuery({
     queryKey: ['routines'],
     queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
+    ...live,
   })
 
   if (isUnauthorized(error)) return <PairPrompt />

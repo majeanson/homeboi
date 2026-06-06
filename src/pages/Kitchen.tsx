@@ -5,6 +5,7 @@ import { Icon } from '../components/Icon'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { api, isStatus, isUnauthorized } from '../lib/api'
+import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday } from '../lib/format'
 import { type Recipe, RECIPES_KEY, recipeImg, allTags } from '../lib/recipes'
@@ -47,12 +48,12 @@ export function Kitchen() {
     options: { item: string; on: boolean }[]
   } | null>(null)
 
-  const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals') })
-  const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry') })
-  const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes') })
+  const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), ...live })
+  const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry'), ...live })
+  const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live })
   // Shares the ['board'] cache with the Board/Liste pages — read only for the
   // shopping list, used to rank recipes by "what you could cook now".
-  const boardQ = useQuery({ queryKey: ['board'], queryFn: () => api<{ list: { text: string }[] }>('board') })
+  const boardQ = useQuery({ queryKey: ['board'], queryFn: () => api<{ list: { text: string }[] }>('board'), ...live })
   const recipes = recipesQ.data?.recipes ?? []
   // "Quoi cuisiner ?": when on, sort the grid by fewest out-of-stock ingredients.
   const [cookFilter, setCookFilter] = useState(false)

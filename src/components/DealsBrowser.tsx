@@ -70,7 +70,18 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const bestKey = shown.find((d) => d.unitPrice != null)
 
   return (
-    <div className="pm-overlay" role="dialog" aria-modal="true" aria-label={t.shop.browseTitle} onClick={onClose}>
+    <div
+      className="pm-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t.shop.browseTitle}
+      onClick={(e) => {
+        // Only the bare backdrop closes — not bubbled clicks from the sheet or
+        // the full-flyer viewer layered on top (those would dump you back to the
+        // list when you only meant to pick an item).
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
       <div className="pm-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="pm-sheet__head">
           <div>
