@@ -1,6 +1,7 @@
 import type { Env } from '../_lib/env'
 import { badRequest, ok, readJson } from '../_lib/json'
-import { requireActor, type Actor } from '../_lib/household'
+import { authed } from '../_lib/route'
+import { type Actor } from '../_lib/household'
 import { classifyCapture, resolveLang, type Intent } from '../_lib/ai'
 import { newId, nowSec } from '../_lib/ids'
 import { parseWhen } from '../_lib/whenparse'
@@ -12,10 +13,7 @@ import { parseWhen } from '../_lib/whenparse'
 //
 // If `forceType` is sent (the manual type-picker shown when AI is degraded, or
 // a correction of a misroute), we skip classification and use it directly.
-export const onRequestPost: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request)
-  if (actor instanceof Response) return actor
-
+export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ text?: string; source?: string; forceType?: Intent['type'] }>(ctx.request)
   const text = body?.text?.trim()
   if (!text) return badRequest('Texte vide.')
@@ -32,12 +30,12 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     .bind(newId(), actor.householdId, text, source, intent.type, ts)
     .run()
 
-  const routed = await route(ctx.env, actor, intent, text, ts)
+  const routed = await routeIntent(ctx.env, actor, intent, text, ts)
 
   return ok({ type: intent.type, degraded: intent.degraded ?? false, routed })
-}
+})
 
-async function route(
+async function routeIntent(
   env: Env,
   actor: Actor,
   intent: Intent,

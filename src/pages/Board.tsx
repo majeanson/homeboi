@@ -1,67 +1,74 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CaptureBar } from '../components/CaptureBar'
+import { useQuery } from '@tanstack/react-query'
 import { BigTiles, type Tile } from '../components/BigTiles'
+import { Icon } from '../components/Icon'
+import { CATS, TOD_ICON, type CatKey } from '../lib/cats'
+import { tintInk } from '../lib/colors'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useSpeak } from '../lib/speak'
 import { timeOfDay } from '../lib/timeofday'
-import { api, ApiError } from '../lib/api'
-import { formatClock, formatTime } from '../lib/format'
+import { api, isUnauthorized } from '../lib/api'
+import { weatherEmoji, type Weather } from '../lib/weather'
+import { imgUrl } from '../lib/image'
+import { formatClock, formatDay, formatTime } from '../lib/format'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
 // flips a "showing cache" stamp instead of blanking. The day's list empties
 // and stays empty — no counters, no score for clearing it.
-interface Member { id: string; display_name: string; avatar_ref: string; is_child: number }
+interface Member { id: string; display_name: string; colour: string; is_child: number }
 interface EventRow { id: string; title: string; start_at: number; all_day: number; member_id: string | null }
 interface ListRow { id: string; text: string; source: string }
 interface Helper { name: string | null; role: string }
-interface ChoreRow { id: string; title: string; rotation_json: string; current_idx: number; last_done_at: number | null; helpers?: Helper[] }
+interface ChoreRow { id: string; title: string; rotation_json: string; current_idx: number; last_done_at: number | null; color?: string; helpers?: Helper[] }
+interface MealRow { id: string; title: string; cook_member_id: string | null }
 interface BoardData {
   syncedAt: number
   scope: string
   members: Member[]
   today: EventRow[]
+  tomorrow: EventRow[]
   upcoming: EventRow[]
-  tonight: { id: string; title: string; cook_member_id: string | null } | null
+  tonight: MealRow | null
+  tomorrowMeal: MealRow | null
   list: ListRow[]
   chores: ChoreRow[]
 }
 
 const POLL_MS = 20000
+const BOARD_KEY = ['board']
 
 export function Board() {
   const t = useT()
   const { lang } = useLang()
   const { audience } = useAudience()
   const speak = useSpeak()
-  const [data, setData] = useState<BoardData | null>(null)
-  const [stale, setStale] = useState(false)
-  const [unauth, setUnauth] = useState(false)
   const [clock, setClock] = useState(() => formatClock(lang, Date.now()))
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const load = useCallback(async () => {
-    try {
-      const res = await api<BoardData>('board')
-      setData(res)
-      setStale(false)
-      setUnauth(false)
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 401) setUnauth(true)
-      // Any other failure: keep the last frame, mark it stale.
-      else setStale(true)
-    }
-  }, [])
+  // The whole board in one polled read. TanStack keeps the last good frame when a
+  // poll fails, so on wifi loss we keep rendering it and just flip the "offline"
+  // stamp. No retry → the stale stamp appears promptly; the next poll recovers.
+  const { data, error, isError } = useQuery({
+    queryKey: BOARD_KEY,
+    queryFn: () => api<BoardData>('board'),
+    refetchInterval: POLL_MS,
+    retry: false,
+  })
+  const unauth = isUnauthorized(error)
+  const stale = isError && !unauth && !!data
 
-  useEffect(() => {
-    load()
-    pollRef.current = setInterval(load, POLL_MS)
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current)
-    }
-  }, [load])
+  // Weather is its own slow poll (15 min) off the render-critical board read, and
+  // resolves to null when there's no postal / upstream is down → the chip hides.
+  const FIFTEEN_MIN = 15 * 60 * 1000
+  const { data: wx } = useQuery({
+    queryKey: ['weather'],
+    queryFn: () => api<{ weather: Weather | null }>('weather'),
+    refetchInterval: FIFTEEN_MIN,
+    staleTime: FIFTEEN_MIN,
+  })
+  const weather = wx?.weather ?? null
 
   useEffect(() => {
     const c = setInterval(() => setClock(formatClock(lang, Date.now())), 30000)
@@ -69,26 +76,7 @@ export function Board() {
   }, [lang])
 
   const memberName = (id: string | null) => data?.members.find((m) => m.id === id)?.display_name ?? null
-  const memberColor = (id: string | null) => data?.members.find((m) => m.id === id)?.avatar_ref
-
-  async function toggleList(item: ListRow) {
-    // Optimistic: drop it from the open list immediately, then persist.
-    setData((d) => (d ? { ...d, list: d.list.filter((i) => i.id !== item.id) } : d))
-    await api('list', { method: 'PATCH', body: { id: item.id, checked: true } }).catch(() => load())
-  }
-
-  async function doneChore(chore: ChoreRow) {
-    // Parent completing: advances the rotation + logs a parent contribution.
-    await api('chores', { method: 'PATCH', body: { id: chore.id, role: 'parent' } }).catch(() => {})
-    load()
-  }
-
-  async function helpChore(chore: ChoreRow) {
-    // Toddler "I helped": logs a child contribution WITHOUT finishing the chore
-    // (complete:false) — the shared-task model, where both roles can pitch in.
-    await api('chores', { method: 'PATCH', body: { id: chore.id, role: 'child', complete: false } }).catch(() => {})
-    load()
-  }
+  const memberColor = (id: string | null) => data?.members.find((m) => m.id === id)?.colour
 
   if (unauth) {
     return (
@@ -101,14 +89,12 @@ export function Board() {
     )
   }
 
-  // Toddler lens on the same board data. Not a flat tile dump: a hierarchy a
-  // pre-reader can read by SIZE — a hero for tonight's supper, then sized-down
-  // sections for events and chores. Time-of-day decides emphasis: in the evening
-  // supper leads; earlier the day's events lead. Each tile reads itself aloud;
-  // member colour says whose it is.
-  if (audience === 'toddler') {
-    const tod = timeOfDay(Date.now())
-    const eventTiles: Tile[] = (data?.today ?? []).map((e) => ({
+  // Toddler lens on the SAME board data as the parent — same content, kid UI:
+  // big read-aloud tiles, picture-first, member colour says whose thing it is.
+  // Heroes (meals + weather) sit on top; then Today / Demain / chores / list /
+  // photos, mirroring the parent board so nothing is missing for a pre-reader.
+  const eventTiles = (rows: EventRow[]): Tile[] =>
+    rows.map((e) => ({
       key: e.id,
       icon: '📌',
       label: e.title,
@@ -116,214 +102,240 @@ export function Board() {
       narration: e.title,
       color: memberColor(e.member_id) ?? undefined,
     }))
-    const choreTiles: Tile[] = (data?.chores ?? []).map((c) => ({
-      key: `chore-${c.id}`,
-      icon: '🧹',
-      label: c.title,
-      sub: t.board.help,
-      narration: c.title,
-      onTap: () => helpChore(c),
-    }))
 
-    const hero = data?.tonight ? (
+  if (audience === 'toddler') {
+    const tod = timeOfDay(Date.now())
+
+    const mealHero = (meal: MealRow | null, key: 'tonight' | 'tomorrow') =>
+      meal ? (
+        <button
+          type="button"
+          className="today-hero"
+          onClick={() => speak(`${t.board[key]}: ${meal.title}`)}
+          aria-label={`${t.board[key]}: ${meal.title}`}
+        >
+          <span className="today-hero__icon" aria-hidden="true">🍽</span>
+          <span className="today-hero__label">{meal.title}</span>
+          <span className="today-hero__sub mono">{t.board[key]}</span>
+        </button>
+      ) : null
+
+    const weatherHero = weather ? (
       <button
         type="button"
         className="today-hero"
-        onClick={() => speak(`${t.board.tonight}: ${data.tonight!.title}`)}
-        aria-label={`${t.board.tonight}: ${data.tonight.title}`}
+        onClick={() => speak(`${t.weather[weather.bucket]}, ${weather.tempC}°`)}
+        aria-label={`${t.weather[weather.bucket]} ${weather.tempC}°`}
       >
-        <span className="today-hero__icon" aria-hidden="true">
-          🍽
-        </span>
-        <span className="today-hero__label">{data.tonight.title}</span>
-        <span className="today-hero__sub mono">{t.board.tonight}</span>
+        <span className="today-hero__icon" aria-hidden="true">{weatherEmoji(weather)}</span>
+        <span className="today-hero__label">{weather.tempC}°</span>
+        <span className="today-hero__sub mono">{t.weather[weather.bucket]}</span>
       </button>
     ) : null
 
-    const events = eventTiles.length > 0 && (
-      <section className="today-kid__section">
-        <h2 className="today-kid__h">{t.board.today}</h2>
-        <BigTiles tiles={eventTiles} />
-      </section>
-    )
-    const chores = choreTiles.length > 0 && (
-      <section className="today-kid__section">
-        <h2 className="today-kid__h">{t.board.chores}</h2>
-        <BigTiles tiles={choreTiles} />
-      </section>
-    )
+    const kidSection = (label: string, tiles: Tile[]) =>
+      tiles.length > 0 ? (
+        <section className="today-kid__section">
+          <h2 className="today-kid__h">{label}</h2>
+          <BigTiles tiles={tiles} />
+        </section>
+      ) : null
 
     return (
       <main className="kid__main today-kid">
         <p className="today-kid__greet">{t.today[tod]}</p>
         {!data ? (
           <p className="loading mono">{t.common.loading}</p>
-        ) : tod === 'evening' ? (
-          <>
-            {hero}
-            {events}
-            {chores}
-          </>
         ) : (
           <>
-            {events}
-            {chores}
-            {hero}
+            <div className="today-kid__heroes">
+              {mealHero(data.tonight, 'tonight')}
+              {mealHero(data.tomorrowMeal, 'tomorrow')}
+              {weatherHero}
+            </div>
+            {kidSection(t.board.today, eventTiles(data.today))}
+            {kidSection(t.board.tomorrow, eventTiles(data.tomorrow))}
+            <PhotoFrame />
           </>
         )}
       </main>
     )
   }
 
+  // Parent board, Pip "Today" layout: a handwritten tag + greeting, an "Up next"
+  // now-card (tonight's supper), then a gentle grouped timeline of colour-coded
+  // activity cards. Same data + writes as before — just the calm Pip surface.
+  const tod = timeOfDay(Date.now())
+  const eventAct = (e: EventRow) => (
+    <Act
+      key={e.id}
+      cat="event"
+      title={e.title}
+      when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
+      who={memberName(e.member_id) ?? undefined}
+      color={memberColor(e.member_id) ?? undefined}
+    />
+  )
+  const cookLine = (m: MealRow) =>
+    memberName(m.cook_member_id) ? `${memberName(m.cook_member_id)} ${t.board.cooks}` : undefined
+
   return (
-    <>
-      <main className="board__main">
-        <div className="board__topline">
-          <span className="board__greet">{t.today[timeOfDay(Date.now())]}</span>
-          <span className="board__clock mono">{clock}</span>
-        </div>
-        <CaptureBar onCaptured={load} />
-
-        {!data ? (
-          <p className="loading mono">{t.common.loading}</p>
-        ) : (
-          <div className="board__grid">
-            {/* Today */}
-            <section className="surface board__zone">
-              <h2 className="board__zone-title">{t.board.today}</h2>
-              {data.today.length === 0 ? (
-                <p className="board__empty mono">—</p>
-              ) : (
-                <ul className="board__events">
-                  {data.today.map((e) => (
-                    <li key={e.id}>
-                      <span className="board__event-time mono">
-                        {e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
-                      </span>
-                      <span className="board__event-title">{e.title}</span>
-                      {memberName(e.member_id) && (
-                        <span className="board__event-who mono">
-                          <span
-                            className="board__who-dot"
-                            aria-hidden="true"
-                            style={{ background: memberColor(e.member_id) }}
-                          />
-                          {memberName(e.member_id)}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            {/* Tonight */}
-            <section className="surface board__zone board__zone--tonight">
-              <h2 className="board__zone-title">{t.board.tonight}</h2>
-              {data.tonight ? (
-                <>
-                  <p className="board__tonight-meal">{data.tonight.title}</p>
-                  {memberName(data.tonight.cook_member_id) && (
-                    <p className="mono board__tonight-cook">
-                      {memberName(data.tonight.cook_member_id)} {t.board.cooks}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p className="board__empty mono">{t.board.nothingTonight}</p>
-              )}
-            </section>
-
-            {/* List */}
-            <section className="surface board__zone">
-              <h2 className="board__zone-title">{t.board.list}</h2>
-              {data.list.length === 0 ? (
-                <p className="board__empty mono">{t.board.listEmpty}</p>
-              ) : (
-                <ul className="board__list">
-                  {data.list.map((item) => (
-                    <li key={item.id}>
-                      <button type="button" className="board__list-item" onClick={() => toggleList(item)}>
-                        <span className="board__check" aria-hidden="true">
-                          ☐
-                        </span>
-                        <span>{item.text}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            {/* Chores */}
-            <section className="surface board__zone">
-              <h2 className="board__zone-title">{t.board.chores}</h2>
-              {data.chores.length === 0 ? (
-                <p className="board__empty mono">{t.board.choresEmpty}</p>
-              ) : (
-                <ul className="board__chores">
-                  {data.chores.map((c) => {
-                    const rotation = safeRotation(c.rotation_json)
-                    const whoId = rotation.length ? rotation[c.current_idx % rotation.length] : null
-                    return (
-                      <li key={c.id} className="board__chore">
-                        <div>
-                          <span className="board__chore-title">{c.title}</span>
-                          {whoId && (
-                            <span className="board__chore-turn mono">
-                              <span
-                                className="board__who-dot"
-                                aria-hidden="true"
-                                style={{ background: memberColor(whoId) }}
-                              />
-                              {t.board.turn} {memberName(whoId)}
-                            </span>
-                          )}
-                          {c.helpers && c.helpers.length > 0 && (
-                            <span className="board__chore-helped mono">
-                              {t.board.helpedBy} {c.helpers.map((h) => h.name ?? (h.role === 'child' ? '👶' : '🧑')).join(', ')}
-                            </span>
-                          )}
-                        </div>
-                        <button type="button" className="btn btn--ghost mono" onClick={() => doneChore(c)}>
-                          {t.board.done}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </section>
-
-            {/* Upcoming */}
-            {data.upcoming.length > 0 && (
-              <section className="surface board__zone board__zone--wide">
-                <h2 className="board__zone-title">{t.board.upcoming}</h2>
-                <ul className="board__upcoming mono">
-                  {data.upcoming.map((e) => (
-                    <li key={e.id}>
-                      <span>{formatTime(e.start_at, lang)}</span> {e.title}
-                    </li>
-                  ))}
-                </ul>
-              </section>
+    <main className="board-wall">
+      <div className="app-head">
+        <div>
+          <div className="hand-tag">{t.board.today}</div>
+          <h1 className="greet">{t.today[tod]}</h1>
+          <div className="subgreet">
+            {formatDay(Math.floor(Date.now() / 1000), lang)} · {clock}
+            {weather && (
+              <span className="weather-chip" aria-label={`${t.weather[weather.bucket]} ${weather.tempC}°`}>
+                {' '}
+                · <span aria-hidden="true">{weatherEmoji(weather)}</span> {weather.tempC}°
+              </span>
             )}
           </div>
-        )}
+        </div>
+        <div className="avatar" style={{ background: 'var(--marigold-wash)' }}>
+          <Icon name={TOD_ICON[tod]} size={26} color="var(--marigold-deep)" />
+        </div>
+      </div>
 
-        <p className="board__synced mono">
-          {stale ? t.board.offline : `${t.board.synced} ${clock}`}
-        </p>
-      </main>
-    </>
+      {!data ? (
+        <p className="loading mono">{t.common.loading}</p>
+      ) : (
+        <div className="board-grid">
+          {data.tonight && (
+            <div className="now-card" style={{ background: CATS.meal.wash, color: CATS.meal.deep }}>
+              <div className="blob" style={{ background: CATS.meal.color }} />
+              <div className="label">{t.board.tonight}</div>
+              <div className="what">{data.tonight.title}</div>
+              {cookLine(data.tonight) && <div className="who">{cookLine(data.tonight)}</div>}
+              <div className="icn">
+                <Icon name={CATS.meal.icon} size={40} color={CATS.meal.color} />
+              </div>
+            </div>
+          )}
+
+          <Section label={t.board.today} count={data.today.length}>
+            {data.today.length === 0 ? <p className="feed-empty">—</p> : data.today.map(eventAct)}
+          </Section>
+
+          <Section label={t.board.tomorrow} count={data.tomorrow.length + (data.tomorrowMeal ? 1 : 0)}>
+            {data.tomorrowMeal && (
+              <Act cat="meal" title={data.tomorrowMeal.title} who={cookLine(data.tomorrowMeal)} />
+            )}
+            {data.tomorrow.map(eventAct)}
+            {data.tomorrow.length === 0 && !data.tomorrowMeal && <p className="feed-empty">—</p>}
+          </Section>
+
+          {data.upcoming.length > 0 && (
+            <Section label={t.board.upcoming} count={data.upcoming.length}>
+              {data.upcoming.map((e) => (
+                <Act key={e.id} cat="event" title={e.title} when={formatTime(e.start_at, lang)} />
+              ))}
+            </Section>
+          )}
+
+          <PhotoFrame />
+        </div>
+      )}
+
+      <p className="board__synced mono">{stale ? t.board.offline : `${t.board.synced} ${clock}`}</p>
+    </main>
   )
 }
 
-function safeRotation(json: string): string[] {
-  try {
-    const v = JSON.parse(json)
-    return Array.isArray(v) ? v : []
-  } catch {
-    return []
-  }
+// A calm family-photo frame for the wall: one photo at a time, a slow cross-fade
+// every 30s. Silent no-op when there are no photos (or R2 is off).
+function PhotoFrame() {
+  const { data } = useQuery({
+    queryKey: ['photos'],
+    queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
+    staleTime: 5 * 60 * 1000,
+  })
+  const photos = data?.photos ?? []
+  const [idx, setIdx] = useState(0)
+  useEffect(() => {
+    if (photos.length < 2) return
+    const id = setInterval(() => setIdx((i) => (i + 1) % photos.length), 30000)
+    return () => clearInterval(id)
+  }, [photos.length])
+  if (!photos.length) return null
+  const p = photos[idx % photos.length]
+  // key=id so React remounts the <img>, re-triggering the gentle fade per photo.
+  return (
+    <div className="photo-frame">
+      <img key={p.id} src={imgUrl(p.key)} alt="" />
+    </div>
+  )
 }
+
+// Pip section header: label + rule + a quiet count (never a score). Each Section
+// is a bento tile in the board grid.
+function Section({ label, count, children }: { label: string; count?: number; children: React.ReactNode }) {
+  return (
+    <div className="bento">
+      <div className="sec-label">
+        <b>{label}</b>
+        <span className="ln" />
+        {count ? <span className="ct">{count}</span> : null}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+// Pip activity card: colour spine + washed icon tile + title, optional tappable
+// check (settles into sage when done). Interactive variant is a <button>;
+// informational rows (events) render as a static card.
+function Act({
+  cat,
+  title,
+  when,
+  who,
+  done,
+  onCheck,
+  color,
+}: {
+  cat: CatKey
+  title: string
+  when?: string
+  who?: string
+  done?: boolean
+  onCheck?: () => void
+  color?: string // overrides the category colour (member colour, task colour)
+}) {
+  const c = CATS[cat]
+  const spine = color ?? c.color
+  const tileBg = color ? color + '22' : c.wash
+  const glyph = color ?? c.deep
+  const body = (
+    <>
+      <span className="spine" style={{ background: spine }} aria-hidden="true" />
+      <span className="tile" style={{ background: tileBg }} aria-hidden="true">
+        <Icon name={c.icon} size={28} color={glyph} />
+      </span>
+      <span className="act__text">
+        {when && <span className="when">{when}</span>}
+        <span className="title" style={done ? undefined : { color: tintInk(spine) }}>
+          {title}
+        </span>
+        {who && <span className="who">{who}</span>}
+      </span>
+      {onCheck && (
+        <span className="check" aria-hidden="true">
+          <Icon name="check-bold" size={18} />
+        </span>
+      )}
+    </>
+  )
+  if (onCheck) {
+    return (
+      <button type="button" className={'act' + (done ? ' done' : '')} onClick={onCheck} aria-pressed={!!done}>
+        {body}
+      </button>
+    )
+  }
+  return <div className={'act' + (done ? ' done' : '')}>{body}</div>
+}
+

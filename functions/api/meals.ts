@@ -1,15 +1,12 @@
-import type { Env } from '../_lib/env'
 import { badRequest, ok, readJson } from '../_lib/json'
-import { requireActor } from '../_lib/household'
+import { authed } from '../_lib/route'
 import { dayStart, newId, nowSec } from '../_lib/ids'
 
 // Weekly meal plan (supper slots). GET returns the next 7 days. POST sets a
 // slot. Setting a meal optionally pushes "missing" staples to the shared list
 // (the meal -> grocery flow); the staples list is sent by the client since the
 // prototype has no recipe DB.
-export const onRequestGet: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request)
-  if (actor instanceof Response) return actor
+export const onRequestGet = authed(async (ctx, actor) => {
   const today = dayStart(new Date(Date.now()))
   const { results } = await ctx.env.DB.prepare(
     "SELECT id, date, slot, title, cook_member_id FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? ORDER BY date",
@@ -17,11 +14,9 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     .bind(actor.householdId, today, today + 86400 * 7)
     .all()
   return ok({ days: results, weekStart: today })
-}
+})
 
-export const onRequestPost: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request)
-  if (actor instanceof Response) return actor
+export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{
     date?: number
     title?: string
@@ -55,15 +50,13 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     )
   }
   return ok({ ok: true, addedToList: staples.length })
-}
+})
 
-export const onRequestDelete: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request)
-  if (actor instanceof Response) return actor
+export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
   await ctx.env.DB.prepare('DELETE FROM meals WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .run()
   return ok({ ok: true })
-}
+})

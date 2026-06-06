@@ -1,0 +1,26 @@
+import { badRequest, ok, readJson } from '../_lib/json'
+import { authed } from '../_lib/route'
+import { newId, nowSec } from '../_lib/ids'
+
+// Push a recipe's ingredients onto the shared list in ONE call (source 'recipe',
+// so the ghost list / list UI can tell where they came from). Mirrors the meal
+// staples write in meals.ts; kept its own endpoint so the recipe sheet's "add
+// ingredients" button is a single round-trip, not N list POSTs.
+export const onRequestPost = authed(async (ctx, actor) => {
+  const body = await readJson<{ items?: string[] }>(ctx.request)
+  const items = (body?.items ?? [])
+    .map((s) => (typeof s === 'string' ? s.trim() : ''))
+    .filter(Boolean)
+    .map((s) => s.slice(0, 200))
+    .slice(0, 40)
+  if (items.length === 0) return badRequest('Aucun ingrédient.')
+  const ts = nowSec()
+  await ctx.env.DB.batch(
+    items.map((item) =>
+      ctx.env.DB.prepare(
+        'INSERT INTO list_items (id, household_id, text, source, created_at) VALUES (?, ?, ?, ?, ?)',
+      ).bind(newId(), actor.householdId, item, 'recipe', ts),
+    ),
+  )
+  return ok({ added: items.length })
+})

@@ -4,3 +4,9 @@
 # HMAC key for the operator session cookie + device tokens. MUST be >= 32 chars.
 # Generate one: `openssl rand -hex 32`
 SESSION_SECRET=replace-with-at-least-32-random-characters-xx
+
+# OPTIONAL shared login password. When set, /api/auth/login requires it (on top
+# of the email). Leave unset for open login on a trusted LAN / local dev; SET it
+# for any public deployment so a stranger can't sign in as you (email-only login
+# has no other gate). Not a per-user password store — one shared household secret.
+# LOGIN_PASSWORD=choose-a-strong-passphrase

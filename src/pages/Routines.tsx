@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
-import { api, ApiError } from '../lib/api'
+import { api, isUnauthorized } from '../lib/api'
+import { Loading, PairPrompt } from '../components/Fallback'
 import { KidView } from './KidView'
 
 // The Routines tab, two lenses on the same data:
@@ -25,34 +26,14 @@ interface RoutineRow {
 
 function RoutinesParent() {
   const t = useT()
-  const [routines, setRoutines] = useState<RoutineRow[] | null>(null)
-  const [unauth, setUnauth] = useState(false)
+  const { data, error } = useQuery({
+    queryKey: ['routines'],
+    queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
+  })
 
-  const load = useCallback(async () => {
-    try {
-      const res = await api<{ routines: RoutineRow[] }>('routines')
-      setRoutines(res.routines)
-      setUnauth(false)
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 401) setUnauth(true)
-      else setRoutines([])
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  if (unauth) {
-    return (
-      <main className="narrow">
-        <Link to="/pair" className="btn btn--primary">
-          {t.home.ctaPair}
-        </Link>
-      </main>
-    )
-  }
-  if (!routines) return <p className="loading mono">{t.common.loading}</p>
+  if (isUnauthorized(error)) return <PairPrompt />
+  if (!data && !error) return <Loading />
+  const routines = data?.routines ?? []
 
   return (
     <main className="narrow">

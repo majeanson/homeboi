@@ -14,6 +14,13 @@ dist/
 .env.local
 .env.*.local
 
+# playwright e2e — keep specs/config, ignore generated artifacts
+e2e/screenshots/
+e2e/report/
+e2e/test-results/
+playwright-report/
+test-results/
+
 # editor / os
 .DS_Store
 *.log

@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { api } from '../lib/api'
-import { useLang, useT } from '../i18n'
+import { useT } from '../i18n'
+import { useVoiceInput } from '../lib/useVoiceInput'
 import type { IntentType } from '../lib/captureTypes'
 
-// The capture bar: one input, type or speak. Voice uses the browser's on-device
-// SpeechRecognition (zero Neurons, nothing leaves the device for STT in the
-// prototype). The text is then classified server-side by Workers AI.
+// The capture bar: one input, type or speak. Voice is the shared on-device
+// useVoiceInput hook (zero-cost, in-browser STT). The text is then classified
+// server-side by Workers AI.
 //
 // When the server reports `degraded` (AI binding unset), we show a manual
 // type-picker so the capture is never lost — the same shape the brief promises.
@@ -13,13 +14,11 @@ const FORCE_TYPES: IntentType[] = ['event', 'task', 'list-item', 'pantry-low', '
 
 export function CaptureBar({ onCaptured }: { onCaptured?: () => void }) {
   const t = useT()
-  const { lang } = useLang()
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [routed, setRouted] = useState<{ kind: string; label: string } | null>(null)
   const [needType, setNeedType] = useState<string | null>(null)
-  const [listening, setListening] = useState(false)
-  const recogRef = useRef<SpeechRecognitionLike | null>(null)
+  const { listening, hasVoice, start: startVoice } = useVoiceInput(setText)
 
   async function submit(forceType?: IntentType) {
     const value = text.trim()
@@ -47,34 +46,6 @@ export function CaptureBar({ onCaptured }: { onCaptured?: () => void }) {
       setBusy(false)
     }
   }
-
-  function startVoice() {
-    const Ctor =
-      (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor }).SpeechRecognition ??
-      (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionCtor }).webkitSpeechRecognition
-    if (!Ctor) return
-    const recog = new Ctor()
-    recog.lang = lang === 'fr' ? 'fr-CA' : 'en-CA'
-    recog.interimResults = false
-    recog.maxAlternatives = 1
-    recog.onresult = (e: SpeechRecognitionEventLike) => {
-      const said = e.results[0]?.[0]?.transcript ?? ''
-      setText(said)
-      setListening(false)
-    }
-    recog.onend = () => setListening(false)
-    recog.onerror = () => setListening(false)
-    recogRef.current = recog
-    setListening(true)
-    recog.start()
-  }
-
-  const hasVoice =
-    typeof window !== 'undefined' &&
-    !!(
-      (window as unknown as { SpeechRecognition?: unknown }).SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition
-    )
 
   return (
     <div className="capture">
@@ -127,19 +98,4 @@ export function CaptureBar({ onCaptured }: { onCaptured?: () => void }) {
       )}
     </div>
   )
-}
-
-// --- Minimal Web Speech typings (not in lib.dom for all targets) ------------
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike
-interface SpeechRecognitionLike {
-  lang: string
-  interimResults: boolean
-  maxAlternatives: number
-  onresult: (e: SpeechRecognitionEventLike) => void
-  onend: () => void
-  onerror: () => void
-  start: () => void
-}
-interface SpeechRecognitionEventLike {
-  results: ArrayLike<ArrayLike<{ transcript: string }>>
 }

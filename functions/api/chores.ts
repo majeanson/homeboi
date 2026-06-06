@@ -1,36 +1,35 @@
-import type { Env } from '../_lib/env'
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
-import { requireActor } from '../_lib/household'
+import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
+import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
+import { hexColor } from '../_lib/validate'
+
+const isString = (v: unknown): v is string => typeof v === 'string'
 
 // Chores with a round-robin rotation. The ONLY "credit" that exists is
 // last_done_by + whose-turn — no points, no streak (NFR-CALM-1). Marking done
 // advances the rotation and stamps who/when.
-export const onRequestGet: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request)
-  if (actor instanceof Response) return actor
+export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by FROM tasks WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, color FROM tasks WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all()
   return ok({ chores: results })
-}
+})
 
-export const onRequestPost: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request, 'operator')
-  if (actor instanceof Response) return actor
-  const body = await readJson<{ title?: string; rotation?: string[] }>(ctx.request)
+export const onRequestPost = authed(async (ctx, actor) => {
+  const body = await readJson<{ title?: string; rotation?: string[]; color?: string }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
+  const color = hexColor(body?.color, '#88a36f')
   await ctx.env.DB.prepare(
-    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, created_at) VALUES (?, ?, ?, ?, 0, ?)',
+    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, color, created_at) VALUES (?, ?, ?, ?, 0, ?, ?)',
   )
-    .bind(id, actor.householdId, title, JSON.stringify(body?.rotation ?? []), nowSec())
+    .bind(id, actor.householdId, title, JSON.stringify(body?.rotation ?? []), color, nowSec())
     .run()
   return ok({ id, title })
-}
+}, 'operator')
 
 // Mark done / record help. Two shapes, both append a contribution to
 // task_participants (the shared-task "who pitched in" log):
@@ -40,9 +39,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
 //     logs the contribution only, does NOT advance the rotation or "finish" it.
 // `role` ('parent'|'child') comes from the caller's audience; `memberId`
 // defaults to whoever's turn it is. Both kiosk and operator can call this.
-export const onRequestPatch: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request)
-  if (actor instanceof Response) return actor
+export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string; role?: string; memberId?: string; complete?: boolean }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
@@ -53,12 +50,7 @@ export const onRequestPatch: PagesFunction<Env> = async (ctx) => {
     .first<{ rotation_json: string; current_idx: number }>()
   if (!chore) return notFound('Corvée introuvable.')
 
-  let rotation: string[] = []
-  try {
-    rotation = JSON.parse(chore.rotation_json)
-  } catch {
-    rotation = []
-  }
+  const rotation = parseJsonArray<string>(chore.rotation_json, isString)
   const turnMember = rotation.length ? rotation[chore.current_idx % rotation.length] : null
   const nextIdx = rotation.length ? (chore.current_idx + 1) % rotation.length : 0
 
@@ -81,15 +73,20 @@ export const onRequestPatch: PagesFunction<Env> = async (ctx) => {
   }
   await ctx.env.DB.batch(writes)
   return ok({ ok: true, complete, nextIdx })
-}
+})
 
-export const onRequestDelete: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request, 'operator')
-  if (actor instanceof Response) return actor
+export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  await ctx.env.DB.prepare('DELETE FROM tasks WHERE id = ? AND household_id = ?')
-    .bind(body.id, actor.householdId)
-    .run()
+  // task_participants.task_id FK-references this task, so D1 blocks the delete
+  // until the contribution log is gone. Clear it first in one transaction. The
+  // participants are scoped through the task's own household guard, so a wrong
+  // household can't wipe another's log.
+  await ctx.env.DB.batch([
+    ctx.env.DB.prepare(
+      'DELETE FROM task_participants WHERE task_id IN (SELECT id FROM tasks WHERE id = ? AND household_id = ?)',
+    ).bind(body.id, actor.householdId),
+    ctx.env.DB.prepare('DELETE FROM tasks WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId),
+  ])
   return ok({ ok: true })
-}
+}, 'operator')

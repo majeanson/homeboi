@@ -11,6 +11,12 @@ export class ApiError extends Error {
   }
 }
 
+// Status predicates so callers don't re-spell `e instanceof ApiError && ...`.
+// `isUnauthorized` (401) means "no household yet" → send them to pair/login;
+// `isStatus` covers the rest (503 = a degraded AI endpoint, etc.).
+export const isStatus = (e: unknown, status: number): boolean => e instanceof ApiError && e.status === status
+export const isUnauthorized = (e: unknown): boolean => isStatus(e, 401)
+
 function readCsrfCookie(): string | null {
   const m = document.cookie.match(/(?:^|;\s*)bb_csrf=([^;]+)/)
   return m ? decodeURIComponent(m[1]) : null
@@ -33,7 +39,12 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   const method = opts.method ?? 'GET'
   const headers: Record<string, string> = {}
 
-  if (opts.body !== undefined) headers['content-type'] = 'application/json'
+  // A Blob body (image upload) is sent raw with its own type; everything else is
+  // JSON. Same CSRF/credentials/device-token plumbing applies either way.
+  const isBlob = opts.body instanceof Blob
+  if (opts.body !== undefined) {
+    headers['content-type'] = isBlob ? (opts.body as Blob).type || 'application/octet-stream' : 'application/json'
+  }
 
   // Kiosk identity. Sent on every call; harmless on operator-only routes
   // (the server prefers the cookie when both are present).
@@ -54,7 +65,7 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
     method,
     headers,
     credentials: 'same-origin',
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    body: opts.body === undefined ? undefined : isBlob ? (opts.body as Blob) : JSON.stringify(opts.body),
   })
 
   let data: unknown = null

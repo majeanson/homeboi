@@ -1,6 +1,5 @@
-import type { Env } from '../../_lib/env'
 import { badRequest, conflict, notFound, ok, readJson, serverError } from '../../_lib/json'
-import { requireActor } from '../../_lib/household'
+import { authed } from '../../_lib/route'
 import { issueDeviceToken } from '../../_lib/auth'
 import { newId, nowSec, sha256Hex } from '../../_lib/ids'
 
@@ -10,10 +9,7 @@ import { newId, nowSec, sha256Hex } from '../../_lib/ids'
 //
 // Operator-scope only (a kiosk can't pair new kiosks). Goes through the normal
 // cookie + CSRF gate.
-export const onRequestPost: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request, 'operator')
-  if (actor instanceof Response) return actor
-
+export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ code?: string; label?: string }>(ctx.request)
   const code = body?.code?.trim()
   if (!code || !/^\d{6}$/.test(code)) return badRequest('Code à 6 chiffres requis.')
@@ -47,4 +43,4 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   } catch {
     return serverError('Jumelage impossible.')
   }
-}
+}, 'operator')

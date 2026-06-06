@@ -1,95 +1,83 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useLang, useT } from '../i18n'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useT } from '../i18n'
 import { useCalm } from '../lib/calm'
-import { api, ApiError } from '../lib/api'
+import { useSpeak } from '../lib/speak'
+import { Icon } from '../components/Icon'
+import { Loading, PairPrompt } from '../components/Fallback'
+import { tintInk } from '../lib/colors'
+import { imgUrl } from '../lib/image'
+import { api, isUnauthorized } from '../lib/api'
 
-// The pre-reader surface. Big picture cards, no reading required to USE it.
-// Tapping a card:
-//   - speaks its narration on-device (browser SpeechSynthesis, zero Neurons),
-//   - marks it done with the SAME gentle state every time (deterministic, no
-//     variable reward — NFR-CALM-2),
-// When every card is done the routine shows a calm "all done" and STOPS. There
-// is no "do it again" hook and no score (NFR-CALM-1/4). The day resets server-
-// side, so tomorrow it's simply empty again.
-interface Card { icon: string; label: string; narration?: string }
+// The pre-reader surface, in Pip's calm "right now / then" picture story: ONE
+// big card at a time, narrated on tap, with the next thing shown small and a
+// row of dots for rhythm. Tapping the big card (or the arrow) speaks it and
+// settles it done — the SAME gentle state every time (deterministic, no
+// variable reward, NFR-CALM-2) — then the story moves to the next thing. When
+// the day is done it ends on a handwritten "sweet dreams" and STOPS (no "do it
+// again" hook). The day resets server-side, so tomorrow it's simply empty again.
+interface Card {
+  icon: string
+  label: string
+  narration?: string
+}
 interface Routine {
   id: string
   memberName: string | null
   color: string | null
+  avatarPhoto: string | null
   name: string
   cards: Card[]
   doneIdx: number[]
 }
+type RoutinesData = { routines: Routine[] }
+const ROUTINES_KEY = ['routines']
 
 export function KidView() {
   const t = useT()
-  const { lang } = useLang()
   const { calm } = useCalm()
-  const [routines, setRoutines] = useState<Routine[] | null>(null)
-  const [unauth, setUnauth] = useState(false)
+  const speak = useSpeak()
+  const qc = useQueryClient()
   const [pickedId, setPickedId] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    try {
-      const res = await api<{ routines: Routine[] }>('routines')
-      setRoutines(res.routines)
-      // Auto-pick when there's exactly one routine (the common case).
-      if (res.routines.length === 1) setPickedId(res.routines[0].id)
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 401) setUnauth(true)
-      else setRoutines([])
-    }
-  }, [])
+  const { data, error } = useQuery({ queryKey: ROUTINES_KEY, queryFn: () => api<RoutinesData>('routines') })
 
-  useEffect(() => {
-    load()
-  }, [load])
+  // Toggle one card done for today. Optimistic so the tap feels instant on a
+  // cheap tablet; on failure we roll back and resync from the server.
+  const toggle = useMutation({
+    mutationFn: (v: { routineId: string; cardIdx: number; done: boolean }) =>
+      api('routines', { method: 'PATCH', body: v }),
+    onMutate: async (v) => {
+      await qc.cancelQueries({ queryKey: ROUTINES_KEY })
+      const prev = qc.getQueryData<RoutinesData>(ROUTINES_KEY)
+      qc.setQueryData<RoutinesData>(ROUTINES_KEY, (old) =>
+        old
+          ? {
+              routines: old.routines.map((r) =>
+                r.id === v.routineId
+                  ? { ...r, doneIdx: v.done ? [...r.doneIdx, v.cardIdx] : r.doneIdx.filter((i) => i !== v.cardIdx) }
+                  : r,
+              ),
+            }
+          : old,
+      )
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(ROUTINES_KEY, ctx.prev)
+      qc.invalidateQueries({ queryKey: ROUTINES_KEY })
+    },
+  })
 
-  function speak(text: string | undefined) {
-    if (!text || typeof window === 'undefined' || !window.speechSynthesis) return
-    try {
-      const u = new SpeechSynthesisUtterance(text)
-      u.lang = lang === 'fr' ? 'fr-CA' : 'en-CA'
-      window.speechSynthesis.cancel()
-      window.speechSynthesis.speak(u)
-    } catch {
-      /* narration is a nicety, never block the tap on it */
-    }
-  }
-
-  async function toggleCard(routine: Routine, idx: number) {
-    const isDone = routine.doneIdx.includes(idx)
+  function advance(routine: Routine, idx: number) {
     speak(routine.cards[idx]?.narration ?? routine.cards[idx]?.label)
-    // Optimistic local update so the tap feels instant on a cheap tablet.
-    setRoutines((rs) =>
-      rs
-        ? rs.map((r) =>
-            r.id === routine.id
-              ? { ...r, doneIdx: isDone ? r.doneIdx.filter((i) => i !== idx) : [...r.doneIdx, idx] }
-              : r,
-          )
-        : rs,
-    )
-    await api('routines', {
-      method: 'PATCH',
-      body: { routineId: routine.id, cardIdx: idx, done: !isDone },
-    }).catch(() => load())
+    toggle.mutate({ routineId: routine.id, cardIdx: idx, done: !routine.doneIdx.includes(idx) })
   }
 
-  if (unauth) {
-    return (
-      <div className="kid">
-        <main className="narrow">
-          <Link to="/pair" className="btn btn--primary">
-            {t.home.ctaPair}
-          </Link>
-        </main>
-      </div>
-    )
-  }
-
-  if (!routines) return <p className="loading mono">{t.common.loading}</p>
+  if (isUnauthorized(error)) return <div className="kid"><PairPrompt /></div>
+  if (!data && !error) return <Loading />
+  const routines = data?.routines ?? []
 
   if (routines.length === 0) {
     return (
@@ -104,8 +92,9 @@ export function KidView() {
     )
   }
 
-  // "Pick your face" when there are several children's routines.
-  const picked = routines.find((r) => r.id === pickedId)
+  // "Pick your face" when there are several children's routines; a single
+  // routine auto-selects so the toddler lands straight in the story.
+  const picked = routines.find((r) => r.id === pickedId) ?? (routines.length === 1 ? routines[0] : undefined)
   if (!picked) {
     return (
       <div className="kid">
@@ -117,11 +106,20 @@ export function KidView() {
                 key={r.id}
                 type="button"
                 className="kid__face"
-                style={{ background: r.color ?? '#7a8b6f' }}
+                style={{ background: r.avatarPhoto ? 'var(--card)' : r.color ?? '#88A36F' }}
                 onClick={() => setPickedId(r.id)}
               >
-                <span className="kid__face-initial">{(r.memberName ?? '?').slice(0, 1).toUpperCase()}</span>
+                {r.avatarPhoto ? (
+                  <img className="kid__face-photo" src={imgUrl(r.avatarPhoto)} alt="" />
+                ) : (
+                  <span className="kid__face-initial">{(r.memberName ?? '?').slice(0, 1).toUpperCase()}</span>
+                )}
                 <span className="kid__face-name">{r.memberName ?? r.name}</span>
+                {r.cards.length > 0 && (
+                  <span className="kid__face-peek" aria-hidden="true">
+                    {r.cards.slice(0, 4).map((c) => c.icon || '○').join(' ')}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -133,59 +131,86 @@ export function KidView() {
     )
   }
 
+  const tint = picked.color ?? '#88A36F'
   const allDone = picked.cards.length > 0 && picked.doneIdx.length >= picked.cards.length
-  // Calm ON (default): the routine finishes and STOPS on a calm "all done".
-  // Calm OFF: never dead-end — keep the cards visible and re-tappable.
+  // Calm ON (default): the routine finishes and STOPS on a calm "sweet dreams".
+  // Calm OFF: never dead-end — fall through to the last card, still re-tappable.
   const showAllDone = allDone && calm
+
+  // The story position: the first not-yet-done card (else the last).
+  const firstUndone = picked.cards.findIndex((_, i) => !picked.doneIdx.includes(i))
+  const curIdx = firstUndone === -1 ? picked.cards.length - 1 : firstUndone
+  const cur = picked.cards[curIdx]
+  const next = picked.cards[curIdx + 1]
 
   return (
     <div className="kid">
-      <main className="kid__main">
-        {showAllDone ? (
-          <div className="kid__alldone">
-            <div className="kid__alldone-mark" aria-hidden="true">
-              ✿
-            </div>
-            <p className="kid__alldone-text">{t.kid.allDone}</p>
-          </div>
-        ) : (
-          <div className="kid__cards">
-            {picked.cards.map((card, idx) => {
-              const done = picked.doneIdx.includes(idx)
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  className={`kid__card${done ? ' is-done' : ''}`}
-                  onClick={() => toggleCard(picked, idx)}
-                  aria-pressed={done}
-                  aria-label={card.label}
-                >
-                  <span className="kid__card-icon" aria-hidden="true">
-                    {card.icon || '○'}
-                  </span>
-                  <span className="kid__card-label">{card.label}</span>
-                  {done && (
-                    <span className="kid__card-done" aria-hidden="true">
-                      ✓
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        )}
-        <div className="kid__footer">
-          {routines.length > 1 && (
-            <button type="button" className="kid__exit mono" onClick={() => setPickedId(null)}>
-              {t.kid.pick}
-            </button>
-          )}
-          <Link to="/board" className="kid__exit mono">
-            {t.kid.exit}
+      <div className="tdl" style={{ background: tint + '22' }}>
+        <div className="tdl-top">
+          <Link to="/board" className="tdl-exit" aria-label={t.kid.exit}>
+            <Icon name="arrow-right-bold" size={20} style={{ transform: 'rotate(180deg)' }} />
           </Link>
+          <div className="tdl-name">{picked.memberName ? `${picked.memberName} · ${picked.name}` : picked.name}</div>
+          <div style={{ width: 44 }} />
         </div>
-      </main>
+
+        <div className="tdl-stage">
+          {showAllDone ? (
+            <>
+              <div className="tdl-illus" style={{ background: tint }} aria-hidden="true">
+                <span className="tdl-illus-emoji">✿</span>
+              </div>
+              <div className="tdl-sweet">{t.kid.allDone}</div>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="tdl-illus tdl-illus--tap"
+                style={{ background: tint }}
+                onClick={() => advance(picked, curIdx)}
+                aria-label={cur?.label}
+              >
+                <span className="tdl-illus-emoji">{cur?.icon || '○'}</span>
+              </button>
+              <div className="tdl-now">{t.kid.rightNow}</div>
+              <div className="tdl-what" style={{ color: tintInk(tint) }}>
+                {cur?.label}
+              </div>
+
+              {next && (
+                <div className="tdl-next">
+                  {t.kid.then}
+                  <span className="pill">
+                    <span aria-hidden="true">{next.icon}</span> {next.label}
+                  </span>
+                </div>
+              )}
+
+              <div className="tdl-dots" aria-hidden="true">
+                {picked.cards.map((_, k) => (
+                  <i key={k} className={picked.doneIdx.includes(k) ? 'done' : k === curIdx ? 'on' : ''} />
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="tdl-tap"
+                onClick={() => advance(picked, curIdx)}
+                aria-label={t.kid.tapNext}
+              >
+                <Icon name="arrow-right-bold" size={32} />
+              </button>
+            </>
+          )}
+        </div>
+
+        {routines.length > 1 && (
+          <button type="button" className="kid__exit mono" onClick={() => setPickedId(null)}>
+            {t.kid.pick}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

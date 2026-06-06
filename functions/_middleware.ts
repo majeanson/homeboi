@@ -8,17 +8,23 @@
 //      from the cookie-CSRF check because they authenticate by header, not
 //      cookie, so they aren't subject to cookie-riding CSRF.
 //
-//   2. Nothing else for the prototype — single host, so host->tenant routing
+//   2. Global error boundary for /api/*. Any handler that throws — or any route
+//      that lacks its own try/catch — becomes a clean JSON 500 with a server-
+//      side log, never a leaked stack. New endpoints get this for free; they
+//      don't have to remember to wrap themselves. (Authed handlers also catch
+//      internally so they stay self-contained and unit-testable; this is the
+//      backstop for everything else.)
+//
+//   3. Nothing else for the prototype — single host, so host->tenant routing
 //      is deferred (household is resolved per-request from the credential in
 //      _lib/household.ts). The table exists for when custom domains land.
 
 import type { Env } from './_lib/env'
 import { verifyCsrf } from './_lib/auth'
-import { forbidden } from './_lib/json'
+import { forbidden, serverError } from './_lib/json'
 
 const CSRF_EXEMPT = new Set<string>([
   'api/auth/login',
-  'api/auth/logout',
   'api/pair/start',
   'api/pair/poll',
 ])
@@ -28,8 +34,9 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const url = new URL(ctx.request.url)
   const path = url.pathname.replace(/^\/+/, '')
+  const isApi = path.startsWith('api/')
 
-  if (path.startsWith('api/') && !SAFE_METHODS.has(ctx.request.method)) {
+  if (isApi && !SAFE_METHODS.has(ctx.request.method)) {
     const isExempt = CSRF_EXEMPT.has(path)
     // A device-token request carries no auth cookie, so the cookie-riding CSRF
     // threat doesn't apply — its header IS the credential. Let it pass the
@@ -40,5 +47,13 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     }
   }
 
-  return ctx.next()
+  // Static assets pass straight through; only /api/* gets the JSON error shape.
+  if (!isApi) return ctx.next()
+
+  try {
+    return await ctx.next()
+  } catch (err) {
+    console.error(`[${ctx.request.method} /${path}]`, err)
+    return serverError()
+  }
 }

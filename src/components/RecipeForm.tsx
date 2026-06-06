@@ -1,0 +1,316 @@
+import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useT } from '../i18n'
+import { api, isStatus } from '../lib/api'
+import { resizeImage, PHOTO_MAX } from '../lib/image'
+import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
+import { Icon } from './Icon'
+
+// Create / edit a recipe. Three ways to fill it fast, then free editing:
+//   ✨ AI draft from the title · 🔗 import from a URL or pasted text · 📷 a photo.
+// Owns its own POST/PATCH + image upload; calls onSaved() when done. A modal
+// overlay (opened from the Kitchen recipes section).
+type LineKind = 'ingredients' | 'steps'
+
+export function RecipeForm({
+  value,
+  onSaved,
+  onCancel,
+}: {
+  value?: Recipe | null
+  onSaved: () => void
+  onCancel: () => void
+}) {
+  const t = useT()
+  const qc = useQueryClient()
+  const [title, setTitle] = useState(value?.title ?? '')
+  // Keep at least one empty row so there's always somewhere to type.
+  const [ingredients, setIngredients] = useState<string[]>(value?.ingredients?.length ? value.ingredients : [''])
+  const [steps, setSteps] = useState<string[]>(value?.steps?.length ? value.steps : [''])
+  const [servings, setServings] = useState(value?.servings ? String(value.servings) : '')
+  const [notes, setNotes] = useState(value?.notes ?? '')
+  const [source, setSource] = useState<string | null>(value?.source ?? null)
+  const [image, setImage] = useState<string | null>(value?.image ?? null)
+
+  const [busy, setBusy] = useState(false)
+  const [drafting, setDrafting] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [aiOff, setAiOff] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [importUrl, setImportUrl] = useState('')
+  const [importText, setImportText] = useState('')
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+
+  const lines = (kind: LineKind) => (kind === 'ingredients' ? ingredients : steps)
+  const setLines = (kind: LineKind) => (kind === 'ingredients' ? setIngredients : setSteps)
+  const updateLine = (kind: LineKind, i: number, v: string) =>
+    setLines(kind)(lines(kind).map((x, idx) => (idx === i ? v : x)))
+  const addLine = (kind: LineKind) => setLines(kind)([...lines(kind), ''])
+  const removeLine = (kind: LineKind, i: number) => {
+    const next = lines(kind).filter((_, idx) => idx !== i)
+    setLines(kind)(next.length ? next : [''])
+  }
+
+  // Drop the draft into the form. Replaces empty-only sections; never clobbers
+  // lines the user already typed.
+  function applyDraft(d: { ingredients?: string[]; steps?: string[]; title?: string | null }) {
+    if (d.title && !title.trim()) setTitle(d.title)
+    if (d.ingredients?.length && ingredients.every((x) => !x.trim())) setIngredients(d.ingredients)
+    if (d.steps?.length && steps.every((x) => !x.trim())) setSteps(d.steps)
+  }
+
+  async function draft() {
+    if (!title.trim() || drafting) return
+    setDrafting(true)
+    setAiOff(false)
+    try {
+      const d = await api<{ ingredients: string[]; steps: string[] }>('recipe-draft', {
+        method: 'POST',
+        body: { title: title.trim() },
+      })
+      applyDraft(d)
+    } catch (e) {
+      if (isStatus(e, 503)) setAiOff(true)
+    } finally {
+      setDrafting(false)
+    }
+  }
+
+  async function runImport() {
+    const url = importUrl.trim()
+    const text = importText.trim()
+    if ((!url && !text) || importing) return
+    setImporting(true)
+    setImportMsg(null)
+    try {
+      const r = await api<{
+        title: string | null
+        ingredients: string[]
+        steps: string[]
+        image: string | null
+        source: string | null
+        empty?: boolean
+      }>('recipe-import', { method: 'POST', body: text ? { text } : { url } })
+      if (r.empty || (!r.ingredients.length && !r.steps.length && !r.title)) {
+        setImportMsg(t.recipes.importFail)
+      } else {
+        applyDraft(r)
+        if (r.image && !image) setImage(r.image)
+        if (r.source) setSource(r.source)
+        setShowImport(false)
+      }
+    } catch (e) {
+      setImportMsg(isStatus(e, 503) ? t.recipes.aiOff : t.recipes.importFail)
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  async function uploadPhoto(file: File) {
+    setUploading(true)
+    try {
+      const blob = await resizeImage(file, PHOTO_MAX)
+      const { key } = await api<{ key: string }>('recipe-image', { method: 'POST', body: blob })
+      setImage(key)
+    } catch {
+      /* storage off / failure — leave the picture unset, never block the form */
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (!title.trim() || busy) return
+    setBusy(true)
+    const fields = {
+      title: title.trim(),
+      ingredients: ingredients.map((s) => s.trim()).filter(Boolean),
+      steps: steps.map((s) => s.trim()).filter(Boolean),
+      servings: servings.trim() ? Number(servings) : null,
+      notes: notes.trim() || null,
+      source,
+      image,
+    }
+    await api('recipes', {
+      method: value ? 'PATCH' : 'POST',
+      body: value ? { id: value.id, ...fields } : fields,
+    }).catch(() => {})
+    setBusy(false)
+    qc.invalidateQueries({ queryKey: RECIPES_KEY })
+    onSaved()
+  }
+
+  const imgSrc = recipeImg(image)
+
+  const lineEditor = (kind: LineKind, placeholder: string) => (
+    <div className="recipe-lines">
+      {lines(kind).map((v, i) => (
+        <div key={i} className="recipe-line">
+          {kind === 'steps' && <span className="recipe-line__n mono">{i + 1}</span>}
+          <input
+            className="input"
+            value={v}
+            onChange={(e) => updateLine(kind, i, e.target.value)}
+            placeholder={placeholder}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                if (i === lines(kind).length - 1 && v.trim()) addLine(kind)
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="recipe-line__del mono"
+            onClick={() => removeLine(kind, i)}
+            aria-label={t.recipes.removePhoto}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+      <button type="button" className="btn btn--ghost mono recipe-add-line" onClick={() => addLine(kind)}>
+        ＋ {kind === 'ingredients' ? t.recipes.addIngredient : t.recipes.addStep}
+      </button>
+    </div>
+  )
+
+  return (
+    <div className="recipe-modal" role="dialog" aria-modal="true" aria-label={value ? t.recipes.edit : t.recipes.new}>
+      <div className="recipe-modal__scrim" onClick={onCancel} aria-hidden="true" />
+      <form className="recipe-modal__card surface" onSubmit={save}>
+        <div className="recipe-modal__bar">
+          <h2>{value ? t.recipes.edit : t.recipes.new}</h2>
+          <button type="button" className="btn btn--ghost mono" onClick={onCancel} aria-label={t.common.cancel}>
+            ✕
+          </button>
+        </div>
+
+        <div className="recipe-modal__body">
+          {/* Photo */}
+          <div className="recipe-photo">
+            {imgSrc ? (
+              <div className="recipe-photo__has">
+                <img src={imgSrc} alt="" />
+                <button type="button" className="btn btn--ghost mono" onClick={() => setImage(null)}>
+                  {t.recipes.removePhoto}
+                </button>
+              </div>
+            ) : (
+              <label className="btn btn--ghost mono recipe-photo__add">
+                {uploading ? '…' : t.recipes.addPhoto}
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) uploadPhoto(f)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            )}
+          </div>
+
+          <input
+            className="input recipe-title-input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={t.recipes.titlePlaceholder}
+            autoFocus
+          />
+
+          {/* Fast-fill helpers */}
+          <div className="recipe-helpers">
+            <button type="button" className="btn btn--ghost mono" onClick={draft} disabled={!title.trim() || drafting}>
+              {drafting ? t.recipes.draftThinking : t.recipes.draft}
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              onClick={() => setShowImport((s) => !s)}
+              aria-expanded={showImport}
+            >
+              {t.recipes.import}
+            </button>
+          </div>
+          {aiOff && <p className="recipe-aioff mono">{t.recipes.aiOff}</p>}
+
+          {showImport && (
+            <div className="recipe-import">
+              <input
+                className="input"
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                placeholder={t.recipes.importUrl}
+                inputMode="url"
+              />
+              <textarea
+                className="input recipe-import__paste"
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder={t.recipes.importPaste}
+                rows={3}
+              />
+              <button
+                type="button"
+                className="btn mono"
+                onClick={runImport}
+                disabled={importing || (!importUrl.trim() && !importText.trim())}
+              >
+                {importing ? t.recipes.importing : t.recipes.importBtn}
+              </button>
+              {importMsg && <p className="recipe-aioff mono">{importMsg}</p>}
+            </div>
+          )}
+
+          {/* Ingredients */}
+          <h3 className="recipe-sec-h">
+            <Icon name="carrot-bold" size={18} color="var(--terracotta-deep)" /> {t.recipes.ingredients}
+          </h3>
+          {lineEditor('ingredients', t.recipes.ingredientPlaceholder)}
+
+          {/* Steps */}
+          <h3 className="recipe-sec-h">
+            <Icon name="pencil-simple-bold" size={18} color="var(--berry-deep)" /> {t.recipes.steps}
+          </h3>
+          {lineEditor('steps', t.recipes.stepPlaceholder)}
+
+          {/* Servings + notes */}
+          <div className="recipe-meta-row">
+            <label className="recipe-servings mono">
+              {t.recipes.servings}
+              <input
+                className="input"
+                type="number"
+                min="1"
+                value={servings}
+                onChange={(e) => setServings(e.target.value)}
+              />
+            </label>
+          </div>
+          <textarea
+            className="input"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={t.recipes.notesPlaceholder}
+            rows={2}
+          />
+        </div>
+
+        <div className="recipe-modal__foot">
+          <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
+            {t.common.cancel}
+          </button>
+          <button type="submit" className="btn btn--primary" disabled={!title.trim() || busy}>
+            {t.recipes.save}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}

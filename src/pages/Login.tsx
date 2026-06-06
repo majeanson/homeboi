@@ -10,6 +10,7 @@ export function Login() {
   const nav = useNavigate()
   const { refresh } = useAuth()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(false)
 
@@ -18,7 +19,7 @@ export function Login() {
     setBusy(true)
     setError(false)
     try {
-      await api('auth/login', { method: 'POST', body: { email: email.trim().toLowerCase() } })
+      await api('auth/login', { method: 'POST', body: { email: email.trim().toLowerCase(), password } })
       await refresh()
       nav('/settings')
     } catch {
@@ -44,6 +45,16 @@ export function Login() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+            />
+          </label>
+          <label className="field">
+            <span className="field__label">{t.login.password}</span>
+            <input
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
             />
           </label>
           {error && <p className="error mono">{t.login.error}</p>}

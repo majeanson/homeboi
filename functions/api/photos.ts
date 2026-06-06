@@ -1,0 +1,62 @@
+import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
+import { authed } from '../_lib/route'
+import { newId, nowSec } from '../_lib/ids'
+
+// Family photos for the wall-board frame. Bytes live in R2 (free tier, no
+// egress); these rows index them by key. GET is open to any actor (the kiosk
+// shows the frame); upload + delete are operator-only. To guarantee we never
+// outgrow the free tier, the set is CAPPED — uploading past MAX_PHOTOS prunes the
+// oldest (row + R2 blob). Resizing happens client-side before upload.
+const MAX_PHOTOS = 30
+const MAX_BYTES = 3 * 1024 * 1024 // safety net; the client already resizes to ~<300 KB
+
+export const onRequestGet = authed(async (ctx, actor) => {
+  const { results } = await ctx.env.DB.prepare(
+    'SELECT id, r2_key FROM photos WHERE household_id = ? ORDER BY created_at DESC',
+  )
+    .bind(actor.householdId)
+    .all<{ id: string; r2_key: string }>()
+  return ok({ photos: results.map((p) => ({ id: p.id, key: p.r2_key })) })
+})
+
+export const onRequestPost = authed(async (ctx, actor) => {
+  if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage photo indisponible ici.')
+  const type = ctx.request.headers.get('content-type') ?? ''
+  if (!type.startsWith('image/')) return badRequest('Image requise.')
+  const buf = await ctx.request.arrayBuffer()
+  if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
+
+  // Flat, URL-safe key (single path segment so /api/img/[key] serves it). The
+  // random id is the unguessable capability; household scope lives in the row.
+  const key = `ph_${newId()}`
+  await ctx.env.PHOTOS.put(key, buf, { httpMetadata: { contentType: type } })
+  await ctx.env.DB.prepare('INSERT INTO photos (id, household_id, r2_key, created_at) VALUES (?, ?, ?, ?)')
+    .bind(newId(), actor.householdId, key, nowSec())
+    .run()
+
+  // Keep only the most recent MAX_PHOTOS — drop older rows AND their R2 blobs so
+  // storage stays bounded (LIMIT -1 OFFSET n = "everything past the first n").
+  const stale = await ctx.env.DB.prepare(
+    'SELECT id, r2_key FROM photos WHERE household_id = ? ORDER BY created_at DESC LIMIT -1 OFFSET ?',
+  )
+    .bind(actor.householdId, MAX_PHOTOS)
+    .all<{ id: string; r2_key: string }>()
+  for (const row of stale.results) {
+    await ctx.env.PHOTOS.delete(row.r2_key).catch(() => {})
+    await ctx.env.DB.prepare('DELETE FROM photos WHERE id = ?').bind(row.id).run()
+  }
+  return ok({ key })
+}, 'operator')
+
+export const onRequestDelete = authed(async (ctx, actor) => {
+  const body = await readJson<{ id?: string }>(ctx.request)
+  if (!body?.id) return badRequest('id requis.')
+  const row = await ctx.env.DB.prepare('SELECT r2_key FROM photos WHERE id = ? AND household_id = ?')
+    .bind(body.id, actor.householdId)
+    .first<{ r2_key: string }>()
+  if (row && ctx.env.PHOTOS) await ctx.env.PHOTOS.delete(row.r2_key).catch(() => {})
+  await ctx.env.DB.prepare('DELETE FROM photos WHERE id = ? AND household_id = ?')
+    .bind(body.id, actor.householdId)
+    .run()
+  return ok({ ok: true })
+}, 'operator')

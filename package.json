@@ -8,20 +8,26 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "prepages:dev": "npm run db:sync:local",
     "pages:dev": "wrangler pages dev",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:migrate:local": "wrangler d1 migrations apply babillard --local",
+    "e2e": "playwright test",
+    "e2e:report": "playwright show-report e2e/report",
+    "db:migrate:local": "wrangler d1 migrations apply babillard --local && npm run db:sync:local",
+    "db:sync:local": "node --experimental-sqlite scripts/sync-local-d1.mjs",
     "db:migrate:prod": "wrangler d1 migrations apply babillard --remote"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
+    "@playwright/test": "^1.60.0",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",

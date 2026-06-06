@@ -15,7 +15,7 @@ binding = "DB"
 database_name = "babillard"
 # database_id is filled in after `wrangler d1 create babillard`. Left blank so
 # a fresh clone doesn't accidentally point at someone else's DB.
-database_id = "REPLACE_WITH_D1_ID"
+database_id = "edfe36a8-a611-4000-935a-b682d83b026b"
 migrations_dir = "functions/db/migrations"
 
 # --- Workers AI: the one AI feature (capture intent-router + weekly recap) ----
@@ -25,6 +25,16 @@ migrations_dir = "functions/db/migrations"
 # CF auth; local dev without login simply hits the graceful-degrade path.
 [ai]
 binding = "AI"
+
+# --- R2: family photos + member avatar images --------------------------------
+# Optional binding (graceful-degrade like [ai] — with it unset the photo features
+# simply hide). Create the bucket once: `wrangler r2 bucket create babillard-photos`.
+# Stays free: R2's free tier is 10 GB with NO egress fees, and we resize images
+# on upload + cap the home-photo count (oldest auto-pruned), so a household uses
+# kilobytes-to-megabytes — never close to a bill.
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "babillard-photos"
 
 [vars]
 # Public, build-time + runtime config. Nothing secret here.

@@ -3,8 +3,10 @@ import { StrictMode, useState } from 'react'
 // and even with one we'd render fresh over it (portal convention).
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { AppRoutes } from './router'
 import { AuthProvider } from './lib/auth'
+import { queryClient } from './lib/query'
 import { LangContext, type Lang } from './i18n'
 import { AudienceContext, type Audience } from './lib/audience'
 import { CalmContext } from './lib/calm'
@@ -30,10 +32,31 @@ function Root() {
     document.documentElement.lang = l
   }
 
-  // `?kid=1` (a kiosk boot lock) wins; else the last manual choice; else parent.
-  const [audience, setAudienceState] = useState<Audience>(() => {
+  // `?kid=1` is the kiosk boot lock: it forces the toddler view AND latches
+  // `locked` so a toddler can't flip back or reach Réglages. PERSISTED to
+  // localStorage so it survives navigation (which drops the query param) AND a
+  // reload/kiosk reboot. Unlock is a deliberate adult action: load `?kid=0`.
+  const [kidLocked] = useState<boolean>(() => {
     try {
-      if (new URLSearchParams(window.location.search).get('kid') === '1') return 'toddler'
+      const kid = new URLSearchParams(window.location.search).get('kid')
+      if (kid === '1') {
+        localStorage.setItem('babillard-kid-lock', '1')
+        return true
+      }
+      if (kid === '0') {
+        localStorage.removeItem('babillard-kid-lock')
+        return false
+      }
+      return localStorage.getItem('babillard-kid-lock') === '1'
+    } catch {
+      return false
+    }
+  })
+
+  // Lock wins; else the last manual choice; else parent.
+  const [audience, setAudienceState] = useState<Audience>(() => {
+    if (kidLocked) return 'toddler'
+    try {
       const saved = localStorage.getItem('babillard-audience')
       if (saved === 'parent' || saved === 'toddler') return saved
     } catch {
@@ -68,17 +91,19 @@ function Root() {
   }
 
   return (
-    <LangContext.Provider value={{ lang, setLang }}>
-      <AudienceContext.Provider value={{ audience, setAudience }}>
-        <CalmContext.Provider value={{ calm, setCalm }}>
-          <AuthProvider>
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </AuthProvider>
-        </CalmContext.Provider>
-      </AudienceContext.Provider>
-    </LangContext.Provider>
+    <QueryClientProvider client={queryClient}>
+      <LangContext.Provider value={{ lang, setLang }}>
+        <AudienceContext.Provider value={{ audience, setAudience, locked: kidLocked }}>
+          <CalmContext.Provider value={{ calm, setCalm }}>
+            <AuthProvider>
+              <BrowserRouter>
+                <AppRoutes />
+              </BrowserRouter>
+            </AuthProvider>
+          </CalmContext.Provider>
+        </AudienceContext.Provider>
+      </LangContext.Provider>
+    </QueryClientProvider>
   )
 }
 

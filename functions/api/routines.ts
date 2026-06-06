@@ -1,6 +1,5 @@
-import type { Env } from '../_lib/env'
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
-import { requireActor } from '../_lib/household'
+import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
+import { authed } from '../_lib/route'
 import { dayStart, newId, nowSec } from '../_lib/ids'
 
 // Kid-view visual routines. GET returns each routine with TODAY's completion
@@ -13,13 +12,14 @@ interface Card {
   narration?: string
 }
 
-export const onRequestGet: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request)
-  if (actor instanceof Response) return actor
+const isNumber = (v: unknown): v is number => typeof v === 'number'
+
+export const onRequestGet = authed(async (ctx, actor) => {
   const today = dayStart(new Date(Date.now()))
 
   const routines = await ctx.env.DB.prepare(
-    `SELECT r.id, r.member_id, r.name, r.cards_json, m.display_name AS member_name, m.avatar_ref AS color
+    `SELECT r.id, r.member_id, r.name, r.cards_json, m.display_name AS member_name,
+            m.colour AS color, m.avatar_kind AS avatar_kind, m.avatar_ref AS avatar_photo
        FROM routines r LEFT JOIN members m ON m.id = r.member_id
       WHERE r.household_id = ? ORDER BY r.created_at`,
   )
@@ -31,6 +31,8 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
       cards_json: string
       member_name: string | null
       color: string | null
+      avatar_kind: string | null
+      avatar_photo: string | null
     }>()
 
   // Today's runs in one query, keyed by routine.
@@ -47,32 +49,44 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     memberId: r.member_id,
     memberName: r.member_name,
     color: r.color,
+    avatarPhoto: r.avatar_kind === 'photo' ? r.avatar_photo : null,
     name: r.name,
-    cards: safeCards(r.cards_json),
-    doneIdx: safeIdx(doneByRoutine.get(r.id)),
+    cards: parseJsonArray<Card>(r.cards_json),
+    doneIdx: parseJsonArray<number>(doneByRoutine.get(r.id), isNumber),
   }))
   return ok({ routines: out, date: today })
-}
+})
 
-export const onRequestPost: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request, 'operator')
-  if (actor instanceof Response) return actor
-  const body = await readJson<{ memberId?: string; name?: string; cards?: Card[] }>(ctx.request)
-  if (!body?.memberId || !body.name?.trim()) return badRequest('memberId + nom requis.')
-  const cards = (body.cards ?? []).slice(0, 12)
-  const id = newId()
-  await ctx.env.DB.prepare(
-    'INSERT INTO routines (id, household_id, member_id, name, cards_json, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+export const onRequestPost = authed(async (ctx, actor) => {
+  const body = await readJson<{ memberId?: string; memberIds?: string[]; name?: string; cards?: Card[] }>(
+    ctx.request,
   )
-    .bind(id, actor.householdId, body.memberId, body.name.trim(), JSON.stringify(cards), nowSec())
-    .run()
-  return ok({ id })
-}
+  // One routine can be assigned to several toddlers at once (e.g. the SAME
+  // bedtime for two kids). We create one routine row PER child with the same
+  // deck, so each toddler gets independent daily completion — Maya ticking her
+  // teeth doesn't tick Léo's. Accepts memberIds[]; falls back to a single
+  // memberId for older callers.
+  const memberIds = (body?.memberIds?.length ? body.memberIds : body?.memberId ? [body.memberId] : [])
+    .filter((m): m is string => typeof m === 'string' && m.length > 0)
+    .slice(0, 8)
+  if (!memberIds.length || !body?.name?.trim()) return badRequest('memberId(s) + nom requis.')
+  const cards = (body.cards ?? []).slice(0, 12)
+  const name = body.name.trim()
+  const cardsJson = JSON.stringify(cards)
+  const ts = nowSec()
+  const ids = memberIds.map(() => newId())
+  await ctx.env.DB.batch(
+    memberIds.map((memberId, i) =>
+      ctx.env.DB.prepare(
+        'INSERT INTO routines (id, household_id, member_id, name, cards_json, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      ).bind(ids[i], actor.householdId, memberId, name, cardsJson, ts),
+    ),
+  )
+  return ok({ ids })
+}, 'operator')
 
 // Toggle a single card index done for today. Upserts the daily run row.
-export const onRequestPatch: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request)
-  if (actor instanceof Response) return actor
+export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<{ routineId?: string; cardIdx?: number; done?: boolean }>(ctx.request)
   if (!body?.routineId || typeof body.cardIdx !== 'number') return badRequest('routineId + cardIdx requis.')
 
@@ -89,7 +103,7 @@ export const onRequestPatch: PagesFunction<Env> = async (ctx) => {
     .bind(body.routineId, today)
     .first<{ done_idx_json: string }>()
 
-  const set = new Set(safeIdx(existing?.done_idx_json))
+  const set = new Set(parseJsonArray<number>(existing?.done_idx_json, isNumber))
   if (body.done === false) set.delete(body.cardIdx)
   else set.add(body.cardIdx)
   const json = JSON.stringify([...set])
@@ -107,33 +121,23 @@ export const onRequestPatch: PagesFunction<Env> = async (ctx) => {
       .run()
   }
   return ok({ doneIdx: [...set] })
-}
+})
 
-export const onRequestDelete: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request, 'operator')
-  if (actor instanceof Response) return actor
+export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  await ctx.env.DB.prepare('DELETE FROM routines WHERE id = ? AND household_id = ?')
-    .bind(body.id, actor.householdId)
-    .run()
+  // routine_runs.routine_id FK-references this routine, so D1 blocks the delete
+  // until the daily runs are gone. Clear them first in one transaction. Runs are
+  // scoped through the routine's own household guard, so a wrong household can't
+  // wipe another's runs.
+  await ctx.env.DB.batch([
+    ctx.env.DB.prepare(
+      'DELETE FROM routine_runs WHERE routine_id IN (SELECT id FROM routines WHERE id = ? AND household_id = ?)',
+    ).bind(body.id, actor.householdId),
+    ctx.env.DB.prepare('DELETE FROM routines WHERE id = ? AND household_id = ?').bind(
+      body.id,
+      actor.householdId,
+    ),
+  ])
   return ok({ ok: true })
-}
-
-function safeCards(json: string): Card[] {
-  try {
-    const v = JSON.parse(json)
-    return Array.isArray(v) ? v : []
-  } catch {
-    return []
-  }
-}
-function safeIdx(json: string | undefined): number[] {
-  if (!json) return []
-  try {
-    const v = JSON.parse(json)
-    return Array.isArray(v) ? v.filter((n) => typeof n === 'number') : []
-  } catch {
-    return []
-  }
-}
+}, 'operator')

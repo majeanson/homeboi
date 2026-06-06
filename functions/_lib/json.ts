@@ -28,3 +28,17 @@ export async function readJson<T>(request: Request): Promise<T | null> {
     return null
   }
 }
+
+// Parse a JSON string we stored ourselves (rotation lists, card decks, done-idx
+// sets) back into an array, tolerating null/garbage by returning []. An optional
+// element guard filters the array so a corrupt row can't inject the wrong type.
+export function parseJsonArray<T>(json: string | null | undefined, guard?: (v: unknown) => v is T): T[] {
+  if (!json) return []
+  try {
+    const v = JSON.parse(json)
+    if (!Array.isArray(v)) return []
+    return guard ? v.filter(guard) : (v as T[])
+  } catch {
+    return []
+  }
+}

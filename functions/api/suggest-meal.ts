@@ -1,19 +1,16 @@
-import type { Env } from '../_lib/env'
 import { ok, serviceUnavailable } from '../_lib/json'
-import { requireActor } from '../_lib/household'
-import { suggestMeal, resolveLang } from '../_lib/ai'
+import { authed } from '../_lib/route'
+import { suggestMeals, resolveLang } from '../_lib/ai'
 import { dayStart } from '../_lib/ids'
 
-// "Qu'est-ce qu'on mange?" — one on-demand AI call, never on a loop. Reads
-// what's low + recent suppers, asks for a single suggestion. Degrades to 503
-// when AI is unset; the UI hides the button.
-export const onRequestPost: PagesFunction<Env> = async (ctx) => {
-  const actor = await requireActor(ctx.env, ctx.request)
-  if (actor instanceof Response) return actor
+// "Qu'est-ce qu'on mange?" — one on-demand AI call returns a BATCH of 10 ideas.
+// The client shows them one per click and only asks again once exhausted, so 10
+// suggestions cost a single inference (NFR-COST). Degrades to 503 when AI unset.
+export const onRequestPost = authed(async (ctx, actor) => {
   if (!ctx.env.AI) return serviceUnavailable('Suggestion IA indisponible ici.')
 
   const today = dayStart(new Date(Date.now()))
-  const [low, recent] = await Promise.all([
+  const [low, recent, favs] = await Promise.all([
     ctx.env.DB.prepare('SELECT item FROM pantry_low WHERE household_id = ? ORDER BY marked_at DESC LIMIT 10')
       .bind(actor.householdId)
       .all<{ item: string }>(),
@@ -22,14 +19,20 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     )
       .bind(actor.householdId, today + 86400)
       .all<{ title: string }>(),
+    // The family's own recipe book — so "what's for supper?" can resurface dishes
+    // they've actually saved, not only AI-invented ones.
+    ctx.env.DB.prepare('SELECT title FROM recipes WHERE household_id = ? ORDER BY updated_at DESC LIMIT 12')
+      .bind(actor.householdId)
+      .all<{ title: string }>(),
   ])
 
-  const suggestion = await suggestMeal(
+  const suggestions = await suggestMeals(
     ctx.env,
     low.results.map((r) => r.item),
     recent.results.map((r) => r.title),
     resolveLang(ctx.env, ctx.request),
+    favs.results.map((r) => r.title),
   )
-  if (!suggestion) return serviceUnavailable('Pas de suggestion pour le moment.')
-  return ok({ suggestion })
-}
+  if (!suggestions.length) return serviceUnavailable('Pas de suggestion pour le moment.')
+  return ok({ suggestions })
+})

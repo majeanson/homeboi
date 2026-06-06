@@ -1,35 +1,113 @@
 /* Babillard — single design-token stylesheet. No framework, no CSS-in-JS.
-   Day palette = :root; night = :root[data-theme='night']. Calm by design:
-   quiet motion, no shadow lifts, no gradient text, no status pills with a
-   coloured dot. Reveals (where any) are opacity-only. A wall tablet should
-   read as paper, not a TV. */
+   Day palette = :root; night = :root[data-theme='night'].
+
+   Design system: PIP — a warm risograph / cut-paper family planner. Paper-cream
+   grounds, a marigold-led earthy palette (sage = done, sky = calm, berry = play,
+   terracotta = food), chunky-friendly Baloo 2 headlines, Caveat handwriting for
+   toddler delight, and soft offset "printed" shadows — never a glow-lift. This
+   is the look that's pretty to a parent AND friendly to a toddler, while the
+   calm tenets keep it from tipping into dopamine: no streaks/points, deterministic
+   acknowledgments (NFR-CALM-2), opacity/transform-only reveals, no nags.
+
+   Token names below preserve Babillard's existing semantic vars (--accent,
+   --surface, --line…) so every component keeps working, and ADD the full Pip
+   palette so new surfaces can use it directly. */
 
 :root {
-  --paper: #f4f1ea;
-  --surface: #fbfaf6;
-  --ink: #232019;
-  --ink-soft: #5d574c;
-  --line: #d8d2c4;
-  --line-strong: #2b2720;
-  --accent: #6f7d63; /* sage */
-  --accent-ink: #ffffff;
-  --warn: #9a5b3f;
-  --radius: 6px;
-  --gap: 1rem;
+  /* ---- Pip brand palette (riso inks on warm paper) ---- */
+  --paper: #fbf3e4;
+  --paper-deep: #f4e8d2;
+  --card: #fffcf5;
+  --ink: #2c2722;
+  --ink-soft: #6b6258;
+  --ink-faint: #a99e8e;
+
+  --marigold: #f2a03d;
+  --marigold-deep: #d9842a;
+  --terracotta: #e0724e;
+  --terracotta-deep: #c2563a;
+  --sage: #88a36f;
+  --sage-deep: #6b8a52;
+  --sky: #7bb0c9;
+  --sky-deep: #5891ac;
+  --berry: #b06a93;
+  --berry-deep: #95527a;
+  --butter: #fbd66b;
+
+  --marigold-wash: #fbe6c8;
+  --terracotta-wash: #f6dace;
+  --sage-wash: #e2ead6;
+  --sky-wash: #d8eaf1;
+  --berry-wash: #efdce8;
+
+  /* ---- Babillard-compat semantic aliases (map onto Pip) ---- */
+  --paper-2: var(--paper-deep);
+  --surface: var(--card);
+  --line: #e8dac0;
+  --line-strong: #dcc8a6;
+  --accent: var(--marigold); /* PRIMARY is marigold */
+  --accent-soft: var(--marigold-wash);
+  --accent-ink: #3a2a12; /* warm-dark text on marigold */
+  --warn: var(--terracotta-deep);
+  --clay-soft: var(--terracotta-wash);
+  --primary: var(--marigold);
+  --primary-press: var(--marigold-deep);
+  --on-primary: #3a2a12;
+  --success: var(--sage-deep);
+
+  /* ---- type ---- */
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
-  --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --sans: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Baloo 2', ui-rounded, system-ui, sans-serif;
+  --font-hand: 'Caveat', 'Hanken Grotesk', cursive;
+  /* legacy aliases used by older rules */
+  --font-display: var(--display);
+  --font-body: var(--sans);
+
+  /* ---- radii (soft, pebble-like) ---- */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+  --radius: var(--radius-md);
+  --gap: 1rem;
+
+  /* ---- elevation (warm offset "printed" shadows — never gray) ---- */
+  --shadow-sm: 2px 3px 0 rgba(72, 54, 30, 0.08);
+  --shadow-md: 3px 5px 0 rgba(72, 54, 30, 0.1), 0 2px 8px rgba(72, 54, 30, 0.06);
+  --shadow-lg: 5px 8px 0 rgba(72, 54, 30, 0.1), 0 10px 24px rgba(72, 54, 30, 0.1);
+  --shadow-press: 1px 1px 0 rgba(72, 54, 30, 0.12);
+
+  /* ---- motion ---- */
+  --ease-soft: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 140ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
 }
 
+/* Night: the wall tablet dims after dark (A5). Pip is a daytime palette; here we
+   sink it onto warm-dark stock, keep the inks (they read fine bright on dark),
+   and darken the washes so colour-coded tiles still hold. */
 :root[data-theme='night'] {
-  --paper: #16140f;
-  --surface: #1f1c16;
+  --paper: #1b1712;
+  --paper-deep: #221d16;
+  --card: #25201a;
   --ink: #ece6d8;
   --ink-soft: #a59d8c;
-  --line: #353027;
-  --line-strong: #d8d2c4;
-  --accent: #8a9a7a;
-  --accent-ink: #16140f;
-  --warn: #c98a6a;
+  --ink-faint: #786f61;
+  --line: #38322a;
+  --line-strong: #4a4239;
+
+  --marigold-wash: #3a2f1c;
+  --terracotta-wash: #3a261e;
+  --sage-wash: #28301f;
+  --sky-wash: #1f2c33;
+  --berry-wash: #321f2c;
+
+  --accent-ink: #1b1712;
+  --on-primary: #1b1712;
 }
 
 * {
@@ -46,6 +124,25 @@ body {
   font-family: var(--sans);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+/* Paper grain: a fixed, static fractal-noise wash so surfaces read as printed
+   riso stock rather than flat #fff (Pip). multiply at low opacity keeps it a
+   faint tooth on the cream; pointer-events:none so it never eats a tap. No
+   motion — it's texture, not a TV effect. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+}
+#root {
+  position: relative;
+  z-index: 1;
 }
 .mono {
   font-family: var(--mono);
@@ -55,8 +152,10 @@ body {
 h1,
 h2,
 h3 {
-  line-height: 1.15;
-  font-weight: 650;
+  font-family: var(--display);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 a {
   color: inherit;
@@ -64,29 +163,37 @@ a {
 
 /* --- Primitives ----------------------------------------------------------- */
 .surface {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-bottom: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  background: var(--card);
+  border: 0;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.55rem 0.95rem;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--surface);
+  gap: 0.45rem;
+  padding: 0.6rem 1.1rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--card);
   color: var(--ink);
   font: inherit;
+  font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.12s ease;
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast) ease,
+    background var(--dur-fast) ease;
 }
 .btn:hover {
   background: var(--paper);
+}
+.btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
 }
 .btn:disabled {
   opacity: 0.45;
@@ -96,6 +203,7 @@ a {
   background: var(--accent);
   color: var(--accent-ink);
   border-color: var(--accent);
+  box-shadow: var(--shadow-md);
 }
 .btn--primary:hover {
   background: var(--accent);
@@ -126,10 +234,11 @@ a {
 .tag {
   font-family: var(--mono);
   font-size: 0.72rem;
-  padding: 0.1rem 0.4rem;
+  padding: 0.15rem 0.55rem;
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: var(--radius-pill);
   color: var(--ink-soft);
+  white-space: nowrap;
 }
 .tag--on {
   color: var(--accent);
@@ -440,8 +549,18 @@ a {
   gap: 1rem;
   padding: 0.6rem 0.9rem;
 }
+.kitchen__day-tile {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--terracotta-wash);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
 .kitchen__day-name {
-  min-width: 6rem;
+  min-width: 5rem;
   color: var(--ink-soft);
   text-transform: capitalize;
 }
@@ -463,6 +582,48 @@ a {
   flex: 1;
   display: flex;
   gap: 0.5rem;
+}
+/* The meal -> grocery staple confirm step (B3). Breaks the day row into a
+   column: dish + chips + the two save actions. */
+.kitchen__staples {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.kitchen__staples-q {
+  color: var(--ink);
+}
+.kitchen__staples-hint {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  margin: -0.25rem 0 0;
+}
+.kitchen__staples-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.chip {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  padding: 0.3rem 0.6rem;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.chip.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface);
+}
+.kitchen__staples-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 .kitchen__low-add,
 .kitchen__low {
@@ -560,24 +721,40 @@ a {
   justify-content: center;
 }
 .kid__face {
-  width: 8rem;
-  height: 8rem;
+  width: 9.5rem;
+  height: 9.5rem;
   border-radius: 50%;
-  border: none;
+  border: 5px solid rgba(255, 255, 255, 0.55);
   color: #fff;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
+  gap: 0.2rem;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--dur-base) var(--ease-soft);
+}
+.kid__face:hover,
+.kid__face:focus-visible {
+  transform: translateY(-5px) scale(1.04);
 }
 .kid__face-initial {
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 2.8rem;
+  font-weight: 800;
+  font-family: var(--display);
+  line-height: 1;
 }
 .kid__face-name {
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+/* A peek of the routine's first picture-cards, so a face reads as a ROUTINE,
+   not just a name. */
+.kid__face-peek {
+  font-size: 1.2rem;
+  letter-spacing: 3px;
+  line-height: 1;
 }
 .kid__pick-title {
   margin-bottom: 2rem;
@@ -664,6 +841,16 @@ a {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  /* Inside the hub the row's buttons (📷, ✕, Supprimer) are finger-sized, so on a
+     narrow phone the row would overrun the viewport. Let it wrap; the name keeps
+     line 1 and the delete action drops to its own right-aligned line. */
+  flex-wrap: wrap;
+}
+.operator__list li > span:not([class]) {
+  /* The member name (the only unclassed span): take the slack so wrapped rows
+     stay tidy and a long name shrinks instead of shoving the row past the edge. */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .operator__avatar {
   width: 1.4rem;
@@ -673,6 +860,11 @@ a {
 }
 .operator__del {
   margin-left: auto;
+}
+/* The secondary "when · who" line on an event row, quieter than the title. */
+.operator__event-when {
+  color: var(--ink-soft);
+  font-size: 13px;
 }
 .operator__inline-form {
   display: flex;
@@ -747,6 +939,101 @@ a {
 .audience-switch__opt.is-active {
   background: var(--accent);
   color: var(--accent-ink);
+}
+
+/* --- Kiosk scale ---------------------------------------------------------- */
+/* The hub is a wall tablet read and tapped from across the kitchen — an app
+   surface, not a web page. Everything a finger lands on gets a big, confident
+   target here; the compact sizing stays for the operator/home/login admin
+   surfaces (phone/laptop). The toddler tiles (.bigtile) are already oversized
+   per NFR-KID-1 and are intentionally untouched. Scoped under .hub so the two
+   worlds don't fight. */
+.hub {
+  font-size: 1.05rem;
+}
+.hub .btn {
+  min-height: 3.25rem;
+  padding: 0.7rem 1.3rem;
+  font-size: 1.05rem;
+  border-radius: 12px;
+}
+.hub .input {
+  min-height: 3.25rem;
+  padding: 0.7rem 1rem;
+  font-size: 1.05rem;
+  border-radius: 12px;
+}
+.hub .topbar {
+  padding: 0.85rem 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.hub .topbar__brand {
+  font-size: 1.3rem;
+}
+.hub .topbar__actions {
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.hub .topbar__actions .btn {
+  min-width: 3.25rem;
+  font-size: 1.25rem;
+}
+
+/* App-style tab bar: full-width segments, each a fat tap target, active one
+   filled (the clearest app convention) rather than a thin web underline. */
+.hub .tabbar {
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+.hub .tabbar__tab {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.5rem;
+  font-size: 1.05rem;
+  border-radius: 12px;
+  border-bottom: none;
+}
+.hub .tabbar__tab.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.hub .audience-switch__opt {
+  min-height: 3rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 1rem;
+}
+
+/* Board: rows tickable from a step back; a bigger check to aim at. */
+.hub .board__list-item {
+  min-height: 3.25rem;
+  padding: 0.5rem 0.4rem;
+  font-size: 1.2rem;
+}
+.hub .board__check {
+  font-size: 1.8rem;
+}
+.hub .board__chore {
+  min-height: 3.25rem;
+}
+.hub .board__events li {
+  font-size: 1.2rem;
+}
+
+/* Kitchen day rows + staple chips, finger-first. */
+.hub .kitchen__day {
+  min-height: 3.5rem;
+}
+.hub .kitchen__day-meal {
+  font-size: 1.25rem;
+}
+.hub .chip {
+  min-height: 2.9rem;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
 }
 
 /* --- Toddler big tiles (shared toddler primitive, see BigTiles.tsx) ------- */
@@ -881,8 +1168,2403 @@ a {
   letter-spacing: 0.06em;
 }
 
+/* ========================================================================== */
+/* Almanac polish — the "Claude design" layer. Type voice, one calm load        */
+/* reveal, and a deterministic press. Self-contained so it's easy to tune or    */
+/* lift out as a unit. Everything here honours the calm tenets: opacity-only     */
+/* reveals, identical (non-variable) acknowledgments, no glow/lift.             */
+/* ========================================================================== */
+
+/* The display serif carries the brand voice on the few big, glanceable words —
+   not body text (Fraunces stays readable large, Hanken Grotesk does the work
+   small). */
+.topbar__brand {
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.board__clock {
+  font-family: var(--display);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums; /* digits don't jitter as time ticks */
+}
+.board__greet,
+.today-kid__greet,
+.today-hero__label,
+.board__tonight-meal {
+  font-family: var(--display);
+}
+
+/* Surfaces read as a printed card: the deeper bottom border is the "ink edge,"
+   the softer radius is cut paper. (Kept flat — depth is tint + grain, no lift.) */
+.bigtile {
+  border-radius: var(--radius-lg);
+}
+.board__zone--tonight {
+  /* the one warm focal card: tonight's supper, stamped in sage */
+  border-bottom-color: var(--line-strong);
+}
+
+/* One calm arrival: surfaces fade in once on load, gently staggered so the eye
+   lands top-to-bottom. Opacity-only (the house rule). Skipped entirely for
+   reduced-motion below. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes lac-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .board__zone,
+  .bigtile,
+  .home__value,
+  .today-hero {
+    animation: lac-fade-in 0.5s ease both;
+  }
+  .board__zone:nth-child(2),
+  .bigtile:nth-child(2) {
+    animation-delay: 0.06s;
+  }
+  .board__zone:nth-child(3),
+  .bigtile:nth-child(3) {
+    animation-delay: 0.12s;
+  }
+  .board__zone:nth-child(4),
+  .bigtile:nth-child(4) {
+    animation-delay: 0.18s;
+  }
+  .board__zone:nth-child(n + 5),
+  .bigtile:nth-child(n + 5) {
+    animation-delay: 0.24s;
+  }
+}
+
+/* Deterministic press: the SAME tiny, tactile give every time a finger lands —
+   acknowledgment, never a reward (NFR-CALM-2). A toddler feels the tile "press";
+   nothing escalates, nothing surprises. */
+.btn,
+.tabbar__tab,
+.audience-switch__opt,
+.bigtile,
+.board__list-item,
+.chip,
+.kitchen__day-meal,
+.today-hero {
+  transition:
+    background 0.12s ease,
+    transform 0.08s ease,
+    opacity 0.18s ease;
+}
+.btn:active,
+.tabbar__tab:active,
+.audience-switch__opt:active,
+.board__list-item:active,
+.chip:active,
+.kitchen__day-meal:active {
+  transform: translateY(1px);
+}
+.bigtile:active,
+.today-hero:active {
+  transform: scale(0.985);
+}
+
+/* ========================================================================== */
+/* Pip Today — the parent board as a gentle, grouped timeline. Ported from the  */
+/* Pip app UI kit (ui_kits/app): greeting + handwritten tag, an "Up next" now-   */
+/* card, section labels with a done/total count, and colour-coded activity cards */
+/* whose check settles into sage when done (no confetti, no streak).            */
+/* ========================================================================== */
+.today-feed {
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 3rem;
+}
+.app-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 18px;
+}
+.hand-tag {
+  font-family: var(--font-hand);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--terracotta-deep);
+  transform: rotate(-3deg);
+  display: inline-block;
+  margin-bottom: -2px;
+}
+.greet {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.greet .accent {
+  color: var(--marigold-deep);
+}
+.subgreet {
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin-top: 4px;
+}
+/* Weather chip rides in the subgreet line; keep the emoji + temp from wrapping. */
+.weather-chip {
+  white-space: nowrap;
+}
+.avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* "Up next" — the one thing surfaced, tinted to its category. */
+.now-card {
+  border-radius: var(--radius-xl);
+  padding: 18px 20px;
+  margin: 6px 0 22px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+.now-card .label {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.now-card .what {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 28px;
+  margin-top: 2px;
+  line-height: 1.1;
+}
+.now-card .who {
+  font-size: 14px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+.now-card .blob {
+  position: absolute;
+  right: -26px;
+  top: -26px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  opacity: 0.5;
+}
+.now-card .icn {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  opacity: 0.9;
+}
+
+/* Section label: Morning / Afternoon / Evening — a rule + a quiet count. */
+.sec-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 2px 12px;
+}
+.sec-label b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+}
+.sec-label .ln {
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+  border-radius: 2px;
+}
+.sec-label .ct {
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
+/* Activity card: colour spine, washed icon tile, title, a tappable check. */
+.act {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 14px;
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast);
+}
+.act:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.act .spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+}
+.act .tile {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.act__text {
+  min-width: 0;
+}
+.act .when {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+.act .title {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.1;
+}
+.act .who {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+.act .check {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex: none;
+  border: 2px solid var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: all var(--dur-base) var(--ease-soft);
+}
+.act.done .check {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: #fff;
+}
+.act.done .title {
+  color: var(--ink-soft);
+}
+.act.done .tile {
+  opacity: 0.55;
+}
+.feed-empty {
+  color: var(--ink-faint);
+  font-size: 14px;
+  padding: 2px 2px 8px;
+}
+
+/* Entrance: transform-only gentle rise, staggered. (Transform — not opacity —
+   so a kiosk screenshot/print never captures a blank frame.) */
+@media (prefers-reduced-motion: no-preference) {
+  .stagger > * {
+    animation: pip-rise var(--dur-slow) var(--ease-soft) both;
+  }
+  .stagger > *:nth-child(1) {
+    animation-delay: 0.04s;
+  }
+  .stagger > *:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+  .stagger > *:nth-child(3) {
+    animation-delay: 0.16s;
+  }
+  .stagger > *:nth-child(4) {
+    animation-delay: 0.22s;
+  }
+  .stagger > *:nth-child(n + 5) {
+    animation-delay: 0.28s;
+  }
+  @keyframes pip-rise {
+    from {
+      transform: translateY(12px);
+    }
+    to {
+      transform: none;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before {
+    animation: none !important;
     transition: none !important;
   }
+}
+
+/* ========================================================================== */
+/* Hub shell — no top header. A vertical column of big section buttons (Pip     */
+/* nav rail), a scrolling body, and a corner gear to Réglages.                  */
+/* ========================================================================== */
+.hub {
+  display: flex;
+  align-items: stretch;
+  height: 100vh;
+}
+.hubnav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: clamp(9rem, 22vw, 14rem);
+  flex: none;
+  padding: 18px 14px;
+  border-right: 1px solid var(--line);
+  background: var(--paper-deep);
+  overflow-y: auto;
+}
+.hubnav__btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 3.6rem;
+  padding: 0 16px;
+  border-radius: 16px;
+  text-decoration: none;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.12rem;
+  color: var(--ink-soft);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast);
+}
+.hubnav__btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.hubnav__btn.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.hub__body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  position: relative;
+}
+/* Toddler Kitchen/Liste render a bare <main class="kid__main"> (a handful of big
+   tiles) straight into the hub body. Without a height it clumps at the very top,
+   leaving a vast empty band on a wall screen. Fill the body so kid__main's own
+   centering (justify/align center) sits the tiles in the middle — matching the
+   toddler Routines face-picker. KidView wraps in .kid, so it's unaffected. */
+.hub__body > .kid__main {
+  min-height: 100%;
+}
+.page-gear {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 25;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast);
+}
+.page-gear:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+@media (max-width: 560px) {
+  .hub {
+    flex-direction: column;
+  }
+  .hubnav {
+    flex-direction: row;
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+  }
+  .hubnav__btn {
+    font-size: 1rem;
+    min-height: 3rem;
+    white-space: nowrap;
+  }
+  /* The ＋ FAB (bottom: 86px, 60 tall) and the gear (bottom: 20px) float over the
+     bottom-right of the scrolling body. Pad the scroll end so the last row — and
+     its tap target (a list item's check, a day's meal) — clears them. Parent only:
+     the toddler lens centers a few big tiles (no FAB) and shouldn't be shoved up. */
+  .hub[data-audience='parent'] .hub__body {
+    padding-bottom: 150px;
+  }
+}
+
+/* ---- Settings: section nav + anchors + display controls ------------------ */
+.operator__toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+}
+.operator__anchor {
+  scroll-margin-top: 16px;
+}
+.operator__display {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.operator__seg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.operator__seg-label {
+  color: var(--ink-soft);
+}
+
+/* ---- Routine / chore builder: picker chips + drag-and-drop card deck ------ */
+.picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  width: 100%;
+}
+.picker-chips__label {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.deck {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.deck__card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 8px 10px;
+}
+.deck__card.is-dragging {
+  opacity: 0.5;
+}
+.deck__handle {
+  cursor: grab;
+  color: var(--ink-faint);
+  font-size: 18px;
+  user-select: none;
+  padding: 0 2px;
+}
+.deck__emoji {
+  font-size: 26px;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 12px;
+  border: 1.5px solid var(--line-strong);
+  background: var(--paper);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.deck__word {
+  flex: 1;
+  min-width: 0;
+}
+.deck__btns {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: none;
+}
+.deck__mini {
+  width: 30px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--ink-soft);
+  cursor: pointer;
+  line-height: 1;
+  font-size: 13px;
+}
+.deck__mini:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.deck__remove {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 10px;
+}
+.deck__remove:hover {
+  color: var(--warn);
+  background: var(--clay-soft);
+}
+.deck__palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  margin-top: 6px;
+  background: var(--paper-deep);
+  border-radius: var(--radius-md);
+}
+.deck__palette-emoji {
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: var(--card);
+  border-radius: 11px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.deck__palette-emoji:hover {
+  background: var(--marigold-wash);
+}
+.deck__add {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* ---- Colour picker (per-person, per-task) -------------------------------- */
+.colorpick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+.colorpick__dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.colorpick__dot:active {
+  transform: scale(0.92);
+}
+.colorpick__dot.is-sel {
+  border-color: var(--card);
+  outline: 2.5px solid var(--ink);
+}
+
+/* ========================================================================== */
+/* Pip toddler — calm full-screen "right now / then" picture story (KidView).   */
+/* One big card at a time; tap to settle it done; dots for rhythm; ends on a    */
+/* handwritten "sweet dreams". No idle motion, no rewards.                      */
+/* ========================================================================== */
+.kid {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.tdl {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: background var(--dur-slow) var(--ease-out);
+}
+/* Soft light blooms over the member-colour wash — warmth without overriding the
+   inline tint, and a touch of "cute" depth. */
+.tdl::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(42% 32% at 16% 12%, rgba(255, 255, 255, 0.55), transparent 70%),
+    radial-gradient(38% 30% at 86% 82%, rgba(255, 255, 255, 0.35), transparent 70%);
+}
+.tdl > * {
+  position: relative;
+  z-index: 1;
+}
+.tdl-top {
+  width: 100%;
+  max-width: 42rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tdl-exit {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+}
+.tdl-name {
+  font-family: var(--font-hand);
+  font-size: 27px;
+  color: var(--ink);
+  transform: rotate(-2deg);
+}
+.tdl-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 24px 0;
+}
+.tdl-illus {
+  width: 232px;
+  height: 232px;
+  border-radius: 64px; /* soft squircle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 18px 38px rgba(72, 54, 30, 0.18),
+    inset 0 10px 22px rgba(255, 255, 255, 0.28);
+  margin-bottom: 26px;
+  border: 6px solid rgba(255, 255, 255, 0.6);
+  padding: 0;
+}
+.tdl-illus--tap {
+  cursor: pointer;
+}
+.tdl-illus-emoji {
+  font-size: 124px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.16));
+}
+/* Gentle float so the picture feels alive — motion-safe only (NFR-KID-3). */
+@media (prefers-reduced-motion: no-preference) {
+  .tdl-illus {
+    animation: tdl-float 4.2s var(--ease-soft) infinite;
+  }
+  .tdl-illus--tap:active {
+    animation: none;
+    transform: scale(0.96);
+  }
+  @keyframes tdl-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+}
+.tdl-now {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.tdl-what {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.4rem, 9vw, 3.4rem);
+  line-height: 1;
+  color: var(--ink);
+}
+.tdl-next {
+  margin-top: 26px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-soft);
+  font-size: 17px;
+}
+.tdl-next .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--card);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.tdl-dots {
+  display: flex;
+  gap: 9px;
+  margin-top: 30px;
+}
+.tdl-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  opacity: 0.5;
+}
+.tdl-dots i.on {
+  background: var(--ink);
+  opacity: 1;
+  width: 26px;
+  border-radius: 99px;
+}
+.tdl-dots i.done {
+  background: var(--sage);
+  opacity: 1;
+}
+.tdl-tap {
+  margin-top: 24px;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  color: var(--ink);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.tdl-tap:active {
+  transform: scale(0.92);
+}
+.tdl-sweet {
+  font-family: var(--font-hand);
+  font-size: 32px;
+  color: var(--ink);
+  margin-top: 8px;
+}
+
+/* ========================================================================== */
+/* Pip Add bottom-sheet — the capture spine (＋ FAB → slide-up sheet).          */
+/* ========================================================================== */
+.add-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 86px;
+  z-index: 24;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--marigold);
+  color: var(--on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast);
+}
+.add-fab:active {
+  transform: translate(1px, 1px) scale(0.96);
+  box-shadow: var(--shadow-press);
+}
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(44, 39, 34, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-base);
+}
+.scrim.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 31;
+  max-width: 40rem;
+  margin: 0 auto;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-lg);
+  padding: 14px 22px 30px;
+  transform: translateY(110%);
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.sheet.show {
+  transform: translateY(0);
+}
+.grab {
+  width: 44px;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--line-strong);
+  margin: 0 auto 14px;
+}
+.sheet h3 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 24px;
+  margin: 0 0 4px;
+}
+.sheet__hint {
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+.sheet__field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  padding: 13px 16px;
+  margin-bottom: 14px;
+}
+.sheet__field input {
+  border: 0;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+}
+.sheet__field input::placeholder {
+  color: var(--ink-faint);
+}
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 6px 0 18px;
+}
+.cat-pick {
+  background: var(--card);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 12px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-family: var(--sans);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--dur-fast);
+}
+.cat-pick .ct {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cat-pick span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.cat-pick.sel {
+  border-color: var(--marigold);
+  background: var(--marigold-wash);
+}
+.sheet .btn {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.05rem;
+}
+
+/* --- List row + price-match proof ---------------------------------------- */
+/* The list item is a flex pair: the big check-off button, plus a small proof
+   button. They sit side by side so neither nests inside the other. */
+.list-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.list-row__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.list-row__proof {
+  flex: 0 0 auto;
+  width: 52px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--marigold-wash);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.list-row__proof:active {
+  transform: scale(0.94);
+}
+
+/* --- Price-match proof sheet --------------------------------------------- */
+.pm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(44, 39, 34, 0.42);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.pm-sheet {
+  width: 100%;
+  max-width: 40rem;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-lg);
+  padding: 16px 22px 28px;
+}
+.pm-sheet__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.pm-sheet__title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 24px;
+  margin: 2px 0 0;
+}
+.deal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.deal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  padding: 10px 12px;
+}
+.deal__img {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.deal__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.deal__merchant {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.deal__name {
+  font-size: 14px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.deal__dates {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.deal__price {
+  flex: 0 0 auto;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.deal__now {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--ink);
+}
+.deal__was {
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}
+.deal__unit {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sage-deep, var(--ink));
+}
+.deal__unit--none {
+  font-weight: 500;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.deal__unit--approx {
+  color: var(--ink-soft);
+}
+.deal--best {
+  box-shadow: inset 0 0 0 2px var(--marigold);
+}
+.deal__best {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--marigold);
+  color: #3a2f12;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.deal__disclaimer {
+  margin: 16px 0 0;
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.deal__flyer-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--marigold-wash);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.deal__flyer-btn:active {
+  transform: scale(0.96);
+}
+
+/* --- Full-flyer viewer ---------------------------------------------------- */
+/* Sits above the proof sheet. A vertical scroll of reconstructed pages, each a
+   white sheet with clippings absolutely placed by their flyer coordinates. */
+.flyer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+}
+.flyer-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1.5px solid var(--line);
+  background: var(--paper);
+}
+.flyer-bar__title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flyer-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 14px;
+  max-width: 46rem;
+  margin: 0 auto;
+  width: 100%;
+}
+.flyer-page-wrap {
+  margin: 0 auto 22px;
+}
+.flyer-page-label {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin: 0 0 6px 2px;
+}
+.flyer-page {
+  position: relative;
+  width: 100%;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.flyer-item {
+  position: absolute;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  display: block;
+}
+.flyer-item:focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: 1px;
+}
+.flyer-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.flyer-item.is-hit {
+  outline: 3px solid var(--marigold);
+  outline-offset: 1px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px var(--marigold-wash);
+  z-index: 2;
+}
+.flyer-item__pin {
+  position: absolute;
+  top: -10px;
+  left: -8px;
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+  pointer-events: none;
+}
+.flyer-dir {
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 9px 18px;
+  background: var(--marigold-wash);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  border: 0;
+  border-bottom: 1.5px solid var(--line);
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+/* Selected-item detail card — slides up over the flyer; "details there". */
+.flyer-detail {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1.5px solid var(--line);
+  background: var(--paper);
+  box-shadow: 0 -6px 18px rgba(44, 39, 34, 0.12);
+}
+.flyer-detail__img {
+  flex: 0 0 auto;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: var(--radius-sm);
+}
+.flyer-detail__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.flyer-detail__name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.flyer-detail__meta {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.flyer-detail__price {
+  flex: 0 0 auto;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--ink);
+}
+.flyer-detail__close {
+  flex: 0 0 auto;
+}
+
+/* --- List action bar + chosen state -------------------------------------- */
+.list-row__proof.is-picked {
+  background: var(--sage, #88a36f);
+  color: #fff;
+}
+.list-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.list-actions .btn {
+  flex: 1 1 auto;
+}
+.deal__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.deal__choose {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--sage, #88a36f);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.deal__choose.is-chosen {
+  background: var(--ink-soft);
+}
+.deal--chosen {
+  box-shadow: inset 0 0 0 2px var(--sage, #88a36f);
+}
+
+/* --- Cashier mode (review + big stepper) ---------------------------------- */
+.cashier {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+}
+.cashier__bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1.5px solid var(--line);
+}
+.cashier__title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+}
+.cashier__count {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+/* Review */
+.cashier__review {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 14px;
+  max-width: 46rem;
+  margin: 0 auto;
+  width: 100%;
+}
+.review-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.review-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  padding: 10px 12px;
+}
+.review-row__img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  flex: 0 0 auto;
+}
+.review-row__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.review-row__for {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+.review-row__name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.review-row__meta {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.review-row__actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+}
+.review-row__del {
+  color: var(--danger, #b4543a);
+}
+.cashier__foot {
+  flex: 0 0 auto;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1.5px solid var(--line);
+}
+.cashier__go {
+  width: 100%;
+  padding: 18px;
+  font-size: 1.2rem;
+}
+/* Present (big stepper) */
+.cashier__stage {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.bigcard {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+}
+.bigcard__store {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--ink);
+}
+.bigcard__img {
+  width: min(72vw, 320px);
+  height: min(40vh, 320px);
+  object-fit: contain;
+  background: #fff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  margin: 4px 0;
+}
+.bigcard__for {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.bigcard__name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.bigcard__price {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 56px;
+  line-height: 1;
+  color: var(--ink);
+}
+.bigcard__unit {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sage-deep, var(--ink));
+}
+.bigcard__dates {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.bigcard__flyer {
+  margin-top: 10px;
+  padding: 12px 20px;
+  font-size: 1.05rem;
+}
+.cashier__nav {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1.5px solid var(--line);
+}
+.cashier__arrow {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--ink);
+  cursor: pointer;
+}
+.cashier__arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cashier__arrow-label {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 700;
+}
+.cashier__arrow--next {
+  background: var(--marigold);
+  box-shadow: none;
+  color: #3a2f12;
+  flex: 2 1 0;
+}
+.cashier__arrow--done {
+  background: var(--sage, #88a36f);
+  box-shadow: none;
+  color: #fff;
+  flex: 2 1 0;
+}
+
+/* ============================================================================
+   Ghost list — predictive grocery suggestions. Deliberately quiet (dim, dashed)
+   so it reads as "a hint", never as a second to-do list (NFR-CALM). Mobile-first:
+   chips wrap, tap targets are >= 44px, nothing overflows a narrow phone.
+   ========================================================================== */
+.ghost-strip {
+  margin-top: 1.25rem;
+}
+.ghost-strip__head {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 0.5rem;
+}
+.ghost-strip__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.ghost-strip__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 0.4rem 0.8rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.ghost-strip__chip:hover {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.ghost-strip__plus {
+  color: var(--accent);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+.ghost-strip__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ghost-strip__tag {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+.ghost-strip__tag--due {
+  background: var(--terracotta-wash);
+  color: var(--terracotta-deep);
+}
+.ghost-strip__tag--soon {
+  background: var(--sage-wash);
+  color: var(--sage-deep);
+}
+.ghost-strip__more {
+  min-height: 44px;
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+/* Settings → Liste fantôme: one wrap-friendly row per item. */
+.ghost-admin {
+  gap: 0.25rem;
+}
+.ghost-admin__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.ghost-admin__row.is-muted {
+  opacity: 0.5;
+}
+.ghost-admin__name {
+  flex: 1 1 8rem;
+  min-width: 0;
+  font-weight: 600;
+}
+.ghost-admin__meta {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+.ghost-admin__cadence {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.ghost-admin__days {
+  width: 4.75rem;
+  min-height: 40px;
+  text-align: center;
+  /* Extra right padding so the number-spinner arrows don't overlap the digit. */
+  padding: 0.2rem 0.4rem 0.2rem 0.5rem;
+}
+
+/* ---- Photos: avatars, the home-photo grid, and the wall frame -------------- */
+/* Member avatar: a photo or a coloured initial disc (component: Avatar). */
+.avatar {
+  flex: none;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.avatar--photo {
+  object-fit: cover;
+}
+.avatar__initial {
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.operator__photo {
+  cursor: pointer;
+}
+
+/* Settings: the home-photo management grid. */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+.photo-grid__item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.photo-grid__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photo-grid__del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(27, 23, 18, 0.6);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* The wall board's calm family-photo frame. */
+.photo-frame {
+  margin: 1.5rem 0 0.5rem;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  background: var(--card);
+}
+.photo-frame img {
+  display: block;
+  width: 100%;
+  max-height: 42vh;
+  object-fit: cover;
+}
+
+/* Kid face-picker: a round photo where the initial would be. */
+.kid__face-photo {
+  width: 64%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-pill);
+}
+
+/* Gentle cross-fade as the wall frame changes photos — motion-safe only. */
+@media (prefers-reduced-motion: no-preference) {
+  .photo-frame img {
+    animation: photo-fade var(--dur-slow) var(--ease-out) both;
+  }
+  @keyframes photo-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* ---- Board: full-width "whiteboard" bento grid ---------------------------- */
+.board-wall {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 2rem;
+}
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+/* Each section is a calm bento tile. */
+.board-grid > .bento {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem 1.1rem;
+  box-shadow: var(--shadow-sm);
+}
+/* The hero supper card and the photo frame get more room on a wide wall. */
+.board-grid > .now-card {
+  grid-column: span 2;
+}
+.board-grid > .photo-frame {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+@media (max-width: 680px) {
+  .board-wall {
+    padding: 1rem 0.9rem 1.5rem;
+  }
+  .board-grid {
+    gap: 0.75rem;
+  }
+  .board-grid > .now-card {
+    grid-column: auto;
+  }
+}
+
+/* Toddler heroes row (meals + weather) above the kid sections. */
+.today-kid__heroes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.today-kid__heroes .today-hero {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
+/* ---- Image zoom (flyer / deal proof at the till) -------------------------- */
+.zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(20, 16, 12, 0.86);
+  cursor: zoom-out;
+}
+.zoom-overlay__img {
+  max-width: 96vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.zoom-overlay__close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* ---- Recurrence picker (event form) -------------------------------------- */
+.recur {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.recur__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.recur__interval {
+  width: 4.5rem;
+  text-align: center;
+}
+.recur__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* ---- Settings tab bar ----------------------------------------------------- */
+.operator__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1rem 0 1.25rem;
+}
+.operator__tab {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-soft);
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.9rem;
+  min-height: 40px;
+  cursor: pointer;
+  font: inherit;
+}
+.operator__tab.is-active {
+  background: var(--accent);
+  color: var(--on-primary);
+  border-color: transparent;
+  font-weight: 600;
+}
+
+/* Add sheet: the quick-capture / event / chore / routine mode chooser. */
+.sheet__modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+/* Deal store filter (Maxi / Super C …). */
+.deal-stores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+.flyer-detail__add {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Settings ▸ La maisonnée — each member is a boxed card: avatar on top, name,
+   then the photo / delete actions underneath. */
+.member-cards {
+  list-style: none;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.6rem;
+}
+.member-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.9rem 0.6rem;
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+.member-card__name {
+  font-weight: 600;
+}
+.member-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: center;
+  margin-top: auto;
+}
+
+/* Cashier "thank you" hand-back screen. */
+.cashier--thanks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cashier__thanks {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+.cashier__thanks-emoji {
+  font-size: 4rem;
+}
+.cashier__thanks-title {
+  font-family: var(--display);
+  font-size: clamp(2rem, 8vw, 3rem);
+  margin: 0;
+}
+.cashier__thanks-hint {
+  color: var(--ink-soft);
+}
+
+/* --- Recipes: book grid, view/edit modal, Kitchen meal-plan picker --------- */
+/* The recipe book lives in the Kitchen. Cards in a responsive grid; viewing and
+   editing share one centered modal (.recipe-modal) that scrolls its body. */
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.8rem;
+}
+.recipe-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  transition: transform var(--dur-fast) var(--ease-soft), box-shadow var(--dur-fast);
+}
+.recipe-card:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.recipe-card__thumb {
+  display: block;
+  aspect-ratio: 4 / 3;
+  background: var(--terracotta-wash);
+  overflow: hidden;
+}
+.recipe-card__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.recipe-card__noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 2rem;
+}
+.recipe-card__title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.15;
+  padding: 0 0.7rem;
+  color: var(--ink);
+}
+.recipe-card__sub {
+  color: var(--ink-faint);
+  padding: 0 0.7rem 0.7rem;
+}
+
+/* Modal: scrim + a centered scrolling card. */
+.recipe-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.recipe-modal__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(44, 39, 34, 0.4);
+}
+.recipe-modal__card {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.recipe-modal__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+.recipe-modal__bar h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.recipe-modal__body {
+  padding: 1rem 1.1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.recipe-modal__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.8rem 1.1rem;
+  border-top: 1px solid var(--line);
+}
+.recipe-actions {
+  justify-content: flex-start;
+}
+.recipe-del {
+  margin-left: auto;
+  color: var(--warn);
+}
+
+/* Form bits */
+.recipe-photo__has {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.recipe-photo__has img {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+.recipe-title-input {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.recipe-helpers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.recipe-aioff {
+  color: var(--ink-soft);
+  margin: 0;
+}
+.recipe-import {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  background: var(--paper-deep);
+  border-radius: var(--radius-md);
+}
+.recipe-import__paste {
+  resize: vertical;
+  font-family: var(--sans);
+}
+.recipe-sec-h {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.3rem 0 0;
+  font-size: 1.05rem;
+}
+.recipe-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.recipe-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.recipe-line__n {
+  width: 1.4rem;
+  flex: none;
+  text-align: center;
+  color: var(--ink-faint);
+}
+.recipe-line .input {
+  flex: 1;
+  min-width: 0;
+}
+.recipe-line__del {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+}
+.recipe-line__del:hover {
+  color: var(--warn);
+}
+.recipe-add-line {
+  align-self: flex-start;
+}
+.recipe-meta-row {
+  display: flex;
+  gap: 0.8rem;
+}
+.recipe-servings {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ink-soft);
+}
+.recipe-servings .input {
+  width: 5rem;
+}
+
+/* View bits */
+.recipe-view__img {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+.recipe-view__meta {
+  color: var(--ink-soft);
+  margin: 0;
+}
+.recipe-view__ings {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.recipe-view__steps {
+  margin: 0;
+  padding-left: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.recipe-view__steps li {
+  padding-left: 0.2rem;
+}
+.recipe-view__notes {
+  margin: 0;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.recipe-plan-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-top: 0.3rem;
+}
+
+/* Kitchen: the meal-plan recipe picker under a day's edit form. */
+.kitchen__day-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+.kitchen__day-recipes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.kitchen__pick-recipe {
+  align-self: flex-start;
+}
+.kitchen__recipe-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Flyer/deals browser: the search row above the staple chips + results. */
+.deals-search {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.deals-search .input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- Cook Mode: full-screen step-by-step recipe (kitchen tablet) ----------- */
+/* One big thing at a time, readable across the counter. Same calm stepper shape
+   as the cashier view; z-index above the recipe modal it opens from. */
+.cook {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+.cook__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.cook__title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cook__count {
+  color: var(--ink-soft);
+  flex: none;
+}
+.cook__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  overflow-y: auto;
+}
+.cook__card {
+  width: min(640px, 100%);
+  text-align: center;
+}
+.cook__h {
+  font-size: 1.6rem;
+  margin: 0 0 1rem;
+}
+.cook__ings {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 28rem;
+  text-align: left;
+}
+.cook__ings li {
+  font-size: 1.3rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.cook__step-n {
+  display: block;
+  color: var(--terracotta-deep);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.8rem;
+}
+.cook__step-text {
+  font-size: clamp(1.5rem, 4.5vw, 2.4rem);
+  line-height: 1.3;
+  font-family: var(--display);
+  font-weight: 600;
+  margin: 0;
+}
+.cook__nav {
+  display: flex;
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+}
+.cook__arrow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 84px;
+  border: 0;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.6rem;
+  cursor: pointer;
+}
+.cook__arrow:disabled {
+  color: var(--ink-faint);
+  opacity: 0.5;
+}
+.cook__arrow--next,
+.cook__arrow--done {
+  background: var(--marigold);
+  color: var(--on-primary);
+}
+.cook__arrow-label {
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* Kitchen: a recipe-book link beside a planned meal, and the recipe search box. */
+.kitchen__day-recipe-link {
+  flex: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-pill);
+  line-height: 1;
+}
+.kitchen__day-recipe-link:active {
+  transform: translateY(1px);
+}
+.kitchen__recipe-search {
+  margin-bottom: 0.8rem;
 }
