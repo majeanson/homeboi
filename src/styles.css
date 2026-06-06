@@ -3725,6 +3725,29 @@ a {
 .kitchen__day-recipe-link:active {
   transform: translateY(1px);
 }
+.kitchen__recipe-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+.kitchen__recipe-tools .kitchen__recipe-search {
+  flex: 1 1 12rem;
+  margin-bottom: 0;
+}
+.kitchen__cook-filter {
+  flex: 0 0 auto;
+  cursor: pointer;
+  white-space: nowrap;
+}
 .kitchen__recipe-search {
   margin-bottom: 0.8rem;
+}
+.recipe-card__ready {
+  color: var(--sage-deep, #4f6b3a);
+  font-weight: 600;
+}
+.recipe-card__missing {
+  color: var(--terracotta-deep, #a8442b);
 }

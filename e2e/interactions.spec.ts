@@ -322,6 +322,15 @@ test.describe('recipes', () => {
     await expect(cook.locator('.cook__timer-clock')).toContainText(':') // counting down mm:ss
   })
 
+  test('"quoi cuisiner?" toggles a cookability ranking with badges', async ({ page }) => {
+    const toggle = page.locator('.kitchen__cook-filter')
+    await expect(toggle).toBeVisible() // pantry has out-of-stock items to rank against
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    // None of the seeded recipes need Beurre/Café/Papier, so they read as ready.
+    await expect(page.locator('.recipe-card__ready').first()).toBeVisible()
+  })
+
   test('creating a recipe posts it', async ({ page }) => {
     await page.locator('.kitchen__head').nth(1).locator('button').click() // Add recipe
     const modal = page.locator('.recipe-modal')

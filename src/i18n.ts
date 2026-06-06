@@ -128,6 +128,9 @@ export const FR = {
     scaleReset: '↺ Portions d’origine',
     timer: 'Minuteur',
     timerDone: 'Terminé !',
+    cookable: 'Quoi cuisiner ?',
+    ready: 'Prêt',
+    missingN: (n: number) => `il manque ${n}`,
   },
   kid: {
     title: 'Ma routine',
@@ -415,6 +418,9 @@ export const EN: typeof FR = {
     scaleReset: '↺ Original servings',
     timer: 'Timer',
     timerDone: 'Done!',
+    cookable: 'What can I cook?',
+    ready: 'Ready',
+    missingN: (n: number) => `${n} to buy`,
   },
   kid: {
     title: 'My routine',

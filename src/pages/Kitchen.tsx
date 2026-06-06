@@ -8,6 +8,7 @@ import { api, isStatus, isUnauthorized } from '../lib/api'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday } from '../lib/format'
 import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
+import { rankCookable } from '../lib/cookable'
 import { useUndoToast } from '../lib/toast'
 import { RecipeSheet } from '../components/RecipeSheet'
 import { RecipeForm } from '../components/RecipeForm'
@@ -49,7 +50,12 @@ export function Kitchen() {
   const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals') })
   const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry') })
   const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes') })
+  // Shares the ['board'] cache with the Board/Liste pages — read only for the
+  // shopping list, used to rank recipes by "what you could cook now".
+  const boardQ = useQuery({ queryKey: ['board'], queryFn: () => api<{ list: { text: string }[] }>('board') })
   const recipes = recipesQ.data?.recipes ?? []
+  // "Quoi cuisiner ?": when on, sort the grid by fewest out-of-stock ingredients.
+  const [cookFilter, setCookFilter] = useState(false)
   // Recipe book overlays: a recipe being viewed, and one being created/edited
   // ('new' = a blank form). recipePickFor = the day a recipe is being chosen for.
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null)
@@ -70,6 +76,15 @@ export function Kitchen() {
       (r) => r.title.toLowerCase().includes(q) || r.ingredients.some((i) => i.toLowerCase().includes(q)),
     )
   }, [recipes, recipeQuery])
+  // Cookability: which staple each recipe is missing (out of stock + not on the
+  // list), fewest first. `cookFilter` only surfaces when there's a low item to
+  // rank against, so it never appears as a no-op.
+  const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
+  const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
+  const ranked = useMemo(() => rankCookable(shownRecipes, lowItems, listItems), [shownRecipes, lowItems, listItems])
+  const missingById = useMemo(() => new Map(ranked.map((r) => [r.recipe.id, r.missing])), [ranked])
+  const canCookFilter = lowItems.length > 0 && recipes.length > 0
+  const recipeOrder = cookFilter && canCookFilter ? ranked.map((r) => r.recipe) : shownRecipes
   const unauth = isUnauthorized(meals.error) || isUnauthorized(pantry.error)
   const days = meals.data?.days ?? []
   const weekStart = meals.data?.weekStart ?? 0
@@ -410,31 +425,54 @@ export function Kitchen() {
               ＋ {t.recipes.add}
             </button>
           </div>
-          {recipes.length > 3 && (
-            <input
-              className="input kitchen__recipe-search"
-              value={recipeQuery}
-              onChange={(e) => setRecipeQuery(e.target.value)}
-              placeholder={t.recipes.search}
-              aria-label={t.recipes.search}
-            />
+          {(recipes.length > 3 || canCookFilter) && (
+            <div className="kitchen__recipe-tools">
+              {recipes.length > 3 && (
+                <input
+                  className="input kitchen__recipe-search"
+                  value={recipeQuery}
+                  onChange={(e) => setRecipeQuery(e.target.value)}
+                  placeholder={t.recipes.search}
+                  aria-label={t.recipes.search}
+                />
+              )}
+              {canCookFilter && (
+                <button
+                  type="button"
+                  className={`chip kitchen__cook-filter${cookFilter ? ' is-on' : ''}`}
+                  onClick={() => setCookFilter((v) => !v)}
+                  aria-pressed={cookFilter}
+                >
+                  🍳 {t.recipes.cookable}
+                </button>
+              )}
+            </div>
           )}
           {recipes.length === 0 ? (
             <p className="board__empty mono">{t.recipes.empty}</p>
-          ) : shownRecipes.length === 0 ? (
+          ) : recipeOrder.length === 0 ? (
             <p className="board__empty mono">{t.recipes.empty}</p>
           ) : (
             <div className="recipe-grid">
-              {shownRecipes.map((r) => {
+              {recipeOrder.map((r) => {
                 const img = recipeImg(r.image)
+                const missing = missingById.get(r.id) ?? []
                 return (
                   <button key={r.id} type="button" className="recipe-card surface" onClick={() => setViewRecipe(r)}>
                     <span className="recipe-card__thumb" aria-hidden="true">
                       {img ? <img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">🍳</span>}
                     </span>
                     <span className="recipe-card__title">{r.title}</span>
-                    {r.ingredients.length > 0 && (
-                      <span className="recipe-card__sub mono">{t.recipes.count(r.ingredients.length)}</span>
+                    {cookFilter && canCookFilter ? (
+                      missing.length === 0 ? (
+                        <span className="recipe-card__sub recipe-card__ready mono">✓ {t.recipes.ready}</span>
+                      ) : (
+                        <span className="recipe-card__sub recipe-card__missing mono">{t.recipes.missingN(missing.length)}</span>
+                      )
+                    ) : (
+                      r.ingredients.length > 0 && (
+                        <span className="recipe-card__sub mono">{t.recipes.count(r.ingredients.length)}</span>
+                      )
                     )}
                   </button>
                 )
