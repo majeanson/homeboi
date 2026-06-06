@@ -2,13 +2,17 @@ import { useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
+import { useSurface } from '../lib/surface'
 import { Icon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
+import { AddSheetContext } from '../lib/addSheet'
 
-// The hub shell. No top header anymore (theme/lang/view moved into Réglages):
-// just a vertical column of big section buttons, the page body, and a small
+// The hub shell, surface-aware. KIOSK (wall display): a vertical column of big
+// section buttons down the left, calm and readable across the room. MOBILE
+// (phone): the same sections become a thumb-reach bottom tab bar, with the ＋
+// quick-add lifted above it. Either way: the page body in the middle, a small
 // corner gear that deep-links to this page's settings section. Réglages itself
-// isn't a column button — it's reached by the gear (and hidden on a locked
+// isn't a section button — it's reached by the gear (and hidden on a locked
 // toddler kiosk).
 const TABS: {
   to: string
@@ -34,6 +38,7 @@ const GEAR_SECTION: Record<string, string> = {
 export function HubLayout() {
   const t = useT()
   const { audience, locked } = useAudience()
+  const { surface } = useSurface()
   const loc = useLocation()
   const [addOpen, setAddOpen] = useState(false)
   const isSettings = loc.pathname.startsWith('/settings')
@@ -47,13 +52,18 @@ export function HubLayout() {
   // (a toddler can't wander into settings/billing — PRD C5) or on the page itself.
   const showGear = !locked && !isSettings
   // Capture is a parent action (the ＋ Add sheet). Not for a toddler, not in settings.
-  const showAdd = !locked && !isSettings && audience === 'parent'
+  // On the MOBILE board the quick-capture bar already sits at the top of the page,
+  // so the floating ＋ would be redundant there — hide it (it stays on every other
+  // mobile tab and on the kiosk).
+  const onBoard = path === '/board'
+  const showAdd = !locked && !isSettings && audience === 'parent' && !(surface === 'mobile' && onBoard)
   // Réglages is a normal section button — EXCEPT on a locked toddler kiosk,
   // where a three-year-old must not reach settings/billing (PRD C5).
   const tabs = locked ? TABS.filter((tab) => tab.to !== '/settings') : TABS
 
   return (
-    <div className="page hub" data-audience={audience}>
+    <AddSheetContext.Provider value={{ open: () => setAddOpen(true) }}>
+    <div className="page hub" data-audience={audience} data-surface={surface}>
       <nav className="hubnav" aria-label="sections">
         {tabs.map((tab) => (
           <NavLink
@@ -92,5 +102,6 @@ export function HubLayout() {
       )}
       <AddSheet open={addOpen} onClose={() => setAddOpen(false)} />
     </div>
+    </AddSheetContext.Provider>
   )
 }

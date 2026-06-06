@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, type Audience, type Lang, type Theme } from './mocks'
+import { mockApi, seedState, type Audience, type Lang, type Surface, type Theme } from './mocks'
 
 // Visual sweep: every surface × theme × format (and a language spot-check).
 // These are NOT pixel-regression snapshots — they write PNGs to e2e/screenshots
@@ -17,6 +17,7 @@ type Surface = {
 
 const SURFACES: Surface[] = [
   { name: 'home', path: '/', audiences: ['parent'], ready: '.home__title' },
+  { name: 'setup', path: '/setup', audiences: ['parent'], ready: '.setup__choices' },
   { name: 'board', path: '/board', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'kitchen', path: '/kitchen', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'routines', path: '/routines', audiences: ['parent', 'toddler'], ready: '.hub' },
@@ -42,15 +43,28 @@ async function settle(page: Page, ready: string) {
   await page.waitForTimeout(500)
 }
 
+// The device role maps to the format: a phone shoots the MOBILE surface (glance +
+// bottom bar), a wall shoots the KIOSK surface (dashboard + left column). `/` is
+// the marketing page — it must stay a first-time visitor (no role, signed out),
+// else the smart entry would redirect it to /board.
+const surfaceFor = (formatName: string): Surface => (formatName === 'phone' ? 'mobile' : 'kiosk')
+
 for (const surface of SURFACES) {
   for (const audience of surface.audiences) {
     for (const theme of THEMES) {
       for (const format of FORMATS) {
         const label = `${surface.name}-${audience}-${theme}-${format.name}`
+        const isHome = surface.name === 'home'
         test(label, async ({ page }) => {
           await page.setViewportSize({ width: format.width, height: format.height })
-          await mockApi(page)
-          await seedState(page, { theme, audience, lang: 'fr', calm: true })
+          await mockApi(page, isHome ? { signedIn: false } : {})
+          await seedState(page, {
+            theme,
+            audience,
+            lang: 'fr',
+            calm: true,
+            surface: isHome ? undefined : surfaceFor(format.name),
+          })
           await page.goto(surface.path)
           await settle(page, surface.ready)
           await page.screenshot({ path: `e2e/screenshots/${label}.png`, fullPage: true })
@@ -67,10 +81,17 @@ for (const surface of EN_SURFACES) {
   for (const format of FORMATS) {
     const lang: Lang = 'en'
     const label = `${surface.name}-parent-day-${format.name}-en`
+    const isHome = surface.name === 'home'
     test(label, async ({ page }) => {
       await page.setViewportSize({ width: format.width, height: format.height })
-      await mockApi(page)
-      await seedState(page, { theme: 'day', audience: 'parent', lang, calm: true })
+      await mockApi(page, isHome ? { signedIn: false } : {})
+      await seedState(page, {
+        theme: 'day',
+        audience: 'parent',
+        lang,
+        calm: true,
+        surface: isHome ? undefined : surfaceFor(format.name),
+      })
       await page.goto(surface.path)
       await settle(page, surface.ready)
       await page.screenshot({ path: `e2e/screenshots/${label}.png`, fullPage: true })
@@ -99,6 +120,7 @@ test('toddler routines reaches the picture-card story', async ({ page }) => {
 // (the standing "mobile-friendly always" rule). Runs FR + EN, parent + toddler.
 const OVERFLOW_CASES: { path: string; audience: Audience; ready: string }[] = [
   { path: '/', audience: 'parent', ready: '.home__title' },
+  { path: '/setup', audience: 'parent', ready: '.setup__choices' },
   { path: '/board', audience: 'parent', ready: '.hub' },
   { path: '/board', audience: 'toddler', ready: '.hub' },
   { path: '/kitchen', audience: 'parent', ready: '.hub' },
@@ -114,9 +136,10 @@ const OVERFLOW_CASES: { path: string; audience: Audience; ready: string }[] = [
 for (const lang of ['fr', 'en'] as Lang[]) {
   for (const c of OVERFLOW_CASES) {
     test(`no horizontal overflow: ${c.path}#${c.audience} [${lang}] @phone`, async ({ page }) => {
+      const isHome = c.path === '/'
       await page.setViewportSize({ width: 390, height: 844 })
-      await mockApi(page)
-      await seedState(page, { theme: 'day', audience: c.audience, lang })
+      await mockApi(page, isHome ? { signedIn: false } : {})
+      await seedState(page, { theme: 'day', audience: c.audience, lang, surface: isHome ? undefined : 'mobile' })
       await page.goto(c.path)
       await settle(page, c.ready)
       // Poll until the layout is stable. A REAL horizontal overflow persists and

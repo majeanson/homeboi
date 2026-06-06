@@ -10,6 +10,7 @@ import { PairPrompt } from '../components/Fallback'
 import { formatWeekday } from '../lib/format'
 import { type Recipe, RECIPES_KEY, recipeImg, allTags } from '../lib/recipes'
 import { rankCookable } from '../lib/cookable'
+import { pictoFor } from '../lib/picto'
 import { useUndoToast } from '../lib/toast'
 import { RecipeSheet } from '../components/RecipeSheet'
 import { RecipeForm } from '../components/RecipeForm'
@@ -221,19 +222,25 @@ export function Kitchen() {
 
   if (unauth) return <PairPrompt />
 
-  // Toddler lens: just "what's for supper" this week, big and read-aloud.
+  // Toddler lens: just "what's for supper" this week, big and read-aloud. Each
+  // supper draws its own food picture (pictoFor) so a pre-reader sees pizza/soup/
+  // chicken — not seven identical plates.
   if (audience === 'toddler') {
     const tiles: Tile[] = week
       .filter((d) => d.meal)
       .map((d) => ({
         key: String(d.date),
-        icon: '🍽',
+        icon: pictoFor(d.meal!.title, '🍽'),
         label: d.meal!.title,
         sub: formatWeekday(d.date, lang),
         narration: `${formatWeekday(d.date, lang)}: ${d.meal!.title}`,
       }))
     return (
       <main className="kid__main">
+        <div className="kid-head">
+          <span className="kid-head__emoji" aria-hidden="true">🍲</span>
+          <p className="kid-head__title">{t.kid.supper}</p>
+        </div>
         <BigTiles tiles={tiles} empty={t.board.nothingTonight} />
       </main>
     )

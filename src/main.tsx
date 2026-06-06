@@ -9,6 +9,7 @@ import { AuthProvider } from './lib/auth'
 import { queryClient } from './lib/query'
 import { LangContext, type Lang } from './i18n'
 import { AudienceContext, type Audience } from './lib/audience'
+import { SurfaceContext, type Surface } from './lib/surface'
 import { CalmContext } from './lib/calm'
 import { ToastProvider } from './lib/toast'
 import './styles.css'
@@ -74,6 +75,38 @@ function Root() {
     }
   }
 
+  // The device ROLE: kiosk (wall display) or mobile (phone). Chosen at /setup and
+  // remembered. `?surface=kiosk|mobile` overrides (provisioning + e2e); `?kid=1`
+  // implies kiosk. `chosen` records whether the role was set deliberately — the
+  // `/` smart entry uses it to keep the marketing page for first-timers only.
+  const [{ surface, surfaceChosen }, setSurfacePair] = useState<{ surface: Surface; surfaceChosen: boolean }>(() => {
+    try {
+      const q = new URLSearchParams(window.location.search)
+      const qs = q.get('surface')
+      if (qs === 'kiosk' || qs === 'mobile') {
+        localStorage.setItem('babillard-surface', qs)
+        return { surface: qs, surfaceChosen: true }
+      }
+      if (kidLocked) {
+        localStorage.setItem('babillard-surface', 'kiosk')
+        return { surface: 'kiosk', surfaceChosen: true }
+      }
+      const saved = localStorage.getItem('babillard-surface')
+      if (saved === 'kiosk' || saved === 'mobile') return { surface: saved, surfaceChosen: true }
+    } catch {
+      /* noop */
+    }
+    return { surface: 'mobile', surfaceChosen: false }
+  })
+  function setSurface(s: Surface) {
+    setSurfacePair({ surface: s, surfaceChosen: true })
+    try {
+      localStorage.setItem('babillard-surface', s)
+    } catch {
+      /* noop */
+    }
+  }
+
   // Calm mode defaults ON (the tenet); only an explicit opt-out persists.
   const [calm, setCalmState] = useState<boolean>(() => {
     try {
@@ -95,6 +128,7 @@ function Root() {
     <QueryClientProvider client={queryClient}>
       <LangContext.Provider value={{ lang, setLang }}>
         <AudienceContext.Provider value={{ audience, setAudience, locked: kidLocked }}>
+          <SurfaceContext.Provider value={{ surface, setSurface, chosen: surfaceChosen }}>
           <CalmContext.Provider value={{ calm, setCalm }}>
             <ToastProvider>
               <AuthProvider>
@@ -104,6 +138,7 @@ function Root() {
               </AuthProvider>
             </ToastProvider>
           </CalmContext.Provider>
+          </SurfaceContext.Provider>
         </AudienceContext.Provider>
       </LangContext.Provider>
     </QueryClientProvider>

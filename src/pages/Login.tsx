@@ -4,11 +4,13 @@ import { TopBar } from '../components/TopBar'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { useSurface } from '../lib/surface'
 
 export function Login() {
   const t = useT()
   const nav = useNavigate()
   const { refresh } = useAuth()
+  const { setSurface } = useSurface()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -21,7 +23,10 @@ export function Login() {
     try {
       await api('auth/login', { method: 'POST', body: { email: email.trim().toLowerCase(), password } })
       await refresh()
-      nav('/settings')
+      // Signing in is the personal-device path — land on the mobile home (the
+      // glance + quick capture board), not the settings panel.
+      setSurface('mobile')
+      nav('/board')
     } catch {
       setError(true)
     } finally {
