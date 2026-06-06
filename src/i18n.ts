@@ -122,6 +122,10 @@ export const FR = {
     save: 'Enregistrer la recette',
     search: 'Chercher une recette…',
     aiOff: 'IA indisponible — remplis à la main.',
+    servingsN: (n: number) => `${n} portion${n > 1 ? 's' : ''}`,
+    scaleLess: 'Moins de portions',
+    scaleMore: 'Plus de portions',
+    scaleReset: '↺ Portions d’origine',
   },
   kid: {
     title: 'Ma routine',
@@ -402,6 +406,10 @@ export const EN: typeof FR = {
     save: 'Save recipe',
     search: 'Search a recipe…',
     aiOff: 'AI unavailable — fill it in by hand.',
+    servingsN: (n: number) => `${n} serving${n > 1 ? 's' : ''}`,
+    scaleLess: 'Fewer servings',
+    scaleMore: 'More servings',
+    scaleReset: '↺ Original servings',
   },
   kid: {
     title: 'My routine',

@@ -3374,6 +3374,50 @@ a {
   color: var(--ink-soft);
   margin: 0;
 }
+.recipe-scale {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.1rem 0 0.7rem;
+}
+.recipe-scale__btn {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.3rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.recipe-scale__btn:active {
+  transform: scale(0.94);
+}
+.recipe-scale__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.recipe-scale__val {
+  min-width: 5.5rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--ink);
+}
+.recipe-scale__reset {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.3rem;
+}
 .recipe-view__ings {
   margin: 0;
   padding-left: 1.2rem;

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
+import { scaleIngredients } from '../lib/scale'
 import { ZoomableImg } from './ZoomableImg'
 import { CookMode } from './CookMode'
 
@@ -33,10 +34,24 @@ export function RecipeSheet({
   const canCook = recipe.steps.length > 0 || recipe.ingredients.length > 0
   const imgSrc = recipeImg(recipe.image)
 
+  // Servings scaler: `serv` is the target count the cook wants tonight; the
+  // factor against the recipe's own servings rescales every ingredient line.
+  // Only offered when the recipe states a base serving count to scale from.
+  const baseServings = recipe.servings && recipe.servings > 0 ? recipe.servings : null
+  const [serv, setServ] = useState(baseServings ?? 0)
+  const factor = baseServings ? serv / baseServings : 1
+  const scaledIngredients = useMemo(
+    () => scaleIngredients(recipe.ingredients, factor),
+    [recipe.ingredients, factor],
+  )
+  // The recipe handed to Cook mode and pushed to the list reflects the chosen
+  // batch, so the cook reads (and shops for) the amounts they'll actually use.
+  const effectiveRecipe = factor === 1 ? recipe : { ...recipe, ingredients: scaledIngredients, servings: serv }
+
   async function addToList() {
-    if (added || !recipe.ingredients.length) return
+    if (added || !scaledIngredients.length) return
     setAdded(true)
-    await api('recipe-to-list', { method: 'POST', body: { items: recipe.ingredients } }).catch(() => setAdded(false))
+    await api('recipe-to-list', { method: 'POST', body: { items: scaledIngredients } }).catch(() => setAdded(false))
     qc.invalidateQueries({ queryKey: ['board'] })
   }
 
@@ -69,16 +84,14 @@ export function RecipeSheet({
         <div className="recipe-modal__body">
           {imgSrc && <ZoomableImg className="recipe-view__img" src={imgSrc} alt={recipe.title} />}
 
-          {(recipe.servings || recipe.source) && (
+          {recipe.source && (
             <p className="recipe-view__meta mono">
-              {recipe.servings ? `${recipe.servings} ${t.recipes.servings.toLowerCase()}` : ''}
-              {recipe.servings && recipe.source ? ' · ' : ''}
-              {recipe.source && /^https?:\/\//i.test(recipe.source) ? (
+              {/^https?:\/\//i.test(recipe.source) ? (
                 <a href={recipe.source} target="_blank" rel="noreferrer noopener">
                   {t.recipes.sourceLabel}
                 </a>
               ) : (
-                recipe.source ?? ''
+                recipe.source
               )}
             </p>
           )}
@@ -86,8 +99,41 @@ export function RecipeSheet({
           {recipe.ingredients.length > 0 && (
             <>
               <h3 className="recipe-sec-h">{t.recipes.ingredients}</h3>
+              {baseServings && (
+                <div className="recipe-scale" role="group" aria-label={t.recipes.servings}>
+                  <button
+                    type="button"
+                    className="recipe-scale__btn"
+                    aria-label={t.recipes.scaleLess}
+                    onClick={() => setServ((s) => Math.max(1, s - 1))}
+                    disabled={serv <= 1}
+                  >
+                    −
+                  </button>
+                  <span className="recipe-scale__val mono" aria-live="polite">
+                    {t.recipes.servingsN(serv)}
+                  </span>
+                  <button
+                    type="button"
+                    className="recipe-scale__btn"
+                    aria-label={t.recipes.scaleMore}
+                    onClick={() => setServ((s) => s + 1)}
+                  >
+                    ＋
+                  </button>
+                  {factor !== 1 && (
+                    <button
+                      type="button"
+                      className="recipe-scale__reset mono"
+                      onClick={() => setServ(baseServings)}
+                    >
+                      {t.recipes.scaleReset}
+                    </button>
+                  )}
+                </div>
+              )}
               <ul className="recipe-view__ings">
-                {recipe.ingredients.map((ing, i) => (
+                {scaledIngredients.map((ing, i) => (
                   <li key={i}>{ing}</li>
                 ))}
               </ul>
@@ -146,7 +192,7 @@ export function RecipeSheet({
         </div>
       </div>
 
-      {cooking && <CookMode recipe={recipe} onClose={() => setCooking(false)} />}
+      {cooking && <CookMode recipe={effectiveRecipe} onClose={() => setCooking(false)} />}
     </div>
   )
 }
