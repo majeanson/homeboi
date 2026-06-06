@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { type Recipe } from '../lib/recipes'
+import { findDurations } from '../lib/duration'
+
+const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padStart(2, '0')}`
 
 // Full-screen, one-thing-at-a-time cooking view for the kitchen tablet. The
 // ingredients are the first page (a checklist to gather), then each prep step is
@@ -17,6 +20,10 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const t = useT()
   const [idx, setIdx] = useState(0)
   const lockRef = useRef<{ release: () => Promise<void> } | null>(null)
+  // A one-tap timer for a duration written into the current step. One at a time:
+  // total is what it started from (so a finished timer can restart), remaining
+  // ticks down while running.
+  const [timer, setTimer] = useState<{ total: number; remaining: number; running: boolean } | null>(null)
 
   const stages: Stage[] = [
     ...(recipe.ingredients.length ? [{ kind: 'ingredients' } as Stage] : []),
@@ -27,6 +34,37 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const cur = stages[Math.min(idx, stages.length - 1)]
   const atFirst = idx === 0
   const atLast = idx >= stages.length - 1
+  const durations = cur?.kind === 'step' ? findDurations(cur.text) : []
+
+  // Moving to another step drops the timer — it belonged to the step you left.
+  useEffect(() => setTimer(null), [idx])
+
+  // Tick once a second while running; at zero, stop and give a gentle buzz
+  // (where supported). The screen wake-lock above keeps the tablet awake for it.
+  useEffect(() => {
+    if (!timer?.running) return
+    const id = setInterval(() => {
+      setTimer((tm) => {
+        if (!tm || !tm.running) return tm
+        if (tm.remaining <= 1) {
+          try {
+            navigator.vibrate?.([200, 100, 200])
+          } catch {
+            /* no vibration API — the visual "done" state is enough */
+          }
+          return { ...tm, remaining: 0, running: false }
+        }
+        return { ...tm, remaining: tm.remaining - 1 }
+      })
+    }, 1000)
+    return () => clearInterval(id)
+  }, [timer?.running])
+
+  // Tap a finished clock to restart it; otherwise pause/resume.
+  const toggleTimer = () =>
+    setTimer((tm) =>
+      !tm ? tm : tm.remaining === 0 ? { ...tm, remaining: tm.total, running: true } : { ...tm, running: !tm.running },
+    )
 
   // Keep the screen awake while cooking; re-acquire on visibility regain.
   useEffect(() => {
@@ -88,6 +126,43 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
               {t.recipes.stepLabel} {cur?.kind === 'step' ? cur.n : ''}
             </span>
             <p className="cook__step-text">{cur?.kind === 'step' ? cur.text : ''}</p>
+            {durations.length > 0 && (
+              <div className="cook__timers">
+                {timer ? (
+                  <div className={'cook__timer' + (timer.remaining === 0 ? ' is-done' : '')}>
+                    <button
+                      type="button"
+                      className="cook__timer-clock mono"
+                      onClick={toggleTimer}
+                      aria-label={t.recipes.timer}
+                    >
+                      {timer.remaining === 0
+                        ? `⏱ ${t.recipes.timerDone}`
+                        : `${timer.running ? '⏱' : '▶'} ${clock(timer.remaining)}`}
+                    </button>
+                    <button
+                      type="button"
+                      className="cook__timer-x mono"
+                      onClick={() => setTimer(null)}
+                      aria-label={t.common.cancel}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  durations.map((d) => (
+                    <button
+                      key={d.seconds}
+                      type="button"
+                      className="cook__timer-chip mono"
+                      onClick={() => setTimer({ total: d.seconds, remaining: d.seconds, running: true })}
+                    >
+                      ⏱ {d.label}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

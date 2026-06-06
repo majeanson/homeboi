@@ -126,6 +126,8 @@ export const FR = {
     scaleLess: 'Moins de portions',
     scaleMore: 'Plus de portions',
     scaleReset: '↺ Portions d’origine',
+    timer: 'Minuteur',
+    timerDone: 'Terminé !',
   },
   kid: {
     title: 'Ma routine',
@@ -411,6 +413,8 @@ export const EN: typeof FR = {
     scaleLess: 'Fewer servings',
     scaleMore: 'More servings',
     scaleReset: '↺ Original servings',
+    timer: 'Timer',
+    timerDone: 'Done!',
   },
   kid: {
     title: 'My routine',

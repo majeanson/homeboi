@@ -118,7 +118,7 @@ const RECIPES = {
       id: 'rc1',
       title: 'Spaghetti maison',
       ingredients: ['400 g de pâtes', '1 pot de sauce tomate', '500 g de bœuf haché', '1 oignon'],
-      steps: ['Faire bouillir les pâtes.', 'Faire revenir le bœuf et l’oignon.', 'Ajouter la sauce et mijoter.'],
+      steps: ['Faire bouillir les pâtes 10 minutes.', 'Faire revenir le bœuf et l’oignon.', 'Ajouter la sauce et mijoter 20 minutes.'],
       servings: 4,
       notes: 'Ajoute du parmesan au service.',
       source: null,

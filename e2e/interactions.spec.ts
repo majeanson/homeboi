@@ -309,6 +309,19 @@ test.describe('recipes', () => {
     await expect(page.locator('.cook')).toBeVisible()
   })
 
+  test('a step with a duration offers a tappable cook-mode timer', async ({ page }) => {
+    await page.locator('.recipe-card').first().click() // Spaghetti — steps carry durations
+    const modal = page.locator('.recipe-modal')
+    await modal.locator('.recipe-actions .btn--primary').click() // Cook
+    const cook = page.locator('.cook')
+    await expect(cook).toBeVisible()
+    await cook.locator('.cook__arrow--next').click() // ingredients → step 1 ("10 minutes")
+    const chip = cook.locator('.cook__timer-chip')
+    await expect(chip).toBeVisible()
+    await chip.click()
+    await expect(cook.locator('.cook__timer-clock')).toContainText(':') // counting down mm:ss
+  })
+
   test('creating a recipe posts it', async ({ page }) => {
     await page.locator('.kitchen__head').nth(1).locator('button').click() // Add recipe
     const modal = page.locator('.recipe-modal')

@@ -3616,6 +3616,67 @@ a {
   font-weight: 600;
   margin: 0;
 }
+/* One-tap timers for a duration written into the step. */
+.cook__timers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+.cook__timer-chip {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.1rem;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cook__timer-chip:active {
+  transform: scale(0.97);
+}
+.cook__timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cook__timer-clock {
+  border: none;
+  background: var(--sky-wash, #e6eef3);
+  color: var(--ink);
+  font-size: 1.6rem;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  min-width: 7rem;
+}
+.cook__timer.is-done .cook__timer-clock {
+  background: var(--sage, #6b8a52);
+  color: var(--paper);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cook__timer.is-done .cook__timer-clock {
+    animation: cook-buzz 0.5s ease 2;
+  }
+  @keyframes cook-buzz {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+}
+.cook__timer-x {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-soft);
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
 .cook__nav {
   display: flex;
   gap: 1px;
