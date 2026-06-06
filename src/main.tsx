@@ -110,6 +110,14 @@ function Root() {
   )
 }
 
+// A little fridge-magnet note for anyone who opens the console. Calm by default —
+// nothing to optimize, just a hello. 🧲
+console.log(
+  '%c🧲 Babillard %c— la maisonnée, en un coup d’œil · the household, at a glance',
+  'font-weight:bold',
+  'color:#9aa',
+)
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Root />
