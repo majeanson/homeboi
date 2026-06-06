@@ -286,6 +286,7 @@ export const FR = {
     browseStart: 'Cherche un article, ou touche une suggestion.',
   },
   common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN' },
+  undo: { action: 'Annuler', checked: (s: string) => `« ${s} » coché`, cleared: (s: string) => `« ${s} » retiré` },
   notFound: { title: 'Page introuvable', back: 'Retour à l’accueil' },
 }
 
@@ -570,6 +571,7 @@ export const EN: typeof FR = {
     browseStart: 'Search an item, or tap a suggestion.',
   },
   common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR' },
+  undo: { action: 'Undo', checked: (s: string) => `"${s}" checked off`, cleared: (s: string) => `"${s}" cleared` },
   notFound: { title: 'Page not found', back: 'Back to home' },
 }
 

@@ -255,13 +255,22 @@ test.describe('kitchen', () => {
     await expectApi(page, 'POST', 'pantry', () => form.locator('button[type="submit"]').click())
   })
 
-  test('clear a pantry item (optimistic)', async ({ page }) => {
+  test('clear a pantry item (optimistic) and delete after the undo window', async ({ page }) => {
     const lows = page.locator('.kitchen__low li')
     await expect(lows).toHaveCount(3)
     await expectApi(page, 'DELETE', 'pantry', () =>
       lows.first().locator('button.board__list-item').click(),
     )
     await expect(lows).toHaveCount(2)
+  })
+
+  test('undo restores a cleared pantry item', async ({ page }) => {
+    const lows = page.locator('.kitchen__low li')
+    await lows.first().locator('button.board__list-item').click()
+    await expect(lows).toHaveCount(2)
+    await expect(page.locator('.undo-toast')).toBeVisible()
+    await page.locator('.undo-toast__btn').click()
+    await expect(lows).toHaveCount(3)
   })
 
   test('planning a supper asks for its staples', async ({ page }) => {
@@ -321,8 +330,20 @@ test.describe('list', () => {
   test('checking an item removes it (optimistic) and patches the list', async ({ page }) => {
     const rows = page.locator('.list-row')
     await expect(rows).toHaveCount(4)
+    // The write is deferred behind the undo toast, so the PATCH lands a few
+    // seconds later (well within waitForRequest's window); the row goes at once.
     await expectApi(page, 'PATCH', 'list', () => rows.first().locator('.list-row__main').click())
     await expect(rows).toHaveCount(3)
+  })
+
+  test('undo restores a checked-off item', async ({ page }) => {
+    const rows = page.locator('.list-row')
+    await rows.first().locator('.list-row__main').click()
+    await expect(rows).toHaveCount(3)
+    await expect(page.locator('.undo-toast')).toBeVisible()
+    await page.locator('.undo-toast__btn').click()
+    await expect(rows).toHaveCount(4)
+    await expect(page.locator('.undo-toast')).toHaveCount(0)
   })
 
   test('a ghost suggestion adds itself to the list', async ({ page }) => {

@@ -13,6 +13,7 @@ import { DealsBrowser } from '../components/DealsBrowser'
 import { CashierMode } from '../components/CashierMode'
 import { GhostStrip } from '../components/GhostStrip'
 import { fetchGhosts, type Ghost } from '../lib/ghost'
+import { useUndoToast } from '../lib/toast'
 import { type Deal, type Pick } from '../lib/deals'
 
 // The shared list (groceries + anything), two lenses on the same data:
@@ -49,6 +50,7 @@ export function Liste() {
   const t = useT()
   const { audience } = useAudience()
   const qc = useQueryClient()
+  const undo = useUndoToast()
   const [proofFor, setProofFor] = useState<{ id: string; text: string } | null>(null)
   const [picks, setPicks] = useState<Picks>(loadPicks)
   const [cashierOpen, setCashierOpen] = useState(false)
@@ -80,23 +82,22 @@ export function Liste() {
     })
   }
 
-  // Check an item off. Optimistic: drop it from the cached list at once, then
-  // persist; roll back + resync on failure. A check records a purchase, which
-  // shifts the predictions, so refresh the ghost strip when it settles.
-  const check = useMutation({
-    mutationFn: (item: ListRow) => api('list', { method: 'PATCH', body: { id: item.id, checked: true } }),
-    onMutate: async (item) => {
-      await qc.cancelQueries({ queryKey: BOARD_KEY })
-      const prev = qc.getQueryData<BoardListData>(BOARD_KEY)
-      qc.setQueryData<BoardListData>(BOARD_KEY, (d) => (d ? { ...d, list: d.list.filter((i) => i.id !== item.id) } : d))
-      return { prev }
-    },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(BOARD_KEY, ctx.prev)
-      qc.invalidateQueries({ queryKey: BOARD_KEY })
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: GHOSTS_KEY }),
-  })
+  // Check an item off. Drop it from the cached list at once, but DEFER the write
+  // behind an undo toast: a mis-tap costs nothing (tap Undo → restore, no
+  // round-trip). A check records a purchase, which shifts the predictions, so
+  // refresh the ghost strip once it commits.
+  function checkOff(item: ListRow) {
+    const prev = qc.getQueryData<BoardListData>(BOARD_KEY)
+    qc.setQueryData<BoardListData>(BOARD_KEY, (d) => (d ? { ...d, list: d.list.filter((i) => i.id !== item.id) } : d))
+    undo({
+      message: t.undo.checked(item.text),
+      onUndo: () => prev && qc.setQueryData(BOARD_KEY, prev),
+      onCommit: () => {
+        api('list', { method: 'PATCH', body: { id: item.id, checked: true } }).catch(() => {})
+        qc.invalidateQueries({ queryKey: GHOSTS_KEY })
+      },
+    })
+  }
 
   // Tap a suggestion → add it to the real list. Drop the chip immediately
   // (optimistic), then persist and refresh both the list and the strip.
@@ -181,7 +182,7 @@ export function Liste() {
         <div className="stagger">
           {list.map((item) => (
             <div key={item.id} className="list-row">
-              <button type="button" className="act list-row__main" onClick={() => check.mutate(item)}>
+              <button type="button" className="act list-row__main" onClick={() => checkOff(item)}>
                 <span className="spine" style={{ background: CATS.list.color }} aria-hidden="true" />
                 <span className="tile" style={{ background: CATS.list.wash }} aria-hidden="true">
                   <Icon name={CATS.list.icon} size={28} color={CATS.list.deep} />

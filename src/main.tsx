@@ -10,6 +10,7 @@ import { queryClient } from './lib/query'
 import { LangContext, type Lang } from './i18n'
 import { AudienceContext, type Audience } from './lib/audience'
 import { CalmContext } from './lib/calm'
+import { ToastProvider } from './lib/toast'
 import './styles.css'
 
 function Root() {
@@ -95,11 +96,13 @@ function Root() {
       <LangContext.Provider value={{ lang, setLang }}>
         <AudienceContext.Provider value={{ audience, setAudience, locked: kidLocked }}>
           <CalmContext.Provider value={{ calm, setCalm }}>
-            <AuthProvider>
-              <BrowserRouter>
-                <AppRoutes />
-              </BrowserRouter>
-            </AuthProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <BrowserRouter>
+                  <AppRoutes />
+                </BrowserRouter>
+              </AuthProvider>
+            </ToastProvider>
           </CalmContext.Provider>
         </AudienceContext.Provider>
       </LangContext.Provider>

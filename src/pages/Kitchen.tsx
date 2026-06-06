@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
 import { useLang, useT } from '../i18n'
@@ -8,6 +8,7 @@ import { api, isStatus, isUnauthorized } from '../lib/api'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday } from '../lib/format'
 import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
+import { useUndoToast } from '../lib/toast'
 import { RecipeSheet } from '../components/RecipeSheet'
 import { RecipeForm } from '../components/RecipeForm'
 
@@ -26,6 +27,7 @@ export function Kitchen() {
   const { lang } = useLang()
   const { audience } = useAudience()
   const qc = useQueryClient()
+  const undo = useUndoToast()
   // A batch of supper ideas + a cursor into it: each click shows the next without
   // re-asking, until the batch (10) is used up — then a click fetches a new one.
   const [suggestions, setSuggestions] = useState<string[]>([])
@@ -142,21 +144,19 @@ export function Kitchen() {
     qc.invalidateQueries({ queryKey: PANTRY_KEY })
   }
 
-  // Optimistic: drop the cleared item from the low list at once, roll back and
-  // resync on failure.
-  const clearLow = useMutation({
-    mutationFn: (id: string) => api('pantry', { method: 'DELETE', body: { id } }),
-    onMutate: async (id) => {
-      await qc.cancelQueries({ queryKey: PANTRY_KEY })
-      const prev = qc.getQueryData<PantryData>(PANTRY_KEY)
-      qc.setQueryData<PantryData>(PANTRY_KEY, (d) => (d ? { low: d.low.filter((x) => x.id !== id) } : d))
-      return { prev }
-    },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(PANTRY_KEY, ctx.prev)
-      qc.invalidateQueries({ queryKey: PANTRY_KEY })
-    },
-  })
+  // Drop the cleared item from the low list at once, but DEFER the delete behind
+  // an undo toast — a mis-tap is recoverable with no round-trip.
+  function clearLowItem(l: LowRow) {
+    const prev = qc.getQueryData<PantryData>(PANTRY_KEY)
+    qc.setQueryData<PantryData>(PANTRY_KEY, (d) => (d ? { low: d.low.filter((x) => x.id !== l.id) } : d))
+    undo({
+      message: t.undo.cleared(l.item),
+      onUndo: () => prev && qc.setQueryData(PANTRY_KEY, prev),
+      onCommit: () => {
+        api('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
+      },
+    })
+  }
 
   const suggestion = suggestions[suggestIdx] ?? null
 
@@ -390,7 +390,7 @@ export function Kitchen() {
             <ul className="kitchen__low">
               {low.map((l) => (
                 <li key={l.id}>
-                  <button type="button" className="board__list-item" onClick={() => clearLow.mutate(l.id)}>
+                  <button type="button" className="board__list-item" onClick={() => clearLowItem(l)}>
                     <span className="board__check" aria-hidden="true">
                       ☐
                     </span>
