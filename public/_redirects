@@ -1,9 +1,0 @@
-# SPA deep-link fallback for Cloudflare Pages. Any path that isn't a Function
-# (/api/*) or a real static asset is served index.html with a 200, so the React
-# router can handle client routes on a hard load — a kiosk booting straight to
-# /pair, /board?kid=1, a refresh on /kitchen, etc. Without this, Pages 404s the
-# path and the app appears to "bounce to the homepage."
-#
-# Order of precedence in Pages: Functions first, then existing static files,
-# then these rewrites — so /api/* and /pip-icons.js are unaffected.
-/*    /index.html   200

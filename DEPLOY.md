@@ -11,14 +11,14 @@ Babillard runs as **one Cloudflare Worker with static assets**:
 Deploy command is `npm run deploy` (build + `wrangler deploy`). Live URL ends up
 `https://babillard.<account>.workers.dev`.
 
-| Binding | Resource | Required? | If absent |
-| --- | --- | --- | --- |
-| `DB` | D1 database `babillard` | **Yes** | app can't store anything |
-| `SESSION_SECRET` | secret (≥32 chars) | **Yes** for login/devices | auth can't sign/verify |
-| `ASSETS` | static `dist/` | **Yes** (auto) | no SPA |
-| `AI` | Workers AI | optional | capture → manual type-picker; recap hidden |
-| `PHOTOS` | R2 bucket `babillard-photos` | optional | photo/avatar features hide |
-| `LOGIN_PASSWORD` | secret | optional | login is open (fine on a trusted LAN) |
+| Binding          | Resource                     | Required?                 | If absent                                  |
+| ---------------- | ---------------------------- | ------------------------- | ------------------------------------------ |
+| `DB`             | D1 database `babillard`      | **Yes**                   | app can't store anything                   |
+| `SESSION_SECRET` | secret (≥32 chars)           | **Yes** for login/devices | auth can't sign/verify                     |
+| `ASSETS`         | static `dist/`               | **Yes** (auto)            | no SPA                                     |
+| `AI`             | Workers AI                   | optional                  | capture → manual type-picker; recap hidden |
+| `PHOTOS`         | R2 bucket `babillard-photos` | optional                  | photo/avatar features hide                 |
+| `LOGIN_PASSWORD` | secret                       | optional                  | login is open (fine on a trusted LAN)      |
 
 ## One-time setup
 
