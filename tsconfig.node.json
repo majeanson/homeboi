@@ -14,5 +14,5 @@
     "noUnusedParameters": true,
     "types": ["@cloudflare/workers-types", "vite/client"]
   },
-  "include": ["functions", "vite.config.ts"]
+  "include": ["functions", "worker", "vite.config.ts"]
 }
