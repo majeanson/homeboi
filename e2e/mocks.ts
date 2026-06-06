@@ -123,6 +123,7 @@ const RECIPES = {
       notes: 'Ajoute du parmesan au service.',
       source: null,
       image: null,
+      tags: ['rapide', 'préféré'],
       updatedAt: BASE - DAY,
     },
     {
@@ -134,6 +135,7 @@ const RECIPES = {
       notes: null,
       source: 'https://exemple.ca/tacos',
       image: null,
+      tags: ['rapide'],
       updatedAt: BASE - 2 * DAY,
     },
     {
@@ -145,6 +147,7 @@ const RECIPES = {
       notes: null,
       source: null,
       image: null,
+      tags: [],
       updatedAt: BASE - 3 * DAY,
     },
   ],

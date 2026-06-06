@@ -96,6 +96,16 @@ export function RecipeSheet({
             </p>
           )}
 
+          {recipe.tags?.length > 0 && (
+            <div className="recipe-view__tags">
+              {recipe.tags.map((tg) => (
+                <span key={tg} className="chip recipe-view__tag">
+                  {tg}
+                </span>
+              ))}
+            </div>
+          )}
+
           {recipe.ingredients.length > 0 && (
             <>
               <h3 className="recipe-sec-h">{t.recipes.ingredients}</h3>

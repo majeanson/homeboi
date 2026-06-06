@@ -3751,3 +3751,50 @@ a {
 .recipe-card__missing {
   color: var(--terracotta-deep, #a8442b);
 }
+/* Tag filter chips over the recipe grid; scrolls sideways on a narrow phone. */
+.kitchen__tag-filter {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.8rem;
+  -webkit-overflow-scrolling: touch;
+}
+.kitchen__tag-filter .chip {
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+/* Tag editor in the recipe form. */
+.recipe-tags-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.recipe-tags-edit__label {
+  color: var(--ink-soft);
+}
+.recipe-tags-edit__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.recipe-tags-edit__chips .chip {
+  cursor: pointer;
+}
+.recipe-tags-edit__add {
+  display: flex;
+  gap: 0.4rem;
+}
+.recipe-tags-edit__add .input {
+  flex: 1 1 auto;
+}
+/* Tags shown on the recipe view. */
+.recipe-view__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.recipe-view__tag {
+  background: var(--berry-wash, #efe6ee);
+  color: var(--berry-deep, #7a3f6a);
+}

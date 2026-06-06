@@ -131,6 +131,10 @@ export const FR = {
     cookable: 'Quoi cuisiner ?',
     ready: 'Prêt',
     missingN: (n: number) => `il manque ${n}`,
+    tagsLabel: 'Étiquettes',
+    tagAdd: 'Ajouter une étiquette…',
+    tagPresets: ['rapide', 'végé', 'préféré', 'dessert', 'soupe', 'four'],
+    allTag: 'Toutes',
   },
   kid: {
     title: 'Ma routine',
@@ -421,6 +425,10 @@ export const EN: typeof FR = {
     cookable: 'What can I cook?',
     ready: 'Ready',
     missingN: (n: number) => `${n} to buy`,
+    tagsLabel: 'Tags',
+    tagAdd: 'Add a tag…',
+    tagPresets: ['quick', 'veggie', 'favourite', 'dessert', 'soup', 'oven'],
+    allTag: 'All',
   },
   kid: {
     title: 'My routine',

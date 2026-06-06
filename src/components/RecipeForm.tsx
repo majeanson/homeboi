@@ -29,6 +29,8 @@ export function RecipeForm({
   const [steps, setSteps] = useState<string[]>(value?.steps?.length ? value.steps : [''])
   const [servings, setServings] = useState(value?.servings ? String(value.servings) : '')
   const [notes, setNotes] = useState(value?.notes ?? '')
+  const [tags, setTags] = useState<string[]>(value?.tags ?? [])
+  const [tagInput, setTagInput] = useState('')
   const [source, setSource] = useState<string | null>(value?.source ?? null)
   const [image, setImage] = useState<string | null>(value?.image ?? null)
 
@@ -41,6 +43,15 @@ export function RecipeForm({
   const [importUrl, setImportUrl] = useState('')
   const [importText, setImportText] = useState('')
   const [importMsg, setImportMsg] = useState<string | null>(null)
+
+  const hasTag = (tag: string) => tags.some((x) => x.toLowerCase() === tag.toLowerCase())
+  const toggleTag = (tag: string) =>
+    setTags((ts) => (hasTag(tag) ? ts.filter((x) => x.toLowerCase() !== tag.toLowerCase()) : [...ts, tag]))
+  function addTag() {
+    const s = tagInput.trim()
+    if (s && !hasTag(s)) setTags((ts) => [...ts, s])
+    setTagInput('')
+  }
 
   const lines = (kind: LineKind) => (kind === 'ingredients' ? ingredients : steps)
   const setLines = (kind: LineKind) => (kind === 'ingredients' ? setIngredients : setSteps)
@@ -132,6 +143,7 @@ export function RecipeForm({
       notes: notes.trim() || null,
       source,
       image,
+      tags,
     }
     await api('recipes', {
       method: value ? 'PATCH' : 'POST',
@@ -300,6 +312,50 @@ export function RecipeForm({
             placeholder={t.recipes.notesPlaceholder}
             rows={2}
           />
+
+          {/* Tags: preset chips + any custom one already on the recipe, then a
+              free-text add. Drives the Kitchen filter chips. */}
+          <div className="recipe-tags-edit">
+            <span className="recipe-tags-edit__label mono">{t.recipes.tagsLabel}</span>
+            <div className="recipe-tags-edit__chips">
+              {t.recipes.tagPresets.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className={'chip' + (hasTag(tag) ? ' is-on' : '')}
+                  onClick={() => toggleTag(tag)}
+                  aria-pressed={hasTag(tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+              {tags
+                .filter((tag) => !t.recipes.tagPresets.some((p) => p.toLowerCase() === tag.toLowerCase()))
+                .map((tag) => (
+                  <button key={tag} type="button" className="chip is-on" onClick={() => toggleTag(tag)} aria-pressed>
+                    {tag} ✕
+                  </button>
+                ))}
+            </div>
+            <div className="recipe-tags-edit__add">
+              <input
+                className="input"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                placeholder={t.recipes.tagAdd}
+                aria-label={t.recipes.tagAdd}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addTag()
+                  }
+                }}
+              />
+              <button type="button" className="btn btn--ghost mono" onClick={addTag} disabled={!tagInput.trim()}>
+                ＋
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="recipe-modal__foot">

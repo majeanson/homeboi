@@ -19,6 +19,7 @@ interface RecipeRow {
   notes: string | null
   source: string | null
   image: string | null
+  tags_json: string
   updated_at: number
 }
 
@@ -31,6 +32,7 @@ interface RecipeBody {
   notes?: string | null
   source?: string | null
   image?: string | null
+  tags?: string[]
 }
 
 // An image value is either an R2 key (a single path segment we own) or a remote
@@ -58,9 +60,26 @@ function cleanList(v: unknown, max = 40): string[] {
     .slice(0, max)
 }
 
+// Tags: short, deduped (case-insensitively), few. A tighter cleanList.
+function cleanTags(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const x of v) {
+    if (!isStr(x)) continue
+    const s = x.trim().slice(0, 24)
+    const key = s.toLowerCase()
+    if (s && !seen.has(key)) {
+      seen.add(key)
+      out.push(s)
+    }
+  }
+  return out.slice(0, 8)
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, ingredients_json, steps_json, servings, notes, source, image, updated_at FROM recipes WHERE household_id = ? ORDER BY title',
+    'SELECT id, title, ingredients_json, steps_json, servings, notes, source, image, tags_json, updated_at FROM recipes WHERE household_id = ? ORDER BY title',
   )
     .bind(actor.householdId)
     .all<RecipeRow>()
@@ -73,6 +92,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     notes: r.notes,
     source: r.source,
     image: r.image,
+    tags: parseJsonArray<string>(r.tags_json, isStr),
     updatedAt: r.updated_at,
   }))
   return ok({ recipes })
@@ -86,7 +106,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   const servings = typeof body?.servings === 'number' && body.servings > 0 ? Math.floor(body.servings) : null
   await ctx.env.DB.prepare(
-    'INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, notes, source, image, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, notes, source, image, tags_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -98,6 +118,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       body?.notes?.trim()?.slice(0, 2000) || null,
       body?.source?.trim()?.slice(0, 200) || null,
       cleanImage(body?.image),
+      JSON.stringify(cleanTags(body?.tags)),
       ts,
       ts,
     )
@@ -119,7 +140,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     .first<{ image: string | null }>()
   if (!prev) return notFound('Recette introuvable.')
   await ctx.env.DB.prepare(
-    'UPDATE recipes SET title = ?, ingredients_json = ?, steps_json = ?, servings = ?, notes = ?, source = ?, image = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+    'UPDATE recipes SET title = ?, ingredients_json = ?, steps_json = ?, servings = ?, notes = ?, source = ?, image = ?, tags_json = ?, updated_at = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title.slice(0, 200),
@@ -129,6 +150,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       body.notes?.trim()?.slice(0, 2000) || null,
       body.source?.trim()?.slice(0, 200) || null,
       image,
+      JSON.stringify(cleanTags(body.tags)),
       nowSec(),
       body.id,
       actor.householdId,

@@ -7,7 +7,7 @@ import { useAudience } from '../lib/audience'
 import { api, isStatus, isUnauthorized } from '../lib/api'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday } from '../lib/format'
-import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
+import { type Recipe, RECIPES_KEY, recipeImg, allTags } from '../lib/recipes'
 import { rankCookable } from '../lib/cookable'
 import { useUndoToast } from '../lib/toast'
 import { RecipeSheet } from '../components/RecipeSheet'
@@ -62,6 +62,9 @@ export function Kitchen() {
   const [editRecipe, setEditRecipe] = useState<Recipe | 'new' | null>(null)
   const [recipePickFor, setRecipePickFor] = useState<number | null>(null)
   const [recipeQuery, setRecipeQuery] = useState('')
+  // Single active tag filter (null = all). Drives the chip row over the grid.
+  const [tagFilter, setTagFilter] = useState<string | null>(null)
+  const tags = useMemo(() => allTags(recipes), [recipes])
   // Match a planned supper to a saved recipe by (loose) title, so a day's meal can
   // open its recipe, and the grid can be filtered.
   const recipeByTitle = useMemo(() => {
@@ -71,11 +74,13 @@ export function Kitchen() {
   }, [recipes])
   const shownRecipes = useMemo(() => {
     const q = recipeQuery.trim().toLowerCase()
-    if (!q) return recipes
-    return recipes.filter(
-      (r) => r.title.toLowerCase().includes(q) || r.ingredients.some((i) => i.toLowerCase().includes(q)),
-    )
-  }, [recipes, recipeQuery])
+    const tf = tagFilter?.toLowerCase()
+    return recipes.filter((r) => {
+      if (q && !(r.title.toLowerCase().includes(q) || r.ingredients.some((i) => i.toLowerCase().includes(q)))) return false
+      if (tf && !(r.tags ?? []).some((tg) => tg.toLowerCase() === tf)) return false
+      return true
+    })
+  }, [recipes, recipeQuery, tagFilter])
   // Cookability: which staple each recipe is missing (out of stock + not on the
   // list), fewest first. `cookFilter` only surfaces when there's a low item to
   // rank against, so it never appears as a no-op.
@@ -446,6 +451,32 @@ export function Kitchen() {
                   🍳 {t.recipes.cookable}
                 </button>
               )}
+            </div>
+          )}
+          {tags.length > 0 && (
+            <div className="kitchen__tag-filter">
+              <button
+                type="button"
+                className={`chip${!tagFilter ? ' is-on' : ''}`}
+                onClick={() => setTagFilter(null)}
+                aria-pressed={!tagFilter}
+              >
+                {t.recipes.allTag}
+              </button>
+              {tags.map((tg) => {
+                const on = tagFilter?.toLowerCase() === tg.toLowerCase()
+                return (
+                  <button
+                    key={tg}
+                    type="button"
+                    className={`chip${on ? ' is-on' : ''}`}
+                    onClick={() => setTagFilter(on ? null : tg)}
+                    aria-pressed={on}
+                  >
+                    {tg}
+                  </button>
+                )
+              })}
             </div>
           )}
           {recipes.length === 0 ? (

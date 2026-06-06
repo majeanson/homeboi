@@ -236,6 +236,9 @@ test.describe('add sheet', () => {
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
+    // Wait for the sheet to finish mounting (capture input present) before
+    // switching modes, so a cold-compiled first paint can't race the click.
+    await expect(page.locator('.sheet__field input')).toBeVisible()
     await page.locator('.cat-pick').nth(1).click() // Event mode
     await expect(page.locator('.sheet input[type="date"]')).toBeVisible()
   })
@@ -329,6 +332,15 @@ test.describe('recipes', () => {
     await expect(toggle).toHaveAttribute('aria-pressed', 'true')
     // None of the seeded recipes need Beurre/Café/Papier, so they read as ready.
     await expect(page.locator('.recipe-card__ready').first()).toBeVisible()
+  })
+
+  test('tag chips filter the recipe grid', async ({ page }) => {
+    const cards = page.locator('.recipe-card')
+    await expect(cards).toHaveCount(3)
+    await page.locator('.kitchen__tag-filter .chip', { hasText: 'préféré' }).click()
+    await expect(cards).toHaveCount(1) // only the recipe tagged "préféré"
+    await page.locator('.kitchen__tag-filter .chip', { hasText: 'rapide' }).click()
+    await expect(cards).toHaveCount(2) // two recipes tagged "rapide"
   })
 
   test('creating a recipe posts it', async ({ page }) => {

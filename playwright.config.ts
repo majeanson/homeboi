@@ -8,7 +8,12 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  // CI runs serially (workers:1 below) and is the authoritative, strict run.
+  // Locally we fan out to 4 workers for speed, where the first hit on a lazy
+  // route cold-compiles in Vite and can briefly starve a parallel navigation —
+  // a one-shot retry absorbs that environmental flake without masking real ones
+  // (a genuine failure fails both attempts).
+  retries: process.env.CI ? 0 : 1,
   // Cap workers: the first hit on each lazy route triggers a Vite transform, and
   // too much parallel cold-compile starves navigations. 4 is a good balance.
   workers: process.env.CI ? 1 : 4,
