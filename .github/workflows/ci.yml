@@ -30,9 +30,37 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Only chromium is configured (playwright.config.ts); --with-deps pulls the
+      # Linux system libs the browser needs on the runner.
+      - run: npx playwright install --with-deps chromium
+      # Playwright boots the Vite dev server itself (webServer config) and stubs
+      # every /api/* call per-test — no wrangler/D1/secrets needed.
+      - run: npm run e2e
+      # Always upload the HTML report + the surface×theme×format PNGs so a failure
+      # (or just a visual review) is inspectable from the run page.
+      - name: Upload Playwright report + screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/report
+            e2e/screenshots
+          retention-days: 7
+
   deploy:
     name: Deploy to Cloudflare
-    needs: ci
+    needs: [ci, e2e]
     # Only the real branch advancing — not PRs, not feature branches.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
