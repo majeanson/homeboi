@@ -43,6 +43,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Apply any new D1 migrations to prod BEFORE shipping Worker code that may
+      # depend on them. wrangler skips its confirmation prompt in CI (GitHub
+      # sets CI=true); a no-op when there's nothing new to apply.
+      - run: npm run db:migrate:prod
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       # `npm run deploy` == build (tsc + vite) then `wrangler deploy`. Wrangler
       # reads the API token + account id from these env vars; D1/R2/AI bindings
       # and the runtime secrets (SESSION_SECRET, LOGIN_PASSWORD) already live in
