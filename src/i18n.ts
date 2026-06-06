@@ -23,6 +23,19 @@ export const FR = {
     kidBody: 'Des grandes cartes en images, lues à voix haute sur l’appareil. Aucune lecture requise.',
     privacyTitle: 'Tout reste chez Cloudflare',
     privacyBody: 'Le peu d’IA tourne en réseau. L’horaire de ta famille ne sort pas vers un tiers (Loi 25).',
+    ctaStart: 'Commencer',
+  },
+  setup: {
+    title: 'On installe ça comment ?',
+    lead: 'Cet appareil-ci, c’est quoi ?',
+    kiosk: {
+      title: 'Tablette au mur',
+      body: 'Toujours allumée, à la vue de tous. Le babillard de la maisonnée, lisible de l’autre bout de la cuisine. On la jumelle une fois.',
+    },
+    mobile: {
+      title: 'Mon appareil',
+      body: 'Mon téléphone, à moi. Un coup d’œil sur la journée, pis une note rapide quand ça adonne. On se connecte.',
+    },
   },
   capture: {
     placeholder: 'Note quelque chose… (ex. souper spaghetti jeudi)',
@@ -148,6 +161,8 @@ export const FR = {
     allDone: 'C’est fini ! Bravo.',
     none: 'Pas encore de routine. Un adulte peut en créer une dans les réglages.',
     exit: 'Sortir',
+    supper: 'Miam, on mange quoi ?',
+    shopping: 'On va magasiner !',
   },
   login: {
     title: 'Connexion',
@@ -320,6 +335,19 @@ export const EN: typeof FR = {
     kidBody: 'Big picture cards, read aloud on the device. No reading required.',
     privacyTitle: 'It all stays on Cloudflare',
     privacyBody: 'The little AI there is runs in-network. Your family’s schedule never leaves to a third party (Loi 25).',
+    ctaStart: 'Get started',
+  },
+  setup: {
+    title: 'How are we setting this up?',
+    lead: 'What is this device?',
+    kiosk: {
+      title: 'Wall tablet',
+      body: 'Always on, in plain sight. The household board, readable from across the kitchen. You pair it once.',
+    },
+    mobile: {
+      title: 'My device',
+      body: 'My own phone. A glance at the day, and a quick note when it suits. You sign in.',
+    },
   },
   capture: {
     placeholder: 'Jot something down… (e.g. supper spaghetti thursday)',
@@ -445,6 +473,8 @@ export const EN: typeof FR = {
     allDone: 'All done! Nice.',
     none: 'No routine yet. An adult can make one in settings.',
     exit: 'Exit',
+    supper: 'Yum — what’s for supper?',
+    shopping: 'Let’s go shopping!',
   },
   login: {
     title: 'Sign in',

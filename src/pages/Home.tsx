@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
 import { useT } from '../i18n'
-import { useAuth } from '../lib/auth'
 
-// The marketing front door. Calm by design: no floating CTA, no shadow lifts,
-// the value props sit flat on the page. Three honest claims (calm / kid /
-// privacy), each its own length so it doesn't read as a parallel triad.
+// The marketing front door — shown to first-time visitors only (the `/` smart
+// entry in router.tsx redirects a returning kiosk/phone straight to its home).
+// Calm by design: no floating CTA, no shadow lifts, the value props sit flat on
+// the page. Three honest claims (calm / kid / privacy), each its own length so it
+// doesn't read as a parallel triad. ONE CTA — "Get started" → /setup, where the
+// visitor says whether this is a wall display or a personal device.
 export function Home() {
   const t = useT()
-  const { signedIn } = useAuth()
   return (
     <div className="page">
       <TopBar />
@@ -18,11 +19,8 @@ export function Home() {
           <h1 className="home__title">{t.home.title}</h1>
           <p className="home__lead">{t.home.lead}</p>
           <div className="home__cta">
-            <Link to={signedIn ? '/settings' : '/login'} className="btn btn--primary">
-              {t.home.ctaLogin}
-            </Link>
-            <Link to="/pair" className="btn">
-              {t.home.ctaPair}
+            <Link to="/setup" className="btn btn--primary">
+              {t.home.ctaStart}
             </Link>
           </div>
         </section>
@@ -41,12 +39,6 @@ export function Home() {
             <p>{t.home.privacyBody}</p>
           </article>
         </section>
-
-        <nav className="home__links mono">
-          <Link to="/board">→ {t.nav.board}</Link>
-          <Link to="/kitchen">→ {t.nav.kitchen}</Link>
-          <Link to="/kid">→ {t.nav.kid}</Link>
-        </nav>
       </main>
     </div>
   )

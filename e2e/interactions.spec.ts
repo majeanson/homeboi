@@ -41,17 +41,30 @@ async function expectApi(page: Page, method: string, path: string, action: () =>
 // ───────────────────────────── navigation ──────────────────────────────
 
 test.describe('navigation', () => {
-  test('home links into the hub and to pairing', async ({ page }) => {
-    await APP('/')(page)
+  test('the marketing front door routes through setup to pair / login', async ({ page }) => {
+    // A first-time visitor — signed out, no device role chosen — sees marketing.
+    // (A returning device would be redirected straight to /board by the smart entry.)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page, { signedIn: false })
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.goto('/')
     await settle(page, '.home__title')
-    await page.locator('a[href="/board"]').first().click()
-    await expect(page).toHaveURL(/\/board$/)
-    await expect(page.locator('.hub')).toBeVisible()
-
-    await APP('/')(page)
-    await settle(page, '.home__title')
-    await page.locator('a[href="/pair"]').first().click()
+    await page.locator('a[href="/setup"]').first().click()
+    await expect(page).toHaveURL(/\/setup$/)
+    // "Wall tablet" (first card) is the pairing path.
+    await page.locator('.setup__choice').first().click()
     await expect(page).toHaveURL(/\/pair$/)
+  })
+
+  test('setup → personal device leads to sign-in', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page, { signedIn: false })
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.goto('/setup')
+    await settle(page, '.setup__choices')
+    // "My device" (second card) is the sign-in path.
+    await page.locator('.setup__choice').nth(1).click()
+    await expect(page).toHaveURL(/\/login$/)
   })
 
   test('hub nav switches every section and marks the active tab', async ({ page }) => {
@@ -141,7 +154,7 @@ test.describe('toggles', () => {
 
 // ───────────────────────────── auth form ───────────────────────────────
 
-test('login posts credentials and lands in settings', async ({ page }) => {
+test('login posts credentials and lands on the board', async ({ page }) => {
   await APP('/login')(page)
   await settle(page, 'form')
   await page.locator('input[type="email"]').fill('famille@exemple.ca')
@@ -149,7 +162,8 @@ test('login posts credentials and lands in settings', async ({ page }) => {
   await expectApi(page, 'POST', 'auth/login', () =>
     page.locator('button[type="submit"]').click(),
   )
-  await expect(page).toHaveURL(/\/settings/)
+  // Signing in is the personal-device path — land on the mobile home (the board).
+  await expect(page).toHaveURL(/\/board$/)
 })
 
 // ─────────────────────────── settings forms ────────────────────────────
@@ -220,10 +234,12 @@ test.describe('settings forms', () => {
 // ───────────────────────── add sheet (capture) ─────────────────────────
 
 test.describe('add sheet', () => {
+  // On the mobile board the prominent quick-capture bar (.qcap) replaces the
+  // floating ＋ FAB; it opens the same shared sheet.
   test('quick-capture posts the typed note', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
-    await page.locator('.add-fab').click()
+    await page.locator('.qcap').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
     await page.locator('.sheet__field input').fill('Acheter du lait')
     await expectApi(page, 'POST', 'capture', () =>
@@ -234,7 +250,7 @@ test.describe('add sheet', () => {
   test('switching to the event mode reveals the full event form', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
-    await page.locator('.add-fab').click()
+    await page.locator('.qcap').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
     // Wait for the sheet to finish mounting (capture input present) before
     // switching modes, so a cold-compiled first paint can't race the click.

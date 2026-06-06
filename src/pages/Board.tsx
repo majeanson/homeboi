@@ -7,6 +7,8 @@ import { CATS, TOD_ICON, type CatKey } from '../lib/cats'
 import { tintInk } from '../lib/colors'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
+import { useSurface } from '../lib/surface'
+import { useAddSheet } from '../lib/addSheet'
 import { useSpeak } from '../lib/speak'
 import { timeOfDay } from '../lib/timeofday'
 import { api, isUnauthorized } from '../lib/api'
@@ -14,6 +16,7 @@ import { live } from '../lib/query'
 import { weatherEmoji, type Weather } from '../lib/weather'
 import { imgUrl } from '../lib/image'
 import { formatClock, formatDay, formatTime } from '../lib/format'
+import { pictoFor } from '../lib/picto'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -44,6 +47,10 @@ export function Board() {
   const t = useT()
   const { lang } = useLang()
   const { audience } = useAudience()
+  const { surface } = useSurface()
+  // Mobile glance: a quick-capture bar sits at the top and opens the shared
+  // AddSheet (note/voice → AI router) owned by HubLayout. The primary phone action.
+  const { open: openAdd } = useAddSheet()
   const speak = useSpeak()
   const [clock, setClock] = useState(() => formatClock(lang, Date.now()))
 
@@ -98,7 +105,9 @@ export function Board() {
   const eventTiles = (rows: EventRow[]): Tile[] =>
     rows.map((e) => ({
       key: e.id,
-      icon: '📌',
+      // Draw the event's own picture (school/swim/birthday…) so a pre-reader can
+      // tell things apart; fall back to a pin when nothing matches.
+      icon: pictoFor(e.title, '📌'),
       label: e.title,
       sub: e.all_day ? t.board.allDay : formatTime(e.start_at, lang),
       narration: e.title,
@@ -112,11 +121,11 @@ export function Board() {
       meal ? (
         <button
           type="button"
-          className="today-hero"
+          className="today-hero today-hero--meal"
           onClick={() => speak(`${t.board[key]}: ${meal.title}`)}
           aria-label={`${t.board[key]}: ${meal.title}`}
         >
-          <span className="today-hero__icon" aria-hidden="true">🍽</span>
+          <span className="today-hero__icon" aria-hidden="true">{pictoFor(meal.title, '🍽')}</span>
           <span className="today-hero__label">{meal.title}</span>
           <span className="today-hero__sub mono">{t.board[key]}</span>
         </button>
@@ -125,7 +134,7 @@ export function Board() {
     const weatherHero = weather ? (
       <button
         type="button"
-        className="today-hero"
+        className="today-hero today-hero--weather"
         onClick={() => speak(`${t.weather[weather.bucket]}, ${weather.tempC}°`)}
         aria-label={`${t.weather[weather.bucket]} ${weather.tempC}°`}
       >
@@ -183,6 +192,16 @@ export function Board() {
 
   return (
     <main className="board-wall">
+      {surface === 'mobile' && (
+        <button type="button" className="qcap" onClick={openAdd}>
+          <span className="qcap__icon" aria-hidden="true">
+            <Icon name="plus-bold" size={20} color="var(--on-primary)" />
+          </span>
+          <span className="qcap__text">{t.capture.placeholder}</span>
+          {/* The mic is a hint here; the sheet hosts the real voice input. */}
+          <span className="qcap__mic" aria-hidden="true">🎤</span>
+        </button>
+      )}
       <div className="app-head">
         <div>
           <div className="hand-tag">{t.board.today}</div>

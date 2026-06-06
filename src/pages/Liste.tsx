@@ -16,6 +16,7 @@ import { GhostStrip } from '../components/GhostStrip'
 import { fetchGhosts, type Ghost } from '../lib/ghost'
 import { useUndoToast } from '../lib/toast'
 import { type Deal, type Pick } from '../lib/deals'
+import { pictoFor } from '../lib/picto'
 
 // The shared list (groceries + anything), two lenses on the same data:
 //   - parent: the compact check-off list.
@@ -152,14 +153,20 @@ export function Liste() {
   if (audience === 'toddler') {
     // Read-only for toddlers: tapping a tile reads it aloud but does NOT check it
     // off (no onTap) — a pre-reader can't accidentally clear the grocery list.
+    // Each item draws its own picture (pictoFor: milk/bread/apple…) so the list
+    // is legible to someone who can't read, and never a wall of identical carts.
     const tiles: Tile[] = list.map((i) => ({
       key: i.id,
-      icon: '🛒',
+      icon: pictoFor(i.text, '🛒'),
       label: i.text,
       narration: i.text,
     }))
     return (
       <main className="kid__main">
+        <div className="kid-head">
+          <span className="kid-head__emoji" aria-hidden="true">🛒</span>
+          <p className="kid-head__title">{t.kid.shopping}</p>
+        </div>
         <BigTiles tiles={tiles} empty={t.board.listEmpty} />
       </main>
     )

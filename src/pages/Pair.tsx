@@ -4,6 +4,7 @@ import { TopBar } from '../components/TopBar'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { setDeviceToken, isPaired } from '../lib/device'
+import { useSurface } from '../lib/surface'
 
 // The tablet's pairing screen (kiosk side of device pairing). Get a code,
 // display it big, poll until the operator approves from their phone, then store
@@ -13,16 +14,22 @@ type Phase = 'idle' | 'waiting' | 'paired' | 'expired'
 export function Pair() {
   const t = useT()
   const nav = useNavigate()
+  const { setSurface } = useSurface()
   const [phase, setPhase] = useState<Phase>('idle')
   const [code, setCode] = useState('')
   const pairingId = useRef<string | null>(null)
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    // Reaching the pairing screen IS the wall-display path — latch the kiosk role
+    // so the board boots into the kiosk dashboard once paired.
+    setSurface('kiosk')
     if (isPaired()) nav('/board')
     return () => {
       if (timer.current) clearInterval(timer.current)
     }
+    // setSurface is stable (from context); run once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nav])
 
   async function getCode() {

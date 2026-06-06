@@ -215,7 +215,11 @@ const ROUTES: Record<string, unknown> = {
   recap: { recap: 'Belle semaine : 3 soupers planifiés, 2 sorties, liste à jour.' },
 }
 
-export async function mockApi(page: Page) {
+// signedIn defaults true (the populated household). Pass { signedIn: false } to
+// simulate a brand-new visitor — used by the `/` marketing-page screenshot, since
+// the smart entry only shows marketing when nobody's signed in.
+export async function mockApi(page: Page, opts: { signedIn?: boolean } = {}) {
+  const signedIn = opts.signedIn ?? true
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace(/^\/api\//, '')
@@ -223,6 +227,12 @@ export async function mockApi(page: Page) {
 
     if (method !== 'GET') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+      return
+    }
+
+    if (path === 'auth/me') {
+      const body = signedIn ? AUTH_ME : { signedIn: false }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
       return
     }
 
@@ -250,17 +260,21 @@ export async function mockApi(page: Page) {
 export type Theme = 'day' | 'night'
 export type Audience = 'parent' | 'toddler'
 export type Lang = 'fr' | 'en'
+export type Surface = 'kiosk' | 'mobile'
 
 export interface AppState {
   theme?: Theme
   audience?: Audience
   lang?: Lang
   calm?: boolean
+  // The device role. When set, the `/` smart entry treats the device as "chosen"
+  // and skips the marketing page. Leave undefined to exercise a first-time visitor.
+  surface?: Surface
 }
 
 // Seed localStorage BEFORE any document script runs, so theme-bootstrap.js picks
 // the right surface on first paint (no wrong-theme flash) and main.tsx reads the
-// audience/lang/calm we want.
+// audience/lang/calm/surface we want.
 export async function seedState(page: Page, s: AppState) {
   await page.addInitScript((state) => {
     try {
@@ -268,6 +282,7 @@ export async function seedState(page: Page, s: AppState) {
       if (state.audience) localStorage.setItem('babillard-audience', state.audience)
       if (state.lang) localStorage.setItem('babillard-lang', state.lang)
       if (state.calm !== undefined) localStorage.setItem('babillard-calm', state.calm ? 'on' : 'off')
+      if (state.surface) localStorage.setItem('babillard-surface', state.surface)
     } catch {
       /* noop */
     }
