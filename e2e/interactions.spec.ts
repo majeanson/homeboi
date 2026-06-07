@@ -424,6 +424,24 @@ test.describe('list', () => {
 
 // ──────────────────────── toddler routine story ────────────────────────
 
+test.describe('profile', () => {
+  test('picking a face greets you on the board', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    await page.locator('.profile-chip').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await page.locator('.profile-face', { hasText: 'Maman' }).click()
+    await expect(page.locator('.greet')).toContainText('Maman')
+  })
+
+  test('the shared list shows who added an item', async ({ page }) => {
+    await APP('/liste')(page)
+    await settle(page, '.today-feed')
+    // l1 (Lait) is seeded added_by m1 (Maman) → an "M" tint on that row.
+    await expect(page.locator('.list-row__by').first()).toBeVisible()
+  })
+})
+
 test('toddler picks a face and taps through the routine', async ({ page }) => {
   await APP('/routines', 'toddler')(page)
   await settle(page, '.kid')

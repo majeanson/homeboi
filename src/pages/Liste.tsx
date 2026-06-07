@@ -28,10 +28,17 @@ interface ListRow {
   id: string
   text: string
   source: string
+  added_by?: string | null // pick-your-face attribution (member id), if any
 }
-// The board read returns more than the list, but this page only needs the list;
-// the shared ['board'] cache still holds the full payload for the Board page.
-type BoardListData = { list: ListRow[] }
+interface ListMember {
+  id: string
+  display_name: string
+  colour: string
+}
+// The board read returns more than the list; this page uses the list plus the
+// members (to draw "who added it" faces). The shared ['board'] cache still holds
+// the full payload for the Board page.
+type BoardListData = { list: ListRow[]; members?: ListMember[] }
 const BOARD_KEY = ['board']
 const GHOSTS_KEY = ['ghosts']
 
@@ -123,6 +130,8 @@ export function Liste() {
   if (isUnauthorized(error)) return <PairPrompt />
   if (!board && !error) return <Loading />
   const list = board?.list ?? []
+  // Who-added-it faces: map member id → member so each row can show a tiny tint.
+  const memberById = new Map((board?.members ?? []).map((m) => [m.id, m]))
 
   // Auto-pick: for each list item, grab the top (best-value) deal and stage it,
   // then jump straight to the review screen. Best-first is the server's sort.
@@ -188,7 +197,9 @@ export function Liste() {
         <p className="feed-empty">{t.board.listEmpty}</p>
       ) : (
         <div className="stagger">
-          {list.map((item) => (
+          {list.map((item) => {
+            const adder = item.added_by ? memberById.get(item.added_by) : null
+            return (
             <div key={item.id} className="list-row">
               <button type="button" className="act list-row__main" onClick={() => checkOff(item)}>
                 <span className="spine" style={{ background: CATS.list.color }} aria-hidden="true" />
@@ -200,6 +211,16 @@ export function Liste() {
                     {item.text}
                   </span>
                 </span>
+                {adder && (
+                  <span
+                    className="list-row__by"
+                    style={{ background: adder.colour }}
+                    title={adder.display_name}
+                    aria-label={adder.display_name}
+                  >
+                    {(adder.display_name[0] ?? '?').toUpperCase()}
+                  </span>
+                )}
                 <span className="check" aria-hidden="true">
                   <Icon name="check-bold" size={18} />
                 </span>
@@ -214,7 +235,8 @@ export function Liste() {
                 {picks[item.id] ? '✓' : '🏷️'}
               </button>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

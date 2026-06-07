@@ -10,6 +10,7 @@ import { queryClient } from './lib/query'
 import { LangContext, type Lang } from './i18n'
 import { AudienceContext, type Audience } from './lib/audience'
 import { SurfaceContext, type Surface } from './lib/surface'
+import { ProfileContext } from './lib/profile'
 import { CalmContext } from './lib/calm'
 import { ToastProvider } from './lib/toast'
 import './styles.css'
@@ -107,6 +108,26 @@ function Root() {
     }
   }
 
+  // Which household member is using THIS device (pick-your-face). Null = no one
+  // picked / "tout le monde". Persisted per device; drives the greeting, the
+  // personal board emphasis, and write attribution (X-Profile header in lib/api).
+  const [profile, setProfileState] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('babillard-profile')
+    } catch {
+      return null
+    }
+  })
+  function setProfile(id: string | null) {
+    setProfileState(id)
+    try {
+      if (id) localStorage.setItem('babillard-profile', id)
+      else localStorage.removeItem('babillard-profile')
+    } catch {
+      /* noop */
+    }
+  }
+
   // Calm mode defaults ON (the tenet); only an explicit opt-out persists.
   const [calm, setCalmState] = useState<boolean>(() => {
     try {
@@ -129,6 +150,7 @@ function Root() {
       <LangContext.Provider value={{ lang, setLang }}>
         <AudienceContext.Provider value={{ audience, setAudience, locked: kidLocked }}>
           <SurfaceContext.Provider value={{ surface, setSurface, chosen: surfaceChosen }}>
+          <ProfileContext.Provider value={{ memberId: profile, setMemberId: setProfile }}>
           <CalmContext.Provider value={{ calm, setCalm }}>
             <ToastProvider>
               <AuthProvider>
@@ -138,6 +160,7 @@ function Root() {
               </AuthProvider>
             </ToastProvider>
           </CalmContext.Provider>
+          </ProfileContext.Provider>
           </SurfaceContext.Provider>
         </AudienceContext.Provider>
       </LangContext.Provider>
