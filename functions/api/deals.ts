@@ -3,7 +3,7 @@ import { badRequest, ok, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { computeUnitPrice, stripProductCode, type UnitKind } from '../_lib/unitprice'
-import { extractSizes } from '../_lib/ai'
+import { extractSizes, resolveLang } from '../_lib/ai'
 
 // PROOF OF CONCEPT — flyer-deal lookup (the "Reebee replacement" half).
 //
@@ -62,7 +62,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const url = new URL(ctx.request.url)
   const q = url.searchParams.get('q')?.trim()
   const postalRaw = url.searchParams.get('postal')?.trim()
-  const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'fr'
+  // Explicit ?lang wins; otherwise honour the X-Lang header the client sends on
+  // every call (so an EN household gets en-ca flyer results, not fr-ca).
+  const qlang = url.searchParams.get('lang')
+  const lang = qlang === 'en' || qlang === 'fr' ? qlang : resolveLang(ctx.env, ctx.request)
 
   if (!q) return badRequest('q requis.')
 

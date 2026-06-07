@@ -5,7 +5,7 @@ import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { type Deal, type FlyerSummary } from '../lib/deals'
-import { usePicks } from '../lib/picks'
+import { usePicks, existingListId } from '../lib/picks'
 
 // Standalone flyer/deals browser: search what's on sale near the household this
 // week and add items straight to the shared list (or open the full flyer and add
@@ -75,14 +75,22 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
 
   async function addToList(name: string) {
     setAdded((prev) => new Set(prev).add(name))
+    // Don't duplicate a line that's already on the list (re-tap, or added by hand).
+    if (existingListId(qc, name)) return
     await api('list', { method: 'POST', body: { text: name } }).catch(() => {})
     qc.invalidateQueries({ queryKey: ['board'] })
   }
 
-  // Stage a deal for the cashier in one tap: add it to the list, then key a pick
-  // to the NEW list item id so it shows on the list row AND flows to the cashier.
+  // Stage a deal for the cashier in one tap: ensure it's on the list (reusing an
+  // existing line if present, else inserting), then key a pick to that item id so
+  // it shows on the list row AND flows to the cashier.
   async function stage(deal: Deal) {
     setStaged((prev) => new Set(prev).add(deal.name))
+    const existing = existingListId(qc, deal.name)
+    if (existing) {
+      pick(existing, deal.name, deal)
+      return
+    }
     const res = await api<{ id: string }>('list', { method: 'POST', body: { text: deal.name } }).catch(() => null)
     if (res?.id) pick(res.id, deal.name, deal)
     qc.invalidateQueries({ queryKey: ['board'] })
