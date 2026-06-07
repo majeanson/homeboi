@@ -349,13 +349,6 @@ a {
   color: var(--ink-soft);
   font-size: 0.95rem;
 }
-.home__links {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  color: var(--ink-soft);
-}
-
 /* First-run role choice: two honest cards, wall display vs personal device. */
 .setup__choices {
   display: grid;
@@ -400,10 +393,6 @@ a {
   color: var(--ink-soft);
   font-size: 0.95rem;
 }
-.home__links a {
-  text-decoration: none;
-}
-
 /* --- Capture bar ---------------------------------------------------------- */
 .capture {
   margin: 1rem 0 1.5rem;
@@ -3490,6 +3479,12 @@ a {
 .lane .act {
   margin-bottom: 0.5rem;
 }
+.lane--mine {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.lane__head--shared {
+  color: var(--ink-soft);
+}
 
 /* ---- Pick-your-face: chip, picker faces, "you" accents ------------------- */
 .profile-chip {
@@ -3738,6 +3733,65 @@ a {
   flex-wrap: wrap;
   gap: 0.4rem;
   margin: 0 0 0.75rem;
+}
+
+/* Deals browser: by-article vs by-store tabs. */
+.deal-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+.deal-tabs .chip {
+  flex: 1 1 0;
+  text-align: center;
+}
+
+/* "Par magasin": a grid of store flyers (logo + name) to open whole. */
+.flyer-stores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 0.6rem;
+}
+.flyer-store {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.flyer-store:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.flyer-store__logo {
+  width: 100%;
+  height: 3rem;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+.flyer-store__logo--none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+.flyer-store__name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* A staged flyer deal shown on a shared-list row. */
+.list-row__deal {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin-top: 0.1rem;
 }
 .flyer-detail__add {
   flex: 0 0 auto;

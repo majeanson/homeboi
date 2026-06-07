@@ -420,6 +420,26 @@ test.describe('list', () => {
     await page.locator('.list-actions').first().locator('button').click()
     await expect(page.locator('.pm-overlay .deals-search')).toBeVisible()
   })
+
+  test('staging a deal from the browser adds it to the list (→ cashier)', async ({ page }) => {
+    await page.locator('.list-actions').first().locator('button').click()
+    await expect(page.locator('.deals-search')).toBeVisible()
+    await page.locator('.deals-search input').fill('lait')
+    await page.locator('.deals-search button[type="submit"]').click()
+    await expect(page.locator('.deal').first()).toBeVisible()
+    await expectApi(page, 'POST', 'list', () =>
+      page.getByRole('button', { name: /Montrer à la caisse/ }).first().click(),
+    )
+  })
+
+  test('the by-store tab opens a store flyer without searching', async ({ page }) => {
+    await page.locator('.list-actions').first().locator('button').click()
+    await expect(page.locator('.deal-tabs')).toBeVisible()
+    await page.getByRole('button', { name: /Par magasin/ }).click()
+    await expect(page.locator('.flyer-store').first()).toBeVisible()
+    await page.locator('.flyer-store', { hasText: 'Super C' }).click()
+    await expect(page.locator('.flyer-overlay')).toBeVisible()
+  })
 })
 
 // ──────────────────────── toddler routine story ────────────────────────

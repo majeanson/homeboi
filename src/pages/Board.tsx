@@ -52,7 +52,7 @@ export function Board() {
   const { audience } = useAudience()
   const { surface } = useSurface()
   // Pick-your-face: who's on this phone — greets them + marks their day.
-  const { memberId: profileId } = useProfile()
+  const { memberId: profileId, setMemberId } = useProfile()
   const [profileOpen, setProfileOpen] = useState(false)
   // Mobile glance: a quick-capture bar sits at the top and opens the shared
   // AddSheet (note/voice → AI router) owned by HubLayout. The primary phone action.
@@ -97,6 +97,27 @@ export function Board() {
     const c = setInterval(() => setClock(formatClock(lang, Date.now())), 30000)
     return () => clearInterval(c)
   }, [lang])
+
+  // Shared kiosk: when someone has tapped their face, drift back to Maisonnée
+  // after a few idle minutes so the wall tablet never gets "stuck" as one person.
+  // Mobile (a personal device) is left as-is. Resets on any interaction.
+  useEffect(() => {
+    if (surface !== 'kiosk' || !profileId) return
+    const IDLE = 3 * 60 * 1000
+    let timer: ReturnType<typeof setTimeout>
+    const reset = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => setMemberId(null), IDLE)
+    }
+    reset()
+    window.addEventListener('pointerdown', reset, { passive: true })
+    window.addEventListener('keydown', reset)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('pointerdown', reset)
+      window.removeEventListener('keydown', reset)
+    }
+  }, [surface, profileId, setMemberId])
 
   const memberName = (id: string | null) => data?.members.find((m) => m.id === id)?.display_name ?? null
   const memberColor = (id: string | null) => data?.members.find((m) => m.id === id)?.colour
@@ -271,9 +292,9 @@ export function Board() {
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
       ) : view === 'next' ? (
-        <NowNext data={data} lang={lang} t={t} />
+        <NowNext data={data} lang={lang} t={t} profileId={profileId} />
       ) : view === 'lanes' ? (
-        <Lanes data={data} lang={lang} t={t} />
+        <Lanes data={data} lang={lang} t={t} profileId={profileId} />
       ) : (
         <div className="board-grid">
           {data.tonight && (
@@ -498,28 +519,61 @@ function MemberSwitcher({ members, t }: { members: Member[]; t: Dict }) {
 }
 
 // "Now & Next" — a departure-board focus: the next thing up, big, with the one
-// after it small beneath. Falls back to tonight's supper, then a calm empty.
-// All-day items ride along as a quiet footer (they have no clock to sort by).
-function NowNext({ data, lang, t }: { data: BoardData; lang: Lang; t: Dict }) {
+// after it small beneath. When today is exhausted it BRIDGES to tomorrow's first
+// event (rather than a stale "tonight" card); only an empty tomorrow falls back to
+// the supper, then a calm empty. All-day items ride along as a quiet footer.
+function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: Lang; t: Dict; profileId: string | null }) {
   const now = Date.now() / 1000
   const timed = data.today.filter((e) => !e.all_day).sort((a, b) => a.start_at - b.start_at)
   const allDay = data.today.filter((e) => e.all_day)
   // Something that started in the last 30 min still counts as "now".
   const upcoming = timed.filter((e) => e.start_at >= now - 1800)
-  const next = upcoming[0]
-  const then = upcoming[1]
-  const nextColor = next ? colorOf(data.members, next.member_id) : undefined
-  const nextWho = next ? nameOf(data.members, next.member_id) : null
+  const tomorrow = [...data.tomorrow].sort((a, b) => a.start_at - b.start_at)
+
+  let focus: EventRow | undefined
+  let focusWhen = ''
+  let then: EventRow | undefined
+  let thenWhen = ''
+  if (upcoming[0]) {
+    focus = upcoming[0]
+    focusWhen = focus.all_day ? t.board.allDay : formatTime(focus.start_at, lang)
+    if (upcoming[1]) {
+      then = upcoming[1]
+      thenWhen = formatTime(then.start_at, lang)
+    } else if (tomorrow[0]) {
+      then = tomorrow[0]
+      thenWhen = t.board.tomorrow
+    }
+  } else if (tomorrow[0]) {
+    focus = tomorrow[0]
+    focusWhen = t.board.tomorrow
+    if (tomorrow[1]) {
+      then = tomorrow[1]
+      thenWhen = t.board.tomorrow
+    }
+  }
+
+  const focusColor = focus ? colorOf(data.members, focus.member_id) : undefined
+  const focusWho = focus ? nameOf(data.members, focus.member_id) : null
+  const focusMine = !!focus && !!profileId && focus.member_id === profileId
 
   return (
     <div className="nownext">
-      {next ? (
-        <div className="nownext__focus" style={{ borderColor: (nextColor ?? CATS.event.color) + '55' }}>
-          <div className="nownext__when mono">{formatTime(next.start_at, lang)}</div>
-          <div className="nownext__title" style={{ color: tintInk(nextColor ?? CATS.event.color) }}>
-            {next.title}
+      {focus ? (
+        <div
+          className={'nownext__focus' + (focusMine ? ' act--mine' : '')}
+          style={{ borderColor: (focusColor ?? CATS.event.color) + '55' }}
+        >
+          <div className="nownext__when mono">{focusWhen}</div>
+          <div className="nownext__title" style={{ color: tintInk(focusColor ?? CATS.event.color) }}>
+            {focus.title}
           </div>
-          {nextWho && <div className="nownext__who">{nextWho}</div>}
+          {focusWho && (
+            <div className="nownext__who">
+              {focusWho}
+              {focusMine ? ' ★' : ''}
+            </div>
+          )}
         </div>
       ) : data.tonight ? (
         <div className="nownext__focus" style={{ borderColor: CATS.meal.color + '55' }}>
@@ -537,7 +591,7 @@ function NowNext({ data, lang, t }: { data: BoardData; lang: Lang; t: Dict }) {
       {then && (
         <div className="nownext__then">
           <span className="nownext__then-label mono">{t.boardView.then}</span>
-          <span className="nownext__then-when mono">{formatTime(then.start_at, lang)}</span>
+          <span className="nownext__then-when mono">{thenWhen}</span>
           <span className="nownext__then-title">{then.title}</span>
         </div>
       )}
@@ -551,9 +605,11 @@ function NowNext({ data, lang, t }: { data: BoardData; lang: Lang; t: Dict }) {
   )
 }
 
-// Per-person "lanes": one column per family member showing their day — today's
-// events plus whichever chore is currently their turn (rotation_json[current_idx]).
-function Lanes({ data, lang, t }: { data: BoardData; lang: Lang; t: Dict }) {
+// Per-person "lanes": one column per family member (their today events + the chore
+// currently their turn). A leading "Maisonnée" lane carries tonight's supper and
+// any unassigned events — the common case, since quick-capture doesn't set a
+// member — so nothing vanishes. The device's own member lane is gently accented.
+function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lang; t: Dict; profileId: string | null }) {
   const choresFor = (memberId: string) =>
     data.chores.filter((c) => {
       try {
@@ -563,18 +619,42 @@ function Lanes({ data, lang, t }: { data: BoardData; lang: Lang; t: Dict }) {
         return false
       }
     })
+  const memberIds = new Set(data.members.map((m) => m.id))
+  const unassigned = data.today.filter((e) => !e.member_id || !memberIds.has(e.member_id))
+  const cook = data.tonight ? nameOf(data.members, data.tonight.cook_member_id) : null
 
   return (
     <div className="lanes">
+      {(unassigned.length > 0 || data.tonight) && (
+        <div className="lane bento">
+          <div className="lane__head lane__head--shared">
+            <span className="lane__dot" style={{ background: 'var(--ink-faint)' }} aria-hidden="true" />
+            {t.profile.household}
+          </div>
+          {data.tonight && (
+            <Act cat="meal" title={data.tonight.title} who={cook ? `${cook} ${t.board.cooks}` : undefined} />
+          )}
+          {unassigned.map((e) => (
+            <Act
+              key={e.id}
+              cat="event"
+              title={e.title}
+              when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
+            />
+          ))}
+        </div>
+      )}
       {data.members.map((m) => {
         const events = data.today.filter((e) => e.member_id === m.id)
         const chores = choresFor(m.id)
         const empty = events.length === 0 && chores.length === 0
+        const mine = m.id === profileId
         return (
-          <div key={m.id} className="lane bento">
+          <div key={m.id} className={'lane bento' + (mine ? ' lane--mine' : '')}>
             <div className="lane__head" style={{ color: tintInk(m.colour) }}>
               <span className="lane__dot" style={{ background: m.colour }} aria-hidden="true" />
               {m.display_name}
+              {mine ? ' ★' : ''}
             </div>
             {empty ? (
               <p className="feed-empty">—</p>

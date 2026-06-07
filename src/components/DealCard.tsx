@@ -9,22 +9,27 @@ import { ZoomableImg } from './ZoomableImg'
 //   onViewFlyer — open the full flyer (only when the deal has a flyerId)
 //   onAddToList — drop this deal onto the shared grocery list
 //   onChoose    — pick this price for the cashier list (proof sheet only)
+//   onStage     — add to the list AND stage for the cashier in one tap (browser)
 export function DealCard({
   deal,
   isBest,
   isChosen,
   added,
+  staged,
   onViewFlyer,
   onAddToList,
   onChoose,
+  onStage,
 }: {
   deal: Deal
   isBest?: boolean
   isChosen?: boolean
   added?: boolean
+  staged?: boolean
   onViewFlyer?: (deal: Deal) => void
   onAddToList?: (name: string) => void
   onChoose?: (deal: Deal) => void
+  onStage?: (deal: Deal) => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -64,6 +69,15 @@ export function DealCard({
               onClick={() => onChoose(deal)}
             >
               {isChosen ? t.shop.chosen : t.shop.choose}
+            </button>
+          )}
+          {onStage && (
+            <button
+              type="button"
+              className={`deal__choose mono${staged ? ' is-chosen' : ''}`}
+              onClick={() => onStage(deal)}
+            >
+              {staged ? `✓ ${t.shop.present}` : `🧾 ${t.shop.present}`}
             </button>
           )}
         </span>

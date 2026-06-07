@@ -4,7 +4,8 @@ import { api, isStatus } from '../lib/api'
 import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
-import { type Deal } from '../lib/deals'
+import { type Deal, type FlyerSummary } from '../lib/deals'
+import { usePicks } from '../lib/picks'
 
 // Standalone flyer/deals browser: search what's on sale near the household this
 // week and add items straight to the shared list (or open the full flyer and add
@@ -23,11 +24,15 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
+  const { pick } = usePicks()
+  // Two ways to browse: by article (search) or by magasin (open a store's flyer).
+  const [mode, setMode] = useState<'item' | 'store'>('item')
   const [input, setInput] = useState('')
   const [query, setQuery] = useState('')
   const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string } | null>(null)
   const [store, setStore] = useState<string | null>(null)
   const [added, setAdded] = useState<Set<string>>(new Set())
+  const [staged, setStaged] = useState<Set<string>>(new Set())
 
   // Day-scoped cache, shared with the price-match sheet's ['deals', q, day] key —
   // so a term browsed here is instant if matched there (and vice-versa).
@@ -40,6 +45,15 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
     enabled: query.length > 0,
   })
   const deals = dealsQ.data?.deals ?? null
+  // Store flyers near the household — only fetched when the "Par magasin" tab is on.
+  const flyersQ = useQuery({
+    queryKey: ['flyers', dayKey],
+    queryFn: () => api<{ flyers: FlyerSummary[] }>('flyers'),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+    enabled: mode === 'store',
+  })
+  const storeFlyers = flyersQ.data?.flyers ?? null
   const state: 'start' | 'loading' | 'ok' | 'empty' | 'noPostal' | 'error' = !query
     ? 'start'
     : dealsQ.isLoading
@@ -62,6 +76,15 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   async function addToList(name: string) {
     setAdded((prev) => new Set(prev).add(name))
     await api('list', { method: 'POST', body: { text: name } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: ['board'] })
+  }
+
+  // Stage a deal for the cashier in one tap: add it to the list, then key a pick
+  // to the NEW list item id so it shows on the list row AND flows to the cashier.
+  async function stage(deal: Deal) {
+    setStaged((prev) => new Set(prev).add(deal.name))
+    const res = await api<{ id: string }>('list', { method: 'POST', body: { text: deal.name } }).catch(() => null)
+    if (res?.id) pick(res.id, deal.name, deal)
     qc.invalidateQueries({ queryKey: ['board'] })
   }
 
@@ -93,6 +116,27 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
+        <div className="deal-tabs mono">
+          <button
+            type="button"
+            className={`chip${mode === 'item' ? ' is-on' : ''}`}
+            onClick={() => setMode('item')}
+            aria-pressed={mode === 'item'}
+          >
+            🔎 {t.shop.byItem}
+          </button>
+          <button
+            type="button"
+            className={`chip${mode === 'store' ? ' is-on' : ''}`}
+            onClick={() => setMode('store')}
+            aria-pressed={mode === 'store'}
+          >
+            🏬 {t.shop.byStore}
+          </button>
+        </div>
+
+        {mode === 'item' && (
+          <>
         <form
           className="deals-search"
           onSubmit={(e) => {
@@ -148,11 +192,44 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
                 deal={d}
                 isBest={d === bestKey}
                 added={added.has(d.name)}
+                staged={staged.has(d.name)}
                 onViewFlyer={(deal) => setFlyer({ id: deal.flyerId!, itemId: deal.id, merchant: deal.merchant })}
                 onAddToList={addToList}
+                onStage={stage}
               />
             ))}
           </ul>
+        )}
+          </>
+        )}
+
+        {mode === 'store' && (
+          <>
+            {flyersQ.isLoading && <p className="loading mono">{t.shop.searching}</p>}
+            {flyersQ.error && (
+              <p className="feed-empty">{isStatus(flyersQ.error, 400) ? t.shop.noPostal : t.shop.none}</p>
+            )}
+            {storeFlyers && storeFlyers.length === 0 && <p className="feed-empty">{t.shop.none}</p>}
+            {storeFlyers && storeFlyers.length > 0 && (
+              <div className="flyer-stores">
+                {storeFlyers.map((f) => (
+                  <button
+                    key={f.flyerId}
+                    type="button"
+                    className="flyer-store"
+                    onClick={() => setFlyer({ id: f.flyerId, itemId: null, merchant: f.merchant })}
+                  >
+                    {f.logo ? (
+                      <img className="flyer-store__logo" src={f.logo} alt="" loading="lazy" />
+                    ) : (
+                      <span className="flyer-store__logo flyer-store__logo--none" aria-hidden="true">🏬</span>
+                    )}
+                    <span className="flyer-store__name">{f.merchant}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         <p className="deal__disclaimer mono">{t.shop.disclaimer}</p>
@@ -164,6 +241,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
           highlightId={flyer.itemId}
           title={flyer.merchant}
           onAddToList={addToList}
+          onStage={stage}
           onClose={() => setFlyer(null)}
         />
       )}
