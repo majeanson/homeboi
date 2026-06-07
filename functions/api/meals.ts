@@ -2,6 +2,7 @@ import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { dayStart, newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
+import { ingredientName } from '../_lib/ingredient'
 
 // Weekly meal plan (supper slots). GET returns the next 7 days. POST sets a
 // slot. Setting a meal optionally pushes "missing" staples to the shared list
@@ -40,7 +41,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .run()
 
   // meal -> grocery list: drop any staples the client flagged as missing.
-  const staples = (body.staples ?? []).map((s) => s.trim()).filter(Boolean).slice(0, 20)
+  const staples = (body.staples ?? []).map((s) => ingredientName(s)).filter(Boolean).slice(0, 20)
   if (staples.length) {
     const addedBy = profileMemberId(ctx.request)
     await ctx.env.DB.batch(

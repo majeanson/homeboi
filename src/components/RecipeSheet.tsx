@@ -162,17 +162,23 @@ export function RecipeSheet({
           )}
 
           {recipe.notes && <p className="recipe-view__notes">{recipe.notes}</p>}
+        </div>
 
-          {planning && (
-            <div className="recipe-plan-days">
+        {/* Plan-a-supper day picker, anchored right above the actions so tapping
+            "Planifier un souper" reveals the days next to the button (not lost up
+            in the scrolled recipe body). */}
+        {planning && (
+          <div className="recipe-plan-days">
+            <span className="recipe-plan-days__label mono">{t.recipes.planPick}</span>
+            <div className="recipe-plan-days__chips">
               {week.map((d) => (
                 <button key={d.date} type="button" className="chip" onClick={() => planOn(d.date)}>
                   {d.label}
                 </button>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="recipe-modal__foot recipe-actions">
           {canCook && (

@@ -4,6 +4,7 @@ import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { computeUnitPrice, stripProductCode, type UnitKind } from '../_lib/unitprice'
 import { extractSizes, resolveLang } from '../_lib/ai'
+import { ingredientName } from '../_lib/ingredient'
 
 // PROOF OF CONCEPT — flyer-deal lookup (the "Reebee replacement" half).
 //
@@ -68,6 +69,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const lang = qlang === 'en' || qlang === 'fr' ? qlang : resolveLang(ctx.env, ctx.request)
 
   if (!q) return badRequest('q requis.')
+  // Search by the bare item word ("2 œufs" → "Œufs", "15 ml de beurre" → "Beurre")
+  // so a flyer query matches the most deals instead of failing on a measured line.
+  const term = ingredientName(q)
 
   // Explicit ?postal wins; otherwise fall back to the household's saved code so
   // the client doesn't have to pass it on every call (set in Operator).
@@ -82,7 +86,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const endpoint =
     'https://backflipp.wishabi.com/flipp/items/search' +
-    `?locale=${lang}-ca&postal_code=${encodeURIComponent(postal)}&q=${encodeURIComponent(q)}`
+    `?locale=${lang}-ca&postal_code=${encodeURIComponent(postal)}&q=${encodeURIComponent(term)}`
 
   let payload: { items?: FlippItem[] }
   try {

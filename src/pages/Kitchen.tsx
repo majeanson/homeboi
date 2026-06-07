@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
@@ -10,6 +10,7 @@ import { PairPrompt } from '../components/Fallback'
 import { formatWeekday } from '../lib/format'
 import { type Recipe, RECIPES_KEY, recipeImg, allTags } from '../lib/recipes'
 import { rankCookable, rankUseSoon, normKey } from '../lib/cookable'
+import { ingredientName } from '../lib/ingredient'
 import { pictoFor } from '../lib/picto'
 import { useUndoToast } from '../lib/toast'
 import { RecipeSheet } from '../components/RecipeSheet'
@@ -38,6 +39,19 @@ export function Kitchen() {
   const [suggestIdx, setSuggestIdx] = useState(0)
   const [suggesting, setSuggesting] = useState(false)
   const [aiUnavailable, setAiUnavailable] = useState(false)
+  // Workers AI cold-starts the first call of a session (model load) — it can take
+  // 10-30s. After a short wait we surface a "the model's waking up" line so that
+  // first slow call reads as warming, not frozen. Warm calls finish before it shows.
+  const [aiWaking, setAiWaking] = useState(false)
+  const wakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  function aiStart() {
+    if (wakeTimer.current) clearTimeout(wakeTimer.current)
+    wakeTimer.current = setTimeout(() => setAiWaking(true), 3500)
+  }
+  function aiDone() {
+    if (wakeTimer.current) clearTimeout(wakeTimer.current)
+    setAiWaking(false)
+  }
   const [newLow, setNewLow] = useState('')
   const [newSoon, setNewSoon] = useState('')
   const [editDate, setEditDate] = useState<number | null>(null)
@@ -142,6 +156,7 @@ export function Kitchen() {
     const title = mealText.trim()
     if (!title) return
     setStaplesBusy(true)
+    aiStart()
     try {
       const res = await api<{ staples: string[] }>('meal-staples', { method: 'POST', body: { title } })
       if (res.staples.length) {
@@ -156,6 +171,7 @@ export function Kitchen() {
       await saveMeal(date, title, [])
     } finally {
       setStaplesBusy(false)
+      aiDone()
     }
   }
 
@@ -166,7 +182,18 @@ export function Kitchen() {
     setRecipePickFor(null)
     setEditDate(null)
     if (recipe.ingredients.length) {
-      setStaplePrompt({ date, title: recipe.title, options: recipe.ingredients.map((item) => ({ item, on: false })) })
+      // Chips show buyable names ("Beurre non salé"), not measured recipe lines.
+      const seen = new Set<string>()
+      const options: { item: string; on: boolean }[] = []
+      for (const ing of recipe.ingredients) {
+        const item = ingredientName(ing)
+        const k = item.toLowerCase()
+        if (item && !seen.has(k)) {
+          seen.add(k)
+          options.push({ item, on: false })
+        }
+      }
+      setStaplePrompt({ date, title: recipe.title, options })
     } else {
       saveMeal(date, recipe.title, [])
     }
@@ -193,7 +220,7 @@ export function Kitchen() {
         const k = normKey(ing)
         if (!k || onList.has(k) || picked.has(k)) continue
         picked.add(k)
-        items.push(ing)
+        items.push(ingredientName(ing)) // buyable name, not the measured line
       }
     }
     setShopPrompt(items.map((item) => ({ item, on: true })))
@@ -297,6 +324,7 @@ export function Kitchen() {
       return
     }
     setSuggesting(true)
+    aiStart()
     try {
       const res = await api<{ suggestions: string[] }>('suggest-meal', { method: 'POST' })
       if (res.suggestions.length) {
@@ -311,6 +339,7 @@ export function Kitchen() {
       }
     } finally {
       setSuggesting(false)
+      aiDone()
     }
   }
 
@@ -369,6 +398,11 @@ export function Kitchen() {
               )}
             </div>
           </div>
+          {aiWaking && (
+            <p className="kitchen__ai-waking mono" role="status">
+              ⏳ {t.kitchen.aiWaking}
+            </p>
+          )}
           {suggestion && (
             <p className="kitchen__suggestion" role="status">
               🍽 {suggestion}

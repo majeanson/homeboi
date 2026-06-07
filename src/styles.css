@@ -3793,6 +3793,17 @@ a {
   color: var(--ink-soft);
   margin-top: 0.1rem;
 }
+/* The linked flyer item's clipping image, in the row's tile slot. */
+.list-row__thumb {
+  overflow: hidden;
+  background: var(--card);
+  padding: 0;
+}
+.list-row__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 .flyer-detail__add {
   flex: 0 0 auto;
   white-space: nowrap;
@@ -4145,9 +4156,26 @@ a {
 }
 .recipe-plan-days {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.recipe-plan-days__label {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.recipe-plan-days__chips {
+  display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  padding-top: 0.3rem;
+}
+.kitchen__ai-waking {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  padding: 0.4rem 0;
 }
 
 /* Kitchen: the meal-plan recipe picker under a day's edit form. */

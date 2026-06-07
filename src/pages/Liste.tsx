@@ -173,9 +173,16 @@ export function Liste() {
             <div key={item.id} className="list-row">
               <button type="button" className="act list-row__main" onClick={() => checkOff(item)}>
                 <span className="spine" style={{ background: CATS.list.color }} aria-hidden="true" />
-                <span className="tile" style={{ background: CATS.list.wash }} aria-hidden="true">
-                  <Icon name={CATS.list.icon} size={28} color={CATS.list.deep} />
-                </span>
+                {staged?.image ? (
+                  // A linked flyer deal with a clipping → show the product picture.
+                  <span className="tile list-row__thumb" aria-hidden="true">
+                    <img src={staged.image} alt="" loading="lazy" />
+                  </span>
+                ) : (
+                  <span className="tile" style={{ background: CATS.list.wash }} aria-hidden="true">
+                    <Icon name={CATS.list.icon} size={28} color={CATS.list.deep} />
+                  </span>
+                )}
                 <span className="act__text">
                   <span className="title" style={{ color: tintInk(CATS.list.color) }}>
                     {item.text}
