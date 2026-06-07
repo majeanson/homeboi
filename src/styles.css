@@ -707,6 +707,28 @@ a {
   justify-content: center;
   padding: 2rem 1.25rem;
 }
+/* With the recipe picker present the view becomes a scrollable feed (supper row,
+   then the shelf of recipes / day choices) — top-aligned so a long list never
+   pushes the first tiles off the top behind centering. */
+.kid__main--feed {
+  justify-content: flex-start;
+  gap: 2rem;
+}
+.kid-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+}
+.kid-pick__back {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+  padding: 0.5rem 1rem;
+}
 .kid__cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
@@ -1129,6 +1151,17 @@ a {
     0 1px 0 rgba(255, 255, 255, 0.5);
   font-size: 2.9rem;
   line-height: 1;
+}
+/* When the tile carries a real photo (a recipe), the picture fills the sticker
+   disc edge-to-edge instead of an emoji floating on cream. */
+.bigtile__icon--photo {
+  overflow: hidden;
+}
+.bigtile__icon--photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 .bigtile__label {
   font-family: var(--display);
@@ -2074,10 +2107,15 @@ a {
 }
 .tdl-stage {
   flex: 1;
+  min-height: 0; /* let this flex child shrink so its own overflow can scroll */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* Centered when the step fits, but top-aligned (and scrollable) when it's
+     taller than the screen — otherwise centering would push the ▶/✓ button off
+     the bottom of a short phone/kiosk and the kid couldn't advance the step. */
+  justify-content: safe center;
   gap: 4px;
   padding: 24px 0;
 }
@@ -2247,6 +2285,61 @@ a {
   font-size: 32px;
   color: var(--ink);
   margin-top: 8px;
+}
+/* A quiet running total during the routine — the kid can glance at their time. */
+.tdl-total {
+  margin-top: 18px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+/* The end-of-routine recap: each step that was timed, with a grand total. */
+.tdl-times {
+  margin-top: 22px;
+  width: min(360px, 86vw);
+  background: var(--card);
+  border-radius: var(--radius-lg, 18px);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-md);
+}
+.tdl-times__head {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+.tdl-times__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tdl-times__list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.tdl-times__step {
+  text-align: left;
+}
+.tdl-times__t {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.tdl-times__total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+  font-weight: 800;
+  color: var(--ink);
 }
 
 /* ========================================================================== */

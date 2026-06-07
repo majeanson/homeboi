@@ -95,15 +95,20 @@ export function KidView() {
   // moves to the next, until the whole routine is complete. Count-up, no score.
   const [running, setRunning] = useState(false)
   const [elapsed, setElapsed] = useState(0)
+  // How long each step took (card index → seconds), built up as the kid finishes
+  // steps so the end can show a per-step result and a total. Session-local: it's
+  // a gentle "look how you did", not data we persist — a reload starts it fresh.
+  const [times, setTimes] = useState<Record<number, number>>({})
   useEffect(() => {
     if (!running) return
     const id = setInterval(() => setElapsed((e) => e + 1), 1000)
     return () => clearInterval(id)
   }, [running])
-  // Switching to another child's routine resets the stopwatch.
+  // Switching to another child's routine resets the stopwatch + the tally.
   useEffect(() => {
     setRunning(false)
     setElapsed(0)
+    setTimes({})
   }, [pickedId])
 
   function startStep(idx: number) {
@@ -113,7 +118,9 @@ export function KidView() {
   }
   function finishStep(routine: Routine, idx: number) {
     setRunning(false)
+    const taken = elapsed
     setElapsed(0)
+    if (!routine.doneIdx.includes(idx)) setTimes((m) => ({ ...m, [idx]: taken }))
     toggle.mutate({ routineId: routine.id, cardIdx: idx, done: !routine.doneIdx.includes(idx) })
   }
 
@@ -195,6 +202,13 @@ export function KidView() {
   const cur = picked.cards[curIdx]
   const next = picked.cards[curIdx + 1]
 
+  // Time spent so far across the steps finished this session (plus the one
+  // running right now) — shown small during the routine and broken down per step
+  // at the end so the kid can see how long they took.
+  const tallied = Object.values(times).reduce((a, b) => a + b, 0)
+  const totalSecs = tallied + (running ? elapsed : 0)
+  const timedSteps = picked.cards.map((c, i) => ({ ...c, i, secs: times[i] })).filter((c) => c.secs != null)
+
   return (
     <div className="kid">
       <div className="tdl" style={{ background: tint + '22' }}>
@@ -213,6 +227,25 @@ export function KidView() {
                 <span className="tdl-illus-emoji">✿</span>
               </div>
               <div className="tdl-sweet">{t.kid.allDone}</div>
+              {timedSteps.length > 0 && (
+                <div className="tdl-times">
+                  <div className="tdl-times__head mono">{t.kid.yourTimes}</div>
+                  <ul className="tdl-times__list">
+                    {timedSteps.map((c) => (
+                      <li key={c.i}>
+                        <span className="tdl-times__step">
+                          <span aria-hidden="true">{c.icon || '○'}</span> {c.label}
+                        </span>
+                        <span className="tdl-times__t mono">{fmtClock(c.secs as number)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="tdl-times__total">
+                    <span>{t.kid.total}</span>
+                    <span className="mono">{fmtClock(totalSecs)}</span>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -248,6 +281,12 @@ export function KidView() {
                   <i key={k} className={picked.doneIdx.includes(k) ? 'done' : k === curIdx ? 'on' : ''} />
                 ))}
               </div>
+
+              {totalSecs > 0 && (
+                <div className="tdl-total mono" aria-live="polite">
+                  ⏱ {fmtClock(totalSecs)}
+                </div>
+              )}
 
               {running ? (
                 <div className="tdl-timer">

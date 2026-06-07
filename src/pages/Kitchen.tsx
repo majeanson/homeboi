@@ -87,6 +87,9 @@ export function Kitchen() {
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null)
   const [editRecipe, setEditRecipe] = useState<Recipe | 'new' | null>(null)
   const [recipePickFor, setRecipePickFor] = useState<number | null>(null)
+  // Toddler meal-picking: the recipe a child has tapped and is now choosing a day
+  // for (null = still browsing the recipe shelf). Picture-first, read-aloud flow.
+  const [kidRecipe, setKidRecipe] = useState<Recipe | null>(null)
   const [recipeQuery, setRecipeQuery] = useState('')
   // Single active tag filter (null = all). Drives the chip row over the grid.
   const [tagFilter, setTagFilter] = useState<string | null>(null)
@@ -197,6 +200,14 @@ export function Kitchen() {
     } else {
       saveMeal(date, recipe.title, [])
     }
+  }
+
+  // Toddler path to the same slot: a child taps a recipe, then a day. No staples
+  // step (that's a parent's job) — just fill the supper and let the planned row
+  // above redraw so the child sees their pick land on the menu.
+  function kidPlan(date: number, recipe: Recipe) {
+    setKidRecipe(null)
+    saveMeal(date, recipe.title, [])
   }
 
   function toggleStaple(item: string) {
@@ -360,7 +371,7 @@ export function Kitchen() {
   // supper draws its own food picture (pictoFor) so a pre-reader sees pizza/soup/
   // chicken — not seven identical plates.
   if (audience === 'toddler') {
-    const tiles: Tile[] = week
+    const planned: Tile[] = week
       .filter((d) => d.meal)
       .map((d) => ({
         key: String(d.date),
@@ -369,13 +380,61 @@ export function Kitchen() {
         sub: formatWeekday(d.date, lang),
         narration: `${formatWeekday(d.date, lang)}: ${d.meal!.title}`,
       }))
+    // The picker: tap a recipe to hear it (BigTiles speaks on tap) and choose it,
+    // then tap a day to put it on the menu. The day tile's narration ("Lundi:
+    // Pizza") doubles as the spoken confirmation, and `planned` above redraws so
+    // the child watches their pick appear. A picture for every recipe (pictoFor)
+    // so a pre-reader picks by sight, never by reading (NFR-KID-2).
+    // Real photo when the recipe has one, the food picto as fallback — a
+    // pre-reader recognizes "the orange soup we had" by its picture.
+    const recipeTiles: Tile[] = recipes.map((r) => ({
+      key: r.id,
+      image: recipeImg(r.image),
+      icon: pictoFor(r.title, '🍽'),
+      label: r.title,
+      onTap: () => setKidRecipe(r),
+    }))
+    const dayTiles: Tile[] = kidRecipe
+      ? week.map(({ date, meal }) => ({
+          key: String(date),
+          icon: meal ? pictoFor(meal.title, '🍽') : '📅',
+          label: formatWeekday(date, lang),
+          sub: meal?.title,
+          narration: `${formatWeekday(date, lang)}: ${kidRecipe.title}`,
+          onTap: () => kidPlan(date, kidRecipe),
+        }))
+      : []
     return (
-      <main className="kid__main">
+      <main className={`kid__main${recipes.length > 0 ? ' kid__main--feed' : ''}`}>
         <div className="kid-head">
           <span className="kid-head__emoji" aria-hidden="true">🍲</span>
           <p className="kid-head__title">{t.kid.supper}</p>
         </div>
-        <BigTiles tiles={tiles} empty={t.board.nothingTonight} />
+        <BigTiles tiles={planned} empty={t.board.nothingTonight} />
+
+        {recipes.length > 0 &&
+          (kidRecipe ? (
+            <section className="kid-pick">
+              <div className="kid-head">
+                <span className="kid-head__emoji" aria-hidden="true">
+                  {pictoFor(kidRecipe.title, '🍽')}
+                </span>
+                <p className="kid-head__title">{t.kid.whichDay}</p>
+              </div>
+              <BigTiles tiles={dayTiles} />
+              <button type="button" className="kid-pick__back mono" onClick={() => setKidRecipe(null)}>
+                ← {t.kid.back}
+              </button>
+            </section>
+          ) : (
+            <section className="kid-pick">
+              <div className="kid-head">
+                <span className="kid-head__emoji" aria-hidden="true">📖</span>
+                <p className="kid-head__title">{t.kid.pickMeal}</p>
+              </div>
+              <BigTiles tiles={recipeTiles} />
+            </section>
+          ))}
       </main>
     )
   }

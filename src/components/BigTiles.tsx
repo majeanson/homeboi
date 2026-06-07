@@ -9,6 +9,7 @@ import { useSpeak } from '../lib/speak'
 export interface Tile {
   key: string
   icon?: string
+  image?: string | null // a real photo (recipe) — shown in the sticker disc, with `icon` as the fallback
   label: string
   sub?: string
   narration?: string
@@ -58,8 +59,8 @@ export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
             {tile.color && (
               <span className="bigtile__dot" aria-hidden="true" style={{ background: tile.color }} />
             )}
-            <span className="bigtile__icon" aria-hidden="true">
-              {tile.icon ?? '•'}
+            <span className={`bigtile__icon${tile.image ? ' bigtile__icon--photo' : ''}`} aria-hidden="true">
+              {tile.image ? <img src={tile.image} alt="" loading="lazy" /> : (tile.icon ?? '•')}
             </span>
             <span className="bigtile__label">{tile.label}</span>
             {tile.sub && <span className="bigtile__sub mono">{tile.sub}</span>}
