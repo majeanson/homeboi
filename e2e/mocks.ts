@@ -23,6 +23,7 @@ const BOARD = {
   scope: 'today',
   members: MEMBERS,
   today: [
+    { id: 'e0', title: 'Rappel: facture', start_at: BASE + 2 * 3600, all_day: 0, member_id: null },
     { id: 'e1', title: 'Garderie', start_at: BASE + 3600, all_day: 0, member_id: 'm3' },
     { id: 'e2', title: 'Rendez-vous dentiste', start_at: BASE + 6 * 3600, all_day: 0, member_id: 'm4' },
     { id: 'e3', title: 'Soccer', start_at: BASE + 9 * 3600, all_day: 0, member_id: 'm3' },
@@ -212,6 +213,23 @@ const ROUTES: Record<string, unknown> = {
   events: EVENTS,
   health: { ai: true },
   household: { postal: 'H2X 1Y4' },
+  deals: {
+    deals: [
+      { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', image: null, validFrom: null, validTo: BASE + 5 * DAY },
+      { id: 102, flyerId: 5002, name: 'Lait 1% 2L', price: 2.99, wasPrice: null, unitPrice: 1.5, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'IGA', image: null, validFrom: null, validTo: BASE + 5 * DAY },
+    ],
+  },
+  flyers: {
+    flyers: [
+      { flyerId: 5001, merchant: 'Super C', logo: null, validFrom: null, validTo: null },
+      { flyerId: 5002, merchant: 'IGA', logo: null, validFrom: null, validTo: null },
+    ],
+  },
+  flyer: {
+    flyerId: 5001,
+    pages: [{ id: 1, page: 1, left: 0, top: 0, right: 100, bottom: -100 }],
+    items: [{ id: 101, name: 'Lait 2% 4L', price: 4.99, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', validFrom: null, validTo: null, image: null, left: 10, top: -10, right: 40, bottom: -40 }],
+  },
   ghost: GHOSTS,
   recap: { recap: 'Belle semaine : 3 soupers planifiés, 2 sorties, liste à jour.' },
 }

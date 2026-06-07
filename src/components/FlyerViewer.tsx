@@ -3,6 +3,7 @@ import { useQuery, type QueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useLang, useT } from '../i18n'
 import { ZoomableImg } from './ZoomableImg'
+import { type Deal } from '../lib/deals'
 
 // Full-flyer viewer. A Flipp flyer page is a canvas of item clippings positioned
 // by coordinates (no scanned page image), so we fetch /api/flyer and reconstruct
@@ -64,16 +65,19 @@ export function FlyerViewer({
   highlightId,
   title,
   onAddToList,
+  onStage,
   onClose,
 }: {
   flyerId: number
   highlightId?: number | null
   title?: string
   onAddToList?: (name: string) => void
+  onStage?: (deal: Deal) => void // stage this flyer item for the cashier (one tap)
   onClose: () => void
 }) {
   const t = useT()
   const [addedName, setAddedName] = useState<string | null>(null)
+  const [stagedName, setStagedName] = useState<string | null>(null)
   const { lang } = useLang()
   // Cached so re-opening the same flyer (or one prefetched on wifi) is instant.
   const { data, isError } = useQuery({
@@ -268,6 +272,34 @@ export function FlyerViewer({
                 }}
               >
                 {addedName === selected.name ? `✓ ${t.shop.addToList}` : `+ ${t.shop.addToList}`}
+              </button>
+            )}
+            {onStage && selected.name && (
+              <button
+                type="button"
+                className="btn btn--primary mono flyer-detail__add"
+                onClick={() => {
+                  // Synthesize a Deal from the flyer item + this flyer's merchant/id
+                  // so the cashier card has the store, price, and a flyer link.
+                  onStage({
+                    id: selected.id,
+                    flyerId,
+                    name: selected.name,
+                    price: selected.price,
+                    wasPrice: null,
+                    unitPrice: selected.unitPrice,
+                    unitLabel: selected.unitLabel,
+                    unitKind: selected.unitKind,
+                    unitApprox: false,
+                    merchant: title ?? '',
+                    image: selected.image,
+                    validFrom: selected.validFrom,
+                    validTo: selected.validTo,
+                  })
+                  setStagedName(selected.name)
+                }}
+              >
+                {stagedName === selected.name ? `✓ ${t.shop.present}` : `🧾 ${t.shop.present}`}
               </button>
             )}
             <button

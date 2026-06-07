@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
@@ -15,7 +15,8 @@ import { CashierMode } from '../components/CashierMode'
 import { GhostStrip } from '../components/GhostStrip'
 import { fetchGhosts, type Ghost } from '../lib/ghost'
 import { useUndoToast } from '../lib/toast'
-import { type Deal, type Pick } from '../lib/deals'
+import { money, type Deal } from '../lib/deals'
+import { usePicks, toPickList } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 
 // The shared list (groceries + anything), two lenses on the same data:
@@ -42,26 +43,15 @@ type BoardListData = { list: ListRow[]; members?: ListMember[] }
 const BOARD_KEY = ['board']
 const GHOSTS_KEY = ['ghosts']
 
-// Chosen deals survive a reload (build the list at home, present it in store).
-// Keyed by list-item id. Deals go stale weekly, but that's fine — re-pick then.
-const PICKS_KEY = 'babillard-cashier-picks'
-type Picks = Record<string, { deal: Deal; itemText: string }>
-function loadPicks(): Picks {
-  try {
-    const raw = localStorage.getItem(PICKS_KEY)
-    return raw ? (JSON.parse(raw) as Picks) : {}
-  } catch {
-    return {}
-  }
-}
-
 export function Liste() {
   const t = useT()
   const { audience } = useAudience()
   const qc = useQueryClient()
   const undo = useUndoToast()
+  // The cashier list (staged flyer deals) is shared app-wide so the deals browser
+  // and full-flyer viewer can stage straight into it — see lib/picks.
+  const { picks, pick: choose, remove: removePick } = usePicks()
   const [proofFor, setProofFor] = useState<{ id: string; text: string } | null>(null)
-  const [picks, setPicks] = useState<Picks>(loadPicks)
   const [cashierOpen, setCashierOpen] = useState(false)
   const [browseOpen, setBrowseOpen] = useState(false)
   const [auto, setAuto] = useState(false)
@@ -71,25 +61,6 @@ export function Liste() {
   // strip, never a broken list. So: no retry, and errors fall back to [].
   const { data: ghostsData } = useQuery({ queryKey: GHOSTS_KEY, queryFn: () => fetchGhosts(), retry: false })
   const ghosts = ghostsData ?? []
-
-  // Persist picks so they're there at the store.
-  useEffect(() => {
-    try {
-      localStorage.setItem(PICKS_KEY, JSON.stringify(picks))
-    } catch {
-      /* storage full / private mode — picks just won't persist */
-    }
-  }, [picks])
-
-  function choose(itemId: string, itemText: string, deal: Deal) {
-    setPicks((p) => ({ ...p, [itemId]: { deal, itemText } }))
-  }
-  function removePick(itemId: string) {
-    setPicks((p) => {
-      const { [itemId]: _, ...rest } = p
-      return rest
-    })
-  }
 
   // Check an item off. Drop it from the cached list at once, but DEFER the write
   // behind an undo toast: a mis-tap costs nothing (tap Undo → restore, no
@@ -137,27 +108,25 @@ export function Liste() {
   // then jump straight to the review screen. Best-first is the server's sort.
   async function autoPick(rows: ListRow[]) {
     setAuto(true)
-    const next: Picks = { ...picks }
+    let any = false
     for (const item of rows) {
       try {
         const r = await api<{ deals: Deal[] }>(`deals?q=${encodeURIComponent(item.text)}`)
-        if (r.deals[0]) next[item.id] = { deal: r.deals[0], itemText: item.text }
+        if (r.deals[0]) {
+          choose(item.id, item.text, r.deals[0])
+          any = true
+        }
       } catch {
         /* skip items with no deals / errors */
       }
     }
-    setPicks(next)
     setAuto(false)
-    if (Object.keys(next).length) setCashierOpen(true)
+    if (any || Object.keys(picks).length) setCashierOpen(true)
   }
 
   // Built from picks directly (not the current list) so a pick survives even
   // after its grocery item is checked off.
-  const pickList: Pick[] = Object.entries(picks).map(([itemId, v]) => ({
-    itemId,
-    itemText: v.itemText,
-    deal: v.deal,
-  }))
+  const pickList = toPickList(picks)
 
   if (audience === 'toddler') {
     // Read-only for toddlers: tapping a tile reads it aloud but does NOT check it
@@ -199,6 +168,7 @@ export function Liste() {
         <div className="stagger">
           {list.map((item) => {
             const adder = item.added_by ? memberById.get(item.added_by) : null
+            const staged = picks[item.id]?.deal
             return (
             <div key={item.id} className="list-row">
               <button type="button" className="act list-row__main" onClick={() => checkOff(item)}>
@@ -210,6 +180,13 @@ export function Liste() {
                   <span className="title" style={{ color: tintInk(CATS.list.color) }}>
                     {item.text}
                   </span>
+                  {/* A staged flyer deal for this item: store + price, so the choice
+                      is visible on the list itself (not just the 🏷️→✓ flip). */}
+                  {staged && (
+                    <span className="list-row__deal mono">
+                      🏷️ {staged.merchant} · {money(staged.price)}
+                    </span>
+                  )}
                 </span>
                 {adder && (
                   <span
@@ -267,12 +244,7 @@ export function Liste() {
       )}
 
       {proofFor && (
-        <PriceMatchSheet
-          query={proofFor.text}
-          chosenId={picks[proofFor.id]?.deal.id ?? null}
-          onChoose={(deal) => choose(proofFor.id, proofFor.text, deal)}
-          onClose={() => setProofFor(null)}
-        />
+        <PriceMatchSheet itemId={proofFor.id} query={proofFor.text} onClose={() => setProofFor(null)} />
       )}
 
       {cashierOpen && (

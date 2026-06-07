@@ -17,7 +17,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ item?: string }>(ctx.request)
-  const item = body?.item?.trim()
+  const item = body?.item?.trim().slice(0, 200)
   if (!item) return badRequest('Aliment requis.')
   await ctx.env.DB.prepare('INSERT INTO pantry_use_soon (id, household_id, item, marked_at) VALUES (?, ?, ?, ?)')
     .bind(newId(), actor.householdId, item, nowSec())

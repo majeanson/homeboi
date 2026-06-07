@@ -5,6 +5,7 @@ import { useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { type Deal } from '../lib/deals'
+import { usePicks } from '../lib/picks'
 
 // Price-match proof sheet (Maxi "Imbattable" et al.): given a grocery item, pull
 // current competitor flyer deals near the household's postal code and show each
@@ -15,18 +16,18 @@ import { type Deal } from '../lib/deals'
 // degrading to a clear message on nothing / no postal.
 
 export function PriceMatchSheet({
+  itemId,
   query,
-  chosenId,
-  onChoose,
   onClose,
 }: {
+  itemId: string // the shared-list item this proof is for — picks key on it
   query: string
-  chosenId?: number | null
-  onChoose?: (deal: Deal) => void
   onClose: () => void
 }) {
   const t = useT()
   const qc = useQueryClient()
+  const { picks, pick } = usePicks()
+  const chosenId = picks[itemId]?.deal.id ?? null
   // Cache the expensive Flipp lookup per query, per day — flyers change ~weekly,
   // so a day-scoped key serves re-opens instantly and refreshes tomorrow.
   const dayKey = new Date().toISOString().slice(0, 10)
@@ -124,14 +125,10 @@ export function PriceMatchSheet({
                 added={added === d.name}
                 onViewFlyer={(deal) => setFlyer({ id: deal.flyerId!, itemId: deal.id, merchant: deal.merchant })}
                 onAddToList={addToList}
-                onChoose={
-                  onChoose
-                    ? (deal) => {
-                        onChoose(deal)
-                        onClose()
-                      }
-                    : undefined
-                }
+                onChoose={(deal) => {
+                  pick(itemId, query, deal)
+                  onClose()
+                }}
               />
             ))}
           </ul>
@@ -146,6 +143,7 @@ export function PriceMatchSheet({
           highlightId={flyer.itemId}
           title={flyer.merchant}
           onAddToList={addToList}
+          onStage={(deal) => pick(itemId, query, deal)}
           onClose={() => setFlyer(null)}
         />
       )}

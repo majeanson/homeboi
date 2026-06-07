@@ -14,6 +14,7 @@ import * as chores from '../functions/api/chores'
 import * as deals from '../functions/api/deals'
 import * as events from '../functions/api/events'
 import * as flyer from '../functions/api/flyer'
+import * as flyers from '../functions/api/flyers'
 import * as ghost from '../functions/api/ghost'
 import * as health from '../functions/api/health'
 import * as household from '../functions/api/household'
@@ -60,6 +61,7 @@ const TABLE: Record<string, RouteMod> = {
   deals,
   events,
   flyer,
+  flyers,
   ghost,
   health,
   household,
