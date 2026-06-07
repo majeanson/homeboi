@@ -476,11 +476,16 @@ test.describe('profile', () => {
   })
 })
 
-test('toddler picks a face and taps through the routine', async ({ page }) => {
+test('toddler reads a step aloud, then starts + finishes it', async ({ page }) => {
   await APP('/routines', 'toddler')(page)
   await settle(page, '.kid')
   await page.locator('.kid__face').first().click()
+  // Tapping the picture only reads it aloud — it must NOT mark the step done.
   const tap = page.locator('.tdl-illus--tap')
   await expect(tap).toBeVisible()
-  await expectApi(page, 'PATCH', 'routines', () => tap.click())
+  await tap.click()
+  // Doing it is the start → finish flow; finishing marks the step done (PATCH).
+  await page.locator('.tdl-start').click()
+  await expect(page.locator('.tdl-clock')).toBeVisible()
+  await expectApi(page, 'PATCH', 'routines', () => page.locator('.tdl-finish').click())
 })

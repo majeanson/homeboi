@@ -318,24 +318,35 @@ export function Kitchen() {
       setSuggestIdx((i) => i + 1)
       return
     }
-    // AI already known off → just cycle the recipe book.
+    // AI already known off → just cycle the recipe book (or re-loop the batch).
     if (aiUnavailable) {
-      suggestFromBook()
+      if (!suggestFromBook()) setSuggestIdx(0)
       return
     }
     setSuggesting(true)
     aiStart()
     try {
-      const res = await api<{ suggestions: string[] }>('suggest-meal', { method: 'POST' })
+      // Send the batch just seen so the model returns DIFFERENT dishes.
+      const res = await api<{ suggestions: string[] }>('suggest-meal', {
+        method: 'POST',
+        body: { avoid: suggestions },
+      })
       if (res.suggestions.length) {
         setSuggestions(res.suggestions)
+        setSuggestIdx(0)
+      } else if (!suggestFromBook()) {
+        // Nothing new came back — re-loop the current batch so the button never
+        // dead-ends after the tenth idea.
         setSuggestIdx(0)
       }
     } catch (e) {
       // No AI binding → fall back to the household's own recipes instead of hiding.
       if (isStatus(e, 503)) {
         setAiUnavailable(true)
-        suggestFromBook()
+        if (!suggestFromBook()) setSuggestIdx(0)
+      } else {
+        // Other hiccup → don't strand the user; re-loop what we have.
+        setSuggestIdx(0)
       }
     } finally {
       setSuggesting(false)
