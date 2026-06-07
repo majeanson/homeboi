@@ -76,7 +76,9 @@ export const FR = {
   boardView: {
     label: 'Vue du babillard',
     bento: 'Grille',
-    next: 'À venir',
+    // "Maintenant" (not "À venir") so the view toggle doesn't share a name with
+    // the bento grid's "À venir" (upcoming) section — they were indistinguishable.
+    next: 'Maintenant',
     lanes: 'Par personne',
     then: 'ensuite',
     nothingNext: 'Rien de prévu pour l’instant',
