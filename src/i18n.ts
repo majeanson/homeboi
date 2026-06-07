@@ -228,6 +228,7 @@ export const FR = {
     password: 'Mot de passe',
     submit: 'Entrer',
     error: 'Connexion impossible.',
+    nextStep: 'Tu atterriras sur le babillard.',
   },
   pair: {
     title: 'Jumeler cette tablette',
@@ -597,6 +598,7 @@ export const EN: typeof FR = {
     password: 'Password',
     submit: 'Enter',
     error: 'Sign-in failed.',
+    nextStep: 'You’ll land on the board.',
   },
   pair: {
     title: 'Pair this tablet',
