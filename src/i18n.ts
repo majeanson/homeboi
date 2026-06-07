@@ -121,6 +121,7 @@ export const FR = {
     useSoonHint: 'Ce que tu as et veux finir — ça suggère des recettes, sans toucher à la liste.',
     useSoonAdd: 'Ajouter un aliment à finir',
     useSoonEmpty: 'Rien à finir, pour là.',
+    aiWaking: 'L’IA se réveille… la première fois est plus longue.',
   },
   recipes: {
     title: 'Recettes',
@@ -158,6 +159,7 @@ export const FR = {
     addedToList: '✓ Ajouté à la liste',
     plan: 'Planifier un souper',
     planOn: 'Planifier le',
+    planPick: 'Quel jour ?',
     planned: '✓ Planifié',
     editBtn: 'Modifier',
     sourceLabel: 'Source ↗',
@@ -470,6 +472,7 @@ export const EN: typeof FR = {
     useSoonHint: 'What you have and want to finish — suggests recipes, never touches the list.',
     useSoonAdd: 'Add something to use up',
     useSoonEmpty: 'Nothing to use up right now.',
+    aiWaking: 'The AI is waking up… the first time is slower.',
   },
   recipes: {
     title: 'Recipes',
@@ -507,6 +510,7 @@ export const EN: typeof FR = {
     addedToList: '✓ Added to the list',
     plan: 'Plan a supper',
     planOn: 'Plan for',
+    planPick: 'Which day?',
     planned: '✓ Planned',
     editBtn: 'Edit',
     sourceLabel: 'Source ↗',
