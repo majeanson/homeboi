@@ -4138,14 +4138,9 @@ a {
 }
 
 /* Deals browser: by-article vs by-store tabs. */
+/* .deal-tabs now layers on .subtabs (the segmented control); just its own margin. */
 .deal-tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin: 0 0 0.75rem;
-}
-.deal-tabs .chip {
-  flex: 1 1 0;
-  text-align: center;
+  margin: 0 0 0.85rem;
 }
 
 /* "Par magasin": a grid of store flyers (logo + name) to open whole. */
