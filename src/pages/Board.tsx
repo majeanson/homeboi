@@ -25,7 +25,7 @@ import { pictoFor } from '../lib/picto'
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
 // flips a "showing cache" stamp instead of blanking. The day's list empties
 // and stays empty — no counters, no score for clearing it.
-interface Member { id: string; display_name: string; colour: string; is_child: number }
+interface Member { id: string; display_name: string; colour: string; is_child: number; avatar_kind?: string; avatar_ref?: string }
 interface EventRow { id: string; title: string; start_at: number; all_day: number; member_id: string | null }
 interface ListRow { id: string; text: string; source: string }
 interface Helper { name: string | null; role: string }
@@ -261,6 +261,13 @@ export function Board() {
         </div>
       </div>
 
+      {/* Shared kiosk: a one-tap face row to switch between Maisonnée (everyone)
+          and an individual member — so anyone at the wall tablet can quickly act
+          as themselves, then tap Maisonnée (or their face again) to step back. */}
+      {surface === 'kiosk' && data && data.members.length > 0 && (
+        <MemberSwitcher members={data.members} t={t} />
+      )}
+
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
       ) : view === 'next' ? (
@@ -447,6 +454,45 @@ function BoardViewToggle({ view, onChange, t }: { view: BoardView; onChange: (v:
           <Icon name={o.icon} size={18} />
         </button>
       ))}
+    </div>
+  )
+}
+
+// The kiosk member switcher: a calm face row. "Maisonnée" (everyone) is the
+// default neutral mode; tapping a face acts/personalizes as that member; tapping
+// the active face again, or Maisonnée, returns to everyone. Uses the device
+// profile (lib/profile) — the same identity the mobile chip sets.
+function MemberSwitcher({ members, t }: { members: Member[]; t: Dict }) {
+  const { memberId, setMemberId } = useProfile()
+  return (
+    <div className="mswitch" role="group" aria-label={t.profile.switch}>
+      <button
+        type="button"
+        className={'mswitch__opt' + (memberId === null ? ' is-on' : '')}
+        aria-pressed={memberId === null}
+        onClick={() => setMemberId(null)}
+      >
+        <span className="mswitch__av mswitch__av--all" aria-hidden="true">👥</span>
+        <span className="mswitch__name">{t.profile.household}</span>
+      </button>
+      {members.map((m) => {
+        const photo = m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null
+        const on = m.id === memberId
+        return (
+          <button
+            key={m.id}
+            type="button"
+            className={'mswitch__opt' + (on ? ' is-on' : '')}
+            aria-pressed={on}
+            onClick={() => setMemberId(on ? null : m.id)}
+          >
+            <span className="mswitch__av" style={{ background: photo ? undefined : m.colour }}>
+              {photo ? <img src={photo} alt="" /> : (m.display_name[0] ?? '?').toUpperCase()}
+            </span>
+            <span className="mswitch__name">{m.display_name}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }

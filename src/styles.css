@@ -3582,6 +3582,64 @@ a {
   margin-left: 0.4rem;
 }
 
+/* Kiosk member switcher: a calm one-tap face row (Maisonnée + each member). */
+.mswitch {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0 0 1.25rem;
+}
+.mswitch__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.8rem 0.35rem 0.35rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  color: var(--ink-soft);
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast);
+}
+.mswitch__opt:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.mswitch__opt.is-on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.mswitch__av {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-family: var(--display);
+  overflow: hidden;
+  flex: none;
+}
+.mswitch__av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mswitch__av--all {
+  background: var(--paper-deep);
+}
+.mswitch__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
 /* ---- Image zoom (flyer / deal proof at the till) -------------------------- */
 .zoom-overlay {
   position: fixed;

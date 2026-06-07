@@ -39,8 +39,9 @@ export const FR = {
   },
   profile: {
     who: 'Qui es-tu ?',
-    everyone: 'Tout le monde',
+    household: 'Maisonnée',
     askShort: 'Qui ?',
+    switch: 'Changer de personne',
   },
   capture: {
     placeholder: 'Note quelque chose… (ex. souper spaghetti jeudi)',
@@ -385,8 +386,9 @@ export const EN: typeof FR = {
   },
   profile: {
     who: 'Who are you?',
-    everyone: 'Everyone',
+    household: 'Everyone',
     askShort: 'Who?',
+    switch: 'Switch person',
   },
   capture: {
     placeholder: 'Jot something down… (e.g. supper spaghetti thursday)',

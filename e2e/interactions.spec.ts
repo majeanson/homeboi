@@ -440,6 +440,20 @@ test.describe('profile', () => {
     // l1 (Lait) is seeded added_by m1 (Maman) → an "M" tint on that row.
     await expect(page.locator('.list-row__by').first()).toBeVisible()
   })
+
+  test('kiosk switcher flips between a member and Maisonnée', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })
+    await page.goto('/board')
+    await settle(page, '.hub')
+    await expect(page.locator('.mswitch')).toBeVisible()
+    await page.locator('.mswitch__opt', { hasText: 'Papa' }).click()
+    await expect(page.locator('.greet')).toContainText('Papa')
+    await page.locator('.mswitch__opt', { hasText: 'Maisonnée' }).click()
+    await expect(page.locator('.greet')).not.toContainText('Papa')
+  })
 })
 
 test('toddler picks a face and taps through the routine', async ({ page }) => {

@@ -61,7 +61,7 @@ export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () =>
             <span className="profile-face__av profile-face__av--all" aria-hidden="true">
               👥
             </span>
-            <span className="profile-face__name">{t.profile.everyone}</span>
+            <span className="profile-face__name">{t.profile.household}</span>
           </button>
         </div>
       </div>
