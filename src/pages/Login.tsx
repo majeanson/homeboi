@@ -37,10 +37,10 @@ export function Login() {
   return (
     <div className="page">
       <TopBar />
-      <main className="narrow">
+      <main className="narrow auth">
         <h1>{t.login.title}</h1>
         <p className="lead">{t.login.lead}</p>
-        <form className="form" onSubmit={submit}>
+        <form className="form auth__card" onSubmit={submit}>
           <label className="field">
             <span className="field__label">{t.login.email}</span>
             <input
@@ -66,6 +66,7 @@ export function Login() {
           <button type="submit" className="btn btn--primary" disabled={busy || !email.trim()}>
             {t.login.submit}
           </button>
+          {!error && <p className="auth__hint mono">{t.login.nextStep}</p>}
         </form>
       </main>
     </div>

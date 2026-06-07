@@ -70,7 +70,7 @@ export function Pair() {
   return (
     <div className="page">
       <TopBar />
-      <main className="narrow pair">
+      <main className="narrow pair auth">
         <h1>{t.pair.title}</h1>
         <p className="lead">{t.pair.lead}</p>
 
@@ -90,7 +90,11 @@ export function Pair() {
           </div>
         )}
 
-        {phase === 'paired' && <p className="pair__ok">{t.pair.paired}</p>}
+        {phase === 'paired' && (
+          <p className="pair__ok">
+            <span className="pair__ok-mark" aria-hidden="true">✓</span> {t.pair.paired}
+          </p>
+        )}
 
         {phase === 'expired' && (
           <div>

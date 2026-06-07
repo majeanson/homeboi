@@ -875,13 +875,17 @@ a {
   gap: 1.25rem;
   width: 100%;
 }
+/* A real, finger-sized button (was bare text) — a toddler's back tap shouldn't be
+   smaller than everything else on the picture-first surface (NFR-KID-1). */
 .kid-pick__back {
-  background: none;
-  border: none;
   cursor: pointer;
   color: var(--ink-soft);
-  font-size: 1.05rem;
-  padding: 0.5rem 1rem;
+  font-size: 1.15rem;
+  min-height: 56px;
+  padding: 0.6rem 1.5rem;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
 }
 .kid__cards {
   display: grid;
@@ -1000,25 +1004,67 @@ a {
 }
 
 /* --- Pair ----------------------------------------------------------------- */
+/* Onboarding (Login + Pair): center the content so a short form/code doesn't
+   cling to the top of a tall, empty page, and give the form/code a warm card so
+   it reads as a held object rather than fields floating on paper. */
+.auth {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 70vh;
+  gap: 1rem;
+}
+.auth__card {
+  max-width: 24rem;
+  background: var(--card);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
+}
+.auth__hint {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0;
+}
 .pair__code-block {
   text-align: center;
   margin-top: 1.5rem;
+  padding: 1.75rem 1.5rem;
+  background: var(--marigold-wash);
+  border: 1.5px solid color-mix(in srgb, var(--marigold) 40%, var(--card));
+  border-radius: var(--radius-lg);
 }
 .pair__code {
   font-family: var(--mono);
   font-size: 3.5rem;
   letter-spacing: 0.5rem;
   font-weight: 700;
-  margin: 1rem 0;
-  color: var(--accent);
+  margin: 0.75rem 0;
+  color: var(--marigold-deep);
 }
 .pair__waiting {
   color: var(--ink-soft);
 }
 .pair__ok {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.3rem;
-  color: var(--accent);
+  color: var(--ink);
   margin-top: 1.5rem;
+}
+.pair__ok-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--sage);
+  color: #fff;
+  font-size: 1.1rem;
 }
 
 /* --- Operator ------------------------------------------------------------- */
@@ -1029,7 +1075,7 @@ a {
 }
 .operator__head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
@@ -1039,7 +1085,13 @@ a {
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  flex-wrap: wrap;
   color: var(--ink-soft);
+}
+/* Keep the household name on one line — it was breaking mid-phrase ("Maison /
+   Tremblay"); the cluster wraps as a unit instead. */
+.operator__meta > span:first-child {
+  white-space: nowrap;
 }
 .operator__section {
   padding: 1.25rem;
@@ -1691,7 +1743,9 @@ a {
   width: 130px;
   height: 130px;
   border-radius: 50%;
-  opacity: 0.5;
+  /* A whisper of print texture, not a second fill — lighter now that supper sits
+     beside the weather hero (was 0.5, which bled into the neighbouring card). */
+  opacity: 0.3;
 }
 .now-card .icn {
   position: absolute;
@@ -2417,8 +2471,8 @@ a {
 .tdl-start,
 .tdl-finish {
   margin-top: 24px;
-  min-height: 64px;
-  padding: 0 28px;
+  min-height: 72px;
+  padding: 0 32px;
   border: 0;
   border-radius: var(--radius-pill);
   font-family: var(--display);
@@ -2670,9 +2724,11 @@ a {
 .sheet__field input::placeholder {
   color: var(--ink-faint);
 }
+/* Four modes in a balanced 2×2 (was 3+1, which stranded the fourth on its own
+   row) — and the wider cards are easier to tap. */
 .cat-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin: 6px 0 18px;
 }
@@ -4704,6 +4760,8 @@ a {
   gap: 1px;
   background: var(--line);
   border-top: 1px solid var(--line);
+  /* Keep the ▶/✓ nav clear of the home indicator on notched phones. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .cook__arrow {
   flex: 1;
