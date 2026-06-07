@@ -96,7 +96,11 @@ export const FR = {
   kitchen: {
     title: 'La cuisine',
     week: 'La semaine',
-    plan: 'Quoi pour souper ?',
+    planShort: 'À planifier',
+    tabMeals: 'Repas',
+    tabPantry: 'Garde-manger',
+    tabRecipes: 'Recettes',
+    plan:'Quoi pour souper ?',
     suggest: 'Qu’est-ce qu’on mange ?',
     suggestAnother: 'Une autre suggestion.',
     suggestThinking: 'Je pense…',
@@ -209,6 +213,11 @@ export const FR = {
     pickMeal: 'Choisis un repas',
     whichDay: 'Quel jour ?',
     back: 'Retour',
+  },
+  routines: {
+    tag: 'Le rythme du jour',
+    stepsN: (n: number) => `${n} étape${n > 1 ? 's' : ''}`,
+    empty: 'Aucune carte',
   },
   login: {
     title: 'Connexion',
@@ -456,7 +465,11 @@ export const EN: typeof FR = {
   kitchen: {
     title: 'Kitchen',
     week: 'The week',
-    plan: 'What’s for supper?',
+    planShort: 'To plan',
+    tabMeals: 'Meals',
+    tabPantry: 'Pantry',
+    tabRecipes: 'Recipes',
+    plan:'What’s for supper?',
     suggest: 'What should we eat?',
     suggestAnother: 'Another idea?',
     suggestThinking: 'Thinking…',
@@ -569,6 +582,11 @@ export const EN: typeof FR = {
     pickMeal: 'Pick a meal',
     whichDay: 'Which day?',
     back: 'Back',
+  },
+  routines: {
+    tag: 'The day’s rhythm',
+    stepsN: (n: number) => `${n} step${n === 1 ? '' : 's'}`,
+    empty: 'No cards',
   },
   login: {
     title: 'Sign in',
