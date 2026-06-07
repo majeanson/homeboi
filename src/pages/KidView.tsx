@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
@@ -34,6 +34,9 @@ interface Routine {
 }
 type RoutinesData = { routines: Routine[] }
 const ROUTINES_KEY = ['routines']
+
+// mm:ss for the gentle per-step stopwatch (count-up — no countdown, no pressure).
+const fmtClock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
 export function KidView() {
   const t = useT()
@@ -78,8 +81,36 @@ export function KidView() {
     },
   })
 
-  function advance(routine: Routine, idx: number) {
-    speak(routine.cards[idx]?.narration ?? routine.cards[idx]?.label)
+  // Read a step aloud WITHOUT marking it done — a toddler hears what to do first,
+  // then does it. (Separated from finishing it, which is the start/timer flow.)
+  function readAloud(idx: number) {
+    speak(picked?.cards[idx]?.narration ?? picked?.cards[idx]?.label)
+  }
+
+  // A gentle per-step stopwatch: the kid taps ▶ to start a step (and hear it),
+  // does it while it counts up, then taps ✓ to finish — which marks it done and
+  // moves to the next, until the whole routine is complete. Count-up, no score.
+  const [running, setRunning] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    if (!running) return
+    const id = setInterval(() => setElapsed((e) => e + 1), 1000)
+    return () => clearInterval(id)
+  }, [running])
+  // Switching to another child's routine resets the stopwatch.
+  useEffect(() => {
+    setRunning(false)
+    setElapsed(0)
+  }, [pickedId])
+
+  function startStep(idx: number) {
+    setElapsed(0)
+    setRunning(true)
+    readAloud(idx)
+  }
+  function finishStep(routine: Routine, idx: number) {
+    setRunning(false)
+    setElapsed(0)
     toggle.mutate({ routineId: routine.id, cardIdx: idx, done: !routine.doneIdx.includes(idx) })
   }
 
@@ -176,7 +207,7 @@ export function KidView() {
                 type="button"
                 className="tdl-illus tdl-illus--tap"
                 style={{ background: tint }}
-                onClick={() => advance(picked, curIdx)}
+                onClick={() => readAloud(curIdx)}
                 aria-label={cur?.label}
               >
                 <span className="tdl-illus-emoji">{cur?.icon || '○'}</span>
@@ -184,6 +215,10 @@ export function KidView() {
               <div className="tdl-now">{t.kid.rightNow}</div>
               <div className="tdl-what" style={{ color: tintInk(tint) }}>
                 {cur?.label}
+              </div>
+              {/* Tapping the picture only reads it aloud — doing it is the ▶ flow below. */}
+              <div className="tdl-hear mono" aria-hidden="true">
+                🔊 {t.kid.tapHear}
               </div>
 
               {next && (
@@ -201,14 +236,20 @@ export function KidView() {
                 ))}
               </div>
 
-              <button
-                type="button"
-                className="tdl-tap"
-                onClick={() => advance(picked, curIdx)}
-                aria-label={t.kid.tapNext}
-              >
-                <Icon name="arrow-right-bold" size={32} />
-              </button>
+              {running ? (
+                <div className="tdl-timer">
+                  <span className="tdl-clock mono" aria-live="polite">
+                    {fmtClock(elapsed)}
+                  </span>
+                  <button type="button" className="tdl-finish" onClick={() => finishStep(picked, curIdx)}>
+                    ✓ {t.kid.finish}
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="tdl-start" onClick={() => startStep(curIdx)}>
+                  ▶ {t.kid.start}
+                </button>
+              )}
             </>
           )}
         </div>

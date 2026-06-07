@@ -375,24 +375,30 @@ export async function suggestMeals(
   recent: string[],
   lang: Lang = 'fr',
   favorites: string[] = [],
+  avoid: string[] = [],
 ): Promise<string[]> {
   if (!env.AI) return []
+  // "avoid" = the batch the user just cycled through, so a re-ask returns DIFFERENT
+  // dishes instead of the same ten. Merged with recent suppers as the don't-repeat
+  // list, and paired with a higher temperature so each batch genuinely varies.
+  const dontRepeat = [...new Set([...recent, ...avoid])]
   const prompt =
     lang === 'en'
       ? `Suggest 10 simple, varied family suppers.
 Foods running low (use some if helpful): ${lowItems.join(', ') || 'none'}.
-Recent suppers (avoid repeating): ${recent.join(', ') || 'none'}.
+Suppers to AVOID repeating: ${dontRepeat.join(', ') || 'none'}.
 Family's own recipes (feel free to suggest some of these back): ${favorites.join(', ') || 'none'}.
 Reply ONLY with a JSON array of 10 short dish names. Example: ["spaghetti","chili","tacos"].`
       : `Suggère 10 soupers familiaux simples et variés (français québécois).
 Aliments qui achèvent (utilises-en si utile) : ${lowItems.join(', ') || 'aucun'}.
-Soupers récents (à éviter de répéter) : ${recent.join(', ') || 'aucun'}.
+Soupers à ÉVITER de répéter : ${dontRepeat.join(', ') || 'aucun'}.
 Recettes de la famille (suggères-en quelques-unes au besoin) : ${favorites.join(', ') || 'aucune'}.
 Réponds UNIQUEMENT avec un tableau JSON de 10 noms de plats courts. Exemple : ["spaghetti","chili","tacos"].`
   try {
     const res = (await env.AI.run(MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 300,
+      temperature: 0.9,
     })) as { response?: string }
     return extractStringArray(res.response ?? '', 10)
   } catch {

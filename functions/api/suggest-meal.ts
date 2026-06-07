@@ -1,4 +1,4 @@
-import { ok, serviceUnavailable } from '../_lib/json'
+import { ok, serviceUnavailable, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { suggestMeals, resolveLang } from '../_lib/ai'
 import { dayStart } from '../_lib/ids'
@@ -8,6 +8,13 @@ import { dayStart } from '../_lib/ids'
 // suggestions cost a single inference (NFR-COST). Degrades to 503 when AI unset.
 export const onRequestPost = authed(async (ctx, actor) => {
   if (!ctx.env.AI) return serviceUnavailable('Suggestion IA indisponible ici.')
+
+  // The batch the client just showed — so re-asking yields fresh dishes, not the
+  // same ten. Optional (older clients send no body).
+  const body = await readJson<{ avoid?: string[] }>(ctx.request).catch(() => null)
+  const avoid = Array.isArray(body?.avoid)
+    ? body!.avoid.filter((x): x is string => typeof x === 'string').slice(0, 20)
+    : []
 
   const today = dayStart(new Date(Date.now()))
   const [low, recent, favs] = await Promise.all([
@@ -32,6 +39,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     recent.results.map((r) => r.title),
     resolveLang(ctx.env, ctx.request),
     favs.results.map((r) => r.title),
+    avoid,
   )
   if (!suggestions.length) return serviceUnavailable('Pas de suggestion pour le moment.')
   return ok({ suggestions })

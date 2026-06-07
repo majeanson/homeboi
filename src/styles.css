@@ -2196,6 +2196,52 @@ a {
 .tdl-tap:active {
   transform: scale(0.92);
 }
+/* Tap-to-hear cue under the picture (the picture only reads aloud now). */
+.tdl-hear {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+/* Per-step flow: a big ▶ start, then a running clock + ✓ finish. */
+.tdl-start,
+.tdl-finish {
+  margin-top: 24px;
+  min-height: 64px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.4rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.tdl-start {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.tdl-finish {
+  background: var(--sage, #88a36f);
+  color: #fff;
+}
+.tdl-start:active,
+.tdl-finish:active {
+  transform: scale(0.95);
+}
+.tdl-timer {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.tdl-clock {
+  font-size: clamp(2.6rem, 12vw, 4rem);
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1;
+}
 .tdl-sweet {
   font-family: var(--font-hand);
   font-size: 32px;
