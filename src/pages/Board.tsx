@@ -8,6 +8,8 @@ import { tintInk } from '../lib/colors'
 import { useLang, useT, type Lang } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
+import { useProfile } from '../lib/profile'
+import { ProfilePicker } from '../components/ProfilePicker'
 import { useAddSheet } from '../lib/addSheet'
 import { readBoardView, saveBoardView, type BoardView } from '../lib/boardview'
 import { useSpeak } from '../lib/speak'
@@ -23,7 +25,7 @@ import { pictoFor } from '../lib/picto'
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
 // flips a "showing cache" stamp instead of blanking. The day's list empties
 // and stays empty — no counters, no score for clearing it.
-interface Member { id: string; display_name: string; colour: string; is_child: number }
+interface Member { id: string; display_name: string; colour: string; is_child: number; avatar_kind?: string; avatar_ref?: string }
 interface EventRow { id: string; title: string; start_at: number; all_day: number; member_id: string | null }
 interface ListRow { id: string; text: string; source: string }
 interface Helper { name: string | null; role: string }
@@ -49,6 +51,9 @@ export function Board() {
   const { lang } = useLang()
   const { audience } = useAudience()
   const { surface } = useSurface()
+  // Pick-your-face: who's on this phone — greets them + marks their day.
+  const { memberId: profileId } = useProfile()
+  const [profileOpen, setProfileOpen] = useState(false)
   // Mobile glance: a quick-capture bar sits at the top and opens the shared
   // AddSheet (note/voice → AI router) owned by HubLayout. The primary phone action.
   const { open: openAdd } = useAddSheet()
@@ -186,6 +191,9 @@ export function Board() {
   // now-card (tonight's supper), then a gentle grouped timeline of colour-coded
   // activity cards. Same data + writes as before — just the calm Pip surface.
   const tod = timeOfDay(Date.now())
+  // The picked member on this device (greeting + "your day" emphasis). Null on a
+  // shared kiosk (no profile chosen there).
+  const me = data?.members.find((m) => m.id === profileId) ?? null
   const eventAct = (e: EventRow) => (
     <Act
       key={e.id}
@@ -194,6 +202,7 @@ export function Board() {
       when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
       who={memberName(e.member_id) ?? undefined}
       color={memberColor(e.member_id) ?? undefined}
+      mine={!!profileId && e.member_id === profileId}
     />
   )
   const cookLine = (m: MealRow) =>
@@ -214,7 +223,7 @@ export function Board() {
       <div className="app-head">
         <div>
           <div className="hand-tag">{t.board.today}</div>
-          <h1 className="greet">{t.today[tod]}</h1>
+          <h1 className="greet">{me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]}</h1>
           <div className="subgreet">
             {formatDay(Math.floor(Date.now() / 1000), lang)} · {clock}
             {weather && (
@@ -229,12 +238,35 @@ export function Board() {
           {tip && <div className="weather-tip mono">{t.weather.tip[tip]}</div>}
         </div>
         <div className="board-head__right">
+          {surface === 'mobile' && (
+            <button
+              type="button"
+              className="profile-chip"
+              onClick={() => setProfileOpen(true)}
+              aria-label={t.profile.who}
+            >
+              {me ? (
+                <span className="profile-chip__av" style={{ background: me.colour }}>
+                  {(me.display_name[0] ?? '?').toUpperCase()}
+                </span>
+              ) : (
+                <span className="profile-chip__ask mono">{t.profile.askShort}</span>
+              )}
+            </button>
+          )}
           <BoardViewToggle view={view} onChange={changeView} t={t} />
           <div className="avatar" style={{ background: 'var(--marigold-wash)' }}>
             <Icon name={TOD_ICON[tod]} size={26} color="var(--marigold-deep)" />
           </div>
         </div>
       </div>
+
+      {/* Shared kiosk: a one-tap face row to switch between Maisonnée (everyone)
+          and an individual member — so anyone at the wall tablet can quickly act
+          as themselves, then tap Maisonnée (or their face again) to step back. */}
+      {surface === 'kiosk' && data && data.members.length > 0 && (
+        <MemberSwitcher members={data.members} t={t} />
+      )}
 
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
@@ -289,6 +321,7 @@ export function Board() {
       )}
 
       <p className="board__synced mono">{stale ? t.board.offline : `${t.board.synced} ${clock}`}</p>
+      {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}
     </main>
   )
 }
@@ -344,6 +377,7 @@ function Act({
   done,
   onCheck,
   color,
+  mine,
 }: {
   cat: CatKey
   title: string
@@ -352,11 +386,13 @@ function Act({
   done?: boolean
   onCheck?: () => void
   color?: string // overrides the category colour (member colour, task colour)
+  mine?: boolean // belongs to the device's picked member → a quiet "you" accent
 }) {
   const c = CATS[cat]
   const spine = color ?? c.color
   const tileBg = color ? color + '22' : c.wash
   const glyph = color ?? c.deep
+  const cls = 'act' + (done ? ' done' : '') + (mine ? ' act--mine' : '')
   const body = (
     <>
       <span className="spine" style={{ background: spine }} aria-hidden="true" />
@@ -370,6 +406,7 @@ function Act({
         </span>
         {who && <span className="who">{who}</span>}
       </span>
+      {mine && <span className="act__mine" aria-hidden="true">★</span>}
       {onCheck && (
         <span className="check" aria-hidden="true">
           <Icon name="check-bold" size={18} />
@@ -379,12 +416,12 @@ function Act({
   )
   if (onCheck) {
     return (
-      <button type="button" className={'act' + (done ? ' done' : '')} onClick={onCheck} aria-pressed={!!done}>
+      <button type="button" className={cls} onClick={onCheck} aria-pressed={!!done}>
         {body}
       </button>
     )
   }
-  return <div className={'act' + (done ? ' done' : '')}>{body}</div>
+  return <div className={cls}>{body}</div>
 }
 
 // ---- Board view switching --------------------------------------------------
@@ -417,6 +454,45 @@ function BoardViewToggle({ view, onChange, t }: { view: BoardView; onChange: (v:
           <Icon name={o.icon} size={18} />
         </button>
       ))}
+    </div>
+  )
+}
+
+// The kiosk member switcher: a calm face row. "Maisonnée" (everyone) is the
+// default neutral mode; tapping a face acts/personalizes as that member; tapping
+// the active face again, or Maisonnée, returns to everyone. Uses the device
+// profile (lib/profile) — the same identity the mobile chip sets.
+function MemberSwitcher({ members, t }: { members: Member[]; t: Dict }) {
+  const { memberId, setMemberId } = useProfile()
+  return (
+    <div className="mswitch" role="group" aria-label={t.profile.switch}>
+      <button
+        type="button"
+        className={'mswitch__opt' + (memberId === null ? ' is-on' : '')}
+        aria-pressed={memberId === null}
+        onClick={() => setMemberId(null)}
+      >
+        <span className="mswitch__av mswitch__av--all" aria-hidden="true">👥</span>
+        <span className="mswitch__name">{t.profile.household}</span>
+      </button>
+      {members.map((m) => {
+        const photo = m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null
+        const on = m.id === memberId
+        return (
+          <button
+            key={m.id}
+            type="button"
+            className={'mswitch__opt' + (on ? ' is-on' : '')}
+            aria-pressed={on}
+            onClick={() => setMemberId(on ? null : m.id)}
+          >
+            <span className="mswitch__av" style={{ background: photo ? undefined : m.colour }}>
+              {photo ? <img src={photo} alt="" /> : (m.display_name[0] ?? '?').toUpperCase()}
+            </span>
+            <span className="mswitch__name">{m.display_name}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }

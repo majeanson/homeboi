@@ -37,6 +37,12 @@ export const FR = {
       body: 'Mon téléphone, à moi. Un coup d’œil sur la journée, pis une note rapide quand ça adonne. On se connecte.',
     },
   },
+  profile: {
+    who: 'Qui es-tu ?',
+    household: 'Maisonnée',
+    askShort: 'Qui ?',
+    switch: 'Changer de personne',
+  },
   capture: {
     placeholder: 'Note quelque chose… (ex. souper spaghetti jeudi)',
     add: 'Ajouter',
@@ -377,6 +383,12 @@ export const EN: typeof FR = {
       title: 'My device',
       body: 'My own phone. A glance at the day, and a quick note when it suits. You sign in.',
     },
+  },
+  profile: {
+    who: 'Who are you?',
+    household: 'Everyone',
+    askShort: 'Who?',
+    switch: 'Switch person',
   },
   capture: {
     placeholder: 'Jot something down… (e.g. supper spaghetti thursday)',

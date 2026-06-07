@@ -2,13 +2,14 @@ import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { normalizeItem } from '../_lib/normalize'
+import { profileMemberId } from '../_lib/profile'
 
 // Shared list: read open + recently-checked, add, toggle, delete. Both operator
 // and kiosk can write — ticking a grocery item is exactly what the wall tablet
 // is for. No score for clearing items (NFR-CALM): done is just done.
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, text, source, checked_at FROM list_items WHERE household_id = ? ORDER BY checked_at IS NOT NULL, created_at',
+    'SELECT id, text, source, added_by, checked_at FROM list_items WHERE household_id = ? ORDER BY checked_at IS NOT NULL, created_at',
   )
     .bind(actor.householdId)
     .all()
@@ -21,9 +22,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!text) return badRequest('Texte requis.')
   const id = newId()
   await ctx.env.DB.prepare(
-    'INSERT INTO list_items (id, household_id, text, source, created_at) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO list_items (id, household_id, text, source, added_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
   )
-    .bind(id, actor.householdId, text, 'manual', nowSec())
+    .bind(id, actor.householdId, text, 'manual', profileMemberId(ctx.request), nowSec())
     .run()
   return ok({ id, text })
 })

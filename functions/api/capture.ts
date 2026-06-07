@@ -5,6 +5,7 @@ import { type Actor } from '../_lib/household'
 import { classifyCapture, resolveLang, type Intent } from '../_lib/ai'
 import { newId, nowSec } from '../_lib/ids'
 import { parseWhen } from '../_lib/whenparse'
+import { profileMemberId } from '../_lib/profile'
 
 // THE SPINE. One free-text (or already-transcribed voice) capture in; the
 // intent-router classifies it; we route it to the right table. Every capture
@@ -30,7 +31,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .bind(newId(), actor.householdId, text, source, intent.type, ts)
     .run()
 
-  const routed = await routeIntent(ctx.env, actor, intent, text, ts)
+  const routed = await routeIntent(ctx.env, actor, intent, text, ts, profileMemberId(ctx.request))
 
   return ok({ type: intent.type, degraded: intent.degraded ?? false, routed })
 })
@@ -41,6 +42,7 @@ async function routeIntent(
   intent: Intent,
   raw: string,
   ts: number,
+  addedBy: string | null,
 ): Promise<{ kind: string; label: string }> {
   const hh = actor.householdId
   const p = intent.payload
@@ -68,9 +70,9 @@ async function routeIntent(
     case 'list-item': {
       const itemText = p.item || p.text || raw
       await env.DB.prepare(
-        'INSERT INTO list_items (id, household_id, text, source, created_at) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO list_items (id, household_id, text, source, added_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
       )
-        .bind(newId(), hh, itemText, 'capture', ts)
+        .bind(newId(), hh, itemText, 'capture', addedBy, ts)
         .run()
       return { kind: 'list-item', label: itemText }
     }
@@ -86,8 +88,8 @@ async function routeIntent(
           ts,
         ),
         env.DB.prepare(
-          'INSERT INTO list_items (id, household_id, text, source, created_at) VALUES (?, ?, ?, ?, ?)',
-        ).bind(newId(), hh, item, 'pantry-low', ts),
+          'INSERT INTO list_items (id, household_id, text, source, added_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        ).bind(newId(), hh, item, 'pantry-low', addedBy, ts),
       ])
       return { kind: 'pantry-low', label: item }
     }

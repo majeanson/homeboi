@@ -32,7 +32,7 @@ const BOARD = {
   tonight: { id: 'meal1', title: 'Spaghetti maison', cook_member_id: 'm2' },
   tomorrowMeal: { id: 'meal2', title: 'Tacos', cook_member_id: 'm1' },
   list: [
-    { id: 'l1', text: 'Lait', source: 'manual' },
+    { id: 'l1', text: 'Lait', source: 'manual', added_by: 'm1' },
     { id: 'l2', text: 'Pain', source: 'manual' },
     { id: 'l3', text: 'Pommes', source: 'ghost' },
     { id: 'l4', text: 'Couches', source: 'manual' },

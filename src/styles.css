@@ -3485,6 +3485,161 @@ a {
   margin-bottom: 0.5rem;
 }
 
+/* ---- Pick-your-face: chip, picker faces, "you" accents ------------------- */
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.profile-chip__av {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-family: var(--display);
+}
+.profile-chip__ask {
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+.profile-faces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.profile-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.3rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  cursor: pointer;
+}
+.profile-face.is-sel {
+  border-color: var(--accent);
+}
+.profile-face__av {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.4rem;
+  font-family: var(--display);
+  overflow: hidden;
+}
+.profile-face__av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profile-face__av--all {
+  background: var(--paper-deep);
+}
+.profile-face__name {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+/* A quiet "this is yours" accent on the board's activity cards. */
+.act--mine {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.act__mine {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+/* Who-added-it tint on a shared-list row. */
+.list-row__by {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 0.4rem;
+}
+
+/* Kiosk member switcher: a calm one-tap face row (Maisonnée + each member). */
+.mswitch {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0 0 1.25rem;
+}
+.mswitch__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.8rem 0.35rem 0.35rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  color: var(--ink-soft);
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast);
+}
+.mswitch__opt:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.mswitch__opt.is-on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.mswitch__av {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-family: var(--display);
+  overflow: hidden;
+  flex: none;
+}
+.mswitch__av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mswitch__av--all {
+  background: var(--paper-deep);
+}
+.mswitch__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
 /* ---- Image zoom (flyer / deal proof at the till) -------------------------- */
 .zoom-overlay {
   position: fixed;

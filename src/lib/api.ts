@@ -33,6 +33,16 @@ function readLang(): string | null {
   }
 }
 
+// The picked member id for this device (lib/profile), read straight from storage
+// so api() stays a plain function (no React context).
+function readProfile(): string | null {
+  try {
+    return localStorage.getItem('babillard-profile')
+  } catch {
+    return null
+  }
+}
+
 type Options = { method?: string; body?: unknown }
 
 export async function api<T = unknown>(path: string, opts: Options = {}): Promise<T> {
@@ -54,6 +64,11 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   // Tell the server which language to answer AI calls in.
   const lang = readLang()
   if (lang) headers['X-Lang'] = lang
+
+  // Who's acting on this device (pick-your-face), so writes can be attributed.
+  // Presentation/attribution only — never an access decision (see lib/profile).
+  const profile = readProfile()
+  if (profile) headers['X-Profile'] = profile
 
   // CSRF double-submit for state-changing operator requests.
   if (method !== 'GET' && method !== 'HEAD') {
