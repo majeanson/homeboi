@@ -1,67 +1,137 @@
 import { test, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { mockApi, seedState, type Theme } from './mocks'
 
-// Visual capture of the overlay surfaces (sheets/modals) that screenshots.spec
-// can't reach because they only exist after an interaction. Phone format — these
-// are phone-first surfaces. Writes PNGs to e2e/screenshots for review; not
+// Visual capture of the overlay surfaces (sheets / modals) that screenshots.spec
+// can't reach — they only exist after an interaction. Phone format (these are
+// phone-first), day + night. Writes PNGs to e2e/screenshots for review; not
 // pixel-regression. Run: npx playwright test sheets.spec.ts
 
 const PHONE = { width: 390, height: 844 }
 
-async function boot(page: Page, path: string) {
+async function boot(page: Page, path: string, theme: Theme = 'day') {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize(PHONE)
   await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
+  await seedState(page, { theme, audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
   await page.goto(path)
   await page.locator('.hub, .page').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
   await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
 }
 
-const shoot = (page: Page, name: string) =>
-  page.screenshot({ path: `e2e/screenshots/${name}.png` })
+const shoot = (page: Page, name: string) => page.screenshot({ path: `e2e/screenshots/${name}.png` })
 
-test('sheet-add-capture', async ({ page }) => {
-  await boot(page, '/board')
-  await page.locator('.qcap').click()
-  await page.locator('.sheet__field input').waitFor({ state: 'visible' })
-  await page.waitForTimeout(300)
-  await shoot(page, 'sheet-add-capture-phone')
-})
+// Open the recipe book (behind the Recettes sub-tab) and a recipe modal.
+async function openRecipe(page: Page) {
+  await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
+  await page.locator('.recipe-card').first().click()
+  await page.locator('.recipe-modal').waitFor({ state: 'visible' })
+}
 
+for (const theme of ['day', 'night'] as Theme[]) {
+  const sfx = theme === 'night' ? '-night' : ''
+
+  test(`sheet-add-capture${sfx}`, async ({ page }) => {
+    await boot(page, '/board', theme)
+    await page.locator('.qcap').click()
+    await page.locator('.sheet__field input').waitFor({ state: 'visible' })
+    await page.waitForTimeout(250)
+    await shoot(page, `sheet-add-capture-phone${sfx}`)
+  })
+
+  test(`sheet-recipe${sfx}`, async ({ page }) => {
+    await boot(page, '/kitchen', theme)
+    await openRecipe(page)
+    await page.waitForTimeout(250)
+    await shoot(page, `sheet-recipe-phone${sfx}`)
+  })
+
+  test(`sheet-cook-step${sfx}`, async ({ page }) => {
+    await boot(page, '/kitchen', theme)
+    await openRecipe(page)
+    await page.locator('.recipe-actions .btn--primary').click() // Cuisiner
+    await page.locator('.cook').waitFor({ state: 'visible' })
+    await page.locator('.cook__arrow--next').click() // ingredients → step 1 (has a 10-min timer)
+    await page.locator('.cook__timer-chip').first().waitFor({ state: 'visible' }).catch(() => {})
+    await page.waitForTimeout(250)
+    await shoot(page, `sheet-cook-step-phone${sfx}`)
+  })
+
+  test(`sheet-deals${sfx}`, async ({ page }) => {
+    await boot(page, '/liste', theme)
+    await page.getByRole('button', { name: /Parcourir/ }).click()
+    await page.locator('.pm-sheet').waitFor({ state: 'visible' })
+    await page.locator('.deal-stores .chip', { hasText: 'lait' }).first().click()
+    await page.locator('.deal-list').waitFor({ state: 'visible' }).catch(() => {})
+    await page.waitForTimeout(300)
+    await shoot(page, `sheet-deals-phone${sfx}`)
+  })
+
+  test(`sheet-pricematch${sfx}`, async ({ page }) => {
+    await boot(page, '/liste', theme)
+    await page.locator('.list-row__proof').first().click()
+    await page.locator('.pm-sheet').waitFor({ state: 'visible' })
+    await page.locator('.deal-list').waitFor({ state: 'visible' }).catch(() => {})
+    await page.waitForTimeout(300)
+    await shoot(page, `sheet-pricematch-phone${sfx}`)
+  })
+
+  test(`sheet-cashier-review${sfx}`, async ({ page }) => {
+    await boot(page, '/liste', theme)
+    await page.getByRole('button', { name: /Choisir les meilleurs/ }).click()
+    await page.locator('.cashier').waitFor({ state: 'visible', timeout: 15_000 })
+    await page.locator('.review-row').first().waitFor({ state: 'visible' }).catch(() => {})
+    await page.waitForTimeout(300)
+    await shoot(page, `sheet-cashier-review-phone${sfx}`)
+  })
+}
+
+// Day-only one-offs (forms / secondary states).
 test('sheet-add-event', async ({ page }) => {
   await boot(page, '/board')
   await page.locator('.qcap').click()
   await page.locator('.sheet__field input').waitFor({ state: 'visible' })
   await page.locator('.cat-pick').nth(1).click()
   await page.locator('.sheet input[type="date"]').waitFor({ state: 'visible' })
-  await page.waitForTimeout(300)
+  await page.waitForTimeout(250)
   await shoot(page, 'sheet-add-event-phone')
 })
 
-test('sheet-recipe', async ({ page }) => {
+test('sheet-recipe-form', async ({ page }) => {
   await boot(page, '/kitchen')
   await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
-  await page.locator('.recipe-card').first().click()
+  await page.locator('.kitchen__head').first().locator('button').click() // ＋ Ajouter
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
-  await page.waitForTimeout(300)
-  await shoot(page, 'sheet-recipe-phone')
+  await page.waitForTimeout(250)
+  await shoot(page, 'sheet-recipe-form-phone')
 })
 
-test('sheet-cook', async ({ page }) => {
-  await boot(page, '/kitchen')
-  await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
-  await page.locator('.recipe-card').first().click()
-  await page.locator('.recipe-modal').waitFor({ state: 'visible' })
-  await page.locator('.recipe-actions .btn--primary').click()
-  await page.locator('.cook').waitFor({ state: 'visible' })
-  await page.waitForTimeout(300)
-  await shoot(page, 'sheet-cook-phone')
+test('sheet-cashier-present', async ({ page }) => {
+  await boot(page, '/liste')
+  await page.getByRole('button', { name: /Choisir les meilleurs/ }).click()
+  await page.locator('.cashier').waitFor({ state: 'visible', timeout: 15_000 })
+  await page.locator('.cashier__go').click()
+  await page.locator('.bigcard').waitFor({ state: 'visible' })
+  await page.waitForTimeout(250)
+  await shoot(page, 'sheet-cashier-present-phone')
 })
 
-test('sheet-deals', async ({ page }) => {
+test('sheet-deals-store', async ({ page }) => {
   await boot(page, '/liste')
   await page.getByRole('button', { name: /Parcourir/ }).click()
-  await page.waitForTimeout(600)
-  await shoot(page, 'sheet-deals-phone')
+  await page.locator('.pm-sheet').waitFor({ state: 'visible' })
+  await page.locator('.deal-tabs .subtabs__opt', { hasText: 'magasin' }).click()
+  await page.locator('.flyer-stores').waitFor({ state: 'visible' }).catch(() => {})
+  await page.waitForTimeout(300)
+  await shoot(page, 'sheet-deals-store-phone')
+})
+
+test('sheet-flyer', async ({ page }) => {
+  await boot(page, '/liste')
+  await page.getByRole('button', { name: /Parcourir/ }).click()
+  await page.locator('.pm-sheet').waitFor({ state: 'visible' })
+  await page.locator('.deal-tabs .subtabs__opt', { hasText: 'magasin' }).click()
+  await page.locator('.flyer-store').first().click()
+  await page.locator('.flyer-overlay').waitFor({ state: 'visible' })
+  await page.waitForTimeout(400)
+  await shoot(page, 'sheet-flyer-phone')
 })

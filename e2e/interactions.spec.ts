@@ -441,7 +441,7 @@ test.describe('list', () => {
   test('the by-store tab opens a store flyer without searching', async ({ page }) => {
     await page.locator('.list-actions').first().locator('button').click()
     await expect(page.locator('.deal-tabs')).toBeVisible()
-    await page.getByRole('button', { name: /Par magasin/ }).click()
+    await page.getByRole('tab', { name: /Par magasin/ }).click()
     await expect(page.locator('.flyer-store').first()).toBeVisible()
     await page.locator('.flyer-store', { hasText: 'Super C' }).click()
     await expect(page.locator('.flyer-overlay')).toBeVisible()

@@ -124,20 +124,24 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div className="deal-tabs mono">
+        {/* Mode switch (search vs browse-a-store) — a segmented control, not chips,
+            so it doesn't read as another filter row above the actual filters. */}
+        <div className="subtabs deal-tabs" role="tablist" aria-label={t.shop.browseTitle}>
           <button
             type="button"
-            className={`chip${mode === 'item' ? ' is-on' : ''}`}
+            role="tab"
+            className={`subtabs__opt${mode === 'item' ? ' is-on' : ''}`}
             onClick={() => setMode('item')}
-            aria-pressed={mode === 'item'}
+            aria-selected={mode === 'item'}
           >
             🔎 {t.shop.byItem}
           </button>
           <button
             type="button"
-            className={`chip${mode === 'store' ? ' is-on' : ''}`}
+            role="tab"
+            className={`subtabs__opt${mode === 'store' ? ' is-on' : ''}`}
             onClick={() => setMode('store')}
-            aria-pressed={mode === 'store'}
+            aria-selected={mode === 'store'}
           >
             🏬 {t.shop.byStore}
           </button>
