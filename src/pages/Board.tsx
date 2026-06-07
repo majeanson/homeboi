@@ -2,18 +2,19 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { BigTiles, type Tile } from '../components/BigTiles'
-import { Icon } from '../components/Icon'
+import { Icon, type IconName } from '../components/Icon'
 import { CATS, TOD_ICON, type CatKey } from '../lib/cats'
 import { tintInk } from '../lib/colors'
-import { useLang, useT } from '../i18n'
+import { useLang, useT, type Lang } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useAddSheet } from '../lib/addSheet'
+import { readBoardView, saveBoardView, type BoardView } from '../lib/boardview'
 import { useSpeak } from '../lib/speak'
 import { timeOfDay } from '../lib/timeofday'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
-import { weatherEmoji, type Weather } from '../lib/weather'
+import { weatherEmoji, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { imgUrl } from '../lib/image'
 import { formatClock, formatDay, formatTime } from '../lib/format'
 import { pictoFor } from '../lib/picto'
@@ -53,6 +54,12 @@ export function Board() {
   const { open: openAdd } = useAddSheet()
   const speak = useSpeak()
   const [clock, setClock] = useState(() => formatClock(lang, Date.now()))
+  // The board layout for this device (bento | next | lanes), remembered locally.
+  const [view, setView] = useState<BoardView>(() => readBoardView())
+  function changeView(v: BoardView) {
+    setView(v)
+    saveBoardView(v)
+  }
 
   // The whole board in one live read (see `live` in lib/query: polls + refetches
   // on focus so another phone's change lands here within a tick). TanStack keeps
@@ -73,11 +80,13 @@ export function Board() {
   const FIFTEEN_MIN = 15 * 60 * 1000
   const { data: wx } = useQuery({
     queryKey: ['weather'],
-    queryFn: () => api<{ weather: Weather | null }>('weather'),
+    queryFn: () => api<{ weather: Weather | null; tomorrow: DayOutlook | null }>('weather'),
     refetchInterval: FIFTEEN_MIN,
     staleTime: FIFTEEN_MIN,
   })
   const weather = wx?.weather ?? null
+  const tomorrowWx = wx?.tomorrow ?? null
+  const tip = weatherTip(weather)
 
   useEffect(() => {
     const c = setInterval(() => setClock(formatClock(lang, Date.now())), 30000)
@@ -215,14 +224,24 @@ export function Board() {
               </span>
             )}
           </div>
+          {/* One calm dressing tip from today's weather — hides when there's nothing
+              worth saying (the usual case). */}
+          {tip && <div className="weather-tip mono">{t.weather.tip[tip]}</div>}
         </div>
-        <div className="avatar" style={{ background: 'var(--marigold-wash)' }}>
-          <Icon name={TOD_ICON[tod]} size={26} color="var(--marigold-deep)" />
+        <div className="board-head__right">
+          <BoardViewToggle view={view} onChange={changeView} t={t} />
+          <div className="avatar" style={{ background: 'var(--marigold-wash)' }}>
+            <Icon name={TOD_ICON[tod]} size={26} color="var(--marigold-deep)" />
+          </div>
         </div>
       </div>
 
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
+      ) : view === 'next' ? (
+        <NowNext data={data} lang={lang} t={t} />
+      ) : view === 'lanes' ? (
+        <Lanes data={data} lang={lang} t={t} />
       ) : (
         <div className="board-grid">
           {data.tonight && (
@@ -242,6 +261,14 @@ export function Board() {
           </Section>
 
           <Section label={t.board.tomorrow} count={data.tomorrow.length + (data.tomorrowMeal ? 1 : 0)}>
+            {tomorrowWx && (
+              <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
+                <span aria-hidden="true">
+                  {weatherEmoji({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
+                </span>{' '}
+                {tomorrowWx.highC}° / {tomorrowWx.lowC}°
+              </div>
+            )}
             {data.tomorrowMeal && (
               <Act cat="meal" title={data.tomorrowMeal.title} who={cookLine(data.tomorrowMeal)} />
             )}
@@ -358,5 +385,143 @@ function Act({
     )
   }
   return <div className={'act' + (done ? ' done' : '')}>{body}</div>
+}
+
+// ---- Board view switching --------------------------------------------------
+// Module helpers so the alternate views (NowNext, Lanes) don't recreate Board's
+// member lookups.
+type Dict = ReturnType<typeof useT>
+const nameOf = (members: Member[], id: string | null) => members.find((m) => m.id === id)?.display_name ?? null
+const colorOf = (members: Member[], id: string | null) => members.find((m) => m.id === id)?.colour
+
+// A tiny segmented control in the board header: bento (grid) · next (focus) ·
+// lanes (per-person). Calm and small; the choice is remembered per device.
+function BoardViewToggle({ view, onChange, t }: { view: BoardView; onChange: (v: BoardView) => void; t: Dict }) {
+  const opts: { v: BoardView; icon: IconName; label: string }[] = [
+    { v: 'bento', icon: 'calendar-blank-bold', label: t.boardView.bento },
+    { v: 'next', icon: 'clock-bold', label: t.boardView.next },
+    { v: 'lanes', icon: 'smiley-bold', label: t.boardView.lanes },
+  ]
+  return (
+    <div className="boardview" role="group" aria-label={t.boardView.label}>
+      {opts.map((o) => (
+        <button
+          key={o.v}
+          type="button"
+          className={'boardview__opt' + (view === o.v ? ' is-on' : '')}
+          aria-pressed={view === o.v}
+          aria-label={o.label}
+          title={o.label}
+          onClick={() => onChange(o.v)}
+        >
+          <Icon name={o.icon} size={18} />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// "Now & Next" — a departure-board focus: the next thing up, big, with the one
+// after it small beneath. Falls back to tonight's supper, then a calm empty.
+// All-day items ride along as a quiet footer (they have no clock to sort by).
+function NowNext({ data, lang, t }: { data: BoardData; lang: Lang; t: Dict }) {
+  const now = Date.now() / 1000
+  const timed = data.today.filter((e) => !e.all_day).sort((a, b) => a.start_at - b.start_at)
+  const allDay = data.today.filter((e) => e.all_day)
+  // Something that started in the last 30 min still counts as "now".
+  const upcoming = timed.filter((e) => e.start_at >= now - 1800)
+  const next = upcoming[0]
+  const then = upcoming[1]
+  const nextColor = next ? colorOf(data.members, next.member_id) : undefined
+  const nextWho = next ? nameOf(data.members, next.member_id) : null
+
+  return (
+    <div className="nownext">
+      {next ? (
+        <div className="nownext__focus" style={{ borderColor: (nextColor ?? CATS.event.color) + '55' }}>
+          <div className="nownext__when mono">{formatTime(next.start_at, lang)}</div>
+          <div className="nownext__title" style={{ color: tintInk(nextColor ?? CATS.event.color) }}>
+            {next.title}
+          </div>
+          {nextWho && <div className="nownext__who">{nextWho}</div>}
+        </div>
+      ) : data.tonight ? (
+        <div className="nownext__focus" style={{ borderColor: CATS.meal.color + '55' }}>
+          <div className="nownext__when mono">{t.board.tonight}</div>
+          <div className="nownext__title" style={{ color: CATS.meal.deep }}>
+            {data.tonight.title}
+          </div>
+        </div>
+      ) : (
+        <div className="nownext__focus nownext__focus--empty">
+          <div className="nownext__title">{t.boardView.nothingNext}</div>
+        </div>
+      )}
+
+      {then && (
+        <div className="nownext__then">
+          <span className="nownext__then-label mono">{t.boardView.then}</span>
+          <span className="nownext__then-when mono">{formatTime(then.start_at, lang)}</span>
+          <span className="nownext__then-title">{then.title}</span>
+        </div>
+      )}
+
+      {allDay.length > 0 && (
+        <div className="nownext__allday mono">
+          {t.board.allDay} · {allDay.map((e) => e.title).join(' · ')}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Per-person "lanes": one column per family member showing their day — today's
+// events plus whichever chore is currently their turn (rotation_json[current_idx]).
+function Lanes({ data, lang, t }: { data: BoardData; lang: Lang; t: Dict }) {
+  const choresFor = (memberId: string) =>
+    data.chores.filter((c) => {
+      try {
+        const rot = JSON.parse(c.rotation_json) as string[]
+        return rot[c.current_idx] === memberId
+      } catch {
+        return false
+      }
+    })
+
+  return (
+    <div className="lanes">
+      {data.members.map((m) => {
+        const events = data.today.filter((e) => e.member_id === m.id)
+        const chores = choresFor(m.id)
+        const empty = events.length === 0 && chores.length === 0
+        return (
+          <div key={m.id} className="lane bento">
+            <div className="lane__head" style={{ color: tintInk(m.colour) }}>
+              <span className="lane__dot" style={{ background: m.colour }} aria-hidden="true" />
+              {m.display_name}
+            </div>
+            {empty ? (
+              <p className="feed-empty">—</p>
+            ) : (
+              <>
+                {events.map((e) => (
+                  <Act
+                    key={e.id}
+                    cat="event"
+                    title={e.title}
+                    when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
+                    color={m.colour}
+                  />
+                ))}
+                {chores.map((c) => (
+                  <Act key={c.id} cat="chore" title={c.title} color={c.color ?? m.colour} />
+                ))}
+              </>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 

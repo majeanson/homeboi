@@ -74,6 +74,18 @@ for (const surface of SURFACES) {
   }
 }
 
+// The two alternate board layouts (kiosk wall): Now & Next, and per-person lanes.
+for (const boardView of ['next', 'lanes'] as const) {
+  test(`board-${boardView}-parent-day-wall`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'kiosk', boardView })
+    await page.goto('/board')
+    await settle(page, '.hub')
+    await page.screenshot({ path: `e2e/screenshots/board-${boardView}-parent-day-wall.png`, fullPage: true })
+  })
+}
+
 // Language spot-check: English on the busiest surfaces, where FR→EN length
 // changes most often break a layout. Day + both formats.
 const EN_SURFACES = SURFACES.filter((s) => ['home', 'board', 'kitchen', 'settings'].includes(s.name))

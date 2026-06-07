@@ -300,6 +300,20 @@ test.describe('kitchen', () => {
       edit.locator('button[type="submit"]').click(),
     )
   })
+
+  test('shop the week gathers ingredients and adds them to the list', async ({ page }) => {
+    await page.getByRole('button', { name: /Magasiner la semaine/ }).click()
+    await expect(page.locator('.kitchen__shop')).toBeVisible()
+    await expectApi(page, 'POST', 'recipe-to-list', () =>
+      page.locator('.kitchen__shop .btn--primary').click(),
+    )
+  })
+
+  test('adding a use-soon item posts it (and never touches the list)', async ({ page }) => {
+    const form = page.locator('.kitchen__soon-add')
+    await form.locator('input.input').fill('Épinards')
+    await expectApi(page, 'POST', 'use-soon', () => form.locator('button[type="submit"]').click())
+  })
 })
 
 // ────────────────────────────── recipes ────────────────────────────────
