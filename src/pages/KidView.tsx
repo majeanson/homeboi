@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useCalm } from '../lib/calm'
+import { useProfile } from '../lib/profile'
 import { useSpeak } from '../lib/speak'
 import { Icon } from '../components/Icon'
 import { Loading, PairPrompt } from '../components/Fallback'
@@ -25,6 +26,7 @@ interface Card {
 }
 interface Routine {
   id: string
+  memberId: string | null
   memberName: string | null
   color: string | null
   avatarPhoto: string | null
@@ -41,6 +43,7 @@ const fmtClock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart
 export function KidView() {
   const t = useT()
   const { calm } = useCalm()
+  const { memberId: profileId } = useProfile()
   const speak = useSpeak()
   const qc = useQueryClient()
   const [pickedId, setPickedId] = useState<string | null>(null)
@@ -131,16 +134,26 @@ export function KidView() {
     )
   }
 
+  // If this device already knows who's holding it (a picked profile, see
+  // lib/profile), skip the "Choisis ton nom" face-picker and jump straight to
+  // that member's routine(s) — no need to ask a name we already have. Falls
+  // back to everyone if the identified member has no routine of their own.
+  const mine = profileId ? routines.filter((r) => r.memberId === profileId) : []
+  const identified = mine.length > 0
+  const visible = identified ? mine : routines
+
   // "Pick your face" when there are several children's routines; a single
-  // routine auto-selects so the toddler lands straight in the story.
-  const picked = routines.find((r) => r.id === pickedId) ?? (routines.length === 1 ? routines[0] : undefined)
+  // routine auto-selects so the toddler lands straight in the story. When
+  // identified, the faces are all the same member, so we already filtered to
+  // theirs above.
+  const picked = visible.find((r) => r.id === pickedId) ?? (visible.length === 1 ? visible[0] : undefined)
   if (!picked) {
     return (
       <div className="kid">
         <main className="kid__pick">
-          <h1 className="kid__pick-title">{t.kid.pick}</h1>
+          <h1 className="kid__pick-title">{identified ? t.kid.pickRoutine : t.kid.pick}</h1>
           <div className="kid__faces">
-            {routines.map((r) => (
+            {visible.map((r) => (
               <button
                 key={r.id}
                 type="button"
@@ -153,7 +166,7 @@ export function KidView() {
                 ) : (
                   <span className="kid__face-initial">{(r.memberName ?? '?').slice(0, 1).toUpperCase()}</span>
                 )}
-                <span className="kid__face-name">{r.memberName ?? r.name}</span>
+                <span className="kid__face-name">{identified ? r.name : r.memberName ?? r.name}</span>
                 {r.cards.length > 0 && (
                   <span className="kid__face-peek" aria-hidden="true">
                     {r.cards.slice(0, 4).map((c) => c.icon || '○').join(' ')}
@@ -254,9 +267,9 @@ export function KidView() {
           )}
         </div>
 
-        {routines.length > 1 && (
+        {visible.length > 1 && (
           <button type="button" className="kid__exit mono" onClick={() => setPickedId(null)}>
-            {t.kid.pick}
+            {identified ? t.kid.pickRoutine : t.kid.pick}
           </button>
         )}
       </div>

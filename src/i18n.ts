@@ -192,6 +192,7 @@ export const FR = {
   kid: {
     title: 'Ma routine',
     pick: 'Choisis ton nom',
+    pickRoutine: 'Quelle routine ?',
     rightNow: 'c’est l’heure de',
     then: 'ensuite',
     tapNext: 'Suivant',
@@ -546,6 +547,7 @@ export const EN: typeof FR = {
   kid: {
     title: 'My routine',
     pick: 'Pick your name',
+    pickRoutine: 'Which routine?',
     rightNow: 'right now',
     then: 'then',
     tapNext: 'Next',
