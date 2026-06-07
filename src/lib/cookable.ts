@@ -51,6 +51,31 @@ export interface Ranked<R> {
   missing: string[]
 }
 
+export interface UseSoonRanked<R> {
+  recipe: R
+  uses: string[]
+}
+
+// "Use it up": rank recipes by how many of your use-soon items they'd use —
+// MOST first (the inverse of cookability). A gentle "this finishes the spinach
+// and the cream" nudge. Recipes that use none drop to the bottom.
+export function rankUseSoon<R extends { title: string; ingredients: string[] }>(
+  recipes: R[],
+  useSoon: string[],
+): UseSoonRanked<R>[] {
+  const soon = useSoon.map((s) => ({ label: s, key: normKey(s) })).filter((s) => s.key)
+  return recipes
+    .map((recipe) => {
+      const ingKeys = recipe.ingredients.map(normKey).filter(Boolean)
+      const uses: string[] = []
+      for (const s of soon) {
+        if (ingKeys.some((ing) => related(ing, s.key))) uses.push(s.label)
+      }
+      return { recipe, uses }
+    })
+    .sort((a, b) => b.uses.length - a.uses.length || a.recipe.title.localeCompare(b.recipe.title))
+}
+
 export function rankCookable<R extends { title: string; ingredients: string[] }>(
   recipes: R[],
   pantryLow: string[],

@@ -199,10 +199,11 @@ const AUTH_ME = {
 const ROUTES: Record<string, unknown> = {
   'auth/me': AUTH_ME,
   board: BOARD,
-  weather: { weather: { tempC: 21, bucket: 'clear', isDay: true } },
+  weather: { weather: { tempC: 21, bucket: 'clear', isDay: true }, tomorrow: { bucket: 'rain', highC: 18, lowC: 11 } },
   photos: { photos: [] },
   meals: MEALS,
   pantry: PANTRY,
+  'use-soon': { soon: [{ id: 'u1', item: 'Épinards', marked_at: BASE - 3 * 3600 }, { id: 'u2', item: 'Crème', marked_at: BASE - 8 * 3600 }] },
   recipes: RECIPES,
   routines: ROUTINES,
   members: { members: MEMBERS },
@@ -270,6 +271,8 @@ export interface AppState {
   // The device role. When set, the `/` smart entry treats the device as "chosen"
   // and skips the marketing page. Leave undefined to exercise a first-time visitor.
   surface?: Surface
+  // The parent board layout (bento | next | lanes). Defaults to bento when unset.
+  boardView?: 'bento' | 'next' | 'lanes'
 }
 
 // Seed localStorage BEFORE any document script runs, so theme-bootstrap.js picks
@@ -283,6 +286,7 @@ export async function seedState(page: Page, s: AppState) {
       if (state.lang) localStorage.setItem('babillard-lang', state.lang)
       if (state.calm !== undefined) localStorage.setItem('babillard-calm', state.calm ? 'on' : 'off')
       if (state.surface) localStorage.setItem('babillard-surface', state.surface)
+      if (state.boardView) localStorage.setItem('babillard-boardview', state.boardView)
     } catch {
       /* noop */
     }

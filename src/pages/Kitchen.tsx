@@ -9,7 +9,7 @@ import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday } from '../lib/format'
 import { type Recipe, RECIPES_KEY, recipeImg, allTags } from '../lib/recipes'
-import { rankCookable } from '../lib/cookable'
+import { rankCookable, rankUseSoon, normKey } from '../lib/cookable'
 import { pictoFor } from '../lib/picto'
 import { useUndoToast } from '../lib/toast'
 import { RecipeSheet } from '../components/RecipeSheet'
@@ -24,6 +24,7 @@ type MealsData = { days: MealRow[]; weekStart: number }
 type PantryData = { low: LowRow[] }
 const MEALS_KEY = ['meals']
 const PANTRY_KEY = ['pantry']
+const USE_SOON_KEY = ['use-soon']
 
 export function Kitchen() {
   const t = useT()
@@ -38,6 +39,7 @@ export function Kitchen() {
   const [suggesting, setSuggesting] = useState(false)
   const [aiUnavailable, setAiUnavailable] = useState(false)
   const [newLow, setNewLow] = useState('')
+  const [newSoon, setNewSoon] = useState('')
   const [editDate, setEditDate] = useState<number | null>(null)
   const [mealText, setMealText] = useState('')
   // The meal -> grocery staple step (B3): after a title is entered, we offer the
@@ -48,9 +50,14 @@ export function Kitchen() {
     title: string
     options: { item: string; on: boolean }[]
   } | null>(null)
+  // "Shop this week": gather the ingredients of recipes matching the week's
+  // planned meals (minus what's already on the list) into a confirm panel.
+  const [shopPrompt, setShopPrompt] = useState<{ item: string; on: boolean }[] | null>(null)
+  const [shopBusy, setShopBusy] = useState(false)
 
   const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), ...live })
   const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry'), ...live })
+  const useSoonQ = useQuery({ queryKey: USE_SOON_KEY, queryFn: () => api<{ soon: LowRow[] }>('use-soon'), ...live })
   const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live })
   // Shares the ['board'] cache with the Board/Liste pages — read only for the
   // shopping list, used to rank recipes by "what you could cook now".
@@ -58,6 +65,9 @@ export function Kitchen() {
   const recipes = recipesQ.data?.recipes ?? []
   // "Quoi cuisiner ?": when on, sort the grid by fewest out-of-stock ingredients.
   const [cookFilter, setCookFilter] = useState(false)
+  // "À utiliser bientôt": when on, sort the grid by most use-soon items used.
+  // Mutually exclusive with cookFilter (toggling one clears the other).
+  const [useSoonFilter, setUseSoonFilter] = useState(false)
   // Recipe book overlays: a recipe being viewed, and one being created/edited
   // ('new' = a blank form). recipePickFor = the day a recipe is being chosen for.
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null)
@@ -91,11 +101,22 @@ export function Kitchen() {
   const ranked = useMemo(() => rankCookable(shownRecipes, lowItems, listItems), [shownRecipes, lowItems, listItems])
   const missingById = useMemo(() => new Map(ranked.map((r) => [r.recipe.id, r.missing])), [ranked])
   const canCookFilter = lowItems.length > 0 && recipes.length > 0
-  const recipeOrder = cookFilter && canCookFilter ? ranked.map((r) => r.recipe) : shownRecipes
+  // "Use it up" ranking: which use-soon items each recipe would finish, most first.
+  const soonItems = useMemo(() => (useSoonQ.data?.soon ?? []).map((s) => s.item), [useSoonQ.data])
+  const rankedSoon = useMemo(() => rankUseSoon(shownRecipes, soonItems), [shownRecipes, soonItems])
+  const usesById = useMemo(() => new Map(rankedSoon.map((r) => [r.recipe.id, r.uses])), [rankedSoon])
+  const canUseSoonFilter = soonItems.length > 0 && recipes.length > 0
+  const recipeOrder =
+    useSoonFilter && canUseSoonFilter
+      ? rankedSoon.map((r) => r.recipe)
+      : cookFilter && canCookFilter
+        ? ranked.map((r) => r.recipe)
+        : shownRecipes
   const unauth = isUnauthorized(meals.error) || isUnauthorized(pantry.error)
   const days = meals.data?.days ?? []
   const weekStart = meals.data?.weekStart ?? 0
   const low = pantry.data?.low ?? []
+  const soon = useSoonQ.data?.soon ?? []
 
   // Build the 7-day grid from weekStart, slotting in any planned meal.
   const week = Array.from({ length: 7 }, (_, i) => {
@@ -157,6 +178,56 @@ export function Kitchen() {
     )
   }
 
+  // Shop this week: walk the planned suppers, pull each matched recipe's
+  // ingredients, drop anything already on the list (normalized), and open a
+  // confirm panel (everything pre-checked — untick what you already have).
+  function beginShopWeek() {
+    const onList = new Set(listItems.map(normKey).filter(Boolean))
+    const picked = new Set<string>()
+    const items: string[] = []
+    for (const { meal } of week) {
+      if (!meal) continue
+      const r = recipeByTitle.get(meal.title.trim().toLowerCase())
+      if (!r) continue
+      for (const ing of r.ingredients) {
+        const k = normKey(ing)
+        if (!k || onList.has(k) || picked.has(k)) continue
+        picked.add(k)
+        items.push(ing)
+      }
+    }
+    setShopPrompt(items.map((item) => ({ item, on: true })))
+  }
+
+  function toggleShop(item: string) {
+    setShopPrompt((p) => p?.map((o) => (o.item === item ? { ...o, on: !o.on } : o)) ?? p)
+  }
+
+  async function confirmShop() {
+    const items = (shopPrompt ?? []).filter((o) => o.on).map((o) => o.item)
+    if (!items.length) {
+      setShopPrompt(null)
+      return
+    }
+    setShopBusy(true)
+    try {
+      await api('recipe-to-list', { method: 'POST', body: { items } })
+      qc.invalidateQueries({ queryKey: ['board'] })
+      qc.invalidateQueries({ queryKey: ['list'] })
+    } catch {
+      /* a failed add isn't worth an error wall — the list just won't grow */
+    } finally {
+      setShopBusy(false)
+      setShopPrompt(null)
+    }
+  }
+
+  // How many planned suppers map to a saved recipe — the shop button only shows
+  // when there's something to gather (never a no-op).
+  const shoppableCount = week.filter(
+    (w) => w.meal && recipeByTitle.get(w.meal.title.trim().toLowerCase()),
+  ).length
+
   async function addLow(e: React.FormEvent) {
     e.preventDefault()
     const item = newLow.trim()
@@ -176,6 +247,29 @@ export function Kitchen() {
       onUndo: () => prev && qc.setQueryData(PANTRY_KEY, prev),
       onCommit: () => {
         api('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
+      },
+    })
+  }
+
+  async function addSoon(e: React.FormEvent) {
+    e.preventDefault()
+    const item = newSoon.trim()
+    if (!item) return
+    setNewSoon('')
+    await api('use-soon', { method: 'POST', body: { item } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: USE_SOON_KEY })
+  }
+
+  // Clear a use-soon item (used it / tossed it). Deferred behind the undo toast,
+  // like the low list. No list side-effects — use-soon never touches shopping.
+  function clearSoonItem(s: LowRow) {
+    const prev = qc.getQueryData<{ soon: LowRow[] }>(USE_SOON_KEY)
+    qc.setQueryData<{ soon: LowRow[] }>(USE_SOON_KEY, (d) => (d ? { soon: d.soon.filter((x) => x.id !== s.id) } : d))
+    undo({
+      message: t.undo.cleared(s.item),
+      onUndo: () => prev && qc.setQueryData(USE_SOON_KEY, prev),
+      onCommit: () => {
+        api('use-soon', { method: 'DELETE', body: { id: s.id } }).catch(() => {})
       },
     })
   }
@@ -262,16 +356,58 @@ export function Kitchen() {
         <section>
           <div className="kitchen__head">
             <h2>{t.kitchen.week}</h2>
-            {(!aiUnavailable || recipes.length > 0) && (
-              <button type="button" className="btn" onClick={suggest} disabled={suggesting}>
-                {suggesting ? t.kitchen.suggestThinking : suggestion ? t.kitchen.suggestAnother : t.kitchen.suggest}
-              </button>
-            )}
+            <div className="kitchen__head-actions">
+              {shoppableCount > 0 && (
+                <button type="button" className="btn" onClick={beginShopWeek} disabled={shopBusy}>
+                  🛒 {t.kitchen.shopWeek}
+                </button>
+              )}
+              {(!aiUnavailable || recipes.length > 0) && (
+                <button type="button" className="btn" onClick={suggest} disabled={suggesting}>
+                  {suggesting ? t.kitchen.suggestThinking : suggestion ? t.kitchen.suggestAnother : t.kitchen.suggest}
+                </button>
+              )}
+            </div>
           </div>
           {suggestion && (
             <p className="kitchen__suggestion" role="status">
               🍽 {suggestion}
             </p>
+          )}
+          {shopPrompt && (
+            <div className="kitchen__staples kitchen__shop">
+              {shopPrompt.length === 0 ? (
+                <p className="kitchen__staples-q mono">{t.kitchen.shopWeekEmpty}</p>
+              ) : (
+                <>
+                  <p className="kitchen__staples-q mono">{t.kitchen.shopWeekQ}</p>
+                  <p className="kitchen__staples-hint mono">{t.kitchen.shopWeekHint}</p>
+                  <div className="kitchen__staples-chips">
+                    {shopPrompt.map((o) => (
+                      <button
+                        key={o.item}
+                        type="button"
+                        className={`chip${o.on ? ' is-on' : ''}`}
+                        onClick={() => toggleShop(o.item)}
+                        aria-pressed={o.on}
+                      >
+                        {o.on ? '☑' : '☐'} {o.item}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              <div className="kitchen__staples-actions">
+                {shopPrompt.length > 0 && (
+                  <button type="button" className="btn btn--primary mono" onClick={confirmShop} disabled={shopBusy}>
+                    {t.kitchen.shopWeekAdd}
+                  </button>
+                )}
+                <button type="button" className="btn btn--ghost mono" onClick={() => setShopPrompt(null)}>
+                  {t.common.cancel}
+                </button>
+              </div>
+            </div>
           )}
           <ul className="kitchen__week">
             {week.map(({ date, meal }) => (
@@ -432,13 +568,45 @@ export function Kitchen() {
         </section>
 
         <section>
+          <h2>{t.kitchen.useSoon}</h2>
+          <p className="kitchen__use-soon-hint mono">{t.kitchen.useSoonHint}</p>
+          <form className="kitchen__soon-add" onSubmit={addSoon}>
+            <input
+              className="input"
+              value={newSoon}
+              onChange={(e) => setNewSoon(e.target.value)}
+              placeholder={t.kitchen.useSoonAdd}
+            />
+            <button type="submit" className="btn" disabled={!newSoon.trim()}>
+              {t.capture.add}
+            </button>
+          </form>
+          {soon.length === 0 ? (
+            <p className="board__empty mono">{t.kitchen.useSoonEmpty}</p>
+          ) : (
+            <ul className="kitchen__soon">
+              {soon.map((s) => (
+                <li key={s.id}>
+                  <button type="button" className="board__list-item" onClick={() => clearSoonItem(s)}>
+                    <span className="board__check" aria-hidden="true">
+                      ☐
+                    </span>
+                    <span>{s.item}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section>
           <div className="kitchen__head">
             <h2>{t.recipes.title}</h2>
             <button type="button" className="btn" onClick={() => setEditRecipe('new')}>
               ＋ {t.recipes.add}
             </button>
           </div>
-          {(recipes.length > 3 || canCookFilter) && (
+          {(recipes.length > 3 || canCookFilter || canUseSoonFilter) && (
             <div className="kitchen__recipe-tools">
               {recipes.length > 3 && (
                 <input
@@ -453,10 +621,26 @@ export function Kitchen() {
                 <button
                   type="button"
                   className={`chip kitchen__cook-filter${cookFilter ? ' is-on' : ''}`}
-                  onClick={() => setCookFilter((v) => !v)}
+                  onClick={() => {
+                    setCookFilter((v) => !v)
+                    setUseSoonFilter(false)
+                  }}
                   aria-pressed={cookFilter}
                 >
                   🍳 {t.recipes.cookable}
+                </button>
+              )}
+              {canUseSoonFilter && (
+                <button
+                  type="button"
+                  className={`chip kitchen__soon-filter${useSoonFilter ? ' is-on' : ''}`}
+                  onClick={() => {
+                    setUseSoonFilter((v) => !v)
+                    setCookFilter(false)
+                  }}
+                  aria-pressed={useSoonFilter}
+                >
+                  ♻️ {t.recipes.useItUp}
                 </button>
               )}
             </div>
@@ -496,13 +680,22 @@ export function Kitchen() {
               {recipeOrder.map((r) => {
                 const img = recipeImg(r.image)
                 const missing = missingById.get(r.id) ?? []
+                const uses = usesById.get(r.id) ?? []
                 return (
                   <button key={r.id} type="button" className="recipe-card surface" onClick={() => setViewRecipe(r)}>
                     <span className="recipe-card__thumb" aria-hidden="true">
                       {img ? <img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">🍳</span>}
                     </span>
                     <span className="recipe-card__title">{r.title}</span>
-                    {cookFilter && canCookFilter ? (
+                    {useSoonFilter && canUseSoonFilter ? (
+                      uses.length > 0 ? (
+                        <span className="recipe-card__sub recipe-card__uses mono">♻ {t.recipes.usesN(uses.length)}</span>
+                      ) : (
+                        r.ingredients.length > 0 && (
+                          <span className="recipe-card__sub mono">{t.recipes.count(r.ingredients.length)}</span>
+                        )
+                      )
+                    ) : cookFilter && canCookFilter ? (
                       missing.length === 0 ? (
                         <span className="recipe-card__sub recipe-card__ready mono">✓ {t.recipes.ready}</span>
                       ) : (

@@ -575,6 +575,15 @@ a {
   justify-content: space-between;
   gap: 1rem;
 }
+.kitchen__head-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+/* The "shop this week" confirm panel reuses the staples panel styling. */
+.kitchen__shop {
+  margin: 0.5rem 0 1rem;
+}
 .kitchen__suggestion {
   font-size: 1.15rem;
   padding: 0.75rem 1rem;
@@ -671,14 +680,18 @@ a {
   flex-wrap: wrap;
 }
 .kitchen__low-add,
-.kitchen__low {
+.kitchen__soon-add,
+.kitchen__low,
+.kitchen__soon {
   margin-top: 0.75rem;
 }
-.kitchen__low-add {
+.kitchen__low-add,
+.kitchen__soon-add {
   display: flex;
   gap: 0.5rem;
 }
-.kitchen__low {
+.kitchen__low,
+.kitchen__soon {
   list-style: none;
   padding: 0;
   display: flex;
@@ -3344,6 +3357,134 @@ a {
   font-size: clamp(1rem, 1.6vw, 1.4rem);
 }
 
+/* ---- Board: weather tip, tomorrow chip, view toggle & alt views ---------- */
+.board-head__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.weather-tip {
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.tomorrow-wx {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
+/* The little segmented view switch (bento · next · lanes). */
+.boardview {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+}
+.boardview__opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.boardview__opt.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* "Now & Next" focus view. */
+.nownext {
+  max-width: 46rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.nownext__focus {
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: clamp(1.5rem, 5vw, 3rem);
+  text-align: center;
+}
+.nownext__when {
+  font-size: clamp(1rem, 2.5vw, 1.6rem);
+  color: var(--ink-soft);
+}
+.nownext__title {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: clamp(2rem, 8vw, 5rem);
+  line-height: 1.05;
+  margin: 0.25rem 0;
+}
+.nownext__who {
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  color: var(--ink-soft);
+}
+.nownext__focus--empty .nownext__title {
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  color: var(--ink-faint);
+}
+.nownext__then {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  color: var(--ink-soft);
+}
+.nownext__then-when {
+  font-weight: 700;
+}
+.nownext__then-title {
+  font-size: 1.15rem;
+}
+.nownext__allday {
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
+
+/* Per-person "lanes": columns of each member's day. */
+.lanes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.lane__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 0.6rem;
+}
+.lane__dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  flex: none;
+}
+.lane .act {
+  margin-bottom: 0.5rem;
+}
+
 /* ---- Image zoom (flyer / deal proof at the till) -------------------------- */
 .zoom-overlay {
   position: fixed;
@@ -4028,7 +4169,8 @@ a {
   flex: 1 1 12rem;
   margin-bottom: 0;
 }
-.kitchen__cook-filter {
+.kitchen__cook-filter,
+.kitchen__soon-filter {
   flex: 0 0 auto;
   cursor: pointer;
   white-space: nowrap;
@@ -4042,6 +4184,15 @@ a {
 }
 .recipe-card__missing {
   color: var(--terracotta-deep, #a8442b);
+}
+.recipe-card__uses {
+  color: var(--sage-deep, #4f6b3a);
+  font-weight: 600;
+}
+.kitchen__use-soon-hint {
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  margin: 0 0 0.6rem;
 }
 /* Tag filter chips over the recipe grid; scrolls sideways on a narrow phone. */
 .kitchen__tag-filter {

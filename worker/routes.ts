@@ -33,6 +33,7 @@ import * as recipes from '../functions/api/recipes'
 import * as recipeToList from '../functions/api/recipe-to-list'
 import * as routines from '../functions/api/routines'
 import * as suggestMeal from '../functions/api/suggest-meal'
+import * as useSoon from '../functions/api/use-soon'
 import * as weather from '../functions/api/weather'
 import * as pairClaim from '../functions/api/pair/claim'
 import * as pairDevices from '../functions/api/pair/devices'
@@ -78,6 +79,7 @@ const TABLE: Record<string, RouteMod> = {
   'recipe-to-list': recipeToList,
   routines,
   'suggest-meal': suggestMeal,
+  'use-soon': useSoon,
   weather,
   'pair/claim': pairClaim,
   'pair/devices': pairDevices,
