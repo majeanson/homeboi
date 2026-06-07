@@ -247,16 +247,7 @@ export function Board() {
           <h1 className="greet">{me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]}</h1>
           <div className="subgreet">
             {formatDay(Math.floor(Date.now() / 1000), lang)} · {clock}
-            {weather && (
-              <span className="weather-chip" aria-label={`${t.weather[weather.bucket]} ${weather.tempC}°`}>
-                {' '}
-                · <span aria-hidden="true">{weatherEmoji(weather)}</span> {weather.tempC}°
-              </span>
-            )}
           </div>
-          {/* One calm dressing tip from today's weather — hides when there's nothing
-              worth saying (the usual case). */}
-          {tip && <div className="weather-tip mono">{t.weather.tip[tip]}</div>}
         </div>
         <div className="board-head__right">
           {surface === 'mobile' && (
@@ -296,20 +287,40 @@ export function Board() {
       ) : view === 'lanes' ? (
         <Lanes data={data} lang={lang} t={t} profileId={profileId} />
       ) : (
-        <div className="board-grid">
-          {data.tonight && (
-            <div className="now-card" style={{ background: CATS.meal.wash, color: CATS.meal.deep }}>
-              <div className="blob" style={{ background: CATS.meal.color }} />
-              <div className="label">{t.board.tonight}</div>
-              <div className="what">{data.tonight.title}</div>
-              {cookLine(data.tonight) && <div className="who">{cookLine(data.tonight)}</div>}
-              <div className="icn">
-                <Icon name={CATS.meal.icon} size={40} color={CATS.meal.color} />
-              </div>
+        <>
+          {/* The "today" zone: tonight's supper and today's weather as equal hero
+              cards (mirrors the toddler heroes row), so weather has a real bubble
+              instead of hiding in the timestamp line. The dressing tip rides under
+              the temperature where it's actionable. */}
+          {(data.tonight || weather) && (
+            <div className="board-heroes">
+              {data.tonight && (
+                <div className="now-card" style={{ background: CATS.meal.wash, color: CATS.meal.deep }}>
+                  <div className="blob" style={{ background: CATS.meal.color }} />
+                  <div className="label">{t.board.tonight}</div>
+                  <div className="what">{data.tonight.title}</div>
+                  {cookLine(data.tonight) && <div className="who">{cookLine(data.tonight)}</div>}
+                  <div className="icn">
+                    <Icon name={CATS.meal.icon} size={40} color={CATS.meal.color} />
+                  </div>
+                </div>
+              )}
+              {weather && (
+                <div className="now-card now-card--wx" style={{ background: CATS.event.wash, color: CATS.event.deep }}>
+                  <div className="blob" style={{ background: CATS.event.color }} />
+                  <div className="label">{t.weather[weather.bucket]}</div>
+                  <div className="what">{weather.tempC}°</div>
+                  {tip && <div className="who">{t.weather.tip[tip]}</div>}
+                  <div className="icn icn--emoji" aria-hidden="true">
+                    {weatherEmoji(weather)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          <Section label={t.board.today} count={data.today.length}>
+          <div className="board-grid">
+            <Section label={t.board.today} count={data.today.length}>
             {data.today.length === 0 ? <p className="feed-empty">—</p> : data.today.map(eventAct)}
           </Section>
 
@@ -337,8 +348,9 @@ export function Board() {
             </Section>
           )}
 
-          <PhotoFrame />
-        </div>
+            <PhotoFrame />
+          </div>
+        </>
       )}
 
       <p className="board__synced mono">{stale ? t.board.offline : `${t.board.synced} ${clock}`}</p>
@@ -473,6 +485,7 @@ function BoardViewToggle({ view, onChange, t }: { view: BoardView; onChange: (v:
           onClick={() => onChange(o.v)}
         >
           <Icon name={o.icon} size={18} />
+          <span className="boardview__label">{o.label}</span>
         </button>
       ))}
     </div>

@@ -563,6 +563,147 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  /* Let the actions drop below the heading on a narrow phone instead of
+     squeezing the title into a two-line "La / semaine". */
+  flex-wrap: wrap;
+}
+.kitchen__head h2 {
+  white-space: nowrap;
+}
+/* In-page section switch (Repas · Garde-manger · Recettes): one job at a time so
+   the kitchen isn't a five-section scroll. Mirrors the board's segmented control. */
+.subtabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  margin: 0 0 1.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+}
+.subtabs__opt {
+  flex: 1;
+  min-height: 2.4rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.subtabs__opt.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.kitchen__day-empty {
+  font-size: 0.95rem;
+  opacity: 0.7;
+}
+
+/* ---- Parent Routines overview: a card per routine (was a bare text list that
+   left the wall empty). Member colour tints the card; the step pictos preview the
+   run so a parent recognizes it at a glance. ------------------------------------ */
+.routines-parent {
+  max-width: 60rem;
+  margin: 0 auto;
+}
+.routines-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+.routine-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem 1.1rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: color-mix(in srgb, var(--tint) 8%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--tint) 28%, var(--card));
+  box-shadow: var(--shadow-sm);
+}
+.routine-card__spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+}
+.routine-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.routine-card__av {
+  flex: none;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.routine-card__av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.routine-card__title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.routine-card__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+.routine-card__who {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.routine-card__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.routine-card__step {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 10px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  box-shadow: inset 0 1px 3px rgba(72, 54, 30, 0.1);
+}
+.routine-card__more {
+  align-self: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.routine-card__steps--empty {
+  color: var(--ink-faint);
+}
+.routine-card__count {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.routines-parent__edit {
+  margin-top: 1.5rem;
 }
 .kitchen__head-actions {
   display: flex;
@@ -601,6 +742,19 @@ a {
   align-items: center;
   justify-content: center;
   flex: none;
+}
+.kitchen__day-picto {
+  font-size: 22px;
+  line-height: 1;
+}
+/* Open slot: a muted "+" on a paler tile — reads as "tap to plan", not a meal. */
+.kitchen__day-add {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-faint);
+}
+.kitchen__day:has(.kitchen__day-add) .kitchen__day-tile {
+  background: var(--paper-deep);
 }
 .kitchen__day-name {
   min-width: 5rem;
@@ -1544,6 +1698,25 @@ a {
   right: 18px;
   bottom: 14px;
   opacity: 0.9;
+}
+/* Weather hero reuses the now-card shell; its corner picture is an emoji, not a
+   Phosphor glyph, so it needs an explicit size. */
+.now-card .icn--emoji {
+  font-size: 40px;
+  line-height: 1;
+}
+/* The "today" zone: supper + weather as equal hero cards. They sit in their own
+   flex row above the section grid so weather reads as a peer of supper, and they
+   stack on a phone. */
+.board-heroes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 6px 0 22px;
+}
+.board-heroes > .now-card {
+  flex: 1 1 16rem;
+  margin: 0;
 }
 
 /* Section label: Morning / Afternoon / Evening — a rule + a quiet count. */
@@ -2552,14 +2725,23 @@ a {
   flex: 1 1 auto;
   min-width: 0;
 }
+/* The item's own picture in the tile slot (emoji, not a Phosphor glyph). */
+.list-row__pic {
+  font-size: 24px;
+  line-height: 1;
+}
+/* The price-tag affordance: a quiet, self-contained button — bordered, not a
+   solid marigold block, so it reads as its own control rather than a tab clipped
+   onto the row. Fills sage only once a deal is actually picked. */
 .list-row__proof {
   flex: 0 0 auto;
-  width: 52px;
-  border: 0;
+  width: 44px;
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: var(--marigold-wash);
+  background: transparent;
+  opacity: 0.7;
   cursor: pointer;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -2918,7 +3100,9 @@ a {
 /* --- List action bar + chosen state -------------------------------------- */
 .list-row__proof.is-picked {
   background: var(--sage, #88a36f);
+  border-color: var(--sage, #88a36f);
   color: #fff;
+  opacity: 1;
 }
 .list-actions {
   display: flex;
@@ -3524,17 +3708,34 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
+  gap: 0.35rem;
   height: 32px;
+  padding: 0 0.7rem;
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--ink-soft);
   cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.boardview__label {
+  white-space: nowrap;
 }
 .boardview__opt.is-on {
   background: var(--accent);
   color: var(--accent-ink);
+}
+/* On a tight phone the labels would crowd the header — fall back to icon-only
+   there (the labels stay for tablets/kiosk where the discoverability matters). */
+@media (max-width: 520px) {
+  .boardview__opt {
+    width: 36px;
+    padding: 0;
+  }
+  .boardview__label {
+    display: none;
+  }
 }
 
 /* "Now & Next" focus view. */
@@ -3835,26 +4036,32 @@ a {
 }
 
 /* ---- Settings tab bar ----------------------------------------------------- */
+/* The section nav. Held in ONE rounded strip (not 11 separate outlined pills, which
+   read as a filter cloud): the shared container + a single filled selection say
+   "pick a section" — the same segmented-control language as the board/kitchen. */
 .operator__tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 1rem 0 1.25rem;
+  gap: 0.25rem;
+  margin: 1rem 0 1.5rem;
+  padding: 0.3rem;
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
 }
 .operator__tab {
-  border: 1px solid var(--line);
-  background: var(--card);
+  border: 0;
+  background: transparent;
   color: var(--ink-soft);
   border-radius: var(--radius-pill);
   padding: 0.4rem 0.9rem;
-  min-height: 40px;
+  min-height: 38px;
   cursor: pointer;
   font: inherit;
 }
 .operator__tab.is-active {
   background: var(--accent);
   color: var(--on-primary);
-  border-color: transparent;
   font-weight: 600;
 }
 

@@ -90,6 +90,10 @@ export function Kitchen() {
   // Toddler meal-picking: the recipe a child has tapped and is now choosing a day
   // for (null = still browsing the recipe shelf). Picture-first, read-aloud flow.
   const [kidRecipe, setKidRecipe] = useState<Recipe | null>(null)
+  // Parent kitchen is three jobs (plan the week / track the pantry / browse the
+  // book); a sub-tab shows one at a time so the page isn't an endless scroll and
+  // the recipe filters only appear with the recipe book.
+  const [kitTab, setKitTab] = useState<'meals' | 'pantry' | 'recipes'>('meals')
   const [recipeQuery, setRecipeQuery] = useState('')
   // Single active tag filter (null = all). Drives the chip row over the grid.
   const [tagFilter, setTagFilter] = useState<string | null>(null)
@@ -452,6 +456,26 @@ export function Kitchen() {
           </div>
         </div>
 
+        <div className="subtabs" role="tablist" aria-label={t.kitchen.title}>
+          {([
+            ['meals', t.kitchen.tabMeals],
+            ['pantry', t.kitchen.tabPantry],
+            ['recipes', t.kitchen.tabRecipes],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={kitTab === key}
+              className={'subtabs__opt' + (kitTab === key ? ' is-on' : '')}
+              onClick={() => setKitTab(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {kitTab === 'meals' && (
         <section>
           <div className="kitchen__head">
             <h2>{t.kitchen.week}</h2>
@@ -516,8 +540,14 @@ export function Kitchen() {
           <ul className="kitchen__week">
             {week.map(({ date, meal }) => (
               <li key={date} className="surface kitchen__day">
+                {/* The day's own meal picture (pizza/soup/fish) when planned, a quiet
+                    "+" when the slot is open — never seven identical carrots. */}
                 <span className="kitchen__day-tile" aria-hidden="true">
-                  <Icon name="carrot-bold" size={18} color="var(--terracotta-deep)" />
+                  {meal ? (
+                    <span className="kitchen__day-picto">{pictoFor(meal.title, '🍽')}</span>
+                  ) : (
+                    <span className="kitchen__day-add">＋</span>
+                  )}
                 </span>
                 <span className="kitchen__day-name mono">{formatWeekday(date, lang)}</span>
                 {staplePrompt?.date === date ? (
@@ -619,7 +649,7 @@ export function Kitchen() {
                         setMealText(meal?.title ?? '')
                       }}
                     >
-                      {meal?.title ?? <span className="kitchen__day-empty mono">{t.kitchen.plan}</span>}
+                      {meal?.title ?? <span className="kitchen__day-empty mono">{t.kitchen.planShort}</span>}
                     </button>
                     {meal && recipeByTitle.get(meal.title.trim().toLowerCase()) && (
                       <button
@@ -638,7 +668,10 @@ export function Kitchen() {
             ))}
           </ul>
         </section>
+        )}
 
+        {kitTab === 'pantry' && (
+        <>
         <section>
           <h2>{t.kitchen.low}</h2>
           <form className="kitchen__low-add" onSubmit={addLow}>
@@ -702,7 +735,10 @@ export function Kitchen() {
             </ul>
           )}
         </section>
+        </>
+        )}
 
+        {kitTab === 'recipes' && (
         <section>
           <div className="kitchen__head">
             <h2>{t.recipes.title}</h2>
@@ -816,6 +852,7 @@ export function Kitchen() {
             </div>
           )}
         </section>
+        )}
       </main>
 
       {viewRecipe && (

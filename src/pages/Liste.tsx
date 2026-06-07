@@ -169,6 +169,10 @@ export function Liste() {
           {list.map((item) => {
             const adder = item.added_by ? memberById.get(item.added_by) : null
             const staged = picks[item.id]?.deal
+            // Draw the item's own picture (milk/bread/apple…) so the list reads as
+            // distinct things, not a column of identical sparkles. Falls back to the
+            // list category glyph only when nothing matches (a non-grocery note).
+            const pic = pictoFor(item.text, '')
             return (
             <div key={item.id} className="list-row">
               <button type="button" className="act list-row__main" onClick={() => checkOff(item)}>
@@ -177,6 +181,10 @@ export function Liste() {
                   // A linked flyer deal with a clipping → show the product picture.
                   <span className="tile list-row__thumb" aria-hidden="true">
                     <img src={staged.image} alt="" loading="lazy" />
+                  </span>
+                ) : pic ? (
+                  <span className="tile list-row__pic" style={{ background: CATS.list.wash }} aria-hidden="true">
+                    {pic}
                   </span>
                 ) : (
                   <span className="tile" style={{ background: CATS.list.wash }} aria-hidden="true">
