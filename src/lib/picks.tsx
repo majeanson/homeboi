@@ -6,7 +6,9 @@
 // survives its grocery item being checked off (you build the list at home, present
 // it in store), so it's its own store, not derived from the list.
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { type QueryClient } from '@tanstack/react-query'
 import { type Deal, type Pick } from './deals'
+import { normKey } from './cookable'
 
 export type PickEntry = { deal: Deal; itemText: string }
 export type Picks = Record<string, PickEntry>
@@ -59,4 +61,14 @@ export const usePicks = () => useContext(PicksContext)
 // survives even after its grocery item is checked off the list.
 export function toPickList(picks: Picks): Pick[] {
   return Object.entries(picks).map(([itemId, v]) => ({ itemId, itemText: v.itemText, deal: v.deal }))
+}
+
+// The id of an OPEN list item matching `name` (normalized), from the ['board']
+// cache — so adding/staging a flyer deal reuses an existing line instead of
+// inserting a duplicate. Returns null when there's no match (or no cache yet).
+export function existingListId(qc: QueryClient, name: string): string | null {
+  const key = normKey(name)
+  if (!key) return null
+  const board = qc.getQueryData<{ list?: { id: string; text: string }[] }>(['board'])
+  return board?.list?.find((i) => normKey(i.text) === key)?.id ?? null
 }

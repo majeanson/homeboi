@@ -5,7 +5,7 @@ import { useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { type Deal } from '../lib/deals'
-import { usePicks } from '../lib/picks'
+import { usePicks, existingListId } from '../lib/picks'
 
 // Price-match proof sheet (Maxi "Imbattable" et al.): given a grocery item, pull
 // current competitor flyer deals near the household's postal code and show each
@@ -57,6 +57,7 @@ export function PriceMatchSheet({
   // Drop an item straight onto the grocery list (from a deal card or the flyer).
   async function addToList(name: string) {
     setAdded(name)
+    if (existingListId(qc, name)) return // already on the list — no duplicate
     await api('list', { method: 'POST', body: { text: name } }).catch(() => {})
     qc.invalidateQueries({ queryKey: ['board'] })
   }
