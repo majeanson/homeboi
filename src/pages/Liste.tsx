@@ -68,10 +68,18 @@ export function Liste() {
   // refresh the ghost strip once it commits.
   function checkOff(item: ListRow) {
     const prev = qc.getQueryData<BoardListData>(BOARD_KEY)
+    // The list and the "show the cashier" set are one thing: checking an item off
+    // also drops its staged flyer deal so the cashier stepper stays in sync.
+    // Capture the pick first so undo restores both the line and its deal.
+    const prevPick = picks[item.id]
     qc.setQueryData<BoardListData>(BOARD_KEY, (d) => (d ? { ...d, list: d.list.filter((i) => i.id !== item.id) } : d))
+    if (prevPick) removePick(item.id)
     undo({
       message: t.undo.checked(item.text),
-      onUndo: () => prev && qc.setQueryData(BOARD_KEY, prev),
+      onUndo: () => {
+        if (prev) qc.setQueryData(BOARD_KEY, prev)
+        if (prevPick) choose(item.id, prevPick.itemText, prevPick.deal)
+      },
       onCommit: () => {
         api('list', { method: 'PATCH', body: { id: item.id, checked: true } }).catch(() => {})
         qc.invalidateQueries({ queryKey: GHOSTS_KEY })
