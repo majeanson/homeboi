@@ -427,15 +427,41 @@ test.describe('list', () => {
     await expect(page.locator('.pm-overlay .deals-search')).toBeVisible()
   })
 
-  test('staging a deal from the browser adds it to the list (→ cashier)', async ({ page }) => {
+  test('adding a deal from the browser adds it to the list (and links it → cashier)', async ({ page }) => {
     await page.locator('.list-actions').first().locator('button').click()
     await expect(page.locator('.deals-search')).toBeVisible()
     await page.locator('.deals-search input').fill('lait')
     await page.locator('.deals-search button[type="submit"]').click()
     await expect(page.locator('.deal').first()).toBeVisible()
+    // "Ajouter à la liste" now also stages the deal for the cashier (one action).
     await expectApi(page, 'POST', 'list', () =>
-      page.getByRole('button', { name: /Montrer à la caisse/ }).first().click(),
+      page.locator('.deal').first().getByRole('button', { name: /Ajouter à la liste/ }).click(),
     )
+  })
+
+  test('checking an item off also drops its staged cashier pick', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    // Seed a staged deal keyed to the first list item (Lait, id l1).
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'babillard-cashier-picks',
+        JSON.stringify({
+          l1: {
+            itemText: 'Lait',
+            deal: { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: null, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', image: null, validFrom: null, validTo: null },
+          },
+        }),
+      )
+    })
+    await page.goto('/liste')
+    await settle(page, '.hub')
+    // The pick surfaces the "show the cashier" button.
+    await expect(page.getByRole('button', { name: /Montrer à la caisse/ })).toBeVisible()
+    // Check the Lait row off → its pick is dropped → the cashier button is gone.
+    await page.locator('.list-row').first().locator('.list-row__main').click()
+    await expect(page.getByRole('button', { name: /Montrer à la caisse/ })).toHaveCount(0)
   })
 
   test('the by-store tab opens a store flyer without searching', async ({ page }) => {

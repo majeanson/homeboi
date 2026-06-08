@@ -7,9 +7,12 @@ import { ZoomableImg } from './ZoomableImg'
 // price-match proof sheet AND the standalone flyer browser so both render deals
 // identically. Actions are opt-in via props:
 //   onViewFlyer — open the full flyer (only when the deal has a flyerId)
-//   onAddToList — drop this deal onto the shared grocery list
+//   onAddToList — drop this deal onto the shared grocery list (plain add)
 //   onChoose    — pick this price for the cashier list (proof sheet only)
-//   onStage     — add to the list AND stage for the cashier in one tap (browser)
+//   onStage     — add to the list AND link the deal for the cashier in one tap.
+//                 When present it REPLACES the plain add: "add to list" always
+//                 carries the deal to the cashier (image + price), so there's no
+//                 separate "show the cashier" button to think about.
 export function DealCard({
   deal,
   isBest,
@@ -57,11 +60,21 @@ export function DealCard({
               {t.shop.viewFlyer} →
             </button>
           )}
-          {onAddToList && (
+          {/* One "add to list" action: it links the deal for the cashier when it
+              can (onStage), else a plain add. No separate "show the cashier". */}
+          {onStage ? (
+            <button
+              type="button"
+              className={`deal__choose mono${staged ? ' is-chosen' : ''}`}
+              onClick={() => onStage(deal)}
+            >
+              {staged ? `✓ ${t.shop.addToList}` : `+ ${t.shop.addToList}`}
+            </button>
+          ) : onAddToList ? (
             <button type="button" className="deal__choose mono" onClick={() => onAddToList(deal.name)}>
               {added ? `✓ ${t.shop.addToList}` : `+ ${t.shop.addToList}`}
             </button>
-          )}
+          ) : null}
           {onChoose && (
             <button
               type="button"
@@ -69,15 +82,6 @@ export function DealCard({
               onClick={() => onChoose(deal)}
             >
               {isChosen ? t.shop.chosen : t.shop.choose}
-            </button>
-          )}
-          {onStage && (
-            <button
-              type="button"
-              className={`deal__choose mono${staged ? ' is-chosen' : ''}`}
-              onClick={() => onStage(deal)}
-            >
-              {staged ? `✓ ${t.shop.present}` : `🧾 ${t.shop.present}`}
             </button>
           )}
         </span>

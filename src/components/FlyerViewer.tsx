@@ -77,7 +77,6 @@ export function FlyerViewer({
 }) {
   const t = useT()
   const [addedName, setAddedName] = useState<string | null>(null)
-  const [stagedName, setStagedName] = useState<string | null>(null)
   const { lang } = useLang()
   // Cached so re-opening the same flyer (or one prefetched on wifi) is instant.
   const { data, isError } = useQuery({
@@ -262,44 +261,40 @@ export function FlyerViewer({
                 </button>
               </div>
             )}
-            {onAddToList && selected.name && (
-              <button
-                type="button"
-                className="btn btn--ghost mono flyer-detail__add"
-                onClick={() => {
-                  onAddToList(selected.name)
-                  setAddedName(selected.name)
-                }}
-              >
-                {addedName === selected.name ? `✓ ${t.shop.addToList}` : `+ ${t.shop.addToList}`}
-              </button>
-            )}
-            {onStage && selected.name && (
+            {/* One action: adding from the flyer links the deal for the cashier
+                too (store, price, image) — so the list row shows the ✓ + flyer
+                picture, and there's no separate "show the cashier" button here. */}
+            {(onStage || onAddToList) && selected.name && (
               <button
                 type="button"
                 className="btn btn--primary mono flyer-detail__add"
                 onClick={() => {
-                  // Synthesize a Deal from the flyer item + this flyer's merchant/id
-                  // so the cashier card has the store, price, and a flyer link.
-                  onStage({
-                    id: selected.id,
-                    flyerId,
-                    name: selected.name,
-                    price: selected.price,
-                    wasPrice: null,
-                    unitPrice: selected.unitPrice,
-                    unitLabel: selected.unitLabel,
-                    unitKind: selected.unitKind,
-                    unitApprox: false,
-                    merchant: title ?? '',
-                    image: selected.image,
-                    validFrom: selected.validFrom,
-                    validTo: selected.validTo,
-                  })
-                  setStagedName(selected.name)
+                  const nm = selected.name
+                  if (onStage) {
+                    // Synthesize a Deal from the flyer item + this flyer's
+                    // merchant/id so the cashier card has store, price, and image.
+                    onStage({
+                      id: selected.id,
+                      flyerId,
+                      name: nm,
+                      price: selected.price,
+                      wasPrice: null,
+                      unitPrice: selected.unitPrice,
+                      unitLabel: selected.unitLabel,
+                      unitKind: selected.unitKind,
+                      unitApprox: false,
+                      merchant: title ?? '',
+                      image: selected.image,
+                      validFrom: selected.validFrom,
+                      validTo: selected.validTo,
+                    })
+                  } else {
+                    onAddToList!(nm)
+                  }
+                  setAddedName(nm)
                 }}
               >
-                {stagedName === selected.name ? `✓ ${t.shop.present}` : `🧾 ${t.shop.present}`}
+                {addedName === selected.name ? `✓ ${t.shop.addToList}` : `+ ${t.shop.addToList}`}
               </button>
             )}
             <button
