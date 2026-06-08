@@ -5,7 +5,7 @@ import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { type Deal, type FlyerSummary } from '../lib/deals'
-import { usePicks, existingListId } from '../lib/picks'
+import { existingListId, stageDeal } from '../lib/picks'
 
 // Standalone flyer/deals browser: search what's on sale near the household this
 // week and add items straight to the shared list (or open the full flyer and add
@@ -24,7 +24,6 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
-  const { pick } = usePicks()
   // Two ways to browse: by article (search) or by magasin (open a store's flyer).
   const [mode, setMode] = useState<'item' | 'store'>('item')
   const [input, setInput] = useState('')
@@ -81,19 +80,12 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
     qc.invalidateQueries({ queryKey: ['board'] })
   }
 
-  // Stage a deal for the cashier in one tap: ensure it's on the list (reusing an
-  // existing line if present, else inserting), then key a pick to that item id so
-  // it shows on the list row AND flows to the cashier.
+  // Add a deal to the list in one tap — it attaches the deal to its grocery line
+  // (reusing an existing line or adding one), which both shows it on the list row
+  // and flows it to the cashier. Persisted server-side, so it's there on any device.
   async function stage(deal: Deal) {
     setStaged((prev) => new Set(prev).add(deal.name))
-    const existing = existingListId(qc, deal.name)
-    if (existing) {
-      pick(existing, deal.name, deal)
-      return
-    }
-    const res = await api<{ id: string }>('list', { method: 'POST', body: { text: deal.name } }).catch(() => null)
-    if (res?.id) pick(res.id, deal.name, deal)
-    qc.invalidateQueries({ queryKey: ['board'] })
+    await stageDeal(qc, deal.name, deal)
   }
 
   const stores = deals ? [...new Set(deals.map((d) => d.merchant).filter(Boolean))].sort() : []

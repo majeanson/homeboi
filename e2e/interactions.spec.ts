@@ -439,27 +439,12 @@ test.describe('list', () => {
     )
   })
 
-  test('checking an item off also drops its staged cashier pick', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await mockApi(page)
-    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
-    // Seed a staged deal keyed to the first list item (Lait, id l1).
-    await page.addInitScript(() => {
-      localStorage.setItem(
-        'babillard-cashier-picks',
-        JSON.stringify({
-          l1: {
-            itemText: 'Lait',
-            deal: { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: null, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', image: null, validFrom: null, validTo: null },
-          },
-        }),
-      )
-    })
-    await page.goto('/liste')
+  test('checking an item off also drops its staged cashier deal', async ({ page }) => {
+    await APP('/liste')(page)
     await settle(page, '.hub')
-    // The pick surfaces the "show the cashier" button.
+    // l1 (Lait) carries a staged deal server-side → the cashier button shows.
     await expect(page.getByRole('button', { name: /Montrer à la caisse/ })).toBeVisible()
-    // Check the Lait row off → its pick is dropped → the cashier button is gone.
+    // Check the Lait row off → it leaves the open list → leaves the cashier set.
     await page.locator('.list-row').first().locator('.list-row__main').click()
     await expect(page.getByRole('button', { name: /Montrer à la caisse/ })).toHaveCount(0)
   })
