@@ -17,14 +17,17 @@ export const onRequestGet = authed(async (ctx, actor) => {
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ text?: string }>(ctx.request)
+  // `deal` optionally stages a flyer deal onto the new line (the cashier set lives
+  // on the list now) — stored as JSON; absent for an ordinary grocery item.
+  const body = await readJson<{ text?: string; deal?: unknown }>(ctx.request)
   const text = body?.text?.trim()
   if (!text) return badRequest('Texte requis.')
   const id = newId()
+  const dealJson = body?.deal ? JSON.stringify(body.deal) : null
   await ctx.env.DB.prepare(
-    'INSERT INTO list_items (id, household_id, text, source, added_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO list_items (id, household_id, text, source, added_by, deal_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
   )
-    .bind(id, actor.householdId, text, 'manual', profileMemberId(ctx.request), nowSec())
+    .bind(id, actor.householdId, text, 'manual', profileMemberId(ctx.request), dealJson, nowSec())
     .run()
   return ok({ id, text })
 })
@@ -32,34 +35,46 @@ export const onRequestPost = authed(async (ctx, actor) => {
 // PATCH toggles checked; DELETE removes. Scoped to the household so a kiosk
 // can't touch another household's rows even with a forged id.
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; checked?: boolean }>(ctx.request)
+  const body = await readJson<{ id?: string; checked?: boolean; deal?: unknown }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  const ts = body.checked ? nowSec() : null
-  // Checking an item off = buying it. Record it in purchase_log so the ghost
-  // list can learn what's bought and how often (its renewal cadence). We need
-  // the item's text for the normalized key, so fetch it, then write the toggle
-  // and the log row in one transaction. Unchecking just clears the timestamp.
-  const row = ts
-    ? await ctx.env.DB.prepare('SELECT text FROM list_items WHERE id = ? AND household_id = ?')
-        .bind(body.id, actor.householdId)
-        .first<{ text: string }>()
-    : null
-  const writes = [
-    ctx.env.DB.prepare('UPDATE list_items SET checked_at = ? WHERE id = ? AND household_id = ?').bind(
-      ts,
-      body.id,
-      actor.householdId,
-    ),
-  ]
-  const key = row ? normalizeItem(row.text) : ''
-  if (ts && row && key) {
-    writes.push(
-      ctx.env.DB.prepare(
-        'INSERT INTO purchase_log (id, household_id, item_key, text, purchased_at) VALUES (?, ?, ?, ?, ?)',
-      ).bind(newId(), actor.householdId, key, row.text, ts),
-    )
+
+  // Stage / unstage a flyer deal on this line — `deal` present (object → stage,
+  // null → unstage) updates deal_json. This is how the cashier set is built now.
+  if ('deal' in body) {
+    const dealJson = body.deal ? JSON.stringify(body.deal) : null
+    await ctx.env.DB.prepare('UPDATE list_items SET deal_json = ? WHERE id = ? AND household_id = ?')
+      .bind(dealJson, body.id, actor.householdId)
+      .run()
   }
-  await ctx.env.DB.batch(writes)
+
+  // Checking an item off = buying it. Record it in purchase_log so the ghost list
+  // can learn what's bought and how often (its renewal cadence). We need the item's
+  // text for the normalized key, so fetch it, then write the toggle and the log row
+  // in one transaction. Unchecking just clears the timestamp.
+  if (typeof body.checked === 'boolean') {
+    const ts = body.checked ? nowSec() : null
+    const row = ts
+      ? await ctx.env.DB.prepare('SELECT text FROM list_items WHERE id = ? AND household_id = ?')
+          .bind(body.id, actor.householdId)
+          .first<{ text: string }>()
+      : null
+    const writes = [
+      ctx.env.DB.prepare('UPDATE list_items SET checked_at = ? WHERE id = ? AND household_id = ?').bind(
+        ts,
+        body.id,
+        actor.householdId,
+      ),
+    ]
+    const key = row ? normalizeItem(row.text) : ''
+    if (ts && row && key) {
+      writes.push(
+        ctx.env.DB.prepare(
+          'INSERT INTO purchase_log (id, household_id, item_key, text, purchased_at) VALUES (?, ?, ?, ?, ?)',
+        ).bind(newId(), actor.householdId, key, row.text, ts),
+      )
+    }
+    await ctx.env.DB.batch(writes)
+  }
   return ok({ ok: true })
 })
 

@@ -11,7 +11,6 @@ import { LangContext, type Lang } from './i18n'
 import { AudienceContext, type Audience } from './lib/audience'
 import { SurfaceContext, type Surface } from './lib/surface'
 import { ProfileContext } from './lib/profile'
-import { PicksProvider } from './lib/picks'
 import { CalmContext } from './lib/calm'
 import { ToastProvider } from './lib/toast'
 import './styles.css'
@@ -153,7 +152,6 @@ function Root() {
           <SurfaceContext.Provider value={{ surface, setSurface, chosen: surfaceChosen }}>
           <ProfileContext.Provider value={{ memberId: profile, setMemberId: setProfile }}>
           <CalmContext.Provider value={{ calm, setCalm }}>
-            <PicksProvider>
             <ToastProvider>
               <AuthProvider>
                 <BrowserRouter>
@@ -161,7 +159,6 @@ function Root() {
                 </BrowserRouter>
               </AuthProvider>
             </ToastProvider>
-            </PicksProvider>
           </CalmContext.Provider>
           </ProfileContext.Provider>
           </SurfaceContext.Provider>

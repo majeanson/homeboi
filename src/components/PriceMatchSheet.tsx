@@ -5,7 +5,7 @@ import { useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { type Deal } from '../lib/deals'
-import { usePicks, existingListId } from '../lib/picks'
+import { existingListId, parseDeal, type ListItem } from '../lib/picks'
 
 // Price-match proof sheet (Maxi "Imbattable" et al.): given a grocery item, pull
 // current competitor flyer deals near the household's postal code and show each
@@ -26,8 +26,17 @@ export function PriceMatchSheet({
 }) {
   const t = useT()
   const qc = useQueryClient()
-  const { picks, pick } = usePicks()
-  const chosenId = picks[itemId]?.deal.id ?? null
+  // The currently chosen deal for this line (its staged deal on the list).
+  const chosenId =
+    parseDeal(qc.getQueryData<{ list?: ListItem[] }>(['board'])?.list?.find((i) => i.id === itemId)?.deal_json)?.id ??
+    null
+
+  // Pick this price for the line: attach the deal to its grocery item (server
+  // state → shows on the row + flows to the cashier on any device).
+  async function choose(deal: Deal) {
+    await api('list', { method: 'PATCH', body: { id: itemId, deal } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: ['board'] })
+  }
   // Cache the expensive Flipp lookup per query, per day — flyers change ~weekly,
   // so a day-scoped key serves re-opens instantly and refreshes tomorrow.
   const dayKey = new Date().toISOString().slice(0, 10)
@@ -127,7 +136,7 @@ export function PriceMatchSheet({
                 onViewFlyer={(deal) => setFlyer({ id: deal.flyerId!, itemId: deal.id, merchant: deal.merchant })}
                 onAddToList={addToList}
                 onChoose={(deal) => {
-                  pick(itemId, query, deal)
+                  choose(deal)
                   onClose()
                 }}
               />
@@ -144,7 +153,7 @@ export function PriceMatchSheet({
           highlightId={flyer.itemId}
           title={flyer.merchant}
           onAddToList={addToList}
-          onStage={(deal) => pick(itemId, query, deal)}
+          onStage={(deal) => choose(deal)}
           onClose={() => setFlyer(null)}
         />
       )}

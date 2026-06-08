@@ -50,7 +50,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh, tomorrow, dayAfter)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, text, source, added_by FROM list_items WHERE household_id = ? AND checked_at IS NULL ORDER BY created_at',
+      'SELECT id, text, source, added_by, deal_json FROM list_items WHERE household_id = ? AND checked_at IS NULL ORDER BY created_at',
     )
       .bind(hh)
       .all(),

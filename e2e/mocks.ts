@@ -33,7 +33,15 @@ const BOARD = {
   tonight: { id: 'meal1', title: 'Spaghetti maison', cook_member_id: 'm2' },
   tomorrowMeal: { id: 'meal2', title: 'Tacos', cook_member_id: 'm1' },
   list: [
-    { id: 'l1', text: 'Lait', source: 'manual', added_by: 'm1' },
+    // l1 carries a staged flyer deal (deal_json) — the cashier set now lives on the
+    // list, so this is what drives the "show the cashier" button and the row's ✓.
+    {
+      id: 'l1',
+      text: 'Lait',
+      source: 'manual',
+      added_by: 'm1',
+      deal_json: JSON.stringify({ id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', image: null, validFrom: null, validTo: null }),
+    },
     { id: 'l2', text: 'Pain', source: 'manual' },
     { id: 'l3', text: 'Pommes', source: 'ghost' },
     { id: 'l4', text: 'Couches', source: 'manual' },

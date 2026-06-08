@@ -16,7 +16,7 @@ import { GhostStrip } from '../components/GhostStrip'
 import { fetchGhosts, type Ghost } from '../lib/ghost'
 import { useUndoToast } from '../lib/toast'
 import { money, type Deal } from '../lib/deals'
-import { usePicks, toPickList } from '../lib/picks'
+import { pickListFrom, parseDeal, stageDeal, unstageDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 
 // The shared list (groceries + anything), two lenses on the same data:
@@ -30,6 +30,7 @@ interface ListRow {
   text: string
   source: string
   added_by?: string | null // pick-your-face attribution (member id), if any
+  deal_json?: string | null // a staged flyer deal for the cashier (JSON), if any
 }
 interface ListMember {
   id: string
@@ -48,9 +49,6 @@ export function Liste() {
   const { audience } = useAudience()
   const qc = useQueryClient()
   const undo = useUndoToast()
-  // The cashier list (staged flyer deals) is shared app-wide so the deals browser
-  // and full-flyer viewer can stage straight into it — see lib/picks.
-  const { picks, pick: choose, remove: removePick } = usePicks()
   const [proofFor, setProofFor] = useState<{ id: string; text: string } | null>(null)
   const [cashierOpen, setCashierOpen] = useState(false)
   const [browseOpen, setBrowseOpen] = useState(false)
@@ -68,18 +66,14 @@ export function Liste() {
   // refresh the ghost strip once it commits.
   function checkOff(item: ListRow) {
     const prev = qc.getQueryData<BoardListData>(BOARD_KEY)
-    // The list and the "show the cashier" set are one thing: checking an item off
-    // also drops its staged flyer deal so the cashier stepper stays in sync.
-    // Capture the pick first so undo restores both the line and its deal.
-    const prevPick = picks[item.id]
+    // The list and the "show the cashier" set are one thing now: a checked-off item
+    // leaves the open list, so it leaves the cashier set too — and its deal_json is
+    // kept on the row, so undo (which restores the cached open list) brings the deal
+    // back with it. No separate pick bookkeeping needed.
     qc.setQueryData<BoardListData>(BOARD_KEY, (d) => (d ? { ...d, list: d.list.filter((i) => i.id !== item.id) } : d))
-    if (prevPick) removePick(item.id)
     undo({
       message: t.undo.checked(item.text),
-      onUndo: () => {
-        if (prev) qc.setQueryData(BOARD_KEY, prev)
-        if (prevPick) choose(item.id, prevPick.itemText, prevPick.deal)
-      },
+      onUndo: () => prev && qc.setQueryData(BOARD_KEY, prev),
       onCommit: () => {
         api('list', { method: 'PATCH', body: { id: item.id, checked: true } }).catch(() => {})
         qc.invalidateQueries({ queryKey: GHOSTS_KEY })
@@ -121,7 +115,8 @@ export function Liste() {
       try {
         const r = await api<{ deals: Deal[] }>(`deals?q=${encodeURIComponent(item.text)}`)
         if (r.deals[0]) {
-          choose(item.id, item.text, r.deals[0])
+          // Stage the best deal straight onto this line (matched by name).
+          await stageDeal(qc, item.text, r.deals[0])
           any = true
         }
       } catch {
@@ -129,12 +124,12 @@ export function Liste() {
       }
     }
     setAuto(false)
-    if (any || Object.keys(picks).length) setCashierOpen(true)
+    if (any || pickList.length > 0) setCashierOpen(true)
   }
 
-  // Built from picks directly (not the current list) so a pick survives even
-  // after its grocery item is checked off.
-  const pickList = toPickList(picks)
+  // The cashier set = every open list line carrying a staged deal (server state,
+  // so it's in sync across devices and gone once the item is checked off).
+  const pickList = pickListFrom(list)
 
   if (audience === 'toddler') {
     // Read-only for toddlers: tapping a tile reads it aloud but does NOT check it
@@ -176,7 +171,7 @@ export function Liste() {
         <div className="stagger">
           {list.map((item) => {
             const adder = item.added_by ? memberById.get(item.added_by) : null
-            const staged = picks[item.id]?.deal
+            const staged = parseDeal(item.deal_json)
             // Draw the item's own picture (milk/bread/apple…) so the list reads as
             // distinct things, not a column of identical sparkles. Falls back to the
             // list category glyph only when nothing matches (a non-grocery note).
@@ -227,12 +222,12 @@ export function Liste() {
               </button>
               <button
                 type="button"
-                className={`list-row__proof${picks[item.id] ? ' is-picked' : ''}`}
+                className={`list-row__proof${staged ? ' is-picked' : ''}`}
                 onClick={() => setProofFor({ id: item.id, text: item.text })}
                 aria-label={t.shop.proof}
                 title={t.shop.proof}
               >
-                {picks[item.id] ? '✓' : '🏷️'}
+                {staged ? '✓' : '🏷️'}
               </button>
             </div>
             )
@@ -274,7 +269,7 @@ export function Liste() {
         <CashierMode
           picks={pickList}
           onRevise={(p) => setProofFor({ id: p.itemId, text: p.itemText })}
-          onRemove={removePick}
+          onRemove={(itemId) => unstageDeal(qc, itemId)}
           onClose={() => setCashierOpen(false)}
         />
       )}
