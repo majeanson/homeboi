@@ -4,6 +4,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
 import { scaleIngredients } from '../lib/scale'
+import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
 import { ZoomableImg } from './ZoomableImg'
 import { CookMode } from './CookMode'
 
@@ -154,9 +155,27 @@ export function RecipeSheet({
             <>
               <h3 className="recipe-sec-h">{t.recipes.steps}</h3>
               <ol className="recipe-view__steps">
-                {recipe.steps.map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
+                {recipe.steps.map((s, i) => {
+                  // Each step: its instruction as sentence bullets, then the
+                  // ingredients (with scaled quantities) that step uses.
+                  const used = ingredientsForStep(s, scaledIngredients)
+                  return (
+                    <li key={i}>
+                      <ul className="recipe-step__sentences">
+                        {stepSentences(s).map((sen, j) => (
+                          <li key={j}>{sen}</li>
+                        ))}
+                      </ul>
+                      {used.length > 0 && (
+                        <ul className="recipe-step__ings mono">
+                          {used.map((ing, j) => (
+                            <li key={j}>{ing}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  )
+                })}
               </ol>
             </>
           )}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
+import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
 
 const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padStart(2, '0')}`
 
@@ -125,7 +126,25 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             <span className="cook__step-n mono">
               {t.recipes.stepLabel} {cur?.kind === 'step' ? cur.n : ''}
             </span>
-            <p className="cook__step-text">{cur?.kind === 'step' ? cur.text : ''}</p>
+            {/* The instruction as bullet points (one per sentence), and the
+                ingredients this step uses — so you've got the quantities right
+                here, no flipping back to the list. */}
+            <ul className="cook__step-text cook__step-list">
+              {(cur?.kind === 'step' ? stepSentences(cur.text) : []).map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ul>
+            {cur?.kind === 'step' &&
+              (() => {
+                const used = ingredientsForStep(cur.text, recipe.ingredients)
+                return used.length > 0 ? (
+                  <ul className="cook__step-ings mono" aria-label={t.recipes.ingredients}>
+                    {used.map((ing, i) => (
+                      <li key={i}>{ing}</li>
+                    ))}
+                  </ul>
+                ) : null
+              })()}
             {durations.length > 0 && (
               <div className="cook__timers">
                 {timer ? (

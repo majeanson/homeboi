@@ -4689,6 +4689,73 @@ a {
   font-weight: 600;
   margin: 0;
 }
+/* The step instruction as sentence bullets. A single-sentence step reads cleaner
+   centered with no bullet; multi-sentence steps get left-aligned bullets. */
+.cook__step-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 32rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.cook__step-list li:only-child {
+  text-align: center;
+}
+.cook__step-list li:not(:only-child) {
+  position: relative;
+  padding-left: 1.4rem;
+  text-align: left;
+}
+.cook__step-list li:not(:only-child)::before {
+  content: '•';
+  position: absolute;
+  left: 0.2rem;
+  color: var(--terracotta-deep);
+}
+/* The ingredients (with quantities) this step uses — a small card under the text. */
+.cook__step-ings {
+  list-style: none;
+  margin: 1.1rem auto 0;
+  padding: 0.7rem 0.95rem;
+  max-width: 28rem;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-align: left;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+/* RecipeSheet: per-step sentence bullets (the number is the marker for a lone
+   sentence) + a compact line of the step's ingredients. */
+.recipe-step__sentences {
+  list-style: disc;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.recipe-step__sentences li:only-child {
+  list-style: none;
+  margin-left: -1.1rem;
+}
+.recipe-step__ings {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.9rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.recipe-step__ings li::before {
+  content: '·';
+  margin-right: 0.35rem;
+  color: var(--terracotta-deep);
+}
 /* One-tap timers for a duration written into the step. */
 .cook__timers {
   display: flex;
