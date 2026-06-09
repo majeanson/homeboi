@@ -3,8 +3,20 @@ import { useT } from '../i18n'
 import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
-import { useSpeak } from '../lib/speak'
+import { useSpeak, stopSpeaking } from '../lib/speak'
 import { IngredientLine } from './IngredientLine'
+
+// Whether a step reads itself aloud on arrival. Default ON; an explicit opt-out
+// persists per device (same shape as the calm/lang prefs). OFF = narration only
+// when you tap the step or a pill — never auto-started.
+const AUTOREAD_KEY = 'babillard-cook-autoread'
+function loadAutoRead(): boolean {
+  try {
+    return localStorage.getItem(AUTOREAD_KEY) !== 'off'
+  } catch {
+    return true
+  }
+}
 
 const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padStart(2, '0')}`
 
@@ -47,10 +59,33 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   // instruction — not only the measurement pills. The navigation tap is the user
   // gesture browsers require for speech; tapping the step again repeats it. The
   // gather (ingredients) page stays silent — nothing to narrate there.
+  //
+  // Auto-read is opt-out (the 🔊/🔇 toggle in the bar). We read the preference
+  // through a ref so flipping the toggle never itself triggers (or silences) a
+  // read — only arriving at a NEW step does, honouring the latest setting.
+  const [autoRead, setAutoRead] = useState(loadAutoRead)
+  const autoReadRef = useRef(autoRead)
+  autoReadRef.current = autoRead
   const stepText = cur?.kind === 'step' ? cur.text : null
   useEffect(() => {
-    if (stepText) speak(stepText)
+    if (autoReadRef.current && stepText) speak(stepText)
   }, [stepText, speak])
+
+  function toggleAutoRead() {
+    setAutoRead((on) => {
+      const next = !on
+      try {
+        localStorage.setItem(AUTOREAD_KEY, next ? 'on' : 'off')
+      } catch {
+        /* noop */
+      }
+      if (!next) stopSpeaking() // turning it off silences whatever's reading now
+      return next
+    })
+  }
+
+  // Closing Cook mode (or unmounting) stops any narration still in progress.
+  useEffect(() => () => stopSpeaking(), [])
 
   // Tick once a second while running; at zero, stop and give a gentle buzz
   // (where supported). The screen wake-lock above keeps the tablet awake for it.
@@ -118,6 +153,16 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
         <span className="cook__count mono">
           {Math.min(idx + 1, total)} / {total}
         </span>
+        <button
+          type="button"
+          className={'cook__autoread' + (autoRead ? ' is-on' : '')}
+          onClick={toggleAutoRead}
+          aria-pressed={autoRead}
+          title={autoRead ? t.recipes.autoReadOn : t.recipes.autoReadOff}
+          aria-label={autoRead ? t.recipes.autoReadOn : t.recipes.autoReadOff}
+        >
+          {autoRead ? '🔊' : '🔇'}
+        </button>
         <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.back}>
           ✕
         </button>
