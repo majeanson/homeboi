@@ -125,6 +125,18 @@ test('sheet-deals-store', async ({ page }) => {
   await shoot(page, 'sheet-deals-store-phone')
 })
 
+test('routine-story', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize(PHONE)
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true, surface: 'mobile' })
+  await page.goto('/routines')
+  await page.locator('.kid__face').first().click() // pick a routine → the picture-card story
+  await page.locator('.tdl-stage').waitFor({ state: 'visible' })
+  await page.waitForTimeout(300)
+  await shoot(page, 'routine-story-phone')
+})
+
 test('sheet-flyer', async ({ page }) => {
   await boot(page, '/liste')
   await page.getByRole('button', { name: /Parcourir/ }).click()

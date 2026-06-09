@@ -2410,31 +2410,35 @@ a {
   text-transform: uppercase;
   color: var(--ink-soft);
 }
+/* The step name — a borderless button so it reads aloud on tap too (the picture
+   above it does the same). It's the one piece of text; everything else is picture. */
 .tdl-what {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
   font-family: var(--display);
   font-weight: 800;
   font-size: clamp(2.4rem, 9vw, 3.4rem);
   line-height: 1;
   color: var(--ink);
+  text-align: center;
 }
+/* "What's next" — just the picture, faded, with a small arrow. No word. */
 .tdl-next {
-  margin-top: 26px;
+  margin-top: 22px;
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--ink-soft);
-  font-size: 17px;
+  opacity: 0.55;
 }
-.tdl-next .pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: var(--card);
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 700;
-  color: var(--ink);
-  box-shadow: var(--shadow-sm);
+.tdl-next-arrow {
+  font-size: 20px;
+  color: var(--ink-soft);
+}
+.tdl-next-pic {
+  font-size: 28px;
+  line-height: 1;
 }
 .tdl-dots {
   display: flex;
@@ -2482,17 +2486,19 @@ a {
   font-size: 13px;
   color: var(--ink-soft);
 }
-/* Per-step flow: a big ▶ start, then a running clock + ✓ finish. */
+/* One ▶ to start, then a running clock + → (or ✓ on the last step). Icon-only,
+   big — a toddler taps a picture, not a word. */
 .tdl-start,
 .tdl-finish {
   margin-top: 24px;
-  min-height: 72px;
-  padding: 0 32px;
+  min-width: 96px;
+  min-height: 76px;
+  padding: 0 28px;
   border: 0;
   border-radius: var(--radius-pill);
-  font-family: var(--display);
   font-weight: 800;
-  font-size: 1.4rem;
+  font-size: 2.2rem;
+  line-height: 1;
   cursor: pointer;
   box-shadow: var(--shadow-md);
   transition: transform var(--dur-fast) var(--ease-soft);

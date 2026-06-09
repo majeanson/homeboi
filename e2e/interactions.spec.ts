@@ -405,6 +405,20 @@ test('a kid recipe pick suggests a supper into an empty day', async ({ page }) =
   expect(JSON.parse(req.postData() || '{}')).toMatchObject({ suggest: true })
 })
 
+test('a routine runs start → next → next → stop on one timer', async ({ page }) => {
+  await APP('/routines', 'toddler')(page)
+  await settle(page, '.hub')
+  await page.locator('.kid__face', { hasText: 'Noah' }).click() // Dodo: 3 steps, none done
+  // ▶ start once, then advance through with the single → button, ✓ on the last.
+  await page.locator('.tdl-start').click()
+  await expect(page.locator('.tdl-finish')).toBeVisible()
+  await page.locator('.tdl-finish').click() // → step 1
+  await page.locator('.tdl-finish').click() // → step 2
+  await page.locator('.tdl-finish').click() // ✓ last → stop
+  // It ends on the recap (per-step times + total), not back at a start button.
+  await expect(page.locator('.tdl-times')).toBeVisible()
+})
+
 // ──────────────────────────── shared list ──────────────────────────────
 
 test.describe('list', () => {
