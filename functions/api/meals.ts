@@ -11,7 +11,7 @@ import { ingredientName } from '../_lib/ingredient'
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = dayStart(new Date(Date.now()))
   const { results } = await ctx.env.DB.prepare(
-    "SELECT id, date, slot, title, cook_member_id FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? ORDER BY date",
+    "SELECT id, date, slot, title, cook_member_id, suggested_by FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? ORDER BY date",
   )
     .bind(actor.householdId, today, today + 86400 * 7)
     .all()
@@ -24,13 +24,34 @@ export const onRequestPost = authed(async (ctx, actor) => {
     title?: string
     cookMemberId?: string
     staples?: string[]
+    suggest?: boolean // a kid's pick — fill an empty slot only, never replace
+    suggestedBy?: string // the child's member id, for "suggéré par X"
   }>(ctx.request)
   if (typeof body?.date !== 'number' || !body.title?.trim()) return badRequest('date + titre requis.')
   const title = body.title.trim()
   const date = dayStart(new Date(body.date * 1000))
   const ts = nowSec()
 
-  // One supper per day: replace any existing one for that date.
+  // Kid suggestion: a child's pick only fills an EMPTY supper slot — it never
+  // overwrites a meal a parent (or an earlier suggestion) already set. Recorded
+  // with suggested_by so a parent sees who suggested it and can keep or change it.
+  if (body.suggest) {
+    const existing = await ctx.env.DB.prepare(
+      "SELECT id FROM meals WHERE household_id = ? AND slot = 'supper' AND date = ?",
+    )
+      .bind(actor.householdId, date)
+      .first()
+    if (existing) return ok({ ok: true, suggested: false }) // day taken — leave it alone
+    await ctx.env.DB.prepare(
+      'INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    )
+      .bind(newId(), actor.householdId, date, 'supper', title, null, body.suggestedBy ?? null, ts)
+      .run()
+    return ok({ ok: true, suggested: true })
+  }
+
+  // Parent set: one supper per day — replace any existing one (suggested_by clears
+  // back to null on this fresh insert, since it's now a decision, not a suggestion).
   await ctx.env.DB.prepare("DELETE FROM meals WHERE household_id = ? AND slot = 'supper' AND date = ?")
     .bind(actor.householdId, date)
     .run()

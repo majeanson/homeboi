@@ -73,7 +73,9 @@ const MEALS = {
   days: [
     { id: 'meal1', date: BASE, title: 'Spaghetti maison', cook_member_id: 'm2' },
     { id: 'meal2', date: BASE + DAY, title: 'Tacos', cook_member_id: 'm1' },
-    { id: 'meal3', date: BASE + 3 * DAY, title: 'Saumon & riz', cook_member_id: 'm2' },
+    // A kid-suggested supper (Léa, m3) sitting in a slot that was empty — shows the
+    // "💡 Léa" note in the parent week. cook is null until a parent decides.
+    { id: 'meal3', date: BASE + 3 * DAY, title: 'Saumon & riz', cook_member_id: null, suggested_by: 'm3' },
   ],
 }
 

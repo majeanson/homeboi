@@ -601,6 +601,17 @@ a {
   font-size: 0.95rem;
   opacity: 0.7;
 }
+/* "💡 Léa" — a kid suggested this supper into an empty slot. Quiet, so it reads as
+   a note beside the meal, not a second meal. */
+.kitchen__day-sugg {
+  flex: none;
+  font-size: 0.78rem;
+  color: var(--terracotta-deep);
+  background: var(--terracotta-wash);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
 
 /* ---- Parent Routines overview: a card per routine (was a bare text list that
    left the wall empty). Member colour tints the card; the step pictos preview the
@@ -732,6 +743,9 @@ a {
   align-items: center;
   gap: 1rem;
   padding: 0.6rem 0.9rem;
+  /* Wrap so the "💡 suggéré par" note drops below the meal on a narrow phone
+     instead of overrunning the row. */
+  flex-wrap: wrap;
 }
 .kitchen__day-tile {
   width: 40px;
@@ -763,6 +777,7 @@ a {
 }
 .kitchen__day-meal {
   flex: 1;
+  min-width: 0;
   text-align: left;
   background: none;
   border: none;
