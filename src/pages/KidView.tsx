@@ -90,9 +90,11 @@ export function KidView() {
     speak(picked?.cards[idx]?.narration ?? picked?.cards[idx]?.label)
   }
 
-  // A gentle per-step stopwatch: the kid taps ▶ to start a step (and hear it),
-  // does it while it counts up, then taps ✓ to finish — which marks it done and
-  // moves to the next, until the whole routine is complete. Count-up, no score.
+  // One continuous run, not a per-step start/stop: the kid taps ▶ ONCE to begin
+  // (it reads the first step aloud), then → to move through each step, and ✓ on the
+  // last one to finish — start, next, next, next, stop. Each → laps the current
+  // step's time; the clock keeps running between steps. Count-up, no score; the end
+  // shows every step's time + the total.
   const [running, setRunning] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   // How long each step took (card index → seconds), built up as the kid finishes
@@ -116,12 +118,17 @@ export function KidView() {
     setRunning(true)
     readAloud(idx)
   }
-  function finishStep(routine: Routine, idx: number) {
-    setRunning(false)
+  // Advance one step: lap the current step's time, mark it done (which moves the
+  // story to the next card), and keep the clock running — until the LAST step,
+  // where it stops and the recap appears. The timer is NOT reset between steps.
+  function advance(routine: Routine, idx: number) {
     const taken = elapsed
+    const isLast = idx >= routine.cards.length - 1
     setElapsed(0)
     if (!routine.doneIdx.includes(idx)) setTimes((m) => ({ ...m, [idx]: taken }))
-    toggle.mutate({ routineId: routine.id, cardIdx: idx, done: !routine.doneIdx.includes(idx) })
+    toggle.mutate({ routineId: routine.id, cardIdx: idx, done: true })
+    if (isLast) setRunning(false)
+    else readAloud(idx + 1)
   }
 
   if (isUnauthorized(error)) return <div className="kid"><PairPrompt /></div>
@@ -249,6 +256,8 @@ export function KidView() {
             </>
           ) : (
             <>
+              {/* The whole step is a picture you tap to hear — no instructional
+                  text; the picture + audio carry the meaning (NFR-KID-2). */}
               <button
                 type="button"
                 className="tdl-illus tdl-illus--tap"
@@ -258,21 +267,21 @@ export function KidView() {
               >
                 <span className="tdl-illus-emoji">{cur?.icon || '○'}</span>
               </button>
-              <div className="tdl-now">{t.kid.rightNow}</div>
-              <div className="tdl-what" style={{ color: tintInk(tint) }}>
+              <button
+                type="button"
+                className="tdl-what"
+                style={{ color: tintInk(tint) }}
+                onClick={() => readAloud(curIdx)}
+                aria-label={cur?.label}
+              >
                 {cur?.label}
-              </div>
-              {/* Tapping the picture only reads it aloud — doing it is the ▶ flow below. */}
-              <div className="tdl-hear mono" aria-hidden="true">
-                🔊 {t.kid.tapHear}
-              </div>
+              </button>
 
+              {/* What's coming — just the picture, faded. No word. */}
               {next && (
-                <div className="tdl-next">
-                  {t.kid.then}
-                  <span className="pill">
-                    <span aria-hidden="true">{next.icon}</span> {next.label}
-                  </span>
+                <div className="tdl-next" aria-hidden="true">
+                  <span className="tdl-next-arrow">→</span>
+                  <span className="tdl-next-pic">{next.icon || '○'}</span>
                 </div>
               )}
 
@@ -288,18 +297,29 @@ export function KidView() {
                 </div>
               )}
 
+              {/* Start ONCE (▶), then advance through with →, and ✓ on the last. */}
               {running ? (
                 <div className="tdl-timer">
                   <span className="tdl-clock mono" aria-live="polite">
                     {fmtClock(elapsed)}
                   </span>
-                  <button type="button" className="tdl-finish" onClick={() => finishStep(picked, curIdx)}>
-                    ✓ {t.kid.finish}
+                  <button
+                    type="button"
+                    className="tdl-finish"
+                    onClick={() => advance(picked, curIdx)}
+                    aria-label={curIdx >= picked.cards.length - 1 ? t.kid.finish : t.kid.tapNext}
+                  >
+                    {curIdx >= picked.cards.length - 1 ? '✓' : '→'}
                   </button>
                 </div>
               ) : (
-                <button type="button" className="tdl-start" onClick={() => startStep(curIdx)}>
-                  ▶ {t.kid.start}
+                <button
+                  type="button"
+                  className="tdl-start"
+                  onClick={() => startStep(curIdx)}
+                  aria-label={t.kid.start}
+                >
+                  ▶
                 </button>
               )}
             </>
