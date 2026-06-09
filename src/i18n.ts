@@ -195,6 +195,7 @@ export const FR = {
     tagAdd: 'Ajouter une étiquette…',
     tagPresets: ['rapide', 'végé', 'préféré', 'dessert', 'soupe', 'four'],
     allTag: 'Toutes',
+    hearMeasure: (m: string) => `Écouter : ${m}`,
   },
   kid: {
     title: 'Ma routine',
@@ -566,6 +567,7 @@ export const EN: typeof FR = {
     tagAdd: 'Add a tag…',
     tagPresets: ['quick', 'veggie', 'favourite', 'dessert', 'soup', 'oven'],
     allTag: 'All',
+    hearMeasure: (m: string) => `Hear: ${m}`,
   },
   kid: {
     title: 'My routine',

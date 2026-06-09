@@ -3,6 +3,7 @@ import { useT } from '../i18n'
 import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
+import { IngredientLine } from './IngredientLine'
 
 const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padStart(2, '0')}`
 
@@ -117,7 +118,9 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             <h2 className="cook__h">{t.recipes.ingredients}</h2>
             <ul className="cook__ings">
               {recipe.ingredients.map((ing, i) => (
-                <li key={i}>{ing}</li>
+                <li key={i}>
+                  <IngredientLine line={ing} size="lg" />
+                </li>
               ))}
             </ul>
           </div>
@@ -140,7 +143,9 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                 return used.length > 0 ? (
                   <ul className="cook__step-ings mono" aria-label={t.recipes.ingredients}>
                     {used.map((ing, i) => (
-                      <li key={i}>{ing}</li>
+                      <li key={i}>
+                        <IngredientLine line={ing} size="sm" />
+                      </li>
                     ))}
                   </ul>
                 ) : null
