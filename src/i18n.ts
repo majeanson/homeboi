@@ -197,6 +197,8 @@ export const FR = {
     allTag: 'Toutes',
     hearMeasure: (m: string) => `Écouter : ${m}`,
     readStep: 'Touche pour réécouter l’étape',
+    autoReadOn: 'Lecture auto activée — touche pour couper',
+    autoReadOff: 'Lecture auto coupée — touche pour activer',
   },
   kid: {
     title: 'Ma routine',
@@ -570,6 +572,8 @@ export const EN: typeof FR = {
     allTag: 'All',
     hearMeasure: (m: string) => `Hear: ${m}`,
     readStep: 'Tap to hear the step again',
+    autoReadOn: 'Auto read-aloud on — tap to mute',
+    autoReadOff: 'Auto read-aloud off — tap to enable',
   },
   kid: {
     title: 'My routine',

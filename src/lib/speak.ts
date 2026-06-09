@@ -61,6 +61,17 @@ export function hasVoiceFor(lang: Lang): boolean {
   return pickVoice(wantedTag(lang)) !== null
 }
 
+// Stop any in-progress narration immediately (toggling auto-read off, leaving a
+// narrated surface). A no-op where speech isn't supported; never throws.
+export function stopSpeaking(): void {
+  if (!SUPPORTED) return
+  try {
+    window.speechSynthesis.cancel()
+  } catch {
+    /* nothing to cancel */
+  }
+}
+
 export function useSpeak() {
   const { lang } = useLang()
   return useCallback(
