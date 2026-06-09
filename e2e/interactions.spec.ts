@@ -389,6 +389,22 @@ test.describe('recipes', () => {
   })
 })
 
+// ──────────────────────── kid meal suggestion ──────────────────────────
+
+test('a kid recipe pick suggests a supper into an empty day', async ({ page }) => {
+  await APP('/kitchen', 'toddler')(page)
+  await settle(page, '.hub')
+  // Pick the first recipe → the day tiles appear.
+  await page.locator('.kid-pick .bigtile').first().click()
+  await expect(page.locator('.kid-pick .bigtile', { hasText: 'Mardi' })).toBeVisible()
+  // Tapping an EMPTY day (Mardi) posts a SUGGESTION (suggest:true), not a plain set.
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('POST', 'meals'), { timeout: 15_000 }),
+    page.locator('.kid-pick .bigtile', { hasText: 'Mardi' }).click(),
+  ])
+  expect(JSON.parse(req.postData() || '{}')).toMatchObject({ suggest: true })
+})
+
 // ──────────────────────────── shared list ──────────────────────────────
 
 test.describe('list', () => {

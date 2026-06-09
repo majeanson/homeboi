@@ -4,6 +4,7 @@ import { BigTiles, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
+import { useProfile } from '../lib/profile'
 import { api, isStatus, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
@@ -19,7 +20,7 @@ import { RecipeForm } from '../components/RecipeForm'
 // Garde-manger. Weekly supper slots + a "running low" list (never a full
 // inventory — brief tenet 3). One AI button asks for a supper suggestion; it
 // hides itself when the AI binding is off (503).
-interface MealRow { id: string; date: number; title: string; cook_member_id: string | null }
+interface MealRow { id: string; date: number; title: string; cook_member_id: string | null; suggested_by?: string | null }
 interface LowRow { id: string; item: string; marked_at: number }
 type MealsData = { days: MealRow[]; weekStart: number }
 type PantryData = { low: LowRow[] }
@@ -31,6 +32,7 @@ export function Kitchen() {
   const t = useT()
   const { lang } = useLang()
   const { audience } = useAudience()
+  const { memberId: profileId } = useProfile()
   const qc = useQueryClient()
   const undo = useUndoToast()
   // A batch of supper ideas + a cursor into it: each click shows the next without
@@ -75,7 +77,14 @@ export function Kitchen() {
   const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live })
   // Shares the ['board'] cache with the Board/Liste pages — read only for the
   // shopping list, used to rank recipes by "what you could cook now".
-  const boardQ = useQuery({ queryKey: ['board'], queryFn: () => api<{ list: { text: string }[] }>('board'), ...live })
+  const boardQ = useQuery({
+    queryKey: ['board'],
+    queryFn: () => api<{ list: { text: string }[]; members?: { id: string; display_name: string }[] }>('board'),
+    ...live,
+  })
+  // member id → name, for "suggéré par X" on a kid-suggested supper.
+  const memberName = (id: string | null | undefined) =>
+    (id && boardQ.data?.members?.find((m) => m.id === id)?.display_name) || ''
   const recipes = recipesQ.data?.recipes ?? []
   // "Quoi cuisiner ?": when on, sort the grid by fewest out-of-stock ingredients.
   const [cookFilter, setCookFilter] = useState(false)
@@ -206,12 +215,18 @@ export function Kitchen() {
     }
   }
 
-  // Toddler path to the same slot: a child taps a recipe, then a day. No staples
-  // step (that's a parent's job) — just fill the supper and let the planned row
-  // above redraw so the child sees their pick land on the menu.
-  function kidPlan(date: number, recipe: Recipe) {
+  // Toddler path: a child taps a recipe, then a day. This is a SUGGESTION, not a
+  // decision — it only fills an EMPTY day and never replaces a planned meal (the
+  // server enforces this too). It's recorded as "suggested by" the child on this
+  // device, so a parent sees whose idea it was. No staples step (a parent's job).
+  async function kidSuggest(date: number, recipe: Recipe, taken: boolean) {
     setKidRecipe(null)
-    saveMeal(date, recipe.title, [])
+    if (taken) return // day already planned — a kid's pick can't overwrite it
+    await api('meals', {
+      method: 'POST',
+      body: { date, title: recipe.title, suggest: true, suggestedBy: profileId },
+    }).catch(() => {})
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
   }
 
   function toggleStaple(item: string) {
@@ -404,8 +419,13 @@ export function Kitchen() {
           icon: meal ? pictoFor(meal.title, '🍽') : '📅',
           label: formatWeekday(date, lang),
           sub: meal?.title,
-          narration: `${formatWeekday(date, lang)}: ${kidRecipe.title}`,
-          onTap: () => kidPlan(date, kidRecipe),
+          // A planned day is "taken" — greyed and read-only (tapping just reads the
+          // meal that's already there). Only empty days accept the suggestion.
+          done: !!meal,
+          narration: meal
+            ? `${formatWeekday(date, lang)}: ${meal.title}`
+            : `${formatWeekday(date, lang)}: ${kidRecipe.title}`,
+          onTap: meal ? undefined : () => kidSuggest(date, kidRecipe, false),
         }))
       : []
     return (
@@ -661,6 +681,13 @@ export function Kitchen() {
                       >
                         📖
                       </button>
+                    )}
+                    {/* A kid suggested this supper into an empty slot — a parent sees
+                        whose idea it was, and can keep it or tap to change it. */}
+                    {meal?.suggested_by != null && (
+                      <span className="kitchen__day-sugg mono">
+                        💡 {memberName(meal.suggested_by) || t.kitchen.suggested}
+                      </span>
                     )}
                   </>
                 )}
