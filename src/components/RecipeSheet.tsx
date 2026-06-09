@@ -7,6 +7,7 @@ import { scaleIngredients } from '../lib/scale'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
 import { ZoomableImg } from './ZoomableImg'
 import { CookMode } from './CookMode'
+import { IngredientLine } from './IngredientLine'
 
 // Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method,
 // then a row of gentle actions —
@@ -145,7 +146,9 @@ export function RecipeSheet({
               )}
               <ul className="recipe-view__ings">
                 {scaledIngredients.map((ing, i) => (
-                  <li key={i}>{ing}</li>
+                  <li key={i}>
+                    <IngredientLine line={ing} size="sm" />
+                  </li>
                 ))}
               </ul>
             </>
@@ -169,7 +172,9 @@ export function RecipeSheet({
                       {used.length > 0 && (
                         <ul className="recipe-step__ings mono">
                           {used.map((ing, j) => (
-                            <li key={j}>{ing}</li>
+                            <li key={j}>
+                              <IngredientLine line={ing} size="sm" />
+                            </li>
                           ))}
                         </ul>
                       )}

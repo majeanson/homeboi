@@ -27,3 +27,15 @@ export const wash = (hex: string) => hex + '22'
 // --ink so it stays readable on cream (day) AND dark (night). Use for titles and
 // labels we want coloured-but-readable rather than flat black.
 export const tintInk = (hex: string) => `color-mix(in srgb, ${hex} 68%, var(--ink) 32%)`
+
+// Dark or light ink for text sitting ON a solid colour (e.g. a tinted pill).
+// Picks whichever contrasts more, via relative luminance (WCAG). Reads our own
+// warm ink/cream tokens so it sits in the palette rather than pure #000/#fff.
+export function readableInk(hex: string): string {
+  const c = hex.replace('#', '')
+  if (c.length < 6) return '#2c2722'
+  const ch = (i: number) => parseInt(c.slice(i, i + 2), 16) / 255
+  const lin = (x: number) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4)
+  const L = 0.2126 * lin(ch(0)) + 0.7152 * lin(ch(2)) + 0.0722 * lin(ch(4))
+  return L > 0.5 ? '#2c2722' : '#fffcf5'
+}

@@ -4777,6 +4777,57 @@ a {
   margin-right: 0.35rem;
   color: var(--terracotta-deep);
 }
+
+/* Measuring-tool pill: a tappable, colour-coded amount ("1 c. à thé") inside an
+   ingredient line. Tinted to the real spoon/cup (measureColors.ts); tapping it
+   reads the amount aloud. 'sm' for the parent recipe sheet, 'lg' for the kid
+   Cook mode. The 🔊 hints it speaks; the colour is the tool. */
+.meas-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  cursor: pointer;
+  vertical-align: baseline;
+  transition: transform 0.06s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.meas-pill::before {
+  content: '🔊';
+  font-size: 0.82em;
+  opacity: 0.85;
+}
+.meas-pill:hover {
+  filter: brightness(1.04);
+}
+.meas-pill:active {
+  transform: scale(0.96);
+}
+.meas-pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.meas-pill--sm {
+  padding: 0.05rem 0.5rem;
+  font-size: 0.85em;
+  margin: 0 0.05rem;
+}
+.meas-pill--lg {
+  padding: 0.2rem 0.7rem;
+  font-size: 1em;
+  margin: 0 0.1rem;
+  box-shadow: var(--shadow-sm);
+}
+/* Unmapped tool: no colour yet, but still tappable to hear. Neutral surface tint
+   so it reads as a chip rather than coloured-by-tool. */
+.meas-pill--plain {
+  background: var(--accent-soft);
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--ink) 14%, transparent);
+}
 /* One-tap timers for a duration written into the step. */
 .cook__timers {
   display: flex;
