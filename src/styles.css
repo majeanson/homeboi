@@ -4800,6 +4800,11 @@ a {
   font-size: 0.82em;
   opacity: 0.85;
 }
+/* Kid Cook mode narrates the whole step, so a speaker on every pill is noise —
+   drop the glyph there, keep the colour + tap-to-hear. */
+.meas-pill--noicon::before {
+  content: none;
+}
 .meas-pill:hover {
   filter: brightness(1.04);
 }
@@ -4827,6 +4832,22 @@ a {
   background: var(--accent-soft);
   color: var(--ink);
   border-color: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+/* The step instruction in Cook mode is a tap target: it's read aloud once on
+   arrival and re-read on tap, so a pre-reader can hear the whole step (not only
+   the measurement pills). Calm affordance — a soft hover, a clear focus ring. */
+.cook__step-read {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.cook__step-read:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.cook__step-read:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 /* One-tap timers for a duration written into the step. */
 .cook__timers {
