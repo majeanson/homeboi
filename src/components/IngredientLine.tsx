@@ -12,9 +12,19 @@ import { measureColor } from '../lib/measureColors'
 // right-coloured tool, and a parent gets the same as a small inline pill.
 //
 // `size` scales the pill: 'lg' for the kid-facing Cook mode, 'sm' for the parent
-// recipe sheet. A line with no scoopable measurement just renders its text — the
-// feature is additive, never a rewrite (the calm/degrade tenet).
-export function IngredientLine({ line, size = 'sm' }: { line: string; size?: 'sm' | 'lg' }) {
+// recipe sheet. `kid` drops the 🔊 glyph (Cook mode narrates the whole step, so a
+// speaker on every pill is noise there) while keeping the colour + tap-to-hear.
+// A line with no scoopable measurement just renders its text — the feature is
+// additive, never a rewrite (the calm/degrade tenet).
+export function IngredientLine({
+  line,
+  size = 'sm',
+  kid = false,
+}: {
+  line: string
+  size?: 'sm' | 'lg'
+  kid?: boolean
+}) {
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
@@ -34,7 +44,7 @@ export function IngredientLine({ line, size = 'sm' }: { line: string; size?: 'sm
       <button
         key={`p${i}`}
         type="button"
-        className={`meas-pill meas-pill--${size}${color ? '' : ' meas-pill--plain'}`}
+        className={`meas-pill meas-pill--${size}${color ? '' : ' meas-pill--plain'}${kid ? ' meas-pill--noicon' : ''}`}
         style={color ? { background: color, color: readableInk(color), borderColor: color } : undefined}
         onClick={() => speak(spokenMeasure(m, lang))}
         aria-label={t.recipes.hearMeasure(m.text)}

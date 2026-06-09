@@ -196,6 +196,7 @@ export const FR = {
     tagPresets: ['rapide', 'végé', 'préféré', 'dessert', 'soupe', 'four'],
     allTag: 'Toutes',
     hearMeasure: (m: string) => `Écouter : ${m}`,
+    readStep: 'Touche pour réécouter l’étape',
   },
   kid: {
     title: 'Ma routine',
@@ -568,6 +569,7 @@ export const EN: typeof FR = {
     tagPresets: ['quick', 'veggie', 'favourite', 'dessert', 'soup', 'oven'],
     allTag: 'All',
     hearMeasure: (m: string) => `Hear: ${m}`,
+    readStep: 'Tap to hear the step again',
   },
   kid: {
     title: 'My routine',

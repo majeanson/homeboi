@@ -3,6 +3,7 @@ import { useT } from '../i18n'
 import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
+import { useSpeak } from '../lib/speak'
 import { IngredientLine } from './IngredientLine'
 
 const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padStart(2, '0')}`
@@ -20,6 +21,7 @@ type Stage = { kind: 'ingredients' } | { kind: 'step'; text: string; n: number }
 
 export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
   const t = useT()
+  const speak = useSpeak()
   const [idx, setIdx] = useState(0)
   const lockRef = useRef<{ release: () => Promise<void> } | null>(null)
   // A one-tap timer for a duration written into the current step. One at a time:
@@ -40,6 +42,15 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
 
   // Moving to another step drops the timer — it belonged to the step you left.
   useEffect(() => setTimer(null), [idx])
+
+  // Read the step aloud when it becomes current, so a pre-reader hears the whole
+  // instruction — not only the measurement pills. The navigation tap is the user
+  // gesture browsers require for speech; tapping the step again repeats it. The
+  // gather (ingredients) page stays silent — nothing to narrate there.
+  const stepText = cur?.kind === 'step' ? cur.text : null
+  useEffect(() => {
+    if (stepText) speak(stepText)
+  }, [stepText, speak])
 
   // Tick once a second while running; at zero, stop and give a gentle buzz
   // (where supported). The screen wake-lock above keeps the tablet awake for it.
@@ -119,7 +130,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             <ul className="cook__ings">
               {recipe.ingredients.map((ing, i) => (
                 <li key={i}>
-                  <IngredientLine line={ing} size="lg" />
+                  <IngredientLine line={ing} size="lg" kid />
                 </li>
               ))}
             </ul>
@@ -131,12 +142,27 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             </span>
             {/* The instruction as bullet points (one per sentence), and the
                 ingredients this step uses — so you've got the quantities right
-                here, no flipping back to the list. */}
-            <ul className="cook__step-text cook__step-list">
-              {(cur?.kind === 'step' ? stepSentences(cur.text) : []).map((s, i) => (
-                <li key={i}>{s}</li>
-              ))}
-            </ul>
+                here, no flipping back to the list. Tap the instruction to hear
+                the whole step again (it's read once automatically on arrival). */}
+            <div
+              className="cook__step-read"
+              role="button"
+              tabIndex={0}
+              aria-label={t.recipes.readStep}
+              onClick={() => cur?.kind === 'step' && speak(cur.text)}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' || e.key === ' ') && cur?.kind === 'step') {
+                  e.preventDefault()
+                  speak(cur.text)
+                }
+              }}
+            >
+              <ul className="cook__step-text cook__step-list">
+                {(cur?.kind === 'step' ? stepSentences(cur.text) : []).map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
+            </div>
             {cur?.kind === 'step' &&
               (() => {
                 const used = ingredientsForStep(cur.text, recipe.ingredients)
@@ -144,7 +170,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                   <ul className="cook__step-ings mono" aria-label={t.recipes.ingredients}>
                     {used.map((ing, i) => (
                       <li key={i}>
-                        <IngredientLine line={ing} size="sm" />
+                        <IngredientLine line={ing} size="sm" kid />
                       </li>
                     ))}
                   </ul>
