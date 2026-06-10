@@ -94,15 +94,18 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   // Recent helpers per chore (shared-task attribution). Today's contributions
   // only, so "aidé par" reflects who pitched in on the current run, not history.
+  // JOIN (not IN-subquery) so the planner walks the household's few tasks via
+  // tasks_household_idx, then task_participants_task_idx(task_id, contributed_at)
+  // per task — this read rides the 10 s kiosk poll, it must stay index-only.
   const helps = await ctx.env.DB.prepare(
     `SELECT tp.task_id, tp.role, m.display_name AS name
        FROM task_participants tp
+       JOIN tasks t ON t.id = tp.task_id AND t.household_id = ?
        LEFT JOIN members m ON m.id = tp.member_id
       WHERE tp.contributed_at >= ?
-        AND tp.task_id IN (SELECT id FROM tasks WHERE household_id = ?)
       ORDER BY tp.contributed_at DESC`,
   )
-    .bind(today, hh)
+    .bind(hh, today)
     .all<{ task_id: string; role: string; name: string | null }>()
 
   // Distinct helpers per chore: collapse repeat taps so "aidé par" shows each
