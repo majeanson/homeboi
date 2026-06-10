@@ -77,12 +77,27 @@ test.describe('navigation', () => {
     }
   })
 
-  test('the corner gear deep-links into settings', async ({ page }) => {
+  test('the nav audience switch flips to the kid view and back', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
-    await page.locator('a.page-gear').click()
-    await expect(page).toHaveURL(/\/settings/)
-    await expect(page.locator('.operator__tabs')).toBeVisible()
+    // Parent → Enfant: the toddler lens comes up and Réglages leaves the nav.
+    await page.locator('.hubnav__peek').click()
+    await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'toddler')
+    await expect(page.locator('.hubnav a[href="/settings"]')).toHaveCount(0)
+    // Enfant → Parent: back, and Réglages returns.
+    await page.locator('.hubnav__peek').click()
+    await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'parent')
+    await expect(page.locator('.hubnav a[href="/settings"]')).toHaveCount(1)
+  })
+
+  test('a locked kiosk (?kid=1) has no audience switch and no settings tab', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await page.goto('/board?kid=1')
+    await settle(page, '.hub')
+    await expect(page.locator('.hubnav__peek')).toHaveCount(0)
+    await expect(page.locator('.hubnav a[href="/settings"]')).toHaveCount(0)
+    await expect(page.locator('.add-fab')).toHaveCount(0)
   })
 })
 
@@ -415,8 +430,9 @@ test('a routine runs start → next → next → stop on one timer', async ({ pa
   await page.locator('.tdl-finish').click() // → step 1
   await page.locator('.tdl-finish').click() // → step 2
   await page.locator('.tdl-finish').click() // ✓ last → stop
-  // It ends on the recap (per-step times + total), not back at a start button.
-  await expect(page.locator('.tdl-times')).toBeVisible()
+  // It ends on the picture recap (each step wearing its ✓), not a start button.
+  await expect(page.locator('.tdl-recap')).toBeVisible()
+  await expect(page.locator('.tdl-recap__step')).toHaveCount(3)
 })
 
 // ──────────────────────────── shared list ──────────────────────────────

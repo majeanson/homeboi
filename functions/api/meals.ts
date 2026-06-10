@@ -35,31 +35,30 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // Kid suggestion: a child's pick only fills an EMPTY supper slot — it never
   // overwrites a meal a parent (or an earlier suggestion) already set. Recorded
   // with suggested_by so a parent sees who suggested it and can keep or change it.
+  // The meals_day_unique index (0014) makes this atomic: two devices racing the
+  // same empty day can't both land — the loser's insert is simply ignored.
   if (body.suggest) {
-    const existing = await ctx.env.DB.prepare(
-      "SELECT id FROM meals WHERE household_id = ? AND slot = 'supper' AND date = ?",
-    )
-      .bind(actor.householdId, date)
-      .first()
-    if (existing) return ok({ ok: true, suggested: false }) // day taken — leave it alone
-    await ctx.env.DB.prepare(
-      'INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    const res = await ctx.env.DB.prepare(
+      'INSERT OR IGNORE INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     )
       .bind(newId(), actor.householdId, date, 'supper', title, null, body.suggestedBy ?? null, ts)
       .run()
-    return ok({ ok: true, suggested: true })
+    return ok({ ok: true, suggested: res.meta.changes > 0 })
   }
 
   // Parent set: one supper per day — replace any existing one (suggested_by clears
   // back to null on this fresh insert, since it's now a decision, not a suggestion).
-  await ctx.env.DB.prepare("DELETE FROM meals WHERE household_id = ? AND slot = 'supper' AND date = ?")
-    .bind(actor.householdId, date)
-    .run()
-  await ctx.env.DB.prepare(
-    'INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-  )
-    .bind(newId(), actor.householdId, date, 'supper', title, body.cookMemberId ?? null, ts)
-    .run()
+  // Batched so the delete+insert is one atomic transaction — a suggest landing
+  // between them can't double-book the day against the unique index.
+  await ctx.env.DB.batch([
+    ctx.env.DB.prepare("DELETE FROM meals WHERE household_id = ? AND slot = 'supper' AND date = ?").bind(
+      actor.householdId,
+      date,
+    ),
+    ctx.env.DB.prepare(
+      'INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    ).bind(newId(), actor.householdId, date, 'supper', title, body.cookMemberId ?? null, ts),
+  ])
 
   // meal -> grocery list: drop any staples the client flagged as missing.
   const staples = (body.staples ?? []).map((s) => ingredientName(s)).filter(Boolean).slice(0, 20)

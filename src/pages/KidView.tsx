@@ -216,11 +216,10 @@ export function KidView() {
   const next = picked.cards[curIdx + 1]
 
   // Time spent so far across the steps finished this session (plus the one
-  // running right now) — shown small during the routine and broken down per step
-  // at the end so the kid can see how long they took.
+  // running right now) — shown small during the routine and as a quiet line on
+  // the recap (a parent's glance; the kid's recap is the picture grid).
   const tallied = Object.values(times).reduce((a, b) => a + b, 0)
   const totalSecs = tallied + (running ? elapsed : 0)
-  const timedSteps = picked.cards.map((c, i) => ({ ...c, i, secs: times[i] })).filter((c) => c.secs != null)
 
   return (
     <div className="kid">
@@ -240,25 +239,24 @@ export function KidView() {
                 <span className="tdl-illus-emoji">✿</span>
               </div>
               <div className="tdl-sweet">{t.kid.allDone}</div>
-              {timedSteps.length > 0 && (
-                <div className="tdl-times">
-                  <div className="tdl-times__head mono">{t.kid.yourTimes}</div>
-                  <ul className="tdl-times__list">
-                    {timedSteps.map((c) => (
-                      <li key={c.i}>
-                        <span className="tdl-times__step">
-                          <span aria-hidden="true">{c.icon || '○'}</span> {c.label}
-                        </span>
-                        <span className="tdl-times__t mono">{fmtClock(c.secs as number)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="tdl-times__total">
-                    <span>{t.kid.total}</span>
-                    <span className="mono">{fmtClock(totalSecs)}</span>
-                  </div>
-                </div>
-              )}
+              {/* The story again, in pictures: every step wearing its ✓. Tap one
+                  to hear it — a pre-reader relives the routine without reading
+                  (the old mm:ss table meant nothing to a three-year-old). */}
+              <div className="tdl-recap">
+                {picked.cards.map((c, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="tdl-recap__step"
+                    onClick={() => speak(c.narration ?? c.label)}
+                    aria-label={c.label}
+                  >
+                    <span aria-hidden="true">{c.icon || '○'}</span>
+                    <span className="tdl-recap__check" aria-hidden="true">✓</span>
+                  </button>
+                ))}
+              </div>
+              {totalSecs > 0 && <div className="tdl-total mono">⏱ {fmtClock(totalSecs)}</div>}
             </>
           ) : (
             <>
