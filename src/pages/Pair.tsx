@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
@@ -104,6 +104,13 @@ export function Pair() {
             </button>
           </div>
         )}
+
+        {/* The approval comes from a signed-in phone — which a brand-new family
+            doesn't have yet. Don't let "wall tablet first" be a dead end: point
+            at signup (their phone, or right on this tablet as a fallback). */}
+        <p className="auth__alt mono">
+          {t.pair.firstTime} <Link to="/signup">{t.pair.firstTimeCta}</Link>
+        </p>
       </main>
     </div>
   )

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useUndoableRemove } from '../../lib/undoRemove'
@@ -50,6 +51,29 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   return (
     <section className="surface operator__section">
       <h2>{t.operator.members}</h2>
+      {/* A brand-new household (fresh signup) lands here with nobody in it yet —
+          three calm steps instead of a bare empty list. Disappears with the
+          first member; never comes back. */}
+      {members.length === 0 && (
+        <div className="welcome-steps">
+          <p className="welcome-steps__title">{t.operator.welcomeTitle}</p>
+          <ol className="welcome-steps__list">
+            <li>{t.operator.welcomeStep1}</li>
+            <li>
+              {t.operator.welcomeStep2}{' '}
+              <Link to="/settings#devices" className="mono">
+                {t.operator.devices}
+              </Link>
+            </li>
+            <li>
+              {t.operator.welcomeStep3}{' '}
+              <Link to="/board" className="mono">
+                {t.operator.welcomeBoard}
+              </Link>
+            </li>
+          </ol>
+        </div>
+      )}
       <ul className="member-cards">
         {members.map((m) => (
           <li key={m.id} className="member-card surface">

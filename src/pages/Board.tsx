@@ -125,6 +125,10 @@ export function Board() {
     )
   }
 
+  // The picked member on this device (greeting + "your day" emphasis, both
+  // lenses). Null on a shared kiosk with nobody picked.
+  const me = data?.members.find((m) => m.id === profileId) ?? null
+
   // Toddler lens on the SAME board data as the parent — same content, kid UI:
   // big read-aloud tiles, picture-first, member colour says whose thing it is.
   // Heroes (meals + weather) sit on top; then Today / Demain / chores / list /
@@ -154,15 +158,25 @@ export function Board() {
         >
           <span className="today-hero__icon" aria-hidden="true">{pictoFor(meal.title, '🍽')}</span>
           <span className="today-hero__label">{meal.title}</span>
-          <span className="today-hero__sub mono">{t.board[key]}</span>
+          {/* A picture hint beside the word, so "tonight vs tomorrow" doesn't
+              hang on reading alone (NFR-KID-2 soft-reading). */}
+          <span className="today-hero__sub mono">
+            <span aria-hidden="true">{key === 'tonight' ? '🌙 ' : '🌅 '}</span>
+            {t.board[key]}
+          </span>
         </button>
       ) : null
 
+    // Tapping the weather also SPEAKS the dressing tip ("mets un manteau") —
+    // that's the actionable part for a pre-schooler getting ready. Audio only:
+    // the picture + temperature stay the calm visual.
     const weatherHero = weather ? (
       <button
         type="button"
         className="today-hero today-hero--weather"
-        onClick={() => speak(`${t.weather[weather.bucket]}, ${weather.tempC}°`)}
+        onClick={() =>
+          speak(`${t.weather[weather.bucket]}, ${weather.tempC}°.${tip ? ` ${t.weather.tip[tip]}` : ''}`)
+        }
         aria-label={`${t.weather[weather.bucket]} ${weather.tempC}°`}
       >
         <span className="today-hero__icon" aria-hidden="true">{weatherEmoji(weather)}</span>
@@ -181,7 +195,9 @@ export function Board() {
 
     return (
       <main className="kid__main today-kid">
-        <p className="today-kid__greet">{t.today[tod]}</p>
+        {/* Greet the picked child by name — same personal touch the parent
+            board gets. Generic when nobody's picked (shared wall). */}
+        <p className="today-kid__greet">{me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]}</p>
         {!data ? (
           <p className="loading mono">{t.common.loading}</p>
         ) : (
@@ -204,9 +220,6 @@ export function Board() {
   // now-card (tonight's supper), then a gentle grouped timeline of colour-coded
   // activity cards. Same data + writes as before — just the calm Pip surface.
   const tod = timeOfDay(Date.now())
-  // The picked member on this device (greeting + "your day" emphasis). Null on a
-  // shared kiosk (no profile chosen there).
-  const me = data?.members.find((m) => m.id === profileId) ?? null
   const eventAct = (e: EventRow) => (
     <Act
       key={e.id}
@@ -270,6 +283,15 @@ export function Board() {
           as themselves, then tap Maisonnée (or their face again) to step back. */}
       {surface === 'kiosk' && data && data.members.length > 0 && (
         <MemberSwitcher members={data.members} t={t} />
+      )}
+
+      {/* A fresh household (nobody added yet): one gentle pointer to the next
+          step instead of a wall of empty "—" sections. */}
+      {data && data.members.length === 0 && (
+        <p className="board-welcome mono">
+          {t.board.welcomeHint}{' '}
+          <Link to="/settings#household">{t.board.welcomeCta}</Link>
+        </p>
       )}
 
       {!data ? (

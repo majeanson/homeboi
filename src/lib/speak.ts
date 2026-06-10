@@ -72,11 +72,24 @@ export function stopSpeaking(): void {
   }
 }
 
+// Narration text often carries emoji (weather tips "🧥", card icons) — some
+// engines read them out loud ("manteau emoji"), which is noise to a toddler.
+// Strip pictographs + joiners before speaking; never strip letters.
+function spokenOnly(text: string): string {
+  try {
+    return text.replace(/[\p{Extended_Pictographic}️‍]/gu, '').replace(/\s+/g, ' ').trim()
+  } catch {
+    return text
+  }
+}
+
 export function useSpeak() {
   const { lang } = useLang()
   return useCallback(
-    (text: string | undefined) => {
-      if (!text || !SUPPORTED) return
+    (raw: string | undefined) => {
+      if (!raw || !SUPPORTED) return
+      const text = spokenOnly(raw)
+      if (!text) return
       const want = wantedTag(lang)
 
       const utter = () => {

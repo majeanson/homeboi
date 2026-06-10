@@ -170,6 +170,33 @@
 }
 
 /* ---- Settings: section nav + anchors + display controls ------------------ */
+/* The fresh-household welcome (Réglages ▸ La maisonnée, zero members): three
+   calm steps in a warm wash. Gone forever after the first person is added. */
+.welcome-steps {
+  background: var(--marigold-wash);
+  border: 1.5px solid color-mix(in srgb, var(--marigold) 35%, var(--card));
+  border-radius: var(--radius-lg, 18px);
+  padding: 14px 18px;
+  margin-bottom: 1rem;
+}
+.welcome-steps__title {
+  font-family: var(--font-hand);
+  font-size: 1.35rem;
+  margin: 0 0 6px;
+}
+.welcome-steps__list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--ink-soft);
+}
+.welcome-steps__list a {
+  color: inherit;
+  font-weight: 600;
+}
+
 .operator__toc {
   display: flex;
   flex-wrap: wrap;

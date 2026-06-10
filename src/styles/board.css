@@ -4,6 +4,19 @@
   margin: 0 auto;
   padding: 1.25rem 1.25rem 2rem;
 }
+/* Fresh household (zero members): one gentle pointer to Réglages instead of a
+   wall of empty sections. */
+.board-welcome {
+  background: var(--marigold-wash);
+  border-radius: var(--radius-lg, 18px);
+  padding: 12px 16px;
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+}
+.board-welcome a {
+  color: inherit;
+  font-weight: 600;
+}
 .board-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));

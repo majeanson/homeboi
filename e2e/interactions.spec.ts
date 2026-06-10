@@ -67,21 +67,28 @@ test.describe('navigation', () => {
     await expect(page).toHaveURL(/\/login$/)
   })
 
-  test('signup creates the household and lands in settings', async ({ page }) => {
+  test('the login card cross-links to signup', async ({ page }) => {
     await APP('/login')(page)
     await settle(page, '.auth__card')
-    // The login card cross-links to signup for a brand-new family.
     await page.locator('.auth__alt a[href="/signup"]').click()
     await expect(page).toHaveURL(/\/signup$/)
+    await settle(page, '.auth__card')
+  })
+
+  test('signup creates the household and lands in settings', async ({ page }) => {
+    // Direct load (not a client-side hop): the first hit on this lazy route
+    // cold-compiles in Vite on CI, and a mid-test dev-server reload would wipe
+    // the filled form (see playwright.config.ts on lazy-route cold compiles).
+    await APP('/signup')(page)
     await settle(page, '.auth__card')
     await page.locator('.auth__card input').first().fill('Maison Test')
     await page.locator('.auth__card input[type="email"]').fill('nouvelle@famille.ca')
     await page.locator('.auth__card input[type="password"]').fill('mot-de-passe-solide')
+    const submit = page.locator('.auth__card button[type="submit"]')
+    await expect(submit).toBeEnabled()
     // The create POST fires, then the flow lands in Réglages ▸ La maisonnée
     // (the obvious next step: add your family).
-    await expectApi(page, 'POST', 'auth/signup', () =>
-      page.locator('.auth__card button[type="submit"]').click(),
-    )
+    await expectApi(page, 'POST', 'auth/signup', () => submit.click())
     await expect(page).toHaveURL(/\/settings/)
     await expect(page.locator('.operator__tabs')).toBeVisible()
   })
