@@ -12,6 +12,8 @@ import { imgUrl } from '../lib/image'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { useOptimisticMutation } from '../lib/optimistic'
+import { timeOfDay } from '../lib/timeofday'
+import { todRank, isRoutineTod, TOD_EMOJI } from '../lib/routineTod'
 
 // The pre-reader surface, in Pip's calm "right now / then" picture story: ONE
 // big card at a time, narrated on tap, with the next thing shown small and a
@@ -32,6 +34,7 @@ interface Routine {
   color: string | null
   avatarPhoto: string | null
   name: string
+  timeOfDay: string | null
   cards: Card[]
   doneIdx: number[]
 }
@@ -147,7 +150,13 @@ export function KidView() {
   // back to everyone if the identified member has no routine of their own.
   const mine = profileId ? routines.filter((r) => r.memberId === profileId) : []
   const identified = mine.length > 0
-  const visible = identified ? mine : routines
+  // Surface the routine that matches the CURRENT moment first (morning shows
+  // Matin first, evening shows Dodo), "anytime" next, the rest after — an
+  // ORDERING cue only; everything stays visible and tappable (NFR-CALM).
+  const tod = timeOfDay(Date.now())
+  const visible = [...(identified ? mine : routines)].sort(
+    (a, b) => todRank(tod, a.timeOfDay) - todRank(tod, b.timeOfDay),
+  )
 
   // "Pick your face" when there are several children's routines; a single
   // routine auto-selects so the toddler lands straight in the story. When
@@ -172,6 +181,13 @@ export function KidView() {
                   <img className="kid__face-photo" src={imgUrl(r.avatarPhoto)} alt="" />
                 ) : (
                   <span className="kid__face-initial">{(r.memberName ?? '?').slice(0, 1).toUpperCase()}</span>
+                )}
+                {/* The routine's moment, worn as a small picture badge — a
+                    pre-reader spots "the moon one" without reading. */}
+                {isRoutineTod(r.timeOfDay) && (
+                  <span className="kid__face-tod" aria-hidden="true">
+                    {TOD_EMOJI[r.timeOfDay]}
+                  </span>
                 )}
                 <span className="kid__face-name">{identified ? r.name : r.memberName ?? r.name}</span>
                 {r.cards.length > 0 && (

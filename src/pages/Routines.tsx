@@ -7,6 +7,7 @@ import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
 import { imgUrl } from '../lib/image'
+import { dayOrder, isRoutineTod, TOD_EMOJI } from '../lib/routineTod'
 import { KidView } from './KidView'
 
 // The Routines tab, two lenses on the same data:
@@ -26,6 +27,7 @@ interface RoutineRow {
   memberName: string | null
   color: string | null
   avatarPhoto: string | null
+  timeOfDay: string | null
   cards: { icon?: string }[]
 }
 
@@ -39,7 +41,11 @@ function RoutinesParent() {
 
   if (isUnauthorized(error)) return <PairPrompt />
   if (!data && !error) return <Loading />
-  const routines = data?.routines ?? []
+  // Day order (matin → après-midi → soir → n'importe quand), so the overview
+  // reads like the day itself.
+  const routines = [...(data?.routines ?? [])].sort(
+    (a, b) => dayOrder(a.timeOfDay) - dayOrder(b.timeOfDay),
+  )
 
   return (
     <main className="today-feed routines-parent">
@@ -80,6 +86,12 @@ function RoutinesParent() {
                     <span className="routine-card__name">{r.name}</span>
                     {r.memberName && <span className="routine-card__who mono">{r.memberName}</span>}
                   </div>
+                  {/* The moment cue, when set — matches the chip in Réglages. */}
+                  {isRoutineTod(r.timeOfDay) && (
+                    <span className="routine-card__tod mono" title={t.routines.tod[r.timeOfDay]}>
+                      {TOD_EMOJI[r.timeOfDay]} {t.routines.tod[r.timeOfDay]}
+                    </span>
+                  )}
                 </div>
                 {steps.length > 0 ? (
                   <div className="routine-card__steps" aria-hidden="true">

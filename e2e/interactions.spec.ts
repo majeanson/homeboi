@@ -446,6 +446,22 @@ test('a kid recipe pick suggests a supper into an empty day', async ({ page }) =
   expect(JSON.parse(req.postData() || '{}')).toMatchObject({ suggest: true })
 })
 
+test('routines surface the current moment first (morning vs evening)', async ({ page }) => {
+  // Freeze the clock so timeOfDay() is deterministic. 12:00Z = 8 AM in the
+  // config's America/Toronto (June, UTC-4) → morning.
+  await page.clock.setFixedTime(new Date('2026-06-08T12:00:00Z'))
+  await APP('/routines', 'toddler')(page)
+  await settle(page, '.kid__faces')
+  // Matin (Léa, timeOfDay: morning) leads in the morning…
+  await expect(page.locator('.kid__face').first()).toContainText('Léa')
+  // …and Dodo (Noah, evening) leads at 8 PM. Nothing hides — just the order.
+  await page.clock.setFixedTime(new Date('2026-06-09T00:00:00Z'))
+  await page.reload()
+  await settle(page, '.kid__faces')
+  await expect(page.locator('.kid__face').first()).toContainText('Noah')
+  await expect(page.locator('.kid__face')).toHaveCount(2)
+})
+
 test('a routine runs start → next → next → stop on one timer', async ({ page }) => {
   await APP('/routines', 'toddler')(page)
   await settle(page, '.hub')

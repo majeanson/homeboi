@@ -232,6 +232,8 @@ export const FR = {
     tag: 'Le rythme du jour',
     stepsN: (n: number) => `${n} étape${n > 1 ? 's' : ''}`,
     empty: 'Aucune carte',
+    todLabel: 'Moment :',
+    tod: { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir', any: 'N’importe quand' },
   },
   login: {
     title: 'Connexion',
@@ -640,6 +642,8 @@ export const EN: typeof FR = {
     tag: 'The day’s rhythm',
     stepsN: (n: number) => `${n} step${n === 1 ? '' : 's'}`,
     empty: 'No cards',
+    todLabel: 'Moment:',
+    tod: { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening', any: 'Anytime' },
   },
   login: {
     title: 'Sign in',
