@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { useProfile } from '../lib/profile'
 import { DisplaySection, CalmSection } from '../components/operator/display'
 import { ShopSection, GhostSection } from '../components/operator/shopping'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
@@ -40,6 +41,7 @@ export function Operator() {
   const nav = useNavigate()
   const loc = useLocation()
   const { loading, signedIn, household, signOut } = useAuth()
+  const { setMemberId } = useProfile()
   const qc = useQueryClient()
 
   // Only fetch once signed in — a kiosk/anon visitor would 401. Each strip is
@@ -94,7 +96,17 @@ export function Operator() {
         <div className="operator__meta mono">
           <span>{household?.name}</span>
           <span className={`tag ${ai ? 'tag--on' : 'tag--off'}`}>{ai ? t.operator.aiOn : t.operator.aiOff}</span>
-          <button type="button" className="btn btn--ghost mono" onClick={() => signOut().then(() => nav('/'))}>
+          <button
+            type="button"
+            className="btn btn--ghost mono"
+            onClick={() => {
+              // Drop the picked face with the session — on a shared device the
+              // next family signing in must not inherit a ghost member id (the
+              // X-Profile header would mis-attribute their writes).
+              setMemberId(null)
+              signOut().then(() => nav('/'))
+            }}
+          >
             {t.nav.logout}
           </button>
         </div>

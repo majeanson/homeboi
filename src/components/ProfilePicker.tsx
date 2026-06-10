@@ -24,7 +24,9 @@ export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () =>
 
   function pick(id: string | null) {
     setMemberId(id)
-    onClose()
+    // Let the picked face show its selected state for a beat before the sheet
+    // slides away — an instant close reads as "did that even register?".
+    window.setTimeout(onClose, 250)
   }
 
   return (

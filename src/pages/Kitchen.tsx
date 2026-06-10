@@ -384,6 +384,7 @@ export function Kitchen() {
                         className={`chip${o.on ? ' is-on' : ''}`}
                         onClick={() => toggleShop(o.item)}
                         aria-pressed={o.on}
+                        title={o.item}
                       >
                         {o.on ? '☑' : '☐'} {o.item}
                       </button>
@@ -430,6 +431,7 @@ export function Kitchen() {
                           className={`chip${o.on ? ' is-on' : ''}`}
                           onClick={() => toggleStaple(o.item)}
                           aria-pressed={o.on}
+                          title={o.item}
                         >
                           {o.on ? '☑' : '☐'} {o.item}
                         </button>

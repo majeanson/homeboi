@@ -5,7 +5,7 @@ import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { Icon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
-import { AddSheetContext } from '../lib/addSheet'
+import { AddSheetContext, type AddSheetMode } from '../lib/addSheet'
 
 // The hub shell, surface-aware. KIOSK (wall display): a vertical column of big
 // section buttons down the left, calm and readable across the room. MOBILE
@@ -33,6 +33,7 @@ export function HubLayout() {
   const { surface } = useSurface()
   const loc = useLocation()
   const [addOpen, setAddOpen] = useState(false)
+  const [addMode, setAddMode] = useState<AddSheetMode>('capture')
   const isSettings = loc.pathname.startsWith('/settings')
 
   // A locked toddler kiosk has no business in Réglages.
@@ -53,7 +54,14 @@ export function HubLayout() {
   const tabs = locked || toddler ? TABS.filter((tab) => tab.to !== '/settings') : TABS
 
   return (
-    <AddSheetContext.Provider value={{ open: () => setAddOpen(true) }}>
+    <AddSheetContext.Provider
+      value={{
+        open: (mode) => {
+          setAddMode(mode ?? 'capture')
+          setAddOpen(true)
+        },
+      }}
+    >
     <div className="page hub" data-audience={audience} data-surface={surface}>
       <nav className="hubnav" aria-label="sections">
         {tabs.map((tab) => (
@@ -94,11 +102,19 @@ export function HubLayout() {
       </div>
 
       {showAdd && (
-        <button type="button" className="add-fab" onClick={() => setAddOpen(true)} aria-label={t.capture.add}>
+        <button
+          type="button"
+          className="add-fab"
+          onClick={() => {
+            setAddMode('capture')
+            setAddOpen(true)
+          }}
+          aria-label={t.capture.add}
+        >
           <Icon name="plus-bold" size={26} />
         </button>
       )}
-      <AddSheet open={addOpen} onClose={() => setAddOpen(false)} />
+      <AddSheet open={addOpen} initialMode={addMode} onClose={() => setAddOpen(false)} />
     </div>
     </AddSheetContext.Provider>
   )
