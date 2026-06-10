@@ -67,6 +67,25 @@ test.describe('navigation', () => {
     await expect(page).toHaveURL(/\/login$/)
   })
 
+  test('signup creates the household and lands in settings', async ({ page }) => {
+    await APP('/login')(page)
+    await settle(page, '.auth__card')
+    // The login card cross-links to signup for a brand-new family.
+    await page.locator('.auth__alt a[href="/signup"]').click()
+    await expect(page).toHaveURL(/\/signup$/)
+    await settle(page, '.auth__card')
+    await page.locator('.auth__card input').first().fill('Maison Test')
+    await page.locator('.auth__card input[type="email"]').fill('nouvelle@famille.ca')
+    await page.locator('.auth__card input[type="password"]').fill('mot-de-passe-solide')
+    // The create POST fires, then the flow lands in Réglages ▸ La maisonnée
+    // (the obvious next step: add your family).
+    await expectApi(page, 'POST', 'auth/signup', () =>
+      page.locator('.auth__card button[type="submit"]').click(),
+    )
+    await expect(page).toHaveURL(/\/settings/)
+    await expect(page.locator('.operator__tabs')).toBeVisible()
+  })
+
   test('hub nav switches every section and marks the active tab', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')

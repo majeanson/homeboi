@@ -24,7 +24,7 @@ type WorkerEnv = Env & { ASSETS: Fetcher }
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // Mirror functions/_middleware.ts: these state-changing endpoints have no cookie
 // yet (pairing) or issue it (login), so they're exempt from the CSRF gate.
-const CSRF_EXEMPT = new Set(['auth/login', 'pair/start', 'pair/poll'])
+const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'pair/start', 'pair/poll'])
 
 const METHOD_EXPORT: Record<string, string> = {
   GET: 'onRequestGet',
