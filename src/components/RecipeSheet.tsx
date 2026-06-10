@@ -36,19 +36,24 @@ export function RecipeSheet({
   const canCook = recipe.steps.length > 0 || recipe.ingredients.length > 0
   const imgSrc = recipeImg(recipe.image)
 
-  // Servings scaler: `serv` is the target count the cook wants tonight; the
-  // factor against the recipe's own servings rescales every ingredient line.
-  // Only offered when the recipe states a base serving count to scale from.
+  // Batch scaler: `factor` is the source of truth (1 = the recipe as written).
+  // Quick presets (×½ ×1 ×2 ×3) set it directly and work even with no stated
+  // servings; when the recipe DOES state servings, a +/- stepper nudges it and
+  // the shown serving count is derived from the factor.
   const baseServings = recipe.servings && recipe.servings > 0 ? recipe.servings : null
-  const [serv, setServ] = useState(baseServings ?? 0)
-  const factor = baseServings ? serv / baseServings : 1
+  const [factor, setFactor] = useState(1)
+  const serv = baseServings ? Math.max(1, Math.round(baseServings * factor)) : 0
+  const MULTS: [string, number][] = [['½', 0.5], ['1', 1], ['2', 2], ['3', 3]]
   const scaledIngredients = useMemo(
     () => scaleIngredients(recipe.ingredients, factor),
     [recipe.ingredients, factor],
   )
   // The recipe handed to Cook mode and pushed to the list reflects the chosen
   // batch, so the cook reads (and shops for) the amounts they'll actually use.
-  const effectiveRecipe = factor === 1 ? recipe : { ...recipe, ingredients: scaledIngredients, servings: serv }
+  const effectiveRecipe =
+    factor === 1
+      ? recipe
+      : { ...recipe, ingredients: scaledIngredients, servings: baseServings ? serv : recipe.servings }
 
   async function addToList() {
     if (added || !scaledIngredients.length) return
@@ -111,39 +116,47 @@ export function RecipeSheet({
           {recipe.ingredients.length > 0 && (
             <>
               <h3 className="recipe-sec-h">{t.recipes.ingredients}</h3>
-              {baseServings && (
-                <div className="recipe-scale" role="group" aria-label={t.recipes.servings}>
-                  <button
-                    type="button"
-                    className="recipe-scale__btn"
-                    aria-label={t.recipes.scaleLess}
-                    onClick={() => setServ((s) => Math.max(1, s - 1))}
-                    disabled={serv <= 1}
-                  >
-                    −
-                  </button>
-                  <span className="recipe-scale__val mono" aria-live="polite">
-                    {t.recipes.servingsN(serv)}
-                  </span>
-                  <button
-                    type="button"
-                    className="recipe-scale__btn"
-                    aria-label={t.recipes.scaleMore}
-                    onClick={() => setServ((s) => s + 1)}
-                  >
-                    ＋
-                  </button>
-                  {factor !== 1 && (
+              <div className="recipe-scale-row">
+                {baseServings && (
+                  <div className="recipe-scale" role="group" aria-label={t.recipes.servings}>
                     <button
                       type="button"
-                      className="recipe-scale__reset mono"
-                      onClick={() => setServ(baseServings)}
+                      className="recipe-scale__btn"
+                      aria-label={t.recipes.scaleLess}
+                      onClick={() => setFactor(Math.max(1, serv - 1) / baseServings)}
+                      disabled={serv <= 1}
                     >
-                      {t.recipes.scaleReset}
+                      −
                     </button>
-                  )}
+                    <span className="recipe-scale__val mono" aria-live="polite">
+                      {t.recipes.servingsN(serv)}
+                    </span>
+                    <button
+                      type="button"
+                      className="recipe-scale__btn"
+                      aria-label={t.recipes.scaleMore}
+                      onClick={() => setFactor((serv + 1) / baseServings)}
+                    >
+                      ＋
+                    </button>
+                  </div>
+                )}
+                {/* Quick batch presets — work with or without a stated serving
+                    count. ×1 returns to the recipe as written. */}
+                <div className="recipe-mult" role="group" aria-label={t.recipes.batch}>
+                  {MULTS.map(([lbl, m]) => (
+                    <button
+                      key={m}
+                      type="button"
+                      className={'recipe-mult__btn mono' + (factor === m ? ' is-active' : '')}
+                      aria-pressed={factor === m}
+                      onClick={() => setFactor(m)}
+                    >
+                      ×{lbl}
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
               <ul className="recipe-view__ings">
                 {scaledIngredients.map((ing, i) => (
                   <li key={i}>

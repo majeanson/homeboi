@@ -199,6 +199,10 @@ export const FR = {
     readStep: 'Touche pour réécouter l’étape',
     autoReadOn: 'Lecture auto activée — touche pour couper',
     autoReadOff: 'Lecture auto coupée — touche pour activer',
+    batch: 'Quantité',
+    gathered: 'Pris ✓',
+    toGather: 'À prendre',
+    hearLine: 'Écouter l’ingrédient',
   },
   kid: {
     title: 'Ma routine',
@@ -574,6 +578,10 @@ export const EN: typeof FR = {
     readStep: 'Tap to hear the step again',
     autoReadOn: 'Auto read-aloud on — tap to mute',
     autoReadOff: 'Auto read-aloud off — tap to enable',
+    batch: 'Batch',
+    gathered: 'Got it ✓',
+    toGather: 'To gather',
+    hearLine: 'Hear the ingredient',
   },
   kid: {
     title: 'My routine',

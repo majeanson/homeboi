@@ -199,3 +199,18 @@ export function spokenMeasure(m: Measure, lang: Lang): string {
   const join = lang === 'fr' ? 'et' : 'and'
   return `${intWord(+whole)} ${join} ${bare} ${unit}`
 }
+
+// The whole ingredient line, read naturally: each scoop measurement swapped for
+// its spoken form so a TTS voice says "un quart de cuillère à thé de vanille"
+// instead of mangling "1/4 c. à thé". A line with no measurement reads verbatim.
+export function spokenIngredient(line: string, lang: Lang): string {
+  const ms = findMeasures(line)
+  if (!ms.length) return line
+  let out = ''
+  let cursor = 0
+  for (const m of ms) {
+    out += line.slice(cursor, m.start) + spokenMeasure(m, lang)
+    cursor = m.end
+  }
+  return out + line.slice(cursor)
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findMeasures, qtyKey, spokenMeasure } from './measure'
+import { findMeasures, qtyKey, spokenMeasure, spokenIngredient } from './measure'
 
 const keys = (line: string) => findMeasures(line).map((m) => m.key)
 const one = (line: string) => {
@@ -101,5 +101,16 @@ describe('spokenMeasure', () => {
   it('reads a mixed amount', () => {
     expect(spokenMeasure(one('1 1/2 tasse de lait'), 'fr')).toBe('une et demi tasse')
     expect(spokenMeasure(one('1 1/2 cup milk'), 'en')).toBe('one and a half cups')
+  })
+})
+
+describe('spokenIngredient', () => {
+  it('expands each measurement in place, keeping the rest of the line', () => {
+    expect(spokenIngredient('1/4 c. à thé de vanille', 'fr')).toBe('un quart de cuillère à thé de vanille')
+    expect(spokenIngredient('1 tsp vanilla', 'en')).toBe('one teaspoon vanilla')
+  })
+  it('reads a line with no measurement verbatim', () => {
+    expect(spokenIngredient('Sel et poivre au goût', 'fr')).toBe('Sel et poivre au goût')
+    expect(spokenIngredient('400 g de farine', 'fr')).toBe('400 g de farine')
   })
 })
