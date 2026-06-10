@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
 import { useLang, useT } from '../i18n'
@@ -172,7 +173,15 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
         {state === 'start' && <p className="feed-empty">{t.shop.browseStart}</p>}
         {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}
         {state === 'empty' && <p className="feed-empty">{t.shop.none}</p>}
-        {state === 'noPostal' && <p className="feed-empty">{t.shop.noPostal}</p>}
+        {state === 'noPostal' && (
+          // Not a dead-end: jump straight to Réglages ▸ Magasinage to fix it.
+          <p className="feed-empty">
+            {t.shop.noPostal}{' '}
+            <Link to="/settings#shopping" className="btn btn--ghost mono">
+              {t.shop.setPostal}
+            </Link>
+          </p>
+        )}
         {state === 'error' && <p className="feed-empty">{t.shop.none}</p>}
 
         {state === 'ok' && stores.length > 1 && (
@@ -211,7 +220,18 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
           <>
             {flyersQ.isLoading && <p className="loading mono">{t.shop.searching}</p>}
             {flyersQ.error && (
-              <p className="feed-empty">{isStatus(flyersQ.error, 400) ? t.shop.noPostal : t.shop.none}</p>
+              <p className="feed-empty">
+                {isStatus(flyersQ.error, 400) ? (
+                  <>
+                    {t.shop.noPostal}{' '}
+                    <Link to="/settings#shopping" className="btn btn--ghost mono">
+                      {t.shop.setPostal}
+                    </Link>
+                  </>
+                ) : (
+                  t.shop.none
+                )}
+              </p>
             )}
             {storeFlyers && storeFlyers.length === 0 && <p className="feed-empty">{t.shop.none}</p>}
             {storeFlyers && storeFlyers.length > 0 && (

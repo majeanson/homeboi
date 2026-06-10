@@ -20,6 +20,7 @@ export function ChoreForm({ members, onSaved }: { members: FormMember[]; onSaved
   const [rotation, setRotation] = useState<string[]>([])
   const [color, setColor] = useState('#88A36F')
   const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(false)
 
   function toggleRot(id: string) {
     setRotation((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]))
@@ -28,12 +29,19 @@ export function ChoreForm({ members, onSaved }: { members: FormMember[]; onSaved
     e.preventDefault()
     if (!title.trim() || busy) return
     setBusy(true)
-    await api('chores', { method: 'POST', body: { title: title.trim(), rotation, color } }).catch(() => {})
-    setBusy(false)
-    setTitle('')
-    setRotation([])
-    setColor('#88A36F')
-    onSaved()
+    setErr(false)
+    try {
+      await api('chores', { method: 'POST', body: { title: title.trim(), rotation, color } })
+      setTitle('')
+      setRotation([])
+      setColor('#88A36F')
+      onSaved()
+    } catch {
+      // Keep the filled form — resetting on a failed write loses the chore.
+      setErr(true)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -66,6 +74,7 @@ export function ChoreForm({ members, onSaved }: { members: FormMember[]; onSaved
         ))}
       </div>
       <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+      {err && <p className="error mono">{t.common.saveFailed}</p>}
       <button type="submit" className="btn" disabled={!title.trim() || busy}>
         {t.operator.addChore}
       </button>

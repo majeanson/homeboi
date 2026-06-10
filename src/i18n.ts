@@ -133,6 +133,8 @@ export const FR = {
   recipes: {
     title: 'Recettes',
     empty: 'Pas encore de recettes.',
+    noMatch: 'Aucune recette ne correspond.',
+    clearFilters: 'Tout afficher',
     add: 'Ajouter une recette',
     new: 'Nouvelle recette',
     edit: 'Modifier la recette',
@@ -347,6 +349,7 @@ export const FR = {
     searching: 'Je cherche les circulaires…',
     none: 'Aucune circulaire trouvée pour cet article.',
     noPostal: 'Règle d’abord ton code postal dans les réglages.',
+    setPostal: 'Régler le code postal',
     was: 'avant',
     until: 'jusqu’au',
     disclaimer: 'Données de circulaires non officielles. À confirmer à la caisse.',
@@ -381,7 +384,7 @@ export const FR = {
     byItem: 'Par article',
     byStore: 'Par magasin',
   },
-  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN' },
+  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', edit: 'Modifier', saveFailed: 'Pas enregistré — réessaie.' },
   undo: { action: 'Annuler', checked: (s: string) => `« ${s} » coché`, cleared: (s: string) => `« ${s} » retiré` },
   notFound: { title: 'Page introuvable', back: 'Retour à l’accueil' },
 }
@@ -512,6 +515,8 @@ export const EN: typeof FR = {
   recipes: {
     title: 'Recipes',
     empty: 'No recipes yet.',
+    noMatch: 'No recipes match.',
+    clearFilters: 'Show all',
     add: 'Add a recipe',
     new: 'New recipe',
     edit: 'Edit recipe',
@@ -726,6 +731,7 @@ export const EN: typeof FR = {
     searching: 'Finding flyers…',
     none: 'No flyer deal found for this item.',
     noPostal: 'Set your postal code in settings first.',
+    setPostal: 'Set postal code',
     was: 'was',
     until: 'until',
     disclaimer: 'Unofficial flyer data. Confirm at the till.',
@@ -760,7 +766,7 @@ export const EN: typeof FR = {
     byItem: 'By item',
     byStore: 'By store',
   },
-  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR' },
+  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', edit: 'Edit', saveFailed: 'Not saved — try again.' },
   undo: { action: 'Undo', checked: (s: string) => `"${s}" checked off`, cleared: (s: string) => `"${s}" cleared` },
   notFound: { title: 'Page not found', back: 'Back to home' },
 }

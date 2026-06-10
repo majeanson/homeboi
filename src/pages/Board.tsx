@@ -119,6 +119,12 @@ export function Board() {
     }
   }, [surface, profileId, setMemberId])
 
+  // A member deleted in Réglages can linger as this device's picked profile —
+  // clear it so the greeting/"my day" accents never point at a ghost.
+  useEffect(() => {
+    if (profileId && data?.members && !data.members.some((m) => m.id === profileId)) setMemberId(null)
+  }, [data?.members, profileId, setMemberId])
+
   const memberName = (id: string | null) => data?.members.find((m) => m.id === id)?.display_name ?? null
   const memberColor = (id: string | null) => data?.members.find((m) => m.id === id)?.colour
 

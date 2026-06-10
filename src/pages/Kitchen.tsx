@@ -157,12 +157,21 @@ export function Kitchen() {
 
   // Persist the supper, optionally pushing chosen staples onto the shared list
   // (the meals endpoint inserts them with source 'meal' in the same write).
+  // On failure the edit/staple state stays put (the typed title isn't lost) and
+  // an error line appears — silently closing would read as "saved" when nothing was.
+  const [mealErr, setMealErr] = useState(false)
   async function saveMeal(date: number, title: string, staples: string[]) {
-    await api('meals', { method: 'POST', body: { date, title, staples } }).catch(() => {})
-    setEditDate(null)
-    setMealText('')
-    setStaplePrompt(null)
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
+    setMealErr(false)
+    try {
+      await api('meals', { method: 'POST', body: { date, title, staples } })
+      setEditDate(null)
+      setMealText('')
+      setStaplePrompt(null)
+    } catch {
+      setMealErr(true)
+    } finally {
+      qc.invalidateQueries({ queryKey: MEALS_KEY })
+    }
   }
 
   // Setting a meal first asks the router for its staples (B3). If AI finds some,
@@ -517,6 +526,11 @@ export function Kitchen() {
               ⏳ {t.kitchen.aiWaking}
             </p>
           )}
+          {mealErr && (
+            <p className="error mono" role="alert">
+              {t.common.saveFailed}
+            </p>
+          )}
           {suggestion && (
             <p className="kitchen__suggestion" role="status">
               🍽 {suggestion}
@@ -841,7 +855,23 @@ export function Kitchen() {
           {recipes.length === 0 ? (
             <p className="board__empty mono">{t.recipes.empty}</p>
           ) : recipeOrder.length === 0 ? (
-            <p className="board__empty mono">{t.recipes.empty}</p>
+            // The book has recipes — the FILTERS hid them all. Say so (instead of
+            // the misleading "no recipes yet") and offer the one-tap way back.
+            <div className="board__empty mono">
+              <p>{t.recipes.noMatch}</p>
+              <button
+                type="button"
+                className="btn btn--ghost mono"
+                onClick={() => {
+                  setRecipeQuery('')
+                  setTagFilter(null)
+                  setCookFilter(false)
+                  setUseSoonFilter(false)
+                }}
+              >
+                {t.recipes.clearFilters}
+              </button>
+            </div>
           ) : (
             <div className="recipe-grid">
               {recipeOrder.map((r) => {

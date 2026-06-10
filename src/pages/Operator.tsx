@@ -5,6 +5,7 @@ import { useLang, useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useCalm } from '../lib/calm'
+import { useUndoToast } from '../lib/toast'
 import { useAudience } from '../lib/audience'
 import { getTheme, toggleTheme, type Theme } from '../lib/theme'
 import { ColorPicker } from '../components/ColorPicker'
@@ -43,6 +44,38 @@ interface Device { id: string; label: string; created_at: number; last_seen_at: 
 interface Chore { id: string; title: string; color?: string }
 interface Routine { id: string; name: string; memberName: string | null }
 interface EventRow { id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json?: string | null }
+
+// Deletes in Réglages used to be one tap and gone — the only destructive action
+// in the app with no way back. Same calm pattern as the list/pantry now: the row
+// leaves the cached list at once, the undo toast holds the real DELETE for a few
+// seconds, and tapping Annuler restores it with zero round-trips.
+function useUndoableRemove() {
+  const t = useT()
+  const qc = useQueryClient()
+  const undo = useUndoToast()
+  return (opts: {
+    queryKey: string[]
+    listProp: string
+    id: string
+    label: string
+    commit: () => Promise<unknown>
+    after: () => void
+  }) => {
+    const prev = qc.getQueryData(opts.queryKey)
+    qc.setQueryData(opts.queryKey, (d: Record<string, { id: string }[]> | undefined) =>
+      d ? { ...d, [opts.listProp]: d[opts.listProp].filter((x) => x.id !== opts.id) } : d,
+    )
+    undo({
+      message: t.undo.cleared(opts.label),
+      onUndo: () => {
+        if (prev) qc.setQueryData(opts.queryKey, prev)
+      },
+      onCommit: () => {
+        opts.commit().catch(() => {}).then(opts.after)
+      },
+    })
+  }
+}
 
 export function Operator() {
   const t = useT()
@@ -474,6 +507,7 @@ function GhostRow({
 
 function MembersSection({ members, onChange }: { members: Member[]; onChange: () => void }) {
   const t = useT()
+  const undoableRemove = useUndoableRemove()
   const [name, setName] = useState('')
   const [isChild, setIsChild] = useState(false)
   // Default each new person to the next unused palette colour, so a household
@@ -489,9 +523,15 @@ function MembersSection({ members, onChange }: { members: Member[]; onChange: ()
     setColor(PALETTE[(members.length + 1) % PALETTE.length])
     onChange()
   }
-  async function remove(id: string) {
-    await api('members', { method: 'DELETE', body: { id } }).catch(() => {})
-    onChange()
+  function remove(m: Member) {
+    undoableRemove({
+      queryKey: ['members'],
+      listProp: 'members',
+      id: m.id,
+      label: m.display_name,
+      commit: () => api('members', { method: 'DELETE', body: { id: m.id } }),
+      after: onChange,
+    })
   }
   // Set a face from the phone (camera or gallery): resize small, upload, refresh.
   async function setPhoto(id: string, file: File) {
@@ -538,7 +578,7 @@ function MembersSection({ members, onChange }: { members: Member[]; onChange: ()
                   ✕
                 </button>
               )}
-              <button type="button" className="btn btn--ghost mono" onClick={() => remove(m.id)}>
+              <button type="button" className="btn btn--ghost mono" onClick={() => remove(m)}>
                 {t.operator.delete}
               </button>
             </div>
@@ -567,10 +607,19 @@ function MembersSection({ members, onChange }: { members: Member[]; onChange: ()
 
 function DevicesSection({ devices, onChange }: { devices: Device[]; onChange: () => void }) {
   const t = useT()
+  const undoableRemove = useUndoableRemove()
   const active = devices.filter((d) => !d.revoked_at)
-  async function revoke(id: string) {
-    await api('pair/devices', { method: 'POST', body: { revokeId: id } }).catch(() => {})
-    onChange()
+  // A mis-tapped revoke forces someone to re-pair the wall tablet — defer it
+  // behind the undo toast like the other destructive rows.
+  function revoke(d: Device) {
+    undoableRemove({
+      queryKey: ['devices'],
+      listProp: 'devices',
+      id: d.id,
+      label: d.label,
+      commit: () => api('pair/devices', { method: 'POST', body: { revokeId: d.id } }),
+      after: onChange,
+    })
   }
   return (
     <section className="surface operator__section">
@@ -582,7 +631,7 @@ function DevicesSection({ devices, onChange }: { devices: Device[]; onChange: ()
           {active.map((d) => (
             <li key={d.id}>
               <span>📱 {d.label}</span>
-              <button type="button" className="btn btn--ghost mono operator__del" onClick={() => revoke(d.id)}>
+              <button type="button" className="btn btn--ghost mono operator__del" onClick={() => revoke(d)}>
                 {t.operator.revoke}
               </button>
             </li>
@@ -603,9 +652,16 @@ function ChoresSection({
   onChange: () => void
 }) {
   const t = useT()
-  async function remove(id: string) {
-    await api('chores', { method: 'DELETE', body: { id } }).catch(() => {})
-    onChange()
+  const undoableRemove = useUndoableRemove()
+  function remove(c: Chore) {
+    undoableRemove({
+      queryKey: ['chores'],
+      listProp: 'chores',
+      id: c.id,
+      label: c.title,
+      commit: () => api('chores', { method: 'DELETE', body: { id: c.id } }),
+      after: onChange,
+    })
   }
 
   return (
@@ -616,7 +672,7 @@ function ChoresSection({
           <li key={c.id}>
             <span className="operator__avatar" style={{ background: c.color ?? '#88A36F' }} aria-hidden="true" />
             <span>{c.title}</span>
-            <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(c.id)}>
+            <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(c)}>
               {t.operator.delete}
             </button>
           </li>
@@ -641,12 +697,19 @@ function EventsSection({
 }) {
   const t = useT()
   const { lang } = useLang()
+  const undoableRemove = useUndoableRemove()
   const [editing, setEditing] = useState<EventRow | null>(null)
 
-  async function remove(id: string) {
-    await api('events', { method: 'DELETE', body: { id } }).catch(() => {})
-    if (editing?.id === id) setEditing(null)
-    onChange()
+  function remove(ev: EventRow) {
+    if (editing?.id === ev.id) setEditing(null)
+    undoableRemove({
+      queryKey: ['events'],
+      listProp: 'events',
+      id: ev.id,
+      label: ev.title,
+      commit: () => api('events', { method: 'DELETE', body: { id: ev.id } }),
+      after: onChange,
+    })
   }
   const memberName = (id: string | null) => members.find((m) => m.id === id)?.display_name
   const memberColor = (id: string | null) => members.find((m) => m.id === id)?.colour
@@ -675,10 +738,10 @@ function EventsSection({
                   {memberName(ev.member_id) ? ` · ${memberName(ev.member_id)}` : ''}
                 </span>
               </span>
-              <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(ev)} aria-label={t.common.save}>
+              <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(ev)} aria-label={t.common.edit}>
                 ✎
               </button>
-              <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(ev.id)}>
+              <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(ev)}>
                 {t.operator.delete}
               </button>
             </li>
@@ -815,9 +878,16 @@ function RoutinesSection({
   onChange: () => void
 }) {
   const t = useT()
-  async function remove(id: string) {
-    await api('routines', { method: 'DELETE', body: { id } }).catch(() => {})
-    onChange()
+  const undoableRemove = useUndoableRemove()
+  function remove(r: Routine) {
+    undoableRemove({
+      queryKey: ['routines'],
+      listProp: 'routines',
+      id: r.id,
+      label: r.name,
+      commit: () => api('routines', { method: 'DELETE', body: { id: r.id } }),
+      after: onChange,
+    })
   }
 
   return (
@@ -830,7 +900,7 @@ function RoutinesSection({
               {r.name}
               {r.memberName ? ` · ${r.memberName}` : ''}
             </span>
-            <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(r.id)}>
+            <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(r)}>
               {t.operator.delete}
             </button>
           </li>

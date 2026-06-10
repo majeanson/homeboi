@@ -127,8 +127,14 @@ export function KidView() {
     setElapsed(0)
     if (!routine.doneIdx.includes(idx)) setTimes((m) => ({ ...m, [idx]: taken }))
     toggle.mutate({ routineId: routine.id, cardIdx: idx, done: true })
-    if (isLast) setRunning(false)
-    else readAloud(idx + 1)
+    if (isLast) {
+      setRunning(false)
+      // A pre-reader can't read the "sweet dreams" card — say it. The SAME
+      // gentle line every time (deterministic, no variable reward, NFR-CALM-2).
+      speak(t.kid.allDone)
+    } else {
+      readAloud(idx + 1)
+    }
   }
 
   if (isUnauthorized(error)) return <div className="kid"><PairPrompt /></div>
