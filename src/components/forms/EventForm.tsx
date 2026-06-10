@@ -57,6 +57,7 @@ export function EventForm({
   const [memberId, setMemberId] = useState<string | null>(value?.member_id ?? null)
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
   const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(false)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -68,12 +69,19 @@ export function EventForm({
     // server's UTC expansion and recur on the wrong day.
     const fields = { title: title.trim(), startAt, allDay: !time, memberId, recur }
     setBusy(true)
-    await api('events', {
-      method: value ? 'PATCH' : 'POST',
-      body: value ? { id: value.id, ...fields } : fields,
-    }).catch(() => {})
-    setBusy(false)
-    onSaved()
+    setErr(false)
+    try {
+      await api('events', {
+        method: value ? 'PATCH' : 'POST',
+        body: value ? { id: value.id, ...fields } : fields,
+      })
+      onSaved()
+    } catch {
+      // Keep what was typed — closing here would silently throw the event away.
+      setErr(true)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -106,6 +114,7 @@ export function EventForm({
         ))}
       </div>
       <RecurPicker value={recur} onChange={setRecur} />
+      {err && <p className="error mono">{t.common.saveFailed}</p>}
       <button type="submit" className="btn" disabled={!title.trim() || !date || busy}>
         {value ? t.common.save : t.operator.addEvent}
       </button>

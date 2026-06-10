@@ -23,6 +23,7 @@ export function RoutineForm({ members, onSaved }: { members: FormMember[]; onSav
   const [name, setName] = useState('')
   const [cards, setCards] = useState<DeckCard[]>([])
   const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(false)
 
   function toggleMember(id: string) {
     setMemberIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
@@ -42,12 +43,19 @@ export function RoutineForm({ members, onSaved }: { members: FormMember[]; onSav
       .filter((c) => c.label || c.icon)
       .map((c) => ({ icon: c.icon, label: c.label || c.icon, narration: c.label || c.icon }))
     setBusy(true)
-    await api('routines', { method: 'POST', body: { memberIds, name: name.trim(), cards: payload } }).catch(() => {})
-    setBusy(false)
-    setName('')
-    setCards([])
-    setMemberIds([])
-    onSaved()
+    setErr(false)
+    try {
+      await api('routines', { method: 'POST', body: { memberIds, name: name.trim(), cards: payload } })
+      setName('')
+      setCards([])
+      setMemberIds([])
+      onSaved()
+    } catch {
+      // Keep the deck — a failed write shouldn't eat a hand-built routine.
+      setErr(true)
+    } finally {
+      setBusy(false)
+    }
   }
 
   if (children.length === 0) return <p className="board__empty mono">{t.operator.needChild}</p>
@@ -82,6 +90,7 @@ export function RoutineForm({ members, onSaved }: { members: FormMember[]; onSav
 
       <CardDeckEditor cards={cards} onChange={setCards} />
 
+      {err && <p className="error mono">{t.common.saveFailed}</p>}
       <button type="submit" className="btn btn--primary" disabled={!memberIds.length || !name.trim() || busy}>
         {t.operator.addRoutine}
       </button>

@@ -194,7 +194,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
     <div className="cook" role="dialog" aria-modal="true" aria-label={recipe.title}>
       <div className="cook__bar">
         <span className="cook__title">{recipe.title}</span>
-        <span className="cook__count mono">
+        <span className="cook__count mono" aria-live="polite">
           {Math.min(idx + 1, total)} / {total}
         </span>
         <button
