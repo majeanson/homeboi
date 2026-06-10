@@ -1,0 +1,101 @@
+/* ========================================================================== */
+/* Almanac polish — the "Claude design" layer. Type voice, one calm load        */
+/* reveal, and a deterministic press. Self-contained so it's easy to tune or    */
+/* lift out as a unit. Everything here honours the calm tenets: opacity-only     */
+/* reveals, identical (non-variable) acknowledgments, no glow/lift.             */
+/* ========================================================================== */
+
+/* The display serif carries the brand voice on the few big, glanceable words —
+   not body text (Fraunces stays readable large, Hanken Grotesk does the work
+   small). */
+.topbar__brand {
+  font-family: var(--display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.board__clock {
+  font-family: var(--display);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums; /* digits don't jitter as time ticks */
+}
+.board__greet,
+.today-kid__greet,
+.today-hero__label,
+.board__tonight-meal {
+  font-family: var(--display);
+}
+
+/* Surfaces read as a printed card: the deeper bottom border is the "ink edge,"
+   the softer radius is cut paper. (Kept flat — depth is tint + grain, no lift.) */
+.bigtile {
+  border-radius: var(--radius-lg);
+}
+.board__zone--tonight {
+  /* the one warm focal card: tonight's supper, stamped in sage */
+  border-bottom-color: var(--line-strong);
+}
+
+/* One calm arrival: surfaces fade in once on load, gently staggered so the eye
+   lands top-to-bottom. Opacity-only (the house rule). Skipped entirely for
+   reduced-motion below. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes lac-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .board__zone,
+  .bigtile,
+  .home__value,
+  .today-hero {
+    animation: lac-fade-in 0.5s ease both;
+  }
+  .board__zone:nth-child(2),
+  .bigtile:nth-child(2) {
+    animation-delay: 0.06s;
+  }
+  .board__zone:nth-child(3),
+  .bigtile:nth-child(3) {
+    animation-delay: 0.12s;
+  }
+  .board__zone:nth-child(4),
+  .bigtile:nth-child(4) {
+    animation-delay: 0.18s;
+  }
+  .board__zone:nth-child(n + 5),
+  .bigtile:nth-child(n + 5) {
+    animation-delay: 0.24s;
+  }
+}
+
+/* Deterministic press: the SAME tiny, tactile give every time a finger lands —
+   acknowledgment, never a reward (NFR-CALM-2). A toddler feels the tile "press";
+   nothing escalates, nothing surprises. */
+.btn,
+.tabbar__tab,
+.audience-switch__opt,
+.bigtile,
+.board__list-item,
+.chip,
+.kitchen__day-meal,
+.today-hero {
+  transition:
+    background 0.12s ease,
+    transform 0.08s ease,
+    opacity 0.18s ease;
+}
+.btn:active,
+.tabbar__tab:active,
+.audience-switch__opt:active,
+.board__list-item:active,
+.chip:active,
+.kitchen__day-meal:active {
+  transform: translateY(1px);
+}
+.bigtile:active,
+.today-hero:active {
+  transform: scale(0.985);
+}

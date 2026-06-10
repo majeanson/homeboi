@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { BigTiles, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -9,32 +8,28 @@ import { api, isStatus, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday } from '../lib/format'
-import { type Recipe, RECIPES_KEY, recipeImg, allTags } from '../lib/recipes'
-import { rankCookable, rankUseSoon, normKey } from '../lib/cookable'
+import { type Recipe, RECIPES_KEY } from '../lib/recipes'
+import { normKey } from '../lib/cookable'
 import { ingredientName } from '../lib/ingredient'
 import { pictoFor } from '../lib/picto'
-import { useUndoToast } from '../lib/toast'
 import { RecipeSheet } from '../components/RecipeSheet'
 import { RecipeForm } from '../components/RecipeForm'
+import { KidKitchen } from '../components/kitchen/KidKitchen'
+import { PantryTab } from '../components/kitchen/PantryTab'
+import { RecipesTab } from '../components/kitchen/RecipesTab'
+import { type LowRow, type MealsData, type PantryData, MEALS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
 
-// Garde-manger. Weekly supper slots + a "running low" list (never a full
-// inventory — brief tenet 3). One AI button asks for a supper suggestion; it
-// hides itself when the AI binding is off (503).
-interface MealRow { id: string; date: number; title: string; cook_member_id: string | null; suggested_by?: string | null }
-interface LowRow { id: string; item: string; marked_at: number }
-type MealsData = { days: MealRow[]; weekStart: number }
-type PantryData = { low: LowRow[] }
-const MEALS_KEY = ['meals']
-const PANTRY_KEY = ['pantry']
-const USE_SOON_KEY = ['use-soon']
-
+// La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
+// browse the book — one sub-tab at a time. The pantry and recipe tabs and the
+// toddler lens live in src/components/kitchen/*; this page owns the queries
+// (one unauth gate for all), the week grid, and the meal-planning flows (the
+// AI staples step, shop-the-week, the kid-suggestion write).
 export function Kitchen() {
   const t = useT()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
   const qc = useQueryClient()
-  const undo = useUndoToast()
   // A batch of supper ideas + a cursor into it: each click shows the next without
   // re-asking, until the batch (10) is used up — then a click fetches a new one.
   const [suggestions, setSuggestions] = useState<string[]>([])
@@ -54,8 +49,6 @@ export function Kitchen() {
     if (wakeTimer.current) clearTimeout(wakeTimer.current)
     setAiWaking(false)
   }
-  const [newLow, setNewLow] = useState('')
-  const [newSoon, setNewSoon] = useState('')
   const [editDate, setEditDate] = useState<number | null>(null)
   const [mealText, setMealText] = useState('')
   // The meal -> grocery staple step (B3): after a title is entered, we offer the
@@ -86,62 +79,23 @@ export function Kitchen() {
   const memberName = (id: string | null | undefined) =>
     (id && boardQ.data?.members?.find((m) => m.id === id)?.display_name) || ''
   const recipes = recipesQ.data?.recipes ?? []
-  // "Quoi cuisiner ?": when on, sort the grid by fewest out-of-stock ingredients.
-  const [cookFilter, setCookFilter] = useState(false)
-  // "À utiliser bientôt": when on, sort the grid by most use-soon items used.
-  // Mutually exclusive with cookFilter (toggling one clears the other).
-  const [useSoonFilter, setUseSoonFilter] = useState(false)
   // Recipe book overlays: a recipe being viewed, and one being created/edited
   // ('new' = a blank form). recipePickFor = the day a recipe is being chosen for.
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null)
   const [editRecipe, setEditRecipe] = useState<Recipe | 'new' | null>(null)
   const [recipePickFor, setRecipePickFor] = useState<number | null>(null)
-  // Toddler meal-picking: the recipe a child has tapped and is now choosing a day
-  // for (null = still browsing the recipe shelf). Picture-first, read-aloud flow.
-  const [kidRecipe, setKidRecipe] = useState<Recipe | null>(null)
-  // Parent kitchen is three jobs (plan the week / track the pantry / browse the
-  // book); a sub-tab shows one at a time so the page isn't an endless scroll and
-  // the recipe filters only appear with the recipe book.
+  // Parent kitchen sub-tab: one job at a time so the page isn't an endless scroll.
   const [kitTab, setKitTab] = useState<'meals' | 'pantry' | 'recipes'>('meals')
-  const [recipeQuery, setRecipeQuery] = useState('')
-  // Single active tag filter (null = all). Drives the chip row over the grid.
-  const [tagFilter, setTagFilter] = useState<string | null>(null)
-  const tags = useMemo(() => allTags(recipes), [recipes])
   // Match a planned supper to a saved recipe by (loose) title, so a day's meal can
-  // open its recipe, and the grid can be filtered.
+  // open its recipe.
   const recipeByTitle = useMemo(() => {
     const m = new Map<string, Recipe>()
     for (const r of recipes) m.set(r.title.trim().toLowerCase(), r)
     return m
   }, [recipes])
-  const shownRecipes = useMemo(() => {
-    const q = recipeQuery.trim().toLowerCase()
-    const tf = tagFilter?.toLowerCase()
-    return recipes.filter((r) => {
-      if (q && !(r.title.toLowerCase().includes(q) || r.ingredients.some((i) => i.toLowerCase().includes(q)))) return false
-      if (tf && !(r.tags ?? []).some((tg) => tg.toLowerCase() === tf)) return false
-      return true
-    })
-  }, [recipes, recipeQuery, tagFilter])
-  // Cookability: which staple each recipe is missing (out of stock + not on the
-  // list), fewest first. `cookFilter` only surfaces when there's a low item to
-  // rank against, so it never appears as a no-op.
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
-  const ranked = useMemo(() => rankCookable(shownRecipes, lowItems, listItems), [shownRecipes, lowItems, listItems])
-  const missingById = useMemo(() => new Map(ranked.map((r) => [r.recipe.id, r.missing])), [ranked])
-  const canCookFilter = lowItems.length > 0 && recipes.length > 0
-  // "Use it up" ranking: which use-soon items each recipe would finish, most first.
   const soonItems = useMemo(() => (useSoonQ.data?.soon ?? []).map((s) => s.item), [useSoonQ.data])
-  const rankedSoon = useMemo(() => rankUseSoon(shownRecipes, soonItems), [shownRecipes, soonItems])
-  const usesById = useMemo(() => new Map(rankedSoon.map((r) => [r.recipe.id, r.uses])), [rankedSoon])
-  const canUseSoonFilter = soonItems.length > 0 && recipes.length > 0
-  const recipeOrder =
-    useSoonFilter && canUseSoonFilter
-      ? rankedSoon.map((r) => r.recipe)
-      : cookFilter && canCookFilter
-        ? ranked.map((r) => r.recipe)
-        : shownRecipes
   const unauth = isUnauthorized(meals.error) || isUnauthorized(pantry.error)
   const days = meals.data?.days ?? []
   const weekStart = meals.data?.weekStart ?? 0
@@ -224,13 +178,10 @@ export function Kitchen() {
     }
   }
 
-  // Toddler path: a child taps a recipe, then a day. This is a SUGGESTION, not a
-  // decision — it only fills an EMPTY day and never replaces a planned meal (the
-  // server enforces this too). It's recorded as "suggested by" the child on this
-  // device, so a parent sees whose idea it was. No staples step (a parent's job).
-  async function kidSuggest(date: number, recipe: Recipe, taken: boolean) {
-    setKidRecipe(null)
-    if (taken) return // day already planned — a kid's pick can't overwrite it
+  // Toddler path: a child taps a recipe, then an empty day. This is a SUGGESTION,
+  // not a decision — the server only fills an empty slot (unique-day index) and
+  // records "suggested by" this device's child so a parent sees whose idea it was.
+  async function kidSuggest(date: number, recipe: Recipe) {
     await api('meals', {
       method: 'POST',
       body: { date, title: recipe.title, suggest: true, suggestedBy: profileId },
@@ -294,52 +245,6 @@ export function Kitchen() {
     (w) => w.meal && recipeByTitle.get(w.meal.title.trim().toLowerCase()),
   ).length
 
-  async function addLow(e: React.FormEvent) {
-    e.preventDefault()
-    const item = newLow.trim()
-    if (!item) return
-    setNewLow('')
-    await api('pantry', { method: 'POST', body: { item } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: PANTRY_KEY })
-  }
-
-  // Drop the cleared item from the low list at once, but DEFER the delete behind
-  // an undo toast — a mis-tap is recoverable with no round-trip.
-  function clearLowItem(l: LowRow) {
-    const prev = qc.getQueryData<PantryData>(PANTRY_KEY)
-    qc.setQueryData<PantryData>(PANTRY_KEY, (d) => (d ? { low: d.low.filter((x) => x.id !== l.id) } : d))
-    undo({
-      message: t.undo.cleared(l.item),
-      onUndo: () => prev && qc.setQueryData(PANTRY_KEY, prev),
-      onCommit: () => {
-        api('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
-      },
-    })
-  }
-
-  async function addSoon(e: React.FormEvent) {
-    e.preventDefault()
-    const item = newSoon.trim()
-    if (!item) return
-    setNewSoon('')
-    await api('use-soon', { method: 'POST', body: { item } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: USE_SOON_KEY })
-  }
-
-  // Clear a use-soon item (used it / tossed it). Deferred behind the undo toast,
-  // like the low list. No list side-effects — use-soon never touches shopping.
-  function clearSoonItem(s: LowRow) {
-    const prev = qc.getQueryData<{ soon: LowRow[] }>(USE_SOON_KEY)
-    qc.setQueryData<{ soon: LowRow[] }>(USE_SOON_KEY, (d) => (d ? { soon: d.soon.filter((x) => x.id !== s.id) } : d))
-    undo({
-      message: t.undo.cleared(s.item),
-      onUndo: () => prev && qc.setQueryData(USE_SOON_KEY, prev),
-      onCommit: () => {
-        api('use-soon', { method: 'DELETE', body: { id: s.id } }).catch(() => {})
-      },
-    })
-  }
-
   const suggestion = suggestions[suggestIdx] ?? null
 
   // Cycle the family's own recipe titles as suggestions (the AI-off fallback, and
@@ -395,81 +300,8 @@ export function Kitchen() {
 
   if (unauth) return <PairPrompt />
 
-  // Toddler lens: just "what's for supper" this week, big and read-aloud. Each
-  // supper draws its own food picture (pictoFor) so a pre-reader sees pizza/soup/
-  // chicken — not seven identical plates.
   if (audience === 'toddler') {
-    const planned: Tile[] = week
-      .filter((d) => d.meal)
-      .map((d) => ({
-        key: String(d.date),
-        icon: pictoFor(d.meal!.title, '🍽'),
-        label: d.meal!.title,
-        sub: formatWeekday(d.date, lang),
-        narration: `${formatWeekday(d.date, lang)}: ${d.meal!.title}`,
-      }))
-    // The picker: tap a recipe to hear it (BigTiles speaks on tap) and choose it,
-    // then tap a day to put it on the menu. The day tile's narration ("Lundi:
-    // Pizza") doubles as the spoken confirmation, and `planned` above redraws so
-    // the child watches their pick appear. A picture for every recipe (pictoFor)
-    // so a pre-reader picks by sight, never by reading (NFR-KID-2).
-    // Real photo when the recipe has one, the food picto as fallback — a
-    // pre-reader recognizes "the orange soup we had" by its picture.
-    const recipeTiles: Tile[] = recipes.map((r) => ({
-      key: r.id,
-      image: recipeImg(r.image),
-      icon: pictoFor(r.title, '🍽'),
-      label: r.title,
-      onTap: () => setKidRecipe(r),
-    }))
-    const dayTiles: Tile[] = kidRecipe
-      ? week.map(({ date, meal }) => ({
-          key: String(date),
-          icon: meal ? pictoFor(meal.title, '🍽') : '📅',
-          label: formatWeekday(date, lang),
-          sub: meal?.title,
-          // A planned day is "taken" — greyed and read-only (tapping just reads the
-          // meal that's already there). Only empty days accept the suggestion.
-          done: !!meal,
-          narration: meal
-            ? `${formatWeekday(date, lang)}: ${meal.title}`
-            : `${formatWeekday(date, lang)}: ${kidRecipe.title}`,
-          onTap: meal ? undefined : () => kidSuggest(date, kidRecipe, false),
-        }))
-      : []
-    return (
-      <main className={`kid__main${recipes.length > 0 ? ' kid__main--feed' : ''}`}>
-        <div className="kid-head">
-          <span className="kid-head__emoji" aria-hidden="true">🍲</span>
-          <p className="kid-head__title">{t.kid.supper}</p>
-        </div>
-        <BigTiles tiles={planned} empty={t.board.nothingTonight} />
-
-        {recipes.length > 0 &&
-          (kidRecipe ? (
-            <section className="kid-pick">
-              <div className="kid-head">
-                <span className="kid-head__emoji" aria-hidden="true">
-                  {pictoFor(kidRecipe.title, '🍽')}
-                </span>
-                <p className="kid-head__title">{t.kid.whichDay}</p>
-              </div>
-              <BigTiles tiles={dayTiles} />
-              <button type="button" className="kid-pick__back mono" onClick={() => setKidRecipe(null)}>
-                ← {t.kid.back}
-              </button>
-            </section>
-          ) : (
-            <section className="kid-pick">
-              <div className="kid-head">
-                <span className="kid-head__emoji" aria-hidden="true">📖</span>
-                <p className="kid-head__title">{t.kid.pickMeal}</p>
-              </div>
-              <BigTiles tiles={recipeTiles} />
-            </section>
-          ))}
-      </main>
-    )
+    return <KidKitchen week={week} recipes={recipes} onSuggest={kidSuggest} />
   }
 
   return (
@@ -711,204 +543,17 @@ export function Kitchen() {
         </section>
         )}
 
-        {kitTab === 'pantry' && (
-        <>
-        <section>
-          <h2>{t.kitchen.low}</h2>
-          <form className="kitchen__low-add" onSubmit={addLow}>
-            <input
-              className="input"
-              value={newLow}
-              onChange={(e) => setNewLow(e.target.value)}
-              placeholder={t.kitchen.lowAdd}
-            />
-            <button type="submit" className="btn" disabled={!newLow.trim()}>
-              {t.capture.add}
-            </button>
-          </form>
-          {low.length === 0 ? (
-            <p className="board__empty mono">{t.kitchen.lowEmpty}</p>
-          ) : (
-            <ul className="kitchen__low">
-              {low.map((l) => (
-                <li key={l.id}>
-                  <button type="button" className="board__list-item" onClick={() => clearLowItem(l)}>
-                    <span className="board__check" aria-hidden="true">
-                      ☐
-                    </span>
-                    <span>{l.item}</span>
-                    <span className="kitchen__low-note mono">{t.kitchen.addToList}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section>
-          <h2>{t.kitchen.useSoon}</h2>
-          <p className="kitchen__use-soon-hint mono">{t.kitchen.useSoonHint}</p>
-          <form className="kitchen__soon-add" onSubmit={addSoon}>
-            <input
-              className="input"
-              value={newSoon}
-              onChange={(e) => setNewSoon(e.target.value)}
-              placeholder={t.kitchen.useSoonAdd}
-            />
-            <button type="submit" className="btn" disabled={!newSoon.trim()}>
-              {t.capture.add}
-            </button>
-          </form>
-          {soon.length === 0 ? (
-            <p className="board__empty mono">{t.kitchen.useSoonEmpty}</p>
-          ) : (
-            <ul className="kitchen__soon">
-              {soon.map((s) => (
-                <li key={s.id}>
-                  <button type="button" className="board__list-item" onClick={() => clearSoonItem(s)}>
-                    <span className="board__check" aria-hidden="true">
-                      ☐
-                    </span>
-                    <span>{s.item}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-        </>
-        )}
+        {kitTab === 'pantry' && <PantryTab low={low} soon={soon} />}
 
         {kitTab === 'recipes' && (
-        <section>
-          <div className="kitchen__head">
-            <h2>{t.recipes.title}</h2>
-            <button type="button" className="btn" onClick={() => setEditRecipe('new')}>
-              ＋ {t.recipes.add}
-            </button>
-          </div>
-          {(recipes.length > 3 || canCookFilter || canUseSoonFilter) && (
-            <div className="kitchen__recipe-tools">
-              {recipes.length > 3 && (
-                <input
-                  className="input kitchen__recipe-search"
-                  value={recipeQuery}
-                  onChange={(e) => setRecipeQuery(e.target.value)}
-                  placeholder={t.recipes.search}
-                  aria-label={t.recipes.search}
-                />
-              )}
-              {canCookFilter && (
-                <button
-                  type="button"
-                  className={`chip kitchen__cook-filter${cookFilter ? ' is-on' : ''}`}
-                  onClick={() => {
-                    setCookFilter((v) => !v)
-                    setUseSoonFilter(false)
-                  }}
-                  aria-pressed={cookFilter}
-                >
-                  🍳 {t.recipes.cookable}
-                </button>
-              )}
-              {canUseSoonFilter && (
-                <button
-                  type="button"
-                  className={`chip kitchen__soon-filter${useSoonFilter ? ' is-on' : ''}`}
-                  onClick={() => {
-                    setUseSoonFilter((v) => !v)
-                    setCookFilter(false)
-                  }}
-                  aria-pressed={useSoonFilter}
-                >
-                  ♻️ {t.recipes.useItUp}
-                </button>
-              )}
-            </div>
-          )}
-          {tags.length > 0 && (
-            <div className="kitchen__tag-filter">
-              <button
-                type="button"
-                className={`chip${!tagFilter ? ' is-on' : ''}`}
-                onClick={() => setTagFilter(null)}
-                aria-pressed={!tagFilter}
-              >
-                {t.recipes.allTag}
-              </button>
-              {tags.map((tg) => {
-                const on = tagFilter?.toLowerCase() === tg.toLowerCase()
-                return (
-                  <button
-                    key={tg}
-                    type="button"
-                    className={`chip${on ? ' is-on' : ''}`}
-                    onClick={() => setTagFilter(on ? null : tg)}
-                    aria-pressed={on}
-                  >
-                    {tg}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-          {recipes.length === 0 ? (
-            <p className="board__empty mono">{t.recipes.empty}</p>
-          ) : recipeOrder.length === 0 ? (
-            // The book has recipes — the FILTERS hid them all. Say so (instead of
-            // the misleading "no recipes yet") and offer the one-tap way back.
-            <div className="board__empty mono">
-              <p>{t.recipes.noMatch}</p>
-              <button
-                type="button"
-                className="btn btn--ghost mono"
-                onClick={() => {
-                  setRecipeQuery('')
-                  setTagFilter(null)
-                  setCookFilter(false)
-                  setUseSoonFilter(false)
-                }}
-              >
-                {t.recipes.clearFilters}
-              </button>
-            </div>
-          ) : (
-            <div className="recipe-grid">
-              {recipeOrder.map((r) => {
-                const img = recipeImg(r.image)
-                const missing = missingById.get(r.id) ?? []
-                const uses = usesById.get(r.id) ?? []
-                return (
-                  <button key={r.id} type="button" className="recipe-card surface" onClick={() => setViewRecipe(r)}>
-                    <span className="recipe-card__thumb" aria-hidden="true">
-                      {img ? <img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">🍳</span>}
-                    </span>
-                    <span className="recipe-card__title">{r.title}</span>
-                    {useSoonFilter && canUseSoonFilter ? (
-                      uses.length > 0 ? (
-                        <span className="recipe-card__sub recipe-card__uses mono">♻ {t.recipes.usesN(uses.length)}</span>
-                      ) : (
-                        r.ingredients.length > 0 && (
-                          <span className="recipe-card__sub mono">{t.recipes.count(r.ingredients.length)}</span>
-                        )
-                      )
-                    ) : cookFilter && canCookFilter ? (
-                      missing.length === 0 ? (
-                        <span className="recipe-card__sub recipe-card__ready mono">✓ {t.recipes.ready}</span>
-                      ) : (
-                        <span className="recipe-card__sub recipe-card__missing mono">{t.recipes.missingN(missing.length)}</span>
-                      )
-                    ) : (
-                      r.ingredients.length > 0 && (
-                        <span className="recipe-card__sub mono">{t.recipes.count(r.ingredients.length)}</span>
-                      )
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </section>
+          <RecipesTab
+            recipes={recipes}
+            lowItems={lowItems}
+            soonItems={soonItems}
+            listItems={listItems}
+            onView={setViewRecipe}
+            onNew={() => setEditRecipe('new')}
+          />
         )}
       </main>
 

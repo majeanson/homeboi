@@ -1,0 +1,304 @@
+/* ========================================================================== */
+/* Pip toddler — calm full-screen "right now / then" picture story (KidView).   */
+/* One big card at a time; tap to settle it done; dots for rhythm; ends on a    */
+/* handwritten "sweet dreams". No idle motion, no rewards.                      */
+/* ========================================================================== */
+.kid {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.tdl {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: background var(--dur-slow) var(--ease-out);
+}
+/* Soft light blooms over the member-colour wash — warmth without overriding the
+   inline tint, and a touch of "cute" depth. */
+.tdl::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(42% 32% at 16% 12%, rgba(255, 255, 255, 0.55), transparent 70%),
+    radial-gradient(38% 30% at 86% 82%, rgba(255, 255, 255, 0.35), transparent 70%);
+}
+.tdl > * {
+  position: relative;
+  z-index: 1;
+}
+.tdl-top {
+  width: 100%;
+  max-width: 42rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tdl-exit {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+}
+.tdl-name {
+  font-family: var(--font-hand);
+  font-size: 27px;
+  color: var(--ink);
+  transform: rotate(-2deg);
+}
+.tdl-stage {
+  flex: 1;
+  min-height: 0; /* let this flex child shrink so its own overflow can scroll */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Centered when the step fits, but top-aligned (and scrollable) when it's
+     taller than the screen — otherwise centering would push the ▶/✓ button off
+     the bottom of a short phone/kiosk and the kid couldn't advance the step. */
+  justify-content: safe center;
+  gap: 4px;
+  padding: 24px 0;
+}
+.tdl-illus {
+  width: 232px;
+  height: 232px;
+  border-radius: 64px; /* soft squircle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 18px 38px rgba(72, 54, 30, 0.18),
+    inset 0 10px 22px rgba(255, 255, 255, 0.28);
+  margin-bottom: 26px;
+  border: 6px solid rgba(255, 255, 255, 0.6);
+  padding: 0;
+}
+.tdl-illus--tap {
+  cursor: pointer;
+}
+.tdl-illus-emoji {
+  font-size: 124px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.16));
+}
+/* Gentle float so the picture feels alive — motion-safe only (NFR-KID-3). */
+@media (prefers-reduced-motion: no-preference) {
+  .tdl-illus {
+    animation: tdl-float 4.2s var(--ease-soft) infinite;
+  }
+  .tdl-illus--tap:active {
+    animation: none;
+    transform: scale(0.96);
+  }
+  @keyframes tdl-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+}
+.tdl-now {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+/* The step name — a borderless button so it reads aloud on tap too (the picture
+   above it does the same). It's the one piece of text; everything else is picture. */
+.tdl-what {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.4rem, 9vw, 3.4rem);
+  line-height: 1;
+  color: var(--ink);
+  text-align: center;
+}
+/* "What's next" — just the picture, faded, with a small arrow. No word. */
+.tdl-next {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.55;
+}
+.tdl-next-arrow {
+  font-size: 20px;
+  color: var(--ink-soft);
+}
+.tdl-next-pic {
+  font-size: 28px;
+  line-height: 1;
+}
+.tdl-dots {
+  display: flex;
+  gap: 9px;
+  margin-top: 30px;
+}
+.tdl-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  opacity: 0.5;
+}
+.tdl-dots i.on {
+  background: var(--ink);
+  opacity: 1;
+  width: 26px;
+  border-radius: 99px;
+}
+.tdl-dots i.done {
+  background: var(--sage);
+  opacity: 1;
+}
+.tdl-tap {
+  margin-top: 24px;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  color: var(--ink);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.tdl-tap:active {
+  transform: scale(0.92);
+}
+/* Tap-to-hear cue under the picture (the picture only reads aloud now). */
+.tdl-hear {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+/* One ▶ to start, then a running clock + → (or ✓ on the last step). Icon-only,
+   big — a toddler taps a picture, not a word. */
+.tdl-start,
+.tdl-finish {
+  margin-top: 24px;
+  min-width: 96px;
+  min-height: 76px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  font-size: 2.2rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.tdl-start {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.tdl-finish {
+  background: var(--sage, #88a36f);
+  color: #fff;
+}
+.tdl-start:active,
+.tdl-finish:active {
+  transform: scale(0.95);
+}
+.tdl-timer {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.tdl-clock {
+  font-size: clamp(2.6rem, 12vw, 4rem);
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1;
+}
+.tdl-sweet {
+  font-family: var(--font-hand);
+  font-size: 32px;
+  color: var(--ink);
+  margin-top: 8px;
+}
+/* A quiet running total during the routine — the kid can glance at their time. */
+.tdl-total {
+  margin-top: 18px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+/* The end-of-routine recap, pre-reader edition: the story's pictures again, each
+   wearing its ✓ — tap one to hear the step. No table, no numbers to read (the
+   small running total above stays for a parent's glance). NFR-KID-2. */
+.tdl-recap {
+  margin-top: 22px;
+  width: min(420px, 86vw);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.tdl-recap__step {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  line-height: 1;
+}
+.tdl-recap__step:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.tdl-recap__check {
+  position: absolute;
+  right: -6px;
+  top: -6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--sage, #6b8a52);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}

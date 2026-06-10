@@ -1,0 +1,225 @@
+/* ---- Image zoom (flyer / deal proof at the till) -------------------------- */
+.zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(20, 16, 12, 0.86);
+  cursor: zoom-out;
+}
+.zoom-overlay__img {
+  max-width: 96vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.zoom-overlay__close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* ---- Recurrence picker (event form) -------------------------------------- */
+.recur {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.recur__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.recur__interval {
+  width: 4.5rem;
+  text-align: center;
+}
+.recur__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* ---- Settings tab bar ----------------------------------------------------- */
+/* The section nav. Held in ONE rounded strip (not 11 separate outlined pills, which
+   read as a filter cloud): the shared container + a single filled selection say
+   "pick a section" — the same segmented-control language as the board/kitchen. */
+.operator__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 1rem 0 1.5rem;
+  padding: 0.3rem;
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+.operator__tab {
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.9rem;
+  min-height: 38px;
+  cursor: pointer;
+  font: inherit;
+}
+.operator__tab.is-active {
+  background: var(--accent);
+  color: var(--on-primary);
+  font-weight: 600;
+}
+
+/* Add sheet: the quick-capture / event / chore / routine mode chooser. */
+.sheet__modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+/* Deal store filter (Maxi / Super C …). */
+.deal-stores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+
+/* Deals browser: by-article vs by-store tabs. */
+/* .deal-tabs now layers on .subtabs (the segmented control); just its own margin. */
+.deal-tabs {
+  margin: 0 0 0.85rem;
+}
+
+/* "Par magasin": a grid of store flyers (logo + name) to open whole. */
+.flyer-stores {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 0.6rem;
+}
+.flyer-store {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.flyer-store:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.flyer-store__logo {
+  width: 100%;
+  height: 3rem;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+.flyer-store__logo--none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+}
+.flyer-store__name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* A staged flyer deal shown on a shared-list row. */
+.list-row__deal {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin-top: 0.1rem;
+}
+/* The linked flyer item's clipping image, in the row's tile slot. */
+.list-row__thumb {
+  overflow: hidden;
+  background: var(--card);
+  padding: 0;
+}
+.list-row__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.flyer-detail__add {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* Settings ▸ La maisonnée — each member is a boxed card: avatar on top, name,
+   then the photo / delete actions underneath. */
+.member-cards {
+  list-style: none;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.6rem;
+}
+.member-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.9rem 0.6rem;
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+.member-card__name {
+  font-weight: 600;
+}
+.member-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: center;
+  margin-top: auto;
+}
+
+/* Cashier "thank you" hand-back screen. */
+.cashier--thanks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cashier__thanks {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+.cashier__thanks-emoji {
+  font-size: 4rem;
+}
+.cashier__thanks-title {
+  font-family: var(--display);
+  font-size: clamp(2rem, 8vw, 3rem);
+  margin: 0;
+}
+.cashier__thanks-hint {
+  color: var(--ink-soft);
+}

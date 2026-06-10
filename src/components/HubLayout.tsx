@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
@@ -10,10 +10,10 @@ import { AddSheetContext } from '../lib/addSheet'
 // The hub shell, surface-aware. KIOSK (wall display): a vertical column of big
 // section buttons down the left, calm and readable across the room. MOBILE
 // (phone): the same sections become a thumb-reach bottom tab bar, with the ＋
-// quick-add lifted above it. Either way: the page body in the middle, a small
-// corner gear that deep-links to this page's settings section. Réglages itself
-// isn't a section button — it's reached by the gear (and hidden on a locked
-// toddler kiosk).
+// quick-add lifted above it. Réglages is the last section button (parent view
+// only). The nav also carries the Parent/Enfant switch — flip to preview what
+// the toddler sees on any tab, flip back the same way. Nothing floats over the
+// page except the single ＋ (parent view only).
 const TABS: {
   to: string
   key: 'today' | 'kitchen' | 'routines' | 'list' | 'operator'
@@ -27,17 +27,9 @@ const TABS: {
   { to: '/settings', key: 'operator', icon: 'gear-six-bold', color: '#6B8A52' }, // sage
 ]
 
-// Which Réglages section each page's gear jumps to.
-const GEAR_SECTION: Record<string, string> = {
-  '/board': 'household',
-  '/kitchen': 'household',
-  '/routines': 'routines',
-  '/liste': 'household',
-}
-
 export function HubLayout() {
   const t = useT()
-  const { audience, locked } = useAudience()
+  const { audience, setAudience, locked } = useAudience()
   const { surface } = useSurface()
   const loc = useLocation()
   const [addOpen, setAddOpen] = useState(false)
@@ -47,19 +39,18 @@ export function HubLayout() {
   if (locked && isSettings) return <Navigate to="/board" replace />
 
   const path = '/' + (loc.pathname.split('/')[1] || 'board')
-  const gearSection = GEAR_SECTION[path] ?? ''
-  // The gear is the only route into Réglages; never show it on a locked kiosk
-  // (a toddler can't wander into settings/billing — PRD C5) or on the page itself.
-  const showGear = !locked && !isSettings
-  // Capture is a parent action (the ＋ Add sheet). Not for a toddler, not in settings.
-  // On the MOBILE board the quick-capture bar already sits at the top of the page,
-  // so the floating ＋ would be redundant there — hide it (it stays on every other
-  // mobile tab and on the kiosk).
+  const toddler = audience === 'toddler'
+  // Capture is a parent action (the ＋ Add sheet). Not for a toddler, not in
+  // settings. On the MOBILE board the quick-capture bar already sits at the top
+  // of the page, so the floating ＋ would be redundant there — hide it (it stays
+  // on every other mobile tab and on the kiosk).
   const onBoard = path === '/board'
-  const showAdd = !locked && !isSettings && audience === 'parent' && !(surface === 'mobile' && onBoard)
-  // Réglages is a normal section button — EXCEPT on a locked toddler kiosk,
-  // where a three-year-old must not reach settings/billing (PRD C5).
-  const tabs = locked ? TABS.filter((tab) => tab.to !== '/settings') : TABS
+  const showAdd = !locked && !isSettings && !toddler && !(surface === 'mobile' && onBoard)
+  // Réglages hides from the nav whenever the toddler lens is up: on a locked
+  // kiosk a three-year-old must not reach settings/billing (PRD C5), and even
+  // unlocked, a kid-facing screen shouldn't dangle a gear — a parent flips back
+  // to the parent view first (the switch below), then Réglages reappears.
+  const tabs = locked || toddler ? TABS.filter((tab) => tab.to !== '/settings') : TABS
 
   return (
     <AddSheetContext.Provider value={{ open: () => setAddOpen(true) }}>
@@ -79,21 +70,28 @@ export function HubLayout() {
             )}
           </NavLink>
         ))}
+
+        {/* Parent ⇄ Enfant, right in the nav (never floating). A parent previews
+            the toddler lens on any tab and flips back the same way. NEVER shown
+            on a locked kiosk (?kid=1) — there, only relaunching without the
+            param unlocks (a deliberate adult act, PRD C5). */}
+        {!locked && (
+          <button
+            type="button"
+            className="hubnav__btn hubnav__peek"
+            onClick={() => setAudience(toddler ? 'parent' : 'toddler')}
+            aria-pressed={toddler}
+            aria-label={toddler ? t.audience.parentView : t.audience.kidView}
+          >
+            <span className="hubnav__peek-pic" aria-hidden="true">{toddler ? '🧑' : '👶'}</span>
+            <span>{toddler ? t.audience.parent : t.audience.kid}</span>
+          </button>
+        )}
       </nav>
 
       <div className="hub__body">
         <Outlet />
       </div>
-
-      {showGear && (
-        <Link
-          className="page-gear"
-          to={`/settings${gearSection ? '#' + gearSection : ''}`}
-          aria-label={t.operator.gearLabel}
-        >
-          <Icon name="gear-six-bold" size={24} />
-        </Link>
-      )}
 
       {showAdd && (
         <button type="button" className="add-fab" onClick={() => setAddOpen(true)} aria-label={t.capture.add}>

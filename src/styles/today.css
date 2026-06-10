@@ -1,0 +1,285 @@
+/* ========================================================================== */
+/* Pip Today — the parent board as a gentle, grouped timeline. Ported from the  */
+/* Pip app UI kit (ui_kits/app): greeting + handwritten tag, an "Up next" now-   */
+/* card, section labels with a done/total count, and colour-coded activity cards */
+/* whose check settles into sage when done (no confetti, no streak).            */
+/* ========================================================================== */
+.today-feed {
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 3rem;
+}
+.app-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 18px;
+  /* Wrap on a narrow phone so the right-hand cluster (profile chip + view toggle
+     + avatar) drops below the greeting instead of forcing horizontal overflow. */
+  flex-wrap: wrap;
+}
+.hand-tag {
+  font-family: var(--font-hand);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--terracotta-deep);
+  transform: rotate(-3deg);
+  display: inline-block;
+  margin-bottom: -2px;
+}
+.greet {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.greet .accent {
+  color: var(--marigold-deep);
+}
+.subgreet {
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin-top: 4px;
+}
+/* Weather chip rides in the subgreet line; keep the emoji + temp from wrapping. */
+.weather-chip {
+  white-space: nowrap;
+}
+.avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* "Up next" — the one thing surfaced, tinted to its category. */
+.now-card {
+  border-radius: var(--radius-xl);
+  padding: 18px 20px;
+  margin: 6px 0 22px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+.now-card .label {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.now-card .what {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 28px;
+  margin-top: 2px;
+  line-height: 1.1;
+}
+.now-card .who {
+  font-size: 14px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+.now-card .blob {
+  position: absolute;
+  right: -26px;
+  top: -26px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  /* A whisper of print texture, not a second fill — lighter now that supper sits
+     beside the weather hero (was 0.5, which bled into the neighbouring card). */
+  opacity: 0.3;
+}
+.now-card .icn {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  opacity: 0.9;
+}
+/* Weather hero reuses the now-card shell; its corner picture is an emoji, not a
+   Phosphor glyph, so it needs an explicit size. */
+.now-card .icn--emoji {
+  font-size: 40px;
+  line-height: 1;
+}
+/* The "today" zone: supper + weather as equal hero cards. They sit in their own
+   flex row above the section grid so weather reads as a peer of supper, and they
+   stack on a phone. */
+.board-heroes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 6px 0 22px;
+}
+.board-heroes > .now-card {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+/* Section label: Morning / Afternoon / Evening — a rule + a quiet count. */
+.sec-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 2px 12px;
+}
+.sec-label b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+}
+.sec-label .ln {
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+  border-radius: 2px;
+}
+.sec-label .ct {
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
+/* Activity card: colour spine, washed icon tile, title, a tappable check. */
+.act {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 14px;
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast);
+}
+.act:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.act .spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+}
+.act .tile {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.act__text {
+  min-width: 0;
+}
+.act .when {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+.act .title {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.1;
+}
+.act .who {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+.act .check {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex: none;
+  border: 2px solid var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: all var(--dur-base) var(--ease-soft);
+}
+.act.done .check {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: #fff;
+}
+.act.done .title {
+  color: var(--ink-soft);
+}
+.act.done .tile {
+  opacity: 0.55;
+}
+.feed-empty {
+  color: var(--ink-faint);
+  font-size: 14px;
+  padding: 2px 2px 8px;
+}
+
+/* Entrance: transform-only gentle rise, staggered. (Transform — not opacity —
+   so a kiosk screenshot/print never captures a blank frame.) */
+@media (prefers-reduced-motion: no-preference) {
+  .stagger > * {
+    animation: pip-rise var(--dur-slow) var(--ease-soft) both;
+  }
+  .stagger > *:nth-child(1) {
+    animation-delay: 0.04s;
+  }
+  .stagger > *:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+  .stagger > *:nth-child(3) {
+    animation-delay: 0.16s;
+  }
+  .stagger > *:nth-child(4) {
+    animation-delay: 0.22s;
+  }
+  .stagger > *:nth-child(n + 5) {
+    animation-delay: 0.28s;
+  }
+  @keyframes pip-rise {
+    from {
+      transform: translateY(12px);
+    }
+    to {
+      transform: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}

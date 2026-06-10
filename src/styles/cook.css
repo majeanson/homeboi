@@ -1,0 +1,496 @@
+/* --- Cook Mode: full-screen step-by-step recipe (kitchen tablet) ----------- */
+/* One big thing at a time, readable across the counter. Same calm stepper shape
+   as the cashier view; z-index above the recipe modal it opens from. */
+.cook {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+.cook__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.cook__title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cook__count {
+  color: var(--ink-soft);
+  flex: none;
+}
+/* Auto read-aloud toggle: 🔊 when steps narrate on arrival, 🔇 when narration is
+   tap-only. A quiet round button so it doesn't compete with the recipe. */
+.cook__autoread {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  cursor: pointer;
+  opacity: 0.65;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.12s ease, transform 0.06s ease, border-color 0.12s ease;
+}
+.cook__autoread.is-on {
+  opacity: 1;
+  border-color: var(--accent);
+}
+.cook__autoread:active {
+  transform: scale(0.94);
+}
+.cook__autoread:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.cook__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  overflow-y: auto;
+}
+.cook__card {
+  width: min(640px, 100%);
+  text-align: center;
+}
+.cook__h {
+  font-size: 1.6rem;
+  margin: 0 0 1rem;
+}
+.cook__ings {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 28rem;
+  text-align: left;
+}
+.cook__ings li {
+  font-size: 1.3rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+/* Gather row: a check box you tick as you grab it, and the ingredient text which
+   reads aloud on tap. */
+.cook__ing {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.cook__ing-check {
+  flex: none;
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cook__ing-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 2px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.cook__ing.is-got .cook__ing-box {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.cook__ing-check:focus-visible .cook__ing-box {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.cook__ing-text {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.cook__ing.is-got .cook__ing-text {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+.cook__ing-text:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 0.3rem;
+}
+.cook__step-n {
+  display: block;
+  color: var(--terracotta-deep);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.8rem;
+}
+.cook__step-text {
+  font-size: clamp(1.5rem, 4.5vw, 2.4rem);
+  line-height: 1.3;
+  font-family: var(--display);
+  font-weight: 600;
+  margin: 0;
+}
+/* The step instruction as sentence bullets. A single-sentence step reads cleaner
+   centered with no bullet; multi-sentence steps get left-aligned bullets. */
+.cook__step-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 32rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.cook__step-list li:only-child {
+  text-align: center;
+}
+.cook__step-list li:not(:only-child) {
+  position: relative;
+  padding-left: 1.4rem;
+  text-align: left;
+}
+.cook__step-list li:not(:only-child)::before {
+  content: '•';
+  position: absolute;
+  left: 0.2rem;
+  color: var(--terracotta-deep);
+}
+/* The ingredients (with quantities) this step uses — a small card under the text. */
+.cook__step-ings {
+  list-style: none;
+  margin: 1.1rem auto 0;
+  padding: 0.7rem 0.95rem;
+  max-width: 28rem;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-align: left;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+/* RecipeSheet: per-step sentence bullets (the number is the marker for a lone
+   sentence) + a compact line of the step's ingredients. */
+.recipe-step__sentences {
+  list-style: disc;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.recipe-step__sentences li:only-child {
+  list-style: none;
+  margin-left: -1.1rem;
+}
+.recipe-step__ings {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.9rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.recipe-step__ings li::before {
+  content: '·';
+  margin-right: 0.35rem;
+  color: var(--terracotta-deep);
+}
+
+/* Measuring-tool pill: a tappable, colour-coded amount ("1 c. à thé") inside an
+   ingredient line. Tinted to the real spoon/cup (measureColors.ts); tapping it
+   reads the amount aloud. 'sm' for the parent recipe sheet, 'lg' for the kid
+   Cook mode. The 🔊 hints it speaks; the colour is the tool. */
+.meas-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  cursor: pointer;
+  vertical-align: baseline;
+  transition: transform 0.06s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.meas-pill::before {
+  content: '🔊';
+  font-size: 0.82em;
+  opacity: 0.85;
+}
+/* Kid Cook mode narrates the whole step, so a speaker on every pill is noise —
+   drop the glyph there, keep the colour + tap-to-hear. */
+.meas-pill--noicon::before {
+  content: none;
+}
+.meas-pill:hover {
+  filter: brightness(1.04);
+}
+.meas-pill:active {
+  transform: scale(0.96);
+}
+.meas-pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.meas-pill--sm {
+  padding: 0.05rem 0.5rem;
+  font-size: 0.85em;
+  margin: 0 0.05rem;
+}
+.meas-pill--lg {
+  padding: 0.2rem 0.7rem;
+  font-size: 1em;
+  margin: 0 0.1rem;
+  box-shadow: var(--shadow-sm);
+}
+/* Unmapped tool: no colour yet, but still tappable to hear. Neutral surface tint
+   so it reads as a chip rather than coloured-by-tool. */
+.meas-pill--plain {
+  background: var(--accent-soft);
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+/* The step instruction in Cook mode is a tap target: it's read aloud once on
+   arrival and re-read on tap, so a pre-reader can hear the whole step (not only
+   the measurement pills). Calm affordance — a soft hover, a clear focus ring. */
+.cook__step-read {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.cook__step-read:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.cook__step-read:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+/* One-tap timers for a duration written into the step. */
+.cook__timers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+.cook__timer-chip {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.1rem;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cook__timer-chip:active {
+  transform: scale(0.97);
+}
+.cook__timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cook__timer-clock {
+  border: none;
+  background: var(--sky-wash, #e6eef3);
+  color: var(--ink);
+  font-size: 1.6rem;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  min-width: 7rem;
+}
+.cook__timer.is-done .cook__timer-clock {
+  background: var(--sage, #6b8a52);
+  color: var(--paper);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cook__timer.is-done .cook__timer-clock {
+    animation: cook-buzz 0.5s ease 2;
+  }
+  @keyframes cook-buzz {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+}
+.cook__timer-x {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-soft);
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.cook__nav {
+  display: flex;
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+  /* Keep the ▶/✓ nav clear of the home indicator on notched phones. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.cook__arrow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 84px;
+  border: 0;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.6rem;
+  cursor: pointer;
+}
+.cook__arrow:disabled {
+  color: var(--ink-faint);
+  opacity: 0.5;
+}
+.cook__arrow--next,
+.cook__arrow--done {
+  background: var(--marigold);
+  color: var(--on-primary);
+}
+.cook__arrow-label {
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* Kitchen: a recipe-book link beside a planned meal, and the recipe search box. */
+.kitchen__day-recipe-link {
+  flex: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-pill);
+  line-height: 1;
+}
+.kitchen__day-recipe-link:active {
+  transform: translateY(1px);
+}
+.kitchen__recipe-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+.kitchen__recipe-tools .kitchen__recipe-search {
+  flex: 1 1 12rem;
+  margin-bottom: 0;
+}
+.kitchen__cook-filter,
+.kitchen__soon-filter {
+  flex: 0 0 auto;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.kitchen__recipe-search {
+  margin-bottom: 0.8rem;
+}
+.recipe-card__ready {
+  color: var(--sage-deep, #4f6b3a);
+  font-weight: 600;
+}
+.recipe-card__missing {
+  color: var(--terracotta-deep, #a8442b);
+}
+.recipe-card__uses {
+  color: var(--sage-deep, #4f6b3a);
+  font-weight: 600;
+}
+.kitchen__use-soon-hint {
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  margin: 0 0 0.6rem;
+}
+/* Tag filter chips over the recipe grid; scrolls sideways on a narrow phone. */
+.kitchen__tag-filter {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.8rem;
+  -webkit-overflow-scrolling: touch;
+}
+.kitchen__tag-filter .chip {
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+/* Tag editor in the recipe form. */
+.recipe-tags-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.recipe-tags-edit__label {
+  color: var(--ink-soft);
+}
+.recipe-tags-edit__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.recipe-tags-edit__chips .chip {
+  cursor: pointer;
+}
+.recipe-tags-edit__add {
+  display: flex;
+  gap: 0.4rem;
+}
+.recipe-tags-edit__add .input {
+  flex: 1 1 auto;
+}
+/* Tags shown on the recipe view. */
+.recipe-view__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.recipe-view__tag {
+  background: var(--berry-wash, #efe6ee);
+  color: var(--berry-deep, #7a3f6a);
+}
