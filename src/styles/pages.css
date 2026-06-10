@@ -1,0 +1,943 @@
+/* ---- Parent Routines overview: a card per routine (was a bare text list that
+   left the wall empty). Member colour tints the card; the step pictos preview the
+   run so a parent recognizes it at a glance. ------------------------------------ */
+.routines-parent {
+  max-width: 60rem;
+  margin: 0 auto;
+}
+.routines-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+.routine-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem 1.1rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: color-mix(in srgb, var(--tint) 8%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--tint) 28%, var(--card));
+  box-shadow: var(--shadow-sm);
+}
+.routine-card__spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+}
+.routine-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.routine-card__av {
+  flex: none;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.routine-card__av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.routine-card__title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.routine-card__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+.routine-card__who {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.routine-card__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.routine-card__step {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 10px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  box-shadow: inset 0 1px 3px rgba(72, 54, 30, 0.1);
+}
+.routine-card__more {
+  align-self: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.routine-card__steps--empty {
+  color: var(--ink-faint);
+}
+.routine-card__count {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.routines-parent__edit {
+  margin-top: 1.5rem;
+}
+.kitchen__head-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+/* The "shop this week" confirm panel reuses the staples panel styling. */
+.kitchen__shop {
+  margin: 0.5rem 0 1rem;
+}
+.kitchen__suggestion {
+  font-size: 1.15rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+}
+.kitchen__week {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.kitchen__day {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.9rem;
+  /* Wrap so the "💡 suggéré par" note drops below the meal on a narrow phone
+     instead of overrunning the row. */
+  flex-wrap: wrap;
+}
+.kitchen__day-tile {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--terracotta-wash);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.kitchen__day-picto {
+  font-size: 22px;
+  line-height: 1;
+}
+/* Open slot: a muted "+" on a paler tile — reads as "tap to plan", not a meal. */
+.kitchen__day-add {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-faint);
+}
+.kitchen__day:has(.kitchen__day-add) .kitchen__day-tile {
+  background: var(--paper-deep);
+}
+.kitchen__day-name {
+  min-width: 5rem;
+  color: var(--ink-soft);
+  text-transform: capitalize;
+}
+.kitchen__day-meal {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 1.05rem;
+  cursor: pointer;
+  padding: 0.2rem 0;
+}
+.kitchen__day-empty {
+  color: var(--ink-soft);
+}
+.kitchen__day-edit {
+  flex: 1;
+  display: flex;
+  gap: 0.5rem;
+}
+/* The meal -> grocery staple confirm step (B3). Breaks the day row into a
+   column: dish + chips + the two save actions. */
+.kitchen__staples {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.kitchen__staples-q {
+  color: var(--ink);
+}
+.kitchen__staples-hint {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  margin: -0.25rem 0 0;
+}
+.kitchen__staples-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.chip {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  padding: 0.3rem 0.6rem;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.chip.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface);
+}
+.kitchen__staples-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.kitchen__low-add,
+.kitchen__soon-add,
+.kitchen__low,
+.kitchen__soon {
+  margin-top: 0.75rem;
+}
+.kitchen__low-add,
+.kitchen__soon-add {
+  display: flex;
+  gap: 0.5rem;
+}
+.kitchen__low,
+.kitchen__soon {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.kitchen__low-note {
+  color: var(--ink-soft);
+  margin-left: auto;
+}
+
+/* --- Kid view (pre-reader: big targets, calm, deterministic) -------------- */
+.kid {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.kid__main,
+.kid__pick {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+}
+/* With the recipe picker present the view becomes a scrollable feed (supper row,
+   then the shelf of recipes / day choices) — top-aligned so a long list never
+   pushes the first tiles off the top behind centering. */
+.kid__main--feed {
+  justify-content: flex-start;
+  gap: 2rem;
+}
+.kid-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+}
+/* A real, finger-sized button (was bare text) — a toddler's back tap shouldn't be
+   smaller than everything else on the picture-first surface (NFR-KID-1). */
+.kid-pick__back {
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: 1.15rem;
+  min-height: 56px;
+  padding: 0.6rem 1.5rem;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+}
+.kid__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 48rem;
+}
+.kid__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  /* >= 64px target, way bigger here — a toddler taps the whole card */
+  min-height: 9rem;
+  padding: 1.5rem 1rem;
+  border: 2px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  cursor: pointer;
+  position: relative;
+  transition: opacity 0.18s ease;
+}
+.kid__card-icon {
+  font-size: 3.2rem;
+  line-height: 1;
+}
+.kid__card-label {
+  font-size: 1.15rem;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+.kid__card.is-done {
+  /* Deterministic, identical every time: a calm fade + a check. No confetti,
+     no jackpot animation, no sound that escalates (NFR-CALM-2). */
+  opacity: 0.4;
+}
+.kid__card-done {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.7rem;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+.kid__alldone {
+  text-align: center;
+}
+.kid__alldone-mark {
+  font-size: 5rem;
+  color: var(--accent);
+}
+.kid__alldone-text {
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+.kid__faces {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.kid__face {
+  width: 9.5rem;
+  height: 9.5rem;
+  border-radius: 50%;
+  border: 5px solid rgba(255, 255, 255, 0.55);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--dur-base) var(--ease-soft);
+}
+.kid__face:hover,
+.kid__face:focus-visible {
+  transform: translateY(-5px) scale(1.04);
+}
+.kid__face-initial {
+  font-size: 2.8rem;
+  font-weight: 800;
+  font-family: var(--display);
+  line-height: 1;
+}
+.kid__face-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+/* A peek of the routine's first picture-cards, so a face reads as a ROUTINE,
+   not just a name. */
+.kid__face-peek {
+  font-size: 1.2rem;
+  letter-spacing: 3px;
+  line-height: 1;
+}
+.kid__pick-title {
+  margin-bottom: 2rem;
+}
+.kid__footer {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+.kid__exit {
+  color: var(--ink-soft);
+  text-decoration: none;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+.kid__none {
+  text-align: center;
+}
+
+/* --- Pair ----------------------------------------------------------------- */
+/* Onboarding (Login + Pair): center the content so a short form/code doesn't
+   cling to the top of a tall, empty page, and give the form/code a warm card so
+   it reads as a held object rather than fields floating on paper. */
+.auth {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 70vh;
+  gap: 1rem;
+}
+.auth__card {
+  max-width: 24rem;
+  background: var(--card);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
+}
+.auth__hint {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0;
+}
+.pair__code-block {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding: 1.75rem 1.5rem;
+  background: var(--marigold-wash);
+  border: 1.5px solid color-mix(in srgb, var(--marigold) 40%, var(--card));
+  border-radius: var(--radius-lg);
+}
+.pair__code {
+  font-family: var(--mono);
+  font-size: 3.5rem;
+  letter-spacing: 0.5rem;
+  font-weight: 700;
+  margin: 0.75rem 0;
+  color: var(--marigold-deep);
+}
+.pair__waiting {
+  color: var(--ink-soft);
+}
+.pair__ok {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.3rem;
+  color: var(--ink);
+  margin-top: 1.5rem;
+}
+.pair__ok-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--sage);
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+/* --- Operator ------------------------------------------------------------- */
+.operator {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+.operator__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.operator__meta {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  color: var(--ink-soft);
+}
+/* Keep the household name on one line — it was breaking mid-phrase ("Maison /
+   Tremblay"); the cluster wraps as a unit instead. */
+.operator__meta > span:first-child {
+  white-space: nowrap;
+}
+.operator__section {
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.operator__section h2 {
+  font-size: 1rem;
+  margin: 0 0 0.75rem;
+}
+.operator__claim {
+  border-bottom-color: var(--accent);
+}
+.operator__list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.operator__list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  /* Inside the hub the row's buttons (📷, ✕, Supprimer) are finger-sized, so on a
+     narrow phone the row would overrun the viewport. Let it wrap; the name keeps
+     line 1 and the delete action drops to its own right-aligned line. */
+  flex-wrap: wrap;
+}
+.operator__list li > span:not([class]) {
+  /* The member name (the only unclassed span): take the slack so wrapped rows
+     stay tidy and a long name shrinks instead of shoving the row past the edge. */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.operator__avatar {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.operator__del {
+  margin-left: auto;
+}
+/* The secondary "when · who" line on an event row, quieter than the title. */
+.operator__event-when {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.operator__inline-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.operator__inline-form .input {
+  width: auto;
+  flex: 1;
+  min-width: 8rem;
+}
+.operator__check {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.operator__chore-form,
+.operator__routine-form {
+  flex-direction: column;
+  align-items: stretch;
+}
+.operator__rotation {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.operator__cards {
+  min-width: 100%;
+}
+
+/* --- Hub: tab bar + the Parent/Toddler audience switch -------------------- */
+.tabbar {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.4rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.tabbar__tab {
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+.tabbar__tab:hover {
+  background: var(--surface);
+}
+.tabbar__tab.is-active {
+  color: var(--ink);
+  background: var(--surface);
+  border-bottom-color: var(--accent);
+}
+.audience-switch {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.audience-switch__opt {
+  padding: 0.4rem 0.7rem;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+.audience-switch__opt.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* --- Kiosk scale ---------------------------------------------------------- */
+/* The hub is a wall tablet read and tapped from across the kitchen — an app
+   surface, not a web page. Everything a finger lands on gets a big, confident
+   target here; the compact sizing stays for the operator/home/login admin
+   surfaces (phone/laptop). The toddler tiles (.bigtile) are already oversized
+   per NFR-KID-1 and are intentionally untouched. Scoped under .hub so the two
+   worlds don't fight. */
+.hub {
+  font-size: 1.05rem;
+}
+.hub .btn {
+  min-height: 3.25rem;
+  padding: 0.7rem 1.3rem;
+  font-size: 1.05rem;
+  border-radius: 12px;
+}
+.hub .input {
+  min-height: 3.25rem;
+  padding: 0.7rem 1rem;
+  font-size: 1.05rem;
+  border-radius: 12px;
+}
+.hub .topbar {
+  padding: 0.85rem 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.hub .topbar__brand {
+  font-size: 1.3rem;
+}
+.hub .topbar__actions {
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.hub .topbar__actions .btn {
+  min-width: 3.25rem;
+  font-size: 1.25rem;
+}
+
+/* App-style tab bar: full-width segments, each a fat tap target, active one
+   filled (the clearest app convention) rather than a thin web underline. */
+.hub .tabbar {
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+.hub .tabbar__tab {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.5rem;
+  font-size: 1.05rem;
+  border-radius: 12px;
+  border-bottom: none;
+}
+.hub .tabbar__tab.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.hub .audience-switch__opt {
+  min-height: 3rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 1rem;
+}
+
+/* Board: rows tickable from a step back; a bigger check to aim at. */
+.hub .board__list-item {
+  min-height: 3.25rem;
+  padding: 0.5rem 0.4rem;
+  font-size: 1.2rem;
+}
+.hub .board__check {
+  font-size: 1.8rem;
+}
+.hub .board__chore {
+  min-height: 3.25rem;
+}
+.hub .board__events li {
+  font-size: 1.2rem;
+}
+
+/* Kitchen day rows + staple chips, finger-first. */
+.hub .kitchen__day {
+  min-height: 3.5rem;
+}
+.hub .kitchen__day-meal {
+  font-size: 1.25rem;
+}
+.hub .chip {
+  min-height: 2.9rem;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}
+
+/* --- Toddler big tiles (shared toddler primitive, see BigTiles.tsx) ------- */
+.bigtiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 52rem;
+}
+.bigtile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 10rem;
+  padding: 1.4rem 1rem 1.2rem;
+  /* Cut-paper card: a pale wash of the tile's tint over the card stock, a chunkier
+     tint border, and a soft printed shadow — so a grid reads as cheerful riso
+     cards, not a wall of identical white boxes. --tile-tint is set per tile in
+     BigTiles (member colour, else a cycled palette); color-mix keeps the wash and
+     border theme-aware (they re-mix against --card, which darkens at night). */
+  --tint: var(--tile-tint, var(--marigold));
+  border: 2.5px solid color-mix(in srgb, var(--tint) 52%, var(--card));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--tint) 13%, var(--card));
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  position: relative;
+  transition:
+    opacity 0.18s ease,
+    transform 0.08s ease;
+}
+/* The emoji sits on a round "sticker" badge — a cream disc with an inset shade —
+   so each picture reads as a deliberate object, not a floating glyph. */
+.bigtile__icon {
+  width: 5.2rem;
+  height: 5.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow:
+    inset 0 2px 5px rgba(72, 54, 30, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+  font-size: 2.9rem;
+  line-height: 1;
+}
+/* When the tile carries a real photo (a recipe), the picture fills the sticker
+   disc edge-to-edge instead of an emoji floating on cream. */
+.bigtile__icon--photo {
+  overflow: hidden;
+}
+.bigtile__icon--photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.bigtile__label {
+  font-family: var(--display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--ink);
+}
+.bigtile__sub {
+  color: var(--ink-soft);
+}
+.bigtile.is-done {
+  /* Deterministic, identical every time — a calm fade, no jackpot (NFR-CALM-2). */
+  opacity: 0.4;
+}
+.bigtile__check {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.7rem;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+.bigtiles__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 2rem;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  text-align: center;
+}
+.bigtiles__empty-mark {
+  font-size: 3.2rem;
+  line-height: 1;
+  color: var(--sage);
+}
+.board__chore-helped {
+  display: block;
+  color: var(--ink-soft);
+  margin-top: 0.2rem;
+}
+
+/* --- Aujourd'hui: time-of-day greeting + per-member colour --------------- */
+.board__topline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.board__greet {
+  font-size: 1.3rem;
+  font-weight: 650;
+}
+.board__who-dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+.bigtile__dot {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.7rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+}
+
+/* --- Aujourd'hui (toddler): hierarchy by size --------------------------- */
+.today-kid {
+  justify-content: flex-start;
+  gap: 1.5rem;
+}
+.today-kid__greet {
+  font-size: 1.6rem;
+  font-weight: 650;
+  margin: 0;
+}
+.today-kid__section {
+  width: 100%;
+  max-width: 52rem;
+}
+.today-kid__h {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem;
+}
+.today-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 52rem;
+  padding: 2.2rem 1.5rem;
+  /* Each hero carries its own colour family (set by --hero-tint on the variants
+     below), so meals and weather read as distinct cards instead of an identical
+     marigold-bordered row. Wash + border re-mix per theme. */
+  --hero-tint: var(--marigold);
+  border: 3px solid color-mix(in srgb, var(--hero-tint) 55%, var(--card));
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--hero-tint) 15%, var(--card));
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.today-hero--meal {
+  --hero-tint: var(--terracotta);
+}
+.today-hero--weather {
+  --hero-tint: var(--sky);
+}
+.today-hero__icon {
+  width: 6.4rem;
+  height: 6.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow:
+    inset 0 2px 6px rgba(72, 54, 30, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+  font-size: 3.6rem;
+  line-height: 1;
+}
+.today-hero__label {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+}
+.today-hero__sub {
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* --- Toddler tab header (Kitchen / Liste): a friendly title so a bare grid of
+   tiles isn't a naked, headerless page. A big emoji badge over a handwritten
+   line, matching the warmth of the Routines picture-story. */
+.kid-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+.kid-head__emoji {
+  width: 5.5rem;
+  height: 5.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow:
+    inset 0 2px 6px rgba(72, 54, 30, 0.12),
+    var(--shadow-sm);
+  font-size: 3rem;
+  line-height: 1;
+}
+.kid-head__title {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: 2.2rem;
+  color: var(--ink);
+  transform: rotate(-1.5deg);
+}

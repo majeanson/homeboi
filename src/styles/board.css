@@ -1,0 +1,264 @@
+/* ---- Board: full-width "whiteboard" bento grid ---------------------------- */
+.board-wall {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 2rem;
+}
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+/* Each section is a calm bento tile. */
+.board-grid > .bento {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem 1.1rem;
+  box-shadow: var(--shadow-sm);
+}
+/* The hero supper card and the photo frame get more room on a wide wall. */
+.board-grid > .now-card {
+  grid-column: span 2;
+}
+.board-grid > .photo-frame {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+@media (max-width: 680px) {
+  .board-wall {
+    padding: 1rem 0.9rem 1.5rem;
+  }
+  .board-grid {
+    gap: 0.75rem;
+  }
+  .board-grid > .now-card {
+    grid-column: auto;
+  }
+}
+
+/* Toddler heroes row (meals + weather) above the kid sections. */
+.today-kid__heroes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.today-kid__heroes .today-hero {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
+/* Mobile glance: the prominent quick-capture bar atop the board (opens AddSheet).
+   The phone's primary action, sat where the thumb lands first. */
+.qcap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast);
+}
+.qcap:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-press);
+}
+.qcap__icon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--marigold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qcap__text {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-faint);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.qcap__mic {
+  flex: none;
+  font-size: 1.1rem;
+  opacity: 0.7;
+}
+
+/* Kiosk dashboard: scale the "Aujourd'hui" header up for across-the-room reading.
+   Same board, same data — just an official wall-display weight. */
+.hub[data-surface='kiosk'] .board-wall {
+  padding: 1.75rem 1.75rem 2.25rem;
+}
+.hub[data-surface='kiosk'] .board-wall .greet {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+}
+.hub[data-surface='kiosk'] .board-wall .subgreet {
+  font-size: clamp(1rem, 1.6vw, 1.4rem);
+}
+
+/* ---- Board: weather tip, tomorrow chip, view toggle & alt views ---------- */
+.board-head__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+.weather-tip {
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.tomorrow-wx {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
+/* The little segmented view switch (bento · next · lanes). */
+.boardview {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+}
+.boardview__opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  height: 32px;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.boardview__label {
+  white-space: nowrap;
+}
+.boardview__opt.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+/* On a tight phone the labels would crowd the header — fall back to icon-only
+   there (the labels stay for tablets/kiosk where the discoverability matters). */
+@media (max-width: 520px) {
+  .boardview__opt {
+    width: 36px;
+    padding: 0;
+  }
+  .boardview__label {
+    display: none;
+  }
+}
+
+/* "Now & Next" focus view. */
+.nownext {
+  max-width: 46rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.nownext__focus {
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: clamp(1.5rem, 5vw, 3rem);
+  text-align: center;
+}
+.nownext__when {
+  font-size: clamp(1rem, 2.5vw, 1.6rem);
+  color: var(--ink-soft);
+}
+.nownext__title {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: clamp(2rem, 8vw, 5rem);
+  line-height: 1.05;
+  margin: 0.25rem 0;
+}
+.nownext__who {
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  color: var(--ink-soft);
+}
+.nownext__focus--empty .nownext__title {
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  color: var(--ink-faint);
+}
+.nownext__then {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  color: var(--ink-soft);
+}
+.nownext__then-when {
+  font-weight: 700;
+}
+.nownext__then-title {
+  font-size: 1.15rem;
+}
+.nownext__allday {
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
+
+/* Per-person "lanes": columns of each member's day. */
+.lanes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.lane__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 0.6rem;
+}
+.lane__dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  flex: none;
+}
+.lane .act {
+  margin-bottom: 0.5rem;
+}
+.lane--mine {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.lane__head--shared {
+  color: var(--ink-soft);
+}

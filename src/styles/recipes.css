@@ -1,0 +1,380 @@
+/* --- Recipes: book grid, view/edit modal, Kitchen meal-plan picker --------- */
+/* The recipe book lives in the Kitchen. Cards in a responsive grid; viewing and
+   editing share one centered modal (.recipe-modal) that scrolls its body. */
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.8rem;
+}
+.recipe-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  transition: transform var(--dur-fast) var(--ease-soft), box-shadow var(--dur-fast);
+}
+.recipe-card:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.recipe-card__thumb {
+  display: block;
+  aspect-ratio: 4 / 3;
+  background: var(--terracotta-wash);
+  overflow: hidden;
+}
+.recipe-card__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.recipe-card__noimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 2rem;
+}
+.recipe-card__title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.15;
+  padding: 0 0.7rem;
+  color: var(--ink);
+}
+.recipe-card__sub {
+  color: var(--ink-faint);
+  padding: 0 0.7rem 0.7rem;
+}
+
+/* Modal: scrim + a centered scrolling card. */
+.recipe-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.recipe-modal__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(44, 39, 34, 0.4);
+}
+.recipe-modal__card {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.recipe-modal__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+.recipe-modal__bar h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.recipe-modal__body {
+  padding: 1rem 1.1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.recipe-modal__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.8rem 1.1rem;
+  border-top: 1px solid var(--line);
+}
+.recipe-actions {
+  justify-content: flex-start;
+}
+.recipe-del {
+  margin-left: auto;
+  color: var(--warn);
+}
+
+/* Form bits */
+.recipe-photo__has {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.recipe-photo__has img {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+.recipe-title-input {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.recipe-helpers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.recipe-aioff {
+  color: var(--ink-soft);
+  margin: 0;
+}
+.recipe-import {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  background: var(--paper-deep);
+  border-radius: var(--radius-md);
+}
+.recipe-import__paste {
+  resize: vertical;
+  font-family: var(--sans);
+}
+.recipe-sec-h {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.3rem 0 0;
+  font-size: 1.05rem;
+}
+.recipe-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.recipe-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.recipe-line__n {
+  width: 1.4rem;
+  flex: none;
+  text-align: center;
+  color: var(--ink-faint);
+}
+.recipe-line .input {
+  flex: 1;
+  min-width: 0;
+}
+.recipe-line__del {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+}
+.recipe-line__del:hover {
+  color: var(--warn);
+}
+.recipe-add-line {
+  align-self: flex-start;
+}
+.recipe-meta-row {
+  display: flex;
+  gap: 0.8rem;
+}
+.recipe-servings {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ink-soft);
+}
+.recipe-servings .input {
+  width: 5rem;
+}
+
+/* View bits */
+.recipe-view__img {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+.recipe-view__meta {
+  color: var(--ink-soft);
+  margin: 0;
+}
+.recipe-scale {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.1rem 0 0.7rem;
+}
+.recipe-scale__btn {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.3rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.recipe-scale__btn:active {
+  transform: scale(0.94);
+}
+.recipe-scale__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.recipe-scale__val {
+  min-width: 5.5rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--ink);
+}
+.recipe-scale__reset {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.3rem;
+}
+/* The servings stepper and the quick batch presets sit on one wrapping row. */
+.recipe-scale-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin: 0.1rem 0 0.7rem;
+}
+.recipe-scale-row .recipe-scale {
+  margin: 0;
+}
+.recipe-mult {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.recipe-mult__btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.06s ease;
+}
+.recipe-mult__btn.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.recipe-mult__btn:active {
+  transform: scale(0.95);
+}
+.recipe-view__ings {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.recipe-view__steps {
+  margin: 0;
+  padding-left: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.recipe-view__steps li {
+  padding-left: 0.2rem;
+}
+.recipe-view__notes {
+  margin: 0;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.recipe-plan-days {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.recipe-plan-days__label {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.recipe-plan-days__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.kitchen__ai-waking {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  padding: 0.4rem 0;
+}
+
+/* Kitchen: the meal-plan recipe picker under a day's edit form. */
+.kitchen__day-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+.kitchen__day-recipes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.kitchen__pick-recipe {
+  align-self: flex-start;
+}
+.kitchen__recipe-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Flyer/deals browser: the search row above the staple chips + results. */
+.deals-search {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.deals-search .input {
+  flex: 1;
+  min-width: 0;
+}

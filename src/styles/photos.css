@@ -1,0 +1,95 @@
+/* ---- Photos: avatars, the home-photo grid, and the wall frame -------------- */
+/* Member avatar: a photo or a coloured initial disc (component: Avatar). */
+.avatar {
+  flex: none;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.avatar--photo {
+  object-fit: cover;
+}
+.avatar__initial {
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.operator__photo {
+  cursor: pointer;
+}
+
+/* Settings: the home-photo management grid. */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+.photo-grid__item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.photo-grid__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photo-grid__del {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(27, 23, 18, 0.6);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* The wall board's calm family-photo frame. */
+.photo-frame {
+  margin: 1.5rem 0 0.5rem;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  background: var(--card);
+}
+.photo-frame img {
+  display: block;
+  width: 100%;
+  max-height: 42vh;
+  object-fit: cover;
+}
+
+/* Kid face-picker: a round photo where the initial would be. */
+.kid__face-photo {
+  width: 64%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-pill);
+}
+
+/* Gentle cross-fade as the wall frame changes photos — motion-safe only. */
+@media (prefers-reduced-motion: no-preference) {
+  .photo-frame img {
+    animation: photo-fade var(--dur-slow) var(--ease-out) both;
+  }
+  @keyframes photo-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}

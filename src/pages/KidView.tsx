@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useCalm } from '../lib/calm'
 import { useProfile } from '../lib/profile'
@@ -11,6 +11,7 @@ import { tintInk } from '../lib/colors'
 import { imgUrl } from '../lib/image'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
+import { useOptimisticMutation } from '../lib/optimistic'
 
 // The pre-reader surface, in Pip's calm "right now / then" picture story: ONE
 // big card at a time, narrated on tap, with the next thing shown small and a
@@ -45,7 +46,6 @@ export function KidView() {
   const { calm } = useCalm()
   const { memberId: profileId } = useProfile()
   const speak = useSpeak()
-  const qc = useQueryClient()
   const [pickedId, setPickedId] = useState<string | null>(null)
 
   // Left-on toddler kiosk: a parent's change from another device (ticking a
@@ -58,30 +58,17 @@ export function KidView() {
   })
 
   // Toggle one card done for today. Optimistic so the tap feels instant on a
-  // cheap tablet; on failure we roll back and resync from the server.
-  const toggle = useMutation({
-    mutationFn: (v: { routineId: string; cardIdx: number; done: boolean }) =>
-      api('routines', { method: 'PATCH', body: v }),
-    onMutate: async (v) => {
-      await qc.cancelQueries({ queryKey: ROUTINES_KEY })
-      const prev = qc.getQueryData<RoutinesData>(ROUTINES_KEY)
-      qc.setQueryData<RoutinesData>(ROUTINES_KEY, (old) =>
-        old
-          ? {
-              routines: old.routines.map((r) =>
-                r.id === v.routineId
-                  ? { ...r, doneIdx: v.done ? [...r.doneIdx, v.cardIdx] : r.doneIdx.filter((i) => i !== v.cardIdx) }
-                  : r,
-              ),
-            }
-          : old,
-      )
-      return { prev }
-    },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(ROUTINES_KEY, ctx.prev)
-      qc.invalidateQueries({ queryKey: ROUTINES_KEY })
-    },
+  // cheap tablet; on failure the shared hook rolls back and resyncs.
+  const toggle = useOptimisticMutation<RoutinesData, { routineId: string; cardIdx: number; done: boolean }>({
+    queryKey: ROUTINES_KEY,
+    mutationFn: (v) => api('routines', { method: 'PATCH', body: v }),
+    apply: (old, v) => ({
+      routines: old.routines.map((r) =>
+        r.id === v.routineId
+          ? { ...r, doneIdx: v.done ? [...r.doneIdx, v.cardIdx] : r.doneIdx.filter((i) => i !== v.cardIdx) }
+          : r,
+      ),
+    }),
   })
 
   // Read a step aloud WITHOUT marking it done — a toddler hears what to do first,

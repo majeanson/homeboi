@@ -1,0 +1,339 @@
+/* ========================================================================== */
+/* Hub shell — no top header. A vertical column of big section buttons (Pip     */
+/* nav rail) and a scrolling body. Réglages is the last nav button; the only    */
+/* element floating over the page is the single ＋ FAB (parent view only).      */
+/* ========================================================================== */
+.hub {
+  display: flex;
+  align-items: stretch;
+  height: 100vh;
+}
+.hubnav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: clamp(9rem, 22vw, 14rem);
+  flex: none;
+  padding: 18px 14px;
+  border-right: 1px solid var(--line);
+  background: var(--paper-deep);
+  overflow-y: auto;
+}
+.hubnav__btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 3.6rem;
+  padding: 0 16px;
+  border-radius: 16px;
+  text-decoration: none;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.12rem;
+  color: var(--ink-soft);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast);
+}
+.hubnav__btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.hubnav__btn.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.hub__body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  position: relative;
+}
+/* Toddler Kitchen/Liste render a bare <main class="kid__main"> (a handful of big
+   tiles) straight into the hub body. Without a height it clumps at the very top,
+   leaving a vast empty band on a wall screen. Fill the body so kid__main's own
+   centering (justify/align center) sits the tiles in the middle — matching the
+   toddler Routines face-picker. KidView wraps in .kid, so it's unaffected. */
+.hub__body > .kid__main {
+  min-height: 100%;
+}
+/* Parent ⇄ Enfant, living IN the nav (never floating). On the kiosk column it
+   sinks to the bottom, visually apart from the section buttons; quieter chrome
+   (no card, no shadow) so it reads as a mode, not a destination. */
+.hubnav__peek {
+  margin-top: auto;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1rem;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink-faint);
+}
+.hubnav__peek-pic {
+  font-size: 20px;
+  line-height: 1;
+}
+@media (max-width: 560px) {
+  .hub {
+    flex-direction: column;
+  }
+  .hubnav {
+    flex-direction: row;
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+  }
+  .hubnav__btn {
+    font-size: 1rem;
+    min-height: 3rem;
+    white-space: nowrap;
+  }
+  /* The ＋ FAB floats over the bottom-right of the scrolling body. Pad the
+     scroll end so the last row — and its tap target (a list item's check, a
+     day's meal) — clears it. Parent only: the toddler lens centers a few big
+     tiles (no FAB) and shouldn't be shoved up. */
+  .hub[data-audience='parent'] .hub__body {
+    padding-bottom: 110px;
+  }
+}
+
+/* ---- Mobile surface: sections become a thumb-reach bottom tab bar --------- */
+/* Driven by the device ROLE (src/lib/surface), not the viewport: a phone gets a
+   fixed bottom bar regardless of width; the kiosk keeps its left column. More
+   specific than the width fallback above, so it wins where they'd overlap. */
+.hub[data-surface='mobile'] {
+  flex-direction: column;
+}
+.hub[data-surface='mobile'] .hub__body {
+  order: 1;
+  padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+}
+.hub[data-surface='mobile'] .hubnav {
+  order: 2;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  flex-direction: row;
+  width: auto;
+  gap: 4px;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+  border-right: 0;
+  border-bottom: 0;
+  border-top: 1px solid var(--line);
+  background: var(--paper-deep);
+  overflow-x: auto;
+}
+.hub[data-surface='mobile'] .hubnav__btn {
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 3.4rem;
+  padding: 6px 4px;
+  border-radius: 14px;
+  font-size: 0.72rem;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+}
+.hub[data-surface='mobile'] .hubnav__btn span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.hub[data-surface='mobile'] .hubnav__btn.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+/* In the bottom bar the switch rides inline with the tabs: compact (it shouldn't
+   crowd five tabs on a narrow phone) and icon-led like them. */
+.hub[data-surface='mobile'] .hubnav__peek {
+  margin-top: 0;
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+}
+/* Lift the ＋ quick-add clear of the bottom bar. */
+.hub[data-surface='mobile'] .add-fab {
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+/* ---- Settings: section nav + anchors + display controls ------------------ */
+.operator__toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+}
+.operator__anchor {
+  scroll-margin-top: 16px;
+}
+.operator__display {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.operator__seg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.operator__seg-label {
+  color: var(--ink-soft);
+}
+
+/* ---- Routine / chore builder: picker chips + drag-and-drop card deck ------ */
+.picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  width: 100%;
+}
+.picker-chips__label {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.deck {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.deck__card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 8px 10px;
+}
+.deck__card.is-dragging {
+  opacity: 0.5;
+}
+.deck__handle {
+  cursor: grab;
+  color: var(--ink-faint);
+  font-size: 18px;
+  user-select: none;
+  padding: 0 2px;
+}
+.deck__emoji {
+  font-size: 26px;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 12px;
+  border: 1.5px solid var(--line-strong);
+  background: var(--paper);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.deck__word {
+  flex: 1;
+  min-width: 0;
+}
+.deck__btns {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: none;
+}
+.deck__mini {
+  width: 30px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--ink-soft);
+  cursor: pointer;
+  line-height: 1;
+  font-size: 13px;
+}
+.deck__mini:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.deck__remove {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 10px;
+}
+.deck__remove:hover {
+  color: var(--warn);
+  background: var(--clay-soft);
+}
+.deck__palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  margin-top: 6px;
+  background: var(--paper-deep);
+  border-radius: var(--radius-md);
+}
+.deck__palette-emoji {
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: var(--card);
+  border-radius: 11px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.deck__palette-emoji:hover {
+  background: var(--marigold-wash);
+}
+.deck__add {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* ---- Colour picker (per-person, per-task) -------------------------------- */
+.colorpick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+.colorpick__dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.colorpick__dot:active {
+  transform: scale(0.92);
+}
+.colorpick__dot.is-sel {
+  border-color: var(--card);
+  outline: 2.5px solid var(--ink);
+}

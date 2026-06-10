@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
 import { CATS } from '../lib/cats'
@@ -15,6 +15,7 @@ import { CashierMode } from '../components/CashierMode'
 import { GhostStrip } from '../components/GhostStrip'
 import { fetchGhosts, type Ghost } from '../lib/ghost'
 import { useUndoToast } from '../lib/toast'
+import { useOptimisticMutation } from '../lib/optimistic'
 import { money, type Deal } from '../lib/deals'
 import { pickListFrom, parseDeal, stageDeal, unstageDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
@@ -83,21 +84,11 @@ export function Liste() {
 
   // Tap a suggestion → add it to the real list. Drop the chip immediately
   // (optimistic), then persist and refresh both the list and the strip.
-  const addGhost = useMutation({
-    mutationFn: (g: Ghost) => api('list', { method: 'POST', body: { text: g.label } }),
-    onMutate: async (g) => {
-      await qc.cancelQueries({ queryKey: GHOSTS_KEY })
-      const prev = qc.getQueryData<Ghost[]>(GHOSTS_KEY)
-      qc.setQueryData<Ghost[]>(GHOSTS_KEY, (gs) => gs?.filter((x) => x.key !== g.key) ?? gs)
-      return { prev }
-    },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(GHOSTS_KEY, ctx.prev)
-    },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: BOARD_KEY })
-      qc.invalidateQueries({ queryKey: GHOSTS_KEY })
-    },
+  const addGhost = useOptimisticMutation<Ghost[], Ghost>({
+    queryKey: GHOSTS_KEY,
+    mutationFn: (g) => api('list', { method: 'POST', body: { text: g.label } }),
+    apply: (gs, g) => gs.filter((x) => x.key !== g.key),
+    invalidateOnSettled: [BOARD_KEY, GHOSTS_KEY],
   })
 
   if (isUnauthorized(error)) return <PairPrompt />
