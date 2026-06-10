@@ -16,7 +16,7 @@ export function Signup() {
   const t = useT()
   const nav = useNavigate()
   const { refresh } = useAuth()
-  const { setSurface } = useSurface()
+  const { surface, chosen, setSurface } = useSurface()
   const [householdName, setHouseholdName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -46,9 +46,12 @@ export function Signup() {
         },
       })
       await refresh()
-      // Creating a household is the personal-device path; land in Réglages ▸ La
-      // maisonnée so the obvious next step (add your family) is right there.
-      setSurface('mobile')
+      // Creating a household is usually the personal-device path — but when the
+      // family started on the wall tablet (Pair's signup link), keep the kiosk
+      // role they already chose instead of stamping the phone layout on a wall.
+      if (!(chosen && surface === 'kiosk')) setSurface('mobile')
+      // Land in Réglages ▸ La maisonnée so the obvious next step (add your
+      // family) is right there.
       nav('/settings#household')
     } catch (err) {
       setError(isStatus(err, 409) ? 'exists' : isStatus(err, 403) ? 'badInvite' : 'error')

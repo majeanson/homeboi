@@ -302,3 +302,43 @@
   justify-content: center;
   box-shadow: var(--shadow-sm);
 }
+
+/* The all-done moment, gently animated: the ✿ blooms once, the recap pictures
+   rise one after another. DETERMINISTIC — the same little sequence every single
+   time, never a variable reward (NFR-CALM-2) — and off entirely for
+   prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .tdl-illus:not(.tdl-illus--tap) {
+    animation: tdl-bloom 0.55s var(--ease-soft, ease-out) both;
+  }
+  @keyframes tdl-bloom {
+    from {
+      transform: scale(0.55);
+      opacity: 0.4;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  .tdl-recap__step {
+    animation: tdl-pop 0.4s var(--ease-soft, ease-out) both;
+  }
+  .tdl-recap__step:nth-child(1) { animation-delay: 0.25s; }
+  .tdl-recap__step:nth-child(2) { animation-delay: 0.35s; }
+  .tdl-recap__step:nth-child(3) { animation-delay: 0.45s; }
+  .tdl-recap__step:nth-child(4) { animation-delay: 0.55s; }
+  .tdl-recap__step:nth-child(5) { animation-delay: 0.65s; }
+  .tdl-recap__step:nth-child(6) { animation-delay: 0.75s; }
+  .tdl-recap__step:nth-child(n + 7) { animation-delay: 0.85s; }
+  @keyframes tdl-pop {
+    from {
+      transform: translateY(10px) scale(0.85);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+}
