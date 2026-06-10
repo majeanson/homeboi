@@ -46,6 +46,16 @@
   padding: 3px 10px;
   white-space: nowrap;
 }
+/* Single-column phones: the nowrap badge would shove into the name — let the
+   head wrap and give the badge its own line instead of clipping. */
+@media (max-width: 420px) {
+  .routine-card__head {
+    flex-wrap: wrap;
+  }
+  .routine-card__tod {
+    margin-left: 0;
+  }
+}
 .routine-card__av {
   flex: none;
   width: 2.6rem;
@@ -112,6 +122,10 @@
 }
 .routines-parent__edit {
   margin-top: 1.5rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
 }
 .kitchen__head-actions {
   display: flex;
@@ -212,6 +226,15 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+/* Long AI ingredient names ("beurre non salé…") otherwise wrap to 3-line chips
+   and the confirm panel turns into a ragged wall — one tidy line each, full
+   name in the title attr. */
+.kitchen__staples-chips .chip {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .chip {
   font-family: var(--mono);
@@ -460,6 +483,10 @@
   font-size: 0.78rem;
   margin-top: 4px;
 }
+/* The hint flips green once the constraint is met (signup password length). */
+.field__hint--ok {
+  color: var(--sage, #6b8a52);
+}
 /* The cross-link under an auth card (login ⇄ signup). */
 .auth__alt {
   color: var(--ink-soft);
@@ -592,6 +619,13 @@
   width: auto;
   flex: 1;
   min-width: 8rem;
+}
+/* Narrow phones: rotation chips + colour picker crowd the title input down to
+   its 8rem floor — give the input its own full-width row instead. */
+@media (max-width: 480px) {
+  .operator__inline-form .input {
+    min-width: 100%;
+  }
 }
 .operator__check {
   display: flex;
@@ -841,6 +875,13 @@
   color: var(--ink-soft);
   font-size: 1.1rem;
   text-align: center;
+  /* It's a <button> now (tapping speaks the message, NFR-KID-2) — undo the
+     button chrome so it keeps reading as a quiet empty state. */
+  width: 100%;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
 }
 .bigtiles__empty-mark {
   font-size: 3.2rem;

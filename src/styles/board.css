@@ -17,6 +17,13 @@
   color: inherit;
   font-weight: 600;
 }
+/* Kiosk idle heads-up: 30 s before the picked face drifts back to Maisonnée. */
+.board-idle {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}
 .board-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));

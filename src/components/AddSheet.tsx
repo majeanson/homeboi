@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, ApiError } from '../lib/api'
@@ -40,11 +40,25 @@ const MODES: { mode: Mode; icon: IconName; deep: string; wash: string }[] = [
   { mode: 'routine', icon: 'pencil-simple-bold', deep: '#95527A', wash: 'var(--berry-wash)' },
 ]
 
-export function AddSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function AddSheet({
+  open,
+  initialMode = 'capture',
+  onClose,
+}: {
+  open: boolean
+  initialMode?: Mode
+  onClose: () => void
+}) {
   const t = useT()
   const qc = useQueryClient()
   const { signedIn } = useAuth()
-  const [mode, setMode] = useState<Mode>('capture')
+  const [mode, setMode] = useState<Mode>(initialMode)
+  // An opener can land on a specific form (the Routines page's ＋ goes straight
+  // to the routine builder); re-sync on each open so the last visit's tab
+  // doesn't leak into this one.
+  useEffect(() => {
+    if (open) setMode(initialMode)
+  }, [open, initialMode])
   const [text, setText] = useState('')
   const { listening, hasVoice, start: startVoice } = useVoiceInput(setText)
   const [busy, setBusy] = useState(false)

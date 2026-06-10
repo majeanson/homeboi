@@ -100,7 +100,15 @@ export function Signup() {
               minLength={8}
               autoComplete="new-password"
             />
-            <span className="field__hint mono">{t.signup.passwordHint}</span>
+            {/* Live progress toward the 8-char minimum — otherwise the only
+                signal is a disabled submit button with no visible reason. */}
+            <span className={'field__hint mono' + (password.length >= 8 ? ' field__hint--ok' : '')}>
+              {password.length === 0
+                ? t.signup.passwordHint
+                : password.length < 8
+                  ? `${t.signup.passwordHint} (${password.length}/8)`
+                  : `${t.signup.passwordHint} ✓`}
+            </span>
           </label>
           {inviteRequired && (
             <label className="field">

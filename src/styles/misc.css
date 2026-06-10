@@ -81,6 +81,20 @@
   color: var(--on-primary);
   font-weight: 600;
 }
+/* On a phone, 11 tabs wrapping into a 3-row block stop reading as a segmented
+   control — keep ONE swipeable strip instead. */
+@media (max-width: 640px) {
+  .operator__tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .operator__tab {
+    flex: none;
+    white-space: nowrap;
+  }
+}
 
 /* Add sheet: the quick-capture / event / chore / routine mode chooser. */
 .sheet__modes {

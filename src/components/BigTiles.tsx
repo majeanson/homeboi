@@ -27,13 +27,16 @@ const TILE_TINTS = ['#f2a03d', '#7bb0c9', '#b06a93', '#88a36f', '#e0724e', '#fbd
 export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
   const speak = useSpeak()
   if (tiles.length === 0) {
+    // The empty state speaks too — a pre-reader who lands here can't decode the
+    // sentence, but a tap anywhere on it reads the message aloud, same contract
+    // as every tile (NFR-KID-2).
     return (
-      <p className="bigtiles__empty">
+      <button type="button" className="bigtiles__empty" onClick={() => speak(empty ?? '')}>
         <span className="bigtiles__empty-mark" aria-hidden="true">
           ✿
         </span>
         <span className="mono">{empty ?? '—'}</span>
-      </p>
+      </button>
     )
   }
   return (

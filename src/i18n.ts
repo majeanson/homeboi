@@ -75,6 +75,7 @@ export const FR = {
     allDay: 'Toute la journée',
     welcomeHint: 'Le babillard est prêt — il manque juste ta famille.',
     welcomeCta: 'Ajouter les personnes',
+    idleSoon: 'Retour à la maisonnée dans un instant…',
   },
   boardView: {
     label: 'Vue du babillard',
@@ -230,6 +231,7 @@ export const FR = {
   },
   routines: {
     tag: 'Le rythme du jour',
+    add: 'Ajouter une routine',
     stepsN: (n: number) => `${n} étape${n > 1 ? 's' : ''}`,
     empty: 'Aucune carte',
     todLabel: 'Moment :',
@@ -487,6 +489,7 @@ export const EN: typeof FR = {
     allDay: 'All day',
     welcomeHint: 'The board is ready — it just needs your family.',
     welcomeCta: 'Add the people',
+    idleSoon: 'Back to the household view in a moment…',
   },
   boardView: {
     label: 'Board view',
@@ -640,6 +643,7 @@ export const EN: typeof FR = {
   },
   routines: {
     tag: 'The day’s rhythm',
+    add: 'Add a routine',
     stepsN: (n: number) => `${n} step${n === 1 ? '' : 's'}`,
     empty: 'No cards',
     todLabel: 'Moment:',

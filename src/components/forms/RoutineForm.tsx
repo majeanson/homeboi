@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { useLang, useT } from '../../i18n'
 import { CardDeckEditor } from '../CardDeckEditor'
@@ -67,7 +68,15 @@ export function RoutineForm({ members, onSaved }: { members: FormMember[]; onSav
     }
   }
 
-  if (children.length === 0) return <p className="board__empty mono">{t.operator.needChild}</p>
+  // Not a dead end: the fix (add a child) is one tap away instead of "close the
+  // sheet, find Réglages, find the household tab" — three taps a new family
+  // shouldn't have to guess.
+  if (children.length === 0)
+    return (
+      <p className="board__empty mono">
+        {t.operator.needChild} <Link to="/settings#household">{t.board.welcomeCta}</Link>
+      </p>
+    )
 
   return (
     <form className="operator__inline-form operator__routine-form" onSubmit={add}>

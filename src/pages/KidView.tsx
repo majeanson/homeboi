@@ -14,6 +14,7 @@ import { live } from '../lib/query'
 import { useOptimisticMutation } from '../lib/optimistic'
 import { timeOfDay } from '../lib/timeofday'
 import { todRank, isRoutineTod, TOD_EMOJI } from '../lib/routineTod'
+import { ROUTINES_KEY } from '../lib/queryKeys'
 
 // The pre-reader surface, in Pip's calm "right now / then" picture story: ONE
 // big card at a time, narrated on tap, with the next thing shown small and a
@@ -39,7 +40,6 @@ interface Routine {
   doneIdx: number[]
 }
 type RoutinesData = { routines: Routine[] }
-const ROUTINES_KEY = ['routines']
 
 // mm:ss for the gentle per-step stopwatch (count-up — no countdown, no pressure).
 const fmtClock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -77,7 +77,8 @@ export function KidView() {
   // Read a step aloud WITHOUT marking it done — a toddler hears what to do first,
   // then does it. (Separated from finishing it, which is the start/timer flow.)
   function readAloud(idx: number) {
-    speak(picked?.cards[idx]?.narration ?? picked?.cards[idx]?.label)
+    if (!picked || idx < 0 || idx >= picked.cards.length) return
+    speak(picked.cards[idx].narration ?? picked.cards[idx].label)
   }
 
   // One continuous run, not a per-step start/stop: the kid taps ▶ ONCE to begin
@@ -102,6 +103,17 @@ export function KidView() {
     setElapsed(0)
     setTimes({})
   }, [pickedId])
+
+  // After the "sweet dreams" recap, drift back to the face picker so the wall
+  // tablet is ready for the next child — only when a picker was actually used
+  // (pickedId set); a single auto-selected routine has no picker to return to.
+  useEffect(() => {
+    if (!pickedId || !calm) return
+    const r = (data?.routines ?? []).find((x) => x.id === pickedId)
+    if (!r || r.cards.length === 0 || r.doneIdx.length < r.cards.length) return
+    const id = setTimeout(() => setPickedId(null), 20_000)
+    return () => clearTimeout(id)
+  }, [data, pickedId, calm])
 
   function startStep(idx: number) {
     setElapsed(0)
@@ -129,7 +141,10 @@ export function KidView() {
 
   if (isUnauthorized(error)) return <div className="kid"><PairPrompt /></div>
   if (!data && !error) return <Loading />
-  const routines = data?.routines ?? []
+  // A routine with no cards yet (a parent saved the shell, steps to come) has no
+  // story to tell — keep it out of the kid surface entirely so the picker never
+  // lands on an empty stage (curIdx would point at nothing).
+  const routines = (data?.routines ?? []).filter((r) => r.cards.length > 0)
 
   if (routines.length === 0) {
     return (
@@ -175,7 +190,12 @@ export function KidView() {
                 type="button"
                 className="kid__face"
                 style={{ background: r.avatarPhoto ? 'var(--card)' : r.color ?? '#88A36F' }}
-                onClick={() => setPickedId(r.id)}
+                onClick={() => {
+                  // Say what was picked — audio confirmation is the pre-reader's
+                  // "you tapped the right one" (NFR-KID-2).
+                  speak(identified ? r.name : r.memberName ?? r.name)
+                  setPickedId(r.id)
+                }}
               >
                 {r.avatarPhoto ? (
                   <img className="kid__face-photo" src={imgUrl(r.avatarPhoto)} alt="" />
@@ -335,6 +355,10 @@ export function KidView() {
 
         {visible.length > 1 && (
           <button type="button" className="kid__exit mono" onClick={() => setPickedId(null)}>
+            {/* The ← marks this as "go back" (to the faces), distinct from the
+                top-left exit that leaves Kid Mode — two same-styled text links
+                were indistinguishable to a pre-reader. */}
+            <span aria-hidden="true">← </span>
             {identified ? t.kid.pickRoutine : t.kid.pick}
           </button>
         )}

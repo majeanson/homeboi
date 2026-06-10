@@ -30,7 +30,7 @@ import { type BoardData, type EventRow, type MealRow } from '../components/board
 // and stays empty — no counters, no score for clearing it. The alternate views
 // (Now & Next, per-person lanes) and the card/section atoms live in
 // src/components/board/*.
-const BOARD_KEY = ['board']
+import { BOARD_KEY } from '../lib/queryKeys'
 
 export function Board() {
   const t = useT()
@@ -86,20 +86,35 @@ export function Board() {
 
   // Shared kiosk: when someone has tapped their face, drift back to Maisonnée
   // after a few idle minutes so the wall tablet never gets "stuck" as one person.
-  // Mobile (a personal device) is left as-is. Resets on any interaction.
+  // Mobile (a personal device) is left as-is. Resets on any interaction. A quiet
+  // heads-up appears 30 s before the drift, so a parent mid-glance isn't
+  // silently switched back (and tagging things to the wrong person).
+  const [idleWarn, setIdleWarn] = useState(false)
   useEffect(() => {
-    if (surface !== 'kiosk' || !profileId) return
+    if (surface !== 'kiosk' || !profileId) {
+      setIdleWarn(false)
+      return
+    }
     const IDLE = 3 * 60 * 1000
+    const WARN = IDLE - 30 * 1000
     let timer: ReturnType<typeof setTimeout>
+    let warnTimer: ReturnType<typeof setTimeout>
     const reset = () => {
       clearTimeout(timer)
-      timer = setTimeout(() => setMemberId(null), IDLE)
+      clearTimeout(warnTimer)
+      setIdleWarn(false)
+      warnTimer = setTimeout(() => setIdleWarn(true), WARN)
+      timer = setTimeout(() => {
+        setIdleWarn(false)
+        setMemberId(null)
+      }, IDLE)
     }
     reset()
     window.addEventListener('pointerdown', reset, { passive: true })
     window.addEventListener('keydown', reset)
     return () => {
       clearTimeout(timer)
+      clearTimeout(warnTimer)
       window.removeEventListener('pointerdown', reset)
       window.removeEventListener('keydown', reset)
     }
@@ -237,7 +252,7 @@ export function Board() {
   return (
     <main className="board-wall">
       {surface === 'mobile' && (
-        <button type="button" className="qcap" onClick={openAdd}>
+        <button type="button" className="qcap" onClick={() => openAdd()}>
           <span className="qcap__icon" aria-hidden="true">
             <Icon name="plus-bold" size={20} color="var(--on-primary)" />
           </span>
@@ -283,6 +298,11 @@ export function Board() {
           as themselves, then tap Maisonnée (or their face again) to step back. */}
       {surface === 'kiosk' && data && data.members.length > 0 && (
         <MemberSwitcher members={data.members} t={t} />
+      )}
+      {idleWarn && me && (
+        <p className="board-idle mono" role="status">
+          ⏳ {t.board.idleSoon}
+        </p>
       )}
 
       {/* A fresh household (nobody added yet): one gentle pointer to the next

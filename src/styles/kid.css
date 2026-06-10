@@ -93,6 +93,11 @@
 .tdl-illus--tap {
   cursor: pointer;
 }
+/* Press feedback for every motion preference — reduced-motion users skip the
+   float, not the "I tapped it" squeeze. */
+.tdl-illus--tap:active {
+  transform: scale(0.96);
+}
 .tdl-illus-emoji {
   font-size: 124px;
   line-height: 1;

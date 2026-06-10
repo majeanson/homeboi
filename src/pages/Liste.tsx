@@ -19,6 +19,7 @@ import { useOptimisticMutation } from '../lib/optimistic'
 import { money, type Deal } from '../lib/deals'
 import { pickListFrom, parseDeal, stageDeal, unstageDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
+import { BOARD_KEY } from '../lib/queryKeys'
 
 // The shared list (groceries + anything), two lenses on the same data:
 //   - parent: the compact check-off list.
@@ -42,7 +43,6 @@ interface ListMember {
 // members (to draw "who added it" faces). The shared ['board'] cache still holds
 // the full payload for the Board page.
 type BoardListData = { list: ListRow[]; members?: ListMember[] }
-const BOARD_KEY = ['board']
 const GHOSTS_KEY = ['ghosts']
 
 export function Liste() {
