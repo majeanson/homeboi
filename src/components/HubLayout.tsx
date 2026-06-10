@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
+import { useProfile } from '../lib/profile'
 import { onAuthLost } from '../lib/authEvents'
 import { clearDeviceToken, isPaired } from '../lib/device'
 import { Icon, type IconName } from './Icon'
@@ -57,6 +58,44 @@ export function HubLayout() {
       }),
     [],
   )
+
+  // Shared kiosk: when someone has tapped their face, drift back to Maisonnée
+  // after a few idle minutes so the wall tablet never gets "stuck" as one person.
+  // Shell-level (not Board) so wandering to Réglages or the kitchen doesn't pin
+  // the picked face forever. Mobile (a personal device) is left as-is. Resets on
+  // any interaction; a quiet heads-up appears 30 s before the drift so a parent
+  // mid-glance isn't silently switched back (mis-attributing what they add).
+  const { memberId: profileId, setMemberId } = useProfile()
+  const [idleWarn, setIdleWarn] = useState(false)
+  useEffect(() => {
+    if (surface !== 'kiosk' || !profileId) {
+      setIdleWarn(false)
+      return
+    }
+    const IDLE = 3 * 60 * 1000
+    const WARN = IDLE - 30 * 1000
+    let timer: ReturnType<typeof setTimeout>
+    let warnTimer: ReturnType<typeof setTimeout>
+    const reset = () => {
+      clearTimeout(timer)
+      clearTimeout(warnTimer)
+      setIdleWarn(false)
+      warnTimer = setTimeout(() => setIdleWarn(true), WARN)
+      timer = setTimeout(() => {
+        setIdleWarn(false)
+        setMemberId(null)
+      }, IDLE)
+    }
+    reset()
+    window.addEventListener('pointerdown', reset, { passive: true })
+    window.addEventListener('keydown', reset)
+    return () => {
+      clearTimeout(timer)
+      clearTimeout(warnTimer)
+      window.removeEventListener('pointerdown', reset)
+      window.removeEventListener('keydown', reset)
+    }
+  }, [surface, profileId, setMemberId])
 
   // A locked toddler kiosk has no business in Réglages.
   if (locked && isSettings) return <Navigate to="/board" replace />
@@ -156,6 +195,12 @@ export function HubLayout() {
       <div className="hub__body">
         <Outlet />
       </div>
+
+      {idleWarn && (
+        <p className="board-idle board-idle--shell mono" role="status">
+          ⏳ {t.board.idleSoon}
+        </p>
+      )}
 
       {showAdd && (
         <button
