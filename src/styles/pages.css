@@ -34,6 +34,18 @@
   align-items: center;
   gap: 0.7rem;
 }
+/* The moment cue on the parent overview — matches the Réglages chip. */
+.routine-card__tod {
+  margin-left: auto;
+  flex: none;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
 .routine-card__av {
   flex: none;
   width: 2.6rem;
@@ -382,6 +394,19 @@
   font-size: 1.2rem;
   letter-spacing: 3px;
   line-height: 1;
+}
+/* The routine's moment badge (🌅/☀️/🌙) riding the face's shoulder — a
+   pre-reader spots "the moon one" without reading. */
+.kid__face {
+  position: relative;
+}
+.kid__face-tod {
+  position: absolute;
+  top: 4px;
+  right: 16px;
+  font-size: 1.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 .kid__pick-title {
   margin-bottom: 2rem;

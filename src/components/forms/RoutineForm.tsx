@@ -3,6 +3,7 @@ import { api } from '../../lib/api'
 import { useLang, useT } from '../../i18n'
 import { CardDeckEditor } from '../CardDeckEditor'
 import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
+import { ROUTINE_TODS, TOD_EMOJI, type RoutineTod } from '../../lib/routineTod'
 
 // The complete kid-routine form — who it's for (one or several toddlers, each
 // gets their own copy), a name, a template starting point, and the picture-card
@@ -22,14 +23,18 @@ export function RoutineForm({ members, onSaved }: { members: FormMember[]; onSav
   const [memberIds, setMemberIds] = useState<string[]>([])
   const [name, setName] = useState('')
   const [cards, setCards] = useState<DeckCard[]>([])
+  // The moment-of-day cue (null = anytime). Orders the kid view; never a gate.
+  const [tod, setTod] = useState<RoutineTod | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
 
   function toggleMember(id: string) {
     setMemberIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
   }
-  function applyTemplate(tpl: { name: string; cards: DeckCard[] }) {
+  function applyTemplate(tpl: { name: string; tod: RoutineTod | null; cards: DeckCard[] }) {
     setCards(tpl.cards.map((c) => ({ ...c })))
+    // The template knows its moment (Matin → morning, Dodo → evening).
+    setTod(tpl.tod)
     if (!name.trim()) {
       const icon = tpl.cards[0]?.icon
       setName(icon ? `${icon} ${tpl.name}` : tpl.name)
@@ -45,10 +50,14 @@ export function RoutineForm({ members, onSaved }: { members: FormMember[]; onSav
     setBusy(true)
     setErr(false)
     try {
-      await api('routines', { method: 'POST', body: { memberIds, name: name.trim(), cards: payload } })
+      await api('routines', {
+        method: 'POST',
+        body: { memberIds, name: name.trim(), cards: payload, timeOfDay: tod ?? undefined },
+      })
       setName('')
       setCards([])
       setMemberIds([])
+      setTod(null)
       onSaved()
     } catch {
       // Keep the deck — a failed write shouldn't eat a hand-built routine.
@@ -78,6 +87,30 @@ export function RoutineForm({ members, onSaved }: { members: FormMember[]; onSav
       </div>
 
       <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t.operator.routineName} />
+
+      {/* The moment of day: orders the kid view (morning shows Matin first). */}
+      <div className="picker-chips mono">
+        <span className="picker-chips__label">{t.routines.todLabel}</span>
+        <button
+          type="button"
+          className={'chip' + (tod === null ? ' is-on' : '')}
+          onClick={() => setTod(null)}
+          aria-pressed={tod === null}
+        >
+          {t.routines.tod.any}
+        </button>
+        {ROUTINE_TODS.map((v) => (
+          <button
+            key={v}
+            type="button"
+            className={'chip' + (tod === v ? ' is-on' : '')}
+            onClick={() => setTod(tod === v ? null : v)}
+            aria-pressed={tod === v}
+          >
+            {TOD_EMOJI[v]} {t.routines.tod[v]}
+          </button>
+        ))}
+      </div>
 
       <div className="picker-chips mono">
         <span className="picker-chips__label">{t.operator.tplStart}</span>

@@ -12,6 +12,9 @@ export interface DeckCard {
 interface RawTemplate {
   id: string
   name: Record<Lang, string>
+  // The implied time-of-day cue ('morning'|'afternoon'|'evening'; undefined =
+  // anytime) — picking the template pre-fills the form's moment picker.
+  tod?: 'morning' | 'afternoon' | 'evening'
   cards: { icon: string; label: Record<Lang, string> }[]
 }
 
@@ -21,6 +24,7 @@ const ROUTINES: RawTemplate[] = [
   {
     id: 'matin',
     name: { fr: 'Le matin', en: 'Morning' },
+    tod: 'morning',
     cards: [
       c('🌅', 'réveil', 'wake up'),
       c('🚽', 'toilette', 'potty'),
@@ -32,6 +36,7 @@ const ROUTINES: RawTemplate[] = [
   {
     id: 'dodo',
     name: { fr: 'Le dodo', en: 'Bedtime' },
+    tod: 'evening',
     cards: [
       c('🛁', 'bain', 'bath'),
       c('🪥', 'brosse les dents', 'brush teeth'),
@@ -43,6 +48,7 @@ const ROUTINES: RawTemplate[] = [
   {
     id: 'bain',
     name: { fr: 'Le bain', en: 'Bath time' },
+    tod: 'evening',
     cards: [
       c('🧼', 'savon', 'soap'),
       c('🚿', 'rince', 'rinse'),
@@ -64,6 +70,7 @@ const ROUTINES: RawTemplate[] = [
 export interface RoutineTemplate {
   id: string
   name: string
+  tod: 'morning' | 'afternoon' | 'evening' | null
   cards: DeckCard[]
 }
 
@@ -71,6 +78,7 @@ export function routineTemplates(lang: Lang): RoutineTemplate[] {
   return ROUTINES.map((t) => ({
     id: t.id,
     name: t.name[lang],
+    tod: t.tod ?? null,
     cards: t.cards.map((card) => ({ icon: card.icon, label: card.label[lang] })),
   }))
 }

@@ -24,6 +24,7 @@ export interface Routine {
   id: string
   name: string
   memberName: string | null
+  timeOfDay: string | null
 }
 export interface EventRow {
   id: string
