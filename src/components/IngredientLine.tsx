@@ -46,7 +46,12 @@ export function IngredientLine({
         type="button"
         className={`meas-pill meas-pill--${size}${color ? '' : ' meas-pill--plain'}${kid ? ' meas-pill--noicon' : ''}`}
         style={color ? { background: color, color: readableInk(color), borderColor: color } : undefined}
-        onClick={() => speak(spokenMeasure(m, lang))}
+        onClick={(e) => {
+          // Don't let a pill tap also fire a tappable parent row (the Cook-mode
+          // gather list reads the whole line) — the pill reads just its amount.
+          e.stopPropagation()
+          speak(spokenMeasure(m, lang))
+        }}
         aria-label={t.recipes.hearMeasure(m.text)}
       >
         {m.text}

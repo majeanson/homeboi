@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
-import { useT } from '../i18n'
+import { useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
+import { useT, useLang } from '../i18n'
 import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
+import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
 import { IngredientLine } from './IngredientLine'
 
@@ -33,6 +34,7 @@ type Stage = { kind: 'ingredients' } | { kind: 'step'; text: string; n: number }
 
 export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
   const t = useT()
+  const { lang } = useLang()
   const speak = useSpeak()
   const [idx, setIdx] = useState(0)
   const lockRef = useRef<{ release: () => Promise<void> } | null>(null)
@@ -86,6 +88,48 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
 
   // Closing Cook mode (or unmounting) stops any narration still in progress.
   useEffect(() => () => stopSpeaking(), [])
+
+  // Page navigation, shared by the arrow buttons, the keyboard and swipe.
+  const goPrev = () => setIdx((i) => Math.max(0, i - 1))
+  const goNext = () => setIdx((i) => Math.min(stages.length - 1, i + 1))
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowLeft') goPrev()
+      else if (e.key === 'ArrowRight') goNext()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stages.length])
+
+  // Swipe left/right between pages — horizontal-dominant gestures only, so it
+  // never hijacks the vertical scroll of a long step. A tap (tiny delta) is
+  // ignored, so the pills / checkboxes keep working.
+  const touch = useRef<{ x: number; y: number } | null>(null)
+  const onTouchStart = (e: ReactTouchEvent) => {
+    touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }
+  const onTouchEnd = (e: ReactTouchEvent) => {
+    const start = touch.current
+    touch.current = null
+    if (!start) return
+    const dx = e.changedTouches[0].clientX - start.x
+    const dy = e.changedTouches[0].clientY - start.y
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
+    if (dx > 0) goPrev()
+    else goNext()
+  }
+
+  // Gathered-ingredient checklist on the first page (session-local — a calm
+  // "what I've grabbed", not data we persist; a reload starts fresh).
+  const [gathered, setGathered] = useState<Set<number>>(() => new Set())
+  const toggleGot = (i: number) =>
+    setGathered((g) => {
+      const n = new Set(g)
+      if (n.has(i)) n.delete(i)
+      else n.add(i)
+      return n
+    })
 
   // Tick once a second while running; at zero, stop and give a gentle buzz
   // (where supported). The screen wake-lock above keeps the tablet awake for it.
@@ -168,16 +212,46 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
         </button>
       </div>
 
-      <div className="cook__stage">
+      <div className="cook__stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {cur?.kind === 'ingredients' ? (
           <div className="cook__card">
             <h2 className="cook__h">{t.recipes.ingredients}</h2>
+            {/* Gather list: tick the box as you grab each one (strike-through),
+                tap the text to hear the whole ingredient read aloud. */}
             <ul className="cook__ings">
-              {recipe.ingredients.map((ing, i) => (
-                <li key={i}>
-                  <IngredientLine line={ing} size="lg" kid />
-                </li>
-              ))}
+              {recipe.ingredients.map((ing, i) => {
+                const got = gathered.has(i)
+                return (
+                  <li key={i} className={'cook__ing' + (got ? ' is-got' : '')}>
+                    <button
+                      type="button"
+                      className="cook__ing-check"
+                      onClick={() => toggleGot(i)}
+                      aria-pressed={got}
+                      aria-label={got ? t.recipes.gathered : t.recipes.toGather}
+                    >
+                      <span className="cook__ing-box" aria-hidden="true">
+                        {got ? '✓' : ''}
+                      </span>
+                    </button>
+                    <span
+                      className="cook__ing-text"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t.recipes.hearLine}
+                      onClick={() => speak(spokenIngredient(ing, lang))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          speak(spokenIngredient(ing, lang))
+                        }
+                      }}
+                    >
+                      <IngredientLine line={ing} size="lg" kid />
+                    </span>
+                  </li>
+                )
+              })}
             </ul>
           </div>
         ) : (
@@ -266,7 +340,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
         <button
           type="button"
           className="cook__arrow"
-          onClick={() => setIdx((i) => Math.max(0, i - 1))}
+          onClick={goPrev}
           disabled={atFirst}
           aria-label={t.shop.prev}
         >
@@ -280,7 +354,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
           <button
             type="button"
             className="cook__arrow cook__arrow--next"
-            onClick={() => setIdx((i) => Math.min(stages.length - 1, i + 1))}
+            onClick={goNext}
             aria-label={t.shop.next}
           >
             <span className="cook__arrow-label">{t.shop.next}</span>→
