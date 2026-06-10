@@ -5,10 +5,22 @@
 // Platform-agnostic on purpose: this and the query hooks depend only on `api`
 // (the one transport chokepoint), so the data layer would port to React
 // Native/Expo by swapping `api`'s transport — no page logic changes.
-import { QueryClient } from '@tanstack/react-query'
-import { ApiError } from './api'
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
+import { ApiError, isUnauthorized } from './api'
+import { emitAuthLost } from './authEvents'
+
+// Central 401 interception: ANY query or mutation coming back unauthorized
+// broadcasts auth-lost, so a revoked device token / expired session lands the
+// whole app on the right door at once instead of each page discovering it on
+// its own poll schedule. Subscribers are idempotent — a burst of failing
+// queries collapses into one state change.
+const broadcast401 = (err: unknown) => {
+  if (isUnauthorized(err)) emitAuthLost()
+}
 
 export const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: broadcast401 }),
+  mutationCache: new MutationCache({ onError: broadcast401 }),
   defaultOptions: {
     queries: {
       // A 4xx (401 not-paired, 400 bad input) won't fix itself by retrying;

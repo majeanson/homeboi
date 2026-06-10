@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { BigTiles, type Tile } from '../components/BigTiles'
+import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
 import { useLang, useT } from '../i18n'
@@ -129,16 +130,7 @@ export function Board() {
   const memberName = (id: string | null) => data?.members.find((m) => m.id === id)?.display_name ?? null
   const memberColor = (id: string | null) => data?.members.find((m) => m.id === id)?.colour
 
-  if (unauth) {
-    return (
-      <main className="narrow">
-        <p className="lead">{t.pair.lead}</p>
-        <Link to="/pair" className="btn btn--primary">
-          {t.home.ctaPair}
-        </Link>
-      </main>
-    )
-  }
+  if (unauth) return <PairPrompt />
 
   // The picked member on this device (greeting + "your day" emphasis, both
   // lenses). Null on a shared kiosk with nobody picked.

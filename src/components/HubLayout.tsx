@@ -1,8 +1,11 @@
-import { useState } from 'react'
-import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
+import { onAuthLost } from '../lib/authEvents'
+import { clearDeviceToken, isPaired } from '../lib/device'
 import { Icon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
 import { AddSheetContext, type AddSheetMode } from '../lib/addSheet'
@@ -32,12 +35,65 @@ export function HubLayout() {
   const { audience, setAudience, locked } = useAudience()
   const { surface } = useSurface()
   const loc = useLocation()
+  const nav = useNavigate()
+  const qc = useQueryClient()
   const [addOpen, setAddOpen] = useState(false)
   const [addMode, setAddMode] = useState<AddSheetMode>('capture')
   const isSettings = loc.pathname.startsWith('/settings')
 
+  // A PAIRED device getting 401s means its token was revoked (re-paired, device
+  // removed in Réglages, DB reset) — latch a recovery screen at the shell level.
+  // Crucially this survives the kid lock: before this, a locked kiosk whose
+  // token died was stuck on per-page prompts with no tappable way out (the only
+  // fix was URL-editing ?kid=0 + clearing storage). Showing re-pair to a toddler
+  // is safe — pairing still requires an operator's approval from their phone
+  // (PRD C5 holds). NOT latched for unpaired devices: their 401 just means "not
+  // onboarded yet", which the per-page PairPrompt already handles.
+  const [pairingLost, setPairingLost] = useState(false)
+  useEffect(
+    () =>
+      onAuthLost(() => {
+        if (isPaired()) setPairingLost(true)
+      }),
+    [],
+  )
+
   // A locked toddler kiosk has no business in Réglages.
   if (locked && isSettings) return <Navigate to="/board" replace />
+
+  if (pairingLost) {
+    return (
+      <div className="page hub" data-audience={audience} data-surface={surface}>
+        <main className="narrow pair-lost">
+          <h1>{t.pair.lostTitle}</h1>
+          <p className="lead">{t.pair.lostLead}</p>
+          <div className="pair-lost__actions">
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => {
+                clearDeviceToken()
+                nav('/pair')
+              }}
+            >
+              {t.pair.repair}
+            </button>
+            {/* A server blip can 401 too — let a human re-test before unpairing. */}
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              onClick={() => {
+                setPairingLost(false)
+                void qc.refetchQueries({ type: 'active' })
+              }}
+            >
+              {t.pair.retry}
+            </button>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   const path = '/' + (loc.pathname.split('/')[1] || 'board')
   const toddler = audience === 'toddler'
