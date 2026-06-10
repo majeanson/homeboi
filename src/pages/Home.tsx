@@ -22,6 +22,11 @@ export function Home() {
             <Link to="/setup" className="btn btn--primary">
               {t.home.ctaStart}
             </Link>
+            {/* The new-family shortcut: skip the device-role fork and go straight
+                to creating the household (the role gets set on signup anyway). */}
+            <Link to="/signup" className="btn btn--ghost">
+              {t.home.ctaSignup}
+            </Link>
           </div>
         </section>
 

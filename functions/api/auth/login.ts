@@ -2,24 +2,36 @@ import type { Env } from '../../_lib/env'
 import { badRequest, readJson, serverError, unauthorized } from '../../_lib/json'
 import { issueSession, sessionCookies } from '../../_lib/auth'
 import { ensureHouseholdForEmail } from '../../_lib/household'
+import { safeEqual, verifyPassword } from '../../_lib/password'
 
-// Login: email + an optional shared password (LOGIN_PASSWORD). First login
-// creates the household. This is a household-owned deployment, not a SaaS — one
-// shared secret, no per-user password store. A full magic-link flow (Resend)
-// would be the SaaS upgrade, but needs email infra; the HMAC cookie + CSRF
-// machinery underneath is already real, so that swap stays local.
+// Login, three account shapes behind one form:
+//   1. Signup-era account (password_hash set) → verify THEIR password.
+//   2. Legacy account (no hash — created before /api/auth/signup existed) →
+//      the shared LOGIN_PASSWORD gate, exactly as before.
+//   3. Unknown email → the original first-login-creates-household path, still
+//      gated by LOGIN_PASSWORD when set. Kept so a handed-out shared code keeps
+//      working; new families are pointed at /signup by the UI.
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   const body = await readJson<{ email?: string; password?: string }>(ctx.request)
   const email = body?.email?.trim().toLowerCase()
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return badRequest('Courriel invalide.')
   }
+  const password = body?.password ?? ''
 
-  // When a password is configured, it must match. Constant-time so the shared
-  // secret can't be guessed by timing. Unset = open login (local dev / LAN).
-  const required = ctx.env.LOGIN_PASSWORD
-  if (required && !safeEqual(body?.password ?? '', required)) {
-    return unauthorized('Mot de passe invalide.')
+  const row = await ctx.env.DB.prepare('SELECT password_hash FROM operators WHERE email = ?')
+    .bind(email)
+    .first<{ password_hash: string | null }>()
+
+  if (row?.password_hash) {
+    if (!(await verifyPassword(password, row.password_hash))) return unauthorized('Mot de passe invalide.')
+  } else {
+    // Legacy/unknown: the shared secret, constant-time. Unset = open login
+    // (local dev / LAN).
+    const required = ctx.env.LOGIN_PASSWORD
+    if (required && !safeEqual(password, required)) {
+      return unauthorized('Mot de passe invalide.')
+    }
   }
 
   try {
@@ -31,15 +43,4 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   } catch {
     return serverError('Connexion impossible (SESSION_SECRET manquant ?).')
   }
-}
-
-// Length-aware constant-time string compare (the length difference can leak, but
-// the secret's bytes don't). Good enough for a single shared deployment secret.
-function safeEqual(a: string, b: string): boolean {
-  const ea = new TextEncoder().encode(a)
-  const eb = new TextEncoder().encode(b)
-  if (ea.length !== eb.length) return false
-  let diff = 0
-  for (let i = 0; i < ea.length; i++) diff |= ea[i] ^ eb[i]
-  return diff === 0
 }

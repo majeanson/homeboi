@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
@@ -68,6 +68,9 @@ export function Login() {
           </button>
           {!error && <p className="auth__hint mono">{t.login.nextStep}</p>}
         </form>
+        <p className="auth__alt mono">
+          {t.login.noAccount} <Link to="/signup">{t.login.gotoSignup}</Link>
+        </p>
       </main>
     </div>
   )

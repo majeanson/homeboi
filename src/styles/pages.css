@@ -428,6 +428,22 @@
   font-size: 0.85rem;
   margin: 0.25rem 0 0;
 }
+/* A quiet per-field note (password rules, invite-code provenance). */
+.field__hint {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+/* The cross-link under an auth card (login ⇄ signup). */
+.auth__alt {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+.auth__alt a {
+  color: inherit;
+  font-weight: 600;
+}
 .pair__code-block {
   text-align: center;
   margin-top: 1.5rem;

@@ -25,6 +25,7 @@ import { forbidden, serverError } from './_lib/json'
 
 const CSRF_EXEMPT = new Set<string>([
   'api/auth/login',
+  'api/auth/signup',
   'api/pair/start',
   'api/pair/poll',
 ])

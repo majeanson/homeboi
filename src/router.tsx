@@ -13,6 +13,7 @@ import { HubLayout } from './components/HubLayout'
 import { Board } from './pages/Board'
 
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
+const Signup = lazy(() => import('./pages/Signup').then((m) => ({ default: m.Signup })))
 const Operator = lazy(() => import('./pages/Operator').then((m) => ({ default: m.Operator })))
 const Kitchen = lazy(() => import('./pages/Kitchen').then((m) => ({ default: m.Kitchen })))
 const Routines = lazy(() => import('./pages/Routines').then((m) => ({ default: m.Routines })))
@@ -58,6 +59,7 @@ export function AppRoutes() {
         {/* Standalone surfaces (no hub chrome). */}
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
         {/* Legacy: kid view folded into Routines-in-toddler-mode. */}
         <Route path="/kid" element={<Navigate to="/routines" replace />} />
