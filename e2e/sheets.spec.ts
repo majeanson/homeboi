@@ -125,6 +125,15 @@ test('sheet-deals-store', async ({ page }) => {
   await shoot(page, 'sheet-deals-store-phone')
 })
 
+test('sheet-cook-ings', async ({ page }) => {
+  await boot(page, '/kitchen')
+  await openRecipe(page)
+  await page.locator('.recipe-actions .btn--primary').click() // Cuisiner
+  await page.locator('.cook').waitFor({ state: 'visible' })
+  await page.waitForTimeout(300)
+  await shoot(page, 'sheet-cook-ings-phone')
+})
+
 test('routine-story', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize(PHONE)
