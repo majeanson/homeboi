@@ -1,68 +1,37 @@
-import { useMemo, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Icon } from '../components/Icon'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
-import { api, isStatus, isUnauthorized } from '../lib/api'
+import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday } from '../lib/format'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
-import { normKey } from '../lib/cookable'
-import { ingredientName } from '../lib/ingredient'
 import { pictoFor } from '../lib/picto'
 import { RecipeSheet } from '../components/RecipeSheet'
 import { RecipeForm } from '../components/RecipeForm'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { RecipesTab } from '../components/kitchen/RecipesTab'
-import { type LowRow, type MealsData, type PantryData, MEALS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
+import { useAiWake } from '../components/kitchen/useAiWake'
+import { useMealPlanning } from '../components/kitchen/useMealPlanning'
+import { useRecipeShop } from '../components/kitchen/useRecipeShop'
+import { useMealSuggest } from '../components/kitchen/useMealSuggest'
+import { type LowRow, type MealsData, type PantryData, type WeekDay, MEALS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
-// browse the book — one sub-tab at a time. The pantry and recipe tabs and the
-// toddler lens live in src/components/kitchen/*; this page owns the queries
-// (one unauth gate for all), the week grid, and the meal-planning flows (the
-// AI staples step, shop-the-week, the kid-suggestion write).
+// browse the book — one sub-tab at a time. The page owns the queries (one unauth
+// gate for all), the week grid, and the layout; the FLOWS live as hooks beside
+// the tab components in src/components/kitchen/* (useMealPlanning = type/pick a
+// supper + the AI staples step, useRecipeShop = shop-the-week, useMealSuggest =
+// supper ideas, useAiWake = the shared cold-start/AI-off truth).
 export function Kitchen() {
   const t = useT()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
-  const qc = useQueryClient()
-  // A batch of supper ideas + a cursor into it: each click shows the next without
-  // re-asking, until the batch (10) is used up — then a click fetches a new one.
-  const [suggestions, setSuggestions] = useState<string[]>([])
-  const [suggestIdx, setSuggestIdx] = useState(0)
-  const [suggesting, setSuggesting] = useState(false)
-  const [aiUnavailable, setAiUnavailable] = useState(false)
-  // Workers AI cold-starts the first call of a session (model load) — it can take
-  // 10-30s. After a short wait we surface a "the model's waking up" line so that
-  // first slow call reads as warming, not frozen. Warm calls finish before it shows.
-  const [aiWaking, setAiWaking] = useState(false)
-  const wakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  function aiStart() {
-    if (wakeTimer.current) clearTimeout(wakeTimer.current)
-    wakeTimer.current = setTimeout(() => setAiWaking(true), 3500)
-  }
-  function aiDone() {
-    if (wakeTimer.current) clearTimeout(wakeTimer.current)
-    setAiWaking(false)
-  }
-  const [editDate, setEditDate] = useState<number | null>(null)
-  const [mealText, setMealText] = useState('')
-  // The meal -> grocery staple step (B3): after a title is entered, we offer the
-  // dish's staples as pre-checked chips for the shared list. null = no prompt up.
-  const [staplesBusy, setStaplesBusy] = useState(false)
-  const [staplePrompt, setStaplePrompt] = useState<{
-    date: number
-    title: string
-    options: { item: string; on: boolean }[]
-  } | null>(null)
-  // "Shop this week": gather the ingredients of recipes matching the week's
-  // planned meals (minus what's already on the list) into a confirm panel.
-  const [shopPrompt, setShopPrompt] = useState<{ item: string; on: boolean }[] | null>(null)
-  const [shopBusy, setShopBusy] = useState(false)
 
   const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), ...live })
   const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry'), ...live })
@@ -103,200 +72,33 @@ export function Kitchen() {
   const soon = useSoonQ.data?.soon ?? []
 
   // Build the 7-day grid from weekStart, slotting in any planned meal.
-  const week = Array.from({ length: 7 }, (_, i) => {
+  const week: WeekDay[] = Array.from({ length: 7 }, (_, i) => {
     const date = weekStart + i * 86400
     const meal = days.find((d) => d.date === date)
     return { date, meal }
   })
 
-  // Persist the supper, optionally pushing chosen staples onto the shared list
-  // (the meals endpoint inserts them with source 'meal' in the same write).
-  // On failure the edit/staple state stays put (the typed title isn't lost) and
-  // an error line appears — silently closing would read as "saved" when nothing was.
-  const [mealErr, setMealErr] = useState(false)
-  async function saveMeal(date: number, title: string, staples: string[]) {
-    setMealErr(false)
-    try {
-      await api('meals', { method: 'POST', body: { date, title, staples } })
-      setEditDate(null)
-      setMealText('')
-      setStaplePrompt(null)
-    } catch {
-      setMealErr(true)
-    } finally {
-      qc.invalidateQueries({ queryKey: MEALS_KEY })
-    }
-  }
-
-  // Setting a meal first asks the router for its staples (B3). If AI finds some,
-  // we show the confirm chips; if AI is off (503) or finds nothing, we just save
-  // the meal — the staple step is a bonus, never a gate (NFR-DEGRADE-1).
-  async function beginSetMeal(date: number) {
-    const title = mealText.trim()
-    if (!title) return
-    setStaplesBusy(true)
-    aiStart()
-    try {
-      const res = await api<{ staples: string[] }>('meal-staples', { method: 'POST', body: { title } })
-      if (res.staples.length) {
-        // Start unchecked: the user ticks what they're MISSING (need to buy),
-        // rather than un-ticking everything they already have.
-        setStaplePrompt({ date, title, options: res.staples.map((item) => ({ item, on: false })) })
-      } else {
-        await saveMeal(date, title, [])
-      }
-    } catch (e) {
-      if (isStatus(e, 503)) setAiUnavailable(true)
-      await saveMeal(date, title, [])
-    } finally {
-      setStaplesBusy(false)
-      aiDone()
-    }
-  }
-
-  // Plan a day's supper FROM a saved recipe: its title fills the slot and its own
-  // ingredients become the staple-confirm chips — so we skip the AI staples call
-  // entirely (we already know them). The cook still ticks what they're missing.
-  function chooseRecipeForMeal(date: number, recipe: Recipe) {
-    setRecipePickFor(null)
-    setEditDate(null)
-    if (recipe.ingredients.length) {
-      // Chips show buyable names ("Beurre non salé"), not measured recipe lines.
-      const seen = new Set<string>()
-      const options: { item: string; on: boolean }[] = []
-      for (const ing of recipe.ingredients) {
-        const item = ingredientName(ing)
-        const k = item.toLowerCase()
-        if (item && !seen.has(k)) {
-          seen.add(k)
-          options.push({ item, on: false })
-        }
-      }
-      setStaplePrompt({ date, title: recipe.title, options })
-    } else {
-      saveMeal(date, recipe.title, [])
-    }
-  }
-
-  // Toddler path: a child taps a recipe, then an empty day. This is a SUGGESTION,
-  // not a decision — the server only fills an empty slot (unique-day index) and
-  // records "suggested by" this device's child so a parent sees whose idea it was.
-  async function kidSuggest(date: number, recipe: Recipe) {
-    await api('meals', {
-      method: 'POST',
-      body: { date, title: recipe.title, suggest: true, suggestedBy: profileId },
-    }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-  }
-
-  function toggleStaple(item: string) {
-    setStaplePrompt((p) =>
-      p ? { ...p, options: p.options.map((o) => (o.item === item ? { ...o, on: !o.on } : o)) } : p,
-    )
-  }
-
-  // Shop this week: walk the planned suppers, pull each matched recipe's
-  // ingredients, drop anything already on the list (normalized), and open a
-  // confirm panel (everything pre-checked — untick what you already have).
-  function beginShopWeek() {
-    const onList = new Set(listItems.map(normKey).filter(Boolean))
-    const picked = new Set<string>()
-    const items: string[] = []
-    for (const { meal } of week) {
-      if (!meal) continue
-      const r = recipeByTitle.get(meal.title.trim().toLowerCase())
-      if (!r) continue
-      for (const ing of r.ingredients) {
-        const k = normKey(ing)
-        if (!k || onList.has(k) || picked.has(k)) continue
-        picked.add(k)
-        items.push(ingredientName(ing)) // buyable name, not the measured line
-      }
-    }
-    setShopPrompt(items.map((item) => ({ item, on: true })))
-  }
-
-  function toggleShop(item: string) {
-    setShopPrompt((p) => p?.map((o) => (o.item === item ? { ...o, on: !o.on } : o)) ?? p)
-  }
-
-  async function confirmShop() {
-    const items = (shopPrompt ?? []).filter((o) => o.on).map((o) => o.item)
-    if (!items.length) {
-      setShopPrompt(null)
-      return
-    }
-    setShopBusy(true)
-    try {
-      await api('recipe-to-list', { method: 'POST', body: { items } })
-      qc.invalidateQueries({ queryKey: ['board'] })
-      qc.invalidateQueries({ queryKey: ['list'] })
-    } catch {
-      /* a failed add isn't worth an error wall — the list just won't grow */
-    } finally {
-      setShopBusy(false)
-      setShopPrompt(null)
-    }
-  }
-
-  // How many planned suppers map to a saved recipe — the shop button only shows
-  // when there's something to gather (never a no-op).
-  const shoppableCount = week.filter(
-    (w) => w.meal && recipeByTitle.get(w.meal.title.trim().toLowerCase()),
-  ).length
-
-  const suggestion = suggestions[suggestIdx] ?? null
-
-  // Cycle the family's own recipe titles as suggestions (the AI-off fallback, and
-  // a way to resurface the book). Returns true if it had anything to show.
-  function suggestFromBook(): boolean {
-    if (!recipes.length) return false
-    setSuggestions(recipes.map((r) => r.title))
-    setSuggestIdx(0)
-    return true
-  }
-
-  async function suggest() {
-    // Still ideas left in the batch? Just advance — no new AI call.
-    if (suggestions.length && suggestIdx < suggestions.length - 1) {
-      setSuggestIdx((i) => i + 1)
-      return
-    }
-    // AI already known off → just cycle the recipe book (or re-loop the batch).
-    if (aiUnavailable) {
-      if (!suggestFromBook()) setSuggestIdx(0)
-      return
-    }
-    setSuggesting(true)
-    aiStart()
-    try {
-      // Send the batch just seen so the model returns DIFFERENT dishes.
-      const res = await api<{ suggestions: string[] }>('suggest-meal', {
-        method: 'POST',
-        body: { avoid: suggestions },
-      })
-      if (res.suggestions.length) {
-        setSuggestions(res.suggestions)
-        setSuggestIdx(0)
-      } else if (!suggestFromBook()) {
-        // Nothing new came back — re-loop the current batch so the button never
-        // dead-ends after the tenth idea.
-        setSuggestIdx(0)
-      }
-    } catch (e) {
-      // No AI binding → fall back to the household's own recipes instead of hiding.
-      if (isStatus(e, 503)) {
-        setAiUnavailable(true)
-        if (!suggestFromBook()) setSuggestIdx(0)
-      } else {
-        // Other hiccup → don't strand the user; re-loop what we have.
-        setSuggestIdx(0)
-      }
-    } finally {
-      setSuggesting(false)
-      aiDone()
-    }
-  }
+  // The flows (see components/kitchen/use*). Destructured to the same names the
+  // JSX always used, so the markup below reads unchanged.
+  const ai = useAiWake()
+  const { aiWaking, aiUnavailable } = ai
+  const {
+    editDate,
+    setEditDate,
+    mealText,
+    setMealText,
+    staplesBusy,
+    staplePrompt,
+    mealErr,
+    saveMeal,
+    beginSetMeal,
+    chooseRecipeForMeal,
+    kidSuggest,
+    toggleStaple,
+  } = useMealPlanning(ai, profileId)
+  const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, confirmShop, shoppableCount } =
+    useRecipeShop(week, recipeByTitle, listItems)
+  const { suggestion, suggesting, suggest } = useMealSuggest(recipes, ai)
 
   if (unauth) return <PairPrompt />
 
@@ -497,7 +299,12 @@ export function Kitchen() {
                                 key={r.id}
                                 type="button"
                                 className="chip"
-                                onClick={() => chooseRecipeForMeal(date, r)}
+                                onClick={() => {
+                                  // The picker menu is page chrome, not flow state —
+                                  // close it here; the hook closes the day editor.
+                                  setRecipePickFor(null)
+                                  chooseRecipeForMeal(date, r)
+                                }}
                               >
                                 {r.title}
                               </button>

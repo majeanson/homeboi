@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { BigTiles, type Tile } from '../components/BigTiles'
+import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
 import { useLang, useT } from '../i18n'
@@ -84,41 +85,8 @@ export function Board() {
     return () => clearInterval(c)
   }, [lang])
 
-  // Shared kiosk: when someone has tapped their face, drift back to Maisonnée
-  // after a few idle minutes so the wall tablet never gets "stuck" as one person.
-  // Mobile (a personal device) is left as-is. Resets on any interaction. A quiet
-  // heads-up appears 30 s before the drift, so a parent mid-glance isn't
-  // silently switched back (and tagging things to the wrong person).
-  const [idleWarn, setIdleWarn] = useState(false)
-  useEffect(() => {
-    if (surface !== 'kiosk' || !profileId) {
-      setIdleWarn(false)
-      return
-    }
-    const IDLE = 3 * 60 * 1000
-    const WARN = IDLE - 30 * 1000
-    let timer: ReturnType<typeof setTimeout>
-    let warnTimer: ReturnType<typeof setTimeout>
-    const reset = () => {
-      clearTimeout(timer)
-      clearTimeout(warnTimer)
-      setIdleWarn(false)
-      warnTimer = setTimeout(() => setIdleWarn(true), WARN)
-      timer = setTimeout(() => {
-        setIdleWarn(false)
-        setMemberId(null)
-      }, IDLE)
-    }
-    reset()
-    window.addEventListener('pointerdown', reset, { passive: true })
-    window.addEventListener('keydown', reset)
-    return () => {
-      clearTimeout(timer)
-      clearTimeout(warnTimer)
-      window.removeEventListener('pointerdown', reset)
-      window.removeEventListener('keydown', reset)
-    }
-  }, [surface, profileId, setMemberId])
+  // (The kiosk's idle drift back to Maisonnée lives in HubLayout — shell-level,
+  // so wandering to Réglages or the kitchen doesn't pin a picked face forever.)
 
   // A member deleted in Réglages can linger as this device's picked profile —
   // clear it so the greeting/"my day" accents never point at a ghost.
@@ -129,16 +97,7 @@ export function Board() {
   const memberName = (id: string | null) => data?.members.find((m) => m.id === id)?.display_name ?? null
   const memberColor = (id: string | null) => data?.members.find((m) => m.id === id)?.colour
 
-  if (unauth) {
-    return (
-      <main className="narrow">
-        <p className="lead">{t.pair.lead}</p>
-        <Link to="/pair" className="btn btn--primary">
-          {t.home.ctaPair}
-        </Link>
-      </main>
-    )
-  }
+  if (unauth) return <PairPrompt />
 
   // The picked member on this device (greeting + "your day" emphasis, both
   // lenses). Null on a shared kiosk with nobody picked.
@@ -298,11 +257,6 @@ export function Board() {
           as themselves, then tap Maisonnée (or their face again) to step back. */}
       {surface === 'kiosk' && data && data.members.length > 0 && (
         <MemberSwitcher members={data.members} t={t} />
-      )}
-      {idleWarn && me && (
-        <p className="board-idle mono" role="status">
-          ⏳ {t.board.idleSoon}
-        </p>
       )}
 
       {/* A fresh household (nobody added yet): one gentle pointer to the next

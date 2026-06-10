@@ -249,12 +249,20 @@ const ROUTES: Record<string, unknown> = {
 // signedIn defaults true (the populated household). Pass { signedIn: false } to
 // simulate a brand-new visitor — used by the `/` marketing-page screenshot, since
 // the smart entry only shows marketing when nobody's signed in.
-export async function mockApi(page: Page, opts: { signedIn?: boolean } = {}) {
+// `unauthorized: true` 401s every data route (auth/me and health stay 200) —
+// simulates a revoked device token / dead session for the recovery flows.
+// `fresh: true` empties members + board — the just-signed-up household.
+export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthorized?: boolean; fresh?: boolean } = {}) {
   const signedIn = opts.signedIn ?? true
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace(/^\/api\//, '')
     const method = route.request().method()
+
+    if (opts.unauthorized && path !== 'auth/me' && path !== 'health') {
+      await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Non autorisé' }) })
+      return
+    }
 
     if (method !== 'GET') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
@@ -264,6 +272,16 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean } = {}) {
     if (path === 'auth/me') {
       const body = signedIn ? AUTH_ME : { signedIn: false }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
+      return
+    }
+
+    if (opts.fresh && path === 'members') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ members: [] }) })
+      return
+    }
+    if (opts.fresh && path === 'board') {
+      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], chores: [] }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
       return
     }
 
@@ -303,6 +321,9 @@ export interface AppState {
   surface?: Surface
   // The parent board layout (bento | next | lanes). Defaults to bento when unset.
   boardView?: 'bento' | 'next' | 'lanes'
+  // Pretend this device holds a (possibly revoked) device token — pairs with
+  // mockApi({ unauthorized: true }) to exercise the pairing-lost recovery.
+  paired?: boolean
 }
 
 // Seed localStorage BEFORE any document script runs, so theme-bootstrap.js picks
@@ -317,6 +338,10 @@ export async function seedState(page: Page, s: AppState) {
       if (state.calm !== undefined) localStorage.setItem('babillard-calm', state.calm ? 'on' : 'off')
       if (state.surface) localStorage.setItem('babillard-surface', state.surface)
       if (state.boardView) localStorage.setItem('babillard-boardview', state.boardView)
+      if (state.paired) {
+        localStorage.setItem('babillard-device-token', 'e2e-device-token')
+        localStorage.setItem('babillard-device-household', 'h1')
+      }
     } catch {
       /* noop */
     }

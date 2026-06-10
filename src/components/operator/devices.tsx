@@ -10,9 +10,12 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
   const [label, setLabel] = useState('')
   const [ok, setOk] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (busy) return
+    setBusy(true)
     setErr(null)
     setOk(false)
     try {
@@ -23,6 +26,8 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
       onClaimed()
     } catch (e) {
       setErr((e as Error).message)
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -48,7 +53,7 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
           placeholder={t.pair.label}
           aria-label={t.pair.label}
         />
-        <button type="submit" className="btn btn--primary" disabled={code.length !== 6}>
+        <button type="submit" className="btn btn--primary" disabled={code.length !== 6 || busy}>
           {t.pair.claimSubmit}
         </button>
       </form>

@@ -280,6 +280,10 @@ export const FR = {
     label: 'Nom de la tablette',
     firstTime: 'Première fois ? Crée d’abord ta maisonnée sur ton téléphone — ou directement ici :',
     firstTimeCta: 'Créer ma maisonnée',
+    lostTitle: 'Cet écran n’est plus jumelé',
+    lostLead: 'Le jumelage a été retiré (ou réinitialisé). Re-jumelle l’écran — l’approbation se fait depuis le téléphone d’un parent.',
+    repair: 'Re-jumeler cet écran',
+    retry: 'Réessayer',
   },
   operator: {
     title: 'Réglages',
@@ -692,6 +696,10 @@ export const EN: typeof FR = {
     label: 'Tablet name',
     firstTime: 'First time? Create your household on your phone first — or right here:',
     firstTimeCta: 'Create my household',
+    lostTitle: 'This screen is no longer paired',
+    lostLead: 'The pairing was removed (or reset). Pair the screen again — approval happens from a parent’s phone.',
+    repair: 'Re-pair this screen',
+    retry: 'Try again',
   },
   operator: {
     title: 'Settings',

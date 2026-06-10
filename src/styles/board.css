@@ -17,12 +17,30 @@
   color: inherit;
   font-weight: 600;
 }
-/* Kiosk idle heads-up: 30 s before the picked face drifts back to Maisonnée. */
+/* Kiosk idle heads-up: 30 s before the picked face drifts back to Maisonnée.
+   Lives in the HubLayout shell (any tab), so it floats as a quiet pill. */
 .board-idle {
   text-align: center;
   color: var(--ink-soft);
   font-size: 0.85rem;
   margin: 0 0 1rem;
+}
+.board-idle--shell {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 14px;
+  margin: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 16px;
+  box-shadow: var(--shadow-md);
+  z-index: 40;
+}
+/* Mobile: the bottom tab bar owns that edge — sit above it. */
+.hub[data-surface='mobile'] .board-idle--shell {
+  bottom: 92px;
 }
 .board-grid {
   display: grid;

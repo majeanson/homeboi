@@ -14,17 +14,26 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   const undoableRemove = useUndoableRemove()
   const [name, setName] = useState('')
   const [isChild, setIsChild] = useState(false)
+  const [busy, setBusy] = useState(false)
   // Default each new person to the next unused palette colour, so a household
   // fills out colour-distinct without anyone having to think about it.
   const [color, setColor] = useState(PALETTE[members.length % PALETTE.length])
 
   async function add(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) return
-    await api('members', { method: 'POST', body: { name: name.trim(), isChild, color } }).catch(() => {})
-    setName('')
-    setIsChild(false)
-    setColor(PALETTE[(members.length + 1) % PALETTE.length])
+    if (!name.trim() || busy) return
+    setBusy(true)
+    try {
+      await api('members', { method: 'POST', body: { name: name.trim(), isChild, color } })
+      setName('')
+      setIsChild(false)
+      setColor(PALETTE[(members.length + 1) % PALETTE.length])
+    } catch {
+      // Keep the typed name — a double-Enter or flaky wifi shouldn't eat it
+      // (and must not create the member twice).
+    } finally {
+      setBusy(false)
+    }
     onChange()
   }
   function remove(m: Member) {
@@ -124,7 +133,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
           {t.operator.isChild}
         </label>
         <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
-        <button type="submit" className="btn" disabled={!name.trim()}>
+        <button type="submit" className="btn" disabled={!name.trim() || busy}>
           {t.operator.addMember}
         </button>
       </form>

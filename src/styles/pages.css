@@ -487,6 +487,25 @@
 .field__hint--ok {
   color: var(--sage, #6b8a52);
 }
+/* The shared 401 prompt: primary door for this surface, the other underneath. */
+.pairprompt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+/* Shell-level "pairing lost" recovery (HubLayout) — survives the kid lock. */
+.pair-lost {
+  padding-top: 3rem;
+  text-align: center;
+}
+.pair-lost__actions {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
 /* The cross-link under an auth card (login ⇄ signup). */
 .auth__alt {
   color: var(--ink-soft);

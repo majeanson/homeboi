@@ -20,7 +20,12 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
     const item = newLow.trim()
     if (!item) return
     setNewLow('')
-    await api('pantry', { method: 'POST', body: { item } }).catch(() => {})
+    try {
+      await api('pantry', { method: 'POST', body: { item } })
+    } catch {
+      // A failed write must not eat what was typed — put it back to retry.
+      setNewLow(item)
+    }
     qc.invalidateQueries({ queryKey: PANTRY_KEY })
   }
 
@@ -43,7 +48,11 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
     const item = newSoon.trim()
     if (!item) return
     setNewSoon('')
-    await api('use-soon', { method: 'POST', body: { item } }).catch(() => {})
+    try {
+      await api('use-soon', { method: 'POST', body: { item } })
+    } catch {
+      setNewSoon(item)
+    }
     qc.invalidateQueries({ queryKey: USE_SOON_KEY })
   }
 

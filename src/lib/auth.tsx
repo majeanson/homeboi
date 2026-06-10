@@ -3,6 +3,7 @@
 // operator surfaces. No external state lib (boring-tech).
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { api } from './api'
+import { onAuthLost } from './authEvents'
 
 interface Household {
   id: string
@@ -55,6 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refresh()
+    // A 401 anywhere means the cached signedIn may be stale (cookie expired,
+    // session revoked) — re-ask the server so guards (Operator → /login) react
+    // without waiting for the user to navigate.
+    return onAuthLost(() => {
+      void refresh()
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
