@@ -16,10 +16,24 @@ export function GhostStrip({ ghosts, onAdd }: { ghosts: Ghost[]; onAdd: (g: Ghos
 
   const shown = expanded ? ghosts : ghosts.slice(0, VISIBLE)
   const hidden = ghosts.length - shown.length
+  // The restock shortcut: everything overdue, one tap. Still opt-in (the user
+  // taps), still quiet (only shows when 2+ are due — one item IS the chip).
+  const due = ghosts.filter((g) => g.status === 'due')
 
   return (
     <section className="ghost-strip" aria-label={t.ghost.title}>
-      <div className="ghost-strip__head mono">👻 {t.ghost.title}</div>
+      <div className="ghost-strip__head mono">
+        👻 {t.ghost.title}
+        {due.length >= 2 && (
+          <button
+            type="button"
+            className="ghost-strip__all mono"
+            onClick={() => due.forEach(onAdd)}
+          >
+            ✨ {t.ghost.addAllDue(due.length)}
+          </button>
+        )}
+      </div>
       <div className="ghost-strip__chips">
         {shown.map((g) => (
           <button

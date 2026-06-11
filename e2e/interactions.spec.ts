@@ -258,6 +258,15 @@ test.describe('settings forms', () => {
     await expectApi(page, 'PATCH', 'ghost', () => form.locator('button[type="submit"]').click())
   })
 
+  test('a frequent buy is offered for tracking — one deliberate tap tracks it', async ({ page }) => {
+    await page.getByRole('tab').nth(5).click() // Ghost
+    // Tracking is conscious: candidates sit apart from the tracked rows, and
+    // nothing enters the set until this tap.
+    const chip = page.locator('.ghost-admin__candidate-chips .chip').first()
+    await expect(chip).toBeVisible()
+    await expectApi(page, 'PATCH', 'ghost', () => chip.click())
+  })
+
   test('claim a tablet with a 6-digit code', async ({ page }) => {
     await page.getByRole('tab').nth(6).click() // Devices
     const form = page.locator('.operator__claim form')

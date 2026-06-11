@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { learnedCadence, rankGhosts, type PurchaseRow, type OverrideRow } from './ghost'
+import { learnedCadence, rankGhosts, trackCandidates, type PurchaseRow, type OverrideRow } from './ghost'
 import type { StapleDef } from './ghostStaples'
 
 const DAY = 86400
@@ -88,6 +88,20 @@ describe('rankGhosts', () => {
     expect(g).toHaveLength(0)
   })
 
+  it('does NOT auto-enroll a non-staple even when bought on a rhythm — tracking is a conscious step', () => {
+    // A one-time-deal item bought a few times (e.g. the same flyer special)
+    // must never start haunting the strip on its own.
+    const log = [buy('chips', daysAgo(21)), buy('chips', daysAgo(14)), buy('chips', daysAgo(8))]
+    expect(rank({ log, staples: [] })).toHaveLength(0)
+  })
+
+  it('a consciously tracked item (override row) IS predicted, using its learned cadence', () => {
+    const overrides: OverrideRow[] = [{ item_key: 'chips', label: 'Chips', cadence_days: null, muted: false }]
+    const log = [buy('chips', daysAgo(21)), buy('chips', daysAgo(14)), buy('chips', daysAgo(8))]
+    const g = rank({ log, overrides, staples: [] })
+    expect(g[0]).toMatchObject({ key: 'chips', status: 'due', cadenceDays: 7 })
+  })
+
   it('ranks the most-bought due items first', () => {
     const staples: StapleDef[] = [EGGS, { key: 'bread', cadenceDays: 5, label: 'Bread' }]
     const log = [
@@ -96,5 +110,40 @@ describe('rankGhosts', () => {
     ]
     const g = rank({ log, staples })
     expect(g.map((x) => x.key)).toEqual(['eggs', 'bread'])
+  })
+})
+
+describe('trackCandidates', () => {
+  it('offers a frequent untracked buy with its learned cadence', () => {
+    const log = [
+      buy('chips', daysAgo(21), 'Chips BBQ'),
+      buy('chips', daysAgo(14), 'Chips BBQ'),
+      buy('chips', daysAgo(7), 'Chips BBQ'),
+    ]
+    const c = trackCandidates(log, [], [])
+    expect(c).toHaveLength(1)
+    expect(c[0]).toMatchObject({ key: 'chips', label: 'Chips BBQ', count: 3, cadenceDays: 7 })
+  })
+
+  it('never offers a one-time deal (below the frequency bar)', () => {
+    expect(trackCandidates([buy('gadget', daysAgo(5))], [], [])).toHaveLength(0)
+    expect(trackCandidates([buy('gadget', daysAgo(12)), buy('gadget', daysAgo(5))], [], [])).toHaveLength(0)
+  })
+
+  it('skips items already tracked (staple or override)', () => {
+    const log = [buy('eggs', daysAgo(21)), buy('eggs', daysAgo(14)), buy('eggs', daysAgo(7))]
+    expect(trackCandidates(log, [], [EGGS])).toHaveLength(0)
+    const ov: OverrideRow[] = [{ item_key: 'eggs', label: 'Eggs', cadence_days: 7, muted: false }]
+    expect(trackCandidates(log, ov, [])).toHaveLength(0)
+  })
+
+  it('orders by frequency and caps the list', () => {
+    const log: PurchaseRow[] = []
+    for (let i = 0; i < 8; i++) {
+      for (let n = 0; n < 3 + (i % 2); n++) log.push(buy(`item${i}`, daysAgo(7 * n + i)))
+    }
+    const c = trackCandidates(log, [], [])
+    expect(c.length).toBeLessThanOrEqual(6)
+    for (let i = 1; i < c.length; i++) expect(c[i - 1].count).toBeGreaterThanOrEqual(c[i].count)
   })
 })

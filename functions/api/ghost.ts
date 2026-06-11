@@ -4,7 +4,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { normalizeItem } from '../_lib/normalize'
 import { resolveLang } from '../_lib/ai'
-import { rankGhosts, learnedCadence, type PurchaseRow, type OverrideRow } from '../_lib/ghost'
+import { rankGhosts, learnedCadence, trackCandidates, type PurchaseRow, type OverrideRow } from '../_lib/ghost'
 import { staples } from '../_lib/ghostStaples'
 
 // Ghost list — predictive grocery suggestions (see _lib/ghost for the logic and
@@ -54,8 +54,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const stapleList = staples(lang)
 
   if (new URL(ctx.request.url).searchParams.get('view') === 'manage') {
-    // Everything the operator can tune: each staple, each learned key, each
-    // override — with the effective cadence and where it came from.
+    // What the operator can tune: each staple and each row they added — and
+    // ONLY those. Buying something never lands it here (tracking is a conscious
+    // step); the purchase history just informs cadence/count for tracked keys,
+    // and feeds the opt-in `candidates` block below.
     const agg = new Map<string, { count: number; lastAt: number; lastText: string; ts: number[] }>()
     for (const r of log) {
       const a = agg.get(r.item_key)
@@ -68,19 +70,18 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
     const stapleByKey = new Map(stapleList.map((s) => [s.key, s]))
     const ovByKey = new Map(overrides.map((o) => [o.item_key, o]))
-    const keys = new Set<string>([...stapleByKey.keys(), ...agg.keys(), ...ovByKey.keys()])
+    const keys = new Set<string>([...stapleByKey.keys(), ...ovByKey.keys()])
 
     const items = [...keys].map((key) => {
       const ov = ovByKey.get(key)
       const staple = stapleByKey.get(key)
       const a = agg.get(key)
       const cadenceDays = ov?.cadence_days ?? learnedCadence(a?.ts ?? []) ?? staple?.cadenceDays ?? null
-      const source = staple ? 'staple' : ov?.source === 'manual' ? 'manual' : 'learned'
       return {
         key,
         label: ov?.label ?? staple?.label ?? a?.lastText ?? key,
         cadenceDays,
-        source,
+        source: staple ? 'staple' : 'manual',
         muted: !!ov?.muted,
         count: a?.count ?? 0,
         lastAt: a?.lastAt ?? null,
@@ -92,7 +93,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
       y.count - x.count ||
       x.label.localeCompare(y.label),
     )
-    return ok({ items })
+    // Frequent untracked buys, offered for a one-tap deliberate opt-in.
+    const candidates = trackCandidates(log, overrides.map(toOverride), stapleList)
+    return ok({ items, candidates })
   }
 
   const openKeys = new Set(open.map((r) => normalizeItem(r.text)).filter(Boolean))
