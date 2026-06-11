@@ -55,6 +55,9 @@ export const FR = {
     types: { event: 'Rendez-vous', task: 'Corvée', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', note: 'Note' },
     degraded: 'IA hors ligne : choisis le type.',
   },
+  list: {
+    addPlaceholder: 'Ajouter à la liste… (ex. lait)',
+  },
   board: {
     today: 'Aujourd’hui',
     tonight: 'Ce soir',
@@ -477,6 +480,9 @@ export const EN: typeof FR = {
     pickType: 'What was that?',
     types: { event: 'Event', task: 'Chore', 'list-item': 'List', 'pantry-low': 'Low', meal: 'Supper', note: 'Note' },
     degraded: 'AI offline: pick the type.',
+  },
+  list: {
+    addPlaceholder: 'Add to the list… (e.g. milk)',
   },
   board: {
     today: 'Today',

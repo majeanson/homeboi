@@ -589,6 +589,22 @@
   color: #fff;
   opacity: 1;
 }
+/* Add-a-line bar at the top of the grocery list — type or speak it. */
+.list-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0 0 1rem;
+  flex-wrap: wrap;
+}
+.list-add .input {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+.list-add__voice.is-listening {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
 .list-actions {
   display: flex;
   gap: 10px;

@@ -527,6 +527,29 @@ test.describe('list', () => {
     )
   })
 
+  test('the add bar posts a new line straight to the list', async ({ page }) => {
+    await page.locator('.list-add .input').fill('Bananes')
+    await expectApi(page, 'POST', 'list', () =>
+      page.locator('.list-add button[type="submit"]').click(),
+    )
+  })
+
+  test('checking an item off then adding another does not resurrect the checked one', async ({ page }) => {
+    const rows = page.locator('.list-row')
+    await expect(rows).toHaveCount(4)
+    const firstText = (await rows.first().locator('.title').innerText()).trim()
+    // Tick it off — hidden at once (its delete is deferred behind the undo toast).
+    await rows.first().locator('.list-row__main').click()
+    await expect(rows).toHaveCount(3)
+    // Add another line — this refetches the board (which, server-side, still has
+    // the just-ticked item until the deferred write commits). The pendingChecked
+    // filter must keep it gone — the bug was both lines coming back.
+    await page.locator('.list-add .input').fill('Bananes')
+    await page.locator('.list-add button[type="submit"]').click()
+    await expect(rows).toHaveCount(3)
+    await expect(page.locator('.list-row .title', { hasText: firstText })).toHaveCount(0)
+  })
+
   test('the flyer browser opens', async ({ page }) => {
     await page.locator('.list-actions').first().locator('button').click()
     await expect(page.locator('.pm-overlay .deals-search')).toBeVisible()
