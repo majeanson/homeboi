@@ -174,10 +174,16 @@ const GHOSTS = {
 }
 
 const GHOST_MANAGE = {
+  // Tracking is conscious: only staples + operator-added rows appear as items;
+  // frequent untracked buys are offered separately as opt-in candidates.
   items: [
     { key: 'lait', label: 'Lait', cadenceDays: 5, source: 'staple', muted: false, count: 12, lastAt: BASE - 6 * DAY },
-    { key: 'oeufs', label: 'Œufs', cadenceDays: 7, source: 'learned', muted: false, count: 8, lastAt: BASE - 5 * DAY },
+    { key: 'oeufs', label: 'Œufs', cadenceDays: 7, source: 'staple', muted: false, count: 8, lastAt: BASE - 5 * DAY },
     { key: 'café', label: 'Café', cadenceDays: 14, source: 'manual', muted: true, count: 3, lastAt: null },
+  ],
+  candidates: [
+    { key: 'yogourt', label: 'Yogourt grec', count: 4, cadenceDays: 9 },
+    { key: 'bananes', label: 'Bananes', count: 3, cadenceDays: 6 },
   ],
 }
 

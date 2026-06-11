@@ -1,0 +1,11 @@
+-- Ghost tracking became a CONSCIOUS step (2026-06): only code staples and rows
+-- the operator deliberately added are predicted or listed — buying something no
+-- longer enrolls it. Most of the old auto-learned clutter (one-time flyer deals)
+-- never had a ghost_items row at all, so it vanishes with the read-path change.
+--
+-- This cleans the one residue the old model could leave: muted MANUAL rows.
+-- Muting was the only way to hide an auto-learned item back then, so these rows
+-- are almost certainly "please stop showing this one-time deal" — pointless now
+-- (and noise in the manage view). Muted OVERRIDE rows (silenced staples, e.g. a
+-- gluten-free home muting bread) are kept: that mute still does its job.
+DELETE FROM ghost_items WHERE source = 'manual' AND muted = 1;

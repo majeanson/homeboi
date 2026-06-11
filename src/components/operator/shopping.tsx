@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
-import { fetchGhostManage, patchGhost, deleteGhost, type GhostManageItem } from '../../lib/ghost'
+import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
 // price-match proof on the list knows where to search. Set once, used every trip.
@@ -58,21 +58,32 @@ export function ShopSection() {
 }
 
 // Ghost list management — the manual handle on the predictive grocery layer.
-// Lists every staple, learned item, and added one with its effective renewal
-// cadence; the operator retunes the days, hides one, or adds a custom staple.
-// This is the "10% specific, handled manually" half of the feature.
+// Lists the staples and the items the operator chose to track (tracking is a
+// CONSCIOUS step — buying something never enrolls it); the operator retunes the
+// days, hides one, or adds a custom staple. Frequent untracked buys appear as
+// one-tap "track it?" suggestions — the deliberate opt-in.
 export function GhostSection() {
   const t = useT()
   const [items, setItems] = useState<GhostManageItem[]>([])
+  const [candidates, setCandidates] = useState<GhostCandidate[]>([])
   const [label, setLabel] = useState('')
   const [days, setDays] = useState('7')
 
   const load = useCallback(async () => {
-    setItems(await fetchGhostManage().catch(() => []))
+    const r = await fetchGhostManage().catch(() => ({ items: [], candidates: [] }))
+    setItems(r.items)
+    setCandidates(r.candidates)
   }, [])
   useEffect(() => {
     load()
   }, [load])
+
+  // The conscious step: one tap turns a frequent buy into a tracked item, with
+  // its learned cadence as the starting point.
+  async function track(c: GhostCandidate) {
+    await patchGhost({ key: c.key, label: c.label, cadenceDays: c.cadenceDays }).catch(() => {})
+    load()
+  }
 
   async function save(item: GhostManageItem, patch: { cadenceDays?: number; muted?: boolean }) {
     await patchGhost({
@@ -110,6 +121,24 @@ export function GhostSection() {
             <GhostRow key={it.key} item={it} onSave={save} onRemove={remove} />
           ))}
         </ul>
+      )}
+      {candidates.length > 0 && (
+        <div className="ghost-admin__candidates">
+          <p className="mono">{t.ghost.candidatesTitle}</p>
+          <div className="ghost-admin__candidate-chips">
+            {candidates.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                className="chip"
+                onClick={() => track(c)}
+                title={`${c.label} · ${c.count}× · ${t.ghost.every} ${c.cadenceDays} ${t.ghost.days}`}
+              >
+                ＋ {c.label} <span className="ghost-admin__candidate-n">{c.count}×</span>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
       <form className="operator__inline-form" onSubmit={add}>
         <input
@@ -154,12 +183,7 @@ function GhostRow({
 }) {
   const t = useT()
   const [days, setDays] = useState(String(item.cadenceDays ?? ''))
-  const sourceLabel =
-    item.source === 'staple'
-      ? t.ghost.sourceStaple
-      : item.source === 'manual'
-        ? t.ghost.sourceManual
-        : t.ghost.sourceLearned
+  const sourceLabel = item.source === 'staple' ? t.ghost.sourceStaple : t.ghost.sourceManual
 
   function commit() {
     const n = Math.max(1, Math.min(365, Math.round(Number(days) || item.cadenceDays || 7)))

@@ -5,9 +5,14 @@
 //
 // Calm by design (NFR-CALM): we only ever surface things that are actually near
 // their renewal point, capped to a handful — never the whole catalogue, never a
-// score. The split the user asked for falls out naturally: high-frequency
-// staples (eggs/bread/milk) have a cadence from day one and recur; rare one-off
-// items only appear once they've earned a learned cadence, else they're manual.
+// score.
+//
+// TRACKING IS A CONSCIOUS STEP: only the code-defined staples and the items the
+// operator explicitly added are ever predicted. Buying something — even buying
+// it twice — never auto-enrolls it (a one-time flyer deal must not haunt the
+// settings forever). The purchase history's job is narrower: it refines the
+// CADENCE of items already tracked, and feeds `trackCandidates` so the operator
+// can opt a frequent buy in with one deliberate tap.
 import type { StapleDef } from './ghostStaples'
 
 export interface PurchaseRow {
@@ -88,9 +93,10 @@ export function rankGhosts({ log, overrides, staples, openKeys, now, limit = DEF
   const overrideByKey = new Map(overrides.map((o) => [o.item_key, o]))
   const stapleByKey = new Map(staples.map((s) => [s.key, s]))
 
-  // Candidate keys: every staple, everything ever bought, and every manual
-  // override (an operator-added custom staple).
-  const keys = new Set<string>([...stapleByKey.keys(), ...agg.keys(), ...overrideByKey.keys()])
+  // Candidate keys: the staples and the operator's own rows ONLY. Purchase
+  // history is deliberately NOT a candidate source — being bought doesn't
+  // enroll an item; it only tunes the cadence of items already tracked.
+  const keys = new Set<string>([...stapleByKey.keys(), ...overrideByKey.keys()])
 
   const out: Ghost[] = []
   for (const key of keys) {
@@ -127,5 +133,52 @@ export function rankGhosts({ log, overrides, staples, openKeys, now, limit = DEF
     return x.label.localeCompare(y.label)
   })
 
+  return out.slice(0, limit)
+}
+
+export interface TrackCandidate {
+  key: string
+  label: string
+  count: number
+  cadenceDays: number
+}
+
+// The conscious-step bridge: untracked items the household ACTUALLY buys on a
+// rhythm (≥ minCount buys AND a learnable cadence), offered in Settings as a
+// one-tap "track it?". Opt-in only — nothing enters the ghost set without this
+// tap (or the manual add form). A one-time deal (count 1) never qualifies.
+const CANDIDATE_MIN_COUNT = 3
+const CANDIDATE_LIMIT = 6
+
+export function trackCandidates(
+  log: PurchaseRow[],
+  overrides: OverrideRow[],
+  staples: StapleDef[],
+  { minCount = CANDIDATE_MIN_COUNT, limit = CANDIDATE_LIMIT }: { minCount?: number; limit?: number } = {},
+): TrackCandidate[] {
+  const tracked = new Set<string>([...staples.map((s) => s.key), ...overrides.map((o) => o.item_key)])
+  const agg = new Map<string, { count: number; lastAt: number; lastText: string; timestamps: number[] }>()
+  for (const row of log) {
+    if (tracked.has(row.item_key)) continue
+    const a = agg.get(row.item_key)
+    if (!a) {
+      agg.set(row.item_key, { count: 1, lastAt: row.purchased_at, lastText: row.text, timestamps: [row.purchased_at] })
+    } else {
+      a.count++
+      a.timestamps.push(row.purchased_at)
+      if (row.purchased_at >= a.lastAt) {
+        a.lastAt = row.purchased_at
+        a.lastText = row.text
+      }
+    }
+  }
+  const out: TrackCandidate[] = []
+  for (const [key, a] of agg) {
+    if (a.count < minCount) continue
+    const cadence = learnedCadence(a.timestamps)
+    if (cadence == null) continue
+    out.push({ key, label: a.lastText, count: a.count, cadenceDays: cadence })
+  }
+  out.sort((x, y) => y.count - x.count || x.label.localeCompare(y.label))
   return out.slice(0, limit)
 }

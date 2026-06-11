@@ -12,6 +12,23 @@
   text-transform: uppercase;
   color: var(--ink-faint);
   margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+/* One-tap restock of everything overdue — quiet, inline with the heading. */
+.ghost-strip__all {
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 4px 12px;
+  min-height: 32px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: normal;
 }
 .ghost-strip__chips {
   display: flex;
@@ -113,4 +130,27 @@
   text-align: center;
   /* Extra right padding so the number-spinner arrows don't overlap the digit. */
   padding: 0.2rem 0.4rem 0.2rem 0.5rem;
+}
+
+/* "Bought often — track them?" — the conscious opt-in chips under the admin
+   list. Same quiet chip language as the strip; the count whispers why it's
+   being offered (frequency, not a score — NFR-CALM-1). */
+.ghost-admin__candidates {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--line);
+}
+.ghost-admin__candidates > p {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin: 0 0 0.5rem;
+}
+.ghost-admin__candidate-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.ghost-admin__candidate-n {
+  color: var(--ink-faint);
+  font-size: 0.72rem;
 }
