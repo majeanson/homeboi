@@ -13,6 +13,7 @@ import { SurfaceContext, type Surface } from './lib/surface'
 import { ProfileContext } from './lib/profile'
 import { CalmContext } from './lib/calm'
 import { ToastProvider } from './lib/toast'
+import { registerSw } from './lib/registerSw'
 import './styles.css'
 
 function Root() {
@@ -175,6 +176,9 @@ console.log(
   'font-weight:bold',
   'color:#9aa',
 )
+
+// Offline app shell for the installed PWA (wall tablet / iPad). No-op in dev.
+registerSw()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

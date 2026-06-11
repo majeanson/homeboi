@@ -6,6 +6,16 @@
     <meta name="theme-color" content="#FBF3E4" />
     <meta name="description" content="Babillard — un planificateur familial calme pour une tablette murale." />
     <title>Babillard</title>
+    <!-- PWA: installable on the wall tablet / iPad (Partager ▸ Sur l'écran
+         d'accueil) — standalone chrome, fridge-magnet icon, offline app shell
+         via /sw.js (registered in src/lib/registerSw.ts, prod builds only). -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Babillard" />
     <!-- Pip design system type: Baloo 2 (chunky, friendly, rounded headlines),
          Hanken Grotesk (humanist body), Caveat (handwritten accents — toddler
          delight). display=swap so a kiosk that loses wifi falls back to the
