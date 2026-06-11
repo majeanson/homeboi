@@ -22,6 +22,7 @@ import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { useMealSuggest } from '../components/kitchen/useMealSuggest'
 import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type PantryData, type WeekDay, MEALS_KEY, MEAL_IDEAS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
+import { RecipePickerMenu } from '../components/kitchen/RecipePickerMenu'
 import { SIDE_SLOTS, SLOT_ICON } from '../lib/mealSlots'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
@@ -41,7 +42,7 @@ export function Kitchen() {
   // edited, plus its text.
   const [editSlot, setEditSlot] = useState<{ date: number; slot: string } | null>(null)
   const [slotText, setSlotText] = useState('')
-  async function saveSlot(date: number, slot: string, title: string) {
+  async function saveSlot(date: number, slot: string, title: string, recipeId?: string | null) {
     const v = title.trim()
     if (!v) {
       setEditSlot(null)
@@ -49,7 +50,7 @@ export function Kitchen() {
       return
     }
     try {
-      await api('meals', { method: 'POST', body: { date, slot, title: v } })
+      await api('meals', { method: 'POST', body: { date, slot, title: v, recipeId } })
       // Only close the editor once the write lands — a failed plan keeps the
       // typed title so it can be retried (same as the grocery add bar).
       setEditSlot(null)
@@ -80,7 +81,10 @@ export function Kitchen() {
   // ('new' = a blank form). recipePickFor = the day a recipe is being chosen for.
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null)
   const [editRecipe, setEditRecipe] = useState<Recipe | 'new' | null>(null)
-  const [recipePickFor, setRecipePickFor] = useState<number | null>(null)
+  // Which slot's recipe picker is open ({date, slot}) — any slot can pick a
+  // recipe now, not just the souper.
+  const [recipePickFor, setRecipePickFor] = useState<{ date: number; slot: string } | null>(null)
+  const pickOpenFor = (date: number, slot: string) => recipePickFor?.date === date && recipePickFor.slot === slot
   // Quick-add is the default (tap a recipe → it's set, no staples). This toggle
   // opts a pick INTO the grocery flow ("ajouter les ingrédients aussi") for the
   // times you do want the staples chips — kept off so dropping a recipe is one tap.
@@ -131,7 +135,7 @@ export function Kitchen() {
   // The flows (see components/kitchen/use*). Destructured to the same names the
   // JSX always used, so the markup below reads unchanged.
   const ai = useAiWake()
-  const { aiWaking, aiUnavailable } = ai
+  const { aiWaking } = ai
   const {
     editDate,
     setEditDate,
@@ -142,14 +146,40 @@ export function Kitchen() {
     mealErr,
     saveMeal,
     beginSetMeal,
-    quickPickRecipe,
     chooseRecipeForMeal,
     kidSuggest,
     toggleStaple,
   } = useMealPlanning(ai, profileId)
   const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, confirmShop, shoppableCount } =
-    useRecipeShop(week, recipeByTitle, listItems)
-  const { suggestion, suggesting, suggest } = useMealSuggest(recipes, ai)
+    useRecipeShop(week, recipeForMeal, listItems)
+  const suggest = useMealSuggest(recipes, ai, lowItems, listItems)
+
+  // Plan a recipe onto ANY slot (the shared picker's onPick). Souper keeps its
+  // optional "+ ingredients" staples step; every other slot is a clean quick-add
+  // (links the recipe, saves now). Closes whichever editor was open.
+  async function planRecipe(date: number, slot: string, r: Recipe) {
+    setRecipePickFor(null)
+    setEditDate(null)
+    setEditSlot(null)
+    setMealText('')
+    setSlotText('')
+    if (slot === 'supper' && pickWithStaples) {
+      chooseRecipeForMeal(date, r)
+      return
+    }
+    await api('meals', { method: 'POST', body: { date, slot, title: r.title, recipeId: r.id } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
+  }
+
+  // Keep a suggestion (AI text, or a real recipe link) into the ideas pool.
+  async function keepSuggestion() {
+    if (!suggest.current) return
+    await api('meal-ideas', {
+      method: 'POST',
+      body: { title: suggest.current.title, recipeId: suggest.current.recipe?.id ?? null, suggestedBy: profileId },
+    }).catch(() => {})
+    qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
+  }
 
   if (unauth) return <PairPrompt />
 
@@ -159,7 +189,7 @@ export function Kitchen() {
         <KidKitchen
           week={week}
           recipes={recipes}
-          recipeByTitle={recipeByTitle}
+          recipeFor={recipeForMeal}
           onSuggest={kidSuggest}
           onStartRecipe={setKidCook}
         />
@@ -212,9 +242,20 @@ export function Kitchen() {
                   🛒 {t.kitchen.shopWeek}
                 </button>
               )}
-              {(!aiUnavailable || recipes.length > 0) && (
-                <button type="button" className="btn" onClick={suggest} disabled={suggesting}>
-                  {suggesting ? t.kitchen.suggestThinking : suggestion ? t.kitchen.suggestAnother : t.kitchen.suggest}
+              {/* Two separate idea sources — fresh from the AI, or from your own
+                  recipes ranked by what's in stock. Never blended. */}
+              <button
+                type="button"
+                className="btn"
+                onClick={suggest.suggestAi}
+                disabled={suggest.aiBusy || suggest.aiOff}
+                title={suggest.aiOff ? t.kitchen.suggestAiOff : undefined}
+              >
+                {suggest.aiBusy ? t.kitchen.suggestThinking : t.kitchen.suggestAi}
+              </button>
+              {suggest.hasRecipes && (
+                <button type="button" className="btn" onClick={suggest.suggestFromRecipes}>
+                  {t.kitchen.suggestFromRecipes}
                 </button>
               )}
             </div>
@@ -229,22 +270,29 @@ export function Kitchen() {
               {t.common.saveFailed}
             </p>
           )}
-          {suggestion && (
-            <p className="kitchen__suggestion" role="status">
-              🍽 {suggestion}
-              <button
-                type="button"
-                className="btn btn--ghost mono kitchen__suggestion-keep"
-                onClick={async () => {
-                  await api('meal-ideas', { method: 'POST', body: { title: suggestion, suggestedBy: profileId } }).catch(
-                    () => {},
-                  )
-                  qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
-                }}
-              >
-                ＋ {t.kitchen.keepIdea}
-              </button>
-            </p>
+          {suggest.current && (
+            <div className="kitchen__suggestion" role="status">
+              <span className="kitchen__suggestion-text">
+                🍽 {suggest.current.title}
+                {suggest.current.source === 'book' && (suggest.current.missing ?? 0) > 0 && (
+                  <span className="mono kitchen__suggestion-sub"> · {t.recipes.missingN(suggest.current.missing!)}</span>
+                )}
+              </span>
+              <span className="kitchen__suggestion-actions">
+                {suggest.current.recipe && (
+                  <button
+                    type="button"
+                    className="btn btn--ghost mono"
+                    onClick={() => setViewRecipe(suggest.current!.recipe!)}
+                  >
+                    {t.kitchen.suggestOpen}
+                  </button>
+                )}
+                <button type="button" className="btn btn--ghost mono" onClick={keepSuggestion}>
+                  ＋ {t.kitchen.suggestKeep}
+                </button>
+              </span>
+            </div>
           )}
           {shopPrompt && (
             <div className="kitchen__staples kitchen__shop">
@@ -364,14 +412,14 @@ export function Kitchen() {
                         <button
                           type="button"
                           className="btn btn--ghost mono kitchen__pick-recipe"
-                          onClick={() => setRecipePickFor(recipePickFor === date ? null : date)}
-                          aria-expanded={recipePickFor === date}
+                          onClick={() => setRecipePickFor(pickOpenFor(date, 'supper') ? null : { date, slot: 'supper' })}
+                          aria-expanded={pickOpenFor(date, 'supper')}
                         >
                           📖 {t.kitchen.chooseRecipe}
                         </button>
-                        {recipePickFor === date && (
-                          <div className="kitchen__recipe-menu">
-                            {/* Tap a recipe → quick-add (links it, saves now, no
+                        {pickOpenFor(date, 'supper') && (
+                          <>
+                            {/* Pick a recipe → quick-add (links it, saves now, no
                                 staples). Flip this on first to also confirm its
                                 ingredients for the grocery list. */}
                             <button
@@ -382,23 +430,13 @@ export function Kitchen() {
                             >
                               {pickWithStaples ? '☑' : '☐'} 🛒 {t.kitchen.alsoStaples}
                             </button>
-                            {recipes.map((r) => (
-                              <button
-                                key={r.id}
-                                type="button"
-                                className="chip"
-                                onClick={() => {
-                                  // The picker menu is page chrome, not flow state —
-                                  // close it here; the hook closes the day editor.
-                                  setRecipePickFor(null)
-                                  if (pickWithStaples) chooseRecipeForMeal(date, r)
-                                  else quickPickRecipe(date, r)
-                                }}
-                              >
-                                {r.title}
-                              </button>
-                            ))}
-                          </div>
+                            <RecipePickerMenu
+                              recipes={recipes}
+                              lowItems={lowItems}
+                              listItems={listItems}
+                              onPick={(r) => planRecipe(date, 'supper', r)}
+                            />
+                          </>
                         )}
                       </div>
                     )}
@@ -437,47 +475,83 @@ export function Kitchen() {
                 )}
 
                 {/* The lighter slots beside the souper — déjeuner / dîner /
-                    collation. Each shows its planned title or just the picture +
-                    label; tapping opens a simple inline title editor (no staples). */}
+                    collation. Each shows its planned title (or picture + label);
+                    tapping opens an inline editor with the SAME recipe picker as
+                    the souper, so any meal can link a recipe — just without the
+                    souper's grocery-staples step. */}
                 <div className="kitchen__slots">
                   {SIDE_SLOTS.map((slot) => {
                     const sm = slotMeal(date, slot)
                     const editing = editSlot?.date === date && editSlot.slot === slot
+                    const linked = sm ? recipeForMeal(sm) : undefined
                     return editing ? (
-                      <form
-                        key={slot}
-                        className="kitchen__slot-edit"
-                        onSubmit={(e) => {
-                          e.preventDefault()
-                          saveSlot(date, slot, slotText)
-                        }}
-                      >
-                        <input
-                          className="input"
-                          autoFocus
-                          value={slotText}
-                          onChange={(e) => setSlotText(e.target.value)}
-                          placeholder={t.kitchen.slots[slot]}
-                          aria-label={t.kitchen.slots[slot]}
-                        />
-                        <button type="submit" className="btn btn--ghost mono">
-                          {t.kitchen.setMeal}
-                        </button>
-                      </form>
+                      <div key={slot} className="kitchen__slot-edit-wrap">
+                        <form
+                          className="kitchen__slot-edit"
+                          onSubmit={(e) => {
+                            e.preventDefault()
+                            saveSlot(date, slot, slotText)
+                          }}
+                        >
+                          <input
+                            className="input"
+                            autoFocus
+                            value={slotText}
+                            onChange={(e) => setSlotText(e.target.value)}
+                            placeholder={t.kitchen.slots[slot]}
+                            aria-label={t.kitchen.slots[slot]}
+                          />
+                          <button type="submit" className="btn btn--ghost mono">
+                            {t.kitchen.setMeal}
+                          </button>
+                        </form>
+                        {recipes.length > 0 && (
+                          <div className="kitchen__day-recipes">
+                            <button
+                              type="button"
+                              className="btn btn--ghost mono kitchen__pick-recipe"
+                              onClick={() => setRecipePickFor(pickOpenFor(date, slot) ? null : { date, slot })}
+                              aria-expanded={pickOpenFor(date, slot)}
+                            >
+                              📖 {t.kitchen.chooseRecipe}
+                            </button>
+                            {pickOpenFor(date, slot) && (
+                              <RecipePickerMenu
+                                recipes={recipes}
+                                lowItems={lowItems}
+                                listItems={listItems}
+                                onPick={(r) => planRecipe(date, slot, r)}
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
                     ) : (
-                      <button
-                        key={slot}
-                        type="button"
-                        className={'kitchen__slot' + (sm ? ' is-set' : '')}
-                        onClick={() => {
-                          setEditSlot({ date, slot })
-                          setSlotText(sm?.title ?? '')
-                        }}
-                        title={t.kitchen.slots[slot]}
-                      >
-                        <span aria-hidden="true">{SLOT_ICON[slot]}</span>
-                        <span className="kitchen__slot-label">{sm?.title ?? t.kitchen.slots[slot]}</span>
-                      </button>
+                      <span key={slot} className="kitchen__slot-wrap">
+                        <button
+                          type="button"
+                          className={'kitchen__slot' + (sm ? ' is-set' : '')}
+                          onClick={() => {
+                            setEditSlot({ date, slot })
+                            setSlotText(sm?.title ?? '')
+                          }}
+                          title={t.kitchen.slots[slot]}
+                        >
+                          <span aria-hidden="true">{SLOT_ICON[slot]}</span>
+                          <span className="kitchen__slot-label">{sm?.title ?? t.kitchen.slots[slot]}</span>
+                        </button>
+                        {linked && (
+                          <button
+                            type="button"
+                            className="kitchen__slot-recipe-link"
+                            onClick={() => setViewRecipe(linked)}
+                            aria-label={t.recipes.title}
+                            title={t.recipes.title}
+                          >
+                            📖
+                          </button>
+                        )}
+                      </span>
                     )
                   })}
                 </div>
@@ -489,6 +563,8 @@ export function Kitchen() {
             ideas={ideasQ.data?.ideas ?? []}
             recipes={recipes}
             week={week.map((w) => ({ date: w.date, label: formatWeekday(w.date, lang) }))}
+            lowItems={lowItems}
+            listItems={listItems}
             profileId={profileId}
           />
         </section>

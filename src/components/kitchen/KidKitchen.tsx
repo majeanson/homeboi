@@ -4,7 +4,7 @@ import { formatWeekday } from '../../lib/format'
 import { pictoFor } from '../../lib/picto'
 import { type Recipe, recipeImg } from '../../lib/recipes'
 import { BigTiles, Sayable, type Tile } from '../BigTiles'
-import { type WeekDay } from './types'
+import { type MealRow, type WeekDay } from './types'
 
 // Toddler lens on the kitchen: just "what's for supper" this week, big and
 // read-aloud, plus the picture-first meal picker. Each supper draws its own food
@@ -14,13 +14,13 @@ import { type WeekDay } from './types'
 export function KidKitchen({
   week,
   recipes,
-  recipeByTitle,
+  recipeFor,
   onSuggest,
   onStartRecipe,
 }: {
   week: WeekDay[]
   recipes: Recipe[]
-  recipeByTitle: Map<string, Recipe>
+  recipeFor: (meal: MealRow) => Recipe | undefined
   onSuggest: (date: number, recipe: Recipe) => void
   onStartRecipe: (recipe: Recipe) => void
 }) {
@@ -36,7 +36,7 @@ export function KidKitchen({
   const planned: Tile[] = week
     .filter((d) => d.meal)
     .map((d) => {
-      const recipe = recipeByTitle.get(d.meal!.title.trim().toLowerCase())
+      const recipe = recipeFor(d.meal!)
       return {
         key: String(d.date),
         icon: pictoFor(d.meal!.title, '🍽'),
