@@ -8,7 +8,7 @@ import { mockApi, seedState } from './mocks'
 const PHONE = { width: 390, height: 844 }
 const SECTIONS = [
   'household', 'agenda', 'chores', 'routines', 'shopping',
-  'ghost', 'devices', 'photos', 'recap', 'display', 'calm',
+  'recipes', 'ghost', 'devices', 'photos', 'recap', 'display', 'calm',
 ]
 
 async function boot(page: Page) {

@@ -247,6 +247,14 @@ const ROUTES: Record<string, unknown> = {
     flyers: [
       { flyerId: 5001, merchant: 'Super C', logo: null, validFrom: null, validTo: null },
       { flyerId: 5002, merchant: 'IGA', logo: null, validFrom: null, validTo: null },
+  'recipe-tags': {
+    presets: [],
+    used: [
+      { tag: 'rapide', count: 2 },
+      { tag: 'préféré', count: 1 },
+      { tag: 'Collation', count: 1 },
+    ],
+  },
     ],
   },
   flyer: {

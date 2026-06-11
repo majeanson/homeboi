@@ -135,7 +135,7 @@ test.describe('settings tabs', () => {
     await settle(page, '.operator__tabs')
     const tabs = page.getByRole('tab')
     const n = await tabs.count()
-    expect(n).toBe(11)
+    expect(n).toBe(12)
     for (let i = 0; i < n; i++) {
       await tabs.nth(i).click()
       await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true')
@@ -150,7 +150,8 @@ test.describe('toggles', () => {
   async function openDisplay(page: Page) {
     await APP('/settings')(page)
     await settle(page, '.operator__tabs')
-    await page.getByRole('tab').nth(9).click() // Display
+    // By name, not index — adding a settings tab must not shift these tests.
+    await page.getByRole('tab', { name: 'Affichage' }).click()
   }
 
   test('theme toggle flips the persisted theme', async ({ page }) => {
@@ -182,7 +183,7 @@ test.describe('toggles', () => {
   test('calm toggle flips and persists the opt-out', async ({ page }) => {
     await APP('/settings')(page)
     await settle(page, '.operator__tabs')
-    await page.getByRole('tab').nth(10).click() // Calm
+    await page.getByRole('tab', { name: 'Mode calme' }).click()
     const btn = page.locator('.operator__panel button[aria-pressed]')
     await expect(btn).toHaveAttribute('aria-pressed', 'true')
     await btn.click()
@@ -222,7 +223,7 @@ test.describe('settings forms', () => {
   })
 
   test('add an event', async ({ page }) => {
-    await page.getByRole('tab').nth(1).click() // Agenda
+    await page.getByRole('tab', { name: 'Rendez-vous' }).click()
     const form = page.locator('.operator__panel form.operator__inline-form')
     await form.locator('input.input').first().fill('Réunion parents')
     await form.locator('input[type="date"]').fill('2026-07-01')
@@ -230,14 +231,14 @@ test.describe('settings forms', () => {
   })
 
   test('add a chore', async ({ page }) => {
-    await page.getByRole('tab').nth(2).click() // Chores
+    await page.getByRole('tab', { name: 'Corvées' }).click()
     const form = page.locator('.operator__chore-form')
     await form.locator('input.input').first().fill('Balayer la cuisine')
     await expectApi(page, 'POST', 'chores', () => form.locator('button[type="submit"]').click())
   })
 
   test('add a kid routine', async ({ page }) => {
-    await page.getByRole('tab').nth(3).click() // Routines
+    await page.getByRole('tab', { name: 'Routines (mode enfant)' }).click()
     const form = page.locator('.operator__routine-form')
     await form.locator('.picker-chips').first().locator('.chip').first().click() // pick a child
     await form.locator('input.input').first().fill('Routine du soir')
@@ -245,21 +246,21 @@ test.describe('settings forms', () => {
   })
 
   test('save the shopping postal code', async ({ page }) => {
-    await page.getByRole('tab').nth(4).click() // Shopping
+    await page.getByRole('tab', { name: 'Magasinage' }).click()
     const form = page.locator('.operator__panel form.operator__inline-form')
     await form.locator('input.input').first().fill('H2X 1Y4')
     await expectApi(page, 'PATCH', 'household', () => form.locator('button[type="submit"]').click())
   })
 
   test('add a ghost-list staple', async ({ page }) => {
-    await page.getByRole('tab').nth(5).click() // Ghost
+    await page.getByRole('tab', { name: 'Liste fantôme' }).click()
     const form = page.locator('.operator__panel form.operator__inline-form')
     await form.locator('input.input').first().fill('Savon à vaisselle')
     await expectApi(page, 'PATCH', 'ghost', () => form.locator('button[type="submit"]').click())
   })
 
   test('a frequent buy is offered for tracking — one deliberate tap tracks it', async ({ page }) => {
-    await page.getByRole('tab').nth(5).click() // Ghost
+    await page.getByRole('tab', { name: 'Liste fantôme' }).click()
     // Tracking is conscious: candidates sit apart from the tracked rows, and
     // nothing enters the set until this tap.
     const chip = page.locator('.ghost-admin__candidate-chips .chip').first()
@@ -268,14 +269,14 @@ test.describe('settings forms', () => {
   })
 
   test('claim a tablet with a 6-digit code', async ({ page }) => {
-    await page.getByRole('tab').nth(6).click() // Devices
+    await page.getByRole('tab', { name: 'Tablettes jumelées' }).click()
     const form = page.locator('.operator__claim form')
     await form.locator('input.input').first().fill('123456')
     await expectApi(page, 'POST', 'pair/claim', () => form.locator('button[type="submit"]').click())
   })
 
   test('generate the weekly recap', async ({ page }) => {
-    await page.getByRole('tab').nth(8).click() // Recap
+    await page.getByRole('tab', { name: 'Bilan de la semaine' }).click()
     await expectApi(page, 'GET', 'recap', () => page.locator('.operator__panel button').click())
     await expect(page.locator('.operator__panel')).toContainText('Belle semaine')
   })
@@ -651,7 +652,7 @@ test.describe('recurring chores on the board', () => {
   test('a chore can be given a weekly schedule in settings (PATCH recur)', async ({ page }) => {
     await APP('/settings#chores')(page)
     await settle(page, '.operator__tabs')
-    await page.getByRole('tab').nth(2).click() // Chores
+    await page.getByRole('tab', { name: 'Corvées' }).click()
     // Open the schedule editor on the first chore, pick weekly → PATCH recur.
     await page.locator('.operator__chore-row').first().getByRole('button', { name: /céduler|schedule/i }).click()
     await expectApi(page, 'PATCH', 'chores', () =>
