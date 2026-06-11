@@ -73,6 +73,24 @@ describe('scaleLine', () => {
     expect(scaleLine('2 cups flour', 0)).toBe('2 cups flour')
     expect(scaleLine('2 cups flour', NaN)).toBe('2 cups flour')
   })
+
+  // The headline fix: scale the spoon/cup too, not just the leading ml/g.
+  it('scales a parenthetical alternate measure alongside the leading one', () => {
+    expect(scaleLine('15 ml (1 c. à soupe) de beurre', 2)).toBe('30 ml (2 c. à soupe) de beurre')
+    expect(scaleLine('250 ml (1 tasse) de lait', 2)).toBe('500 ml (2 tasse) de lait')
+  })
+  it('scales a standalone c. à soupe / c. à thé / tasse line', () => {
+    expect(scaleLine('1 c. à soupe d’huile', 3)).toBe('3 c. à soupe d’huile')
+    expect(scaleLine('1 c. à thé de sel', 2)).toBe('2 c. à thé de sel')
+    expect(scaleLine('1 tasse de farine', 2)).toBe('2 tasse de farine')
+  })
+  it('keeps a measurable fraction (1 ½ c. à soupe), not a times-form', () => {
+    expect(scaleLine('1 c. à soupe de miel', 1.5)).toBe('1 ½ c. à soupe de miel')
+  })
+  it('falls back to a "times" form when the scaled scoop is not measurable', () => {
+    // ⅓ tasse × 2.5 = 0.833 — no tidy fraction to scoop → "2 ½× ⅓ tasse".
+    expect(scaleLine('⅓ tasse de sucre', 2.5)).toBe('2 ½× ⅓ tasse de sucre')
+  })
 })
 
 describe('scaleIngredients', () => {
