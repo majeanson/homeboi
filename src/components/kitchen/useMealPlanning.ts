@@ -70,14 +70,6 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
     }
   }
 
-  // Quick-add a recipe onto a day: the DEFAULT recipe→slot path. Links the recipe
-  // and saves immediately — NO staples chips, no AI. Groceries stay a separate,
-  // deliberate choice (the recipe sheet's "add to list", or "add ingredients too"
-  // below), so dropping a recipe on a day is one tap.
-  function quickPickRecipe(date: number, recipe: Recipe) {
-    saveMeal(date, recipe.title, [], recipe.id)
-  }
-
   // Plan a day's supper FROM a saved recipe AND confirm its staples for the list:
   // its own ingredients become the chips (no AI call — we already know them). The
   // recipe link rides along so the saved meal still opens the recipe.
@@ -128,7 +120,6 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
     mealErr,
     saveMeal,
     beginSetMeal,
-    quickPickRecipe,
     chooseRecipeForMeal,
     kidSuggest,
     toggleStaple,

@@ -332,7 +332,9 @@ export function RecipeForm({
             autoComplete="off"
           />
 
-          {/* Fast-fill helpers */}
+          {/* Fast-fill helpers — distinct from the dish photo above: these READ a
+              recipe (scan a card / import a link) into the fields. */}
+          <span className="recipe-fill-label mono">{t.recipes.fillFrom}</span>
           <div className="recipe-helpers">
             <label className={'btn btn--ghost mono' + (reading ? ' is-busy' : '')}>
               {reading ? t.recipes.reading : t.recipes.readPhoto}

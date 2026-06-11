@@ -137,10 +137,27 @@
   margin: 0.5rem 0 1rem;
 }
 .kitchen__suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   font-size: 1.15rem;
   padding: 0.75rem 1rem;
   border-left: 3px solid var(--accent);
   background: var(--surface);
+}
+.kitchen__suggestion-text {
+  min-width: 0;
+}
+.kitchen__suggestion-sub {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+.kitchen__suggestion-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
 }
 .kitchen__week {
   list-style: none;
@@ -240,6 +257,34 @@
   flex-basis: 100%;
   display: flex;
   gap: 0.5rem;
+}
+/* A side slot in edit mode now stacks its title row + the recipe picker. */
+.kitchen__slot-edit-wrap {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+/* A set side slot + its little "open the linked recipe" button, kept together. */
+.kitchen__slot-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: 100%;
+}
+.kitchen__slot-recipe-link {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.05rem;
+  line-height: 1;
+  border-radius: var(--radius-pill);
 }
 .kitchen__day-edit {
   flex: 1;

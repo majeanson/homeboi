@@ -4,12 +4,18 @@ import { api } from '../../lib/api'
 import { normKey } from '../../lib/cookable'
 import { ingredientName } from '../../lib/ingredient'
 import { type Recipe } from '../../lib/recipes'
-import { type WeekDay } from './types'
+import { type MealRow, type WeekDay } from './types'
 
 // "Shop this week", extracted from the Kitchen page: walk the planned suppers,
 // pull each matched recipe's ingredients, drop anything already on the list
 // (normalized), and confirm the rest onto the shared grocery list in one write.
-export function useRecipeShop(week: WeekDay[], recipeByTitle: Map<string, Recipe>, listItems: string[]) {
+// `recipeFor` resolves a planned meal to its recipe by the exact recipe_id link
+// first (title only as a fallback), so renamed/duplicate recipes still shop.
+export function useRecipeShop(
+  week: WeekDay[],
+  recipeFor: (meal: MealRow) => Recipe | undefined,
+  listItems: string[],
+) {
   const qc = useQueryClient()
   const [shopPrompt, setShopPrompt] = useState<{ item: string; on: boolean }[] | null>(null)
   const [shopBusy, setShopBusy] = useState(false)
@@ -21,7 +27,7 @@ export function useRecipeShop(week: WeekDay[], recipeByTitle: Map<string, Recipe
     const items: string[] = []
     for (const { meal } of week) {
       if (!meal) continue
-      const r = recipeByTitle.get(meal.title.trim().toLowerCase())
+      const r = recipeFor(meal)
       if (!r) continue
       for (const ing of r.ingredients) {
         const k = normKey(ing)
@@ -58,9 +64,7 @@ export function useRecipeShop(week: WeekDay[], recipeByTitle: Map<string, Recipe
 
   // How many planned suppers map to a saved recipe — the shop button only shows
   // when there's something to gather (never a no-op).
-  const shoppableCount = week.filter(
-    (w) => w.meal && recipeByTitle.get(w.meal.title.trim().toLowerCase()),
-  ).length
+  const shoppableCount = week.filter((w) => w.meal && recipeFor(w.meal)).length
 
   return { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, confirmShop, shoppableCount }
 }

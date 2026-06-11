@@ -5,9 +5,11 @@ import { api } from '../lib/api'
 import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
 import { scaleIngredients } from '../lib/scale'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
+import { type MealSlot } from '../lib/mealSlots'
 import { ZoomableImg } from './ZoomableImg'
 import { CookMode } from './CookMode'
 import { IngredientLine } from './IngredientLine'
+import { SlotPicker } from './kitchen/SlotPicker'
 
 // Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method,
 // then a row of gentle actions —
@@ -31,6 +33,7 @@ export function RecipeSheet({
   const qc = useQueryClient()
   const [added, setAdded] = useState(false)
   const [planning, setPlanning] = useState(false)
+  const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
   const [plannedDate, setPlannedDate] = useState<number | null>(null)
   const [cooking, setCooking] = useState(false)
   const canCook = recipe.steps.length > 0 || recipe.ingredients.length > 0
@@ -80,10 +83,11 @@ export function RecipeSheet({
     setPlannedDate(date)
     setPlanning(false)
     // Optimistic badge above; roll it back on failure so the sheet never claims
-    // a supper the server doesn't have.
-    await api('meals', { method: 'POST', body: { date, title: recipe.title, staples: [], recipeId: recipe.id } }).catch(() =>
-      setPlannedDate(null),
-    )
+    // a meal the server doesn't have. Lands on the chosen slot (souper default).
+    await api('meals', {
+      method: 'POST',
+      body: { date, slot: planSlot, title: recipe.title, staples: [], recipeId: recipe.id },
+    }).catch(() => setPlannedDate(null))
     qc.invalidateQueries({ queryKey: ['meals'] })
     qc.invalidateQueries({ queryKey: ['board'] })
   }
@@ -272,6 +276,8 @@ export function RecipeSheet({
             in the scrolled recipe body). */}
         {planning && (
           <div className="recipe-plan-days">
+            <span className="recipe-plan-days__label mono">{t.recipes.planSlot}</span>
+            <SlotPicker value={planSlot} onChange={setPlanSlot} />
             <span className="recipe-plan-days__label mono">{t.recipes.planPick}</span>
             <div className="recipe-plan-days__chips">
               {week.map((d) => (

@@ -3,22 +3,29 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { type Recipe } from '../../lib/recipes'
+import { type MealSlot } from '../../lib/mealSlots'
 import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
+import { RecipePickerMenu } from './RecipePickerMenu'
+import { SlotPicker } from './SlotPicker'
 
 // The "general ideas" pool under the week grid: a reusable shortlist of meal
 // ideas — free text ("tacos") or a saved-recipe shortcut. Add by typing or
-// picking from the book; tap an idea to drop it onto a day's supper. Planning an
-// idea leaves it in the pool (reusable). Generalizes the toddler "suggest a meal"
-// path so anyone can stash an idea and place it later. Calm, low-chrome.
+// picking from the book; tap an idea to drop it onto a chosen day + meal. Planning
+// an idea leaves it in the pool (reusable). Generalizes the toddler "suggest a
+// meal" path so anyone can stash an idea and place it later. Calm, low-chrome.
 export function MealIdeas({
   ideas,
   recipes,
   week,
+  lowItems,
+  listItems,
   profileId,
 }: {
   ideas: MealIdea[]
   recipes: Recipe[]
   week: { date: number; label: string }[]
+  lowItems: string[]
+  listItems: string[]
   profileId: string | null
 }) {
   const t = useT()
@@ -26,6 +33,8 @@ export function MealIdeas({
   const [text, setText] = useState('')
   const [pickRecipe, setPickRecipe] = useState(false)
   const [planFor, setPlanFor] = useState<string | null>(null)
+  // Which meal a "plan it" lands on — souper by default, like everywhere else.
+  const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
   const [busy, setBusy] = useState(false)
 
   async function addIdea(title: string, recipeId?: string | null) {
@@ -49,13 +58,13 @@ export function MealIdeas({
     qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
   }
 
-  // Place an idea onto a day's supper — same shape as a recipe quick-add, so a
+  // Place an idea onto a day + meal — same shape as a recipe quick-add, so a
   // recipe-linked idea keeps its link and a free-text idea stays plain text.
-  async function planIdea(idea: MealIdea, date: number) {
+  async function planIdea(idea: MealIdea, date: number, slot: MealSlot) {
     setPlanFor(null)
     await api('meals', {
       method: 'POST',
-      body: { date, title: idea.title, recipeId: idea.recipe_id ?? null, staples: [] },
+      body: { date, slot, title: idea.title, recipeId: idea.recipe_id ?? null, staples: [] },
     }).catch(() => {})
     qc.invalidateQueries({ queryKey: MEALS_KEY })
     qc.invalidateQueries({ queryKey: ['board'] })
@@ -100,13 +109,12 @@ export function MealIdeas({
       </form>
 
       {pickRecipe && (
-        <div className="kitchen__recipe-menu">
-          {recipes.map((r) => (
-            <button key={r.id} type="button" className="chip" onClick={() => addIdea(r.title, r.id)}>
-              {r.title}
-            </button>
-          ))}
-        </div>
+        <RecipePickerMenu
+          recipes={recipes}
+          lowItems={lowItems}
+          listItems={listItems}
+          onPick={(r) => addIdea(r.title, r.id)}
+        />
       )}
 
       {ideas.length === 0 ? (
@@ -137,10 +145,17 @@ export function MealIdeas({
               </div>
               {planFor === idea.id && (
                 <div className="kitchen__idea-days">
+                  <span className="mono kitchen__idea-days-label">{t.recipes.planSlot}</span>
+                  <SlotPicker value={planSlot} onChange={setPlanSlot} />
                   <span className="mono kitchen__idea-days-label">{t.kitchen.planIt}</span>
                   <div className="kitchen__recipe-menu">
                     {week.map((d) => (
-                      <button key={d.date} type="button" className="chip" onClick={() => planIdea(idea, d.date)}>
+                      <button
+                        key={d.date}
+                        type="button"
+                        className="chip"
+                        onClick={() => planIdea(idea, d.date, planSlot)}
+                      >
                         {d.label}
                       </button>
                     ))}
