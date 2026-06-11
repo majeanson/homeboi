@@ -231,6 +231,8 @@ export function CashierMode({
           flyerId={d.flyerId}
           highlightId={d.id}
           title={d.merchant}
+          logo={d.logo}
+          premium={d.premium}
           onClose={() => setFlyerOpen(false)}
         />
       )}

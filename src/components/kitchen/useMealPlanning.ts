@@ -12,6 +12,7 @@ import { type AiWake } from './useAiWake'
 export interface StaplePrompt {
   date: number
   title: string
+  recipeId?: string | null // carried through so the saved meal keeps its recipe link
   options: { item: string; on: boolean }[]
 }
 
@@ -29,10 +30,10 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
   // (the meals endpoint inserts them with source 'meal' in the same write).
   // On failure the edit/staple state stays put (the typed title isn't lost) and
   // an error line appears — silently closing would read as "saved" when nothing was.
-  async function saveMeal(date: number, title: string, staples: string[]) {
+  async function saveMeal(date: number, title: string, staples: string[], recipeId?: string | null) {
     setMealErr(false)
     try {
-      await api('meals', { method: 'POST', body: { date, title, staples } })
+      await api('meals', { method: 'POST', body: { date, title, staples, recipeId } })
       setEditDate(null)
       setMealText('')
       setStaplePrompt(null)
@@ -69,9 +70,17 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
     }
   }
 
-  // Plan a day's supper FROM a saved recipe: its title fills the slot and its own
-  // ingredients become the staple-confirm chips — so we skip the AI staples call
-  // entirely (we already know them). The cook still ticks what they're missing.
+  // Quick-add a recipe onto a day: the DEFAULT recipe→slot path. Links the recipe
+  // and saves immediately — NO staples chips, no AI. Groceries stay a separate,
+  // deliberate choice (the recipe sheet's "add to list", or "add ingredients too"
+  // below), so dropping a recipe on a day is one tap.
+  function quickPickRecipe(date: number, recipe: Recipe) {
+    saveMeal(date, recipe.title, [], recipe.id)
+  }
+
+  // Plan a day's supper FROM a saved recipe AND confirm its staples for the list:
+  // its own ingredients become the chips (no AI call — we already know them). The
+  // recipe link rides along so the saved meal still opens the recipe.
   function chooseRecipeForMeal(date: number, recipe: Recipe) {
     setEditDate(null)
     if (recipe.ingredients.length) {
@@ -86,9 +95,9 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
           options.push({ item, on: false })
         }
       }
-      setStaplePrompt({ date, title: recipe.title, options })
+      setStaplePrompt({ date, title: recipe.title, recipeId: recipe.id, options })
     } else {
-      saveMeal(date, recipe.title, [])
+      saveMeal(date, recipe.title, [], recipe.id)
     }
   }
 
@@ -119,6 +128,7 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
     mealErr,
     saveMeal,
     beginSetMeal,
+    quickPickRecipe,
     chooseRecipeForMeal,
     kidSuggest,
     toggleStaple,

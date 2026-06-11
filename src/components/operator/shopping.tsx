@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useT } from '../../i18n'
-import { api } from '../../lib/api'
+import { api, isStatus } from '../../lib/api'
+import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
@@ -53,6 +54,106 @@ export function ShopSection() {
       </form>
       {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
       {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
+    </section>
+  )
+}
+
+// Store filter — sits right under the postal locator. Lists the grocery stores
+// the flyer/deal lookups found near the household and lets the operator keep only
+// the ones they shop (an allowlist). A store left out is dropped server-side
+// (/api/deals and /api/flyers), so it never reaches the deal cards, the store
+// picker, or the price-match proof. With nothing narrowed, every store is kept.
+type ManageStore = { key: string; merchant: string; logo: string | null; included: boolean }
+
+export function StoreFilterSection() {
+  const t = useT()
+  const [stores, setStores] = useState<ManageStore[] | null>(null)
+  const [state, setState] = useState<'loading' | 'ok' | 'empty' | 'noPostal' | 'error'>('loading')
+  const [pending, setPending] = useState<Set<string>>(new Set())
+
+  const load = useCallback(async () => {
+    setState('loading')
+    try {
+      // The manage feed supplies names + logos (and the current included flag); the
+      // household supplies the stored keys, so a store the operator kept that's no
+      // longer in this week's feed still shows here and can be toggled.
+      const [hh, fl] = await Promise.all([
+        api<{ includedStores: string[] }>('household'),
+        api<{ flyers: FlyerSummary[] }>('flyers?manage=1'),
+      ])
+      const included = new Set(hh.includedStores ?? [])
+      const noFilter = included.size === 0 // unconfigured = every store kept
+      const byKey = new Map<string, ManageStore>()
+      for (const f of fl.flyers) {
+        const key = f.merchant.trim().toLowerCase()
+        byKey.set(key, { key, merchant: f.merchant, logo: f.logo, included: f.included ?? (noFilter || included.has(key)) })
+      }
+      for (const key of included) {
+        if (!byKey.has(key)) byKey.set(key, { key, merchant: key, logo: null, included: true })
+      }
+      const list = [...byKey.values()].sort((a, b) => a.merchant.localeCompare(b.merchant))
+      setStores(list)
+      setState(list.length ? 'ok' : 'empty')
+    } catch (e) {
+      setState(isStatus(e, 400) ? 'noPostal' : 'error')
+    }
+  }, [])
+  useEffect(() => {
+    load()
+  }, [load])
+
+  async function toggle(s: ManageStore) {
+    if (!stores) return
+    const prev = stores
+    const next = stores.map((x) => (x.key === s.key ? { ...x, included: !x.included } : x))
+    setStores(next) // optimistic
+    setPending((p) => new Set(p).add(s.key))
+    try {
+      await api('household', { method: 'PATCH', body: { includedStores: next.filter((x) => x.included).map((x) => x.key) } })
+    } catch {
+      setStores(prev) // revert on failure
+    } finally {
+      setPending((p) => {
+        const n = new Set(p)
+        n.delete(s.key)
+        return n
+      })
+    }
+  }
+
+  return (
+    <section className="surface operator__section">
+      <h2>{t.operator.storeFilter}</h2>
+      <p className="lead">{t.operator.storeFilterHint}</p>
+      {state === 'loading' && <p className="board__empty mono">{t.shop.searching}</p>}
+      {state === 'noPostal' && <p className="board__empty mono">{t.operator.storeFilterNoPostal}</p>}
+      {state === 'error' && <p className="board__empty mono">{t.operator.storeFilterError}</p>}
+      {state === 'empty' && <p className="board__empty mono">{t.operator.storeFilterEmpty}</p>}
+      {state === 'ok' && stores && (
+        <ul className="operator__list store-filter">
+          {stores.map((s) => (
+            <li key={s.key} className={'store-filter__row' + (s.included ? '' : ' is-off')}>
+              {s.logo ? (
+                <img className="store-filter__logo" src={s.logo} alt="" loading="lazy" />
+              ) : (
+                <span className="store-filter__logo store-filter__logo--none" aria-hidden="true">
+                  🏬
+                </span>
+              )}
+              <span className="store-filter__name">{s.merchant}</span>
+              <button
+                type="button"
+                className={'btn mono store-filter__toggle' + (s.included ? ' btn--primary' : ' btn--ghost')}
+                onClick={() => toggle(s)}
+                disabled={pending.has(s.key)}
+                aria-pressed={s.included}
+              >
+                {s.included ? t.operator.storeIncluded : t.operator.storeExcluded}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   )
 }

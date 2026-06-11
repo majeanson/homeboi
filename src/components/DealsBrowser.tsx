@@ -29,7 +29,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const [mode, setMode] = useState<'item' | 'store'>('item')
   const [input, setInput] = useState('')
   const [query, setQuery] = useState('')
-  const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string } | null>(null)
+  const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string; logo?: string | null; premium?: boolean } | null>(null)
   const [store, setStore] = useState<string | null>(null)
   const [added, setAdded] = useState<Set<string>>(new Set())
   const [staged, setStaged] = useState<Set<string>>(new Set())
@@ -206,7 +206,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
                 isBest={d === bestKey}
                 added={added.has(d.name)}
                 staged={staged.has(d.name)}
-                onViewFlyer={(deal) => setFlyer({ id: deal.flyerId!, itemId: deal.id, merchant: deal.merchant })}
+                onViewFlyer={(deal) => setFlyer({ id: deal.flyerId!, itemId: deal.id, merchant: deal.merchant, logo: deal.logo, premium: deal.premium })}
                 onAddToList={addToList}
                 onStage={stage}
               />
@@ -241,7 +241,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
                     key={f.flyerId}
                     type="button"
                     className="flyer-store"
-                    onClick={() => setFlyer({ id: f.flyerId, itemId: null, merchant: f.merchant })}
+                    onClick={() => setFlyer({ id: f.flyerId, itemId: null, merchant: f.merchant, logo: f.logo, premium: f.premium })}
                   >
                     {f.logo ? (
                       <img className="flyer-store__logo" src={f.logo} alt="" loading="lazy" />
@@ -255,8 +255,6 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
             )}
           </>
         )}
-
-        <p className="deal__disclaimer mono">{t.shop.disclaimer}</p>
       </div>
 
       {flyer && (
@@ -264,6 +262,8 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
           flyerId={flyer.id}
           highlightId={flyer.itemId}
           title={flyer.merchant}
+          logo={flyer.logo}
+          premium={flyer.premium}
           onAddToList={addToList}
           onStage={stage}
           onClose={() => setFlyer(null)}

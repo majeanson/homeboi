@@ -20,7 +20,8 @@ import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { useMealSuggest } from '../components/kitchen/useMealSuggest'
-import { type LowRow, type MealsData, type PantryData, type WeekDay, MEALS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
+import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type PantryData, type WeekDay, MEALS_KEY, MEAL_IDEAS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
+import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { SIDE_SLOTS, SLOT_ICON } from '../lib/mealSlots'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
@@ -63,6 +64,7 @@ export function Kitchen() {
   const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry'), ...live })
   const useSoonQ = useQuery({ queryKey: USE_SOON_KEY, queryFn: () => api<{ soon: LowRow[] }>('use-soon'), ...live })
   const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live })
+  const ideasQ = useQuery({ queryKey: MEAL_IDEAS_KEY, queryFn: () => api<MealIdeasData>('meal-ideas'), ...live })
   // Shares the ['board'] cache with the Board/Liste pages — read only for the
   // shopping list, used to rank recipes by "what you could cook now".
   const boardQ = useQuery({
@@ -79,6 +81,10 @@ export function Kitchen() {
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null)
   const [editRecipe, setEditRecipe] = useState<Recipe | 'new' | null>(null)
   const [recipePickFor, setRecipePickFor] = useState<number | null>(null)
+  // Quick-add is the default (tap a recipe → it's set, no staples). This toggle
+  // opts a pick INTO the grocery flow ("ajouter les ingrédients aussi") for the
+  // times you do want the staples chips — kept off so dropping a recipe is one tap.
+  const [pickWithStaples, setPickWithStaples] = useState(false)
   // A toddler tapped a planned meal to cook it → full-screen read-aloud Cook mode.
   const [kidCook, setKidCook] = useState<Recipe | null>(null)
   // Parent kitchen sub-tab: one job at a time so the page isn't an endless scroll.
@@ -90,6 +96,18 @@ export function Kitchen() {
     for (const r of recipes) m.set(r.title.trim().toLowerCase(), r)
     return m
   }, [recipes])
+  // Exact link: a planned meal's recipe_id → its recipe. Preferred over the loose
+  // title match (survives renames/duplicates); title stays the fallback for plain
+  // free-text meals and pre-link rows.
+  const recipeById = useMemo(() => {
+    const m = new Map<string, Recipe>()
+    for (const r of recipes) m.set(r.id, r)
+    return m
+  }, [recipes])
+  // The recipe a planned meal points at: its exact link first, else a title match.
+  const recipeForMeal = (meal: MealRow): Recipe | undefined =>
+    (meal.recipe_id ? recipeById.get(meal.recipe_id) : undefined) ??
+    recipeByTitle.get(meal.title.trim().toLowerCase())
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const soonItems = useMemo(() => (useSoonQ.data?.soon ?? []).map((s) => s.item), [useSoonQ.data])
@@ -124,6 +142,7 @@ export function Kitchen() {
     mealErr,
     saveMeal,
     beginSetMeal,
+    quickPickRecipe,
     chooseRecipeForMeal,
     kidSuggest,
     toggleStaple,
@@ -213,6 +232,18 @@ export function Kitchen() {
           {suggestion && (
             <p className="kitchen__suggestion" role="status">
               🍽 {suggestion}
+              <button
+                type="button"
+                className="btn btn--ghost mono kitchen__suggestion-keep"
+                onClick={async () => {
+                  await api('meal-ideas', { method: 'POST', body: { title: suggestion, suggestedBy: profileId } }).catch(
+                    () => {},
+                  )
+                  qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
+                }}
+              >
+                ＋ {t.kitchen.keepIdea}
+              </button>
             </p>
           )}
           {shopPrompt && (
@@ -293,6 +324,7 @@ export function Kitchen() {
                             staplePrompt.date,
                             staplePrompt.title,
                             staplePrompt.options.filter((o) => o.on).map((o) => o.item),
+                            staplePrompt.recipeId,
                           )
                         }
                       >
@@ -301,7 +333,7 @@ export function Kitchen() {
                       <button
                         type="button"
                         className="btn btn--ghost mono"
-                        onClick={() => saveMeal(staplePrompt.date, staplePrompt.title, [])}
+                        onClick={() => saveMeal(staplePrompt.date, staplePrompt.title, [], staplePrompt.recipeId)}
                       >
                         {t.kitchen.staplesSkip}
                       </button>
@@ -335,10 +367,21 @@ export function Kitchen() {
                           onClick={() => setRecipePickFor(recipePickFor === date ? null : date)}
                           aria-expanded={recipePickFor === date}
                         >
-                          📖 {t.kitchen.pickRecipe}
+                          📖 {t.kitchen.chooseRecipe}
                         </button>
                         {recipePickFor === date && (
                           <div className="kitchen__recipe-menu">
+                            {/* Tap a recipe → quick-add (links it, saves now, no
+                                staples). Flip this on first to also confirm its
+                                ingredients for the grocery list. */}
+                            <button
+                              type="button"
+                              className={'chip kitchen__recipe-staples' + (pickWithStaples ? ' is-on' : '')}
+                              onClick={() => setPickWithStaples((s) => !s)}
+                              aria-pressed={pickWithStaples}
+                            >
+                              {pickWithStaples ? '☑' : '☐'} 🛒 {t.kitchen.alsoStaples}
+                            </button>
                             {recipes.map((r) => (
                               <button
                                 key={r.id}
@@ -348,7 +391,8 @@ export function Kitchen() {
                                   // The picker menu is page chrome, not flow state —
                                   // close it here; the hook closes the day editor.
                                   setRecipePickFor(null)
-                                  chooseRecipeForMeal(date, r)
+                                  if (pickWithStaples) chooseRecipeForMeal(date, r)
+                                  else quickPickRecipe(date, r)
                                 }}
                               >
                                 {r.title}
@@ -371,11 +415,11 @@ export function Kitchen() {
                     >
                       {meal?.title ?? <span className="kitchen__day-empty mono">{t.kitchen.planShort}</span>}
                     </button>
-                    {meal && recipeByTitle.get(meal.title.trim().toLowerCase()) && (
+                    {meal && recipeForMeal(meal) && (
                       <button
                         type="button"
                         className="kitchen__day-recipe-link"
-                        onClick={() => setViewRecipe(recipeByTitle.get(meal.title.trim().toLowerCase())!)}
+                        onClick={() => setViewRecipe(recipeForMeal(meal)!)}
                         aria-label={t.recipes.title}
                         title={t.recipes.title}
                       >
@@ -440,6 +484,13 @@ export function Kitchen() {
               </li>
             ))}
           </ul>
+
+          <MealIdeas
+            ideas={ideasQ.data?.ideas ?? []}
+            recipes={recipes}
+            week={week.map((w) => ({ date: w.date, label: formatWeekday(w.date, lang) }))}
+            profileId={profileId}
+          />
         </section>
         )}
 

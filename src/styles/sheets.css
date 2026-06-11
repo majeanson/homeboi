@@ -209,9 +209,44 @@
   align-items: stretch;
   gap: 8px;
 }
+/* The row is one card holding three INDEPENDENT tap targets — picture (→ deals),
+   name (→ edit sheet), and the check (→ toggle). So the card itself is an inert
+   container; only the inner buttons take taps. */
 .list-row__main {
   flex: 1 1 auto;
   min-width: 0;
+  cursor: default;
+}
+.list-row__img,
+.list-row__name,
+.list-row__toggle {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.list-row__img {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+/* The check is now the ONLY check-off target (the rest of the row edits / opens
+   deals), so give it a comfortable tap area — a 42px circle, not the old 30px.
+   Loaded after today.css, so this ties-and-wins over `.act .check`. */
+.list-row__toggle.check {
+  width: 42px;
+  height: 42px;
+}
+.list-row__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 /* The item's own picture in the tile slot (emoji, not a Phosphor glyph). */
 .list-row__pic {
@@ -239,6 +274,101 @@
 }
 .list-row__proof:active {
   transform: scale(0.94);
+}
+
+/* --- List mode switch (home · store) ------------------------------------- */
+/* Segmented control: prepare the list at home, or shop with it at the store. */
+.list-mode {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  margin: 0 0 6px;
+}
+.list-mode__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0 0.95rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.list-mode__opt.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.list-mode__hint {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+/* --- List item edit sheet ------------------------------------------------- */
+/* Rides on .pm-overlay/.pm-sheet (keyboard-safe). Rename, manage flyer-search
+   synonyms, unlink a deal, or delete the line. */
+.li-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.5rem;
+}
+.li-edit__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.li-edit__label {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.li-edit__hint {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+.li-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.li-term {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.3rem 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+.li-term__x {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink-faint);
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+.li-edit__row {
+  justify-content: flex-start;
+}
+.li-edit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+.li-edit__danger {
+  color: var(--clay, #b3463a);
 }
 
 /* --- Price-match proof sheet --------------------------------------------- */
@@ -420,13 +550,77 @@
   border-bottom: 1.5px solid var(--line);
   background: var(--paper);
 }
+/* Branded header band: store logo (or monogram) + name + validity dates — our own
+   stand-in for reebee's rendered flyer banner, which the data feed doesn't carry. */
+.flyer-bar__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.flyer-bar__logo {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  object-fit: contain;
+  background: #fff;
+  border: 1.5px solid var(--line-strong);
+  padding: 3px;
+}
+.flyer-bar__logo--mono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+}
 .flyer-bar__title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
   font-family: var(--display);
   font-weight: 800;
   font-size: 18px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Data-quality note under the header: green when it's an official (image) flyer,
+   muted when it's an SFML reconstruction (so the cashier knows the difference). */
+.flyer-note {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 7px 18px;
+  font-size: 12px;
+  line-height: 1.35;
+  border-bottom: 1px solid var(--line);
+}
+.flyer-note--official {
+  color: #2f7d4f;
+  background: rgba(47, 125, 79, 0.09);
+}
+.flyer-note--recon {
+  color: var(--ink-soft);
+  background: var(--paper-2);
+}
+/* Flyer validity span under the merchant name — the dates the cashier checks. */
+.flyer-bar__dates {
+  font-family: var(--mono, monospace);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 1px 9px;
 }
 .flyer-scroll {
   flex: 1 1 auto;

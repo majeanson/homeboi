@@ -21,6 +21,7 @@ import * as health from '../functions/api/health'
 import * as household from '../functions/api/household'
 import * as list from '../functions/api/list'
 import * as meals from '../functions/api/meals'
+import * as mealIdeas from '../functions/api/meal-ideas'
 import * as mealStaples from '../functions/api/meal-staples'
 import * as members from '../functions/api/members'
 import * as membersAvatar from '../functions/api/members/avatar'
@@ -71,6 +72,7 @@ const TABLE: Record<string, RouteMod> = {
   household,
   list,
   meals,
+  'meal-ideas': mealIdeas,
   'meal-staples': mealStaples,
   members,
   'members/avatar': membersAvatar,

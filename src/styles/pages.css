@@ -219,10 +219,10 @@
   background: transparent;
   color: var(--ink-soft);
   border-radius: 999px;
-  padding: 0.3rem 0.7rem;
-  min-height: 2.2rem;
+  padding: 0.35rem 0.8rem;
+  min-height: 2.6rem;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   cursor: pointer;
   max-width: 100%;
 }
@@ -277,10 +277,16 @@
   white-space: nowrap;
 }
 .chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
   font-family: var(--mono);
-  font-size: 0.82rem;
-  padding: 0.3rem 0.6rem;
-  min-height: 32px;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+  /* Chips ARE the navigation in the kitchen (day picker, recipe menu, tags,
+     ideas) — keep them a comfortable thumb height, not a 32px sliver. */
+  min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: transparent;

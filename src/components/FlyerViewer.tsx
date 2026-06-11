@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useQuery, type QueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useLang, useT } from '../i18n'
 import { ZoomableImg } from './ZoomableImg'
-import { type Deal } from '../lib/deals'
+import { type Deal, type FlyerSummary } from '../lib/deals'
 
 // Full-flyer viewer. A Flipp flyer page is a canvas of item clippings positioned
 // by coordinates (no scanned page image), so we fetch /api/flyer and reconstruct
@@ -41,6 +41,15 @@ interface FlyerItem extends Box {
   image: string | null
 }
 
+interface FlyerResponse {
+  pages: FlyerPage[]
+  items: FlyerItem[]
+  // Flyer-level run dates (the cashier-facing validity span, e.g. 11 juin → 17
+  // juin). Derived server-side from the items; null if the feed omits them.
+  validFrom: string | null
+  validTo: string | null
+}
+
 const money = (n: number | null) => (n == null ? '' : `$${n.toFixed(2)}`)
 
 const FLYER_STALE = 30 * 60 * 1000 // flyers change ~weekly; cache generously
@@ -52,7 +61,7 @@ export async function prefetchFlyer(qc: QueryClient, flyerId: number): Promise<v
   const data = await qc
     .fetchQuery({
       queryKey: ['flyer', flyerId],
-      queryFn: () => api<{ pages: FlyerPage[]; items: FlyerItem[] }>(`flyer?id=${flyerId}`),
+      queryFn: () => api<FlyerResponse>(`flyer?id=${flyerId}`),
       staleTime: FLYER_STALE,
     })
     .catch(() => null)
@@ -64,6 +73,8 @@ export function FlyerViewer({
   flyerId,
   highlightId,
   title,
+  logo,
+  premium,
   onAddToList,
   onStage,
   onClose,
@@ -71,17 +82,51 @@ export function FlyerViewer({
   flyerId: number
   highlightId?: number | null
   title?: string
+  // Store logo for the header band. The flyer detail endpoint carries no merchant
+  // info, so the caller passes it when it has it (the store browser does); else we
+  // fall back to the nearby-stores cache, then to a monogram.
+  logo?: string | null
+  // Whether this is an image-based (premium) flyer. Drives the "official vs
+  // reconstructed" note. Resolved like logo (prop → flyers cache → unknown).
+  premium?: boolean
   onAddToList?: (name: string) => void
   onStage?: (deal: Deal) => void // stage this flyer item for the cashier (one tap)
   onClose: () => void
 }) {
   const t = useT()
+  const qc = useQueryClient()
   const [addedName, setAddedName] = useState<string | null>(null)
   const { lang } = useLang()
+
+  // Logo for the header band: explicit prop wins; otherwise look this flyer up by
+  // id in any cached /api/flyers list (warmed by the store browser / prefetch).
+  // The reconstruction can't show reebee's rendered banner, so we brand our own.
+  const resolvedLogo = useMemo(() => {
+    if (logo != null) return logo
+    for (const [, data] of qc.getQueriesData<{ flyers: FlyerSummary[] }>({ queryKey: ['flyers'] })) {
+      const hit = data?.flyers?.find((f) => f.flyerId === flyerId)
+      if (hit?.logo) return hit.logo
+    }
+    return null
+  }, [logo, qc, flyerId])
+  const monogram = (title ?? '').trim().charAt(0).toUpperCase() || '🏬'
+
+  // Premium = image-based flyer (Super C, Métro, IGA): the reconstruction is built
+  // from real scanned clippings, so we present it as the official flyer. SFML flyers
+  // (Maxi, Provigo) are vector-only — flag them as a reconstruction so the cashier
+  // knows. Resolved prop → flyers cache → unknown (null shows no note).
+  const resolvedPremium = useMemo<boolean | null>(() => {
+    if (typeof premium === 'boolean') return premium
+    for (const [, data] of qc.getQueriesData<{ flyers: FlyerSummary[] }>({ queryKey: ['flyers'] })) {
+      const hit = data?.flyers?.find((f) => f.flyerId === flyerId)
+      if (hit && typeof hit.premium === 'boolean') return hit.premium
+    }
+    return null
+  }, [premium, qc, flyerId])
   // Cached so re-opening the same flyer (or one prefetched on wifi) is instant.
   const { data, isError } = useQuery({
     queryKey: ['flyer', flyerId],
-    queryFn: () => api<{ pages: FlyerPage[]; items: FlyerItem[] }>(`flyer?id=${flyerId}`),
+    queryFn: () => api<FlyerResponse>(`flyer?id=${flyerId}`),
     staleTime: FLYER_STALE,
   })
   const state: 'loading' | 'ok' | 'empty' | 'error' = isError
@@ -152,14 +197,45 @@ export function FlyerViewer({
       : d.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { month: 'short', day: 'numeric' })
   }
 
+  // The flyer's validity span for the header — "11 juin au 17 juin". This is the
+  // date the cashier checks; reebee shows it but our reconstruction dropped it.
+  const dateRange = useMemo(() => {
+    const from = fmtDate(data?.validFrom ?? null)
+    const to = fmtDate(data?.validTo ?? null)
+    if (from && to) return `${from} ${t.shop.dateRangeTo} ${to}`
+    return to ? `${t.shop.until} ${to}` : from
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.validFrom, data?.validTo, lang, t])
+
   return (
     <div className="flyer-overlay" role="dialog" aria-modal="true" aria-label={title ?? 'flyer'}>
       <div className="flyer-bar">
-        <span className="flyer-bar__title">{title ?? t.shop.proofTitle}</span>
+        <div className="flyer-bar__brand">
+          {resolvedLogo ? (
+            <img className="flyer-bar__logo" src={resolvedLogo} alt="" loading="lazy" />
+          ) : (
+            <span className="flyer-bar__logo flyer-bar__logo--mono" aria-hidden="true">
+              {monogram}
+            </span>
+          )}
+          <span className="flyer-bar__title">
+            {title ?? t.shop.proofTitle}
+            {dateRange && <span className="flyer-bar__dates mono">{dateRange}</span>}
+          </span>
+        </div>
         <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
           ✕
         </button>
       </div>
+
+      {resolvedPremium != null && (
+        <p
+          className={`flyer-note mono ${resolvedPremium ? 'flyer-note--official' : 'flyer-note--recon'}`}
+          aria-live="polite"
+        >
+          {resolvedPremium ? `✓ ${t.shop.flyerOfficial}` : `≈ ${t.shop.flyerReconstructed}`}
+        </p>
+      )}
 
       {directions && (
         <button
@@ -226,8 +302,6 @@ export function FlyerViewer({
               </div>
             )
           })}
-
-        <p className="deal__disclaimer mono">{t.shop.disclaimer}</p>
       </div>
 
       {/* Detail card for the selected item — the "details there" view. Slides up
@@ -284,6 +358,8 @@ export function FlyerViewer({
                       unitKind: selected.unitKind,
                       unitApprox: false,
                       merchant: title ?? '',
+                      logo: resolvedLogo,
+                      premium: resolvedPremium ?? false,
                       image: selected.image,
                       validFrom: selected.validFrom,
                       validTo: selected.validTo,

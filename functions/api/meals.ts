@@ -16,7 +16,7 @@ const slotOf = (v: unknown): string => (typeof v === 'string' && SLOTS.has(v) ? 
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = dayStart(new Date(Date.now()))
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, date, slot, title, cook_member_id, suggested_by FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date',
+    'SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date',
   )
     .bind(actor.householdId, today, today + 86400 * 7)
     .all()
@@ -29,6 +29,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     slot?: string // breakfast | lunch | supper | snack (default supper)
     title?: string
     cookMemberId?: string
+    recipeId?: string // optional: the saved recipe this slot points at
     staples?: string[]
     suggest?: boolean // a kid's pick — fill an empty slot only, never replace
     suggestedBy?: string // the child's member id, for "suggéré par X"
@@ -37,6 +38,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const title = body.title.trim()
   const slot = slotOf(body.slot)
   const date = dayStart(new Date(body.date * 1000))
+  const recipeId = body.recipeId?.trim() || null
   const ts = nowSec()
 
   // Kid suggestion: a child's pick only fills an EMPTY slot — it never overwrites
@@ -46,9 +48,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // racing the same empty slot can't both land — the loser's insert is ignored.
   if (body.suggest) {
     const res = await ctx.env.DB.prepare(
-      'INSERT OR IGNORE INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT OR IGNORE INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, recipe_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
-      .bind(newId(), actor.householdId, date, slot, title, null, body.suggestedBy ?? null, ts)
+      .bind(newId(), actor.householdId, date, slot, title, null, body.suggestedBy ?? null, recipeId, ts)
       .run()
     return ok({ ok: true, suggested: res.meta.changes > 0 })
   }
@@ -64,8 +66,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
       date,
     ),
     ctx.env.DB.prepare(
-      'INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    ).bind(newId(), actor.householdId, date, slot, title, body.cookMemberId ?? null, ts),
+      'INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, recipe_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    ).bind(newId(), actor.householdId, date, slot, title, body.cookMemberId ?? null, recipeId, ts),
   ])
 
   // meal -> grocery list: drop any staples the client flagged as missing.

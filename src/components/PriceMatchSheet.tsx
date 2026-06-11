@@ -19,10 +19,12 @@ import { existingListId, parseDeal, type ListItem } from '../lib/picks'
 export function PriceMatchSheet({
   itemId,
   query,
+  terms,
   onClose,
 }: {
   itemId: string // the shared-list item this proof is for — picks key on it
   query: string
+  terms?: string[] // extra flyer-search synonyms saved on the line, if any
   onClose: () => void
 }) {
   const t = useT()
@@ -41,9 +43,13 @@ export function PriceMatchSheet({
   // Cache the expensive Flipp lookup per query, per day — flyers change ~weekly,
   // so a day-scoped key serves re-opens instantly and refreshes tomorrow.
   const dayKey = new Date().toISOString().slice(0, 10)
+  const termsParam = terms && terms.length ? terms.join(',') : ''
   const dealsQ = useQuery({
-    queryKey: ['deals', query, dayKey],
-    queryFn: () => api<{ deals: Deal[] }>(`deals?q=${encodeURIComponent(query)}`),
+    queryKey: ['deals', query, termsParam, dayKey],
+    queryFn: () =>
+      api<{ deals: Deal[] }>(
+        `deals?q=${encodeURIComponent(query)}${termsParam ? `&terms=${encodeURIComponent(termsParam)}` : ''}`,
+      ),
     staleTime: 60 * 60 * 1000,
     retry: false,
   })
@@ -59,7 +65,7 @@ export function PriceMatchSheet({
         ? 'ok'
         : 'empty'
   // Which flyer is open on top of the sheet (null = none).
-  const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string } | null>(null)
+  const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string; logo?: string | null; premium?: boolean } | null>(null)
   // Filter the results to one store (Maxi, Super C…); null = all.
   const [store, setStore] = useState<string | null>(null)
   const [added, setAdded] = useState<string | null>(null)
@@ -142,7 +148,7 @@ export function PriceMatchSheet({
                 isBest={d === bestKey}
                 isChosen={chosenId != null && d.id === chosenId}
                 added={added === d.name}
-                onViewFlyer={(deal) => setFlyer({ id: deal.flyerId!, itemId: deal.id, merchant: deal.merchant })}
+                onViewFlyer={(deal) => setFlyer({ id: deal.flyerId!, itemId: deal.id, merchant: deal.merchant, logo: deal.logo, premium: deal.premium })}
                 onAddToList={addToList}
                 onChoose={(deal) => {
                   choose(deal)
@@ -152,8 +158,6 @@ export function PriceMatchSheet({
             ))}
           </ul>
         )}
-
-        <p className="deal__disclaimer mono">{t.shop.disclaimer}</p>
       </div>
 
       {flyer && (
@@ -161,6 +165,8 @@ export function PriceMatchSheet({
           flyerId={flyer.id}
           highlightId={flyer.itemId}
           title={flyer.merchant}
+          logo={flyer.logo}
+          premium={flyer.premium}
           onAddToList={addToList}
           onStage={(deal) => choose(deal)}
           onClose={() => setFlyer(null)}

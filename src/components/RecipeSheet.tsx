@@ -81,7 +81,7 @@ export function RecipeSheet({
     setPlanning(false)
     // Optimistic badge above; roll it back on failure so the sheet never claims
     // a supper the server doesn't have.
-    await api('meals', { method: 'POST', body: { date, title: recipe.title, staples: [] } }).catch(() =>
+    await api('meals', { method: 'POST', body: { date, title: recipe.title, staples: [], recipeId: recipe.id } }).catch(() =>
       setPlannedDate(null),
     )
     qc.invalidateQueries({ queryKey: ['meals'] })

@@ -79,6 +79,21 @@ const box = (o: { left?: number; top?: number; right?: number; bottom?: number }
   bottom: o.bottom ?? 0,
 })
 
+// The flyer detail endpoint returns no flyer-level metadata (no merchant, no run
+// dates) — only pages + items. But nearly every item carries the flyer's run
+// dates; a handful of "2 jours seulement" promos differ. So the flyer's validity
+// period is the MOST COMMON valid_from/valid_to across items, not min/max (an
+// outlier promo would otherwise stretch the range). This is the date span the
+// cashier needs ("11 juin au 17 juin"), which the UI header was missing.
+const mostCommon = (values: (string | null | undefined)[]): string | null => {
+  const counts = new Map<string, number>()
+  for (const v of values) if (v) counts.set(v, (counts.get(v) ?? 0) + 1)
+  let best: string | null = null
+  let bestN = 0
+  for (const [v, n] of counts) if (n > bestN) [best, bestN] = [v, n]
+  return best
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const url = new URL(ctx.request.url)
   const id = url.searchParams.get('id')?.trim()
@@ -138,5 +153,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     })
     .filter((it) => it.image)
 
-  return ok({ flyerId: Number(id), postal, pages, items })
+  // Flyer-level run dates, derived from the items (see mostCommon). Computed from
+  // the raw payload so they reflect every item, not just the image-bearing ones.
+  const validFrom = mostCommon((payload.items ?? []).map((it) => it.valid_from))
+  const validTo = mostCommon((payload.items ?? []).map((it) => it.valid_to))
+
+  return ok({ flyerId: Number(id), postal, validFrom, validTo, pages, items })
 })
