@@ -444,13 +444,21 @@ test.describe('recipes', () => {
 test('a kid recipe pick suggests a supper into an empty day', async ({ page }) => {
   await APP('/kitchen', 'toddler')(page)
   await settle(page, '.hub')
-  // Pick the first recipe → the day tiles appear.
-  await page.locator('.kid-pick .bigtile').first().click()
+  // Hear-first: a toddler action tile speaks on the FIRST tap and arms; a SECOND
+  // tap commits — so nothing happens by accident. Pick the first recipe (two taps).
+  const recipe = page.locator('.kid-pick .bigtile').first()
+  await recipe.click()
+  await expect(recipe).toHaveClass(/is-armed/)
+  await recipe.click()
   await expect(page.locator('.kid-pick .bigtile', { hasText: 'Mardi' })).toBeVisible()
-  // Tapping an EMPTY day (Mardi) posts a SUGGESTION (suggest:true), not a plain set.
+  // Tapping an EMPTY day (Mardi) posts a SUGGESTION (suggest:true) — but only on
+  // the confirming second tap. First tap arms + speaks "Mardi : <recipe>".
+  const mardi = page.locator('.kid-pick .bigtile', { hasText: 'Mardi' })
+  await mardi.click()
+  await expect(mardi).toHaveClass(/is-armed/)
   const [req] = await Promise.all([
     page.waitForRequest(isApi('POST', 'meals'), { timeout: 15_000 }),
-    page.locator('.kid-pick .bigtile', { hasText: 'Mardi' }).click(),
+    mardi.click(),
   ])
   expect(JSON.parse(req.postData() || '{}')).toMatchObject({ suggest: true })
 })

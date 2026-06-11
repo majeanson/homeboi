@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { BigTiles, type Tile } from '../components/BigTiles'
+import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
@@ -162,16 +162,17 @@ export function Board() {
     const kidSection = (label: string, tiles: Tile[]) =>
       tiles.length > 0 ? (
         <section className="today-kid__section">
-          <h2 className="today-kid__h">{label}</h2>
+          <Sayable className="today-kid__h" text={label} />
           <BigTiles tiles={tiles} />
         </section>
       ) : null
 
+    const greet = me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]
     return (
       <main className="kid__main today-kid">
         {/* Greet the picked child by name — same personal touch the parent
-            board gets. Generic when nobody's picked (shared wall). */}
-        <p className="today-kid__greet">{me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]}</p>
+            board gets. Generic when nobody's picked (shared wall). Tap to hear. */}
+        <Sayable className="today-kid__greet" text={greet} />
         {!data ? (
           <p className="loading mono">{t.common.loading}</p>
         ) : (

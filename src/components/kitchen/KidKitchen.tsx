@@ -3,7 +3,7 @@ import { useLang, useT } from '../../i18n'
 import { formatWeekday } from '../../lib/format'
 import { pictoFor } from '../../lib/picto'
 import { type Recipe, recipeImg } from '../../lib/recipes'
-import { BigTiles, type Tile } from '../BigTiles'
+import { BigTiles, Sayable, type Tile } from '../BigTiles'
 import { type WeekDay } from './types'
 
 // Toddler lens on the kitchen: just "what's for supper" this week, big and
@@ -14,11 +14,15 @@ import { type WeekDay } from './types'
 export function KidKitchen({
   week,
   recipes,
+  recipeByTitle,
   onSuggest,
+  onStartRecipe,
 }: {
   week: WeekDay[]
   recipes: Recipe[]
+  recipeByTitle: Map<string, Recipe>
   onSuggest: (date: number, recipe: Recipe) => void
+  onStartRecipe: (recipe: Recipe) => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -26,15 +30,23 @@ export function KidKitchen({
   // browsing the recipe shelf).
   const [kidRecipe, setKidRecipe] = useState<Recipe | null>(null)
 
+  // A planned supper that maps to a saved recipe is tappable: hear "Jeudi :
+  // Spaghetti" first, then a second tap STARTS the recipe (Cook mode — big
+  // read-aloud steps). Planned meals with no matching recipe stay read-aloud only.
   const planned: Tile[] = week
     .filter((d) => d.meal)
-    .map((d) => ({
-      key: String(d.date),
-      icon: pictoFor(d.meal!.title, '🍽'),
-      label: d.meal!.title,
-      sub: formatWeekday(d.date, lang),
-      narration: `${formatWeekday(d.date, lang)}: ${d.meal!.title}`,
-    }))
+    .map((d) => {
+      const recipe = recipeByTitle.get(d.meal!.title.trim().toLowerCase())
+      return {
+        key: String(d.date),
+        icon: pictoFor(d.meal!.title, '🍽'),
+        label: d.meal!.title,
+        sub: formatWeekday(d.date, lang),
+        narration: `${formatWeekday(d.date, lang)}: ${d.meal!.title}`,
+        confirmHint: recipe ? t.kid.tapToCook : undefined,
+        onTap: recipe ? () => onStartRecipe(recipe) : undefined,
+      }
+    })
   // The picker: tap a recipe to hear it (BigTiles speaks on tap) and choose it,
   // then tap a day to put it on the menu. The day tile's narration ("Lundi:
   // Pizza") doubles as the spoken confirmation, and `planned` above redraws so
@@ -72,7 +84,7 @@ export function KidKitchen({
     <main className={`kid__main${recipes.length > 0 ? ' kid__main--feed' : ''}`}>
       <div className="kid-head">
         <span className="kid-head__emoji" aria-hidden="true">🍲</span>
-        <p className="kid-head__title">{t.kid.supper}</p>
+        <Sayable className="kid-head__title" text={t.kid.supper} />
       </div>
       <BigTiles tiles={planned} empty={t.board.nothingTonight} />
 
@@ -83,7 +95,7 @@ export function KidKitchen({
               <span className="kid-head__emoji" aria-hidden="true">
                 {pictoFor(kidRecipe.title, '🍽')}
               </span>
-              <p className="kid-head__title">{t.kid.whichDay}</p>
+              <Sayable className="kid-head__title" text={t.kid.whichDay} />
             </div>
             <BigTiles tiles={dayTiles} />
             <button type="button" className="kid-pick__back mono" onClick={() => setKidRecipe(null)}>
@@ -94,7 +106,7 @@ export function KidKitchen({
           <section className="kid-pick">
             <div className="kid-head">
               <span className="kid-head__emoji" aria-hidden="true">📖</span>
-              <p className="kid-head__title">{t.kid.pickMeal}</p>
+              <Sayable className="kid-head__title" text={t.kid.pickMeal} />
             </div>
             <BigTiles tiles={recipeTiles} />
           </section>

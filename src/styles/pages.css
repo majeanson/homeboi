@@ -865,13 +865,20 @@
 }
 .bigtile__label {
   font-family: var(--display);
-  font-size: 1.3rem;
-  font-weight: 600;
-  line-height: 1.1;
+  /* Bigger + heavier than before — a pre-reader leans on shape recognition, and
+     this is the one bit of text on the tile, so it must carry across the room. */
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.15;
   text-align: center;
   color: var(--ink);
+  /* Long meal/recipe names must stay readable, not clip — wrap and balance. */
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 .bigtile__sub {
+  font-size: 1.05rem;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 .bigtile.is-done {
@@ -884,6 +891,49 @@
   right: 0.7rem;
   font-size: 1.6rem;
   color: var(--accent);
+}
+/* Hear-first: an action tile's FIRST tap speaks the proposition and arms the
+   tile (a 👆 cue + a warm ring); a SECOND tap commits. So a toddler always
+   hears "Jeudi : Spaghetti" before anything happens — a wandering finger never
+   chooses by accident. The ring is deterministic + motion-safe (NFR-CALM-2). */
+.bigtile.is-armed {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent),
+    var(--shadow-md);
+}
+.bigtile__again {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.6rem;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bigtile.is-armed .bigtile__again {
+    animation: bigtile-nudge 1s ease-in-out infinite;
+  }
+  @keyframes bigtile-nudge {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+}
+/* Sayable: plain kid-surface text turned into a tap-to-hear button without
+   changing how it looks (NFR-KID-2 — any word is hearable). */
+.sayable {
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
 }
 .bigtiles__empty {
   display: flex;

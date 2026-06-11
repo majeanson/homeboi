@@ -69,6 +69,11 @@ function Root() {
     return 'parent'
   })
   function setAudience(a: Audience) {
+    // A locked kiosk (?kid=1) is pinned to the toddler lens — refuse ANY audience
+    // change at the source, so the lock holds even if a stray code path (or a
+    // future caller) tries to flip it. The only way out stays the deliberate
+    // adult act of relaunching with ?kid=0 (handled at init above). PRD C5.
+    if (kidLocked) return
     setAudienceState(a)
     try {
       localStorage.setItem('babillard-audience', a)

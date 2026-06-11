@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { BigTiles, type Tile } from '../components/BigTiles'
+import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
@@ -137,7 +137,7 @@ export function Liste() {
       <main className="kid__main">
         <div className="kid-head">
           <span className="kid-head__emoji" aria-hidden="true">🛒</span>
-          <p className="kid-head__title">{t.kid.shopping}</p>
+          <Sayable className="kid-head__title" text={t.kid.shopping} />
         </div>
         <BigTiles tiles={tiles} empty={t.board.listEmpty} />
       </main>

@@ -228,6 +228,10 @@ export const FR = {
     pickMeal: 'Choisis un repas',
     whichDay: 'Quel jour ?',
     back: 'Retour',
+    tapAgain: 'Tape encore pour choisir !',
+    tapToCook: 'Tape encore pour cuisiner !',
+    okDone: 'Voilà !',
+    cook: 'On cuisine !',
   },
   routines: {
     tag: 'Le rythme du jour',
@@ -645,6 +649,10 @@ export const EN: typeof FR = {
     pickMeal: 'Pick a meal',
     whichDay: 'Which day?',
     back: 'Back',
+    tapAgain: 'Tap again to choose!',
+    tapToCook: 'Tap again to cook!',
+    okDone: 'There!',
+    cook: "Let's cook!",
   },
   routines: {
     tag: 'The day’s rhythm',

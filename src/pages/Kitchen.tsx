@@ -11,6 +11,7 @@ import { formatWeekday } from '../lib/format'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { pictoFor } from '../lib/picto'
 import { RecipeSheet } from '../components/RecipeSheet'
+import { CookMode } from '../components/CookMode'
 import { RecipeForm } from '../components/RecipeForm'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
@@ -53,6 +54,8 @@ export function Kitchen() {
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null)
   const [editRecipe, setEditRecipe] = useState<Recipe | 'new' | null>(null)
   const [recipePickFor, setRecipePickFor] = useState<number | null>(null)
+  // A toddler tapped a planned meal to cook it → full-screen read-aloud Cook mode.
+  const [kidCook, setKidCook] = useState<Recipe | null>(null)
   // Parent kitchen sub-tab: one job at a time so the page isn't an endless scroll.
   const [kitTab, setKitTab] = useState<'meals' | 'pantry' | 'recipes'>('meals')
   // Match a planned supper to a saved recipe by (loose) title, so a day's meal can
@@ -103,7 +106,20 @@ export function Kitchen() {
   if (unauth) return <PairPrompt />
 
   if (audience === 'toddler') {
-    return <KidKitchen week={week} recipes={recipes} onSuggest={kidSuggest} />
+    return (
+      <>
+        <KidKitchen
+          week={week}
+          recipes={recipes}
+          recipeByTitle={recipeByTitle}
+          onSuggest={kidSuggest}
+          onStartRecipe={setKidCook}
+        />
+        {/* "Start its recipe": a planned meal a toddler taps opens Cook mode —
+            big one-step-at-a-time pages that read themselves aloud. */}
+        {kidCook && <CookMode recipe={kidCook} onClose={() => setKidCook(null)} />}
+      </>
+    )
   }
 
   return (
