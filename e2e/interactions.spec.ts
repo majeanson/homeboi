@@ -621,6 +621,34 @@ test.describe('profile', () => {
   })
 })
 
+test.describe('recurring chores on the board', () => {
+  test('a chore due today shows in Aujourd\'hui and checks off (PATCH complete)', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    const chore = page.locator('.act', { hasText: 'Sortir les poubelles' })
+    await expect(chore).toBeVisible()
+    await expect(chore).toContainText('Léa') // whose turn
+    await expectApi(page, 'PATCH', 'chores', () => chore.click())
+  })
+
+  test('an upcoming chore shows under À venir with its day', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    await expect(page.locator('.act', { hasText: 'Vaisselle' })).toBeVisible()
+  })
+
+  test('a chore can be given a weekly schedule in settings (PATCH recur)', async ({ page }) => {
+    await APP('/settings#chores')(page)
+    await settle(page, '.operator__tabs')
+    await page.getByRole('tab').nth(2).click() // Chores
+    // Open the schedule editor on the first chore, pick weekly → PATCH recur.
+    await page.locator('.operator__chore-row').first().getByRole('button', { name: /céduler|schedule/i }).click()
+    await expectApi(page, 'PATCH', 'chores', () =>
+      page.locator('.operator__chore-schedule select').selectOption('weekly'),
+    )
+  })
+})
+
 test.describe('fridge notes', () => {
   test('a note shows on the board and clears with a tap (DELETE)', async ({ page }) => {
     await APP('/board')(page)

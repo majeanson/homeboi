@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../../lib/api'
 import { useLang, useT } from '../../i18n'
 import { ColorPicker } from '../ColorPicker'
+import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { choreTemplates } from '../../lib/routineTemplates'
 
 // The complete chore (corvée) form — title (with common presets), a round-robin
@@ -19,6 +20,8 @@ export function ChoreForm({ members, onSaved }: { members: FormMember[]; onSaved
   const [title, setTitle] = useState('')
   const [rotation, setRotation] = useState<string[]>([])
   const [color, setColor] = useState('#88A36F')
+  // Optional schedule — "tous les jeudis". null = a standing chore (no schedule).
+  const [recur, setRecur] = useState<RecurValue | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
 
@@ -31,10 +34,11 @@ export function ChoreForm({ members, onSaved }: { members: FormMember[]; onSaved
     setBusy(true)
     setErr(false)
     try {
-      await api('chores', { method: 'POST', body: { title: title.trim(), rotation, color } })
+      await api('chores', { method: 'POST', body: { title: title.trim(), rotation, color, recur } })
       setTitle('')
       setRotation([])
       setColor('#88A36F')
+      setRecur(null)
       onSaved()
     } catch {
       // Keep the filled form — resetting on a failed write loses the chore.
@@ -74,6 +78,7 @@ export function ChoreForm({ members, onSaved }: { members: FormMember[]; onSaved
         ))}
       </div>
       <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+      <RecurPicker value={recur} onChange={setRecur} />
       {err && <p className="error mono">{t.common.saveFailed}</p>}
       <button type="submit" className="btn" disabled={!title.trim() || busy}>
         {t.operator.addChore}

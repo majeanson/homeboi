@@ -67,6 +67,9 @@ const BOARD = {
     },
   ],
   notes: [{ id: 'n1', text: 'Bonne chance à ton examen !', member_id: 'm1', created_at: BASE }],
+  // A recurring chore due today (Léa's turn) + one coming up later this week.
+  choresToday: [{ id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', at: BASE, who: 'Léa' }],
+  choresUpcoming: [{ id: 'c2', title: 'Vaisselle', color: '#7BB0C9', at: BASE + 3 * DAY, who: 'Papa' }],
 }
 
 const MEALS = {
@@ -287,7 +290,7 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
     if (opts.fresh && path === 'board') {
-      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], chores: [], notes: [] }
+      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
       return
     }

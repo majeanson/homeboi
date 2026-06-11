@@ -614,6 +614,25 @@
   flex: 1 1 auto;
   min-width: 0;
 }
+/* A chore row carries an inline schedule editor that drops under it when open. */
+.operator__chore-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.operator__chore-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.operator__chore-recur {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+.operator__chore-schedule {
+  flex-basis: 100%;
+  padding: 0.5rem 0 0.25rem;
+}
 .operator__avatar {
   width: 1.4rem;
   height: 1.4rem;

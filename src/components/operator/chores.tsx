@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -5,6 +6,8 @@ import { useUndoableRemove } from '../../lib/undoRemove'
 import { ROUTINE_TODS, TOD_EMOJI, isRoutineTod } from '../../lib/routineTod'
 import { ChoreForm } from '../forms/ChoreForm'
 import { RoutineForm } from '../forms/RoutineForm'
+import { RecurPicker, type RecurValue } from '../RecurPicker'
+import { recurLabel, recurOf } from '../../lib/recurLabel'
 import { type Chore, type Member, type Routine } from './types'
 
 export function ChoresSection({
@@ -34,17 +37,47 @@ export function ChoresSection({
       <h2>{t.operator.chores}</h2>
       <ul className="operator__list">
         {chores.map((c) => (
-          <li key={c.id}>
-            <span className="operator__avatar" style={{ background: c.color ?? '#88A36F' }} aria-hidden="true" />
-            <span>{c.title}</span>
-            <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(c)}>
-              {t.operator.delete}
-            </button>
-          </li>
+          <ChoreRow key={c.id} chore={c} onChange={onChange} onRemove={() => remove(c)} />
         ))}
       </ul>
       <ChoreForm members={members} onSaved={onChange} />
     </section>
+  )
+}
+
+// One chore row with an expandable "schedule" control, so an existing chore can
+// be given (or cleared of) a recurrence without recreating it.
+function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () => void; onRemove: () => void }) {
+  const t = useT()
+  const [editing, setEditing] = useState(false)
+  const [recur, setRecur] = useState<RecurValue | null>(recurOf(chore.recur_json))
+  const label = recurLabel(chore.recur_json, t)
+
+  async function saveRecur(v: RecurValue | null) {
+    setRecur(v)
+    await api('chores', { method: 'PATCH', body: { id: chore.id, recur: v } }).catch(() => {})
+    onChange()
+  }
+
+  return (
+    <li className="operator__chore-row">
+      <span className="operator__avatar" style={{ background: chore.color ?? '#88A36F' }} aria-hidden="true" />
+      <span className="operator__chore-name">
+        {chore.title}
+        {label && <span className="operator__chore-recur mono"> · {label}</span>}
+      </span>
+      <button type="button" className="btn btn--ghost mono" onClick={() => setEditing((s) => !s)}>
+        {t.operator.schedule}
+      </button>
+      <button type="button" className="btn btn--ghost mono operator__del" onClick={onRemove}>
+        {t.operator.delete}
+      </button>
+      {editing && (
+        <div className="operator__chore-schedule">
+          <RecurPicker value={recur} onChange={saveRecur} />
+        </div>
+      )}
+    </li>
   )
 }
 

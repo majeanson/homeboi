@@ -1,7 +1,7 @@
 import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { dayStart } from '../_lib/ids'
-import { parseRecur, expandRange } from '../_lib/recur'
+import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
 
 interface Ev {
   id: string
@@ -55,7 +55,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, rotation_json, current_idx, last_done_at, color FROM tasks WHERE household_id = ? ORDER BY created_at',
+      'SELECT id, title, rotation_json, current_idx, last_done_at, color, recur_json, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
     )
       .bind(hh)
       .all(),
@@ -135,6 +135,56 @@ export const onRequestGet = authed(async (ctx, actor) => {
     helpers: helpersByTask.get(c.id) ?? [],
   }))
 
+  // Recurring chores expanded onto the day: those that occur TODAY (and aren't
+  // already done today) surface on Aujourd'hui; otherwise the next occurrence in
+  // the week surfaces on À venir. Whose-turn rides along (rotation + current_idx).
+  // Non-recurring chores have no schedule, so they're left to the per-person
+  // lanes (unchanged) and never auto-surfaced here.
+  interface ChoreInst {
+    id: string
+    title: string
+    color: string | null
+    at: number
+    who: string | null
+  }
+  const memberName = (id: string | null) =>
+    (id && (members.results as { id: string; display_name: string }[]).find((m) => m.id === id)?.display_name) || null
+  type ChoreSrc = {
+    id: string
+    title: string
+    color: string | null
+    rotation_json: string
+    current_idx: number
+    last_done_at: number | null
+    recur_json: string | null
+    created_at: number
+  }
+  const whoseTurn = (c: ChoreSrc): string | null => {
+    let rot: string[] = []
+    try {
+      const p = JSON.parse(c.rotation_json)
+      if (Array.isArray(p)) rot = p.filter((x): x is string => typeof x === 'string')
+    } catch {
+      /* malformed rotation → no turn */
+    }
+    return rot.length ? memberName(rot[c.current_idx % rot.length]) : null
+  }
+  const choresToday: ChoreInst[] = []
+  const choresUpcoming: ChoreInst[] = []
+  for (const c of chores.results as ChoreSrc[]) {
+    const r = parseRecur(c.recur_json)
+    if (!r) continue
+    const inst = (at: number): ChoreInst => ({ id: c.id, title: c.title, color: c.color, at, who: whoseTurn(c) })
+    if (occurrenceOn(today, c.created_at, r) !== null) {
+      const doneToday = c.last_done_at != null && c.last_done_at >= today
+      if (!doneToday) choresToday.push(inst(today))
+    } else {
+      const next = expandRange(c.created_at, r, tomorrow, weekEnd)[0]
+      if (next != null) choresUpcoming.push(inst(next))
+    }
+  }
+  choresUpcoming.sort((a, b) => a.at - b.at)
+
   return ok({
     syncedAt: Math.floor(Date.now() / 1000),
     scope: actor.scope,
@@ -146,6 +196,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     tomorrowMeal: tomorrowMeal.results[0] ?? null,
     list: openList.results,
     chores: choresOut,
+    choresToday,
+    choresUpcoming,
     notes: notes.results,
   })
 })
