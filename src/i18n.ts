@@ -360,8 +360,9 @@ export const FR = {
     removePhoto: 'Retirer la photo',
     photos: 'Photos de la maison',
     photoHint: 'Des photos qui défilent doucement sur le babillard. Ajoute-les depuis ton téléphone.',
-    photoAdd: 'Ajouter une photo',
+    photoAdd: 'Ajouter des photos',
     photoUploading: 'Téléversement…',
+    photoUploadingN: (done: number, total: number) => `Téléversement ${done}/${total}…`,
     noPhotos: 'Aucune photo pour le moment.',
   },
   ghost: {
@@ -784,8 +785,9 @@ export const EN: typeof FR = {
     removePhoto: 'Remove photo',
     photos: 'Home photos',
     photoHint: 'Photos that drift gently across the board. Add them from your phone.',
-    photoAdd: 'Add a photo',
+    photoAdd: 'Add photos',
     photoUploading: 'Uploading…',
+    photoUploadingN: (done: number, total: number) => `Uploading ${done}/${total}…`,
     noPhotos: 'No photos yet.',
   },
   ghost: {
