@@ -33,6 +33,7 @@ import * as recipeImage from '../functions/api/recipe-image'
 import * as recipeImport from '../functions/api/recipe-import'
 import * as recipeVision from '../functions/api/recipe-vision'
 import * as recipes from '../functions/api/recipes'
+import * as recipeTags from '../functions/api/recipe-tags'
 import * as recipeToList from '../functions/api/recipe-to-list'
 import * as routines from '../functions/api/routines'
 import * as suggestMeal from '../functions/api/suggest-meal'
@@ -82,6 +83,7 @@ const TABLE: Record<string, RouteMod> = {
   'recipe-import': recipeImport,
   'recipe-vision': recipeVision,
   recipes,
+  'recipe-tags': recipeTags,
   'recipe-to-list': recipeToList,
   routines,
   'suggest-meal': suggestMeal,

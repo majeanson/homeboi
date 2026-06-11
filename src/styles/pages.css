@@ -1151,3 +1151,48 @@
   color: var(--ink);
   transform: rotate(-1.5deg);
 }
+
+/* Reglages -> Recettes: the recipe-tag manager (pill presets + tags in use). */
+.operator__sub {
+  margin: 1.2rem 0 0.2rem;
+  font-size: 1.02rem;
+}
+.operator__hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.tag-admin__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.tag-admin__list {
+  margin-bottom: 0;
+}
+.tag-admin__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.tag-admin__name {
+  pointer-events: none;
+}
+.tag-admin__count {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  margin-right: auto;
+}
+.tag-admin__rename {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+.tag-admin__rename .input {
+  flex: 1;
+  min-width: 8rem;
+}

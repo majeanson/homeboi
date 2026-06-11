@@ -14,6 +14,7 @@ import { ProfileContext } from './lib/profile'
 import { CalmContext } from './lib/calm'
 import { ToastProvider } from './lib/toast'
 import { registerSw } from './lib/registerSw'
+import { trackVisualViewport } from './lib/viewportVars'
 import './styles.css'
 
 function Root() {
@@ -184,6 +185,10 @@ console.log(
 
 // Offline app shell for the installed PWA (wall tablet / iPad). No-op in dev.
 registerSw()
+
+// Keep --vvh/--vvt/--kb in sync with the visual viewport so modal and sheet
+// action buttons stay visible above the on-screen keyboard (iOS overlays it).
+trackVisualViewport()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -54,10 +54,17 @@
   padding: 0 0.7rem 0.7rem;
 }
 
-/* Modal: scrim + a centered scrolling card. */
+/* Modal: scrim + a centered scrolling card. Pinned to the VISUAL viewport (not
+   the layout one) so the card — footer buttons included — stays fully visible
+   when the on-screen keyboard is up. The --vvt/--vvh vars come from
+   src/lib/viewportVars.ts; without them this is simply inset: 0. */
 .recipe-modal {
   position: fixed;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: var(--vvt, 0px);
+  height: 100dvh;
+  height: var(--vvh, 100dvh);
   z-index: 80;
   display: flex;
   align-items: center;
@@ -73,6 +80,7 @@
   position: relative;
   width: min(560px, 100%);
   max-height: 90vh;
+  max-height: calc(var(--vvh, 100dvh) - 2rem);
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-lg);
