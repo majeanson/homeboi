@@ -20,6 +20,7 @@ interface RecipeRow {
   source: string | null
   image: string | null
   tags_json: string
+  original_json: string | null
   updated_at: number
 }
 
@@ -33,6 +34,18 @@ interface RecipeBody {
   source?: string | null
   image?: string | null
   tags?: string[]
+  original?: RecipeOriginal | null
+}
+
+// The as-imported snapshot (migration 0020): what the import (URL / paste /
+// photo) produced, untouched, so the sheet can always show "the original".
+interface RecipeOriginal {
+  title: string | null
+  ingredients: string[]
+  steps: string[]
+  servings?: number | null
+  source?: string | null
+  importedAt?: number
 }
 
 // An image value is either an R2 key (a single path segment we own) or a remote
@@ -51,13 +64,46 @@ function cleanImage(v: unknown): string | null {
 const isStr = (v: unknown): v is string => typeof v === 'string'
 
 // Trim, drop blanks, cap length + count so a runaway paste can't bloat a row.
-function cleanList(v: unknown, max = 40): string[] {
+// Ingredients fit in 200 chars; STEPS need more (a real instruction sentence
+// group runs longer) — silently chopping them at 200 was mangling imports.
+function cleanList(v: unknown, max = 40, maxLen = 200): string[] {
   if (!Array.isArray(v)) return []
   return v
     .map((x) => (isStr(x) ? x.trim() : ''))
     .filter(Boolean)
-    .map((s) => s.slice(0, 200))
+    .map((s) => s.slice(0, maxLen))
     .slice(0, max)
+}
+const cleanSteps = (v: unknown): string[] => cleanList(v, 40, 500)
+
+// Validate + serialize the as-imported snapshot. Returns the JSON string for
+// the column, or null when the value isn't a usable snapshot. Same caps as the
+// live fields so a hostile client can't bloat the row through this side door.
+function cleanOriginal(v: unknown): string | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null
+  const o = v as RecipeOriginal
+  const ingredients = cleanList(o.ingredients)
+  const steps = cleanSteps(o.steps)
+  if (!ingredients.length && !steps.length) return null
+  return JSON.stringify({
+    title: isStr(o.title) ? o.title.trim().slice(0, 200) || null : null,
+    ingredients,
+    steps,
+    servings: typeof o.servings === 'number' && o.servings > 0 ? Math.floor(o.servings) : null,
+    source: isStr(o.source) ? o.source.trim().slice(0, 600) || null : null,
+    importedAt: typeof o.importedAt === 'number' ? Math.floor(o.importedAt) : null,
+  })
+}
+
+// Parse the stored snapshot back out (defensive — a bad row reads as null).
+function parseOriginal(json: string | null): RecipeOriginal | null {
+  if (!json) return null
+  try {
+    const o = JSON.parse(json) as RecipeOriginal
+    return o && typeof o === 'object' && !Array.isArray(o) ? o : null
+  } catch {
+    return null
+  }
 }
 
 // Tags: short, deduped (case-insensitively), few. A tighter cleanList.
@@ -79,7 +125,7 @@ function cleanTags(v: unknown): string[] {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, ingredients_json, steps_json, servings, notes, source, image, tags_json, updated_at FROM recipes WHERE household_id = ? ORDER BY title',
+    'SELECT id, title, ingredients_json, steps_json, servings, notes, source, image, tags_json, original_json, updated_at FROM recipes WHERE household_id = ? ORDER BY title',
   )
     .bind(actor.householdId)
     .all<RecipeRow>()
@@ -93,6 +139,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     source: r.source,
     image: r.image,
     tags: parseJsonArray<string>(r.tags_json, isStr),
+    original: parseOriginal(r.original_json),
     updatedAt: r.updated_at,
   }))
   return ok({ recipes })
@@ -106,19 +153,20 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   const servings = typeof body?.servings === 'number' && body.servings > 0 ? Math.floor(body.servings) : null
   await ctx.env.DB.prepare(
-    'INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, notes, source, image, tags_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, notes, source, image, tags_json, original_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
       actor.householdId,
       title.slice(0, 200),
       JSON.stringify(cleanList(body?.ingredients)),
-      JSON.stringify(cleanList(body?.steps)),
+      JSON.stringify(cleanSteps(body?.steps)),
       servings,
       body?.notes?.trim()?.slice(0, 2000) || null,
       body?.source?.trim()?.slice(0, 200) || null,
       cleanImage(body?.image),
       JSON.stringify(cleanTags(body?.tags)),
+      cleanOriginal(body?.original),
       ts,
       ts,
     )
@@ -134,23 +182,27 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const servings = typeof body.servings === 'number' && body.servings > 0 ? Math.floor(body.servings) : null
   const image = cleanImage(body.image)
   // The previous image, so we can free a now-orphaned R2 blob when it's replaced
-  // or cleared (remote URLs need no cleanup).
-  const prev = await ctx.env.DB.prepare('SELECT image FROM recipes WHERE id = ? AND household_id = ?')
+  // or cleared (remote URLs need no cleanup), and the previous original snapshot
+  // so an edit that doesn't carry one never wipes it.
+  const prev = await ctx.env.DB.prepare('SELECT image, original_json FROM recipes WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
-    .first<{ image: string | null }>()
+    .first<{ image: string | null; original_json: string | null }>()
   if (!prev) return notFound('Recette introuvable.')
+  // A fresh import during the edit replaces the snapshot; anything else keeps it.
+  const original = cleanOriginal(body.original) ?? prev.original_json
   await ctx.env.DB.prepare(
-    'UPDATE recipes SET title = ?, ingredients_json = ?, steps_json = ?, servings = ?, notes = ?, source = ?, image = ?, tags_json = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+    'UPDATE recipes SET title = ?, ingredients_json = ?, steps_json = ?, servings = ?, notes = ?, source = ?, image = ?, tags_json = ?, original_json = ?, updated_at = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title.slice(0, 200),
       JSON.stringify(cleanList(body.ingredients)),
-      JSON.stringify(cleanList(body.steps)),
+      JSON.stringify(cleanSteps(body.steps)),
       servings,
       body.notes?.trim()?.slice(0, 2000) || null,
       body.source?.trim()?.slice(0, 200) || null,
       image,
       JSON.stringify(cleanTags(body.tags)),
+      original,
       nowSec(),
       body.id,
       actor.householdId,

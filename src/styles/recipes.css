@@ -378,3 +378,49 @@
   flex: 1;
   min-width: 0;
 }
+
+/* The "Original" view: the recipe with nothing we added — a calm paper read.
+   Serif, cream sheet, plain lists; deliberately none of the card chrome. */
+.recipe-original-toggle.is-on {
+  background: var(--surface-strong, var(--surface));
+  box-shadow: inset 0 0 0 2px var(--line);
+  border-radius: 8px;
+}
+.recipe-original {
+  font-family: Georgia, 'Times New Roman', serif;
+  background: color-mix(in srgb, var(--surface) 88%, #f4ecd9);
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem 1.4rem;
+}
+.recipe-original__tag {
+  margin: 0 0 0.6rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.recipe-original__title {
+  margin: 0 0 0.3rem;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+.recipe-original__meta {
+  margin: 0.2rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+.recipe-original__h {
+  margin: 1.1rem 0 0.4rem;
+  font-size: 1.05rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.25rem;
+}
+.recipe-original__ings,
+.recipe-original__steps {
+  margin: 0;
+  padding-left: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  line-height: 1.5;
+}

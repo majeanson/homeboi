@@ -36,6 +36,20 @@ export function RecipeSheet({
   const canCook = recipe.steps.length > 0 || recipe.ingredients.length > 0
   const imgSrc = recipeImg(recipe.image)
 
+  // "Original" flips the body into the recipe with nothing we added — no
+  // scaling, no measure pills, no per-step ingredients, no sentence bullets.
+  // An imported recipe shows its as-imported snapshot; a hand-typed one shows
+  // the card as written. Plain title, plain list, plain numbered steps.
+  const [showOriginal, setShowOriginal] = useState(false)
+  const orig = recipe.original ?? null
+  const origView = {
+    title: orig?.title || recipe.title,
+    ingredients: orig?.ingredients?.length ? orig.ingredients : recipe.ingredients,
+    steps: orig?.steps?.length ? orig.steps : recipe.steps,
+    servings: orig ? (orig.servings ?? null) : recipe.servings,
+    source: (orig ? orig.source : null) ?? recipe.source,
+  }
+
   // Batch scaler: `factor` is the source of truth (1 = the recipe as written).
   // Quick presets (×½ ×1 ×2 ×3) set it directly and work even with no stated
   // servings; when the recipe DOES state servings, a +/- stepper nudges it and
@@ -87,11 +101,58 @@ export function RecipeSheet({
       <div className="recipe-modal__card surface">
         <div className="recipe-modal__bar">
           <h2>{recipe.title}</h2>
+          <button
+            type="button"
+            className={'btn btn--ghost mono recipe-original-toggle' + (showOriginal ? ' is-on' : '')}
+            onClick={() => setShowOriginal((s) => !s)}
+            aria-pressed={showOriginal}
+            title={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
+            aria-label={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
+          >
+            📜
+          </button>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.back}>
             ✕
           </button>
         </div>
 
+        {showOriginal ? (
+          <div className="recipe-modal__body recipe-original">
+            <p className="recipe-original__tag mono">
+              {orig ? t.recipes.originalImported : t.recipes.originalAsWritten}
+              {orig?.importedAt ? ` · ${new Date(orig.importedAt * 1000).toLocaleDateString()}` : ''}
+            </p>
+            <h3 className="recipe-original__title">{origView.title}</h3>
+            {origView.servings ? <p className="recipe-original__meta">{t.recipes.servingsN(origView.servings)}</p> : null}
+            {origView.ingredients.length > 0 && (
+              <>
+                <h4 className="recipe-original__h">{t.recipes.ingredients}</h4>
+                <ul className="recipe-original__ings">
+                  {origView.ingredients.map((ing, i) => (
+                    <li key={i}>{ing}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {origView.steps.length > 0 && (
+              <>
+                <h4 className="recipe-original__h">{t.recipes.steps}</h4>
+                <ol className="recipe-original__steps">
+                  {origView.steps.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ol>
+              </>
+            )}
+            {origView.source && /^https?:\/\//i.test(origView.source) && (
+              <p className="recipe-original__meta">
+                <a href={origView.source} target="_blank" rel="noreferrer noopener">
+                  {t.recipes.sourceLabel}
+                </a>
+              </p>
+            )}
+          </div>
+        ) : (
         <div className="recipe-modal__body">
           {imgSrc && <ZoomableImg className="recipe-view__img" src={imgSrc} alt={recipe.title} />}
 
@@ -204,6 +265,7 @@ export function RecipeSheet({
 
           {recipe.notes && <p className="recipe-view__notes">{recipe.notes}</p>}
         </div>
+        )}
 
         {/* Plan-a-supper day picker, anchored right above the actions so tapping
             "Planifier un souper" reveals the days next to the button (not lost up
