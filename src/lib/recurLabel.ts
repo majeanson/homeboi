@@ -1,14 +1,19 @@
 import type { FR } from '../i18n'
 import type { RecurValue } from '../components/RecurPicker'
 
-// Parse a stored recur_json into the form's RecurValue (or null). Mirrors the
-// EventForm helper so chores and events read a rule the same way.
+// Parse a stored recur_json into the form's RecurValue (or null). The single
+// reader shared by the event form, the chore rows, and the chore label — so a
+// rule is parsed (and defended) one way everywhere. Weekdays are filtered to
+// 0–6 so a corrupt stored value can't break the RecurPicker.
 export function recurOf(json?: string | null): RecurValue | null {
   if (!json) return null
   try {
     const v = JSON.parse(json) as Partial<RecurValue>
     if (v.freq === 'daily' || v.freq === 'weekly' || v.freq === 'monthly') {
-      return { freq: v.freq, interval: v.interval ?? 1, weekdays: v.weekdays ?? [] }
+      const weekdays = Array.isArray(v.weekdays)
+        ? v.weekdays.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+        : []
+      return { freq: v.freq, interval: v.interval ?? 1, weekdays }
     }
   } catch {
     /* malformed → no rule */

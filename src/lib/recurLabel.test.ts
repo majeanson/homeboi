@@ -19,6 +19,13 @@ describe('recurOf', () => {
   it('defaults a missing interval/weekdays', () => {
     expect(recurOf('{"freq":"daily"}')).toEqual({ freq: 'daily', interval: 1, weekdays: [] })
   })
+  it('drops out-of-range / non-integer weekdays from a corrupt rule', () => {
+    expect(recurOf('{"freq":"weekly","interval":1,"weekdays":[4,99,-1,2.5,"x"]}')).toEqual({
+      freq: 'weekly',
+      interval: 1,
+      weekdays: [4],
+    })
+  })
 })
 
 describe('recurLabel', () => {

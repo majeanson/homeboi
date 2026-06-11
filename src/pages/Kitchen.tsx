@@ -42,13 +42,19 @@ export function Kitchen() {
   const [slotText, setSlotText] = useState('')
   async function saveSlot(date: number, slot: string, title: string) {
     const v = title.trim()
-    setEditSlot(null)
-    setSlotText('')
-    if (!v) return
+    if (!v) {
+      setEditSlot(null)
+      setSlotText('')
+      return
+    }
     try {
       await api('meals', { method: 'POST', body: { date, slot, title: v } })
+      // Only close the editor once the write lands — a failed plan keeps the
+      // typed title so it can be retried (same as the grocery add bar).
+      setEditSlot(null)
+      setSlotText('')
     } catch {
-      /* a failed plan just doesn't appear; the calm path */
+      /* keep the editor open with the text intact */
     }
     qc.invalidateQueries({ queryKey: MEALS_KEY })
   }

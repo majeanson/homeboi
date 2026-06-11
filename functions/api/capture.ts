@@ -36,6 +36,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
   return ok({ type: intent.type, degraded: intent.degraded ?? false, routed })
 })
 
+// The valid meal slots — the router's proposed slot is checked against these
+// before it reaches the row (mirrors functions/api/meals.ts).
+const MEAL_SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack'])
+
 async function routeIntent(
   env: Env,
   actor: Actor,
@@ -96,10 +100,12 @@ async function routeIntent(
     case 'meal': {
       const { startAt } = parseWhen(p.when, Date.now())
       const title = p.title || raw
+      // Validate the slot the router proposed — never trust it blindly into the row.
+      const slot = p.slot && MEAL_SLOTS.has(p.slot) ? p.slot : 'supper'
       await env.DB.prepare(
         'INSERT INTO meals (id, household_id, date, slot, title, created_at) VALUES (?, ?, ?, ?, ?, ?)',
       )
-        .bind(newId(), hh, startAt, p.slot || 'supper', title, ts)
+        .bind(newId(), hh, startAt, slot, title, ts)
         .run()
       return { kind: 'meal', label: title }
     }
@@ -107,7 +113,9 @@ async function routeIntent(
     default: {
       // A note now has a home: the `notes` table, shown on the Aujourd'hui board
       // until cleared (and still in `captures` as the audit row for re-classify).
-      const noteText = p.text || raw
+      // Clamp to the same 280 the notes endpoint enforces — one capture can't bloat
+      // the board payload.
+      const noteText = (p.text || raw).slice(0, 280)
       await env.DB.prepare(
         'INSERT INTO notes (id, household_id, text, member_id, created_at) VALUES (?, ?, ?, ?, ?)',
       )

@@ -62,7 +62,7 @@ export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
       if (armTimer.current) clearTimeout(armTimer.current)
       setArmedKey(null)
       speak(t.kid.okDone)
-      tile.onTap()
+      tile.onTap?.()
       return
     }
     // First tap: say what this IS and what tapping again will do, then wait.

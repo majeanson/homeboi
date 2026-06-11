@@ -3,7 +3,7 @@ import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { useSpeak } from '../../lib/speak'
-import type { Member, NoteRow } from './types'
+import type { BoardData, Member, NoteRow } from './types'
 
 // Fridge notes on the Aujourd'hui board: little hand-written cards a parent can
 // clear with a tap. Tinted by who left it (pick-your-face). Optimistically
@@ -27,7 +27,7 @@ export function Notes({
 
   function dismiss(n: NoteRow) {
     // Optimistic: drop it from the cached board at once, then persist the clear.
-    qc.setQueryData<{ notes: NoteRow[] }>(BOARD_KEY, (d) =>
+    qc.setQueryData<BoardData>(BOARD_KEY, (d) =>
       d ? { ...d, notes: d.notes.filter((x) => x.id !== n.id) } : d,
     )
     api('notes', { method: 'DELETE', body: { id: n.id } })
