@@ -15,6 +15,7 @@ export interface ListItem {
   source?: string
   added_by?: string | null
   deal_json?: string | null
+  search_terms?: string | null // JSON array of extra flyer-search synonyms, if any
 }
 
 // Parse a staged deal off a list row (null when none / malformed).
@@ -24,6 +25,17 @@ export function parseDeal(dealJson: string | null | undefined): Deal | null {
     return JSON.parse(dealJson) as Deal
   } catch {
     return null
+  }
+}
+
+// Parse the saved flyer-search synonyms off a list row ([] when none / malformed).
+export function parseTerms(json: string | null | undefined): string[] {
+  if (!json) return []
+  try {
+    const a = JSON.parse(json)
+    return Array.isArray(a) ? a.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
   }
 }
 

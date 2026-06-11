@@ -189,8 +189,9 @@
 }
 .recipe-line__del {
   flex: none;
-  width: 2rem;
-  height: 2rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1rem;
   border: 0;
   background: transparent;
   color: var(--ink-faint);
@@ -374,6 +375,116 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+/* The chip that opts a recipe pick into the grocery flow — quiet until ticked. */
+.kitchen__recipe-staples {
+  align-self: flex-start;
+}
+
+/* The "general ideas" pool below the week grid — a reusable shortlist. */
+.kitchen__ideas {
+  margin-top: 1.4rem;
+}
+.kitchen__ideas-hint,
+.kitchen__ideas-empty {
+  color: var(--ink-faint);
+  margin: 0.2rem 0 0.6rem;
+}
+.kitchen__ideas-add {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.kitchen__ideas-add .input {
+  flex: 1;
+  min-width: 0;
+}
+.kitchen__ideas-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.kitchen__idea-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.kitchen__idea-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  justify-content: flex-start;
+}
+.kitchen__idea-del {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  background: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: 0.6rem;
+}
+.kitchen__idea-del:hover {
+  color: var(--ink);
+}
+.kitchen__idea-days {
+  margin: 0.4rem 0 0.2rem;
+}
+.kitchen__idea-days-label {
+  display: block;
+  color: var(--ink-faint);
+  margin-bottom: 0.3rem;
+}
+.kitchen__suggestion-keep {
+  margin-left: 0.5rem;
+}
+
+/* ---- Phones: give text editors a full line ------------------------------- *
+   The kitchen/recipe inline editors are "text field + button" rows. On a narrow
+   screen the button steals width and the input shrinks to a few characters —
+   you can't see what you typed. Below 540px the field takes the whole line and
+   the action(s) drop beneath it, so every edit is comfortably wide. */
+@media (max-width: 540px) {
+  /* When a day is being edited, let the whole editor (title field + recipe
+     picker, or the staples confirm) drop below the day's tile+name and span the
+     full card width — otherwise it's pinned to a ~60% column on the right and
+     the text field is needlessly narrow. */
+  .kitchen__day-edit-wrap,
+  .kitchen__staples {
+    flex-basis: 100%;
+  }
+  .kitchen__day-edit,
+  .kitchen__slot-edit,
+  .kitchen__ideas-add {
+    flex-wrap: wrap;
+  }
+  .kitchen__day-edit > .input,
+  .kitchen__slot-edit > .input,
+  .kitchen__ideas-add > .input {
+    flex: 1 1 100%;
+  }
+  /* The day/slot editors' submit button then sits on its own line, full-width
+     and easy to hit, instead of pinned to the right of a squished field. */
+  .kitchen__day-edit > .btn,
+  .kitchen__slot-edit > .btn {
+    flex: 1 1 100%;
+  }
+  /* The recipe modal's primary actions go full-width so the main action is a
+     big, unambiguous tap at the bottom of the sheet. */
+  .recipe-modal__foot .btn {
+    flex: 1 1 auto;
+  }
+  /* Two recipe cards still fit a phone; this keeps them from going too narrow
+     to read the title when an image is present. */
+  .recipe-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }
 
 /* Flyer/deals browser: the search row above the staple chips + results. */

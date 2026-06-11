@@ -6,7 +6,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useProfile } from '../lib/profile'
 import { DisplaySection, CalmSection } from '../components/operator/display'
-import { ShopSection, GhostSection } from '../components/operator/shopping'
+import { ShopSection, StoreFilterSection, GhostSection } from '../components/operator/shopping'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
 import { EventsSection } from '../components/operator/agenda'
@@ -134,7 +134,12 @@ export function Operator() {
         {tab === 'agenda' && <EventsSection events={events} members={members} onChange={load} />}
         {tab === 'chores' && <ChoresSection chores={chores} members={members} onChange={load} />}
         {tab === 'routines' && <RoutinesSection routines={routines} members={members} onChange={load} />}
-        {tab === 'shopping' && <ShopSection />}
+        {tab === 'shopping' && (
+          <>
+            <ShopSection />
+            <StoreFilterSection />
+          </>
+        )}
         {tab === 'recipes' && <RecipeTagsSection />}
         {tab === 'ghost' && <GhostSection />}
         {tab === 'devices' && (

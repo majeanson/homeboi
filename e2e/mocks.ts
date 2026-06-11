@@ -40,7 +40,7 @@ const BOARD = {
       text: 'Lait',
       source: 'manual',
       added_by: 'm1',
-      deal_json: JSON.stringify({ id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', image: null, validFrom: null, validTo: null }),
+      deal_json: JSON.stringify({ id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: null, premium: true, image: null, validFrom: null, validTo: null }),
     },
     { id: 'l2', text: 'Pain', source: 'manual' },
     { id: 'l3', text: 'Pommes', source: 'ghost' },
@@ -80,7 +80,8 @@ const BOARD = {
 const MEALS = {
   weekStart: BASE - 0 * DAY,
   days: [
-    { id: 'meal1', date: BASE, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2' },
+    // Linked to the saved recipe rc1 (recipe_id) — the grid's 📖 opens it exactly.
+    { id: 'meal1', date: BASE, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1' },
     { id: 'meal2', date: BASE + DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1' },
     // A kid-suggested supper (Léa, m3) sitting in a slot that was empty — shows the
     // "💡 Léa" note in the parent week. cook is null until a parent decides.
@@ -244,6 +245,13 @@ const ROUTES: Record<string, unknown> = {
   weather: { weather: { tempC: 21, bucket: 'clear', isDay: true }, tomorrow: { bucket: 'rain', highC: 18, lowC: 11 } },
   photos: { photos: [] },
   meals: MEALS,
+  'meal-ideas': {
+    ideas: [
+      { id: 'idea1', title: 'Soupe poulet-nouilles', recipe_id: null, suggested_by: null, created_at: BASE - DAY },
+      // A recipe-linked idea (rc1) — shows the 📖 marker in the pool.
+      { id: 'idea2', title: 'Spaghetti maison', recipe_id: 'rc1', suggested_by: 'm3', created_at: BASE - 2 * DAY },
+    ],
+  },
   pantry: PANTRY,
   'use-soon': { soon: [{ id: 'u1', item: 'Épinards', marked_at: BASE - 3 * 3600 }, { id: 'u2', item: 'Crème', marked_at: BASE - 8 * 3600 }] },
   recipes: RECIPES,
@@ -261,21 +269,25 @@ const ROUTES: Record<string, unknown> = {
   chores: CHORES,
   events: EVENTS,
   health: { ai: true },
-  household: { postal: 'H2X 1Y4' },
+  household: { postal: 'H2X 1Y4', includedStores: [] },
   deals: {
     deals: [
-      { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', image: null, validFrom: null, validTo: BASE + 5 * DAY },
-      { id: 102, flyerId: 5002, name: 'Lait 1% 2L', price: 2.99, wasPrice: null, unitPrice: 1.5, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'IGA', image: null, validFrom: null, validTo: BASE + 5 * DAY },
+      { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: null, premium: true, image: null, validFrom: null, validTo: BASE + 5 * DAY },
+      { id: 102, flyerId: 5002, name: 'Lait 1% 2L', price: 2.99, wasPrice: null, unitPrice: 1.5, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'IGA', logo: null, premium: true, image: null, validFrom: null, validTo: BASE + 5 * DAY },
     ],
   },
   flyers: {
     flyers: [
-      { flyerId: 5001, merchant: 'Super C', logo: null, validFrom: null, validTo: null },
-      { flyerId: 5002, merchant: 'IGA', logo: null, validFrom: null, validTo: null },
+      { flyerId: 5001, merchant: 'Super C', logo: null, premium: true, validFrom: null, validTo: null },
+      { flyerId: 5002, merchant: 'IGA', logo: null, premium: true, validFrom: null, validTo: null },
     ],
   },
   flyer: {
     flyerId: 5001,
+    // ISO strings (not the unix-seconds BASE) so the viewer's date header renders a
+    // real range, like the live feed — the rest of the mock uses seconds for slotting.
+    validFrom: '2026-06-11T00:00:00-04:00',
+    validTo: '2026-06-17T23:59:59-04:00',
     pages: [{ id: 1, page: 1, left: 0, top: 0, right: 100, bottom: -100 }],
     items: [{ id: 101, name: 'Lait 2% 4L', price: 4.99, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', validFrom: null, validTo: null, image: null, left: 10, top: -10, right: 40, bottom: -40 }],
   },

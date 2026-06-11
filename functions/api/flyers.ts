@@ -1,6 +1,7 @@
 import { badRequest, ok, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
+import { householdIncludedStores, storeKey } from '../_lib/stores'
 import { resolveLang } from '../_lib/ai'
 
 // PROOF OF CONCEPT — list the grocery flyers near the household, so you can open a
@@ -22,6 +23,7 @@ interface FlippFlyer {
   valid_from?: string
   valid_to?: string
   categories?: string[]
+  premium?: boolean // image-based (scanned) flyer vs SFML reconstruction
 }
 
 export interface FlyerSummary {
@@ -30,6 +32,12 @@ export interface FlyerSummary {
   logo: string | null
   validFrom: string | null
   validTo: string | null
+  // Image-based (scanned) flyer — its reconstruction uses real flyer clippings, so
+  // the viewer can present it as the official flyer. False = SFML vector flyer.
+  premium: boolean
+  // Only set in ?manage=1 (settings) responses: whether this store is currently
+  // kept by the household's store allowlist. Omitted from the normal feed.
+  included?: boolean
 }
 
 const https = (u: string | null | undefined): string | null =>
@@ -38,6 +46,10 @@ const https = (u: string | null | undefined): string | null =>
 export const onRequestGet = authed(async (ctx, actor) => {
   const url = new URL(ctx.request.url)
   const postalRaw = url.searchParams.get('postal')?.trim()
+  // ?manage=1 is the settings store-filter view: it returns every grocery store
+  // (including ones outside the allowlist) each tagged with `included`, so the
+  // operator can toggle them. The normal feed drops non-included stores entirely.
+  const manage = url.searchParams.get('manage') === '1'
   const qlang = url.searchParams.get('lang')
   const lang = qlang === 'en' || qlang === 'fr' ? qlang : resolveLang(ctx.env, ctx.request)
 
@@ -49,6 +61,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     postal = await householdPostal(ctx.env, actor.householdId)
   }
   if (!postal) return badRequest('Code postal requis — réglez-le dans les réglages.')
+
+  const included = new Set(await householdIncludedStores(ctx.env, actor.householdId))
 
   const endpoint =
     'https://backflipp.wishabi.com/flipp/flyers' +
@@ -78,15 +92,22 @@ export const onRequestGet = authed(async (ctx, actor) => {
     if (typeof f.id !== 'number' || !f.merchant) continue
     const cats = (f.categories ?? []).map((c) => c.toLowerCase())
     if (!cats.some((c) => KEEP.includes(c))) continue
-    const key = f.merchant.toLowerCase()
+    const key = storeKey(f.merchant)
     if (seen.has(key)) continue
     seen.add(key)
+    // Empty allowlist = no filter, so every store counts as included. Normal feed:
+    // non-included stores are simply dropped so nothing downstream sees them.
+    // Manage view: keep them all and tag the state for the settings toggle.
+    const isIncluded = included.size === 0 || included.has(key)
+    if (!isIncluded && !manage) continue
     flyers.push({
       flyerId: f.id,
       merchant: f.merchant,
       logo: https(f.merchant_logo),
       validFrom: f.valid_from ?? null,
       validTo: f.valid_to ?? null,
+      premium: f.premium ?? false,
+      ...(manage ? { included: isIncluded } : {}),
     })
   }
   flyers.sort((a, b) => a.merchant.localeCompare(b.merchant))

@@ -400,11 +400,15 @@
 /* Kitchen: a recipe-book link beside a planned meal, and the recipe search box. */
 .kitchen__day-recipe-link {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   border: 0;
   background: transparent;
   cursor: pointer;
-  font-size: 1.1rem;
-  padding: 0.2rem 0.4rem;
+  font-size: 1.25rem;
   border-radius: var(--radius-pill);
   line-height: 1;
 }
@@ -479,10 +483,18 @@
 }
 .recipe-tags-edit__add {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
 }
 .recipe-tags-edit__add .input {
   flex: 1 1 auto;
+}
+/* Phone: the tag field takes the whole line so the typed tag is readable; the
+   ＋ drops beneath it (matches the other kitchen/recipe inline editors). */
+@media (max-width: 540px) {
+  .recipe-tags-edit__add .input {
+    flex: 1 1 100%;
+  }
 }
 /* Tags shown on the recipe view. */
 .recipe-view__tags {

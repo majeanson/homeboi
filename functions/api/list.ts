@@ -68,8 +68,37 @@ export const onRequestPost = authed(async (ctx, actor) => {
 // PATCH toggles checked; DELETE removes. Scoped to the household so a kiosk
 // can't touch another household's rows even with a forged id.
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; checked?: boolean; deal?: unknown }>(ctx.request)
+  const body = await readJson<{
+    id?: string
+    checked?: boolean
+    deal?: unknown
+    text?: string
+    search_terms?: unknown
+  }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
+
+  // Rename the line in place (edit sheet). Trimmed; empty text is ignored rather
+  // than blanking the row.
+  if (typeof body.text === 'string') {
+    const text = body.text.trim()
+    if (!text) return badRequest('Texte requis.')
+    await ctx.env.DB.prepare('UPDATE list_items SET text = ? WHERE id = ? AND household_id = ?')
+      .bind(text, body.id, actor.householdId)
+      .run()
+  }
+
+  // Extra flyer search synonyms for this line (edit sheet) — a JSON array of
+  // strings, or null/[] to clear. Stored as JSON; the deals endpoint fans these
+  // out across Flipp so "Œuf" can also match "egg"/"oeufs".
+  if ('search_terms' in body) {
+    const terms = Array.isArray(body.search_terms)
+      ? body.search_terms.map((s) => String(s).trim()).filter(Boolean).slice(0, 12)
+      : []
+    const json = terms.length ? JSON.stringify(terms) : null
+    await ctx.env.DB.prepare('UPDATE list_items SET search_terms = ? WHERE id = ? AND household_id = ?')
+      .bind(json, body.id, actor.householdId)
+      .run()
+  }
 
   // Stage / unstage a flyer deal on this line — `deal` present (object → stage,
   // null → unstage) updates deal_json. This is how the cashier set is built now.

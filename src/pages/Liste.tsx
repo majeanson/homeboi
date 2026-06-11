@@ -10,6 +10,7 @@ import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { PriceMatchSheet } from '../components/PriceMatchSheet'
+import { ListItemSheet } from '../components/ListItemSheet'
 import { DealsBrowser } from '../components/DealsBrowser'
 import { CashierMode } from '../components/CashierMode'
 import { GhostStrip } from '../components/GhostStrip'
@@ -18,7 +19,7 @@ import { useUndoToast } from '../lib/toast'
 import { useOptimisticMutation } from '../lib/optimistic'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { money, type Deal } from '../lib/deals'
-import { pickListFrom, parseDeal, stageDeal, unstageDeal } from '../lib/picks'
+import { pickListFrom, parseDeal, parseTerms, stageDeal, unstageDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { BOARD_KEY } from '../lib/queryKeys'
 
@@ -28,12 +29,19 @@ import { BOARD_KEY } from '../lib/queryKeys'
 //     pre-reader can help clear the list — the same write a parent makes.
 // Reads the list out of the one-shot /board payload to avoid a second endpoint,
 // sharing the ['board'] cache with the Board page.
+//
+// The parent lens has two MODES (NFR-CALM: one screen, two intents):
+//   - 'home'  — preparing the list: a check moves the item to the done shelf.
+//   - 'store' — shopping with it: a check means "in my cart", so the item STAYS
+//     in the list with a filled check; the cashier ("Montrer à la caisse") lives
+//     here, plus a one-tap "empty the cart" to clear what was bought.
 interface ListRow {
   id: string
   text: string
   source: string
   added_by?: string | null // pick-your-face attribution (member id), if any
   deal_json?: string | null // a staged flyer deal for the cashier (JSON), if any
+  search_terms?: string | null // extra flyer-search synonyms (JSON array), if any
 }
 interface ListMember {
   id: string
@@ -68,15 +76,119 @@ interface HistoryItem {
 // Accent/case-insensitive matching for the typeahead ("creme" finds "Crème").
 const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim()
 
+// One list row, drawn the same way wherever it appears — the live list AND the
+// done shelf (so checked items read as the same things, just resting). Three
+// independent tap targets: the picture opens the flyer/deals, the name opens the
+// edit sheet, the check is the toggle. On the done shelf all three restore.
+function ListItemRow({
+  text,
+  picto,
+  dealImage,
+  dealLabel,
+  adder,
+  checked,
+  toggleLabel,
+  onImage,
+  imageLabel,
+  onName,
+  nameLabel,
+  onToggle,
+  proof,
+}: {
+  text: string
+  picto: string
+  dealImage?: string | null
+  dealLabel?: React.ReactNode
+  adder?: ListMember | null
+  checked?: boolean
+  toggleLabel: string
+  onImage: () => void
+  imageLabel: string
+  onName: () => void
+  nameLabel: string
+  onToggle: () => void
+  proof?: React.ReactNode
+}) {
+  return (
+    <div className="list-row">
+      <div className={`act list-row__main${checked ? ' done' : ''}`}>
+        <span className="spine" style={{ background: CATS.list.color }} aria-hidden="true" />
+        <button type="button" className="list-row__img" onClick={onImage} aria-label={imageLabel}>
+          {dealImage ? (
+            // A linked flyer deal with a clipping → show the product picture.
+            <span className="tile list-row__thumb" aria-hidden="true">
+              <img src={dealImage} alt="" loading="lazy" />
+            </span>
+          ) : picto ? (
+            // The item's own picture (milk/bread/apple…) so the list reads as
+            // distinct things, not a column of identical carts.
+            <span className="tile list-row__pic" style={{ background: CATS.list.wash }} aria-hidden="true">
+              {picto}
+            </span>
+          ) : (
+            <span className="tile" style={{ background: CATS.list.wash }} aria-hidden="true">
+              <Icon name={CATS.list.icon} size={28} color={CATS.list.deep} />
+            </span>
+          )}
+        </button>
+        <button type="button" className="list-row__name act__text" onClick={onName} aria-label={nameLabel}>
+          <span className="title" style={{ color: tintInk(CATS.list.color) }}>
+            {text}
+          </span>
+          {dealLabel}
+        </button>
+        {adder && (
+          <span
+            className="list-row__by"
+            style={{ background: adder.colour }}
+            title={adder.display_name}
+            aria-label={adder.display_name}
+          >
+            {(adder.display_name[0] ?? '?').toUpperCase()}
+          </span>
+        )}
+        <button type="button" className="check list-row__toggle" onClick={onToggle} aria-label={toggleLabel}>
+          <Icon name="check-bold" size={18} />
+        </button>
+      </div>
+      {proof}
+    </div>
+  )
+}
+
 export function Liste() {
   const t = useT()
   const { audience } = useAudience()
   const qc = useQueryClient()
   const undo = useUndoToast()
-  const [proofFor, setProofFor] = useState<{ id: string; text: string } | null>(null)
+  const [proofFor, setProofFor] = useState<{ id: string; text: string; terms: string[] } | null>(null)
+  const [editItem, setEditItem] = useState<ListRow | null>(null)
   const [cashierOpen, setCashierOpen] = useState(false)
   const [browseOpen, setBrowseOpen] = useState(false)
   const [auto, setAuto] = useState(false)
+  // 'home' = preparing the list (a check shelves the item); 'store' = shopping
+  // (a check means "in my cart" — the item stays, the cashier shows). Remembered
+  // per device so you land back where you were. Local-only: the cart is the phone
+  // in your hand, not synced household state.
+  const [mode, setMode] = useState<'home' | 'store'>(() => {
+    try {
+      return localStorage.getItem('list-mode') === 'store' ? 'store' : 'home'
+    } catch {
+      return 'home'
+    }
+  })
+  function chooseMode(m: 'home' | 'store') {
+    setMode(m)
+    try {
+      localStorage.setItem('list-mode', m)
+    } catch {
+      /* private mode — just don't remember it */
+    }
+  }
+  // In-cart items (store mode): a local, per-device Set. Toggling marks "I picked
+  // this up" — the row stays put with a filled check; it never touches the server
+  // until you empty the cart (which checks them all off → done shelf).
+  const [inCart, setInCart] = useState<Set<string>>(new Set())
   // Items checked off but whose delete is still DEFERRED behind the undo toast.
   // Filtered out of the displayed list so a refetch (the live poll, a focus, or
   // an add's invalidation) can't resurrect them before their write commits — the
@@ -102,8 +214,8 @@ export function Liste() {
     staleTime: 60_000,
   })
 
-  // Check an item off. Drop it from the cached list at once, but DEFER the write
-  // behind an undo toast: a mis-tap costs nothing (tap Undo → restore, no
+  // Check an item off (HOME mode). Drop it from the cached list at once, but DEFER
+  // the write behind an undo toast: a mis-tap costs nothing (tap Undo → restore, no
   // round-trip). A check records a purchase, which shifts the predictions, so
   // refresh the ghost strip once it commits.
   function checkOff(item: ListRow) {
@@ -132,6 +244,38 @@ export function Liste() {
           return n
         })
       },
+    })
+  }
+
+  // Toggle an item in/out of the cart (STORE mode) — purely local; the row stays
+  // on the list, just gains/loses its filled check.
+  function toggleCart(id: string) {
+    setInCart((s) => {
+      const n = new Set(s)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+  }
+
+  // Empty the cart (STORE mode): everything you picked up gets checked off in one
+  // go (→ done shelf), clearing the trip. Hidden at once via pendingChecked so the
+  // live poll can't bring them back mid-commit.
+  async function clearCart() {
+    const ids = [...inCart]
+    if (ids.length === 0) return
+    setPendingChecked((s) => new Set([...s, ...ids]))
+    setInCart(new Set())
+    for (const id of ids) {
+      await api('list', { method: 'PATCH', body: { id, checked: true } }).catch(() => {})
+    }
+    await qc.invalidateQueries({ queryKey: BOARD_KEY })
+    qc.invalidateQueries({ queryKey: GHOSTS_KEY })
+    qc.invalidateQueries({ queryKey: HISTORY_KEY })
+    setPendingChecked((s) => {
+      const n = new Set(s)
+      ids.forEach((i) => n.delete(i))
+      return n
     })
   }
 
@@ -173,6 +317,12 @@ export function Liste() {
     qc.invalidateQueries({ queryKey: GHOSTS_KEY })
   }
 
+  // Open the flyer/deals sheet for a line, carrying its saved synonyms so the
+  // lookup can fan out ("Œuf" → also "egg"/"oeufs").
+  function openFlyer(item: ListRow) {
+    setProofFor({ id: item.id, text: item.text, terms: parseTerms(item.search_terms) })
+  }
+
   // Tap a suggestion → add it to the real list. Drop the chip immediately
   // (optimistic), then persist and refresh both the list and the strip.
   const addGhost = useOptimisticMutation<Ghost[], Ghost>({
@@ -206,12 +356,15 @@ export function Liste() {
 
   // Auto-pick: for each list item, grab the top (best-value) deal and stage it,
   // then jump straight to the review screen. Best-first is the server's sort.
+  // Carries each line's saved synonyms into the lookup, same as the proof sheet.
   async function autoPick(rows: ListRow[]) {
     setAuto(true)
     let any = false
     for (const item of rows) {
       try {
-        const r = await api<{ deals: Deal[] }>(`deals?q=${encodeURIComponent(item.text)}`)
+        const terms = parseTerms(item.search_terms)
+        const qs = `deals?q=${encodeURIComponent(item.text)}${terms.length ? `&terms=${encodeURIComponent(terms.join(','))}` : ''}`
+        const r = await api<{ deals: Deal[] }>(qs)
         if (r.deals[0]) {
           // Stage the best deal straight onto this line (matched by name).
           await stageDeal(qc, item.text, r.deals[0])
@@ -262,6 +415,30 @@ export function Liste() {
           <Icon name={CATS.list.icon} size={26} color={CATS.list.deep} />
         </div>
       </div>
+
+      {/* Two intents, one screen: prepare the list at home, or shop with it at the
+          store (where a check means "in my cart" and the cashier appears). */}
+      <div className="list-mode" role="tablist" aria-label={t.nav.list}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'home'}
+          className={`list-mode__opt${mode === 'home' ? ' is-on' : ''}`}
+          onClick={() => chooseMode('home')}
+        >
+          🏠 {t.list.modeHome}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === 'store'}
+          className={`list-mode__opt${mode === 'store' ? ' is-on' : ''}`}
+          onClick={() => chooseMode('store')}
+        >
+          🛒 {t.list.modeStore}
+        </button>
+      </div>
+      <p className="list-mode__hint mono">{mode === 'store' ? t.list.modeStoreHint : t.list.modeHomeHint}</p>
 
       {/* Add a line right here — type it or speak it. The direct path; the ＋
           capture sheet still works for the AI-routed quick note. */}
@@ -315,95 +492,76 @@ export function Liste() {
           {list.map((item) => {
             const adder = item.added_by ? memberById.get(item.added_by) : null
             const staged = parseDeal(item.deal_json)
-            // Draw the item's own picture (milk/bread/apple…) so the list reads as
-            // distinct things, not a column of identical sparkles. Falls back to the
-            // list category glyph only when nothing matches (a non-grocery note).
+            // Draw the item's own picture (milk/bread/apple…), falling back to the
+            // list glyph only when nothing matches (a non-grocery note).
             const pic = pictoFor(item.text, '')
             return (
-            <div key={item.id} className="list-row">
-              <button type="button" className="act list-row__main" onClick={() => checkOff(item)}>
-                <span className="spine" style={{ background: CATS.list.color }} aria-hidden="true" />
-                {staged?.image ? (
-                  // A linked flyer deal with a clipping → show the product picture.
-                  <span className="tile list-row__thumb" aria-hidden="true">
-                    <img src={staged.image} alt="" loading="lazy" />
-                  </span>
-                ) : pic ? (
-                  <span className="tile list-row__pic" style={{ background: CATS.list.wash }} aria-hidden="true">
-                    {pic}
-                  </span>
-                ) : (
-                  <span className="tile" style={{ background: CATS.list.wash }} aria-hidden="true">
-                    <Icon name={CATS.list.icon} size={28} color={CATS.list.deep} />
-                  </span>
-                )}
-                <span className="act__text">
-                  <span className="title" style={{ color: tintInk(CATS.list.color) }}>
-                    {item.text}
-                  </span>
-                  {/* A staged flyer deal for this item: store + price, so the choice
-                      is visible on the list itself (not just the 🏷️→✓ flip). */}
-                  {staged && (
+              <ListItemRow
+                key={item.id}
+                text={item.text}
+                picto={pic}
+                dealImage={staged?.image}
+                // A staged flyer deal: store + price, visible on the row itself.
+                dealLabel={
+                  staged ? (
                     <span className="list-row__deal mono">
                       🏷️ {staged.merchant} · {money(staged.price)}
                     </span>
-                  )}
-                </span>
-                {adder && (
-                  <span
-                    className="list-row__by"
-                    style={{ background: adder.colour }}
-                    title={adder.display_name}
-                    aria-label={adder.display_name}
+                  ) : null
+                }
+                adder={adder}
+                // Store mode: a checked row is "in my cart" and stays put.
+                checked={mode === 'store' && inCart.has(item.id)}
+                toggleLabel={mode === 'store' ? t.list.inCart : t.list.check}
+                onImage={() => openFlyer(item)}
+                imageLabel={t.list.openFlyer}
+                onName={() => setEditItem(item)}
+                nameLabel={t.list.edit}
+                onToggle={() => (mode === 'store' ? toggleCart(item.id) : checkOff(item))}
+                proof={
+                  <button
+                    type="button"
+                    className={`list-row__proof${staged ? ' is-picked' : ''}`}
+                    onClick={() => openFlyer(item)}
+                    aria-label={t.shop.proof}
+                    title={t.shop.proof}
                   >
-                    {(adder.display_name[0] ?? '?').toUpperCase()}
-                  </span>
-                )}
-                <span className="check" aria-hidden="true">
-                  <Icon name="check-bold" size={18} />
-                </span>
-              </button>
-              <button
-                type="button"
-                className={`list-row__proof${staged ? ' is-picked' : ''}`}
-                onClick={() => setProofFor({ id: item.id, text: item.text })}
-                aria-label={t.shop.proof}
-                title={t.shop.proof}
-              >
-                {staged ? '✓' : '🏷️'}
-              </button>
-            </div>
+                    {staged ? '✓' : '🏷️'}
+                  </button>
+                }
+              />
             )
           })}
         </div>
       )}
 
-      {/* The done shelf: checked-off items don't vanish — they land here, muted,
-          one tap to put back. The undo toast covers the first 5 seconds; this
-          covers the "wait, we DO still need milk" five minutes later. */}
+      {/* The done shelf: checked-off items don't vanish — they land here in the
+          same row format (just without the flyer deal), one tap to put back. */}
       {done.length > 0 && (
         <section className="list-done" aria-label={t.list.done}>
           <div className="list-done__head mono">✓ {t.list.done}</div>
-          <div className="list-done__rows">
+          <div className="stagger">
             {(doneOpen ? done : done.slice(0, 6)).map((d) => (
-              <button
+              <ListItemRow
                 key={d.id}
-                type="button"
-                className="list-done__row"
-                onClick={() => void restore(d)}
-                aria-label={`${t.list.restore} : ${d.text}`}
-                title={t.list.restore}
-              >
-                <span className="list-done__back" aria-hidden="true">↩</span>
-                <span className="list-done__text">{d.text}</span>
-              </button>
+                text={d.text}
+                picto={pictoFor(d.text, '')}
+                adder={d.added_by ? memberById.get(d.added_by) : null}
+                checked
+                toggleLabel={t.list.restore}
+                onImage={() => void restore(d)}
+                imageLabel={t.list.restore}
+                onName={() => void restore(d)}
+                nameLabel={t.list.restore}
+                onToggle={() => void restore(d)}
+              />
             ))}
-            {!doneOpen && done.length > 6 && (
-              <button type="button" className="ghost-strip__more mono" onClick={() => setDoneOpen(true)}>
-                +{done.length - 6} {t.ghost.more}
-              </button>
-            )}
           </div>
+          {!doneOpen && done.length > 6 && (
+            <button type="button" className="ghost-strip__more mono" onClick={() => setDoneOpen(true)}>
+              +{done.length - 6} {t.ghost.more}
+            </button>
+          )}
         </section>
       )}
 
@@ -415,14 +573,11 @@ export function Liste() {
         </button>
       </div>
 
-      {list.length > 0 && (
+      {/* Shopping tools live in store mode: auto-pick the best prices, show the
+          cashier, and empty the cart when the trip's done. */}
+      {mode === 'store' && list.length > 0 && (
         <div className="list-actions">
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={() => autoPick(list)}
-            disabled={auto}
-          >
+          <button type="button" className="btn btn--ghost mono" onClick={() => autoPick(list)} disabled={auto}>
             {auto ? t.shop.autoWorking : `✨ ${t.shop.auto}`}
           </button>
           {pickList.length > 0 && (
@@ -430,17 +585,29 @@ export function Liste() {
               🧾 {t.shop.present} ({pickList.length})
             </button>
           )}
+          {inCart.size > 0 && (
+            <button type="button" className="btn btn--ghost mono" onClick={() => void clearCart()}>
+              ✓ {t.list.clearCart} ({inCart.size})
+            </button>
+          )}
         </div>
       )}
 
       {proofFor && (
-        <PriceMatchSheet itemId={proofFor.id} query={proofFor.text} onClose={() => setProofFor(null)} />
+        <PriceMatchSheet
+          itemId={proofFor.id}
+          query={proofFor.text}
+          terms={proofFor.terms}
+          onClose={() => setProofFor(null)}
+        />
       )}
+
+      {editItem && <ListItemSheet item={editItem} onClose={() => setEditItem(null)} />}
 
       {cashierOpen && (
         <CashierMode
           picks={pickList}
-          onRevise={(p) => setProofFor({ id: p.itemId, text: p.itemText })}
+          onRevise={(p) => setProofFor({ id: p.itemId, text: p.itemText, terms: [] })}
           onRemove={(itemId) => unstageDeal(qc, itemId)}
           onClose={() => setCashierOpen(false)}
         />

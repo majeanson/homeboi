@@ -7,7 +7,19 @@ export interface MealRow {
   title: string
   cook_member_id: string | null
   suggested_by?: string | null
+  recipe_id?: string | null // the saved recipe this slot points at, if any
 }
+
+// One entry in the "general ideas" pool — a meal idea not yet pinned to a day.
+// Free text (title only) or a recipe shortcut (recipe_id set).
+export interface MealIdea {
+  id: string
+  title: string
+  recipe_id?: string | null
+  suggested_by?: string | null
+  created_at: number
+}
+export type MealIdeasData = { ideas: MealIdea[] }
 export interface LowRow {
   id: string
   item: string
@@ -20,5 +32,6 @@ export type PantryData = { low: LowRow[] }
 export type WeekDay = { date: number; meal: MealRow | undefined }
 
 export const MEALS_KEY = ['meals']
+export const MEAL_IDEAS_KEY = ['meal-ideas']
 export const PANTRY_KEY = ['pantry']
 export const USE_SOON_KEY = ['use-soon']

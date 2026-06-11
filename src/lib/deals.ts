@@ -11,6 +11,8 @@ export interface Deal {
   unitKind: 'mass' | 'volume' | null
   unitApprox: boolean // size inferred by AI rather than stated in the text
   merchant: string
+  logo: string | null // store logo, for the flyer/cashier header band
+  premium: boolean // image-based (scanned) flyer → reconstruction uses real clippings
   image: string | null
   validFrom: string | null
   validTo: string | null
@@ -24,6 +26,10 @@ export interface FlyerSummary {
   logo: string | null
   validFrom: string | null
   validTo: string | null
+  premium?: boolean // image-based (scanned) flyer vs SFML reconstruction
+  // Only present in the settings store-filter feed (/api/flyers?manage=1):
+  // whether the household's allowlist currently keeps this store.
+  included?: boolean
 }
 
 // A deal the user picked to price-match, kept against the grocery item it's for.
