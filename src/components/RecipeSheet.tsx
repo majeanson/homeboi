@@ -252,13 +252,18 @@ export function RecipeSheet({
                         ))}
                       </ul>
                       {used.length > 0 && (
-                        <ul className="recipe-step__ings mono">
-                          {used.map((ing, j) => (
-                            <li key={j}>
-                              <IngredientLine line={ing} size="sm" />
-                            </li>
-                          ))}
-                        </ul>
+                        <details className="recipe-step__ings-wrap">
+                          <summary className="recipe-step__ings-toggle mono">
+                            {t.recipes.stepIngredients} ({used.length})
+                          </summary>
+                          <ul className="recipe-step__ings mono">
+                            {used.map((ing, j) => (
+                              <li key={j}>
+                                <IngredientLine line={ing} size="sm" />
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
                       )}
                     </li>
                   )
