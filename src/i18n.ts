@@ -57,6 +57,9 @@ export const FR = {
   },
   list: {
     addPlaceholder: 'Ajouter à la liste… (ex. lait)',
+    done: 'Coché récemment',
+    restore: 'Remettre sur la liste',
+    history: 'Déjà ajouté',
   },
   notes: {
     title: 'Notes',
@@ -510,6 +513,9 @@ export const EN: typeof FR = {
   },
   list: {
     addPlaceholder: 'Add to the list… (e.g. milk)',
+    done: 'Recently checked',
+    restore: 'Put back on the list',
+    history: 'Added before',
   },
   notes: {
     title: 'Notes',

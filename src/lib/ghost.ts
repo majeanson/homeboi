@@ -4,11 +4,13 @@
 // header in api(), so nothing to pass here.
 import { api } from './api'
 
-// A suggestion for the list strip: something near its renewal point.
+// A suggestion for the list strip: something near its renewal point ('due' /
+// 'soon'), or a tracked item that's simply off the list right now ('later' —
+// shown quietly so the whole ghost set stays one tap away).
 export interface Ghost {
   key: string
   label: string
-  status: 'due' | 'soon'
+  status: 'due' | 'soon' | 'later'
   cadenceDays: number
   lastAt: number | null
   count: number

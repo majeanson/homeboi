@@ -615,6 +615,86 @@
   background: var(--accent);
   color: var(--accent-ink);
 }
+/* "Added before" typeahead — quiet chips under the add bar (never a dropdown
+   covering the list). Wrap-friendly, >= 44px tap targets for thumbs. */
+.list-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: -0.25rem 0 1rem;
+}
+.list-suggest__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.list-suggest__chip:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.list-suggest__plus {
+  color: var(--accent);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+/* The done shelf — checked items rest here (muted, struck through), one tap to
+   put back. Reads as an afterglow of the list, never a second to-do list. */
+.list-done {
+  margin-top: 1.25rem;
+}
+.list-done__head {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 0.5rem;
+}
+.list-done__rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.list-done__row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-faint);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.list-done__row:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.list-done__back {
+  color: var(--accent);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+.list-done__text {
+  text-decoration: line-through;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .list-actions {
   display: flex;
   gap: 10px;

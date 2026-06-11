@@ -40,11 +40,33 @@ interface ListMember {
   display_name: string
   colour: string
 }
+// A recently checked-off item on the "done" shelf — still visible, one tap to
+// put back (checking off is a shelf move now, not a disappearance).
+interface DoneRow {
+  id: string
+  text: string
+  source: string
+  added_by?: string | null
+  checked_at: number
+}
 // The board read returns more than the list; this page uses the list plus the
 // members (to draw "who added it" faces). The shared ['board'] cache still holds
 // the full payload for the Board page.
-type BoardListData = { list: ListRow[]; members?: ListMember[] }
+type BoardListData = { list: ListRow[]; listDone?: DoneRow[]; members?: ListMember[] }
 const GHOSTS_KEY = ['ghosts']
+const HISTORY_KEY = ['list-history']
+
+// Anything the household has put on the list before — feeds the add bar's
+// "you've added this before" typeahead chips.
+interface HistoryItem {
+  key: string
+  text: string
+  count: number
+  lastAt: number
+}
+
+// Accent/case-insensitive matching for the typeahead ("creme" finds "Crème").
+const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim()
 
 export function Liste() {
   const t = useT()
@@ -64,11 +86,21 @@ export function Liste() {
   const [adding, setAdding] = useState(false)
   const { listening, hasVoice, start: startVoice } = useVoiceInput(setAddText)
 
+  const [doneOpen, setDoneOpen] = useState(false)
+
   const { data: board, error } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board'), ...live })
   // Ghost suggestions are a quiet best-effort layer — a failure just means no
   // strip, never a broken list. So: no retry, and errors fall back to [].
   const { data: ghostsData } = useQuery({ queryKey: GHOSTS_KEY, queryFn: () => fetchGhosts(), retry: false })
   const ghosts = ghostsData ?? []
+  // Everything ever added/bought — the typeahead's haystack. Same best-effort
+  // stance as the ghosts: a failure just means no chips.
+  const { data: history } = useQuery({
+    queryKey: HISTORY_KEY,
+    queryFn: () => api<{ items: HistoryItem[] }>('list?view=history').then((r) => r.items),
+    retry: false,
+    staleTime: 60_000,
+  })
 
   // Check an item off. Drop it from the cached list at once, but DEFER the write
   // behind an undo toast: a mis-tap costs nothing (tap Undo → restore, no
@@ -93,6 +125,7 @@ export function Liste() {
         await api('list', { method: 'PATCH', body: { id: item.id, checked: true } }).catch(() => {})
         await qc.invalidateQueries({ queryKey: BOARD_KEY })
         qc.invalidateQueries({ queryKey: GHOSTS_KEY })
+        qc.invalidateQueries({ queryKey: HISTORY_KEY })
         setPendingChecked((s) => {
           const n = new Set(s)
           n.delete(item.id)
@@ -102,13 +135,10 @@ export function Liste() {
     })
   }
 
-  // Add a line straight from the list (type or speak it) — the direct path that
-  // didn't exist before (you had to go through the ＋ capture sheet). Optimistic:
-  // append to the cache, then persist and resync. The pendingChecked filter means
-  // this add's refetch can't bring a just-ticked item back.
-  async function addItem(e?: React.FormEvent) {
-    e?.preventDefault()
-    const text = addText.trim()
+  // Add a line straight from the list (type it, speak it, or tap a "you've added
+  // this before" chip). The pendingChecked filter means this add's refetch can't
+  // bring a just-ticked item back.
+  async function submitAdd(text: string) {
     if (!text || adding) return
     setAdding(true)
     setAddText('')
@@ -120,7 +150,27 @@ export function Liste() {
       setAdding(false)
       qc.invalidateQueries({ queryKey: BOARD_KEY })
       qc.invalidateQueries({ queryKey: GHOSTS_KEY })
+      qc.invalidateQueries({ queryKey: HISTORY_KEY })
     }
+  }
+  function addItem(e?: React.FormEvent) {
+    e?.preventDefault()
+    void submitAdd(addText.trim())
+  }
+
+  // Put a done-shelf item back on the list: move it in the shared cache at once
+  // (the row hops shelves with no flicker), then persist the uncheck and resync.
+  async function restore(item: DoneRow) {
+    qc.setQueryData<BoardListData>(BOARD_KEY, (b) =>
+      b && {
+        ...b,
+        list: [...b.list, { id: item.id, text: item.text, source: item.source, added_by: item.added_by }],
+        listDone: (b.listDone ?? []).filter((d) => d.id !== item.id),
+      },
+    )
+    await api('list', { method: 'PATCH', body: { id: item.id, checked: false } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: BOARD_KEY })
+    qc.invalidateQueries({ queryKey: GHOSTS_KEY })
   }
 
   // Tap a suggestion → add it to the real list. Drop the chip immediately
@@ -138,6 +188,21 @@ export function Liste() {
   const list = (board?.list ?? []).filter((i) => !pendingChecked.has(i.id))
   // Who-added-it faces: map member id → member so each row can show a tiny tint.
   const memberById = new Map((board?.members ?? []).map((m) => [m.id, m]))
+  // The done shelf: recently checked items, still one tap from coming back.
+  const done = board?.listDone ?? []
+  // Typeahead: once 2+ chars are typed, offer past items that match (accent- and
+  // case-blind) and aren't already on the open list. Capped — chips, not a wall.
+  const q = fold(addText)
+  const openTexts = new Set(list.map((i) => fold(i.text)))
+  const matches =
+    q.length >= 2
+      ? (history ?? [])
+          .filter((h) => {
+            const f = fold(h.text)
+            return f.includes(q) && !openTexts.has(f)
+          })
+          .slice(0, 5)
+      : []
 
   // Auto-pick: for each list item, grab the top (best-value) deal and stage it,
   // then jump straight to the review screen. Best-first is the server's sort.
@@ -224,6 +289,25 @@ export function Liste() {
         </button>
       </form>
 
+      {/* "You've added this before" — past items matching what's being typed,
+          one tap to re-add. Quiet chips, never a dropdown over the list. */}
+      {matches.length > 0 && (
+        <div className="list-suggest" aria-label={t.list.history}>
+          {matches.map((h) => (
+            <button
+              key={h.key}
+              type="button"
+              className="list-suggest__chip"
+              onClick={() => void submitAdd(h.text)}
+              aria-label={`${t.ghost.add} ${h.text}`}
+            >
+              <span className="list-suggest__plus" aria-hidden="true">＋</span>
+              {h.text}
+            </button>
+          ))}
+        </div>
+      )}
+
       {list.length === 0 ? (
         <p className="feed-empty">{t.board.listEmpty}</p>
       ) : (
@@ -292,6 +376,35 @@ export function Liste() {
             )
           })}
         </div>
+      )}
+
+      {/* The done shelf: checked-off items don't vanish — they land here, muted,
+          one tap to put back. The undo toast covers the first 5 seconds; this
+          covers the "wait, we DO still need milk" five minutes later. */}
+      {done.length > 0 && (
+        <section className="list-done" aria-label={t.list.done}>
+          <div className="list-done__head mono">✓ {t.list.done}</div>
+          <div className="list-done__rows">
+            {(doneOpen ? done : done.slice(0, 6)).map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                className="list-done__row"
+                onClick={() => void restore(d)}
+                aria-label={`${t.list.restore} : ${d.text}`}
+                title={t.list.restore}
+              >
+                <span className="list-done__back" aria-hidden="true">↩</span>
+                <span className="list-done__text">{d.text}</span>
+              </button>
+            ))}
+            {!doneOpen && done.length > 6 && (
+              <button type="button" className="ghost-strip__more mono" onClick={() => setDoneOpen(true)}>
+                +{done.length - 6} {t.ghost.more}
+              </button>
+            )}
+          </div>
+        </section>
       )}
 
       <GhostStrip ghosts={ghosts} onAdd={(g) => addGhost.mutate(g)} />

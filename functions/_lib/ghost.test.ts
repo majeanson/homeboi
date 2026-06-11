@@ -13,6 +13,7 @@ function rank(opts: {
   overrides?: OverrideRow[]
   staples?: StapleDef[]
   openKeys?: string[]
+  includeLater?: boolean
 }) {
   return rankGhosts({
     log: opts.log ?? [],
@@ -20,6 +21,7 @@ function rank(opts: {
     staples: opts.staples ?? [EGGS],
     openKeys: new Set(opts.openKeys ?? []),
     now: NOW,
+    includeLater: opts.includeLater,
   })
 }
 
@@ -100,6 +102,23 @@ describe('rankGhosts', () => {
     const log = [buy('chips', daysAgo(21)), buy('chips', daysAgo(14)), buy('chips', daysAgo(8))]
     const g = rank({ log, overrides, staples: [] })
     expect(g[0]).toMatchObject({ key: 'chips', status: 'due', cadenceDays: 7 })
+  })
+
+  it('includeLater surfaces a tracked item not yet near renewal, after due/soon', () => {
+    const staples: StapleDef[] = [EGGS, { key: 'bread', cadenceDays: 7, label: 'Bread' }]
+    // eggs overdue (due), bread bought yesterday (1/7 — far from renewal).
+    const log = [buy('eggs', daysAgo(8)), buy('bread', daysAgo(1))]
+    expect(rank({ log, staples }).map((x) => x.key)).toEqual(['eggs']) // default: hidden
+    const g = rank({ log, staples, includeLater: true })
+    expect(g.map((x) => x.key)).toEqual(['eggs', 'bread'])
+    expect(g[1].status).toBe('later')
+  })
+
+  it('includeLater still never suggests open-list items nor muted ones', () => {
+    const staples: StapleDef[] = [EGGS, { key: 'bread', cadenceDays: 7, label: 'Bread' }]
+    const overrides: OverrideRow[] = [{ item_key: 'bread', label: 'Bread', cadence_days: null, muted: true }]
+    const g = rank({ log: [buy('eggs', daysAgo(1))], staples, overrides, openKeys: ['eggs'], includeLater: true })
+    expect(g).toHaveLength(0)
   })
 
   it('ranks the most-bought due items first', () => {

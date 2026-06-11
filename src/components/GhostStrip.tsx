@@ -45,9 +45,13 @@ export function GhostStrip({ ghosts, onAdd }: { ghosts: Ghost[]; onAdd: (g: Ghos
           >
             <span className="ghost-strip__plus" aria-hidden="true">＋</span>
             <span className="ghost-strip__label">{g.label}</span>
-            <span className={`ghost-strip__tag ghost-strip__tag--${g.status}`}>
-              {g.status === 'due' ? t.ghost.due : t.ghost.soon}
-            </span>
+            {/* 'later' (tracked, just not near renewal) stays untagged — the chip
+                itself is the offer; a badge would invent urgency it doesn't have. */}
+            {g.status !== 'later' && (
+              <span className={`ghost-strip__tag ghost-strip__tag--${g.status}`}>
+                {g.status === 'due' ? t.ghost.due : t.ghost.soon}
+              </span>
+            )}
           </button>
         ))}
         {hidden > 0 && !expanded && (

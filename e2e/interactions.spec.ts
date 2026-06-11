@@ -562,6 +562,49 @@ test.describe('list', () => {
     await expect(page.locator('.list-row .title', { hasText: firstText })).toHaveCount(0)
   })
 
+  test('checked items rest on the done shelf and a tap puts one back', async ({ page }) => {
+    const rows = page.locator('.list-row')
+    const doneRows = page.locator('.list-done__row')
+    // Two seeded done items (Beurre, Fromage) on the shelf.
+    await expect(doneRows).toHaveCount(2)
+    // Restoring fires the uncheck PATCH and the row hops shelves at once —
+    // and STAYS hopped after the confirming refetch (mock reflects the write).
+    await expectApi(page, 'PATCH', 'list', () => doneRows.first().click())
+    await expect(rows).toHaveCount(5)
+    await expect(doneRows).toHaveCount(1)
+    await expect(page.locator('.list-row .title', { hasText: 'Beurre' })).toHaveCount(1)
+  })
+
+  test('a checked-off item lands on the done shelf once its write commits', async ({ page }) => {
+    const rows = page.locator('.list-row')
+    const firstText = (await rows.first().locator('.title').innerText()).trim()
+    // The deferred write (undo toast) commits, the board refetches, and the
+    // item reappears below on the shelf — gone from the list, not from sight.
+    await expectApi(page, 'PATCH', 'list', () => rows.first().locator('.list-row__main').click())
+    await expect(page.locator('.list-done__text', { hasText: firstText })).toHaveCount(1)
+    await expect(page.locator('.list-done__row')).toHaveCount(3)
+  })
+
+  test('typing offers past items as one-tap chips that add to the list', async ({ page }) => {
+    // No chips until something is typed.
+    await expect(page.locator('.list-suggest')).toHaveCount(0)
+    await page.locator('.list-add .input').fill('yog')
+    const chip = page.locator('.list-suggest__chip')
+    await expect(chip).toHaveCount(1)
+    await expect(chip).toContainText('Yogourt grec')
+    await expectApi(page, 'POST', 'list', () => chip.click())
+    // The input clears so the next line can be typed straight away.
+    await expect(page.locator('.list-add .input')).toHaveValue('')
+  })
+
+  test('the ghost strip shows a tracked-but-not-due item as a quiet untagged chip', async ({ page }) => {
+    const chips = page.locator('.ghost-strip__chip')
+    await expect(chips).toHaveCount(3)
+    const later = chips.filter({ hasText: 'Café' })
+    await expect(later).toHaveCount(1)
+    await expect(later.locator('.ghost-strip__tag')).toHaveCount(0)
+  })
+
   test('the flyer browser opens', async ({ page }) => {
     await page.locator('.list-actions').first().locator('button').click()
     await expect(page.locator('.pm-overlay .deals-search')).toBeVisible()

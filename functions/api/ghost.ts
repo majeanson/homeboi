@@ -99,12 +99,16 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
 
   const openKeys = new Set(open.map((r) => normalizeItem(r.text)).filter(Boolean))
+  // includeLater: the strip also gets the tracked items that aren't near renewal
+  // ('later'), folded behind its "+N" — so the ghost list is always reachable
+  // from the list page, not only on the days something happens to be due.
   const ghosts = rankGhosts({
     log,
     overrides: overrides.map(toOverride),
     staples: stapleList,
     openKeys,
     now: nowSec(),
+    includeLater: true,
   })
   return ok({ ghosts })
 })

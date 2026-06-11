@@ -8,6 +8,39 @@ import { profileMemberId } from '../_lib/profile'
 // and kiosk can write — ticking a grocery item is exactly what the wall tablet
 // is for. No score for clearing items (NFR-CALM): done is just done.
 export const onRequestGet = authed(async (ctx, actor) => {
+  // ?view=history → everything this household has ever put on the list, deduped,
+  // newest first. Feeds the add bar's "you've bought this before" typeahead.
+  // Two sources merged: purchase_log (long-term, survives row pruning) and
+  // list_items (catches lines added but never checked off).
+  if (new URL(ctx.request.url).searchParams.get('view') === 'history') {
+    const [bought, added] = await Promise.all([
+      ctx.env.DB.prepare(
+        'SELECT item_key AS key, text, COUNT(*) AS count, MAX(purchased_at) AS last_at FROM purchase_log WHERE household_id = ? GROUP BY item_key',
+      )
+        .bind(actor.householdId)
+        .all<{ key: string; text: string; count: number; last_at: number }>(),
+      ctx.env.DB.prepare(
+        'SELECT text, MAX(created_at) AS last_at FROM list_items WHERE household_id = ? GROUP BY text',
+      )
+        .bind(actor.householdId)
+        .all<{ text: string; last_at: number }>(),
+    ])
+    const byKey = new Map<string, { key: string; text: string; count: number; lastAt: number }>()
+    for (const r of bought.results) byKey.set(r.key, { key: r.key, text: r.text, count: r.count, lastAt: r.last_at })
+    for (const r of added.results) {
+      const key = normalizeItem(r.text)
+      if (!key) continue
+      const seen = byKey.get(key)
+      if (!seen) byKey.set(key, { key, text: r.text, count: 0, lastAt: r.last_at })
+      else if (r.last_at > seen.lastAt) {
+        seen.lastAt = r.last_at
+        seen.text = r.text
+      }
+    }
+    const items = [...byKey.values()].sort((a, b) => b.lastAt - a.lastAt).slice(0, 80)
+    return ok({ items })
+  }
+
   const { results } = await ctx.env.DB.prepare(
     'SELECT id, text, source, added_by, checked_at FROM list_items WHERE household_id = ? ORDER BY checked_at IS NOT NULL, created_at',
   )
@@ -50,14 +83,14 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Checking an item off = buying it. Record it in purchase_log so the ghost list
   // can learn what's bought and how often (its renewal cadence). We need the item's
   // text for the normalized key, so fetch it, then write the toggle and the log row
-  // in one transaction. Unchecking just clears the timestamp.
+  // in one transaction. Unchecking (restoring from the done shelf) clears the
+  // timestamp AND takes back the newest log row for that key — a restored item was
+  // not actually bought, so it must not skew the learned cadence.
   if (typeof body.checked === 'boolean') {
     const ts = body.checked ? nowSec() : null
-    const row = ts
-      ? await ctx.env.DB.prepare('SELECT text FROM list_items WHERE id = ? AND household_id = ?')
-          .bind(body.id, actor.householdId)
-          .first<{ text: string }>()
-      : null
+    const row = await ctx.env.DB.prepare('SELECT text FROM list_items WHERE id = ? AND household_id = ?')
+      .bind(body.id, actor.householdId)
+      .first<{ text: string }>()
     const writes = [
       ctx.env.DB.prepare('UPDATE list_items SET checked_at = ? WHERE id = ? AND household_id = ?').bind(
         ts,
@@ -66,12 +99,27 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       ),
     ]
     const key = row ? normalizeItem(row.text) : ''
-    if (ts && row && key) {
-      writes.push(
-        ctx.env.DB.prepare(
-          'INSERT INTO purchase_log (id, household_id, item_key, text, purchased_at) VALUES (?, ?, ?, ?, ?)',
-        ).bind(newId(), actor.householdId, key, row.text, ts),
-      )
+    if (row && key) {
+      if (ts) {
+        writes.push(
+          ctx.env.DB.prepare(
+            'INSERT INTO purchase_log (id, household_id, item_key, text, purchased_at) VALUES (?, ?, ?, ?, ?)',
+          ).bind(newId(), actor.householdId, key, row.text, ts),
+        )
+        // Done is a shelf, not an archive: quietly drop checked rows older than 30
+        // days. purchase_log keeps the long-term history, so nothing learned is lost.
+        writes.push(
+          ctx.env.DB.prepare(
+            'DELETE FROM list_items WHERE household_id = ? AND checked_at IS NOT NULL AND checked_at < ?',
+          ).bind(actor.householdId, nowSec() - 30 * 86400),
+        )
+      } else {
+        writes.push(
+          ctx.env.DB.prepare(
+            'DELETE FROM purchase_log WHERE id = (SELECT id FROM purchase_log WHERE household_id = ? AND item_key = ? ORDER BY purchased_at DESC LIMIT 1)',
+          ).bind(actor.householdId, key),
+        )
+      }
     }
     await ctx.env.DB.batch(writes)
   }

@@ -23,7 +23,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const dayAfter = today + 86400 * 2
   const weekEnd = today + 86400 * 7
 
-  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, openList, chores, notes] = await Promise.all([
+  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, openList, doneList, chores, notes] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
     )
@@ -51,6 +51,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .all(),
     ctx.env.DB.prepare(
       'SELECT id, text, source, added_by, deal_json FROM list_items WHERE household_id = ? AND checked_at IS NULL ORDER BY created_at',
+    )
+      .bind(hh)
+      .all(),
+    // Recently checked-off items — the "done" shelf under the list, so a mis-tap
+    // (or a changed mind) can be picked back up instead of being gone for good.
+    ctx.env.DB.prepare(
+      'SELECT id, text, source, added_by, checked_at FROM list_items WHERE household_id = ? AND checked_at IS NOT NULL ORDER BY checked_at DESC LIMIT 12',
     )
       .bind(hh)
       .all(),
@@ -195,6 +202,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     tonight: tonightMeal.results[0] ?? null,
     tomorrowMeal: tomorrowMeal.results[0] ?? null,
     list: openList.results,
+    listDone: doneList.results,
     chores: choresOut,
     choresToday,
     choresUpcoming,

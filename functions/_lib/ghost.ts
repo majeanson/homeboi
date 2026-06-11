@@ -31,7 +31,7 @@ export interface OverrideRow {
 export interface Ghost {
   key: string
   label: string
-  status: 'due' | 'soon'
+  status: 'due' | 'soon' | 'later'
   cadenceDays: number
   lastAt: number | null
   count: number
@@ -42,6 +42,7 @@ const MIN_CADENCE = 2
 const MAX_CADENCE = 60
 const SOON_RATIO = 0.66 // show as "soon" once two-thirds through the cadence
 const DEFAULT_LIMIT = 8
+const LATER_LIMIT = 12 // tracked-but-not-near items, behind the strip's "+N"
 
 // Median renewal interval (in whole days) from a key's purchase timestamps.
 // Needs at least two buys to form one interval; null otherwise. Clamped so one
@@ -71,9 +72,13 @@ export interface RankInput {
   openKeys: Set<string>
   now: number // unix seconds
   limit?: number
+  // Also return tracked items that aren't near renewal yet (status 'later').
+  // The list page wants the whole tracked set tappable — the strip keeps them
+  // quiet behind its "+N" fold, so the calm cap still applies to what's SHOWN.
+  includeLater?: boolean
 }
 
-export function rankGhosts({ log, overrides, staples, openKeys, now, limit = DEFAULT_LIMIT }: RankInput): Ghost[] {
+export function rankGhosts({ log, overrides, staples, openKeys, now, limit = DEFAULT_LIMIT, includeLater = false }: RankInput): Ghost[] {
   // Aggregate history per key.
   const agg = new Map<string, Agg>()
   for (const row of log) {
@@ -113,19 +118,18 @@ export function rankGhosts({ log, overrides, staples, openKeys, now, limit = DEF
     // Never bought (a fresh seeded/added staple) → due now, so it's useful on
     // day one. Otherwise gate on how far through the cadence we are.
     const ratio = lastAt == null ? Number.POSITIVE_INFINITY : (now - lastAt) / DAY / cadence
-    if (ratio < SOON_RATIO) continue
-    const status: Ghost['status'] = ratio >= 1 ? 'due' : 'soon'
+    if (ratio < SOON_RATIO && !includeLater) continue
+    const status: Ghost['status'] = ratio >= 1 ? 'due' : ratio >= SOON_RATIO ? 'soon' : 'later'
 
     const label = ov?.label ?? staple?.label ?? a?.lastText ?? key
     out.push({ key, label, status, cadenceDays: cadence, lastAt, count: a?.count ?? 0 })
   }
 
-  // Due before soon; within a status, the things you buy most come first
-  // ("top picked through time"), then the most overdue, then alphabetical.
+  // Due before soon before later; within a status, the things you buy most come
+  // first ("top picked through time"), then the most overdue, then alphabetical.
+  const rank = (s: Ghost['status']) => (s === 'due' ? 0 : s === 'soon' ? 1 : 2)
   out.sort((x, y) => {
-    const sx = x.status === 'due' ? 0 : 1
-    const sy = y.status === 'due' ? 0 : 1
-    if (sx !== sy) return sx - sy
+    if (rank(x.status) !== rank(y.status)) return rank(x.status) - rank(y.status)
     if (y.count !== x.count) return y.count - x.count
     const rx = x.lastAt == null ? Infinity : (now - x.lastAt) / DAY / x.cadenceDays
     const ry = y.lastAt == null ? Infinity : (now - y.lastAt) / DAY / y.cadenceDays
@@ -133,7 +137,11 @@ export function rankGhosts({ log, overrides, staples, openKeys, now, limit = DEF
     return x.label.localeCompare(y.label)
   })
 
-  return out.slice(0, limit)
+  // The calm cap applies to the urgent statuses; 'later' rides behind them with
+  // its own (looser) cap so the strip's fold has something to offer.
+  const near = out.filter((g) => g.status !== 'later').slice(0, limit)
+  const later = out.filter((g) => g.status === 'later').slice(0, LATER_LIMIT)
+  return [...near, ...later]
 }
 
 export interface TrackCandidate {

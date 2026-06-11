@@ -46,6 +46,11 @@ const BOARD = {
     { id: 'l3', text: 'Pommes', source: 'ghost' },
     { id: 'l4', text: 'Couches', source: 'manual' },
   ],
+  // The done shelf: recently checked-off items, one tap to put back.
+  listDone: [
+    { id: 'ld1', text: 'Beurre', source: 'manual', added_by: 'm2', checked_at: BASE - 3600 },
+    { id: 'ld2', text: 'Fromage', source: 'manual', added_by: null, checked_at: BASE - 2 * 3600 },
+  ],
   chores: [
     {
       id: 'c1',
@@ -176,6 +181,18 @@ const GHOSTS = {
   ghosts: [
     { key: 'lait', label: 'Lait', status: 'due', cadenceDays: 5, lastAt: BASE - 6 * DAY, count: 12 },
     { key: 'oeufs', label: 'Œufs', status: 'soon', cadenceDays: 7, lastAt: BASE - 5 * DAY, count: 8 },
+    // Tracked but nowhere near renewal — rendered as a quiet untagged chip.
+    { key: 'cafe', label: 'Café', status: 'later', cadenceDays: 14, lastAt: BASE - 2 * DAY, count: 3 },
+  ],
+}
+
+// list?view=history — everything the household has added/bought before; feeds
+// the add bar's typeahead chips. 'Beurre' also sits on the done shelf above.
+const LIST_HISTORY = {
+  items: [
+    { key: 'beurre', text: 'Beurre', count: 5, lastAt: BASE - 3600 },
+    { key: 'yogourt grec', text: 'Yogourt grec', count: 4, lastAt: BASE - 2 * DAY },
+    { key: 'bananes', text: 'Bananes', count: 3, lastAt: BASE - 4 * DAY },
   ],
 }
 
@@ -230,6 +247,14 @@ const ROUTES: Record<string, unknown> = {
   pantry: PANTRY,
   'use-soon': { soon: [{ id: 'u1', item: 'Épinards', marked_at: BASE - 3 * 3600 }, { id: 'u2', item: 'Crème', marked_at: BASE - 8 * 3600 }] },
   recipes: RECIPES,
+  'recipe-tags': {
+    presets: [],
+    used: [
+      { tag: 'rapide', count: 2 },
+      { tag: 'préféré', count: 1 },
+      { tag: 'Collation', count: 1 },
+    ],
+  },
   routines: ROUTINES,
   members: { members: MEMBERS },
   'pair/devices': DEVICES,
@@ -247,14 +272,6 @@ const ROUTES: Record<string, unknown> = {
     flyers: [
       { flyerId: 5001, merchant: 'Super C', logo: null, validFrom: null, validTo: null },
       { flyerId: 5002, merchant: 'IGA', logo: null, validFrom: null, validTo: null },
-  'recipe-tags': {
-    presets: [],
-    used: [
-      { tag: 'rapide', count: 2 },
-      { tag: 'préféré', count: 1 },
-      { tag: 'Collation', count: 1 },
-    ],
-  },
     ],
   },
   flyer: {
@@ -277,6 +294,10 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
   // A little server-side state so optimistic flows that DELETE then refetch read
   // back the change (else the board GET would resurrect a just-cleared note).
   const dismissedNotes = new Set<string>()
+  // Same for the list's two shelf moves: check (open → done) and restore
+  // (done → open), so the board refetch confirms rather than reverts them.
+  const checkedItems = new Set<string>()
+  const restoredItems = new Set<string>()
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace(/^\/api\//, '')
@@ -297,6 +318,16 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
           /* no body */
         }
       }
+      // Record list shelf moves so the next board read confirms the optimistic UI.
+      if (method === 'PATCH' && path === 'list') {
+        try {
+          const body = JSON.parse(route.request().postData() || '{}')
+          if (body.id && body.checked === true) checkedItems.add(body.id)
+          if (body.id && body.checked === false) restoredItems.add(body.id)
+        } catch {
+          /* no body */
+        }
+      }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
       return
     }
@@ -312,7 +343,7 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
     if (opts.fresh && path === 'board') {
-      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
+      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], listDone: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
       return
     }
@@ -323,9 +354,28 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
 
-    // Board read reflects any notes cleared this session (realistic soft-delete).
-    if (path === 'board' && dismissedNotes.size) {
-      const b = { ...BOARD, notes: BOARD.notes.filter((n) => !dismissedNotes.has(n.id)) }
+    // list?view=history is a distinct shape (the add bar's typeahead haystack).
+    if (path === 'list' && url.searchParams.get('view') === 'history') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(LIST_HISTORY) })
+      return
+    }
+
+    // Board read reflects this session's writes (cleared notes, list shelf
+    // moves), so an optimistic UI's refetch confirms instead of reverting.
+    if (path === 'board' && (dismissedNotes.size || checkedItems.size || restoredItems.size)) {
+      const b = {
+        ...BOARD,
+        notes: BOARD.notes.filter((n) => !dismissedNotes.has(n.id)),
+        list: [
+          ...BOARD.list.filter((i) => !checkedItems.has(i.id)),
+          // Extra checked_at on a restored row is harmless — the page ignores it.
+          ...BOARD.listDone.filter((d) => restoredItems.has(d.id)),
+        ],
+        listDone: [
+          ...BOARD.list.filter((i) => checkedItems.has(i.id)).map((i) => ({ ...i, checked_at: BASE })),
+          ...BOARD.listDone.filter((d) => !restoredItems.has(d.id)),
+        ],
+      }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(b) })
       return
     }
