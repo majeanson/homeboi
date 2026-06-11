@@ -41,17 +41,50 @@ function wantedTag(lang: Lang): string {
   return lang === 'fr' ? 'fr-CA' : 'en-CA'
 }
 
-// Best installed voice for a BCP-47 tag: exact match (fr-CA), else any voice in
-// the same language family (fr-FR, fr), else null when none is installed.
-function pickVoice(want: string): SpeechSynthesisVoice | null {
-  if (!voices.length) refreshVoices()
+// iOS ships SEVERAL voices per language at very different quality tiers, and
+// getVoices() lists the robotic "compact" ones first — so "first match" reads
+// French with the worst mouth on the device even after the user installs an
+// enhanced/premium voice in Réglages ▸ Accessibilité ▸ Contenu énoncé. Tier is
+// only exposed through the name/voiceURI ("com.apple.voice.premium.fr-CA…"),
+// so rank by that. The "eloquence" set (Eddy, Flo, Grand-maman…) are novelty
+// robot voices — below even compact.
+function quality(v: { name: string; voiceURI: string }): number {
+  const id = `${v.name} ${v.voiceURI}`.toLowerCase()
+  if (id.includes('premium')) return 4
+  if (id.includes('enhanced') || id.includes('amélior') || id.includes('amelior')) return 3
+  if (id.includes('eloquence')) return 0
+  if (id.includes('compact')) return 1
+  return 2
+}
+
+// Best installed voice for a BCP-47 tag, among the whole language family:
+// quality tier first (an enhanced fr-FR beats a compact fr-CA — the user
+// installed that voice to be USED), exact locale as the tie-breaker (equal
+// tiers → fr-CA wins for fr-CA). Null when the family has nothing. Pure +
+// exported for tests; pickVoice below binds it to the live snapshot.
+export function pickBestVoice<T extends Pick<SpeechSynthesisVoice, 'lang' | 'name' | 'voiceURI'>>(
+  list: T[],
+  want: string,
+): T | null {
   const lc = want.toLowerCase()
   const two = lc.slice(0, 2)
-  return (
-    voices.find((v) => v.lang.toLowerCase() === lc) ??
-    voices.find((v) => v.lang.toLowerCase().replace('_', '-').startsWith(two)) ??
-    null
-  )
+  const norm = (l: string) => l.toLowerCase().replace('_', '-')
+  let best: T | null = null
+  let bestScore = -1
+  for (const v of list) {
+    if (!norm(v.lang).startsWith(two)) continue
+    const score = quality(v) * 10 + (norm(v.lang) === lc ? 1 : 0)
+    if (score > bestScore) {
+      bestScore = score
+      best = v
+    }
+  }
+  return best
+}
+
+function pickVoice(want: string): SpeechSynthesisVoice | null {
+  if (!voices.length) refreshVoices()
+  return pickBestVoice(voices, want)
 }
 
 // Whether a voice for `lang` is actually installed, so a surface can choose to
@@ -95,8 +128,11 @@ export function useSpeak() {
       const utter = () => {
         try {
           const u = new SpeechSynthesisUtterance(text)
-          u.lang = want
           const v = pickVoice(want)
+          // Keep lang and voice CONSISTENT: iOS quietly drops an assigned voice
+          // when utterance.lang disagrees with it (fr-CA tag + fr-FR voice) and
+          // falls back to the default mouth — so the voice's own tag wins.
+          u.lang = v?.lang ?? want
           if (v) u.voice = v // matched voice -> reads in the toggled language
           window.speechSynthesis.cancel() // never overlap; narration is a nicety
           window.speechSynthesis.speak(u)
