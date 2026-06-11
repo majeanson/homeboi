@@ -97,16 +97,19 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* Lifted above the on-screen keyboard (--kb from viewportVars.ts) so the
+     sheet's inputs and buttons never sink behind it; 0 when no keyboard. */
+  bottom: var(--kb, 0px);
   z-index: 31;
   max-width: 40rem;
   margin: 0 auto;
   max-height: 88vh;
+  max-height: calc(var(--vvh, 100dvh) - 24px);
   overflow-y: auto;
   background: var(--paper);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: var(--shadow-lg);
-  padding: 14px 22px 30px;
+  padding: 14px 22px calc(30px + env(safe-area-inset-bottom, 0px));
   transform: translateY(110%);
   transition: transform var(--dur-slow) var(--ease-out);
 }
@@ -241,7 +244,13 @@
 /* --- Price-match proof sheet --------------------------------------------- */
 .pm-overlay {
   position: fixed;
-  inset: 0;
+  /* Visual-viewport pinned (see .sheet / .recipe-modal) so the sheet rides
+     above the keyboard instead of hiding behind it. */
+  left: 0;
+  right: 0;
+  top: var(--vvt, 0px);
+  height: 100dvh;
+  height: var(--vvh, 100dvh);
   z-index: 60;
   background: rgba(44, 39, 34, 0.42);
   display: flex;
@@ -252,6 +261,7 @@
   width: 100%;
   max-width: 40rem;
   max-height: 88vh;
+  max-height: calc(var(--vvh, 100dvh) - 12px);
   overflow-y: auto;
   background: var(--paper);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;

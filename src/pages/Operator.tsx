@@ -12,6 +12,7 @@ import { MembersSection } from '../components/operator/household'
 import { EventsSection } from '../components/operator/agenda'
 import { ChoresSection, RoutinesSection } from '../components/operator/chores'
 import { PhotosSection, RecapSection } from '../components/operator/media'
+import { RecipeTagsSection } from '../components/operator/recipesTags'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
 
 // Réglages is one panel per tab; this list drives the tab strip. Deep links
@@ -24,6 +25,7 @@ const SECTIONS = [
   { id: 'chores', key: 'chores' as const },
   { id: 'routines', key: 'routines' as const },
   { id: 'shopping', key: 'shopping' as const },
+  { id: 'recipes', key: 'recipesTab' as const },
   { id: 'ghost', key: 'ghost' as const },
   { id: 'devices', key: 'devices' as const },
   { id: 'photos', key: 'photos' as const },
@@ -133,6 +135,7 @@ export function Operator() {
         {tab === 'chores' && <ChoresSection chores={chores} members={members} onChange={load} />}
         {tab === 'routines' && <RoutinesSection routines={routines} members={members} onChange={load} />}
         {tab === 'shopping' && <ShopSection />}
+        {tab === 'recipes' && <RecipeTagsSection />}
         {tab === 'ghost' && <GhostSection />}
         {tab === 'devices' && (
           <>

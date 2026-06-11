@@ -1,9 +1,17 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { resizeImage, PHOTO_MAX } from '../lib/image'
-import { type Recipe, type RecipeOriginal, RECIPES_KEY, recipeImg } from '../lib/recipes'
+import {
+  type Recipe,
+  type RecipeOriginal,
+  type RecipeTagsData,
+  RECIPES_KEY,
+  RECIPE_TAGS_KEY,
+  recipeImg,
+  tagOptions,
+} from '../lib/recipes'
 import { formatDuration } from '../lib/duration'
 import { Icon } from './Icon'
 
@@ -49,6 +57,16 @@ export function RecipeForm({
   const [importUrl, setImportUrl] = useState('')
   const [importText, setImportText] = useState('')
   const [importMsg, setImportMsg] = useState<string | null>(null)
+
+  // The pill offer: household presets (Réglages → Recettes) or the built-in
+  // starters, plus every tag already used on a recipe — a tag typed once
+  // ("Collation") is a one-tap pill from then on.
+  const tagsQ = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') })
+  const pills = tagOptions(
+    tagsQ.data?.presets ?? [],
+    (tagsQ.data?.used ?? []).map((u) => u.tag),
+    t.recipes.tagPresets,
+  )
 
   const hasTag = (tag: string) => tags.some((x) => x.toLowerCase() === tag.toLowerCase())
   const toggleTag = (tag: string) =>
@@ -218,6 +236,8 @@ export function RecipeForm({
     }).catch(() => {})
     setBusy(false)
     qc.invalidateQueries({ queryKey: RECIPES_KEY })
+    // A freshly typed tag becomes part of the pill offer next time.
+    qc.invalidateQueries({ queryKey: RECIPE_TAGS_KEY })
     onSaved()
   }
 
@@ -301,12 +321,15 @@ export function RecipeForm({
             )}
           </div>
 
+          {/* No autoFocus: on a phone it would summon the keyboard over the
+              just-opened form (hiding the photo/import helpers); autoComplete
+              off keeps iOS from offering contact names for a recipe title. */}
           <input
             className="input recipe-title-input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={t.recipes.titlePlaceholder}
-            autoFocus
+            autoComplete="off"
           />
 
           {/* Fast-fill helpers */}
@@ -402,7 +425,7 @@ export function RecipeForm({
           <div className="recipe-tags-edit">
             <span className="recipe-tags-edit__label mono">{t.recipes.tagsLabel}</span>
             <div className="recipe-tags-edit__chips">
-              {t.recipes.tagPresets.map((tag) => (
+              {pills.map((tag) => (
                 <button
                   key={tag}
                   type="button"
@@ -414,7 +437,7 @@ export function RecipeForm({
                 </button>
               ))}
               {tags
-                .filter((tag) => !t.recipes.tagPresets.some((p) => p.toLowerCase() === tag.toLowerCase()))
+                .filter((tag) => !pills.some((p) => p.toLowerCase() === tag.toLowerCase()))
                 .map((tag) => (
                   <button key={tag} type="button" className="chip is-on" onClick={() => toggleTag(tag)} aria-pressed>
                     {tag} ✕

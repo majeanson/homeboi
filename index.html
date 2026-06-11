@@ -2,7 +2,13 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- interactive-widget: Chrome/Android shrinks the layout viewport when the
+         keyboard opens so fixed sheets stay visible; iOS ignores it (handled by
+         the visualViewport → CSS-vars tracker in src/lib/viewportVars.ts). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <meta name="theme-color" content="#FBF3E4" />
     <meta name="description" content="Babillard — un planificateur familial calme pour une tablette murale." />
     <title>Babillard</title>

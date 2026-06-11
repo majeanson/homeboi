@@ -30,6 +30,35 @@ export interface Recipe {
 
 export const RECIPES_KEY = ['recipes']
 
+// /api/recipe-tags — the household tag layer: saved preset pills + every tag
+// currently in use (with counts). Shared by the recipe form (pill offer) and
+// the Réglages tag manager.
+export interface RecipeTagInfo {
+  tag: string
+  count: number
+}
+export interface RecipeTagsData {
+  presets: string[]
+  used: RecipeTagInfo[]
+}
+export const RECIPE_TAGS_KEY = ['recipeTags']
+
+// The pills the recipe form offers: the household's saved presets (or the
+// built-in starters when none are saved yet), then every tag already in use —
+// so a tag typed once ("Collation") is a one-tap pill from then on.
+export function tagOptions(presets: string[], used: string[], defaults: readonly string[]): string[] {
+  const out = presets.length ? [...presets] : [...defaults]
+  const seen = new Set(out.map((tg) => tg.toLowerCase()))
+  for (const tag of used) {
+    const key = tag.toLowerCase()
+    if (!seen.has(key)) {
+      seen.add(key)
+      out.push(tag)
+    }
+  }
+  return out
+}
+
 // Every distinct tag across the book, in first-seen order — drives the Kitchen
 // filter chips. Defensive about a recipe whose tags didn't load (older payload).
 export function allTags(recipes: Recipe[]): string[] {
