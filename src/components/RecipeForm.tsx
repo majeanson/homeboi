@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { resizeImage, PHOTO_MAX } from '../lib/image'
-import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
+import { type Recipe, type RecipeOriginal, RECIPES_KEY, recipeImg } from '../lib/recipes'
+import { formatDuration } from '../lib/duration'
 import { Icon } from './Icon'
 
 // Create / edit a recipe. Two ways to fill it fast, then free editing:
@@ -35,6 +36,9 @@ export function RecipeForm({
   const [tagInput, setTagInput] = useState('')
   const [source, setSource] = useState<string | null>(value?.source ?? null)
   const [image, setImage] = useState<string | null>(value?.image ?? null)
+  // The as-imported snapshot, kept verbatim across edits; a fresh import
+  // replaces it. Saved alongside the card so the sheet can show "the original".
+  const [original, setOriginal] = useState<RecipeOriginal | null>(value?.original ?? null)
 
   const [busy, setBusy] = useState(false)
   const [reading, setReading] = useState(false)
@@ -64,13 +68,65 @@ export function RecipeForm({
     const next = lines(kind).filter((_, idx) => idx !== i)
     setLines(kind)(next.length ? next : [''])
   }
+  // Pasting a multi-line block into one row spreads it over rows (bullets and
+  // leading step numbers stripped — the editor numbers steps itself), so fixing
+  // an import by copy-pasting a section never means typing line by line.
+  const pasteLines = (kind: LineKind, i: number, pasted: string): boolean => {
+    const parts = pasted
+      .split(/\r?\n/)
+      .map((s) =>
+        s
+          .replace(/^[•·▪◦‣*–—-]+\s*/, '')
+          .replace(/^\d{1,2}\s*[.):\-–—]\s+/, '')
+          .trim(),
+      )
+      .filter(Boolean)
+    if (parts.length <= 1) return false
+    const cur = lines(kind)
+    setLines(kind)([...cur.slice(0, i), ...(cur[i].trim() ? [cur[i], ...parts] : parts), ...cur.slice(i + 1)])
+    return true
+  }
 
   // Drop the draft into the form. Replaces empty-only sections; never clobbers
-  // lines the user already typed.
-  function applyDraft(d: { ingredients?: string[]; steps?: string[]; title?: string | null }) {
+  // lines the user already typed. Also stashes the untouched snapshot so the
+  // saved recipe remembers exactly what the import produced.
+  type Draft = {
+    title?: string | null
+    ingredients?: string[]
+    steps?: string[]
+    servings?: number | null
+    times?: { prep: number | null; cook: number | null; total: number | null }
+    source?: string | null
+  }
+  function applyDraft(d: Draft) {
     if (d.title && !title.trim()) setTitle(d.title)
     if (d.ingredients?.length && ingredients.every((x) => !x.trim())) setIngredients(d.ingredients)
     if (d.steps?.length && steps.every((x) => !x.trim())) setSteps(d.steps)
+    if (d.servings && !servings.trim()) setServings(String(d.servings))
+    // Prep/cook/total times land as a notes line ("Préparation 20 min · …") —
+    // informative without needing new fields, and freely editable.
+    if (d.times && !notes.trim()) {
+      const parts = (
+        [
+          [t.recipes.timePrep, d.times.prep],
+          [t.recipes.timeCook, d.times.cook],
+          [t.recipes.timeTotal, d.times.total],
+        ] as [string, number | null][]
+      )
+        .filter(([, m]) => m != null && m > 0)
+        .map(([label, m]) => `${label} ${formatDuration(m! * 60)}`)
+      if (parts.length) setNotes(parts.join(' · '))
+    }
+    if (d.ingredients?.length || d.steps?.length) {
+      setOriginal({
+        title: d.title ?? null,
+        ingredients: d.ingredients ?? [],
+        steps: d.steps ?? [],
+        servings: d.servings ?? null,
+        source: d.source ?? null,
+        importedAt: Math.floor(Date.now() / 1000),
+      })
+    }
   }
 
   // Read a recipe out of a photo (cookbook page, handwritten card, screenshot):
@@ -107,6 +163,8 @@ export function RecipeForm({
         title: string | null
         ingredients: string[]
         steps: string[]
+        servings: number | null
+        times: { prep: number | null; cook: number | null; total: number | null }
         image: string | null
         source: string | null
         empty?: boolean
@@ -152,6 +210,7 @@ export function RecipeForm({
       source,
       image,
       tags,
+      original,
     }
     await api('recipes', {
       method: value ? 'PATCH' : 'POST',
@@ -178,7 +237,13 @@ export function RecipeForm({
               if (e.key === 'Enter') {
                 e.preventDefault()
                 if (i === lines(kind).length - 1 && v.trim()) addLine(kind)
+              } else if (e.key === 'Backspace' && !v && lines(kind).length > 1) {
+                e.preventDefault()
+                removeLine(kind, i)
               }
+            }}
+            onPaste={(e) => {
+              if (pasteLines(kind, i, e.clipboardData.getData('text'))) e.preventDefault()
             }}
           />
           <button

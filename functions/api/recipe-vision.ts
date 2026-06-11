@@ -1,6 +1,7 @@
 import { badRequest, ok, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { recipeFromImage, resolveLang } from '../_lib/ai'
+import { refineSteps } from '../_lib/recipeImport'
 
 // Read a recipe out of a PHOTO. The client sends raw image bytes (resized, same
 // as recipe-image); the vision model OCRs + structures them into a DRAFT the
@@ -18,5 +19,7 @@ export const onRequestPost = authed(async (ctx) => {
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
 
   const r = await recipeFromImage(ctx.env, new Uint8Array(buf), resolveLang(ctx.env, ctx.request))
-  return ok({ title: r.title, ingredients: r.ingredients, steps: r.steps })
+  // OCR'd steps go through the shared refinement: the model often returns the
+  // page's numbering verbatim ("1. …") or one packed paragraph.
+  return ok({ title: r.title, ingredients: r.ingredients, steps: refineSteps(r.steps) })
 }, 'operator')

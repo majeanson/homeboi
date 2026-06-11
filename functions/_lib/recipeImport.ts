@@ -1,17 +1,38 @@
-// Recipe import — parse a recipe out of a fetched web page. Almost every recipe
-// site embeds schema.org/Recipe as JSON-LD (<script type="application/ld+json">);
-// that structured block is far more reliable than scraping the rendered HTML, and
-// needs no AI. We pull title / ingredients / steps / image straight from it.
+// Recipe import — parse a recipe out of a fetched web page or pasted text.
+// Almost every recipe site embeds schema.org/Recipe as JSON-LD
+// (<script type="application/ld+json">); that structured block is far more
+// reliable than scraping the rendered HTML, and needs no AI. We pull title /
+// ingredients / steps / servings / times / image straight from it. Older sites
+// use microdata (itemprop=…) instead — a second, regex-level fallback. Pasted
+// text gets a heading-aware parser (Ingrédients / Préparation / …) so most
+// pastes need no AI either.
 //
-// All pure + defensive: any malformed block is skipped, never thrown. The Worker
-// endpoint (api/recipe-import) does the fetch; this module does the parsing, so
-// it's unit-testable with fixture HTML.
+// Step separation is format-aware: real recipes ship their structure (numbered
+// lists, HowToSection groups, one-line-per-step) and we honour it — packed
+// "1. … 2. …" blobs are split on their ascending markers, leading step numbers
+// and bullets are stripped (the UI numbers steps itself), and an overlong blob
+// is split at sentence boundaries instead of being truncated mid-word.
+//
+// All pure + defensive: any malformed block is skipped, never thrown. The
+// Worker endpoint (api/recipe-import) does the fetch; this module does the
+// parsing, so it's unit-testable with fixture HTML.
+
+export interface RecipeTimes {
+  prep: number | null // minutes
+  cook: number | null
+  total: number | null
+}
+
+export const NO_TIMES: RecipeTimes = { prep: null, cook: null, total: null }
+export const hasTimes = (t: RecipeTimes): boolean => t.prep != null || t.cook != null || t.total != null
 
 export interface ParsedRecipe {
   title: string | null
   ingredients: string[]
   steps: string[]
   image: string | null
+  servings: number | null
+  times: RecipeTimes
 }
 
 // Grab every JSON-LD <script> block's parsed JSON (objects or arrays). Tolerates
@@ -67,16 +88,50 @@ export function findRecipeNode(value: unknown): Record<string, unknown> | null {
   return null
 }
 
-// Decode the handful of HTML entities that survive in JSON-LD text. Shared by
-// clean() (per-field) and htmlToText() (whole-page fallback).
+// Decode the HTML entities that survive in JSON-LD / microdata text. Named map
+// for the common French + fraction ones, then numeric (&#233; / &#xE9;) for the
+// long tail older sites still emit.
+const NAMED_ENTITIES: Record<string, string> = {
+  nbsp: ' ',
+  amp: '&',
+  apos: "'",
+  quot: '"',
+  lt: '<',
+  gt: '>',
+  eacute: 'é',
+  egrave: 'è',
+  ecirc: 'ê',
+  agrave: 'à',
+  acirc: 'â',
+  icirc: 'î',
+  ocirc: 'ô',
+  ucirc: 'û',
+  ugrave: 'ù',
+  ccedil: 'ç',
+  deg: '°',
+  frac12: '½',
+  frac14: '¼',
+  frac34: '¾',
+  rsquo: '’',
+  lsquo: '‘',
+  ldquo: '“',
+  rdquo: '”',
+  hellip: '…',
+  ndash: '–',
+  mdash: '—',
+}
 const decodeEntities = (s: string): string =>
   s
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&quot;/gi, '"')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => {
+      const code = parseInt(hex, 16)
+      return code > 0 && code < 0x110000 ? String.fromCodePoint(code) : ''
+    })
+    .replace(/&#(\d+);/g, (_, dec: string) => {
+      const code = +dec
+      return code > 0 && code < 0x110000 ? String.fromCodePoint(code) : ''
+    })
+    .replace(/&([a-z0-9]+);/gi, (whole, name: string) => NAMED_ENTITIES[name.toLowerCase()] ?? whole)
+    .replace(/&#39;/g, "'")
 
 // Many sites embed inline HTML inside JSON-LD instruction/ingredient text —
 // Ricardo wraps words in <a href> links, others use <strong>/<em>/<br>. Strip
@@ -100,17 +155,126 @@ function asStringList(value: unknown, max: number): string[] {
   return out
 }
 
-// recipeInstructions is the messy one: a plain string (newline-separated), an
-// array of strings, an array of HowToStep {text}, or HowToSection nodes that nest
-// itemListElement. Flatten any of these into ordered step strings.
-export function normalizeInstructions(value: unknown, max = 30): string[] {
+// ---------------------------------------------------------------------------
+// Step refinement — the format-aware core shared by every import path
+// ---------------------------------------------------------------------------
+
+// Strip a leading list marker the source format carried: a bullet/dash, an
+// "Étape 3" / "Step 2" label, or a bare "1." / "2)" number. The UI numbers
+// steps itself, so a kept prefix would read "1. 1. Faire bouillir…".
+// A quantity like "1.5 L d'eau" survives (no whitespace after the dot), and
+// "2 tasses…" survives (a bare number needs a separator to count as a marker).
+export function stripStepPrefix(s: string): string {
+  return s
+    .trim()
+    .replace(/^[•·▪◦‣*]+\s*/, '')
+    .replace(/^[-–—]+\s+/, '')
+    .replace(/^(?:[ée]tapes?|steps?)\s*\d{1,2}\s*(?:[:.)\-–—]\s*)?/i, '')
+    .replace(/^\d{1,2}\s*[.):\-–—]\s+/, '')
+    .replace(/^\d{1,2}\s*[.)]\s*(?=[A-ZÀ-ÖŒ])/, '')
+    .trim()
+}
+
+// A usable instruction has letters and isn't just a stray label ("Étape 3").
+const isStepText = (s: string): boolean =>
+  s.length >= 3 && /[a-zà-öœ]/i.test(s) && !/^(?:[ée]tapes?|steps?)\s*\d*$/i.test(s)
+
+// Split one string on an ascending run of markers (1, 2, 3, …) found by `re`
+// (first capture group = the number). Only a run that starts at 1 and counts up
+// is treated as a real numbered list — a lone "2)" or a temperature never
+// splits. Returns [s] when no list is found.
+function splitOnAscendingMarkers(s: string, re: RegExp): string[] {
+  const marks: { index: number; end: number }[] = []
+  let expected = 1
+  let m: RegExpExecArray | null
+  re.lastIndex = 0
+  while ((m = re.exec(s))) {
+    if (+m[1] === expected) {
+      marks.push({ index: m.index, end: m.index + m[0].length })
+      expected++
+    }
+  }
+  if (marks.length < 2) return [s]
   const out: string[] = []
+  const lead = s.slice(0, marks[0].index).trim()
+  if (lead) out.push(lead)
+  for (let i = 0; i < marks.length; i++) {
+    const piece = s.slice(marks[i].end, marks[i + 1]?.index ?? s.length).trim()
+    if (piece) out.push(piece)
+  }
+  return out
+}
+
+// Break a packed blob into its formatted pieces: "Étape 1 …" labels first, then
+// "1. … 2. …" numbered markers, then mid-string bullets.
+function splitPacked(s: string): string[] {
+  const byLabel = splitOnAscendingMarkers(s, /(?:^|\s)(?:[ée]tapes?|steps?)\s*(\d{1,2})\s*[:.)\-–—]?\s*/gi)
+  const byNumber = byLabel.flatMap((p) => splitOnAscendingMarkers(p, /(?:^|\s)(\d{1,2})\s*[.)]\s+(?=[A-ZÀ-ÖŒ«"\d])/g))
+  return byNumber.flatMap((p) => p.split(/\s+[•▪]\s+/)).filter(Boolean)
+}
+
+// Split an overlong step at sentence boundaries and regroup into chunks of
+// roughly `target` chars — so a wall-of-text method becomes readable steps
+// instead of being truncated mid-word. Splits only after end punctuation
+// followed by whitespace AND an uppercase/«/digit start, so decimals ("1.5 h")
+// and abbreviations ("env. 5 min") never split.
+export function sentenceChunks(s: string, target = 280): string[] {
+  if (s.length <= target + 120) return [s]
+  const sentences = s.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÖŒ«"(\d])/).filter(Boolean)
+  if (sentences.length <= 1) return [s]
+  const out: string[] = []
+  let cur = ''
+  for (const sen of sentences) {
+    if (cur && cur.length + sen.length + 1 > target) {
+      out.push(cur)
+      cur = sen
+    } else {
+      cur = cur ? `${cur} ${sen}` : sen
+    }
+  }
+  if (cur) out.push(cur)
+  return out
+}
+
+// The shared refinement pipeline: clean → split packed lists → strip leading
+// markers → drop junk → chunk overlong text → dedupe. Every import path (JSON-LD,
+// microdata, paste, AI, photo OCR) funnels its raw steps through here.
+export function refineSteps(raw: string[], max = 30): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const r of raw) {
+    if (out.length >= max) break
+    for (const piece of splitPacked(clean(r))) {
+      const stripped = stripStepPrefix(piece)
+      if (!isStepText(stripped)) continue
+      for (const chunk of sentenceChunks(stripped)) {
+        if (out.length >= max) break
+        const final = chunk.slice(0, 500)
+        const key = final.toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push(final)
+      }
+    }
+  }
+  return out
+}
+
+// recipeInstructions is the messy one: a plain string (newline-separated), an
+// array of strings, an array of HowToStep {text}, or HowToSection nodes that
+// nest itemListElement. Flatten any of these into ordered step strings, keeping
+// section names ("Sauce", "Boulettes") as a "Section — " prefix when the recipe
+// actually has several sections (one section covering everything adds nothing).
+export function normalizeInstructions(value: unknown, max = 30): string[] {
+  type Collected = { section: string | null; text: string }
+  const collected: Collected[] = []
+  let section: string | null = null
   const push = (s: string) => {
     const c = clean(s)
-    if (c) out.push(c.slice(0, 400))
+    if (c && collected.length < max * 2) collected.push({ section, text: c })
   }
   const walk = (v: unknown) => {
-    if (out.length >= max) return
+    if (collected.length >= max * 2) return
     if (typeof v === 'string') {
       // A single string may pack several steps separated by newlines.
       for (const part of v.split(/\r?\n+/)) push(part)
@@ -123,7 +287,10 @@ export function normalizeInstructions(value: unknown, max = 30): string[] {
     if (v && typeof v === 'object') {
       const node = v as Record<string, unknown>
       if (Array.isArray(node.itemListElement)) {
+        const prev = section
+        if (typeIncludes(node, 'HowToSection') && typeof node.name === 'string') section = clean(node.name) || prev
         walk(node.itemListElement)
+        section = prev
         return
       }
       if (typeof node.text === 'string') {
@@ -134,8 +301,69 @@ export function normalizeInstructions(value: unknown, max = 30): string[] {
     }
   }
   walk(value)
-  return out.slice(0, max)
+
+  const sections = new Set(collected.map((c) => c.section).filter(Boolean))
+  const useSections = sections.size >= 2
+  const out: string[] = []
+  for (const c of collected) {
+    if (out.length >= max) break
+    for (const step of refineSteps([c.text], max)) {
+      if (out.length >= max) break
+      const final = (useSections && c.section ? `${c.section} — ${step}` : step).slice(0, 500)
+      if (!out.includes(final)) out.push(final)
+    }
+  }
+  return out
 }
+
+// ---------------------------------------------------------------------------
+// Yield + times
+// ---------------------------------------------------------------------------
+
+const clampServings = (n: number): number | null => {
+  const v = Math.floor(n)
+  return v >= 1 && v <= 99 ? v : null
+}
+
+// recipeYield: a number, "4 portions", "4 à 6 personnes", "Serves 6", an array,
+// or a QuantitativeValue {value}. Take the first plausible serving count; a
+// weight-style yield ("350 g") has no number ≤ 99 and stays null.
+export function parseYield(value: unknown): number | null {
+  if (typeof value === 'number' && isFinite(value)) return clampServings(value)
+  if (typeof value === 'string') {
+    for (const m of value.matchAll(/\d+/g)) {
+      const n = clampServings(+m[0])
+      if (n) return n
+    }
+    return null
+  }
+  if (Array.isArray(value)) {
+    for (const v of value) {
+      const r = parseYield(v)
+      if (r) return r
+    }
+    return null
+  }
+  if (value && typeof value === 'object') return parseYield((value as Record<string, unknown>).value)
+  return null
+}
+
+// ISO-8601 duration ("PT1H30M", "PT45M") → whole minutes. Null on junk or a
+// zero/absurd value, so a site's empty "PT0M" never shows as a time.
+export function isoToMinutes(value: unknown): number | null {
+  if (typeof value !== 'string') return null
+  const m = value
+    .trim()
+    .match(/^P(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i)
+  if (!m) return null
+  const total = +(m[1] ?? 0) * 1440 + +(m[2] ?? 0) * 60 + +(m[3] ?? 0) + +(m[4] ?? 0) / 60
+  const r = Math.round(total)
+  return r > 0 && r <= 48 * 60 ? r : null
+}
+
+// ---------------------------------------------------------------------------
+// Page parsers
+// ---------------------------------------------------------------------------
 
 // image can be a URL string, an array, or an ImageObject {url}. Take the first https one.
 export function normalizeImage(value: unknown): string | null {
@@ -160,8 +388,8 @@ export function normalizeImage(value: unknown): string | null {
   return /^https:\/\//i.test(https) ? https.slice(0, 600) : null
 }
 
-// Parse a Recipe out of fetched page HTML. Returns null when no Recipe JSON-LD
-// is present (caller can then try the AI/paste fallback).
+// Parse a Recipe out of fetched page HTML via JSON-LD. Returns null when no
+// Recipe block is present (caller then tries microdata, then the AI fallback).
 export function parseRecipeJsonLd(html: string): ParsedRecipe | null {
   for (const block of extractJsonLdBlocks(html)) {
     const node = findRecipeNode(block)
@@ -171,21 +399,251 @@ export function parseRecipeJsonLd(html: string): ParsedRecipe | null {
     const steps = normalizeInstructions(node.recipeInstructions, 30)
     // A node with a name but neither ingredients nor steps isn't a usable recipe.
     if (!title && ingredients.length === 0 && steps.length === 0) continue
-    return { title, ingredients, steps, image: normalizeImage(node.image) }
+    return {
+      title,
+      ingredients,
+      steps,
+      image: normalizeImage(node.image),
+      servings: parseYield(node.recipeYield ?? node.yield),
+      times: {
+        prep: isoToMinutes(node.prepTime),
+        cook: isoToMinutes(node.cookTime),
+        total: isoToMinutes(node.totalTime),
+      },
+    }
   }
   return null
 }
 
-// Crude HTML→text for the AI fallback when there's no JSON-LD: drop scripts/styles,
-// strip tags, collapse whitespace. Good enough to feed structureRecipe.
+// Microdata fallback for older sites with no JSON-LD: scan for itemprop
+// elements at the regex level. Coarse but safe — anything it can't see just
+// stays empty and the AI fallback takes over.
+export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
+  const inner = (prop: string): string[] => {
+    const out: string[] = []
+    const re = new RegExp(
+      `<([a-z][a-z0-9]*)\\b[^>]*\\bitemprop=["'](?:${prop})["'][^>]*>([\\s\\S]*?)<\\/\\1>`,
+      'gi',
+    )
+    let m: RegExpExecArray | null
+    while ((m = re.exec(html)) && out.length < 80) out.push(m[2])
+    // <meta itemprop="…" content="…"> variants (self-closing, no inner text).
+    const metaRe = new RegExp(`<meta\\b[^>]*\\bitemprop=["'](?:${prop})["'][^>]*\\bcontent=["']([^"']*)["']`, 'gi')
+    while ((m = metaRe.exec(html)) && out.length < 80) out.push(m[1])
+    return out
+  }
+
+  const ingredients = inner('recipeIngredient|ingredients')
+    .map((s) => clean(s).slice(0, 200))
+    .filter(Boolean)
+    .slice(0, 40)
+
+  // Instructions may be one element per step OR a single container; turn block
+  // closers into newlines before stripping tags so the inner list splits.
+  const stepLines = inner('recipeInstructions').flatMap((blockHtml) =>
+    blockHtml
+      .replace(/<\/(?:li|p|div|h[1-6])>|<br\s*\/?>/gi, '\n')
+      .split(/\n+/)
+      .map((s) => clean(s))
+      .filter(Boolean),
+  )
+  const steps = refineSteps(stepLines, 30)
+
+  if (ingredients.length < 2 && steps.length === 0) return null
+
+  const meta = (re: RegExp): string | null => {
+    const m = html.match(re)
+    return m ? clean(m[1]) || null : null
+  }
+  const title =
+    inner('name').map((s) => clean(s)).find(Boolean)?.slice(0, 200) ??
+    meta(/<meta\b[^>]*\bproperty=["']og:title["'][^>]*\bcontent=["']([^"']*)["']/i)?.slice(0, 200) ??
+    null
+  const image = normalizeImage(meta(/<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["']([^"']*)["']/i))
+  const servings = parseYield(inner('recipeYield')[0] ?? null)
+
+  return { title, ingredients, steps, image, servings, times: NO_TIMES }
+}
+
+// ---------------------------------------------------------------------------
+// Pasted-text parser (no AI)
+// ---------------------------------------------------------------------------
+
+export interface PastedRecipe {
+  title: string | null
+  ingredients: string[]
+  steps: string[]
+  servings: number | null
+  times: RecipeTimes
+  notes: string | null
+  // True when the text carried real recipe structure (both section headings
+  // found) — the caller can then skip the AI entirely.
+  confident: boolean
+}
+
+// Section headings as recipes actually print them — FR (Québec) + EN. A heading
+// is the keyword, at most a short qualifier ("Ingrédients pour la sauce"),
+// optionally a colon — never a full sentence.
+// "Étape(?!\s*\d)" / "Step(?!\s*\d)": a numbered "Étape 1 : Préchauffer…" line
+// is a STEP, not the section heading — never swallow it.
+const ING_HEADING = /^(?:les\s+)?ingr[ée]dients?\b[^.!?]{0,30}:?$/i
+const STEP_HEADING =
+  /^(?:pr[ée]paration|instructions?|m[ée]thode|method|directions?|[ée]tapes?(?!\s*\d)|steps?(?!\s*\d)|marche\s+[àa]\s+suivre|mode\s+d['’]emploi)\b[^.!?]{0,30}:?$/i
+const NOTE_HEADING = /^(?:notes?|conseils?|astuces?|tips?|variantes?)\b[^.!?]{0,10}:?$/i
+
+// "Préparation : 20 min", "Cuisson 1 h 30", "Total time: 45 minutes" — the time
+// block most printed recipes start with. Must be checked BEFORE the step
+// heading ("Préparation" alone flips the mode; with a duration it's a time).
+const TIME_LINE =
+  /^(pr[ée]p(?:aration)?(?:\s*time)?|cuisson|cook(?:ing)?(?:\s*time)?|temps\s+total|total(?:\s*time)?)\s*:?\s+(.{1,30})$/i
+
+// Free-text duration → minutes: "1 h 30", "20 min", "45 minutes", "1 heure".
+export function textToMinutes(s: string): number | null {
+  // "1 h 30" first — the trailing 30 carries no unit of its own.
+  const hm = s.match(/(\d+)\s*(?:h(?:eures?|rs?)?|hours?)\s*(\d{1,2})\b/i)
+  const h = hm ?? s.match(/(\d+)\s*(?:h(?:eures?|rs?)?|hours?)\b/i)
+  const min = hm ? null : s.match(/(\d+)\s*(?:min(?:utes?)?|mn)\b/i)
+  if (!h && !min) return null
+  const total = (h ? +h[1] * 60 : 0) + (hm ? +hm[2] : min ? +min[1] : 0)
+  return total > 0 && total <= 48 * 60 ? total : null
+}
+
+const SERVINGS_LINE =
+  /(?:^|\b)(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b|(?:donne|serves?|rendement|yield)\s*:?\s*(\d{1,2})\b/i
+
+// An ingredient-looking line: bullet or quantity-leading, short. Used only by
+// the no-headings fallback.
+const ING_LIKE = /^[-•*–]?\s*(?:\d|[¼½¾⅓⅔⅛]|une?\b|deux\b|trois\b|quelques\b)/i
+
+const stripBullet = (s: string): string => s.replace(/^[-•·▪◦‣*–—]+\s*/, '').trim()
+
+// Parse text the user pasted (from a site, a PDF, a message). Heading-aware
+// first; when the paste has no headings, fall back to shape detection
+// (quantity-leading lines = ingredients, prose after = steps). The result's
+// `confident` says whether the structure was explicit.
+export function parsePastedRecipe(text: string): PastedRecipe {
+  const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim())
+  let mode: 'pre' | 'ing' | 'steps' | 'notes' = 'pre'
+  let title: string | null = null
+  let servings: number | null = null
+  const times: RecipeTimes = { prep: null, cook: null, total: null }
+  const ings: string[] = []
+  const stepLines: string[] = []
+  const noteLines: string[] = []
+  let sawIngHeading = false
+  let sawStepHeading = false
+
+  for (const line of lines) {
+    if (!line) continue
+
+    // Meta lines can appear anywhere; consume them when they stand alone.
+    const tm = line.match(TIME_LINE)
+    if (tm) {
+      const mins = textToMinutes(tm[2])
+      if (mins) {
+        const kind = tm[1].toLowerCase()
+        if (/^cuisson|^cook/.test(kind)) times.cook ??= mins
+        else if (/total/.test(kind)) times.total ??= mins
+        else times.prep ??= mins
+        continue
+      }
+    }
+    if (servings == null) {
+      const sv = line.match(SERVINGS_LINE)
+      if (sv) {
+        servings = clampServings(+(sv[1] ?? sv[2]))
+        // A short line around the meta block is the marker itself — consume it.
+        // Inside the method, "Diviser en 4 portions…" is a real step: keep it.
+        if (mode !== 'steps' && line.length <= 40) continue
+      }
+    }
+
+    if (ING_HEADING.test(line)) {
+      mode = 'ing'
+      sawIngHeading = true
+      continue
+    }
+    if (STEP_HEADING.test(line)) {
+      mode = 'steps'
+      sawStepHeading = true
+      continue
+    }
+    if (NOTE_HEADING.test(line)) {
+      mode = 'notes'
+      continue
+    }
+
+    if (mode === 'pre') {
+      if (!title && line.length <= 120) title = line.slice(0, 200)
+      // Further preamble (description, byline) is dropped — it isn't the recipe.
+      continue
+    }
+    if (mode === 'ing') {
+      const ing = stripBullet(line).slice(0, 200)
+      if (ing) ings.push(ing)
+      continue
+    }
+    if (mode === 'steps') {
+      stepLines.push(line)
+      continue
+    }
+    noteLines.push(line)
+  }
+
+  // No headings at all — classify by line shape instead.
+  if (!sawIngHeading && !sawStepHeading && ings.length === 0 && stepLines.length === 0) {
+    let pastTitle = false
+    for (const line of lines) {
+      if (!line) continue
+      if (!pastTitle) {
+        pastTitle = true
+        continue // the title was already captured above
+      }
+      if (TIME_LINE.test(line) || (line.length <= 40 && SERVINGS_LINE.test(line))) continue // meta, already read
+      if (ING_LIKE.test(line) && line.length <= 80) ings.push(stripBullet(line).slice(0, 200))
+      else stepLines.push(line)
+    }
+  }
+
+  // Merge wrapped lines (a continuation starts lowercase while the previous
+  // line ended mid-sentence) before the shared refinement pass.
+  const merged: string[] = []
+  for (const l of stepLines) {
+    const prev = merged[merged.length - 1]
+    if (prev && !/[.!?:]$/.test(prev) && /^[a-zà-öœ]/.test(l)) merged[merged.length - 1] = `${prev} ${l}`
+    else merged.push(l)
+  }
+  const steps = refineSteps(merged, 30)
+  const notes = noteLines.join(' ').trim().slice(0, 2000) || null
+
+  return {
+    title,
+    ingredients: ings.slice(0, 40),
+    steps,
+    servings,
+    times,
+    notes,
+    confident: sawIngHeading && sawStepHeading && ings.length >= 2 && steps.length >= 1,
+  }
+}
+
+// Crude HTML→text for the AI fallback when there's no structured data: drop
+// scripts/styles, keep block boundaries as newlines (so the model — and the
+// paste parser — still sees the page's line structure), strip tags, collapse.
 export function htmlToText(html: string, max = 6000): string {
   return decodeEntities(
     html
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      // Source whitespace is insignificant in HTML — structure comes from tags.
+      .replace(/\s+/g, ' ')
+      .replace(/<\/(?:p|li|div|h[1-6]|tr|section|article)>|<br\s*\/?>/gi, '\n')
       .replace(/<[^>]+>/g, ' '),
   )
-    .replace(/\s+/g, ' ')
+    .split('\n')
+    .map((l) => l.replace(/[ \t]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim()
     .slice(0, max)
 }

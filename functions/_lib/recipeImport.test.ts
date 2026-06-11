@@ -2,11 +2,19 @@
 import { describe, it, expect } from 'vitest'
 import {
   parseRecipeJsonLd,
+  parseRecipeMicrodata,
+  parsePastedRecipe,
   extractJsonLdBlocks,
   findRecipeNode,
   normalizeInstructions,
   normalizeImage,
   htmlToText,
+  refineSteps,
+  stripStepPrefix,
+  sentenceChunks,
+  parseYield,
+  isoToMinutes,
+  textToMinutes,
 } from './recipeImport'
 
 const wrap = (json: unknown) =>
@@ -36,6 +44,62 @@ describe('findRecipeNode', () => {
   })
 })
 
+describe('stripStepPrefix', () => {
+  it('strips bullets, bare numbers and Étape/Step labels', () => {
+    expect(stripStepPrefix('1. Faire bouillir.')).toBe('Faire bouillir.')
+    expect(stripStepPrefix('2) Brasser.')).toBe('Brasser.')
+    expect(stripStepPrefix('• Saler.')).toBe('Saler.')
+    expect(stripStepPrefix('Étape 3 : Mélanger.')).toBe('Mélanger.')
+    expect(stripStepPrefix('Step 2 - Stir well.')).toBe('Stir well.')
+  })
+  it('never eats a quantity', () => {
+    expect(stripStepPrefix('1.5 L d’eau à bouillir')).toBe('1.5 L d’eau à bouillir')
+    expect(stripStepPrefix('2 tasses de farine, tamiser')).toBe('2 tasses de farine, tamiser')
+  })
+})
+
+describe('refineSteps', () => {
+  it('splits a packed "1. … 2. …" blob on its ascending markers', () => {
+    const steps = refineSteps(['1. Préchauffer le four. 2. Beurrer le moule. 3. Cuire 30 min.'])
+    expect(steps).toEqual(['Préchauffer le four.', 'Beurrer le moule.', 'Cuire 30 min.'])
+  })
+  it('splits packed "Étape N" labels', () => {
+    const steps = refineSteps(['Étape 1 Couper les légumes. Étape 2 Faire revenir.'])
+    expect(steps).toEqual(['Couper les légumes.', 'Faire revenir.'])
+  })
+  it('does NOT split on a lone number that is not a list (temperature, quantity)', () => {
+    const steps = refineSteps(['Cuire à 180 °C pendant 45 min. Ajouter 2. 5 ml de sel ne change rien.'])
+    expect(steps).toHaveLength(1)
+  })
+  it('drops junk steps and strips leading markers', () => {
+    expect(refineSteps(['Étape 3', '4.', '- Servir chaud.'])).toEqual(['Servir chaud.'])
+  })
+  it('dedupes repeated steps', () => {
+    expect(refineSteps(['Brasser.', 'brasser.'])).toEqual(['Brasser.'])
+  })
+  it('chunks an overlong blob at sentence boundaries instead of truncating', () => {
+    const blob = Array.from(
+      { length: 8 },
+      (_, i) => `Mélanger doucement la farine numéro ${i} avec le beurre fondu et le sucre pendant deux minutes complètes.`,
+    ).join(' ')
+    const steps = refineSteps([blob])
+    expect(steps.length).toBeGreaterThan(1)
+    for (const s of steps) expect(s.length).toBeLessThanOrEqual(500)
+    // Nothing got cut mid-sentence: every chunk ends with punctuation.
+    for (const s of steps) expect(/[.!?]$/.test(s)).toBe(true)
+  })
+})
+
+describe('sentenceChunks', () => {
+  it('returns short text whole', () => {
+    expect(sentenceChunks('Cuire 10 min.')).toEqual(['Cuire 10 min.'])
+  })
+  it('never splits on a decimal or abbreviation', () => {
+    const s = 'Verser 1.5 L d’eau et laisser env. 5 min au repos.'
+    expect(sentenceChunks(s, 10)).toEqual([s])
+  })
+})
+
 describe('normalizeInstructions', () => {
   it('flattens HowToStep objects', () => {
     expect(normalizeInstructions([{ '@type': 'HowToStep', text: 'Boil.' }, { text: 'Stir.' }])).toEqual([
@@ -43,12 +107,65 @@ describe('normalizeInstructions', () => {
       'Stir.',
     ])
   })
-  it('flattens HowToSection > itemListElement', () => {
-    const v = [{ '@type': 'HowToSection', itemListElement: [{ text: 'A' }, { text: 'B' }] }]
-    expect(normalizeInstructions(v)).toEqual(['A', 'B'])
+  it('flattens a single HowToSection without prefixing', () => {
+    const v = [{ '@type': 'HowToSection', name: 'Méthode', itemListElement: [{ text: 'A faire.' }, { text: 'B faire.' }] }]
+    expect(normalizeInstructions(v)).toEqual(['A faire.', 'B faire.'])
+  })
+  it('keeps section names when the recipe has several sections', () => {
+    const v = [
+      { '@type': 'HowToSection', name: 'Sauce', itemListElement: [{ text: 'Mélanger la sauce.' }] },
+      { '@type': 'HowToSection', name: 'Boulettes', itemListElement: [{ text: 'Façonner les boulettes.' }] },
+    ]
+    expect(normalizeInstructions(v)).toEqual(['Sauce — Mélanger la sauce.', 'Boulettes — Façonner les boulettes.'])
   })
   it('splits a single newline-separated string into steps', () => {
     expect(normalizeInstructions('Step one\n\nStep two')).toEqual(['Step one', 'Step two'])
+  })
+  it('splits a packed numbered string', () => {
+    expect(normalizeInstructions('1. Boil water. 2. Add pasta. 3. Drain well.')).toEqual([
+      'Boil water.',
+      'Add pasta.',
+      'Drain well.',
+    ])
+  })
+})
+
+describe('parseYield', () => {
+  it('reads numbers, strings, ranges, arrays and QuantitativeValue', () => {
+    expect(parseYield(4)).toBe(4)
+    expect(parseYield('4 portions')).toBe(4)
+    expect(parseYield('4 à 6 personnes')).toBe(4)
+    expect(parseYield(['6 servings'])).toBe(6)
+    expect(parseYield({ value: 8 })).toBe(8)
+  })
+  it('rejects weight-style and absurd yields', () => {
+    expect(parseYield('350 g')).toBeNull()
+    expect(parseYield(0)).toBeNull()
+    expect(parseYield(null)).toBeNull()
+  })
+})
+
+describe('isoToMinutes', () => {
+  it('reads ISO-8601 durations', () => {
+    expect(isoToMinutes('PT1H30M')).toBe(90)
+    expect(isoToMinutes('PT45M')).toBe(45)
+    expect(isoToMinutes('PT2H')).toBe(120)
+  })
+  it('rejects junk and zero', () => {
+    expect(isoToMinutes('PT0M')).toBeNull()
+    expect(isoToMinutes('45 min')).toBeNull()
+    expect(isoToMinutes(null)).toBeNull()
+  })
+})
+
+describe('textToMinutes', () => {
+  it('reads free-text durations', () => {
+    expect(textToMinutes('1 h 30')).toBe(90)
+    expect(textToMinutes('20 min')).toBe(20)
+    expect(textToMinutes('2 heures')).toBe(120)
+  })
+  it('null when there is no duration', () => {
+    expect(textToMinutes('au goût')).toBeNull()
   })
 })
 
@@ -66,13 +183,17 @@ describe('normalizeImage', () => {
 })
 
 describe('parseRecipeJsonLd', () => {
-  it('parses a typical schema.org Recipe', () => {
+  it('parses a typical schema.org Recipe with yield and times', () => {
     const html = wrap({
       '@context': 'https://schema.org',
       '@type': 'Recipe',
       name: 'Spaghetti maison',
       recipeIngredient: ['400 g de pâtes', '1 pot de sauce', '500 g de bœuf haché'],
       recipeInstructions: [{ '@type': 'HowToStep', text: 'Faire bouillir les pâtes.' }, { text: 'Mijoter la sauce.' }],
+      recipeYield: '4 portions',
+      prepTime: 'PT15M',
+      cookTime: 'PT30M',
+      totalTime: 'PT45M',
       image: 'https://x.com/spag.jpg',
     })
     const r = parseRecipeJsonLd(html)
@@ -81,6 +202,8 @@ describe('parseRecipeJsonLd', () => {
     expect(r!.ingredients).toHaveLength(3)
     expect(r!.steps).toEqual(['Faire bouillir les pâtes.', 'Mijoter la sauce.'])
     expect(r!.image).toBe('https://x.com/spag.jpg')
+    expect(r!.servings).toBe(4)
+    expect(r!.times).toEqual({ prep: 15, cook: 30, total: 45 })
   })
 
   it('returns null for a page with no Recipe JSON-LD', () => {
@@ -90,6 +213,16 @@ describe('parseRecipeJsonLd', () => {
   it('handles instructions given as one plain string', () => {
     const html = wrap({ '@type': 'Recipe', name: 'X', recipeIngredient: ['a'], recipeInstructions: 'Do A.\nDo B.' })
     expect(parseRecipeJsonLd(html)!.steps).toEqual(['Do A.', 'Do B.'])
+  })
+
+  it('strips a leading step number a site left in HowToStep text', () => {
+    const html = wrap({
+      '@type': 'Recipe',
+      name: 'X',
+      recipeIngredient: ['a'],
+      recipeInstructions: [{ text: '1. Préchauffer le four.' }, { text: '2. Cuire.' }],
+    })
+    expect(parseRecipeJsonLd(html)!.steps).toEqual(['Préchauffer le four.', 'Cuire.'])
   })
 
   it('strips inline HTML (links, bold) from steps and ingredients', () => {
@@ -107,9 +240,125 @@ describe('parseRecipeJsonLd', () => {
   })
 })
 
+describe('parseRecipeMicrodata', () => {
+  it('reads itemprop ingredients + a single instructions container', () => {
+    const html = `<html><head>
+      <meta property="og:title" content="Tarte au sucre">
+      <meta property="og:image" content="https://x.com/tarte.jpg">
+    </head><body itemscope itemtype="https://schema.org/Recipe">
+      <li itemprop="recipeIngredient">1 tasse de cassonade</li>
+      <li itemprop="recipeIngredient">250 ml de crème</li>
+      <div itemprop="recipeInstructions"><p>Préchauffer le four.</p><p>Mélanger et verser.</p></div>
+      <span itemprop="recipeYield">6 portions</span>
+    </body></html>`
+    const r = parseRecipeMicrodata(html)!
+    expect(r.ingredients).toEqual(['1 tasse de cassonade', '250 ml de crème'])
+    expect(r.steps).toEqual(['Préchauffer le four.', 'Mélanger et verser.'])
+    expect(r.servings).toBe(6)
+    expect(r.image).toBe('https://x.com/tarte.jpg')
+  })
+  it('returns null when the page has no recipe microdata', () => {
+    expect(parseRecipeMicrodata('<html><body><p>blog post</p></body></html>')).toBeNull()
+  })
+})
+
+describe('parsePastedRecipe', () => {
+  it('parses a normally formatted FR recipe with headings (confident, no AI needed)', () => {
+    const r = parsePastedRecipe(`Pouding chômeur
+
+Préparation : 20 min
+Cuisson : 45 min
+6 portions
+
+Ingrédients
+- 1 tasse de farine
+- 1 tasse de cassonade
+- 250 ml de crème
+
+Préparation
+1. Préchauffer le four à 180 °C.
+2. Mélanger la farine et la cassonade.
+3. Verser la crème et cuire 45 min.
+
+Notes
+Encore meilleur le lendemain.`)
+    expect(r.title).toBe('Pouding chômeur')
+    expect(r.confident).toBe(true)
+    expect(r.ingredients).toEqual(['1 tasse de farine', '1 tasse de cassonade', '250 ml de crème'])
+    expect(r.steps).toEqual([
+      'Préchauffer le four à 180 °C.',
+      'Mélanger la farine et la cassonade.',
+      'Verser la crème et cuire 45 min.',
+    ])
+    expect(r.servings).toBe(6)
+    expect(r.times).toEqual({ prep: 20, cook: 45, total: null })
+    expect(r.notes).toBe('Encore meilleur le lendemain.')
+  })
+
+  it('parses an EN recipe (Method / Serves)', () => {
+    const r = parsePastedRecipe(`Banana bread
+Serves 8
+Ingredients
+2 cups flour
+3 ripe bananas
+Method
+Mash the bananas. Mix everything together.
+Bake for 1 hour.`)
+    expect(r.confident).toBe(true)
+    expect(r.servings).toBe(8)
+    expect(r.ingredients).toEqual(['2 cups flour', '3 ripe bananas'])
+    expect(r.steps).toEqual(['Mash the bananas. Mix everything together.', 'Bake for 1 hour.'])
+  })
+
+  it('treats "Étape N : …" lines as steps, not headings', () => {
+    const r = parsePastedRecipe(`Soupe
+Ingrédients
+- 1 oignon
+- 4 carottes
+Étapes
+Étape 1 : Préchauffer le four
+Étape 2 : Couper les légumes`)
+    expect(r.confident).toBe(true)
+    expect(r.steps).toEqual(['Préchauffer le four', 'Couper les légumes'])
+  })
+
+  it('keeps a mid-method "portions" sentence as a step', () => {
+    const r = parsePastedRecipe(`Gâteau
+Ingrédients
+- 2 oeufs
+- 1 tasse de sucre
+Préparation
+Battre les oeufs.
+Diviser en 4 portions égales.`)
+    expect(r.steps).toContain('Diviser en 4 portions égales.')
+  })
+
+  it('merges wrapped lines into one step', () => {
+    const r = parsePastedRecipe(`X
+Ingrédients
+- 1 oignon
+- 2 carottes
+Préparation
+Faire revenir l'oignon dans le beurre
+jusqu'à ce qu'il soit doré.`)
+    expect(r.steps).toEqual(["Faire revenir l'oignon dans le beurre jusqu'à ce qu'il soit doré."])
+  })
+
+  it('falls back to shape detection when there are no headings (not confident)', () => {
+    const r = parsePastedRecipe(`Salade rapide
+1 laitue
+2 tomates
+Couper les légumes et mélanger avec la vinaigrette.`)
+    expect(r.confident).toBe(false)
+    expect(r.ingredients).toEqual(['1 laitue', '2 tomates'])
+    expect(r.steps).toEqual(['Couper les légumes et mélanger avec la vinaigrette.'])
+    expect(r.title).toBe('Salade rapide')
+  })
+})
+
 describe('htmlToText', () => {
-  it('strips scripts/styles/tags and collapses whitespace', () => {
+  it('strips scripts/styles/tags, keeps block boundaries as newlines', () => {
     const html = '<style>.a{}</style><h1>Hi</h1><script>x()</script><p>there\n  friend</p>'
-    expect(htmlToText(html)).toBe('Hi there friend')
+    expect(htmlToText(html)).toBe('Hi\nthere friend')
   })
 })

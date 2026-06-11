@@ -2,6 +2,18 @@ import { imgUrl } from './image'
 
 // Shared recipe types + helpers for the recipe-book UI. Mirrors the shape the
 // /api/recipes endpoint returns (see functions/api/recipes.ts).
+
+// The recipe exactly as it was imported (URL / paste / photo), before any
+// edits — the sheet's "Original" view shows this untouched.
+export interface RecipeOriginal {
+  title: string | null
+  ingredients: string[]
+  steps: string[]
+  servings?: number | null
+  source?: string | null
+  importedAt?: number | null
+}
+
 export interface Recipe {
   id: string
   title: string
@@ -12,6 +24,7 @@ export interface Recipe {
   source: string | null
   image: string | null // an R2 key (uploaded) OR an https URL (imported)
   tags: string[]
+  original?: RecipeOriginal | null
   updatedAt: number
 }
 
