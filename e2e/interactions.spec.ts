@@ -508,6 +508,15 @@ test('a routine runs start → next → next → stop on one timer', async ({ pa
 
 // ──────────────────────────── shared list ──────────────────────────────
 
+// Open-list rows live in the main stagger; the done shelf renders the same
+// ListItemRow inside .list-done, so a bare '.list-row' now matches BOTH. Scope
+// each side explicitly. A row's check toggle is its own button — the row body
+// (image / name) taps open the flyer / editor instead, so check off via the
+// toggle, not a click on the row.
+const openList = (page: Page) => page.locator('.today-feed > .stagger > .list-row')
+const doneShelf = (page: Page) => page.locator('.list-done .list-row')
+const checkOff = (row: ReturnType<Page['locator']>) => row.locator('.list-row__toggle').click()
+
 test.describe('list', () => {
   test.beforeEach(async ({ page }) => {
     await APP('/liste')(page)
@@ -515,17 +524,17 @@ test.describe('list', () => {
   })
 
   test('checking an item removes it (optimistic) and patches the list', async ({ page }) => {
-    const rows = page.locator('.list-row')
+    const rows = openList(page)
     await expect(rows).toHaveCount(4)
     // The write is deferred behind the undo toast, so the PATCH lands a few
     // seconds later (well within waitForRequest's window); the row goes at once.
-    await expectApi(page, 'PATCH', 'list', () => rows.first().locator('.list-row__main').click())
+    await expectApi(page, 'PATCH', 'list', () => checkOff(rows.first()))
     await expect(rows).toHaveCount(3)
   })
 
   test('undo restores a checked-off item', async ({ page }) => {
-    const rows = page.locator('.list-row')
-    await rows.first().locator('.list-row__main').click()
+    const rows = openList(page)
+    await checkOff(rows.first())
     await expect(rows).toHaveCount(3)
     await expect(page.locator('.undo-toast')).toBeVisible()
     await page.locator('.undo-toast__btn').click()
@@ -547,11 +556,11 @@ test.describe('list', () => {
   })
 
   test('checking an item off then adding another does not resurrect the checked one', async ({ page }) => {
-    const rows = page.locator('.list-row')
+    const rows = openList(page)
     await expect(rows).toHaveCount(4)
     const firstText = (await rows.first().locator('.title').innerText()).trim()
     // Tick it off — hidden at once (its delete is deferred behind the undo toast).
-    await rows.first().locator('.list-row__main').click()
+    await checkOff(rows.first())
     await expect(rows).toHaveCount(3)
     // Add another line — this refetches the board (which, server-side, still has
     // the just-ticked item until the deferred write commits). The pendingChecked
@@ -559,30 +568,30 @@ test.describe('list', () => {
     await page.locator('.list-add .input').fill('Bananes')
     await page.locator('.list-add button[type="submit"]').click()
     await expect(rows).toHaveCount(3)
-    await expect(page.locator('.list-row .title', { hasText: firstText })).toHaveCount(0)
+    await expect(rows.locator('.title', { hasText: firstText })).toHaveCount(0)
   })
 
   test('checked items rest on the done shelf and a tap puts one back', async ({ page }) => {
-    const rows = page.locator('.list-row')
-    const doneRows = page.locator('.list-done__row')
+    const rows = openList(page)
+    const doneRows = doneShelf(page)
     // Two seeded done items (Beurre, Fromage) on the shelf.
     await expect(doneRows).toHaveCount(2)
     // Restoring fires the uncheck PATCH and the row hops shelves at once —
     // and STAYS hopped after the confirming refetch (mock reflects the write).
-    await expectApi(page, 'PATCH', 'list', () => doneRows.first().click())
+    await expectApi(page, 'PATCH', 'list', () => checkOff(doneRows.first()))
     await expect(rows).toHaveCount(5)
     await expect(doneRows).toHaveCount(1)
-    await expect(page.locator('.list-row .title', { hasText: 'Beurre' })).toHaveCount(1)
+    await expect(rows.locator('.title', { hasText: 'Beurre' })).toHaveCount(1)
   })
 
   test('a checked-off item lands on the done shelf once its write commits', async ({ page }) => {
-    const rows = page.locator('.list-row')
+    const rows = openList(page)
     const firstText = (await rows.first().locator('.title').innerText()).trim()
     // The deferred write (undo toast) commits, the board refetches, and the
     // item reappears below on the shelf — gone from the list, not from sight.
-    await expectApi(page, 'PATCH', 'list', () => rows.first().locator('.list-row__main').click())
-    await expect(page.locator('.list-done__text', { hasText: firstText })).toHaveCount(1)
-    await expect(page.locator('.list-done__row')).toHaveCount(3)
+    await expectApi(page, 'PATCH', 'list', () => checkOff(rows.first()))
+    await expect(doneShelf(page).locator('.title', { hasText: firstText })).toHaveCount(1)
+    await expect(doneShelf(page)).toHaveCount(3)
   })
 
   test('typing offers past items as one-tap chips that add to the list', async ({ page }) => {
@@ -622,13 +631,19 @@ test.describe('list', () => {
     )
   })
 
-  test('checking an item off also drops its staged cashier deal', async ({ page }) => {
+  test('checking an item off (emptying the cart) also drops its staged cashier deal', async ({ page }) => {
     await APP('/liste')(page)
-    await settle(page, '.hub')
+    await settle(page, '.today-feed')
+    // Auto-pick + the cashier are store-mode tools, so switch first.
+    await page.locator('.list-mode__opt', { hasText: 'épicerie' }).click()
     // l1 (Lait) carries a staged deal server-side → the cashier button shows.
     await expect(page.getByRole('button', { name: /Montrer à la caisse/ })).toBeVisible()
-    // Check the Lait row off → it leaves the open list → leaves the cashier set.
-    await page.locator('.list-row').first().locator('.list-row__main').click()
+    // Put Lait in the cart, then empty it → Lait is checked off, leaves the open
+    // list, and so leaves the cashier set.
+    await checkOff(openList(page).filter({ hasText: 'Lait' }))
+    await expectApi(page, 'PATCH', 'list', () =>
+      page.getByRole('button', { name: /Vider le panier/ }).click(),
+    )
     await expect(page.getByRole('button', { name: /Montrer à la caisse/ })).toHaveCount(0)
   })
 

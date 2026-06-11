@@ -20,6 +20,10 @@ async function boot(page: Page, path: string, theme: Theme = 'day') {
 
 const shoot = (page: Page, name: string) => page.screenshot({ path: `e2e/screenshots/${name}.png` })
 
+// Auto-pick + the cashier are store-mode tools (a check there means "in my cart"),
+// so the list opens in home mode — switch to store before reaching for them.
+const goStore = (page: Page) => page.locator('.list-mode__opt', { hasText: 'épicerie' }).click()
+
 // Open the recipe book (behind the Recettes sub-tab) and a recipe modal.
 async function openRecipe(page: Page) {
   await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
@@ -77,6 +81,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 
   test(`sheet-cashier-review${sfx}`, async ({ page }) => {
     await boot(page, '/liste', theme)
+    await goStore(page)
     await page.getByRole('button', { name: /Choisir les meilleurs/ }).click()
     await page.locator('.cashier').waitFor({ state: 'visible', timeout: 15_000 })
     await page.locator('.review-row').first().waitFor({ state: 'visible' }).catch(() => {})
@@ -107,6 +112,7 @@ test('sheet-recipe-form', async ({ page }) => {
 
 test('sheet-cashier-present', async ({ page }) => {
   await boot(page, '/liste')
+  await goStore(page)
   await page.getByRole('button', { name: /Choisir les meilleurs/ }).click()
   await page.locator('.cashier').waitFor({ state: 'visible', timeout: 15_000 })
   await page.locator('.cashier__go').click()
