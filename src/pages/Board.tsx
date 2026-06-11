@@ -21,6 +21,7 @@ import { formatClock, formatDay, formatTime } from '../lib/format'
 import { pictoFor } from '../lib/picto'
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
+import { Notes } from '../components/board/Notes'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { NowNext, Lanes } from '../components/board/views'
 import { type BoardData, type EventRow, type MealRow } from '../components/board/types'
@@ -182,6 +183,7 @@ export function Board() {
               {mealHero(data.tomorrowMeal, 'tomorrow')}
               {weatherHero}
             </div>
+            <Notes notes={data.notes ?? []} members={data.members} toddler />
             {kidSection(t.board.today, eventTiles(data.today))}
             {kidSection(t.board.tomorrow, eventTiles(data.tomorrow))}
             <PhotoFrame />
@@ -268,6 +270,9 @@ export function Board() {
           <Link to="/settings#household">{t.board.welcomeCta}</Link>
         </p>
       )}
+
+      {/* Fridge notes ride above the day in every parent view — tap one to clear. */}
+      {data && <Notes notes={data.notes ?? []} members={data.members} />}
 
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>

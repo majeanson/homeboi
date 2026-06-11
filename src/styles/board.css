@@ -300,3 +300,63 @@
 .lane__head--shared {
   color: var(--ink-soft);
 }
+
+/* ---- Fridge notes (Aujourd'hui) ------------------------------------------- */
+/* Little hand-written cards a parent clears with a tap; tinted by who left it.
+   Toddler mode reads them aloud instead of clearing. Mobile-first: they wrap. */
+.notes {
+  margin: 0 0 1.25rem;
+}
+.notes__head {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 0.5rem;
+}
+.notes__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.note-card {
+  --note-tint: var(--marigold);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-hand, inherit);
+  font-size: 1.15rem;
+  line-height: 1.2;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--note-tint) 22%, var(--card));
+  border-radius: 4px 12px 10px 14px; /* torn-paper asymmetry */
+  box-shadow: var(--shadow-sm);
+  padding: 0.7rem 0.9rem;
+  max-width: 22rem;
+  transform: rotate(-1deg);
+}
+.note-card:nth-child(even) {
+  transform: rotate(1.2deg);
+}
+.note-card__text {
+  overflow-wrap: anywhere;
+}
+.note-card__clear {
+  flex: none;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  opacity: 0.6;
+}
+.note-card:active {
+  transform: scale(0.97);
+}
+/* Toddler: bigger, no clear glyph, read-aloud. */
+.notes--kid .note-card {
+  font-size: 1.4rem;
+  padding: 1rem 1.2rem;
+  max-width: none;
+}

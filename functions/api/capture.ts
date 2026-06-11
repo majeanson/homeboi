@@ -105,10 +105,15 @@ async function routeIntent(
     }
     case 'note':
     default: {
-      // A note has no home table in the prototype; it lives in `captures` as
-      // the audit row we already wrote. Surfaced to the operator for a one-tap
-      // re-classify. Returning it here lets the UI offer that correction.
-      return { kind: 'note', label: p.text || raw }
+      // A note now has a home: the `notes` table, shown on the Aujourd'hui board
+      // until cleared (and still in `captures` as the audit row for re-classify).
+      const noteText = p.text || raw
+      await env.DB.prepare(
+        'INSERT INTO notes (id, household_id, text, member_id, created_at) VALUES (?, ?, ?, ?, ?)',
+      )
+        .bind(newId(), hh, noteText, addedBy, ts)
+        .run()
+      return { kind: 'note', label: noteText }
     }
   }
 }

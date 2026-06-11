@@ -621,6 +621,23 @@ test.describe('profile', () => {
   })
 })
 
+test.describe('fridge notes', () => {
+  test('a note shows on the board and clears with a tap (DELETE)', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    const note = page.locator('.note-card', { hasText: 'examen' })
+    await expect(note).toBeVisible()
+    await expectApi(page, 'DELETE', 'notes', () => note.click())
+    await expect(note).toHaveCount(0) // optimistically removed
+  })
+
+  test('toddler sees the note too (read-aloud, not cleared)', async ({ page }) => {
+    await APP('/board', 'toddler')(page)
+    await settle(page, '.kid__main')
+    await expect(page.locator('.notes--kid .note-card', { hasText: 'examen' })).toBeVisible()
+  })
+})
+
 test('toddler reads a step aloud, then starts + finishes it', async ({ page }) => {
   await APP('/routines', 'toddler')(page)
   await settle(page, '.kid')

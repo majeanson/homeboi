@@ -58,6 +58,10 @@ export const FR = {
   list: {
     addPlaceholder: 'Ajouter à la liste… (ex. lait)',
   },
+  notes: {
+    title: 'Notes',
+    clear: 'Effacer',
+  },
   board: {
     today: 'Aujourd’hui',
     tonight: 'Ce soir',
@@ -484,6 +488,10 @@ export const EN: typeof FR = {
   },
   list: {
     addPlaceholder: 'Add to the list… (e.g. milk)',
+  },
+  notes: {
+    title: 'Notes',
+    clear: 'Clear',
   },
   board: {
     today: 'Today',

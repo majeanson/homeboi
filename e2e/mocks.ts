@@ -66,6 +66,7 @@ const BOARD = {
       helpers: [],
     },
   ],
+  notes: [{ id: 'n1', text: 'Bonne chance à ton examen !', member_id: 'm1', created_at: BASE }],
 }
 
 const MEALS = {
@@ -286,7 +287,7 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
     if (opts.fresh && path === 'board') {
-      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], chores: [] }
+      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], chores: [], notes: [] }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
       return
     }

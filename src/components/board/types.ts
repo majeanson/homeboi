@@ -41,6 +41,12 @@ export interface MealRow {
   title: string
   cook_member_id: string | null
 }
+export interface NoteRow {
+  id: string
+  text: string
+  member_id: string | null
+  created_at: number
+}
 export interface BoardData {
   syncedAt: number
   scope: string
@@ -52,6 +58,7 @@ export interface BoardData {
   tomorrowMeal: MealRow | null
   list: ListRow[]
   chores: ChoreRow[]
+  notes: NoteRow[]
 }
 
 // The bilingual copy object, passed down so the extracted views don't each

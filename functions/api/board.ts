@@ -23,7 +23,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const dayAfter = today + 86400 * 2
   const weekEnd = today + 86400 * 7
 
-  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, openList, chores] = await Promise.all([
+  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, openList, chores, notes] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
     )
@@ -56,6 +56,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .all(),
     ctx.env.DB.prepare(
       'SELECT id, title, rotation_json, current_idx, last_done_at, color FROM tasks WHERE household_id = ? ORDER BY created_at',
+    )
+      .bind(hh)
+      .all(),
+    // Fridge notes (uncleared), newest first — shown on the Aujourd'hui board.
+    ctx.env.DB.prepare(
+      'SELECT id, text, member_id, created_at FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC LIMIT 12',
     )
       .bind(hh)
       .all(),
@@ -140,5 +146,6 @@ export const onRequestGet = authed(async (ctx, actor) => {
     tomorrowMeal: tomorrowMeal.results[0] ?? null,
     list: openList.results,
     chores: choresOut,
+    notes: notes.results,
   })
 })
