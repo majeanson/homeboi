@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../../lib/api'
 import { useT } from '../../i18n'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
+import { recurOf } from '../../lib/recurLabel'
 
 // The complete event (rendez-vous) form — title, date, optional time (no time =
 // all-day), member, and recurrence. Shared by Settings ▸ Agenda AND the global
@@ -21,18 +22,6 @@ export interface EventInit {
   recur_json?: string | null
 }
 
-function recurOf(json?: string | null): RecurValue | null {
-  if (!json) return null
-  try {
-    const v = JSON.parse(json) as { freq?: string; interval?: number; weekdays?: number[] }
-    if (v.freq === 'daily' || v.freq === 'weekly' || v.freq === 'monthly') {
-      return { freq: v.freq, interval: v.interval ?? 1, weekdays: v.weekdays ?? [] }
-    }
-  } catch {
-    /* corrupt rule → one-off */
-  }
-  return null
-}
 
 const pad = (n: number) => String(n).padStart(2, '0')
 

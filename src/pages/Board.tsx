@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { BigTiles, type Tile } from '../components/BigTiles'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
@@ -21,9 +21,10 @@ import { formatClock, formatDay, formatTime } from '../lib/format'
 import { pictoFor } from '../lib/picto'
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
+import { Notes } from '../components/board/Notes'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { NowNext, Lanes } from '../components/board/views'
-import { type BoardData, type EventRow, type MealRow } from '../components/board/types'
+import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -35,6 +36,7 @@ import { BOARD_KEY } from '../lib/queryKeys'
 
 export function Board() {
   const t = useT()
+  const qc = useQueryClient()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { surface } = useSurface()
@@ -162,16 +164,17 @@ export function Board() {
     const kidSection = (label: string, tiles: Tile[]) =>
       tiles.length > 0 ? (
         <section className="today-kid__section">
-          <h2 className="today-kid__h">{label}</h2>
+          <Sayable className="today-kid__h" text={label} />
           <BigTiles tiles={tiles} />
         </section>
       ) : null
 
+    const greet = me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]
     return (
       <main className="kid__main today-kid">
         {/* Greet the picked child by name — same personal touch the parent
-            board gets. Generic when nobody's picked (shared wall). */}
-        <p className="today-kid__greet">{me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]}</p>
+            board gets. Generic when nobody's picked (shared wall). Tap to hear. */}
+        <Sayable className="today-kid__greet" text={greet} />
         {!data ? (
           <p className="loading mono">{t.common.loading}</p>
         ) : (
@@ -181,7 +184,20 @@ export function Board() {
               {mealHero(data.tomorrowMeal, 'tomorrow')}
               {weatherHero}
             </div>
+            <Notes notes={data.notes ?? []} members={data.members} toddler />
             {kidSection(t.board.today, eventTiles(data.today))}
+            {/* Chores due today, as read-aloud tiles — whose turn rides in the sub. */}
+            {kidSection(
+              t.board.chores,
+              (data.choresToday ?? []).map((c) => ({
+                key: c.id,
+                icon: pictoFor(c.title, '🧹'),
+                label: c.title,
+                sub: c.who ?? undefined,
+                narration: c.who ? `${c.title}. ${c.who}` : c.title,
+                color: c.color ?? undefined,
+              })),
+            )}
             {kidSection(t.board.tomorrow, eventTiles(data.tomorrow))}
             <PhotoFrame />
           </>
@@ -207,6 +223,28 @@ export function Board() {
   )
   const cookLine = (m: MealRow) =>
     memberName(m.cook_member_id) ? `${memberName(m.cook_member_id)} ${t.board.cooks}` : undefined
+
+  // A due recurring chore, surfaced on the board. Tapping marks it done (advances
+  // the rotation server-side); optimistically drop it so the tap feels instant.
+  const markChoreDone = (c: ChoreInstance) => {
+    qc.setQueryData<BoardData>(BOARD_KEY, (d) =>
+      d ? { ...d, choresToday: (d.choresToday ?? []).filter((x) => x.id !== c.id) } : d,
+    )
+    api('chores', { method: 'PATCH', body: { id: c.id, complete: true } })
+      .catch(() => {})
+      .finally(() => qc.invalidateQueries({ queryKey: BOARD_KEY }))
+  }
+  const choreAct = (c: ChoreInstance, withDay?: boolean) => (
+    <Act
+      key={c.id}
+      cat="chore"
+      title={c.title}
+      when={withDay ? formatDay(c.at, lang) : undefined}
+      who={c.who ?? undefined}
+      color={c.color ?? undefined}
+      onCheck={withDay ? undefined : () => markChoreDone(c)}
+    />
+  )
 
   return (
     <main className="board-wall">
@@ -268,6 +306,9 @@ export function Board() {
         </p>
       )}
 
+      {/* Fridge notes ride above the day in every parent view — tap one to clear. */}
+      {data && <Notes notes={data.notes ?? []} members={data.members} />}
+
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
       ) : view === 'next' ? (
@@ -308,8 +349,16 @@ export function Board() {
           )}
 
           <div className="board-grid">
-            <Section label={t.board.today} count={data.today.length}>
-            {data.today.length === 0 ? <p className="feed-empty">—</p> : data.today.map(eventAct)}
+            <Section label={t.board.today} count={data.today.length + (data.choresToday ?? []).length}>
+            {data.today.length === 0 && (data.choresToday ?? []).length === 0 ? (
+              <p className="feed-empty">—</p>
+            ) : (
+              <>
+                {data.today.map(eventAct)}
+                {/* Recurring chores due today — tap to check off (advances the turn). */}
+                {(data.choresToday ?? []).map((c) => choreAct(c))}
+              </>
+            )}
           </Section>
 
           <Section label={t.board.tomorrow} count={data.tomorrow.length + (data.tomorrowMeal ? 1 : 0)}>
@@ -328,11 +377,13 @@ export function Board() {
             {data.tomorrow.length === 0 && !data.tomorrowMeal && <p className="feed-empty">—</p>}
           </Section>
 
-          {data.upcoming.length > 0 && (
-            <Section label={t.board.upcoming} count={data.upcoming.length}>
+          {(data.upcoming.length > 0 || (data.choresUpcoming ?? []).length > 0) && (
+            <Section label={t.board.upcoming} count={data.upcoming.length + (data.choresUpcoming ?? []).length}>
               {data.upcoming.map((e) => (
                 <Act key={e.id} cat="event" title={e.title} when={formatTime(e.start_at, lang)} />
               ))}
+              {/* Recurring chores coming up later this week, with their day. */}
+              {(data.choresUpcoming ?? []).map((c) => choreAct(c, true))}
             </Section>
           )}
 

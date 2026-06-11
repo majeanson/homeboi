@@ -55,6 +55,13 @@ export const FR = {
     types: { event: 'Rendez-vous', task: 'Corvée', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', note: 'Note' },
     degraded: 'IA hors ligne : choisis le type.',
   },
+  list: {
+    addPlaceholder: 'Ajouter à la liste… (ex. lait)',
+  },
+  notes: {
+    title: 'Notes',
+    clear: 'Effacer',
+  },
   board: {
     today: 'Aujourd’hui',
     tonight: 'Ce soir',
@@ -107,6 +114,7 @@ export const FR = {
     tabMeals: 'Repas',
     tabPantry: 'Garde-manger',
     tabRecipes: 'Recettes',
+    slots: { breakfast: 'Déjeuner', lunch: 'Dîner', supper: 'Souper', snack: 'Collation' },
     plan:'Quoi pour souper ?',
     suggest: 'Qu’est-ce qu’on mange ?',
     suggestAnother: 'Une autre suggestion.',
@@ -228,6 +236,10 @@ export const FR = {
     pickMeal: 'Choisis un repas',
     whichDay: 'Quel jour ?',
     back: 'Retour',
+    tapAgain: 'Tape encore pour choisir !',
+    tapToCook: 'Tape encore pour cuisiner !',
+    okDone: 'Voilà !',
+    cook: 'On cuisine !',
   },
   routines: {
     tag: 'Le rythme du jour',
@@ -301,6 +313,7 @@ export const FR = {
     noDevices: 'Aucune tablette jumelée.',
     chores: 'Corvées',
     addChore: 'Ajouter une corvée',
+    schedule: 'Céduler',
     routines: 'Routines (mode enfant)',
     addRoutine: 'Créer une routine',
     routineName: 'Nom de la routine',
@@ -353,8 +366,9 @@ export const FR = {
     removePhoto: 'Retirer la photo',
     photos: 'Photos de la maison',
     photoHint: 'Des photos qui défilent doucement sur le babillard. Ajoute-les depuis ton téléphone.',
-    photoAdd: 'Ajouter une photo',
+    photoAdd: 'Ajouter des photos',
     photoUploading: 'Téléversement…',
+    photoUploadingN: (done: number, total: number) => `Téléversement ${done}/${total}…`,
     noPhotos: 'Aucune photo pour le moment.',
   },
   ghost: {
@@ -474,6 +488,13 @@ export const EN: typeof FR = {
     types: { event: 'Event', task: 'Chore', 'list-item': 'List', 'pantry-low': 'Low', meal: 'Supper', note: 'Note' },
     degraded: 'AI offline: pick the type.',
   },
+  list: {
+    addPlaceholder: 'Add to the list… (e.g. milk)',
+  },
+  notes: {
+    title: 'Notes',
+    clear: 'Clear',
+  },
   board: {
     today: 'Today',
     tonight: 'Tonight',
@@ -524,6 +545,7 @@ export const EN: typeof FR = {
     tabMeals: 'Meals',
     tabPantry: 'Pantry',
     tabRecipes: 'Recipes',
+    slots: { breakfast: 'Breakfast', lunch: 'Lunch', supper: 'Supper', snack: 'Snack' },
     plan:'What’s for supper?',
     suggest: 'What should we eat?',
     suggestAnother: 'Another idea?',
@@ -645,6 +667,10 @@ export const EN: typeof FR = {
     pickMeal: 'Pick a meal',
     whichDay: 'Which day?',
     back: 'Back',
+    tapAgain: 'Tap again to choose!',
+    tapToCook: 'Tap again to cook!',
+    okDone: 'There!',
+    cook: "Let's cook!",
   },
   routines: {
     tag: 'The day’s rhythm',
@@ -718,6 +744,7 @@ export const EN: typeof FR = {
     noDevices: 'No tablets paired.',
     chores: 'Chores',
     addChore: 'Add a chore',
+    schedule: 'Schedule',
     routines: 'Routines (kid mode)',
     addRoutine: 'Create a routine',
     routineName: 'Routine name',
@@ -770,8 +797,9 @@ export const EN: typeof FR = {
     removePhoto: 'Remove photo',
     photos: 'Home photos',
     photoHint: 'Photos that drift gently across the board. Add them from your phone.',
-    photoAdd: 'Add a photo',
+    photoAdd: 'Add photos',
     photoUploading: 'Uploading…',
+    photoUploadingN: (done: number, total: number) => `Uploading ${done}/${total}…`,
     noPhotos: 'No photos yet.',
   },
   ghost: {

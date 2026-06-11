@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon } from '../components/Icon'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -11,6 +11,7 @@ import { formatWeekday } from '../lib/format'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { pictoFor } from '../lib/picto'
 import { RecipeSheet } from '../components/RecipeSheet'
+import { CookMode } from '../components/CookMode'
 import { RecipeForm } from '../components/RecipeForm'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
@@ -20,6 +21,7 @@ import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { useMealSuggest } from '../components/kitchen/useMealSuggest'
 import { type LowRow, type MealsData, type PantryData, type WeekDay, MEALS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
+import { SIDE_SLOTS, SLOT_ICON } from '../lib/mealSlots'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
 // browse the book — one sub-tab at a time. The page owns the queries (one unauth
@@ -29,9 +31,33 @@ import { type LowRow, type MealsData, type PantryData, type WeekDay, MEALS_KEY, 
 // supper ideas, useAiWake = the shared cold-start/AI-off truth).
 export function Kitchen() {
   const t = useT()
+  const qc = useQueryClient()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
+  // The lighter side slots (déjeuner / dîner / collation): a plain title, no
+  // staples/recipe flow — that richness stays on the souper. {date,slot} being
+  // edited, plus its text.
+  const [editSlot, setEditSlot] = useState<{ date: number; slot: string } | null>(null)
+  const [slotText, setSlotText] = useState('')
+  async function saveSlot(date: number, slot: string, title: string) {
+    const v = title.trim()
+    if (!v) {
+      setEditSlot(null)
+      setSlotText('')
+      return
+    }
+    try {
+      await api('meals', { method: 'POST', body: { date, slot, title: v } })
+      // Only close the editor once the write lands — a failed plan keeps the
+      // typed title so it can be retried (same as the grocery add bar).
+      setEditSlot(null)
+      setSlotText('')
+    } catch {
+      /* keep the editor open with the text intact */
+    }
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
+  }
 
   const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), ...live })
   const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry'), ...live })
@@ -53,6 +79,8 @@ export function Kitchen() {
   const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null)
   const [editRecipe, setEditRecipe] = useState<Recipe | 'new' | null>(null)
   const [recipePickFor, setRecipePickFor] = useState<number | null>(null)
+  // A toddler tapped a planned meal to cook it → full-screen read-aloud Cook mode.
+  const [kidCook, setKidCook] = useState<Recipe | null>(null)
   // Parent kitchen sub-tab: one job at a time so the page isn't an endless scroll.
   const [kitTab, setKitTab] = useState<'meals' | 'pantry' | 'recipes'>('meals')
   // Match a planned supper to a saved recipe by (loose) title, so a day's meal can
@@ -71,12 +99,16 @@ export function Kitchen() {
   const low = pantry.data?.low ?? []
   const soon = useSoonQ.data?.soon ?? []
 
-  // Build the 7-day grid from weekStart, slotting in any planned meal.
+  // Build the 7-day grid from weekStart. The SOUPER is the day's primary meal
+  // (the headline, the shop-the-week driver, the kid-suggestion target), so the
+  // grid + week shape stay keyed on it; the other slots ride alongside.
   const week: WeekDay[] = Array.from({ length: 7 }, (_, i) => {
     const date = weekStart + i * 86400
-    const meal = days.find((d) => d.date === date)
+    const meal = days.find((d) => d.date === date && d.slot === 'supper')
     return { date, meal }
   })
+  // date → (slot → meal) for the breakfast/lunch/snack chips under each day.
+  const slotMeal = (date: number, slot: string) => days.find((d) => d.date === date && d.slot === slot)
 
   // The flows (see components/kitchen/use*). Destructured to the same names the
   // JSX always used, so the markup below reads unchanged.
@@ -103,7 +135,20 @@ export function Kitchen() {
   if (unauth) return <PairPrompt />
 
   if (audience === 'toddler') {
-    return <KidKitchen week={week} recipes={recipes} onSuggest={kidSuggest} />
+    return (
+      <>
+        <KidKitchen
+          week={week}
+          recipes={recipes}
+          recipeByTitle={recipeByTitle}
+          onSuggest={kidSuggest}
+          onStartRecipe={setKidCook}
+        />
+        {/* "Start its recipe": a planned meal a toddler taps opens Cook mode —
+            big one-step-at-a-time pages that read themselves aloud. */}
+        {kidCook && <CookMode recipe={kidCook} onClose={() => setKidCook(null)} />}
+      </>
+    )
   }
 
   return (
@@ -346,6 +391,52 @@ export function Kitchen() {
                     )}
                   </>
                 )}
+
+                {/* The lighter slots beside the souper — déjeuner / dîner /
+                    collation. Each shows its planned title or just the picture +
+                    label; tapping opens a simple inline title editor (no staples). */}
+                <div className="kitchen__slots">
+                  {SIDE_SLOTS.map((slot) => {
+                    const sm = slotMeal(date, slot)
+                    const editing = editSlot?.date === date && editSlot.slot === slot
+                    return editing ? (
+                      <form
+                        key={slot}
+                        className="kitchen__slot-edit"
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          saveSlot(date, slot, slotText)
+                        }}
+                      >
+                        <input
+                          className="input"
+                          autoFocus
+                          value={slotText}
+                          onChange={(e) => setSlotText(e.target.value)}
+                          placeholder={t.kitchen.slots[slot]}
+                          aria-label={t.kitchen.slots[slot]}
+                        />
+                        <button type="submit" className="btn btn--ghost mono">
+                          {t.kitchen.setMeal}
+                        </button>
+                      </form>
+                    ) : (
+                      <button
+                        key={slot}
+                        type="button"
+                        className={'kitchen__slot' + (sm ? ' is-set' : '')}
+                        onClick={() => {
+                          setEditSlot({ date, slot })
+                          setSlotText(sm?.title ?? '')
+                        }}
+                        title={t.kitchen.slots[slot]}
+                      >
+                        <span aria-hidden="true">{SLOT_ICON[slot]}</span>
+                        <span className="kitchen__slot-label">{sm?.title ?? t.kitchen.slots[slot]}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </li>
             ))}
           </ul>

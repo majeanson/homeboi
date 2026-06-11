@@ -88,6 +88,16 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
           {t.board.allDay} · {allDay.map((e) => e.title).join(' · ')}
         </div>
       )}
+
+      {/* Recurring chores due today ride as a quiet footer too — so switching to
+          "Maintenant" doesn't hide them (they're not time-bound, so they can't be
+          the focus card). */}
+      {(data.choresToday ?? []).length > 0 && (
+        <div className="nownext__allday mono">
+          {t.board.chores} ·{' '}
+          {(data.choresToday ?? []).map((c) => (c.who ? `${c.title} (${c.who})` : c.title)).join(' · ')}
+        </div>
+      )}
     </div>
   )
 }

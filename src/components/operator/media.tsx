@@ -49,18 +49,31 @@ export function PhotosSection() {
   })
   const photos = data?.photos ?? []
   const [busy, setBusy] = useState(false)
+  // Batch progress: {done, total} while uploading several at once, null when idle.
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [unavailable, setUnavailable] = useState(false)
 
-  async function add(file: File) {
+  // Add one OR many photos in a single pick (camera roll multi-select). Resized
+  // and uploaded one at a time — sequential so the server-side prune can't race
+  // itself — with a "2/5" counter so a big batch doesn't look frozen.
+  async function addFiles(files: File[]) {
+    if (!files.length) return
     setBusy(true)
+    setProgress({ done: 0, total: files.length })
     try {
-      const blob = await resizeImage(file, PHOTO_MAX)
-      await api('photos', { method: 'POST', body: blob })
+      for (let i = 0; i < files.length; i++) {
+        const blob = await resizeImage(files[i], PHOTO_MAX)
+        await api('photos', { method: 'POST', body: blob })
+        setProgress({ done: i + 1, total: files.length })
+      }
       qc.invalidateQueries({ queryKey: ['photos'] })
     } catch (e) {
       if (isStatus(e, 503)) setUnavailable(true)
+      // A mid-batch failure still surfaces what DID upload.
+      qc.invalidateQueries({ queryKey: ['photos'] })
     } finally {
       setBusy(false)
+      setProgress(null)
     }
   }
   async function remove(id: string) {
@@ -93,15 +106,20 @@ export function PhotosSection() {
         </div>
       )}
       <label className="btn">
-        {busy ? t.operator.photoUploading : t.operator.photoAdd}
+        {busy
+          ? progress
+            ? t.operator.photoUploadingN(progress.done, progress.total)
+            : t.operator.photoUploading
+          : t.operator.photoAdd}
         <input
           type="file"
           accept="image/*"
+          multiple
           hidden
           disabled={busy}
           onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) add(f)
+            const files = Array.from(e.target.files ?? [])
+            if (files.length) addFiles(files)
             e.target.value = ''
           }}
         />

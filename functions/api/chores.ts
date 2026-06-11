@@ -1,16 +1,23 @@
-import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
+import { badRequest, forbidden, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
+import { normalizeRecur } from '../_lib/recur'
 
 const isString = (v: unknown): v is string => typeof v === 'string'
+const recurJson = (recur: unknown): string | null => {
+  const r = normalizeRecur(recur)
+  return r ? JSON.stringify(r) : null
+}
 
-// Chores with a round-robin rotation. The ONLY "credit" that exists is
-// last_done_by + whose-turn — no points, no streak (NFR-CALM-1). Marking done
-// advances the rotation and stamps who/when.
+// Chores with a round-robin rotation and an optional recurrence ("tous les
+// jeudis", see _lib/recur). The ONLY "credit" that exists is last_done_by +
+// whose-turn — no points, no streak (NFR-CALM-1). Marking done advances the
+// rotation and stamps who/when. The board expands recurring chores onto
+// Aujourd'hui / À venir; created_at is the recurrence anchor.
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, color FROM tasks WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, color, recur_json FROM tasks WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all()
@@ -18,15 +25,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ title?: string; rotation?: string[]; color?: string }>(ctx.request)
+  const body = await readJson<{ title?: string; rotation?: string[]; color?: string; recur?: unknown }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   const color = hexColor(body?.color, '#88a36f')
   await ctx.env.DB.prepare(
-    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, color, created_at) VALUES (?, ?, ?, ?, 0, ?, ?)',
+    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, color, recur_json, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?)',
   )
-    .bind(id, actor.householdId, title, JSON.stringify(body?.rotation ?? []), color, nowSec())
+    .bind(id, actor.householdId, title, JSON.stringify(body?.rotation ?? []), color, recurJson(body?.recur), nowSec())
     .run()
   return ok({ id, title })
 }, 'operator')
@@ -40,8 +47,21 @@ export const onRequestPost = authed(async (ctx, actor) => {
 // `role` ('parent'|'child') comes from the caller's audience; `memberId`
 // defaults to whoever's turn it is. Both kiosk and operator can call this.
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; role?: string; memberId?: string; complete?: boolean }>(ctx.request)
+  const body = await readJson<{ id?: string; role?: string; memberId?: string; complete?: boolean; recur?: unknown }>(
+    ctx.request,
+  )
   if (!body?.id) return badRequest('id requis.')
+
+  // Editing the schedule (operator only) — a distinct shape from marking done:
+  // a `recur` field present means "set this chore's recurrence" (null clears it).
+  if (body.recur !== undefined) {
+    if (actor.scope !== 'operator') return forbidden('Opérateur requis.')
+    const res = await ctx.env.DB.prepare('UPDATE tasks SET recur_json = ? WHERE id = ? AND household_id = ?')
+      .bind(recurJson(body.recur), body.id, actor.householdId)
+      .run()
+    if (!res.meta.changes) return notFound('Corvée introuvable.')
+    return ok({ ok: true })
+  }
 
   const chore = await ctx.env.DB.prepare(
     'SELECT rotation_json, current_idx FROM tasks WHERE id = ? AND household_id = ?',

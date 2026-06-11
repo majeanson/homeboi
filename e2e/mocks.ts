@@ -66,16 +66,22 @@ const BOARD = {
       helpers: [],
     },
   ],
+  notes: [{ id: 'n1', text: 'Bonne chance à ton examen !', member_id: 'm1', created_at: BASE }],
+  // A recurring chore due today (Léa's turn) + one coming up later this week.
+  choresToday: [{ id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', at: BASE, who: 'Léa' }],
+  choresUpcoming: [{ id: 'c2', title: 'Vaisselle', color: '#7BB0C9', at: BASE + 3 * DAY, who: 'Papa' }],
 }
 
 const MEALS = {
   weekStart: BASE - 0 * DAY,
   days: [
-    { id: 'meal1', date: BASE, title: 'Spaghetti maison', cook_member_id: 'm2' },
-    { id: 'meal2', date: BASE + DAY, title: 'Tacos', cook_member_id: 'm1' },
+    { id: 'meal1', date: BASE, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2' },
+    { id: 'meal2', date: BASE + DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1' },
     // A kid-suggested supper (Léa, m3) sitting in a slot that was empty — shows the
     // "💡 Léa" note in the parent week. cook is null until a parent decides.
-    { id: 'meal3', date: BASE + 3 * DAY, title: 'Saumon & riz', cook_member_id: null, suggested_by: 'm3' },
+    { id: 'meal3', date: BASE + 3 * DAY, slot: 'supper', title: 'Saumon & riz', cook_member_id: null, suggested_by: 'm3' },
+    // A déjeuner (breakfast) side slot on day one.
+    { id: 'meal4', date: BASE, slot: 'breakfast', title: 'Crêpes', cook_member_id: null },
   ],
 }
 
@@ -260,6 +266,9 @@ const ROUTES: Record<string, unknown> = {
 // `fresh: true` empties members + board — the just-signed-up household.
 export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthorized?: boolean; fresh?: boolean } = {}) {
   const signedIn = opts.signedIn ?? true
+  // A little server-side state so optimistic flows that DELETE then refetch read
+  // back the change (else the board GET would resurrect a just-cleared note).
+  const dismissedNotes = new Set<string>()
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace(/^\/api\//, '')
@@ -271,6 +280,15 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
     }
 
     if (method !== 'GET') {
+      // Record a note clear so the next board read reflects it (realistic soft-delete).
+      if (method === 'DELETE' && path === 'notes') {
+        try {
+          const body = JSON.parse(route.request().postData() || '{}')
+          if (body.id) dismissedNotes.add(body.id)
+        } catch {
+          /* no body */
+        }
+      }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
       return
     }
@@ -286,7 +304,7 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
     if (opts.fresh && path === 'board') {
-      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], chores: [] }
+      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
       return
     }
@@ -294,6 +312,13 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
     // ghost?view=manage is a distinct shape.
     if (path === 'ghost' && url.searchParams.get('view') === 'manage') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(GHOST_MANAGE) })
+      return
+    }
+
+    // Board read reflects any notes cleared this session (realistic soft-delete).
+    if (path === 'board' && dismissedNotes.size) {
+      const b = { ...BOARD, notes: BOARD.notes.filter((n) => !dismissedNotes.has(n.id)) }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(b) })
       return
     }
 

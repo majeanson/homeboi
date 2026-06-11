@@ -354,6 +354,17 @@ test.describe('kitchen', () => {
     )
   })
 
+  test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {
+    // Day one's breakfast is seeded ("Crêpes") — a side slot beside the souper.
+    await expect(page.locator('.kitchen__slot.is-set', { hasText: 'Crêpes' }).first()).toBeVisible()
+    // Setting a lunch is a plain title — straight POST, no staples step.
+    const slot = page.locator('.kitchen__day').first().locator('.kitchen__slot', { hasText: 'Dîner' })
+    await slot.click()
+    const edit = page.locator('.kitchen__slot-edit')
+    await edit.locator('input.input').fill('Sandwich au jambon')
+    await expectApi(page, 'POST', 'meals', () => edit.locator('button[type="submit"]').click())
+  })
+
   test('shop the week gathers ingredients and adds them to the list', async ({ page }) => {
     await page.getByRole('button', { name: /Magasiner la semaine/ }).click()
     await expect(page.locator('.kitchen__shop')).toBeVisible()
@@ -444,13 +455,21 @@ test.describe('recipes', () => {
 test('a kid recipe pick suggests a supper into an empty day', async ({ page }) => {
   await APP('/kitchen', 'toddler')(page)
   await settle(page, '.hub')
-  // Pick the first recipe → the day tiles appear.
-  await page.locator('.kid-pick .bigtile').first().click()
+  // Hear-first: a toddler action tile speaks on the FIRST tap and arms; a SECOND
+  // tap commits — so nothing happens by accident. Pick the first recipe (two taps).
+  const recipe = page.locator('.kid-pick .bigtile').first()
+  await recipe.click()
+  await expect(recipe).toHaveClass(/is-armed/)
+  await recipe.click()
   await expect(page.locator('.kid-pick .bigtile', { hasText: 'Mardi' })).toBeVisible()
-  // Tapping an EMPTY day (Mardi) posts a SUGGESTION (suggest:true), not a plain set.
+  // Tapping an EMPTY day (Mardi) posts a SUGGESTION (suggest:true) — but only on
+  // the confirming second tap. First tap arms + speaks "Mardi : <recipe>".
+  const mardi = page.locator('.kid-pick .bigtile', { hasText: 'Mardi' })
+  await mardi.click()
+  await expect(mardi).toHaveClass(/is-armed/)
   const [req] = await Promise.all([
     page.waitForRequest(isApi('POST', 'meals'), { timeout: 15_000 }),
-    page.locator('.kid-pick .bigtile', { hasText: 'Mardi' }).click(),
+    mardi.click(),
   ])
   expect(JSON.parse(req.postData() || '{}')).toMatchObject({ suggest: true })
 })
@@ -517,6 +536,29 @@ test.describe('list', () => {
     await expectApi(page, 'POST', 'list', () =>
       page.locator('.ghost-strip__chip').first().click(),
     )
+  })
+
+  test('the add bar posts a new line straight to the list', async ({ page }) => {
+    await page.locator('.list-add .input').fill('Bananes')
+    await expectApi(page, 'POST', 'list', () =>
+      page.locator('.list-add button[type="submit"]').click(),
+    )
+  })
+
+  test('checking an item off then adding another does not resurrect the checked one', async ({ page }) => {
+    const rows = page.locator('.list-row')
+    await expect(rows).toHaveCount(4)
+    const firstText = (await rows.first().locator('.title').innerText()).trim()
+    // Tick it off — hidden at once (its delete is deferred behind the undo toast).
+    await rows.first().locator('.list-row__main').click()
+    await expect(rows).toHaveCount(3)
+    // Add another line — this refetches the board (which, server-side, still has
+    // the just-ticked item until the deferred write commits). The pendingChecked
+    // filter must keep it gone — the bug was both lines coming back.
+    await page.locator('.list-add .input').fill('Bananes')
+    await page.locator('.list-add button[type="submit"]').click()
+    await expect(rows).toHaveCount(3)
+    await expect(page.locator('.list-row .title', { hasText: firstText })).toHaveCount(0)
   })
 
   test('the flyer browser opens', async ({ page }) => {
@@ -587,6 +629,51 @@ test.describe('profile', () => {
     await expect(page.locator('.greet')).toContainText('Papa')
     await page.locator('.mswitch__opt', { hasText: 'Maisonnée' }).click()
     await expect(page.locator('.greet')).not.toContainText('Papa')
+  })
+})
+
+test.describe('recurring chores on the board', () => {
+  test('a chore due today shows in Aujourd\'hui and checks off (PATCH complete)', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    const chore = page.locator('.act', { hasText: 'Sortir les poubelles' })
+    await expect(chore).toBeVisible()
+    await expect(chore).toContainText('Léa') // whose turn
+    await expectApi(page, 'PATCH', 'chores', () => chore.click())
+  })
+
+  test('an upcoming chore shows under À venir with its day', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    await expect(page.locator('.act', { hasText: 'Vaisselle' })).toBeVisible()
+  })
+
+  test('a chore can be given a weekly schedule in settings (PATCH recur)', async ({ page }) => {
+    await APP('/settings#chores')(page)
+    await settle(page, '.operator__tabs')
+    await page.getByRole('tab').nth(2).click() // Chores
+    // Open the schedule editor on the first chore, pick weekly → PATCH recur.
+    await page.locator('.operator__chore-row').first().getByRole('button', { name: /céduler|schedule/i }).click()
+    await expectApi(page, 'PATCH', 'chores', () =>
+      page.locator('.operator__chore-schedule select').selectOption('weekly'),
+    )
+  })
+})
+
+test.describe('fridge notes', () => {
+  test('a note shows on the board and clears with a tap (DELETE)', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    const note = page.locator('.note-card', { hasText: 'examen' })
+    await expect(note).toBeVisible()
+    await expectApi(page, 'DELETE', 'notes', () => note.click())
+    await expect(note).toHaveCount(0) // optimistically removed
+  })
+
+  test('toddler sees the note too (read-aloud, not cleared)', async ({ page }) => {
+    await APP('/board', 'toddler')(page)
+    await settle(page, '.kid__main')
+    await expect(page.locator('.notes--kid .note-card', { hasText: 'examen' })).toBeVisible()
   })
 })
 

@@ -201,6 +201,46 @@
 .kitchen__day-empty {
   color: var(--ink-soft);
 }
+/* The lighter slots (déjeuner / dîner / collation) under the souper — a compact
+   row of chips, each its planned title or just the picture + label. Full-width
+   so they sit on their own line below the souper on any screen. */
+.kitchen__slots {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+.kitchen__slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  min-height: 2.2rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  max-width: 100%;
+}
+.kitchen__slot.is-set {
+  border-style: solid;
+  color: var(--ink);
+  background: var(--paper-deep);
+}
+.kitchen__slot-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kitchen__slot-edit {
+  flex-basis: 100%;
+  display: flex;
+  gap: 0.5rem;
+}
 .kitchen__day-edit {
   flex: 1;
   display: flex;
@@ -614,6 +654,25 @@
   flex: 1 1 auto;
   min-width: 0;
 }
+/* A chore row carries an inline schedule editor that drops under it when open. */
+.operator__chore-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.operator__chore-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.operator__chore-recur {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+.operator__chore-schedule {
+  flex-basis: 100%;
+  padding: 0.5rem 0 0.25rem;
+}
 .operator__avatar {
   width: 1.4rem;
   height: 1.4rem;
@@ -865,13 +924,20 @@
 }
 .bigtile__label {
   font-family: var(--display);
-  font-size: 1.3rem;
-  font-weight: 600;
-  line-height: 1.1;
+  /* Bigger + heavier than before — a pre-reader leans on shape recognition, and
+     this is the one bit of text on the tile, so it must carry across the room. */
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.15;
   text-align: center;
   color: var(--ink);
+  /* Long meal/recipe names must stay readable, not clip — wrap and balance. */
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 .bigtile__sub {
+  font-size: 1.05rem;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 .bigtile.is-done {
@@ -884,6 +950,49 @@
   right: 0.7rem;
   font-size: 1.6rem;
   color: var(--accent);
+}
+/* Hear-first: an action tile's FIRST tap speaks the proposition and arms the
+   tile (a 👆 cue + a warm ring); a SECOND tap commits. So a toddler always
+   hears "Jeudi : Spaghetti" before anything happens — a wandering finger never
+   chooses by accident. The ring is deterministic + motion-safe (NFR-CALM-2). */
+.bigtile.is-armed {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent),
+    var(--shadow-md);
+}
+.bigtile__again {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.6rem;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bigtile.is-armed .bigtile__again {
+    animation: bigtile-nudge 1s ease-in-out infinite;
+  }
+  @keyframes bigtile-nudge {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+}
+/* Sayable: plain kid-surface text turned into a tap-to-hear button without
+   changing how it looks (NFR-KID-2 — any word is hearable). */
+.sayable {
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
 }
 .bigtiles__empty {
   display: flex;

@@ -3,6 +3,7 @@
 export interface MealRow {
   id: string
   date: number
+  slot: string // breakfast | lunch | supper | snack
   title: string
   cook_member_id: string | null
   suggested_by?: string | null

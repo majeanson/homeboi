@@ -41,6 +41,20 @@ export interface MealRow {
   title: string
   cook_member_id: string | null
 }
+export interface NoteRow {
+  id: string
+  text: string
+  member_id: string | null
+  created_at: number
+}
+// A recurring chore expanded onto a specific day (today or an upcoming date).
+export interface ChoreInstance {
+  id: string
+  title: string
+  color: string | null
+  at: number
+  who: string | null
+}
 export interface BoardData {
   syncedAt: number
   scope: string
@@ -52,6 +66,9 @@ export interface BoardData {
   tomorrowMeal: MealRow | null
   list: ListRow[]
   chores: ChoreRow[]
+  choresToday: ChoreInstance[]
+  choresUpcoming: ChoreInstance[]
+  notes: NoteRow[]
 }
 
 // The bilingual copy object, passed down so the extracted views don't each

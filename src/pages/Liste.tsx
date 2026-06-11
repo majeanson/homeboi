@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { BigTiles, type Tile } from '../components/BigTiles'
+import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
@@ -16,6 +16,7 @@ import { GhostStrip } from '../components/GhostStrip'
 import { fetchGhosts, type Ghost } from '../lib/ghost'
 import { useUndoToast } from '../lib/toast'
 import { useOptimisticMutation } from '../lib/optimistic'
+import { useVoiceInput } from '../lib/useVoiceInput'
 import { money, type Deal } from '../lib/deals'
 import { pickListFrom, parseDeal, stageDeal, unstageDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
@@ -54,6 +55,14 @@ export function Liste() {
   const [cashierOpen, setCashierOpen] = useState(false)
   const [browseOpen, setBrowseOpen] = useState(false)
   const [auto, setAuto] = useState(false)
+  // Items checked off but whose delete is still DEFERRED behind the undo toast.
+  // Filtered out of the displayed list so a refetch (the live poll, a focus, or
+  // an add's invalidation) can't resurrect them before their write commits — the
+  // bug where ticking one item then adding another brought the ticked one back.
+  const [pendingChecked, setPendingChecked] = useState<Set<string>>(new Set())
+  const [addText, setAddText] = useState('')
+  const [adding, setAdding] = useState(false)
+  const { listening, hasVoice, start: startVoice } = useVoiceInput(setAddText)
 
   const { data: board, error } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board'), ...live })
   // Ghost suggestions are a quiet best-effort layer — a failure just means no
@@ -66,20 +75,52 @@ export function Liste() {
   // round-trip). A check records a purchase, which shifts the predictions, so
   // refresh the ghost strip once it commits.
   function checkOff(item: ListRow) {
-    const prev = qc.getQueryData<BoardListData>(BOARD_KEY)
-    // The list and the "show the cashier" set are one thing now: a checked-off item
-    // leaves the open list, so it leaves the cashier set too — and its deal_json is
-    // kept on the row, so undo (which restores the cached open list) brings the deal
-    // back with it. No separate pick bookkeeping needed.
-    qc.setQueryData<BoardListData>(BOARD_KEY, (d) => (d ? { ...d, list: d.list.filter((i) => i.id !== item.id) } : d))
+    // Hide it NOW via pendingChecked (durable — survives any refetch), and DEFER
+    // the write behind the undo toast so a mis-tap costs nothing. The id leaves
+    // pendingChecked only once the commit's refetch confirms it's gone server-side,
+    // so the row never flickers back. A check records a purchase, which shifts the
+    // predictions, so refresh the ghost strip once it commits.
+    setPendingChecked((s) => new Set(s).add(item.id))
     undo({
       message: t.undo.checked(item.text),
-      onUndo: () => prev && qc.setQueryData(BOARD_KEY, prev),
-      onCommit: () => {
-        api('list', { method: 'PATCH', body: { id: item.id, checked: true } }).catch(() => {})
+      onUndo: () =>
+        setPendingChecked((s) => {
+          const n = new Set(s)
+          n.delete(item.id)
+          return n
+        }),
+      onCommit: async () => {
+        await api('list', { method: 'PATCH', body: { id: item.id, checked: true } }).catch(() => {})
+        await qc.invalidateQueries({ queryKey: BOARD_KEY })
         qc.invalidateQueries({ queryKey: GHOSTS_KEY })
+        setPendingChecked((s) => {
+          const n = new Set(s)
+          n.delete(item.id)
+          return n
+        })
       },
     })
+  }
+
+  // Add a line straight from the list (type or speak it) — the direct path that
+  // didn't exist before (you had to go through the ＋ capture sheet). Optimistic:
+  // append to the cache, then persist and resync. The pendingChecked filter means
+  // this add's refetch can't bring a just-ticked item back.
+  async function addItem(e?: React.FormEvent) {
+    e?.preventDefault()
+    const text = addText.trim()
+    if (!text || adding) return
+    setAdding(true)
+    setAddText('')
+    try {
+      await api('list', { method: 'POST', body: { text } })
+    } catch {
+      setAddText(text) // keep what was typed so a failed add can be retried
+    } finally {
+      setAdding(false)
+      qc.invalidateQueries({ queryKey: BOARD_KEY })
+      qc.invalidateQueries({ queryKey: GHOSTS_KEY })
+    }
   }
 
   // Tap a suggestion → add it to the real list. Drop the chip immediately
@@ -93,7 +134,8 @@ export function Liste() {
 
   if (isUnauthorized(error)) return <PairPrompt />
   if (!board && !error) return <Loading />
-  const list = board?.list ?? []
+  // Hide items whose check-off is still settling so they can't be resurrected.
+  const list = (board?.list ?? []).filter((i) => !pendingChecked.has(i.id))
   // Who-added-it faces: map member id → member so each row can show a tiny tint.
   const memberById = new Map((board?.members ?? []).map((m) => [m.id, m]))
 
@@ -137,7 +179,7 @@ export function Liste() {
       <main className="kid__main">
         <div className="kid-head">
           <span className="kid-head__emoji" aria-hidden="true">🛒</span>
-          <p className="kid-head__title">{t.kid.shopping}</p>
+          <Sayable className="kid-head__title" text={t.kid.shopping} />
         </div>
         <BigTiles tiles={tiles} empty={t.board.listEmpty} />
       </main>
@@ -155,6 +197,32 @@ export function Liste() {
           <Icon name={CATS.list.icon} size={26} color={CATS.list.deep} />
         </div>
       </div>
+
+      {/* Add a line right here — type it or speak it. The direct path; the ＋
+          capture sheet still works for the AI-routed quick note. */}
+      <form className="list-add" onSubmit={addItem}>
+        <input
+          className="input"
+          value={addText}
+          onChange={(e) => setAddText(e.target.value)}
+          placeholder={listening ? t.capture.listening : t.list.addPlaceholder}
+          aria-label={t.list.addPlaceholder}
+        />
+        {hasVoice && (
+          <button
+            type="button"
+            className={`btn btn--ghost list-add__voice${listening ? ' is-listening' : ''}`}
+            onClick={startVoice}
+            aria-label={t.capture.voice}
+          >
+            🎤
+          </button>
+        )}
+        <button type="submit" className="btn btn--primary" disabled={!addText.trim() || adding}>
+          <Icon name="plus-bold" size={18} />
+          {t.capture.add}
+        </button>
+      </form>
 
       {list.length === 0 ? (
         <p className="feed-empty">{t.board.listEmpty}</p>
