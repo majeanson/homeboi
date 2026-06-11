@@ -213,6 +213,36 @@
   list-style: none;
   margin-left: -1.1rem;
 }
+/* Per-step ingredients are collapsed by default — the recipe reads as plain
+   instructions and you tap "Ingredients (n)" only when you need the amounts for
+   that step, so a long recipe doesn't sprawl. Native <details>: no JS, keyboard-
+   and screen-reader-friendly out of the box. */
+.recipe-step__ings-wrap {
+  margin-top: 0.25rem;
+}
+.recipe-step__ings-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  padding: 0.1rem 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.recipe-step__ings-toggle::-webkit-details-marker {
+  display: none;
+}
+.recipe-step__ings-toggle::before {
+  content: '▸';
+  color: var(--terracotta-deep);
+  font-size: 0.7em;
+  transition: transform 0.12s ease;
+}
+.recipe-step__ings-wrap[open] > .recipe-step__ings-toggle::before {
+  transform: rotate(90deg);
+}
 .recipe-step__ings {
   list-style: none;
   margin: 0.3rem 0 0;
