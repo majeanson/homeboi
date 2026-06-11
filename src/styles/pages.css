@@ -201,6 +201,46 @@
 .kitchen__day-empty {
   color: var(--ink-soft);
 }
+/* The lighter slots (déjeuner / dîner / collation) under the souper — a compact
+   row of chips, each its planned title or just the picture + label. Full-width
+   so they sit on their own line below the souper on any screen. */
+.kitchen__slots {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+.kitchen__slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  min-height: 2.2rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  max-width: 100%;
+}
+.kitchen__slot.is-set {
+  border-style: solid;
+  color: var(--ink);
+  background: var(--paper-deep);
+}
+.kitchen__slot-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kitchen__slot-edit {
+  flex-basis: 100%;
+  display: flex;
+  gap: 0.5rem;
+}
 .kitchen__day-edit {
   flex: 1;
   display: flex;

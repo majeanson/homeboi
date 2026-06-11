@@ -354,6 +354,17 @@ test.describe('kitchen', () => {
     )
   })
 
+  test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {
+    // Day one's breakfast is seeded ("Crêpes") — a side slot beside the souper.
+    await expect(page.locator('.kitchen__slot.is-set', { hasText: 'Crêpes' }).first()).toBeVisible()
+    // Setting a lunch is a plain title — straight POST, no staples step.
+    const slot = page.locator('.kitchen__day').first().locator('.kitchen__slot', { hasText: 'Dîner' })
+    await slot.click()
+    const edit = page.locator('.kitchen__slot-edit')
+    await edit.locator('input.input').fill('Sandwich au jambon')
+    await expectApi(page, 'POST', 'meals', () => edit.locator('button[type="submit"]').click())
+  })
+
   test('shop the week gathers ingredients and adds them to the list', async ({ page }) => {
     await page.getByRole('button', { name: /Magasiner la semaine/ }).click()
     await expect(page.locator('.kitchen__shop')).toBeVisible()
