@@ -4,23 +4,36 @@ import { dayStart, newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { ingredientName } from '../_lib/ingredient'
 
-// Weekly meal plan. A day has four slots — déjeuner / dîner / souper / collation
-// (breakfast/lunch/supper/snack). GET returns every planned slot for the next 7
-// days; the client groups them per day. `supper` stays primary (board headline,
-// kid suggestions, shop-the-week). Setting a meal optionally pushes "missing"
-// staples to the shared list (the meal -> grocery flow); the staples list is sent
-// by the client since the prototype has no recipe DB.
+// Meal plan as a 10-day countdown. The planning block is re-anchored every
+// Tuesday (UTC, getUTCDay: Tue=2): each block spans its Tuesday through Tuesday+9
+// (10 inclusive days). Past days within the block drop off, so the visible window
+// is today..blockEnd — it shrinks 10 → 4 across the week, then snaps back to 10
+// each Tuesday (Monday-midnight reset). A day has four slots — déjeuner / dîner /
+// souper / collation (breakfast/lunch/supper/snack); the client groups per day.
+// `supper` stays primary (board headline, kid suggestions, shop-the-week).
+// Setting a meal optionally pushes "missing" staples to the shared list (the
+// meal -> grocery flow); the staples list is sent by the client since the
+// prototype has no recipe DB.
 const SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack'])
 const slotOf = (v: unknown): string => (typeof v === 'string' && SLOTS.has(v) ? v : 'supper')
 
+const DAY = 86400
+// Days remaining in the active block, counting today. = 10 - (days since the
+// block's Tuesday). Ranges 10 (on Tuesday) down to 4 (on Monday).
+const windowDaysFor = (today: number): number => {
+  const sinceTue = (new Date(today * 1000).getUTCDay() - 2 + 7) % 7
+  return 10 - sinceTue
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = dayStart(new Date(Date.now()))
+  const windowDays = windowDaysFor(today)
   const { results } = await ctx.env.DB.prepare(
     'SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date',
   )
-    .bind(actor.householdId, today, today + 86400 * 7)
+    .bind(actor.householdId, today, today + DAY * windowDays)
     .all()
-  return ok({ days: results, weekStart: today })
+  return ok({ days: results, weekStart: today, windowDays })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

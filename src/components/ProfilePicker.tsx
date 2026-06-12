@@ -1,8 +1,11 @@
+import { useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useProfile } from '../lib/profile'
 import { imgUrl } from '../lib/image'
+import { useModal } from '../lib/useModal'
+import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
 // "Qui es-tu ?" — pick-your-face. A bottom sheet of the household's members (the
 // same faces as the toddler routine picker), so a phone knows who's holding it.
@@ -22,6 +25,10 @@ export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () =>
   const { data } = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members'), enabled: open })
   const members = data?.members ?? []
 
+  const sheetRef = useRef<HTMLDivElement>(null)
+  useModal(sheetRef, onClose, { open })
+  useSwipeToDismiss(sheetRef, onClose, { open })
+
   function pick(id: string | null) {
     setMemberId(id)
     // Let the picked face show its selected state for a beat before the sheet
@@ -32,7 +39,7 @@ export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <>
       <div className={'scrim' + (open ? ' show' : '')} onClick={onClose} aria-hidden="true" />
-      <div className={'sheet' + (open ? ' show' : '')} role="dialog" aria-modal="true" aria-label={t.profile.who}>
+      <div ref={sheetRef} className={'sheet' + (open ? ' show' : '')} role="dialog" aria-modal="true" aria-label={t.profile.who}>
         <div className="grab" aria-hidden="true" />
         <h3>{t.profile.who}</h3>
         <div className="profile-faces">

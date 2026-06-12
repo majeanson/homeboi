@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
@@ -7,6 +7,8 @@ import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { type Deal } from '../lib/deals'
 import { existingListId, parseDeal, type ListItem } from '../lib/picks'
+import { useModal } from '../lib/useModal'
+import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
 // Price-match proof sheet (Maxi "Imbattable" et al.): given a grocery item, pull
 // current competitor flyer deals near the household's postal code and show each
@@ -85,8 +87,14 @@ export function PriceMatchSheet({
   const shown = (deals ?? []).filter((d) => !store || d.merchant === store)
   const bestKey = shown.find((d) => d.unitPrice != null)
 
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  useModal(overlayRef, onClose)
+  useSwipeToDismiss(sheetRef, onClose)
+
   return (
     <div
+      ref={overlayRef}
       className="pm-overlay"
       role="dialog"
       aria-modal="true"
@@ -98,7 +106,7 @@ export function PriceMatchSheet({
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="pm-sheet" onClick={(e) => e.stopPropagation()}>
+      <div ref={sheetRef} className="pm-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="pm-sheet__head">
           <div>
             <div className="hand-tag">{t.shop.proofTitle}</div>

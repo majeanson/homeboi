@@ -8,7 +8,7 @@ import { useProfile } from '../lib/profile'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
-import { formatWeekday } from '../lib/format'
+import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { pictoFor } from '../lib/picto'
 import { RecipeSheet } from '../components/RecipeSheet'
@@ -146,13 +146,17 @@ export function Kitchen() {
   const unauth = isUnauthorized(meals.error) || isUnauthorized(pantry.error)
   const days = meals.data?.days ?? []
   const weekStart = meals.data?.weekStart ?? 0
+  // 10-day countdown block, re-anchored each Tuesday; the count shrinks 10 → 4
+  // across the week (see functions/api/meals.ts). 10 is the just-loaded fallback.
+  const windowDays = meals.data?.windowDays ?? 10
   const low = pantry.data?.low ?? []
   const soon = useSoonQ.data?.soon ?? []
 
-  // Build the 7-day grid from weekStart. The SOUPER is the day's primary meal
-  // (the headline, the shop-the-week driver, the kid-suggestion target), so the
-  // grid + week shape stay keyed on it; the other slots ride alongside.
-  const week: WeekDay[] = Array.from({ length: 7 }, (_, i) => {
+  // Build the countdown grid from weekStart (today) across the remaining days of
+  // the 10-day block. The SOUPER is the day's primary meal (the headline, the
+  // shop-the-week driver, the kid-suggestion target), so the grid + week shape
+  // stay keyed on it; the other slots ride alongside.
+  const week: WeekDay[] = Array.from({ length: windowDays }, (_, i) => {
     const date = weekStart + i * 86400
     const meal = days.find((d) => d.date === date && d.slot === 'supper')
     return { date, meal }
@@ -359,8 +363,28 @@ export function Kitchen() {
             </div>
           )}
           <ul className="kitchen__week">
-            {week.map(({ date, meal }) => (
-              <li key={date} className="surface kitchen__day">
+            {week.map(({ date, meal }) => {
+              const dow = new Date(date * 1000).getDay()
+              const isToday = date === weekStart
+              const isTomorrow = date === weekStart + 86400
+              const rel = isToday ? t.board.today : isTomorrow ? t.board.tomorrow : null
+              return (
+              <li
+                key={date}
+                className={
+                  'surface kitchen__day' +
+                  (isToday ? ' is-today' : '') +
+                  (dow === 0 || dow === 6 ? ' is-weekend' : '')
+                }
+              >
+                {/* Calendar-style date badge — weekday + day number, the row's left
+                    anchor. Today/tomorrow get a relative tag; today's whole card
+                    lights up so "you are here" reads at a glance in the countdown. */}
+                <span className="kitchen__day-date" aria-label={formatDay(date, lang)}>
+                  {rel && <span className="kitchen__day-rel mono">{rel}</span>}
+                  <span className="kitchen__day-dow mono" aria-hidden="true">{weekdayShort(date, lang)}</span>
+                  <span className="kitchen__day-num" aria-hidden="true">{dayNum(date, lang)}</span>
+                </span>
                 {/* The day's own meal picture (pizza/soup/fish) when planned, a quiet
                     "+" when the slot is open — never seven identical carrots. */}
                 <span className="kitchen__day-tile" aria-hidden="true">
@@ -370,7 +394,6 @@ export function Kitchen() {
                     <span className="kitchen__day-add">＋</span>
                   )}
                 </span>
-                <span className="kitchen__day-name mono">{formatWeekday(date, lang)}</span>
                 {staplePrompt?.date === date ? (
                   <div className="kitchen__staples">
                     <p className="kitchen__staples-q mono">
@@ -634,7 +657,8 @@ export function Kitchen() {
                   })}
                 </div>
               </li>
-            ))}
+              )
+            })}
           </ul>
 
           <MealIdeas

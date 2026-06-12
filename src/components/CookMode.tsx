@@ -9,6 +9,7 @@ import { groupSections } from '../lib/recipeSections'
 import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
 import { IngredientLine } from './IngredientLine'
+import { useModal } from '../lib/useModal'
 
 // Whether a step reads itself aloud on arrival. Default ON; an explicit opt-out
 // persists per device (same shape as the calm/lang prefs). OFF = narration only
@@ -52,6 +53,9 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
+  // Esc-to-exit + scroll-lock + focus-trap for the full-screen cooking view.
+  const cookRef = useRef<HTMLDivElement>(null)
+  useModal(cookRef, onClose)
   const [idx, setIdx] = useState(0)
   // Toddler stepper vs parent full-recipe page. A ref mirrors it so the keyboard
   // handler can ignore arrow keys in full mode without re-binding the listener.
@@ -230,7 +234,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   // and owns the whole viewport — the modal it launched from stays mounted (state
   // intact for when you close), just fully covered, never peeking through.
   return createPortal(
-    <div className="cook" role="dialog" aria-modal="true" aria-label={recipe.title}>
+    <div ref={cookRef} className="cook" role="dialog" aria-modal="true" aria-label={recipe.title}>
       <div className="cook__bar">
         <span className="cook__title">{recipe.title}</span>
         {mode === 'step' && (

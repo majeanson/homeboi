@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
@@ -7,6 +7,8 @@ import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { existingListId, stageDeal } from '../lib/picks'
+import { useModal } from '../lib/useModal'
+import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
 // Standalone flyer/deals browser: search what's on sale near the household this
 // week and add items straight to the shared list (or open the full flyer and add
@@ -43,6 +45,10 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  useModal(overlayRef, onClose)
+  useSwipeToDismiss(sheetRef, onClose)
   // Two ways to browse: by article (search) or by magasin (open a store's flyer).
   const [mode, setMode] = useState<'item' | 'store'>('item')
   const [input, setInput] = useState('')
@@ -123,6 +129,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
 
   return (
     <div
+      ref={overlayRef}
       className="pm-overlay"
       role="dialog"
       aria-modal="true"
@@ -134,7 +141,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="pm-sheet" onClick={(e) => e.stopPropagation()}>
+      <div ref={sheetRef} className="pm-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="pm-sheet__head">
           <div>
             <div className="hand-tag">{t.shop.browseTitle}</div>

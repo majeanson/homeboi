@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
@@ -14,6 +14,8 @@ import { Icon, type IconName } from './Icon'
 import { EventForm } from './forms/EventForm'
 import { ChoreForm } from './forms/ChoreForm'
 import { RoutineForm } from './forms/RoutineForm'
+import { useModal } from '../lib/useModal'
+import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
 // Pip's "Add" bottom-sheet — CONTEXTUAL now. HubLayout hands in the current
 // section's modes (lib/addSheet SECTION_MODES): the board keeps the quick-note
@@ -111,7 +113,11 @@ export function AddSheet({
     enabled: open && wantsMeal,
   })
   const weekStart = mealsData?.weekStart ?? 0
-  const weekDays = weekStart ? Array.from({ length: 7 }, (_, i) => weekStart + i * 86400) : []
+  // Same 10-day countdown window the Kitchen grid renders (shrinks 10 → 4 across
+  // the week, re-anchored each Tuesday — see functions/api/meals.ts).
+  const weekDays = weekStart
+    ? Array.from({ length: mealsData?.windowDays ?? 10 }, (_, i) => weekStart + i * 86400)
+    : []
 
   const { data: membersData } = useQuery({
     queryKey: ['members'],
@@ -120,10 +126,16 @@ export function AddSheet({
   })
   const members = membersData?.members ?? []
 
-  function close() {
+  const close = useCallback(() => {
     setRouted(null)
     onClose()
-  }
+  }, [onClose])
+
+  // Esc / scroll-lock / focus-trap, plus drag-the-grab-handle-down to dismiss.
+  // Gated on `open` so the always-mounted sheet does nothing while tucked away.
+  const sheetRef = useRef<HTMLDivElement>(null)
+  useModal(sheetRef, close, { open })
+  useSwipeToDismiss(sheetRef, close, { open })
   const savedWith = (keys: string[][]) => () => {
     for (const k of keys) qc.invalidateQueries({ queryKey: k })
     close()
@@ -243,7 +255,7 @@ export function AddSheet({
   return (
     <>
       <div className={'scrim' + (open ? ' show' : '')} onClick={close} aria-hidden="true" />
-      <div className={'sheet' + (open ? ' show' : '')} role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={sheetRef} className={'sheet' + (open ? ' show' : '')} role="dialog" aria-modal="true" aria-label={title}>
         <div className="grab" aria-hidden="true" />
         <h3>{title}</h3>
 

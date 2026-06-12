@@ -102,6 +102,7 @@
 .recipe-modal__body {
   padding: 1rem 1.1rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
@@ -505,6 +506,7 @@
   gap: 0.25rem;
   max-height: 14rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 .recipe-picker__row {

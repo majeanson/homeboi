@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { type Pick, money } from '../lib/deals'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
+import { useModal } from '../lib/useModal'
 
 // "Show the cashier" mode. Two phases:
 //   review  — every picked deal in a list; revise or remove any before you go.
@@ -25,6 +26,10 @@ export function CashierMode({
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
+  // Esc-to-close + scroll-lock + focus-trap. One ref rides whichever phase view
+  // is rendered (only one is mounted at a time).
+  const cashierRef = useRef<HTMLDivElement>(null)
+  useModal(cashierRef, onClose)
   const [phase, setPhase] = useState<'review' | 'present' | 'thanks'>('review')
   const [idx, setIdx] = useState(0)
   const [flyerOpen, setFlyerOpen] = useState(false)
@@ -58,7 +63,7 @@ export function CashierMode({
   // Nothing picked yet — shouldn't normally open, but guard anyway.
   if (picks.length === 0) {
     return (
-      <div className="cashier" role="dialog" aria-modal="true">
+      <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true">
         <div className="cashier__bar">
           <span className="cashier__title">{t.shop.cashierTitle}</span>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
@@ -73,7 +78,7 @@ export function CashierMode({
   // ---- Review phase: tweak picks before presenting -------------------------
   if (phase === 'review') {
     return (
-      <div className="cashier" role="dialog" aria-modal="true" aria-label={t.shop.cashierTitle}>
+      <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true" aria-label={t.shop.cashierTitle}>
         <div className="cashier__bar">
           <span className="cashier__title">{t.shop.cashierTitle}</span>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
@@ -131,7 +136,7 @@ export function CashierMode({
   // ---- Thanks phase: hand the device back, Continue after a 5s pause -------
   if (phase === 'thanks') {
     return (
-      <div className="cashier cashier--thanks" role="dialog" aria-modal="true" aria-label={t.shop.thanks}>
+      <div ref={cashierRef} className="cashier cashier--thanks" role="dialog" aria-modal="true" aria-label={t.shop.thanks}>
         <div className="cashier__thanks">
           <span className="cashier__thanks-emoji" aria-hidden="true">💛</span>
           <h2 className="cashier__thanks-title">{t.shop.thanks}</h2>
@@ -153,7 +158,7 @@ export function CashierMode({
   const atLast = idx === picks.length - 1
 
   return (
-    <div className="cashier" role="dialog" aria-modal="true" aria-label={t.shop.cashierTitle}>
+    <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true" aria-label={t.shop.cashierTitle}>
       <div className="cashier__bar">
         <button
           type="button"
