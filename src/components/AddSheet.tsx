@@ -1,22 +1,26 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useT } from '../i18n'
+import { useLang, useT } from '../i18n'
 import { api, ApiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useVoiceInput } from '../lib/useVoiceInput'
+import { formatWeekday } from '../lib/format'
+import { MEAL_SLOTS, SLOT_ICON, type MealSlot } from '../lib/mealSlots'
+import { OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
+import { BOARD_KEY } from '../lib/queryKeys'
+import { MEALS_KEY, PANTRY_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
 import { EventForm } from './forms/EventForm'
 import { ChoreForm } from './forms/ChoreForm'
 import { RoutineForm } from './forms/RoutineForm'
 
-// Pip's "Add" bottom-sheet. ONE grid of icon tiles, each doing the whole thing:
-//   • Note rapide — type/speak; the AI router sorts it (the fast, kiosk default).
-//   • Rendez-vous / Corvée / Routine — the SAME full forms as Settings (shared
-//     components, identical detail). Operator-only.
-// (No separate force-type grid anymore — the AI routes the quick note; the 6
-// types reappear only as a fallback when AI is off, to re-classify the note.)
+// Pip's "Add" bottom-sheet — CONTEXTUAL now. HubLayout hands in the current
+// section's modes (lib/addSheet SECTION_MODES): the board keeps the quick-note
+// chooser, the kitchen offers recette/repas/garde-manger, Routines and Liste
+// skip the chooser entirely and open their one form. The operator forms
+// (event/chore/routine) are the SAME components Réglages uses.
 type CaptureType = 'event' | 'meal' | 'task' | 'list-item' | 'pantry-low' | 'note'
-type Mode = 'capture' | 'event' | 'chore' | 'routine'
 interface FormMember { id: string; display_name: string; is_child: number }
 
 // The 6 AI-router types — only shown as a fallback when a capture comes back
@@ -32,37 +36,82 @@ const TYPES: { type: CaptureType; icon: IconName; deep: string; wash: string }[]
   { type: 'note', icon: 'pencil-simple-bold', deep: '#95527A', wash: 'var(--berry-wash)' },
 ]
 
-// The single chooser: each tile selects a mode that does the whole thing.
-const MODES: { mode: Mode; icon: IconName; deep: string; wash: string }[] = [
-  { mode: 'capture', icon: 'sparkle-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
-  { mode: 'event', icon: 'calendar-blank-bold', deep: '#5891AC', wash: 'var(--sky-wash)' },
-  { mode: 'chore', icon: 'hand-heart-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
-  { mode: 'routine', icon: 'pencil-simple-bold', deep: '#95527A', wash: 'var(--berry-wash)' },
-]
+// Tile dressing per mode (labels resolve through i18n below). recipe/list-item
+// borrow their hub tab's identity (terracotta book, sky sparkle) so the tile
+// reads as "the thing this section adds".
+const MODE_META: Record<AddSheetMode, { icon: IconName; deep: string; wash: string }> = {
+  capture: { icon: 'sparkle-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
+  event: { icon: 'calendar-blank-bold', deep: '#5891AC', wash: 'var(--sky-wash)' },
+  chore: { icon: 'hand-heart-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
+  routine: { icon: 'pencil-simple-bold', deep: '#95527A', wash: 'var(--berry-wash)' },
+  recipe: { icon: 'book-open-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
+  meal: { icon: 'calendar-blank-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
+  pantry: { icon: 'carrot-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
+  'list-item': { icon: 'sparkle-bold', deep: '#5891AC', wash: 'var(--sky-wash)' },
+}
 
 export function AddSheet({
   open,
-  initialMode = 'capture',
+  modes,
+  initialMode = null,
   onClose,
 }: {
   open: boolean
-  initialMode?: Mode
+  modes: AddSheetMode[]
+  // null = the section's default; an explicit mode (open('routine')) pins it.
+  initialMode?: AddSheetMode | null
   onClose: () => void
 }) {
   const t = useT()
+  const { lang } = useLang()
   const qc = useQueryClient()
+  const nav = useNavigate()
   const { signedIn } = useAuth()
-  const [mode, setMode] = useState<Mode>(initialMode)
-  // An opener can land on a specific form (the Routines page's ＋ goes straight
-  // to the routine builder); re-sync on each open so the last visit's tab
-  // doesn't leak into this one.
+
+  // Per-action gating, same semantics the old signedIn-only chooser had: the
+  // operator forms drop off for an unsigned kiosk; if nothing survives (a kiosk
+  // on /routines), fall back to quick capture — the AI router still sorts it.
+  const allowed = signedIn ? modes : modes.filter((m) => !OPERATOR_MODES.has(m))
+  const shown = allowed.length ? allowed : (['capture'] as AddSheetMode[])
+  // Section default: capture where it exists (the board), else the first
+  // form-backed tile — recipe is navigate-only (it leaves the sheet), so the
+  // kitchen pre-selects the meal planner under its chooser.
+  const defMode = shown.includes('capture') ? 'capture' : (shown.find((m) => m !== 'recipe') ?? shown[0])
+  const [mode, setMode] = useState<AddSheetMode>(initialMode ?? defMode)
+  // Re-sync on each open so the last visit's pick doesn't leak into this one.
   useEffect(() => {
-    if (open) setMode(initialMode)
-  }, [open, initialMode])
-  const [text, setText] = useState('')
-  const { listening, hasVoice, start: startVoice } = useVoiceInput(setText)
+    if (open) setMode(initialMode ?? defMode)
+  }, [open, initialMode, defMode])
+
   const [busy, setBusy] = useState(false)
+
+  // — quick capture (board) —
+  const [text, setText] = useState('')
+  const captureVoice = useVoiceInput(setText)
   const [routed, setRouted] = useState<{ label: string; degraded: boolean } | null>(null)
+
+  // — list item (Liste) — its own state + mic so a board draft never posts to
+  // the grocery list by accident.
+  const [listText, setListText] = useState('')
+  const listVoice = useVoiceInput(setListText)
+
+  // — pantry (kitchen) —
+  const [pantryText, setPantryText] = useState('')
+
+  // — plan a meal (kitchen) — day options come from the SAME weekStart the
+  // Kitchen grid renders, so the planned day lands exactly where the grid
+  // expects it (the server normalizes to its own dayStart on write anyway).
+  const [mealTitle, setMealTitle] = useState('')
+  const [mealDate, setMealDate] = useState<number | null>(null)
+  const [mealSlot, setMealSlot] = useState<MealSlot>('supper')
+  const wantsMeal = shown.includes('meal')
+  const { data: mealsData } = useQuery({
+    queryKey: MEALS_KEY,
+    queryFn: () => api<MealsData>('meals'),
+    enabled: open && wantsMeal,
+  })
+  const weekStart = mealsData?.weekStart ?? 0
+  const weekDays = weekStart ? Array.from({ length: 7 }, (_, i) => weekStart + i * 86400) : []
 
   const { data: membersData } = useQuery({
     queryKey: ['members'],
@@ -72,7 +121,6 @@ export function AddSheet({
   const members = membersData?.members ?? []
 
   function close() {
-    setMode('capture')
     setRouted(null)
     onClose()
   }
@@ -104,31 +152,125 @@ export function AddSheet({
     }
   }
 
-  const modeLabel = (m: Mode) =>
-    m === 'capture' ? t.capture.quick : m === 'event' ? t.capture.types.event : m === 'chore' ? t.operator.chores : t.nav.routines
+  // Add straight to the grocery list (Liste's ＋) — same write + invalidation
+  // fan-out as the page's own add bar (board carries the list; ghosts/history
+  // feed the quick-add panel).
+  async function submitList(e?: React.FormEvent) {
+    e?.preventDefault()
+    const value = listText.trim()
+    if (!value || busy) return
+    setBusy(true)
+    try {
+      await api('list', { method: 'POST', body: { text: value } })
+      setListText('')
+      for (const key of [BOARD_KEY, ['ghosts'], ['list-history']]) qc.invalidateQueries({ queryKey: key })
+      close()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Mark something low in the pantry (kitchen ＋) — mirrors PantryTab's add.
+  async function submitPantry(e?: React.FormEvent) {
+    e?.preventDefault()
+    const value = pantryText.trim()
+    if (!value || busy) return
+    setBusy(true)
+    try {
+      await api('pantry', { method: 'POST', body: { item: value } })
+      setPantryText('')
+      qc.invalidateQueries({ queryKey: PANTRY_KEY })
+      close()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Plan a meal onto a day/slot (kitchen ＋). Deliberately the light version —
+  // no staples step, no recipe picker; that richness stays on the week grid.
+  async function submitMeal(e?: React.FormEvent) {
+    e?.preventDefault()
+    const value = mealTitle.trim()
+    const date = mealDate ?? weekDays[0]
+    if (!value || !date || busy) return
+    setBusy(true)
+    try {
+      await api('meals', { method: 'POST', body: { date, slot: mealSlot, title: value } })
+      setMealTitle('')
+      for (const key of [MEALS_KEY, BOARD_KEY]) qc.invalidateQueries({ queryKey: key })
+      close()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const modeLabel = (m: AddSheetMode) =>
+    m === 'capture'
+      ? t.capture.quick
+      : m === 'event'
+        ? t.capture.types.event
+        : m === 'chore'
+          ? t.operator.chores
+          : m === 'routine'
+            ? t.nav.routines
+            : m === 'recipe'
+              ? t.recipes.add
+              : m === 'meal'
+                ? t.kitchen.planMeal
+                : m === 'pantry'
+                  ? t.kitchen.lowAdd
+                  : t.list.addTitle
+
+  // The sheet's title names what this section adds (the chooser-less sections
+  // would otherwise just say "Ajouter" over an unexplained form).
+  const title =
+    shown.length > 1
+      ? shown.includes('capture')
+        ? t.capture.add
+        : t.kitchen.addTitle
+      : mode === 'routine'
+        ? t.routines.add
+        : mode === 'list-item'
+          ? t.list.addTitle
+          : t.capture.add
 
   return (
     <>
       <div className={'scrim' + (open ? ' show' : '')} onClick={close} aria-hidden="true" />
-      <div className={'sheet' + (open ? ' show' : '')} role="dialog" aria-modal="true" aria-label={t.capture.add}>
+      <div className={'sheet' + (open ? ' show' : '')} role="dialog" aria-modal="true" aria-label={title}>
         <div className="grab" aria-hidden="true" />
-        <h3>{t.capture.add}</h3>
+        <h3>{title}</h3>
 
-        {/* One chooser — operator only. Kiosk gets quick capture straight away. */}
-        {signedIn && (
-          <div className="cat-grid">
-            {MODES.map((m) => (
+        {/* The section's chooser — only when there's a real choice to make.
+            The recipe tile is navigate-only: the recipe builder is a full
+            overlay that lives on the kitchen page, not in this sheet. */}
+        {shown.length > 1 && (
+          <div className={'cat-grid' + (shown.length === 3 ? ' cat-grid--3' : '')}>
+            {shown.map((m) => (
               <button
-                key={m.mode}
+                key={m}
                 type="button"
-                className={'cat-pick' + (mode === m.mode ? ' sel' : '')}
-                onClick={() => setMode(m.mode)}
-                aria-pressed={mode === m.mode}
+                className={'cat-pick' + (mode === m ? ' sel' : '')}
+                onClick={() => {
+                  if (m === 'recipe') {
+                    close()
+                    nav('/kitchen?add=recipe')
+                    return
+                  }
+                  setMode(m)
+                }}
+                aria-pressed={mode === m}
               >
-                <span className="ct" style={{ background: m.wash }}>
-                  <Icon name={m.icon} size={22} color={m.deep} />
+                <span className="ct" style={{ background: MODE_META[m].wash }}>
+                  <Icon name={MODE_META[m].icon} size={22} color={MODE_META[m].deep} />
                 </span>
-                <span>{modeLabel(m.mode)}</span>
+                <span>{modeLabel(m)}</span>
               </button>
             ))}
           </div>
@@ -142,14 +284,14 @@ export function AddSheet({
                 autoFocus={open}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder={listening ? t.capture.listening : t.capture.placeholder}
+                placeholder={captureVoice.listening ? t.capture.listening : t.capture.placeholder}
                 aria-label={t.capture.add}
               />
-              {hasVoice && (
+              {captureVoice.hasVoice && (
                 <button
                   type="button"
-                  className={`btn btn--ghost capture__voice${listening ? ' is-listening' : ''}`}
-                  onClick={startVoice}
+                  className={`btn btn--ghost capture__voice${captureVoice.listening ? ' is-listening' : ''}`}
+                  onClick={captureVoice.start}
                   aria-label={t.capture.voice}
                 >
                   🎤
@@ -183,6 +325,99 @@ export function AddSheet({
             )}
 
             <button type="submit" className="btn btn--primary" disabled={!text.trim() || busy}>
+              <Icon name="plus-bold" size={20} />
+              {t.capture.add}
+            </button>
+          </form>
+        )}
+
+        {mode === 'list-item' && (
+          <form onSubmit={submitList}>
+            <div className="sheet__field">
+              <Icon name="sparkle-bold" size={20} color="var(--ink-faint)" />
+              <input
+                autoFocus={open}
+                value={listText}
+                onChange={(e) => setListText(e.target.value)}
+                placeholder={listVoice.listening ? t.capture.listening : t.list.addPlaceholder}
+                aria-label={t.list.addTitle}
+              />
+              {listVoice.hasVoice && (
+                <button
+                  type="button"
+                  className={`btn btn--ghost capture__voice${listVoice.listening ? ' is-listening' : ''}`}
+                  onClick={listVoice.start}
+                  aria-label={t.capture.voice}
+                >
+                  🎤
+                </button>
+              )}
+            </div>
+            <button type="submit" className="btn btn--primary" disabled={!listText.trim() || busy}>
+              <Icon name="plus-bold" size={20} />
+              {t.capture.add}
+            </button>
+          </form>
+        )}
+
+        {mode === 'pantry' && (
+          <form onSubmit={submitPantry}>
+            <div className="sheet__field">
+              <Icon name="carrot-bold" size={20} color="var(--ink-faint)" />
+              <input
+                autoFocus={open}
+                value={pantryText}
+                onChange={(e) => setPantryText(e.target.value)}
+                placeholder={t.kitchen.lowAdd}
+                aria-label={t.kitchen.lowAdd}
+              />
+            </div>
+            <button type="submit" className="btn btn--primary" disabled={!pantryText.trim() || busy}>
+              <Icon name="plus-bold" size={20} />
+              {t.capture.add}
+            </button>
+          </form>
+        )}
+
+        {mode === 'meal' && (
+          <form onSubmit={submitMeal}>
+            <div className="sheet__row">
+              <select
+                className="input"
+                value={mealDate ?? weekDays[0] ?? ''}
+                onChange={(e) => setMealDate(Number(e.target.value))}
+                aria-label={t.kitchen.week}
+              >
+                {weekDays.map((d) => (
+                  <option key={d} value={d}>
+                    {formatWeekday(d, lang)}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="input"
+                value={mealSlot}
+                onChange={(e) => setMealSlot(e.target.value as MealSlot)}
+                aria-label={t.kitchen.planMeal}
+              >
+                {MEAL_SLOTS.map((s) => (
+                  <option key={s} value={s}>
+                    {SLOT_ICON[s]} {t.kitchen.slots[s]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="sheet__field">
+              <Icon name="pencil-simple-bold" size={20} color="var(--ink-faint)" />
+              <input
+                autoFocus={open}
+                value={mealTitle}
+                onChange={(e) => setMealTitle(e.target.value)}
+                placeholder={t.kitchen.mealPlaceholder}
+                aria-label={t.kitchen.planMeal}
+              />
+            </div>
+            <button type="submit" className="btn btn--primary" disabled={!mealTitle.trim() || !weekDays.length || busy}>
               <Icon name="plus-bold" size={20} />
               {t.capture.add}
             </button>

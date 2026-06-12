@@ -195,6 +195,22 @@
   border-color: var(--marigold);
   background: var(--marigold-wash);
 }
+/* The kitchen's contextual chooser has three actions — one even row, so the
+   2×2 default doesn't strand the third tile alone (same trap the comment above
+   describes for the old 3+1). */
+.cat-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+/* The meal planner's day + slot selects, side by side above the title field. */
+.sheet__row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sheet__row .input {
+  flex: 1;
+  min-width: 0;
+}
 .sheet .btn {
   width: 100%;
   padding: 15px;

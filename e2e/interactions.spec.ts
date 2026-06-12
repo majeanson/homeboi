@@ -308,12 +308,13 @@ test.describe('settings forms', () => {
 // ───────────────────────── add sheet (capture) ─────────────────────────
 
 test.describe('add sheet', () => {
-  // On the mobile board the standard add button (.board-add) opens the same
-  // shared capture sheet as the floating ＋ FAB.
+  // The single floating ＋ FAB is the add affordance everywhere — and it is
+  // CONTEXTUAL: the board keeps the quick-capture chooser, the other sections
+  // open their own actions (tested below).
   test('quick-capture posts the typed note', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
-    await page.locator('.board-add').click()
+    await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
     await page.locator('.sheet__field input').fill('Acheter du lait')
     await expectApi(page, 'POST', 'capture', () =>
@@ -324,13 +325,50 @@ test.describe('add sheet', () => {
   test('switching to the event mode reveals the full event form', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
-    await page.locator('.board-add').click()
+    await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
     // Wait for the sheet to finish mounting (capture input present) before
     // switching modes, so a cold-compiled first paint can't race the click.
     await expect(page.locator('.sheet__field input')).toBeVisible()
     await page.locator('.cat-pick').nth(1).click() // Event mode
     await expect(page.locator('.sheet input[type="date"]')).toBeVisible()
+  })
+
+  test('the kitchen ＋ offers recipe / meal / pantry — no quick note', async ({ page }) => {
+    await APP('/kitchen')(page)
+    await settle(page, '.hub')
+    await page.locator('.add-fab').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await expect(page.locator('.cat-pick')).toHaveCount(3)
+    await expect(page.locator('.cat-pick', { hasText: 'Note rapide' })).toHaveCount(0)
+    // The meal planner is pre-selected (recipe is a navigate-only tile): day +
+    // slot selects over a title field, posting the light {date, slot, title}.
+    await expect(page.locator('.sheet__row select')).toHaveCount(2)
+    await page.locator('.sheet .sheet__field input').fill('Spaghetti')
+    await expectApi(page, 'POST', 'meals', () =>
+      page.locator('.sheet form button[type="submit"]').click(),
+    )
+  })
+
+  test('the liste ＋ adds straight to the list (no chooser)', async ({ page }) => {
+    await APP('/liste')(page)
+    await settle(page, '.hub')
+    await page.locator('.add-fab').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await expect(page.locator('.cat-pick')).toHaveCount(0) // single action → direct form
+    await page.locator('.sheet__field input').fill('Beurre')
+    await expectApi(page, 'POST', 'list', () =>
+      page.locator('.sheet form button[type="submit"]').click(),
+    )
+  })
+
+  test('the routines ＋ opens the routine builder directly', async ({ page }) => {
+    await APP('/routines')(page)
+    await settle(page, '.hub')
+    await page.locator('.add-fab').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await expect(page.locator('.cat-pick')).toHaveCount(0)
+    await expect(page.locator('.sheet .operator__routine-form')).toBeVisible()
   })
 })
 
@@ -349,11 +387,14 @@ test.describe('kitchen', () => {
     await expectApi(page, 'POST', 'pantry', () => form.locator('button[type="submit"]').click())
   })
 
-  test('clear a pantry item (optimistic) and delete after the undo window', async ({ page }) => {
+  test('checking a low item adds it to the list (explicit) and clears the reminder', async ({ page }) => {
     await page.locator('.subtabs__opt', { hasText: 'Garde-manger' }).click()
     const lows = page.locator('.kitchen__low li')
     await expect(lows).toHaveCount(3)
-    await expectApi(page, 'DELETE', 'pantry', () =>
+    // The explicit check is the ONLY thing that puts a low item on the shopping
+    // list (marking something low no longer auto-adds). It posts to /list, then
+    // clears the low flag; the row leaves the reminder at once.
+    await expectApi(page, 'POST', 'list', () =>
       lows.first().locator('button.board__list-item').click(),
     )
     await expect(lows).toHaveCount(2)
@@ -470,12 +511,33 @@ test.describe('recipes', () => {
   })
 
   test('creating a recipe posts it', async ({ page }) => {
-    await page.locator('.kitchen__head').first().locator('button').click() // Add recipe (only the recipes head renders on this tab)
+    // Recipe creation moved to the contextual ＋: FAB → "Ajouter une recette"
+    // tile → ?add=recipe lands on the recipe builder.
+    await page.locator('.add-fab').click()
+    await page.locator('.cat-pick').first().click()
     const modal = page.locator('.recipe-modal')
+    await modal.waitFor({ state: 'visible' })
     await modal.locator('.recipe-title-input').fill('Soupe aux légumes')
     await expectApi(page, 'POST', 'recipes', () =>
       modal.locator('.recipe-modal__foot button[type="submit"]').click(),
     )
+  })
+
+  test('a recipe step edits in a memo, one open at a time', async ({ page }) => {
+    await page.locator('.add-fab').click()
+    await page.locator('.cat-pick').first().click() // Ajouter une recette
+    const modal = page.locator('.recipe-modal')
+    await expect(modal).toBeVisible()
+    // Steps start collapsed — no wall of open boxes.
+    await expect(modal.locator('.recipe-step__memo')).toHaveCount(0)
+    const addStep = modal.getByRole('button', { name: 'Ajouter une étape' })
+    await addStep.click() // a fresh step opens straight into its memo
+    await expect(modal.locator('.recipe-step__memo')).toHaveCount(1)
+    await modal.locator('.recipe-step__memo').fill('Faire revenir l’oignon.')
+    // Opening another step collapses the first → still exactly ONE memo open.
+    await addStep.click()
+    await expect(modal.locator('.recipe-step__memo')).toHaveCount(1)
+    await expect(modal.locator('.recipe-step__text', { hasText: 'Faire revenir' })).toBeVisible()
   })
 })
 

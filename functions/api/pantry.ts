@@ -3,8 +3,10 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 
 // "Low / out" only — never a full inventory (brief tenet 3). Marking something
-// low both records it and drops it on the shared list. Clearing it removes the
-// low flag (you bought it).
+// low ONLY records that it's running low — it does NOT touch the shared list.
+// Putting it on the shopping list is a separate, explicit step: the user checks
+// the item in "Ce qui s'achève", which adds it to the list and clears the low flag
+// (see PantryTab.checkLowItem). So nothing reaches the list without a deliberate tap.
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
     'SELECT id, item, marked_at FROM pantry_low WHERE household_id = ? ORDER BY marked_at DESC',
@@ -18,18 +20,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ item?: string }>(ctx.request)
   const item = body?.item?.trim()
   if (!item) return badRequest('Aliment requis.')
-  const ts = nowSec()
-  await ctx.env.DB.batch([
-    ctx.env.DB.prepare('INSERT INTO pantry_low (id, household_id, item, marked_at) VALUES (?, ?, ?, ?)').bind(
-      newId(),
-      actor.householdId,
-      item,
-      ts,
-    ),
-    ctx.env.DB.prepare(
-      'INSERT INTO list_items (id, household_id, text, source, created_at) VALUES (?, ?, ?, ?, ?)',
-    ).bind(newId(), actor.householdId, item, 'pantry-low', ts),
-  ])
+  await ctx.env.DB.prepare('INSERT INTO pantry_low (id, household_id, item, marked_at) VALUES (?, ?, ?, ?)')
+    .bind(newId(), actor.householdId, item, nowSec())
+    .run()
   return ok({ ok: true })
 })
 

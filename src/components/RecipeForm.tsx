@@ -57,6 +57,10 @@ export function RecipeForm({
   const [importUrl, setImportUrl] = useState('')
   const [importText, setImportText] = useState('')
   const [importMsg, setImportMsg] = useState<string | null>(null)
+  // Steps edit ONE at a time in a roomy memo (index being edited, or null). Avoids
+  // a wall of always-open single-line boxes and gives space to format a step over
+  // several lines.
+  const [editStep, setEditStep] = useState<number | null>(null)
 
   // The pill offer: household presets (Réglages → Recettes) or the built-in
   // starters, plus every tag already used on a recipe — a tag typed once
@@ -282,6 +286,71 @@ export function RecipeForm({
     </div>
   )
 
+  // Steps editor: one-at-a-time memo. Collapsed, a step is a tappable preview of
+  // its own text (wraps, keeps line breaks); the ✎ opens ONE roomy textarea where
+  // it can be written/formatted over several lines. "Terminé" — or opening another
+  // step — closes it, so the list is never a stack of open boxes.
+  const stepsEditor = (
+    <div className="recipe-steps">
+      {steps.map((v, i) => (
+        <div key={i} className={'recipe-step' + (editStep === i ? ' is-editing' : '')}>
+          <span className="recipe-step__n mono">{i + 1}</span>
+          {editStep === i ? (
+            <div className="recipe-step__edit">
+              <textarea
+                className="input recipe-step__memo"
+                autoFocus
+                value={v}
+                onChange={(e) => updateLine('steps', i, e.target.value)}
+                placeholder={t.recipes.stepPlaceholder}
+                rows={4}
+              />
+              <div className="recipe-step__actions">
+                <button
+                  type="button"
+                  className="btn btn--ghost mono recipe-step__del"
+                  onClick={() => {
+                    removeLine('steps', i)
+                    setEditStep(null)
+                  }}
+                >
+                  ✕ {t.recipes.removeStep}
+                </button>
+                <button type="button" className="btn btn--primary mono" onClick={() => setEditStep(null)}>
+                  {t.recipes.stepDone}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="recipe-step__open"
+              onClick={() => setEditStep(i)}
+              aria-label={t.recipes.editStep}
+            >
+              <span className={'recipe-step__text' + (v.trim() ? '' : ' is-empty')}>
+                {v.trim() || t.recipes.stepPlaceholder}
+              </span>
+              <span className="recipe-step__cue mono" aria-hidden="true">
+                ✎
+              </span>
+            </button>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        className="btn btn--ghost mono recipe-add-line"
+        onClick={() => {
+          addLine('steps')
+          setEditStep(steps.length) // open the freshly added step right away
+        }}
+      >
+        ＋ {t.recipes.addStep}
+      </button>
+    </div>
+  )
+
   return (
     <div className="recipe-modal" role="dialog" aria-modal="true" aria-label={value ? t.recipes.edit : t.recipes.new}>
       <div className="recipe-modal__scrim" onClick={onCancel} aria-hidden="true" />
@@ -399,7 +468,7 @@ export function RecipeForm({
           <h3 className="recipe-sec-h">
             <Icon name="pencil-simple-bold" size={18} color="var(--berry-deep)" /> {t.recipes.steps}
           </h3>
-          {lineEditor('steps', t.recipes.stepPlaceholder)}
+          {stepsEditor}
 
           {/* Servings + notes */}
           <div className="recipe-meta-row">

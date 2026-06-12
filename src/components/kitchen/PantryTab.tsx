@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useUndoToast } from '../../lib/toast'
+import { BOARD_KEY } from '../../lib/queryKeys'
 import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 
 // Garde-manger: the "running low" list (never a full inventory — brief tenet 3)
@@ -29,16 +30,24 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
     qc.invalidateQueries({ queryKey: PANTRY_KEY })
   }
 
-  // Drop the cleared item from the low list at once, but DEFER the delete behind
-  // an undo toast — a mis-tap is recoverable with no round-trip.
-  function clearLowItem(l: LowRow) {
+  // Checking a low item is the ONLY thing that puts it on the shopping list:
+  // marking something low never touched the list (see api/pantry POST). The tap
+  // adds it to the shared list AND clears the low flag — deferred behind an undo
+  // toast so a mis-tap costs nothing and never round-trips. Removed from the low
+  // view at once so a refetch can't resurrect it mid-undo.
+  function checkLowItem(l: LowRow) {
     const prev = qc.getQueryData<PantryData>(PANTRY_KEY)
     qc.setQueryData<PantryData>(PANTRY_KEY, (d) => (d ? { low: d.low.filter((x) => x.id !== l.id) } : d))
     undo({
-      message: t.undo.cleared(l.item),
+      message: t.undo.addedToList(l.item),
       onUndo: () => prev && qc.setQueryData(PANTRY_KEY, prev),
-      onCommit: () => {
-        api('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
+      onCommit: async () => {
+        // Add to the shared list first, then drop the low flag. Refresh only the
+        // board (where the list lives) — the low list stays optimistic, same as a
+        // plain clear, so it can't flicker back mid-commit.
+        await api('list', { method: 'POST', body: { text: l.item } }).catch(() => {})
+        await api('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
+        qc.invalidateQueries({ queryKey: BOARD_KEY })
       },
     })
   }
@@ -74,6 +83,7 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
     <>
       <section>
         <h2>{t.kitchen.low}</h2>
+        <p className="kitchen__use-soon-hint mono">{t.kitchen.lowHint}</p>
         <form className="kitchen__low-add" onSubmit={addLow}>
           <input
             className="input"
@@ -91,7 +101,7 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
           <ul className="kitchen__low">
             {low.map((l) => (
               <li key={l.id}>
-                <button type="button" className="board__list-item" onClick={() => clearLowItem(l)}>
+                <button type="button" className="board__list-item" onClick={() => checkLowItem(l)}>
                   <span className="board__check" aria-hidden="true">
                     ☐
                   </span>

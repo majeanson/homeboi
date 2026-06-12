@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon } from '../components/Icon'
 import { useLang, useT } from '../i18n'
@@ -109,6 +110,17 @@ export function Kitchen() {
   const [kidCook, setKidCook] = useState<Recipe | null>(null)
   // Parent kitchen sub-tab: one job at a time so the page isn't an endless scroll.
   const [kitTab, setKitTab] = useState<'meals' | 'pantry' | 'recipes'>('meals')
+  // ?add=recipe — the contextual ＋ sheet's "Ajouter une recette" tile lands
+  // here (the recipe builder is a full overlay owned by this page, not by the
+  // sheet). Consume the param once, then strip it so refresh/back don't reopen
+  // a blank form.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    if (searchParams.get('add') !== 'recipe') return
+    setKitTab('recipes')
+    setEditRecipe('new')
+    setSearchParams({}, { replace: true })
+  }, [searchParams, setSearchParams])
   // Match a planned supper to a saved recipe by (loose) title, so a day's meal can
   // open its recipe.
   const recipeByTitle = useMemo(() => {
@@ -645,7 +657,6 @@ export function Kitchen() {
             soonItems={soonItems}
             listItems={listItems}
             onView={setViewRecipe}
-            onNew={() => setEditRecipe('new')}
           />
         )}
       </main>

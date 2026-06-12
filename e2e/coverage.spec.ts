@@ -137,7 +137,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 // routine(3) — the same shared forms Settings uses.
 test('sheet-add-chore', async ({ page }) => {
   await boot(page, '/board')
-  await page.locator('.board-add').click()
+  await page.locator('.add-fab').click()
   await page.locator('.cat-pick').nth(2).click()
   await page.locator('.operator__chore-form').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
@@ -146,7 +146,7 @@ test('sheet-add-chore', async ({ page }) => {
 
 test('sheet-add-routine', async ({ page }) => {
   await boot(page, '/board')
-  await page.locator('.board-add').click()
+  await page.locator('.add-fab').click()
   await page.locator('.cat-pick').nth(3).click()
   await page.locator('.operator__routine-form').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)

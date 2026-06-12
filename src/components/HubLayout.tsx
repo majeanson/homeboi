@@ -9,7 +9,7 @@ import { onAuthLost } from '../lib/authEvents'
 import { clearDeviceToken, isPaired } from '../lib/device'
 import { Icon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
-import { AddSheetContext, type AddSheetMode } from '../lib/addSheet'
+import { AddSheetContext, SECTION_MODES, type AddSheetMode } from '../lib/addSheet'
 
 // The hub shell, surface-aware. KIOSK (wall display): a vertical column of big
 // section buttons down the left, calm and readable across the room. MOBILE
@@ -39,8 +39,15 @@ export function HubLayout() {
   const nav = useNavigate()
   const qc = useQueryClient()
   const [addOpen, setAddOpen] = useState(false)
-  const [addMode, setAddMode] = useState<AddSheetMode>('capture')
+  // null = "this section's default" — the ＋ is contextual now (recipes in the
+  // kitchen, list items on Liste); only an explicit open('routine')-style call
+  // pins a mode.
+  const [addMode, setAddMode] = useState<AddSheetMode | null>(null)
   const isSettings = loc.pathname.startsWith('/settings')
+  // Which section the ＋ serves, from the first path segment ('/kitchen/…' →
+  // kitchen). Unknown paths fall back to the board's generic capture sheet.
+  const section = loc.pathname.split('/')[1] || 'board'
+  const sectionModes = SECTION_MODES[section] ?? SECTION_MODES.board
 
   // A PAIRED device getting 401s means its token was revoked (re-paired, device
   // removed in Réglages, DB reset) — latch a recovery screen at the shell level.
@@ -134,14 +141,11 @@ export function HubLayout() {
     )
   }
 
-  const path = '/' + (loc.pathname.split('/')[1] || 'board')
   const toddler = audience === 'toddler'
   // Capture is a parent action (the ＋ Add sheet). Not for a toddler, not in
-  // settings. On the MOBILE board the quick-capture bar already sits at the top
-  // of the page, so the floating ＋ would be redundant there — hide it (it stays
-  // on every other mobile tab and on the kiosk).
-  const onBoard = path === '/board'
-  const showAdd = !locked && !isSettings && !toddler && !(surface === 'mobile' && onBoard)
+  // settings. The floating ＋ FAB rides bottom-right on every parent tab —
+  // including the mobile board (no separate in-page add button there).
+  const showAdd = !locked && !isSettings && !toddler
   // Réglages hides from the nav whenever the toddler lens is up: on a locked
   // kiosk a three-year-old must not reach settings/billing (PRD C5), and even
   // unlocked, a kid-facing screen shouldn't dangle a gear — a parent flips back
@@ -152,7 +156,7 @@ export function HubLayout() {
     <AddSheetContext.Provider
       value={{
         open: (mode) => {
-          setAddMode(mode ?? 'capture')
+          setAddMode(mode ?? null)
           setAddOpen(true)
         },
       }}
@@ -207,15 +211,23 @@ export function HubLayout() {
           type="button"
           className="add-fab"
           onClick={() => {
-            setAddMode('capture')
+            setAddMode(null)
             setAddOpen(true)
           }}
-          aria-label={t.capture.add}
+          aria-label={
+            section === 'kitchen'
+              ? t.kitchen.addTitle
+              : section === 'routines'
+                ? t.routines.add
+                : section === 'liste'
+                  ? t.list.addTitle
+                  : t.capture.add
+          }
         >
           <Icon name="plus-bold" size={26} />
         </button>
       )}
-      <AddSheet open={addOpen} initialMode={addMode} onClose={() => setAddOpen(false)} />
+      <AddSheet open={addOpen} modes={sectionModes} initialMode={addMode} onClose={() => setAddOpen(false)} />
     </div>
     </AddSheetContext.Provider>
   )
