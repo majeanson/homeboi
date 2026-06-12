@@ -265,6 +265,12 @@ export function FlyerViewer({
                 const cx = (it.left + it.right) / 2
                 return cx >= page.left && cx < page.right
               })
+            // Skip pages that carry no item clippings. Image-based (premium) flyers
+            // open on a cover/feature page that's pure branding — we have no cutouts
+            // to place there, so it would render as a blank white box (the "blank
+            // pages" bug). A reconstruction only earns a page when it has something
+            // real to show; the page LABEL keeps the flyer's true page numbers.
+            if (onPage.length === 0) return null
             return (
               <div key={page.id ?? page.page} className="flyer-page-wrap">
                 <div className="flyer-page-label mono">

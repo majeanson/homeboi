@@ -654,6 +654,10 @@ test.describe('list', () => {
     await expect(page.locator('.flyer-store').first()).toBeVisible()
     await page.locator('.flyer-store', { hasText: 'Super C' }).click()
     await expect(page.locator('.flyer-overlay')).toBeVisible()
+    // The fixture flyer has 2 pages but only page 1 carries an item; the empty
+    // cover page must be skipped, so exactly one page renders (no blank box).
+    await expect(page.locator('.flyer-page-wrap')).toHaveCount(1)
+    await expect(page.locator('.flyer-page-label')).toHaveText(/1/)
   })
 })
 

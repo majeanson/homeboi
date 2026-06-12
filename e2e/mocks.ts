@@ -288,8 +288,15 @@ const ROUTES: Record<string, unknown> = {
     // real range, like the live feed — the rest of the mock uses seconds for slotting.
     validFrom: '2026-06-11T00:00:00-04:00',
     validTo: '2026-06-17T23:59:59-04:00',
-    pages: [{ id: 1, page: 1, left: 0, top: 0, right: 100, bottom: -100 }],
-    items: [{ id: 101, name: 'Lait 2% 4L', price: 4.99, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', validFrom: null, validTo: null, image: null, left: 10, top: -10, right: 40, bottom: -40 }],
+    // Page 1 carries the item; page 2 is an empty cover/feature page (no item
+    // clippings) — premium flyers open on one of these, and the viewer must SKIP
+    // it instead of rendering a blank white box (the "blank pages" bug).
+    pages: [
+      { id: 1, page: 1, left: 0, top: 0, right: 100, bottom: -100 },
+      { id: 2, page: 2, left: 100, top: 0, right: 200, bottom: -100 },
+    ],
+    // A tiny inline SVG so the clipping renders in the offline screenshot.
+    items: [{ id: 101, name: 'Lait 2% 4L', price: 4.99, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', validFrom: null, validTo: null, image: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 60 60%22%3E%3Crect width%3D%2260%22 height%3D%2260%22 fill%3D%22%23cfe8d6%22%2F%3E%3Ctext x%3D%2230%22 y%3D%2235%22 font-size%3D%2210%22 text-anchor%3D%22middle%22%3E🥛%3C%2Ftext%3E%3C%2Fsvg%3E', left: 10, top: -10, right: 40, bottom: -40 }],
   },
   ghost: GHOSTS,
   recap: { recap: 'Belle semaine : 3 soupers planifiés, 2 sorties, liste à jour.' },
