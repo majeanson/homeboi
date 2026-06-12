@@ -5,7 +5,7 @@
 // appears in the step text. Forgiving — an ingredient that matches no step (salt,
 // a garnish "to taste") simply isn't pinned to one; nothing is lost.
 import { ingredientName } from './ingredient'
-import { isSectionHeading } from './recipeSections'
+import { groupSections, isSectionHeading } from './recipeSections'
 
 // Accent-insensitive, lowercase, with the French ligatures expanded (œ→oe, æ→ae)
 // so "bœuf" tokenizes to "boeuf" and matches a step that also writes "bœuf" —
@@ -28,11 +28,26 @@ function nameTokens(ingredientLine: string): string[] {
 
 // The ingredient lines (original text, WITH quantities) a step uses. Pass the
 // already-scaled lines so the shown quantity reflects the current serving size.
-export function ingredientsForStep(step: string, ingredients: string[]): string[] {
+// When the step belongs to a named section AND the ingredient list has a
+// matching section, only that section's lines are candidates — the glaze step
+// shows the glaze's sugar, not the cookie's. No matching section (or none at
+// all) falls back to the whole list.
+export function ingredientsForStep(step: string, ingredients: string[], section?: string | null): string[] {
+  let pool = ingredients
+  if (section) {
+    const want = norm(section)
+    const match = groupSections(ingredients).find((g) => {
+      if (!g.title) return false
+      const have = norm(g.title)
+      // Containment either way: "Pour le glaçage" ↔ "Glaçage".
+      return have === want || have.includes(want) || want.includes(have)
+    })
+    if (match) pool = match.items.map((it) => it.text)
+  }
   const s = norm(step)
   // Section markers aren't ingredients — and "## Glaçage" would otherwise match
   // every step that mentions the glaze.
-  return ingredients.filter((ing) => {
+  return pool.filter((ing) => {
     if (isSectionHeading(ing)) return false
     const toks = nameTokens(ing)
     return toks.length > 0 && toks.some((tok) => s.includes(tok))

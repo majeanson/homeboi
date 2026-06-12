@@ -16,6 +16,10 @@ interface RecipeRow {
   ingredients_json: string
   steps_json: string
   servings: number | null
+  servings_unit: string | null
+  prep_min: number | null
+  cook_min: number | null
+  total_min: number | null
   notes: string | null
   source: string | null
   image: string | null
@@ -30,6 +34,10 @@ interface RecipeBody {
   ingredients?: string[]
   steps?: string[]
   servings?: number | null
+  servingsUnit?: string | null
+  prepMin?: number | null
+  cookMin?: number | null
+  totalMin?: number | null
   notes?: string | null
   source?: string | null
   image?: string | null
@@ -62,6 +70,12 @@ function cleanImage(v: unknown): string | null {
 }
 
 const isStr = (v: unknown): v is string => typeof v === 'string'
+
+// A time field is whole minutes, 1..48 h — anything else stores null.
+const cleanMin = (v: unknown): number | null =>
+  typeof v === 'number' && isFinite(v) && v > 0 && v <= 48 * 60 ? Math.round(v) : null
+// The yield's unit word ("biscuits"); short free text, null when blank.
+const cleanUnit = (v: unknown): string | null => (isStr(v) ? v.trim().slice(0, 24) || null : null)
 
 // Trim, drop blanks, cap length + count so a runaway paste can't bloat a row.
 // Ingredients fit in 200 chars; STEPS need more (a real instruction sentence
@@ -125,7 +139,7 @@ function cleanTags(v: unknown): string[] {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, ingredients_json, steps_json, servings, notes, source, image, tags_json, original_json, updated_at FROM recipes WHERE household_id = ? ORDER BY title',
+    'SELECT id, title, ingredients_json, steps_json, servings, servings_unit, prep_min, cook_min, total_min, notes, source, image, tags_json, original_json, updated_at FROM recipes WHERE household_id = ? ORDER BY title',
   )
     .bind(actor.householdId)
     .all<RecipeRow>()
@@ -135,6 +149,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     ingredients: parseJsonArray<string>(r.ingredients_json, isStr),
     steps: parseJsonArray<string>(r.steps_json, isStr),
     servings: r.servings,
+    servingsUnit: r.servings_unit,
+    prepMin: r.prep_min,
+    cookMin: r.cook_min,
+    totalMin: r.total_min,
     notes: r.notes,
     source: r.source,
     image: r.image,
@@ -153,7 +171,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   const servings = typeof body?.servings === 'number' && body.servings > 0 ? Math.floor(body.servings) : null
   await ctx.env.DB.prepare(
-    'INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, notes, source, image, tags_json, original_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, servings_unit, prep_min, cook_min, total_min, notes, source, image, tags_json, original_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -162,6 +180,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
       JSON.stringify(cleanList(body?.ingredients)),
       JSON.stringify(cleanSteps(body?.steps)),
       servings,
+      cleanUnit(body?.servingsUnit),
+      cleanMin(body?.prepMin),
+      cleanMin(body?.cookMin),
+      cleanMin(body?.totalMin),
       body?.notes?.trim()?.slice(0, 2000) || null,
       body?.source?.trim()?.slice(0, 200) || null,
       cleanImage(body?.image),
@@ -191,13 +213,17 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // A fresh import during the edit replaces the snapshot; anything else keeps it.
   const original = cleanOriginal(body.original) ?? prev.original_json
   await ctx.env.DB.prepare(
-    'UPDATE recipes SET title = ?, ingredients_json = ?, steps_json = ?, servings = ?, notes = ?, source = ?, image = ?, tags_json = ?, original_json = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+    'UPDATE recipes SET title = ?, ingredients_json = ?, steps_json = ?, servings = ?, servings_unit = ?, prep_min = ?, cook_min = ?, total_min = ?, notes = ?, source = ?, image = ?, tags_json = ?, original_json = ?, updated_at = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title.slice(0, 200),
       JSON.stringify(cleanList(body.ingredients)),
       JSON.stringify(cleanSteps(body.steps)),
       servings,
+      cleanUnit(body.servingsUnit),
+      cleanMin(body.prepMin),
+      cleanMin(body.cookMin),
+      cleanMin(body.totalMin),
       body.notes?.trim()?.slice(0, 2000) || null,
       body.source?.trim()?.slice(0, 200) || null,
       image,

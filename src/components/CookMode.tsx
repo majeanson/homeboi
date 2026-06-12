@@ -414,7 +414,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             </div>
             {cur?.kind === 'step' &&
               (() => {
-                const used = ingredientsForStep(cur.text, recipe.ingredients)
+                const used = ingredientsForStep(cur.text, recipe.ingredients, cur.section)
                 return used.length > 0 ? (
                   <ul className="cook__step-ings mono" aria-label={t.recipes.ingredients}>
                     {used.map((ing, i) => (

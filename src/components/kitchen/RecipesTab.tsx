@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useT } from '../../i18n'
-import { type Recipe, recipeImg, allTags } from '../../lib/recipes'
+import { type Recipe, recipeImg, allTags, recipeTotalMin } from '../../lib/recipes'
 import { rankCookable, rankUseSoon } from '../../lib/cookable'
 import { withoutHeadings } from '../../lib/recipeSections'
+import { formatDuration } from '../../lib/duration'
 import { pictoFor } from '../../lib/picto'
 
 // The recipe book: search, tag chips, and the two stock-aware sorts ("what can
@@ -29,6 +30,10 @@ export function RecipesTab({
   // "Quoi cuisiner ?" / "À utiliser bientôt": mutually exclusive sorts.
   const [cookFilter, setCookFilter] = useState(false)
   const [useSoonFilter, setUseSoonFilter] = useState(false)
+  // "⏱ ≤ 30 min": total-time filter, an AND on top of search/tags. Only offered
+  // once at least one recipe carries time data, so it never appears as a no-op.
+  const [fastFilter, setFastFilter] = useState(false)
+  const canFastFilter = useMemo(() => recipes.some((r) => recipeTotalMin(r) != null), [recipes])
   const tags = useMemo(() => allTags(recipes), [recipes])
 
   const shownRecipes = useMemo(() => {
@@ -37,9 +42,13 @@ export function RecipesTab({
     return recipes.filter((r) => {
       if (q && !(r.title.toLowerCase().includes(q) || r.ingredients.some((i) => i.toLowerCase().includes(q)))) return false
       if (tf && !(r.tags ?? []).some((tg) => tg.toLowerCase() === tf)) return false
+      if (fastFilter && canFastFilter) {
+        const tm = recipeTotalMin(r)
+        if (!tm || tm > 30) return false
+      }
       return true
     })
-  }, [recipes, recipeQuery, tagFilter])
+  }, [recipes, recipeQuery, tagFilter, fastFilter, canFastFilter])
   // Cookability: which staple each recipe is missing (out of stock + not on the
   // list), fewest first. The filter only surfaces when there's a low item to
   // rank against, so it never appears as a no-op.
@@ -62,7 +71,7 @@ export function RecipesTab({
       <div className="kitchen__head">
         <h2>{t.recipes.title}</h2>
       </div>
-      {(recipes.length > 3 || canCookFilter || canUseSoonFilter) && (
+      {(recipes.length > 3 || canCookFilter || canUseSoonFilter || canFastFilter) && (
         <div className="kitchen__recipe-tools">
           {recipes.length > 3 && (
             <input
@@ -97,6 +106,16 @@ export function RecipesTab({
               aria-pressed={useSoonFilter}
             >
               ♻️ {t.recipes.useItUp}
+            </button>
+          )}
+          {canFastFilter && (
+            <button
+              type="button"
+              className={`chip kitchen__fast-filter${fastFilter ? ' is-on' : ''}`}
+              onClick={() => setFastFilter((v) => !v)}
+              aria-pressed={fastFilter}
+            >
+              ⏱ {t.recipes.fast30}
             </button>
           )}
         </div>
@@ -142,6 +161,7 @@ export function RecipesTab({
               setTagFilter(null)
               setCookFilter(false)
               setUseSoonFilter(false)
+              setFastFilter(false)
             }}
           >
             {t.recipes.clearFilters}
@@ -155,6 +175,7 @@ export function RecipesTab({
             const uses = usesById.get(r.id) ?? []
             // Badge counts real ingredients, not "## Section" markers.
             const nIngs = withoutHeadings(r.ingredients).length
+            const totalMin = recipeTotalMin(r)
             return (
               <button key={r.id} type="button" className="recipe-card surface" onClick={() => onView(r)}>
                 <span className="recipe-card__thumb" aria-hidden="true">
@@ -175,6 +196,9 @@ export function RecipesTab({
                   )
                 ) : (
                   nIngs > 0 && <span className="recipe-card__sub mono">{t.recipes.count(nIngs)}</span>
+                )}
+                {totalMin != null && (
+                  <span className="recipe-card__time mono">⏱ {formatDuration(totalMin * 60)}</span>
                 )}
               </button>
             )

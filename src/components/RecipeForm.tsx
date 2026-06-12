@@ -12,7 +12,6 @@ import {
   recipeImg,
   tagOptions,
 } from '../lib/recipes'
-import { formatDuration } from '../lib/duration'
 import { SECTION_PREFIX, dropDanglingHeadings } from '../lib/recipeSections'
 import { Icon } from './Icon'
 
@@ -47,6 +46,12 @@ export function RecipeForm({
   const [ingredients, setIngredients] = useState<string[]>(value?.ingredients?.length ? value.ingredients : [''])
   const [steps, setSteps] = useState<string[]>(value?.steps?.length ? value.steps : [''])
   const [servings, setServings] = useState(value?.servings ? String(value.servings) : '')
+  // Yield unit ("biscuits") + real time fields (minutes) — imports prefill,
+  // freely editable by hand afterwards.
+  const [servingsUnit, setServingsUnit] = useState(value?.servingsUnit ?? '')
+  const [prepMin, setPrepMin] = useState(value?.prepMin ? String(value.prepMin) : '')
+  const [cookMin, setCookMin] = useState(value?.cookMin ? String(value.cookMin) : '')
+  const [totalMin, setTotalMin] = useState(value?.totalMin ? String(value.totalMin) : '')
   const [notes, setNotes] = useState(value?.notes ?? '')
   const [tags, setTags] = useState<string[]>(value?.tags ?? [])
   const [tagInput, setTagInput] = useState('')
@@ -108,16 +113,18 @@ export function RecipeForm({
     setLines(kind)(arr)
     if (kind === 'steps') setEditStep((es) => (es === i ? j : es === j ? i : es))
   }
-  // Pasting a multi-line block into one row spreads it over rows (bullets and
-  // leading step numbers stripped — the editor numbers steps itself), so fixing
-  // an import by copy-pasting a section never means typing line by line. A short
-  // label line ending in ":" ("Glaçage :") becomes a section row.
+  // Pasting a multi-line block into one row spreads it over rows (bullets,
+  // leading step numbers AND "Étape 3 :" / "Step 2" labels stripped — the
+  // editor numbers steps itself, same rules as the server's stripStepPrefix),
+  // so fixing an import by copy-pasting a section never means typing line by
+  // line. A short label line ending in ":" ("Glaçage :") becomes a section row.
   const pasteLines = (kind: LineKind, i: number, pasted: string): boolean => {
     const parts = pasted
       .split(/\r?\n/)
       .map((s) =>
         s
           .replace(/^[•·▪◦‣*–—-]+\s*/, '')
+          .replace(/^(?:[ée]tapes?|steps?)\s*\d{1,2}\s*(?:[:.)\-–—]\s*)?/i, '')
           .replace(/^\d{1,2}\s*[.):\-–—]\s+/, '')
           .trim(),
       )
@@ -141,6 +148,7 @@ export function RecipeForm({
     ingredients?: string[]
     steps?: string[]
     servings?: number | null
+    servingsUnit?: string | null
     times?: { prep: number | null; cook: number | null; total: number | null }
     source?: string | null
   }
@@ -149,19 +157,12 @@ export function RecipeForm({
     if (d.ingredients?.length && ingredients.every((x) => !x.trim())) setIngredients(d.ingredients)
     if (d.steps?.length && steps.every((x) => !x.trim())) setSteps(d.steps)
     if (d.servings && !servings.trim()) setServings(String(d.servings))
-    // Prep/cook/total times land as a notes line ("Préparation 20 min · …") —
-    // informative without needing new fields, and freely editable.
-    if (d.times && !notes.trim()) {
-      const parts = (
-        [
-          [t.recipes.timePrep, d.times.prep],
-          [t.recipes.timeCook, d.times.cook],
-          [t.recipes.timeTotal, d.times.total],
-        ] as [string, number | null][]
-      )
-        .filter(([, m]) => m != null && m > 0)
-        .map(([label, m]) => `${label} ${formatDuration(m! * 60)}`)
-      if (parts.length) setNotes(parts.join(' · '))
+    if (d.servingsUnit && !servingsUnit.trim()) setServingsUnit(d.servingsUnit)
+    // Prep/cook/total land in their REAL fields now (editable like the rest).
+    if (d.times) {
+      if (d.times.prep && !prepMin.trim()) setPrepMin(String(d.times.prep))
+      if (d.times.cook && !cookMin.trim()) setCookMin(String(d.times.cook))
+      if (d.times.total && !totalMin.trim()) setTotalMin(String(d.times.total))
     }
     if (d.ingredients?.length || d.steps?.length) {
       setOriginal({
@@ -210,6 +211,7 @@ export function RecipeForm({
         ingredients: string[]
         steps: string[]
         servings: number | null
+        servingsUnit: string | null
         times: { prep: number | null; cook: number | null; total: number | null }
         image: string | null
         source: string | null
@@ -256,6 +258,10 @@ export function RecipeForm({
       ingredients: cleanRows(ingredients),
       steps: cleanRows(steps),
       servings: servings.trim() ? Number(servings) : null,
+      servingsUnit: servingsUnit.trim() || null,
+      prepMin: prepMin.trim() ? Number(prepMin) : null,
+      cookMin: cookMin.trim() ? Number(cookMin) : null,
+      totalMin: totalMin.trim() ? Number(totalMin) : null,
       notes: notes.trim() || null,
       source,
       image,
@@ -569,7 +575,7 @@ export function RecipeForm({
           </h3>
           {stepsEditor}
 
-          {/* Servings + notes */}
+          {/* Servings (+ optional unit: "24 biscuits") + times + notes */}
           <div className="recipe-meta-row">
             <label className="recipe-servings mono">
               {t.recipes.servings}
@@ -581,6 +587,31 @@ export function RecipeForm({
                 onChange={(e) => setServings(e.target.value)}
               />
             </label>
+            <input
+              className="input recipe-servings-unit"
+              value={servingsUnit}
+              onChange={(e) => setServingsUnit(e.target.value)}
+              placeholder={t.recipes.servingsUnitPlaceholder}
+              aria-label={t.recipes.servingsUnitPlaceholder}
+              maxLength={24}
+            />
+          </div>
+          <div className="recipe-times-row">
+            {(
+              [
+                [t.recipes.timePrep, prepMin, setPrepMin],
+                [t.recipes.timeCook, cookMin, setCookMin],
+                [t.recipes.timeTotal, totalMin, setTotalMin],
+              ] as [string, string, (v: string) => void][]
+            ).map(([label, v, set]) => (
+              <label key={label} className="recipe-time mono">
+                {label}
+                <span className="recipe-time__field">
+                  <input className="input" type="number" min="1" value={v} onChange={(e) => set(e.target.value)} />
+                  <span className="recipe-time__unit mono">min</span>
+                </span>
+              </label>
+            ))}
           </div>
           <textarea
             className="input"
