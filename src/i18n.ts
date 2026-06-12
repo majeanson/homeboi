@@ -57,17 +57,16 @@ export const FR = {
   },
   list: {
     addPlaceholder: 'Ajouter à la liste… (ex. lait)',
-    done: 'Coché récemment',
-    restore: 'Remettre sur la liste',
-    history: 'Déjà ajouté',
-    // Two ways to use the list: prepare it at home, or shop with it at the store.
-    modeHome: 'À la maison',
-    modeStore: 'À l’épicerie',
-    modeHomeHint: 'Préparer la liste',
-    modeStoreHint: 'Magasinage — coche ce qui est dans le panier',
     check: 'Cocher',
-    inCart: 'Dans le panier',
-    clearCart: 'Vider le panier',
+    uncheck: 'Décocher',
+    clearChecked: 'Vider les cochés',
+    // Quick add: reopen past/predicted items to restock a week in a few taps.
+    quickAdd: 'Ajout rapide',
+    quickAddTitle: 'Déjà acheté',
+    quickSearch: 'Chercher ou ajouter…',
+    quickEmpty: 'Rien à proposer pour l’instant.',
+    addNew: (s: string) => `Ajouter « ${s} »`,
+    addedN: (n: number) => `${n} ajouté${n > 1 ? 's' : ''}`,
     // Edit sheet
     editTitle: 'Modifier l’article',
     nameLabel: 'Nom',
@@ -506,7 +505,12 @@ export const FR = {
     byStore: 'Par magasin',
   },
   common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', edit: 'Modifier', saveFailed: 'Pas enregistré — réessaie.' },
-  undo: { action: 'Annuler', checked: (s: string) => `« ${s} » coché`, cleared: (s: string) => `« ${s} » retiré` },
+  undo: {
+    action: 'Annuler',
+    checked: (s: string) => `« ${s} » coché`,
+    cleared: (s: string) => `« ${s} » retiré`,
+    clearedN: (n: number) => `${n} article${n > 1 ? 's' : ''} retiré${n > 1 ? 's' : ''}`,
+  },
   notFound: { title: 'Page introuvable', back: 'Retour à l’accueil' },
 }
 
@@ -562,17 +566,16 @@ export const EN: typeof FR = {
   },
   list: {
     addPlaceholder: 'Add to the list… (e.g. milk)',
-    done: 'Recently checked',
-    restore: 'Put back on the list',
-    history: 'Added before',
-    // Two ways to use the list: prepare it at home, or shop with it at the store.
-    modeHome: 'At home',
-    modeStore: 'At the store',
-    modeHomeHint: 'Prepare the list',
-    modeStoreHint: 'Shopping — check off what’s in the cart',
     check: 'Check off',
-    inCart: 'In the cart',
-    clearCart: 'Empty the cart',
+    uncheck: 'Uncheck',
+    clearChecked: 'Clear checked',
+    // Quick add: reopen past/predicted items to restock a week in a few taps.
+    quickAdd: 'Quick add',
+    quickAddTitle: 'Bought before',
+    quickSearch: 'Search or add…',
+    quickEmpty: 'Nothing to suggest yet.',
+    addNew: (s: string) => `Add “${s}”`,
+    addedN: (n: number) => `${n} added`,
     // Edit sheet
     editTitle: 'Edit item',
     nameLabel: 'Name',
@@ -1009,7 +1012,12 @@ export const EN: typeof FR = {
     byStore: 'By store',
   },
   common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', edit: 'Edit', saveFailed: 'Not saved — try again.' },
-  undo: { action: 'Undo', checked: (s: string) => `"${s}" checked off`, cleared: (s: string) => `"${s}" cleared` },
+  undo: {
+    action: 'Undo',
+    checked: (s: string) => `"${s}" checked off`,
+    cleared: (s: string) => `"${s}" cleared`,
+    clearedN: (n: number) => `${n} item${n > 1 ? 's' : ''} cleared`,
+  },
   notFound: { title: 'Page not found', back: 'Back to home' },
 }
 
