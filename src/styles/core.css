@@ -122,6 +122,19 @@ body {
      shimmer; it also drops double-tap-to-zoom. In-app zoom stays tap-to-
      fullscreen (ZoomableImg). */
   touch-action: pan-x pan-y;
+  /* App-shell scroll lock. The document itself NEVER scrolls — #root is the one
+     scroller (and within it a page may have its own, e.g. .hub__body). Without
+     this the 100vh hub sits taller than the iOS visual viewport, so the page
+     could be dragged behind the toolbar UNDERNEATH the inner scroller — the "two
+     layers of scrolling" you feel. height:100% tracks the REAL viewport, not the
+     100vh phantom. */
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  /* Stop iOS from re-inflating text (and rescaling the whole layout) on a
+     landscape→portrait rotate — the "zoomed weirdly after rotating" bug. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 body {
   background: var(--paper);
@@ -148,6 +161,15 @@ body::before {
 #root {
   position: relative;
   z-index: 1;
+  /* The single document-level scroller. Pages that don't manage their own height
+     (auth, setup, marketing) scroll HERE; the hub fills it exactly so only
+     .hub__body scrolls. overflow-x:hidden also kills any stray horizontal
+     overflow, the usual trigger for the iPad rotate-rescale. */
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
 }
 .mono {
   font-family: var(--mono);
@@ -304,7 +326,10 @@ textarea.input {
 
 /* --- Layout --------------------------------------------------------------- */
 .page {
-  min-height: 100vh;
+  /* Fill the #root scroller (not 100vh — that's the iOS phantom height that
+     let the document scroll behind inner scrollers). Content taller than the
+     viewport scrolls #root; the hub overrides this with its own fixed height. */
+  min-height: 100%;
 }
 .topbar {
   display: flex;

@@ -40,8 +40,32 @@ export function trackVisualViewport(): void {
   vv.addEventListener('scroll', schedule)
 
   // Final backstop for iOS Safari browser tabs: block the pinch-zoom gesture
-  // outright (it honours user-scalable=no only once installed standalone).
+  // outright (it honours user-scalable=no only once installed standalone). These
+  // gesture* events are iOS-only.
   for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) {
     document.addEventListener(ev, (e) => e.preventDefault(), { passive: false })
   }
+
+  // Trackpad pinch + Ctrl/⌘-scroll zoom (laptops & desktops): the browser fires
+  // a wheel event with ctrlKey set and zooms the whole page. touch-action and
+  // user-scalable=no don't cover the wheel, so this is the only guard that stops
+  // it — the most common "I can still zoom weirdly" path on a laptop.
+  window.addEventListener(
+    'wheel',
+    (e) => {
+      if (e.ctrlKey) e.preventDefault()
+    },
+    { passive: false },
+  )
+
+  // Multi-touch backstop for non-iOS tablets (Android / Chrome OS), where the
+  // iOS gesture* events never fire: a second finger landing to pinch is
+  // cancelled. Single-finger scrolling (touches.length === 1) is untouched.
+  document.addEventListener(
+    'touchmove',
+    (e) => {
+      if (e.touches.length > 1) e.preventDefault()
+    },
+    { passive: false },
+  )
 }
