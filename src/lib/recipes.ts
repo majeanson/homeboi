@@ -20,12 +20,27 @@ export interface Recipe {
   ingredients: string[]
   steps: string[]
   servings: number | null
+  // The yield's unit when it isn't plain portions ("24 biscuits"); null = the
+  // default "portions" label. Optional: older payloads/fixtures predate it.
+  servingsUnit?: string | null
+  // Real time fields (whole minutes) — imports fill them, freely editable.
+  prepMin?: number | null
+  cookMin?: number | null
+  totalMin?: number | null
   notes: string | null
   source: string | null
   image: string | null // an R2 key (uploaded) OR an https URL (imported)
   tags: string[]
   original?: RecipeOriginal | null
   updatedAt: number
+}
+
+// The shown total: the stated total when present, else prep+cook when either
+// exists. Null = the recipe carries no time data at all.
+export function recipeTotalMin(r: Pick<Recipe, 'prepMin' | 'cookMin' | 'totalMin'>): number | null {
+  if (r.totalMin) return r.totalMin
+  const sum = (r.prepMin ?? 0) + (r.cookMin ?? 0)
+  return sum > 0 ? sum : null
 }
 
 export const RECIPES_KEY = ['recipes']

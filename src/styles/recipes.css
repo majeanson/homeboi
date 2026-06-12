@@ -766,3 +766,55 @@
   gap: 0.4rem;
   flex-wrap: wrap;
 }
+
+/* --- Real time fields + yield unit ----------------------------------------- */
+/* Form: the optional unit beside the servings count ("24 biscuits"). */
+.recipe-meta-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.recipe-servings-unit {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+/* Form: the prep/cuisson/total minute inputs. */
+.recipe-times-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.recipe-time {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1 1 6.5rem;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.recipe-time__field {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.recipe-time__field .input {
+  flex: 1;
+  min-width: 0;
+}
+.recipe-time__unit {
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+/* Sheet: the "⏱ Préparation 20 min · Cuisson 45 min" line. */
+.recipe-view__times {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+/* Card: quiet total-time badge under the title. */
+.recipe-card__time {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}

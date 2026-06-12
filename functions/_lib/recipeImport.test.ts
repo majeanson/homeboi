@@ -13,8 +13,10 @@ import {
   stripStepPrefix,
   sentenceChunks,
   parseYield,
+  parseYieldUnit,
   isoToMinutes,
   textToMinutes,
+  regroupIngredients,
 } from './recipeImport'
 
 const wrap = (json: unknown) =>
@@ -171,6 +173,60 @@ describe('parseYield', () => {
   })
 })
 
+describe('parseYieldUnit', () => {
+  it('reads the unit word of a non-portion yield', () => {
+    expect(parseYieldUnit('24 biscuits')).toBe('biscuits')
+    expect(parseYieldUnit('Donne 12 muffins')).toBe('muffins')
+    expect(parseYieldUnit('Rendement : 18 carrés')).toBe('carrés')
+  })
+  it('returns null for plain portions / personnes', () => {
+    expect(parseYieldUnit('4 portions')).toBeNull()
+    expect(parseYieldUnit('6 servings')).toBeNull()
+    expect(parseYieldUnit('4 à 6 personnes')).toBeNull()
+    expect(parseYieldUnit(4)).toBeNull()
+  })
+  it('reads QuantitativeValue.unitText, ignoring a portion word', () => {
+    expect(parseYieldUnit({ value: 24, unitText: 'cookies' })).toBe('cookies')
+    expect(parseYieldUnit({ value: 4, unitText: 'servings' })).toBeNull()
+  })
+})
+
+describe('regroupIngredients', () => {
+  const page = (body: string) => `<html><body>${body}</body></html>`
+  it('recovers page-visible groups into "## " markers (every line located)', () => {
+    const html = page(`
+      <h2>Ingrédients</h2>
+      <h3>Biscuits</h3>
+      <ul><li>250 g de farine</li><li>125 g de beurre</li></ul>
+      <h3>Glaçage</h3>
+      <ul><li>120 g de sucre</li><li>30 ml de lait</li></ul>
+    `)
+    const flat = ['250 g de farine', '125 g de beurre', '120 g de sucre', '30 ml de lait']
+    expect(regroupIngredients(html, flat)).toEqual([
+      '## Biscuits',
+      '250 g de farine',
+      '125 g de beurre',
+      '## Glaçage',
+      '120 g de sucre',
+      '30 ml de lait',
+    ])
+  })
+  it('returns the flat list untouched when a line cannot be located verbatim', () => {
+    const html = page('<h3>Biscuits</h3><ul><li>250 g de farine</li></ul>')
+    const flat = ['250 g de farine', '125 g de beurre'] // beurre not on the page
+    expect(regroupIngredients(html, flat)).toBe(flat)
+  })
+  it('does not add a single heading covering the whole list', () => {
+    const html = page('<h3>Ingrédients</h3><ul><li>250 g de farine</li><li>125 g de beurre</li><li>1 œuf</li><li>sel</li></ul>')
+    const flat = ['250 g de farine', '125 g de beurre', '1 œuf', 'sel']
+    expect(regroupIngredients(html, flat)).toBe(flat)
+  })
+  it('leaves an already-sectioned list alone', () => {
+    const flat = ['## A', 'x', 'y', 'z']
+    expect(regroupIngredients(page('whatever'), flat)).toBe(flat)
+  })
+})
+
 describe('isoToMinutes', () => {
   it('reads ISO-8601 durations', () => {
     expect(isoToMinutes('PT1H30M')).toBe(90)
@@ -264,6 +320,13 @@ describe('parseRecipeJsonLd', () => {
     expect(r.steps).toEqual(['Chauffer une poêle à feu moyen.'])
     expect(r.ingredients).toEqual(['400 g de pâtes'])
   })
+
+  it('reads the yield unit ("24 biscuits") into servingsUnit', () => {
+    const html = wrap({ '@type': 'Recipe', name: 'X', recipeIngredient: ['a'], recipeYield: '24 biscuits' })
+    const r = parseRecipeJsonLd(html)!
+    expect(r.servings).toBe(24)
+    expect(r.servingsUnit).toBe('biscuits')
+  })
 })
 
 describe('parseRecipeMicrodata', () => {
@@ -285,6 +348,18 @@ describe('parseRecipeMicrodata', () => {
   })
   it('returns null when the page has no recipe microdata', () => {
     expect(parseRecipeMicrodata('<html><body><p>blog post</p></body></html>')).toBeNull()
+  })
+  it('turns an <hN> inside the instructions container into a "## " section, not a step', () => {
+    const html = `<html><body itemscope itemtype="https://schema.org/Recipe">
+      <li itemprop="recipeIngredient">250 g de farine</li>
+      <li itemprop="recipeIngredient">120 g de sucre</li>
+      <div itemprop="recipeInstructions">
+        <h3>Biscuits</h3><p>Crémer le beurre.</p><p>Cuire 12 min.</p>
+        <h3>Glaçage</h3><p>Fouetter le sucre et le lait.</p>
+      </div>
+    </body></html>`
+    const r = parseRecipeMicrodata(html)!
+    expect(r.steps).toEqual(['## Biscuits', 'Crémer le beurre.', 'Cuire 12 min.', '## Glaçage', 'Fouetter le sucre et le lait.'])
   })
 })
 
@@ -334,6 +409,41 @@ Bake for 1 hour.`)
     expect(r.servings).toBe(8)
     expect(r.ingredients).toEqual(['2 cups flour', '3 ripe bananas'])
     expect(r.steps).toEqual(['Mash the bananas. Mix everything together.', 'Bake for 1 hour.'])
+  })
+
+  it('reads a named yield ("Donne 24 biscuits") into servings + servingsUnit', () => {
+    const r = parsePastedRecipe(`Biscuits
+Donne 24 biscuits
+Ingrédients
+- 2 tasses de farine
+- 1 tasse de beurre
+Préparation
+Mélanger et cuire.`)
+    expect(r.servings).toBe(24)
+    expect(r.servingsUnit).toBe('biscuits')
+  })
+
+  it('leaves a plain portions yield with no unit', () => {
+    const r = parsePastedRecipe(`Soupe
+4 portions
+Ingrédients
+- 1 oignon
+- 4 carottes
+Préparation
+Cuire.`)
+    expect(r.servings).toBe(4)
+    expect(r.servingsUnit).toBeNull()
+  })
+
+  it('treats English imperative "Pour in the milk" as a step, not a section', () => {
+    const r = parsePastedRecipe(`Pancakes
+Ingredients
+2 cups flour
+1 cup milk
+Method
+Pour in the milk and whisk.
+Cook on a hot griddle.`)
+    expect(r.steps).toEqual(['Pour in the milk and whisk.', 'Cook on a hot griddle.'])
   })
 
   it('treats "Étape N : …" lines as steps, not headings', () => {

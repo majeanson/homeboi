@@ -30,6 +30,30 @@ describe('ingredientsForStep', () => {
   it('keeps the quantities of the lines passed in (scaled or not)', () => {
     expect(ingredientsForStep('Cuire les pâtes.', ['800 g de pâtes'])).toEqual(['800 g de pâtes'])
   })
+
+  it('ignores "## Section" markers in the ingredient list', () => {
+    expect(ingredientsForStep('Préparer le glaçage.', ['## Glaçage', '120 g de sucre'])).toEqual([])
+  })
+
+  // The cookie sugar and the glaze sugar both say "sucre"; section scoping keeps
+  // the glaze step from showing the cookie's sugar.
+  const SECTIONED = ['## Biscuits', '250 g de farine', '100 g de sucre', '## Glaçage', '120 g de sucre en poudre', '30 ml de lait']
+
+  it('scopes to the step’s own section when the ingredient list has one', () => {
+    expect(ingredientsForStep('Fouetter le sucre et le lait.', SECTIONED, 'Glaçage')).toEqual([
+      '120 g de sucre en poudre',
+      '30 ml de lait',
+    ])
+  })
+
+  it('matches a section by loose containment ("Pour le glaçage" ↔ "Glaçage")', () => {
+    expect(ingredientsForStep('Étaler le sucre.', SECTIONED, 'Pour le glaçage')).toEqual(['120 g de sucre en poudre'])
+  })
+
+  it('falls back to the whole list when the step section has no ingredient match', () => {
+    // No "Cuisson" ingredient group → search everything (still skips markers).
+    expect(ingredientsForStep('Incorporer la farine.', SECTIONED, 'Cuisson')).toEqual(['250 g de farine'])
+  })
 })
 
 describe('stepSentences', () => {

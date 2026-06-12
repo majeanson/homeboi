@@ -34,6 +34,9 @@ export interface ParsedRecipe {
   steps: string[]
   image: string | null
   servings: number | null
+  // The yield's unit when it isn't plain servings ("Donne 24 biscuits" →
+  // "biscuits") — the UI then says "24 biscuits" instead of "24 portions".
+  servingsUnit: string | null
   times: RecipeTimes
 }
 
@@ -281,7 +284,11 @@ export function normalizeInstructions(value: unknown, max = 30): string[] {
   let section: string | null = null
   const push = (s: string) => {
     const c = clean(s)
-    if (c && collected.length < max * 2) collected.push({ section, text: c })
+    if (!c || collected.length >= max * 2) return
+    // A bare label line packed inside the instructions ("Glaçage :") is a
+    // section marker, not a step — without this it leaks as a junk step.
+    const sec = inlineSectionTitle(c)
+    collected.push({ section, text: sec ? makeSectionHeading(sec) : c })
   }
   const walk = (v: unknown) => {
     if (collected.length >= max * 2) return
@@ -364,6 +371,37 @@ export function parseYield(value: unknown): number | null {
   return null
 }
 
+// The yield's UNIT word when the recipe doesn't yield plain servings: "Donne
+// 24 biscuits" → "biscuits", "12 muffins" → "muffins". Portion-style words
+// return null so the UI keeps its default "portions" label. Forgiving: no
+// readable unit just means null, never junk.
+const PORTION_WORDS = /^(?:portions?|servings?|personnes?|convives?|parts?|people)$/i
+export function parseYieldUnit(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const m = value.match(/\d+\s*(?:[àa]\s*\d+\s*)?([a-zà-öœ' -]{3,24}?)\s*$/i)
+    if (!m) return null
+    const unit = m[1].trim().replace(/^(?:de|d['’])\s+/i, '').trim()
+    return unit && !PORTION_WORDS.test(unit) ? unit.slice(0, 24) : null
+  }
+  if (Array.isArray(value)) {
+    for (const v of value) {
+      const r = parseYieldUnit(v)
+      if (r) return r
+    }
+    return null
+  }
+  if (value && typeof value === 'object') {
+    const node = value as Record<string, unknown>
+    // QuantitativeValue carries unitText; otherwise look inside .value.
+    if (typeof node.unitText === 'string') {
+      const u = node.unitText.trim().slice(0, 24)
+      return u && !PORTION_WORDS.test(u) ? u : null
+    }
+    return parseYieldUnit(node.value)
+  }
+  return null
+}
+
 // ISO-8601 duration ("PT1H30M", "PT45M") → whole minutes. Null on junk or a
 // zero/absurd value, so a site's empty "PT0M" never shows as a time.
 export function isoToMinutes(value: unknown): number | null {
@@ -421,6 +459,7 @@ export function parseRecipeJsonLd(html: string): ParsedRecipe | null {
       steps,
       image: normalizeImage(node.image),
       servings: parseYield(node.recipeYield ?? node.yield),
+      servingsUnit: parseYieldUnit(node.recipeYield ?? node.yield),
       times: {
         prep: isoToMinutes(node.prepTime),
         cook: isoToMinutes(node.cookTime),
@@ -455,15 +494,23 @@ export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
     .slice(0, 40)
 
   // Instructions may be one element per step OR a single container; turn block
-  // closers into newlines before stripping tags so the inner list splits.
+  // closers into newlines before stripping tags so the inner list splits. An
+  // <hN> INSIDE the container is a section heading ("Glaçage") — keep it as a
+  // "## " marker instead of letting it leak as a junk step; a bare label line
+  // ("Glaçage :") gets the same treatment.
   const stepLines = inner('recipeInstructions').flatMap((blockHtml) =>
     blockHtml
-      .replace(/<\/(?:li|p|div|h[1-6])>|<br\s*\/?>/gi, '\n')
+      .replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, (_, t: string) => `\n## ${clean(t)}\n`)
+      .replace(/<\/(?:li|p|div)>|<br\s*\/?>/gi, '\n')
       .split(/\n+/)
       .map((s) => clean(s))
-      .filter(Boolean),
+      .filter(Boolean)
+      .map((s) => {
+        const sec = inlineSectionTitle(s)
+        return sec ? makeSectionHeading(sec) : s
+      }),
   )
-  const steps = refineSteps(stepLines, 30)
+  const steps = dropDanglingHeadings(refineSteps(stepLines, 30))
 
   if (ingredients.length < 2 && steps.length === 0) return null
 
@@ -477,8 +524,93 @@ export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
     null
   const image = normalizeImage(meta(/<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["']([^"']*)["']/i))
   const servings = parseYield(inner('recipeYield')[0] ?? null)
+  const servingsUnit = parseYieldUnit(inner('recipeYield')[0] ?? null)
 
-  return { title, ingredients, steps, image, servings, times: NO_TIMES }
+  return { title, ingredients, steps, image, servings, servingsUnit, times: NO_TIMES }
+}
+
+// ---------------------------------------------------------------------------
+// Ingredient grouping recovered from the rendered page
+// ---------------------------------------------------------------------------
+
+// schema.org has no ingredient sections — JSON-LD hands us a FLAT list even
+// when the page clearly shows "Biscuits" / "Glaçage" groups (Ricardo, WPRM
+// blogs). Recover them from the page text: locate the region where the known
+// ingredient lines appear, and any short label line BETWEEN them becomes a
+// "## " marker. All-or-nothing: if any ingredient can't be located verbatim,
+// return the flat list untouched — a wrong grouping is worse than none.
+
+const normLoose = (s: string): string =>
+  s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/œ/g, 'oe')
+    .replace(/æ/g, 'ae')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
+// A line between two located ingredients that reads as a group label: short,
+// no digits, not a sentence, not one of the big block headings (those mark the
+// whole list, not a part — except an "Ingrédients du/pour…" repeat, whose
+// qualifier IS the part name).
+function groupLabel(line: string): string | null {
+  const s = stripBullet(line).replace(/\s*:$/, '').trim()
+  if (s.length < 2 || s.length > 40) return null
+  if (/\d/.test(s) || !/[a-zà-öœ]/i.test(s)) return null
+  if (/[.!?;,]$/.test(s)) return null
+  if (s.split(/\s+/).length > 5) return null
+  const ingH = s.match(ING_HEADING)
+  if (ingH) return qualifierTitle(ingH[1])
+  if (STEP_HEADING.test(s) || NOTE_HEADING.test(s) || TIME_LINE.test(s)) return null
+  return s
+}
+
+export function regroupIngredients(html: string, ingredients: string[]): string[] {
+  if (ingredients.length < 4 || ingredients.some((l) => isSectionHeading(l))) return ingredients
+  const lines = htmlToText(html, 60000)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+  const keys = ingredients.map(normLoose)
+  const used = new Set<number>()
+  // First UNUSED ingredient rendered verbatim as this line (duplicates like a
+  // "Sel" in two sections consume one slot each).
+  const matchIdx = (line: string): number => {
+    const k = normLoose(stripBullet(line))
+    if (!k) return -1
+    for (let i = 0; i < keys.length; i++) if (!used.has(i) && keys[i] === k) return i
+    return -1
+  }
+  const rows = lines.map((line) => {
+    const ing = matchIdx(line)
+    if (ing >= 0) used.add(ing)
+    return { ing: ing >= 0 ? ing : null, line }
+  })
+  if (used.size !== ingredients.length) return ingredients
+
+  const hits = rows.map((r, i) => (r.ing != null ? i : -1)).filter((i) => i >= 0)
+  // The first group's label sits just BEFORE its first ingredient — pull it in
+  // so "Biscuits" isn't lost (mid-list labels are already inside the window).
+  let start = hits[0]
+  if (start > 0 && rows[start - 1].ing == null && groupLabel(rows[start - 1].line)) start--
+  const out: string[] = []
+  for (let i = start; i <= hits[hits.length - 1]; i++) {
+    const r = rows[i]
+    if (r.ing != null) {
+      out.push(ingredients[r.ing])
+    } else {
+      const sec = groupLabel(r.line)
+      if (sec) out.push(makeSectionHeading(sec))
+    }
+  }
+  const grouped = dropDanglingHeadings(out)
+  const heads = grouped.filter((l) => isSectionHeading(l))
+  if (heads.length === 0) return ingredients
+  // One heading covering the WHOLE list adds nothing; one mid-list makes two
+  // real groups and stays.
+  if (heads.length === 1 && isSectionHeading(grouped[0])) return ingredients
+  return grouped.slice(0, 40)
 }
 
 // ---------------------------------------------------------------------------
@@ -490,6 +622,7 @@ export interface PastedRecipe {
   ingredients: string[]
   steps: string[]
   servings: number | null
+  servingsUnit: string | null
   times: RecipeTimes
   notes: string | null
   // True when the text carried real recipe structure (both section headings
@@ -527,8 +660,10 @@ export function textToMinutes(s: string): number | null {
   return total > 0 && total <= 48 * 60 ? total : null
 }
 
+// Second branch ("Donne 24 biscuits") also captures the unit word so the card
+// can say "24 biscuits" instead of "24 portions".
 const SERVINGS_LINE =
-  /(?:^|\b)(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b|(?:donne|serves?|rendement|yield)\s*:?\s*(\d{1,2})\b/i
+  /(?:^|\b)(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b|(?:donne|serves?|rendement|yield)\s*:?\s*(\d{1,2})\b\s*([a-zà-öœ]{3,24})?/i
 
 // An ingredient-looking line: bullet or quantity-leading, short. Used only by
 // the no-headings fallback.
@@ -552,7 +687,9 @@ function inlineSectionTitle(line: string): string | null {
   if (/\d/.test(s)) return null
   const colon = s.match(/^([^.!?:;,]{2,40})\s*:$/)
   if (colon) return colon[1].trim()
-  if (/^(?:pour|for)\s+\S[^.!?:;,]{1,30}$/i.test(s) && s.split(/\s+/).length <= 5) return s
+  // Article required after pour/for — "Pour le glaçage" / "For the filling"
+  // are part names, but the ENGLISH verb "Pour in the milk" is an instruction.
+  if (/^(?:pour\s+(?:le|la|les|l['’])|for\s+the\b)[^.!?:;,]{1,30}$/i.test(s) && s.split(/\s+/).length <= 5) return s
   return null
 }
 
@@ -565,6 +702,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   let mode: 'pre' | 'ing' | 'steps' | 'notes' = 'pre'
   let title: string | null = null
   let servings: number | null = null
+  let servingsUnit: string | null = null
   const times: RecipeTimes = { prep: null, cook: null, total: null }
   const ings: string[] = []
   const stepLines: string[] = []
@@ -591,6 +729,10 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       const sv = line.match(SERVINGS_LINE)
       if (sv) {
         servings = clampServings(+(sv[1] ?? sv[2]))
+        // "Donne 24 biscuits" — keep the unit word ("biscuits") when it isn't
+        // a plain portion word; the UI then labels servings with it.
+        const unit = sv[3]?.trim()
+        if (servings && unit && !PORTION_WORDS.test(unit)) servingsUnit = unit.slice(0, 24)
         // A short line around the meta block is the marker itself — consume it.
         // Inside the method, "Diviser en 4 portions…" is a real step: keep it.
         if (mode !== 'steps' && line.length <= 40) continue
@@ -677,6 +819,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     ingredients,
     steps,
     servings,
+    servingsUnit,
     times,
     notes,
     confident: sawIngHeading && sawStepHeading && realIngs.length >= 2 && steps.length >= 1,

@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
+import { formatDuration } from '../lib/duration'
 import { scaleIngredients } from '../lib/scale'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
 import { groupSections } from '../lib/recipeSections'
@@ -61,6 +62,18 @@ export function RecipeSheet({
   const baseServings = recipe.servings && recipe.servings > 0 ? recipe.servings : null
   const [factor, setFactor] = useState(1)
   const serv = baseServings ? Math.max(1, Math.round(baseServings * factor)) : 0
+  // "24 biscuits" when the recipe yields a named thing, else "4 portions".
+  const servLabel = (n: number) => (recipe.servingsUnit ? `${n} ${recipe.servingsUnit}` : t.recipes.servingsN(n))
+  // Prep/cook/total pills under the meta line — real fields since 0027.
+  const timeParts = (
+    [
+      [t.recipes.timePrep, recipe.prepMin],
+      [t.recipes.timeCook, recipe.cookMin],
+      [t.recipes.timeTotal, recipe.totalMin],
+    ] as [string, number | null | undefined][]
+  )
+    .filter((p): p is [string, number] => !!p[1])
+    .map(([label, m]) => `${label} ${formatDuration(m * 60)}`)
   const MULTS: [string, number][] = [['½', 0.5], ['1', 1], ['2', 2], ['3', 3]]
   const scaledIngredients = useMemo(
     () => scaleIngredients(recipe.ingredients, factor),
@@ -207,6 +220,8 @@ export function RecipeSheet({
             </p>
           )}
 
+          {timeParts.length > 0 && <p className="recipe-view__times mono">⏱ {timeParts.join(' · ')}</p>}
+
           {recipe.tags?.length > 0 && (
             <div className="recipe-view__tags">
               {recipe.tags.map((tg) => (
@@ -233,7 +248,7 @@ export function RecipeSheet({
                       −
                     </button>
                     <span className="recipe-scale__val mono" aria-live="polite">
-                      {t.recipes.servingsN(serv)}
+                      {servLabel(serv)}
                     </span>
                     <button
                       type="button"
@@ -285,8 +300,9 @@ export function RecipeSheet({
                   <ol className="recipe-view__steps" start={g.start}>
                     {g.items.map(({ text, idx }) => {
                       // Each step: its instruction as sentence bullets, then the
-                      // ingredients (with scaled quantities) that step uses.
-                      const used = ingredientsForStep(text, scaledIngredients)
+                      // ingredients (with scaled quantities) that step uses —
+                      // matched within the step's own section when one exists.
+                      const used = ingredientsForStep(text, scaledIngredients, g.title)
                       return (
                         <li key={idx}>
                           <ul className="recipe-step__sentences">

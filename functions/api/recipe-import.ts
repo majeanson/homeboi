@@ -9,6 +9,7 @@ import {
   parseRecipeJsonLd,
   parseRecipeMicrodata,
   refineSteps,
+  regroupIngredients,
 } from '../_lib/recipeImport'
 
 // Import a recipe into a DRAFT the user reviews before saving. Two inputs:
@@ -28,6 +29,7 @@ interface DraftOut {
   ingredients: string[]
   steps: string[]
   servings: number | null
+  servingsUnit: string | null
   times: RecipeTimes
   image: string | null
   source: string | null
@@ -39,6 +41,7 @@ const draft = (d: Partial<DraftOut>): DraftOut => ({
   ingredients: [],
   steps: [],
   servings: null,
+  servingsUnit: null,
   times: NO_TIMES,
   image: null,
   source: null,
@@ -89,6 +92,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
           ingredients: heuristic.ingredients,
           steps: heuristic.steps,
           servings: heuristic.servings,
+          servingsUnit: heuristic.servingsUnit,
           times: heuristic.times,
         }),
       )
@@ -104,6 +108,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
             ingredients: r.ingredients,
             steps: refineSteps(r.steps),
             servings: heuristic.servings,
+            servingsUnit: heuristic.servingsUnit,
             times: heuristic.times,
           }),
         )
@@ -117,6 +122,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
           ingredients: heuristic.ingredients,
           steps: heuristic.steps,
           servings: heuristic.servings,
+          servingsUnit: heuristic.servingsUnit,
           times: heuristic.times,
         }),
       )
@@ -147,10 +153,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
     return serviceUnavailable('Page indisponible.')
   }
 
-  // Structured data first — JSON-LD, then microdata. Reliable, no AI.
+  // Structured data first — JSON-LD, then microdata. Reliable, no AI. The flat
+  // ingredient list gets its page-visible groups back ("Biscuits" / "Glaçage")
+  // when every line can be located in the rendered page.
   const parsed = parseRecipeJsonLd(html) ?? parseRecipeMicrodata(html)
   if (parsed && (parsed.ingredients.length || parsed.steps.length)) {
-    return ok(draft({ ...parsed, source: url.toString() }))
+    return ok(
+      draft({ ...parsed, ingredients: regroupIngredients(html, parsed.ingredients), source: url.toString() }),
+    )
   }
 
   // No structured Recipe — try AI over the page text (best-effort).
