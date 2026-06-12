@@ -226,6 +226,17 @@ async function openRecipe(page: Page) {
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
 }
 
+// The 'step' stepper now follows the toddler PROFILE (no in-cook toggle), so it's
+// reached through the kid kitchen: a toddler taps a planned meal that maps to a
+// recipe. It's hear-first, so two taps on the first planned tile (Spaghetti →
+// rc1) commit and open Cook mode. Boot with { audience: 'toddler' } first.
+async function openKidCook(page: Page) {
+  const tile = page.locator('.bigtiles .bigtile').first()
+  await tile.click() // tap 1: arm (speaks the proposition)
+  await tile.click() // tap 2: commit → Cook mode
+  await page.locator('.cook').waitFor({ state: 'visible' })
+}
+
 // Plan-a-supper day picker (slot picker + week chips) revealed by "Planifier".
 test('recipe-plan', async ({ page }) => {
   await boot(page, '/kitchen')
@@ -246,24 +257,24 @@ test('recipe-original', async ({ page }) => {
   await shoot(page, 'recipe-original-phone', false)
 })
 
-// CookMode 'full' view — the whole recipe on one scrolling page (parent mode).
+// CookMode 'full' view — the whole recipe on one scrolling page. This is what the
+// parent profile gets straight from the recipe sheet's "Cuisiner" (no toggle).
 test('cook-full', async ({ page }) => {
   await boot(page, '/kitchen')
   await openRecipe(page)
   await page.locator('.recipe-actions .btn--primary').click() // Cuisiner
   await page.locator('.cook').waitFor({ state: 'visible' })
-  await page.locator('.cook__modes button').nth(1).click() // 🧑‍🍳 full
   await page.locator('.cook__full').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'cook-full-phone', false)
 })
 
-// CookMode running timer — step 1 has a "10 minutes" duration; start it.
+// CookMode running timer — the toddler stepper's step 1 has a "10 minutes"
+// duration; start it. Step view follows the toddler profile, so go via the kid
+// kitchen.
 test('cook-timer-running', async ({ page }) => {
-  await boot(page, '/kitchen')
-  await openRecipe(page)
-  await page.locator('.recipe-actions .btn--primary').click()
-  await page.locator('.cook').waitFor({ state: 'visible' })
+  await boot(page, '/kitchen', { audience: 'toddler' })
+  await openKidCook(page)
   await page.locator('.cook__arrow--next').click() // ingredients → step 1
   await page.locator('.cook__timer-chip').first().click() // start the timer
   await page.locator('.cook__timer').waitFor({ state: 'visible' })
@@ -271,15 +282,14 @@ test('cook-timer-running', async ({ page }) => {
   await shoot(page, 'cook-timer-running-phone', false)
 })
 
-// CookMode last step — the "✓ Bon appétit" finish button replaces Next.
+// CookMode last step — Next disables at the end (no full-width "Bonne appétit"
+// button anymore; the way out is the bar's small ✕).
 test('cook-last', async ({ page }) => {
-  await boot(page, '/kitchen')
-  await openRecipe(page)
-  await page.locator('.recipe-actions .btn--primary').click()
-  await page.locator('.cook').waitFor({ state: 'visible' })
+  await boot(page, '/kitchen', { audience: 'toddler' })
+  await openKidCook(page)
   // ingredients(0) → step1(1) → step2(2) → step3/last(3): three Next taps.
   for (let i = 0; i < 3; i++) await page.locator('.cook__arrow--next').click()
-  await page.locator('.cook__arrow--done').waitFor({ state: 'visible' })
+  await page.locator('.cook__arrow--next').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'cook-last-phone', false)
 })

@@ -6,7 +6,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useProfile } from '../lib/profile'
 import { DisplaySection, CalmSection } from '../components/operator/display'
-import { ShopSection, StoreFilterSection, GhostSection } from '../components/operator/shopping'
+import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
 import { EventsSection } from '../components/operator/agenda'
@@ -138,6 +138,7 @@ export function Operator() {
           <>
             <ShopSection />
             <StoreFilterSection />
+            <HistorySection />
           </>
         )}
         {tab === 'recipes' && <RecipeTagsSection />}

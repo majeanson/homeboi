@@ -45,15 +45,16 @@ for (const theme of ['day', 'night'] as Theme[]) {
     await shoot(page, `sheet-recipe-phone${sfx}`)
   })
 
-  test(`sheet-cook-step${sfx}`, async ({ page }) => {
+  test(`sheet-cook-full${sfx}`, async ({ page }) => {
+    // From a parent profile, "Cuisiner" opens the whole-recipe full view (the
+    // toddler stepper is reached from the kid kitchen instead — see coverage spec).
     await boot(page, '/kitchen', theme)
     await openRecipe(page)
     await page.locator('.recipe-actions .btn--primary').click() // Cuisiner
     await page.locator('.cook').waitFor({ state: 'visible' })
-    await page.locator('.cook__arrow--next').click() // ingredients → step 1 (has a 10-min timer)
-    await page.locator('.cook__timer-chip').first().waitFor({ state: 'visible' }).catch(() => {})
+    await page.locator('.cook__full').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
-    await shoot(page, `sheet-cook-step-phone${sfx}`)
+    await shoot(page, `sheet-cook-full-phone${sfx}`)
   })
 
   test(`sheet-deals${sfx}`, async ({ page }) => {

@@ -51,11 +51,19 @@ export function pickListFrom(items: ListItem[]): Pick[] {
 
 // The id of an OPEN list item matching `name` (normalized), from the ['board']
 // cache — so staging reuses an existing line instead of inserting a duplicate.
+// Matches the item's own name first, then any of its saved flyer synonyms: a deal
+// searched as "eggs" lands on the recurring "Oeufs" line (synonym "eggs") rather
+// than spawning a specific-named duplicate. Keeps the household's items generic
+// and stable while the weekly deal that rides on them changes.
 export function existingListId(qc: QueryClient, name: string): string | null {
   const key = normKey(name)
   if (!key) return null
-  const board = qc.getQueryData<{ list?: ListItem[] }>(['board'])
-  return board?.list?.find((i) => normKey(i.text) === key)?.id ?? null
+  const list = qc.getQueryData<{ list?: ListItem[] }>(['board'])?.list ?? []
+  return (
+    list.find((i) => normKey(i.text) === key)?.id ??
+    list.find((i) => parseTerms(i.search_terms).some((term) => normKey(term) === key))?.id ??
+    null
+  )
 }
 
 // Stage a deal: attach it to its grocery line, reusing an existing line or adding

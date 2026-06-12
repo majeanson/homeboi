@@ -268,6 +268,29 @@ test.describe('settings forms', () => {
     await expectApi(page, 'PATCH', 'ghost', () => chip.click())
   })
 
+  test('rename a bought-item history entry to a generic name (merge)', async ({ page }) => {
+    await page.getByRole('tab', { name: 'Magasinage' }).click()
+    // "Yogourt grec" is in the grocery history → rename it to the generic "Yogourt"
+    // so quick-add folds it in and suggests the generic item.
+    await page.locator('.ghost-admin__row', { hasText: 'Yogourt grec' }).getByRole('button', { name: 'Renommer' }).click()
+    const form = page.locator('.ghost-admin__row form.operator__inline-form')
+    await form.locator('input.input').fill('Yogourt')
+    const [req] = await Promise.all([
+      page.waitForRequest(isApi('PATCH', 'list')),
+      form.getByRole('button', { name: 'Enregistrer' }).click(),
+    ])
+    expect(JSON.parse(req.postData() || '{}')).toMatchObject({ historyKey: 'yogourt grec', renameTo: 'Yogourt' })
+  })
+
+  test('remove a bought-item history entry so quick-add stops suggesting it', async ({ page }) => {
+    await page.getByRole('tab', { name: 'Magasinage' }).click()
+    const [req] = await Promise.all([
+      page.waitForRequest(isApi('DELETE', 'list')),
+      page.locator('.ghost-admin__row', { hasText: 'Bananes' }).getByRole('button', { name: 'Retirer' }).click(),
+    ])
+    expect(JSON.parse(req.postData() || '{}')).toMatchObject({ historyKey: 'bananes' })
+  })
+
   test('claim a tablet with a 6-digit code', async ({ page }) => {
     await page.getByRole('tab', { name: 'Tablettes jumelées' }).click()
     const form = page.locator('.operator__claim form')
@@ -411,9 +434,14 @@ test.describe('recipes', () => {
   })
 
   test('a step with a duration offers a tappable cook-mode timer', async ({ page }) => {
-    await page.locator('.recipe-card').first().click() // Spaghetti — steps carry durations
-    const modal = page.locator('.recipe-modal')
-    await modal.locator('.recipe-actions .btn--primary').click() // Cook
+    // Per-step timers live in the stepper, which now follows the toddler PROFILE
+    // (not an in-cook toggle) — so reach it through the kid kitchen: tap a planned
+    // meal that maps to a recipe (Spaghetti → rc1). Hear-first, so two taps commit.
+    await APP('/kitchen', 'toddler')(page)
+    await settle(page, '.bigtiles .bigtile')
+    const tile = page.locator('.bigtiles .bigtile').first()
+    await tile.click() // arm
+    await tile.click() // commit → Cook mode
     const cook = page.locator('.cook')
     await expect(cook).toBeVisible()
     await cook.locator('.cook__arrow--next').click() // ingredients → step 1 ("10 minutes")
@@ -616,16 +644,34 @@ test.describe('list', () => {
     await expect(page.locator('.pm-overlay .deals-search')).toBeVisible()
   })
 
-  test('adding a deal from the browser adds it to the list (and links it → cashier)', async ({ page }) => {
+  test('a browsed deal LINKS onto the matching list item, not a new specific-named line', async ({ page }) => {
     await page.getByRole('button', { name: /Parcourir/ }).click()
     await expect(page.locator('.deals-search')).toBeVisible()
     await page.locator('.deals-search input').fill('lait')
     await page.locator('.deals-search button[type="submit"]').click()
     await expect(page.locator('.deal').first()).toBeVisible()
-    // "Ajouter à la liste" now also stages the deal for the cashier (one action).
-    await expectApi(page, 'POST', 'list', () =>
+    // "Lait" is already on the list, so the deal links onto that recurring line
+    // (PATCH id l1) — it does NOT spawn a "Lait 2% 4L" duplicate. The item stays
+    // generic; only the weekly deal riding on it changes.
+    const [req] = await Promise.all([
+      page.waitForRequest(isApi('PATCH', 'list')),
       page.locator('.deal').first().getByRole('button', { name: /Ajouter à la liste/ }).click(),
-    )
+    ])
+    expect(JSON.parse(req.postData() || '{}')).toMatchObject({ id: 'l1' })
+  })
+
+  test('a browsed deal for a new item adds it under the SEARCHED name, not the product name', async ({ page }) => {
+    await page.getByRole('button', { name: /Parcourir/ }).click()
+    await page.locator('.deals-search input').fill('fromage') // not on the list yet
+    await page.locator('.deals-search button[type="submit"]').click()
+    await expect(page.locator('.deal').first()).toBeVisible()
+    const [req] = await Promise.all([
+      page.waitForRequest(isApi('POST', 'list')),
+      page.locator('.deal').first().getByRole('button', { name: /Ajouter à la liste/ }).click(),
+    ])
+    // The new line is the generic thing searched ("fromage"), NOT the flyer's
+    // "Lait 2% 4L" — so quick-add keeps suggesting the generic item next week.
+    expect(JSON.parse(req.postData() || '{}')).toMatchObject({ text: 'fromage' })
   })
 
   test('clearing a checked item drops its staged cashier deal', async ({ page }) => {

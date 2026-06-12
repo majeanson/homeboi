@@ -61,6 +61,22 @@ export function Kitchen() {
     qc.invalidateQueries({ queryKey: MEALS_KEY })
   }
 
+  // Wipe a planned slot entirely (the ✕ beside the picker). The editor closes and
+  // the day goes back to its open "＋" state. On failure the editor stays open so
+  // the action can be retried — same posture as saveSlot/saveMeal.
+  async function clearMeal(id: string) {
+    try {
+      await api('meals', { method: 'DELETE', body: { id } })
+      setEditDate(null)
+      setMealText('')
+      setEditSlot(null)
+      setSlotText('')
+    } catch {
+      /* keep the editor open so the clear can be retried */
+    }
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
+  }
+
   const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), ...live })
   const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry'), ...live })
   const useSoonQ = useQuery({ queryKey: USE_SOON_KEY, queryFn: () => api<{ soon: LowRow[] }>('use-soon'), ...live })
@@ -403,20 +419,46 @@ export function Kitchen() {
                         onChange={(e) => setMealText(e.target.value)}
                         placeholder={t.kitchen.plan}
                       />
+                      {mealText && (
+                        <button
+                          type="button"
+                          className="btn btn--ghost mono kitchen__clear-text"
+                          onClick={() => setMealText('')}
+                          aria-label={t.kitchen.clearText}
+                          title={t.kitchen.clearText}
+                        >
+                          ✕
+                        </button>
+                      )}
                       <button type="submit" className="btn btn--ghost mono" disabled={staplesBusy}>
                         {staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
                       </button>
                     </form>
-                    {recipes.length > 0 && (
+                    {(recipes.length > 0 || meal) && (
                       <div className="kitchen__day-recipes">
-                        <button
-                          type="button"
-                          className="btn btn--ghost mono kitchen__pick-recipe"
-                          onClick={() => setRecipePickFor(pickOpenFor(date, 'supper') ? null : { date, slot: 'supper' })}
-                          aria-expanded={pickOpenFor(date, 'supper')}
-                        >
-                          📖 {t.kitchen.chooseRecipe}
-                        </button>
+                        <div className="kitchen__day-recipes-row">
+                          {recipes.length > 0 && (
+                            <button
+                              type="button"
+                              className="btn btn--ghost mono kitchen__pick-recipe"
+                              onClick={() =>
+                                setRecipePickFor(pickOpenFor(date, 'supper') ? null : { date, slot: 'supper' })
+                              }
+                              aria-expanded={pickOpenFor(date, 'supper')}
+                            >
+                              📖 {t.kitchen.chooseRecipe}
+                            </button>
+                          )}
+                          {meal && (
+                            <button
+                              type="button"
+                              className="btn btn--ghost mono kitchen__clear-meal"
+                              onClick={() => clearMeal(meal.id)}
+                            >
+                              🗑 {t.kitchen.clearMeal}
+                            </button>
+                          )}
+                        </div>
                         {pickOpenFor(date, 'supper') && (
                           <>
                             {/* Pick a recipe → quick-add (links it, saves now, no
@@ -501,20 +543,44 @@ export function Kitchen() {
                             placeholder={t.kitchen.slots[slot]}
                             aria-label={t.kitchen.slots[slot]}
                           />
+                          {slotText && (
+                            <button
+                              type="button"
+                              className="btn btn--ghost mono kitchen__clear-text"
+                              onClick={() => setSlotText('')}
+                              aria-label={t.kitchen.clearText}
+                              title={t.kitchen.clearText}
+                            >
+                              ✕
+                            </button>
+                          )}
                           <button type="submit" className="btn btn--ghost mono">
                             {t.kitchen.setMeal}
                           </button>
                         </form>
-                        {recipes.length > 0 && (
+                        {(recipes.length > 0 || sm) && (
                           <div className="kitchen__day-recipes">
-                            <button
-                              type="button"
-                              className="btn btn--ghost mono kitchen__pick-recipe"
-                              onClick={() => setRecipePickFor(pickOpenFor(date, slot) ? null : { date, slot })}
-                              aria-expanded={pickOpenFor(date, slot)}
-                            >
-                              📖 {t.kitchen.chooseRecipe}
-                            </button>
+                            <div className="kitchen__day-recipes-row">
+                              {recipes.length > 0 && (
+                                <button
+                                  type="button"
+                                  className="btn btn--ghost mono kitchen__pick-recipe"
+                                  onClick={() => setRecipePickFor(pickOpenFor(date, slot) ? null : { date, slot })}
+                                  aria-expanded={pickOpenFor(date, slot)}
+                                >
+                                  📖 {t.kitchen.chooseRecipe}
+                                </button>
+                              )}
+                              {sm && (
+                                <button
+                                  type="button"
+                                  className="btn btn--ghost mono kitchen__clear-meal"
+                                  onClick={() => clearMeal(sm.id)}
+                                >
+                                  🗑 {t.kitchen.clearMeal}
+                                </button>
+                              )}
+                            </div>
                             {pickOpenFor(date, slot) && (
                               <RecipePickerMenu
                                 recipes={recipes}

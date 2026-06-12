@@ -106,7 +106,24 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     search_terms?: unknown
     clearChecked?: boolean
     ids?: unknown
+    historyKey?: string // a purchase_log item_key to rename (Réglages cleanup)
+    renameTo?: string // the generic name to fold that key into
   }>(ctx.request)
+
+  // Rename / merge a grocery-history entry to a generic name (Réglages ▸
+  // Magasinage). Re-keys every purchase_log row from the old item_key to the new
+  // normalized key, so a specific flyer product name folds back into the recurring
+  // item ("Oeuf blanc sélection" → "Oeufs") and the quick-add panel suggests the
+  // generic one. If the new key already exists, the rows merge into it (same key).
+  if (body?.historyKey && typeof body.renameTo === 'string') {
+    const text = body.renameTo.trim()
+    const key = text ? normalizeItem(text) : ''
+    if (!text || !key) return badRequest('Texte requis.')
+    await ctx.env.DB.prepare('UPDATE purchase_log SET text = ?, item_key = ? WHERE household_id = ? AND item_key = ?')
+      .bind(text, key, actor.householdId, body.historyKey)
+      .run()
+    return ok({ ok: true })
+  }
 
   // Clear checked (no id): every checked line is a confirmed buy now — log each to
   // purchase_log (carrying its synonyms, so a re-add keeps them) then delete it, in
@@ -186,7 +203,19 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string }>(ctx.request)
+  const body = await readJson<{ id?: string; historyKey?: string }>(ctx.request)
+
+  // Prune a grocery-history entry (Réglages ▸ Magasinage): drop every purchase_log
+  // row under this item_key, so the quick-add panel stops suggesting it. Used to
+  // clear out specific flyer product names ("Oeuf blanc sélection") logged before
+  // deals were attached to the generic item. The open list is left untouched.
+  if (body?.historyKey) {
+    await ctx.env.DB.prepare('DELETE FROM purchase_log WHERE household_id = ? AND item_key = ?')
+      .bind(actor.householdId, body.historyKey)
+      .run()
+    return ok({ ok: true })
+  }
+
   if (!body?.id) return badRequest('id requis.')
   await ctx.env.DB.prepare('DELETE FROM list_items WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)

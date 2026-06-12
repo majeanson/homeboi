@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { useT, useLang } from '../i18n'
+import { useAudience } from '../lib/audience'
 import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
@@ -21,17 +23,10 @@ function loadAutoRead(): boolean {
 
 // Which cooking view: 'step' is the one-thing-at-a-time stepper (a pre-reader
 // hears each instruction); 'full' is the whole recipe on one scrollable page —
-// ingredients then every step, the way a parent skims it. The choice persists per
-// device (the kitchen tablet keeps whichever the household prefers).
+// ingredients then every step, the way a parent skims it. This is NOT a toggle in
+// the cooking screen — it follows the active profile (the Parent / Enfant
+// audience), so a toddler always gets the stepper and a parent the full page.
 type CookView = 'step' | 'full'
-const MODE_KEY = 'babillard-cook-mode'
-function loadMode(): CookView {
-  try {
-    return localStorage.getItem(MODE_KEY) === 'full' ? 'full' : 'step'
-  } catch {
-    return 'step'
-  }
-}
 
 const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padStart(2, '0')}`
 
@@ -59,19 +54,14 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const [idx, setIdx] = useState(0)
   // Toddler stepper vs parent full-recipe page. A ref mirrors it so the keyboard
   // handler can ignore arrow keys in full mode without re-binding the listener.
-  const [mode, setMode] = useState<CookView>(loadMode)
+  // The view follows the active profile: a toddler audience cooks one step at a
+  // time, a parent reads the whole recipe. No in-cook toggle — the cooking screen
+  // stays chrome-light. A ref mirrors it so the keyboard handler can ignore arrow
+  // keys in full mode without re-binding the listener.
+  const { audience } = useAudience()
+  const mode: CookView = audience === 'toddler' ? 'step' : 'full'
   const modeRef = useRef(mode)
   modeRef.current = mode
-  function switchMode(next: CookView) {
-    if (next === mode) return
-    try {
-      localStorage.setItem(MODE_KEY, next)
-    } catch {
-      /* noop */
-    }
-    stopSpeaking() // don't carry a step's narration across the view change
-    setMode(next)
-  }
   const lockRef = useRef<{ release: () => Promise<void> } | null>(null)
   // A one-tap timer for a duration written into the current step. One at a time:
   // total is what it started from (so a finished timer can restart), remaining
@@ -226,32 +216,14 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
     }
   }, [])
 
-  return (
+  // Cook mode is a true full-screen MODE, not a panel inside whatever opened it.
+  // We portal to <body> so it escapes the recipe modal's stacking/scroll context
+  // and owns the whole viewport — the modal it launched from stays mounted (state
+  // intact for when you close), just fully covered, never peeking through.
+  return createPortal(
     <div className="cook" role="dialog" aria-modal="true" aria-label={recipe.title}>
       <div className="cook__bar">
         <span className="cook__title">{recipe.title}</span>
-        {/* Toddler stepper ⇄ parent full-recipe. Emoji always show; the labels
-            appear once there's room (kept out of a narrow phone's way). */}
-        <div className="cook__modes" role="group" aria-label={t.recipes.cookModeSwitch}>
-          <button
-            type="button"
-            className={'cook__mode' + (mode === 'step' ? ' is-on' : '')}
-            onClick={() => switchMode('step')}
-            aria-pressed={mode === 'step'}
-            title={t.recipes.cookModeStep}
-          >
-            👶<span className="cook__mode-label">{t.recipes.cookModeStep}</span>
-          </button>
-          <button
-            type="button"
-            className={'cook__mode' + (mode === 'full' ? ' is-on' : '')}
-            onClick={() => switchMode('full')}
-            aria-pressed={mode === 'full'}
-            title={t.recipes.cookModeFull}
-          >
-            🧑‍🍳<span className="cook__mode-label">{t.recipes.cookModeFull}</span>
-          </button>
-        </div>
         {mode === 'step' && (
           <>
             <span className="cook__count mono" aria-live="polite">
@@ -462,14 +434,11 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
         )}
       </div>
 
-      {/* The full recipe is one scrolling page — no step nav, just a way out. */}
-      {mode === 'full' ? (
-        <div className="cook__nav">
-          <button type="button" className="cook__arrow cook__arrow--done" onClick={onClose}>
-            ✓<span className="cook__arrow-label">{t.recipes.cookDone}</span>
-          </button>
-        </div>
-      ) : (
+      {/* Parent/full is one scrolling page — the way out is the small ✕ in the
+          bar, no full-width "Bonne appétit". The toddler stepper keeps its
+          prev/next arrows (its whole point is one page at a time); the last step
+          ends the nav rather than a big done button — the ✕ closes here too. */}
+      {mode === 'step' && (
         <div className="cook__nav">
           <button
             type="button"
@@ -480,22 +449,18 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
           >
             ←<span className="cook__arrow-label">{t.shop.prev}</span>
           </button>
-          {atLast ? (
-            <button type="button" className="cook__arrow cook__arrow--done" onClick={onClose}>
-              ✓<span className="cook__arrow-label">{t.recipes.cookDone}</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="cook__arrow cook__arrow--next"
-              onClick={goNext}
-              aria-label={t.shop.next}
-            >
-              <span className="cook__arrow-label">{t.shop.next}</span>→
-            </button>
-          )}
+          <button
+            type="button"
+            className="cook__arrow cook__arrow--next"
+            onClick={goNext}
+            disabled={atLast}
+            aria-label={t.shop.next}
+          >
+            <span className="cook__arrow-label">{t.shop.next}</span>→
+          </button>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }

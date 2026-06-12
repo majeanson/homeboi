@@ -60,59 +60,15 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-/* Toddler ⇄ parent view toggle: a small segmented control. Emoji always show;
-   the labels collapse on a narrow phone so the bar never crowds the title. */
-.cook__modes {
-  flex: none;
-  display: inline-flex;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  padding: 2px;
-}
-.cook__mode {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 0;
-  background: none;
-  color: var(--ink-soft);
-  font: inherit;
-  font-size: 0.95rem;
-  line-height: 1;
-  padding: 0.4rem 0.7rem;
-  border-radius: 999px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.12s ease, color 0.12s ease;
-}
-.cook__mode.is-on {
-  background: var(--card);
-  color: var(--ink);
-  box-shadow: var(--shadow-sm);
-}
-.cook__mode:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-.cook__mode-label {
-  font-family: var(--sans);
-  font-weight: 600;
-}
-@media (max-width: 520px) {
-  .cook__mode-label {
-    display: none;
-  }
-  .cook__mode {
-    padding: 0.4rem 0.6rem;
-    font-size: 1.1rem;
-  }
-}
 .cook__stage {
   flex: 1;
   min-height: 0;
   display: flex;
+  /* Centre a short card, but when a step is taller than the screen, "safe"
+     keeps the top reachable instead of clipping it above the scroll origin —
+     so every part is visible by scrolling (matters most for the kid stepper). */
   align-items: center;
+  align-items: safe center;
   justify-content: center;
   padding: 1.2rem;
   overflow-y: auto;

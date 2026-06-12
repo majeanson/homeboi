@@ -375,8 +375,29 @@
   flex-direction: column;
   gap: 0.4rem;
 }
+/* Picker + "clear meal" sit on one wrapping row so the trash button is right
+   beside "Choisir une recette" (or alone, when there are no recipes to pick). */
+.kitchen__day-recipes-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
 .kitchen__pick-recipe {
   align-self: flex-start;
+}
+/* Quiet destructive cue — only warms to a danger tint on hover/focus, so a full
+   planned week isn't a row of red trash buttons. */
+.kitchen__clear-meal {
+  color: var(--ink-soft);
+}
+.kitchen__clear-meal:hover,
+.kitchen__clear-meal:focus-visible {
+  color: var(--danger, #c0392b);
+}
+/* The ✕ that empties the meal input — square and unobtrusive, beside the field. */
+.kitchen__clear-text {
+  flex: none;
+  padding-inline: 0.6rem;
 }
 .kitchen__recipe-menu {
   display: flex;

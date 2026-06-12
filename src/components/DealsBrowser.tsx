@@ -92,20 +92,29 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
     setQuery(v)
   }
 
+  // The grocery line a browsed deal belongs to. Searching BY ITEM, that's the
+  // generic thing the user looked up ("oeufs") — never the flyer's specific product
+  // ("Oeuf blanc sélection") — so the deal rides on the recurring item and the
+  // quick-add suggestions stay generic. Browsing a whole store flyer has no such
+  // search concept, so there the product name is the best we have.
+  const lineName = (productName: string) => (mode === 'item' && query.trim() ? query.trim() : productName)
+
   async function addToList(name: string) {
     setAdded((prev) => new Set(prev).add(name))
-    // Don't duplicate a line that's already on the list (re-tap, or added by hand).
-    if (existingListId(qc, name)) return
-    await api('list', { method: 'POST', body: { text: name } }).catch(() => {})
+    const line = lineName(name)
+    // Don't duplicate a line that's already on the list (matched by name or synonym).
+    if (existingListId(qc, line)) return
+    await api('list', { method: 'POST', body: { text: line } }).catch(() => {})
     qc.invalidateQueries({ queryKey: ['board'] })
   }
 
   // Add a deal to the list in one tap — it attaches the deal to its grocery line
-  // (reusing an existing line or adding one), which both shows it on the list row
-  // and flows it to the cashier. Persisted server-side, so it's there on any device.
+  // (the recurring item, reusing an existing line or adding one), which both shows
+  // it on the list row and flows it to the cashier. Persisted server-side, so it's
+  // there on any device.
   async function stage(deal: Deal) {
     setStaged((prev) => new Set(prev).add(deal.name))
-    await stageDeal(qc, deal.name, deal)
+    await stageDeal(qc, lineName(deal.name), deal)
   }
 
   const stores = deals ? [...new Set(deals.map((d) => d.merchant).filter(Boolean))].sort() : []
