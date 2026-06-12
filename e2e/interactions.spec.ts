@@ -503,7 +503,7 @@ test.describe('recipes', () => {
 
   test('tag chips filter the recipe grid', async ({ page }) => {
     const cards = page.locator('.recipe-card')
-    await expect(cards).toHaveCount(3)
+    await expect(cards).toHaveCount(4)
     await page.locator('.kitchen__tag-filter .chip', { hasText: 'préféré' }).click()
     await expect(cards).toHaveCount(1) // only the recipe tagged "préféré"
     await page.locator('.kitchen__tag-filter .chip', { hasText: 'rapide' }).click()
