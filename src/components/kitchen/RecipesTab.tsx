@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useT } from '../../i18n'
 import { type Recipe, recipeImg, allTags } from '../../lib/recipes'
 import { rankCookable, rankUseSoon } from '../../lib/cookable'
+import { withoutHeadings } from '../../lib/recipeSections'
 import { pictoFor } from '../../lib/picto'
 
 // The recipe book: search, tag chips, and the two stock-aware sorts ("what can
@@ -152,6 +153,8 @@ export function RecipesTab({
             const img = recipeImg(r.image)
             const missing = missingById.get(r.id) ?? []
             const uses = usesById.get(r.id) ?? []
+            // Badge counts real ingredients, not "## Section" markers.
+            const nIngs = withoutHeadings(r.ingredients).length
             return (
               <button key={r.id} type="button" className="recipe-card surface" onClick={() => onView(r)}>
                 <span className="recipe-card__thumb" aria-hidden="true">
@@ -162,9 +165,7 @@ export function RecipesTab({
                   uses.length > 0 ? (
                     <span className="recipe-card__sub recipe-card__uses mono">♻ {t.recipes.usesN(uses.length)}</span>
                   ) : (
-                    r.ingredients.length > 0 && (
-                      <span className="recipe-card__sub mono">{t.recipes.count(r.ingredients.length)}</span>
-                    )
+                    nIngs > 0 && <span className="recipe-card__sub mono">{t.recipes.count(nIngs)}</span>
                   )
                 ) : cookFilter && canCookFilter ? (
                   missing.length === 0 ? (
@@ -173,9 +174,7 @@ export function RecipesTab({
                     <span className="recipe-card__sub recipe-card__missing mono">{t.recipes.missingN(missing.length)}</span>
                   )
                 ) : (
-                  r.ingredients.length > 0 && (
-                    <span className="recipe-card__sub mono">{t.recipes.count(r.ingredients.length)}</span>
-                  )
+                  nIngs > 0 && <span className="recipe-card__sub mono">{t.recipes.count(nIngs)}</span>
                 )}
               </button>
             )

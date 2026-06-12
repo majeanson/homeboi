@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../../lib/api'
 import { ingredientName } from '../../lib/ingredient'
+import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
 import { MEALS_KEY } from './types'
 import { type AiWake } from './useAiWake'
@@ -79,7 +80,7 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
       // Chips show buyable names ("Beurre non salé"), not measured recipe lines.
       const seen = new Set<string>()
       const options: { item: string; on: boolean }[] = []
-      for (const ing of recipe.ingredients) {
+      for (const ing of withoutHeadings(recipe.ingredients)) {
         const item = ingredientName(ing)
         const k = item.toLowerCase()
         if (item && !seen.has(k)) {

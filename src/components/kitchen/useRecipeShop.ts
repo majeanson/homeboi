@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { normKey } from '../../lib/cookable'
 import { ingredientName } from '../../lib/ingredient'
+import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
 import { type MealRow, type WeekDay } from './types'
 
@@ -29,7 +30,7 @@ export function useRecipeShop(
       if (!meal) continue
       const r = recipeFor(meal)
       if (!r) continue
-      for (const ing of r.ingredients) {
+      for (const ing of withoutHeadings(r.ingredients)) {
         const k = normKey(ing)
         if (!k || onList.has(k) || picked.has(k)) continue
         picked.add(k)

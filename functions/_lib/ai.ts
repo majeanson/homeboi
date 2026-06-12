@@ -203,11 +203,13 @@ export async function structureRecipe(env: Env, text: string, lang: Lang = 'fr')
       ? `Below is pasted recipe text. Organize it WITHOUT inventing anything new.
 Reply ONLY with JSON: {"title": string, "ingredients": string[], "steps": string[]}.
 Keep ingredient lines as written (with quantities). Split instructions into short steps. At most 30 ingredients, 20 steps.
+If the recipe has named parts (e.g. "Glaze", "Crust"), insert a heading line formatted exactly "## Name" in both arrays before that part's lines.
 Text:
 ${raw}`
       : `Voici du texte de recette collé. Organise-le SANS rien inventer.
 Réponds UNIQUEMENT avec du JSON : {"title": string, "ingredients": string[], "steps": string[]}.
 Garde les lignes d'ingrédients telles quelles (avec quantités). Découpe les instructions en étapes courtes. 30 ingrédients et 20 étapes au maximum.
+Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insère une ligne d'en-tête au format exact « ## Nom » dans les deux tableaux avant les lignes de cette partie.
 Texte :
 ${raw}`
   try {
@@ -247,10 +249,12 @@ export async function recipeFromImage(
     lang === 'en'
       ? `This image is a recipe (a cookbook page, a handwritten card, or a screenshot). Read ALL the text in it and organize it WITHOUT inventing anything that isn't written.
 Reply ONLY with JSON: {"title": string, "ingredients": string[], "steps": string[]}.
-Keep ingredient lines as written (with quantities). Split the method into short steps. At most 30 ingredients, 20 steps. Leave a field empty if it isn't legible.`
+Keep ingredient lines as written (with quantities). Split the method into short steps. At most 30 ingredients, 20 steps. Leave a field empty if it isn't legible.
+If the recipe has named parts (e.g. "Glaze", "Crust"), insert a heading line formatted exactly "## Name" in both arrays before that part's lines.`
       : `Cette image est une recette (page de livre, fiche manuscrite ou capture d'écran). Lis TOUT le texte qu'elle contient et organise-le SANS rien inventer qui n'est pas écrit.
 Réponds UNIQUEMENT avec du JSON : {"title": string, "ingredients": string[], "steps": string[]}.
-Garde les lignes d'ingrédients telles quelles (avec quantités). Découpe la préparation en étapes courtes. 30 ingrédients et 20 étapes au maximum. Laisse un champ vide s'il est illisible.`
+Garde les lignes d'ingrédients telles quelles (avec quantités). Découpe la préparation en étapes courtes. 30 ingrédients et 20 étapes au maximum. Laisse un champ vide s'il est illisible.
+Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insère une ligne d'en-tête au format exact « ## Nom » dans les deux tableaux avant les lignes de cette partie.`
   try {
     const res = (await env.AI.run(VISION_MODEL, {
       // Workers AI vision wants the image as an array of 0-255 byte values.

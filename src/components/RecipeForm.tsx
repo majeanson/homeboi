@@ -13,7 +13,15 @@ import {
   tagOptions,
 } from '../lib/recipes'
 import { formatDuration } from '../lib/duration'
+import { SECTION_PREFIX, dropDanglingHeadings } from '../lib/recipeSections'
 import { Icon } from './Icon'
+
+// In the EDITOR a row is a section row as soon as it carries the "## " marker —
+// even with the title still empty ("## "), so typing the name doesn't flip the
+// row back to a plain line. (The stricter isSectionHeading needs a non-empty
+// title; empty section rows are dropped on save.)
+const isHeadingRow = (v: string): boolean => /^##\s?/.test(v)
+const headingTitle = (v: string): string => v.replace(/^##\s?/, '')
 
 // Create / edit a recipe. Two ways to fill it fast, then free editing:
 //   📷 read a photo (the vision model OCRs a cookbook page / handwritten card
@@ -85,14 +93,25 @@ export function RecipeForm({
   const setLines = (kind: LineKind) => (kind === 'ingredients' ? setIngredients : setSteps)
   const updateLine = (kind: LineKind, i: number, v: string) =>
     setLines(kind)(lines(kind).map((x, idx) => (idx === i ? v : x)))
-  const addLine = (kind: LineKind) => setLines(kind)([...lines(kind), ''])
+  const addLine = (kind: LineKind, v = '') => setLines(kind)([...lines(kind), v])
   const removeLine = (kind: LineKind, i: number) => {
     const next = lines(kind).filter((_, idx) => idx !== i)
     setLines(kind)(next.length ? next : [''])
   }
+  // ↑/↓ swap a row with its neighbour — reordering without drag-and-drop (which
+  // fights the page scroll on a phone). The open step memo follows its step.
+  const moveLine = (kind: LineKind, i: number, delta: -1 | 1) => {
+    const arr = [...lines(kind)]
+    const j = i + delta
+    if (j < 0 || j >= arr.length) return
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    setLines(kind)(arr)
+    if (kind === 'steps') setEditStep((es) => (es === i ? j : es === j ? i : es))
+  }
   // Pasting a multi-line block into one row spreads it over rows (bullets and
   // leading step numbers stripped — the editor numbers steps itself), so fixing
-  // an import by copy-pasting a section never means typing line by line.
+  // an import by copy-pasting a section never means typing line by line. A short
+  // label line ending in ":" ("Glaçage :") becomes a section row.
   const pasteLines = (kind: LineKind, i: number, pasted: string): boolean => {
     const parts = pasted
       .split(/\r?\n/)
@@ -103,6 +122,11 @@ export function RecipeForm({
           .trim(),
       )
       .filter(Boolean)
+      .map((s) => {
+        if (isHeadingRow(s)) return s
+        const sec = s.match(/^([^.!?:;,]{2,40}):$/)
+        return sec && !/\d/.test(sec[1]) ? SECTION_PREFIX + sec[1].trim() : s
+      })
     if (parts.length <= 1) return false
     const cur = lines(kind)
     setLines(kind)([...cur.slice(0, i), ...(cur[i].trim() ? [cur[i], ...parts] : parts), ...cur.slice(i + 1)])
@@ -223,10 +247,14 @@ export function RecipeForm({
     e.preventDefault()
     if (!title.trim() || busy) return
     setBusy(true)
+    // A section row with no title ("## ") and a heading with nothing under it
+    // are editing leftovers, not content — both drop here.
+    const cleanRows = (xs: string[]) =>
+      dropDanglingHeadings(xs.map((s) => s.trim()).filter((s) => s && !/^##$/.test(s)))
     const fields = {
       title: title.trim(),
-      ingredients: ingredients.map((s) => s.trim()).filter(Boolean),
-      steps: steps.map((s) => s.trim()).filter(Boolean),
+      ingredients: cleanRows(ingredients),
+      steps: cleanRows(steps),
       servings: servings.trim() ? Number(servings) : null,
       notes: notes.trim() || null,
       source,
@@ -247,42 +275,80 @@ export function RecipeForm({
 
   const imgSrc = recipeImg(image)
 
+  // The ↑/↓ pair every row gets (ingredient, step, or section) — tap-to-reorder.
+  const moveButtons = (kind: LineKind, i: number) => (
+    <span className="recipe-line__move">
+      <button
+        type="button"
+        className="recipe-line__mv mono"
+        onClick={() => moveLine(kind, i, -1)}
+        disabled={i === 0}
+        aria-label={t.recipes.moveUp}
+      >
+        ↑
+      </button>
+      <button
+        type="button"
+        className="recipe-line__mv mono"
+        onClick={() => moveLine(kind, i, 1)}
+        disabled={i === lines(kind).length - 1}
+        aria-label={t.recipes.moveDown}
+      >
+        ↓
+      </button>
+    </span>
+  )
+
   const lineEditor = (kind: LineKind, placeholder: string) => (
     <div className="recipe-lines">
-      {lines(kind).map((v, i) => (
-        <div key={i} className="recipe-line">
-          {kind === 'steps' && <span className="recipe-line__n mono">{i + 1}</span>}
-          <input
-            className="input"
-            value={v}
-            onChange={(e) => updateLine(kind, i, e.target.value)}
-            placeholder={placeholder}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                if (i === lines(kind).length - 1 && v.trim()) addLine(kind)
-              } else if (e.key === 'Backspace' && !v && lines(kind).length > 1) {
-                e.preventDefault()
-                removeLine(kind, i)
-              }
-            }}
-            onPaste={(e) => {
-              if (pasteLines(kind, i, e.clipboardData.getData('text'))) e.preventDefault()
-            }}
-          />
-          <button
-            type="button"
-            className="recipe-line__del mono"
-            onClick={() => removeLine(kind, i)}
-            aria-label={t.recipes.removePhoto}
-          >
-            ✕
-          </button>
-        </div>
-      ))}
-      <button type="button" className="btn btn--ghost mono recipe-add-line" onClick={() => addLine(kind)}>
-        ＋ {kind === 'ingredients' ? t.recipes.addIngredient : t.recipes.addStep}
-      </button>
+      {lines(kind).map((v, i) => {
+        // A section row edits its TITLE; the "## " marker stays in the value.
+        const sec = isHeadingRow(v)
+        const shown = sec ? headingTitle(v) : v
+        return (
+          <div key={i} className={'recipe-line' + (sec ? ' recipe-line--sec' : '')}>
+            <input
+              className="input"
+              value={shown}
+              onChange={(e) => updateLine(kind, i, sec ? SECTION_PREFIX + e.target.value : e.target.value)}
+              placeholder={sec ? t.recipes.sectionPlaceholder : placeholder}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (i === lines(kind).length - 1 && shown.trim()) addLine(kind)
+                } else if (e.key === 'Backspace' && !shown && lines(kind).length > 1) {
+                  e.preventDefault()
+                  removeLine(kind, i)
+                }
+              }}
+              onPaste={(e) => {
+                if (!sec && pasteLines(kind, i, e.clipboardData.getData('text'))) e.preventDefault()
+              }}
+            />
+            {moveButtons(kind, i)}
+            <button
+              type="button"
+              className="recipe-line__del mono"
+              onClick={() => removeLine(kind, i)}
+              aria-label={t.recipes.removePhoto}
+            >
+              ✕
+            </button>
+          </div>
+        )
+      })}
+      <div className="recipe-add-row">
+        <button type="button" className="btn btn--ghost mono recipe-add-line" onClick={() => addLine(kind)}>
+          ＋ {kind === 'ingredients' ? t.recipes.addIngredient : t.recipes.addStep}
+        </button>
+        <button
+          type="button"
+          className="btn btn--ghost mono recipe-add-line"
+          onClick={() => addLine(kind, SECTION_PREFIX)}
+        >
+          ＋ {t.recipes.addSection}
+        </button>
+      </div>
     </div>
   )
 
@@ -292,9 +358,29 @@ export function RecipeForm({
   // step — closes it, so the list is never a stack of open boxes.
   const stepsEditor = (
     <div className="recipe-steps">
-      {steps.map((v, i) => (
+      {steps.map((v, i) =>
+        // A section row among the steps: a plain title input, no number, no memo.
+        isHeadingRow(v) ? (
+          <div key={i} className="recipe-line recipe-line--sec">
+            <input
+              className="input"
+              value={headingTitle(v)}
+              onChange={(e) => updateLine('steps', i, SECTION_PREFIX + e.target.value)}
+              placeholder={t.recipes.sectionPlaceholder}
+            />
+            {moveButtons('steps', i)}
+            <button
+              type="button"
+              className="recipe-line__del mono"
+              onClick={() => removeLine('steps', i)}
+              aria-label={t.recipes.removePhoto}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
         <div key={i} className={'recipe-step' + (editStep === i ? ' is-editing' : '')}>
-          <span className="recipe-step__n mono">{i + 1}</span>
+          <span className="recipe-step__n mono">{steps.slice(0, i).filter((s) => !isHeadingRow(s)).length + 1}</span>
           {editStep === i ? (
             <div className="recipe-step__edit">
               <textarea
@@ -322,32 +408,45 @@ export function RecipeForm({
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              className="recipe-step__open"
-              onClick={() => setEditStep(i)}
-              aria-label={t.recipes.editStep}
-            >
-              <span className={'recipe-step__text' + (v.trim() ? '' : ' is-empty')}>
-                {v.trim() || t.recipes.stepPlaceholder}
-              </span>
-              <span className="recipe-step__cue mono" aria-hidden="true">
-                ✎
-              </span>
-            </button>
+            <>
+              <button
+                type="button"
+                className="recipe-step__open"
+                onClick={() => setEditStep(i)}
+                aria-label={t.recipes.editStep}
+              >
+                <span className={'recipe-step__text' + (v.trim() ? '' : ' is-empty')}>
+                  {v.trim() || t.recipes.stepPlaceholder}
+                </span>
+                <span className="recipe-step__cue mono" aria-hidden="true">
+                  ✎
+                </span>
+              </button>
+              {moveButtons('steps', i)}
+            </>
           )}
         </div>
-      ))}
-      <button
-        type="button"
-        className="btn btn--ghost mono recipe-add-line"
-        onClick={() => {
-          addLine('steps')
-          setEditStep(steps.length) // open the freshly added step right away
-        }}
-      >
-        ＋ {t.recipes.addStep}
-      </button>
+        ),
+      )}
+      <div className="recipe-add-row">
+        <button
+          type="button"
+          className="btn btn--ghost mono recipe-add-line"
+          onClick={() => {
+            addLine('steps')
+            setEditStep(steps.length) // open the freshly added step right away
+          }}
+        >
+          ＋ {t.recipes.addStep}
+        </button>
+        <button
+          type="button"
+          className="btn btn--ghost mono recipe-add-line"
+          onClick={() => addLine('steps', SECTION_PREFIX)}
+        >
+          ＋ {t.recipes.addSection}
+        </button>
+      </div>
     </div>
   )
 

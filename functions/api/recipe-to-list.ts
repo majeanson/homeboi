@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { ingredientName } from '../_lib/ingredient'
+import { isSectionHeading } from '../_lib/recipeSections'
 
 // Push a recipe's ingredients onto the shared list in ONE call (source 'recipe',
 // so the ghost list / list UI can tell where they came from). Mirrors the meal
@@ -16,6 +17,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const items: string[] = []
   for (const s of body?.items ?? []) {
     if (typeof s !== 'string' || !s.trim()) continue
+    if (isSectionHeading(s)) continue // a "## Glaçage" marker isn't buyable
     const name = ingredientName(s).slice(0, 200)
     const key = name.toLowerCase()
     if (name && !seen.has(key)) {

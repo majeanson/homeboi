@@ -613,3 +613,33 @@
   background: var(--berry-wash, #efe6ee);
   color: var(--berry-deep, #7a3f6a);
 }
+
+/* --- Section markers ("## Glaçage") inside Cook mode ----------------------- */
+.cook__full-subh {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  margin: 0.9rem 0 0.45rem;
+  color: var(--terracotta-deep);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+/* The gather list's section header row — a label, nothing to tick. The li
+   selector below out-specifies .cook__ings li's card styling. */
+.cook__ings li.cook__ing-sec {
+  background: none;
+  box-shadow: none;
+  padding: 0.4rem 0 0;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--terracotta-deep);
+}
+/* The current step's section name, above "Étape n". */
+.cook__step-sec {
+  display: block;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.2rem;
+}
