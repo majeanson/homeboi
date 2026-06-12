@@ -87,7 +87,7 @@ test('recipe sheet: actions stay visible with the keyboard up', async ({ page })
 
 test('add sheet: submit stays visible with the keyboard up', async ({ page }) => {
   await boot(page, '/board')
-  await page.locator('.qcap').click()
+  await page.locator('.board-add').click()
   await page.locator('.sheet__field input').waitFor({ state: 'visible' })
 
   await openKeyboard(page)

@@ -114,7 +114,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
                   ✕
                 </button>
               )}
-              <button type="button" className="btn btn--ghost mono" onClick={() => remove(m)}>
+              <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(m)}>
                 {t.operator.delete}
               </button>
             </div>

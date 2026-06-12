@@ -992,6 +992,11 @@
   max-width: 46rem;
   margin: 0 auto;
   width: 100%;
+  /* Centre a short pick set vertically instead of stranding one row at the top
+     above a tall void; a long list top-aligns and scrolls (safe center). */
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
 }
 .review-list {
   list-style: none;

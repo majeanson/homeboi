@@ -115,6 +115,13 @@
   order: 1;
   padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
 }
+/* Parent surfaces carry the ＋ FAB, which floats ~80px up and is ~56px tall — so
+   74px (the bottom bar alone) leaves the last interactive row (a list check, a
+   day's meal, a suggestion chip) sitting UNDER the FAB. Clear it. Toddler has no
+   FAB and centers a few big tiles, so it keeps the smaller pad above. */
+.hub[data-surface='mobile'][data-audience='parent'] .hub__body {
+  padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+}
 .hub[data-surface='mobile'] .hubnav {
   order: 2;
   position: fixed;

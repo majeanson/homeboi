@@ -32,7 +32,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 
   test(`sheet-add-capture${sfx}`, async ({ page }) => {
     await boot(page, '/board', theme)
-    await page.locator('.qcap').click()
+    await page.locator('.board-add').click()
     await page.locator('.sheet__field input').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `sheet-add-capture-phone${sfx}`)
@@ -68,7 +68,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 
   test(`sheet-pricematch${sfx}`, async ({ page }) => {
     await boot(page, '/liste', theme)
-    await page.locator('.list-row__proof').first().click()
+    await page.locator('.list-row__img').first().click()
     await page.locator('.pm-sheet').waitFor({ state: 'visible' })
     await page.locator('.deal-list').waitFor({ state: 'visible' }).catch(() => {})
     await page.waitForTimeout(300)
@@ -88,7 +88,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 // Day-only one-offs (forms / secondary states).
 test('sheet-add-event', async ({ page }) => {
   await boot(page, '/board')
-  await page.locator('.qcap').click()
+  await page.locator('.board-add').click()
   await page.locator('.sheet__field input').waitFor({ state: 'visible' })
   await page.locator('.cat-pick').nth(1).click()
   await page.locator('.sheet input[type="date"]').waitFor({ state: 'visible' })

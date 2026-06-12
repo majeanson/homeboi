@@ -39,4 +39,6 @@ export interface Pick {
   deal: Deal
 }
 
-export const money = (n: number | null): string => (n == null ? '' : `$${n.toFixed(2)}`)
+// fr-CA convention (the household + the flyers are Québec): comma decimal, the
+// dollar sign AFTER the amount with a non-breaking space — "4,99 $", not "$4.99".
+export const money = (n: number | null): string => (n == null ? '' : `${n.toFixed(2).replace('.', ',')} $`)

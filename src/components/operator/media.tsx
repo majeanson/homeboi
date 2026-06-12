@@ -30,7 +30,7 @@ export function RecapSection() {
       <h2>{t.operator.recapTitle}</h2>
       <p className="mono">{t.operator.recapHint}</p>
       {recap && <p className="lead">{recap}</p>}
-      <button type="button" className="btn" onClick={generate} disabled={busy}>
+      <button type="button" className="btn btn--primary" onClick={generate} disabled={busy}>
         {busy ? t.operator.recapThinking : t.operator.recapGen}
       </button>
     </section>
@@ -105,7 +105,7 @@ export function PhotosSection() {
           ))}
         </div>
       )}
-      <label className="btn">
+      <label className="btn btn--primary">
         {busy
           ? progress
             ? t.operator.photoUploadingN(progress.done, progress.total)

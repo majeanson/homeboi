@@ -26,6 +26,9 @@ SECTIONS.forEach((id, i) => {
     await boot(page)
     await page.locator('.operator__tab').nth(i).click()
     await page.waitForTimeout(300)
-    await page.screenshot({ path: `e2e/screenshots/settings-${id}-phone.png` })
+    // fullPage so the whole section shows — several run taller than the phone
+    // viewport (shopping = postal + store filter, ghost = manage + candidates +
+    // add-staple, household = member list + form) and were being cut off.
+    await page.screenshot({ path: `e2e/screenshots/settings-${id}-phone.png`, fullPage: true })
   })
 })

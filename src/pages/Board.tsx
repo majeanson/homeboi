@@ -249,13 +249,12 @@ export function Board() {
   return (
     <main className="board-wall">
       {surface === 'mobile' && (
-        <button type="button" className="qcap" onClick={() => openAdd()}>
-          <span className="qcap__icon" aria-hidden="true">
-            <Icon name="plus-bold" size={20} color="var(--on-primary)" />
-          </span>
-          <span className="qcap__text">{t.capture.placeholder}</span>
-          {/* The mic is a hint here; the sheet hosts the real voice input. */}
-          <span className="qcap__mic" aria-hidden="true">🎤</span>
+        // A typical add button (the AI capture sheet hosts type + voice) — calm
+        // and standard so the greeting + tonight's meal lead the glance, not a
+        // full-width search-style bar. (Subject to further enhancement later.)
+        <button type="button" className="btn board-add" onClick={() => openAdd()}>
+          <Icon name="plus-bold" size={18} />
+          {t.capture.add}
         </button>
       )}
       <div className="app-head">

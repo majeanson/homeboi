@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useT } from '../../i18n'
 import { type Recipe, recipeImg, allTags } from '../../lib/recipes'
 import { rankCookable, rankUseSoon } from '../../lib/cookable'
+import { pictoFor } from '../../lib/picto'
 
 // The recipe book: search, tag chips, and the two stock-aware sorts ("what can
 // I cook" by fewest missing staples, "use it up" by most use-soon items used).
@@ -159,7 +160,7 @@ export function RecipesTab({
             return (
               <button key={r.id} type="button" className="recipe-card surface" onClick={() => onView(r)}>
                 <span className="recipe-card__thumb" aria-hidden="true">
-                  {img ? <img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">🍳</span>}
+                  {img ? <img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">{pictoFor(r.title, '🍳')}</span>}
                 </span>
                 <span className="recipe-card__title">{r.title}</span>
                 {useSoonFilter && canUseSoonFilter ? (

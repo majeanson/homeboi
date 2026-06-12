@@ -730,8 +730,20 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
+/* Destructive row actions (Supprimer / Retirer / Révoquer) recede: a quiet
+   borderless label, not a second bordered button competing with the constructive
+   one beside it. Terracotta (the warn ink) only surfaces on hover/focus — the
+   calm tenet, where delete is available but never shouts on a dense list. */
 .operator__del {
   margin-left: auto;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-faint);
+}
+.operator__del:hover,
+.operator__del:focus-visible {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 35%, transparent);
 }
 /* The secondary "when · who" line on an event row, quieter than the title. */
 .operator__event-when {
