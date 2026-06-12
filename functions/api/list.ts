@@ -60,7 +60,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // The whole active list — unchecked AND checked. A check is a mark, not a move:
   // checked items stay in place (struck through) until "Clear checked" removes them.
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, text, source, added_by, deal_json, search_terms, checked_at FROM list_items WHERE household_id = ? ORDER BY created_at',
+    // created_at + id so the order is a stable total order — same-second rows
+    // (quick-add) keep a fixed position instead of reshuffling on each read. Mirror
+    // of the board read, which is the list the Liste page actually renders.
+    'SELECT id, text, source, added_by, deal_json, search_terms, checked_at FROM list_items WHERE household_id = ? ORDER BY created_at, id',
   )
     .bind(actor.householdId)
     .all()

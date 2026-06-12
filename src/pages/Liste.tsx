@@ -167,7 +167,15 @@ export function Liste() {
   const [pendingClear, setPendingClear] = useState<Set<string>>(new Set())
   const [addText, setAddText] = useState('')
   const [adding, setAdding] = useState(false)
-  const { listening, hasVoice, start: startVoice } = useVoiceInput(setAddText)
+  // The mic is "add by voice", not dictation: a recognised phrase goes straight
+  // onto the list (hands-free at the counter). postAdd is hoisted, so the closure
+  // resolves it at speak time. Empty results (mis-hear) are ignored, not added.
+  const { listening, hasVoice, start: startVoice } = useVoiceInput((text) => {
+    const v = text.trim()
+    if (!v) return
+    setAddText('')
+    void postAdd(v)
+  })
 
   const { data: board, error } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board'), ...live })
   // Ghost suggestions and history are quiet best-effort layers — a failure just
@@ -380,7 +388,7 @@ export function Liste() {
       {list.length === 0 ? (
         <p className="feed-empty">{t.board.listEmpty}</p>
       ) : (
-        <div className="stagger">
+        <div className="list-rows">
           {list.map((item) => {
             const adder = item.added_by ? memberById.get(item.added_by) : null
             const staged = parseDeal(item.deal_json)

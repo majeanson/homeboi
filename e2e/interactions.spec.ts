@@ -541,7 +541,7 @@ test('a routine runs start → next → next → stop on one timer', async ({ pa
 // predicted re-adds live behind the ⚡ Quick add panel. A row's check toggle is
 // its own button — the row body (image / name) taps open the flyer / editor — so
 // check via the toggle, not a click on the row.
-const openList = (page: Page) => page.locator('.today-feed > .stagger > .list-row')
+const openList = (page: Page) => page.locator('.today-feed > .list-rows > .list-row')
 const checkedRows = (page: Page) => page.locator('.list-row__main.done')
 const checkOff = (row: ReturnType<Page['locator']>) => row.locator('.list-row__toggle').click()
 
