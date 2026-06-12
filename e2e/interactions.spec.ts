@@ -508,13 +508,13 @@ test('a routine runs start → next → next → stop on one timer', async ({ pa
 
 // ──────────────────────────── shared list ──────────────────────────────
 
-// Open-list rows live in the main stagger; the done shelf renders the same
-// ListItemRow inside .list-done, so a bare '.list-row' now matches BOTH. Scope
-// each side explicitly. A row's check toggle is its own button — the row body
-// (image / name) taps open the flyer / editor instead, so check off via the
-// toggle, not a click on the row.
+// One active list: a check is a MARK (the row stays, struck through via
+// .list-row__main.done) until "Clear checked" removes the ticked ones. Past /
+// predicted re-adds live behind the ⚡ Quick add panel. A row's check toggle is
+// its own button — the row body (image / name) taps open the flyer / editor — so
+// check via the toggle, not a click on the row.
 const openList = (page: Page) => page.locator('.today-feed > .stagger > .list-row')
-const doneShelf = (page: Page) => page.locator('.list-done .list-row')
+const checkedRows = (page: Page) => page.locator('.list-row__main.done')
 const checkOff = (row: ReturnType<Page['locator']>) => row.locator('.list-row__toggle').click()
 
 test.describe('list', () => {
@@ -523,29 +523,54 @@ test.describe('list', () => {
     await settle(page, '.today-feed')
   })
 
-  test('checking an item removes it (optimistic) and patches the list', async ({ page }) => {
+  test('checking an item marks it in place (it stays) and patches the list', async ({ page }) => {
     const rows = openList(page)
     await expect(rows).toHaveCount(4)
-    // The write is deferred behind the undo toast, so the PATCH lands a few
-    // seconds later (well within waitForRequest's window); the row goes at once.
     await expectApi(page, 'PATCH', 'list', () => checkOff(rows.first()))
+    // A check is a mark, not a removal — the item STAYS, just struck through.
+    await expect(rows).toHaveCount(4)
+    await expect(checkedRows(page)).toHaveCount(1)
+  })
+
+  test('tapping a checked item again unchecks it', async ({ page }) => {
+    const rows = openList(page)
+    await checkOff(rows.first())
+    await expect(checkedRows(page)).toHaveCount(1)
+    await checkOff(rows.first())
+    await expect(checkedRows(page)).toHaveCount(0)
+  })
+
+  test('clear checked removes the ticked items and leaves the rest', async ({ page }) => {
+    const rows = openList(page)
+    await checkOff(rows.first())
+    const clear = page.getByRole('button', { name: /Vider les cochés/ })
+    await expect(clear).toBeVisible()
+    // Deferred behind the undo toast: the rows go at once, the PATCH lands later.
+    await expectApi(page, 'PATCH', 'list', () => clear.click())
     await expect(rows).toHaveCount(3)
   })
 
-  test('undo restores a checked-off item', async ({ page }) => {
+  test('undo restores cleared items', async ({ page }) => {
     const rows = openList(page)
     await checkOff(rows.first())
+    await page.getByRole('button', { name: /Vider les cochés/ }).click()
     await expect(rows).toHaveCount(3)
     await expect(page.locator('.undo-toast')).toBeVisible()
     await page.locator('.undo-toast__btn').click()
+    // Back on the list, and still checked (undo restores the snapshot as-is).
     await expect(rows).toHaveCount(4)
-    await expect(page.locator('.undo-toast')).toHaveCount(0)
+    await expect(checkedRows(page)).toHaveCount(1)
   })
 
-  test('a ghost suggestion adds itself to the list', async ({ page }) => {
-    await expectApi(page, 'POST', 'list', () =>
-      page.locator('.ghost-strip__chip').first().click(),
+  test('a cleared item stays gone after the confirming board refetch', async ({ page }) => {
+    const rows = openList(page)
+    const firstText = (await rows.first().locator('.title').innerText()).trim()
+    await checkOff(rows.first())
+    await expectApi(page, 'PATCH', 'list', () =>
+      page.getByRole('button', { name: /Vider les cochés/ }).click(),
     )
+    await expect(rows).toHaveCount(3)
+    await expect(rows.locator('.title', { hasText: firstText })).toHaveCount(0)
   })
 
   test('the add bar posts a new line straight to the list', async ({ page }) => {
@@ -555,72 +580,44 @@ test.describe('list', () => {
     )
   })
 
-  test('checking an item off then adding another does not resurrect the checked one', async ({ page }) => {
-    const rows = openList(page)
-    await expect(rows).toHaveCount(4)
-    const firstText = (await rows.first().locator('.title').innerText()).trim()
-    // Tick it off — hidden at once (its delete is deferred behind the undo toast).
-    await checkOff(rows.first())
-    await expect(rows).toHaveCount(3)
-    // Add another line — this refetches the board (which, server-side, still has
-    // the just-ticked item until the deferred write commits). The pendingChecked
-    // filter must keep it gone — the bug was both lines coming back.
-    await page.locator('.list-add .input').fill('Bananes')
-    await page.locator('.list-add button[type="submit"]').click()
-    await expect(rows).toHaveCount(3)
-    await expect(rows.locator('.title', { hasText: firstText })).toHaveCount(0)
-  })
-
-  test('checked items rest on the done shelf and a tap puts one back', async ({ page }) => {
-    const rows = openList(page)
-    const doneRows = doneShelf(page)
-    // Two seeded done items (Beurre, Fromage) on the shelf.
-    await expect(doneRows).toHaveCount(2)
-    // Restoring fires the uncheck PATCH and the row hops shelves at once —
-    // and STAYS hopped after the confirming refetch (mock reflects the write).
-    await expectApi(page, 'PATCH', 'list', () => checkOff(doneRows.first()))
-    await expect(rows).toHaveCount(5)
-    await expect(doneRows).toHaveCount(1)
-    await expect(rows.locator('.title', { hasText: 'Beurre' })).toHaveCount(1)
-  })
-
-  test('a checked-off item lands on the done shelf once its write commits', async ({ page }) => {
-    const rows = openList(page)
-    const firstText = (await rows.first().locator('.title').innerText()).trim()
-    // The deferred write (undo toast) commits, the board refetches, and the
-    // item reappears below on the shelf — gone from the list, not from sight.
-    await expectApi(page, 'PATCH', 'list', () => checkOff(rows.first()))
-    await expect(doneShelf(page).locator('.title', { hasText: firstText })).toHaveCount(1)
-    await expect(doneShelf(page)).toHaveCount(3)
-  })
-
-  test('typing offers past items as one-tap chips that add to the list', async ({ page }) => {
-    // No chips until something is typed.
-    await expect(page.locator('.list-suggest')).toHaveCount(0)
-    await page.locator('.list-add .input').fill('yog')
-    const chip = page.locator('.list-suggest__chip')
+  test('the quick-add panel re-adds a past item and stays open', async ({ page }) => {
+    await page.locator('.list-quick').click()
+    const panel = page.locator('.pm-sheet.qa')
+    await expect(panel).toBeVisible()
+    const chip = panel.locator('.qa__chip', { hasText: 'Beurre' })
     await expect(chip).toHaveCount(1)
-    await expect(chip).toContainText('Yogourt grec')
     await expectApi(page, 'POST', 'list', () => chip.click())
-    // The input clears so the next line can be typed straight away.
-    await expect(page.locator('.list-add .input')).toHaveValue('')
+    // The panel STAYS open (multi-add); the chip locks with a ✓ and a count shows.
+    await expect(panel).toBeVisible()
+    await expect(chip).toHaveClass(/is-added/)
+    await expect(panel.locator('.qa__count')).toBeVisible()
   })
 
-  test('the ghost strip shows a tracked-but-not-due item as a quiet untagged chip', async ({ page }) => {
-    const chips = page.locator('.ghost-strip__chip')
-    await expect(chips).toHaveCount(3)
-    const later = chips.filter({ hasText: 'Café' })
-    await expect(later).toHaveCount(1)
-    await expect(later.locator('.ghost-strip__tag')).toHaveCount(0)
+  test('quick-add re-adds an item with the flyer synonyms it last carried', async ({ page }) => {
+    await page.locator('.list-quick').click()
+    const chip = page.locator('.pm-sheet.qa .qa__chip', { hasText: 'Beurre' })
+    const [req] = await Promise.all([
+      page.waitForRequest((r) => r.url().includes('/api/list') && r.method() === 'POST'),
+      chip.click(),
+    ])
+    expect(JSON.parse(req.postData() || '{}')).toMatchObject({ text: 'Beurre', search_terms: ['beurre', 'butter'] })
+  })
+
+  test('a due-soon prediction shows in quick-add with a tag', async ({ page }) => {
+    await page.locator('.list-quick').click()
+    // Œufs is 'soon' in the ghost mock and not on the list → tagged in the panel.
+    const oeufs = page.locator('.pm-sheet.qa .qa__chip', { hasText: 'Œufs' })
+    await expect(oeufs).toHaveCount(1)
+    await expect(oeufs.locator('.qa__tag')).toBeVisible()
   })
 
   test('the flyer browser opens', async ({ page }) => {
-    await page.locator('.list-actions').first().locator('button').click()
+    await page.getByRole('button', { name: /Parcourir/ }).click()
     await expect(page.locator('.pm-overlay .deals-search')).toBeVisible()
   })
 
   test('adding a deal from the browser adds it to the list (and links it → cashier)', async ({ page }) => {
-    await page.locator('.list-actions').first().locator('button').click()
+    await page.getByRole('button', { name: /Parcourir/ }).click()
     await expect(page.locator('.deals-search')).toBeVisible()
     await page.locator('.deals-search input').fill('lait')
     await page.locator('.deals-search button[type="submit"]').click()
@@ -631,24 +628,20 @@ test.describe('list', () => {
     )
   })
 
-  test('checking an item off (emptying the cart) also drops its staged cashier deal', async ({ page }) => {
-    await APP('/liste')(page)
-    await settle(page, '.today-feed')
-    // Auto-pick + the cashier are store-mode tools, so switch first.
-    await page.locator('.list-mode__opt', { hasText: 'épicerie' }).click()
-    // l1 (Lait) carries a staged deal server-side → the cashier button shows.
+  test('clearing a checked item drops its staged cashier deal', async ({ page }) => {
+    // l1 (Lait) carries a staged deal → the cashier button shows with no mode to
+    // switch into (the shopping tools are always available now).
     await expect(page.getByRole('button', { name: /Montrer à la caisse/ })).toBeVisible()
-    // Put Lait in the cart, then empty it → Lait is checked off, leaves the open
-    // list, and so leaves the cashier set.
+    // Tick Lait, then clear it → it leaves the list and so leaves the cashier set.
     await checkOff(openList(page).filter({ hasText: 'Lait' }))
     await expectApi(page, 'PATCH', 'list', () =>
-      page.getByRole('button', { name: /Vider le panier/ }).click(),
+      page.getByRole('button', { name: /Vider les cochés/ }).click(),
     )
     await expect(page.getByRole('button', { name: /Montrer à la caisse/ })).toHaveCount(0)
   })
 
   test('the by-store tab opens a store flyer without searching', async ({ page }) => {
-    await page.locator('.list-actions').first().locator('button').click()
+    await page.getByRole('button', { name: /Parcourir/ }).click()
     await expect(page.locator('.deal-tabs')).toBeVisible()
     await page.getByRole('tab', { name: /Par magasin/ }).click()
     await expect(page.locator('.flyer-store')).toHaveCount(3)

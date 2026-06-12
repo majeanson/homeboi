@@ -34,7 +34,9 @@ async function readState(env: Env, hh: string) {
     env.DB.prepare('SELECT item_key, label, cadence_days, muted, source FROM ghost_items WHERE household_id = ?')
       .bind(hh)
       .all<OverrideDbRow>(),
-    env.DB.prepare('SELECT text FROM list_items WHERE household_id = ? AND checked_at IS NULL')
+    // Every current line — checked or not — is "on the list" (a checked item is
+    // about to be bought, not gone), so we don't re-suggest what's already there.
+    env.DB.prepare('SELECT text FROM list_items WHERE household_id = ?')
       .bind(hh)
       .all<{ text: string }>(),
   ])

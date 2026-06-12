@@ -276,41 +276,6 @@
   transform: scale(0.94);
 }
 
-/* --- List mode switch (home · store) ------------------------------------- */
-/* Segmented control: prepare the list at home, or shop with it at the store. */
-.list-mode {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--paper-deep);
-  border: 1px solid var(--line);
-  margin: 0 0 6px;
-}
-.list-mode__opt {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 40px;
-  padding: 0 0.95rem;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--ink-soft);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-.list-mode__opt.is-on {
-  background: var(--accent);
-  color: var(--accent-ink);
-}
-.list-mode__hint {
-  margin: 0 0 12px;
-  font-size: 0.8rem;
-  color: var(--ink-faint);
-}
-
 /* --- List item edit sheet ------------------------------------------------- */
 /* Rides on .pm-overlay/.pm-sheet (keyboard-safe). Rename, manage flyer-search
    synonyms, unlink a deal, or delete the line. */
@@ -840,85 +805,124 @@
   background: var(--accent);
   color: var(--accent-ink);
 }
-/* "Added before" typeahead — quiet chips under the add bar (never a dropdown
-   covering the list). Wrap-friendly, >= 44px tap targets for thumbs. */
-.list-suggest {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+/* A checked line stays IN PLACE but reads as "got it": struck title, dimmed
+   picture (the sage-filled check comes from .act.done .check). Targeted to the
+   list so other "done" rows elsewhere keep their own treatment. */
+.list-row__main.done .title {
+  text-decoration: line-through;
+  color: var(--ink-faint);
+}
+.list-row__main.done .list-row__deal {
+  opacity: 0.6;
+}
+
+/* "⚡ Quick add" — the doorway to past/predicted re-adds. Full-width so it reads
+   as a primary affordance under the add bar, with a quiet count of what's on
+   offer. */
+.list-quick {
+  width: 100%;
+  justify-content: center;
   margin: -0.25rem 0 1rem;
 }
-.list-suggest__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  max-width: 100%;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--line);
+.list-quick__n {
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.5rem;
   border-radius: 999px;
-  background: var(--paper);
+  background: var(--paper-deep);
   color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+/* The quick-add panel — a sheet of re-add candidates. Tap one to add it and the
+   panel stays open (an "Added N" counter ticks up), so a week's staples go on in
+   a few taps. Scrolls inside the sheet; chips are >= 48px tap targets. */
+.pm-sheet.qa {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+}
+.qa__count {
+  color: var(--accent);
+}
+.qa__search {
+  margin: 0.25rem 0 0.75rem;
+}
+.qa__search .input {
+  width: 100%;
+}
+.qa__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.qa__chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--sans);
-  font-size: 0.95rem;
+  font-size: 1rem;
+  text-align: left;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
 }
-.list-suggest__chip:hover {
+.qa__chip:hover {
   border-color: var(--accent);
-  color: var(--ink);
 }
-.list-suggest__plus {
-  color: var(--accent);
-  font-weight: 700;
+.qa__chip.is-added {
+  background: var(--sage-wash, var(--paper-deep));
+  border-color: var(--sage, var(--line));
+  color: var(--ink-soft);
+  cursor: default;
+}
+.qa__chip--new {
+  border-style: dashed;
+  color: var(--ink-soft);
+}
+.qa__pic {
   flex: 0 0 auto;
+  font-size: 1.4rem;
+  line-height: 1;
 }
-/* The done shelf — checked items rest here (muted, struck through), one tap to
-   put back. Reads as an afterglow of the list, never a second to-do list. */
-.list-done {
-  margin-top: 1.25rem;
-}
-.list-done__head {
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  margin-bottom: 0.5rem;
-}
-.list-done__rows {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.list-done__row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  max-width: 100%;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ink-faint);
-  font-family: var(--sans);
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-.list-done__row:hover {
-  border-color: var(--accent);
-  color: var(--ink);
-}
-.list-done__back {
-  color: var(--accent);
-  font-weight: 700;
-  flex: 0 0 auto;
-}
-.list-done__text {
-  text-decoration: line-through;
+.qa__label {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.qa__tag {
+  flex: 0 0 auto;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.qa__tag--due {
+  background: var(--marigold-wash, var(--paper-deep));
+  color: var(--marigold-deep, var(--ink));
+}
+.qa__tag--soon {
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+}
+.qa__act {
+  flex: 0 0 auto;
+  font-size: 1.2rem;
+  color: var(--accent);
+}
+.qa__chip.is-added .qa__act {
+  color: var(--sage, var(--accent));
 }
 .list-actions {
   display: flex;

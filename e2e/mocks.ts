@@ -49,11 +49,6 @@ const BOARD = {
     { id: 'l3', text: 'Pommes', source: 'ghost' },
     { id: 'l4', text: 'Couches', source: 'manual' },
   ],
-  // The done shelf: recently checked-off items, one tap to put back.
-  listDone: [
-    { id: 'ld1', text: 'Beurre', source: 'manual', added_by: 'm2', checked_at: BASE - 3600 },
-    { id: 'ld2', text: 'Fromage', source: 'manual', added_by: null, checked_at: BASE - 2 * 3600 },
-  ],
   chores: [
     {
       id: 'c1',
@@ -194,9 +189,10 @@ const GHOSTS = {
 // the add bar's typeahead chips. 'Beurre' also sits on the done shelf above.
 const LIST_HISTORY = {
   items: [
-    { key: 'beurre', text: 'Beurre', count: 5, lastAt: BASE - 3600 },
-    { key: 'yogourt grec', text: 'Yogourt grec', count: 4, lastAt: BASE - 2 * DAY },
-    { key: 'bananes', text: 'Bananes', count: 3, lastAt: BASE - 4 * DAY },
+    // Beurre carries its last flyer synonyms — a quick-add re-add must restock them.
+    { key: 'beurre', text: 'Beurre', count: 5, lastAt: BASE - 3600, searchTerms: '["beurre","butter"]' },
+    { key: 'yogourt grec', text: 'Yogourt grec', count: 4, lastAt: BASE - 2 * DAY, searchTerms: null },
+    { key: 'bananes', text: 'Bananes', count: 3, lastAt: BASE - 4 * DAY, searchTerms: null },
   ],
 }
 
@@ -321,10 +317,11 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
   // A little server-side state so optimistic flows that DELETE then refetch read
   // back the change (else the board GET would resurrect a just-cleared note).
   const dismissedNotes = new Set<string>()
-  // Same for the list's two shelf moves: check (open → done) and restore
-  // (done → open), so the board refetch confirms rather than reverts them.
+  // The list is one active list: a check is a MARK (the item stays, checked_at
+  // set), and "Clear checked" removes the ticked ones. Track both so the board
+  // refetch confirms the optimistic UI rather than reverting it.
   const checkedItems = new Set<string>()
-  const restoredItems = new Set<string>()
+  const clearedItems = new Set<string>()
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace(/^\/api\//, '')
@@ -345,12 +342,19 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
           /* no body */
         }
       }
-      // Record list shelf moves so the next board read confirms the optimistic UI.
+      // Record list writes so the next board read confirms the optimistic UI: a
+      // check marks in place (checked_at), clearChecked removes the ticked rows.
       if (method === 'PATCH' && path === 'list') {
         try {
           const body = JSON.parse(route.request().postData() || '{}')
-          if (body.id && body.checked === true) checkedItems.add(body.id)
-          if (body.id && body.checked === false) restoredItems.add(body.id)
+          if (body.clearChecked) {
+            const ids = Array.isArray(body.ids) ? body.ids : [...checkedItems]
+            ids.forEach((id: string) => {
+              clearedItems.add(id)
+              checkedItems.delete(id)
+            })
+          } else if (body.id && body.checked === true) checkedItems.add(body.id)
+          else if (body.id && body.checked === false) checkedItems.delete(body.id)
         } catch {
           /* no body */
         }
@@ -370,7 +374,7 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
     if (opts.fresh && path === 'board') {
-      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], listDone: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
+      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
       return
     }
@@ -387,21 +391,16 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
 
-    // Board read reflects this session's writes (cleared notes, list shelf
-    // moves), so an optimistic UI's refetch confirms instead of reverting.
-    if (path === 'board' && (dismissedNotes.size || checkedItems.size || restoredItems.size)) {
+    // Board read reflects this session's writes (cleared notes, list checks +
+    // clears), so an optimistic UI's refetch confirms instead of reverting. A
+    // checked row STAYS on the list with checked_at set; a cleared row is gone.
+    if (path === 'board' && (dismissedNotes.size || checkedItems.size || clearedItems.size)) {
       const b = {
         ...BOARD,
         notes: BOARD.notes.filter((n) => !dismissedNotes.has(n.id)),
-        list: [
-          ...BOARD.list.filter((i) => !checkedItems.has(i.id)),
-          // Extra checked_at on a restored row is harmless — the page ignores it.
-          ...BOARD.listDone.filter((d) => restoredItems.has(d.id)),
-        ],
-        listDone: [
-          ...BOARD.list.filter((i) => checkedItems.has(i.id)).map((i) => ({ ...i, checked_at: BASE })),
-          ...BOARD.listDone.filter((d) => !restoredItems.has(d.id)),
-        ],
+        list: BOARD.list
+          .filter((i) => !clearedItems.has(i.id))
+          .map((i) => (checkedItems.has(i.id) ? { ...i, checked_at: BASE } : i)),
       }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(b) })
       return
