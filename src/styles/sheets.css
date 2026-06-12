@@ -816,6 +816,23 @@
   opacity: 0.6;
 }
 
+/* The shopping list holds perfectly still: no staggered entrance rise, no
+   check-fill ease, no press-nudge. Ticking items off (often on a phone mid-aisle,
+   or while the live poll refetches) must never shift or animate a row under your
+   finger — a moving target is the opposite of a calm checklist. Loaded after
+   today.css, so these tie-and-win over the shared .act / .stagger motion. */
+.list-rows > * {
+  animation: none;
+}
+.list-row__main.act,
+.list-row__toggle.check {
+  transition: none;
+}
+.list-row__main.act:active {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
 /* "⚡ Quick add" — the doorway to past/predicted re-adds. Full-width so it reads
    as a primary affordance under the add bar, with a quiet count of what's on
    offer. */
