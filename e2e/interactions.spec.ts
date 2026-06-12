@@ -658,6 +658,11 @@ test.describe('list', () => {
     // cover page must be skipped, so exactly one page renders (no blank box).
     await expect(page.locator('.flyer-page-wrap')).toHaveCount(1)
     await expect(page.locator('.flyer-page-label')).toHaveText(/1/)
+    // The "full flyer" link deep-links Flipp by id + merchant slug + postal.
+    await expect(page.locator('.flyer-full-link')).toHaveAttribute(
+      'href',
+      'https://flipp.com/fr-ca/circulaire/5001-super-c-circulaire?postal_code=H2X1Y4',
+    )
   })
 })
 

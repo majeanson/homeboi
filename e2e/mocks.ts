@@ -284,6 +284,7 @@ const ROUTES: Record<string, unknown> = {
   },
   flyer: {
     flyerId: 5001,
+    postal: 'H2X1Y4',
     // ISO strings (not the unix-seconds BASE) so the viewer's date header renders a
     // real range, like the live feed — the rest of the mock uses seconds for slotting.
     validFrom: '2026-06-11T00:00:00-04:00',

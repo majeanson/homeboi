@@ -48,6 +48,9 @@ interface FlyerResponse {
   // juin). Derived server-side from the items; null if the feed omits them.
   validFrom: string | null
   validTo: string | null
+  // The postal code the flyer was fetched for — used to deep-link the official
+  // Flipp web flyer (the dense scanned pages we can't render in-app).
+  postal?: string | null
 }
 
 const money = (n: number | null) => (n == null ? '' : `$${n.toFixed(2)}`)
@@ -207,6 +210,23 @@ export function FlyerViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.validFrom, data?.validTo, lang, t])
 
+  // Deep-link to the official Flipp web flyer — the full, dense, zoomable scanned
+  // pages we can't reconstruct in-app. Flipp routes client-side on the numeric id
+  // + postal_code, so the merchant slug is cosmetic; we build it from the store
+  // name (accent-stripped, spaces → hyphens: "Super C" → "super-c", "Métro" →
+  // "metro").
+  const officialUrl = useMemo(() => {
+    const slug =
+      (title ?? '')
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'circulaire'
+    const pc = data?.postal ? `?postal_code=${encodeURIComponent(data.postal)}` : ''
+    return `https://flipp.com/${lang}-ca/circulaire/${flyerId}-${slug}-circulaire${pc}`
+  }, [lang, flyerId, title, data?.postal])
+
   return (
     <div className="flyer-overlay" role="dialog" aria-modal="true" aria-label={title ?? 'flyer'}>
       <div className="flyer-bar">
@@ -228,14 +248,21 @@ export function FlyerViewer({
         </button>
       </div>
 
-      {resolvedPremium != null && (
-        <p
-          className={`flyer-note mono ${resolvedPremium ? 'flyer-note--official' : 'flyer-note--recon'}`}
-          aria-live="polite"
-        >
-          {resolvedPremium ? `✓ ${t.shop.flyerOfficial}` : `≈ ${t.shop.flyerReconstructed}`}
-        </p>
-      )}
+      <div className="flyer-meta">
+        {resolvedPremium != null && (
+          <span
+            className={`flyer-note mono ${resolvedPremium ? 'flyer-note--official' : 'flyer-note--recon'}`}
+            aria-live="polite"
+          >
+            {resolvedPremium ? `✓ ${t.shop.flyerOfficial}` : `≈ ${t.shop.flyerReconstructed}`}
+          </span>
+        )}
+        {/* The real, full flyer (dense scanned pages, zoom) lives on Flipp's site —
+            we render a quick reconstruction; this opens the complete one. */}
+        <a className="flyer-full-link mono" href={officialUrl} target="_blank" rel="noopener noreferrer">
+          {t.shop.flyerFull} ↗
+        </a>
+      </div>
 
       {directions && (
         <button
