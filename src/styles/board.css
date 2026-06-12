@@ -110,12 +110,6 @@
   transform: translateY(1px);
   box-shadow: var(--shadow-press);
 }
-/* The board's standard add button — a compact, self-width pill sitting above the
-   greeting; quiet enough that the greeting + tonight's meal lead the glance. */
-.board-add {
-  align-self: flex-start;
-  margin: 0 0 1rem;
-}
 .qcap__icon {
   flex: none;
   width: 38px;

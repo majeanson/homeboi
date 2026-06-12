@@ -64,8 +64,9 @@ const VISIBLE = PHONE.height - KEYBOARD
 
 test('recipe form: save + close stay visible with the keyboard up', async ({ page }) => {
   await boot(page, '/kitchen')
-  await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
-  await page.locator('.kitchen__head').first().locator('button').click() // ＋ Ajouter
+  // The contextual ＋ owns recipe creation now: FAB → recipe tile.
+  await page.locator('.add-fab').click()
+  await page.locator('.cat-pick').first().click()
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
 
   await page.locator('.recipe-title-input').click() // focus = what summons the keyboard
@@ -87,7 +88,7 @@ test('recipe sheet: actions stay visible with the keyboard up', async ({ page })
 
 test('add sheet: submit stays visible with the keyboard up', async ({ page }) => {
   await boot(page, '/board')
-  await page.locator('.board-add').click()
+  await page.locator('.add-fab').click()
   await page.locator('.sheet__field input').waitFor({ state: 'visible' })
 
   await openKeyboard(page)
@@ -100,8 +101,8 @@ test('recipe form fits a short viewport', async ({ page }) => {
   await boot(page, '/kitchen')
   await page.setViewportSize({ width: 390, height: 480 })
   await syncStub(page)
-  await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
-  await page.locator('.kitchen__head').first().locator('button').click()
+  await page.locator('.add-fab').click()
+  await page.locator('.cat-pick').first().click()
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
 
   await expectVisibleAboveKeyboard(page.locator('.recipe-modal__foot .btn--primary'), 480)

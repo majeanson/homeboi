@@ -32,7 +32,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 
   test(`sheet-add-capture${sfx}`, async ({ page }) => {
     await boot(page, '/board', theme)
-    await page.locator('.board-add').click()
+    await page.locator('.add-fab').click()
     await page.locator('.sheet__field input').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `sheet-add-capture-phone${sfx}`)
@@ -89,7 +89,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 // Day-only one-offs (forms / secondary states).
 test('sheet-add-event', async ({ page }) => {
   await boot(page, '/board')
-  await page.locator('.board-add').click()
+  await page.locator('.add-fab').click()
   await page.locator('.sheet__field input').waitFor({ state: 'visible' })
   await page.locator('.cat-pick').nth(1).click()
   await page.locator('.sheet input[type="date"]').waitFor({ state: 'visible' })
@@ -99,8 +99,9 @@ test('sheet-add-event', async ({ page }) => {
 
 test('sheet-recipe-form', async ({ page }) => {
   await boot(page, '/kitchen')
-  await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
-  await page.locator('.kitchen__head').first().locator('button').click() // ＋ Ajouter
+  // Recipe creation lives on the contextual ＋: FAB → recipe tile → ?add=recipe.
+  await page.locator('.add-fab').click()
+  await page.locator('.cat-pick').first().click()
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'sheet-recipe-form-phone')

@@ -208,6 +208,86 @@
 .recipe-add-line {
   align-self: flex-start;
 }
+
+/* Steps editor — a one-at-a-time memo (see RecipeForm). Collapsed steps are
+   tappable field-like previews; the open one swaps to a roomy textarea. */
+.recipe-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.recipe-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+.recipe-step__n {
+  width: 1.4rem;
+  flex: none;
+  text-align: center;
+  color: var(--ink-faint);
+  padding-top: 0.7rem; /* line up with the first line of the preview / memo */
+}
+/* Collapsed step: a tappable, input-looking preview with a clear ✎ edit cue. */
+.recipe-step__open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.7rem;
+  cursor: pointer;
+}
+.recipe-step__open:hover {
+  border-color: var(--line-strong);
+}
+.recipe-step__text {
+  flex: 1;
+  min-width: 0;
+  white-space: pre-wrap; /* keep the user's line breaks visible in the preview */
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.recipe-step__text.is-empty {
+  color: var(--ink-faint);
+}
+.recipe-step__cue {
+  flex: none;
+  color: var(--ink-faint);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+/* Open step: the roomy memo + its actions (remove / done). */
+.recipe-step__edit {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.recipe-step__memo {
+  width: 100%;
+  min-height: 6rem;
+  resize: vertical;
+  line-height: 1.4;
+}
+.recipe-step__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.recipe-step__del {
+  color: var(--ink-faint);
+}
+.recipe-step__del:hover {
+  color: var(--warn);
+}
 .recipe-meta-row {
   display: flex;
   gap: 0.8rem;

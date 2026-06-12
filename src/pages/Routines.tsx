@@ -2,8 +2,6 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
-import { useAuth } from '../lib/auth'
-import { useAddSheet } from '../lib/addSheet'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { ROUTINES_KEY } from '../lib/queryKeys'
@@ -36,8 +34,6 @@ interface RoutineRow {
 
 function RoutinesParent() {
   const t = useT()
-  const { signedIn } = useAuth()
-  const { open: openAdd } = useAddSheet()
   const { data, error } = useQuery({
     queryKey: ROUTINES_KEY,
     queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
@@ -119,16 +115,10 @@ function RoutinesParent() {
         </div>
       )}
 
-      {/* Routines get tweaked daily — creating one shouldn't mean a trip through
-          Réglages. The ＋ opens the shared Add sheet straight on the routine
-          builder (operator-only, same as the sheet's own gating); the settings
-          link deep-links to the matching tab for edits/deletes. */}
+      {/* Creating a routine is the ＋ FAB's job on this tab (the contextual Add
+          sheet opens straight on the routine builder); the settings link
+          deep-links to the matching tab for edits/deletes. */}
       <p className="routines-parent__edit">
-        {signedIn && (
-          <button type="button" className="btn btn--primary" onClick={() => openAdd('routine')}>
-            ＋ {t.routines.add}
-          </button>
-        )}
         <Link to="/settings#routines" className="btn btn--ghost mono">
           {t.audience.editInSettings}
         </Link>

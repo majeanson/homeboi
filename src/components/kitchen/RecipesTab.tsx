@@ -6,22 +6,20 @@ import { pictoFor } from '../../lib/picto'
 
 // The recipe book: search, tag chips, and the two stock-aware sorts ("what can
 // I cook" by fewest missing staples, "use it up" by most use-soon items used).
-// Owns all its filter state; the page just hands in the data and the open/new
-// callbacks.
+// Owns all its filter state; the page just hands in the data and the open
+// callback. (Creating a recipe moved to the contextual ＋ FAB → ?add=recipe.)
 export function RecipesTab({
   recipes,
   lowItems,
   soonItems,
   listItems,
   onView,
-  onNew,
 }: {
   recipes: Recipe[]
   lowItems: string[]
   soonItems: string[]
   listItems: string[]
   onView: (r: Recipe) => void
-  onNew: () => void
 }) {
   const t = useT()
   const [recipeQuery, setRecipeQuery] = useState('')
@@ -62,9 +60,6 @@ export function RecipesTab({
     <section>
       <div className="kitchen__head">
         <h2>{t.recipes.title}</h2>
-        <button type="button" className="btn" onClick={onNew}>
-          ＋ {t.recipes.add}
-        </button>
       </div>
       {(recipes.length > 3 || canCookFilter || canUseSoonFilter) && (
         <div className="kitchen__recipe-tools">

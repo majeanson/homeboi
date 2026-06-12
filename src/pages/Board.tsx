@@ -10,7 +10,6 @@ import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { ProfilePicker } from '../components/ProfilePicker'
-import { useAddSheet } from '../lib/addSheet'
 import { readBoardView, saveBoardView, type BoardView } from '../lib/boardview'
 import { useSpeak } from '../lib/speak'
 import { timeOfDay } from '../lib/timeofday'
@@ -43,9 +42,6 @@ export function Board() {
   // Pick-your-face: who's on this phone — greets them + marks their day.
   const { memberId: profileId, setMemberId } = useProfile()
   const [profileOpen, setProfileOpen] = useState(false)
-  // Mobile glance: a quick-capture bar sits at the top and opens the shared
-  // AddSheet (note/voice → AI router) owned by HubLayout. The primary phone action.
-  const { open: openAdd } = useAddSheet()
   const speak = useSpeak()
   const [clock, setClock] = useState(() => formatClock(lang, Date.now()))
   // The board layout for this device (bento | next | lanes), remembered locally.
@@ -248,15 +244,8 @@ export function Board() {
 
   return (
     <main className="board-wall">
-      {surface === 'mobile' && (
-        // A typical add button (the AI capture sheet hosts type + voice) — calm
-        // and standard so the greeting + tonight's meal lead the glance, not a
-        // full-width search-style bar. (Subject to further enhancement later.)
-        <button type="button" className="btn board-add" onClick={() => openAdd()}>
-          <Icon name="plus-bold" size={18} />
-          {t.capture.add}
-        </button>
-      )}
+      {/* No per-page add button: the shared yellow ＋ FAB (HubLayout) floats
+          bottom-right here just like every other tab. */}
       <div className="app-head">
         <div>
           <div className="hand-tag">{t.board.today}</div>

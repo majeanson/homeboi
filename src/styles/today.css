@@ -239,6 +239,37 @@
 .act.done .tile {
   opacity: 0.55;
 }
+
+/* Mobile: agglomerate each card's text onto one line — time · title · who read
+   inline and only wrap when there's truly no room, instead of always stacking
+   into three short lines. Tighter padding + a smaller icon tile keep the row
+   compact so the section reads as a quick scan, not a tall list. */
+@media (max-width: 680px) {
+  .act {
+    padding: 10px 12px;
+    gap: 11px;
+    margin-bottom: 9px;
+  }
+  .act .tile {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+  .act__text {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 8px;
+    row-gap: 0;
+  }
+  .act .title {
+    font-size: 16px;
+  }
+  .act .who {
+    margin-top: 0;
+  }
+}
+
 .feed-empty {
   color: var(--ink-faint);
   font-size: 14px;
