@@ -21,6 +21,24 @@ const STAPLES: Record<'fr' | 'en', string[]> = {
   en: ['milk', 'bread', 'eggs', 'chicken', 'ground beef', 'cheese', 'apples', 'bananas', 'coffee', 'yogurt'],
 }
 
+// A store flyer is either in effect now or published for a future week (Flipp puts
+// next week's out ~1-2 days early). The split lets you open the upcoming one to
+// prepare next week's list before it's even live.
+function flyerWhen(f: FlyerSummary, now: number): 'current' | 'upcoming' {
+  const vf = f.validFrom ? Date.parse(f.validFrom) : NaN
+  return !Number.isNaN(vf) && vf > now ? 'upcoming' : 'current'
+}
+
+// "11 juin – 17 juin" — the run dates the cashier checks, in the UI language.
+function fmtRange(f: FlyerSummary, lang: 'fr' | 'en'): string {
+  const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
+  const opt = { month: 'short', day: 'numeric' } as const
+  const from = f.validFrom ? new Date(f.validFrom).toLocaleDateString(loc, opt) : ''
+  const to = f.validTo ? new Date(f.validTo).toLocaleDateString(loc, opt) : ''
+  if (from && to) return `${from} – ${to}`
+  return to || from || ''
+}
+
 export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const t = useT()
   const { lang } = useLang()
@@ -37,6 +55,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   // Day-scoped cache, shared with the price-match sheet's ['deals', q, day] key —
   // so a term browsed here is instant if matched there (and vice-versa).
   const dayKey = new Date().toISOString().slice(0, 10)
+  const now = Date.now()
   const dealsQ = useQuery({
     queryKey: ['deals', query, dayKey],
     queryFn: () => api<{ deals: Deal[] }>(`deals?q=${encodeURIComponent(query)}`),
@@ -236,21 +255,31 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
             {storeFlyers && storeFlyers.length === 0 && <p className="feed-empty">{t.shop.none}</p>}
             {storeFlyers && storeFlyers.length > 0 && (
               <div className="flyer-stores">
-                {storeFlyers.map((f) => (
-                  <button
-                    key={f.flyerId}
-                    type="button"
-                    className="flyer-store"
-                    onClick={() => setFlyer({ id: f.flyerId, itemId: null, merchant: f.merchant, logo: f.logo, premium: f.premium })}
-                  >
-                    {f.logo ? (
-                      <img className="flyer-store__logo" src={f.logo} alt="" loading="lazy" />
-                    ) : (
-                      <span className="flyer-store__logo flyer-store__logo--none" aria-hidden="true">🏬</span>
-                    )}
-                    <span className="flyer-store__name">{f.merchant}</span>
-                  </button>
-                ))}
+                {storeFlyers.map((f) => {
+                  const when = flyerWhen(f, now)
+                  const range = fmtRange(f, lang)
+                  return (
+                    <button
+                      key={f.flyerId}
+                      type="button"
+                      className="flyer-store"
+                      onClick={() => setFlyer({ id: f.flyerId, itemId: null, merchant: f.merchant, logo: f.logo, premium: f.premium })}
+                    >
+                      {f.logo ? (
+                        <img className="flyer-store__logo" src={f.logo} alt="" loading="lazy" />
+                      ) : (
+                        <span className="flyer-store__logo flyer-store__logo--none" aria-hidden="true">🏬</span>
+                      )}
+                      <span className="flyer-store__text">
+                        <span className="flyer-store__name">{f.merchant}</span>
+                        {range && <span className="flyer-store__dates mono">{range}</span>}
+                      </span>
+                      <span className={`flyer-store__when flyer-store__when--${when}`}>
+                        {when === 'upcoming' ? t.shop.flyerUpcoming : t.shop.flyerThisWeek}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </>

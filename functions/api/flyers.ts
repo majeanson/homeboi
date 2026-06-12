@@ -79,27 +79,39 @@ export const onRequestGet = authed(async (ctx, actor) => {
     return serviceUnavailable('Service de circulaires indisponible.')
   }
 
-  // Food-shopping flyers, one per merchant (first wins — Flipp returns them
-  // roughly by priority), sorted by store name for a stable picker. We keep
-  // Groceries AND Pharmacy (Jean Coutu, Pharmaprix… carry groceries) so a real
-  // grocery run isn't missing stores; everything else (hardware, electronics,
-  // fashion, auto, pets, restaurants…) is dropped. Flipp's category labels come
-  // back in English regardless of locale, but match case-insensitively to be safe.
+  // Food-shopping flyers. We keep Groceries AND Pharmacy (Jean Coutu, Pharmaprix…
+  // carry groceries) so a real grocery run isn't missing stores; everything else
+  // (hardware, electronics, fashion, auto, pets, restaurants…) is dropped. Flipp's
+  // category labels come back in English regardless of locale, but match
+  // case-insensitively to be safe.
+  //
+  // Two shapes by audience:
+  // - manage (settings store filter): ONE row per store, so the operator toggles a
+  //   STORE, not each of its flyers.
+  // - normal feed: EVERY distinct flyer a store runs — the weekly, a themed brochure
+  //   (IGA "BBQ"), and next week's once Flipp publishes it (future valid_from). The
+  //   UI separates them by date so you can prepare next week. Deduped by flyer id
+  //   (Flipp can repeat one) so the list is unique.
   const KEEP = ['groceries', 'pharmacy']
-  const seen = new Set<string>()
+  const seenStore = new Set<string>()
+  const seenFlyer = new Set<number>()
   const flyers: FlyerSummary[] = []
   for (const f of payload.flyers ?? []) {
     if (typeof f.id !== 'number' || !f.merchant) continue
     const cats = (f.categories ?? []).map((c) => c.toLowerCase())
     if (!cats.some((c) => KEEP.includes(c))) continue
     const key = storeKey(f.merchant)
-    if (seen.has(key)) continue
-    seen.add(key)
     // Empty allowlist = no filter, so every store counts as included. Normal feed:
-    // non-included stores are simply dropped so nothing downstream sees them.
-    // Manage view: keep them all and tag the state for the settings toggle.
+    // non-included stores are dropped entirely. Manage view: keep them all, tagged.
     const isIncluded = included.size === 0 || included.has(key)
     if (!isIncluded && !manage) continue
+    if (manage) {
+      if (seenStore.has(key)) continue
+      seenStore.add(key)
+    } else {
+      if (seenFlyer.has(f.id)) continue
+      seenFlyer.add(f.id)
+    }
     flyers.push({
       flyerId: f.id,
       merchant: f.merchant,
@@ -110,7 +122,14 @@ export const onRequestGet = authed(async (ctx, actor) => {
       ...(manage ? { included: isIncluded } : {}),
     })
   }
-  flyers.sort((a, b) => a.merchant.localeCompare(b.merchant))
+  // Manage: alphabetical store list. Normal feed: soonest-starting first (this
+  // week before next week), then by store — so current flyers lead and upcoming
+  // ones trail, ready for the UI's "Cette semaine" / "À venir" split.
+  flyers.sort((a, b) =>
+    manage
+      ? a.merchant.localeCompare(b.merchant)
+      : (a.validFrom ?? '').localeCompare(b.validFrom ?? '') || a.merchant.localeCompare(b.merchant),
+  )
 
   return ok({ postal, count: flyers.length, flyers })
 })
