@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api, isStatus } from '../../lib/api'
 import { type FlyerSummary } from '../../lib/deals'
@@ -152,6 +153,136 @@ export function StoreFilterSection() {
               </button>
             </li>
           ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+// Grocery history — what the ⚡ Quick add panel (and the add-bar typeahead)
+// suggests, drawn from past buys. The cleanup handle: a flyer deal used to be able
+// to log a specific product name ("Oeuf blanc sélection") instead of riding on the
+// recurring item, so this lets the operator RENAME such an entry back to its
+// generic name (folding its buy history in) or REMOVE it outright. Deals now
+// attach to the generic item, so this is mostly for tidying older entries.
+interface HistRow {
+  key: string
+  text: string
+  count: number
+  lastAt: number
+}
+
+export function HistorySection() {
+  const t = useT()
+  const qc = useQueryClient()
+  const [items, setItems] = useState<HistRow[] | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [busy, setBusy] = useState<Set<string>>(new Set())
+
+  const load = useCallback(async () => {
+    const r = await api<{ items: HistRow[] }>('list?view=history').catch(() => ({ items: [] as HistRow[] }))
+    // Only genuinely bought-and-cleared entries (the purchase_log side, count > 0)
+    // are tidied here — a count-0 row is just a line still on the open list, which
+    // the list itself owns and quick-add already hides.
+    setItems(r.items.filter((i) => i.count > 0))
+  }, [])
+  useEffect(() => {
+    load()
+  }, [load])
+
+  // After a change, refresh this list AND the Liste page's quick-add caches so the
+  // suggestion panel reflects the cleanup without a reload.
+  function refresh() {
+    load()
+    qc.invalidateQueries({ queryKey: ['list-history'] })
+    qc.invalidateQueries({ queryKey: ['ghosts'] })
+  }
+  const mark = (key: string, on: boolean) =>
+    setBusy((b) => {
+      const n = new Set(b)
+      if (on) n.add(key)
+      else n.delete(key)
+      return n
+    })
+
+  async function remove(it: HistRow) {
+    mark(it.key, true)
+    await api('list', { method: 'DELETE', body: { historyKey: it.key } }).catch(() => {})
+    refresh()
+    mark(it.key, false)
+  }
+  async function rename(it: HistRow) {
+    const text = draft.trim()
+    setEditing(null)
+    if (!text || text === it.text) return
+    mark(it.key, true)
+    await api('list', { method: 'PATCH', body: { historyKey: it.key, renameTo: text } }).catch(() => {})
+    refresh()
+    mark(it.key, false)
+  }
+
+  return (
+    <section className="surface operator__section">
+      <h2>{t.operator.history}</h2>
+      <p className="lead">{t.operator.historyHint}</p>
+      {items === null ? (
+        <p className="board__empty mono">{t.shop.searching}</p>
+      ) : items.length === 0 ? (
+        <p className="board__empty mono">{t.operator.historyEmpty}</p>
+      ) : (
+        <ul className="operator__list ghost-admin">
+          {items.map((it) =>
+            editing === it.key ? (
+              <li key={it.key} className="ghost-admin__row">
+                <form
+                  className="operator__inline-form"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    rename(it)
+                  }}
+                >
+                  <input
+                    className="input"
+                    autoFocus
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    aria-label={t.operator.historyRename}
+                  />
+                  <button type="submit" className="btn btn--primary mono">
+                    {t.common.save}
+                  </button>
+                  <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(null)}>
+                    {t.common.cancel}
+                  </button>
+                </form>
+              </li>
+            ) : (
+              <li key={it.key} className="ghost-admin__row">
+                <span className="ghost-admin__name">{it.text}</span>
+                <span className="ghost-admin__meta mono">{it.count > 0 ? `${it.count}×` : ''}</span>
+                <button
+                  type="button"
+                  className="btn btn--ghost mono"
+                  disabled={busy.has(it.key)}
+                  onClick={() => {
+                    setEditing(it.key)
+                    setDraft(it.text)
+                  }}
+                >
+                  {t.operator.historyRename}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost mono operator__del"
+                  disabled={busy.has(it.key)}
+                  onClick={() => remove(it)}
+                >
+                  {t.operator.historyRemove}
+                </button>
+              </li>
+            ),
+          )}
         </ul>
       )}
     </section>
