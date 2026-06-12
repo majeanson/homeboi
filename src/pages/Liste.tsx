@@ -90,7 +90,6 @@ function ListItemRow({
   onName,
   nameLabel,
   onToggle,
-  proof,
 }: {
   text: string
   picto: string
@@ -104,7 +103,6 @@ function ListItemRow({
   onName: () => void
   nameLabel: string
   onToggle: () => void
-  proof?: React.ReactNode
 }) {
   return (
     <div className="list-row">
@@ -148,7 +146,6 @@ function ListItemRow({
           <Icon name="check-bold" size={18} />
         </button>
       </div>
-      {proof}
     </div>
   )
 }
@@ -413,17 +410,6 @@ export function Liste() {
                 onName={() => setEditItem(item)}
                 nameLabel={t.list.edit}
                 onToggle={() => toggleChecked(item)}
-                proof={
-                  <button
-                    type="button"
-                    className={`list-row__proof${staged ? ' is-picked' : ''}`}
-                    onClick={() => openFlyer(item)}
-                    aria-label={t.shop.proof}
-                    title={t.shop.proof}
-                  >
-                    {staged ? '✓' : '🏷️'}
-                  </button>
-                }
               />
             )
           })}

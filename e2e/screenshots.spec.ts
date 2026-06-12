@@ -24,6 +24,7 @@ const SURFACES: Surface[] = [
   { name: 'liste', path: '/liste', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'settings', path: '/settings', audiences: ['parent'], ready: '.hub' },
   { name: 'login', path: '/login', audiences: ['parent'], ready: 'form, .page' },
+  { name: 'signup', path: '/signup', audiences: ['parent'], ready: 'form, .page' },
   { name: 'pair', path: '/pair', audiences: ['parent'], ready: '.page' },
 ]
 
@@ -142,6 +143,7 @@ const OVERFLOW_CASES: { path: string; audience: Audience; ready: string }[] = [
   { path: '/liste', audience: 'toddler', ready: '.hub' },
   { path: '/settings', audience: 'parent', ready: '.hub' },
   { path: '/login', audience: 'parent', ready: '.page' },
+  { path: '/signup', audience: 'parent', ready: '.page' },
   { path: '/pair', audience: 'parent', ready: '.page' },
 ]
 

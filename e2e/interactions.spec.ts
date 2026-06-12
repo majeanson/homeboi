@@ -285,12 +285,12 @@ test.describe('settings forms', () => {
 // ───────────────────────── add sheet (capture) ─────────────────────────
 
 test.describe('add sheet', () => {
-  // On the mobile board the prominent quick-capture bar (.qcap) replaces the
-  // floating ＋ FAB; it opens the same shared sheet.
+  // On the mobile board the standard add button (.board-add) opens the same
+  // shared capture sheet as the floating ＋ FAB.
   test('quick-capture posts the typed note', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
-    await page.locator('.qcap').click()
+    await page.locator('.board-add').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
     await page.locator('.sheet__field input').fill('Acheter du lait')
     await expectApi(page, 'POST', 'capture', () =>
@@ -301,7 +301,7 @@ test.describe('add sheet', () => {
   test('switching to the event mode reveals the full event form', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
-    await page.locator('.qcap').click()
+    await page.locator('.board-add').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
     // Wait for the sheet to finish mounting (capture input present) before
     // switching modes, so a cold-compiled first paint can't race the click.

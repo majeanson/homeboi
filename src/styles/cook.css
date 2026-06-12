@@ -60,6 +60,54 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* Toddler ⇄ parent view toggle: a small segmented control. Emoji always show;
+   the labels collapse on a narrow phone so the bar never crowds the title. */
+.cook__modes {
+  flex: none;
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 2px;
+}
+.cook__mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.cook__mode.is-on {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+.cook__mode:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.cook__mode-label {
+  font-family: var(--sans);
+  font-weight: 600;
+}
+@media (max-width: 520px) {
+  .cook__mode-label {
+    display: none;
+  }
+  .cook__mode {
+    padding: 0.4rem 0.6rem;
+    font-size: 1.1rem;
+  }
+}
 .cook__stage {
   flex: 1;
   min-height: 0;
@@ -72,6 +120,78 @@
 .cook__card {
   width: min(640px, 100%);
   text-align: center;
+}
+/* Parent / full-recipe view: a single scrolling page, so anchor to the top and
+   read top-down rather than vertically centering one card. */
+.cook__stage--full {
+  align-items: flex-start;
+}
+.cook__full {
+  width: min(640px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+.cook__full-sec {
+  text-align: left;
+}
+.cook__full-h {
+  font-family: var(--display);
+  font-size: 1.3rem;
+  margin: 0 0 0.7rem;
+  color: var(--terracotta-deep);
+}
+.cook__full-ings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.cook__full-ings li {
+  font-size: 1.1rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.cook__full-ings .cook__ing-text {
+  display: inline-block;
+}
+.cook__full-steps {
+  margin: 0;
+  padding-left: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.cook__full-steps li {
+  font-size: 1.15rem;
+  line-height: 1.45;
+  padding-left: 0.3rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm, 0.4rem);
+  -webkit-tap-highlight-color: transparent;
+}
+.cook__full-steps li::marker {
+  color: var(--terracotta-deep);
+  font-weight: 700;
+}
+.cook__full-steps li:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.cook__full-steps li:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.cook__full-notes {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
 }
 .cook__h {
   font-size: 1.6rem;
@@ -155,8 +275,9 @@
   margin-bottom: 0.8rem;
 }
 .cook__step-text {
-  font-size: clamp(1.5rem, 4.5vw, 2.4rem);
-  line-height: 1.3;
+  /* Read across a counter at arm's length with messy hands — bias big. */
+  font-size: clamp(1.9rem, 6.5vw, 3.2rem);
+  line-height: 1.25;
   font-family: var(--display);
   font-weight: 600;
   margin: 0;

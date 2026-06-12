@@ -160,6 +160,14 @@ h3 {
 a {
   color: inherit;
 }
+/* Bare buttons (icon-tile cards, today-hero / bigtile, setup choices, profile
+   faces, cat-pick, the toddler tiles) must follow the theme ink — NOT the UA
+   `ButtonText` system colour, which stays dark and turns their label dark-on-dark
+   in night mode. Class-styled buttons that set their own colour (.btn--primary,
+   active .subtabs__opt / .operator__tab, .tdl-start…) still win on specificity. */
+button {
+  color: inherit;
+}
 
 /* --- Primitives ----------------------------------------------------------- */
 .surface {
@@ -201,6 +209,13 @@ a {
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+/* On the dark ground a 0.45-opacity marigold still reads as a rich, tappable
+   amber — desaturate + dim it further so a disabled primary (empty login/signup)
+   clearly reads inert at night, matching the muted look it has in day. */
+:root[data-theme='night'] .btn:disabled {
+  opacity: 0.4;
+  filter: grayscale(0.55);
 }
 .btn--primary {
   background: var(--accent);
