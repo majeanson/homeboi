@@ -17,6 +17,8 @@
 // Worker endpoint (api/recipe-import) does the fetch; this module does the
 // parsing, so it's unit-testable with fixture HTML.
 
+import { dropDanglingHeadings, isSectionHeading, makeSectionHeading } from './recipeSections'
+
 export interface RecipeTimes {
   prep: number | null // minutes
   cook: number | null
@@ -244,7 +246,14 @@ export function refineSteps(raw: string[], max = 30): string[] {
   const seen = new Set<string>()
   for (const r of raw) {
     if (out.length >= max) break
-    for (const piece of splitPacked(clean(r))) {
+    const cleaned = clean(r)
+    // A "## Section" marker is structure, not an instruction — it passes
+    // through whole: never split, never stripped, never deduped against steps.
+    if (isSectionHeading(cleaned)) {
+      out.push(cleaned.slice(0, 500))
+      continue
+    }
+    for (const piece of splitPacked(cleaned)) {
       const stripped = stripStepPrefix(piece)
       if (!isStepText(stripped)) continue
       for (const chunk of sentenceChunks(stripped)) {
@@ -263,8 +272,9 @@ export function refineSteps(raw: string[], max = 30): string[] {
 // recipeInstructions is the messy one: a plain string (newline-separated), an
 // array of strings, an array of HowToStep {text}, or HowToSection nodes that
 // nest itemListElement. Flatten any of these into ordered step strings, keeping
-// section names ("Sauce", "Boulettes") as a "Section — " prefix when the recipe
-// actually has several sections (one section covering everything adds nothing).
+// section names ("Sauce", "Boulettes") as inline "## Section" heading lines
+// when the recipe actually has several sections (one section covering
+// everything adds nothing).
 export function normalizeInstructions(value: unknown, max = 30): string[] {
   type Collected = { section: string | null; text: string }
   const collected: Collected[] = []
@@ -305,15 +315,21 @@ export function normalizeInstructions(value: unknown, max = 30): string[] {
   const sections = new Set(collected.map((c) => c.section).filter(Boolean))
   const useSections = sections.size >= 2
   const out: string[] = []
+  let lastSection: string | null = null
   for (const c of collected) {
     if (out.length >= max) break
     for (const step of refineSteps([c.text], max)) {
       if (out.length >= max) break
-      const final = (useSections && c.section ? `${c.section} — ${step}` : step).slice(0, 500)
+      if (useSections && c.section && c.section !== lastSection) {
+        out.push(makeSectionHeading(c.section).slice(0, 500))
+        lastSection = c.section
+        if (out.length >= max) break
+      }
+      const final = step.slice(0, 500)
       if (!out.includes(final)) out.push(final)
     }
   }
-  return out
+  return dropDanglingHeadings(out)
 }
 
 // ---------------------------------------------------------------------------
@@ -486,9 +502,12 @@ export interface PastedRecipe {
 // optionally a colon — never a full sentence.
 // "Étape(?!\s*\d)" / "Step(?!\s*\d)": a numbered "Étape 1 : Préchauffer…" line
 // is a STEP, not the section heading — never swallow it.
-const ING_HEADING = /^(?:les\s+)?ingr[ée]dients?\b[^.!?]{0,30}:?$/i
+// The optional capture is the heading's qualifier ("Ingrédients POUR LE
+// GLAÇAGE :") — when a paste has several ingredient/step blocks, the qualifier
+// becomes that block's "## " section marker.
+const ING_HEADING = /^(?:les\s+)?ingr[ée]dients?\b\s*([^.!?]{0,30}?)\s*:?$/i
 const STEP_HEADING =
-  /^(?:pr[ée]paration|instructions?|m[ée]thode|method|directions?|[ée]tapes?(?!\s*\d)|steps?(?!\s*\d)|marche\s+[àa]\s+suivre|mode\s+d['’]emploi)\b[^.!?]{0,30}:?$/i
+  /^(?:pr[ée]paration|instructions?|m[ée]thode|method|directions?|[ée]tapes?(?!\s*\d)|steps?(?!\s*\d)|marche\s+[àa]\s+suivre|mode\s+d['’]emploi)\b\s*([^.!?]{0,30}?)\s*:?$/i
 const NOTE_HEADING = /^(?:notes?|conseils?|astuces?|tips?|variantes?)\b[^.!?]{0,10}:?$/i
 
 // "Préparation : 20 min", "Cuisson 1 h 30", "Total time: 45 minutes" — the time
@@ -516,6 +535,26 @@ const SERVINGS_LINE =
 const ING_LIKE = /^[-•*–]?\s*(?:\d|[¼½¾⅓⅔⅛]|une?\b|deux\b|trois\b|quelques\b)/i
 
 const stripBullet = (s: string): string => s.replace(/^[-•·▪◦‣*–—]+\s*/, '').trim()
+
+// A heading's qualifier becomes a section title only when it's wordy, not a
+// count ("pour 4 personnes") — digits mean it's meta, not a part name.
+const qualifierTitle = (q: string | undefined): string | null => {
+  const s = (q ?? '').replace(/^[:\-–—\s]+/, '').trim()
+  return s && !/\d/.test(s) ? s : null
+}
+
+// Inside the ingredient or step block, a short label line introduces a named
+// part of the recipe ("Glaçage :", "Garniture:", "Pour le glaçage", "For the
+// filling") — keep it as an inline "## " section marker. Conservative: short,
+// no digits (a quantity/temperature line is content), never a full sentence.
+function inlineSectionTitle(line: string): string | null {
+  const s = stripBullet(line)
+  if (/\d/.test(s)) return null
+  const colon = s.match(/^([^.!?:;,]{2,40})\s*:$/)
+  if (colon) return colon[1].trim()
+  if (/^(?:pour|for)\s+\S[^.!?:;,]{1,30}$/i.test(s) && s.split(/\s+/).length <= 5) return s
+  return null
+}
 
 // Parse text the user pasted (from a site, a PDF, a message). Heading-aware
 // first; when the paste has no headings, fall back to shape detection
@@ -558,14 +597,21 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       }
     }
 
-    if (ING_HEADING.test(line)) {
+    const ingH = line.match(ING_HEADING)
+    if (ingH) {
       mode = 'ing'
       sawIngHeading = true
+      // "Ingrédients pour le glaçage :" — the qualifier names this part.
+      const sec = qualifierTitle(ingH[1])
+      if (sec) ings.push(makeSectionHeading(sec))
       continue
     }
-    if (STEP_HEADING.test(line)) {
+    const stepH = line.match(STEP_HEADING)
+    if (stepH) {
       mode = 'steps'
       sawStepHeading = true
+      const sec = qualifierTitle(stepH[1])
+      if (sec) stepLines.push(makeSectionHeading(sec))
       continue
     }
     if (NOTE_HEADING.test(line)) {
@@ -579,12 +625,18 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       continue
     }
     if (mode === 'ing') {
+      const sec = inlineSectionTitle(line)
+      if (sec) {
+        ings.push(makeSectionHeading(sec))
+        continue
+      }
       const ing = stripBullet(line).slice(0, 200)
       if (ing) ings.push(ing)
       continue
     }
     if (mode === 'steps') {
-      stepLines.push(line)
+      const sec = inlineSectionTitle(line)
+      stepLines.push(sec ? makeSectionHeading(sec) : line)
       continue
     }
     noteLines.push(line)
@@ -606,24 +658,28 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   }
 
   // Merge wrapped lines (a continuation starts lowercase while the previous
-  // line ended mid-sentence) before the shared refinement pass.
+  // line ended mid-sentence) before the shared refinement pass. A "## " section
+  // marker never merges in either direction — it isn't part of any sentence.
   const merged: string[] = []
   for (const l of stepLines) {
     const prev = merged[merged.length - 1]
-    if (prev && !/[.!?:]$/.test(prev) && /^[a-zà-öœ]/.test(l)) merged[merged.length - 1] = `${prev} ${l}`
+    if (prev && !isSectionHeading(prev) && !isSectionHeading(l) && !/[.!?:]$/.test(prev) && /^[a-zà-öœ]/.test(l))
+      merged[merged.length - 1] = `${prev} ${l}`
     else merged.push(l)
   }
-  const steps = refineSteps(merged, 30)
+  const steps = dropDanglingHeadings(refineSteps(merged, 30))
   const notes = noteLines.join(' ').trim().slice(0, 2000) || null
 
+  const ingredients = dropDanglingHeadings(ings.slice(0, 40))
+  const realIngs = ingredients.filter((l) => !isSectionHeading(l))
   return {
     title,
-    ingredients: ings.slice(0, 40),
+    ingredients,
     steps,
     servings,
     times,
     notes,
-    confident: sawIngHeading && sawStepHeading && ings.length >= 2 && steps.length >= 1,
+    confident: sawIngHeading && sawStepHeading && realIngs.length >= 2 && steps.length >= 1,
   }
 }
 

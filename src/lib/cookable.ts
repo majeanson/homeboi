@@ -9,6 +9,8 @@
 // lowercase, fold ligatures/diacritics, drop a leading quantity+unit run, strip
 // punctuation. A lean cousin of the server's grocery normalizer — enough to tell
 // "400 g de beurre" and "Beurre" are the same thing.
+import { withoutHeadings } from './recipeSections'
+
 const DIACRITICS = /[̀-ͯ]/g
 const UNITS = [
   'kg', 'g', 'gr', 'mg', 'l', 'ml', 'cl', 'dl',
@@ -66,7 +68,7 @@ export function rankUseSoon<R extends { title: string; ingredients: string[] }>(
   const soon = useSoon.map((s) => ({ label: s, key: normKey(s) })).filter((s) => s.key)
   return recipes
     .map((recipe) => {
-      const ingKeys = recipe.ingredients.map(normKey).filter(Boolean)
+      const ingKeys = withoutHeadings(recipe.ingredients).map(normKey).filter(Boolean)
       const uses: string[] = []
       for (const s of soon) {
         if (ingKeys.some((ing) => related(ing, s.key))) uses.push(s.label)
@@ -86,7 +88,7 @@ export function rankCookable<R extends { title: string; ingredients: string[] }>
 
   return recipes
     .map((recipe) => {
-      const ingKeys = recipe.ingredients.map(normKey).filter(Boolean)
+      const ingKeys = withoutHeadings(recipe.ingredients).map(normKey).filter(Boolean)
       const missing: string[] = []
       for (const low of lows) {
         const needed = ingKeys.some((ing) => related(ing, low.key))

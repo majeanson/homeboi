@@ -77,6 +77,14 @@ describe('refineSteps', () => {
   it('dedupes repeated steps', () => {
     expect(refineSteps(['Brasser.', 'brasser.'])).toEqual(['Brasser.'])
   })
+  it('passes "## Section" markers through untouched (no split, strip or dedupe)', () => {
+    expect(refineSteps(['## Glaçage', 'Fouetter le beurre.', '## Glaçage 2', 'Étaler.'])).toEqual([
+      '## Glaçage',
+      'Fouetter le beurre.',
+      '## Glaçage 2',
+      'Étaler.',
+    ])
+  })
   it('chunks an overlong blob at sentence boundaries instead of truncating', () => {
     const blob = Array.from(
       { length: 8 },
@@ -111,12 +119,30 @@ describe('normalizeInstructions', () => {
     const v = [{ '@type': 'HowToSection', name: 'Méthode', itemListElement: [{ text: 'A faire.' }, { text: 'B faire.' }] }]
     expect(normalizeInstructions(v)).toEqual(['A faire.', 'B faire.'])
   })
-  it('keeps section names when the recipe has several sections', () => {
+  it('keeps section names as "## " heading lines when the recipe has several sections', () => {
     const v = [
       { '@type': 'HowToSection', name: 'Sauce', itemListElement: [{ text: 'Mélanger la sauce.' }] },
       { '@type': 'HowToSection', name: 'Boulettes', itemListElement: [{ text: 'Façonner les boulettes.' }] },
     ]
-    expect(normalizeInstructions(v)).toEqual(['Sauce — Mélanger la sauce.', 'Boulettes — Façonner les boulettes.'])
+    expect(normalizeInstructions(v)).toEqual([
+      '## Sauce',
+      'Mélanger la sauce.',
+      '## Boulettes',
+      'Façonner les boulettes.',
+    ])
+  })
+  it('emits one heading per section, not per step', () => {
+    const v = [
+      { '@type': 'HowToSection', name: 'Sauce', itemListElement: [{ text: 'Mélanger.' }, { text: 'Mijoter la sauce.' }] },
+      { '@type': 'HowToSection', name: 'Boulettes', itemListElement: [{ text: 'Façonner les boulettes.' }] },
+    ]
+    expect(normalizeInstructions(v)).toEqual([
+      '## Sauce',
+      'Mélanger.',
+      'Mijoter la sauce.',
+      '## Boulettes',
+      'Façonner les boulettes.',
+    ])
   })
   it('splits a single newline-separated string into steps', () => {
     expect(normalizeInstructions('Step one\n\nStep two')).toEqual(['Step one', 'Step two'])
@@ -342,6 +368,94 @@ Préparation
 Faire revenir l'oignon dans le beurre
 jusqu'à ce qu'il soit doré.`)
     expect(r.steps).toEqual(["Faire revenir l'oignon dans le beurre jusqu'à ce qu'il soit doré."])
+  })
+
+  it('keeps sub-section labels ("Glaçage :") as "## " markers in both lists', () => {
+    const r = parsePastedRecipe(`Biscuits glacés
+Ingrédients
+Biscuits :
+- 2 tasses de farine
+- 1 tasse de beurre
+Glaçage :
+- 1 tasse de sucre en poudre
+- 30 ml de lait
+Préparation
+Biscuits :
+Mélanger la farine et le beurre.
+Cuire 12 minutes.
+Glaçage :
+Fouetter le sucre et le lait.
+Étaler sur les biscuits refroidis.`)
+    expect(r.confident).toBe(true)
+    expect(r.ingredients).toEqual([
+      '## Biscuits',
+      '2 tasses de farine',
+      '1 tasse de beurre',
+      '## Glaçage',
+      '1 tasse de sucre en poudre',
+      '30 ml de lait',
+    ])
+    expect(r.steps).toEqual([
+      '## Biscuits',
+      'Mélanger la farine et le beurre.',
+      'Cuire 12 minutes.',
+      '## Glaçage',
+      'Fouetter le sucre et le lait.',
+      'Étaler sur les biscuits refroidis.',
+    ])
+  })
+
+  it('turns a repeated "Ingrédients pour X" heading qualifier into a section marker', () => {
+    const r = parsePastedRecipe(`Gâteau étagé
+Ingrédients pour le gâteau
+- 2 tasses de farine
+- 3 oeufs
+Ingrédients pour le glaçage
+- 1 tasse de sucre
+Préparation
+Mélanger et cuire.`)
+    expect(r.ingredients).toEqual([
+      '## pour le gâteau',
+      '2 tasses de farine',
+      '3 oeufs',
+      '## pour le glaçage',
+      '1 tasse de sucre',
+    ])
+  })
+
+  it('treats a short "Pour la garniture" line as a section, not an ingredient', () => {
+    const r = parsePastedRecipe(`Tarte
+Ingrédients
+- 1 abaisse
+Pour la garniture
+- 2 pommes
+- 60 ml de sirop
+Préparation
+Garnir et cuire.`)
+    expect(r.ingredients).toEqual(['1 abaisse', '## Pour la garniture', '2 pommes', '60 ml de sirop'])
+  })
+
+  it('never merges a wrapped line into a section marker', () => {
+    const r = parsePastedRecipe(`X
+Ingrédients
+- 1 oignon
+- 2 carottes
+Préparation
+Glaçage :
+fouetter le beurre avec le sucre
+jusqu'à consistance légère.`)
+    expect(r.steps).toEqual(['## Glaçage', "fouetter le beurre avec le sucre jusqu'à consistance légère."])
+  })
+
+  it('drops a dangling section marker with nothing under it', () => {
+    const r = parsePastedRecipe(`X
+Ingrédients
+- 1 oignon
+- 2 carottes
+Glaçage :
+Préparation
+Couper et cuire les légumes.`)
+    expect(r.ingredients).toEqual(['1 oignon', '2 carottes'])
   })
 
   it('falls back to shape detection when there are no headings (not confident)', () => {

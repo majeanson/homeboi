@@ -5,6 +5,7 @@ import { useAudience } from '../lib/audience'
 import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
+import { groupSections } from '../lib/recipeSections'
 import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
 import { IngredientLine } from './IngredientLine'
@@ -45,7 +46,7 @@ const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padStart(2,
 // Holds a Screen Wake Lock so the tablet doesn't sleep mid-recipe; re-acquires it
 // when the tab becomes visible again (locks drop on hide). Silent no-op where the
 // API is missing — it just behaves like a normal screen.
-type Stage = { kind: 'ingredients' } | { kind: 'step'; text: string; n: number }
+type Stage = { kind: 'ingredients' } | { kind: 'step'; text: string; n: number; section: string | null }
 
 export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
   const t = useT()
@@ -68,9 +69,17 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   // ticks down while running.
   const [timer, setTimer] = useState<{ total: number; remaining: number; running: boolean } | null>(null)
 
+  // "## Section" markers group the flat lines (a recipe without markers is one
+  // untitled group). A marker is never its own page — each step page carries
+  // its section's name instead, and the step count covers real steps only.
+  const ingGroups = groupSections(recipe.ingredients)
+  const stepGroups = groupSections(recipe.steps)
+  let stepN = 0
   const stages: Stage[] = [
-    ...(recipe.ingredients.length ? [{ kind: 'ingredients' } as Stage] : []),
-    ...recipe.steps.map((text, i) => ({ kind: 'step', text, n: i + 1 }) as Stage),
+    ...(ingGroups.some((g) => g.items.length) ? [{ kind: 'ingredients' } as Stage] : []),
+    ...stepGroups.flatMap((g) =>
+      g.items.map(({ text }) => ({ kind: 'step', text, n: ++stepN, section: g.title }) as Stage),
+    ),
   ]
   // A recipe with nothing to show shouldn't open, but guard so we never NaN.
   const total = Math.max(1, stages.length)
@@ -256,52 +265,70 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             {recipe.ingredients.length > 0 && (
               <section className="cook__full-sec">
                 <h2 className="cook__full-h">{t.recipes.ingredients}</h2>
-                <ul className="cook__full-ings">
-                  {recipe.ingredients.map((ing, i) => (
-                    <li key={i}>
-                      <span
-                        className="cook__ing-text"
-                        role="button"
-                        tabIndex={0}
-                        aria-label={t.recipes.hearLine}
-                        onClick={() => speak(spokenIngredient(ing, lang))}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            speak(spokenIngredient(ing, lang))
-                          }
-                        }}
-                      >
-                        <IngredientLine line={ing} size="sm" />
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                {ingGroups.map((g, gi) => (
+                  <div key={gi}>
+                    {g.title && <h3 className="cook__full-subh">{g.title}</h3>}
+                    <ul className="cook__full-ings">
+                      {g.items.map(({ text: ing, idx }) => (
+                        <li key={idx}>
+                          <span
+                            className="cook__ing-text"
+                            role="button"
+                            tabIndex={0}
+                            aria-label={t.recipes.hearLine}
+                            onClick={() => speak(spokenIngredient(ing, lang))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                speak(spokenIngredient(ing, lang))
+                              }
+                            }}
+                          >
+                            <IngredientLine line={ing} size="sm" />
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </section>
             )}
             {recipe.steps.length > 0 && (
               <section className="cook__full-sec">
                 <h2 className="cook__full-h">{t.recipes.steps}</h2>
-                {/* The whole method at a glance. Tap any step to hear it read. */}
-                <ol className="cook__full-steps">
-                  {recipe.steps.map((s, i) => (
-                    <li
-                      key={i}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={t.recipes.readStep}
-                      onClick={() => speak(s)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          speak(s)
-                        }
-                      }}
-                    >
-                      {s}
-                    </li>
-                  ))}
-                </ol>
+                {/* The whole method at a glance. Tap any step to hear it read.
+                    Numbering runs across sections, matching the stepper. */}
+                {(() => {
+                  let start = 1
+                  return stepGroups.map((g, gi) => {
+                    const olStart = start
+                    start += g.items.length
+                    return (
+                      <div key={gi}>
+                        {g.title && <h3 className="cook__full-subh">{g.title}</h3>}
+                        <ol className="cook__full-steps" start={olStart}>
+                          {g.items.map(({ text: s, idx }) => (
+                            <li
+                              key={idx}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={t.recipes.readStep}
+                              onClick={() => speak(s)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  speak(s)
+                                }
+                              }}
+                            >
+                              {s}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )
+                  })
+                })()}
               </section>
             )}
             {recipe.notes && (
@@ -315,9 +342,12 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
           <div className="cook__card">
             <h2 className="cook__h">{t.recipes.ingredients}</h2>
             {/* Gather list: tick the box as you grab each one (strike-through),
-                tap the text to hear the whole ingredient read aloud. */}
+                tap the text to hear the whole ingredient read aloud. Section
+                names sit between the rows as plain headers — nothing to tick. */}
             <ul className="cook__ings">
-              {recipe.ingredients.map((ing, i) => {
+              {ingGroups.flatMap((g) => [
+                ...(g.title ? [<li key={`h-${g.title}`} className="cook__ing-sec">{g.title}</li>] : []),
+                ...g.items.map(({ text: ing, idx: i }) => {
                 const got = gathered.has(i)
                 return (
                   <li key={i} className={'cook__ing' + (got ? ' is-got' : '')}>
@@ -349,11 +379,13 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                     </span>
                   </li>
                 )
-              })}
+                }),
+              ])}
             </ul>
           </div>
         ) : (
           <div className="cook__card">
+            {cur?.kind === 'step' && cur.section && <span className="cook__step-sec mono">{cur.section}</span>}
             <span className="cook__step-n mono">
               {t.recipes.stepLabel} {cur?.kind === 'step' ? cur.n : ''}
             </span>

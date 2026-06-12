@@ -18,6 +18,7 @@
 // (1/2), unicode vulgar fractions (½), mixed numbers (1 1/2, 1½) and ranges
 // (2-3, 2–3). Output prefers a tidy unicode fraction so amounts read like a
 // cookbook rather than 0.6666 cups.
+import { isSectionHeading } from './recipeSections'
 
 const UNICODE_FRAC: Record<string, number> = {
   '½': 1 / 2, '⅓': 1 / 3, '⅔': 2 / 3, '¼': 1 / 4, '¾': 3 / 4,
@@ -183,5 +184,7 @@ export function scaleLine(line: string, factor: number): string {
 
 export function scaleIngredients(lines: string[], factor: number): string[] {
   if (factor === 1) return lines
-  return lines.map((l) => scaleLine(l, factor))
+  // A "## Section" marker carries no quantity — and a number in its title
+  // ("## Étage 2") must never be scaled.
+  return lines.map((l) => (isSectionHeading(l) ? l : scaleLine(l, factor)))
 }

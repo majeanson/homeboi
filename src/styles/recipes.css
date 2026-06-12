@@ -715,3 +715,54 @@
   gap: 0.35rem;
   line-height: 1.5;
 }
+
+/* --- Recipe sections ("## Glaçage" inline markers) + row reordering -------- */
+/* Sub-section heading inside the sheet and the Original view. */
+.recipe-subsec-h {
+  margin: 0.9rem 0 0.4rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--terracotta-deep);
+}
+/* A section row in the editors: the title input reads as a heading. */
+.recipe-line--sec {
+  margin-top: 0.35rem;
+}
+.recipe-line--sec .input {
+  font-weight: 700;
+  border-left: 3px solid var(--terracotta-deep);
+}
+/* The ↑/↓ reorder pair on every editor row. */
+.recipe-line__move {
+  display: flex;
+  flex: none;
+  gap: 0.1rem;
+}
+.recipe-line__mv {
+  width: 2.1rem;
+  height: 2.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+  font-size: 1rem;
+}
+.recipe-line__mv:hover:not(:disabled) {
+  color: var(--accent);
+}
+.recipe-line__mv:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+/* Steps editor: align the move pair with the first preview line. */
+.recipe-step .recipe-line__move {
+  padding-top: 0.15rem;
+}
+/* "＋ add line" next to "＋ section". */
+.recipe-add-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}

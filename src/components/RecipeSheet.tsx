@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
 import { scaleIngredients } from '../lib/scale'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
+import { groupSections } from '../lib/recipeSections'
 import { type MealSlot } from '../lib/mealSlots'
 import { ZoomableImg } from './ZoomableImg'
 import { CookMode } from './CookMode'
@@ -65,6 +66,30 @@ export function RecipeSheet({
     () => scaleIngredients(recipe.ingredients, factor),
     [recipe.ingredients, factor],
   )
+  // Sectioned display ("Biscuits" / "Glaçage"): inline "## " markers group the
+  // flat lines; a recipe without markers is one untitled group, unchanged. Step
+  // numbering runs ACROSS sections (each group's <ol> picks up where the last
+  // ended) so cook mode's "étape 5" matches the sheet.
+  const ingGroups = useMemo(() => groupSections(scaledIngredients), [scaledIngredients])
+  const stepGroups = useMemo(() => {
+    let n = 1
+    return groupSections(recipe.steps).map((g) => {
+      const start = n
+      n += g.items.length
+      return { ...g, start }
+    })
+  }, [recipe.steps])
+  // The Original view groups too (the markers are part of the snapshot) —
+  // computed inline, it's a handful of lines.
+  const origIngGroups = groupSections(origView.ingredients)
+  const origStepGroups = (() => {
+    let n = 1
+    return groupSections(origView.steps).map((g) => {
+      const start = n
+      n += g.items.length
+      return { ...g, start }
+    })
+  })()
   // The recipe handed to Cook mode and pushed to the list reflects the chosen
   // batch, so the cook reads (and shops for) the amounts they'll actually use.
   const effectiveRecipe =
@@ -131,21 +156,31 @@ export function RecipeSheet({
             {origView.ingredients.length > 0 && (
               <>
                 <h4 className="recipe-original__h">{t.recipes.ingredients}</h4>
-                <ul className="recipe-original__ings">
-                  {origView.ingredients.map((ing, i) => (
-                    <li key={i}>{ing}</li>
-                  ))}
-                </ul>
+                {origIngGroups.map((g, gi) => (
+                  <Fragment key={gi}>
+                    {g.title && <h5 className="recipe-subsec-h">{g.title}</h5>}
+                    <ul className="recipe-original__ings">
+                      {g.items.map(({ text, idx }) => (
+                        <li key={idx}>{text}</li>
+                      ))}
+                    </ul>
+                  </Fragment>
+                ))}
               </>
             )}
             {origView.steps.length > 0 && (
               <>
                 <h4 className="recipe-original__h">{t.recipes.steps}</h4>
-                <ol className="recipe-original__steps">
-                  {origView.steps.map((s, i) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ol>
+                {origStepGroups.map((g, gi) => (
+                  <Fragment key={gi}>
+                    {g.title && <h5 className="recipe-subsec-h">{g.title}</h5>}
+                    <ol className="recipe-original__steps" start={g.start}>
+                      {g.items.map(({ text, idx }) => (
+                        <li key={idx}>{text}</li>
+                      ))}
+                    </ol>
+                  </Fragment>
+                ))}
               </>
             )}
             {origView.source && /^https?:\/\//i.test(origView.source) && (
@@ -226,49 +261,59 @@ export function RecipeSheet({
                   ))}
                 </div>
               </div>
-              <ul className="recipe-view__ings">
-                {scaledIngredients.map((ing, i) => (
-                  <li key={i}>
-                    <IngredientLine line={ing} size="sm" />
-                  </li>
-                ))}
-              </ul>
+              {ingGroups.map((g, gi) => (
+                <Fragment key={gi}>
+                  {g.title && <h4 className="recipe-subsec-h">{g.title}</h4>}
+                  <ul className="recipe-view__ings">
+                    {g.items.map(({ text, idx }) => (
+                      <li key={idx}>
+                        <IngredientLine line={text} size="sm" />
+                      </li>
+                    ))}
+                  </ul>
+                </Fragment>
+              ))}
             </>
           )}
 
           {recipe.steps.length > 0 && (
             <>
               <h3 className="recipe-sec-h">{t.recipes.steps}</h3>
-              <ol className="recipe-view__steps">
-                {recipe.steps.map((s, i) => {
-                  // Each step: its instruction as sentence bullets, then the
-                  // ingredients (with scaled quantities) that step uses.
-                  const used = ingredientsForStep(s, scaledIngredients)
-                  return (
-                    <li key={i}>
-                      <ul className="recipe-step__sentences">
-                        {stepSentences(s).map((sen, j) => (
-                          <li key={j}>{sen}</li>
-                        ))}
-                      </ul>
-                      {used.length > 0 && (
-                        <details className="recipe-step__ings-wrap">
-                          <summary className="recipe-step__ings-toggle mono">
-                            {t.recipes.stepIngredients} ({used.length})
-                          </summary>
-                          <ul className="recipe-step__ings mono">
-                            {used.map((ing, j) => (
-                              <li key={j}>
-                                <IngredientLine line={ing} size="sm" />
-                              </li>
+              {stepGroups.map((g, gi) => (
+                <Fragment key={gi}>
+                  {g.title && <h4 className="recipe-subsec-h">{g.title}</h4>}
+                  <ol className="recipe-view__steps" start={g.start}>
+                    {g.items.map(({ text, idx }) => {
+                      // Each step: its instruction as sentence bullets, then the
+                      // ingredients (with scaled quantities) that step uses.
+                      const used = ingredientsForStep(text, scaledIngredients)
+                      return (
+                        <li key={idx}>
+                          <ul className="recipe-step__sentences">
+                            {stepSentences(text).map((sen, j) => (
+                              <li key={j}>{sen}</li>
                             ))}
                           </ul>
-                        </details>
-                      )}
-                    </li>
-                  )
-                })}
-              </ol>
+                          {used.length > 0 && (
+                            <details className="recipe-step__ings-wrap">
+                              <summary className="recipe-step__ings-toggle mono">
+                                {t.recipes.stepIngredients} ({used.length})
+                              </summary>
+                              <ul className="recipe-step__ings mono">
+                                {used.map((ing, j) => (
+                                  <li key={j}>
+                                    <IngredientLine line={ing} size="sm" />
+                                  </li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ol>
+                </Fragment>
+              ))}
             </>
           )}
 

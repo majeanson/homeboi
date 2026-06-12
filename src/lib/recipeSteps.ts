@@ -5,6 +5,7 @@
 // appears in the step text. Forgiving — an ingredient that matches no step (salt,
 // a garnish "to taste") simply isn't pinned to one; nothing is lost.
 import { ingredientName } from './ingredient'
+import { isSectionHeading } from './recipeSections'
 
 // Accent-insensitive, lowercase, with the French ligatures expanded (œ→oe, æ→ae)
 // so "bœuf" tokenizes to "boeuf" and matches a step that also writes "bœuf" —
@@ -29,7 +30,10 @@ function nameTokens(ingredientLine: string): string[] {
 // already-scaled lines so the shown quantity reflects the current serving size.
 export function ingredientsForStep(step: string, ingredients: string[]): string[] {
   const s = norm(step)
+  // Section markers aren't ingredients — and "## Glaçage" would otherwise match
+  // every step that mentions the glaze.
   return ingredients.filter((ing) => {
+    if (isSectionHeading(ing)) return false
     const toks = nameTokens(ing)
     return toks.length > 0 && toks.some((tok) => s.includes(tok))
   })
