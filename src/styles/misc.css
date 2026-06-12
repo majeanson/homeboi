@@ -119,30 +119,34 @@
 }
 
 /* "Par magasin": a grid of store flyers (logo + name) to open whole. */
+/* One flyer per row (was a tight grid) so each can carry its store, run dates,
+   and a "this week / upcoming" badge without crowding. */
 .flyer-stores {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
-  gap: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 .flyer-store {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.7rem 0.4rem;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--card);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
+  text-align: left;
 }
 .flyer-store:active {
   transform: translate(1px, 1px);
   box-shadow: var(--shadow-press);
 }
 .flyer-store__logo {
-  width: 100%;
-  height: 3rem;
+  flex: none;
+  width: 3rem;
+  height: 2.4rem;
   object-fit: contain;
   border-radius: var(--radius-sm);
 }
@@ -150,12 +154,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
+}
+.flyer-store__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
 }
 .flyer-store__name {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  text-align: center;
+}
+.flyer-store__dates {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+/* Date badge: calm neutral for the week in effect, a warm accent for an upcoming
+   flyer so "you can prep next week" reads at a glance. */
+.flyer-store__when {
+  flex: none;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.flyer-store__when--current {
+  color: var(--ink-soft);
+  background: var(--paper-2);
+}
+.flyer-store__when--upcoming {
+  color: var(--accent-ink, #fff);
+  background: var(--accent);
 }
 
 /* Settings → Magasinage: the store filter. One wrap-friendly row per nearby

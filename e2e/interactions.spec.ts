@@ -651,7 +651,14 @@ test.describe('list', () => {
     await page.locator('.list-actions').first().locator('button').click()
     await expect(page.locator('.deal-tabs')).toBeVisible()
     await page.getByRole('tab', { name: /Par magasin/ }).click()
-    await expect(page.locator('.flyer-store').first()).toBeVisible()
+    await expect(page.locator('.flyer-store')).toHaveCount(3)
+    // Flyers are separated by date: this week's two + next week's IGA (future start),
+    // each badged so you can open the upcoming one to prep next week.
+    await expect(page.locator('.flyer-store__when--upcoming')).toHaveCount(1)
+    await expect(page.locator('.flyer-store__when--upcoming')).toHaveText(/À venir/)
+    await expect(
+      page.locator('.flyer-store', { hasText: 'Super C' }).locator('.flyer-store__when--current'),
+    ).toBeVisible()
     await page.locator('.flyer-store', { hasText: 'Super C' }).click()
     await expect(page.locator('.flyer-overlay')).toBeVisible()
     // The fixture flyer has 2 pages but only page 1 carries an item; the empty

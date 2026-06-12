@@ -10,6 +10,9 @@ const DAY = 86400
 // A fixed Monday-ish anchor (2026-06-08 08:00 local-ish). Only relative slotting
 // and clock formatting use these; exact values don't matter for visual review.
 const BASE = 1_749_369_600 // 2026-06-08T08:00:00Z
+// An ISO date N days from the real clock — for flyer run dates, since the store
+// browser's current/upcoming split keys on the live Date.now() (not BASE).
+const flyerIso = (days: number): string => new Date(Date.now() + days * DAY * 1000).toISOString()
 
 const MEMBERS = [
   { id: 'm1', display_name: 'Maman', colour: '#B06A93', is_child: 0 },
@@ -277,9 +280,13 @@ const ROUTES: Record<string, unknown> = {
     ],
   },
   flyers: {
+    // Dates are relative to the real clock (the store browser splits current vs
+    // upcoming by Date.now(), which these tests don't freeze): two flyers in effect
+    // this week + one IGA flyer Flipp already published for next week (future start).
     flyers: [
-      { flyerId: 5001, merchant: 'Super C', logo: null, premium: true, validFrom: null, validTo: null },
-      { flyerId: 5002, merchant: 'IGA', logo: null, premium: true, validFrom: null, validTo: null },
+      { flyerId: 5001, merchant: 'Super C', logo: null, premium: true, validFrom: flyerIso(-1), validTo: flyerIso(5) },
+      { flyerId: 5002, merchant: 'IGA', logo: null, premium: true, validFrom: flyerIso(-1), validTo: flyerIso(5) },
+      { flyerId: 5003, merchant: 'IGA', logo: null, premium: false, validFrom: flyerIso(7), validTo: flyerIso(13) },
     ],
   },
   flyer: {
