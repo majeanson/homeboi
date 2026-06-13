@@ -1,7 +1,7 @@
 import { ok, serviceUnavailable, readJson, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { suggestMeals, resolveLang } from '../_lib/ai'
-import { dayStart } from '../_lib/ids'
+import { localDayStart } from '../_lib/ids'
 
 // "Qu'est-ce qu'on mange?" — one on-demand AI call returns a BATCH of 10 ideas.
 // The client shows them one per click and only asks again once exhausted, so 10
@@ -16,7 +16,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     ? body!.avoid.filter((x): x is string => typeof x === 'string').slice(0, 20)
     : []
 
-  const today = dayStart(new Date(Date.now()))
+  const today = localDayStart(new Date(Date.now()))
   const [low, recent, favs] = await Promise.all([
     ctx.env.DB.prepare('SELECT item FROM pantry_low WHERE household_id = ? ORDER BY marked_at DESC LIMIT 10')
       .bind(actor.householdId)
