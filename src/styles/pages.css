@@ -641,6 +641,14 @@
   justify-content: center;
   min-height: 70vh;
   gap: 1rem;
+  /* On-screen keyboard: stop vertically centering (which buries the lower fields
+     + submit under the OSK) and reserve its height as scrollable slack so the
+     "Créer la maisonnée" button can be scrolled into view. --kb is 0 when no
+     keyboard, so this is inert otherwise. (viewportVars.ts feeds --kb.) */
+  padding-bottom: var(--kb, 0px);
+}
+.auth:has(input:focus) {
+  justify-content: flex-start;
 }
 .auth__card {
   max-width: 24rem;
