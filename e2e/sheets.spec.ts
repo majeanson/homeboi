@@ -111,7 +111,9 @@ test('sheet-cashier-present', async ({ page }) => {
   await boot(page, '/liste')
   await page.getByRole('button', { name: /Choisir les meilleurs/ }).click()
   await page.locator('.cashier').waitFor({ state: 'visible', timeout: 15_000 })
-  await page.locator('.cashier__go').click()
+  // The "present" CTA moved from a bottom bar (.cashier__go) to the top bar next
+  // to ✕ (iOS-toolbar-safe) — see CashierMode.
+  await page.locator('.cashier__present').click()
   await page.locator('.bigcard').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'sheet-cashier-present-phone')
