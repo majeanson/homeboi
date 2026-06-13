@@ -81,6 +81,18 @@ interface VoiceOpts {
 // BEFORE a dead tap, e.g. a kiosk where the grant was never given.
 export type MicPermission = 'granted' | 'denied' | 'prompt' | 'unknown'
 
+// iOS (incl. iPadOS, which poses as a Mac). There the Permissions API can't
+// read the mic grant AND a denied mic can't be re-prompted from the page — the
+// only way back is iOS Settings. So callers swap to the Settings-pointing
+// recovery copy on iOS rather than the generic "allow it in your browser".
+export function isIos(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent
+  if (/iP(hone|ad|od)/.test(ua)) return true
+  // iPadOS 13+ reports a desktop Safari UA; touch support disambiguates it.
+  return /Macintosh/.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document
+}
+
 export interface VoiceInput {
   listening: boolean
   hasVoice: boolean

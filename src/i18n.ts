@@ -79,6 +79,10 @@ export const FR = {
     // Voice add (continuous): hint while listening + why nothing landed on error.
     voiceHint: 'Nomme tes articles un à un — touche 🎤 pour arrêter.',
     voiceDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
+    // iOS ne laisse pas la page redemander — il faut passer par les réglages.
+    voiceDeniedIos: 'Micro bloqué. Ouvre Réglages → Safari → Microphone pour réautoriser.',
+    // Petit mot avant la première demande système (là où on peut la détecter).
+    voicePrime: 'On va demander l’accès au micro pour écrire à voix haute.',
     voiceNoSpeech: 'Rien entendu. Réessaie plus près du micro.',
     voiceUnsupported: 'La reconnaissance vocale n’est pas dispo sur cet appareil.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
@@ -96,6 +100,7 @@ export const FR = {
     addTerm: 'Ajouter un terme…',
     unlinkDeal: 'Retirer le rabais',
     deleteItem: 'Supprimer de la liste',
+    swipeDelete: 'Supprimer',
     save: 'Enregistrer',
     edit: 'Modifier',
     openFlyer: 'Voir les rabais',
@@ -532,6 +537,7 @@ export const FR = {
     guideHint: 'Tout le fonctionnement de Babillard, expliqué simplement, au même endroit. Touche une carte pour la déplier.',
     guideSearch: 'Chercher dans le guide…',
     guideNone: 'Rien trouvé. Essaie un autre mot.',
+    guideGoTo: 'Aller à cet onglet',
   },
   ghost: {
     title: 'Suggestions',
@@ -691,6 +697,10 @@ export const EN: typeof FR = {
     // Voice add (continuous): hint while listening + why nothing landed on error.
     voiceHint: 'Name your items one at a time — tap 🎤 to stop.',
     voiceDenied: 'Mic blocked. Allow the microphone in your browser.',
+    // iOS won't let the page re-prompt — recovery has to go through Settings.
+    voiceDeniedIos: 'Mic blocked. Open Settings → Safari → Microphone to allow it again.',
+    // A heads-up before the first system prompt (where we can detect it).
+    voicePrime: 'We’ll ask to use the mic so you can add by voice.',
     voiceNoSpeech: 'Didn’t catch that. Try again, closer to the mic.',
     voiceUnsupported: 'Voice recognition isn’t available on this device.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
@@ -708,6 +718,7 @@ export const EN: typeof FR = {
     addTerm: 'Add a term…',
     unlinkDeal: 'Remove deal',
     deleteItem: 'Remove from list',
+    swipeDelete: 'Delete',
     save: 'Save',
     edit: 'Edit',
     openFlyer: 'See deals',
@@ -1142,6 +1153,7 @@ export const EN: typeof FR = {
     guideHint: 'Everything Babillard does, explained simply, in one place. Tap a card to expand it.',
     guideSearch: 'Search the guide…',
     guideNone: 'Nothing found. Try another word.',
+    guideGoTo: 'Go to this tab',
   },
   ghost: {
     title: 'Suggestions',

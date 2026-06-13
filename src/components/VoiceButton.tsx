@@ -1,5 +1,5 @@
 import { useT } from '../i18n'
-import type { VoiceInput } from '../lib/useVoiceInput'
+import { isIos, type VoiceInput } from '../lib/useVoiceInput'
 
 // The shared "speak it" mic, used by every add field (CaptureBar, the ＋ sheet,
 // La liste, the garde-manger). The caller owns the useVoiceInput hook (so the
@@ -14,14 +14,16 @@ export function VoiceButton({ voice, label }: { voice: VoiceInput; label: string
   // it blocked, so it reads as "fix this in settings" rather than a dead tap.
   // (We can't re-grant from code — the browser/OS owns the permission.)
   const blocked = voice.permission === 'denied'
+  // iOS can't re-prompt from the page, so point at Settings instead of "your browser".
+  const blockedMsg = isIos() ? t.list.voiceDeniedIos : t.list.voiceDenied
   return (
     <button
       type="button"
       className={`btn btn--ghost capture__voice${voice.listening ? ' is-listening' : ''}${blocked ? ' is-blocked' : ''}`}
       onClick={voice.start}
-      aria-label={blocked ? `${label} — ${t.list.voiceDenied}` : label}
+      aria-label={blocked ? `${label} — ${blockedMsg}` : label}
       aria-pressed={voice.listening}
-      title={blocked ? t.list.voiceDenied : undefined}
+      title={blocked ? blockedMsg : undefined}
     >
       🎤
     </button>
@@ -34,19 +36,21 @@ export function VoiceButton({ voice, label }: { voice: VoiceInput; label: string
 // don't need it — the text appearing is feedback enough.
 export function VoiceStatus({ voice }: { voice: VoiceInput }) {
   const t = useT()
+  // On iOS the only way back from a denial is Settings, so swap the recovery copy.
+  const deniedMsg = isIos() ? t.list.voiceDeniedIos : t.list.voiceDenied
   // Explain a remembered-blocked mic before the user even taps, so a kiosk that
   // was never granted access doesn't look merely silent.
   if (!voice.error && voice.permission === 'denied') {
     return (
       <p className="list-add__voicemsg list-add__voicemsg--err" role="status">
-        {t.list.voiceDenied}
+        {deniedMsg}
       </p>
     )
   }
   if (voice.error) {
     const msg =
       voice.error === 'not-allowed' || voice.error === 'service-not-allowed'
-        ? t.list.voiceDenied
+        ? deniedMsg
         : voice.error === 'language-not-supported'
           ? t.list.voiceUnsupported
           : t.list.voiceNoSpeech
@@ -60,6 +64,16 @@ export function VoiceStatus({ voice }: { voice: VoiceInput }) {
     return (
       <p className="list-add__voicemsg" role="status">
         {t.list.voiceHint}
+      </p>
+    )
+  }
+  // Pending grant (Android/Chrome, where we can read 'prompt'): a calm heads-up
+  // that the first tap will ask for the mic, so the system prompt isn't a
+  // surprise. iOS stays 'unknown' here, so it's never nagged pre-grant.
+  if (voice.permission === 'prompt') {
+    return (
+      <p className="list-add__voicemsg" role="status">
+        {t.list.voicePrime}
       </p>
     )
   }
