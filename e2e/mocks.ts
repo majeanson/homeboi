@@ -35,6 +35,15 @@ const BOARD = {
   upcoming: [{ id: 'e5', title: 'Fête de Léa', start_at: BASE + 5 * DAY, all_day: 1, member_id: 'm3' }],
   tonight: { id: 'meal1', title: 'Spaghetti maison', cook_member_id: 'm2' },
   tomorrowMeal: { id: 'meal2', title: 'Tacos', cook_member_id: 'm1' },
+  // The full per-day meal table + day memo (new board fields; the Now/Next and
+  // per-person Lanes views read these). Absent → those views must not crash.
+  todayMeals: [
+    { id: 'meal1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2' },
+    { id: 'meal4', slot: 'breakfast', title: 'Crêpes', cook_member_id: null },
+  ],
+  dayNote: { id: 'dn1', text: 'Sans gluten ce soir', member_id: 'm1' },
+  tomorrowMeals: [{ id: 'meal2', slot: 'supper', title: 'Tacos', cook_member_id: 'm1' }],
+  tomorrowNote: null,
   list: [
     // l1 carries a staged flyer deal (deal_json) — the cashier set now lives on the
     // list, so this is what drives the "show the cashier" button and the row's ✓.
@@ -292,6 +301,11 @@ const ROUTES: Record<string, unknown> = {
   },
   pantry: PANTRY,
   'use-soon': { soon: [{ id: 'u1', item: 'Épinards', marked_at: BASE - 3 * 3600 }, { id: 'u2', item: 'Crème', marked_at: BASE - 8 * 3600 }] },
+  // Per-day kitchen memos (La cuisine grid). One note on day-one so the feature
+  // renders; an empty/absent `notes` must never crash the page (Kitchen guards it).
+  'day-notes': { notes: [{ id: 'dn1', date: BASE, text: 'Sans gluten ce soir', member_id: 'm1' }] },
+  // AI-failure journal (Réglages). Empty is the normal, healthy state.
+  'ai-errors': { errors: [] },
   recipes: RECIPES,
   'recipe-tags': {
     presets: [],
