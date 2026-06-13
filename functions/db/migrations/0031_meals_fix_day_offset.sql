@@ -1,0 +1,21 @@
+-- Correct an off-by-one introduced by 0030.
+--
+-- The legacy meals were stored at UTC midnight, e.g. a supper the user planned
+-- for Saturday was stored as `Sunday 00:00 UTC` — because in America/Toronto
+-- (EDT, UTC-4) that instant is Saturday 20:00 local. So the CORRECT re-bucket to
+-- local midnight is the LOCAL day that instant falls in (UTC midnight − 20 h),
+-- not the same calendar number. 0030 shifted +4 h instead, landing every meal one
+-- local day LATE (tonight showed yesterday's supper).
+--
+-- Net needed from the original UTC-midnight value is −20 h; 0030 already added
+-- +4 h, so this removes the remaining full day (−86400 s). The `% 86400 = 14400`
+-- guard matches exactly the EDT local-midnight rows 0030 produced.
+--
+-- A plain `date = date − 86400` trips the (household_id, date, slot) UNIQUE index:
+-- shifting every row back one day transiently lands it on the day its neighbour
+-- still occupies. So park the rows ~1 year back first (365 d = a multiple of
+-- 86400, so the `% 86400` guard still matches; that range can't overlap any live
+-- row), then pull them forward 1 year − 1 day → net −86400 with no intermediate
+-- duplicate. Forward-only, run once (d1_migrations guarantees it).
+UPDATE meals SET date = date - 31536000 WHERE date % 86400 = 14400;
+UPDATE meals SET date = date + 31536000 - 86400 WHERE date % 86400 = 14400;
