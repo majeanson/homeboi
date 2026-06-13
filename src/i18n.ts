@@ -62,6 +62,11 @@ export const FR = {
     check: 'Cocher',
     uncheck: 'Décocher',
     clearChecked: 'Vider les cochés',
+    // Voice add (continuous): hint while listening + why nothing landed on error.
+    voiceHint: 'Nomme tes articles un à un — touche 🎤 pour arrêter.',
+    voiceDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
+    voiceNoSpeech: 'Rien entendu. Réessaie plus près du micro.',
+    voiceUnsupported: 'La reconnaissance vocale n’est pas dispo sur cet appareil.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
     quickAdd: 'Ajout rapide',
     quickAddTitle: 'Déjà acheté',
@@ -621,6 +626,11 @@ export const EN: typeof FR = {
     check: 'Check off',
     uncheck: 'Uncheck',
     clearChecked: 'Clear checked',
+    // Voice add (continuous): hint while listening + why nothing landed on error.
+    voiceHint: 'Name your items one at a time — tap 🎤 to stop.',
+    voiceDenied: 'Mic blocked. Allow the microphone in your browser.',
+    voiceNoSpeech: 'Didn’t catch that. Try again, closer to the mic.',
+    voiceUnsupported: 'Voice recognition isn’t available on this device.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
     quickAdd: 'Quick add',
     quickAddTitle: 'Bought before',

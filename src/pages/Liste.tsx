@@ -167,15 +167,20 @@ export function Liste() {
   const [pendingClear, setPendingClear] = useState<Set<string>>(new Set())
   const [addText, setAddText] = useState('')
   const [adding, setAdding] = useState(false)
-  // The mic is "add by voice", not dictation: a recognised phrase goes straight
-  // onto the list (hands-free at the counter). postAdd is hoisted, so the closure
-  // resolves it at speak time. Empty results (mis-hear) are ignored, not added.
-  const { listening, hasVoice, start: startVoice } = useVoiceInput((text) => {
-    const v = text.trim()
-    if (!v) return
-    setAddText('')
-    void postAdd(v)
-  })
+  // The mic is "add by voice", not dictation: each recognised phrase goes straight
+  // onto the list (hands-free at the counter). `continuous` keeps the mic open so
+  // you can reel off a whole list — tap again to stop — and `split` turns one
+  // breath of "lait, œufs pis pain" into three items. postAdd is hoisted, so the
+  // closure resolves it at speak time. Empty results (mis-hear) are ignored.
+  const { listening, hasVoice, error: voiceError, start: startVoice } = useVoiceInput(
+    (text) => {
+      const v = text.trim()
+      if (!v) return
+      setAddText('')
+      void postAdd(v)
+    },
+    { continuous: true, split: true },
+  )
 
   const { data: board, error } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board'), ...live })
   // Ghost suggestions and history are quiet best-effort layers — a failure just
@@ -369,6 +374,7 @@ export function Liste() {
             className={`btn btn--ghost list-add__voice${listening ? ' is-listening' : ''}`}
             onClick={startVoice}
             aria-label={t.capture.voice}
+            aria-pressed={listening}
           >
             🎤
           </button>
@@ -378,6 +384,21 @@ export function Liste() {
           {t.capture.add}
         </button>
       </form>
+      {/* Voice feedback: a calm hint while the mic is open, or why nothing landed
+          (denied/silent/unsupported) so the mic is never a silent dead button. */}
+      {voiceError ? (
+        <p className="list-add__voicemsg list-add__voicemsg--err" role="status">
+          {voiceError === 'not-allowed' || voiceError === 'service-not-allowed'
+            ? t.list.voiceDenied
+            : voiceError === 'language-not-supported'
+              ? t.list.voiceUnsupported
+              : t.list.voiceNoSpeech}
+        </p>
+      ) : listening ? (
+        <p className="list-add__voicemsg" role="status">
+          {t.list.voiceHint}
+        </p>
+      ) : null}
 
       {/* Quick add: reopen past/predicted items to restock a week in a few taps. */}
       <button type="button" className="btn btn--ghost list-quick" onClick={() => setQuickOpen(true)}>

@@ -931,6 +931,24 @@
 .list-add__voice.is-listening {
   background: var(--accent);
   color: var(--accent-ink);
+  animation: voice-pulse 1.4s ease-in-out infinite;
+}
+@keyframes voice-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  50% { box-shadow: 0 0 0 0.4rem color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .list-add__voice.is-listening { animation: none; }
+}
+/* Voice feedback line under the add form: a calm hint while listening, or a
+   soft error so the mic never fails silently. */
+.list-add__voicemsg {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+.list-add__voicemsg--err {
+  color: var(--danger, #b4413c);
 }
 /* A checked line stays IN PLACE but reads as "got it": struck title, dimmed
    picture (the sage-filled check comes from .act.done .check). Targeted to the
