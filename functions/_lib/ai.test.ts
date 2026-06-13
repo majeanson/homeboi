@@ -2,9 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { classifyCapture, suggestMeals, mealStaples, resolveLang, extractSizes } from './ai'
 import type { Env } from './env'
 
-// A fake Workers AI binding that returns a canned response, so we can test the
-// parsing/normalization without a real model.
-const mockAiEnv = (response: string): Env =>
+// A fake Workers AI binding that returns a canned `response`, so we can test the
+// parsing/normalization without a real model. `response` is typed `unknown` on
+// purpose: newer models (llama-3.3-70b-fp8-fast) hand back an already-PARSED
+// object/array when the output is valid JSON, while older ones returned a string.
+const mockAiEnv = (response: unknown): Env =>
   ({ DB: {} as D1Database, AI: { run: async () => ({ response }) } as unknown as Ai }) as Env
 
 // With no AI binding the router must NEVER throw and NEVER lose the words —
@@ -46,6 +48,30 @@ describe('suggestMeals (degraded)', () => {
   })
 })
 
+// REGRESSION: the model swap to llama-3.3-70b-fp8-fast made `response` arrive as
+// an already-parsed JS value instead of a string. Before the fix this dropped to
+// [] and the endpoint 503'd. Both shapes must now produce the same dishes.
+describe('suggestMeals (response shape)', () => {
+  it('parses a string-wrapped JSON array (old model shape)', async () => {
+    const env = mockAiEnv('Voici: ["spaghetti","chili","tacos"]')
+    const r = await suggestMeals(env, [], [])
+    expect(r).toEqual(['spaghetti', 'chili', 'tacos'])
+  })
+  it('accepts an already-parsed array (new fp8-fast model shape)', async () => {
+    const env = mockAiEnv(['spaghetti', 'chili', 'tacos'])
+    const r = await suggestMeals(env, [], [])
+    expect(r).toEqual(['spaghetti', 'chili', 'tacos'])
+  })
+})
+
+describe('mealStaples (response shape)', () => {
+  it('accepts an already-parsed array (new model shape)', async () => {
+    const env = mockAiEnv(['pâtes', 'sauce tomate', 'viande hachée'])
+    const r = await mealStaples(env, 'spaghetti')
+    expect(r).toEqual(['pâtes', 'sauce tomate', 'viande hachée'])
+  })
+})
+
 describe('mealStaples (degraded)', () => {
   it('returns an empty list when AI is unset so the meal just saves', async () => {
     const r = await mealStaples(noAiEnv, 'spaghetti')
@@ -84,5 +110,32 @@ describe('extractSizes', () => {
     const env = mockAiEnv('no json here')
     const r = await extractSizes(env, ['x', 'y'])
     expect(r).toEqual([null, null])
+  })
+
+  it('accepts an already-parsed array (new fp8-fast model shape)', async () => {
+    const env = mockAiEnv([
+      { i: 0, size: '2 L' },
+      { i: 1, size: null },
+      { i: 2, size: '500 g' },
+    ])
+    const r = await extractSizes(env, ['lait', 'pain', 'poulet'])
+    expect(r).toEqual(['2 L', null, '500 g'])
+  })
+})
+
+// classifyCapture's JSON parse must also accept the new parsed-object shape, or
+// every capture silently falls back to a generic note.
+describe('classifyCapture (response shape)', () => {
+  it('routes from a string-wrapped JSON object (old model shape)', async () => {
+    const env = mockAiEnv('{"type":"list-item","payload":{"item":"lait"}}')
+    const r = await classifyCapture(env, 'ajoute du lait')
+    expect(r.type).toBe('list-item')
+    expect(r.payload.item).toBe('lait')
+  })
+  it('routes from an already-parsed object (new fp8-fast model shape)', async () => {
+    const env = mockAiEnv({ type: 'pantry-low', payload: { item: 'café' } })
+    const r = await classifyCapture(env, 'pus de café')
+    expect(r.type).toBe('pantry-low')
+    expect(r.payload.item).toBe('café')
   })
 })

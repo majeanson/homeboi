@@ -46,6 +46,12 @@ export interface Intent {
 // silently broke every text AI feature (AI.run threw → graceful-degrade swallowed
 // it). Moved to the current recommended instruct model. Keep this in sync with the
 // Workers AI changelog when models are deprecated.
+//
+// GOTCHA (broke suggest-meal after the model swap): this fp8-fast model returns
+// `response` ALREADY PARSED as an object/array when its output is valid JSON,
+// whereas the old 8B model returned a raw string. So extractJson/extractStringArray
+// must accept both shapes — they do. Don't reintroduce a `String(res.response)`
+// assumption or every JSON-returning feature silently 503s again.
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
 
 // Few-shot, JSON-only, one prompt per language. The FR register hints
@@ -107,7 +113,13 @@ function logAi(where: string, err: unknown): string {
   return msg
 }
 
-function extractJson(raw: string): unknown {
+function extractJson(raw: unknown): unknown {
+  // Newer Workers AI models (e.g. llama-3.3-70b-fp8-fast) hand back `response`
+  // ALREADY PARSED as an object/array when the model emitted valid JSON; the old
+  // 8B model returned a raw string. Accept the parsed shape directly — otherwise
+  // the string-only path below silently yields null and every AI feature 503s.
+  if (raw !== null && typeof raw === 'object') return raw
+  if (typeof raw !== 'string') return null
   // Models sometimes wrap JSON in prose or a ```json fence. Grab the first
   // balanced-looking object rather than trusting the whole string.
   const start = raw.indexOf('{')
@@ -138,9 +150,9 @@ export async function classifyCapture(
         { role: 'user', content: trimmed },
       ],
       max_tokens: 200,
-    })) as { response?: string }
+    })) as { response?: unknown }
 
-    const parsed = extractJson(res.response ?? '') as {
+    const parsed = extractJson(res.response) as {
       type?: string
       payload?: Intent['payload']
     } | null
@@ -177,8 +189,8 @@ Exemple : ["pâtes","sauce tomate","viande hachée"].`
     const res = (await env.AI.run(MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 120,
-    })) as { response?: string }
-    return extractStringArray(res.response ?? '')
+    })) as { response?: unknown }
+    return extractStringArray(res.response)
   } catch (err) {
     logAi('mealStaples', err)
     return []
@@ -216,8 +228,8 @@ Exemple : {"ingredients":["400 g de pâtes","1 pot de sauce tomate","500 g de b�
     const res = (await env.AI.run(MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 500,
-    })) as { response?: string }
-    const parsed = extractJson(res.response ?? '') as { ingredients?: unknown; steps?: unknown } | null
+    })) as { response?: unknown }
+    const parsed = extractJson(res.response) as { ingredients?: unknown; steps?: unknown } | null
     if (!parsed) return { ingredients: [], steps: [] }
     return { ingredients: cleanLines(parsed.ingredients, 12), steps: cleanLines(parsed.steps, 8) }
   } catch (err) {
@@ -257,8 +269,8 @@ ${raw}`
     const res = (await env.AI.run(MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 900,
-    })) as { response?: string }
-    const parsed = extractJson(res.response ?? '') as
+    })) as { response?: unknown }
+    const parsed = extractJson(res.response) as
       | { title?: unknown; ingredients?: unknown; steps?: unknown }
       | null
     if (!parsed) return { title: null, ingredients: [], steps: [] }
@@ -271,8 +283,14 @@ ${raw}`
 }
 
 // Vision model for READING a recipe out of a photo (a cookbook page, a hand-
-// written card, a screenshot). Separate from the 8B text model — this one
-// accepts image bytes. Same free Neuron tier, in-network (Loi 25).
+// written card, a screenshot). Separate from the text model — this one accepts
+// image bytes. Same free Neuron tier, in-network (Loi 25).
+//
+// GOTCHA: this is a GATED Meta model. The account must accept the Llama Community
+// License ONCE before any inference works, otherwise every call fails with
+// `5016: ... you must submit the prompt 'agree'` and recipe-vision degrades to
+// empty. Accept per-account by POSTing {"prompt":"agree"} once to
+// /accounts/<id>/ai/run/@cf/meta/llama-3.2-11b-vision-instruct (done 2026-06-13).
 const VISION_MODEL = '@cf/meta/llama-3.2-11b-vision-instruct'
 
 // Read a recipe from a PHOTO: OCR the image, then structure what's actually
@@ -304,8 +322,8 @@ Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insèr
       image: [...bytes],
       prompt,
       max_tokens: 1200,
-    })) as { response?: string }
-    const parsed = extractJson(res.response ?? '') as
+    })) as { response?: unknown }
+    const parsed = extractJson(res.response) as
       | { title?: unknown; ingredients?: unknown; steps?: unknown }
       | null
     if (!parsed) return { title: null, ingredients: [], steps: [] }
@@ -339,15 +357,21 @@ function cleanLines(value: unknown, max: number): string[] {
 // entries (capped at 6). Mirrors extractJson's leniency: models wrap arrays in
 // prose or a fence, so grab the outermost [ … ] rather than trusting the whole
 // string. Anything non-array or unparseable yields [] — never throws.
-function extractStringArray(raw: string, max = 6): string[] {
-  const start = raw.indexOf('[')
-  const end = raw.lastIndexOf(']')
-  if (start < 0 || end <= start) return []
+function extractStringArray(raw: unknown, max = 6): string[] {
+  // Same gotcha as extractJson: newer models return `response` already parsed as
+  // an array; older ones returned a string wrapping the array. Handle both.
   let parsed: unknown
-  try {
-    parsed = JSON.parse(raw.slice(start, end + 1))
-  } catch {
-    return []
+  if (Array.isArray(raw)) {
+    parsed = raw
+  } else if (typeof raw === 'string') {
+    const start = raw.indexOf('[')
+    const end = raw.lastIndexOf(']')
+    if (start < 0 || end <= start) return []
+    try {
+      parsed = JSON.parse(raw.slice(start, end + 1))
+    } catch {
+      return []
+    }
   }
   if (!Array.isArray(parsed)) return []
   const seen = new Set<string>()
@@ -394,11 +418,20 @@ ${list}`
     const res = (await env.AI.run(MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: Math.min(900, 40 + names.length * 18),
-    })) as { response?: string }
-    const start = (res.response ?? '').indexOf('[')
-    const end = (res.response ?? '').lastIndexOf(']')
-    if (start < 0 || end <= start) return out
-    const arr = JSON.parse((res.response ?? '').slice(start, end + 1)) as unknown
+    })) as { response?: unknown }
+    // `response` is an already-parsed array on newer models, a string on older.
+    const resp = res.response
+    let arr: unknown
+    if (Array.isArray(resp)) {
+      arr = resp
+    } else if (typeof resp === 'string') {
+      const start = resp.indexOf('[')
+      const end = resp.lastIndexOf(']')
+      if (start < 0 || end <= start) return out
+      arr = JSON.parse(resp.slice(start, end + 1)) as unknown
+    } else {
+      return out
+    }
     if (!Array.isArray(arr)) return out
     for (const row of arr) {
       const i = (row as { i?: unknown }).i
@@ -449,8 +482,8 @@ Réponds UNIQUEMENT avec un tableau JSON de 10 noms de plats courts. Exemple : [
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 300,
       temperature: 0.9,
-    })) as { response?: string }
-    return extractStringArray(res.response ?? '', 10)
+    })) as { response?: unknown }
+    return extractStringArray(res.response, 10)
   } catch (err) {
     if (report) report.error = logAi('suggestMeals', err)
     return []
@@ -484,8 +517,9 @@ Réponds seulement avec le texte du bilan.`
     const res = (await env.AI.run(MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 160,
-    })) as { response?: string }
-    const out = (res.response ?? '').trim()
+    })) as { response?: unknown }
+    // Plain-text reply, but guard the shape in case a model returns non-string.
+    const out = (typeof res.response === 'string' ? res.response : '').trim()
     return out || null
   } catch (err) {
     if (report) report.error = logAi('weeklyRecap', err)
