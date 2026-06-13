@@ -1,7 +1,9 @@
 // Display side of the weather chip. The board endpoint sends a coarse bucket +
-// temperature; here we pick a calm emoji for it (labels live in i18n under
-// `weather`, keyed by the same bucket). Mirror of functions/_lib/weather's
+// temperature; here we pick a calm Phosphor icon for it (labels live in i18n
+// under `weather`, keyed by the same bucket). Mirror of functions/_lib/weather's
 // WeatherBucket — the two trees don't share code, so the union is restated.
+import type { IconName } from '../components/Icon'
+
 export type WeatherBucket = 'clear' | 'cloud' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'storm'
 
 export interface Weather {
@@ -33,15 +35,15 @@ export function weatherTip(w: Weather | null): WeatherTip | null {
   return null
 }
 
-const EMOJI: Record<WeatherBucket, string> = {
-  clear: '☀️',
-  cloud: '☁️',
-  fog: '🌫️',
-  drizzle: '🌦️',
-  rain: '🌧️',
-  snow: '❄️',
-  storm: '⛈️',
+const ICON: Record<WeatherBucket, IconName> = {
+  clear: 'sun-bold',
+  cloud: 'cloud-bold',
+  fog: 'cloud-fog-bold',
+  drizzle: 'cloud-rain-bold',
+  rain: 'cloud-rain-bold',
+  snow: 'cloud-snow-bold',
+  storm: 'cloud-lightning-bold',
 }
 
 // Clear swaps to a moon at night; everything else reads the same day or night.
-export const weatherEmoji = (w: Weather): string => (w.bucket === 'clear' && !w.isDay ? '🌙' : EMOJI[w.bucket])
+export const weatherIcon = (w: Weather): IconName => (w.bucket === 'clear' && !w.isDay ? 'moon-stars-bold' : ICON[w.bucket])

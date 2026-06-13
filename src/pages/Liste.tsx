@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
@@ -11,15 +11,14 @@ import { useAudience } from '../lib/audience'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
-import { PriceMatchSheet } from '../components/PriceMatchSheet'
-import { ListItemSheet } from '../components/ListItemSheet'
-import { QuickAddPanel, type QuickItem } from '../components/QuickAddPanel'
-import { fetchGhosts } from '../lib/ghost'
 import { useUndoToast } from '../lib/toast'
 import { useVoiceInput } from '../lib/useVoiceInput'
+import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { money, type Deal } from '../lib/deals'
 import { pickListFrom, parseDeal, parseTerms, stageDeal } from '../lib/picks'
+import { useQuickItems } from '../lib/quickItems'
 import { pictoFor } from '../lib/picto'
+import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { BOARD_KEY } from '../lib/queryKeys'
 
 // The shared list — ONE active list, two lenses on the same data:
@@ -60,23 +59,12 @@ type BoardListData = { list: ListRow[]; members?: ListMember[] }
 const GHOSTS_KEY = ['ghosts']
 const HISTORY_KEY = ['list-history']
 
-// Anything the household has put on the list before — feeds the quick-add panel.
-// searchTerms is the raw JSON the item last carried (null = none).
-interface HistoryItem {
-  key: string
-  text: string
-  count: number
-  lastAt: number
-  searchTerms?: string | null
-}
-
-// Accent/case-insensitive matching ("creme" finds "Crème").
-const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim()
-
 // One list row, drawn the same way for every item. Three independent tap targets:
 // the picture opens the flyer/deals, the name opens the edit sheet, the check is
 // the toggle. A checked row keeps its place but reads as "got it" (struck, filled
-// check) until "Clear checked" removes it.
+// check) until "Clear checked" removes it. Swiping the row LEFT deletes it
+// outright (Outlook-mobile style) — a plain remove, NOT logged as bought (that's
+// what the check + "Clear checked" is for).
 function ListItemRow({
   text,
   picto,
@@ -90,6 +78,8 @@ function ListItemRow({
   onName,
   nameLabel,
   onToggle,
+  onDelete,
+  deleteLabel,
 }: {
   text: string
   picto: string
@@ -103,10 +93,21 @@ function ListItemRow({
   onName: () => void
   nameLabel: string
   onToggle: () => void
+  onDelete: () => void
+  deleteLabel: string
 }) {
+  const mainRef = useRef<HTMLDivElement>(null)
+  useSwipeToDelete(mainRef, onDelete)
   return (
     <div className="list-row">
-      <div className={`act list-row__main${checked ? ' done' : ''}`}>
+      {/* The delete pane revealed behind the row as it slides left under the
+          finger. Inert/aria-hidden — the swipe drives it; the edit sheet keeps an
+          actual Delete button for non-touch. */}
+      <span className="list-row__del" aria-hidden="true">
+        <span className="list-row__del-icon">🗑</span>
+        <span className="list-row__del-label">{deleteLabel}</span>
+      </span>
+      <div ref={mainRef} className={`act list-row__main${checked ? ' done' : ''}`}>
         <span className="spine" style={{ background: CATS.list.color }} aria-hidden="true" />
         <button type="button" className="list-row__img" onClick={onImage} aria-label={imageLabel}>
           {dealImage ? (
@@ -155,23 +156,7 @@ export function Liste() {
   const { audience } = useAudience()
   const qc = useQueryClient()
   const nav = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
   const undo = useUndoToast()
-
-  // Coming back from the cashier's "Revise a price" (it routes to /liste?proof=…
-  // rather than stacking the price sheet over the till). Open the price-match
-  // sheet for that line, then strip the params so a reload/back doesn't reopen it.
-  useEffect(() => {
-    const proof = searchParams.get('proof')
-    if (!proof) return
-    setProofFor({ id: proof, text: searchParams.get('q') ?? '', terms: [] })
-    searchParams.delete('proof')
-    searchParams.delete('q')
-    setSearchParams(searchParams, { replace: true })
-  }, [searchParams, setSearchParams])
-  const [proofFor, setProofFor] = useState<{ id: string; text: string; terms: string[] } | null>(null)
-  const [editItem, setEditItem] = useState<ListRow | null>(null)
-  const [quickOpen, setQuickOpen] = useState(false)
   const [auto, setAuto] = useState(false)
   // Items whose "Clear checked" delete is DEFERRED behind the undo toast. Filtered
   // out of the displayed list at once so a refetch (the live poll, a focus, or an
@@ -184,7 +169,7 @@ export function Liste() {
   // you can reel off a whole list — tap again to stop — and `split` turns one
   // breath of "lait, œufs pis pain" into three items. postAdd is hoisted, so the
   // closure resolves it at speak time. Empty results (mis-hear) are ignored.
-  const { listening, hasVoice, error: voiceError, start: startVoice } = useVoiceInput(
+  const voice = useVoiceInput(
     (text) => {
       const v = text.trim()
       if (!v) return
@@ -195,16 +180,9 @@ export function Liste() {
   )
 
   const { data: board, error } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board'), ...live })
-  // Ghost suggestions and history are quiet best-effort layers — a failure just
-  // means a thinner quick-add panel, never a broken list. So: no retry, fall to [].
-  const { data: ghostsData } = useQuery({ queryKey: GHOSTS_KEY, queryFn: () => fetchGhosts(), retry: false })
-  const ghosts = ghostsData ?? []
-  const { data: history } = useQuery({
-    queryKey: HISTORY_KEY,
-    queryFn: () => api<{ items: HistoryItem[] }>('list?view=history').then((r) => r.items),
-    retry: false,
-    staleTime: 60_000,
-  })
+  // Candidate re-adds for the ⚡ Quick add page; here we only need the count for the
+  // badge. The page itself reads the same hook off the shared caches.
+  const quickItems = useQuickItems()
 
   // Add a line to the list. `terms` (optional) carries flyer synonyms — the
   // quick-add panel passes them so a re-added item keeps its deal search.
@@ -270,16 +248,30 @@ export function Liste() {
     })
   }
 
-  // Open the flyer/deals sheet for a line, carrying its saved synonyms so the
-  // lookup can fan out ("Œuf" → also "egg"/"oeufs").
-  function openFlyer(item: ListRow) {
-    setProofFor({ id: item.id, text: item.text, terms: parseTerms(item.search_terms) })
-  }
-
-  // Quick-add: add the item (with its remembered synonyms), then refresh so it
-  // drops out of the panel's source next open. The panel keeps itself open.
-  function quickAdd(item: QuickItem) {
-    void postAdd(item.label, item.searchTerms)
+  // Swipe-left delete: a plain remove from the list — NOT logged as bought (that
+  // path is the check + "Clear checked"). Mirrors clearChecked's deferred shape:
+  // hide the row NOW via pendingClear (so the live poll can't resurrect it) and
+  // hold the DELETE behind the undo toast, so a mis-swipe costs nothing.
+  function deleteItem(item: ListRow) {
+    setPendingClear((s) => new Set([...s, item.id]))
+    undo({
+      message: t.undo.cleared(item.text),
+      onUndo: () =>
+        setPendingClear((s) => {
+          const n = new Set(s)
+          n.delete(item.id)
+          return n
+        }),
+      onCommit: async () => {
+        await api('list', { method: 'DELETE', body: { id: item.id } }).catch(() => {})
+        await qc.invalidateQueries({ queryKey: BOARD_KEY })
+        setPendingClear((s) => {
+          const n = new Set(s)
+          n.delete(item.id)
+          return n
+        })
+      },
+    })
   }
 
   if (isUnauthorized(error)) return <PairPrompt />
@@ -289,29 +281,6 @@ export function Liste() {
   const checkedIds = list.filter((i) => i.checked_at).map((i) => i.id)
   // Who-added-it faces: map member id → member so each row can show a tiny tint.
   const memberById = new Map((board?.members ?? []).map((m) => [m.id, m]))
-
-  // Quick-add candidates: past buys (history) merged with due-soon predictions
-  // (ghosts), keyed by folded label so an item that's both collapses to one.
-  // Anything already on the open list is dropped — the panel only offers re-adds.
-  const openTexts = new Set(list.map((i) => fold(i.text)))
-  const quickByLabel = new Map<string, QuickItem>()
-  for (const h of history ?? []) {
-    const f = fold(h.text)
-    if (!f || openTexts.has(f)) continue
-    quickByLabel.set(f, { key: f, label: h.text, count: h.count, searchTerms: parseTerms(h.searchTerms) })
-  }
-  for (const g of ghosts) {
-    const f = fold(g.label)
-    if (!f || openTexts.has(f)) continue
-    const status = g.status === 'later' ? undefined : g.status
-    const ex = quickByLabel.get(f)
-    if (ex) ex.status = status
-    else quickByLabel.set(f, { key: f, label: g.label, count: g.count, searchTerms: [], status })
-  }
-  const rankStatus = (s?: 'due' | 'soon') => (s === 'due' ? 0 : s === 'soon' ? 1 : 2)
-  const quickItems = [...quickByLabel.values()].sort(
-    (a, b) => rankStatus(a.status) - rankStatus(b.status) || b.count - a.count || a.label.localeCompare(b.label),
-  )
 
   // The cashier set = every list line carrying a staged deal (server state, in
   // sync across devices, gone once the item is cleared).
@@ -380,43 +349,19 @@ export function Liste() {
           className="input"
           value={addText}
           onChange={(e) => setAddText(e.target.value)}
-          placeholder={listening ? t.capture.listening : t.list.addPlaceholder}
+          placeholder={voice.listening ? t.capture.listening : t.list.addPlaceholder}
           aria-label={t.list.addPlaceholder}
         />
-        {hasVoice && (
-          <button
-            type="button"
-            className={`btn btn--ghost list-add__voice${listening ? ' is-listening' : ''}`}
-            onClick={startVoice}
-            aria-label={t.capture.voice}
-            aria-pressed={listening}
-          >
-            🎤
-          </button>
-        )}
+        <VoiceButton voice={voice} label={t.capture.voice} />
         <button type="submit" className="btn btn--primary" disabled={!addText.trim() || adding}>
           <Icon name="plus-bold" size={18} />
           {t.capture.add}
         </button>
       </form>
-      {/* Voice feedback: a calm hint while the mic is open, or why nothing landed
-          (denied/silent/unsupported) so the mic is never a silent dead button. */}
-      {voiceError ? (
-        <p className="list-add__voicemsg list-add__voicemsg--err" role="status">
-          {voiceError === 'not-allowed' || voiceError === 'service-not-allowed'
-            ? t.list.voiceDenied
-            : voiceError === 'language-not-supported'
-              ? t.list.voiceUnsupported
-              : t.list.voiceNoSpeech}
-        </p>
-      ) : listening ? (
-        <p className="list-add__voicemsg" role="status">
-          {t.list.voiceHint}
-        </p>
-      ) : null}
+      <VoiceStatus voice={voice} />
 
       {/* Quick add: reopen past/predicted items to restock a week in a few taps. */}
-      <button type="button" className="btn btn--ghost list-quick" onClick={() => setQuickOpen(true)}>
+      <button type="button" className="btn btn--ghost list-quick" onClick={() => nav('/liste/quick')}>
         ⚡ {t.list.quickAdd}
         {quickItems.length > 0 && <span className="list-quick__n mono">{quickItems.length}</span>}
       </button>
@@ -449,11 +394,13 @@ export function Liste() {
                 adder={adder}
                 checked={checked}
                 toggleLabel={checked ? t.list.uncheck : t.list.check}
-                onImage={() => openFlyer(item)}
+                onImage={() => nav(`/liste/deals/${item.id}`)}
                 imageLabel={t.list.openFlyer}
-                onName={() => setEditItem(item)}
+                onName={() => nav(`/liste/item/${item.id}`)}
                 nameLabel={t.list.edit}
                 onToggle={() => toggleChecked(item)}
+                onDelete={() => deleteItem(item)}
+                deleteLabel={t.list.swipeDelete}
               />
             )
           })}
@@ -477,7 +424,13 @@ export function Liste() {
         </button>
         {list.length > 0 && (
           <button type="button" className="btn btn--ghost mono" onClick={() => autoPick(list)} disabled={auto}>
-            {auto ? t.shop.autoWorking : `✨ ${t.shop.auto}`}
+            {auto ? (
+              t.shop.autoWorking
+            ) : (
+              <>
+                <Icon name="sparkle-bold" size={15} style={{ display: 'inline-block', verticalAlign: '-2px' }} /> {t.shop.auto}
+              </>
+            )}
           </button>
         )}
         {pickList.length > 0 && (
@@ -487,18 +440,6 @@ export function Liste() {
         )}
       </div>
 
-      {quickOpen && <QuickAddPanel items={quickItems} onAdd={quickAdd} onClose={() => setQuickOpen(false)} />}
-
-      {proofFor && (
-        <PriceMatchSheet
-          itemId={proofFor.id}
-          query={proofFor.text}
-          terms={proofFor.terms}
-          onClose={() => setProofFor(null)}
-        />
-      )}
-
-      {editItem && <ListItemSheet item={editItem} onClose={() => setEditItem(null)} />}
     </main>
   )
 }

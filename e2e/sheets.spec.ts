@@ -70,7 +70,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
   test(`sheet-pricematch${sfx}`, async ({ page }) => {
     await boot(page, '/liste', theme)
     await page.locator('.list-row__img').first().click()
-    await page.locator('.pm-sheet').waitFor({ state: 'visible' })
+    await page.locator('.scene').waitFor({ state: 'visible' })
     await page.locator('.deal-list').waitFor({ state: 'visible' }).catch(() => {})
     await page.waitForTimeout(300)
     await shoot(page, `sheet-pricematch-phone${sfx}`)

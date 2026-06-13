@@ -78,7 +78,7 @@ test('ms: cashier review + present + thanks', async ({ page }) => {
 test('ms: liste edit item sheet', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await open(page, '/liste')
-  // The item name is the edit affordance (opens ListItemSheet).
+  // The item name is the edit affordance (navigates to the edit scene /liste/item/:id).
   await page.getByText('Pain', { exact: true }).first().click()
   await page.waitForTimeout(500)
   await shot(page, 'liste-item-sheet')

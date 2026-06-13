@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../lib/api'
 import { useT } from '../i18n'
 import { useVoiceInput } from '../lib/useVoiceInput'
+import { VoiceButton } from './VoiceButton'
 import type { IntentType } from '../lib/captureTypes'
 
 // The capture bar: one input, type or speak. Voice is the shared on-device
@@ -18,7 +19,8 @@ export function CaptureBar({ onCaptured }: { onCaptured?: () => void }) {
   const [busy, setBusy] = useState(false)
   const [routed, setRouted] = useState<{ kind: string; label: string } | null>(null)
   const [needType, setNeedType] = useState<string | null>(null)
-  const { listening, hasVoice, start: startVoice } = useVoiceInput(setText)
+  const voice = useVoiceInput(setText)
+  const { listening } = voice
 
   async function submit(forceType?: IntentType) {
     const value = text.trim()
@@ -64,16 +66,7 @@ export function CaptureBar({ onCaptured }: { onCaptured?: () => void }) {
           aria-label={t.capture.placeholder}
           disabled={busy}
         />
-        {hasVoice && (
-          <button
-            type="button"
-            className={`btn btn--ghost capture__voice${listening ? ' is-listening' : ''}`}
-            onClick={startVoice}
-            aria-label={t.capture.voice}
-          >
-            🎤
-          </button>
-        )}
+        <VoiceButton voice={voice} label={t.capture.voice} />
         <button type="submit" className="btn capture__add" disabled={busy || !text.trim()}>
           {t.capture.add}
         </button>

@@ -720,7 +720,7 @@ test.describe('list', () => {
 
   test('the quick-add panel re-adds a past item and stays open', async ({ page }) => {
     await page.locator('.list-quick').click()
-    const panel = page.locator('.pm-sheet.qa')
+    const panel = page.locator('.scene')
     await expect(panel).toBeVisible()
     const chip = panel.locator('.qa__chip', { hasText: 'Beurre' })
     await expect(chip).toHaveCount(1)
@@ -733,7 +733,7 @@ test.describe('list', () => {
 
   test('quick-add re-adds an item with the flyer synonyms it last carried', async ({ page }) => {
     await page.locator('.list-quick').click()
-    const chip = page.locator('.pm-sheet.qa .qa__chip', { hasText: 'Beurre' })
+    const chip = page.locator('.scene .qa__chip', { hasText: 'Beurre' })
     const [req] = await Promise.all([
       page.waitForRequest((r) => r.url().includes('/api/list') && r.method() === 'POST'),
       chip.click(),
@@ -744,7 +744,7 @@ test.describe('list', () => {
   test('a due-soon prediction shows in quick-add with a tag', async ({ page }) => {
     await page.locator('.list-quick').click()
     // Œufs is 'soon' in the ghost mock and not on the list → tagged in the panel.
-    const oeufs = page.locator('.pm-sheet.qa .qa__chip', { hasText: 'Œufs' })
+    const oeufs = page.locator('.scene .qa__chip', { hasText: 'Œufs' })
     await expect(oeufs).toHaveCount(1)
     await expect(oeufs.locator('.qa__tag')).toBeVisible()
   })

@@ -536,7 +536,7 @@ export function Kitchen() {
                           aria-label={t.kitchen.clearText}
                           title={t.kitchen.clearText}
                         >
-                          ✕
+                          <Icon name="x-bold" size={15} />
                         </button>
                       )}
                       <button type="submit" className="btn btn--ghost mono" disabled={staplesBusy}>
@@ -649,7 +649,7 @@ export function Kitchen() {
                                   aria-label={t.kitchen.clearText}
                                   title={t.kitchen.clearText}
                                 >
-                                  ✕
+                                  <Icon name="x-bold" size={15} />
                                 </button>
                               )}
                               <button type="submit" className="btn btn--ghost mono">

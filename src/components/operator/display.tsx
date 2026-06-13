@@ -4,6 +4,7 @@ import { useAudience } from '../../lib/audience'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
 import { getTheme, toggleTheme, type Theme } from '../../lib/theme'
+import { Icon } from '../Icon'
 import {
   getRate,
   getVoicePref,
@@ -31,7 +32,12 @@ export function DisplaySection() {
         <div className="operator__seg">
           <span className="operator__seg-label mono">{t.operator.themeLabel}</span>
           <button type="button" className="btn" onClick={() => setThemeState(toggleTheme())}>
-            {theme === 'night' ? `🌙 ${t.operator.themeNight}` : `☀️ ${t.operator.themeDay}`}
+            <Icon
+              name={theme === 'night' ? 'moon-stars-bold' : 'sun-bold'}
+              size={16}
+              style={{ display: 'inline-block', verticalAlign: '-2px' }}
+            />{' '}
+            {theme === 'night' ? t.operator.themeNight : t.operator.themeDay}
           </button>
         </div>
         <div className="operator__seg">
@@ -49,7 +55,7 @@ export function DisplaySection() {
               onClick={() => setAudience('parent')}
               aria-pressed={audience === 'parent'}
             >
-              🧑 {t.audience.parent}
+              <Icon name="user-bold" size={15} style={{ display: 'inline-block', verticalAlign: '-2px' }} /> {t.audience.parent}
             </button>
             <button
               type="button"
@@ -57,7 +63,7 @@ export function DisplaySection() {
               onClick={() => setAudience('toddler')}
               aria-pressed={audience === 'toddler'}
             >
-              👶 {t.audience.kid}
+              <Icon name="baby-bold" size={15} style={{ display: 'inline-block', verticalAlign: '-2px' }} /> {t.audience.kid}
             </button>
           </div>
         </div>

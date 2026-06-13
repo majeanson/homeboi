@@ -9,7 +9,7 @@ import { Loading, PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
 import { imgUrl } from '../lib/image'
-import { dayOrder, isRoutineTod, TOD_EMOJI } from '../lib/routineTod'
+import { dayOrder, isRoutineTod, TOD_ICON } from '../lib/routineTod'
 import { KidView } from './KidView'
 
 // The Routines tab, two lenses on the same data:
@@ -94,7 +94,8 @@ function RoutinesParent() {
                   {/* The moment cue, when set — matches the chip in Réglages. */}
                   {isRoutineTod(r.timeOfDay) && (
                     <span className="routine-card__tod mono" title={t.routines.tod[r.timeOfDay]}>
-                      {TOD_EMOJI[r.timeOfDay]} {t.routines.tod[r.timeOfDay]}
+                      <Icon name={TOD_ICON[r.timeOfDay]} size={14} style={{ display: 'inline-block', verticalAlign: '-2px' }} />{' '}
+                      {t.routines.tod[r.timeOfDay]}
                     </span>
                   )}
                 </div>

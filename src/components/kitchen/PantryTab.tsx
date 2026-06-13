@@ -3,6 +3,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useUndoToast } from '../../lib/toast'
+import { useVoiceInput } from '../../lib/useVoiceInput'
+import { VoiceButton, VoiceStatus } from '../VoiceButton'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 
@@ -16,19 +18,37 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
   const [newLow, setNewLow] = useState('')
   const [newSoon, setNewSoon] = useState('')
 
-  async function addLow(e: React.FormEvent) {
-    e.preventDefault()
-    const item = newLow.trim()
-    if (!item) return
-    setNewLow('')
+  // Add one low item. `viaVoice` skips the put-it-back-on-failure (the field is
+  // already cleared by the voice path and the spoken word is gone anyway).
+  async function postLow(item: string, viaVoice = false) {
+    const v = item.trim()
+    if (!v) return
     try {
-      await api('pantry', { method: 'POST', body: { item } })
+      await api('pantry', { method: 'POST', body: { item: v } })
     } catch {
       // A failed write must not eat what was typed — put it back to retry.
-      setNewLow(item)
+      if (!viaVoice) setNewLow(v)
     }
     qc.invalidateQueries({ queryKey: PANTRY_KEY })
   }
+  async function addLow(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newLow.trim()) return
+    const item = newLow
+    setNewLow('')
+    await postLow(item)
+  }
+
+  // Speak a string of items into the low list, hands-free — same continuous +
+  // split + pause-cut mic as La liste, so "patate … blé d'inde … tarte" lands as
+  // three. Each finished phrase posts straight away. [shared VoiceButton]
+  const lowVoice = useVoiceInput(
+    (text) => {
+      setNewLow('')
+      void postLow(text, true)
+    },
+    { continuous: true, split: true },
+  )
 
   // Checking a low item is the ONLY thing that puts it on the shopping list:
   // marking something low never touched the list (see api/pantry POST). The tap
@@ -52,18 +72,30 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
     })
   }
 
-  async function addSoon(e: React.FormEvent) {
-    e.preventDefault()
-    const item = newSoon.trim()
-    if (!item) return
-    setNewSoon('')
+  async function postSoon(item: string, viaVoice = false) {
+    const v = item.trim()
+    if (!v) return
     try {
-      await api('use-soon', { method: 'POST', body: { item } })
+      await api('use-soon', { method: 'POST', body: { item: v } })
     } catch {
-      setNewSoon(item)
+      if (!viaVoice) setNewSoon(v)
     }
     qc.invalidateQueries({ queryKey: USE_SOON_KEY })
   }
+  async function addSoon(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newSoon.trim()) return
+    const item = newSoon
+    setNewSoon('')
+    await postSoon(item)
+  }
+  const soonVoice = useVoiceInput(
+    (text) => {
+      setNewSoon('')
+      void postSoon(text, true)
+    },
+    { continuous: true, split: true },
+  )
 
   // Clear a use-soon item (used it / tossed it). Deferred behind the undo toast,
   // like the low list. No list side-effects — use-soon never touches shopping.
@@ -89,12 +121,14 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
             className="input"
             value={newLow}
             onChange={(e) => setNewLow(e.target.value)}
-            placeholder={t.kitchen.lowAdd}
+            placeholder={lowVoice.listening ? t.capture.listening : t.kitchen.lowAdd}
           />
+          <VoiceButton voice={lowVoice} label={t.capture.voice} />
           <button type="submit" className="btn" disabled={!newLow.trim()}>
             {t.capture.add}
           </button>
         </form>
+        <VoiceStatus voice={lowVoice} />
         {low.length === 0 ? (
           <p className="board__empty mono">{t.kitchen.lowEmpty}</p>
         ) : (
@@ -122,12 +156,14 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
             className="input"
             value={newSoon}
             onChange={(e) => setNewSoon(e.target.value)}
-            placeholder={t.kitchen.useSoonAdd}
+            placeholder={soonVoice.listening ? t.capture.listening : t.kitchen.useSoonAdd}
           />
+          <VoiceButton voice={soonVoice} label={t.capture.voice} />
           <button type="submit" className="btn" disabled={!newSoon.trim()}>
             {t.capture.add}
           </button>
         </form>
+        <VoiceStatus voice={soonVoice} />
         {soon.length === 0 ? (
           <p className="board__empty mono">{t.kitchen.useSoonEmpty}</p>
         ) : (

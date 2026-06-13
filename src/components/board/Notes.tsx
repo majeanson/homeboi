@@ -3,6 +3,7 @@ import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { useSpeak } from '../../lib/speak'
+import { Icon } from '../Icon'
 import type { BoardData, Member, NoteRow } from './types'
 
 // Fridge notes on the Aujourd'hui board: little hand-written cards a parent can
@@ -59,7 +60,7 @@ export function Notes({
               <span className="note-card__text">{n.text}</span>
               {!toddler && (
                 <span className="note-card__clear" aria-hidden="true">
-                  ✕
+                  <Icon name="x-bold" size={14} />
                 </span>
               )}
             </button>

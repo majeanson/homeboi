@@ -341,7 +341,7 @@ export function RecipeForm({
               onClick={() => removeLine(kind, i)}
               aria-label={t.recipes.removePhoto}
             >
-              ✕
+              <Icon name="x-bold" size={14} />
             </button>
           </div>
         )
@@ -384,7 +384,7 @@ export function RecipeForm({
               onClick={() => removeLine('steps', i)}
               aria-label={t.recipes.removePhoto}
             >
-              ✕
+              <Icon name="x-bold" size={14} />
             </button>
           </div>
         ) : (
@@ -409,7 +409,7 @@ export function RecipeForm({
                     setEditStep(null)
                   }}
                 >
-                  ✕ {t.recipes.removeStep}
+                  <Icon name="x-bold" size={13} style={{ display: 'inline-block', verticalAlign: '-2px' }} /> {t.recipes.removeStep}
                 </button>
                 <button type="button" className="btn btn--primary mono" onClick={() => setEditStep(null)}>
                   {t.recipes.stepDone}
@@ -466,7 +466,7 @@ export function RecipeForm({
         <div className="recipe-modal__bar">
           <h2>{value ? t.recipes.edit : t.recipes.new}</h2>
           <button type="button" className="btn btn--ghost mono" onClick={onCancel} aria-label={t.common.cancel}>
-            ✕
+            <Icon name="x-bold" size={18} />
           </button>
         </div>
 
@@ -644,7 +644,7 @@ export function RecipeForm({
                 .filter((tag) => !pills.some((p) => p.toLowerCase() === tag.toLowerCase()))
                 .map((tag) => (
                   <button key={tag} type="button" className="chip is-on" onClick={() => toggleTag(tag)} aria-pressed>
-                    {tag} ✕
+                    {tag} <Icon name="x-bold" size={12} style={{ display: 'inline-block', verticalAlign: '-1px' }} />
                   </button>
                 ))}
             </div>

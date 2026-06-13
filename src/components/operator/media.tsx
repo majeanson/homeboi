@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api, isStatus } from '../../lib/api'
 import { resizeImage, imgUrl, PHOTO_MAX } from '../../lib/image'
+import { Icon } from '../Icon'
 
 // Weekly recap: an on-demand, calm reflection (NFR-CALM/COST — a button, never a
 // loop). Hides itself when AI is unavailable (503) so it never shows a dead button.
@@ -99,7 +100,7 @@ export function PhotosSection() {
                 onClick={() => remove(p.id)}
                 aria-label={t.operator.delete}
               >
-                ✕
+                <Icon name="x-bold" size={15} />
               </button>
             </div>
           ))}

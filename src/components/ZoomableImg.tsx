@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useModal } from '../lib/useModal'
+import { Icon } from './Icon'
 
 // Tap an image to open it full-screen (zoom-in); tap the backdrop, the ✕, or
 // press Esc to close. Used for flyer/deal images so a price or product photo is
@@ -18,7 +19,7 @@ export function ZoomableImg({ src, alt = '', className }: { src: string; alt?: s
         <div ref={overlayRef} className="zoom-overlay" role="dialog" aria-modal="true" onClick={() => setOpen(false)}>
           <img className="zoom-overlay__img" src={src} alt={alt} />
           <button type="button" className="zoom-overlay__close" aria-label="✕" onClick={() => setOpen(false)}>
-            ✕
+            <Icon name="x-bold" size={20} />
           </button>
         </div>
       )}

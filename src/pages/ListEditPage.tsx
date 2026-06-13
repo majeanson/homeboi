@@ -1,37 +1,53 @@
-import { useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { live } from '../lib/query'
 import { useT } from '../i18n'
-import { parseDeal, parseTerms, unstageDeal } from '../lib/picks'
+import { Loading } from '../components/Fallback'
+import { Icon } from '../components/Icon'
+import { parseDeal, parseTerms, unstageDeal, type ListItem } from '../lib/picks'
 import { money } from '../lib/deals'
 import { BOARD_KEY } from '../lib/queryKeys'
-import { useModal } from '../lib/useModal'
-import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
+import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
-// Edit one grocery line: rename it, manage the extra flyer-search synonyms (so
-// "Œuf" can also match "egg"/"oeufs" in the deals lookup), unlink a staged deal,
-// or remove it from the list. Reuses the price-match sheet's keyboard-safe shell
-// (.pm-overlay is pinned to the visual viewport, so it rides above the keyboard).
-export function ListItemSheet({
-  item,
-  onClose,
-}: {
-  item: { id: string; text: string; deal_json?: string | null; search_terms?: string | null }
-  onClose: () => void
-}) {
+// /liste/item/:itemId — edit one grocery line as a full-screen route (was a
+// bottom sheet, flaky to scroll): rename it, manage the extra flyer-search
+// synonyms (so "Œuf" can also match "egg"/"oeufs" in the deals lookup), unlink a
+// staged deal, or remove it from the list. The line is read off the shared
+// ['board'] cache by id, so there are no props to thread and it's deep-linkable.
+export function ListEditPage() {
   const t = useT()
   const qc = useQueryClient()
-  const [text, setText] = useState(item.text)
-  const [terms, setTerms] = useState<string[]>(() => parseTerms(item.search_terms))
+  const { itemId = '' } = useParams()
+  const close = useSceneClose('/liste')
+  useEscapeKey(close)
+
+  const { data: board } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
+  const item = board?.list?.find((i) => i.id === itemId) ?? null
+
+  // Seed the editable fields once from the line. `seeded` guards against the live
+  // board poll re-seeding (and wiping) an in-progress edit on every refetch.
+  const [seeded, setSeeded] = useState(false)
+  const [text, setText] = useState('')
+  const [terms, setTerms] = useState<string[]>([])
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
-  const deal = parseDeal(item.deal_json)
+  useEffect(() => {
+    if (item && !seeded) {
+      setText(item.text)
+      setTerms(parseTerms(item.search_terms))
+      setSeeded(true)
+    }
+  }, [item, seeded])
 
-  // Esc / scroll-lock / focus-trap on the overlay; swipe-down-to-close on the sheet.
-  const overlayRef = useRef<HTMLDivElement>(null)
-  const sheetRef = useRef<HTMLDivElement>(null)
-  useModal(overlayRef, onClose)
-  useSwipeToDismiss(sheetRef, onClose)
+  // The line is gone (cleared elsewhere, or a cold deep-link to a stale id) →
+  // slip back to the list. Not while busy: a save/delete unmounts the line itself.
+  useEffect(() => {
+    if (board && !item && !busy) close()
+  }, [board, item, busy, close])
+
+  const deal = parseDeal(item?.deal_json)
 
   function addTerm(raw: string) {
     const v = raw.trim()
@@ -55,49 +71,40 @@ export function ListItemSheet({
     setBusy(true)
     // Fold a still-typed term in rather than silently dropping it.
     const allTerms = draft.trim() ? [...terms, draft.trim()] : terms
-    await api('list', { method: 'PATCH', body: { id: item.id, text: name, search_terms: allTerms } }).catch(() => {})
+    await api('list', { method: 'PATCH', body: { id: itemId, text: name, search_terms: allTerms } }).catch(() => {})
     await qc.invalidateQueries({ queryKey: BOARD_KEY })
-    setBusy(false)
-    onClose()
+    close()
   }
 
   async function unlink() {
     setBusy(true)
-    await unstageDeal(qc, item.id)
-    setBusy(false)
-    onClose()
+    await unstageDeal(qc, itemId)
+    close()
   }
 
   async function remove() {
     setBusy(true)
-    await api('list', { method: 'DELETE', body: { id: item.id } }).catch(() => {})
+    await api('list', { method: 'DELETE', body: { id: itemId } }).catch(() => {})
     await qc.invalidateQueries({ queryKey: BOARD_KEY })
-    setBusy(false)
-    onClose()
+    close()
   }
 
-  return (
-    <div
-      ref={overlayRef}
-      className="pm-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t.list.editTitle}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div ref={sheetRef} className="pm-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="pm-sheet__head">
-          <div>
-            <div className="hand-tag">{t.list.editTitle}</div>
-            <h2 className="pm-sheet__title">{item.text}</h2>
-          </div>
-          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-            ✕
-          </button>
-        </div>
+  if (!board) return <Loading />
+  if (!item) return null
 
+  return (
+    <div className="scene" aria-label={t.list.editTitle}>
+      <div className="scene__head">
+        <div>
+          <div className="hand-tag">{t.list.editTitle}</div>
+          <h2 className="pm-sheet__title">{item.text}</h2>
+        </div>
+        <button type="button" className="btn btn--ghost mono" onClick={close} aria-label={t.shop.close}>
+          <Icon name="x-bold" size={18} />
+        </button>
+      </div>
+
+      <div className="scene__body">
         <div className="li-edit">
           <label className="li-edit__field">
             <span className="li-edit__label">{t.list.nameLabel}</span>
@@ -124,7 +131,7 @@ export function ListItemSheet({
                       onClick={() => removeTerm(i)}
                       aria-label={`${t.shop.close} ${term}`}
                     >
-                      ✕
+                      <Icon name="x-bold" size={12} />
                     </button>
                   </span>
                 ))}

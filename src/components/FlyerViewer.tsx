@@ -3,6 +3,7 @@ import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-quer
 import { api } from '../lib/api'
 import { useLang, useT } from '../i18n'
 import { ZoomableImg } from './ZoomableImg'
+import { Icon } from './Icon'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { useModal } from '../lib/useModal'
 
@@ -247,7 +248,7 @@ export function FlyerViewer({
           </span>
         </div>
         <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-          ✕
+          <Icon name="x-bold" size={18} />
         </button>
       </div>
 
@@ -415,7 +416,7 @@ export function FlyerViewer({
               onClick={() => setSelectedIdx(null)}
               aria-label={t.shop.close}
             >
-              ✕
+              <Icon name="x-bold" size={18} />
             </button>
           </div>
         </div>

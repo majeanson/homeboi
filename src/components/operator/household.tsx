@@ -7,6 +7,7 @@ import { PALETTE } from '../../lib/colors'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
 import { Avatar } from '../Avatar'
 import { ColorPicker } from '../ColorPicker'
+import { Icon } from '../Icon'
 import { type Member } from './types'
 
 export function MembersSection({ members, onChange }: { members: Member[]; onChange: () => void }) {
@@ -91,7 +92,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
             {m.is_child ? <span className="tag mono">{t.operator.isChild}</span> : null}
             <div className="member-card__actions">
               <label className="btn btn--ghost mono operator__photo" title={t.operator.photo}>
-                📷
+                <Icon name="camera-bold" size={16} />
                 <input
                   type="file"
                   accept="image/*"
@@ -111,7 +112,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
                   onClick={() => clearPhoto(m.id)}
                   aria-label={t.operator.removePhoto}
                 >
-                  ✕
+                  <Icon name="x-bold" size={15} />
                 </button>
               )}
               <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(m)}>

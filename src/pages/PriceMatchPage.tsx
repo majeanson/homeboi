@@ -1,51 +1,50 @@
-import { useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
+import { live } from '../lib/query'
 import { useT } from '../i18n'
-import { FlyerViewer } from './FlyerViewer'
-import { DealCard } from './DealCard'
+import { Loading } from '../components/Fallback'
+import { Icon } from '../components/Icon'
+import { FlyerViewer } from '../components/FlyerViewer'
+import { DealCard } from '../components/DealCard'
 import { type Deal } from '../lib/deals'
-import { existingListId, parseDeal, type ListItem } from '../lib/picks'
-import { useModal } from '../lib/useModal'
-import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
+import { existingListId, parseDeal, parseTerms, type ListItem } from '../lib/picks'
+import { BOARD_KEY } from '../lib/queryKeys'
+import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
-// Price-match proof sheet (Maxi "Imbattable" et al.): given a grocery item, pull
-// current competitor flyer deals near the household's postal code and show each
-// as a card the cashier can look at — real flyer clipping image, store, price,
-// "was" price, and valid dates. Each card with a flyer can open the full flyer
-// (FlyerViewer) with the item highlighted, and can be CHOSEN to add to the
-// cashier list. Read-only; rides on /api/deals (unofficial Flipp backend),
-// degrading to a clear message on nothing / no postal.
-
-export function PriceMatchSheet({
-  itemId,
-  query,
-  terms,
-  onClose,
-}: {
-  itemId: string // the shared-list item this proof is for — picks key on it
-  query: string
-  terms?: string[] // extra flyer-search synonyms saved on the line, if any
-  onClose: () => void
-}) {
+// /liste/deals/:itemId — price-match proof for one grocery line, as a full-screen
+// route (was a bottom sheet stacked over the list — flaky to scroll). Given a
+// list item, pull current competitor flyer deals near the household's postal code
+// and show each as a card: real flyer clipping, store, price, "was" price, valid
+// dates. Each card with a flyer can open the full flyer (FlyerViewer) with the
+// item highlighted, and can be CHOSEN to attach to the line for the cashier. The
+// item (query text + saved synonyms) is read straight off the shared ['board']
+// cache — no props to thread, deep-linkable. Read-only; rides on /api/deals.
+export function PriceMatchPage() {
   const t = useT()
   const qc = useQueryClient()
+  const { itemId = '' } = useParams()
+  const close = useSceneClose('/liste')
+
+  const { data: board } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
+  const item = board?.list?.find((i) => i.id === itemId) ?? null
+  const query = item?.text ?? ''
+  const terms = parseTerms(item?.search_terms)
+
   // The currently chosen deal for this line (its staged deal on the list).
-  const chosenId =
-    parseDeal(qc.getQueryData<{ list?: ListItem[] }>(['board'])?.list?.find((i) => i.id === itemId)?.deal_json)?.id ??
-    null
+  const chosenId = parseDeal(item?.deal_json)?.id ?? null
 
   // Pick this price for the line: attach the deal to its grocery item (server
   // state → shows on the row + flows to the cashier on any device).
   async function choose(deal: Deal) {
     await api('list', { method: 'PATCH', body: { id: itemId, deal } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: ['board'] })
+    qc.invalidateQueries({ queryKey: BOARD_KEY })
   }
   // Cache the expensive Flipp lookup per query, per day — flyers change ~weekly,
   // so a day-scoped key serves re-opens instantly and refreshes tomorrow.
   const dayKey = new Date().toISOString().slice(0, 10)
-  const termsParam = terms && terms.length ? terms.join(',') : ''
+  const termsParam = terms.length ? terms.join(',') : ''
   const dealsQ = useQuery({
     queryKey: ['deals', query, termsParam, dayKey],
     queryFn: () =>
@@ -54,6 +53,7 @@ export function PriceMatchSheet({
       ),
     staleTime: 60 * 60 * 1000,
     retry: false,
+    enabled: query.length > 0,
   })
   const deals = dealsQ.data?.deals ?? null
   // 400 from /api/deals means "no/invalid postal" — point at settings.
@@ -66,18 +66,27 @@ export function PriceMatchSheet({
       : deals && deals.length
         ? 'ok'
         : 'empty'
-  // Which flyer is open on top of the sheet (null = none).
+  // Which flyer is open on top of the scene (null = none).
   const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string; logo?: string | null; premium?: boolean } | null>(null)
   // Filter the results to one store (Maxi, Super C…); null = all.
   const [store, setStore] = useState<string | null>(null)
   const [added, setAdded] = useState<string | null>(null)
+  // Esc leaves the scene — but not while the full flyer is open over it (that
+  // overlay owns Esc), so one keypress doesn't pop both layers.
+  useEscapeKey(close, !flyer)
+
+  // The line is gone (cleared elsewhere, or a cold deep-link to a stale id) →
+  // there's nothing to price-match; slip back to the list.
+  useEffect(() => {
+    if (board && !item) close()
+  }, [board, item, close])
 
   // Drop an item straight onto the grocery list (from a deal card or the flyer).
   async function addToList(name: string) {
     setAdded(name)
     if (existingListId(qc, name)) return // already on the list — no duplicate
     await api('list', { method: 'POST', body: { text: name } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: ['board'] })
+    qc.invalidateQueries({ queryKey: BOARD_KEY })
   }
 
   // Distinct stores for the filter; the shown list respects the active store.
@@ -87,36 +96,22 @@ export function PriceMatchSheet({
   const shown = (deals ?? []).filter((d) => !store || d.merchant === store)
   const bestKey = shown.find((d) => d.unitPrice != null)
 
-  const overlayRef = useRef<HTMLDivElement>(null)
-  const sheetRef = useRef<HTMLDivElement>(null)
-  useModal(overlayRef, onClose)
-  useSwipeToDismiss(sheetRef, onClose)
+  if (!board) return <Loading />
+  if (!item) return null
 
   return (
-    <div
-      ref={overlayRef}
-      className="pm-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t.shop.proofTitle}
-      onClick={(e) => {
-        // Only the bare backdrop closes — not bubbled clicks from the sheet or
-        // the full-flyer viewer layered on top (those would dump you back to the
-        // list when you only meant to pick an item).
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div ref={sheetRef} className="pm-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="pm-sheet__head">
-          <div>
-            <div className="hand-tag">{t.shop.proofTitle}</div>
-            <h2 className="pm-sheet__title">{query}</h2>
-          </div>
-          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-            ✕
-          </button>
+    <div className="scene" aria-label={t.shop.proofTitle}>
+      <div className="scene__head">
+        <div>
+          <div className="hand-tag">{t.shop.proofTitle}</div>
+          <h2 className="pm-sheet__title">{query}</h2>
         </div>
+        <button type="button" className="btn btn--ghost mono" onClick={close} aria-label={t.shop.close}>
+          <Icon name="x-bold" size={18} />
+        </button>
+      </div>
 
+      <div className="scene__body">
         {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}
         {state === 'empty' && <p className="feed-empty">{t.shop.none}</p>}
         {state === 'noPostal' && (
@@ -132,11 +127,7 @@ export function PriceMatchSheet({
 
         {state === 'ok' && stores.length > 1 && (
           <div className="deal-stores mono">
-            <button
-              type="button"
-              className={`chip${store === null ? ' is-on' : ''}`}
-              onClick={() => setStore(null)}
-            >
+            <button type="button" className={`chip${store === null ? ' is-on' : ''}`} onClick={() => setStore(null)}>
               {t.shop.allStores}
             </button>
             {stores.map((s) => (
@@ -160,7 +151,7 @@ export function PriceMatchSheet({
                 onAddToList={addToList}
                 onChoose={(deal) => {
                   choose(deal)
-                  onClose()
+                  close()
                 }}
               />
             ))}

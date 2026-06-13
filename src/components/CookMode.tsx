@@ -9,6 +9,7 @@ import { groupSections } from '../lib/recipeSections'
 import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
 import { IngredientLine } from './IngredientLine'
+import { Icon } from './Icon'
 import { useModal } from '../lib/useModal'
 
 // Whether a step reads itself aloud on arrival. Default ON; an explicit opt-out
@@ -250,12 +251,12 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
               title={autoRead ? t.recipes.autoReadOn : t.recipes.autoReadOff}
               aria-label={autoRead ? t.recipes.autoReadOn : t.recipes.autoReadOff}
             >
-              {autoRead ? '🔊' : '🔇'}
+              <Icon name={autoRead ? 'speaker-high-bold' : 'speaker-slash-bold'} size={20} />
             </button>
           </>
         )}
         <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.back}>
-          ✕
+          <Icon name="x-bold" size={20} />
         </button>
       </div>
 
@@ -449,7 +450,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                       onClick={() => setTimer(null)}
                       aria-label={t.common.cancel}
                     >
-                      ✕
+                      <Icon name="x-bold" size={16} />
                     </button>
                   </div>
                 ) : (

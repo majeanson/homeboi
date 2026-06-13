@@ -79,20 +79,20 @@ test('kitchen-recipes-wall', async ({ page }) => {
 for (const theme of ['day', 'night'] as Theme[]) {
   const sfx = theme === 'night' ? '-night' : ''
 
-  // ⚡ Quick add: the re-stock panel of past/predicted items.
+  // ⚡ Quick add: the re-stock page of past/predicted items (now a full-screen scene).
   test(`list-quick-add${sfx}`, async ({ page }) => {
     await boot(page, '/liste', { theme })
     await page.locator('.list-quick').click()
-    await page.locator('.pm-sheet.qa').waitFor({ state: 'visible' })
+    await page.locator('.scene .qa__list').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `list-quick-add-phone${sfx}`, false)
   })
 
-  // Tap a row's NAME → the edit sheet (rename / synonyms / unlink deal / delete).
+  // Tap a row's NAME → the edit scene (rename / synonyms / unlink deal / delete).
   test(`list-item-sheet${sfx}`, async ({ page }) => {
     await boot(page, '/liste', { theme })
     await page.locator('.list-row__name').first().click()
-    await page.locator('.li-edit').waitFor({ state: 'visible' })
+    await page.locator('.scene .li-edit').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `list-item-sheet-phone${sfx}`, false)
   })

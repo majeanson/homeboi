@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useUndoableRemove } from '../../lib/undoRemove'
-import { ROUTINE_TODS, TOD_EMOJI, isRoutineTod } from '../../lib/routineTod'
+import { ROUTINE_TODS, TOD_ICON, isRoutineTod } from '../../lib/routineTod'
+import { Icon } from '../Icon'
 import { ChoreForm } from '../forms/ChoreForm'
 import { RoutineForm } from '../forms/RoutineForm'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
@@ -151,9 +152,14 @@ export function RoutinesSection({
               title={t.routines.todLabel}
               aria-label={`${t.routines.todLabel} ${isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : t.routines.tod.any}`}
             >
-              {isRoutineTod(r.timeOfDay)
-                ? `${TOD_EMOJI[r.timeOfDay]} ${t.routines.tod[r.timeOfDay]}`
-                : t.routines.tod.any}
+              {isRoutineTod(r.timeOfDay) ? (
+                <>
+                  <Icon name={TOD_ICON[r.timeOfDay]} size={15} style={{ display: 'inline-block', verticalAlign: '-2px' }} />{' '}
+                  {t.routines.tod[r.timeOfDay]}
+                </>
+              ) : (
+                t.routines.tod.any
+              )}
             </button>
             <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(r)}>
               {t.operator.delete}

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { RECIPES_KEY, RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions } from '../../lib/recipes'
+import { Icon } from '../Icon'
 
 // Réglages → Recettes: the household tag layer. Two strips:
 //   · the preset pills offered in the recipe form (chips, editable in place)
@@ -62,7 +63,7 @@ export function RecipeTagsSection() {
             onClick={() => savePills(effective.filter((x) => x !== tg))}
             aria-label={`${t.operator.tagRemove} — ${tg}`}
           >
-            {tg} ✕
+            {tg} <Icon name="x-bold" size={12} style={{ display: 'inline-block', verticalAlign: '-1px' }} />
           </button>
         ))}
       </div>
@@ -113,7 +114,7 @@ export function RecipeTagsSection() {
                     ✓
                   </button>
                   <button type="button" className="btn btn--ghost mono" onClick={() => setRenaming(null)}>
-                    ✕
+                    <Icon name="x-bold" size={15} />
                   </button>
                 </form>
               ) : (

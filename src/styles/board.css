@@ -25,7 +25,7 @@
   gap: 10px;
   flex-wrap: wrap;
   padding: 8px 14px;
-  margin: 0 0 0.85rem;
+  margin: 0 0 0.6rem;
   border-radius: 999px;
   background: var(--ink-wash, rgba(0, 0, 0, 0.04));
   color: var(--ink-soft);
@@ -167,7 +167,7 @@
 /* Kiosk dashboard: scale the "Aujourd'hui" header up for across-the-room reading.
    Same board, same data — just an official wall-display weight. */
 .hub[data-surface='kiosk'] .board-wall {
-  padding: 1.75rem 1.75rem 2.25rem;
+  padding: 1rem 1.75rem 1.5rem;
 }
 .hub[data-surface='kiosk'] .board-wall .greet {
   font-size: clamp(2rem, 4vw, 3.25rem);
@@ -312,7 +312,7 @@
   font-family: var(--display);
   font-weight: 700;
   font-size: 1.1rem;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.4rem;
 }
 .lane__dot {
   width: 0.85rem;
@@ -320,8 +320,32 @@
   border-radius: 50%;
   flex: none;
 }
+/* Lane entries are compact rows, not waist-high cards. The base .act stacks a
+   big icon tile over a 19px title that wraps token-by-token in a narrow column
+   ("Dîner · / Restants / pâtes / croquettes"). Here we shrink the tile, tighten
+   the padding and drop the title size so the slot · meal · who reads on one or
+   two lines — a lane of a few items scans as a short column, not a tall stack. */
 .lane .act {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
+  padding: 8px 10px;
+  gap: 9px;
+  border-radius: var(--radius-md, 12px);
+}
+.lane .act .tile {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+.lane .act__emoji {
+  font-size: 20px;
+}
+.lane .act .title {
+  font-size: 15px;
+  line-height: 1.15;
+}
+.lane .act .when,
+.lane .act .who {
+  font-size: 11.5px;
 }
 /* All lanes share padding + radius so the "mine" accent has room to breathe
    and rounds cleanly instead of hugging the text with sharp corners. */
@@ -341,7 +365,7 @@
 /* Little hand-written cards a parent clears with a tap; tinted by who left it.
    Toddler mode reads them aloud instead of clearing. Mobile-first: they wrap. */
 .notes {
-  margin: 0 0 1.25rem;
+  margin: 0 0 0.75rem;
 }
 .notes__head {
   font-size: 0.72rem;

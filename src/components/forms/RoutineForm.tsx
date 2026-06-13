@@ -4,7 +4,8 @@ import { api } from '../../lib/api'
 import { useLang, useT } from '../../i18n'
 import { CardDeckEditor } from '../CardDeckEditor'
 import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
-import { ROUTINE_TODS, TOD_EMOJI, type RoutineTod } from '../../lib/routineTod'
+import { ROUTINE_TODS, TOD_ICON, type RoutineTod } from '../../lib/routineTod'
+import { Icon } from '../Icon'
 
 // The complete kid-routine form — who it's for (one or several toddlers, each
 // gets their own copy), a name, a template starting point, and the picture-card
@@ -116,7 +117,7 @@ export function RoutineForm({ members, onSaved }: { members: FormMember[]; onSav
             onClick={() => setTod(tod === v ? null : v)}
             aria-pressed={tod === v}
           >
-            {TOD_EMOJI[v]} {t.routines.tod[v]}
+            <Icon name={TOD_ICON[v]} size={15} style={{ display: 'inline-block', verticalAlign: '-2px' }} /> {t.routines.tod[v]}
           </button>
         ))}
       </div>

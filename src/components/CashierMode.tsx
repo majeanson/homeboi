@@ -4,6 +4,7 @@ import { useLang, useT } from '../i18n'
 import { type Pick, money } from '../lib/deals'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
+import { Icon } from './Icon'
 import { useModal } from '../lib/useModal'
 
 // "Show the cashier" mode. Two phases:
@@ -77,7 +78,7 @@ export function CashierMode({
             {t.shop.present} ({picks.length}) →
           </button>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-            ✕
+            <Icon name="x-bold" size={18} />
           </button>
         </div>
         <p className="feed-empty">{t.shop.none}</p>
@@ -105,7 +106,7 @@ export function CashierMode({
             {t.shop.present} ({picks.length}) →
           </button>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-            ✕
+            <Icon name="x-bold" size={18} />
           </button>
         </div>
 
@@ -132,7 +133,7 @@ export function CashierMode({
                     onClick={() => onRemove(p.itemId)}
                     aria-label={t.shop.clearPicks}
                   >
-                    ✕
+                    <Icon name="x-bold" size={15} />
                   </button>
                 </div>
               </li>
@@ -182,7 +183,7 @@ export function CashierMode({
           {idx + 1} / {picks.length}
         </span>
         <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-          ✕
+          <Icon name="x-bold" size={18} />
         </button>
       </div>
 

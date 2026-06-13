@@ -1,39 +1,32 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { api } from '../lib/api'
 import { useT } from '../i18n'
 import { pictoFor } from '../lib/picto'
-import { useModal } from '../lib/useModal'
-import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
-
-// One re-add candidate for the quick-add panel: something bought before (history)
-// and/or near its renewal point (a ghost 'due'/'soon'). Carries the flyer
-// synonyms it last shopped with, so re-adding "Pain" restocks "baguette/bread"
-// too. The parent (Liste) merges history + ghosts into these and drops anything
-// already on the list, so the panel is pure presentation.
-export interface QuickItem {
-  key: string
-  label: string
-  count: number
-  searchTerms: string[]
-  status?: 'due' | 'soon'
-}
+import { Icon } from '../components/Icon'
+import { BOARD_KEY } from '../lib/queryKeys'
+import { useQuickItems, type QuickItem } from '../lib/quickItems'
+import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // Accent/case-blind matching so "creme" filters to "Crème".
 const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim()
 
-// The ⚡ Quick add panel: a sheet of past/predicted items. Tap one to add it
-// instantly — the panel STAYS open (a running "Added N" counter) so a week's
-// staples go on in a few taps. An added chip locks with a ✓ so the same line
-// isn't doubled. Typing offers an "Add '<what you typed>'" for anything new.
-export function QuickAddPanel({
-  items,
-  onAdd,
-  onClose,
-}: {
-  items: QuickItem[]
-  onAdd: (item: QuickItem) => void
-  onClose: () => void
-}) {
+const GHOSTS_KEY = ['ghosts']
+const HISTORY_KEY = ['list-history']
+
+// /liste/quick — the ⚡ Quick add screen as a full-screen route (was a bottom
+// sheet, flaky to scroll): past/predicted items to restock a week in a few taps.
+// Tap one to add it instantly — the page STAYS open (a running "Added N" counter)
+// so a week's staples go on without leaving; an added chip locks with a ✓ so the
+// same line isn't doubled. Typing offers an "Add '<what you typed>'" for anything
+// new. The candidate set comes from the shared useQuickItems hook.
+export function QuickAddPage() {
   const t = useT()
+  const qc = useQueryClient()
+  const close = useSceneClose('/liste')
+  useEscapeKey(close)
+  const items = useQuickItems()
+
   const [q, setQ] = useState('')
   const [added, setAdded] = useState<Set<string>>(new Set())
   const fq = fold(q)
@@ -41,50 +34,48 @@ export function QuickAddPanel({
   // Offer a free-text add only when what's typed isn't already a known item.
   const canAddTyped = fq.length > 0 && !items.some((i) => fold(i.label) === fq)
 
-  const overlayRef = useRef<HTMLDivElement>(null)
-  const sheetRef = useRef<HTMLDivElement>(null)
-  useModal(overlayRef, onClose)
-  useSwipeToDismiss(sheetRef, onClose)
+  // Add a line (with its remembered flyer synonyms) and refresh so it drops out of
+  // the candidate set on the next render. Best-effort, like the rest of quick-add.
+  async function postAdd(text: string, terms: string[]) {
+    try {
+      await api('list', { method: 'POST', body: terms.length ? { text, search_terms: terms } : { text } })
+    } finally {
+      qc.invalidateQueries({ queryKey: BOARD_KEY })
+      qc.invalidateQueries({ queryKey: GHOSTS_KEY })
+      qc.invalidateQueries({ queryKey: HISTORY_KEY })
+    }
+  }
 
   function add(item: QuickItem) {
     if (added.has(item.key)) return
-    onAdd(item)
+    void postAdd(item.label, item.searchTerms)
     setAdded((s) => new Set(s).add(item.key))
   }
   function addTyped() {
     const text = q.trim()
     if (!text) return
     const key = `typed:${fold(text)}`
-    onAdd({ key, label: text, count: 0, searchTerms: [] })
+    void postAdd(text, [])
     setAdded((s) => new Set(s).add(key))
     setQ('')
   }
 
   return (
-    <div
-      ref={overlayRef}
-      className="pm-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t.list.quickAddTitle}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div ref={sheetRef} className="pm-sheet qa" onClick={(e) => e.stopPropagation()}>
-        <div className="pm-sheet__head">
-          <div>
-            <div className="hand-tag">{t.list.quickAddTitle}</div>
-            <h2 className="pm-sheet__title">
-              ⚡ {t.list.quickAdd}
-              {added.size > 0 && <span className="qa__count"> · {t.list.addedN(added.size)}</span>}
-            </h2>
-          </div>
-          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-            ✕
-          </button>
+    <div className="scene" aria-label={t.list.quickAddTitle}>
+      <div className="scene__head">
+        <div>
+          <div className="hand-tag">{t.list.quickAddTitle}</div>
+          <h2 className="pm-sheet__title">
+            ⚡ {t.list.quickAdd}
+            {added.size > 0 && <span className="qa__count"> · {t.list.addedN(added.size)}</span>}
+          </h2>
         </div>
+        <button type="button" className="btn btn--ghost mono" onClick={close} aria-label={t.shop.close}>
+          <Icon name="x-bold" size={18} />
+        </button>
+      </div>
 
+      <div className="scene__body qa">
         <div className="qa__search">
           <input
             className="input"

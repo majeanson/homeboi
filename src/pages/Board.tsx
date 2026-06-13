@@ -16,7 +16,7 @@ import { useSpeak } from '../lib/speak'
 import { timeOfDay } from '../lib/timeofday'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
-import { weatherEmoji, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
+import { weatherIcon, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { formatClock, formatDay, formatTime } from '../lib/format'
 import { pictoFor } from '../lib/picto'
 import { SLOT_ICON_NAME, type MealSlot } from '../lib/mealSlots'
@@ -159,7 +159,11 @@ export function Board() {
           {/* A picture hint beside the word, so "tonight vs tomorrow" doesn't
               hang on reading alone (NFR-KID-2 soft-reading). */}
           <span className="today-hero__sub mono">
-            <span aria-hidden="true">{key === 'tonight' ? '🌙 ' : '🌅 '}</span>
+            <Icon
+              name={key === 'tonight' ? 'moon-stars-bold' : 'sun-horizon-bold'}
+              size={14}
+              style={{ display: 'inline-block', verticalAlign: '-2px' }}
+            />{' '}
             {t.board[key]}
           </span>
         </button>
@@ -177,7 +181,7 @@ export function Board() {
         }
         aria-label={`${t.weather[weather.bucket]} ${weather.tempC}°`}
       >
-        <span className="today-hero__icon" aria-hidden="true">{weatherEmoji(weather)}</span>
+        <span className="today-hero__icon" aria-hidden="true"><Icon name={weatherIcon(weather)} size={56} /></span>
         <span className="today-hero__label">{weather.tempC}°</span>
         <span className="today-hero__sub mono">{t.weather[weather.bucket]}</span>
       </button>
@@ -447,8 +451,8 @@ export function Board() {
                   <div className="label">{t.weather[weather.bucket]}</div>
                   <div className="what">{weather.tempC}°</div>
                   {tip && <div className="who">{t.weather.tip[tip]}</div>}
-                  <div className="icn icn--emoji" aria-hidden="true">
-                    {weatherEmoji(weather)}
+                  <div className="icn" aria-hidden="true">
+                    <Icon name={weatherIcon(weather)} size={38} />
                   </div>
                 </div>
               )}
@@ -497,8 +501,8 @@ export function Board() {
           >
             {tomorrowWx && (
               <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
-                <span aria-hidden="true">
-                  {weatherEmoji({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
+                <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                  <Icon name={weatherIcon({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })} size={17} />
                 </span>{' '}
                 {tomorrowWx.highC}° / {tomorrowWx.lowC}°
               </div>

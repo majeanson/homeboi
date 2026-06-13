@@ -10,6 +10,7 @@ import { groupSections, withoutHeadings } from '../lib/recipeSections'
 import { ingredientName } from '../lib/ingredient'
 import { type MealSlot } from '../lib/mealSlots'
 import { ZoomableImg } from './ZoomableImg'
+import { Icon } from './Icon'
 import { IngredientLine } from './IngredientLine'
 import { SlotPicker } from './kitchen/SlotPicker'
 import { useModal } from '../lib/useModal'
@@ -179,10 +180,10 @@ export function RecipeSheet({
             title={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
             aria-label={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
           >
-            📜
+            <Icon name="scroll-bold" size={18} />
           </button>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.back}>
-            ✕
+            <Icon name="x-bold" size={18} />
           </button>
         </div>
 

@@ -81,7 +81,7 @@ export function MealRows({
                 aria-label={t.kitchen.clearMeal}
                 title={t.kitchen.clearMeal}
               >
-                ✕
+                <Icon name="x-bold" size={15} />
               </button>
             </span>
           </li>

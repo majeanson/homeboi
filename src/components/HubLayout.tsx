@@ -34,7 +34,7 @@ const TABS: {
 
 export function HubLayout() {
   const t = useT()
-  const { audience, setAudience, locked } = useAudience()
+  const { audience, locked } = useAudience()
   const { surface } = useSurface()
   const loc = useLocation()
   const nav = useNavigate()
@@ -181,24 +181,9 @@ export function HubLayout() {
           </NavLink>
         ))}
 
-        {/* Parent → Enfant, right in the nav (never floating). The kid view is a
-            ONE-WAY door: this only ever enters it, and it vanishes the moment the
-            toddler lens is up — so a child has no tap back to the parent view or
-            Réglages, whether the kiosk was locked with ?kid=1 or a parent just
-            tapped in to preview. Coming back out is a deliberate adult act:
-            relaunch without ?kid=1 (or with ?kid=0). NEVER shown on a locked
-            kiosk either (PRD C5). */}
-        {!locked && !toddler && (
-          <button
-            type="button"
-            className="hubnav__btn hubnav__peek"
-            onClick={() => setAudience('toddler')}
-            aria-label={t.audience.kidView}
-          >
-            <span className="hubnav__peek-pic" aria-hidden="true">👶</span>
-            <span>{t.audience.kid}</span>
-          </button>
-        )}
+        {/* Entering the toddler lens lives in Réglages ▸ Display now (the audience
+            switch there), not in the nav — a parent flips to Enfant from settings.
+            Coming back OUT is still a deliberate adult act via KidExitGate below. */}
 
         {/* The way back OUT of the toddler lens: a visible footer switch behind a
             parental gate (3s hold + a math challenge), so the one-way door still

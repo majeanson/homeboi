@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { formatDay, formatTime } from '../../lib/format'
 import { EventForm } from '../forms/EventForm'
+import { Icon } from '../Icon'
 import { type EventRow, type Member } from './types'
 
 // Events: the operator's direct CRUD over the agenda. The form itself is the
@@ -52,7 +53,11 @@ export function EventsSection({
                 aria-hidden="true"
               />
               <span>
-                {ev.recur_json ? '🔁 ' : ''}
+                {ev.recur_json && (
+                  <>
+                    <Icon name="repeat-bold" size={13} style={{ display: 'inline-block', verticalAlign: '-2px' }} />{' '}
+                  </>
+                )}
                 {ev.title}
                 <span className="mono operator__event-when">
                   {' · '}

@@ -328,11 +328,53 @@
 
 /* --- List row + price-match proof ---------------------------------------- */
 /* The list item is a flex pair: the big check-off button, plus a small proof
-   button. They sit side by side so neither nests inside the other. */
+   button. They sit side by side so neither nests inside the other.
+   It's also a clip window for swipe-to-delete: the card (.list-row__main) is the
+   sliding foreground and the red delete pane sits behind it, revealed as the
+   finger drags the card left (useSwipeToDelete). */
 .list-row {
   display: flex;
   align-items: stretch;
   gap: 8px;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+/* Row spacing moves from the card's own margin to the column gap, so the clip
+   window hugs the card exactly — no red strip peeking out below it at rest. */
+.list-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.list-row > .list-row__main.act {
+  margin-bottom: 0;
+}
+/* The delete pane behind the card. Inert (aria-hidden) — the swipe drives it;
+   the edit page keeps a real Delete control for non-touch. The card's opaque
+   --card background covers this at rest. */
+.list-row__del {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-right: 22px;
+  border-radius: var(--radius-lg);
+  background: var(--clay, #b3463a);
+  color: #fff;
+  font-weight: 700;
+}
+.list-row__del-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+/* The sliding foreground rides above the pane and follows the finger. */
+.list-row > .list-row__main {
+  z-index: 1;
+  will-change: transform;
 }
 /* The row is one card holding three INDEPENDENT tap targets — picture (→ deals),
    name (→ edit sheet), and the check (→ toggle). So the card itself is an inert
@@ -500,41 +542,10 @@
   margin: 0 auto;
 }
 
-/* --- Price-match proof sheet --------------------------------------------- */
-.pm-overlay {
-  position: fixed;
-  /* Visual-viewport pinned (see .sheet / .recipe-modal) so the sheet rides
-     above the keyboard instead of hiding behind it. */
-  left: 0;
-  right: 0;
-  top: var(--vvt, 0px);
-  height: 100dvh;
-  height: var(--vvh, 100dvh);
-  z-index: 60;
-  background: rgba(44, 39, 34, 0.42);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-.pm-sheet {
-  width: 100%;
-  max-width: 40rem;
-  max-height: 88vh;
-  max-height: calc(var(--vvh, 100dvh) - 12px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: var(--paper);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  box-shadow: var(--shadow-lg);
-  padding: 16px 22px 28px;
-}
-.pm-sheet__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
+/* --- Price-match / deals scene title ------------------------------------- */
+/* The price-match proof, the list-item edit, and quick-add are now full-screen
+   .scene routes (see above) — no more bottom sheets. Only the shared scene title
+   style remains, reused by those deals scenes and DealsBrowser. */
 .pm-sheet__title {
   font-family: var(--display);
   font-weight: 800;
@@ -967,18 +978,6 @@
   flex: 1 1 10rem;
   min-width: 0;
 }
-.list-add__voice.is-listening {
-  background: var(--accent);
-  color: var(--accent-ink);
-  animation: voice-pulse 1.4s ease-in-out infinite;
-}
-@keyframes voice-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
-  50% { box-shadow: 0 0 0 0.4rem color-mix(in srgb, var(--accent) 0%, transparent); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .list-add__voice.is-listening { animation: none; }
-}
 /* Voice feedback line under the add form: a calm hint while listening, or a
    soft error so the mic never fails silently. */
 .list-add__voicemsg {
@@ -1034,14 +1033,9 @@
   font-size: 0.8rem;
 }
 
-/* The quick-add panel — a sheet of re-add candidates. Tap one to add it and the
-   panel stays open (an "Added N" counter ticks up), so a week's staples go on in
-   a few taps. Scrolls inside the sheet; chips are >= 48px tap targets. */
-.pm-sheet.qa {
-  display: flex;
-  flex-direction: column;
-  max-height: 85vh;
-}
+/* The ⚡ Quick add scene — re-add candidates inside a .scene__body.qa. Tap one to
+   add it and the page stays open (an "Added N" counter ticks up), so a week's
+   staples go on in a few taps; the scene body scrolls, chips are >= 48px taps. */
 .qa__count {
   color: var(--accent);
 }

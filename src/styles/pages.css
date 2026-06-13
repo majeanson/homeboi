@@ -652,6 +652,15 @@
 .kitchen__soon-add {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+  /* input + mic + add: let the field take the slack and wrap on a narrow phone
+     so the third control never pushes "Ajouter" off the row. */
+  flex-wrap: wrap;
+}
+.kitchen__low-add .input,
+.kitchen__soon-add .input {
+  flex: 1 1 10rem;
+  min-width: 0;
 }
 .kitchen__low,
 .kitchen__soon {
@@ -1623,9 +1632,12 @@
   display: none;
 }
 .guide__icon {
-  font-size: 1.4rem;
-  line-height: 1.4;
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent, var(--ink));
+  margin-top: 0.1rem;
 }
 .guide__heads {
   display: flex;
@@ -1649,18 +1661,64 @@
   flex-direction: column;
   gap: 0.7rem;
 }
+/* Each point is its own nested <details>: a clickable title that expands to
+   reveal the one-sentence detail. Calm, no marker chrome — a caret we draw. */
 .guide__point {
   border-top: 1px solid var(--line);
-  padding-top: 0.7rem;
 }
-.guide__point dt {
+.guide__point-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0;
+  cursor: pointer;
   font-weight: 600;
   font-size: 0.9rem;
-  margin-bottom: 0.15rem;
+  line-height: 1.35;
+  list-style: none;
 }
-.guide__point dd {
+.guide__point-title::-webkit-details-marker {
+  display: none;
+}
+/* A small caret that rotates open — drawn before the label so it never needs an
+   emoji. Uses the accent so the "tap me" affordance reads at a glance. */
+.guide__point-title::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid var(--accent, var(--ink-soft));
+  border-bottom: 2px solid var(--accent, var(--ink-soft));
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.guide__point[open] > .guide__point-title::before {
+  transform: rotate(45deg);
+}
+.guide__point-detail {
   margin: 0;
+  padding: 0 0 0.6rem 0.95rem;
   color: var(--ink-soft);
   font-size: 0.9rem;
   line-height: 1.45;
+}
+/* A direct "go there" link on a Settings-tab card — jumps Réglages to that tab. */
+.guide__goto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  margin-top: 0.7rem;
+  padding: 0.5rem 0.85rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--accent, var(--ink));
+  font-weight: 600;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+.guide__goto:hover {
+  border-color: var(--accent, var(--line-strong));
+  background: color-mix(in srgb, var(--accent, var(--ink)) 8%, var(--paper));
 }

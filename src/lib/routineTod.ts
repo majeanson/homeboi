@@ -2,15 +2,18 @@
 // Réglages list (tag), the parent overview (badge + grouping) and the kid view
 // (surface the matching routine first). A CUE, not a gate: ordering only,
 // nothing hides (NFR-CALM — no nagging, no locks).
+import type { IconName } from '../components/Icon'
 import type { TimeOfDay } from './timeofday'
 
 export type RoutineTod = 'morning' | 'afternoon' | 'evening'
 export const ROUTINE_TODS: RoutineTod[] = ['morning', 'afternoon', 'evening']
 
-export const TOD_EMOJI: Record<RoutineTod, string> = {
-  morning: '🌅',
-  afternoon: '☀️',
-  evening: '🌙',
+// The moment cue as a shared Phosphor icon (was an emoji). One source of truth
+// for the builder chip, the Réglages tag, the parent badge and the kid badge.
+export const TOD_ICON: Record<RoutineTod, IconName> = {
+  morning: 'sun-horizon-bold',
+  afternoon: 'sun-bold',
+  evening: 'moon-stars-bold',
 }
 
 export const isRoutineTod = (v: unknown): v is RoutineTod =>

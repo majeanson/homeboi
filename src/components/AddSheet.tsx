@@ -5,6 +5,7 @@ import { useLang, useT } from '../i18n'
 import { api, ApiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useVoiceInput } from '../lib/useVoiceInput'
+import { VoiceButton } from './VoiceButton'
 import { formatWeekday } from '../lib/format'
 import { type MealSlot } from '../lib/mealSlots'
 import { SlotPicker } from './kitchen/SlotPicker'
@@ -98,8 +99,10 @@ export function AddSheet({
   const [listText, setListText] = useState('')
   const listVoice = useVoiceInput(setListText)
 
-  // — pantry (kitchen) —
+  // — pantry (kitchen) — speak-to-fill, same single-shot mic as capture (the
+  // sheet adds one then closes; the page's PantryTab is where you rattle off many).
   const [pantryText, setPantryText] = useState('')
+  const pantryVoice = useVoiceInput(setPantryText)
 
   // — plan a meal (kitchen) — day options come from the SAME weekStart the
   // Kitchen grid renders, so the planned day lands exactly where the grid
@@ -299,16 +302,7 @@ export function AddSheet({
                 placeholder={captureVoice.listening ? t.capture.listening : t.capture.placeholder}
                 aria-label={t.capture.add}
               />
-              {captureVoice.hasVoice && (
-                <button
-                  type="button"
-                  className={`btn btn--ghost capture__voice${captureVoice.listening ? ' is-listening' : ''}`}
-                  onClick={captureVoice.start}
-                  aria-label={t.capture.voice}
-                >
-                  🎤
-                </button>
-              )}
+              <VoiceButton voice={captureVoice} label={t.capture.voice} />
             </div>
 
             {/* Fallback only: AI off → let the human re-route the saved note. */}
@@ -353,16 +347,7 @@ export function AddSheet({
                 placeholder={listVoice.listening ? t.capture.listening : t.list.addPlaceholder}
                 aria-label={t.list.addTitle}
               />
-              {listVoice.hasVoice && (
-                <button
-                  type="button"
-                  className={`btn btn--ghost capture__voice${listVoice.listening ? ' is-listening' : ''}`}
-                  onClick={listVoice.start}
-                  aria-label={t.capture.voice}
-                >
-                  🎤
-                </button>
-              )}
+              <VoiceButton voice={listVoice} label={t.capture.voice} />
             </div>
             <button type="submit" className="btn btn--primary" disabled={!listText.trim() || busy}>
               <Icon name="plus-bold" size={20} />
@@ -378,9 +363,10 @@ export function AddSheet({
               <input
                 value={pantryText}
                 onChange={(e) => setPantryText(e.target.value)}
-                placeholder={t.kitchen.lowAdd}
+                placeholder={pantryVoice.listening ? t.capture.listening : t.kitchen.lowAdd}
                 aria-label={t.kitchen.lowAdd}
               />
+              <VoiceButton voice={pantryVoice} label={t.capture.voice} />
             </div>
             <button type="submit" className="btn btn--primary" disabled={!pantryText.trim() || busy}>
               <Icon name="plus-bold" size={20} />

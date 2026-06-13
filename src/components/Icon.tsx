@@ -39,6 +39,39 @@ export type IconName =
   | 'sun-fill'
   | 'tooth-bold'
   | 'tree-bold'
+  // Added for the in-app Guide so every concept reuses the app's Phosphor-bold
+  // icon set instead of emoji (Réglages ▸ Guide).
+  | 'device-tablet-bold'
+  | 'link-bold'
+  | 'tag-bold'
+  | 'receipt-bold'
+  | 'ghost-bold'
+  | 'wifi-high-bold'
+  | 'newspaper-bold'
+  | 'arrow-counter-clockwise-bold'
+  | 'key-bold'
+  | 'users-three-bold'
+  | 'broom-bold'
+  | 'shopping-bag-bold'
+  | 'image-square-bold'
+  | 'first-aid-kit-bold'
+  // App-affordance icons — replacing emoji in live controls so the UI (and the
+  // Guide that documents it) uses one Phosphor set: audience/theme toggles,
+  // weather, time-of-day, close/camera/sound/recurring/original.
+  | 'baby-bold'
+  | 'user-bold'
+  | 'x-bold'
+  | 'camera-bold'
+  | 'speaker-high-bold'
+  | 'speaker-slash-bold'
+  | 'scroll-bold'
+  | 'repeat-bold'
+  | 'sun-horizon-bold'
+  | 'cloud-bold'
+  | 'cloud-fog-bold'
+  | 'cloud-rain-bold'
+  | 'cloud-snow-bold'
+  | 'cloud-lightning-bold'
 
 export function Icon({
   name,

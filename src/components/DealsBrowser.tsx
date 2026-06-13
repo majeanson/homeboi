@@ -5,6 +5,7 @@ import { api, isStatus } from '../lib/api'
 import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
+import { Icon } from './Icon'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { existingListId, stageDeal } from '../lib/picks'
 import { useEscapeKey } from '../lib/sceneNav'
@@ -137,7 +138,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
           <h2 className="pm-sheet__title">{t.shop.browseHint}</h2>
         </div>
         <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-          ✕
+          <Icon name="x-bold" size={18} />
         </button>
       </div>
 
