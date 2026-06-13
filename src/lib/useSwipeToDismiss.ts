@@ -38,7 +38,18 @@ export function useSwipeToDismiss(
     let active = false
 
     const onStart = (e: TouchEvent) => {
-      if (e.touches.length !== 1 || el.scrollTop > 0) return
+      if (e.touches.length !== 1) return
+      // Don't arm the dismiss if the finger is over a nested scroller that can
+      // still scroll UP (e.g. QuickAdd's `.qa__list`, scrolled partway down).
+      // That downward drag belongs to content scrolling — without this check the
+      // sheet's own scrollTop stays 0 (the inner list scrolls instead), so every
+      // in-list pan looked like a dismiss and closed the whole panel.
+      let n: HTMLElement | null = e.target instanceof HTMLElement ? e.target : null
+      while (n && n !== el) {
+        if (n.scrollHeight > n.clientHeight + 1 && n.scrollTop > 0) return
+        n = n.parentElement
+      }
+      if (el.scrollTop > 0) return
       startY = e.touches[0].clientY
       delta = 0
       active = true

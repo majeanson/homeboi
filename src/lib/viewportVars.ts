@@ -22,13 +22,21 @@ export function trackVisualViewport(): void {
   //      frame, and writing the shrunken vv.height would squash overlays sized
   //      with --vvh and make them shimmer through the gesture.
   //   2. rAF-coalesce bursts so we set the vars at most once per frame.
+  // Tracks the current keyboard inset so the focus-scroll below only nudges on a
+  // device whose keyboard is actually up (0 on desktop → no jump on click).
+  let kbInset = 0
   let queued = false
   const apply = () => {
     queued = false
     if (vv.scale > 1) return
+    kbInset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
     root.setProperty('--vvh', `${Math.round(vv.height)}px`)
     root.setProperty('--vvt', `${Math.round(vv.offsetTop)}px`)
-    root.setProperty('--kb', `${Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))}px`)
+    root.setProperty('--kb', `${kbInset}px`)
+    // While the keyboard is up, hide the bottom chrome (the mobile tab bar + the
+    // ＋ FAB) — it otherwise floats in the gap above the keyboard, fighting the
+    // field being edited for attention. `.kb-open` keys the CSS in hub.css.
+    document.documentElement.classList.toggle('kb-open', kbInset > 120)
   }
   const schedule = () => {
     if (queued) return
@@ -38,6 +46,24 @@ export function trackVisualViewport(): void {
   apply()
   vv.addEventListener('resize', schedule)
   vv.addEventListener('scroll', schedule)
+
+  // When a text field is tapped, ease THAT field into the middle of the visible
+  // band ("zoom on the part being edited") once the keyboard has slid in. Gated
+  // on a real keyboard inset, so a plain desktop click never yanks the page.
+  // iOS' own scroll-into-view is unreliable inside our fixed sheets/overlays.
+  const TEXT = /^(|text|search|email|url|tel|password|number)$/i
+  let scrollTimer: ReturnType<typeof setTimeout>
+  document.addEventListener('focusin', (e) => {
+    const el = e.target
+    if (!(el instanceof HTMLElement)) return
+    const editable =
+      el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && TEXT.test((el as HTMLInputElement).type))
+    if (!editable) return
+    clearTimeout(scrollTimer)
+    scrollTimer = setTimeout(() => {
+      if (kbInset > 120 && el.isConnected) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }, 300)
+  })
 
   // Final backstop for iOS Safari browser tabs: block the pinch-zoom gesture
   // outright (it honours user-scalable=no only once installed standalone). These

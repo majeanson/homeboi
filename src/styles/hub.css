@@ -178,6 +178,14 @@
 .hub[data-surface='mobile'] .add-fab {
   bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
+/* While editing text (on-screen keyboard up — `.kb-open` from viewportVars.ts),
+   drop the bottom tab bar and the ＋ FAB. iOS pins them above the keyboard where
+   they'd otherwise float in the gap, stealing the eye from the field being
+   typed into. They slide back the instant the keyboard dismisses. */
+.kb-open .hub[data-surface='mobile'] .hubnav,
+.kb-open .hub[data-surface='mobile'] .add-fab {
+  display: none;
+}
 
 /* ---- Settings: section nav + anchors + display controls ------------------ */
 /* The fresh-household welcome (Réglages ▸ La maisonnée, zero members): three

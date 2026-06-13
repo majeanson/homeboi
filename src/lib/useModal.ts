@@ -15,6 +15,16 @@ import { useEffect, type RefObject } from 'react'
 const FOCUSABLE =
   'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
 
+// A field that pops the on-screen keyboard when focused — every textarea, any
+// contenteditable, and the text-flavoured <input> types (not checkbox/radio/
+// button/date pickers). The focus trap skips these so opening a modal never
+// summons the keyboard on its own.
+const TEXT_INPUT = /^(|text|search|email|url|tel|password|number)$/i
+function isTextEntry(n: HTMLElement): boolean {
+  if (n.tagName === 'TEXTAREA' || n.isContentEditable) return true
+  return n.tagName === 'INPUT' && TEXT_INPUT.test((n as HTMLInputElement).type)
+}
+
 // Ref-counted scroll lock so stacked overlays (a flyer over the cashier) don't
 // unlock the page when only the top one closes. position:fixed + scroll restore
 // is the one technique that actually stops iOS Safari scrolling the background.
@@ -86,10 +96,14 @@ export function useModal(
       Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
         (n) => n.offsetParent !== null || n === document.activeElement,
       )
-    // Pull focus in — unless an autoFocus field already claimed it.
+    // Pull focus in for the trap — but NEVER onto a text field, which would
+    // summon the on-screen keyboard the instant a dialog/sheet opens. House
+    // rule: text entry is always an explicit tap, never automatic. So prefer the
+    // first NON-text control (a ✕, a tab, a button); fall back to the container
+    // itself. The keyboard only ever appears when the user taps a field.
     if (!el.contains(document.activeElement)) {
-      const first = list()[0]
-      if (first) first.focus()
+      const target = list().find((n) => !isTextEntry(n))
+      if (target) target.focus()
       else {
         el.tabIndex = -1
         el.focus()

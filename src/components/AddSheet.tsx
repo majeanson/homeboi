@@ -293,7 +293,6 @@ export function AddSheet({
             <div className="sheet__field">
               <Icon name="pencil-simple-bold" size={20} color="var(--ink-faint)" />
               <input
-                autoFocus={open}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={captureVoice.listening ? t.capture.listening : t.capture.placeholder}
@@ -348,7 +347,6 @@ export function AddSheet({
             <div className="sheet__field">
               <Icon name="sparkle-bold" size={20} color="var(--ink-faint)" />
               <input
-                autoFocus={open}
                 value={listText}
                 onChange={(e) => setListText(e.target.value)}
                 placeholder={listVoice.listening ? t.capture.listening : t.list.addPlaceholder}
@@ -377,7 +375,6 @@ export function AddSheet({
             <div className="sheet__field">
               <Icon name="carrot-bold" size={20} color="var(--ink-faint)" />
               <input
-                autoFocus={open}
                 value={pantryText}
                 onChange={(e) => setPantryText(e.target.value)}
                 placeholder={t.kitchen.lowAdd}
@@ -422,7 +419,6 @@ export function AddSheet({
             <div className="sheet__field">
               <Icon name="pencil-simple-bold" size={20} color="var(--ink-faint)" />
               <input
-                autoFocus={open}
                 value={mealTitle}
                 onChange={(e) => setMealTitle(e.target.value)}
                 placeholder={t.kitchen.mealPlaceholder}

@@ -190,7 +190,6 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
             onChange={(e) => setInput(e.target.value)}
             placeholder={t.shop.search}
             aria-label={t.shop.search}
-            autoFocus
           />
           <button type="submit" className="btn" disabled={!input.trim()}>
             🔎
