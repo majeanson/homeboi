@@ -199,6 +199,11 @@ export function HubLayout() {
             <span>{t.audience.kid}</span>
           </button>
         )}
+
+        {/* The way back OUT of the toddler lens: a visible footer switch behind a
+            parental gate (3s hold + a math challenge), so the one-way door still
+            holds for the child but an adult can leave without an address bar. */}
+        {toddler && <KidExitGate />}
       </nav>
 
       <div className="hub__body">
@@ -233,12 +238,6 @@ export function HubLayout() {
         </button>
       )}
       <AddSheet open={addOpen} modes={sectionModes} initialMode={addMode} onClose={() => setAddOpen(false)} />
-
-      {/* The toddler lens is a one-way door for the CHILD; this is the adult's
-          way back out (long-press + math gate) — the only escape on an installed
-          PWA with no address bar. Covers both a locked kiosk and a parent
-          preview, since both can get stranded on a phone home-screen install. */}
-      {toddler && <KidExitGate />}
     </div>
     </AddSheetContext.Provider>
   )

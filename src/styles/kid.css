@@ -349,61 +349,57 @@
 }
 
 /* ========================================================================== */
-/* Kid-exit parental gate (KidExitGate). A near-invisible top-left hotspot that  */
-/* arms a fill-ring on a sustained ~3s long-press, then a small arithmetic        */
-/* challenge. The only way out of the toddler lens on an installed PWA. The       */
-/* hotspot must read as "nothing" to a child but be holdable by an adult.         */
+/* Kid-exit parental gate (KidExitGate). A visible exit switch in the hub footer/ */
+/* nav that arms a fill bar on a sustained ~3s long-press, then a small           */
+/* arithmetic challenge. The way out of the toddler lens on an installed PWA.     */
+/* The switch must survive a long touch: suppress the OS callout / selection so   */
+/* the press isn't cancelled mid-hold, and clip the fill bar to the button.       */
 /* ========================================================================== */
-.kid-exit-hotspot {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 64px;
-  height: 64px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
+.kid-exit-switch {
+  position: relative;
+  overflow: hidden;
+  /* Sits at the far end of the nav (bottom of the kiosk sidebar column), like
+     the parent→kid peek it replaces in the toddler lens. */
+  margin-top: auto;
+  color: var(--ink-faint);
   cursor: pointer;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  /* Invisible at rest — no hint for the toddler. */
+  /* A 3s touch must not trigger the OS long-press callout / text selection —
+     either fires pointercancel and aborts the hold. */
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   touch-action: none;
 }
-.kid-exit-hotspot__ring {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 3px solid transparent;
+.hub[data-surface='mobile'] .kid-exit-switch {
+  margin-top: 0;
+  flex: 0 0 auto;
+}
+/* The fill bar grows left→right over HOLD_MS so the hold has feedback. The
+   duration mirrors HOLD_MS (3s) in KidExitGate. */
+.kid-exit-switch__fill {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 0;
+  background: var(--ink);
   opacity: 0;
+  pointer-events: none;
 }
-/* Only while an adult is actively holding: a calm ring fills over HOLD_MS so the
-   long-press has feedback. The duration mirrors HOLD_MS (3s) in KidExitGate. */
-.kid-exit-hotspot.is-holding .kid-exit-hotspot__ring {
-  opacity: 1;
-  border-color: color-mix(in srgb, var(--ink) 35%, transparent);
-  border-top-color: var(--ink);
-  animation: kid-exit-spin 0.9s linear infinite, kid-exit-grow 3s linear forwards;
+.kid-exit-switch.is-holding .kid-exit-switch__fill {
+  opacity: 0.75;
+  animation: kid-exit-fill 3s linear forwards;
 }
-@keyframes kid-exit-spin {
+@keyframes kid-exit-fill {
   to {
-    transform: rotate(360deg);
-  }
-}
-@keyframes kid-exit-grow {
-  from {
-    transform: scale(0.7);
-  }
-  to {
-    transform: scale(1.15);
+    width: 100%;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .kid-exit-hotspot.is-holding .kid-exit-hotspot__ring {
+  .kid-exit-switch.is-holding .kid-exit-switch__fill {
     animation: none;
-    border-color: var(--ink);
+    width: 100%;
   }
 }
 

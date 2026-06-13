@@ -8,13 +8,21 @@ import { useModal } from '../lib/useModal'
 // "kid view one-way door" project note). A toddler-locked kiosk relaunched with
 // ?kid=1 has no address bar in an installed PWA, so there was no way out at all.
 //
-// Two gates, neither of which a pre-reader clears:
-//   1. A near-invisible top-left hotspot that needs a SUSTAINED long-press
-//      (~3s). Toddlers tap and drag; they rarely hold one spot that long.
+// It lives as a visible switch in the hub footer/nav (rendered by HubLayout
+// inside .hubnav), but is gated by two challenges neither of which a pre-reader
+// clears:
+//   1. A SUSTAINED long-press (~3s) on the switch. Toddlers tap and drag; they
+//      rarely hold one spot that long. A fill bar gives the adult feedback.
 //   2. A simple arithmetic challenge (a + b). A pre-reader can't solve it; an
 //      adult answers in a second. Nothing to set up, nothing to remember, no
 //      stored secret — calm by design.
 // Clearing both calls unlock(), which drops the lock and the parent lens back.
+//
+// Touch note: on a real tablet a 3s press would otherwise trigger the OS
+// long-press callout / text selection (→ pointercancel) or be cancelled by tiny
+// finger jitter (→ pointerleave), so the hold never completed. We suppress the
+// callout/selection in CSS, preventDefault the context menu, and capture the
+// pointer so jitter inside the hold doesn't abort it.
 const HOLD_MS = 3000
 
 function newSum() {
@@ -35,7 +43,14 @@ export function KidExitGate() {
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, () => setGateOpen(false), { open: gateOpen })
 
-  function startHold() {
+  function startHold(e: React.PointerEvent<HTMLButtonElement>) {
+    // Capture the pointer so small finger movement during the 3s hold doesn't
+    // fire pointerleave (which would cancel it). pointerup still lands here.
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {
+      // setPointerCapture can throw if the pointer is already gone — ignore.
+    }
     setHolding(true)
     timer.current = setTimeout(() => {
       setHolding(false)
@@ -68,19 +83,25 @@ export function KidExitGate() {
 
   return (
     <>
-      {/* The hotspot is a real button (keyboard/AT reachable for an adult) but
-          visually all but invisible until a press arms the fill ring. */}
+      {/* The visible exit switch, sitting in the hub footer/nav. It reads as an
+          ordinary nav button; a 3s hold arms the fill bar, then the math gate
+          opens. onContextMenu is prevented so a long-press doesn't pop the OS
+          callout (which would cancel the hold) — see the touch note above. */}
       <button
         type="button"
-        className={`kid-exit-hotspot${holding ? ' is-holding' : ''}`}
+        className={`hubnav__btn kid-exit-switch${holding ? ' is-holding' : ''}`}
         aria-label={t.audience.exitTitle}
         title={t.audience.exitHold}
         onPointerDown={startHold}
         onPointerUp={cancelHold}
-        onPointerLeave={cancelHold}
         onPointerCancel={cancelHold}
+        onContextMenu={(e) => e.preventDefault()}
       >
-        <span className="kid-exit-hotspot__ring" aria-hidden="true" />
+        <span className="hubnav__peek-pic" aria-hidden="true">
+          🚪
+        </span>
+        <span>{t.audience.exitTitle}</span>
+        <span className="kid-exit-switch__fill" aria-hidden="true" />
       </button>
 
       {gateOpen && (

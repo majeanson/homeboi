@@ -111,10 +111,11 @@ test.describe('navigation', () => {
     await page.locator('.hubnav__peek').click()
     await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'toddler')
     await expect(page.locator('.hubnav a[href="/settings"]')).toHaveCount(0)
-    // The switch itself is now gone too: no tap back to the parent view or
-    // settings, and /settings redirects away. Coming back out is a deliberate
-    // relaunch (?kid=0), not an in-app tap.
+    // The instant entry switch is gone — there's no one-tap flip back to the
+    // parent view, and /settings redirects away. The only way out is the gated
+    // exit switch (3s hold + math), so the door stays one-way for the child.
     await expect(page.locator('.hubnav__peek')).toHaveCount(0)
+    await expect(page.locator('.kid-exit-switch')).toBeVisible()
     // goto reloads the shell, re-running seedState's init (which re-seeds parent);
     // pin the toddler lens first so the reloaded shell still bounces /settings → /board.
     await page.addInitScript(() => localStorage.setItem('babillard-audience', 'toddler'))
@@ -130,6 +131,35 @@ test.describe('navigation', () => {
     await expect(page.locator('.hubnav__peek')).toHaveCount(0)
     await expect(page.locator('.hubnav a[href="/settings"]')).toHaveCount(0)
     await expect(page.locator('.add-fab')).toHaveCount(0)
+    // The gated exit switch is the one allowed way out of a locked kiosk.
+    await expect(page.locator('.kid-exit-switch')).toBeVisible()
+  })
+
+  test('the gated exit switch leaves the toddler lens after a 3s hold + correct math', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await page.goto('/board?kid=1')
+    await settle(page, '.hub')
+    await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'toddler')
+
+    // A sustained ~3s press on the footer switch arms the parental gate.
+    const sw = page.locator('.kid-exit-switch')
+    const box = await sw.boundingBox()
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+    await page.mouse.down()
+    await page.waitForTimeout(3300)
+    await page.mouse.up()
+
+    // Solve the arithmetic challenge it shows (random addends — read + sum them).
+    const modal = page.locator('.kid-exit-modal')
+    await expect(modal).toBeVisible()
+    const q = await modal.locator('.kid-exit-modal__q span').first().innerText()
+    const m = q.match(/(\d+)\s*\+\s*(\d+)/)
+    await modal.locator('input').fill(String(Number(m![1]) + Number(m![2])))
+    await modal.getByRole('button', { name: 'Sortir' }).click()
+
+    // Lock cleared, back in the parent lens — the door opened for the adult.
+    await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'parent')
   })
 })
 
