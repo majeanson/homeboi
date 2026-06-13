@@ -49,26 +49,31 @@ export function MealRows({
                   <Icon name="book-open-bold" size={16} />
                 </button>
               )}
-              <button
-                type="button"
-                className="kitchen__meal-btn"
-                onClick={() => onMove(m.id, 'up')}
-                disabled={i === 0}
-                aria-label={t.kitchen.moveUp}
-                title={t.kitchen.moveUp}
-              >
-                <Icon name="caret-up-bold" size={16} />
-              </button>
-              <button
-                type="button"
-                className="kitchen__meal-btn"
-                onClick={() => onMove(m.id, 'down')}
-                disabled={i === meals.length - 1}
-                aria-label={t.kitchen.moveDown}
-                title={t.kitchen.moveDown}
-              >
-                <Icon name="caret-down-bold" size={16} />
-              </button>
+              {/* Reorder only makes sense once there's another meal to swap with. */}
+              {meals.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="kitchen__meal-btn"
+                    onClick={() => onMove(m.id, 'up')}
+                    disabled={i === 0}
+                    aria-label={t.kitchen.moveUp}
+                    title={t.kitchen.moveUp}
+                  >
+                    <Icon name="caret-up-bold" size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="kitchen__meal-btn"
+                    onClick={() => onMove(m.id, 'down')}
+                    disabled={i === meals.length - 1}
+                    aria-label={t.kitchen.moveDown}
+                    title={t.kitchen.moveDown}
+                  >
+                    <Icon name="caret-down-bold" size={16} />
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 className="kitchen__meal-btn kitchen__meal-remove"
