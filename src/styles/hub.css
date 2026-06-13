@@ -240,6 +240,26 @@
   color: var(--ink-soft);
 }
 
+/* Read-aloud voice picker (Réglages ▸ Affichage). Stacked rows: voice select,
+   speed slider, then the test button. */
+.operator__voice {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: stretch;
+}
+.operator__voice select.input {
+  max-width: 22rem;
+}
+.operator__voice input[type='range'] {
+  flex: 1 1 12rem;
+  max-width: 22rem;
+  accent-color: var(--accent, var(--ink));
+}
+.operator__voice .btn {
+  align-self: flex-start;
+}
+
 /* ---- Routine / chore builder: picker chips + drag-and-drop card deck ------ */
 .picker-chips {
   display: flex;

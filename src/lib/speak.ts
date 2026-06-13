@@ -15,10 +15,49 @@
 //      French voice installed), there's nothing to match — we fall back to the
 //      same language family, then to best-effort default. That's an OS gap, not
 //      a bug; install a Français (Canada) voice to hear it narrated properly.
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useLang, type Lang } from '../i18n'
 
 const SUPPORTED = typeof window !== 'undefined' && 'speechSynthesis' in window
+
+// Per-language voice override + a global speaking rate, chosen in Réglages ▸
+// Affichage. Empty/auto means "let pickBestVoice decide". Stored in localStorage
+// (same convention as the other display prefs); read live at speak time so a
+// change applies to the very next tap without threading a context everywhere.
+const RATE_KEY = 'babillard-voice-rate'
+const voicePrefKey = (lang: Lang) => `babillard-voice-${lang}`
+
+export function getVoicePref(lang: Lang): string {
+  try {
+    return localStorage.getItem(voicePrefKey(lang)) ?? ''
+  } catch {
+    return ''
+  }
+}
+export function setVoicePref(lang: Lang, voiceURI: string): void {
+  try {
+    if (voiceURI) localStorage.setItem(voicePrefKey(lang), voiceURI)
+    else localStorage.removeItem(voicePrefKey(lang))
+  } catch {
+    /* storage blocked — narration just falls back to the auto-picked voice */
+  }
+}
+export function getRate(): number {
+  try {
+    const n = Number(localStorage.getItem(RATE_KEY))
+    // Clamp to the slider range; default 1 (normal) when unset/garbage.
+    return Number.isFinite(n) && n >= 0.6 && n <= 1.4 ? n : 1
+  } catch {
+    return 1
+  }
+}
+export function setRate(rate: number): void {
+  try {
+    localStorage.setItem(RATE_KEY, String(rate))
+  } catch {
+    /* noop */
+  }
+}
 
 // The latest voice list. Populated lazily and kept current via `voiceschanged`.
 let voices: SpeechSynthesisVoice[] = []
@@ -84,7 +123,48 @@ export function pickBestVoice<T extends Pick<SpeechSynthesisVoice, 'lang' | 'nam
 
 function pickVoice(want: string): SpeechSynthesisVoice | null {
   if (!voices.length) refreshVoices()
+  // An explicit per-language override wins — but only if that voice is still
+  // installed AND in the wanted language family (a stale fr pick must not read
+  // English text). Otherwise fall back to the best auto-match.
+  const lang: Lang = want.toLowerCase().startsWith('fr') ? 'fr' : 'en'
+  const prefURI = getVoicePref(lang)
+  if (prefURI) {
+    const two = want.slice(0, 2).toLowerCase()
+    const pref = voices.find(
+      (v) => v.voiceURI === prefURI && v.lang.toLowerCase().replace('_', '-').startsWith(two),
+    )
+    if (pref) return pref
+  }
   return pickBestVoice(voices, want)
+}
+
+// Every installed voice in a language's family (fr*/en*), best-quality first —
+// the option list for the voice picker. Reads the live snapshot.
+export function listVoicesFor(lang: Lang): SpeechSynthesisVoice[] {
+  if (!voices.length) refreshVoices()
+  const two = wantedTag(lang).slice(0, 2)
+  const norm = (l: string) => l.toLowerCase().replace('_', '-')
+  return voices
+    .filter((v) => norm(v.lang).startsWith(two))
+    .slice()
+    .sort((a, b) => quality(b) * 10 + (norm(b.lang) === wantedTag(lang) ? 1 : 0) - (quality(a) * 10 + (norm(a.lang) === wantedTag(lang) ? 1 : 0)))
+}
+
+// Voice list for `lang`, re-rendering when the browser finishes loading voices
+// (the `voiceschanged` event can fire after a component mounts). For the picker.
+export function useVoiceList(lang: Lang): SpeechSynthesisVoice[] {
+  const [list, setList] = useState<SpeechSynthesisVoice[]>(() => listVoicesFor(lang))
+  useEffect(() => {
+    if (!SUPPORTED) return
+    const update = () => {
+      refreshVoices()
+      setList(listVoicesFor(lang))
+    }
+    update()
+    window.speechSynthesis.addEventListener('voiceschanged', update)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', update)
+  }, [lang])
+  return list
 }
 
 // Whether a voice for `lang` is actually installed, so a surface can choose to
@@ -134,6 +214,7 @@ export function useSpeak() {
           // falls back to the default mouth — so the voice's own tag wins.
           u.lang = v?.lang ?? want
           if (v) u.voice = v // matched voice -> reads in the toggled language
+          u.rate = getRate() // parent-set speaking speed (Réglages ▸ Affichage)
           window.speechSynthesis.cancel() // never overlap; narration is a nicety
           window.speechSynthesis.speak(u)
         } catch {

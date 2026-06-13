@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { GUIDE, GUIDE_GROUPS, type GuideEntry } from '../../lib/guideContent'
 
@@ -10,6 +11,26 @@ export function GuideSection() {
   const t = useT()
   const { lang } = useLang()
   const [query, setQuery] = useState('')
+  const [params, setParams] = useSearchParams()
+
+  // A contextual "?" elsewhere links here as ?card=<id> (see HelpDot). Open that
+  // card and scroll to it. We mirror the id into local state and CONSUME the
+  // param (replace) so a refresh/back doesn't re-force it and the parent can
+  // collapse it again. The effect (not initial state) is the real driver — it
+  // also handles the case where the Guide tab is already mounted.
+  const [openId, setOpenId] = useState<string | null>(() => params.get('card'))
+  const targetRef = useRef<HTMLDetailsElement | null>(null)
+  useEffect(() => {
+    const card = params.get('card')
+    if (!card) return
+    setOpenId(card)
+    const next = new URLSearchParams(params)
+    next.delete('card')
+    setParams(next, { replace: true })
+  }, [params, setParams])
+  useEffect(() => {
+    if (openId && targetRef.current) targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [openId])
 
   const q = query.trim().toLowerCase()
   const matches = useMemo(() => {
@@ -47,8 +68,14 @@ export function GuideSection() {
             <p className="guide__group-blurb mono">{group.blurb[lang]}</p>
             <div className="guide__cards">
               {entries.map((e) => (
-                // Open the matching cards while searching, so a hit is visible at once.
-                <details key={e.id} className="guide__card" open={q.length > 0}>
+                // Open the matching cards while searching, so a hit is visible at once;
+                // also open (and scroll to) a card a contextual "?" deep-linked us to.
+                <details
+                  key={e.id}
+                  ref={e.id === openId ? targetRef : undefined}
+                  className={`guide__card${e.id === openId ? ' is-target' : ''}`}
+                  open={q.length > 0 || e.id === openId}
+                >
                   <summary className="guide__summary">
                     <span className="guide__icon" aria-hidden="true">
                       {e.icon}

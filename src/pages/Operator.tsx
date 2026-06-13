@@ -5,7 +5,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useProfile } from '../lib/profile'
-import { DisplaySection, CalmSection } from '../components/operator/display'
+import { DisplaySection, VoiceSection, CalmSection } from '../components/operator/display'
 import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
@@ -151,7 +151,12 @@ export function Operator() {
         )}
         {tab === 'photos' && <PhotosSection />}
         {tab === 'recap' && <RecapSection />}
-        {tab === 'display' && <DisplaySection />}
+        {tab === 'display' && (
+          <>
+            <DisplaySection />
+            <VoiceSection />
+          </>
+        )}
         {tab === 'calm' && <CalmSection />}
         {tab === 'ai-log' && <AiErrorLogSection />}
         {tab === 'guide' && <GuideSection />}

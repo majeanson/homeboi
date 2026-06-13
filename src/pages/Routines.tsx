@@ -7,6 +7,7 @@ import { live } from '../lib/query'
 import { ROUTINES_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
+import { HelpDot } from '../components/HelpDot'
 import { imgUrl } from '../lib/image'
 import { dayOrder, isRoutineTod, TOD_EMOJI } from '../lib/routineTod'
 import { KidView } from './KidView'
@@ -53,7 +54,10 @@ function RoutinesParent() {
       <div className="app-head">
         <div>
           <div className="hand-tag">{t.routines.tag}</div>
-          <h1 className="greet">{t.nav.routines}</h1>
+          <div className="app-head__titlerow">
+            <h1 className="greet">{t.nav.routines}</h1>
+            <HelpDot card="routines" />
+          </div>
         </div>
         <div className="avatar" style={{ background: 'var(--berry-wash)' }}>
           <Icon name="paint-brush-bold" size={26} color="var(--berry-deep, #95527A)" />

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon } from '../components/Icon'
+import { HelpDot } from '../components/HelpDot'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
@@ -256,7 +257,10 @@ export function Kitchen() {
         <div className="app-head">
           <div>
             <div className="hand-tag">{t.kitchen.plan}</div>
-            <h1 className="greet">{t.kitchen.title}</h1>
+            <div className="app-head__titlerow">
+              <h1 className="greet">{t.kitchen.title}</h1>
+              <HelpDot card="kitchen" />
+            </div>
           </div>
           <div className="avatar" style={{ background: 'var(--terracotta-wash)' }}>
             <Icon name="carrot-bold" size={26} color="var(--terracotta-deep)" />

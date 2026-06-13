@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
+import { HelpDot } from '../components/HelpDot'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
 import { useT } from '../i18n'
@@ -362,7 +363,10 @@ export function Liste() {
       <div className="app-head">
         <div>
           <div className="hand-tag">{t.capture.add}</div>
-          <h1 className="greet">{t.nav.list}</h1>
+          <div className="app-head__titlerow">
+            <h1 className="greet">{t.nav.list}</h1>
+            <HelpDot card="liste" />
+          </div>
         </div>
         <div className="avatar" style={{ background: 'var(--marigold-wash)' }}>
           <Icon name={CATS.list.icon} size={26} color={CATS.list.deep} />

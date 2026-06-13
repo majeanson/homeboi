@@ -12,6 +12,7 @@ import { AudienceContext, type Audience } from './lib/audience'
 import { SurfaceContext, type Surface } from './lib/surface'
 import { ProfileContext } from './lib/profile'
 import { CalmContext } from './lib/calm'
+import { HelpContext } from './lib/help'
 import { ToastProvider } from './lib/toast'
 import { AiErrorProvider } from './lib/aiErrorToast'
 import { registerSw } from './lib/registerSw'
@@ -169,6 +170,24 @@ function Root() {
     }
   }
 
+  // Tutorial mode defaults ON so a new household discovers the contextual "?"
+  // help; only an explicit switch to expert persists.
+  const [tutorial, setTutorialState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('babillard-tutorial') !== 'off'
+    } catch {
+      return true
+    }
+  })
+  function setTutorial(v: boolean) {
+    setTutorialState(v)
+    try {
+      localStorage.setItem('babillard-tutorial', v ? 'on' : 'off')
+    } catch {
+      /* noop */
+    }
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <LangContext.Provider value={{ lang, setLang }}>
@@ -176,6 +195,7 @@ function Root() {
           <SurfaceContext.Provider value={{ surface, setSurface, chosen: surfaceChosen }}>
           <ProfileContext.Provider value={{ memberId: profile, setMemberId: setProfile }}>
           <CalmContext.Provider value={{ calm, setCalm }}>
+          <HelpContext.Provider value={{ tutorial, setTutorial }}>
             <ToastProvider>
               <AiErrorProvider>
                 <AuthProvider>
@@ -185,6 +205,7 @@ function Root() {
                 </AuthProvider>
               </AiErrorProvider>
             </ToastProvider>
+          </HelpContext.Provider>
           </CalmContext.Provider>
           </ProfileContext.Provider>
           </SurfaceContext.Provider>

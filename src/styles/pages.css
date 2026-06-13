@@ -1424,6 +1424,12 @@
 .guide__card[open] {
   border-color: var(--line-strong);
 }
+/* The card a contextual "?" deep-linked to — a brief accent ring so the eye
+   lands on it after the scroll. */
+.guide__card.is-target {
+  border-color: var(--accent, var(--marigold-deep));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, var(--marigold-deep)) 28%, transparent);
+}
 .guide__summary {
   display: flex;
   align-items: flex-start;

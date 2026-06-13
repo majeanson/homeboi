@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
+import { HelpDot } from '../components/HelpDot'
 import { Icon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
 import { useLang, useT } from '../i18n'
@@ -341,7 +342,10 @@ export function Board() {
       <div className="app-head">
         <div>
           <div className="hand-tag">{t.board.today}</div>
-          <h1 className="greet">{me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]}</h1>
+          <div className="app-head__titlerow">
+            <h1 className="greet">{me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]}</h1>
+            <HelpDot card="board" />
+          </div>
           <div className="subgreet">
             {formatDay(Math.floor(Date.now() / 1000), lang)} · {clock}
           </div>

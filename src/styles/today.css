@@ -35,6 +35,39 @@
   line-height: 1.05;
   letter-spacing: -0.01em;
 }
+/* Title + its contextual "?" on one baseline-aligned row. */
+.app-head__titlerow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+/* The contextual help "?" beside a section title (HelpDot). Quiet by default,
+   a soft ring on hover/focus — discoverable without shouting (calm). Hidden in
+   the toddler lens and in expert mode at the source (component returns null). */
+.help-dot {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: var(--paper-deep, transparent);
+  color: var(--ink-soft);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--dur-fast, 0.15s) ease, border-color var(--dur-fast, 0.15s) ease;
+}
+.help-dot:hover,
+.help-dot:focus-visible {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+}
 .greet .accent {
   color: var(--marigold-deep);
 }
