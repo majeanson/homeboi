@@ -464,9 +464,27 @@ textarea.input {
 .capture__input {
   flex: 1;
 }
+/* The shared "speak it" mic while listening: filled accent + a soft pulse so the
+   "I'm hearing you" state reads at a glance on the wall tablet. */
 .capture__voice.is-listening {
   border-color: var(--accent);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  animation: voice-pulse 1.4s ease-in-out infinite;
+}
+/* Mic grant the browser remembers as refused: dim it so it reads as
+   "blocked — fix in settings" rather than just inert. Still tappable (the tap
+   re-surfaces the denial); we can't re-grant from code, the browser owns it. */
+.capture__voice.is-blocked {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+@keyframes voice-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  50% { box-shadow: 0 0 0 0.4rem color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .capture__voice.is-listening { animation: none; }
 }
 .capture__picker {
   display: flex;
@@ -606,7 +624,7 @@ textarea.input {
 .board__synced {
   text-align: center;
   color: var(--ink-soft);
-  margin-top: 1.5rem;
+  margin-top: 0.75rem;
 }
 
 /* --- Kitchen -------------------------------------------------------------- */
