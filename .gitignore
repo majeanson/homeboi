@@ -19,6 +19,7 @@ dist/
 e2e/screenshots/
 e2e/report/
 e2e/test-results/
+e2e/test-results-realdata/
 playwright-report/
 test-results/
 

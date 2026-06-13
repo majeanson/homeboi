@@ -29,11 +29,20 @@ export default defineConfig({
     // (Board, Aujourd'hui) render the same bucket every run.
     timezoneId: 'America/Toronto',
   },
+  // Chromium is the authoritative CI engine. Set PW_WEBKIT=1 locally to also get
+  // WebKit (Safari's engine) + an iPhone-emulated mobile WebKit project — Marc's
+  // live apps run iOS Safari, so this catches WebKit-only rendering bugs Chromium
+  // hides. Opt-in (not in CI, which has no webkit binary). Pick one with
+  // `--project=iphone`. NB: Playwright WebKit does not emulate the iOS dynamic
+  // toolbar / safe-area, so a real toolbar-overlap still needs a device/simulator.
   projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    ...(process.env.PW_WEBKIT
+      ? [
+          { name: 'safari', use: { ...devices['Desktop Safari'] } },
+          { name: 'iphone', use: { ...devices['iPhone 13'] } },
+        ]
+      : []),
   ],
   // Plain `vite` — frontend only. The API is stubbed per-test via page.route,
   // so the 8788 proxy target never needs to be up.
