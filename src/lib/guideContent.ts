@@ -11,6 +11,8 @@
 // unexplained — if a term is house-specific (kiosk, capture, ghost), say what it
 // means in the detail.
 
+import type { IconName } from '../components/Icon'
+
 export type Bi = { fr: string; en: string }
 
 export type GuidePoint = {
@@ -20,11 +22,17 @@ export type GuidePoint = {
 
 export type GuideEntry = {
   id: string
-  icon: string
+  // A name from the app's shared Phosphor-bold icon set (see components/Icon),
+  // so the Guide reuses the very same glyphs the live UI uses — no emoji.
+  icon: IconName
   group: 'sections' | 'concepts' | 'settings'
   title: Bi
   what: Bi
   points: GuidePoint[]
+  // For the "settings" group: the Réglages tab id this card documents, so the
+  // Guide can offer a direct "go there" link (/settings?tab=<tab>). Must match a
+  // SECTION id in pages/Operator.tsx.
+  tab?: string
 }
 
 export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] = [
@@ -58,7 +66,7 @@ export const GUIDE: GuideEntry[] = [
   // ── Sections (the five hub tabs) ──────────────────────────────────────────
   {
     id: 'board',
-    icon: '📋',
+    icon: 'sun-bold',
     group: 'sections',
     title: { fr: 'Le babillard', en: 'The board' },
     what: {
@@ -90,8 +98,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Toucher un visage', en: 'Tap a face' },
         detail: {
-          fr: 'Touche ta photo pour mettre ta journée en avant; touche-la encore pour revenir à « toute la maisonnée ». Sur la tablette, ça revient tout seul après quelques minutes (avec un petit ⏳ d’avertissement).',
-          en: 'Tap your photo to put your day front and centre; tap it again to go back to “everyone”. On the tablet it drifts back on its own after a few idle minutes (with a small ⏳ heads-up).',
+          fr: 'Touche ta photo pour mettre ta journée en avant; touche-la encore pour revenir à « toute la maisonnée ». Sur la tablette, ça revient tout seul après quelques minutes (avec un petit avertissement).',
+          en: 'Tap your photo to put your day front and centre; tap it again to go back to “everyone”. On the tablet it drifts back on its own after a few idle minutes (with a small heads-up).',
         },
       },
       {
@@ -111,15 +119,15 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Conseil météo', en: 'Weather tip' },
         detail: {
-          fr: 'Sous la température, une ligne d’habillement (manteau, parapluie, bois de l’eau). De nuit, le ☀️ devient 🌙. En vue enfant, touche la météo pour l’entendre.',
-          en: 'Under the temperature, a dressing tip (coat, umbrella, drink water). At night ☀️ becomes 🌙. In kid view, tap the weather to hear it.',
+          fr: 'Sous la température, une ligne d’habillement (manteau, parapluie, bois de l’eau). De nuit, le [[icon:sun-bold]] devient [[icon:moon-stars-bold]]. En vue enfant, touche la météo pour l’entendre.',
+          en: 'Under the temperature, a dressing tip (coat, umbrella, drink water). At night [[icon:sun-bold]] becomes [[icon:moon-stars-bold]]. In kid view, tap the weather to hear it.',
         },
       },
     ],
   },
   {
     id: 'kitchen',
-    icon: '🥕',
+    icon: 'carrot-bold',
     group: 'sections',
     title: { fr: 'La cuisine', en: 'The kitchen' },
     what: {
@@ -165,8 +173,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Idées de repas', en: 'Meal ideas' },
         detail: {
-          fr: 'Une petite réserve d’idées (texte libre ou recette 📖) sous la grille; touche-en une pour la déposer sur n’importe quel jour. Elle reste dans la réserve pour réutiliser.',
-          en: 'A small pool of ideas (free text or a 📖 recipe) under the grid; tap one to drop it on any day. It stays in the pool to reuse.',
+          fr: 'Une petite réserve d’idées (texte libre ou recette [[icon:book-open-bold]]) sous la grille; touche-en une pour la déposer sur n’importe quel jour. Elle reste dans la réserve pour réutiliser.',
+          en: 'A small pool of ideas (free text or a [[icon:book-open-bold]] recipe) under the grid; tap one to drop it on any day. It stays in the pool to reuse.',
         },
       },
       {
@@ -180,7 +188,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'routines',
-    icon: '🧸',
+    icon: 'smiley-bold',
     group: 'sections',
     title: { fr: 'Routines', en: 'Routines' },
     what: {
@@ -241,7 +249,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'liste',
-    icon: '🛒',
+    icon: 'sparkle-bold',
     group: 'sections',
     title: { fr: 'La liste', en: 'The list' },
     what: {
@@ -301,8 +309,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Choisir les meilleurs prix', en: 'Pick the best prices' },
         detail: {
-          fr: 'Un bouton ✨ trouve le meilleur rabais (au prix unitaire) pour chaque article non coché et t’amène au mode caissier.',
-          en: 'A ✨ button finds the best deal (by unit price) for every unchecked item and takes you to cashier mode.',
+          fr: 'Un bouton [[icon:sparkle-bold]] trouve le meilleur rabais (au prix unitaire) pour chaque article non coché et t’amène au mode caissier.',
+          en: 'A [[icon:sparkle-bold]] button finds the best deal (by unit price) for every unchecked item and takes you to cashier mode.',
         },
       },
       {
@@ -316,7 +324,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'settings',
-    icon: '⚙️',
+    icon: 'gear-six-bold',
     group: 'sections',
     title: { fr: 'Réglages', en: 'Settings' },
     what: {
@@ -358,7 +366,7 @@ export const GUIDE: GuideEntry[] = [
   // ── Key concepts (cross-cutting) ──────────────────────────────────────────
   {
     id: 'capture',
-    icon: '✍️',
+    icon: 'plus-bold',
     group: 'concepts',
     title: { fr: 'La capture (le bouton ＋)', en: 'Capture (the ＋ button)' },
     what: {
@@ -391,7 +399,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'surface',
-    icon: '🖥️',
+    icon: 'device-tablet-bold',
     group: 'concepts',
     title: { fr: 'Tablette ou téléphone (la « surface »)', en: 'Tablet or phone (the “surface”)' },
     what: {
@@ -417,7 +425,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'audience',
-    icon: '👶',
+    icon: 'smiley-bold',
     group: 'concepts',
     title: { fr: 'Vue parent ou vue enfant (l’« audience »)', en: 'Parent or kid view (the “audience”)' },
     what: {
@@ -428,8 +436,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Passer en vue enfant', en: 'Switch to kid view' },
         detail: {
-          fr: 'Touche 👶 dans la barre, ou démarre la tablette « verrouillée enfant » pour qu’elle reste sur cette vue.',
-          en: 'Tap 👶 in the bar, or boot the tablet “kid-locked” so it stays on that view.',
+          fr: 'Touche [[icon:baby-bold]] dans la barre, ou démarre la tablette « verrouillée enfant » pour qu’elle reste sur cette vue.',
+          en: 'Tap [[icon:baby-bold]] in the bar, or boot the tablet “kid-locked” so it stays on that view.',
         },
       },
       {
@@ -457,7 +465,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'calm',
-    icon: '🌿',
+    icon: 'tree-bold',
     group: 'concepts',
     title: { fr: 'Le calme (par choix)', en: 'Calm (by design)' },
     what: {
@@ -490,7 +498,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'pairing',
-    icon: '🔗',
+    icon: 'link-bold',
     group: 'concepts',
     title: { fr: 'Jumeler une tablette', en: 'Pairing a tablet' },
     what: {
@@ -523,7 +531,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'deals',
-    icon: '🏷️',
+    icon: 'tag-bold',
     group: 'concepts',
     title: { fr: 'Rabais & circulaires', en: 'Deals & flyers' },
     what: {
@@ -556,7 +564,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'cashier',
-    icon: '🧾',
+    icon: 'receipt-bold',
     group: 'concepts',
     title: { fr: 'Mode caissier', en: 'Cashier mode' },
     what: {
@@ -581,8 +589,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Trois temps', en: 'Three beats' },
         detail: {
-          fr: 'Réviser la liste → présenter une carte à la fois (‹ Précédent / Suivant ›, avec « 3/5 ») → un petit écran de remerciement.',
-          en: 'Review the list → present one card at a time (‹ Back / Next ›, with “3/5”) → a small thank-you screen.',
+          fr: 'Réviser la liste → présenter une carte à la fois ([[icon:caret-left-bold]] Précédent / Suivant [[icon:caret-right-bold]], avec « 3/5 ») → un petit écran de remerciement.',
+          en: 'Review the list → present one card at a time ([[icon:caret-left-bold]] Back / Next [[icon:caret-right-bold]], with “3/5”) → a small thank-you screen.',
         },
       },
       {
@@ -596,7 +604,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'recipes',
-    icon: '👩‍🍳',
+    icon: 'book-open-bold',
     group: 'concepts',
     title: { fr: 'Recettes & mode cuisson', en: 'Recipes & cook mode' },
     what: {
@@ -614,8 +622,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Mode cuisson', en: 'Cook mode' },
         detail: {
-          fr: 'Plein écran, gros texte, une étape à la fois. Il suit la vue (parent/enfant) et se ferme par un petit ✕.',
-          en: 'Full screen, big text, one step at a time. Follows the view (parent/kid) and closes with a small ✕.',
+          fr: 'Plein écran, gros texte, une étape à la fois. Il suit la vue (parent/enfant) et se ferme par un petit [[icon:x-bold]].',
+          en: 'Full screen, big text, one step at a time. Follows the view (parent/kid) and closes with a small [[icon:x-bold]].',
         },
       },
       {
@@ -647,7 +655,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Voir l’original (📜)', en: 'See the original (📜)' },
+        label: { fr: 'Voir l’original ([[icon:scroll-bold]])', en: 'See the original ([[icon:scroll-bold]])' },
         detail: {
           fr: 'Un bouton montre la recette telle qu’importée, avant tes retouches, avec la date d’import.',
           en: 'A button shows the recipe exactly as imported, before your edits, with the import date.',
@@ -656,15 +664,15 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Réordonner les rangées', en: 'Reorder rows' },
         detail: {
-          fr: 'Des flèches ↑/↓ montent ou descendent un ingrédient ou une étape, sans glisser-déposer.',
-          en: 'Arrows ↑/↓ move an ingredient or step up or down, no drag-and-drop.',
+          fr: 'Des flèches [[icon:caret-up-bold]]/[[icon:caret-down-bold]] montent ou descendent un ingrédient ou une étape, sans glisser-déposer.',
+          en: 'Arrows [[icon:caret-up-bold]]/[[icon:caret-down-bold]] move an ingredient or step up or down, no drag-and-drop.',
         },
       },
     ],
   },
   {
     id: 'ghost',
-    icon: '👻',
+    icon: 'ghost-bold',
     group: 'concepts',
     title: { fr: 'Suivi fantôme (achats)', en: 'Ghost tracking (purchases)' },
     what: {
@@ -690,7 +698,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'offline',
-    icon: '📶',
+    icon: 'wifi-high-bold',
     group: 'concepts',
     title: { fr: 'Hors ligne & installation (PWA)', en: 'Offline & install (PWA)' },
     what: {
@@ -712,12 +720,19 @@ export const GUIDE: GuideEntry[] = [
           en: 'The tablet can reboot with no wifi and still show the app.',
         },
       },
+      {
+        label: { fr: 'Le micro, autorisé une fois', en: 'The mic, allowed once' },
+        detail: {
+          fr: 'Pour parler tes articles, le navigateur demande le micro la première fois — accepte une fois et c’est retenu. Astuce : installe l’app sur l’écran d’accueil et garde-la utilisée; l’autorisation tient bien mieux que dans un simple onglet. Sur iPhone/iPad, si tu refuses, on ne peut plus redemander depuis la page : va dans Réglages → Safari → Microphone pour réautoriser.',
+          en: 'To speak your items, the browser asks for the mic the first time — allow it once and it’s remembered. Tip: install the app to the home screen and keep it in use; the grant holds far better than in a plain tab. On iPhone/iPad, if you decline, the page can’t ask again — go to Settings → Safari → Microphone to allow it.',
+        },
+      },
     ],
   },
 
   {
     id: 'cookmode',
-    icon: '⏲️',
+    icon: 'clock-bold',
     group: 'concepts',
     title: { fr: 'Le mode cuisson en détail', en: 'Cook mode in detail' },
     what: {
@@ -740,7 +755,10 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Lecture auto (🔊/🔇)', en: 'Auto read-aloud (🔊/🔇)' },
+        label: {
+          fr: 'Lecture auto ([[icon:speaker-high-bold]]/[[icon:speaker-slash-bold]])',
+          en: 'Auto read-aloud ([[icon:speaker-high-bold]]/[[icon:speaker-slash-bold]])',
+        },
         detail: {
           fr: 'Chaque étape se lit toute seule en arrivant; coupe-la d’un toucher si tu préfères le silence (retenu par appareil).',
           en: 'Each step reads itself on arrival; mute it with a tap if you prefer quiet (remembered per device).',
@@ -757,7 +775,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'flyers',
-    icon: '📰',
+    icon: 'newspaper-bold',
     group: 'concepts',
     title: { fr: 'Naviguer les circulaires', en: 'Browsing the flyers' },
     what: {
@@ -789,15 +807,15 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Trouver l’article sur la page', en: 'Find the item on the page' },
         detail: {
-          fr: 'Le rabais indique sa page et sa position (haut/milieu/bas, gauche/centre/droite); feuillette les articles avec ‹ ›, et touche une image pour l’agrandir.',
-          en: 'A deal shows its page and position (top/middle/bottom, left/centre/right); step through items with ‹ ›, and tap an image to zoom.',
+          fr: 'Le rabais indique sa page et sa position (haut/milieu/bas, gauche/centre/droite); feuillette les articles avec [[icon:caret-left-bold]] [[icon:caret-right-bold]], et touche une image pour l’agrandir.',
+          en: 'A deal shows its page and position (top/middle/bottom, left/centre/right); step through items with [[icon:caret-left-bold]] [[icon:caret-right-bold]], and tap an image to zoom.',
         },
       },
     ],
   },
   {
     id: 'undo',
-    icon: '↩️',
+    icon: 'arrow-counter-clockwise-bold',
     group: 'concepts',
     title: { fr: 'Annuler (le filet de sécurité)', en: 'Undo (the safety net)' },
     what: {
@@ -823,7 +841,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'account',
-    icon: '🔑',
+    icon: 'key-bold',
     group: 'concepts',
     title: { fr: 'Compte & connexion', en: 'Account & sign-in' },
     what: {
@@ -858,8 +876,9 @@ export const GUIDE: GuideEntry[] = [
   // ── Settings, tab by tab (the Réglages reference) ─────────────────────────
   {
     id: 'set-household',
-    icon: '👪',
+    icon: 'users-three-bold',
     group: 'settings',
+    tab: 'household',
     title: { fr: 'Maisonnée', en: 'Household' },
     what: {
       fr: 'Qui fait partie de la famille. C’est ce qui peuple les visages, les couleurs et les agendas partout dans l’app.',
@@ -883,8 +902,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Photo de visage', en: 'Face photo' },
         detail: {
-          fr: 'Touche 📷 pour prendre/choisir une photo (redimensionnée petite). Le ✕ la retire.',
-          en: 'Tap 📷 to take/pick a photo (resized small). The ✕ removes it.',
+          fr: 'Touche [[icon:camera-bold]] pour prendre/choisir une photo (redimensionnée petite). Le [[icon:x-bold]] la retire.',
+          en: 'Tap [[icon:camera-bold]] to take/pick a photo (resized small). The [[icon:x-bold]] removes it.',
         },
       },
       {
@@ -898,8 +917,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-agenda',
-    icon: '📅',
+    icon: 'calendar-dots-bold',
     group: 'settings',
+    tab: 'agenda',
     title: { fr: 'Agenda', en: 'Agenda' },
     what: {
       fr: 'Les rendez-vous et événements de la famille. Ce qui s’affiche dans « Aujourd’hui / À venir » sur le babillard.',
@@ -921,18 +941,19 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Récurrent (🔁)', en: 'Recurring (🔁)' },
+        label: { fr: 'Récurrent ([[icon:repeat-bold]])', en: 'Recurring ([[icon:repeat-bold]])' },
         detail: {
-          fr: 'Un événement qui revient (chaque jour/semaine/mois) porte le 🔁 dans la liste.',
-          en: 'An event that repeats (daily/weekly/monthly) carries the 🔁 in the list.',
+          fr: 'Un événement qui revient (chaque jour/semaine/mois) porte le [[icon:repeat-bold]] dans la liste.',
+          en: 'An event that repeats (daily/weekly/monthly) carries the [[icon:repeat-bold]] in the list.',
         },
       },
     ],
   },
   {
     id: 'set-chores',
-    icon: '🧹',
+    icon: 'broom-bold',
     group: 'settings',
+    tab: 'chores',
     title: { fr: 'Corvées', en: 'Chores' },
     what: {
       fr: 'Les tâches de la maison et leur horaire. Elles tournent et s’affichent sur le babillard avec « c’est le tour de… ».',
@@ -964,8 +985,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-routines',
-    icon: '🧸',
+    icon: 'smiley-bold',
     group: 'settings',
+    tab: 'routines',
     title: { fr: 'Routines (réglage)', en: 'Routines (setup)' },
     what: {
       fr: 'Là où tu montes les routines en images des enfants : les étapes, à qui elles appartiennent, et le moment de la journée.',
@@ -982,8 +1004,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Moment de la journée', en: 'Time of day' },
         detail: {
-          fr: 'La pastille fait défiler : n’importe quand → 🌅 matin → ☀️ après-midi → 🌙 soir. Ça ordonne les routines pour l’enfant.',
-          en: 'The chip cycles: anytime → 🌅 morning → ☀️ afternoon → 🌙 evening. It orders the routines for the child.',
+          fr: 'La pastille fait défiler : n’importe quand → [[icon:sun-horizon-bold]] matin → [[icon:sun-bold]] après-midi → [[icon:moon-stars-bold]] soir. Ça ordonne les routines pour l’enfant.',
+          en: 'The chip cycles: anytime → [[icon:sun-horizon-bold]] morning → [[icon:sun-bold]] afternoon → [[icon:moon-stars-bold]] evening. It orders the routines for the child.',
         },
       },
       {
@@ -997,8 +1019,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-shopping',
-    icon: '🛍️',
+    icon: 'shopping-bag-bold',
     group: 'settings',
+    tab: 'shopping',
     title: { fr: 'Magasinage', en: 'Shopping' },
     what: {
       fr: 'Tout ce qui alimente les rabais et l’ajout rapide : ton code postal, les magasins à garder, et l’historique d’achats.',
@@ -1030,8 +1053,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-recipes',
-    icon: '🏷️',
+    icon: 'tag-bold',
     group: 'settings',
+    tab: 'recipes',
     title: { fr: 'Recettes (étiquettes)', en: 'Recipes (tags)' },
     what: {
       fr: 'La couche d’étiquettes de tes recettes : les pastilles proposées dans le formulaire, et le ménage des étiquettes déjà utilisées.',
@@ -1063,8 +1087,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-ghost',
-    icon: '👻',
+    icon: 'ghost-bold',
     group: 'settings',
+    tab: 'ghost',
     title: { fr: 'Suggestions (ghost)', en: 'Suggestions (ghost)' },
     what: {
       fr: 'Le réglage du suivi d’achats opt-in. Tu choisis quoi suivre et à quelle fréquence; ça nourrit l’ajout rapide.',
@@ -1096,8 +1121,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-devices',
-    icon: '📱',
+    icon: 'device-tablet-bold',
     group: 'settings',
+    tab: 'devices',
     title: { fr: 'Appareils', en: 'Devices' },
     what: {
       fr: 'Approuve les tablettes jumelées et retire-les. C’est ici que tu donnes (ou reprends) l’accès au babillard.',
@@ -1122,8 +1148,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-photos',
-    icon: '🖼️',
+    icon: 'image-square-bold',
     group: 'settings',
+    tab: 'photos',
     title: { fr: 'Photos', en: 'Photos' },
     what: {
       fr: 'Les photos de famille qui dérivent doucement sur le babillard. Téléverse-les depuis ton téléphone.',
@@ -1140,8 +1167,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Retirer', en: 'Remove' },
         detail: {
-          fr: 'Le ✕ sur une vignette l’enlève. Le nombre total est plafonné côté serveur, alors ça reste gratuit.',
-          en: 'The ✕ on a thumbnail removes it. The total is capped server-side, so it stays free.',
+          fr: 'Le [[icon:x-bold]] sur une vignette l’enlève. Le nombre total est plafonné côté serveur, alors ça reste gratuit.',
+          en: 'The [[icon:x-bold]] on a thumbnail removes it. The total is capped server-side, so it stays free.',
         },
       },
       {
@@ -1155,8 +1182,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-recap',
-    icon: '📝',
+    icon: 'pencil-simple-bold',
     group: 'settings',
+    tab: 'recap',
     title: { fr: 'Récapitulatif', en: 'Recap' },
     what: {
       fr: 'Un petit bilan calme de la semaine, écrit par l’IA — sur demande seulement. Un bouton, jamais un fil sans fin.',
@@ -1181,8 +1209,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-display',
-    icon: '🎨',
+    icon: 'paint-brush-bold',
     group: 'settings',
+    tab: 'display',
     title: { fr: 'Affichage', en: 'Display' },
     what: {
       fr: 'L’apparence de cet appareil : le thème jour/nuit, la langue, et la vue parent/enfant.',
@@ -1192,8 +1221,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Thème jour / nuit', en: 'Day / night theme' },
         detail: {
-          fr: 'Bascule entre ☀️ jour et 🌙 nuit pour la lisibilité selon l’heure.',
-          en: 'Toggle between ☀️ day and 🌙 night for readability by time of day.',
+          fr: 'Bascule entre [[icon:sun-bold]] jour et [[icon:moon-stars-bold]] nuit pour la lisibilité selon l’heure.',
+          en: 'Toggle between [[icon:sun-bold]] day and [[icon:moon-stars-bold]] night for readability by time of day.',
         },
       },
       {
@@ -1214,8 +1243,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-calm',
-    icon: '🌿',
+    icon: 'tree-bold',
     group: 'settings',
+    tab: 'calm',
     title: { fr: 'Mode calme', en: 'Calm mode' },
     what: {
       fr: 'Le seul réglage « anti-friction » : adoucir le « refaire » de la routine d’enfant. Activé par défaut.',
@@ -1240,8 +1270,9 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-ailog',
-    icon: '🩹',
+    icon: 'first-aid-kit-bold',
     group: 'settings',
+    tab: 'ai-log',
     title: { fr: 'Journal IA', en: 'AI log' },
     what: {
       fr: 'Un carnet d’entretien : quand une fonction IA échoue (modèle retiré, panne), la note acceptée à l’écran s’inscrit ici.',
