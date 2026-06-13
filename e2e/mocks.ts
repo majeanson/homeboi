@@ -384,6 +384,22 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
     }
     return v
   }
+  // Silence on-device read-aloud (src/lib/speak.ts). Toddler surfaces narrate on
+  // every tap via window.speechSynthesis, which routes through the OS voice and is
+  // audible while e2e drives the browser. No-op ONLY `speak` (and `cancel`) — leave
+  // getVoices()/hasVoiceFor() intact so the 🔊 affordances render identically in
+  // screenshots; we suppress the audio, not the feature.
+  await page.addInitScript(() => {
+    try {
+      const ss = window.speechSynthesis
+      if (ss) {
+        ss.speak = () => {}
+        ss.cancel = () => {}
+      }
+    } catch {
+      /* no speech support — nothing to silence */
+    }
+  })
   const serve = (body: unknown) => JSON.stringify(opts.longText ? longify(body) : body)
   // A little server-side state so optimistic flows that DELETE then refetch read
   // back the change (else the board GET would resurrect a just-cleared note).
