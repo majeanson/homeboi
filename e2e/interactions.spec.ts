@@ -221,13 +221,15 @@ test('login posts credentials and lands on the board', async ({ page }) => {
 
 test.describe('settings forms', () => {
   test.beforeEach(async ({ page }) => {
-    // Guide is now the default settings tab; deep-link to La maisonnée so the
-    // member form is the one showing (other cases here click their own tab).
-    await APP('/settings?tab=household')(page)
+    // Land on the default tab (Guide). It has no <button>/<form>, so each case
+    // below can click its own tab and the panel locators wait for the target
+    // panel to render — starting on a form-heavy tab would race the switch.
+    await APP('/settings')(page)
     await settle(page, '.operator__tabs')
   })
 
   test('add a household member', async ({ page }) => {
+    await page.getByRole('tab', { name: 'La maisonnée' }).click()
     const form = page.locator('.operator__panel form.operator__inline-form')
     await form.locator('input.input').first().fill('Mamie')
     await expectApi(page, 'POST', 'members', () => form.locator('button[type="submit"]').click())
