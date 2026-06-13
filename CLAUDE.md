@@ -56,7 +56,7 @@ typecheck/test/build are green. **Trust CI as the baseline; don't run e2e locall
 default — check the E2E job on the run page for visual/flow regressions.** Node 24.
 
 > **Workflow: push straight to `main`.** No PR branches — commit and `git push origin
-> main` directly. CI (typecheck/test/build) is the only gate; a red build is caught
+main` directly. CI (typecheck/test/build) is the only gate; a red build is caught
 > on `main` and fixed forward. (This supersedes the old branch-per-change + PR flow.)
 
 > README.md predates the Pages→Worker migration — ignore its `pages:dev` references;

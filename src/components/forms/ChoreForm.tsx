@@ -3,6 +3,7 @@ import { api } from '../../lib/api'
 import { useLang, useT } from '../../i18n'
 import { ColorPicker } from '../ColorPicker'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
+import { dateToAnchorSec, todayAnchorDate } from '../../lib/recurLabel'
 import { choreTemplates } from '../../lib/routineTemplates'
 
 // The complete chore (corvée) form — title (with common presets), a round-robin
@@ -22,6 +23,9 @@ export function ChoreForm({ members, onSaved }: { members: FormMember[]; onSaved
   const [color, setColor] = useState('#88A36F')
   // Optional schedule — "tous les jeudis". null = a standing chore (no schedule).
   const [recur, setRecur] = useState<RecurValue | null>(null)
+  // The recurrence anchor (which date "every 2 weeks" counts from). Defaults to
+  // today; only sent when there's a recurrence — a standing chore has no anchor.
+  const [start, setStart] = useState(todayAnchorDate())
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
 
@@ -34,11 +38,15 @@ export function ChoreForm({ members, onSaved }: { members: FormMember[]; onSaved
     setBusy(true)
     setErr(false)
     try {
-      await api('chores', { method: 'POST', body: { title: title.trim(), rotation, color, recur } })
+      await api('chores', {
+        method: 'POST',
+        body: { title: title.trim(), rotation, color, recur, start: recur ? dateToAnchorSec(start) : null },
+      })
       setTitle('')
       setRotation([])
       setColor('#88A36F')
       setRecur(null)
+      setStart(todayAnchorDate())
       onSaved()
     } catch {
       // Keep the filled form — resetting on a failed write loses the chore.
@@ -79,6 +87,12 @@ export function ChoreForm({ members, onSaved }: { members: FormMember[]; onSaved
       </div>
       <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
       <RecurPicker value={recur} onChange={setRecur} />
+      {recur && (
+        <label className="recur__row mono">
+          <span>{t.operator.choreStart}</span>
+          <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+        </label>
+      )}
       {err && <p className="error mono">{t.common.saveFailed}</p>}
       <button type="submit" className="btn" disabled={!title.trim() || busy}>
         {t.operator.addChore}

@@ -347,3 +347,111 @@
     }
   }
 }
+
+/* ========================================================================== */
+/* Kid-exit parental gate (KidExitGate). A near-invisible top-left hotspot that  */
+/* arms a fill-ring on a sustained ~3s long-press, then a small arithmetic        */
+/* challenge. The only way out of the toddler lens on an installed PWA. The       */
+/* hotspot must read as "nothing" to a child but be holdable by an adult.         */
+/* ========================================================================== */
+.kid-exit-hotspot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 64px;
+  height: 64px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  /* Invisible at rest — no hint for the toddler. */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.kid-exit-hotspot__ring {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  opacity: 0;
+}
+/* Only while an adult is actively holding: a calm ring fills over HOLD_MS so the
+   long-press has feedback. The duration mirrors HOLD_MS (3s) in KidExitGate. */
+.kid-exit-hotspot.is-holding .kid-exit-hotspot__ring {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--ink) 35%, transparent);
+  border-top-color: var(--ink);
+  animation: kid-exit-spin 0.9s linear infinite, kid-exit-grow 3s linear forwards;
+}
+@keyframes kid-exit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes kid-exit-grow {
+  from {
+    transform: scale(0.7);
+  }
+  to {
+    transform: scale(1.15);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kid-exit-hotspot.is-holding .kid-exit-hotspot__ring {
+    animation: none;
+    border-color: var(--ink);
+  }
+}
+
+.kid-exit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+  backdrop-filter: blur(2px);
+}
+.kid-exit-modal {
+  width: min(360px, 100%);
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: var(--radius-lg, 18px);
+  box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.25));
+  padding: 22px;
+}
+.kid-exit-modal__title {
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+}
+.kid-exit-modal__q {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 1.1rem;
+}
+.kid-exit-modal__input {
+  font-size: 1.4rem;
+  padding: 12px 14px;
+  border: 2px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  border-radius: var(--radius, 12px);
+  background: var(--bg);
+  color: var(--ink);
+  width: 100%;
+}
+.kid-exit-modal__wrong {
+  margin: 10px 0 0;
+  color: var(--danger, #c2563a);
+  font-size: 0.95rem;
+}
+.kid-exit-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}

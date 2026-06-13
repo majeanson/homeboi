@@ -62,12 +62,15 @@ export interface NoteRow {
   created_at: number
 }
 // A recurring chore expanded onto a specific day (today or an upcoming date).
+// `who`/`who_id` are whose turn it is (rotation + current_idx); null = unassigned
+// (a "Maisonnée" task shown to everyone, surfaced even in a single-member focus).
 export interface ChoreInstance {
   id: string
   title: string
   color: string | null
   at: number
   who: string | null
+  who_id: string | null
 }
 export interface BoardData {
   syncedAt: number
@@ -86,6 +89,10 @@ export interface BoardData {
   chores: ChoreRow[]
   choresToday: ChoreInstance[]
   choresUpcoming: ChoreInstance[]
+  // One-off to-dos: non-recurring, not-yet-done tasks (captured "corvées" or
+  // standing chores with no schedule). Surfaced on Aujourd'hui; checking one
+  // marks it done so it drops off. Shares the ChoreInstance shape.
+  todos: ChoreInstance[]
   notes: NoteRow[]
 }
 

@@ -1380,3 +1380,100 @@
   flex: 1;
   min-width: 8rem;
 }
+
+/* ========================================================================== */
+/* Réglages ▸ Guide — the in-app manual. Collapsible concept cards grouped into  */
+/* "sections" and "concepts", with a search filter. Calm, paper-toned, mobile-   */
+/* and tablet-friendly (single readable column).                                 */
+/* ========================================================================== */
+.guide__search {
+  width: 100%;
+  font-size: 1rem;
+  padding: 0.7rem 0.9rem;
+  margin: 0 0 1.25rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+}
+.guide__group {
+  margin-bottom: 1.75rem;
+}
+.guide__group-title {
+  font-size: 1.05rem;
+  margin: 0 0 0.2rem;
+}
+.guide__group-blurb {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 0 0 0.9rem;
+  max-width: 60ch;
+}
+.guide__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.guide__card {
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.guide__card[open] {
+  border-color: var(--line-strong);
+}
+.guide__summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+.guide__summary::-webkit-details-marker {
+  display: none;
+}
+.guide__icon {
+  font-size: 1.4rem;
+  line-height: 1.4;
+  flex: 0 0 auto;
+}
+.guide__heads {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.guide__title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+.guide__what {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+.guide__points {
+  margin: 0;
+  padding: 0 1rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.guide__point {
+  border-top: 1px solid var(--line);
+  padding-top: 0.7rem;
+}
+.guide__point dt {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.15rem;
+}
+.guide__point dd {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}

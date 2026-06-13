@@ -42,7 +42,7 @@ function Root() {
   // `locked` so a toddler can't flip back or reach Réglages. PERSISTED to
   // localStorage so it survives navigation (which drops the query param) AND a
   // reload/kiosk reboot. Unlock is a deliberate adult action: load `?kid=0`.
-  const [kidLocked] = useState<boolean>(() => {
+  const [kidLocked, setKidLocked] = useState<boolean>(() => {
     try {
       const kid = new URLSearchParams(window.location.search).get('kid')
       if (kid === '1') {
@@ -82,6 +82,22 @@ function Root() {
     } catch {
       /* noop */
     }
+  }
+
+  // The adult escape hatch, used by the parental gate in HubLayout. Clears the
+  // ?kid=1 latch and drops back to the parent lens — the in-app equivalent of
+  // relaunching with ?kid=0, for an installed PWA that has no address bar.
+  // setAudience() refuses while kidLocked, so we clear the lock first then set
+  // the audience through the raw setter.
+  function unlock() {
+    try {
+      localStorage.removeItem('babillard-kid-lock')
+      localStorage.setItem('babillard-audience', 'parent')
+    } catch {
+      /* noop */
+    }
+    setKidLocked(false)
+    setAudienceState('parent')
   }
 
   // The device ROLE: kiosk (wall display) or mobile (phone). Chosen at /setup and
@@ -156,7 +172,7 @@ function Root() {
   return (
     <QueryClientProvider client={queryClient}>
       <LangContext.Provider value={{ lang, setLang }}>
-        <AudienceContext.Provider value={{ audience, setAudience, locked: kidLocked }}>
+        <AudienceContext.Provider value={{ audience, setAudience, locked: kidLocked, unlock }}>
           <SurfaceContext.Provider value={{ surface, setSurface, chosen: surfaceChosen }}>
           <ProfileContext.Provider value={{ memberId: profile, setMemberId: setProfile }}>
           <CalmContext.Provider value={{ calm, setCalm }}>

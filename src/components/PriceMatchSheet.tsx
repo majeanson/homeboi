@@ -123,7 +123,7 @@ export function PriceMatchSheet({
           // Not a dead-end: jump straight to Réglages ▸ Magasinage to fix it.
           <p className="feed-empty">
             {t.shop.noPostal}{' '}
-            <Link to="/settings#shopping" className="btn btn--ghost mono">
+            <Link to="/settings?tab=shopping" className="btn btn--ghost mono">
               {t.shop.setPostal}
             </Link>
           </p>

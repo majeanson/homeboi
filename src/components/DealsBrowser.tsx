@@ -8,6 +8,7 @@ import { DealCard } from './DealCard'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { existingListId, stageDeal } from '../lib/picks'
 import { useEscapeKey } from '../lib/sceneNav'
+import { useTabParam } from '../lib/tabParam'
 
 // Standalone flyer/deals browser: search what's on sale near the household this
 // week and add items straight to the shared list (or open the full flyer and add
@@ -47,7 +48,8 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const { lang } = useLang()
   const qc = useQueryClient()
   // Two ways to browse: by article (search) or by magasin (open a store's flyer).
-  const [mode, setMode] = useState<'item' | 'store'>('item')
+  // Held in the URL (?view=) so the chosen tab survives a remount and is shareable.
+  const [mode, setMode] = useTabParam('view', 'item', ['item', 'store'] as const)
   const [input, setInput] = useState('')
   const [query, setQuery] = useState('')
   const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string; logo?: string | null; premium?: boolean } | null>(null)
@@ -200,7 +202,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
           // Not a dead-end: jump straight to Réglages ▸ Magasinage to fix it.
           <p className="feed-empty">
             {t.shop.noPostal}{' '}
-            <Link to="/settings#shopping" className="btn btn--ghost mono">
+            <Link to="/settings?tab=shopping" className="btn btn--ghost mono">
               {t.shop.setPostal}
             </Link>
           </p>
@@ -247,7 +249,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
                 {isStatus(flyersQ.error, 400) ? (
                   <>
                     {t.shop.noPostal}{' '}
-                    <Link to="/settings#shopping" className="btn btn--ghost mono">
+                    <Link to="/settings?tab=shopping" className="btn btn--ghost mono">
                       {t.shop.setPostal}
                     </Link>
                   </>

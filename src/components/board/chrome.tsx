@@ -11,6 +11,7 @@ export function BoardViewToggle({ view, onChange, t }: { view: BoardView; onChan
     { v: 'bento', icon: 'calendar-blank-bold', label: t.boardView.bento },
     { v: 'next', icon: 'clock-bold', label: t.boardView.next },
     { v: 'lanes', icon: 'smiley-bold', label: t.boardView.lanes },
+    { v: 'month', icon: 'calendar-dots-bold', label: t.boardView.month },
   ]
   return (
     <div className="boardview" role="group" aria-label={t.boardView.label}>

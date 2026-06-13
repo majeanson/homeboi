@@ -70,7 +70,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
             <li>{t.operator.welcomeStep1}</li>
             <li>
               {t.operator.welcomeStep2}{' '}
-              <Link to="/settings#devices" className="mono">
+              <Link to="/settings?tab=devices" className="mono">
                 {t.operator.devices}
               </Link>
             </li>

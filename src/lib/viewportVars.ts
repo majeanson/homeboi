@@ -52,6 +52,23 @@ export function trackVisualViewport(): void {
   // on a real keyboard inset, so a plain desktop click never yanks the page.
   // iOS' own scroll-into-view is unreliable inside our fixed sheets/overlays.
   const TEXT = /^(|text|search|email|url|tel|password|number)$/i
+  // A submit/action button sitting just below the focused field in the same
+  // compact group (e.g. the recipe import panel's "Importer", which follows the
+  // URL input + paste box) — reveal IT, not just the field, so the control the
+  // user is typing toward never strands under the keyboard. Disabled buttons
+  // count: import enables only once a URL is typed, but it's where the field
+  // leads, so keep it in view. Returns null for a lone field → centre the field.
+  const actionBelow = (el: HTMLElement): HTMLElement | null => {
+    const bottom = el.getBoundingClientRect().bottom
+    let scope = el.parentElement
+    for (let up = 0; up < 3 && scope; up++, scope = scope.parentElement) {
+      for (const b of scope.querySelectorAll<HTMLElement>('button')) {
+        const dy = b.getBoundingClientRect().top - bottom
+        if (dy >= 0 && dy < 260) return b
+      }
+    }
+    return null
+  }
   let scrollTimer: ReturnType<typeof setTimeout>
   document.addEventListener('focusin', (e) => {
     const el = e.target
@@ -61,7 +78,10 @@ export function trackVisualViewport(): void {
     if (!editable) return
     clearTimeout(scrollTimer)
     scrollTimer = setTimeout(() => {
-      if (kbInset > 120 && el.isConnected) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      if (kbInset <= 120 || !el.isConnected) return
+      const action = actionBelow(el)
+      if (action) action.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      else el.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }, 300)
   })
 

@@ -80,7 +80,6 @@ export function EventForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder={t.operator.eventWhat}
-        autoFocus
       />
       <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       <input

@@ -7,7 +7,7 @@ import { ROUTINE_TODS, TOD_EMOJI, isRoutineTod } from '../../lib/routineTod'
 import { ChoreForm } from '../forms/ChoreForm'
 import { RoutineForm } from '../forms/RoutineForm'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
-import { recurLabel, recurOf } from '../../lib/recurLabel'
+import { recurLabel, recurOf, anchorSecToDate, dateToAnchorSec, todayAnchorDate } from '../../lib/recurLabel'
 import { type Chore, type Member, type Routine } from './types'
 
 export function ChoresSection({
@@ -51,11 +51,19 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
   const t = useT()
   const [editing, setEditing] = useState(false)
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(chore.recur_json))
+  // The recurrence anchor; defaults to today when this chore never had one.
+  const [start, setStart] = useState(anchorSecToDate(chore.recur_start) || todayAnchorDate())
   const label = recurLabel(chore.recur_json, t)
 
-  async function saveRecur(v: RecurValue | null) {
+  // One write sets both rule and anchor — they always travel together, and the
+  // anchor is only meaningful while a rule exists (cleared with it).
+  async function saveRecur(v: RecurValue | null, s: string) {
     setRecur(v)
-    await api('chores', { method: 'PATCH', body: { id: chore.id, recur: v } }).catch(() => {})
+    setStart(s)
+    await api('chores', {
+      method: 'PATCH',
+      body: { id: chore.id, recur: v, start: v ? dateToAnchorSec(s) : null },
+    }).catch(() => {})
     onChange()
   }
 
@@ -74,7 +82,18 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
       </button>
       {editing && (
         <div className="operator__chore-schedule">
-          <RecurPicker value={recur} onChange={saveRecur} />
+          <RecurPicker value={recur} onChange={(v) => saveRecur(v, start)} />
+          {recur && (
+            <label className="recur__row mono">
+              <span>{t.operator.choreStart}</span>
+              <input
+                className="input"
+                type="date"
+                value={start}
+                onChange={(e) => saveRecur(recur, e.target.value)}
+              />
+            </label>
+          )}
         </div>
       )}
     </li>

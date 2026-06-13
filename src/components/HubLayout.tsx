@@ -9,6 +9,7 @@ import { onAuthLost } from '../lib/authEvents'
 import { clearDeviceToken, isPaired } from '../lib/device'
 import { Icon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
+import { KidExitGate } from './KidExitGate'
 import { AddSheetContext, SECTION_MODES, type AddSheetMode } from '../lib/addSheet'
 
 // The hub shell, surface-aware. KIOSK (wall display): a vertical column of big
@@ -232,6 +233,12 @@ export function HubLayout() {
         </button>
       )}
       <AddSheet open={addOpen} modes={sectionModes} initialMode={addMode} onClose={() => setAddOpen(false)} />
+
+      {/* The toddler lens is a one-way door for the CHILD; this is the adult's
+          way back out (long-press + math gate) — the only escape on an installed
+          PWA with no address bar. Covers both a locked kiosk and a parent
+          preview, since both can get stranded on a phone home-screen install. */}
+      {toddler && <KidExitGate />}
     </div>
     </AddSheetContext.Provider>
   )

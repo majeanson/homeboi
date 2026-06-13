@@ -17,6 +17,19 @@ export function formatWeekday(unixSec: number, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'long' }).format(unixSec * 1000)
 }
 
+// "juin 2026" / "June 2026" — the month-view header. Intl lowercases the French
+// month; the caller capitalizes.
+export function formatMonthYear(unixSec: number, lang: Lang): string {
+  return new Intl.DateTimeFormat(LOCALE[lang], { month: 'long', year: 'numeric' }).format(unixSec * 1000)
+}
+
+// "vendredi 13 juin" / "Friday, June 13" — the month-view day-detail header.
+export function formatDayLong(unixSec: number, lang: Lang): string {
+  return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'long', day: 'numeric', month: 'long' }).format(
+    unixSec * 1000,
+  )
+}
+
 // Short weekday ("ven" / "Fri") for the meal-plan date badge. Trim the locale's
 // trailing dot so it sits clean above the day number.
 export function weekdayShort(unixSec: number, lang: Lang): string {

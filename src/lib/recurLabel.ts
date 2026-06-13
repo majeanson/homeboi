@@ -34,3 +34,29 @@ export function recurLabel(json: string | null | undefined, t: typeof FR): strin
   if (r.interval > 1) return `${t.recur.every} ${r.interval} ${t.recur.unit[r.freq]}`
   return r.freq === 'daily' ? t.recur.daily : r.freq === 'weekly' ? t.recur.weekly : t.recur.monthly
 }
+
+// The recurrence anchor is stored as unix-seconds at UTC-midnight of the chosen
+// day (see functions/_lib/recur, which does UTC day math). These two helpers
+// convert between that and the `yyyy-mm-dd` an <input type="date"> speaks, both
+// in UTC so the day the operator picks is the day the board expands from.
+const pad = (n: number) => String(n).padStart(2, '0')
+
+export function dateToAnchorSec(date: string): number | null {
+  if (!date) return null
+  const [y, m, d] = date.split('-').map(Number)
+  if (!y || !m || !d) return null
+  return Math.floor(Date.UTC(y, m - 1, d) / 1000)
+}
+
+export function anchorSecToDate(sec?: number | null): string {
+  if (!sec) return ''
+  const d = new Date(sec * 1000)
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
+}
+
+// Today as `yyyy-mm-dd` in UTC — the default anchor when a recurrence is first
+// picked, matching the board's `today = dayStart(now)` (also UTC).
+export function todayAnchorDate(): string {
+  const d = new Date()
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
+}

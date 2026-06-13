@@ -20,6 +20,7 @@ export interface Chore {
   title: string
   color?: string
   recur_json?: string | null
+  recur_start?: number | null
 }
 export interface Routine {
   id: string

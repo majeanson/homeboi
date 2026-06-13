@@ -29,6 +29,7 @@ export function Act({
   onCheck,
   color,
   mine,
+  emoji,
 }: {
   cat: CatKey
   title: string
@@ -38,6 +39,7 @@ export function Act({
   onCheck?: () => void
   color?: string // overrides the category colour (member colour, task colour)
   mine?: boolean // belongs to the device's picked member → a quiet "you" accent
+  emoji?: string // glyph override (e.g. the meal-slot icon) shown in place of the Phosphor icon
 }) {
   const c = CATS[cat]
   const spine = color ?? c.color
@@ -48,7 +50,7 @@ export function Act({
     <>
       <span className="spine" style={{ background: spine }} aria-hidden="true" />
       <span className="tile" style={{ background: tileBg }} aria-hidden="true">
-        <Icon name={c.icon} size={28} color={glyph} />
+        {emoji ? <span className="act__emoji">{emoji}</span> : <Icon name={c.icon} size={28} color={glyph} />}
       </span>
       <span className="act__text">
         {when && <span className="when">{when}</span>}

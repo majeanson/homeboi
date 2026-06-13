@@ -193,6 +193,12 @@
   align-items: center;
   justify-content: center;
 }
+/* Meal-slot glyph: an emoji (🍳 ☀️ 🌙 🍎) instead of the Phosphor icon, sized to
+   sit in the same washed tile so déjeuner/dîner/souper/collation read apart. */
+.act__emoji {
+  font-size: 26px;
+  line-height: 1;
+}
 .act__text {
   min-width: 0;
 }

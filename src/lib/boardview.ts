@@ -3,15 +3,16 @@
 //   • bento  — the default calm grid (today / tomorrow / upcoming).
 //   • next   — "Now & Next": the next thing up, big, departure-board style.
 //   • lanes  — one column per family member (their events + current chore).
+//   • month  — a six-week calendar of everything dated (events/meals/chores/notes).
 // Persisted to localStorage; a tiny corner toggle on the board cycles it.
-export type BoardView = 'bento' | 'next' | 'lanes'
+export type BoardView = 'bento' | 'next' | 'lanes' | 'month'
 
 const KEY = 'babillard-boardview'
 
 export function readBoardView(): BoardView {
   try {
     const v = localStorage.getItem(KEY)
-    if (v === 'next' || v === 'lanes') return v
+    if (v === 'next' || v === 'lanes' || v === 'month') return v
   } catch {
     /* noop */
   }

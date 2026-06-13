@@ -119,7 +119,7 @@ function RoutinesParent() {
           sheet opens straight on the routine builder); the settings link
           deep-links to the matching tab for edits/deletes. */}
       <p className="routines-parent__edit">
-        <Link to="/settings#routines" className="btn btn--ghost mono">
+        <Link to="/settings?tab=routines" className="btn btn--ghost mono">
           {t.audience.editInSettings}
         </Link>
       </p>

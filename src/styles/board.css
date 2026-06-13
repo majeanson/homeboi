@@ -17,6 +17,35 @@
   color: inherit;
   font-weight: 600;
 }
+/* Focus stamp: the board is narrowed to one picked face (+ shared Maisonnée).
+   A quiet line that says whose view this is, with a one-tap way back to everyone. */
+.board-focus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  margin: 0 0 0.85rem;
+  border-radius: 999px;
+  background: var(--ink-wash, rgba(0, 0, 0, 0.04));
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+.board-focus b {
+  font-weight: 700;
+}
+.board-focus__all {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 4px 6px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 /* Kiosk idle heads-up: 30 s before the picked face drifts back to Maisonnée.
    Lives in the HubLayout shell (any tab), so it floats as a quiet pill. */
 .board-idle {
@@ -374,4 +403,167 @@
   font-size: 1.4rem;
   padding: 1rem 1.2rem;
   max-width: none;
+}
+
+/* ---- Month view: a calm six-week calendar of everything dated -------------
+   The fourth board take (after bento · next · lanes): zoom out from the day to
+   the whole month. Cells carry colour-coded dots (event = member/sky, meal =
+   terracotta, chore = sage, note = marigold); tapping a day opens its full list
+   below. Phone shows dots only — the words live in the detail panel; the wall
+   tablet gets roomier cells read from across the room. */
+.monthv {
+  max-width: 60rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.monthv__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.monthv__title {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  font-weight: 700;
+  color: var(--ink);
+}
+.monthv__nav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.monthv__today {
+  flex: none;
+  height: 36px;
+  padding: 0 0.9rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.monthv__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.monthv__dow {
+  text-align: center;
+  padding: 0.2rem 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.monthv__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  aspect-ratio: 1 / 1;
+  min-height: 44px;
+  padding: 0.3rem 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 12px);
+  background: var(--card);
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+.monthv__cell.is-out {
+  opacity: 0.4;
+}
+.monthv__cell.is-today {
+  border-color: var(--accent);
+}
+.monthv__cell.is-on {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.monthv__num {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.monthv__cell.is-today .monthv__num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink, var(--ink));
+}
+.monthv__dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.monthv__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.monthv__more {
+  font-size: 0.6rem;
+  color: var(--ink-faint);
+  line-height: 1;
+}
+.monthv__day {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+}
+.monthv__day-h {
+  font-size: 1rem;
+  color: var(--ink);
+}
+@media (max-width: 520px) {
+  .monthv__grid {
+    gap: 2px;
+  }
+  .monthv__cell {
+    min-height: 38px;
+    padding: 0.2rem 0.1rem;
+    border-radius: 8px;
+  }
+  .monthv__num {
+    font-size: 0.8rem;
+  }
+  .monthv__dot {
+    width: 5px;
+    height: 5px;
+  }
+}
+@media (min-width: 900px) {
+  .monthv__cell {
+    min-height: 72px;
+  }
+  .monthv__num {
+    font-size: 1.05rem;
+  }
+  .monthv__dot {
+    width: 8px;
+    height: 8px;
+  }
 }

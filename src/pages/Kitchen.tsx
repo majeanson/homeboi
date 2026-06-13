@@ -5,6 +5,7 @@ import { Icon } from '../components/Icon'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
+import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
@@ -136,7 +137,9 @@ export function Kitchen() {
   // times you do want the staples chips — kept off so dropping a recipe is one tap.
   const [pickWithStaples, setPickWithStaples] = useState(false)
   // Parent kitchen sub-tab: one job at a time so the page isn't an endless scroll.
-  const [kitTab, setKitTab] = useState<'meals' | 'pantry' | 'recipes'>('meals')
+  // Held in the URL (?tab=) so it survives the return from a full-screen add/edit
+  // scene — add a recipe from Recettes and you come back to Recettes. See tabParam.
+  const [kitTab, setKitTab] = useTabParam('tab', 'meals', ['meals', 'pantry', 'recipes'] as const)
   // Match a planned supper to a saved recipe by (loose) title, so a day's meal can
   // open its recipe.
   const recipeByTitle = useMemo(() => {

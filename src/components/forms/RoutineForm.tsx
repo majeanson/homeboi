@@ -74,7 +74,7 @@ export function RoutineForm({ members, onSaved }: { members: FormMember[]; onSav
   if (children.length === 0)
     return (
       <p className="board__empty mono">
-        {t.operator.needChild} <Link to="/settings#household">{t.board.welcomeCta}</Link>
+        {t.operator.needChild} <Link to="/settings?tab=household">{t.board.welcomeCta}</Link>
       </p>
     )
 

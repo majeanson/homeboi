@@ -97,7 +97,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, rotation_json, current_idx, last_done_at, color, recur_json, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
+      'SELECT id, title, rotation_json, current_idx, last_done_at, color, recur_json, recur_start, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
     )
       .bind(hh)
       .all(),
@@ -180,14 +180,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Recurring chores expanded onto the day: those that occur TODAY (and aren't
   // already done today) surface on Aujourd'hui; otherwise the next occurrence in
   // the week surfaces on À venir. Whose-turn rides along (rotation + current_idx).
-  // Non-recurring chores have no schedule, so they're left to the per-person
-  // lanes (unchanged) and never auto-surfaced here.
+  // Non-recurring chores have no schedule, so they surface as one-off to-dos
+  // (the `todos` slice below) until they're checked off.
   interface ChoreInst {
     id: string
     title: string
     color: string | null
     at: number
     who: string | null
+    who_id: string | null
   }
   const memberName = (id: string | null) =>
     (id && (members.results as { id: string; display_name: string }[]).find((m) => m.id === id)?.display_name) || null
@@ -199,9 +200,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
     current_idx: number
     last_done_at: number | null
     recur_json: string | null
+    recur_start: number | null
     created_at: number
   }
-  const whoseTurn = (c: ChoreSrc): string | null => {
+  // Whose turn it is, as a member id (rotation + current_idx). Null when there's
+  // no rotation — an unassigned "Maisonnée" task. The board's personal-focus
+  // filter keeps these visible to everyone alongside the picked member's own.
+  const whoseTurnId = (c: ChoreSrc): string | null => {
     let rot: string[] = []
     try {
       const p = JSON.parse(c.rotation_json)
@@ -209,19 +214,38 @@ export const onRequestGet = authed(async (ctx, actor) => {
     } catch {
       /* malformed rotation → no turn */
     }
-    return rot.length ? memberName(rot[c.current_idx % rot.length]) : null
+    return rot.length ? rot[c.current_idx % rot.length] : null
   }
+  const whoseTurn = (c: ChoreSrc): string | null => memberName(whoseTurnId(c))
   const choresToday: ChoreInst[] = []
   const choresUpcoming: ChoreInst[] = []
+  // One-off to-dos: non-recurring, not-yet-done tasks (a captured "corvée" or a
+  // standing chore with no schedule). These never had a home on Aujourd'hui;
+  // now they surface as a checkable "À faire" list until completed (last_done_at).
+  const todos: ChoreInst[] = []
   for (const c of chores.results as ChoreSrc[]) {
     const r = parseRecur(c.recur_json)
-    if (!r) continue
-    const inst = (at: number): ChoreInst => ({ id: c.id, title: c.title, color: c.color, at, who: whoseTurn(c) })
-    if (occurrenceOn(today, c.created_at, r) !== null) {
+    const inst = (at: number): ChoreInst => ({
+      id: c.id,
+      title: c.title,
+      color: c.color,
+      at,
+      who: whoseTurn(c),
+      who_id: whoseTurnId(c),
+    })
+    if (!r) {
+      // No schedule → a to-do. Show it until it's marked done.
+      if (c.last_done_at == null) todos.push(inst(today))
+      continue
+    }
+    // The chosen start date is the recurrence anchor; chores created before 0032
+    // (or with no explicit start) fall back to created_at, the old behaviour.
+    const anchor = c.recur_start ?? c.created_at
+    if (occurrenceOn(today, anchor, r) !== null) {
       const doneToday = c.last_done_at != null && c.last_done_at >= today
       if (!doneToday) choresToday.push(inst(today))
     } else {
-      const next = expandRange(c.created_at, r, tomorrow, weekEnd)[0]
+      const next = expandRange(anchor, r, tomorrow, weekEnd)[0]
       if (next != null) choresUpcoming.push(inst(next))
     }
   }
@@ -253,6 +277,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     chores: choresOut,
     choresToday,
     choresUpcoming,
+    todos,
     notes: notes.results,
   })
 })

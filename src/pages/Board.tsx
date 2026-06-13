@@ -18,12 +18,14 @@ import { live } from '../lib/query'
 import { weatherEmoji, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { formatClock, formatDay, formatTime } from '../lib/format'
 import { pictoFor } from '../lib/picto'
+import { SLOT_ICON, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { NowNext, Lanes } from '../components/board/views'
+import { MonthView } from '../components/board/MonthView'
 import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
@@ -102,6 +104,21 @@ export function Board() {
   // Tomorrow's meals shown in Demain. Supper has its own line there, so list the
   // rest — together they cover tomorrow's table for prep-ahead planning.
   const otherTomorrowMeals = (data?.tomorrowMeals ?? []).filter((m) => m.slot !== 'supper')
+
+  // Personal focus: when a face is picked (mobile chip / kiosk switcher), the
+  // board narrows to THAT person's things plus shared "Maisonnée" items (no
+  // owner) — others' personal events/chores drop away. Meals are the family's
+  // table (always Maisonnée), so they're never filtered. Maisonnée (no pick) =
+  // everyone, the unfiltered board.
+  const focusing = !!profileId
+  const mineEvent = (e: EventRow) => !focusing || e.member_id === profileId || e.member_id === null
+  const mineChore = (c: ChoreInstance) => !focusing || c.who_id === profileId || c.who_id === null
+  const todayEvents = (data?.today ?? []).filter(mineEvent)
+  const todayChores = (data?.choresToday ?? []).filter(mineChore)
+  const todayTodos = (data?.todos ?? []).filter(mineChore)
+  const tomorrowEvents = (data?.tomorrow ?? []).filter(mineEvent)
+  const upcomingEvents = (data?.upcoming ?? []).filter(mineEvent)
+  const upcomingChores = (data?.choresUpcoming ?? []).filter(mineChore)
 
   if (unauth) return <PairPrompt />
 
@@ -203,11 +220,11 @@ export function Board() {
                 color: memberColor(m.cook_member_id) ?? undefined,
               })),
             )}
-            {kidSection(t.board.today, eventTiles(data.today))}
+            {kidSection(t.board.today, eventTiles(todayEvents))}
             {/* Chores due today, as read-aloud tiles — whose turn rides in the sub. */}
             {kidSection(
               t.board.chores,
-              (data.choresToday ?? []).map((c) => ({
+              todayChores.map((c) => ({
                 key: c.id,
                 icon: pictoFor(c.title, '🧹'),
                 label: c.title,
@@ -216,11 +233,24 @@ export function Board() {
                 color: c.color ?? undefined,
               })),
             )}
+            {/* One-off to-dos, read aloud too — a parent checks them off in the
+                parent board; here a pre-reader just sees what's left to do. */}
+            {kidSection(
+              t.board.todos,
+              todayTodos.map((c) => ({
+                key: c.id,
+                icon: pictoFor(c.title, '✅'),
+                label: c.title,
+                sub: c.who ?? undefined,
+                narration: c.title,
+                color: c.color ?? undefined,
+              })),
+            )}
             {data.tomorrowNote && (
               <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} toddler />
             )}
             {kidSection(t.board.tomorrow, [
-              ...eventTiles(data.tomorrow),
+              ...eventTiles(tomorrowEvents),
               ...(data.tomorrowMeals ?? []).map((m) => ({
                 key: m.id,
                 icon: pictoFor(m.title, '🍽'),
@@ -241,6 +271,9 @@ export function Board() {
   // now-card (tonight's supper), then a gentle grouped timeline of colour-coded
   // activity cards. Same data + writes as before — just the calm Pip surface.
   const tod = timeOfDay(Date.now())
+  // UTC midnight of "today" — the calendar's day key, matching the server's
+  // dayStart bucketing (functions/_lib/ids + /api/month).
+  const todayDay = Math.floor(new Date(Date.now()).setUTCHours(0, 0, 0, 0) / 1000)
   const eventAct = (e: EventRow) => (
     <Act
       key={e.id}
@@ -273,7 +306,31 @@ export function Board() {
       when={withDay ? formatDay(c.at, lang) : undefined}
       who={c.who ?? undefined}
       color={c.color ?? undefined}
+      mine={!!profileId && c.who_id === profileId}
       onCheck={withDay ? undefined : () => markChoreDone(c)}
+    />
+  )
+
+  // A one-off to-do (non-recurring task). Checking it marks it done server-side
+  // (same /chores PATCH — sets last_done_at), so it drops off the next board read.
+  // Optimistically remove it so the tap feels instant.
+  const markTodoDone = (c: ChoreInstance) => {
+    qc.setQueryData<BoardData>(BOARD_KEY, (d) =>
+      d ? { ...d, todos: (d.todos ?? []).filter((x) => x.id !== c.id) } : d,
+    )
+    api('chores', { method: 'PATCH', body: { id: c.id, complete: true } })
+      .catch(() => {})
+      .finally(() => qc.invalidateQueries({ queryKey: BOARD_KEY }))
+  }
+  const todoAct = (c: ChoreInstance) => (
+    <Act
+      key={c.id}
+      cat="chore"
+      title={c.title}
+      who={c.who ?? undefined}
+      color={c.color ?? undefined}
+      mine={!!profileId && c.who_id === profileId}
+      onCheck={() => markTodoDone(c)}
     />
   )
 
@@ -320,12 +377,26 @@ export function Board() {
         <MemberSwitcher members={data.members} t={t} />
       )}
 
+      {/* Focus stamp: when a face is picked the board is narrowed to that person
+          (plus shared Maisonnée items). Say so, and offer a one-tap way back to
+          everyone — so a filtered board never feels like missing data. */}
+      {me && focusing && (
+        <div className="board-focus mono">
+          <span>
+            {t.board.focusedOn} <b style={{ color: me.colour }}>{me.display_name}</b>
+          </span>
+          <button type="button" className="board-focus__all" onClick={() => setMemberId(null)}>
+            {t.board.showAll}
+          </button>
+        </div>
+      )}
+
       {/* A fresh household (nobody added yet): one gentle pointer to the next
           step instead of a wall of empty "—" sections. */}
       {data && data.members.length === 0 && (
         <p className="board-welcome mono">
           {t.board.welcomeHint}{' '}
-          <Link to="/settings#household">{t.board.welcomeCta}</Link>
+          <Link to="/settings?tab=household">{t.board.welcomeCta}</Link>
         </p>
       )}
 
@@ -342,6 +413,8 @@ export function Board() {
         <NowNext data={data} lang={lang} t={t} profileId={profileId} />
       ) : view === 'lanes' ? (
         <Lanes data={data} lang={lang} t={t} profileId={profileId} />
+      ) : view === 'month' ? (
+        <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
       ) : (
         <>
           {/* The "today" zone: tonight's supper and today's weather as equal hero
@@ -376,26 +449,44 @@ export function Board() {
           )}
 
           <div className="board-grid">
-            <Section label={t.board.today} count={data.today.length + (data.choresToday ?? []).length + otherMeals.length}>
-            {data.today.length === 0 && (data.choresToday ?? []).length === 0 && otherMeals.length === 0 ? (
+            <Section label={t.board.today} count={todayEvents.length + todayChores.length + otherMeals.length}>
+            {todayEvents.length === 0 && todayChores.length === 0 && otherMeals.length === 0 ? (
               <p className="feed-empty">—</p>
             ) : (
               <>
                 {/* Today's other meals (déjeuner/dîner/collation) — supper is the
-                    "Ce soir" hero above, so the rest of the day's table shows here. */}
+                    "Ce soir" hero above, so the rest of the day's table shows here.
+                    Each carries its slot emoji (🍳 ☀️ 🌙 🍎) so the slots read apart
+                    at a glance, like La cuisine. */}
                 {otherMeals.map((m) => (
-                  <Act key={m.id} cat="meal" title={`${slotLabel(m.slot)} · ${m.title}`} who={cookLine(m)} />
+                  <Act
+                    key={m.id}
+                    cat="meal"
+                    emoji={SLOT_ICON[m.slot as MealSlot]}
+                    when={slotLabel(m.slot)}
+                    title={m.title}
+                    who={cookLine(m)}
+                    mine={!!profileId && m.cook_member_id === profileId}
+                  />
                 ))}
-                {data.today.map(eventAct)}
+                {todayEvents.map(eventAct)}
                 {/* Recurring chores due today — tap to check off (advances the turn). */}
-                {(data.choresToday ?? []).map((c) => choreAct(c))}
+                {todayChores.map((c) => choreAct(c))}
               </>
             )}
           </Section>
 
+          {/* One-off to-dos — captured "corvées" / standing tasks with no schedule.
+              Tap to check off (drops away). Hidden when there are none. */}
+          {todayTodos.length > 0 && (
+            <Section label={t.board.todos} count={todayTodos.length}>
+              {todayTodos.map(todoAct)}
+            </Section>
+          )}
+
           <Section
             label={t.board.tomorrow}
-            count={data.tomorrow.length + (data.tomorrowMeal ? 1 : 0) + otherTomorrowMeals.length}
+            count={tomorrowEvents.length + (data.tomorrowMeal ? 1 : 0) + otherTomorrowMeals.length}
           >
             {tomorrowWx && (
               <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
@@ -411,24 +502,37 @@ export function Board() {
               <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} />
             )}
             {data.tomorrowMeal && (
-              <Act cat="meal" title={data.tomorrowMeal.title} who={cookLine(data.tomorrowMeal)} />
+              <Act
+                cat="meal"
+                emoji={SLOT_ICON.supper}
+                when={slotLabel('supper')}
+                title={data.tomorrowMeal.title}
+                who={cookLine(data.tomorrowMeal)}
+              />
             )}
             {otherTomorrowMeals.map((m) => (
-              <Act key={m.id} cat="meal" title={`${slotLabel(m.slot)} · ${m.title}`} who={cookLine(m)} />
+              <Act
+                key={m.id}
+                cat="meal"
+                emoji={SLOT_ICON[m.slot as MealSlot]}
+                when={slotLabel(m.slot)}
+                title={m.title}
+                who={cookLine(m)}
+              />
             ))}
-            {data.tomorrow.map(eventAct)}
-            {data.tomorrow.length === 0 && !data.tomorrowMeal && otherTomorrowMeals.length === 0 && !data.tomorrowNote && (
+            {tomorrowEvents.map(eventAct)}
+            {tomorrowEvents.length === 0 && !data.tomorrowMeal && otherTomorrowMeals.length === 0 && !data.tomorrowNote && (
               <p className="feed-empty">—</p>
             )}
           </Section>
 
-          {(data.upcoming.length > 0 || (data.choresUpcoming ?? []).length > 0) && (
-            <Section label={t.board.upcoming} count={data.upcoming.length + (data.choresUpcoming ?? []).length}>
-              {data.upcoming.map((e) => (
+          {(upcomingEvents.length > 0 || upcomingChores.length > 0) && (
+            <Section label={t.board.upcoming} count={upcomingEvents.length + upcomingChores.length}>
+              {upcomingEvents.map((e) => (
                 <Act key={e.id} cat="event" title={e.title} when={formatTime(e.start_at, lang)} />
               ))}
               {/* Recurring chores coming up later this week, with their day. */}
-              {(data.choresUpcoming ?? []).map((c) => choreAct(c, true))}
+              {upcomingChores.map((c) => choreAct(c, true))}
             </Section>
           )}
 

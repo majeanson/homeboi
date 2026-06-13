@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
@@ -14,13 +14,17 @@ import { ChoresSection, RoutinesSection } from '../components/operator/chores'
 import { PhotosSection, RecapSection } from '../components/operator/media'
 import { RecipeTagsSection } from '../components/operator/recipesTags'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
+import { GuideSection } from '../components/operator/guide'
+import { useTabParam } from '../lib/tabParam'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
 
 // Réglages is one panel per tab; this list drives the tab strip. Deep links
-// (/settings#<id>) select the matching tab. The sections themselves live in
-// src/components/operator/* — this page is just the shell: auth gate, queries,
-// tab state, and the invalidation fan-out the sections call after a write.
+// (/settings?tab=<id>) select the matching tab — the active tab lives in the URL
+// (see lib/tabParam). The sections themselves live in src/components/operator/* —
+// this page is just the shell: auth gate, queries, tab state, and the
+// invalidation fan-out the sections call after a write.
 const SECTIONS = [
+  { id: 'guide', key: 'guide' as const },
   { id: 'household', key: 'members' as const },
   { id: 'agenda', key: 'events' as const },
   { id: 'chores', key: 'chores' as const },
@@ -35,6 +39,7 @@ const SECTIONS = [
   { id: 'calm', key: 'calmTitle' as const },
   { id: 'ai-log', key: 'aiLog' as const },
 ]
+const SECTION_IDS = SECTIONS.map((s) => s.id)
 
 // Operator hub (phone/laptop, logged in). The control surface that a kiosk is
 // NOT allowed to reach: members, device pairing approval + revocation, chores,
@@ -43,7 +48,6 @@ const SECTIONS = [
 export function Operator() {
   const t = useT()
   const nav = useNavigate()
-  const loc = useLocation()
   const { loading, signedIn, household, signOut } = useAuth()
   const { setMemberId } = useProfile()
   const qc = useQueryClient()
@@ -77,16 +81,10 @@ export function Operator() {
     if (!loading && !signedIn) nav('/login')
   }, [loading, signedIn, nav])
 
-  // Which settings tab is open. A deep link selects the matching tab
-  // (/settings#<id>, init + on hash change).
-  const [tab, setTab] = useState<string>(() => {
-    const h = loc.hash.slice(1)
-    return SECTIONS.some((s) => s.id === h) ? h : SECTIONS[0].id
-  })
-  useEffect(() => {
-    const h = loc.hash.slice(1)
-    if (h && SECTIONS.some((s) => s.id === h)) setTab(h)
-  }, [loc.hash])
+  // Which settings tab is open, held in the URL (?tab=<id>). A deep link selects
+  // the matching tab (/settings?tab=routines) and the choice survives a refresh
+  // or a return from elsewhere — unlike the old read-only hash. See tabParam.
+  const [tab, setTab] = useTabParam('tab', SECTIONS[0].id, SECTION_IDS)
 
   if (loading || !signedIn) return <p className="loading mono">{t.common.loading}</p>
 
@@ -156,6 +154,7 @@ export function Operator() {
         {tab === 'display' && <DisplaySection />}
         {tab === 'calm' && <CalmSection />}
         {tab === 'ai-log' && <AiErrorLogSection />}
+        {tab === 'guide' && <GuideSection />}
       </div>
     </main>
   )
