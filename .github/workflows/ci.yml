@@ -1,8 +1,10 @@
 name: CI & Deploy
 
-# CI (typecheck · test · build) runs on every push and PR. Deploy to the
-# Cloudflare Worker runs only after CI passes on a push to main — the same
-# `npm run deploy` you run locally, just gated behind green checks.
+# CI (typecheck · test · build) runs on every push and PR, and GATES the deploy.
+# E2E (Playwright) runs in PARALLEL on every push/PR for signal, but does NOT
+# block the deploy — so a push to main ships as soon as typecheck/test/build are
+# green, without waiting on the slower browser suite. Deploy to the Cloudflare
+# Worker is the same `npm run deploy` you run locally, gated behind green CI.
 
 on:
   push:
@@ -60,7 +62,10 @@ jobs:
 
   deploy:
     name: Deploy to Cloudflare
-    needs: [ci, e2e]
+    # Gated on CI only (typecheck · test · build). E2E runs in parallel and is
+    # intentionally NOT a dependency, so deploys aren't held up by the browser
+    # suite — check the E2E job separately for visual/flow regressions.
+    needs: [ci]
     # Only the real branch advancing — not PRs, not feature branches.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest

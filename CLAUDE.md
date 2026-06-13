@@ -49,9 +49,15 @@ npm run db:migrate:local   # apply migrations to local D1, then sync the sqlite 
 npm run db:migrate:prod    # apply to remote D1 (CI does this before deploy)
 ```
 
-CI (`.github/workflows/ci.yml`) runs typecheck → test → build → e2e on every push,
-and `db:migrate:prod` + deploy only on `main`. **Trust CI as the baseline; don't run
-e2e locally by default.** Node 24.
+CI (`.github/workflows/ci.yml`) runs typecheck → test → build on every push, which
+**gates** `db:migrate:prod` + deploy on `main`. E2E (Playwright) runs in **parallel**
+for signal but does **not** block the deploy, so main ships as soon as
+typecheck/test/build are green. **Trust CI as the baseline; don't run e2e locally by
+default — check the E2E job on the run page for visual/flow regressions.** Node 24.
+
+> **Workflow: push straight to `main`.** No PR branches — commit and `git push origin
+> main` directly. CI (typecheck/test/build) is the only gate; a red build is caught
+> on `main` and fixed forward. (This supersedes the old branch-per-change + PR flow.)
 
 > README.md predates the Pages→Worker migration — ignore its `pages:dev` references;
 > the real full-stack command is `npm run cf:dev`. **DEPLOY.md is the current source of truth.**
@@ -202,7 +208,9 @@ Comments cite `bmad/` tags: **`NFR-*`** (non-functional, e.g. `NFR-CALM-1`,
 
 - **Every UI change must be mobile-friendly**, every time (standing rule).
 - **Every UI change must be tablet-friendly, especially for Toddler mode**, every time (standing rule).
-- **Delete a merged branch** (local + remote) after it merges (standing rule).
+- **Push straight to `main`** — no PR branches; CI (typecheck/test/build) is the
+  only gate, fix forward if it goes red (standing rule). If a branch ever is used,
+  delete it (local + remote) after it merges.
 - **Shared working tree** — concurrent Claude sessions share this checkout. Re-check
   git state before committing; stage explicit paths; verify `HEAD` after commit.
 - **`src/styles/styles.css`** `@import` order IS the cascade — never reorder.
