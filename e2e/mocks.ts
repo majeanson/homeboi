@@ -427,7 +427,7 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
     if (opts.fresh && path === 'board') {
-      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
+      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, todayMeals: [], dayNote: null, tomorrowMeals: [], tomorrowNote: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
       return
     }
