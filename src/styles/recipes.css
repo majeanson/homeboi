@@ -437,6 +437,42 @@
   flex-wrap: wrap;
   gap: 0.4rem;
 }
+/* "Which ingredients?" checklist above the recipe actions. Same surface band as
+   the plan-a-day picker so the two read as the same kind of inline panel. */
+.recipe-list-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.recipe-list-pick__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.recipe-list-pick__label {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.recipe-list-pick__all {
+  flex: none;
+}
+.recipe-list-pick__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  max-height: 8.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.recipe-list-pick__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
 .kitchen__ai-waking {
   font-size: 0.9rem;
   color: var(--ink-soft);

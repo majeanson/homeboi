@@ -1,4 +1,4 @@
-import { ok, serviceUnavailable, readJson } from '../_lib/json'
+import { ok, serviceUnavailable, readJson, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { suggestMeals, resolveLang } from '../_lib/ai'
 import { dayStart } from '../_lib/ids'
@@ -33,6 +33,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       .all<{ title: string }>(),
   ])
 
+  const report = { error: null as string | null }
   const suggestions = await suggestMeals(
     ctx.env,
     low.results.map((r) => r.item),
@@ -40,7 +41,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
     resolveLang(ctx.env, ctx.request),
     favs.results.map((r) => r.title),
     avoid,
+    report,
   )
-  if (!suggestions.length) return serviceUnavailable('Pas de suggestion pour le moment.')
+  // The header rides on the 503 too: an empty batch from a real AI failure now
+  // carries the reason, while a genuinely empty result stays a quiet 503.
+  if (!suggestions.length) return withAiError(serviceUnavailable('Pas de suggestion pour le moment.'), report)
   return ok({ suggestions })
 })

@@ -361,6 +361,14 @@
 .note-card:active {
   transform: scale(0.97);
 }
+/* The day note is read-only on the parent board (a div, not a clearable button):
+   no pointer cursor, no press-shrink. Toddler keeps the button (tap to hear). */
+.day-note div.note-card {
+  cursor: default;
+}
+.day-note div.note-card:active {
+  transform: rotate(-1deg);
+}
 /* Toddler: bigger, no clear glyph, read-aloud. */
 .notes--kid .note-card {
   font-size: 1.4rem;

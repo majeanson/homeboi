@@ -13,6 +13,7 @@ import { EventsSection } from '../components/operator/agenda'
 import { ChoresSection, RoutinesSection } from '../components/operator/chores'
 import { PhotosSection, RecapSection } from '../components/operator/media'
 import { RecipeTagsSection } from '../components/operator/recipesTags'
+import { AiErrorLogSection } from '../components/operator/aiErrors'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
 
 // Réglages is one panel per tab; this list drives the tab strip. Deep links
@@ -32,6 +33,7 @@ const SECTIONS = [
   { id: 'recap', key: 'recapTitle' as const },
   { id: 'display', key: 'display' as const },
   { id: 'calm', key: 'calmTitle' as const },
+  { id: 'ai-log', key: 'aiLog' as const },
 ]
 
 // Operator hub (phone/laptop, logged in). The control surface that a kiosk is
@@ -153,6 +155,7 @@ export function Operator() {
         {tab === 'recap' && <RecapSection />}
         {tab === 'display' && <DisplaySection />}
         {tab === 'calm' && <CalmSection />}
+        {tab === 'ai-log' && <AiErrorLogSection />}
       </div>
     </main>
   )

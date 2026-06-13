@@ -1,4 +1,4 @@
-import { badRequest, ok, serviceUnavailable, readJson } from '../_lib/json'
+import { badRequest, ok, serviceUnavailable, readJson, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { draftRecipe, resolveLang } from '../_lib/ai'
 
@@ -11,6 +11,7 @@ export const onRequestPost = authed(async (ctx) => {
   const body = await readJson<{ title?: string }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
-  const draft = await draftRecipe(ctx.env, title, resolveLang(ctx.env, ctx.request))
-  return ok(draft)
+  const report = { error: null as string | null }
+  const draft = await draftRecipe(ctx.env, title, resolveLang(ctx.env, ctx.request), report)
+  return withAiError(ok(draft), report)
 })

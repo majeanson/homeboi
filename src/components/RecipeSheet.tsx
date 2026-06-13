@@ -6,7 +6,8 @@ import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
 import { formatDuration } from '../lib/duration'
 import { scaleIngredients } from '../lib/scale'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
-import { groupSections } from '../lib/recipeSections'
+import { groupSections, withoutHeadings } from '../lib/recipeSections'
+import { ingredientName } from '../lib/ingredient'
 import { type MealSlot } from '../lib/mealSlots'
 import { ZoomableImg } from './ZoomableImg'
 import { CookMode } from './CookMode'
@@ -37,6 +38,11 @@ export function RecipeSheet({
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onClose)
   const [added, setAdded] = useState(false)
+  // "Add to list" opens a checklist (you rarely need EVERY ingredient — most are
+  // staples you already have). null = closed; each row is a buyable name you tick
+  // to add. Starts all-unticked, so it's "pick the few I'm missing", not "untick
+  // the many I have".
+  const [listPrompt, setListPrompt] = useState<{ item: string; on: boolean }[] | null>(null)
   const [planning, setPlanning] = useState(false)
   const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
   const [plannedDate, setPlannedDate] = useState<number | null>(null)
@@ -113,11 +119,35 @@ export function RecipeSheet({
       ? recipe
       : { ...recipe, ingredients: scaledIngredients, servings: baseServings ? serv : recipe.servings }
 
-  async function addToList() {
-    if (added || !scaledIngredients.length) return
+  // Open the "which ingredients?" checklist: the recipe's buyable names, deduped,
+  // section markers dropped. (recipe-to-list reduces a measured line to its name
+  // anyway — "500 g de bœuf haché" → "Bœuf haché" — so we show that directly.)
+  function openAddToList() {
+    const seen = new Set<string>()
+    const opts: { item: string; on: boolean }[] = []
+    for (const line of withoutHeadings(scaledIngredients)) {
+      const name = ingredientName(line)
+      const k = name.toLowerCase()
+      if (name && !seen.has(k)) {
+        seen.add(k)
+        opts.push({ item: name, on: false })
+      }
+    }
+    setListPrompt(opts)
+  }
+  const toggleListItem = (item: string) =>
+    setListPrompt((p) => p?.map((o) => (o.item === item ? { ...o, on: !o.on } : o)) ?? p)
+  const allListOn = !!listPrompt?.length && listPrompt.every((o) => o.on)
+  const toggleAllList = () => setListPrompt((p) => p?.map((o) => ({ ...o, on: !allListOn })) ?? p)
+
+  async function confirmAddToList() {
+    const items = (listPrompt ?? []).filter((o) => o.on).map((o) => o.item)
+    if (!items.length) return
     setAdded(true)
-    await api('recipe-to-list', { method: 'POST', body: { items: scaledIngredients } }).catch(() => setAdded(false))
+    setListPrompt(null)
+    await api('recipe-to-list', { method: 'POST', body: { items } }).catch(() => setAdded(false))
     qc.invalidateQueries({ queryKey: ['board'] })
+    qc.invalidateQueries({ queryKey: ['list'] })
   }
 
   async function planOn(date: number) {
@@ -340,6 +370,46 @@ export function RecipeSheet({
         </div>
         )}
 
+        {/* "Which ingredients?" checklist — tick the few you're missing (it opens
+            all-unticked, since most are staples you already have). */}
+        {listPrompt && (
+          <div className="recipe-list-pick">
+            <div className="recipe-list-pick__head">
+              <span className="recipe-list-pick__label mono">{t.recipes.addWhich}</span>
+              <button type="button" className="chip recipe-list-pick__all" onClick={toggleAllList}>
+                {allListOn ? t.recipes.selectNone : t.recipes.selectAll}
+              </button>
+            </div>
+            <div className="recipe-list-pick__items">
+              {listPrompt.map((o) => (
+                <button
+                  key={o.item}
+                  type="button"
+                  className={'chip' + (o.on ? ' is-on' : '')}
+                  onClick={() => toggleListItem(o.item)}
+                  aria-pressed={o.on}
+                >
+                  {o.on ? '✓ ' : ''}
+                  {o.item}
+                </button>
+              ))}
+            </div>
+            <div className="recipe-list-pick__actions">
+              <button type="button" className="btn btn--ghost mono" onClick={() => setListPrompt(null)}>
+                {t.common.cancel}
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary mono"
+                onClick={confirmAddToList}
+                disabled={!listPrompt.some((o) => o.on)}
+              >
+                {t.recipes.addSelected(listPrompt.filter((o) => o.on).length)}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Plan-a-supper day picker, anchored right above the actions so tapping
             "Planifier un souper" reveals the days next to the button (not lost up
             in the scrolled recipe body). */}
@@ -365,7 +435,13 @@ export function RecipeSheet({
             </button>
           )}
           {recipe.ingredients.length > 0 && (
-            <button type="button" className="btn btn--ghost mono" onClick={addToList} disabled={added}>
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              onClick={() => (listPrompt ? setListPrompt(null) : openAddToList())}
+              disabled={added}
+              aria-expanded={!!listPrompt}
+            >
               {added ? t.recipes.addedToList : t.recipes.addToList}
             </button>
           )}

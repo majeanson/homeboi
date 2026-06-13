@@ -35,3 +35,45 @@ export const nowSec = () => Math.floor(Date.now() / 1000)
 export function dayStart(d: Date): number {
   return Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000)
 }
+
+// The household's wall-clock timezone. The meal week rolls over at LOCAL
+// midnight, not the 20:00 (8 PM Eastern) you get when the day is bucketed in
+// UTC. Single Québec household, so a fixed zone is fine; Intl handles DST.
+export const HOUSEHOLD_TZ = 'America/Toronto'
+
+// Wall-clock Y/M/D h:m:s for an instant in `tz` (via Intl, DST-aware).
+function wallParts(d: Date, tz: string) {
+  const f = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+  const p = Object.fromEntries(f.formatToParts(d).map((x) => [x.type, x.value])) as Record<string, string>
+  // Intl emits hour "24" at midnight in some runtimes — normalize to 0.
+  return { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour % 24, mi: +p.minute, s: +p.second }
+}
+
+// Unix-seconds of LOCAL midnight (in `tz`) for the day containing `d`. The
+// double-offset pass keeps it correct across a DST boundary. Use this for the
+// meal-week window so "today" advances at midnight, not 8 PM.
+export function localDayStart(d: Date, tz = HOUSEHOLD_TZ): number {
+  const w = wallParts(d, tz)
+  const offset = Date.UTC(w.y, w.mo - 1, w.d, w.h, w.mi, w.s) - d.getTime()
+  const wallMidnight = Date.UTC(w.y, w.mo - 1, w.d)
+  const approx = new Date(wallMidnight - offset)
+  const w2 = wallParts(approx, tz)
+  const offset2 = Date.UTC(w2.y, w2.mo - 1, w2.d, w2.h, w2.mi, w2.s) - approx.getTime()
+  return Math.floor((wallMidnight - offset2) / 1000)
+}
+
+// Day-of-week (0 = Sunday) in `tz` — the week-block anchor must use the local
+// day, not getUTCDay (which flips at 8 PM Eastern).
+export function localDayOfWeek(d: Date, tz = HOUSEHOLD_TZ): number {
+  const wd = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(d)
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wd)
+}

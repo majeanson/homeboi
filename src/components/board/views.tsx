@@ -10,6 +10,7 @@ import { colorOf, nameOf, type BoardData, type Dict, type EventRow } from './typ
 // event (rather than a stale "tonight" card); only an empty tomorrow falls back to
 // the supper, then a calm empty. All-day items ride along as a quiet footer.
 export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: Lang; t: Dict; profileId: string | null }) {
+  const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
   const now = Date.now() / 1000
   const timed = data.today.filter((e) => !e.all_day).sort((a, b) => a.start_at - b.start_at)
   const allDay = data.today.filter((e) => e.all_day)
@@ -98,6 +99,22 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
           {(data.choresToday ?? []).map((c) => (c.who ? `${c.title} (${c.who})` : c.title)).join(' · ')}
         </div>
       )}
+
+      {/* Today's full meal table rides as a footer too — every slot, not just the
+          supper (which can also be the fallback focus above). */}
+      {data.todayMeals.length > 0 && (
+        <div className="nownext__allday mono">
+          {t.board.meals} · {data.todayMeals.map((m) => `${slotLabel(m.slot)}: ${m.title}`).join(' · ')}
+        </div>
+      )}
+
+      {/* Tomorrow's prep note — the night-before reminder, even on the minimal
+          "Maintenant" board, so advance prep isn't hidden behind a view switch. */}
+      {data.tomorrowNote && (
+        <div className="nownext__allday mono">
+          {t.board.prepTomorrow} · {data.tomorrowNote.text}
+        </div>
+      )}
     </div>
   )
 }
@@ -118,19 +135,24 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
     })
   const memberIds = new Set(data.members.map((m) => m.id))
   const unassigned = data.today.filter((e) => !e.member_id || !memberIds.has(e.member_id))
-  const cook = data.tonight ? nameOf(data.members, data.tonight.cook_member_id) : null
+  const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
+  const cookLine = (cookId: string | null) => {
+    const who = nameOf(data.members, cookId)
+    return who ? `${who} ${t.board.cooks}` : undefined
+  }
 
   return (
     <div className="lanes">
-      {(unassigned.length > 0 || data.tonight) && (
+      {(unassigned.length > 0 || data.todayMeals.length > 0) && (
         <div className="lane bento">
           <div className="lane__head lane__head--shared">
             <span className="lane__dot" style={{ background: 'var(--ink-faint)' }} aria-hidden="true" />
             {t.profile.household}
           </div>
-          {data.tonight && (
-            <Act cat="meal" title={data.tonight.title} who={cook ? `${cook} ${t.board.cooks}` : undefined} />
-          )}
+          {/* The whole day's table — every planned slot, whoever's cooking. */}
+          {data.todayMeals.map((m) => (
+            <Act key={m.id} cat="meal" title={`${slotLabel(m.slot)} · ${m.title}`} who={cookLine(m.cook_member_id)} />
+          ))}
           {unassigned.map((e) => (
             <Act
               key={e.id}

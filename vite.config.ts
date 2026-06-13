@@ -133,7 +133,15 @@ export default defineConfig({
   plugins: [react(), serviceWorker()],
   server: {
     proxy: {
-      '/api': 'http://127.0.0.1:8787',
+      // Defaults to the local wrangler instance. Override with BABILLARD_API_PROXY
+      // to point the frontend dev loop at a deployed Worker (e.g. real-data e2e
+      // against prod) — changeOrigin so the Worker sees its own Host; the host-only
+      // session cookies then land on 127.0.0.1 so login persists across the proxy.
+      '/api': {
+        target: process.env.BABILLARD_API_PROXY || 'http://127.0.0.1:8787',
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
 })

@@ -272,6 +272,51 @@
   gap: 0.4rem;
   margin-top: 0.3rem;
 }
+/* The day's free-text note — a memo line under the slots. Full-width so it sits
+   on its own row; a quiet dashed "+ note" when empty, a tinted chip when set. */
+.kitchen__note {
+  flex-basis: 100%;
+  margin-top: 0.3rem;
+}
+.kitchen__note-add {
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-faint);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  min-height: 2.4rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.kitchen__note-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  text-align: left;
+  border: 0;
+  background: var(--marigold-wash);
+  color: var(--ink);
+  border-radius: 0.7rem;
+  padding: 0.4rem 0.7rem;
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.kitchen__note-text {
+  overflow-wrap: anywhere;
+}
+.kitchen__note-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.kitchen__note-edit .input {
+  flex: 1;
+  min-width: 9rem;
+}
 .kitchen__slot {
   display: inline-flex;
   align-items: center;

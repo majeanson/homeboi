@@ -23,7 +23,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const dayAfter = today + 86400 * 2
   const weekEnd = today + 86400 * 7
 
-  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, openList, chores, notes] = await Promise.all([
+  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
     )
@@ -46,6 +46,32 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .all(),
     ctx.env.DB.prepare(
       "SELECT id, title, cook_member_id FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? LIMIT 1",
+    )
+      .bind(hh, tomorrow, dayAfter)
+      .all(),
+    // EVERY meal planned for today (all four slots) — the board shows the full
+    // day's table, not just tonight's supper hero. Sorted by slot below.
+    ctx.env.DB.prepare(
+      'SELECT id, slot, title, cook_member_id FROM meals WHERE household_id = ? AND date >= ? AND date < ?',
+    )
+      .bind(hh, today, tomorrow)
+      .all(),
+    // Today's day note — the per-day memo from La cuisine (functions/api/day-notes).
+    ctx.env.DB.prepare(
+      'SELECT id, text, member_id FROM day_notes WHERE household_id = ? AND date >= ? AND date < ? LIMIT 1',
+    )
+      .bind(hh, today, tomorrow)
+      .all(),
+    // Tomorrow's full meal table + its day note — surfaced in the Demain section
+    // so prep that has to happen the night before (thaw the chicken, soak the
+    // beans, "sortir le poulet") is visible TODAY, while there's still time.
+    ctx.env.DB.prepare(
+      'SELECT id, slot, title, cook_member_id FROM meals WHERE household_id = ? AND date >= ? AND date < ?',
+    )
+      .bind(hh, tomorrow, dayAfter)
+      .all(),
+    ctx.env.DB.prepare(
+      'SELECT id, text, member_id FROM day_notes WHERE household_id = ? AND date >= ? AND date < ? LIMIT 1',
     )
       .bind(hh, tomorrow, dayAfter)
       .all(),
@@ -192,6 +218,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   choresUpcoming.sort((a, b) => a.at - b.at)
 
+  // Today's meals, ordered through the day (déjeuner → collation) so the board
+  // reads top-to-bottom like a menu. Supper stays the headline hero above; the
+  // client lists the rest here so nothing planned for the day is hidden.
+  const SLOT_ORDER: Record<string, number> = { breakfast: 0, lunch: 1, supper: 2, snack: 3 }
+  type DayMeal = { id: string; slot: string; title: string; cook_member_id: string | null }
+  const bySlot = (rows: unknown) => (rows as DayMeal[]).sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9))
+  const todayMeals = bySlot(todayMealsRes.results)
+  const tomorrowMeals = bySlot(tomorrowMealsRes.results)
+
   return ok({
     syncedAt: Math.floor(Date.now() / 1000),
     scope: actor.scope,
@@ -201,6 +236,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     upcoming: upcomingMerged,
     tonight: tonightMeal.results[0] ?? null,
     tomorrowMeal: tomorrowMeal.results[0] ?? null,
+    todayMeals,
+    dayNote: dayNoteRes.results[0] ?? null,
+    tomorrowMeals,
+    tomorrowNote: tomorrowNoteRes.results[0] ?? null,
     list: openList.results,
     chores: choresOut,
     choresToday,

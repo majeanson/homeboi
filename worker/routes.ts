@@ -9,9 +9,11 @@ import * as authLogin from '../functions/api/auth/login'
 import * as authLogout from '../functions/api/auth/logout'
 import * as authMe from '../functions/api/auth/me'
 import * as authSignup from '../functions/api/auth/signup'
+import * as aiErrors from '../functions/api/ai-errors'
 import * as board from '../functions/api/board'
 import * as capture from '../functions/api/capture'
 import * as chores from '../functions/api/chores'
+import * as dayNotes from '../functions/api/day-notes'
 import * as deals from '../functions/api/deals'
 import * as events from '../functions/api/events'
 import * as flyer from '../functions/api/flyer'
@@ -60,9 +62,11 @@ const TABLE: Record<string, RouteMod> = {
   'auth/logout': authLogout,
   'auth/me': authMe,
   'auth/signup': authSignup,
+  'ai-errors': aiErrors,
   board,
   capture,
   chores,
+  'day-notes': dayNotes,
   deals,
   events,
   flyer,

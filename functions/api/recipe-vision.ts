@@ -1,4 +1,4 @@
-import { badRequest, ok, serviceUnavailable } from '../_lib/json'
+import { badRequest, ok, serviceUnavailable, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { recipeFromImage, resolveLang } from '../_lib/ai'
 import { refineSteps } from '../_lib/recipeImport'
@@ -18,8 +18,9 @@ export const onRequestPost = authed(async (ctx) => {
   const buf = await ctx.request.arrayBuffer()
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
 
-  const r = await recipeFromImage(ctx.env, new Uint8Array(buf), resolveLang(ctx.env, ctx.request))
+  const report = { error: null as string | null }
+  const r = await recipeFromImage(ctx.env, new Uint8Array(buf), resolveLang(ctx.env, ctx.request), report)
   // OCR'd steps go through the shared refinement: the model often returns the
   // page's numbering verbatim ("1. …") or one packed paragraph.
-  return ok({ title: r.title, ingredients: r.ingredients, steps: refineSteps(r.steps) })
+  return withAiError(ok({ title: r.title, ingredients: r.ingredients, steps: refineSteps(r.steps) }), report)
 }, 'operator')

@@ -1,6 +1,6 @@
 import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { dayStart, newId, nowSec } from '../_lib/ids'
+import { localDayStart, localDayOfWeek, newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { ingredientName } from '../_lib/ingredient'
 
@@ -19,14 +19,15 @@ const slotOf = (v: unknown): string => (typeof v === 'string' && SLOTS.has(v) ? 
 
 const DAY = 86400
 // Days remaining in the active block, counting today. = 10 - (days since the
-// block's Tuesday). Ranges 10 (on Tuesday) down to 4 (on Monday).
+// block's Tuesday). Ranges 10 (on Tuesday) down to 4 (on Monday). Local
+// day-of-week so the block re-anchors at LOCAL Tuesday midnight, not 8 PM.
 const windowDaysFor = (today: number): number => {
-  const sinceTue = (new Date(today * 1000).getUTCDay() - 2 + 7) % 7
+  const sinceTue = (localDayOfWeek(new Date(today * 1000)) - 2 + 7) % 7
   return 10 - sinceTue
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
-  const today = dayStart(new Date(Date.now()))
+  const today = localDayStart(new Date(Date.now()))
   const windowDays = windowDaysFor(today)
   const { results } = await ctx.env.DB.prepare(
     'SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date',
@@ -50,7 +51,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (typeof body?.date !== 'number' || !body.title?.trim()) return badRequest('date + titre requis.')
   const title = body.title.trim()
   const slot = slotOf(body.slot)
-  const date = dayStart(new Date(body.date * 1000))
+  const date = localDayStart(new Date(body.date * 1000))
   const recipeId = body.recipeId?.trim() || null
   const ts = nowSec()
 

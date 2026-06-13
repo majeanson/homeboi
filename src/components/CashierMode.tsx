@@ -66,6 +66,16 @@ export function CashierMode({
       <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true">
         <div className="cashier__bar">
           <span className="cashier__title">{t.shop.cashierTitle}</span>
+          <button
+            type="button"
+            className="btn btn--ghost mono"
+            onClick={() => {
+              setIdx(0)
+              setPhase('present')
+            }}
+          >
+            {t.shop.present} ({picks.length}) →
+          </button>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
             ✕
           </button>
@@ -80,7 +90,20 @@ export function CashierMode({
     return (
       <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true" aria-label={t.shop.cashierTitle}>
         <div className="cashier__bar">
-          <span className="cashier__title">{t.shop.cashierTitle}</span>
+          {/* No redundant title here: the big CTA already reads "Montrer à la
+              caisse". It lives up next to ✕, NOT as a bottom bar button — on iOS
+              Safari a portal's bottom edge sits under the browser toolbar, so a
+              footer CTA there is unreachable; the top bar is always clear. */}
+          <button
+            type="button"
+            className="btn btn--primary mono cashier__present cashier__present--lead"
+            onClick={() => {
+              setIdx(0)
+              setPhase('present')
+            }}
+          >
+            {t.shop.present} ({picks.length}) →
+          </button>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
             ✕
           </button>
@@ -115,19 +138,6 @@ export function CashierMode({
               </li>
             ))}
           </ul>
-        </div>
-
-        <div className="cashier__foot">
-          <button
-            type="button"
-            className="btn btn--primary cashier__go"
-            onClick={() => {
-              setIdx(0)
-              setPhase('present')
-            }}
-          >
-            {t.shop.present} ({picks.length}) →
-          </button>
         </div>
       </div>
     )
