@@ -81,8 +81,16 @@ for (const boardView of ['next', 'lanes'] as const) {
     await page.setViewportSize({ width: 1280, height: 800 })
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'kiosk', boardView })
+    const errors: string[] = []
+    page.on('pageerror', (e) => errors.push(e.message))
     await page.goto('/board')
     await settle(page, '.hub')
+    // Guard: the alternate views read newer board fields (todayMeals, …) — assert
+    // they actually render content and don't throw, not just shoot a blank frame.
+    await expect.poll(async () => (await page.locator('.hub__body').innerText()).trim().length, {
+      timeout: 8000,
+    }).toBeGreaterThan(20)
+    expect(errors, `pageerror on board ${boardView}`).toEqual([])
     await page.screenshot({ path: `e2e/screenshots/board-${boardView}-parent-day-wall.png`, fullPage: true })
   })
 }
@@ -128,6 +136,26 @@ test('toddler routines reaches the picture-card story', async ({ page }) => {
   await page.goto('/routines')
   await expect(page.locator('.hub')).toBeVisible()
 })
+
+// Crash guard: a render error (e.g. `.find` on an undefined query field) silently
+// blanks a surface — the screenshot tests still "pass" because they only shoot a
+// frame. So assert every PARENT surface actually paints content and throws no
+// pageerror. This is what would have caught the blank-Kitchen regression.
+for (const path of ['/board', '/kitchen', '/routines', '/liste', '/settings']) {
+  test(`no blank surface (no render crash): ${path}`, async ({ page }) => {
+    const errors: string[] = []
+    page.on('pageerror', (e) => errors.push(e.message))
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+    await page.goto(path)
+    await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
+    // The shell paints instantly; give data-driven content a beat to mount.
+    await expect.poll(async () => (await page.locator('.hub__body').innerText()).trim().length, {
+      timeout: 8000,
+    }).toBeGreaterThan(20)
+    expect(errors, `pageerror on ${path}`).toEqual([])
+  })
+}
 
 // Regression guard: no surface may overflow the viewport horizontally on a phone
 // (the standing "mobile-friendly always" rule). Runs FR + EN, parent + toddler.

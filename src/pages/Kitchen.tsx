@@ -197,7 +197,7 @@ export function Kitchen() {
   // date → (slot → meal) for the breakfast/lunch/snack chips under each day.
   const slotMeal = (date: number, slot: string) => days.find((d) => d.date === date && d.slot === slot)
   // date → its day note (the per-day memo), if any.
-  const noteFor = (date: number) => dayNotesQ.data?.notes.find((n) => n.date === date)
+  const noteFor = (date: number) => dayNotesQ.data?.notes?.find((n) => n.date === date)
 
   // The flows (see components/kitchen/use*). Destructured to the same names the
   // JSX always used, so the markup below reads unchanged.
