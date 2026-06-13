@@ -664,11 +664,13 @@ textarea.input {
 /* "💡 Léa" — a kid suggested this supper into an empty slot. Quiet, so it reads as
    a note beside the meal, not a second meal. */
 .kitchen__day-sugg {
-  /* Shrinkable + ellipsized so a long "suggéré par <name>" truncates instead of
-     overrunning the day card. */
-  flex: 0 1 auto;
+  /* Its OWN line below the meal (the .kitchen__day wrap was always meant to drop
+     it here). Beside the title it competed for width and — because flex shrinks
+     the larger-content item hardest — collapsed the title into a one-letter-per-
+     line column. Full-basis takes it out of that fight; a long name ellipsizes. */
+  flex: 0 0 100%;
   min-width: 0;
-  max-width: 100%;
+  max-width: max-content;
   font-size: 0.78rem;
   color: var(--terracotta-deep);
   background: var(--terracotta-wash);

@@ -255,19 +255,29 @@
   background: var(--paper-deep);
 }
 .kitchen__day-meal {
-  flex: 1;
-  min-width: 0;
+  /* min-width is a real floor, not 0: the title is the headline and must never
+     collapse to a sliver. Without it, the unstyled 📖 link + "💡 suggéré par"
+     chip (which don't shrink) would eat the row and squeeze this to < 1ch wide,
+     stacking the title one letter per line. With a 7rem floor it keeps a
+     readable column and instead forces those adornments to wrap below. */
+  flex: 1 1 auto;
+  min-width: 7rem;
   text-align: left;
   background: none;
   border: none;
   color: inherit;
   font: inherit;
   font-size: 1.05rem;
+  line-height: 1.25;
   cursor: pointer;
   padding: 0.2rem 0;
-  /* A long meal title wraps and breaks instead of pushing the day card wide. */
+  /* Last-resort guard for one absurdly long unspaced word — normal multi-word
+     titles now wrap at spaces within the 7rem+ column above. */
   overflow-wrap: anywhere;
 }
+/* The 📖 recipe link (.kitchen__day-recipe-link, cook.css) and the "💡 suggéré
+   par X" note (.kitchen__day-sugg, core.css) are both flex: none / own-line so
+   they no longer compete with the title for row width. */
 .kitchen__day-empty {
   color: var(--ink-soft);
 }
