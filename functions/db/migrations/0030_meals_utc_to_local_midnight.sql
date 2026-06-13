@@ -1,0 +1,16 @@
+-- Re-bucket legacy meal rows from UTC midnight to America/Toronto LOCAL midnight.
+--
+-- Until commit e40f990, meals were day-bucketed with dayStart() (UTC midnight).
+-- That commit moved the meal week to localDayStart() (local midnight) so the day
+-- rolls at midnight Eastern, not 20:00. But the meals already in the table stayed
+-- at UTC midnight, so the Kitchen's new local-midnight window starts 4 h AFTER
+-- them and they vanished ("À planifier" everywhere) even though the Board's old
+-- UTC query still caught them.
+--
+-- Shift those legacy rows forward by the Eastern offset so they land on local
+-- midnight of the SAME calendar day. Every legacy row is inside the rolling
+-- ~10-day meal window, i.e. summer (EDT = UTC-4 = +14400 s). The `% 86400 = 0`
+-- guard matches ONLY UTC-midnight rows: local-midnight rows sit at 14400 (EDT)
+-- or 18000 (EST), so this is a no-op on already-correct or freshly-seeded data
+-- and is safe to re-run.
+UPDATE meals SET date = date + 14400 WHERE date % 86400 = 0;

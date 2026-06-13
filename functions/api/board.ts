@@ -1,6 +1,6 @@
 import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { dayStart } from '../_lib/ids'
+import { dayStart, localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
 
 interface Ev {
@@ -23,6 +23,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const dayAfter = today + 86400 * 2
   const weekEnd = today + 86400 * 7
 
+  // Meals and day-notes bucket at LOCAL midnight (America/Toronto) — the same
+  // boundary meals.ts / day-notes.ts store and query them at. On UTC the meal
+  // day rolls at 20:00 Eastern, so "ce soir" would flip to tomorrow's supper all
+  // evening. Events and chores keep the UTC `today` above to match _lib/recur's
+  // day math (it re-buckets with dayStart internally).
+  const mealToday = localDayStart(new Date(Date.now()))
+  const mealTomorrow = mealToday + 86400
+  const mealDayAfter = mealToday + 86400 * 2
+
   const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
@@ -42,25 +51,25 @@ export const onRequestGet = authed(async (ctx, actor) => {
     ctx.env.DB.prepare(
       "SELECT id, title, cook_member_id FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? LIMIT 1",
     )
-      .bind(hh, today, tomorrow)
+      .bind(hh, mealToday, mealTomorrow)
       .all(),
     ctx.env.DB.prepare(
       "SELECT id, title, cook_member_id FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? LIMIT 1",
     )
-      .bind(hh, tomorrow, dayAfter)
+      .bind(hh, mealTomorrow, mealDayAfter)
       .all(),
     // EVERY meal planned for today (all four slots) — the board shows the full
     // day's table, not just tonight's supper hero. Sorted by slot below.
     ctx.env.DB.prepare(
       'SELECT id, slot, title, cook_member_id FROM meals WHERE household_id = ? AND date >= ? AND date < ?',
     )
-      .bind(hh, today, tomorrow)
+      .bind(hh, mealToday, mealTomorrow)
       .all(),
     // Today's day note — the per-day memo from La cuisine (functions/api/day-notes).
     ctx.env.DB.prepare(
       'SELECT id, text, member_id FROM day_notes WHERE household_id = ? AND date >= ? AND date < ? LIMIT 1',
     )
-      .bind(hh, today, tomorrow)
+      .bind(hh, mealToday, mealTomorrow)
       .all(),
     // Tomorrow's full meal table + its day note — surfaced in the Demain section
     // so prep that has to happen the night before (thaw the chicken, soak the
@@ -68,12 +77,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
     ctx.env.DB.prepare(
       'SELECT id, slot, title, cook_member_id FROM meals WHERE household_id = ? AND date >= ? AND date < ?',
     )
-      .bind(hh, tomorrow, dayAfter)
+      .bind(hh, mealTomorrow, mealDayAfter)
       .all(),
     ctx.env.DB.prepare(
       'SELECT id, text, member_id FROM day_notes WHERE household_id = ? AND date >= ? AND date < ? LIMIT 1',
     )
-      .bind(hh, tomorrow, dayAfter)
+      .bind(hh, mealTomorrow, mealDayAfter)
       .all(),
     // The whole active list — unchecked AND checked. A check is a mark, not a
     // move: checked rows stay in place (struck through) until "Clear checked"
