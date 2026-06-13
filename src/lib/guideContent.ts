@@ -131,22 +131,22 @@ export const GUIDE: GuideEntry[] = [
     group: 'sections',
     title: { fr: 'La cuisine', en: 'The kitchen' },
     what: {
-      fr: 'Le garde-manger : le plan des soupers de la semaine, les recettes, ce qui s’achève, et les suggestions de repas.',
-      en: 'The pantry: the week’s supper plan, recipes, what’s running low, and meal suggestions.',
+      fr: 'Le garde-manger : tu planifies les repas de la semaine et tu signales ce qui achève, et la cuisine remplit ta liste d’épicerie pour toi. Elle garde aussi tes recettes et propose des idées quand tu sèches.',
+      en: 'The pantry: you plan the week’s meals and flag what’s running low, and the kitchen fills your grocery list for you. It also keeps your recipes and suggests ideas when you’re stuck.',
     },
     points: [
       {
         label: { fr: 'Planifier la semaine', en: 'Plan the week' },
         detail: {
-          fr: 'Mets un repas dans une case et il apparaît sur le babillard la bonne journée. Pas obligé de tout remplir.',
-          en: 'Drop a meal in a slot and it shows on the board on the right day. No need to fill every box.',
+          fr: 'Mets un repas dans une case et il apparaît sur le babillard la bonne journée — décidé une fois, fini le « qu’est-ce qu’on mange ? » chaque soir. Pas obligé de tout remplir.',
+          en: 'Drop a meal in a slot and it shows on the board on the right day — decided once, no more nightly “what’s for supper?”. No need to fill every box.',
         },
       },
       {
         label: { fr: 'Ce qui s’achève', en: 'Running low' },
         detail: {
-          fr: 'Un simple drapeau « il en manque » — pas un inventaire. Coche un aliment pour l’envoyer direct sur la liste d’épicerie.',
-          en: 'Just a “we’re low” flag — not an inventory count. Check an item to send it straight to the grocery list.',
+          fr: 'Dès qu’un aliment achève, mets-lui le drapeau « il en manque » : il saute direct sur la liste d’épicerie, pour ne pas l’oublier à la prochaine commande. C’est un simple drapeau, pas un inventaire à tenir à jour — moins de corvée, et c’est ça qui garde la cuisine calme.',
+          en: 'The moment a food is almost gone, flag it “running low”: it jumps straight onto the grocery list so you don’t forget it next shop. It’s just a flag, not an inventory to keep current — less busywork, and that’s what keeps the kitchen calm.',
         },
       },
       {
