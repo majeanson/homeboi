@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
@@ -12,13 +12,12 @@ import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { PriceMatchSheet } from '../components/PriceMatchSheet'
 import { ListItemSheet } from '../components/ListItemSheet'
-import { CashierMode } from '../components/CashierMode'
 import { QuickAddPanel, type QuickItem } from '../components/QuickAddPanel'
 import { fetchGhosts } from '../lib/ghost'
 import { useUndoToast } from '../lib/toast'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { money, type Deal } from '../lib/deals'
-import { pickListFrom, parseDeal, parseTerms, stageDeal, unstageDeal } from '../lib/picks'
+import { pickListFrom, parseDeal, parseTerms, stageDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { BOARD_KEY } from '../lib/queryKeys'
 
@@ -155,10 +154,22 @@ export function Liste() {
   const { audience } = useAudience()
   const qc = useQueryClient()
   const nav = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const undo = useUndoToast()
+
+  // Coming back from the cashier's "Revise a price" (it routes to /liste?proof=…
+  // rather than stacking the price sheet over the till). Open the price-match
+  // sheet for that line, then strip the params so a reload/back doesn't reopen it.
+  useEffect(() => {
+    const proof = searchParams.get('proof')
+    if (!proof) return
+    setProofFor({ id: proof, text: searchParams.get('q') ?? '', terms: [] })
+    searchParams.delete('proof')
+    searchParams.delete('q')
+    setSearchParams(searchParams, { replace: true })
+  }, [searchParams, setSearchParams])
   const [proofFor, setProofFor] = useState<{ id: string; text: string; terms: string[] } | null>(null)
   const [editItem, setEditItem] = useState<ListRow | null>(null)
-  const [cashierOpen, setCashierOpen] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
   const [auto, setAuto] = useState(false)
   // Items whose "Clear checked" delete is DEFERRED behind the undo toast. Filtered
@@ -324,7 +335,7 @@ export function Liste() {
       }
     }
     setAuto(false)
-    if (any || pickList.length > 0) setCashierOpen(true)
+    if (any || pickList.length > 0) nav('/liste/cashier')
   }
 
   if (audience === 'toddler') {
@@ -466,7 +477,7 @@ export function Liste() {
           </button>
         )}
         {pickList.length > 0 && (
-          <button type="button" className="btn btn--primary" onClick={() => setCashierOpen(true)}>
+          <button type="button" className="btn btn--primary" onClick={() => nav('/liste/cashier')}>
             🧾 {t.shop.present} ({pickList.length})
           </button>
         )}
@@ -484,15 +495,6 @@ export function Liste() {
       )}
 
       {editItem && <ListItemSheet item={editItem} onClose={() => setEditItem(null)} />}
-
-      {cashierOpen && (
-        <CashierMode
-          picks={pickList}
-          onRevise={(p) => setProofFor({ id: p.itemId, text: p.itemText, terms: [] })}
-          onRemove={(itemId) => unstageDeal(qc, itemId)}
-          onClose={() => setCashierOpen(false)}
-        />
-      )}
     </main>
   )
 }
