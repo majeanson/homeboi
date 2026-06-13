@@ -307,29 +307,49 @@ export function Kitchen() {
         <section>
           <div className="kitchen__head">
             <h2>{t.kitchen.week}</h2>
-            <div className="kitchen__head-actions">
-              {shoppableCount > 0 && (
-                <button type="button" className="btn" onClick={beginShopWeek} disabled={shopBusy}>
-                  🛒 {t.kitchen.shopWeek}
-                </button>
-              )}
-              {/* Two separate idea sources — fresh from the AI, or from your own
-                  recipes ranked by what's in stock. Never blended. */}
+          </div>
+
+          {/* The week's three actions as an icon rail stacked above the ＋ FAB:
+              shop the week, AI ideas, ideas from your own recipes. Icon-only with
+              a tooltip/aria-label; busy + off states disable in place. (Two idea
+              sources — fresh from the AI, or your recipes ranked by stock — never
+              blended.) The result/prompt still surface in the section below. */}
+          <div className="kitchen__fab-rail" role="group" aria-label={t.kitchen.week}>
+            {shoppableCount > 0 && (
               <button
                 type="button"
-                className="btn"
-                onClick={suggest.suggestAi}
-                disabled={suggest.aiBusy || suggest.aiOff}
-                title={suggest.aiOff ? t.kitchen.suggestAiOff : undefined}
+                className="kitchen__fab-act"
+                onClick={beginShopWeek}
+                disabled={shopBusy}
+                aria-busy={shopBusy}
+                aria-label={t.kitchen.shopWeek}
+                title={t.kitchen.shopWeek}
               >
-                {suggest.aiBusy ? t.kitchen.suggestThinking : t.kitchen.suggestAi}
+                <Icon name="shopping-bag-bold" size={24} />
               </button>
-              {suggest.hasRecipes && (
-                <button type="button" className="btn" onClick={suggest.suggestFromRecipes}>
-                  {t.kitchen.suggestFromRecipes}
-                </button>
-              )}
-            </div>
+            )}
+            <button
+              type="button"
+              className="kitchen__fab-act"
+              onClick={suggest.suggestAi}
+              disabled={suggest.aiBusy || suggest.aiOff}
+              aria-busy={suggest.aiBusy}
+              aria-label={t.kitchen.suggestAi}
+              title={suggest.aiOff ? t.kitchen.suggestAiOff : t.kitchen.suggestAi}
+            >
+              <Icon name="sparkle-bold" size={24} />
+            </button>
+            {suggest.hasRecipes && (
+              <button
+                type="button"
+                className="kitchen__fab-act"
+                onClick={suggest.suggestFromRecipes}
+                aria-label={t.kitchen.suggestFromRecipes}
+                title={t.kitchen.suggestFromRecipes}
+              >
+                <Icon name="book-open-bold" size={24} />
+              </button>
+            )}
           </div>
           {aiWaking && (
             <p className="kitchen__ai-waking mono" role="status">
