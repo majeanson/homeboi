@@ -114,6 +114,9 @@ test.describe('navigation', () => {
     // settings, and /settings redirects away. Coming back out is a deliberate
     // relaunch (?kid=0), not an in-app tap.
     await expect(page.locator('.hubnav__peek')).toHaveCount(0)
+    // goto reloads the shell, re-running seedState's init (which re-seeds parent);
+    // pin the toddler lens first so the reloaded shell still bounces /settings → /board.
+    await page.addInitScript(() => localStorage.setItem('babillard-audience', 'toddler'))
     await page.goto('/settings')
     await expect(page).toHaveURL(/\/board$/)
   })
@@ -137,7 +140,8 @@ test.describe('settings tabs', () => {
     await settle(page, '.operator__tabs')
     const tabs = page.getByRole('tab')
     const n = await tabs.count()
-    expect(n).toBe(12)
+    // 13 sections: the 12 originals + the AI-error journal (ai-log).
+    expect(n).toBe(13)
     for (let i = 0; i < n; i++) {
       await tabs.nth(i).click()
       await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true')
@@ -176,10 +180,11 @@ test.describe('toggles', () => {
 
   test('audience switch flips the hub into the toddler layer', async ({ page }) => {
     await openDisplay(page)
-    const toddler = page.locator('.audience-switch__opt').nth(1)
-    await toddler.click()
-    await expect(toddler).toHaveAttribute('aria-pressed', 'true')
+    await page.locator('.audience-switch__opt').nth(1).click()
+    // Flipping to the kid lens in Réglages bounces out of settings (the one-way
+    // door): the hub comes up in the toddler layer on the board.
     await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'toddler')
+    await expect(page).toHaveURL(/\/board$/)
   })
 
   test('calm toggle flips and persists the opt-out', async ({ page }) => {
@@ -469,8 +474,12 @@ test.describe('recipes', () => {
   test('a recipe pushes its ingredients to the list and opens cook mode', async ({ page }) => {
     await page.locator('.recipe-card').first().click()
     const modal = page.locator('.recipe-modal')
+    // "Ajouter à la liste" now opens an ingredient PICKER (e40f990) with nothing
+    // pre-selected; pick all, then confirm — that's what posts recipe-to-list.
+    await modal.getByRole('button', { name: 'Ajouter à la liste' }).click()
+    await modal.locator('.recipe-list-pick__all').click() // Tout sélectionner
     await expectApi(page, 'POST', 'recipe-to-list', () =>
-      modal.getByRole('button', { name: 'Ajouter à la liste' }).click(),
+      modal.locator('.recipe-list-pick__actions .btn--primary').click(),
     )
     await modal.locator('.recipe-actions .btn--primary').click() // Cook
     await expect(page.locator('.cook')).toBeVisible()
