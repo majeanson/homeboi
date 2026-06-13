@@ -384,9 +384,10 @@ test.describe('add sheet', () => {
     await expect(page.locator('.sheet.show')).toBeVisible()
     await expect(page.locator('.cat-pick')).toHaveCount(3)
     await expect(page.locator('.cat-pick', { hasText: 'Note rapide' })).toHaveCount(0)
-    // The meal planner is pre-selected (recipe is a navigate-only tile): day +
-    // slot selects over a title field, posting the light {date, slot, title}.
-    await expect(page.locator('.sheet__row select')).toHaveCount(2)
+    // The meal planner is pre-selected (recipe is a navigate-only tile): a day
+    // select + the slot as icon chips, over a title field, posting {date, slot, title}.
+    await expect(page.locator('.sheet__row select')).toHaveCount(1)
+    await expect(page.locator('.sheet .slot-picker')).toBeVisible()
     await page.locator('.sheet .sheet__field input').fill('Spaghetti')
     await expectApi(page, 'POST', 'meals', () =>
       page.locator('.sheet form button[type="submit"]').click(),
@@ -463,12 +464,12 @@ test.describe('kitchen', () => {
   })
 
   test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {
-    // Day one's breakfast is seeded ("Crêpes") — a side slot beside the souper.
-    await expect(page.locator('.kitchen__slot.is-set', { hasText: 'Crêpes' }).first()).toBeVisible()
-    // Setting a lunch is a plain title — straight POST, no staples step.
-    const slot = page.locator('.kitchen__day').first().locator('.kitchen__slot', { hasText: 'Dîner' })
-    await slot.click()
-    const edit = page.locator('.kitchen__slot-edit')
+    // Day one's breakfast is seeded ("Crêpes") — a meal row in the déjeuner slot.
+    await expect(page.locator('.kitchen__meal-row', { hasText: 'Crêpes' }).first()).toBeVisible()
+    // Setting a lunch is a plain title — a straight POST (append), no staples step.
+    const day = page.locator('.kitchen__day').first()
+    await day.locator('.kitchen__slot-add', { hasText: 'Dîner' }).click()
+    const edit = day.locator('.kitchen__slot-edit')
     await edit.locator('input.input').fill('Sandwich au jambon')
     await expectApi(page, 'POST', 'meals', () => edit.locator('button[type="submit"]').click())
   })

@@ -1,6 +1,6 @@
 import { CATS, type CatKey } from '../../lib/cats'
 import { tintInk } from '../../lib/colors'
-import { Icon } from '../Icon'
+import { Icon, type IconName } from '../Icon'
 
 // Pip section header: label + rule + a quiet count (never a score). Each Section
 // is a bento tile in the board grid.
@@ -30,6 +30,7 @@ export function Act({
   color,
   mine,
   emoji,
+  icon,
 }: {
   cat: CatKey
   title: string
@@ -39,7 +40,8 @@ export function Act({
   onCheck?: () => void
   color?: string // overrides the category colour (member colour, task colour)
   mine?: boolean // belongs to the device's picked member → a quiet "you" accent
-  emoji?: string // glyph override (e.g. the meal-slot icon) shown in place of the Phosphor icon
+  emoji?: string // glyph override shown in place of the Phosphor icon (legacy)
+  icon?: IconName // a specific Phosphor icon (e.g. a meal's slot icon) over the category one
 }) {
   const c = CATS[cat]
   const spine = color ?? c.color
@@ -49,8 +51,14 @@ export function Act({
   const body = (
     <>
       <span className="spine" style={{ background: spine }} aria-hidden="true" />
-      <span className="tile" style={{ background: tileBg }} aria-hidden="true">
-        {emoji ? <span className="act__emoji">{emoji}</span> : <Icon name={c.icon} size={28} color={glyph} />}
+      <span className="tile" style={{ background: tileBg }} aria-hidden="true" data-icon={icon ?? (emoji ? undefined : c.icon)}>
+        {icon ? (
+          <Icon name={icon} size={28} color={glyph} />
+        ) : emoji ? (
+          <span className="act__emoji">{emoji}</span>
+        ) : (
+          <Icon name={c.icon} size={28} color={glyph} />
+        )}
       </span>
       <span className="act__text">
         {when && <span className="when">{when}</span>}

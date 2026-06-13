@@ -34,12 +34,19 @@ const BOARD = {
   tomorrow: [{ id: 'e4', title: 'Épicerie', start_at: BASE + DAY + 4 * 3600, all_day: 0, member_id: 'm1' }],
   upcoming: [{ id: 'e5', title: 'Fête de Léa', start_at: BASE + 5 * DAY, all_day: 1, member_id: 'm3' }],
   tonight: { id: 'meal1', title: 'Spaghetti maison', cook_member_id: 'm2' },
+  // ALL of today's suppers — "Ce soir" lists every one (two here, to exercise it).
+  tonightMeals: [
+    { id: 'meal1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', position: 0 },
+    { id: 'meal5', slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
+  ],
   tomorrowMeal: { id: 'meal2', title: 'Tacos', cook_member_id: 'm1' },
   // The full per-day meal table + day memo (new board fields; the Now/Next and
   // per-person Lanes views read these). Absent → those views must not crash.
+  // Time-ordered (breakfast → supper) with a slot holding two meals.
   todayMeals: [
-    { id: 'meal1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2' },
-    { id: 'meal4', slot: 'breakfast', title: 'Crêpes', cook_member_id: null },
+    { id: 'meal4', slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
+    { id: 'meal1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', position: 0 },
+    { id: 'meal5', slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
   ],
   dayNote: { id: 'dn1', text: 'Sans gluten ce soir', member_id: 'm1' },
   tomorrowMeals: [{ id: 'meal2', slot: 'supper', title: 'Tacos', cook_member_id: 'm1' }],
@@ -89,13 +96,16 @@ const MEALS = {
   windowDays: 10, // full 10-day countdown block (see functions/api/meals.ts)
   days: [
     // Linked to the saved recipe rc1 (recipe_id) — the grid's 📖 opens it exactly.
-    { id: 'meal1', date: BASE, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1' },
-    { id: 'meal2', date: BASE + DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1' },
+    { id: 'meal1', date: BASE, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 },
+    // A SECOND supper in the same slot (N per slot) — the grid lists both, each
+    // with its own ✕ / ↑↓.
+    { id: 'meal5', date: BASE, slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
+    { id: 'meal2', date: BASE + DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1', position: 0 },
     // A kid-suggested supper (Léa, m3) sitting in a slot that was empty — shows the
     // "💡 Léa" note in the parent week. cook is null until a parent decides.
-    { id: 'meal3', date: BASE + 3 * DAY, slot: 'supper', title: 'Saumon & riz', cook_member_id: null, suggested_by: 'm3' },
+    { id: 'meal3', date: BASE + 3 * DAY, slot: 'supper', title: 'Saumon & riz', cook_member_id: null, suggested_by: 'm3', position: 0 },
     // A déjeuner (breakfast) side slot on day one.
-    { id: 'meal4', date: BASE, slot: 'breakfast', title: 'Crêpes', cook_member_id: null },
+    { id: 'meal4', date: BASE, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
   ],
 }
 
@@ -461,7 +471,7 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
     if (opts.fresh && path === 'board') {
-      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tomorrowMeal: null, todayMeals: [], dayNote: null, tomorrowMeals: [], tomorrowNote: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
+      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tonightMeals: [], tomorrowMeal: null, todayMeals: [], dayNote: null, tomorrowMeals: [], tomorrowNote: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
       return
     }

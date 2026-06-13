@@ -12,6 +12,7 @@ import { type AiWake } from './useAiWake'
 // Pure state + handlers — the page renders; this decides.
 export interface StaplePrompt {
   date: number
+  slot: string // which slot the new meal is appended to (déjeuner/dîner/souper/collation)
   title: string
   recipeId?: string | null // carried through so the saved meal keeps its recipe link
   options: { item: string; on: boolean }[]
@@ -31,10 +32,11 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
   // (the meals endpoint inserts them with source 'meal' in the same write).
   // On failure the edit/staple state stays put (the typed title isn't lost) and
   // an error line appears — silently closing would read as "saved" when nothing was.
-  async function saveMeal(date: number, title: string, staples: string[], recipeId?: string | null) {
+  async function saveMeal(date: number, slot: string, title: string, staples: string[], recipeId?: string | null) {
     setMealErr(false)
     try {
-      await api('meals', { method: 'POST', body: { date, title, staples, recipeId } })
+      // Appends to the slot (a slot is a list now — see functions/api/meals.ts).
+      await api('meals', { method: 'POST', body: { date, slot, title, staples, recipeId } })
       setEditDate(null)
       setMealText('')
       setStaplePrompt(null)
@@ -48,7 +50,7 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
   // Setting a meal first asks the router for its staples (B3). If AI finds some,
   // we show the confirm chips; if AI is off (503) or finds nothing, we just save
   // the meal — the staple step is a bonus, never a gate (NFR-DEGRADE-1).
-  async function beginSetMeal(date: number) {
+  async function beginSetMeal(date: number, slot: string) {
     const title = mealText.trim()
     if (!title) return
     setStaplesBusy(true)
@@ -58,13 +60,13 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
       if (res.staples.length) {
         // Start unchecked: the user ticks what they're MISSING (need to buy),
         // rather than un-ticking everything they already have.
-        setStaplePrompt({ date, title, options: res.staples.map((item) => ({ item, on: false })) })
+        setStaplePrompt({ date, slot, title, options: res.staples.map((item) => ({ item, on: false })) })
       } else {
-        await saveMeal(date, title, [])
+        await saveMeal(date, slot, title, [])
       }
     } catch (e) {
       if (isStatus(e, 503)) ai.markAiUnavailable()
-      await saveMeal(date, title, [])
+      await saveMeal(date, slot, title, [])
     } finally {
       setStaplesBusy(false)
       ai.aiDone()
@@ -74,7 +76,7 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
   // Plan a day's supper FROM a saved recipe AND confirm its staples for the list:
   // its own ingredients become the chips (no AI call — we already know them). The
   // recipe link rides along so the saved meal still opens the recipe.
-  function chooseRecipeForMeal(date: number, recipe: Recipe) {
+  function chooseRecipeForMeal(date: number, slot: string, recipe: Recipe) {
     setEditDate(null)
     if (recipe.ingredients.length) {
       // Chips show buyable names ("Beurre non salé"), not measured recipe lines.
@@ -88,9 +90,9 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
           options.push({ item, on: false })
         }
       }
-      setStaplePrompt({ date, title: recipe.title, recipeId: recipe.id, options })
+      setStaplePrompt({ date, slot, title: recipe.title, recipeId: recipe.id, options })
     } else {
-      saveMeal(date, recipe.title, [], recipe.id)
+      saveMeal(date, slot, recipe.title, [], recipe.id)
     }
   }
 

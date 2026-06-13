@@ -48,6 +48,7 @@ export interface DayMealRow {
   slot: string
   title: string
   cook_member_id: string | null
+  position?: number
 }
 // Today's day note — the per-day memo set in La cuisine. Read-only on the board.
 export interface DayNote {
@@ -79,7 +80,8 @@ export interface BoardData {
   today: EventRow[]
   tomorrow: EventRow[]
   upcoming: EventRow[]
-  tonight: MealRow | null
+  tonight: MealRow | null // the first supper — the headline hero / toddler hero
+  tonightMeals: DayMealRow[] // ALL of today's suppers — "Ce soir" lists every one
   tomorrowMeal: MealRow | null
   todayMeals: DayMealRow[]
   dayNote: DayNote | null

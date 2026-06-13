@@ -8,6 +8,7 @@ export interface MealRow {
   cook_member_id: string | null
   suggested_by?: string | null
   recipe_id?: string | null // the saved recipe this slot points at, if any
+  position?: number // intra-slot order (migration 0033); a slot can hold several meals
 }
 
 // One entry in the "general ideas" pool — a meal idea not yet pinned to a day.

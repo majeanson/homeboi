@@ -1,6 +1,7 @@
 import { CATS } from '../../lib/cats'
 import { tintInk } from '../../lib/colors'
 import { formatTime } from '../../lib/format'
+import { SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
 import { type Lang } from '../../i18n'
 import { Act } from './Act'
 import { colorOf, nameOf, type BoardData, type Dict, type EventRow } from './types'
@@ -151,7 +152,13 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
           </div>
           {/* The whole day's table — every planned slot, whoever's cooking. */}
           {data.todayMeals.map((m) => (
-            <Act key={m.id} cat="meal" title={`${slotLabel(m.slot)} · ${m.title}`} who={cookLine(m.cook_member_id)} />
+            <Act
+              key={m.id}
+              cat="meal"
+              icon={SLOT_ICON_NAME[m.slot as MealSlot]}
+              title={`${slotLabel(m.slot)} · ${m.title}`}
+              who={cookLine(m.cook_member_id)}
+            />
           ))}
           {unassigned.map((e) => (
             <Act

@@ -6,7 +6,8 @@ import { api, ApiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { formatWeekday } from '../lib/format'
-import { MEAL_SLOTS, SLOT_ICON, type MealSlot } from '../lib/mealSlots'
+import { type MealSlot } from '../lib/mealSlots'
+import { SlotPicker } from './kitchen/SlotPicker'
 import { OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { MEALS_KEY, PANTRY_KEY, type MealsData } from './kitchen/types'
@@ -31,7 +32,7 @@ interface FormMember { id: string; display_name: string; is_child: number }
 // each --*-wash); deep stays concrete hex (the glyph ink reads on both surfaces).
 const TYPES: { type: CaptureType; icon: IconName; deep: string; wash: string }[] = [
   { type: 'event', icon: 'calendar-blank-bold', deep: '#5891AC', wash: 'var(--sky-wash)' },
-  { type: 'meal', icon: 'carrot-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
+  { type: 'meal', icon: 'bowl-food-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
   { type: 'task', icon: 'hand-heart-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
   { type: 'list-item', icon: 'sparkle-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
   { type: 'pantry-low', icon: 'carrot-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
@@ -403,19 +404,9 @@ export function AddSheet({
                   </option>
                 ))}
               </select>
-              <select
-                className="input"
-                value={mealSlot}
-                onChange={(e) => setMealSlot(e.target.value as MealSlot)}
-                aria-label={t.kitchen.planMeal}
-              >
-                {MEAL_SLOTS.map((s) => (
-                  <option key={s} value={s}>
-                    {SLOT_ICON[s]} {t.kitchen.slots[s]}
-                  </option>
-                ))}
-              </select>
             </div>
+            {/* Slot as icon chips, not a <select> (an <option> can't hold an SVG). */}
+            <SlotPicker value={mealSlot} onChange={setMealSlot} />
             <div className="sheet__field">
               <Icon name="pencil-simple-bold" size={20} color="var(--ink-faint)" />
               <input

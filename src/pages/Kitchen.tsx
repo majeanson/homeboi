@@ -22,8 +22,9 @@ import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { useMealSuggest } from '../components/kitchen/useMealSuggest'
 import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type DayNotesData, type PantryData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
+import { MealRows } from '../components/kitchen/MealRows'
 import { RecipePickerMenu } from '../components/kitchen/RecipePickerMenu'
-import { SIDE_SLOTS, SLOT_ICON } from '../lib/mealSlots'
+import { SIDE_SLOTS, SLOT_ICON_NAME } from '../lib/mealSlots'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
 // browse the book — one sub-tab at a time. The page owns the queries (one unauth
@@ -75,6 +76,21 @@ export function Kitchen() {
     } catch {
       /* keep the editor open so the clear can be retried */
     }
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
+  }
+
+  // Reorder one meal within its slot (↑/↓). The server renumbers the slot.
+  async function moveMeal(id: string, dir: 'up' | 'down') {
+    await api('meals', { method: 'POST', body: { action: 'move', id, dir } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
+  }
+  // Easy clearing: wipe one slot's meals, or a whole day's.
+  async function clearSlotMeals(date: number, slot: string) {
+    await api('meals', { method: 'POST', body: { action: 'clear', date, slot } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
+  }
+  async function clearDay(date: number) {
+    await api('meals', { method: 'POST', body: { action: 'clear', date } }).catch(() => {})
     qc.invalidateQueries({ queryKey: MEALS_KEY })
   }
 
@@ -181,8 +197,9 @@ export function Kitchen() {
     const meal = days.find((d) => d.date === date && d.slot === 'supper')
     return { date, meal }
   })
-  // date → (slot → meal) for the breakfast/lunch/snack chips under each day.
-  const slotMeal = (date: number, slot: string) => days.find((d) => d.date === date && d.slot === slot)
+  // date+slot → its planned meals, in order (a slot holds several now). Server
+  // already orders by position; this just filters the flat list.
+  const mealsFor = (date: number, slot: string) => days.filter((d) => d.date === date && d.slot === slot)
   // date → its day note (the per-day memo), if any.
   const noteFor = (date: number) => dayNotesQ.data?.notes?.find((n) => n.date === date)
 
@@ -205,7 +222,7 @@ export function Kitchen() {
     toggleStaple,
   } = useMealPlanning(ai, profileId)
   const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, confirmShop, shoppableCount } =
-    useRecipeShop(week, recipeForMeal, listItems)
+    useRecipeShop(days, recipeForMeal, listItems)
   const suggest = useMealSuggest(recipes, ai, lowItems, listItems)
 
   // Plan a recipe onto ANY slot (the shared picker's onPick). Souper keeps its
@@ -218,7 +235,7 @@ export function Kitchen() {
     setMealText('')
     setSlotText('')
     if (slot === 'supper' && pickWithStaples) {
-      chooseRecipeForMeal(date, r)
+      chooseRecipeForMeal(date, slot, r)
       return
     }
     await api('meals', { method: 'POST', body: { date, slot, title: r.title, recipeId: r.id } }).catch(() => {})
@@ -390,6 +407,8 @@ export function Kitchen() {
               const isToday = date === weekStart
               const isTomorrow = date === weekStart + 86400
               const rel = isToday ? t.board.today : isTomorrow ? t.board.tomorrow : null
+              const suppers = mealsFor(date, 'supper') // a day can hold several
+              const dayMealCount = days.filter((d) => d.date === date).length
               return (
               <li
                 key={date}
@@ -416,6 +435,7 @@ export function Kitchen() {
                     <span className="kitchen__day-add">＋</span>
                   )}
                 </span>
+                <div className="kitchen__day-body">
                 {staplePrompt?.date === date ? (
                   <div className="kitchen__staples">
                     <p className="kitchen__staples-q mono">
@@ -443,6 +463,7 @@ export function Kitchen() {
                         onClick={() =>
                           saveMeal(
                             staplePrompt.date,
+                            staplePrompt.slot,
                             staplePrompt.title,
                             staplePrompt.options.filter((o) => o.on).map((o) => o.item),
                             staplePrompt.recipeId,
@@ -454,19 +475,30 @@ export function Kitchen() {
                       <button
                         type="button"
                         className="btn btn--ghost mono"
-                        onClick={() => saveMeal(staplePrompt.date, staplePrompt.title, [], staplePrompt.recipeId)}
+                        onClick={() => saveMeal(staplePrompt.date, staplePrompt.slot, staplePrompt.title, [], staplePrompt.recipeId)}
                       >
                         {t.kitchen.staplesSkip}
                       </button>
                     </div>
                   </div>
-                ) : editDate === date ? (
+                ) : (
+                  <>
+                    <MealRows
+                      meals={suppers}
+                      recipeFor={recipeForMeal}
+                      memberName={memberName}
+                      onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
+                      onRemove={clearMeal}
+                      onMove={moveMeal}
+                      onClearAll={() => clearSlotMeals(date, 'supper')}
+                    />
+                    {editDate === date ? (
                   <div className="kitchen__day-edit-wrap">
                     <form
                       className="kitchen__day-edit"
                       onSubmit={(e) => {
                         e.preventDefault()
-                        beginSetMeal(date)
+                        beginSetMeal(date, 'supper')
                       }}
                     >
                       <input
@@ -491,30 +523,19 @@ export function Kitchen() {
                         {staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
                       </button>
                     </form>
-                    {(recipes.length > 0 || meal) && (
+                    {recipes.length > 0 && (
                       <div className="kitchen__day-recipes">
                         <div className="kitchen__day-recipes-row">
-                          {recipes.length > 0 && (
-                            <button
-                              type="button"
-                              className="btn btn--ghost mono kitchen__pick-recipe"
-                              onClick={() =>
-                                setRecipePickFor(pickOpenFor(date, 'supper') ? null : { date, slot: 'supper' })
-                              }
-                              aria-expanded={pickOpenFor(date, 'supper')}
-                            >
-                              📖 {t.kitchen.chooseRecipe}
-                            </button>
-                          )}
-                          {meal && (
-                            <button
-                              type="button"
-                              className="btn btn--ghost mono kitchen__clear-meal"
-                              onClick={() => clearMeal(meal.id)}
-                            >
-                              🗑 {t.kitchen.clearMeal}
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            className="btn btn--ghost mono kitchen__pick-recipe"
+                            onClick={() =>
+                              setRecipePickFor(pickOpenFor(date, 'supper') ? null : { date, slot: 'supper' })
+                            }
+                            aria-expanded={pickOpenFor(date, 'supper')}
+                          >
+                            📖 {t.kitchen.chooseRecipe}
+                          </button>
                         </div>
                         {pickOpenFor(date, 'supper') && (
                           <>
@@ -540,35 +561,21 @@ export function Kitchen() {
                       </div>
                     )}
                   </div>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      className="kitchen__day-meal"
-                      onClick={() => {
-                        setEditDate(date)
-                        setMealText(meal?.title ?? '')
-                      }}
-                    >
-                      {meal?.title ?? <span className="kitchen__day-empty mono">{t.kitchen.planShort}</span>}
-                    </button>
-                    {meal && recipeForMeal(meal) && (
+                    ) : (
                       <button
                         type="button"
-                        className="kitchen__day-recipe-link"
-                        onClick={() => nav(`/kitchen/recipe/${recipeForMeal(meal)!.id}`)}
-                        aria-label={t.recipes.title}
-                        title={t.recipes.title}
+                        className="kitchen__day-meal"
+                        onClick={() => {
+                          setEditDate(date)
+                          setMealText('')
+                        }}
                       >
-                        📖
+                        {suppers.length ? (
+                          <span className="kitchen__day-add-more mono">＋ {t.kitchen.addAnother}</span>
+                        ) : (
+                          <span className="kitchen__day-empty mono">{t.kitchen.planShort}</span>
+                        )}
                       </button>
-                    )}
-                    {/* A kid suggested this supper into an empty slot — a parent sees
-                        whose idea it was, and can keep it or tap to change it. */}
-                    {meal?.suggested_by != null && (
-                      <span className="kitchen__day-sugg mono">
-                        💡 {memberName(meal.suggested_by) || t.kitchen.suggested}
-                      </span>
                     )}
                   </>
                 )}
@@ -580,104 +587,116 @@ export function Kitchen() {
                     souper's grocery-staples step. */}
                 <div className="kitchen__slots">
                   {SIDE_SLOTS.map((slot) => {
-                    const sm = slotMeal(date, slot)
+                    const slotMeals = mealsFor(date, slot)
                     const editing = editSlot?.date === date && editSlot.slot === slot
-                    const linked = sm ? recipeForMeal(sm) : undefined
-                    return editing ? (
-                      <div key={slot} className="kitchen__slot-edit-wrap">
-                        <form
-                          className="kitchen__slot-edit"
-                          onSubmit={(e) => {
-                            e.preventDefault()
-                            saveSlot(date, slot, slotText)
-                          }}
-                        >
-                          <input
-                            className="input"
-                            autoFocus
-                            value={slotText}
-                            onChange={(e) => setSlotText(e.target.value)}
-                            placeholder={t.kitchen.slots[slot]}
-                            aria-label={t.kitchen.slots[slot]}
-                          />
-                          {slotText && (
+                    return (
+                      <div key={slot} className="kitchen__slot-wrap">
+                        <div className="kitchen__slot-head">
+                          <Icon name={SLOT_ICON_NAME[slot]} size={16} color="var(--ink-soft)" />
+                          <span className="kitchen__slot-label">{t.kitchen.slots[slot]}</span>
+                        </div>
+                        <MealRows
+                          meals={slotMeals}
+                          recipeFor={recipeForMeal}
+                          memberName={memberName}
+                          onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
+                          onRemove={clearMeal}
+                          onMove={moveMeal}
+                          onClearAll={() => clearSlotMeals(date, slot)}
+                        />
+                        {editing ? (
+                          <div className="kitchen__slot-edit-wrap">
+                            <form
+                              className="kitchen__slot-edit"
+                              onSubmit={(e) => {
+                                e.preventDefault()
+                                saveSlot(date, slot, slotText)
+                              }}
+                            >
+                              <input
+                                className="input"
+                                autoFocus
+                                value={slotText}
+                                onChange={(e) => setSlotText(e.target.value)}
+                                placeholder={t.kitchen.slots[slot]}
+                                aria-label={t.kitchen.slots[slot]}
+                              />
+                              {slotText && (
+                                <button
+                                  type="button"
+                                  className="btn btn--ghost mono kitchen__clear-text"
+                                  onClick={() => setSlotText('')}
+                                  aria-label={t.kitchen.clearText}
+                                  title={t.kitchen.clearText}
+                                >
+                                  ✕
+                                </button>
+                              )}
+                              <button type="submit" className="btn btn--ghost mono">
+                                {t.kitchen.setMeal}
+                              </button>
+                            </form>
+                            {recipes.length > 0 && (
+                              <div className="kitchen__day-recipes">
+                                <div className="kitchen__day-recipes-row">
+                                  <button
+                                    type="button"
+                                    className="btn btn--ghost mono kitchen__pick-recipe"
+                                    onClick={() => setRecipePickFor(pickOpenFor(date, slot) ? null : { date, slot })}
+                                    aria-expanded={pickOpenFor(date, slot)}
+                                  >
+                                    📖 {t.kitchen.chooseRecipe}
+                                  </button>
+                                </div>
+                                {pickOpenFor(date, slot) && (
+                                  <RecipePickerMenu
+                                    recipes={recipes}
+                                    lowItems={lowItems}
+                                    listItems={listItems}
+                                    onPick={(r) => planRecipe(date, slot, r)}
+                                  />
+                                )}
+                              </div>
+                            )}
                             <button
                               type="button"
-                              className="btn btn--ghost mono kitchen__clear-text"
-                              onClick={() => setSlotText('')}
-                              aria-label={t.kitchen.clearText}
-                              title={t.kitchen.clearText}
+                              className="btn btn--ghost mono kitchen__add-cancel"
+                              onClick={() => {
+                                setEditSlot(null)
+                                setSlotText('')
+                              }}
                             >
-                              ✕
+                              {t.common.cancel}
                             </button>
-                          )}
-                          <button type="submit" className="btn btn--ghost mono">
-                            {t.kitchen.setMeal}
-                          </button>
-                        </form>
-                        {(recipes.length > 0 || sm) && (
-                          <div className="kitchen__day-recipes">
-                            <div className="kitchen__day-recipes-row">
-                              {recipes.length > 0 && (
-                                <button
-                                  type="button"
-                                  className="btn btn--ghost mono kitchen__pick-recipe"
-                                  onClick={() => setRecipePickFor(pickOpenFor(date, slot) ? null : { date, slot })}
-                                  aria-expanded={pickOpenFor(date, slot)}
-                                >
-                                  📖 {t.kitchen.chooseRecipe}
-                                </button>
-                              )}
-                              {sm && (
-                                <button
-                                  type="button"
-                                  className="btn btn--ghost mono kitchen__clear-meal"
-                                  onClick={() => clearMeal(sm.id)}
-                                >
-                                  🗑 {t.kitchen.clearMeal}
-                                </button>
-                              )}
-                            </div>
-                            {pickOpenFor(date, slot) && (
-                              <RecipePickerMenu
-                                recipes={recipes}
-                                lowItems={lowItems}
-                                listItems={listItems}
-                                onPick={(r) => planRecipe(date, slot, r)}
-                              />
-                            )}
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span key={slot} className="kitchen__slot-wrap">
-                        <button
-                          type="button"
-                          className={'kitchen__slot' + (sm ? ' is-set' : '')}
-                          onClick={() => {
-                            setEditSlot({ date, slot })
-                            setSlotText(sm?.title ?? '')
-                          }}
-                          title={t.kitchen.slots[slot]}
-                        >
-                          <span aria-hidden="true">{SLOT_ICON[slot]}</span>
-                          <span className="kitchen__slot-label">{sm?.title ?? t.kitchen.slots[slot]}</span>
-                        </button>
-                        {linked && (
+                        ) : (
                           <button
                             type="button"
-                            className="kitchen__slot-recipe-link"
-                            onClick={() => nav(`/kitchen/recipe/${linked.id}`)}
-                            aria-label={t.recipes.title}
-                            title={t.recipes.title}
+                            className="kitchen__slot-add mono"
+                            onClick={() => {
+                              setEditSlot({ date, slot })
+                              setSlotText('')
+                            }}
                           >
-                            📖
+                            ＋ {slotMeals.length ? t.kitchen.addAnother : t.kitchen.slots[slot]}
                           </button>
                         )}
-                      </span>
+                      </div>
                     )
                   })}
                 </div>
+
+                {/* Easy clearing: wipe the whole day's meals at once. Only when
+                    there's something to clear, so an empty day stays calm. */}
+                {dayMealCount > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn--ghost mono kitchen__clear-day"
+                    onClick={() => clearDay(date)}
+                  >
+                    🗑 {t.kitchen.clearDay}
+                  </button>
+                )}
 
                 {/* The day's note — a free-text memo that isn't a meal (a pickup,
                     an outing, "souper léger"). One per day; it rides under the
@@ -742,6 +761,7 @@ export function Kitchen() {
                     </div>
                   )
                 })()}
+                </div>
               </li>
               )
             })}

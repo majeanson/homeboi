@@ -1,15 +1,16 @@
 import { useT } from '../../i18n'
-import { MEAL_SLOTS, SLOT_ICON, type MealSlot } from '../../lib/mealSlots'
+import { SLOT_TIME_ORDER, SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
+import { Icon } from '../Icon'
 
-// Pick which meal a recipe is planned into (déjeuner / dîner / souper /
-// collation). Shared by the recipe sheet's "Planifier" and the ideas pool's
+// Pick which meal a recipe is planned into (déjeuner / dîner / collation /
+// souper). Shared by the recipe sheet's "Planifier" and the ideas pool's
 // "plan it" so a recipe can land on any meal, not just supper. Defaults are the
-// caller's job; souper stays the usual choice.
+// caller's job; souper stays the usual choice. Listed in time order.
 export function SlotPicker({ value, onChange }: { value: MealSlot; onChange: (s: MealSlot) => void }) {
   const t = useT()
   return (
     <div className="slot-picker" role="group" aria-label={t.recipes.planSlot}>
-      {MEAL_SLOTS.map((s) => (
+      {SLOT_TIME_ORDER.map((s) => (
         <button
           key={s}
           type="button"
@@ -17,7 +18,7 @@ export function SlotPicker({ value, onChange }: { value: MealSlot; onChange: (s:
           onClick={() => onChange(s)}
           aria-pressed={value === s}
         >
-          <span aria-hidden="true">{SLOT_ICON[s]}</span> {t.kitchen.slots[s]}
+          <Icon name={SLOT_ICON_NAME[s]} size={16} /> {t.kitchen.slots[s]}
         </button>
       ))}
     </div>

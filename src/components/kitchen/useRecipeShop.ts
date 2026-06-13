@@ -5,15 +5,16 @@ import { normKey } from '../../lib/cookable'
 import { ingredientName } from '../../lib/ingredient'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
-import { type MealRow, type WeekDay } from './types'
+import { type MealRow } from './types'
 
-// "Shop this week", extracted from the Kitchen page: walk the planned suppers,
-// pull each matched recipe's ingredients, drop anything already on the list
-// (normalized), and confirm the rest onto the shared grocery list in one write.
-// `recipeFor` resolves a planned meal to its recipe by the exact recipe_id link
-// first (title only as a fallback), so renamed/duplicate recipes still shop.
+// "Shop this week", extracted from the Kitchen page: walk EVERY planned meal that
+// maps to a recipe (any slot, several per slot), pull each matched recipe's
+// ingredients, drop anything already on the list (normalized), and confirm the
+// rest onto the shared grocery list in one write. `recipeFor` resolves a planned
+// meal to its recipe by the exact recipe_id link first (title as a fallback), so
+// renamed/duplicate recipes still shop.
 export function useRecipeShop(
-  week: WeekDay[],
+  meals: MealRow[],
   recipeFor: (meal: MealRow) => Recipe | undefined,
   listItems: string[],
 ) {
@@ -26,10 +27,11 @@ export function useRecipeShop(
     const onList = new Set(listItems.map(normKey).filter(Boolean))
     const picked = new Set<string>()
     const items: string[] = []
-    for (const { meal } of week) {
-      if (!meal) continue
+    const seenRecipe = new Set<string>()
+    for (const meal of meals) {
       const r = recipeFor(meal)
-      if (!r) continue
+      if (!r || seenRecipe.has(r.id)) continue // a recipe planned twice shops once
+      seenRecipe.add(r.id)
       for (const ing of withoutHeadings(r.ingredients)) {
         const k = normKey(ing)
         if (!k || onList.has(k) || picked.has(k)) continue
@@ -63,9 +65,9 @@ export function useRecipeShop(
     }
   }
 
-  // How many planned suppers map to a saved recipe — the shop button only shows
+  // How many distinct recipes are planned this week — the shop button only shows
   // when there's something to gather (never a no-op).
-  const shoppableCount = week.filter((w) => w.meal && recipeFor(w.meal)).length
+  const shoppableCount = new Set(meals.map((m) => recipeFor(m)?.id).filter(Boolean)).size
 
   return { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, confirmShop, shoppableCount }
 }

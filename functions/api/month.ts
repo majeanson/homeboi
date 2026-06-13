@@ -45,10 +45,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // side so an entry near the UTC boundary still lands, then re-bucket by UTC
     // day below and clip back to [from, to).
     ctx.env.DB.prepare(
-      'SELECT id, slot, title, cook_member_id, date FROM meals WHERE household_id = ? AND date >= ? AND date < ?',
+      "SELECT id, slot, title, cook_member_id, date, position FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, CASE slot WHEN 'breakfast' THEN 0 WHEN 'lunch' THEN 1 WHEN 'snack' THEN 2 WHEN 'supper' THEN 3 ELSE 9 END, position, created_at, id",
     )
       .bind(hh, from - DAY, to + DAY)
-      .all<{ id: string; slot: string; title: string; cook_member_id: string | null; date: number }>(),
+      .all<{ id: string; slot: string; title: string; cook_member_id: string | null; date: number; position: number }>(),
     ctx.env.DB.prepare(
       'SELECT id, text, member_id, date FROM day_notes WHERE household_id = ? AND date >= ? AND date < ?',
     )

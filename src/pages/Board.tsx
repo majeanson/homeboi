@@ -19,7 +19,7 @@ import { live } from '../lib/query'
 import { weatherEmoji, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { formatClock, formatDay, formatTime } from '../lib/format'
 import { pictoFor } from '../lib/picto'
-import { SLOT_ICON, type MealSlot } from '../lib/mealSlots'
+import { SLOT_ICON_NAME, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { Notes } from '../components/board/Notes'
@@ -425,19 +425,21 @@ export function Board() {
               cards (mirrors the toddler heroes row), so weather has a real bubble
               instead of hiding in the timestamp line. The dressing tip rides under
               the temperature where it's actionable. */}
-          {(data.tonight || weather) && (
+          {(data.tonightMeals.length > 0 || weather) && (
             <div className="board-heroes">
-              {data.tonight && (
-                <div className="now-card" style={{ background: CATS.meal.wash, color: CATS.meal.deep }}>
+              {/* "Ce soir" lists EVERY supper planned for today — a day can hold more
+                  than one. Each carries the souper food icon (no carrot, no emoji). */}
+              {data.tonightMeals.map((m) => (
+                <div key={m.id} className="now-card" style={{ background: CATS.meal.wash, color: CATS.meal.deep }}>
                   <div className="blob" style={{ background: CATS.meal.color }} />
                   <div className="label">{t.board.tonight}</div>
-                  <div className="what">{data.tonight.title}</div>
-                  {cookLine(data.tonight) && <div className="who">{cookLine(data.tonight)}</div>}
+                  <div className="what">{m.title}</div>
+                  {cookLine(m) && <div className="who">{cookLine(m)}</div>}
                   <div className="icn">
-                    <Icon name={CATS.meal.icon} size={40} color={CATS.meal.color} />
+                    <Icon name={SLOT_ICON_NAME.supper} size={40} color={CATS.meal.color} />
                   </div>
                 </div>
-              )}
+              ))}
               {weather && (
                 <div className="now-card now-card--wx" style={{ background: CATS.event.wash, color: CATS.event.deep }}>
                   <div className="blob" style={{ background: CATS.event.color }} />
@@ -460,13 +462,13 @@ export function Board() {
               <>
                 {/* Today's other meals (déjeuner/dîner/collation) — supper is the
                     "Ce soir" hero above, so the rest of the day's table shows here.
-                    Each carries its slot emoji (🍳 ☀️ 🌙 🍎) so the slots read apart
-                    at a glance, like La cuisine. */}
+                    Each carries its slot food icon so the slots read apart at a
+                    glance, like La cuisine. */}
                 {otherMeals.map((m) => (
                   <Act
                     key={m.id}
                     cat="meal"
-                    emoji={SLOT_ICON[m.slot as MealSlot]}
+                    icon={SLOT_ICON_NAME[m.slot as MealSlot]}
                     when={slotLabel(m.slot)}
                     title={m.title}
                     who={cookLine(m)}
@@ -508,7 +510,7 @@ export function Board() {
             {data.tomorrowMeal && (
               <Act
                 cat="meal"
-                emoji={SLOT_ICON.supper}
+                icon={SLOT_ICON_NAME.supper}
                 when={slotLabel('supper')}
                 title={data.tomorrowMeal.title}
                 who={cookLine(data.tomorrowMeal)}
@@ -518,7 +520,7 @@ export function Board() {
               <Act
                 key={m.id}
                 cat="meal"
-                emoji={SLOT_ICON[m.slot as MealSlot]}
+                icon={SLOT_ICON_NAME[m.slot as MealSlot]}
                 when={slotLabel(m.slot)}
                 title={m.title}
                 who={cookLine(m)}

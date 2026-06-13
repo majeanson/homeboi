@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDayLong, weekdayShort } from '../../lib/format'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
+import { SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
 import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
 import { Act } from './Act'
@@ -16,7 +17,7 @@ const DAY = 86400
 // key by the server. Mirrors the families on the bento board so the calendar is a
 // faithful "is it all here?" inventory — events, meals, recurring chores, notes.
 interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; day: number }
-interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number }
+interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number }
 interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 interface MNote { id: string; text: string; member_id: string | null; day: number }
 export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[] }
@@ -171,7 +172,13 @@ export function MonthView({
                 chores, then the day note — so nothing dated is represented here
                 differently than on the day view. */}
             {sel!.meals.map((m) => (
-              <Act key={m.id} cat="meal" title={`${slotLabel(m.slot)} · ${m.title}`} who={cookLine(m.cook_member_id)} />
+              <Act
+                key={m.id}
+                cat="meal"
+                icon={SLOT_ICON_NAME[m.slot as MealSlot]}
+                title={`${slotLabel(m.slot)} · ${m.title}`}
+                who={cookLine(m.cook_member_id)}
+              />
             ))}
             {sel!.events.map((e) => (
               <Act

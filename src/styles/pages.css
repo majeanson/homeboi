@@ -288,8 +288,11 @@
   flex-basis: 100%;
   min-width: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  /* Stack the side slots full-width — each is now a list with per-item controls,
+     too wide to sit three-across on a phone. */
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
   margin-top: 0.3rem;
 }
 /* The day's free-text note — a memo line under the slots. Full-width so it sits
@@ -403,6 +406,128 @@
   flex: 1;
   display: flex;
   gap: 0.5rem;
+}
+
+/* ── Meals as lists per slot (N per slot, migration 0033) ─────────────────── */
+/* Everything in a day after the date badge stacks vertically in a width-capped
+   column, so the per-meal control rows never push the card past the viewport. */
+.kitchen__day-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+/* Each side slot is now a small stack: an icon+label header, the list of planned
+   meals, and an add control (was a single inline chip). */
+.kitchen__slot-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+  width: 100%;
+  min-width: 0;
+}
+.kitchen__slot-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.kitchen__slot-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  align-self: flex-start;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-faint);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  min-height: 2.4rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+/* The planned meals in one slot — a stacked list of rows with per-item controls. */
+.kitchen__meal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex-basis: 100%;
+  /* Let rows clip long/unbreakable titles instead of forcing the card wider. */
+  min-width: 0;
+  width: 100%;
+}
+/* Grid (not flex) so the title column can shrink to 0 — minmax(0,1fr) truncates a
+   long/unbreakable title instead of pushing the fixed control cluster off-card. */
+.kitchen__meal-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--paper-deep);
+  border-radius: 0.6rem;
+  padding: 0.3rem 0.5rem;
+  min-width: 0;
+}
+.kitchen__meal-main {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.kitchen__meal-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kitchen__meal-ctl {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+.kitchen__meal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: 0.4rem;
+}
+.kitchen__meal-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.kitchen__meal-remove {
+  color: var(--ink-faint);
+  font-size: 0.95rem;
+}
+.kitchen__meal-clearall {
+  margin-top: 0.15rem;
+}
+.kitchen__day-add-more {
+  color: var(--ink-faint);
+}
+.kitchen__add-cancel {
+  align-self: flex-start;
+}
+.kitchen__clear-day {
+  flex-basis: 100%;
+  align-self: flex-start;
+  margin-top: 0.3rem;
+  color: var(--ink-faint);
 }
 /* The meal -> grocery staple confirm step (B3). Breaks the day row into a
    column: dish + chips + the two save actions. */
