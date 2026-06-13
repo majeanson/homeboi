@@ -44,7 +44,8 @@ test('st: fresh household settings welcome', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await mockApi(page, { fresh: true })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto('/settings')
+  // Guide is the default tab now; deep-link to La maisonnée to capture the welcome.
+  await page.goto('/settings?tab=household')
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
   await page.waitForTimeout(600)
   await shot(page, 'fresh-settings')

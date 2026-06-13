@@ -89,8 +89,9 @@ test.describe('navigation', () => {
     // The create POST fires, then the flow lands in Réglages ▸ La maisonnée
     // (the obvious next step: add your family).
     await expectApi(page, 'POST', 'auth/signup', () => submit.click())
-    await expect(page).toHaveURL(/\/settings/)
+    await expect(page).toHaveURL(/\/settings\?tab=household$/)
     await expect(page.locator('.operator__tabs')).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'La maisonnée' })).toHaveAttribute('aria-selected', 'true')
   })
 
   test('hub nav switches every section and marks the active tab', async ({ page }) => {
@@ -140,8 +141,9 @@ test.describe('settings tabs', () => {
     await settle(page, '.operator__tabs')
     const tabs = page.getByRole('tab')
     const n = await tabs.count()
-    // 13 sections: the 12 originals + the AI-error journal (ai-log).
-    expect(n).toBe(13)
+    // 14 sections: the in-app Guide (now first/default) + the 12 originals +
+    // the AI-error journal (ai-log).
+    expect(n).toBe(14)
     for (let i = 0; i < n; i++) {
       await tabs.nth(i).click()
       await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true')
@@ -219,7 +221,9 @@ test('login posts credentials and lands on the board', async ({ page }) => {
 
 test.describe('settings forms', () => {
   test.beforeEach(async ({ page }) => {
-    await APP('/settings')(page)
+    // Guide is now the default settings tab; deep-link to La maisonnée so the
+    // member form is the one showing (other cases here click their own tab).
+    await APP('/settings?tab=household')(page)
     await settle(page, '.operator__tabs')
   })
 
@@ -836,7 +840,7 @@ test.describe('recurring chores on the board', () => {
   })
 
   test('a chore can be given a weekly schedule in settings (PATCH recur)', async ({ page }) => {
-    await APP('/settings#chores')(page)
+    await APP('/settings?tab=chores')(page)
     await settle(page, '.operator__tabs')
     await page.getByRole('tab', { name: 'Corvées' }).click()
     // Open the schedule editor on the first chore, pick weekly → PATCH recur.

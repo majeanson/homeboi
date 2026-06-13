@@ -51,8 +51,9 @@ export function Signup() {
       // role they already chose instead of stamping the phone layout on a wall.
       if (!(chosen && surface === 'kiosk')) setSurface('mobile')
       // Land in Réglages ▸ La maisonnée so the obvious next step (add your
-      // family) is right there.
-      nav('/settings#household')
+      // family) is right there. (?tab= selects the sub-tab — Guide is the
+      // default now; a bare /settings would land there instead. See tabParam.)
+      nav('/settings?tab=household')
     } catch (err) {
       setError(isStatus(err, 409) ? 'exists' : isStatus(err, 403) ? 'badInvite' : 'error')
     } finally {

@@ -162,7 +162,7 @@ test('sheet-add-routine', async ({ page }) => {
 // Lives in the agenda section's EventForm.
 test('settings-recur-weekly', async ({ page }) => {
   await boot(page, '/settings')
-  await page.locator('.operator__tab').nth(1).click() // agenda
+  await page.getByRole('tab', { name: 'Rendez-vous' }).click() // agenda
   await page.locator('.recur select').first().waitFor({ state: 'visible' })
   await page.locator('.recur select').first().selectOption('weekly')
   await page.locator('.recur__days').waitFor({ state: 'visible' })
@@ -174,7 +174,7 @@ test('settings-recur-weekly', async ({ page }) => {
 // in the routines section's RoutineForm.
 test('settings-deck-palette', async ({ page }) => {
   await boot(page, '/settings')
-  await page.locator('.operator__tab').nth(3).click() // routines
+  await page.getByRole('tab', { name: 'Routines (mode enfant)' }).click() // routines
   await page.locator('.deck__add').waitFor({ state: 'visible' })
   await page.locator('.deck__add').click() // add a blank card
   await page.locator('.deck__emoji').first().click() // open its palette
@@ -186,7 +186,7 @@ test('settings-deck-palette', async ({ page }) => {
 // Rename-a-tag inline form (Réglages ▸ Recettes ▸ used-tags). recipes = nth(5).
 test('settings-tag-rename', async ({ page }) => {
   await boot(page, '/settings')
-  await page.locator('.operator__tab').nth(5).click() // recipes (tags)
+  await page.getByRole('tab', { name: 'Recettes' }).click() // recipes (tags)
   await page.locator('.tag-admin__row').first().waitFor({ state: 'visible' })
   // First button in a row is "Renommer"; the second (.operator__del) is "Retirer".
   await page.locator('.tag-admin__row').first().locator('button').first().click()

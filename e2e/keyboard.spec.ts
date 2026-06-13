@@ -89,7 +89,8 @@ for (const d of DEVICES) {
 
   // --- Settings: add-a-person form (inline, not a sheet) ---
   test(`kb ${d.name}: settings add-person`, async ({ page }) => {
-    await open(page, '/settings')
+    // Guide is the default settings tab now; deep-link to La maisonnée for the form.
+    await open(page, '/settings?tab=household')
     const nom = page.getByPlaceholder('Nom')
     await nom.scrollIntoViewIfNeeded()
     await nom.focus()
