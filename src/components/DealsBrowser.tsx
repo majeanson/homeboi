@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
@@ -7,14 +7,15 @@ import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { existingListId, stageDeal } from '../lib/picks'
-import { useModal } from '../lib/useModal'
-import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
+import { useEscapeKey } from '../lib/sceneNav'
 
 // Standalone flyer/deals browser: search what's on sale near the household this
 // week and add items straight to the shared list (or open the full flyer and add
 // from there). Same /api/deals lookup as the price-match proof sheet, but query-
-// driven instead of pinned to one list item — reached from the Liste page. Read-
-// only; degrades to a clear message on nothing / no postal.
+// driven instead of pinned to one list item — its own route (/liste/circulaires)
+// reached from the Liste page, so it's a full-screen scene with native back, not
+// a sheet stacked over the list. Read-only; degrades to a clear message on
+// nothing / no postal.
 
 // A few common Québec grocery staples to seed browsing with no typing. Flipp
 // search is bilingual-tolerant, but show the suggestions in the UI language.
@@ -45,10 +46,6 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
-  const overlayRef = useRef<HTMLDivElement>(null)
-  const sheetRef = useRef<HTMLDivElement>(null)
-  useModal(overlayRef, onClose)
-  useSwipeToDismiss(sheetRef, onClose)
   // Two ways to browse: by article (search) or by magasin (open a store's flyer).
   const [mode, setMode] = useState<'item' | 'store'>('item')
   const [input, setInput] = useState('')
@@ -57,6 +54,9 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const [store, setStore] = useState<string | null>(null)
   const [added, setAdded] = useState<Set<string>>(new Set())
   const [staged, setStaged] = useState<Set<string>>(new Set())
+  // Esc leaves the scene — but not while the full flyer is open over it (that
+  // overlay owns Esc), so one keypress doesn't pop both layers.
+  useEscapeKey(onClose, !flyer)
 
   // Day-scoped cache, shared with the price-match sheet's ['deals', q, day] key —
   // so a term browsed here is instant if matched there (and vice-versa).
@@ -128,29 +128,18 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const bestKey = shown.find((d) => d.unitPrice != null)
 
   return (
-    <div
-      ref={overlayRef}
-      className="pm-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t.shop.browseTitle}
-      onClick={(e) => {
-        // Only the bare backdrop closes — not bubbled clicks from the sheet or
-        // the full-flyer viewer layered on top (those would dump you back to the
-        // list when you only meant to pick an item).
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div ref={sheetRef} className="pm-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="pm-sheet__head">
-          <div>
-            <div className="hand-tag">{t.shop.browseTitle}</div>
-            <h2 className="pm-sheet__title">{t.shop.browseHint}</h2>
-          </div>
-          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-            ✕
-          </button>
+    <div className="scene" aria-label={t.shop.browseTitle}>
+      <div className="scene__head">
+        <div>
+          <div className="hand-tag">{t.shop.browseTitle}</div>
+          <h2 className="pm-sheet__title">{t.shop.browseHint}</h2>
         </div>
+        <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
+          ✕
+        </button>
+      </div>
+
+      <div className="scene__body">
 
         {/* Mode switch (search vs browse-a-store) — a segmented control, not chips,
             so it doesn't read as another filter row above the actual filters. */}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon } from '../components/Icon'
@@ -11,7 +12,6 @@ import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { PriceMatchSheet } from '../components/PriceMatchSheet'
 import { ListItemSheet } from '../components/ListItemSheet'
-import { DealsBrowser } from '../components/DealsBrowser'
 import { CashierMode } from '../components/CashierMode'
 import { QuickAddPanel, type QuickItem } from '../components/QuickAddPanel'
 import { fetchGhosts } from '../lib/ghost'
@@ -154,11 +154,11 @@ export function Liste() {
   const t = useT()
   const { audience } = useAudience()
   const qc = useQueryClient()
+  const nav = useNavigate()
   const undo = useUndoToast()
   const [proofFor, setProofFor] = useState<{ id: string; text: string; terms: string[] } | null>(null)
   const [editItem, setEditItem] = useState<ListRow | null>(null)
   const [cashierOpen, setCashierOpen] = useState(false)
-  const [browseOpen, setBrowseOpen] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
   const [auto, setAuto] = useState(false)
   // Items whose "Clear checked" delete is DEFERRED behind the undo toast. Filtered
@@ -457,7 +457,7 @@ export function Liste() {
 
       {/* Shopping tools, always one tap away — no mode to switch into. */}
       <div className="list-actions">
-        <button type="button" className="btn btn--ghost mono" onClick={() => setBrowseOpen(true)}>
+        <button type="button" className="btn btn--ghost mono" onClick={() => nav('/liste/circulaires')}>
           🔎 {t.shop.browse}
         </button>
         {list.length > 0 && (
@@ -493,8 +493,6 @@ export function Liste() {
           onClose={() => setCashierOpen(false)}
         />
       )}
-
-      {browseOpen && <DealsBrowser onClose={() => setBrowseOpen(false)} />}
     </main>
   )
 }

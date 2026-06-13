@@ -461,6 +461,45 @@
   color: var(--clay, #b3463a);
 }
 
+/* --- Full-screen routed scene -------------------------------------------- */
+/* A scene is a ROUTE, not an overlay: circulaires, cashier, recipe, cook. It
+   owns the whole viewport (no scrim, nothing stacked behind), so it's a plain
+   column — sticky head + one scroll body — pinned to the VISIBLE viewport so its
+   content rides above the on-screen keyboard like the sheets do. Native back /
+   the ✕ leave it; there's no swipe-to-dismiss to fake (the real back-swipe is
+   the gesture now). */
+.scene {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--vvt, 0px);
+  height: 100dvh;
+  height: var(--vvh, 100dvh);
+  z-index: 1;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+}
+.scene__head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 22px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.scene__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 22px calc(28px + env(safe-area-inset-bottom, 0px));
+  max-width: 46rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
 /* --- Price-match proof sheet --------------------------------------------- */
 .pm-overlay {
   position: fixed;

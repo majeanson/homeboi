@@ -113,7 +113,7 @@ test('list-checked', async ({ page }) => {
 test('list-deals-start', async ({ page }) => {
   await boot(page, '/liste')
   await page.getByRole('button', { name: /Parcourir/ }).click()
-  await page.locator('.pm-sheet').waitFor({ state: 'visible' })
+  await page.locator('.scene').waitFor({ state: 'visible' })
   await page.locator('.deal-stores').first().waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'list-deals-start-phone', false)

@@ -105,7 +105,7 @@ for (const d of DEVICES) {
     { name: 'liste-addsheet', path: '/liste', field: '.sheet.show input', go: async (p) => void (await p.locator('.add-fab').click()) },
     { name: 'liste-item-sheet', path: '/liste', field: '.pm-sheet input', go: async (p) => void (await p.getByText('Pain', { exact: true }).first().click()) },
     { name: 'quickadd', path: '/liste', field: '.pm-sheet input', go: async (p) => void (await p.getByRole('button', { name: /Ajout rapide/ }).first().click()) },
-    { name: 'deals-browser', path: '/liste', field: '.pm-sheet input', go: async (p) => void (await p.getByRole('button', { name: /Parcourir les circulaires/ }).click()) },
+    { name: 'deals-browser', path: '/liste', field: '.scene input', go: async (p) => void (await p.getByRole('button', { name: /Parcourir les circulaires/ }).click()) },
     { name: 'board-addsheet', path: '/board', field: '.sheet.show input', go: async (p) => void (await p.locator('.add-fab').click()) },
     { name: 'kitchen-addsheet', path: '/kitchen', field: '.sheet.show input', go: async (p) => void (await p.locator('.add-fab').click()) },
   ]

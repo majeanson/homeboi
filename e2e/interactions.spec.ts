@@ -714,7 +714,7 @@ test.describe('list', () => {
 
   test('the flyer browser opens', async ({ page }) => {
     await page.getByRole('button', { name: /Parcourir/ }).click()
-    await expect(page.locator('.pm-overlay .deals-search')).toBeVisible()
+    await expect(page.locator('.scene .deals-search')).toBeVisible()
   })
 
   test('a browsed deal LINKS onto the matching list item, not a new specific-named line', async ({ page }) => {

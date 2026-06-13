@@ -20,6 +20,9 @@ const Routines = lazy(() => import('./pages/Routines').then((m) => ({ default: m
 const Liste = lazy(() => import('./pages/Liste').then((m) => ({ default: m.Liste })))
 const Pair = lazy(() => import('./pages/Pair').then((m) => ({ default: m.Pair })))
 const Setup = lazy(() => import('./pages/Setup').then((m) => ({ default: m.Setup })))
+// Full-screen scenes — real routes (native back, deep-linkable), rendered
+// standalone (no hub chrome) because they take over the whole viewport.
+const CirculairesPage = lazy(() => import('./pages/CirculairesPage').then((m) => ({ default: m.CirculairesPage })))
 
 function Loading() {
   const t = useT()
@@ -57,6 +60,7 @@ export function AppRoutes() {
         </Route>
 
         {/* Standalone surfaces (no hub chrome). */}
+        <Route path="/liste/circulaires" element={<CirculairesPage />} />
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
