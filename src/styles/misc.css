@@ -277,9 +277,14 @@
   padding: 0.9rem 0.6rem;
   border-radius: var(--radius-md);
   text-align: center;
+  /* Don't let a long name blow the grid track past its 1fr and overflow. */
+  min-width: 0;
 }
 .member-card__name {
   font-weight: 600;
+  max-width: 100%;
+  /* A long / unspaced name breaks inside the card instead of overflowing it. */
+  overflow-wrap: anywhere;
 }
 .member-card__actions {
   display: flex;

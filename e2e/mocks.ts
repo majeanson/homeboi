@@ -365,8 +365,26 @@ const ROUTES: Record<string, unknown> = {
 // `unauthorized: true` 401s every data route (auth/me and health stay 200) —
 // simulates a revoked device token / dead session for the recovery flows.
 // `fresh: true` empties members + board — the just-signed-up household.
-export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthorized?: boolean; fresh?: boolean } = {}) {
+// `longText: true` stuffs every text-ish field with a long phrase + an unbreakable
+// long word — a layout stress test for truncation / overflow / word-break.
+export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthorized?: boolean; fresh?: boolean; longText?: boolean } = {}) {
   const signedIn = opts.signedIn ?? true
+  // Deep-replace user-content strings with a worst-case value: a real long phrase
+  // (wrap stress) plus an unbreakable word (word-break / overflow stress).
+  const LONG = 'à la bolognaise maison avec béchamel gratinée Supercalifragilisticexpialidocieux'
+  const TEXT_KEYS = new Set(['display_name', 'title', 'text', 'name', 'label', 'merchant', 'memberName'])
+  const longify = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(longify)
+    if (v && typeof v === 'object') {
+      const o: Record<string, unknown> = {}
+      for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+        o[k] = typeof val === 'string' && TEXT_KEYS.has(k) && val ? `${val} ${LONG}` : longify(val)
+      }
+      return o
+    }
+    return v
+  }
+  const serve = (body: unknown) => JSON.stringify(opts.longText ? longify(body) : body)
   // A little server-side state so optimistic flows that DELETE then refetch read
   // back the change (else the board GET would resurrect a just-cleared note).
   const dismissedNotes = new Set<string>()
@@ -465,7 +483,7 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       .sort((a, b) => b.length - a.length)[0]
 
     if (key) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(ROUTES[key]) })
+      await route.fulfill({ status: 200, contentType: 'application/json', body: serve(ROUTES[key]) })
       return
     }
 

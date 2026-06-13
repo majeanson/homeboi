@@ -664,11 +664,17 @@ textarea.input {
 /* "💡 Léa" — a kid suggested this supper into an empty slot. Quiet, so it reads as
    a note beside the meal, not a second meal. */
 .kitchen__day-sugg {
-  flex: none;
+  /* Shrinkable + ellipsized so a long "suggéré par <name>" truncates instead of
+     overrunning the day card. */
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
   font-size: 0.78rem;
   color: var(--terracotta-deep);
   background: var(--terracotta-wash);
   padding: 0.15rem 0.5rem;
   border-radius: var(--radius-pill);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
