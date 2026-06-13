@@ -42,6 +42,17 @@
   gap: 10px;
   flex-wrap: wrap;
 }
+/* The "Aujourd'hui" tag with the date to its right — the top-left anchor. */
+.app-head__tagrow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.app-head__date {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
 /* The contextual help "?" beside a section title (HelpDot). Quiet by default,
    a soft ring on hover/focus — discoverable without shouting (calm). Hidden in
    the toddler lens and in expert mode at the source (component returns null). */

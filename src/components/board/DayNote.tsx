@@ -20,14 +20,19 @@ export function DayNote({
 }) {
   const t = useT()
   const speak = useSpeak()
+  // Today's own note needs no announcing — just show it. A header only appears
+  // when an explicit label carries meaning (e.g. "À préparer demain"). The
+  // aria-label keeps the section named for screen readers either way.
   const heading = label ?? t.board.dayNote
   const tint = (note.member_id ? members.find((m) => m.id === note.member_id)?.colour : null) ?? '#9BD1C9'
   const style = { '--note-tint': tint } as React.CSSProperties
   return (
     <section className={'notes day-note' + (toddler ? ' notes--kid' : '')} aria-label={heading}>
-      <div className="notes__head mono" aria-hidden="true">
-        📝 {heading}
-      </div>
+      {label && (
+        <div className="notes__head mono" aria-hidden="true">
+          📝 {label}
+        </div>
+      )}
       <div className="notes__grid">
         {toddler ? (
           <button type="button" className="note-card" style={style} onClick={() => speak(note.text)} aria-label={note.text}>

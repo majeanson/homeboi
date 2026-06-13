@@ -341,14 +341,15 @@ export function Board() {
           bottom-right here just like every other tab. */}
       <div className="app-head">
         <div>
-          <div className="hand-tag">{t.board.today}</div>
+          <div className="app-head__tagrow">
+            <span className="hand-tag">{t.board.today}</span>
+            <span className="app-head__date mono">{formatDay(Math.floor(Date.now() / 1000), lang)}</span>
+          </div>
           <div className="app-head__titlerow">
             <h1 className="greet">{me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]}</h1>
             <HelpDot card="board" />
           </div>
-          <div className="subgreet">
-            {formatDay(Math.floor(Date.now() / 1000), lang)} · {clock}
-          </div>
+          <div className="subgreet">{clock}</div>
         </div>
         <div className="board-head__right">
           {surface === 'mobile' && (
