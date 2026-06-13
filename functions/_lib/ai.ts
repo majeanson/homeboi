@@ -29,7 +29,7 @@ export type IntentType = 'event' | 'task' | 'list-item' | 'pantry-low' | 'meal' 
 export interface Intent {
   type: IntentType
   // Loose payload — each route validates the fields it needs. Kept permissive
-  // because an 8B model's JSON is good but not a contract.
+  // because even a strong model's JSON is good but not a contract.
   payload: {
     title?: string
     item?: string
@@ -41,7 +41,12 @@ export interface Intent {
   degraded?: boolean
 }
 
-const MODEL = '@cf/meta/llama-3.1-8b-instruct'
+// Text model for every capture/recipe/recap/suggestion call. NOTE: the original
+// '@cf/meta/llama-3.1-8b-instruct' was RETIRED by Cloudflare on 2026-05-30, which
+// silently broke every text AI feature (AI.run threw → graceful-degrade swallowed
+// it). Moved to the current recommended instruct model. Keep this in sync with the
+// Workers AI changelog when models are deprecated.
+const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
 
 // Few-shot, JSON-only, one prompt per language. The FR register hints
 // ("souper", "vidanges", "pus de") are deliberately Québécois so the router
@@ -79,6 +84,29 @@ const VALID: ReadonlySet<IntentType> = new Set([
   'note',
 ])
 
+// A per-request sink so a handler can learn that an AI call failed even though the
+// helper degraded gracefully and returned a safe fallback. The handler passes a
+// fresh object, reads `.error` after the call, and (when set) signals the client
+// via the X-AI-Error header → the UI pops an "AI failed" notice the user can
+// acknowledge into the persistent log. Optional: callers that don't care omit it.
+export interface AiReport {
+  error: string | null
+}
+
+// Surface an AI failure instead of letting the graceful-degrade catch swallow it
+// in silence. A retired model, a Workers AI outage, or a malformed call now shows
+// up in `wrangler tail` and the Worker's dashboard logs with the failing function
+// named — so the next breakage is visible in minutes, not after two weeks of
+// "the AI features seem broken." The caller STILL degrades; this only observes,
+// and returns the human message so the caller can also stash it on an AiReport.
+// (This exists because '@cf/meta/llama-3.1-8b-instruct' was retired 2026-05-30 and
+// every feature failed quietly — see the MODEL note above.)
+function logAi(where: string, err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err)
+  console.error(`[ai] ${where} failed:`, msg)
+  return msg
+}
+
 function extractJson(raw: string): unknown {
   // Models sometimes wrap JSON in prose or a ```json fence. Grab the first
   // balanced-looking object rather than trusting the whole string.
@@ -92,7 +120,12 @@ function extractJson(raw: string): unknown {
   }
 }
 
-export async function classifyCapture(env: Env, text: string, lang: Lang = 'fr'): Promise<Intent> {
+export async function classifyCapture(
+  env: Env,
+  text: string,
+  lang: Lang = 'fr',
+  report?: AiReport,
+): Promise<Intent> {
   const trimmed = text.trim()
   if (!env.AI) {
     // No binding — keep the words, let the UI ask what kind it was.
@@ -117,8 +150,9 @@ export async function classifyCapture(env: Env, text: string, lang: Lang = 'fr')
       return { type: 'note', payload: { text: trimmed } }
     }
     return { type: parsed.type as IntentType, payload: parsed.payload ?? { text: trimmed } }
-  } catch {
+  } catch (err) {
     // Workers AI hiccup is non-essential to capturing the words; degrade.
+    if (report) report.error = logAi('classifyCapture', err)
     return { type: 'note', payload: { text: trimmed }, degraded: true }
   }
 }
@@ -145,7 +179,8 @@ Exemple : ["pâtes","sauce tomate","viande hachée"].`
       max_tokens: 120,
     })) as { response?: string }
     return extractStringArray(res.response ?? '')
-  } catch {
+  } catch (err) {
+    logAi('mealStaples', err)
     return []
   }
 }
@@ -159,7 +194,12 @@ export interface RecipeDraft {
   ingredients: string[]
   steps: string[]
 }
-export async function draftRecipe(env: Env, title: string, lang: Lang = 'fr'): Promise<RecipeDraft> {
+export async function draftRecipe(
+  env: Env,
+  title: string,
+  lang: Lang = 'fr',
+  report?: AiReport,
+): Promise<RecipeDraft> {
   const dish = title.trim()
   if (!env.AI || !dish) return { ingredients: [], steps: [] }
   const prompt =
@@ -180,7 +220,8 @@ Exemple : {"ingredients":["400 g de pâtes","1 pot de sauce tomate","500 g de b�
     const parsed = extractJson(res.response ?? '') as { ingredients?: unknown; steps?: unknown } | null
     if (!parsed) return { ingredients: [], steps: [] }
     return { ingredients: cleanLines(parsed.ingredients, 12), steps: cleanLines(parsed.steps, 8) }
-  } catch {
+  } catch (err) {
+    if (report) report.error = logAi('draftRecipe', err)
     return { ingredients: [], steps: [] }
   }
 }
@@ -223,7 +264,8 @@ ${raw}`
     if (!parsed) return { title: null, ingredients: [], steps: [] }
     const title = typeof parsed.title === 'string' ? parsed.title.trim() || null : null
     return { title, ingredients: cleanLines(parsed.ingredients, 30), steps: cleanLines(parsed.steps, 20) }
-  } catch {
+  } catch (err) {
+    logAi('structureRecipe', err)
     return { title: null, ingredients: [], steps: [] }
   }
 }
@@ -243,6 +285,7 @@ export async function recipeFromImage(
   env: Env,
   bytes: Uint8Array,
   lang: Lang = 'fr',
+  report?: AiReport,
 ): Promise<RecipeStructured> {
   if (!env.AI || bytes.length === 0) return { title: null, ingredients: [], steps: [] }
   const prompt =
@@ -268,7 +311,8 @@ Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insèr
     if (!parsed) return { title: null, ingredients: [], steps: [] }
     const title = typeof parsed.title === 'string' ? parsed.title.trim() || null : null
     return { title, ingredients: cleanLines(parsed.ingredients, 30), steps: cleanLines(parsed.steps, 20) }
-  } catch {
+  } catch (err) {
+    if (report) report.error = logAi('recipeFromImage', err)
     return { title: null, ingredients: [], steps: [] }
   }
 }
@@ -363,7 +407,8 @@ ${list}`
         out[i] = size.trim()
       }
     }
-  } catch {
+  } catch (err) {
+    logAi('extractSizes', err)
     return names.map(() => null)
   }
   return out
@@ -380,6 +425,7 @@ export async function suggestMeals(
   lang: Lang = 'fr',
   favorites: string[] = [],
   avoid: string[] = [],
+  report?: AiReport,
 ): Promise<string[]> {
   if (!env.AI) return []
   // "avoid" = the batch the user just cycled through, so a re-ask returns DIFFERENT
@@ -405,7 +451,8 @@ Réponds UNIQUEMENT avec un tableau JSON de 10 noms de plats courts. Exemple : [
       temperature: 0.9,
     })) as { response?: string }
     return extractStringArray(res.response ?? '', 10)
-  } catch {
+  } catch (err) {
+    if (report) report.error = logAi('suggestMeals', err)
     return []
   }
 }
@@ -418,6 +465,7 @@ export async function weeklyRecap(
   env: Env,
   week: { events: string[]; meals: string[]; chores: string[] },
   lang: Lang = 'fr',
+  report?: AiReport,
 ): Promise<string | null> {
   if (!env.AI) return null
   const prompt =
@@ -439,7 +487,8 @@ Réponds seulement avec le texte du bilan.`
     })) as { response?: string }
     const out = (res.response ?? '').trim()
     return out || null
-  } catch {
+  } catch (err) {
+    if (report) report.error = logAi('weeklyRecap', err)
     return null
   }
 }

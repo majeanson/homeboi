@@ -1,5 +1,5 @@
 import type { Env } from '../_lib/env'
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { type Actor } from '../_lib/household'
 import { classifyCapture, resolveLang, type Intent } from '../_lib/ai'
@@ -20,9 +20,13 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!text) return badRequest('Texte vide.')
   const source = body?.source === 'voice' ? 'voice' : 'text'
 
+  // A fresh sink per request: if the router's AI call fails (it still degrades to
+  // a note), report.error gets the message and we tag the response so the client
+  // can pop the acknowledge-into-log notice.
+  const report = { error: null as string | null }
   const intent: Intent = body?.forceType
     ? { type: body.forceType, payload: { text, title: text, item: text } }
-    : await classifyCapture(ctx.env, text, resolveLang(ctx.env, ctx.request))
+    : await classifyCapture(ctx.env, text, resolveLang(ctx.env, ctx.request), report)
 
   const ts = nowSec()
   await ctx.env.DB.prepare(
@@ -33,7 +37,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   const routed = await routeIntent(ctx.env, actor, intent, text, ts, profileMemberId(ctx.request))
 
-  return ok({ type: intent.type, degraded: intent.degraded ?? false, routed })
+  return withAiError(ok({ type: intent.type, degraded: intent.degraded ?? false, routed }), report)
 })
 
 // The valid meal slots — the router's proposed slot is checked against these

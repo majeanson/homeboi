@@ -104,8 +104,11 @@ export function HubLayout() {
     }
   }, [surface, profileId, setMemberId])
 
-  // A locked toddler kiosk has no business in Réglages.
-  if (locked && isSettings) return <Navigate to="/board" replace />
+  const toddler = audience === 'toddler'
+  // The toddler lens has no business in Réglages — not on a locked kiosk, and
+  // not in an unlocked parent preview either (a kid mustn't reach settings via a
+  // stray /settings URL). Only the parent view opens Réglages.
+  if ((locked || toddler) && isSettings) return <Navigate to="/board" replace />
 
   if (pairingLost) {
     return (
@@ -141,15 +144,14 @@ export function HubLayout() {
     )
   }
 
-  const toddler = audience === 'toddler'
   // Capture is a parent action (the ＋ Add sheet). Not for a toddler, not in
   // settings. The floating ＋ FAB rides bottom-right on every parent tab —
   // including the mobile board (no separate in-page add button there).
   const showAdd = !locked && !isSettings && !toddler
   // Réglages hides from the nav whenever the toddler lens is up: on a locked
-  // kiosk a three-year-old must not reach settings/billing (PRD C5), and even
-  // unlocked, a kid-facing screen shouldn't dangle a gear — a parent flips back
-  // to the parent view first (the switch below), then Réglages reappears.
+  // kiosk a three-year-old must not reach settings/billing (PRD C5), and the same
+  // holds for an unlocked preview — the kid view is a one-way door, so Réglages
+  // only ever returns by relaunching back into the parent view (?kid=0).
   const tabs = locked || toddler ? TABS.filter((tab) => tab.to !== '/settings') : TABS
 
   return (
@@ -178,20 +180,22 @@ export function HubLayout() {
           </NavLink>
         ))}
 
-        {/* Parent ⇄ Enfant, right in the nav (never floating). A parent previews
-            the toddler lens on any tab and flips back the same way. NEVER shown
-            on a locked kiosk (?kid=1) — there, only relaunching without the
-            param unlocks (a deliberate adult act, PRD C5). */}
-        {!locked && (
+        {/* Parent → Enfant, right in the nav (never floating). The kid view is a
+            ONE-WAY door: this only ever enters it, and it vanishes the moment the
+            toddler lens is up — so a child has no tap back to the parent view or
+            Réglages, whether the kiosk was locked with ?kid=1 or a parent just
+            tapped in to preview. Coming back out is a deliberate adult act:
+            relaunch without ?kid=1 (or with ?kid=0). NEVER shown on a locked
+            kiosk either (PRD C5). */}
+        {!locked && !toddler && (
           <button
             type="button"
             className="hubnav__btn hubnav__peek"
-            onClick={() => setAudience(toddler ? 'parent' : 'toddler')}
-            aria-pressed={toddler}
-            aria-label={toddler ? t.audience.parentView : t.audience.kidView}
+            onClick={() => setAudience('toddler')}
+            aria-label={t.audience.kidView}
           >
-            <span className="hubnav__peek-pic" aria-hidden="true">{toddler ? '🧑' : '👶'}</span>
-            <span>{toddler ? t.audience.parent : t.audience.kid}</span>
+            <span className="hubnav__peek-pic" aria-hidden="true">👶</span>
+            <span>{t.audience.kid}</span>
           </button>
         )}
       </nav>

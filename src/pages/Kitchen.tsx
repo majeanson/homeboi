@@ -21,7 +21,7 @@ import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { useMealSuggest } from '../components/kitchen/useMealSuggest'
-import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type PantryData, type WeekDay, MEALS_KEY, MEAL_IDEAS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
+import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type DayNotesData, type PantryData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { RecipePickerMenu } from '../components/kitchen/RecipePickerMenu'
 import { SIDE_SLOTS, SLOT_ICON } from '../lib/mealSlots'
@@ -78,7 +78,40 @@ export function Kitchen() {
     qc.invalidateQueries({ queryKey: MEALS_KEY })
   }
 
+  // A free-text memo per day (déjeuner-to-collation context that isn't a meal:
+  // "souper chez mémé", "lunch froid — sortie"). One per day; editing replaces it.
+  // {date} being edited, plus its text.
+  const [editNote, setEditNote] = useState<number | null>(null)
+  const [noteText, setNoteText] = useState('')
+  async function saveNote(date: number, text: string) {
+    const v = text.trim()
+    if (!v) {
+      setEditNote(null)
+      setNoteText('')
+      return
+    }
+    try {
+      await api('day-notes', { method: 'POST', body: { date, text: v } })
+      setEditNote(null)
+      setNoteText('')
+    } catch {
+      /* keep the editor open with the text intact */
+    }
+    qc.invalidateQueries({ queryKey: DAY_NOTES_KEY })
+  }
+  async function clearNote(date: number) {
+    try {
+      await api('day-notes', { method: 'DELETE', body: { date } })
+      setEditNote(null)
+      setNoteText('')
+    } catch {
+      /* keep the editor open so the clear can be retried */
+    }
+    qc.invalidateQueries({ queryKey: DAY_NOTES_KEY })
+  }
+
   const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), ...live })
+  const dayNotesQ = useQuery({ queryKey: DAY_NOTES_KEY, queryFn: () => api<DayNotesData>('day-notes'), ...live })
   const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry'), ...live })
   const useSoonQ = useQuery({ queryKey: USE_SOON_KEY, queryFn: () => api<{ soon: LowRow[] }>('use-soon'), ...live })
   const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live })
@@ -163,6 +196,8 @@ export function Kitchen() {
   })
   // date → (slot → meal) for the breakfast/lunch/snack chips under each day.
   const slotMeal = (date: number, slot: string) => days.find((d) => d.date === date && d.slot === slot)
+  // date → its day note (the per-day memo), if any.
+  const noteFor = (date: number) => dayNotesQ.data?.notes.find((n) => n.date === date)
 
   // The flows (see components/kitchen/use*). Destructured to the same names the
   // JSX always used, so the markup below reads unchanged.
@@ -656,6 +691,70 @@ export function Kitchen() {
                     )
                   })}
                 </div>
+
+                {/* The day's note — a free-text memo that isn't a meal (a pickup,
+                    an outing, "souper léger"). One per day; it rides under the
+                    slots here and surfaces on the Aujourd'hui board for today. */}
+                {(() => {
+                  const note = noteFor(date)
+                  return (
+                    <div className="kitchen__note">
+                      {editNote === date ? (
+                        <form
+                          className="kitchen__note-edit"
+                          onSubmit={(e) => {
+                            e.preventDefault()
+                            saveNote(date, noteText)
+                          }}
+                        >
+                          <input
+                            className="input"
+                            autoFocus
+                            value={noteText}
+                            onChange={(e) => setNoteText(e.target.value)}
+                            placeholder={t.kitchen.notePlaceholder}
+                            aria-label={t.kitchen.note}
+                          />
+                          <button type="submit" className="btn btn--ghost mono">
+                            {t.kitchen.setMeal}
+                          </button>
+                          {note && (
+                            <button
+                              type="button"
+                              className="btn btn--ghost mono kitchen__clear-meal"
+                              onClick={() => clearNote(date)}
+                            >
+                              🗑 {t.kitchen.clearNote}
+                            </button>
+                          )}
+                        </form>
+                      ) : note ? (
+                        <button
+                          type="button"
+                          className="kitchen__note-chip"
+                          onClick={() => {
+                            setEditNote(date)
+                            setNoteText(note.text)
+                          }}
+                        >
+                          <span aria-hidden="true">📝</span>
+                          <span className="kitchen__note-text">{note.text}</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="kitchen__note-add mono"
+                          onClick={() => {
+                            setEditNote(date)
+                            setNoteText('')
+                          }}
+                        >
+                          ＋ {t.kitchen.note}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })()}
               </li>
               )
             })}

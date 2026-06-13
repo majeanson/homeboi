@@ -103,17 +103,19 @@ test.describe('navigation', () => {
     }
   })
 
-  test('the nav audience switch flips to the kid view and back', async ({ page }) => {
+  test('the nav audience switch enters the kid view as a one-way door', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
     // Parent → Enfant: the toddler lens comes up and Réglages leaves the nav.
     await page.locator('.hubnav__peek').click()
     await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'toddler')
     await expect(page.locator('.hubnav a[href="/settings"]')).toHaveCount(0)
-    // Enfant → Parent: back, and Réglages returns.
-    await page.locator('.hubnav__peek').click()
-    await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'parent')
-    await expect(page.locator('.hubnav a[href="/settings"]')).toHaveCount(1)
+    // The switch itself is now gone too: no tap back to the parent view or
+    // settings, and /settings redirects away. Coming back out is a deliberate
+    // relaunch (?kid=0), not an in-app tap.
+    await expect(page.locator('.hubnav__peek')).toHaveCount(0)
+    await page.goto('/settings')
+    await expect(page).toHaveURL(/\/board$/)
   })
 
   test('a locked kiosk (?kid=1) has no audience switch and no settings tab', async ({ page }) => {

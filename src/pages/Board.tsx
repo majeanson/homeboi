@@ -21,6 +21,7 @@ import { pictoFor } from '../lib/picto'
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { Notes } from '../components/board/Notes'
+import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { NowNext, Lanes } from '../components/board/views'
 import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
@@ -94,6 +95,13 @@ export function Board() {
 
   const memberName = (id: string | null) => data?.members.find((m) => m.id === id)?.display_name ?? null
   const memberColor = (id: string | null) => data?.members.find((m) => m.id === id)?.colour
+  const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
+  // Today's meals beside the supper hero. Supper is already the "Ce soir" hero, so
+  // the day list shows the OTHER slots — together they cover the whole day's table.
+  const otherMeals = (data?.todayMeals ?? []).filter((m) => m.slot !== 'supper')
+  // Tomorrow's meals shown in Demain. Supper has its own line there, so list the
+  // rest — together they cover tomorrow's table for prep-ahead planning.
+  const otherTomorrowMeals = (data?.tomorrowMeals ?? []).filter((m) => m.slot !== 'supper')
 
   if (unauth) return <PairPrompt />
 
@@ -181,6 +189,20 @@ export function Board() {
               {weatherHero}
             </div>
             <Notes notes={data.notes ?? []} members={data.members} toddler />
+            {data.dayNote && <DayNote note={data.dayNote} members={data.members} toddler />}
+            {/* Every meal planned for today, read-aloud — supper rides up in the
+                heroes, so this lists the rest of the day's table. */}
+            {kidSection(
+              t.board.meals,
+              otherMeals.map((m) => ({
+                key: m.id,
+                icon: pictoFor(m.title, '🍽'),
+                label: m.title,
+                sub: slotLabel(m.slot),
+                narration: `${slotLabel(m.slot)}: ${m.title}`,
+                color: memberColor(m.cook_member_id) ?? undefined,
+              })),
+            )}
             {kidSection(t.board.today, eventTiles(data.today))}
             {/* Chores due today, as read-aloud tiles — whose turn rides in the sub. */}
             {kidSection(
@@ -194,7 +216,20 @@ export function Board() {
                 color: c.color ?? undefined,
               })),
             )}
-            {kidSection(t.board.tomorrow, eventTiles(data.tomorrow))}
+            {data.tomorrowNote && (
+              <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} toddler />
+            )}
+            {kidSection(t.board.tomorrow, [
+              ...eventTiles(data.tomorrow),
+              ...(data.tomorrowMeals ?? []).map((m) => ({
+                key: m.id,
+                icon: pictoFor(m.title, '🍽'),
+                label: m.title,
+                sub: slotLabel(m.slot),
+                narration: `${slotLabel(m.slot)}: ${m.title}`,
+                color: memberColor(m.cook_member_id) ?? undefined,
+              })),
+            ])}
             <PhotoFrame />
           </>
         )}
@@ -297,6 +332,10 @@ export function Board() {
       {/* Fridge notes ride above the day in every parent view — tap one to clear. */}
       {data && <Notes notes={data.notes ?? []} members={data.members} />}
 
+      {/* Today's day note (the per-day memo from La cuisine) rides here too, in
+          every view — read-only on the wall, edited in the kitchen. */}
+      {data?.dayNote && <DayNote note={data.dayNote} members={data.members} />}
+
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
       ) : view === 'next' ? (
@@ -337,11 +376,16 @@ export function Board() {
           )}
 
           <div className="board-grid">
-            <Section label={t.board.today} count={data.today.length + (data.choresToday ?? []).length}>
-            {data.today.length === 0 && (data.choresToday ?? []).length === 0 ? (
+            <Section label={t.board.today} count={data.today.length + (data.choresToday ?? []).length + otherMeals.length}>
+            {data.today.length === 0 && (data.choresToday ?? []).length === 0 && otherMeals.length === 0 ? (
               <p className="feed-empty">—</p>
             ) : (
               <>
+                {/* Today's other meals (déjeuner/dîner/collation) — supper is the
+                    "Ce soir" hero above, so the rest of the day's table shows here. */}
+                {otherMeals.map((m) => (
+                  <Act key={m.id} cat="meal" title={`${slotLabel(m.slot)} · ${m.title}`} who={cookLine(m)} />
+                ))}
                 {data.today.map(eventAct)}
                 {/* Recurring chores due today — tap to check off (advances the turn). */}
                 {(data.choresToday ?? []).map((c) => choreAct(c))}
@@ -349,7 +393,10 @@ export function Board() {
             )}
           </Section>
 
-          <Section label={t.board.tomorrow} count={data.tomorrow.length + (data.tomorrowMeal ? 1 : 0)}>
+          <Section
+            label={t.board.tomorrow}
+            count={data.tomorrow.length + (data.tomorrowMeal ? 1 : 0) + otherTomorrowMeals.length}
+          >
             {tomorrowWx && (
               <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
                 <span aria-hidden="true">
@@ -358,11 +405,21 @@ export function Board() {
                 {tomorrowWx.highC}° / {tomorrowWx.lowC}°
               </div>
             )}
+            {/* Tomorrow's prep note, surfaced TODAY — "sortir le poulet", "faire
+                tremper les haricots" — while there's still time to act on it. */}
+            {data.tomorrowNote && (
+              <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} />
+            )}
             {data.tomorrowMeal && (
               <Act cat="meal" title={data.tomorrowMeal.title} who={cookLine(data.tomorrowMeal)} />
             )}
+            {otherTomorrowMeals.map((m) => (
+              <Act key={m.id} cat="meal" title={`${slotLabel(m.slot)} · ${m.title}`} who={cookLine(m)} />
+            ))}
             {data.tomorrow.map(eventAct)}
-            {data.tomorrow.length === 0 && !data.tomorrowMeal && <p className="feed-empty">—</p>}
+            {data.tomorrow.length === 0 && !data.tomorrowMeal && otherTomorrowMeals.length === 0 && !data.tomorrowNote && (
+              <p className="feed-empty">—</p>
+            )}
           </Section>
 
           {(data.upcoming.length > 0 || (data.choresUpcoming ?? []).length > 0) && (

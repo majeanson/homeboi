@@ -1,4 +1,4 @@
-import { ok, serviceUnavailable } from '../_lib/json'
+import { ok, serviceUnavailable, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { weeklyRecap, resolveLang } from '../_lib/ai'
 import { dayStart, nowSec } from '../_lib/ids'
@@ -28,6 +28,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .all<{ title: string }>(),
   ])
 
+  const report = { error: null as string | null }
   const recap = await weeklyRecap(
     ctx.env,
     {
@@ -36,6 +37,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       chores: chores.results.map((r) => r.title),
     },
     resolveLang(ctx.env, ctx.request),
+    report,
   )
-  return ok({ recap })
+  return withAiError(ok({ recap }), report)
 })

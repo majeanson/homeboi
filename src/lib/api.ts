@@ -2,6 +2,7 @@
 // (kiosk), credentials, and JSON error parsing. Don't call fetch directly for
 // the API — you'll lose one of these and get a silent 403.
 import { getDeviceToken } from './device'
+import { emitAiError } from './aiErrorBus'
 
 export class ApiError extends Error {
   status: number
@@ -82,6 +83,19 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
     credentials: 'same-origin',
     body: opts.body === undefined ? undefined : isBlob ? (opts.body as Blob) : JSON.stringify(opts.body),
   })
+
+  // A Workers AI call degraded server-side: the handler tagged the response so we
+  // can surface a notice (on success OR a 503), regardless of this body's shape.
+  const aiErr = res.headers.get('X-AI-Error')
+  if (aiErr) {
+    let message = aiErr
+    try {
+      message = decodeURIComponent(aiErr)
+    } catch {
+      /* keep the raw value if it isn't valid percent-encoding */
+    }
+    emitAiError({ feature: path.replace(/^\/+/, ''), message })
+  }
 
   let data: unknown = null
   const text = await res.text()

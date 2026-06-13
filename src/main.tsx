@@ -13,6 +13,7 @@ import { SurfaceContext, type Surface } from './lib/surface'
 import { ProfileContext } from './lib/profile'
 import { CalmContext } from './lib/calm'
 import { ToastProvider } from './lib/toast'
+import { AiErrorProvider } from './lib/aiErrorToast'
 import { registerSw } from './lib/registerSw'
 import { trackVisualViewport } from './lib/viewportVars'
 import './styles.css'
@@ -160,11 +161,13 @@ function Root() {
           <ProfileContext.Provider value={{ memberId: profile, setMemberId: setProfile }}>
           <CalmContext.Provider value={{ calm, setCalm }}>
             <ToastProvider>
-              <AuthProvider>
-                <BrowserRouter>
-                  <AppRoutes />
-                </BrowserRouter>
-              </AuthProvider>
+              <AiErrorProvider>
+                <AuthProvider>
+                  <BrowserRouter>
+                    <AppRoutes />
+                  </BrowserRouter>
+                </AuthProvider>
+              </AiErrorProvider>
             </ToastProvider>
           </CalmContext.Provider>
           </ProfileContext.Provider>

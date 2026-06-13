@@ -19,6 +19,15 @@ export const tooManyRequests = (message = 'Slow down.') => body({ error: message
 export const serviceUnavailable = (message: string) => body({ error: message }, 503)
 export const serverError = (message = 'Something broke.') => body({ error: message }, 500)
 
+// Attach the "an AI call quietly failed" signal to a response, so lib/api on the
+// client can pop a notice the user acknowledges into the persistent error log.
+// The message is URI-encoded because HTTP header values must be ASCII and ours can
+// be French. No-op when nothing failed, so handlers can wrap every return path.
+export function withAiError(res: Response, report: { error: string | null }): Response {
+  if (report.error) res.headers.set('X-AI-Error', encodeURIComponent(report.error))
+  return res
+}
+
 // Read + parse a JSON body, returning null on anything malformed so the
 // handler can answer with a clean 400 instead of throwing.
 export async function readJson<T>(request: Request): Promise<T | null> {
