@@ -4,10 +4,17 @@
     <meta charset="UTF-8" />
     <!-- interactive-widget: Chrome/Android shrinks the layout viewport when the
          keyboard opens so fixed sheets stay visible; iOS ignores it (handled by
-         the visualViewport → CSS-vars tracker in src/lib/viewportVars.ts). -->
+         the visualViewport → CSS-vars tracker in src/lib/viewportVars.ts).
+         maximum-scale=1 + user-scalable=no: lock browser pinch / double-tap zoom.
+         This is an installed kiosk/wall-tablet PWA whose own "zoom to read" is
+         tap-to-fullscreen (ZoomableImg) — browser zoom only made the fixed
+         full-screen overlays (cashier, cook, sheets) shimmer and re-anchor mid-
+         gesture. Reinforced by touch-action in core.css + a gesturestart guard
+         in viewportVars.ts (iOS Safari ignores user-scalable=no in a browser
+         tab, honours it once installed standalone). -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <meta name="theme-color" content="#FBF3E4" />
     <meta name="description" content="Babillard — un planificateur familial calme pour une tablette murale." />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
@@ -14,6 +14,7 @@ import {
 } from '../lib/recipes'
 import { SECTION_PREFIX, dropDanglingHeadings } from '../lib/recipeSections'
 import { Icon } from './Icon'
+import { useModal } from '../lib/useModal'
 
 // In the EDITOR a row is a section row as soon as it carries the "## " marker —
 // even with the title still empty ("## "), so typing the name doesn't flip the
@@ -41,6 +42,8 @@ export function RecipeForm({
 }) {
   const t = useT()
   const qc = useQueryClient()
+  const modalRef = useRef<HTMLDivElement>(null)
+  useModal(modalRef, onCancel)
   const [title, setTitle] = useState(value?.title ?? '')
   // Keep at least one empty row so there's always somewhere to type.
   const [ingredients, setIngredients] = useState<string[]>(value?.ingredients?.length ? value.ingredients : [''])
@@ -457,7 +460,7 @@ export function RecipeForm({
   )
 
   return (
-    <div className="recipe-modal" role="dialog" aria-modal="true" aria-label={value ? t.recipes.edit : t.recipes.new}>
+    <div ref={modalRef} className="recipe-modal" role="dialog" aria-modal="true" aria-label={value ? t.recipes.edit : t.recipes.new}>
       <div className="recipe-modal__scrim" onClick={onCancel} aria-hidden="true" />
       <form className="recipe-modal__card surface" onSubmit={save}>
         <div className="recipe-modal__bar">

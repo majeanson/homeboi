@@ -30,10 +30,16 @@ export function KidKitchen({
   // browsing the recipe shelf).
   const [kidRecipe, setKidRecipe] = useState<Recipe | null>(null)
 
+  // The toddler lens is just "this week": the next 7 days, one of each weekday.
+  // (The parent grid runs a longer 10-day countdown, but two "Mardi" tiles would
+  // confuse a pre-reader picking a day by sight — and read-aloud — so the kid
+  // view stays a single, unambiguous week.)
+  const days7 = week.slice(0, 7)
+
   // A planned supper that maps to a saved recipe is tappable: hear "Jeudi :
   // Spaghetti" first, then a second tap STARTS the recipe (Cook mode — big
   // read-aloud steps). Planned meals with no matching recipe stay read-aloud only.
-  const planned: Tile[] = week
+  const planned: Tile[] = days7
     .filter((d) => d.meal)
     .map((d) => {
       const recipe = recipeFor(d.meal!)
@@ -60,7 +66,7 @@ export function KidKitchen({
     onTap: () => setKidRecipe(r),
   }))
   const dayTiles: Tile[] = kidRecipe
-    ? week.map(({ date, meal }) => ({
+    ? days7.map(({ date, meal }) => ({
         key: String(date),
         icon: meal ? pictoFor(meal.title, '🍽') : '📅',
         label: formatWeekday(date, lang),

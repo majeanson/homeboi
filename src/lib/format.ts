@@ -17,6 +17,17 @@ export function formatWeekday(unixSec: number, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'long' }).format(unixSec * 1000)
 }
 
+// Short weekday ("ven" / "Fri") for the meal-plan date badge. Trim the locale's
+// trailing dot so it sits clean above the day number.
+export function weekdayShort(unixSec: number, lang: Lang): string {
+  return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'short' }).format(unixSec * 1000).replace('.', '')
+}
+
+// Day-of-month number ("12") — the date badge's big anchor.
+export function dayNum(unixSec: number, lang: Lang): string {
+  return new Intl.DateTimeFormat(LOCALE[lang], { day: 'numeric' }).format(unixSec * 1000)
+}
+
 export function formatClock(lang: Lang, nowMs: number): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { hour: '2-digit', minute: '2-digit' }).format(nowMs)
 }

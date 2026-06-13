@@ -106,6 +106,9 @@
   max-height: 88vh;
   max-height: calc(var(--vvh, 100dvh) - 24px);
   overflow-y: auto;
+  /* Keep a scroll-to-the-end flick inside the sheet — don't chain it to the
+     page behind (no background drift, no iOS rubber-band peek). */
+  overscroll-behavior: contain;
   background: var(--paper);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: var(--shadow-lg);
@@ -374,6 +377,7 @@
   max-height: 88vh;
   max-height: calc(var(--vvh, 100dvh) - 12px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--paper);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: var(--shadow-lg);
@@ -637,6 +641,7 @@
 .flyer-scroll {
   flex: 1 1 auto;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 14px;
   max-width: 46rem;
   margin: 0 auto;
@@ -888,6 +893,7 @@
   flex-direction: column;
   gap: 0.4rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 .qa__chip {
@@ -1021,6 +1027,7 @@
 .cashier__review {
   flex: 1 1 auto;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 14px;
   max-width: 46rem;
   margin: 0 auto;
@@ -1102,6 +1109,7 @@
 .cashier__stage {
   flex: 1 1 auto;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   align-items: center;
   justify-content: center;

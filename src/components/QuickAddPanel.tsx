@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { pictoFor } from '../lib/picto'
+import { useModal } from '../lib/useModal'
+import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
 // One re-add candidate for the quick-add panel: something bought before (history)
 // and/or near its renewal point (a ghost 'due'/'soon'). Carries the flyer
@@ -39,6 +41,11 @@ export function QuickAddPanel({
   // Offer a free-text add only when what's typed isn't already a known item.
   const canAddTyped = fq.length > 0 && !items.some((i) => fold(i.label) === fq)
 
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  useModal(overlayRef, onClose)
+  useSwipeToDismiss(sheetRef, onClose)
+
   function add(item: QuickItem) {
     if (added.has(item.key)) return
     onAdd(item)
@@ -55,6 +62,7 @@ export function QuickAddPanel({
 
   return (
     <div
+      ref={overlayRef}
       className="pm-overlay"
       role="dialog"
       aria-modal="true"
@@ -63,7 +71,7 @@ export function QuickAddPanel({
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="pm-sheet qa" onClick={(e) => e.stopPropagation()}>
+      <div ref={sheetRef} className="pm-sheet qa" onClick={(e) => e.stopPropagation()}>
         <div className="pm-sheet__head">
           <div>
             <div className="hand-tag">{t.list.quickAddTitle}</div>

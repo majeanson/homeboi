@@ -25,10 +25,13 @@ export interface LowRow {
   item: string
   marked_at: number
 }
-export type MealsData = { days: MealRow[]; weekStart: number }
+// windowDays: how many days the 10-day countdown block currently shows (10 on
+// Tuesday, shrinking to 4 by Monday). The client renders this many days from
+// weekStart instead of a fixed 7.
+export type MealsData = { days: MealRow[]; weekStart: number; windowDays: number }
 export type PantryData = { low: LowRow[] }
 
-// One slot of the 7-day grid: the day plus its planned meal, if any.
+// One slot of the planning grid: the day plus its planned meal, if any.
 export type WeekDay = { date: number; meal: MealRow | undefined }
 
 export const MEALS_KEY = ['meals']

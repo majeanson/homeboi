@@ -77,6 +77,7 @@ const BOARD = {
 
 const MEALS = {
   weekStart: BASE - 0 * DAY,
+  windowDays: 10, // full 10-day countdown block (see functions/api/meals.ts)
   days: [
     // Linked to the saved recipe rc1 (recipe_id) — the grid's 📖 opens it exactly.
     { id: 'meal1', date: BASE, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1' },

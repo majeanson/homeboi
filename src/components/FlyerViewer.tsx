@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useLang, useT } from '../i18n'
 import { ZoomableImg } from './ZoomableImg'
 import { type Deal, type FlyerSummary } from '../lib/deals'
+import { useModal } from '../lib/useModal'
 
 // Full-flyer viewer. A Flipp flyer page is a canvas of item clippings positioned
 // by coordinates (no scanned page image), so we fetch /api/flyer and reconstruct
@@ -98,6 +99,8 @@ export function FlyerViewer({
 }) {
   const t = useT()
   const qc = useQueryClient()
+  const overlayRef = useRef<HTMLDivElement>(null)
+  useModal(overlayRef, onClose)
   const [addedName, setAddedName] = useState<string | null>(null)
   const { lang } = useLang()
 
@@ -228,7 +231,7 @@ export function FlyerViewer({
   }, [lang, flyerId, title, data?.postal])
 
   return (
-    <div className="flyer-overlay" role="dialog" aria-modal="true" aria-label={title ?? 'flyer'}>
+    <div ref={overlayRef} className="flyer-overlay" role="dialog" aria-modal="true" aria-label={title ?? 'flyer'}>
       <div className="flyer-bar">
         <div className="flyer-bar__brand">
           {resolvedLogo ? (

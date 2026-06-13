@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
@@ -12,6 +12,7 @@ import { ZoomableImg } from './ZoomableImg'
 import { CookMode } from './CookMode'
 import { IngredientLine } from './IngredientLine'
 import { SlotPicker } from './kitchen/SlotPicker'
+import { useModal } from '../lib/useModal'
 
 // Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method,
 // then a row of gentle actions —
@@ -33,6 +34,8 @@ export function RecipeSheet({
 }) {
   const t = useT()
   const qc = useQueryClient()
+  const modalRef = useRef<HTMLDivElement>(null)
+  useModal(modalRef, onClose)
   const [added, setAdded] = useState(false)
   const [planning, setPlanning] = useState(false)
   const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
@@ -138,7 +141,7 @@ export function RecipeSheet({
   }
 
   return (
-    <div className="recipe-modal" role="dialog" aria-modal="true" aria-label={recipe.title}>
+    <div ref={modalRef} className="recipe-modal" role="dialog" aria-modal="true" aria-label={recipe.title}>
       <div className="recipe-modal__scrim" onClick={onClose} aria-hidden="true" />
       <div className="recipe-modal__card surface">
         <div className="recipe-modal__bar">

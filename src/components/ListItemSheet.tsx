@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useT } from '../i18n'
 import { parseDeal, parseTerms, unstageDeal } from '../lib/picks'
 import { money } from '../lib/deals'
 import { BOARD_KEY } from '../lib/queryKeys'
+import { useModal } from '../lib/useModal'
+import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
 // Edit one grocery line: rename it, manage the extra flyer-search synonyms (so
 // "Œuf" can also match "egg"/"oeufs" in the deals lookup), unlink a staged deal,
@@ -24,6 +26,12 @@ export function ListItemSheet({
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const deal = parseDeal(item.deal_json)
+
+  // Esc / scroll-lock / focus-trap on the overlay; swipe-down-to-close on the sheet.
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  useModal(overlayRef, onClose)
+  useSwipeToDismiss(sheetRef, onClose)
 
   function addTerm(raw: string) {
     const v = raw.trim()
@@ -70,6 +78,7 @@ export function ListItemSheet({
 
   return (
     <div
+      ref={overlayRef}
       className="pm-overlay"
       role="dialog"
       aria-modal="true"
@@ -78,7 +87,7 @@ export function ListItemSheet({
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="pm-sheet" onClick={(e) => e.stopPropagation()}>
+      <div ref={sheetRef} className="pm-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="pm-sheet__head">
           <div>
             <div className="hand-tag">{t.list.editTitle}</div>
