@@ -10,7 +10,6 @@ import { groupSections, withoutHeadings } from '../lib/recipeSections'
 import { ingredientName } from '../lib/ingredient'
 import { type MealSlot } from '../lib/mealSlots'
 import { ZoomableImg } from './ZoomableImg'
-import { CookMode } from './CookMode'
 import { IngredientLine } from './IngredientLine'
 import { SlotPicker } from './kitchen/SlotPicker'
 import { useModal } from '../lib/useModal'
@@ -25,11 +24,15 @@ import { useModal } from '../lib/useModal'
 export function RecipeSheet({
   recipe,
   week,
+  onCook,
   onEdit,
   onClose,
 }: {
   recipe: Recipe
   week: { date: number; label: string }[]
+  // Cook mode is its own route now; the sheet hands up the chosen batch factor so
+  // the cook screen scales to the same amounts shown here.
+  onCook: (factor: number) => void
   onEdit: () => void
   onClose: () => void
 }) {
@@ -46,7 +49,6 @@ export function RecipeSheet({
   const [planning, setPlanning] = useState(false)
   const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
   const [plannedDate, setPlannedDate] = useState<number | null>(null)
-  const [cooking, setCooking] = useState(false)
   const canCook = recipe.steps.length > 0 || recipe.ingredients.length > 0
   const imgSrc = recipeImg(recipe.image)
 
@@ -112,13 +114,6 @@ export function RecipeSheet({
       return { ...g, start }
     })
   })()
-  // The recipe handed to Cook mode and pushed to the list reflects the chosen
-  // batch, so the cook reads (and shops for) the amounts they'll actually use.
-  const effectiveRecipe =
-    factor === 1
-      ? recipe
-      : { ...recipe, ingredients: scaledIngredients, servings: baseServings ? serv : recipe.servings }
-
   // Open the "which ingredients?" checklist: the recipe's buyable names, deduped,
   // section markers dropped. (recipe-to-list reduces a measured line to its name
   // anyway — "500 g de bœuf haché" → "Bœuf haché" — so we show that directly.)
@@ -430,7 +425,7 @@ export function RecipeSheet({
 
         <div className="recipe-modal__foot recipe-actions">
           {canCook && (
-            <button type="button" className="btn btn--primary" onClick={() => setCooking(true)}>
+            <button type="button" className="btn btn--primary" onClick={() => onCook(factor)}>
               {t.recipes.cook}
             </button>
           )}
@@ -461,8 +456,6 @@ export function RecipeSheet({
           </button>
         </div>
       </div>
-
-      {cooking && <CookMode recipe={effectiveRecipe} onClose={() => setCooking(false)} />}
     </div>
   )
 }

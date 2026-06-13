@@ -272,7 +272,7 @@ export function AddSheet({
                 onClick={() => {
                   if (m === 'recipe') {
                     close()
-                    nav('/kitchen?add=recipe')
+                    nav('/kitchen/recipe/new')
                     return
                   }
                   setMode(m)

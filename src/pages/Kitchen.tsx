@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon } from '../components/Icon'
 import { useLang, useT } from '../i18n'
@@ -11,9 +11,6 @@ import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { pictoFor } from '../lib/picto'
-import { RecipeSheet } from '../components/RecipeSheet'
-import { CookMode } from '../components/CookMode'
-import { RecipeForm } from '../components/RecipeForm'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { RecipesTab } from '../components/kitchen/RecipesTab'
@@ -38,6 +35,7 @@ export function Kitchen() {
   const { lang } = useLang()
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
+  const nav = useNavigate()
   // The lighter side slots (déjeuner / dîner / collation): a plain title, no
   // staples/recipe flow — that richness stays on the souper. {date,slot} being
   // edited, plus its text.
@@ -127,10 +125,8 @@ export function Kitchen() {
   const memberName = (id: string | null | undefined) =>
     (id && boardQ.data?.members?.find((m) => m.id === id)?.display_name) || ''
   const recipes = recipesQ.data?.recipes ?? []
-  // Recipe book overlays: a recipe being viewed, and one being created/edited
-  // ('new' = a blank form). recipePickFor = the day a recipe is being chosen for.
-  const [viewRecipe, setViewRecipe] = useState<Recipe | null>(null)
-  const [editRecipe, setEditRecipe] = useState<Recipe | 'new' | null>(null)
+  // The recipe book is routes now (/kitchen/recipe/:id, …/edit, …/cook, …/new) —
+  // openers navigate instead of toggling local overlay state.
   // Which slot's recipe picker is open ({date, slot}) — any slot can pick a
   // recipe now, not just the souper.
   const [recipePickFor, setRecipePickFor] = useState<{ date: number; slot: string } | null>(null)
@@ -139,21 +135,8 @@ export function Kitchen() {
   // opts a pick INTO the grocery flow ("ajouter les ingrédients aussi") for the
   // times you do want the staples chips — kept off so dropping a recipe is one tap.
   const [pickWithStaples, setPickWithStaples] = useState(false)
-  // A toddler tapped a planned meal to cook it → full-screen read-aloud Cook mode.
-  const [kidCook, setKidCook] = useState<Recipe | null>(null)
   // Parent kitchen sub-tab: one job at a time so the page isn't an endless scroll.
   const [kitTab, setKitTab] = useState<'meals' | 'pantry' | 'recipes'>('meals')
-  // ?add=recipe — the contextual ＋ sheet's "Ajouter une recette" tile lands
-  // here (the recipe builder is a full overlay owned by this page, not by the
-  // sheet). Consume the param once, then strip it so refresh/back don't reopen
-  // a blank form.
-  const [searchParams, setSearchParams] = useSearchParams()
-  useEffect(() => {
-    if (searchParams.get('add') !== 'recipe') return
-    setKitTab('recipes')
-    setEditRecipe('new')
-    setSearchParams({}, { replace: true })
-  }, [searchParams, setSearchParams])
   // Match a planned supper to a saved recipe by (loose) title, so a day's meal can
   // open its recipe.
   const recipeByTitle = useMemo(() => {
@@ -252,18 +235,15 @@ export function Kitchen() {
 
   if (audience === 'toddler') {
     return (
-      <>
-        <KidKitchen
-          week={week}
-          recipes={recipes}
-          recipeFor={recipeForMeal}
-          onSuggest={kidSuggest}
-          onStartRecipe={setKidCook}
-        />
-        {/* "Start its recipe": a planned meal a toddler taps opens Cook mode —
-            big one-step-at-a-time pages that read themselves aloud. */}
-        {kidCook && <CookMode recipe={kidCook} onClose={() => setKidCook(null)} />}
-      </>
+      <KidKitchen
+        week={week}
+        recipes={recipes}
+        recipeFor={recipeForMeal}
+        onSuggest={kidSuggest}
+        // "Start its recipe": a planned meal a toddler taps opens Cook mode —
+        // big one-step-at-a-time pages that read themselves aloud (its own route).
+        onStartRecipe={(r) => nav(`/kitchen/recipe/${r.id}/cook`)}
+      />
     )
   }
 
@@ -350,7 +330,7 @@ export function Kitchen() {
                   <button
                     type="button"
                     className="btn btn--ghost mono"
-                    onClick={() => setViewRecipe(suggest.current!.recipe!)}
+                    onClick={() => nav(`/kitchen/recipe/${suggest.current!.recipe!.id}`)}
                   >
                     {t.kitchen.suggestOpen}
                   </button>
@@ -569,7 +549,7 @@ export function Kitchen() {
                       <button
                         type="button"
                         className="kitchen__day-recipe-link"
-                        onClick={() => setViewRecipe(recipeForMeal(meal)!)}
+                        onClick={() => nav(`/kitchen/recipe/${recipeForMeal(meal)!.id}`)}
                         aria-label={t.recipes.title}
                         title={t.recipes.title}
                       >
@@ -680,7 +660,7 @@ export function Kitchen() {
                           <button
                             type="button"
                             className="kitchen__slot-recipe-link"
-                            onClick={() => setViewRecipe(linked)}
+                            onClick={() => nav(`/kitchen/recipe/${linked.id}`)}
                             aria-label={t.recipes.title}
                             title={t.recipes.title}
                           >
@@ -779,29 +759,10 @@ export function Kitchen() {
             lowItems={lowItems}
             soonItems={soonItems}
             listItems={listItems}
-            onView={setViewRecipe}
+            onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
           />
         )}
       </main>
-
-      {viewRecipe && (
-        <RecipeSheet
-          recipe={viewRecipe}
-          week={week.map((w) => ({ date: w.date, label: formatWeekday(w.date, lang) }))}
-          onEdit={() => {
-            setEditRecipe(viewRecipe)
-            setViewRecipe(null)
-          }}
-          onClose={() => setViewRecipe(null)}
-        />
-      )}
-      {editRecipe && (
-        <RecipeForm
-          value={editRecipe === 'new' ? null : editRecipe}
-          onSaved={() => setEditRecipe(null)}
-          onCancel={() => setEditRecipe(null)}
-        />
-      )}
     </>
   )
 }

@@ -523,7 +523,7 @@ test.describe('recipes', () => {
 
   test('creating a recipe posts it', async ({ page }) => {
     // Recipe creation moved to the contextual ＋: FAB → "Ajouter une recette"
-    // tile → ?add=recipe lands on the recipe builder.
+    // tile → navigates to /kitchen/recipe/new (the recipe builder route).
     await page.locator('.add-fab').click()
     await page.locator('.cat-pick').first().click()
     const modal = page.locator('.recipe-modal')

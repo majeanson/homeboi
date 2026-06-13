@@ -24,6 +24,9 @@ const Setup = lazy(() => import('./pages/Setup').then((m) => ({ default: m.Setup
 // standalone (no hub chrome) because they take over the whole viewport.
 const CirculairesPage = lazy(() => import('./pages/CirculairesPage').then((m) => ({ default: m.CirculairesPage })))
 const CashierPage = lazy(() => import('./pages/CashierPage').then((m) => ({ default: m.CashierPage })))
+const RecipeViewPage = lazy(() => import('./pages/RecipeViewPage').then((m) => ({ default: m.RecipeViewPage })))
+const RecipeFormPage = lazy(() => import('./pages/RecipeFormPage').then((m) => ({ default: m.RecipeFormPage })))
+const CookPage = lazy(() => import('./pages/CookPage').then((m) => ({ default: m.CookPage })))
 
 function Loading() {
   const t = useT()
@@ -63,6 +66,11 @@ export function AppRoutes() {
         {/* Standalone surfaces (no hub chrome). */}
         <Route path="/liste/circulaires" element={<CirculairesPage />} />
         <Route path="/liste/cashier" element={<CashierPage />} />
+        {/* `new` before `:id` so it isn't captured as a recipe id. */}
+        <Route path="/kitchen/recipe/new" element={<RecipeFormPage />} />
+        <Route path="/kitchen/recipe/:id" element={<RecipeViewPage />} />
+        <Route path="/kitchen/recipe/:id/edit" element={<RecipeFormPage />} />
+        <Route path="/kitchen/recipe/:id/cook" element={<CookPage />} />
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />

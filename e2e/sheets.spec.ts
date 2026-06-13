@@ -99,7 +99,7 @@ test('sheet-add-event', async ({ page }) => {
 
 test('sheet-recipe-form', async ({ page }) => {
   await boot(page, '/kitchen')
-  // Recipe creation lives on the contextual ＋: FAB → recipe tile → ?add=recipe.
+  // Recipe creation lives on the contextual ＋: FAB → recipe tile → /kitchen/recipe/new.
   await page.locator('.add-fab').click()
   await page.locator('.cat-pick').first().click()
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })

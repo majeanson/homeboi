@@ -54,10 +54,11 @@
   padding: 0 0.7rem 0.7rem;
 }
 
-/* Modal: scrim + a centered scrolling card. Pinned to the VISUAL viewport (not
-   the layout one) so the card — footer buttons included — stays fully visible
-   when the on-screen keyboard is up. The --vvt/--vvh vars come from
-   src/lib/viewportVars.ts; without them this is simply inset: 0. */
+/* A recipe (view + edit) is now a full-screen ROUTE, not a centered modal — so
+   it owns the whole viewport: no scrim, a card that fills the screen (capped to a
+   readable column on a wide wall tablet, centred). Pinned to the VISUAL viewport
+   (--vvt/--vvh from src/lib/viewportVars.ts) so the footer buttons stay above the
+   on-screen keyboard. */
 .recipe-modal {
   position: fixed;
   left: 0;
@@ -67,23 +68,21 @@
   height: var(--vvh, 100dvh);
   z-index: 80;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  padding: 1rem;
+  padding: 0;
 }
+/* No backdrop on a full-screen route — the card IS the screen. */
 .recipe-modal__scrim {
-  position: absolute;
-  inset: 0;
-  background: rgba(44, 39, 34, 0.4);
+  display: none;
 }
 .recipe-modal__card {
   position: relative;
-  width: min(560px, 100%);
-  max-height: 90vh;
-  max-height: calc(var(--vvh, 100dvh) - 2rem);
+  width: 100%;
+  max-width: 46rem;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
@@ -100,9 +99,12 @@
   font-size: 1.25rem;
 }
 .recipe-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 1rem 1.1rem;
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
