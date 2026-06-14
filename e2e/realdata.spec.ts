@@ -146,8 +146,9 @@ test('real liste overlays (cashier / quick-add / browse)', async ({ page, contex
   await page.goto('/liste')
   await settle(page)
 
-  // Quick add panel.
-  const quick = page.locator('.list-quick')
+  // Quick add panel — reached via the ＋ Add sheet now (was an on-page button).
+  await page.locator('.add-fab').click()
+  const quick = page.getByRole('button', { name: /Ajout rapide/ })
   if (await quick.count()) {
     await quick.first().click()
     await page.waitForTimeout(500)
@@ -156,7 +157,8 @@ test('real liste overlays (cashier / quick-add / browse)', async ({ page, contex
     await page.waitForTimeout(300)
   }
 
-  // Deals browser.
+  // Deals browser — also behind the ＋ Add sheet.
+  await page.locator('.add-fab').click()
   const browse = page.getByRole('button', { name: /Parcourir|Browse/ })
   if (await browse.count()) {
     await browse.first().click()

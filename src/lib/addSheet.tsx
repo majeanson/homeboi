@@ -16,6 +16,7 @@ export type AddSheetMode =
   | 'list-item'
   | 'quick-add'
   | 'flyer'
+  | 'auto-pick'
   | 'recipe'
   | 'meal'
   | 'pantry'
@@ -23,8 +24,11 @@ export type AddSheetMode =
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
 // action → the sheet skips the chooser and opens that form directly. Liste's ＋
-// is a small chooser: add a line, restock past items (Ajout rapide), or shop the
-// flyers — the last two are navigate-only tiles (see NAV_TARGET in AddSheet).
+// is a small chooser: add a line, restock past items (Ajout rapide), shop the
+// flyers, or auto-pick the week's best prices. quick-add/flyer are navigate-only
+// tiles (see NAV_TARGET in AddSheet); `auto-pick` runs an action in place (stages
+// the best deal per line, then jumps to the cashier) — the page itself stays just
+// the list, so no shopping action lives as an on-page button anymore.
 export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   board: ['capture', 'event', 'chore', 'routine'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
@@ -32,7 +36,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // where it's navigate-only and resolves its target from the meal plan).
   kitchen: ['cook', 'recipe', 'meal', 'pantry'],
   routines: ['routine'],
-  liste: ['list-item', 'quick-add', 'flyer'],
+  liste: ['list-item', 'quick-add', 'flyer', 'auto-pick'],
 }
 
 // The operator-grade forms (same gating the old chooser had): a kiosk that

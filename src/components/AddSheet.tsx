@@ -11,6 +11,8 @@ import { OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
 import { useNextMeal } from '../lib/nextMeal'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
 import { BOARD_KEY } from '../lib/queryKeys'
+import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
+import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
 import { EventForm } from './forms/EventForm'
@@ -55,6 +57,7 @@ const MODE_META: Record<AddSheetMode, { icon: IconName; deep: string; wash: stri
   'list-item': { icon: 'sparkle-bold', deep: '#5891AC', wash: 'var(--sky-wash)' },
   'quick-add': { icon: 'lightning-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
   flyer: { icon: 'magnifying-glass-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
+  'auto-pick': { icon: 'tag-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -66,10 +69,11 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   flyer: '/liste/circulaires',
 }
 
-// Navigate-only modes never host an in-sheet form, so they can't be the sheet's
-// default. `cook`'s destination is dynamic (the next meal's recipe), resolved at
-// click time, so it lives here rather than in the static NAV_TARGET map above.
-const isNavOnly = (m: AddSheetMode) => m === 'cook' || m in NAV_TARGET
+// Modes with no in-sheet form, so they can't be the sheet's default. `cook`'s
+// destination is dynamic (the next meal's recipe) and `auto-pick` runs an action
+// in place (stage best deals → cashier) — both resolved at click time, so they
+// live here rather than in the static NAV_TARGET map above.
+const isNavOnly = (m: AddSheetMode) => m === 'cook' || m === 'auto-pick' || m in NAV_TARGET
 
 export function AddSheet({
   open,
@@ -155,6 +159,46 @@ export function AddSheet({
     enabled: signedIn && open,
   })
   const members = membersData?.members ?? []
+
+  // Liste's "Meilleurs prix" tile (auto-pick): stages the best flyer deal onto
+  // each grocery line, then jumps to the cashier. Needs the current list, fetched
+  // only while the sheet's open on Liste. An empty list ⇒ nothing to price-match,
+  // so the tile hides (see `tiles` below). Replaces the old on-page button — the
+  // list page is now just the list; its shopping actions live behind the ＋.
+  const wantsAutoPick = shown.includes('auto-pick')
+  const { data: listBoard } = useQuery({
+    queryKey: BOARD_KEY,
+    queryFn: () => api<{ list: ListItem[] }>('board'),
+    enabled: open && wantsAutoPick,
+  })
+  const listItems = listBoard?.list ?? []
+  const [autoBusy, setAutoBusy] = useState(false)
+  // The tiles actually rendered: auto-pick only earns a spot once there's a list
+  // to price-match against (an empty Liste shows just add/quick-add/flyer).
+  const tiles = shown.filter((m) => m !== 'auto-pick' || listItems.length > 0)
+
+  async function autoPick() {
+    if (autoBusy) return
+    setAutoBusy(true)
+    let any = false
+    for (const item of listItems) {
+      try {
+        const terms = parseTerms(item.search_terms)
+        const qs = `deals?q=${encodeURIComponent(item.text)}${terms.length ? `&terms=${encodeURIComponent(terms.join(','))}` : ''}`
+        const r = await api<{ deals: Deal[] }>(qs)
+        if (r.deals[0]) {
+          await stageDeal(qc, item.text, r.deals[0])
+          any = true
+        }
+      } catch {
+        /* skip items with no deals / errors */
+      }
+    }
+    const hadPicks = pickListFrom(listItems).length > 0
+    setAutoBusy(false)
+    close()
+    if (any || hadPicks) nav('/liste/cashier')
+  }
 
   const close = useCallback(() => {
     setRouted(null)
@@ -253,6 +297,7 @@ export function AddSheet({
       'list-item': t.list.addTitle,
       'quick-add': t.list.quickAdd,
       flyer: t.shop.browse,
+      'auto-pick': t.shop.auto,
     }
     return labels[m]
   }
@@ -287,18 +332,24 @@ export function AddSheet({
 
         {/* The section's chooser — only when there's a real choice to make.
             The recipe tile is navigate-only: the recipe builder is a full
-            overlay that lives on the kitchen page, not in this sheet. */}
-        {shown.length > 1 && (
-          <div className={'cat-grid' + (shown.length === 3 ? ' cat-grid--3' : '')}>
-            {shown.map((m) => (
+            overlay that lives on the kitchen page, not in this sheet. Liste's
+            auto-pick tile drops out when the list is empty (nothing to price). */}
+        {tiles.length > 1 && (
+          <div className={'cat-grid' + (tiles.length === 3 ? ' cat-grid--3' : '')}>
+            {tiles.map((m) => (
               <button
                 key={m}
                 type="button"
                 className={'cat-pick' + (mode === m ? ' sel' : '')}
+                disabled={m === 'auto-pick' && autoBusy}
                 onClick={() => {
                   if (m === 'cook') {
                     close()
                     nav(cookTarget)
+                    return
+                  }
+                  if (m === 'auto-pick') {
+                    autoPick()
                     return
                   }
                   const target = NAV_TARGET[m]
@@ -314,7 +365,7 @@ export function AddSheet({
                 <span className="ct" style={{ background: MODE_META[m].wash }}>
                   <Icon name={MODE_META[m].icon} size={22} color={MODE_META[m].deep} />
                 </span>
-                <span>{modeLabel(m)}</span>
+                <span>{m === 'auto-pick' && autoBusy ? t.shop.autoWorking : modeLabel(m)}</span>
               </button>
             ))}
           </div>

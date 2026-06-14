@@ -219,6 +219,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Cadre de photos de famille', en: 'Family photo frame' },
+        detail: {
+          fr: 'Tes photos défilent doucement dans un coin du babillard, une à la fois, avec un fondu lent toutes les 30 s. Téléverse-les dans Réglages ▸ Photos; sans photo, le cadre ne s’affiche pas.',
+          en: 'Your photos drift quietly in a corner of the board, one at a time, with a slow cross-fade every 30 s. Upload them in Settings ▸ Photos; with no photos, the frame simply doesn’t appear.',
+        },
+        why: {
+          fr: 'Pour que le mur tienne aussi du cadre numérique — vivant et familier — sans rien à faire ni à toucher, et sans agitation.',
+          en: 'So the wall doubles as a calm digital frame — alive and familiar — with nothing to do or tap, and no fuss.',
+        },
+      },
+      {
         label: { fr: 'À préparer pour demain', en: 'Prep for tomorrow' },
         detail: {
           fr: 'La note prévue pour demain remonte dès aujourd’hui, avec un aperçu météo (haut/bas).',
@@ -944,6 +955,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Envoyer les ingrédients à La liste', en: 'Send ingredients to La liste' },
+        detail: {
+          fr: 'Un bouton « Ajouter les ingrédients » verse toute la recette sur la liste d’épicerie en un coup : chaque ligne est ramenée à son nom achetable (« 15 ml de beurre » → « Beurre ») et les doublons sont fusionnés.',
+          en: 'An “Add ingredients” button pours the whole recipe onto the grocery list at once: each line is reduced to its buyable name (“15 ml butter” → “Butter”) and duplicates are merged.',
+        },
+        why: {
+          fr: 'C’est le lien recette → épicerie : tu choisis quoi cuisiner et la liste se remplit toute seule, sans recopier ligne par ligne ni emporter les « 2 c. à thé » au magasin.',
+          en: 'It’s the recipe → groceries link: you pick what to cook and the list fills itself, with no copying line by line and no “2 tsp” tagging along to the store.',
+        },
+      },
+      {
         label: { fr: 'Pastilles de mesure', en: 'Measure pills' },
         detail: {
           fr: 'Les quantités (c. à thé, tasse…) sont des pastilles colorées; touche-les pour les entendre.',
@@ -1013,30 +1035,41 @@ export const GUIDE: GuideEntry[] = [
     group: 'concepts',
     title: { fr: 'Suivi fantôme (achats)', en: 'Ghost tracking (purchases)' },
     what: {
-      fr: 'Un suivi discret de ce que tu achètes, pour mieux te proposer l’ajout rapide. Toujours sur invitation — jamais imposé.',
-      en: 'A quiet track of what you buy, to power better quick-add. Always opt-in — never forced on you.',
+      fr: 'Un suivi discret de ce que tu rachètes souvent. Quand un article suivi approche de sa date de rachat, il remonte tout seul dans le panneau d’ajout rapide de La liste, marqué « bientôt » ou « dû » — un toucher le remet sur la liste. Toujours sur invitation, jamais imposé.',
+      en: 'A quiet track of what you restock often. When a tracked item nears its renewal date it floats back up in the quick-add panel on La liste, marked “soon” or “due” — one tap puts it back on the list. Always opt-in, never forced.',
     },
     points: [
       {
         label: { fr: 'Tu choisis', en: 'You choose' },
         detail: {
-          fr: 'Acheter n’inscrit jamais un article tout seul.',
-          en: 'Buying never enrolls an item by itself.',
+          fr: 'Acheter n’inscrit jamais un article tout seul; tu l’ajoutes au suivi à la main (voir Réglages ▸ Suivi).',
+          en: 'Buying never enrolls an item by itself; you add it to tracking by hand (see Settings ▸ Tracking).',
         },
         why: {
-          fr: 'Rien ne s’active sans que tu le demandes — le suivi reste ton choix.',
-          en: 'Nothing turns on unless you ask — tracking stays your choice.',
+          fr: 'Rien ne s’active sans que tu le demandes — pas de « l’app a deviné » dans ton dos.',
+          en: 'Nothing turns on unless you ask — no “the app guessed” behind your back.',
         },
       },
       {
-        label: { fr: 'À quoi ça sert', en: 'What it’s for' },
+        label: { fr: 'Où ça apparaît', en: 'Where it shows up' },
         detail: {
-          fr: 'À te resuggérer ce que tu reprends souvent.',
-          en: 'To re-suggest what you restock often.',
+          fr: 'Sur La liste, dans le panneau d’ajout rapide (l’éclair ⚡) : tes fantômes « dûs » passent en tête, devant le reste de ton historique.',
+          en: 'On La liste, in the quick-add panel (the ⚡): your “due” ghosts jump to the top, ahead of the rest of your history.',
         },
         why: {
-          fr: 'Pour remplir une liste plus vite. C’est tout.',
-          en: 'So a list fills faster. That’s all.',
+          fr: 'C’est le seul endroit où ça sort — pas de notification, pas de badge ailleurs. Tu ne le vois que quand tu fais ta liste, au moment où c’est utile.',
+          en: 'That’s the only place it surfaces — no notification, no badge elsewhere. You only see it when you’re making your list, exactly when it helps.',
+        },
+      },
+      {
+        label: { fr: 'Pourquoi t’embêter', en: 'Why bother' },
+        detail: {
+          fr: 'Le fantôme garde aussi les synonymes de circulaire de l’article : remettre « Pain » réactive « baguette/bread » pour le pige-prix.',
+          en: 'The ghost also keeps the item’s flyer synonyms: re-adding “Pain” re-arms “baguette/bread” for price-matching.',
+        },
+        why: {
+          fr: 'Pour ne plus oublier le lait ou le café juste parce que tu n’y as pas pensé en faisant la liste — sans qu’une app te harcèle pour autant.',
+          en: 'So you stop forgetting the milk or the coffee just because it slipped your mind at list time — without an app nagging you for it.',
         },
       },
     ],
@@ -1614,8 +1647,8 @@ export const GUIDE: GuideEntry[] = [
     tab: 'ghost',
     title: { fr: 'Suggestions (ghost)', en: 'Suggestions (ghost)' },
     what: {
-      fr: 'Le réglage du suivi d’achats opt-in. Tu choisis quoi suivre et à quelle fréquence; ça nourrit l’ajout rapide.',
-      en: 'The opt-in purchase-tracking setup. You choose what to track and how often; it powers quick-add.',
+      fr: 'Le réglage du suivi d’achats opt-in : tu choisis quoi suivre et à quelle fréquence. C’est ici qu’on monte ce qui ressort plus tard, marqué « dû / bientôt », dans le panneau d’ajout rapide de La liste (voir Suivi fantôme).',
+      en: 'The opt-in purchase-tracking setup: you choose what to track and how often. This is where you build what later resurfaces, marked “due / soon”, in the quick-add panel on La liste (see Ghost tracking).',
     },
     points: [
       {
@@ -1803,6 +1836,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Passe en vue enfant d’ici. Rappel : pour ressortir, garde le doigt dans le coin haut-gauche (voir « Vue parent ou enfant »).',
           en: 'Switch to kid view here. Reminder: to get back out, hold the top-left corner (see “Parent or kid view”).',
+        },
+        why: {
+          fr: 'C’est le même interrupteur que le [[icon:baby-bold]] de la barre : il rebascule toutes les sections d’un coup pour ce seul appareil, sans toucher aux autres.',
+          en: 'It’s the same switch as the [[icon:baby-bold]] in the bar: it flips every section at once for this one device, without touching the others.',
         },
       },
     ],
