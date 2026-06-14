@@ -59,6 +59,13 @@
   border-radius: 999px;
   box-shadow: var(--shadow-lg);
 }
+/* On a phone the hub has a fixed bottom tab bar (z-index 30, ~74px); the toast
+   (z-index 40) would otherwise sit ON it and swallow taps meant for the centre
+   tabs. Lift it clear of the bar — same trick as the ＋ FAB. (Kiosk keeps the low
+   default: its nav is a left column, nothing below.) */
+.undo-toast[data-surface='mobile'] {
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+}
 /* Expanded: a rounded card holding the stack of rows + a collapse control. */
 .undo-toast--stack {
   flex-direction: column;

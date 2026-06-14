@@ -636,7 +636,7 @@ export const FR = {
     byItem: 'Par article',
     byStore: 'Par magasin',
   },
-  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', edit: 'Modifier', saveFailed: 'Pas enregistré — réessaie.' },
+  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', edit: 'Modifier', saveFailed: 'Pas enregistré — réessaie.', close: 'Fermer' },
   aiErr: {
     title: 'Erreur IA',
     accept: 'Accepter',
@@ -1296,7 +1296,7 @@ export const EN: typeof FR = {
     byItem: 'By item',
     byStore: 'By store',
   },
-  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', edit: 'Edit', saveFailed: 'Not saved — try again.' },
+  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', edit: 'Edit', saveFailed: 'Not saved — try again.', close: 'Close' },
   aiErr: {
     title: 'AI error',
     accept: 'Accept',

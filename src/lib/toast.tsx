@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
+import { useSurface } from './surface'
 import { Icon } from '../components/Icon'
 import { findEntry, pushEntry, removeEntry, type UndoEntry } from './undoStack'
 
@@ -37,6 +38,9 @@ const ToastContext = createContext<ToastApi>({ schedule: () => {}, record: () =>
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const t = useT()
+  // The mobile shell has a fixed bottom tab bar; the toast must ride ABOVE it (CSS
+  // lifts it by surface) or it covers the centre tabs and eats their taps.
+  const { surface } = useSurface()
   // entriesRef is the source of truth for timer/teardown logic (read inside
   // callbacks); `entries` drives rendering. `apply` keeps them in lockstep and,
   // by living outside render, sidesteps StrictMode's double-invoked updaters.
@@ -60,8 +64,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Commit a deferred entry's held write and drop it (timer fired). No-op if it
-  // was already undone/removed.
+  // Finalize an entry when its timer fires: drop it from the stack and, for a
+  // deferred entry, run its held write (a compensating entry has none — it just
+  // dismisses). No-op if it was already undone/removed.
   const commit = useCallback(
     (id: number) => {
       const e = findEntry(entriesRef.current, id)
@@ -104,8 +109,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (req: RecordRequest) => {
       const id = ++idRef.current
       add({ id, message: req.message, onUndo: req.onUndo, kind: 'compensating' })
+      // Same lifetime as a deferred toast: auto-dismiss after the window. There's
+      // no held write to commit (the action already landed) — commit() just drops
+      // the entry. Without this the pill would linger until 6 more actions evict
+      // it, parking over the UI (and the mobile nav) indefinitely.
+      timers.current.set(
+        id,
+        setTimeout(() => commit(id), DEFAULT_UNDO_MS),
+      )
     },
-    [add],
+    [add, commit],
   )
 
   // Undo one entry: cancel its timer (so a deferred write never fires) and run
@@ -144,7 +157,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ schedule, record }}>
       {children}
       {newest && (
-        <div className={`undo-toast${expanded ? ' undo-toast--stack' : ''}`} role="status">
+        <div className={`undo-toast${expanded ? ' undo-toast--stack' : ''}`} data-surface={surface} role="status">
           {expanded ? (
             <>
               <ul className="undo-toast__list">
