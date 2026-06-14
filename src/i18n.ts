@@ -186,6 +186,9 @@ export const FR = {
     title: 'La cuisine',
     week: 'La semaine',
     planShort: 'À planifier',
+    // Concise relative tags for the week-grid date badge (the badge is tiny).
+    todayShort: 'Auj.',
+    tomorrowShort: 'Dem.',
     suggested: 'suggéré',
     tabMeals: 'Repas',
     tabPantry: 'Garde-manger',
@@ -529,6 +532,16 @@ export const FR = {
     historyRename: 'Renommer',
     historyRemove: 'Retirer',
     ghost: 'Liste fantôme',
+    mealsTab: 'Repas',
+    mealColors: 'Couleurs des repas',
+    mealColorsHint:
+      'Donne une couleur à chaque repas (déjeuner, dîner, collation, souper). Elle paraît partout où ce repas apparaît — babillard, calendrier, cuisine.',
+    mealColorReset: 'Couleur par défaut',
+    mealShow: 'Repas affichés',
+    mealShowHint:
+      'Choisis les repas à voir sur le babillard et la cuisine. Décoche ceux qui t’encombrent (ex. ne garder que le souper). Tu peux quand même les planifier dans La cuisine.',
+    mealVisible: 'Affiché',
+    mealHidden: 'Masqué',
     recipesTab: 'Recettes',
     tagsTitle: 'Étiquettes de recettes',
     tagsHint:
@@ -859,6 +872,9 @@ export const EN: typeof FR = {
     title: 'Kitchen',
     week: 'The week',
     planShort: 'To plan',
+    // Concise relative tags for the week-grid date badge (the badge is tiny).
+    todayShort: 'Today',
+    tomorrowShort: 'Tom.',
     suggested: 'suggested',
     tabMeals: 'Meals',
     tabPantry: 'Pantry',
@@ -1202,6 +1218,16 @@ export const EN: typeof FR = {
     historyRename: 'Rename',
     historyRemove: 'Remove',
     ghost: 'Ghost list',
+    mealsTab: 'Meals',
+    mealColors: 'Meal colours',
+    mealColorsHint:
+      'Give each meal a colour (breakfast, lunch, snack, supper). It shows everywhere that meal appears — the board, the calendar, the kitchen.',
+    mealColorReset: 'Default colour',
+    mealShow: 'Shown meals',
+    mealShowHint:
+      'Pick which meals show on the board and the kitchen. Uncheck the ones that clutter your glance (e.g. keep only supper). You can still plan them in the kitchen.',
+    mealVisible: 'Shown',
+    mealHidden: 'Hidden',
     recipesTab: 'Recipes',
     tagsTitle: 'Recipe tags',
     tagsHint:

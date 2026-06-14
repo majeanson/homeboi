@@ -172,8 +172,11 @@ function MemberCard({ member, onChange, onRemove }: { member: Member; onChange: 
       <span className="member-card__name">{member.display_name}</span>
       {member.is_child ? <span className="tag mono">{t.operator.isChild}</span> : null}
       <div className="member-card__actions">
-        <label className="btn btn--ghost mono operator__photo" title={t.operator.photo}>
-          <Icon name="camera-bold" size={16} />
+        {/* Photo set/clear share the bare 40px icon-button shape of RowActions, so
+            all four controls read as one uniform set (no big bordered buttons next
+            to small bare icons). */}
+        <label className="row-actions__btn operator__photo" title={t.operator.photo}>
+          <Icon name="camera-bold" size={18} />
           <input
             type="file"
             accept="image/*"
@@ -187,8 +190,8 @@ function MemberCard({ member, onChange, onRemove }: { member: Member; onChange: 
           />
         </label>
         {member.avatar_kind === 'photo' && (
-          <button type="button" className="btn btn--ghost mono" onClick={clearPhoto} aria-label={t.operator.removePhoto}>
-            <Icon name="x-bold" size={15} />
+          <button type="button" className="row-actions__btn" onClick={clearPhoto} aria-label={t.operator.removePhoto}>
+            <Icon name="x-bold" size={18} />
           </button>
         )}
         <RowActions

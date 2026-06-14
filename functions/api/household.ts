@@ -2,23 +2,32 @@ import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { householdIncludedStores, storeKey } from '../_lib/stores'
+import { householdMealSlotPrefs, cleanColors, cleanHidden } from '../_lib/mealSlots'
 import { nowSec } from '../_lib/ids'
 
 // Household-level settings that aren't members/devices/chores: the postal code
-// used by the flyer/deal lookups (set once, used every trip) and the allowlist of
+// used by the flyer/deal lookups (set once, used every trip), the allowlist of
 // stores the operator chose to consider in those lookups (only included stores
-// reach the deal cards / store picker / price-match proof; empty = consider all).
-// GET is open to any actor (a kiosk needs to know the location too); PATCH is
-// operator-only — a wall tablet shouldn't be able to move the household.
+// reach the deal cards / store picker / price-match proof; empty = consider all),
+// and the per-slot meal colours + hide-list (so a meal reads the same colour on
+// every surface, and "I only care about souper" can drop the other slots).
+// GET is open to any actor (a kiosk needs the location AND the meal colours too);
+// PATCH is operator-only — a wall tablet shouldn't be able to move the household.
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
-  return ok({ postal, includedStores })
+  const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
+  return ok({ postal, includedStores, mealColors: meals.colors, mealHidden: meals.hidden })
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ postal?: string | null; includedStores?: string[] }>(ctx.request)
+  const body = await readJson<{
+    postal?: string | null
+    includedStores?: string[]
+    mealColors?: Record<string, string>
+    mealHidden?: string[]
+  }>(ctx.request)
 
   // Each field is only touched when its key is present, so the postal form and
   // the store-filter form can PATCH independently without clobbering each other.
@@ -48,7 +57,26 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
   }
 
+  // Per-slot meal colours: a {slot: hex} map. Only valid pairs survive; an empty
+  // result (every slot reset to its default) clears the column back to NULL.
+  if (body && 'mealColors' in body) {
+    const colors = cleanColors(body.mealColors)
+    await ctx.env.DB.prepare('UPDATE households SET meal_slot_colors = ?, updated_at = ? WHERE id = ?')
+      .bind(Object.keys(colors).length ? JSON.stringify(colors) : null, nowSec(), actor.householdId)
+      .run()
+  }
+
+  // Hidden slots: a list of slot names to drop from the glance/plan. Empty list
+  // clears the column (NULL = show every slot).
+  if (body && 'mealHidden' in body) {
+    const hidden = cleanHidden(body.mealHidden)
+    await ctx.env.DB.prepare('UPDATE households SET meal_slot_hidden = ?, updated_at = ? WHERE id = ?')
+      .bind(hidden.length ? JSON.stringify(hidden) : null, nowSec(), actor.householdId)
+      .run()
+  }
+
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
-  return ok({ postal, includedStores })
+  const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
+  return ok({ postal, includedStores, mealColors: meals.colors, mealHidden: meals.hidden })
 }, 'operator')

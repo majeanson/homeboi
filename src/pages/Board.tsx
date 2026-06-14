@@ -6,6 +6,8 @@ import { PairPrompt } from '../components/Fallback'
 import { HelpDot } from '../components/HelpDot'
 import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
+import { wash, tintInk } from '../lib/colors'
+import { useMealPrefs } from '../lib/mealPrefs'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
@@ -111,12 +113,21 @@ export function Board() {
   // by SLOT_RANK gives time order across slots while keeping intra-slot position.
   const bySlotTime = (a: { slot: string }, b: { slot: string }) =>
     SLOT_RANK[a.slot as MealSlot] - SLOT_RANK[b.slot as MealSlot]
+  // Per-slot meal colour + visibility (Réglages ▸ Repas). A meal's slot tints its
+  // card here and everywhere it shows; a hidden slot drops off the glance.
+  const mealPrefs = useMealPrefs()
+  const supperColor = mealPrefs.color('supper')
   // Today's meals beside the supper hero. Supper is already the "Ce soir" hero, so
   // the day list shows the OTHER slots — together they cover the whole day's table.
-  const otherMeals = (data?.todayMeals ?? []).filter((m) => m.slot !== 'supper').sort(bySlotTime)
+  // Hidden slots are filtered out so "I only care about souper" empties the row.
+  const otherMeals = (data?.todayMeals ?? []).filter((m) => m.slot !== 'supper' && mealPrefs.isVisible(m.slot)).sort(bySlotTime)
   // Tomorrow's meals shown in Demain. Supper has its own line there, so list the
   // rest — together they cover tomorrow's table for prep-ahead planning.
-  const otherTomorrowMeals = (data?.tomorrowMeals ?? []).filter((m) => m.slot !== 'supper').sort(bySlotTime)
+  const otherTomorrowMeals = (data?.tomorrowMeals ?? []).filter((m) => m.slot !== 'supper' && mealPrefs.isVisible(m.slot)).sort(bySlotTime)
+  // Tonight's supper hero(es) — hidden entirely if souper is toggled off.
+  const tonightMeals = mealPrefs.isVisible('supper') ? data?.tonightMeals ?? [] : []
+  // Tomorrow's supper line, gated the same way.
+  const showTomorrowSupper = !!data?.tomorrowMeal && mealPrefs.isVisible('supper')
 
   // Personal focus: when a face is picked (mobile chip / kiosk switcher), the
   // board narrows to THAT person's things plus shared "Maisonnée" items (no
@@ -218,8 +229,9 @@ export function Board() {
         ) : (
           <>
             <div className="today-kid__heroes">
-              {mealHero(data.tonight, 'tonight')}
-              {mealHero(data.tomorrowMeal, 'tomorrow')}
+              {/* Supper heroes follow the same show/hide as the parent board. */}
+              {mealPrefs.isVisible('supper') && mealHero(data.tonight, 'tonight')}
+              {mealPrefs.isVisible('supper') && mealHero(data.tomorrowMeal, 'tomorrow')}
               {weatherHero}
             </div>
             <Notes notes={data.notes ?? []} members={data.members} toddler />
@@ -472,18 +484,19 @@ export function Board() {
               cards (mirrors the toddler heroes row), so weather has a real bubble
               instead of hiding in the timestamp line. The dressing tip rides under
               the temperature where it's actionable. */}
-          {(data.tonightMeals.length > 0 || weather) && (
+          {(tonightMeals.length > 0 || weather) && (
             <div className="board-heroes">
               {/* "Ce soir" lists EVERY supper planned for today — a day can hold more
-                  than one. Each carries the souper food icon (no carrot, no emoji). */}
-              {data.tonightMeals.map((m) => (
-                <div key={m.id} className="now-card" style={{ background: CATS.meal.wash, color: CATS.meal.deep }}>
-                  <div className="blob" style={{ background: CATS.meal.color }} />
+                  than one. Each carries the souper food icon (no carrot, no emoji)
+                  and the souper colour (Réglages ▸ Repas). */}
+              {tonightMeals.map((m) => (
+                <div key={m.id} className="now-card" style={{ background: wash(supperColor!), color: tintInk(supperColor!) }}>
+                  <div className="blob" style={{ background: supperColor }} />
                   <div className="label">{t.board.tonight}</div>
                   <div className="what">{m.title}</div>
                   {cookLine(m) && <div className="who">{cookLine(m)}</div>}
                   <div className="icn">
-                    <Icon name={SLOT_ICON_NAME.supper} size={40} color={CATS.meal.color} />
+                    <Icon name={SLOT_ICON_NAME.supper} size={40} color={supperColor} />
                   </div>
                 </div>
               ))}
@@ -519,6 +532,7 @@ export function Board() {
                     when={slotLabel(m.slot)}
                     title={m.title}
                     who={cookLine(m)}
+                    color={mealPrefs.color(m.slot)}
                     mine={!!profileId && m.cook_member_id === profileId}
                   />
                 ))}
@@ -539,7 +553,7 @@ export function Board() {
 
           <Section
             label={t.board.tomorrow}
-            count={tomorrowEvents.length + (data.tomorrowMeal ? 1 : 0) + otherTomorrowMeals.length}
+            count={tomorrowEvents.length + (showTomorrowSupper ? 1 : 0) + otherTomorrowMeals.length}
           >
             {tomorrowWx && (
               <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
@@ -558,13 +572,14 @@ export function Board() {
             {data.tomorrowNote && (
               <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} />
             )}
-            {data.tomorrowMeal && (
+            {showTomorrowSupper && data.tomorrowMeal && (
               <Act
                 cat="meal"
                 icon={SLOT_ICON_NAME.supper}
                 when={slotLabel('supper')}
                 title={data.tomorrowMeal.title}
                 who={cookLine(data.tomorrowMeal)}
+                color={supperColor}
               />
             )}
             {otherTomorrowMeals.map((m) => (
@@ -575,10 +590,11 @@ export function Board() {
                 when={slotLabel(m.slot)}
                 title={m.title}
                 who={cookLine(m)}
+                color={mealPrefs.color(m.slot)}
               />
             ))}
             {tomorrowEvents.map(eventAct)}
-            {tomorrowEvents.length === 0 && !data.tomorrowMeal && otherTomorrowMeals.length === 0 && !data.tomorrowNote && (
+            {tomorrowEvents.length === 0 && !showTomorrowSupper && otherTomorrowMeals.length === 0 && !data.tomorrowNote && (
               <p className="feed-empty">—</p>
             )}
           </Section>

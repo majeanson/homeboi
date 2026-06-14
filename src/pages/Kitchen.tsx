@@ -24,7 +24,9 @@ import { useMealSuggest } from '../components/kitchen/useMealSuggest'
 import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type DayNotesData, type PantryData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { DayManageSheet } from '../components/kitchen/DayManageSheet'
-import { SIDE_SLOTS } from '../lib/mealSlots'
+import { SIDE_SLOTS, SLOT_ICON_NAME } from '../lib/mealSlots'
+import { useMealPrefs } from '../lib/mealPrefs'
+import { tintInk } from '../lib/colors'
 import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
@@ -43,6 +45,10 @@ export function Kitchen() {
   const { lang } = useLang()
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
+  // Per-slot meal visibility (Réglages ▸ Repas) trims the week's side-summary
+  // glance. The full per-slot editor (DayManageSheet) still shows every slot, so a
+  // hidden slot can always be planned from a day's "Gérer".
+  const mealPrefs = useMealPrefs()
   const nav = useNavigate()
   // Kitchen reads are live-polled, so a held (deferred) delete would be resurrected
   // mid-window by the poll. Instead these clears commit immediately and register a
@@ -507,18 +513,22 @@ export function Kitchen() {
               const dow = new Date(date * 1000).getDay()
               const isToday = date === weekStart
               const isTomorrow = date === weekStart + 86400
-              const rel = isToday ? t.board.today : isTomorrow ? t.board.tomorrow : null
+              // Concise relative tag ("Auj."/"Dem.") so the tiny date badge never
+              // overflows with "Aujourd'hui"/"Demain".
+              const rel = isToday ? t.kitchen.todayShort : isTomorrow ? t.kitchen.tomorrowShort : null
               const suppers = mealsFor(date, 'supper') // a day can hold several
+              const showSupper = mealPrefs.isVisible('supper') && suppers.length > 0
+              const supperColor = mealPrefs.color('supper')
               const note = noteFor(date)
-              // A one-line glance of the lighter slots, for the read-only card —
-              // "Déjeuner: gruau · Dîner: restes". Empty slots are skipped; the
-              // full per-slot editing lives in the Gérer sheet.
-              const sideSummary = SIDE_SLOTS.map((s) => {
-                const ms = mealsFor(date, s)
-                return ms.length ? `${t.kitchen.slots[s]}: ${ms.map((m) => m.title).join(', ')}` : null
-              })
-                .filter(Boolean)
-                .join(' · ')
+              // The lighter slots as their own colour-coded chips (déjeuner / dîner /
+              // collation), reusing the per-slot meal colours + icons (mealSlots +
+              // Réglages ▸ Repas). Each visible slot with meals becomes one chip that
+              // WRAPS at full card width — never clipped behind the Gérer cue, unlike
+              // the old single ellipsized line. Hidden slots drop off. Full per-slot
+              // editing still lives in the Gérer sheet.
+              const sideRows = SIDE_SLOTS.filter((s) => mealPrefs.isVisible(s))
+                .map((s) => ({ slot: s, titles: mealsFor(date, s).map((m) => m.title).join(', ') }))
+                .filter((r) => r.titles)
               return (
               <li
                 key={date}
@@ -545,32 +555,54 @@ export function Kitchen() {
                     <span className="kitchen__day-add">＋</span>
                   )}
                 </span>
-                {/* Calm, read-only glance — the souper headline, a one-line peek at
-                    the other slots + note, and a single "Gérer" affordance. Every
-                    edit moved into the DayManageSheet so two days fit a phone. */}
-                <button
-                  type="button"
-                  className="kitchen__day-open"
-                  onClick={() => setManageDate(date)}
-                  aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
-                >
-                  <span className="kitchen__day-sum">
-                    {suppers.length ? (
-                      <span className="kitchen__day-sum-main">{suppers.map((m) => m.title).join(' · ')}</span>
-                    ) : (
-                      <span className="kitchen__day-sum-empty mono">{t.kitchen.planShort}</span>
-                    )}
-                    {sideSummary && <span className="kitchen__day-sum-meta mono">{sideSummary}</span>}
-                    {note && (
-                      <span className="kitchen__day-sum-meta mono">
-                        <InlineIcon name="pencil-simple-bold" /> {note.text}
-                      </span>
-                    )}
-                  </span>
-                  <span className="kitchen__day-manage mono">
-                    <Icon name="pencil-simple-bold" size={14} /> {t.kitchen.manage}
-                  </span>
-                </button>
+                {/* Calm, read-only glance — the souper headline, the other slots as
+                    colour chips, the note. The meal info is plain display (no longer
+                    a giant button that hid it behind an ellipsis); only the compact
+                    "Gérer" cue opens that day's editor. Full editing lives in the
+                    DayManageSheet so two days still fit a phone. */}
+                <div className="kitchen__day-body">
+                  <div className="kitchen__day-top">
+                    <span className="kitchen__day-sum-main">
+                      {showSupper ? (
+                        <>
+                          <span className="kitchen__day-dot" style={{ background: supperColor }} aria-hidden="true" />
+                          {suppers.map((m) => m.title).join(' · ')}
+                        </>
+                      ) : (
+                        <span className="kitchen__day-sum-empty mono">{t.kitchen.planShort}</span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      className="kitchen__day-manage mono"
+                      onClick={() => setManageDate(date)}
+                      aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
+                    >
+                      <Icon name="pencil-simple-bold" size={14} /> {t.kitchen.manage}
+                    </button>
+                  </div>
+                  {sideRows.length > 0 && (
+                    <span className="kitchen__day-slots">
+                      {sideRows.map(({ slot, titles }) => {
+                        const c = mealPrefs.color(slot)!
+                        return (
+                          <span
+                            key={slot}
+                            className="kitchen__day-slot"
+                            style={{ color: tintInk(c), background: c + '14', borderColor: c + '40' }}
+                          >
+                            <InlineIcon name={SLOT_ICON_NAME[slot]} /> {titles}
+                          </span>
+                        )
+                      })}
+                    </span>
+                  )}
+                  {note && (
+                    <span className="kitchen__day-sum-meta mono">
+                      <InlineIcon name="pencil-simple-bold" /> {note.text}
+                    </span>
+                  )}
+                </div>
               </li>
               )
             })}

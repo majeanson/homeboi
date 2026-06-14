@@ -4,6 +4,7 @@ import { type Recipe } from '../../lib/recipes'
 import { useModal } from '../../lib/useModal'
 import { useSwipeToDismiss } from '../../lib/useSwipeToDismiss'
 import { SIDE_SLOTS, SLOT_ICON_NAME } from '../../lib/mealSlots'
+import { useMealPrefs } from '../../lib/mealPrefs'
 import { Icon, InlineIcon } from '../Icon'
 import { MealRows } from './MealRows'
 import { RecipePickerMenu } from './RecipePickerMenu'
@@ -93,6 +94,7 @@ export function DayManageSheet({
   }
 }) {
   const t = useT()
+  const mealPrefs = useMealPrefs()
   const sheetRef = useRef<HTMLDivElement>(null)
   useModal(sheetRef, onClose, { open })
   useSwipeToDismiss(sheetRef, onClose, { open })
@@ -135,7 +137,7 @@ export function DayManageSheet({
                 <section key={slot} className="day-mng__sec">
                   <div className="day-mng__sec-head-row">
                     <p className="day-mng__sec-head mono">
-                      <Icon name={SLOT_ICON_NAME[slot]} size={16} color="var(--ink-soft)" /> {t.kitchen.slots[slot]}
+                      <Icon name={SLOT_ICON_NAME[slot]} size={16} color={mealPrefs.color(slot)} /> {t.kitchen.slots[slot]}
                     </p>
                     {!editing && (
                       <button
@@ -235,7 +237,7 @@ export function DayManageSheet({
             <section className="day-mng__sec">
               <div className="day-mng__sec-head-row">
                 <p className="day-mng__sec-head mono">
-                  <Icon name={SLOT_ICON_NAME.supper} size={16} color="var(--ink-soft)" /> {t.kitchen.slots.supper}
+                  <Icon name={SLOT_ICON_NAME.supper} size={16} color={mealPrefs.color('supper')} /> {t.kitchen.slots.supper}
                 </p>
                 {!supperEditing && !supperStaples && (
                   <button

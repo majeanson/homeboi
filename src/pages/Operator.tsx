@@ -13,6 +13,7 @@ import { EventsSection } from '../components/operator/agenda'
 import { ChoresSection, RoutinesSection } from '../components/operator/chores'
 import { PhotosSection, RecapSection } from '../components/operator/media'
 import { RecipeTagsSection } from '../components/operator/recipesTags'
+import { MealSlotsSection } from '../components/operator/meals'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
 import { GuideSection } from '../components/operator/guide'
 import { SectionGuide } from '../components/operator/sectionGuide'
@@ -32,6 +33,7 @@ const SECTIONS = [
   { id: 'routines', key: 'routines' as const },
   { id: 'shopping', key: 'shopping' as const },
   { id: 'recipes', key: 'recipesTab' as const },
+  { id: 'meals', key: 'mealsTab' as const },
   { id: 'ghost', key: 'ghost' as const },
   { id: 'devices', key: 'devices' as const },
   { id: 'photos', key: 'photos' as const },
@@ -146,6 +148,7 @@ export function Operator() {
           </>
         )}
         {tab === 'recipes' && <RecipeTagsSection />}
+        {tab === 'meals' && <MealSlotsSection />}
         {tab === 'ghost' && <GhostSection />}
         {tab === 'devices' && (
           <>

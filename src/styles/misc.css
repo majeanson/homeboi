@@ -235,6 +235,53 @@
   flex: 0 0 auto;
 }
 
+/* Réglages ▸ Repas — one row per meal slot: its label + coloured icon chip, the
+   colour picker, and a show/hide toggle. Mirrors the store-filter row shape. */
+.meal-slots {
+  gap: 0.25rem;
+}
+.meal-slots__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.meal-slots__row.is-off {
+  opacity: 0.55;
+}
+.meal-slots__name {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 1 1 8rem;
+  min-width: 0;
+  font-weight: 600;
+}
+.meal-slots__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  flex: 0 0 auto;
+  border-radius: var(--radius-sm);
+}
+.meal-slots__pick {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.meal-slots__reset {
+  flex: 0 0 auto;
+}
+.meal-slots__toggle {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
 /* A staged flyer deal shown on a shared-list row. */
 .list-row__deal {
   display: block;

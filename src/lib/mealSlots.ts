@@ -29,5 +29,17 @@ export const SLOT_ICON_NAME: Record<MealSlot, IconName> = {
   supper: 'bowl-food-bold',
 }
 
+// The DEFAULT colour per slot, used until the operator picks an override in
+// Réglages ▸ Repas. Warm-to-cool across the day so the slots read apart at a
+// glance; souper keeps the meal-category terracotta (CATS.meal.color) so the
+// board looks unchanged out of the box. All drawn from the household PALETTE
+// (lib/colors). Resolve an actual colour for a slot via useMealPrefs().color().
+export const SLOT_COLOR: Record<MealSlot, string> = {
+  breakfast: '#E0A93D', // honey — morning
+  lunch: '#7BB0C9', // sky — midday
+  snack: '#B06A93', // berry — afternoon
+  supper: '#E0724E', // terracotta — the day's hero meal
+}
+
 export const isMealSlot = (v: unknown): v is MealSlot =>
   typeof v === 'string' && (MEAL_SLOTS as readonly string[]).includes(v)

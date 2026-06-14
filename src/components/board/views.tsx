@@ -1,5 +1,6 @@
 import { CATS } from '../../lib/cats'
 import { tintInk } from '../../lib/colors'
+import { useMealPrefs } from '../../lib/mealPrefs'
 import { formatTime } from '../../lib/format'
 import { SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
 import { type Lang } from '../../i18n'
@@ -11,7 +12,11 @@ import { colorOf, nameOf, type BoardData, type Dict, type EventRow } from './typ
 // event (rather than a stale "tonight" card); only an empty tomorrow falls back to
 // the supper, then a calm empty. All-day items ride along as a quiet footer.
 export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: Lang; t: Dict; profileId: string | null }) {
+  const mealPrefs = useMealPrefs()
+  const supperColor = mealPrefs.color('supper')
   const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
+  // The day's meal footer skips slots the household hid (Réglages ▸ Repas).
+  const footerMeals = data.todayMeals.filter((m) => mealPrefs.isVisible(m.slot))
   const now = Date.now() / 1000
   const timed = data.today.filter((e) => !e.all_day).sort((a, b) => a.start_at - b.start_at)
   const allDay = data.today.filter((e) => e.all_day)
@@ -64,10 +69,10 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
             </div>
           )}
         </div>
-      ) : data.tonight ? (
-        <div className="nownext__focus" style={{ borderColor: CATS.meal.color + '55' }}>
+      ) : data.tonight && mealPrefs.isVisible('supper') ? (
+        <div className="nownext__focus" style={{ borderColor: supperColor + '55' }}>
           <div className="nownext__when mono">{t.board.tonight}</div>
-          <div className="nownext__title" style={{ color: CATS.meal.deep }}>
+          <div className="nownext__title" style={{ color: tintInk(supperColor!) }}>
             {data.tonight.title}
           </div>
         </div>
@@ -103,9 +108,9 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
 
       {/* Today's full meal table rides as a footer too — every slot, not just the
           supper (which can also be the fallback focus above). */}
-      {data.todayMeals.length > 0 && (
+      {footerMeals.length > 0 && (
         <div className="nownext__allday mono">
-          {t.board.meals} · {data.todayMeals.map((m) => `${slotLabel(m.slot)}: ${m.title}`).join(' · ')}
+          {t.board.meals} · {footerMeals.map((m) => `${slotLabel(m.slot)}: ${m.title}`).join(' · ')}
         </div>
       )}
 
@@ -131,7 +136,10 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
 // NOT every chore in rotation. A weekly chore shows in its person's lane on its
 // day, not all week. Upcoming occurrences live in the Mois (month) view instead.
 export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lang; t: Dict; profileId: string | null }) {
+  const mealPrefs = useMealPrefs()
   const memberIds = new Set(data.members.map((m) => m.id))
+  // Hidden meal slots (Réglages ▸ Repas) drop off the Maisonnée lane's table.
+  const laneMeals = data.todayMeals.filter((m) => mealPrefs.isVisible(m.slot))
   const unassigned = data.today.filter((e) => !e.member_id || !memberIds.has(e.member_id))
   // Chores/to-dos due today with no rotation turn (who_id null) belong to the
   // whole household — they ride the Maisonnée lane beside unassigned events.
@@ -144,20 +152,21 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
 
   return (
     <div className="lanes">
-      {(unassigned.length > 0 || sharedChores.length > 0 || data.todayMeals.length > 0) && (
+      {(unassigned.length > 0 || sharedChores.length > 0 || laneMeals.length > 0) && (
         <div className="lane bento">
           <div className="lane__head lane__head--shared">
             <span className="lane__dot" style={{ background: 'var(--ink-faint)' }} aria-hidden="true" />
             {t.profile.household}
           </div>
-          {/* The whole day's table — every planned slot, whoever's cooking. */}
-          {data.todayMeals.map((m) => (
+          {/* The whole day's table — every planned (shown) slot, whoever's cooking. */}
+          {laneMeals.map((m) => (
             <Act
               key={m.id}
               cat="meal"
               icon={SLOT_ICON_NAME[m.slot as MealSlot]}
               title={`${slotLabel(m.slot)} · ${m.title}`}
               who={cookLine(m.cook_member_id)}
+              color={mealPrefs.color(m.slot)}
             />
           ))}
           {unassigned.map((e) => (

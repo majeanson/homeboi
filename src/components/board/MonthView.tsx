@@ -5,6 +5,7 @@ import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDayLong, weekdayShort } from '../../lib/format'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
 import { SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
+import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
 import { Act } from './Act'
@@ -31,11 +32,12 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 // The colour-coded dots a cell shows: one per dated thing, ordered the same way
 // the detail panel lists them (events first, by member colour, then meals,
 // chores, notes). Cap is applied by the caller.
-function dotsFor(b: DayBucket | undefined, members: Member[]): string[] {
+function dotsFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs): string[] {
   if (!b) return []
   const out: string[] = []
   for (const e of b.events) out.push(colorOf(members, e.member_id) ?? CATS.event.color)
-  b.meals.forEach(() => out.push(CATS.meal.color))
+  // Each shown meal gets its slot colour (Réglages ▸ Repas); hidden slots = no dot.
+  for (const m of b.meals) if (meals.isVisible(m.slot)) out.push(meals.color(m.slot) ?? CATS.meal.color)
   for (const c of b.chores) out.push(c.color ?? CATS.chore.color)
   b.notes.forEach(() => out.push(CATS.list.color))
   return out
@@ -93,6 +95,7 @@ export function MonthView({
     return m
   }, [data])
 
+  const mealPrefs = useMealPrefs()
   const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
   const cookLine = (id: string | null) => {
     const who = nameOf(members, id)
@@ -100,7 +103,9 @@ export function MonthView({
   }
 
   const sel = byDay.get(selected)
-  const selCount = sel ? sel.events.length + sel.meals.length + sel.chores.length + sel.notes.length : 0
+  // Hidden meal slots (Réglages ▸ Repas) drop out of the day's detail list + count.
+  const selMeals = sel ? sel.meals.filter((m) => mealPrefs.isVisible(m.slot)) : []
+  const selCount = sel ? sel.events.length + selMeals.length + sel.chores.length + sel.notes.length : 0
   const atToday = offset === 0 && selected === todayDay
   const title = cap(formatMonthYear(grid.monthStart, lang))
 
@@ -136,7 +141,7 @@ export function MonthView({
         ))}
         {grid.days.map((d) => {
           const b = byDay.get(d)
-          const dots = dotsFor(b, members)
+          const dots = dotsFor(b, members, mealPrefs)
           const cls =
             'monthv__cell' +
             (inMonth(d, grid.month) ? '' : ' is-out') +
@@ -171,13 +176,14 @@ export function MonthView({
             {/* Same order, same cards as the bento day: meals, then events, then
                 chores, then the day note — so nothing dated is represented here
                 differently than on the day view. */}
-            {sel!.meals.map((m) => (
+            {selMeals.map((m) => (
               <Act
                 key={m.id}
                 cat="meal"
                 icon={SLOT_ICON_NAME[m.slot as MealSlot]}
                 title={`${slotLabel(m.slot)} · ${m.title}`}
                 who={cookLine(m.cook_member_id)}
+                color={mealPrefs.color(m.slot)}
               />
             ))}
             {sel!.events.map((e) => (

@@ -26,19 +26,44 @@ async function seed(context: BrowserContext) {
       localStorage.setItem('babillard-lang', 'fr')
       localStorage.setItem('babillard-calm', 'on')
       localStorage.setItem('babillard-surface', 'mobile')
+      // Mark the first-login guided tour as already seen, or its overlay covers
+      // every page and the sweep just shoots the coachmark (see lib/tour.tsx).
+      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
     } catch {
       /* noop */
     }
   })
 }
 
-async function login(page: Page) {
-  await page.goto('/login')
-  await page.locator('input[type="email"]').fill(EMAIL ?? '')
-  await page.locator('input[type="password"]').fill(PASSWORD ?? '')
-  await page.locator('button[type="submit"]').click()
-  // Land on the board (login navigates there on success).
-  await page.waitForURL('**/board', { timeout: 30_000 }).catch(() => {})
+const API_TARGET = process.env.BABILLARD_API_PROXY || 'https://babillard.marc-jeanson.workers.dev'
+
+// Deterministic login: the browser FORM login flakes intermittently through the
+// Vite dev proxy (a Secure-cookie / timing race — the API itself is rock solid).
+// So authenticate straight against the deployed Worker, then re-plant the issued
+// cookies on the dev origin (127.0.0.1) host-only + non-Secure so the browser
+// keeps them over http. Every subsequent navigation is then signed in.
+async function login(page: Page, context: BrowserContext) {
+  const resp = await context.request.post(`${API_TARGET}/api/auth/login`, {
+    data: { email: EMAIL, password: PASSWORD },
+  })
+  if (!resp.ok()) throw new Error(`login failed: ${resp.status()} ${await resp.text()}`)
+  const cookies = resp
+    .headersArray()
+    .filter((h) => h.name.toLowerCase() === 'set-cookie')
+    .map((h) => {
+      const pair = h.value.split(';')[0]
+      const eq = pair.indexOf('=')
+      return {
+        name: pair.slice(0, eq).trim(),
+        value: pair.slice(eq + 1),
+        domain: '127.0.0.1',
+        path: '/',
+        sameSite: 'Lax' as const,
+      }
+    })
+  await context.addCookies(cookies)
+  // Warm the shell so the first real navigation isn't a cold Vite compile.
+  await page.goto('/board')
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
 }
 
@@ -103,7 +128,7 @@ for (const s of SURFACES) {
   test(`real ${s.name} scrolled to bottom @phone`, async ({ page, context }) => {
     await seed(context)
     await page.setViewportSize(PHONE)
-    await login(page)
+    await login(page, context)
     await page.goto(s.path)
     await settle(page)
     await scrollToBottom(page)
@@ -114,7 +139,7 @@ for (const s of SURFACES) {
 test('real liste overlays (cashier / quick-add / browse)', async ({ page, context }) => {
   await seed(context)
   await page.setViewportSize(PHONE)
-  await login(page)
+  await login(page, context)
   await page.goto('/liste')
   await settle(page)
 
@@ -158,7 +183,7 @@ test('real liste overlays (cashier / quick-add / browse)', async ({ page, contex
 test('real add sheet @phone', async ({ page, context }) => {
   await seed(context)
   await page.setViewportSize(PHONE)
-  await login(page)
+  await login(page, context)
   await page.goto('/liste')
   await settle(page)
   const fab = page.locator('.add-fab')
@@ -169,10 +194,48 @@ test('real add sheet @phone', async ({ page, context }) => {
   }
 })
 
+// ── CRUD-row sweep ──────────────────────────────────────────────────────────
+// The uniform add/edit/delete pass put a RowActions pair (✏️/🗑️) on every
+// manageable row. Crowding ("too much on one line") only shows under real content
+// volume — long member names, long recipe/tag names, many chores. These deep-link
+// each Settings sub-tab (?tab=<id> matches Operator.tsx section ids) and walk the
+// Kitchen sub-tabs. The themed tabs render inside an inner scroller (.hub__body)
+// with a fixed 100dvh height, so fullPage only ever captures the top — we use a
+// TALL phone-WIDTH viewport instead, which keeps the (crowding-prone) phone width
+// but reveals every row in one frame. Review e2e/screenshots/real-crud-*.png.
+// ONE test, ONE login: walk every CRUD surface in a single session. Logging in
+// per-test hammered prod with dozens of logins (intermittent auth flake on a
+// reused checkout); a single session is faster and reliable.
+const PHONE_TALL = { width: 390, height: 2400 }
+const SETTINGS_TABS = ['household', 'agenda', 'chores', 'routines', 'recipes', 'devices', 'shopping', 'ghost']
+
+test('real crud rows: all settings + kitchen tabs @phone-tall', async ({ page, context }) => {
+  await seed(context)
+  await page.setViewportSize(PHONE_TALL)
+  await login(page, context)
+
+  for (const id of SETTINGS_TABS) {
+    await page.goto(`/settings?tab=${id}`)
+    await settle(page, '.operator__tabs')
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: `e2e/screenshots/real-crud-settings-${id}.png`, fullPage: true })
+  }
+
+  // Kitchen sub-tabs that carry RowActions rows: pantry (running-low) + recipes
+  // (book grid). Tab order is meals(0) / pantry(1) / recipes(2).
+  for (const [idx, name] of [[1, 'pantry'], [2, 'recipes']] as const) {
+    await page.goto('/kitchen')
+    await settle(page)
+    await page.locator('.subtabs__opt').nth(idx).click().catch(() => {})
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: `e2e/screenshots/real-crud-kitchen-${name}.png`, fullPage: true })
+  }
+})
+
 test('real recipe + cook mode @phone', async ({ page, context }) => {
   await seed(context)
   await page.setViewportSize(PHONE)
-  await login(page)
+  await login(page, context)
   await page.goto('/kitchen')
   await settle(page)
   // Find the recipes tab/section, open the first recipe card.

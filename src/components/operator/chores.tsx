@@ -151,7 +151,7 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
               />
             </li>
           ) : (
-            <li key={r.id}>
+            <li key={r.id} className="operator__routine-row">
               <span>
                 {r.name}
                 {r.memberName ? ` · ${r.memberName}` : ''}
