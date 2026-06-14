@@ -170,6 +170,10 @@ body::before {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
+  /* Reserve the scrollbar's space always, so the scroll lock below (overflow
+     :hidden) can't reclaim a gutter and nudge content sideways on desktop
+     classic-scrollbar browsers. No-op where scrollbars overlay (touch). */
+  scrollbar-gutter: stable;
 }
 /* Modal scroll lock (useModal). The document never scrolls — these two are the
    only scrollers — so freezing THEM is what actually stops the page drifting

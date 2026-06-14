@@ -53,6 +53,10 @@
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
+  /* Always reserve the scrollbar gutter so the modal scroll lock (overflow
+     :hidden, core.css) can't nudge the page sideways when a sheet opens over it
+     on a desktop classic-scrollbar browser. No-op on overlay-scrollbar (touch). */
+  scrollbar-gutter: stable;
   position: relative;
 }
 /* Toddler Kitchen/Liste render a bare <main class="kid__main"> (a handful of big
