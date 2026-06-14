@@ -120,22 +120,22 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
   )
 }
 
-// Per-person "lanes": one column per family member (their today events + the chore
-// currently their turn). A leading "Maisonnée" lane carries tonight's supper and
-// any unassigned events — the common case, since quick-capture doesn't set a
-// member — so nothing vanishes. The device's own member lane is gently accented.
+// Per-person "lanes": one column per family member (their today events + the
+// chores/to-dos that are DUE TODAY and their turn). A leading "Maisonnée" lane
+// carries tonight's supper and any unassigned events/chores — the common case,
+// since quick-capture doesn't set a member — so nothing vanishes. The device's
+// own member lane is gently accented.
+//
+// Due-today only, on purpose: lanes source chores from `choresToday` (recurring
+// chores that occur today and aren't already done — see functions/api/board.ts),
+// NOT every chore in rotation. A weekly chore shows in its person's lane on its
+// day, not all week. Upcoming occurrences live in the Mois (month) view instead.
 export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lang; t: Dict; profileId: string | null }) {
-  const choresFor = (memberId: string) =>
-    data.chores.filter((c) => {
-      try {
-        const rot = JSON.parse(c.rotation_json) as string[]
-        return rot[c.current_idx] === memberId
-      } catch {
-        return false
-      }
-    })
   const memberIds = new Set(data.members.map((m) => m.id))
   const unassigned = data.today.filter((e) => !e.member_id || !memberIds.has(e.member_id))
+  // Chores/to-dos due today with no rotation turn (who_id null) belong to the
+  // whole household — they ride the Maisonnée lane beside unassigned events.
+  const sharedChores = [...data.choresToday, ...data.todos].filter((c) => !c.who_id || !memberIds.has(c.who_id))
   const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
   const cookLine = (cookId: string | null) => {
     const who = nameOf(data.members, cookId)
@@ -144,7 +144,7 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
 
   return (
     <div className="lanes">
-      {(unassigned.length > 0 || data.todayMeals.length > 0) && (
+      {(unassigned.length > 0 || sharedChores.length > 0 || data.todayMeals.length > 0) && (
         <div className="lane bento">
           <div className="lane__head lane__head--shared">
             <span className="lane__dot" style={{ background: 'var(--ink-faint)' }} aria-hidden="true" />
@@ -168,11 +168,16 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
               when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
             />
           ))}
+          {sharedChores.map((c) => (
+            <Act key={c.id} cat="chore" title={c.title} color={c.color ?? undefined} />
+          ))}
         </div>
       )}
       {data.members.map((m) => {
         const events = data.today.filter((e) => e.member_id === m.id)
-        const chores = choresFor(m.id)
+        // Only what's due today and theirs: recurring chores occurring today plus
+        // one-off to-dos on their turn. Future occurrences stay in the Mois view.
+        const chores = [...data.choresToday, ...data.todos].filter((c) => c.who_id === m.id)
         const empty = events.length === 0 && chores.length === 0
         const mine = m.id === profileId
         return (
