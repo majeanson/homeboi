@@ -159,10 +159,12 @@ test('sheet-add-routine', async ({ page }) => {
 // states that only appear after a click inside a section.
 
 // RecurPicker, weekly: the weekday chip row only renders once "weekly" is picked.
-// Lives in the agenda section's EventForm.
+// The EventForm is now EDIT-only in Réglages; adding opens the shared ＋ sheet
+// from the agenda tab's "Ajouter un rendez-vous" button, where the form lives.
 test('settings-recur-weekly', async ({ page }) => {
   await boot(page, '/settings')
   await page.getByRole('tab', { name: 'Rendez-vous' }).click() // agenda
+  await page.getByRole('button', { name: 'Ajouter un rendez-vous' }).click() // opens the ＋ sheet
   await page.locator('.recur select').first().waitFor({ state: 'visible' })
   await page.locator('.recur select').first().selectOption('weekly')
   await page.locator('.recur__days').waitFor({ state: 'visible' })
@@ -170,11 +172,13 @@ test('settings-recur-weekly', async ({ page }) => {
   await shoot(page, 'settings-recur-weekly-phone', false)
 })
 
-// CardDeckEditor emoji palette — add a card, then open its emoji palette. Lives
-// in the routines section's RoutineForm.
+// CardDeckEditor emoji palette — add a card, then open its emoji palette. The
+// RoutineForm is now reached from the routines tab's "Créer une routine" button,
+// which opens the shared ＋ sheet (Réglages no longer carries a blank add form).
 test('settings-deck-palette', async ({ page }) => {
   await boot(page, '/settings')
   await page.getByRole('tab', { name: 'Routines (mode enfant)' }).click() // routines
+  await page.getByRole('button', { name: 'Créer une routine' }).click() // opens the ＋ sheet
   await page.locator('.deck__add').waitFor({ state: 'visible' })
   await page.locator('.deck__add').click() // add a blank card
   await page.locator('.deck__emoji').first().click() // open its palette

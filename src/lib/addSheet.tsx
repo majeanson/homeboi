@@ -4,6 +4,8 @@
 // duplicate selectors in e2e). `open('routine')` jumps straight to that form;
 // the no-arg call opens the CURRENT SECTION's default — the ＋ means "add a
 // recipe" in the kitchen and "add to the list" on Liste, not one generic sheet.
+// An optional `modes` overrides the section's chooser: Réglages (where the ＋ FAB
+// is hidden) opens a single-form sheet, e.g. open('chore', ['chore']).
 import { createContext, useContext } from 'react'
 
 export type AddSheetMode =
@@ -30,6 +32,8 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
 // kitchen adds) already works on a paired kiosk via its device token.
 export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'chore', 'routine'])
 
-export const AddSheetContext = createContext<{ open: (mode?: AddSheetMode) => void }>({ open: () => {} })
+export const AddSheetContext = createContext<{ open: (mode?: AddSheetMode, modes?: AddSheetMode[]) => void }>({
+  open: () => {},
+})
 
 export const useAddSheet = () => useContext(AddSheetContext)

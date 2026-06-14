@@ -15,6 +15,7 @@ import { PhotosSection, RecapSection } from '../components/operator/media'
 import { RecipeTagsSection } from '../components/operator/recipesTags'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
 import { GuideSection } from '../components/operator/guide'
+import { SectionGuide } from '../components/operator/sectionGuide'
 import { useTabParam } from '../lib/tabParam'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
 
@@ -130,10 +131,13 @@ export function Operator() {
       </nav>
 
       <div className="operator__panel" role="tabpanel">
+        {/* Each tab carries its own how-it-works inline (the per-tab cards that
+            used to live only under Guide). The Guide tab documents itself. */}
+        {tab !== 'guide' && <SectionGuide tab={tab} />}
         {tab === 'household' && <MembersSection members={members} onChange={load} />}
         {tab === 'agenda' && <EventsSection events={events} members={members} onChange={load} />}
-        {tab === 'chores' && <ChoresSection chores={chores} members={members} onChange={load} />}
-        {tab === 'routines' && <RoutinesSection routines={routines} members={members} onChange={load} />}
+        {tab === 'chores' && <ChoresSection chores={chores} onChange={load} />}
+        {tab === 'routines' && <RoutinesSection routines={routines} onChange={load} />}
         {tab === 'shopping' && (
           <>
             <ShopSection />

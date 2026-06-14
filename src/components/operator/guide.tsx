@@ -1,10 +1,80 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type Ref } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { GUIDE, GUIDE_GROUPS, type GuideEntry } from '../../lib/guideContent'
 import { renderRich, stripTokens } from '../../lib/richText'
 import { useTour } from '../../lib/tour'
 import { Icon } from '../Icon'
+
+// One documentation card (native <details>, so it stays accessible and calm):
+// an icon, a title, the one-line "what", then every point as its own nested
+// collapsible. Presentational — the Guide tab (below) drives search/deep-link
+// state, and SectionGuide reuses this very card inline in each Réglages tab so
+// each section now carries its own how-it-works (showGoTo off — you're already
+// on the tab it would point to).
+export function GuideCard({
+  entry,
+  open,
+  isTarget,
+  cardRef,
+  pointsOpen = false,
+  showGoTo = true,
+  onReplayTour,
+}: {
+  entry: GuideEntry
+  open?: boolean
+  isTarget?: boolean
+  cardRef?: Ref<HTMLDetailsElement>
+  pointsOpen?: boolean
+  showGoTo?: boolean
+  onReplayTour?: () => void
+}) {
+  const t = useT()
+  const { lang } = useLang()
+  return (
+    <details ref={cardRef} className={`guide__card${isTarget ? ' is-target' : ''}`} open={open}>
+      <summary className="guide__summary">
+        <span className="guide__icon">
+          <Icon name={entry.icon} size={26} />
+        </span>
+        <span className="guide__heads">
+          <span className="guide__title">{entry.title[lang]}</span>
+          <span className="guide__what">{renderRich(entry.what[lang])}</span>
+        </span>
+      </summary>
+      <div className="guide__points">
+        {entry.points.map((p, i) => (
+          // Each explanation collapses under its own clickable title;
+          // a search hit opens them so the matched text is visible.
+          <details key={i} className="guide__point" open={pointsOpen}>
+            <summary className="guide__point-title">{renderRich(p.label[lang])}</summary>
+            <p className="guide__point-detail">{renderRich(p.detail[lang])}</p>
+            {/* The WHY, when the point earns one: a distinct, softer line so a
+                parent scans WHAT first, WHY second. */}
+            {p.why && <p className="guide__point-why">{renderRich(p.why[lang])}</p>}
+          </details>
+        ))}
+        {/* For a Settings-tab card surfaced in the Guide: a direct "go there"
+            link that switches Réglages straight to that tab (?tab=<id>). Off
+            when the card is shown inline on the tab it documents. */}
+        {showGoTo && entry.tab && (
+          <Link className="guide__goto" to={`/settings?tab=${entry.tab}`}>
+            <span>{t.operator.guideGoTo}</span>
+            <Icon name="arrow-right-bold" size={18} />
+          </Link>
+        )}
+        {/* The "Première fois" card hosts the replay button: it starts the
+            guided tour, which navigates to /board itself. */}
+        {entry.action === 'replay-tour' && onReplayTour && (
+          <button type="button" className="guide__goto" onClick={onReplayTour}>
+            <Icon name="repeat-bold" size={18} />
+            <span>{t.operator.replayTour}</span>
+          </button>
+        )}
+      </div>
+    </details>
+  )
+}
 
 // Réglages ▸ Guide — the whole how-it-works manual in one place. Each concept is
 // a collapsible card (native <details>, so it stays accessible and calm), and
@@ -65,7 +135,11 @@ export function GuideSection() {
 
       {matches.length === 0 && <p className="feed-empty">{t.operator.guideNone}</p>}
 
-      {GUIDE_GROUPS.map((group) => {
+      {/* The per-tab "settings" cards now live INLINE in each Réglages tab (see
+          SectionGuide), so the Guide reads as the conceptual manual — start, the
+          five sections, and the cross-cutting concepts — not a second copy of the
+          tab reference. */}
+      {GUIDE_GROUPS.filter((g) => g.id !== 'settings').map((group) => {
         const entries = matches.filter((e) => e.group === group.id)
         if (entries.length === 0) return null
         return (
@@ -76,52 +150,15 @@ export function GuideSection() {
               {entries.map((e) => (
                 // Open the matching cards while searching, so a hit is visible at once;
                 // also open (and scroll to) a card a contextual "?" deep-linked us to.
-                <details
+                <GuideCard
                   key={e.id}
-                  ref={e.id === openId ? targetRef : undefined}
-                  className={`guide__card${e.id === openId ? ' is-target' : ''}`}
+                  entry={e}
+                  cardRef={e.id === openId ? targetRef : undefined}
+                  isTarget={e.id === openId}
                   open={q.length > 0 || e.id === openId}
-                >
-                  <summary className="guide__summary">
-                    <span className="guide__icon">
-                      <Icon name={e.icon} size={26} />
-                    </span>
-                    <span className="guide__heads">
-                      <span className="guide__title">{e.title[lang]}</span>
-                      <span className="guide__what">{renderRich(e.what[lang])}</span>
-                    </span>
-                  </summary>
-                  <div className="guide__points">
-                    {e.points.map((p, i) => (
-                      // Each explanation collapses under its own clickable title;
-                      // a search hit opens them so the matched text is visible.
-                      <details key={i} className="guide__point" open={q.length > 0}>
-                        <summary className="guide__point-title">{renderRich(p.label[lang])}</summary>
-                        <p className="guide__point-detail">{renderRich(p.detail[lang])}</p>
-                        {/* The WHY, when the point earns one: a distinct, softer
-                            line so a parent scans WHAT first, WHY second. */}
-                        {p.why && <p className="guide__point-why">{renderRich(p.why[lang])}</p>}
-                      </details>
-                    ))}
-                    {/* For a Settings-tab card: a direct "go there" link that
-                        switches Réglages straight to that tab (?tab=<id>). */}
-                    {e.tab && (
-                      <Link className="guide__goto" to={`/settings?tab=${e.tab}`}>
-                        <span>{t.operator.guideGoTo}</span>
-                        <Icon name="arrow-right-bold" size={18} />
-                      </Link>
-                    )}
-                    {/* The "Première fois" card hosts the replay button: it starts
-                        the guided tour, which navigates to /board itself, so this
-                        works even though we're standing in Réglages. */}
-                    {e.action === 'replay-tour' && (
-                      <button type="button" className="guide__goto" onClick={() => start('essentials')}>
-                        <Icon name="repeat-bold" size={18} />
-                        <span>{t.operator.replayTour}</span>
-                      </button>
-                    )}
-                  </div>
-                </details>
+                  pointsOpen={q.length > 0}
+                  onReplayTour={() => start('essentials')}
+                />
               ))}
             </div>
           </div>

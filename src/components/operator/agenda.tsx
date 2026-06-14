@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { useAddSheet } from '../../lib/addSheet'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { formatDay, formatTime } from '../../lib/format'
 import { EventForm } from '../forms/EventForm'
 import { InlineIcon } from '../Icon'
 import { type EventRow, type Member } from './types'
 
-// Events: the operator's direct CRUD over the agenda. The form itself is the
-// shared <EventForm> (also used by the Add sheet); this section just adds the
-// list + edit/delete around it. 🔁 marks a recurring series.
+// Events: the operator manages the agenda here (edit/delete + reschedule), but
+// ADDING is the same ＋ as everywhere — this section opens it (open('event'))
+// rather than carrying a duplicate blank form. The shared <EventForm> still
+// appears inline, but only to EDIT an existing event. 🔁 marks a recurring series.
 export function EventsSection({
   events,
   members,
@@ -21,6 +23,7 @@ export function EventsSection({
 }) {
   const t = useT()
   const { lang } = useLang()
+  const { open } = useAddSheet()
   const undoableRemove = useUndoableRemove()
   const [editing, setEditing] = useState<EventRow | null>(null)
 
@@ -76,16 +79,24 @@ export function EventsSection({
           ))}
         </ul>
       )}
-      <EventForm
-        key={editing?.id ?? 'new'}
-        members={members}
-        value={editing}
-        onSaved={() => {
-          setEditing(null)
-          onChange()
-        }}
-        onCancel={editing ? () => setEditing(null) : undefined}
-      />
+      {/* Adding lives on the ＋ (open('event')); the inline form is EDIT-only so
+          Réglages doesn't carry a second copy of the blank event form. */}
+      {editing ? (
+        <EventForm
+          key={editing.id}
+          members={members}
+          value={editing}
+          onSaved={() => {
+            setEditing(null)
+            onChange()
+          }}
+          onCancel={() => setEditing(null)}
+        />
+      ) : (
+        <button type="button" className="btn btn--primary operator__add" onClick={() => open('event', ['event'])}>
+          <InlineIcon name="plus-bold" /> {t.operator.addEvent}
+        </button>
+      )}
     </section>
   )
 }

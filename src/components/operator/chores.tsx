@@ -2,26 +2,18 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { useAddSheet } from '../../lib/addSheet'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { useRecordUndo } from '../../lib/toast'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routineTod'
 import { InlineIcon } from '../Icon'
-import { ChoreForm } from '../forms/ChoreForm'
-import { RoutineForm } from '../forms/RoutineForm'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { recurLabel, recurOf, anchorSecToDate, dateToAnchorSec, todayAnchorDate } from '../../lib/recurLabel'
-import { type Chore, type Member, type Routine } from './types'
+import { type Chore, type Routine } from './types'
 
-export function ChoresSection({
-  chores,
-  members,
-  onChange,
-}: {
-  chores: Chore[]
-  members: Member[]
-  onChange: () => void
-}) {
+export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange: () => void }) {
   const t = useT()
+  const { open } = useAddSheet()
   const undoableRemove = useUndoableRemove()
   function remove(c: Chore) {
     undoableRemove({
@@ -42,7 +34,11 @@ export function ChoresSection({
           <ChoreRow key={c.id} chore={c} onChange={onChange} onRemove={() => remove(c)} />
         ))}
       </ul>
-      <ChoreForm members={members} onSaved={onChange} />
+      {/* Creating a chore is the same ＋ as everywhere; Réglages manages the
+          schedule/rotation of the ones that exist (the rows above). */}
+      <button type="button" className="btn btn--primary operator__add" onClick={() => open('chore', ['chore'])}>
+        <InlineIcon name="plus-bold" /> {t.operator.addChore}
+      </button>
     </section>
   )
 }
@@ -102,17 +98,10 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
   )
 }
 
-export function RoutinesSection({
-  routines,
-  members,
-  onChange,
-}: {
-  routines: Routine[]
-  members: Member[]
-  onChange: () => void
-}) {
+export function RoutinesSection({ routines, onChange }: { routines: Routine[]; onChange: () => void }) {
   const t = useT()
   const qc = useQueryClient()
+  const { open } = useAddSheet()
   const undoableRemove = useUndoableRemove()
   const recordUndo = useRecordUndo()
   function remove(r: Routine) {
@@ -181,7 +170,11 @@ export function RoutinesSection({
           </li>
         ))}
       </ul>
-      <RoutineForm members={members} onSaved={onChange} />
+      {/* Building a routine is the same ＋ as everywhere; Réglages manages the
+          moment-of-day and removal of the ones that exist (the rows above). */}
+      <button type="button" className="btn btn--primary operator__add" onClick={() => open('routine', ['routine'])}>
+        <InlineIcon name="plus-bold" /> {t.operator.addRoutine}
+      </button>
     </section>
   )
 }

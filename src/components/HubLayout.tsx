@@ -51,6 +51,10 @@ export function HubLayout() {
   // kitchen, list items on Liste); only an explicit open('routine')-style call
   // pins a mode.
   const [addMode, setAddMode] = useState<AddSheetMode | null>(null)
+  // An optional modes override for an open() call: Réglages (where the FAB is
+  // hidden) opens a single-form sheet — open('chore', ['chore']) — instead of the
+  // section's whole chooser. null = use the current section's modes.
+  const [addModes, setAddModes] = useState<AddSheetMode[] | null>(null)
   // The Kitchen page registers its three week actions here so the ＋ Add sheet
   // (rendered below, a sibling of the routed page) can offer them as tiles. The
   // live handlers ride in a ref — always fresh, never a dependency — while only
@@ -189,8 +193,9 @@ export function HubLayout() {
   return (
     <AddSheetContext.Provider
       value={{
-        open: (mode) => {
+        open: (mode, modes) => {
           setAddMode(mode ?? null)
+          setAddModes(modes ?? null)
           setAddOpen(true)
         },
       }}
@@ -240,6 +245,7 @@ export function HubLayout() {
           data-tour="add-fab"
           onClick={() => {
             setAddMode(null)
+            setAddModes(null)
             setAddOpen(true)
           }}
           aria-label={
@@ -255,7 +261,7 @@ export function HubLayout() {
           <Icon name="plus-bold" size={26} />
         </button>
       )}
-      <AddSheet open={addOpen} modes={sectionModes} initialMode={addMode} onClose={() => setAddOpen(false)} />
+      <AddSheet open={addOpen} modes={addModes ?? sectionModes} initialMode={addMode} onClose={() => setAddOpen(false)} />
     </div>
     </KitchenActionsContext.Provider>
     </AddSheetContext.Provider>

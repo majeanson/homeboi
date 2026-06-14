@@ -1021,6 +1021,19 @@
   font-size: 1rem;
   margin: 0 0 0.75rem;
 }
+/* The how-it-works card carried inline at the top of each Réglages tab — a quiet
+   reference above the actual controls, set a touch apart from the section below. */
+.section-guide {
+  margin-bottom: 1.25rem;
+}
+/* "Ajouter…" in a settings section opens the shared ＋ sheet now (not an inline
+   form): one primary action, sized to its label, under the managed list. */
+.operator__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+}
 .operator__claim {
   border-bottom-color: var(--accent);
 }
