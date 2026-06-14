@@ -14,6 +14,19 @@ main = "worker/index.ts"
 compatibility_date = "2024-12-30"
 compatibility_flags = ["nodejs_compat"]
 
+# --- Custom domain -----------------------------------------------------------
+# Serve the app from babillard.marcportal.com (in addition to the default
+# *.workers.dev URL). `custom_domain = true` makes Cloudflare create the proxied
+# DNS record + TLS cert on the marcportal.com zone at deploy time. The zone must
+# live in this same Cloudflare account (it does — marc_jeanson@hotmail.com).
+routes = [
+  { pattern = "babillard.marcportal.com", custom_domain = true },
+]
+# Keep the default <name>.workers.dev URL enabled too: declaring `routes` would
+# otherwise disable it, breaking any kiosk/bookmark on the old address. Both URLs
+# serve the same Worker.
+workers_dev = true
+
 # --- Static assets: the built SPA --------------------------------------------
 # `npm run build` writes the Vite bundle to ./dist. Unknown paths fall back to
 # index.html so client-side routes (/board, /kitchen…) load; the Worker reaches
