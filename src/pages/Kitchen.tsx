@@ -25,7 +25,7 @@ import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type Day
 import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { DayManageSheet } from '../components/kitchen/DayManageSheet'
 import { SIDE_SLOTS } from '../lib/mealSlots'
-import { useKitchenActions } from '../lib/kitchenActions'
+import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
 // browse the book — one sub-tab at a time. The page owns the queries (one unauth
@@ -277,23 +277,28 @@ export function Kitchen() {
   // where each action's result (the shop chips / the suggestion card) appears.
   const { register: registerKitchen } = useKitchenActions()
   const kitchenActionsActive = kitTab === 'meals' && audience === 'parent'
+  // Push the current week-action availability up to the shell's ＋ Add sheet.
+  // IDEMPOTENT by design: it only ever registers the CURRENT state (active
+  // handlers + flags, or cleared when inactive), and HubLayout bails when the flag
+  // VALUES are unchanged — so re-running on an unstable dep is a harmless no-op.
+  // It deliberately has NO per-run cleanup: a cleanup that flipped the flags to
+  // all-false on every re-run (with the setup flipping them back) was TWO real
+  // state changes per render, which ping-ponged HubLayout↔Kitchen into an infinite
+  // re-render and froze the tree mid-navigation (you couldn't leave La cuisine).
+  // Clearing on the way out is a separate, unmount-only effect below.
   useEffect(() => {
-    if (!kitchenActionsActive) {
-      registerKitchen(null, { active: false, canShop: false, canAiSuggest: false, aiBusy: false, hasRecipes: false })
-      return
-    }
     registerKitchen(
-      { shop: beginShopWeek, ai: suggest.suggestAi, book: suggest.suggestFromRecipes },
-      {
-        active: true,
-        canShop: shoppableCount > 0,
-        canAiSuggest: !suggest.aiOff,
-        aiBusy: suggest.aiBusy,
-        hasRecipes: suggest.hasRecipes,
-      },
+      kitchenActionsActive ? { shop: beginShopWeek, ai: suggest.suggestAi, book: suggest.suggestFromRecipes } : null,
+      kitchenActionsActive
+        ? {
+            active: true,
+            canShop: shoppableCount > 0,
+            canAiSuggest: !suggest.aiOff,
+            aiBusy: suggest.aiBusy,
+            hasRecipes: suggest.hasRecipes,
+          }
+        : NO_KITCHEN_ACTIONS,
     )
-    return () =>
-      registerKitchen(null, { active: false, canShop: false, canAiSuggest: false, aiBusy: false, hasRecipes: false })
   }, [
     kitchenActionsActive,
     shoppableCount,
@@ -305,6 +310,9 @@ export function Kitchen() {
     suggest.suggestFromRecipes,
     registerKitchen,
   ])
+  // Clear the shell's kitchen actions once, when La cuisine unmounts — so leaving
+  // for another tab never leaves stale tiles in the ＋ sheet.
+  useEffect(() => () => registerKitchen(null, NO_KITCHEN_ACTIONS), [registerKitchen])
 
   // Plan a recipe onto ANY slot (the shared picker's onPick). Souper keeps its
   // optional "+ ingredients" staples step; every other slot is a clean quick-add
