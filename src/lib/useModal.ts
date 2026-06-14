@@ -26,29 +26,22 @@ function isTextEntry(n: HTMLElement): boolean {
 }
 
 // Ref-counted scroll lock so stacked overlays (a flyer over the cashier) don't
-// unlock the page when only the top one closes. position:fixed + scroll restore
-// is the one technique that actually stops iOS Safari scrolling the background.
+// unlock the page when only the top one closes.
+//
+// `body`/`html` are `overflow:hidden` in this app — they NEVER scroll. The real
+// scrollers are `#root` (auth/setup/marketing pages) and `.hub__body` (the hub
+// shell). So the classic `body{position:fixed}` trick is inert here and the page
+// behind an open sheet kept scrolling. We freeze the actual scrollers instead by
+// toggling `html.scroll-locked`, whose CSS (core.css) sets `overflow:hidden` on
+// both. overflow:hidden holds scrollTop in place (no jump, no scroll-restore).
 let lockCount = 0
-let savedScrollY = 0
 function lockScroll(): void {
   if (lockCount++ > 0) return
-  savedScrollY = window.scrollY
-  const b = document.body
-  b.style.position = 'fixed'
-  b.style.top = `-${savedScrollY}px`
-  b.style.left = '0'
-  b.style.right = '0'
-  b.style.width = '100%'
+  document.documentElement.classList.add('scroll-locked')
 }
 function unlockScroll(): void {
   if (lockCount === 0 || --lockCount > 0) return
-  const b = document.body
-  b.style.position = ''
-  b.style.top = ''
-  b.style.left = ''
-  b.style.right = ''
-  b.style.width = ''
-  window.scrollTo(0, savedScrollY)
+  document.documentElement.classList.remove('scroll-locked')
 }
 
 // Only the top-most open modal reacts to Escape, so a flyer over the cashier

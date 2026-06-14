@@ -171,6 +171,15 @@ body::before {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
 }
+/* Modal scroll lock (useModal). The document never scrolls — these two are the
+   only scrollers — so freezing THEM is what actually stops the page drifting
+   behind an open sheet/dialog. overflow:hidden keeps their scrollTop, so the
+   content holds its place and a touch gesture has nowhere to leak but the open
+   sheet (which then scrolls its own overflow, instead of moving the page). */
+html.scroll-locked #root,
+html.scroll-locked .hub__body {
+  overflow: hidden;
+}
 .mono {
   font-family: var(--mono);
   font-size: 0.82rem;
