@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
-import { resizeImage, PHOTO_MAX } from '../lib/image'
+import { resizeImage, PHOTO_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import {
   type Recipe,
   type RecipeOriginal,
@@ -189,6 +189,14 @@ export function RecipeForm({
     setReadMsg(null)
     try {
       const blob = await resizeImage(file, PHOTO_MAX)
+      // resize fell back to the un-shrunk original (a format no decoder could
+      // read) and it's over the server cap — say so instead of uploading just to
+      // get a generic reject. After HEIC handling this is rare (a corrupt/exotic
+      // file), but it's the difference between "trop lourde" and silent failure.
+      if (blob.size > MAX_UPLOAD_BYTES) {
+        setReadMsg(t.recipes.photoTooBig)
+        return
+      }
       const r = await api<{ title: string | null; ingredients: string[]; steps: string[] }>('recipe-vision', {
         method: 'POST',
         body: blob,
@@ -196,7 +204,9 @@ export function RecipeForm({
       if (!r.title && !r.ingredients.length && !r.steps.length) setReadMsg(t.recipes.readFail)
       else applyDraft(r)
     } catch (e) {
-      setReadMsg(isStatus(e, 503) ? t.recipes.aiOff : t.recipes.readFail)
+      if (isStatus(e, 503)) setReadMsg(t.recipes.aiOff)
+      else if (isStatus(e, 400)) setReadMsg(t.recipes.photoTooBig)
+      else setReadMsg(t.recipes.readFail)
     } finally {
       setReading(false)
     }

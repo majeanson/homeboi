@@ -326,13 +326,33 @@ Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insèr
     const parsed = extractJson(res.response) as
       | { title?: unknown; ingredients?: unknown; steps?: unknown }
       | null
-    if (!parsed) return { title: null, ingredients: [], steps: [] }
+    // The call SUCCEEDED but gave us nothing usable — the model replied with
+    // prose, refused, or saw no legible text. This used to return empty
+    // silently, so a failing photo-read showed "no errors anywhere" (the vision
+    // ping in Réglages only proves the model RUNS, not that it reads). Log it to
+    // the AI-error journal + surface it, so the breakage is visible like a throw.
+    if (!parsed) {
+      if (report) report.error = logAi('recipeFromImage', new Error(`vision returned no JSON: ${visionSnippet(res.response)}`))
+      return { title: null, ingredients: [], steps: [] }
+    }
     const title = typeof parsed.title === 'string' ? parsed.title.trim() || null : null
-    return { title, ingredients: cleanLines(parsed.ingredients, 30), steps: cleanLines(parsed.steps, 20) }
+    const result = { title, ingredients: cleanLines(parsed.ingredients, 30), steps: cleanLines(parsed.steps, 20) }
+    if (!result.title && !result.ingredients.length && !result.steps.length && report) {
+      report.error = logAi('recipeFromImage', new Error(`vision read nothing legible: ${visionSnippet(res.response)}`))
+    }
+    return result
   } catch (err) {
     if (report) report.error = logAi('recipeFromImage', err)
     return { title: null, ingredients: [], steps: [] }
   }
+}
+
+// A short, log-safe peek at what the vision model actually returned, so an empty
+// read carries a clue (prose? a refusal? blank?) instead of a bare "no JSON".
+function visionSnippet(raw: unknown): string {
+  const text = typeof raw === 'string' ? raw : JSON.stringify(raw ?? '')
+  const trimmed = text.trim()
+  return trimmed ? trimmed.slice(0, 120) : '(empty)'
 }
 
 // A LIVE self-test of one model, for the operator's "Tester l'IA" button in
