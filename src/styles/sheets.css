@@ -342,6 +342,12 @@
   max-height: 88vh;
   max-height: calc(var(--vvh, 100dvh) - 24px);
   overflow-y: auto;
+  /* A bottom sheet is a VERTICAL surface — never let it pan sideways. Without an
+     explicit value the cross axis computes to `auto` (CSS: `visible` beside a
+     non-visible axis becomes `auto`), so any child that's a hair too wide — a
+     chore form's chip/rotation row at an awkward width — turns the whole sheet
+     into a left-right scroller. Clip it; the inner rows all wrap. */
+  overflow-x: hidden;
   /* Keep a scroll-to-the-end flick inside the sheet — don't chain it to the
      page behind (no background drift, no iOS rubber-band peek). */
   overscroll-behavior: contain;
