@@ -532,6 +532,16 @@
   border-radius: 10px;
   flex: 0 0 auto;
 }
+/* When the recipe has its own photo, the thumbnail fills the tile (clipped to
+   the same rounded square) instead of the slot icon — tapping it cooks. */
+.addsheet__cookrow-icon--photo {
+  overflow: hidden;
+}
+.addsheet__cookrow-icon--photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .addsheet__cookrow-text {
   display: flex;
   flex-direction: column;

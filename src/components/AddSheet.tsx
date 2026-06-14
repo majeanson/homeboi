@@ -9,6 +9,7 @@ import { VoiceButton } from './VoiceButton'
 import { formatWeekday } from '../lib/format'
 import { OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
 import { useCookableMeals } from '../lib/nextMeal'
+import { recipeImg } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
@@ -542,6 +543,10 @@ export function AddSheet({
                 {cookChoices.map((c) => {
                   const slot = c.meal.slot
                   const color = (isMealSlot(slot) ? mealPrefs.color(slot) : undefined) ?? 'var(--ink-soft)'
+                  // The recipe's own photo when it has one (tapping it — like the
+                  // rest of the row — drops straight into that recipe's cook mode);
+                  // the slot icon stays the fallback so a photoless meal still reads.
+                  const photo = recipeImg(c.recipe.image)
                   return (
                     <button
                       key={c.meal.id}
@@ -553,8 +558,15 @@ export function AddSheet({
                         nav(c.target)
                       }}
                     >
-                      <span className="addsheet__cookrow-icon" style={{ background: color + '22' }}>
-                        <Icon name={isMealSlot(slot) ? SLOT_ICON_NAME[slot] : 'cooking-pot-bold'} size={20} color={color} />
+                      <span
+                        className={'addsheet__cookrow-icon' + (photo ? ' addsheet__cookrow-icon--photo' : '')}
+                        style={{ background: color + '22' }}
+                      >
+                        {photo ? (
+                          <img src={photo} alt="" loading="lazy" />
+                        ) : (
+                          <Icon name={isMealSlot(slot) ? SLOT_ICON_NAME[slot] : 'cooking-pot-bold'} size={20} color={color} />
+                        )}
                       </span>
                       <span className="addsheet__cookrow-text">
                         <span className="addsheet__cookrow-title">{c.meal.title}</span>

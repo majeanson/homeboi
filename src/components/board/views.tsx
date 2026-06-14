@@ -106,18 +106,20 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
       )}
 
       {/* Jump straight to cook mode for the next meal due (déjeuner→souper by the
-          hour). Only when that meal resolves to a saved recipe — otherwise there's
-          nothing to open. The same shortcut the kitchen ＋ "Cuisiner" tile uses. */}
-      {cook.target && cook.meal && (
+          hour) when it resolves to a saved recipe — the same shortcut the kitchen
+          ＋ "Cuisiner" tile uses. When a meal IS planned but has no recipe yet, the
+          CTA doesn't vanish: it leads to the kitchen to attach one, so a planned
+          souper is never a dead end. (No meal planned at all → nothing here.) */}
+      {cook.meal && (
         <button
           type="button"
           className="nownext__cook"
           style={{ borderColor: supperColor + '55' }}
-          onClick={() => nav(cook.target!)}
+          onClick={() => nav(cook.target ?? '/kitchen')}
         >
           <Icon name="cooking-pot-bold" size={22} color={supperColor} />
           <span className="nownext__cook-label">
-            {t.board.cook}
+            {cook.target ? t.board.cook : t.board.cookPlan}
             <span className="nownext__cook-meal">{cook.meal.title}</span>
           </span>
         </button>
