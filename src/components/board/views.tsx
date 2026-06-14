@@ -2,8 +2,9 @@ import { CATS } from '../../lib/cats'
 import { tintInk } from '../../lib/colors'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { formatTime } from '../../lib/format'
-import { SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
+import { SLOT_ICON_NAME, SLOT_TIME_ORDER, type MealSlot } from '../../lib/mealSlots'
 import { type Lang } from '../../i18n'
+import { InlineIcon } from '../Icon'
 import { Act } from './Act'
 import { colorOf, nameOf, type BoardData, type Dict, type EventRow } from './types'
 
@@ -14,9 +15,16 @@ import { colorOf, nameOf, type BoardData, type Dict, type EventRow } from './typ
 export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: Lang; t: Dict; profileId: string | null }) {
   const mealPrefs = useMealPrefs()
   const supperColor = mealPrefs.color('supper')
-  const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
-  // The day's meal footer skips slots the household hid (Réglages ▸ Repas).
-  const footerMeals = data.todayMeals.filter((m) => mealPrefs.isVisible(m.slot))
+  // The day's meal footer skips slots the household hid (Réglages ▸ Repas), and
+  // groups by slot in time order so it reads as one colour chip per slot — the same
+  // slot icon + colour the Kitchen pill and Réglages ▸ Repas use (mealSlots).
+  const mealRows = SLOT_TIME_ORDER.map((s) => ({
+    slot: s,
+    titles: data.todayMeals
+      .filter((m) => m.slot === s && mealPrefs.isVisible(m.slot))
+      .map((m) => m.title)
+      .join(', '),
+  })).filter((r) => r.titles)
   const now = Date.now() / 1000
   const timed = data.today.filter((e) => !e.all_day).sort((a, b) => a.start_at - b.start_at)
   const allDay = data.today.filter((e) => e.all_day)
@@ -107,10 +115,23 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
       )}
 
       {/* Today's full meal table rides as a footer too — every slot, not just the
-          supper (which can also be the fallback focus above). */}
-      {footerMeals.length > 0 && (
-        <div className="nownext__allday mono">
-          {t.board.meals} · {footerMeals.map((m) => `${slotLabel(m.slot)}: ${m.title}`).join(' · ')}
+          supper (which can also be the fallback focus above). One colour chip per
+          slot: slot icon + meals, tinted with the slot's colour. */}
+      {mealRows.length > 0 && (
+        <div className="nownext__meals">
+          <span className="nownext__meals-label mono">{t.board.meals}</span>
+          {mealRows.map(({ slot, titles }) => {
+            const c = mealPrefs.color(slot)!
+            return (
+              <span
+                key={slot}
+                className="meal-chip"
+                style={{ color: tintInk(c), background: c + '14', borderColor: c + '40' }}
+              >
+                <InlineIcon name={SLOT_ICON_NAME[slot]} /> {titles}
+              </span>
+            )
+          })}
         </div>
       )}
 

@@ -565,7 +565,9 @@ export function Kitchen() {
                     <span className="kitchen__day-sum-main">
                       {showSupper ? (
                         <>
-                          <span className="kitchen__day-dot" style={{ background: supperColor }} aria-hidden="true" />
+                          {/* The souper slot icon in its slot colour — the same icon +
+                              colour the chips and Réglages ▸ Repas use, not a bare dot. */}
+                          <Icon name={SLOT_ICON_NAME.supper} size={18} color={supperColor} />
                           {suppers.map((m) => m.title).join(' · ')}
                         </>
                       ) : (
@@ -591,7 +593,7 @@ export function Kitchen() {
                         return (
                           <span
                             key={slot}
-                            className="kitchen__day-slot"
+                            className="meal-chip"
                             style={{ color: tintInk(c), background: c + '14', borderColor: c + '40' }}
                           >
                             <InlineIcon name={SLOT_ICON_NAME[slot]} /> {titles}

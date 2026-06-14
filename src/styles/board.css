@@ -297,6 +297,19 @@
   color: var(--ink-faint);
   font-size: 0.9rem;
 }
+/* The day's meals as a centred row of colour-coded slot chips (.meal-chip, shared
+   — see misc.css), with a quiet label. Wraps on a narrow phone. */
+.nownext__meals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.nownext__meals-label {
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
 
 /* Per-person "lanes": columns of each member's day. */
 .lanes {

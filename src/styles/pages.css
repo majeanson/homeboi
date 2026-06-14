@@ -445,35 +445,15 @@
   font-weight: 600;
   overflow-wrap: anywhere;
 }
-/* A small dot in the souper colour (Réglages ▸ Repas) ties the headline into the
-   same per-slot palette the chips below use. */
-.kitchen__day-dot {
-  flex: none;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-}
 .kitchen__day-sum-empty {
   color: var(--ink-soft);
 }
-/* The lighter slots, one colour chip each (déjeuner / dîner / collation) — icon +
-   meals, tinted with the slot's colour. They WRAP so nothing is ever hidden. */
+/* The lighter slots wrap as colour chips (.meal-chip, shared — see misc.css) so
+   nothing is ever hidden; this is just their row. */
 .kitchen__day-slots {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
-}
-.kitchen__day-slot {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  line-height: 1.3;
-  padding: 0.12rem 0.45rem;
-  border: 1px solid;
-  border-radius: 999px;
-  overflow-wrap: anywhere;
 }
 /* The day note: one tidy muted line, ellipsized so a long memo never grows the
    card past the two-days-on-a-phone budget. */
@@ -1408,10 +1388,6 @@
 }
 .hub .kitchen__day-sum-meta {
   font-size: 0.95rem;
-}
-.hub .kitchen__day-slot {
-  font-size: 0.9rem;
-  padding: 0.2rem 0.6rem;
 }
 .hub .kitchen__day-manage {
   width: 2.6rem;
