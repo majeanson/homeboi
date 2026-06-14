@@ -9,6 +9,7 @@ import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
 import { RecipePickerMenu } from './RecipePickerMenu'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon, InlineIcon } from '../Icon'
+import { RowActions } from '../RowActions'
 
 // The "general ideas" pool under the week grid: a reusable shortlist of meal
 // ideas — free text ("tacos") or a saved-recipe shortcut. Add by typing or
@@ -39,6 +40,9 @@ export function MealIdeas({
   // Which meal a "plan it" lands on — souper by default, like everywhere else.
   const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
   const [busy, setBusy] = useState(false)
+  // Inline rename (✏️): which idea is being renamed, and its draft text.
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
 
   async function addIdea(title: string, recipeId?: string | null) {
     const v = title.trim()
@@ -71,6 +75,18 @@ export function MealIdeas({
         qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
       },
     })
+  }
+
+  async function renameIdea(idea: MealIdea, title: string) {
+    const v = title.trim()
+    setEditId(null)
+    if (!v || v === idea.title) return
+    // Optimistic rename, then persist (the pool is live-polled, so reflect it now).
+    qc.setQueryData<{ ideas: MealIdea[] }>(MEAL_IDEAS_KEY, (d) =>
+      d ? { ideas: d.ideas.map((x) => (x.id === idea.id ? { ...x, title: v } : x)) } : d,
+    )
+    await api('meal-ideas', { method: 'PATCH', body: { id: idea.id, title: v } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
   }
 
   // Place an idea onto a day + meal — same shape as a recipe quick-add, so a
@@ -139,28 +155,59 @@ export function MealIdeas({
           {ideas.map((idea) => (
             <li key={idea.id} className="kitchen__idea">
               <div className="kitchen__idea-row">
-                <button
-                  type="button"
-                  className="chip kitchen__idea-name"
-                  onClick={() => setPlanFor(planFor === idea.id ? null : idea.id)}
-                  aria-expanded={planFor === idea.id}
-                >
-                  {idea.recipe_id && (
-                    <>
-                      <InlineIcon name="book-open-bold" size={14} color="var(--berry-deep)" />{' '}
-                    </>
-                  )}
-                  {idea.title}
-                </button>
-                <button
-                  type="button"
-                  className="kitchen__idea-del"
-                  onClick={() => removeIdea(idea)}
-                  aria-label={t.kitchen.removeIdea}
-                  title={t.kitchen.removeIdea}
-                >
-                  <Icon name="x-bold" size={14} />
-                </button>
+                {editId === idea.id ? (
+                  <form
+                    className="kitchen__idea-edit"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      renameIdea(idea, editText)
+                    }}
+                  >
+                    <input
+                      className="input"
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      aria-label={t.common.edit}
+                      autoFocus
+                    />
+                    <button type="submit" className="btn" aria-label={t.common.save} disabled={!editText.trim()}>
+                      <Icon name="check-bold" size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--ghost mono"
+                      aria-label={t.common.cancel}
+                      onClick={() => setEditId(null)}
+                    >
+                      <Icon name="x-bold" size={15} />
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="chip kitchen__idea-name"
+                      onClick={() => setPlanFor(planFor === idea.id ? null : idea.id)}
+                      aria-expanded={planFor === idea.id}
+                    >
+                      {idea.recipe_id && (
+                        <>
+                          <InlineIcon name="book-open-bold" size={14} color="var(--berry-deep)" />{' '}
+                        </>
+                      )}
+                      {idea.title}
+                    </button>
+                    <RowActions
+                      editLabel={t.common.edit}
+                      deleteLabel={t.kitchen.removeIdea}
+                      onEdit={() => {
+                        setEditId(idea.id)
+                        setEditText(idea.title)
+                      }}
+                      onDelete={() => removeIdea(idea)}
+                    />
+                  </>
+                )}
               </div>
               {planFor === idea.id && (
                 <MealPlanPicker

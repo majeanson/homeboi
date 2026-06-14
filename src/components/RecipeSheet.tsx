@@ -14,6 +14,7 @@ import { Icon, InlineIcon } from './Icon'
 import { IngredientLine } from './IngredientLine'
 import { MealPlanPicker } from './kitchen/MealPlanPicker'
 import { useModal } from '../lib/useModal'
+import { useConfirm } from '../lib/confirm'
 
 // Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method,
 // then a row of gentle actions —
@@ -39,6 +40,7 @@ export function RecipeSheet({
 }) {
   const t = useT()
   const qc = useQueryClient()
+  const confirm = useConfirm()
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onClose)
   const [added, setAdded] = useState(false)
@@ -160,7 +162,9 @@ export function RecipeSheet({
   }
 
   async function del() {
-    if (!confirm(t.recipes.deleteConfirm)) return
+    // A recipe is a HEAVY object to lose by a stray tap — deliberate yes/no via
+    // the in-app confirm dialog (not the platform confirm, which e2e can't see).
+    if (!(await confirm({ message: t.recipes.deleteConfirm, confirmLabel: t.recipes.delete, tone: 'danger' }))) return
     await api('recipes', { method: 'DELETE', body: { id: recipe.id } }).catch(() => {})
     qc.invalidateQueries({ queryKey: RECIPES_KEY })
     onClose()

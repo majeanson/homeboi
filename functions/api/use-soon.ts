@@ -25,6 +25,19 @@ export const onRequestPost = authed(async (ctx, actor) => {
   return ok({ ok: true })
 })
 
+// Rename a use-soon item in place (the ✏️ affordance) — the uniform edit every
+// list row offers.
+export const onRequestPatch = authed(async (ctx, actor) => {
+  const body = await readJson<{ id?: string; item?: string }>(ctx.request)
+  if (!body?.id) return badRequest('id requis.')
+  const item = body.item?.trim()
+  if (!item) return badRequest('Aliment requis.')
+  await ctx.env.DB.prepare('UPDATE pantry_use_soon SET item = ? WHERE id = ? AND household_id = ?')
+    .bind(item.slice(0, 200), body.id, actor.householdId)
+    .run()
+  return ok({ ok: true })
+})
+
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')

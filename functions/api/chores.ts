@@ -69,24 +69,48 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     role?: string
     memberId?: string
     complete?: boolean
+    title?: string
+    rotation?: unknown
+    color?: string
     recur?: unknown
     start?: unknown
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
-  // Editing the schedule (operator only) — a distinct shape from marking done:
-  // a `recur` field present means "set this chore's recurrence" (null clears it).
-  // A `start` field (present) sets the recurrence anchor in the same write, so a
-  // standing chore can be turned into "every 2 weeks from the 20th" without
-  // recreating it.
-  if (body.recur !== undefined) {
+  // Editing the chore (operator only) — a distinct shape from marking done: any
+  // of title / rotation / color / recur present means "edit this chore in place".
+  // One write covers everything the form changed, so the same ＋ form that
+  // creates a chore also edits it (rename, re-pick the rotation, recolour,
+  // re-schedule) without recreating it. `start` rides along to anchor a recur.
+  const editsContent =
+    body.title !== undefined || body.rotation !== undefined || body.color !== undefined || body.recur !== undefined
+  if (editsContent) {
     if (actor.scope !== 'operator') return forbidden('Opérateur requis.')
-    const sets = ['recur_json = ?']
-    const binds: unknown[] = [recurJson(body.recur)]
-    if (body.start !== undefined) {
-      sets.push('recur_start = ?')
-      binds.push(recurStart(body.start))
+    const sets: string[] = []
+    const binds: unknown[] = []
+    if (typeof body.title === 'string' && body.title.trim()) {
+      sets.push('title = ?')
+      binds.push(body.title.trim())
     }
+    if (body.rotation !== undefined) {
+      // GET reads turn as current_idx % rotation.length, so a shorter rotation
+      // can't index out of range — no need to reset current_idx here.
+      sets.push('rotation_json = ?')
+      binds.push(JSON.stringify(Array.isArray(body.rotation) ? body.rotation.filter(isString) : []))
+    }
+    if (body.color !== undefined) {
+      sets.push('color = ?')
+      binds.push(hexColor(body.color, '#88a36f'))
+    }
+    if (body.recur !== undefined) {
+      sets.push('recur_json = ?')
+      binds.push(recurJson(body.recur))
+      if (body.start !== undefined) {
+        sets.push('recur_start = ?')
+        binds.push(recurStart(body.start))
+      }
+    }
+    if (!sets.length) return ok({ ok: true })
     binds.push(body.id, actor.householdId)
     const res = await ctx.env.DB.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ? AND household_id = ?`)
       .bind(...binds)

@@ -1,11 +1,13 @@
+import { useState } from 'react'
 import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
 import { Icon, InlineIcon } from '../Icon'
 import { type MealRow } from './types'
 
 // The planned meals in ONE slot (a slot is a list now — migration 0033). Each row
-// shows its title, an optional recipe-link, ↑/↓ to reorder within the slot, and a
-// ✕ to remove just that one. Shared by the souper hero and the lighter side slots.
+// shows its title, an optional recipe-link, ↑/↓ to reorder within the slot, ✏️ to
+// rename it in place, and 🗑️ to remove just that one. Shared by the souper hero
+// and the lighter side slots.
 export function MealRows({
   meals,
   recipeFor,
@@ -13,6 +15,7 @@ export function MealRows({
   onOpenRecipe,
   onRemove,
   onMove,
+  onRename,
   onClearAll,
 }: {
   meals: MealRow[]
@@ -21,9 +24,17 @@ export function MealRows({
   onOpenRecipe: (r: Recipe) => void
   onRemove: (id: string) => void
   onMove: (id: string, dir: 'up' | 'down') => void
+  onRename: (id: string, title: string) => void
   onClearAll?: () => void // "clear this slot" — shown only when the slot holds several
 }) {
   const t = useT()
+  // Inline rename: which row is being edited, and its draft title.
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  function commit(id: string) {
+    onRename(id, editText)
+    setEditId(null)
+  }
   if (!meals.length) return null
   return (
     <ul className="kitchen__meal-list">
@@ -31,59 +42,109 @@ export function MealRows({
         const r = recipeFor(m)
         return (
           <li key={m.id} className="kitchen__meal-row">
-            <span className="kitchen__meal-main">
-              <span className="kitchen__meal-title">{m.title}</span>
-              {m.suggested_by != null && (
-                <span className="kitchen__day-sugg mono">💡 {memberName(m.suggested_by) || t.kitchen.suggested}</span>
-              )}
-            </span>
-            <span className="kitchen__meal-ctl">
-              {r && (
+            {editId === m.id ? (
+              <form
+                className="kitchen__meal-edit"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  commit(m.id)
+                }}
+              >
+                <input
+                  className="input"
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  aria-label={t.common.edit}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="kitchen__meal-btn"
+                  aria-label={t.common.save}
+                  title={t.common.save}
+                  disabled={!editText.trim()}
+                >
+                  <Icon name="check-bold" size={16} />
+                </button>
                 <button
                   type="button"
                   className="kitchen__meal-btn"
-                  onClick={() => onOpenRecipe(r)}
-                  aria-label={t.recipes.title}
-                  title={t.recipes.title}
+                  onClick={() => setEditId(null)}
+                  aria-label={t.common.cancel}
+                  title={t.common.cancel}
                 >
-                  <Icon name="book-open-bold" size={16} />
+                  <Icon name="x-bold" size={15} />
                 </button>
-              )}
-              {/* Reorder only makes sense once there's another meal to swap with. */}
-              {meals.length > 1 && (
-                <>
+              </form>
+            ) : (
+              <>
+                <span className="kitchen__meal-main">
+                  <span className="kitchen__meal-title">{m.title}</span>
+                  {m.suggested_by != null && (
+                    <span className="kitchen__day-sugg mono">💡 {memberName(m.suggested_by) || t.kitchen.suggested}</span>
+                  )}
+                </span>
+                <span className="kitchen__meal-ctl">
+                  {r && (
+                    <button
+                      type="button"
+                      className="kitchen__meal-btn"
+                      onClick={() => onOpenRecipe(r)}
+                      aria-label={t.recipes.title}
+                      title={t.recipes.title}
+                    >
+                      <Icon name="book-open-bold" size={16} />
+                    </button>
+                  )}
+                  {/* Reorder only makes sense once there's another meal to swap with. */}
+                  {meals.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        className="kitchen__meal-btn"
+                        onClick={() => onMove(m.id, 'up')}
+                        disabled={i === 0}
+                        aria-label={t.kitchen.moveUp}
+                        title={t.kitchen.moveUp}
+                      >
+                        <Icon name="caret-up-bold" size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className="kitchen__meal-btn"
+                        onClick={() => onMove(m.id, 'down')}
+                        disabled={i === meals.length - 1}
+                        aria-label={t.kitchen.moveDown}
+                        title={t.kitchen.moveDown}
+                      >
+                        <Icon name="caret-down-bold" size={16} />
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
                     className="kitchen__meal-btn"
-                    onClick={() => onMove(m.id, 'up')}
-                    disabled={i === 0}
-                    aria-label={t.kitchen.moveUp}
-                    title={t.kitchen.moveUp}
+                    onClick={() => {
+                      setEditId(m.id)
+                      setEditText(m.title)
+                    }}
+                    aria-label={t.common.edit}
+                    title={t.common.edit}
                   >
-                    <Icon name="caret-up-bold" size={16} />
+                    <Icon name="pencil-simple-bold" size={15} />
                   </button>
                   <button
                     type="button"
-                    className="kitchen__meal-btn"
-                    onClick={() => onMove(m.id, 'down')}
-                    disabled={i === meals.length - 1}
-                    aria-label={t.kitchen.moveDown}
-                    title={t.kitchen.moveDown}
+                    className="kitchen__meal-btn kitchen__meal-remove"
+                    onClick={() => onRemove(m.id)}
+                    aria-label={t.kitchen.clearMeal}
+                    title={t.kitchen.clearMeal}
                   >
-                    <Icon name="caret-down-bold" size={16} />
+                    <Icon name="trash-bold" size={15} />
                   </button>
-                </>
-              )}
-              <button
-                type="button"
-                className="kitchen__meal-btn kitchen__meal-remove"
-                onClick={() => onRemove(m.id)}
-                aria-label={t.kitchen.clearMeal}
-                title={t.kitchen.clearMeal}
-              >
-                <Icon name="x-bold" size={15} />
-              </button>
-            </span>
+                </span>
+              </>
+            )}
           </li>
         )
       })}

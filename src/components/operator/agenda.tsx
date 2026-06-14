@@ -6,6 +6,7 @@ import { useUndoableRemove } from '../../lib/undoRemove'
 import { formatDay, formatTime } from '../../lib/format'
 import { EventForm } from '../forms/EventForm'
 import { InlineIcon } from '../Icon'
+import { RowActions } from '../RowActions'
 import { type EventRow, type Member } from './types'
 
 // Events: the operator manages the agenda here (edit/delete + reschedule), but
@@ -69,12 +70,12 @@ export function EventsSection({
                   {memberName(ev.member_id) ? ` · ${memberName(ev.member_id)}` : ''}
                 </span>
               </span>
-              <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(ev)} aria-label={t.common.edit}>
-                <InlineIcon name="pencil-simple-bold" />
-              </button>
-              <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(ev)}>
-                {t.operator.delete}
-              </button>
+              <RowActions
+                onEdit={() => setEditing(ev)}
+                onDelete={() => remove(ev)}
+                editLabel={t.operator.editEvent}
+                deleteLabel={t.operator.deleteEvent}
+              />
             </li>
           ))}
         </ul>

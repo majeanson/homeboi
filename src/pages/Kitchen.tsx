@@ -96,6 +96,19 @@ export function Kitchen() {
     await api('meals', { method: 'POST', body: { action: 'move', id, dir } }).catch(() => {})
     qc.invalidateQueries({ queryKey: MEALS_KEY })
   }
+  // Rename one meal in place (✏️) — keeps its slot/position/recipe link, unlike a
+  // remove + re-add. Optimistic so the row updates at once; the board re-reads too
+  // (today's supper headline shows there).
+  async function renameMeal(id: string, title: string) {
+    const v = title.trim()
+    if (!v) return
+    qc.setQueryData<MealsData>(MEALS_KEY, (d) =>
+      d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, title: v } : m)) } : d,
+    )
+    await api('meals', { method: 'PATCH', body: { id, title: v } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
+    qc.invalidateQueries({ queryKey: ['board'] })
+  }
   // Re-create a set of removed meals from their snapshot (the undo inverse). Each
   // comes back as a fresh row in the same day+slot — order/id may differ, the plan
   // reads as restored. Refresh the board too (today's supper shows there).
@@ -584,7 +597,7 @@ export function Kitchen() {
             picker={{ recipePickFor, setRecipePickFor, pickWithStaples, setPickWithStaples, planRecipe }}
             slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
             noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
-            actions={{ clearMeal, moveMeal, clearSlotMeals, clearDay }}
+            actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay }}
           />
 
           <MealIdeas

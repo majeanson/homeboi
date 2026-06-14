@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { RECIPES_KEY, RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions } from '../../lib/recipes'
+import { useConfirm } from '../../lib/confirm'
 import { Icon, InlineIcon } from '../Icon'
+import { RowActions } from '../RowActions'
 
 // Réglages → Recettes: the household tag layer. Two strips:
 //   · the preset pills offered in the recipe form (chips, editable in place)
@@ -12,6 +14,7 @@ import { Icon, InlineIcon } from '../Icon'
 export function RecipeTagsSection() {
   const t = useT()
   const qc = useQueryClient()
+  const confirm = useConfirm()
   const tagsQ = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') })
   const presets = tagsQ.data?.presets ?? []
   const used = tagsQ.data?.used ?? []
@@ -121,25 +124,20 @@ export function RecipeTagsSection() {
                 <>
                   <span className="chip tag-admin__name">{tag}</span>
                   <span className="tag-admin__count mono">{t.operator.tagOnN(count)}</span>
-                  <button
-                    type="button"
-                    className="btn btn--ghost mono"
-                    onClick={() => {
+                  <RowActions
+                    editLabel={t.operator.tagRename}
+                    deleteLabel={t.operator.tagRemove}
+                    onEdit={() => {
                       setRenaming(tag)
                       setRenameTo(tag)
                     }}
-                  >
-                    {t.operator.tagRename}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--ghost mono operator__del"
-                    onClick={() => {
-                      if (confirm(t.operator.tagRemoveConfirm(tag))) patch.mutate({ remove: tag })
+                    onDelete={async () => {
+                      // Removing a tag strips it from EVERY recipe — heavy, so a
+                      // deliberate confirm (the in-app dialog, not platform confirm).
+                      if (await confirm({ message: t.operator.tagRemoveConfirm(tag), confirmLabel: t.operator.tagRemove, tone: 'danger' }))
+                        patch.mutate({ remove: tag })
                     }}
-                  >
-                    {t.operator.tagRemove}
-                  </button>
+                  />
                 </>
               )}
             </li>

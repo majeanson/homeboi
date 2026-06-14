@@ -87,6 +87,7 @@ export function DayManageSheet({
   actions: {
     clearMeal: (id: string) => void
     moveMeal: (id: string, dir: 'up' | 'down') => void
+    renameMeal: (id: string, title: string) => void
     clearSlotMeals: (date: number, slot: string) => void
     clearDay: (date: number) => void
   }
@@ -100,7 +101,7 @@ export function DayManageSheet({
   const { recipePickFor, setRecipePickFor, pickWithStaples, setPickWithStaples, planRecipe } = picker
   const { editSlot, setEditSlot, slotText, setSlotText, saveSlot } = slotEdit
   const { editNote, setEditNote, noteText, setNoteText, saveNote, clearNote } = noteEdit
-  const { clearMeal, moveMeal, clearSlotMeals, clearDay } = actions
+  const { clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay } = actions
   const pickOpenFor = (d: number, slot: string) => recipePickFor?.date === d && recipePickFor.slot === slot
   const dayMealCount = date != null ? SIDE_SLOTS.reduce((n, s) => n + mealsFor(date, s).length, suppers.length) : 0
   // Add-affordance label: "Ajouter un autre" when the slot already holds a meal,
@@ -156,6 +157,7 @@ export function DayManageSheet({
                     onOpenRecipe={onOpenRecipe}
                     onRemove={clearMeal}
                     onMove={moveMeal}
+                    onRename={renameMeal}
                     onClearAll={() => clearSlotMeals(date, slot)}
                   />
                   {editing && (
@@ -302,6 +304,7 @@ export function DayManageSheet({
                     onOpenRecipe={onOpenRecipe}
                     onRemove={clearMeal}
                     onMove={moveMeal}
+                    onRename={renameMeal}
                     onClearAll={() => clearSlotMeals(date, 'supper')}
                   />
                   {supperEditing && (

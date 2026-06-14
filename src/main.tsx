@@ -14,6 +14,7 @@ import { ProfileContext } from './lib/profile'
 import { CalmContext } from './lib/calm'
 import { HelpContext } from './lib/help'
 import { ToastProvider } from './lib/toast'
+import { ConfirmProvider } from './lib/confirm'
 import { AiErrorProvider } from './lib/aiErrorToast'
 import { TourProvider } from './lib/tour'
 import { TourOverlay } from './components/tour/TourOverlay'
@@ -199,6 +200,7 @@ function Root() {
           <CalmContext.Provider value={{ calm, setCalm }}>
           <HelpContext.Provider value={{ tutorial, setTutorial }}>
             <ToastProvider>
+              <ConfirmProvider>
               <AiErrorProvider>
                 <AuthProvider>
                   <BrowserRouter>
@@ -212,6 +214,7 @@ function Root() {
                   </BrowserRouter>
                 </AuthProvider>
               </AiErrorProvider>
+              </ConfirmProvider>
             </ToastProvider>
           </HelpContext.Provider>
           </CalmContext.Provider>

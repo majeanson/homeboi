@@ -7,8 +7,10 @@ import { useUndoableRemove } from '../../lib/undoRemove'
 import { useRecordUndo } from '../../lib/toast'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routineTod'
 import { InlineIcon } from '../Icon'
-import { RecurPicker, type RecurValue } from '../RecurPicker'
-import { recurLabel, recurOf, anchorSecToDate, dateToAnchorSec, todayAnchorDate } from '../../lib/recurLabel'
+import { RowActions } from '../RowActions'
+import { ChoreForm } from '../forms/ChoreForm'
+import { RoutineForm } from '../forms/RoutineForm'
+import { recurLabel } from '../../lib/recurLabel'
 import { type Chore, type Routine } from './types'
 
 export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange: () => void }) {
@@ -34,8 +36,8 @@ export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange:
           <ChoreRow key={c.id} chore={c} onChange={onChange} onRemove={() => remove(c)} />
         ))}
       </ul>
-      {/* Creating a chore is the same ＋ as everywhere; Réglages manages the
-          schedule/rotation of the ones that exist (the rows above). */}
+      {/* Creating a chore is the same ＋ as everywhere; Réglages edits/removes the
+          ones that exist (the rows above). */}
       <button type="button" className="btn btn--primary operator__add" onClick={() => open('chore', ['chore'])}>
         <InlineIcon name="plus-bold" /> {t.operator.addChore}
       </button>
@@ -43,27 +45,33 @@ export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange:
   )
 }
 
-// One chore row with an expandable "schedule" control, so an existing chore can
-// be given (or cleared of) a recurrence without recreating it.
+// One chore row. Tapping ✏️ expands the SAME ＋ form, prefilled — one editor for
+// title, rotation, colour and schedule (the old "Céduler"-only expander is now
+// just part of full edit). 🗑️ removes it (deferred undo).
 function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () => void; onRemove: () => void }) {
   const t = useT()
+  const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
-  const [recur, setRecur] = useState<RecurValue | null>(recurOf(chore.recur_json))
-  // The recurrence anchor; defaults to today when this chore never had one.
-  const [start, setStart] = useState(anchorSecToDate(chore.recur_start) || todayAnchorDate())
   const label = recurLabel(chore.recur_json, t)
+  // The rotation form needs the household roster; it's already cached by the
+  // Réglages shell (the Household tab / board both read ['members']).
+  const members = qc.getQueryData<{ members: { id: string; display_name: string }[] }>(['members'])?.members ?? []
 
-  // One write sets both rule and anchor — they always travel together, and the
-  // anchor is only meaningful while a rule exists (cleared with it).
-  async function saveRecur(v: RecurValue | null, s: string) {
-    setRecur(v)
-    setStart(s)
-    await api('chores', {
-      method: 'PATCH',
-      body: { id: chore.id, recur: v, start: v ? dateToAnchorSec(s) : null },
-    }).catch(() => {})
-    onChange()
-  }
+  if (editing)
+    return (
+      <li className="operator__chore-row operator__chore-row--editing">
+        <ChoreForm
+          key={chore.id}
+          members={members}
+          value={chore}
+          onSaved={() => {
+            setEditing(false)
+            onChange()
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      </li>
+    )
 
   return (
     <li className="operator__chore-row">
@@ -72,28 +80,12 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
         {chore.title}
         {label && <span className="operator__chore-recur mono"> · {label}</span>}
       </span>
-      <button type="button" className="btn btn--ghost mono" onClick={() => setEditing((s) => !s)}>
-        {t.operator.schedule}
-      </button>
-      <button type="button" className="btn btn--ghost mono operator__del" onClick={onRemove}>
-        {t.operator.delete}
-      </button>
-      {editing && (
-        <div className="operator__chore-schedule">
-          <RecurPicker value={recur} onChange={(v) => saveRecur(v, start)} />
-          {recur && (
-            <label className="recur__row mono">
-              <span>{t.operator.choreStart}</span>
-              <input
-                className="input"
-                type="date"
-                value={start}
-                onChange={(e) => saveRecur(recur, e.target.value)}
-              />
-            </label>
-          )}
-        </div>
-      )}
+      <RowActions
+        onEdit={() => setEditing(true)}
+        onDelete={onRemove}
+        editLabel={t.operator.editChore}
+        deleteLabel={t.operator.deleteChore}
+      />
     </li>
   )
 }
@@ -104,7 +96,9 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
   const { open } = useAddSheet()
   const undoableRemove = useUndoableRemove()
   const recordUndo = useRecordUndo()
+  const [editing, setEditing] = useState<string | null>(null)
   function remove(r: Routine) {
+    if (editing === r.id) setEditing(null)
     undoableRemove({
       queryKey: ['routines'],
       listProp: 'routines',
@@ -142,36 +136,56 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
     <section className="surface operator__section">
       <h2>{t.operator.routines}</h2>
       <ul className="operator__list">
-        {routines.map((r) => (
-          <li key={r.id}>
-            <span>
-              {r.name}
-              {r.memberName ? ` · ${r.memberName}` : ''}
-            </span>
-            <button
-              type="button"
-              className="chip mono"
-              onClick={() => cycleTod(r)}
-              title={t.routines.todLabel}
-              aria-label={`${t.routines.todLabel} ${isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : t.routines.tod.any}`}
-            >
-              {isRoutineTod(r.timeOfDay) ? (
-                <>
-                  <InlineIcon name={TOD_ICON[r.timeOfDay]} color={TOD_TINT[r.timeOfDay]} />{' '}
-                  {t.routines.tod[r.timeOfDay]}
-                </>
-              ) : (
-                t.routines.tod.any
-              )}
-            </button>
-            <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(r)}>
-              {t.operator.delete}
-            </button>
-          </li>
-        ))}
+        {routines.map((r) =>
+          editing === r.id ? (
+            <li key={r.id} className="operator__routine-row--editing">
+              <RoutineForm
+                key={r.id}
+                members={[]}
+                value={r}
+                onSaved={() => {
+                  setEditing(null)
+                  onChange()
+                }}
+                onCancel={() => setEditing(null)}
+              />
+            </li>
+          ) : (
+            <li key={r.id}>
+              <span>
+                {r.name}
+                {r.memberName ? ` · ${r.memberName}` : ''}
+              </span>
+              {/* The moment-of-day cue stays a one-tap chip (a quick content
+                  toggle, not a CRUD affordance); ✏️/🗑️ edit and remove. */}
+              <button
+                type="button"
+                className="chip mono"
+                onClick={() => cycleTod(r)}
+                title={t.routines.todLabel}
+                aria-label={`${t.routines.todLabel} ${isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : t.routines.tod.any}`}
+              >
+                {isRoutineTod(r.timeOfDay) ? (
+                  <>
+                    <InlineIcon name={TOD_ICON[r.timeOfDay]} color={TOD_TINT[r.timeOfDay]} />{' '}
+                    {t.routines.tod[r.timeOfDay]}
+                  </>
+                ) : (
+                  t.routines.tod.any
+                )}
+              </button>
+              <RowActions
+                onEdit={() => setEditing(r.id)}
+                onDelete={() => remove(r)}
+                editLabel={t.operator.editRoutine}
+                deleteLabel={t.operator.deleteRoutine}
+              />
+            </li>
+          ),
+        )}
       </ul>
-      {/* Building a routine is the same ＋ as everywhere; Réglages manages the
-          moment-of-day and removal of the ones that exist (the rows above). */}
+      {/* Building a routine is the same ＋ as everywhere; Réglages edits/removes
+          the ones that exist (the rows above). */}
       <button type="button" className="btn btn--primary operator__add" onClick={() => open('routine', ['routine'])}>
         <InlineIcon name="plus-bold" /> {t.operator.addRoutine}
       </button>

@@ -2,17 +2,18 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
-import { useUndoableRemove } from '../../lib/undoRemove'
+import { useConfirm } from '../../lib/confirm'
 import { PALETTE } from '../../lib/colors'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
 import { Avatar } from '../Avatar'
 import { ColorPicker } from '../ColorPicker'
 import { Icon } from '../Icon'
+import { RowActions } from '../RowActions'
 import { type Member } from './types'
 
 export function MembersSection({ members, onChange }: { members: Member[]; onChange: () => void }) {
   const t = useT()
-  const undoableRemove = useUndoableRemove()
+  const confirm = useConfirm()
   const [name, setName] = useState('')
   const [isChild, setIsChild] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -37,24 +38,17 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
     }
     onChange()
   }
-  function remove(m: Member) {
-    undoableRemove({
-      queryKey: ['members'],
-      listProp: 'members',
-      id: m.id,
-      label: m.display_name,
-      commit: () => api('members', { method: 'DELETE', body: { id: m.id } }),
-      after: onChange,
+  // Deleting a member cascades (their routines go; events/chores detach) — a
+  // HEAVY delete, so it asks first via the in-app confirm dialog rather than the
+  // forgiving undo toast the lighter rows use.
+  async function remove(m: Member) {
+    const okay = await confirm({
+      message: t.operator.deleteMemberConfirm(m.display_name),
+      confirmLabel: t.operator.deleteMember,
+      tone: 'danger',
     })
-  }
-  // Set a face from the phone (camera or gallery): resize small, upload, refresh.
-  async function setPhoto(id: string, file: File) {
-    const blob = await resizeImage(file, AVATAR_MAX)
-    await api(`members/avatar?id=${id}`, { method: 'POST', body: blob }).catch(() => {})
-    onChange()
-  }
-  async function clearPhoto(id: string) {
-    await api('members', { method: 'PATCH', body: { id, clearPhoto: true } }).catch(() => {})
+    if (!okay) return
+    await api('members', { method: 'DELETE', body: { id: m.id } }).catch(() => {})
     onChange()
   }
 
@@ -86,40 +80,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       )}
       <ul className="member-cards">
         {members.map((m) => (
-          <li key={m.id} className="member-card surface">
-            <Avatar kind={m.avatar_kind} photo={m.avatar_ref} colour={m.colour} name={m.display_name} size={64} />
-            <span className="member-card__name">{m.display_name}</span>
-            {m.is_child ? <span className="tag mono">{t.operator.isChild}</span> : null}
-            <div className="member-card__actions">
-              <label className="btn btn--ghost mono operator__photo" title={t.operator.photo}>
-                <Icon name="camera-bold" size={16} />
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  aria-label={t.operator.photo}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) setPhoto(m.id, f)
-                    e.target.value = ''
-                  }}
-                />
-              </label>
-              {m.avatar_kind === 'photo' && (
-                <button
-                  type="button"
-                  className="btn btn--ghost mono"
-                  onClick={() => clearPhoto(m.id)}
-                  aria-label={t.operator.removePhoto}
-                >
-                  <Icon name="x-bold" size={15} />
-                </button>
-              )}
-              <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(m)}>
-                {t.operator.delete}
-              </button>
-            </div>
-          </li>
+          <MemberCard key={m.id} member={m} onChange={onChange} onRemove={() => remove(m)} />
         ))}
       </ul>
       <form className="operator__inline-form" onSubmit={add}>
@@ -139,5 +100,104 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
         </button>
       </form>
     </section>
+  )
+}
+
+// One person card. ✏️ flips it to an inline editor (rename, child toggle,
+// recolour — the same fields the add form has); 🗑️ removes (confirmed). The photo
+// camera (and "clear photo") stay as their own affordance — a face is set from
+// the phone's camera/gallery, separate from the text fields.
+function MemberCard({ member, onChange, onRemove }: { member: Member; onChange: () => void; onRemove: () => void }) {
+  const t = useT()
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState(member.display_name)
+  const [isChild, setIsChild] = useState(!!member.is_child)
+  const [color, setColor] = useState(member.colour)
+  const [busy, setBusy] = useState(false)
+
+  async function setPhoto(file: File) {
+    const blob = await resizeImage(file, AVATAR_MAX)
+    await api(`members/avatar?id=${member.id}`, { method: 'POST', body: blob }).catch(() => {})
+    onChange()
+  }
+  async function clearPhoto() {
+    await api('members', { method: 'PATCH', body: { id: member.id, clearPhoto: true } }).catch(() => {})
+    onChange()
+  }
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim() || busy) return
+    setBusy(true)
+    await api('members', {
+      method: 'PATCH',
+      body: { id: member.id, name: name.trim(), isChild, colour: color },
+    }).catch(() => {})
+    setBusy(false)
+    setEditing(false)
+    onChange()
+  }
+
+  if (editing)
+    return (
+      <li className="member-card member-card--editing surface">
+        <form className="operator__inline-form" onSubmit={save}>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label={t.operator.name} autoFocus />
+          <label className="operator__check mono">
+            <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
+            {t.operator.isChild}
+          </label>
+          <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+          <button type="submit" className="btn" disabled={!name.trim() || busy}>
+            {t.common.save}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost mono"
+            onClick={() => {
+              setName(member.display_name)
+              setIsChild(!!member.is_child)
+              setColor(member.colour)
+              setEditing(false)
+            }}
+          >
+            {t.common.cancel}
+          </button>
+        </form>
+      </li>
+    )
+
+  return (
+    <li className="member-card surface">
+      <Avatar kind={member.avatar_kind} photo={member.avatar_ref} colour={member.colour} name={member.display_name} size={64} />
+      <span className="member-card__name">{member.display_name}</span>
+      {member.is_child ? <span className="tag mono">{t.operator.isChild}</span> : null}
+      <div className="member-card__actions">
+        <label className="btn btn--ghost mono operator__photo" title={t.operator.photo}>
+          <Icon name="camera-bold" size={16} />
+          <input
+            type="file"
+            accept="image/*"
+            hidden
+            aria-label={t.operator.photo}
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) setPhoto(f)
+              e.target.value = ''
+            }}
+          />
+        </label>
+        {member.avatar_kind === 'photo' && (
+          <button type="button" className="btn btn--ghost mono" onClick={clearPhoto} aria-label={t.operator.removePhoto}>
+            <Icon name="x-bold" size={15} />
+          </button>
+        )}
+        <RowActions
+          onEdit={() => setEditing(true)}
+          onDelete={onRemove}
+          editLabel={t.operator.editMember}
+          deleteLabel={t.operator.deleteMember}
+        />
+      </div>
+    </li>
   )
 }

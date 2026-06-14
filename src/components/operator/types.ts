@@ -19,14 +19,23 @@ export interface Chore {
   id: string
   title: string
   color?: string
+  rotation_json?: string | null
   recur_json?: string | null
   recur_start?: number | null
+}
+export interface RoutineCard {
+  icon: string
+  label: string
+  narration?: string
 }
 export interface Routine {
   id: string
   name: string
   memberName: string | null
   timeOfDay: string | null
+  // Present in the routines GET payload; needed so the edit form can prefill the
+  // existing card deck (the Settings list still only renders name/member/tod).
+  cards?: RoutineCard[]
 }
 export interface EventRow {
   id: string

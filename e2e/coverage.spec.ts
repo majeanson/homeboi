@@ -192,7 +192,8 @@ test('settings-tag-rename', async ({ page }) => {
   await boot(page, '/settings')
   await page.getByRole('tab', { name: 'Recettes' }).click() // recipes (tags)
   await page.locator('.tag-admin__row').first().waitFor({ state: 'visible' })
-  // First button in a row is "Renommer"; the second (.operator__del) is "Retirer".
+  // Each row ends in the uniform RowActions pair: first button = ✏️ rename, second
+  // = 🗑️ remove (the latter now behind a confirm dialog). Tapping the first renames.
   await page.locator('.tag-admin__row').first().locator('button').first().click()
   await page.locator('.tag-admin__rename').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)

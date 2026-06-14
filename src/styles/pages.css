@@ -705,6 +705,17 @@
   color: var(--ink-soft);
   margin-left: auto;
 }
+/* A pantry row: the calm check button takes the slack, the uniform ✏️/🗑️ pair
+   sits at the end (an editing row is the inline rename form, full width). */
+.kitchen__pantry-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.kitchen__pantry-row .board__list-item {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 
 /* --- Kid view (pre-reader: big targets, calm, deterministic) -------------- */
 .kid {
@@ -1099,6 +1110,73 @@
 .operator__del:focus-visible {
   color: var(--warn);
   border-color: color-mix(in srgb, var(--warn) 35%, transparent);
+}
+
+/* The ONE uniform row affordance (src/components/RowActions): icon-only edit +
+   delete, the same pair on every manageable list row across the app. Quiet by
+   default (the calm tenet — actions are present, never shouting on a dense list);
+   ink firms on hover, delete warms to terracotta. The 40px box is a comfortable
+   wall-tablet / toddler-thumb target even though the glyph is 18px. */
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  margin-left: auto;
+  flex: none;
+}
+.row-actions__btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.row-actions__btn:hover,
+.row-actions__btn:focus-visible {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.row-actions__btn--danger:hover,
+.row-actions__btn--danger:focus-visible {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+
+/* In-app confirm dialog (src/lib/confirm) — the deliberate yes/no for HEAVY
+   deletes (recipe, member, tag-everywhere). Its own backdrop sits above any open
+   sheet (a recipe sheet can spawn it), so it can't reuse the z-30 .scrim. */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(44, 39, 34, 0.4);
+}
+.confirm {
+  position: fixed;
+  z-index: 121;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92vw, 360px);
+  padding: 1.4rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+.confirm__msg {
+  margin: 0 0 1.2rem;
+  line-height: 1.45;
+}
+.confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }
 /* The secondary "when · who" line on an event row, quieter than the title. */
 .operator__event-when {

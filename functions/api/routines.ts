@@ -100,9 +100,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
 // PATCH wears two hats: toggle a card done for today (the toddler's tap —
 // kiosk-allowed), or retag the routine's time-of-day cue (operator-only).
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ routineId?: string; cardIdx?: number; done?: boolean; timeOfDay?: string | null }>(
-    ctx.request,
-  )
+  const body = await readJson<{
+    routineId?: string
+    cardIdx?: number
+    done?: boolean
+    name?: string
+    cards?: Card[]
+    timeOfDay?: string | null
+  }>(ctx.request)
   if (!body?.routineId) return badRequest('routineId requis.')
 
   // Ownership check: the routine must belong to this household.
@@ -111,12 +116,32 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     .first<{ id: string }>()
   if (!owns) return notFound('Routine introuvable.')
 
-  // Retag the cue — a settings act, not a toddler tap, so operator-only.
+  // Edit the routine itself (name / card deck / time-of-day cue) — a settings
+  // act, not a toddler tap, so operator-only. Any of these fields present means
+  // "edit"; the same ＋ form that builds a routine also edits it in place. The
+  // tod-only shape (the Réglages chip cycle) still lands here unchanged.
   if (body.cardIdx === undefined) {
-    if (!('timeOfDay' in body)) return badRequest('cardIdx ou timeOfDay requis.')
+    const editsContent = 'timeOfDay' in body || body.name !== undefined || body.cards !== undefined
+    if (!editsContent) return badRequest('cardIdx, name, cards ou timeOfDay requis.')
     if (actor.scope !== 'operator') return forbidden('This action needs the operator account, not a kiosk.')
-    await ctx.env.DB.prepare('UPDATE routines SET time_of_day = ? WHERE id = ? AND household_id = ?')
-      .bind(todOrNull(body.timeOfDay), body.routineId, actor.householdId)
+    const sets: string[] = []
+    const binds: unknown[] = []
+    if (typeof body.name === 'string' && body.name.trim()) {
+      sets.push('name = ?')
+      binds.push(body.name.trim())
+    }
+    if (Array.isArray(body.cards)) {
+      sets.push('cards_json = ?')
+      binds.push(JSON.stringify(body.cards.slice(0, 12)))
+    }
+    if ('timeOfDay' in body) {
+      sets.push('time_of_day = ?')
+      binds.push(todOrNull(body.timeOfDay))
+    }
+    if (!sets.length) return ok({ ok: true })
+    binds.push(body.routineId, actor.householdId)
+    await ctx.env.DB.prepare(`UPDATE routines SET ${sets.join(', ')} WHERE id = ? AND household_id = ?`)
+      .bind(...binds)
       .run()
     return ok({ ok: true })
   }

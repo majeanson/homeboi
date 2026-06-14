@@ -263,6 +263,21 @@ button {
   border-color: var(--accent);
   color: var(--accent);
 }
+/* The destructive confirm button (in-app confirm dialog). Warn ink with white
+   text — the one place delete is meant to read as a deliberate, weighty action,
+   unlike the quiet recede of an inline row delete. */
+.btn--danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--warn);
+  color: #fff;
+  border-color: var(--warn);
+  box-shadow: var(--shadow-md);
+}
+.btn--danger:hover {
+  filter: brightness(0.96);
+}
 .input {
   width: 100%;
   padding: 0.6rem 0.8rem;

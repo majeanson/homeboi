@@ -34,6 +34,19 @@ export const onRequestPost = authed(async (ctx, actor) => {
   return ok({ id, title })
 })
 
+// Rename an idea in place — keeps its recipe link + suggested_by (a delete +
+// re-add would lose both and reshuffle the pool order).
+export const onRequestPatch = authed(async (ctx, actor) => {
+  const body = await readJson<{ id?: string; title?: string }>(ctx.request)
+  if (!body?.id) return badRequest('id requis.')
+  const title = body.title?.trim()
+  if (!title) return badRequest('Titre requis.')
+  await ctx.env.DB.prepare('UPDATE meal_ideas SET title = ? WHERE id = ? AND household_id = ?')
+    .bind(title.slice(0, 200), body.id, actor.householdId)
+    .run()
+  return ok({ ok: true })
+})
+
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')

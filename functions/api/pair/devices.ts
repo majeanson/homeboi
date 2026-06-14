@@ -25,3 +25,16 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .run()
   return ok({ ok: true })
 }, 'operator')
+
+// Rename a paired tablet (operator) — the only editable field a device has, so
+// "Tablette du salon" stops being whatever label was typed at pairing time.
+export const onRequestPatch = authed(async (ctx, actor) => {
+  const body = await readJson<{ id?: string; label?: string }>(ctx.request)
+  if (!body?.id) return badRequest('id requis.')
+  const label = body.label?.trim()
+  if (!label) return badRequest('label requis.')
+  await ctx.env.DB.prepare('UPDATE devices SET label = ? WHERE id = ? AND household_id = ?')
+    .bind(label.slice(0, 60), body.id, actor.householdId)
+    .run()
+  return ok({ ok: true })
+}, 'operator')

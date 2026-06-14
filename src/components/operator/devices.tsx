@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { InlineIcon } from '../Icon'
+import { RowActions } from '../RowActions'
 import { type Device } from './types'
 
 export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
@@ -69,7 +71,8 @@ export function DevicesSection({ devices, onChange }: { devices: Device[]; onCha
   const undoableRemove = useUndoableRemove()
   const active = devices.filter((d) => !d.revoked_at)
   // A mis-tapped revoke forces someone to re-pair the wall tablet — defer it
-  // behind the undo toast like the other destructive rows.
+  // behind the undo toast like the other destructive rows. (Revoke IS the
+  // device's delete; the trash glyph reads the same as everywhere.)
   function revoke(d: Device) {
     undoableRemove({
       queryKey: ['devices'],
@@ -88,15 +91,78 @@ export function DevicesSection({ devices, onChange }: { devices: Device[]; onCha
       ) : (
         <ul className="operator__list">
           {active.map((d) => (
-            <li key={d.id}>
-              <span><InlineIcon name="device-mobile-bold" /> {d.label}</span>
-              <button type="button" className="btn btn--ghost mono operator__del" onClick={() => revoke(d)}>
-                {t.operator.revoke}
-              </button>
-            </li>
+            <DeviceRow key={d.id} device={d} onChange={onChange} onRevoke={() => revoke(d)} />
           ))}
         </ul>
       )}
     </section>
+  )
+}
+
+// One device row: the label, with the uniform edit (rename) / delete (revoke)
+// pair. Editing swaps the label for an inline input — the rename is the device's
+// only mutable field, so a full form would be overkill.
+function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: () => void; onRevoke: () => void }) {
+  const t = useT()
+  const qc = useQueryClient()
+  const [editing, setEditing] = useState(false)
+  const [label, setLabel] = useState(device.label)
+  const [busy, setBusy] = useState(false)
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    const next = label.trim()
+    if (!next || busy) return
+    setBusy(true)
+    // Optimistic: show the new name at once, then persist.
+    qc.setQueryData<{ devices: Device[] }>(['devices'], (data) =>
+      data ? { devices: data.devices.map((x) => (x.id === device.id ? { ...x, label: next } : x)) } : data,
+    )
+    setEditing(false)
+    await api('pair/devices', { method: 'PATCH', body: { id: device.id, label: next } }).catch(() => {})
+    onChange()
+    setBusy(false)
+  }
+
+  if (editing)
+    return (
+      <li>
+        <form className="operator__inline-form" onSubmit={save} style={{ flex: '1 1 auto' }}>
+          <input
+            className="input"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            aria-label={t.pair.label}
+            autoFocus
+          />
+          <button type="submit" className="btn" disabled={!label.trim() || busy}>
+            {t.common.save}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost mono"
+            onClick={() => {
+              setLabel(device.label)
+              setEditing(false)
+            }}
+          >
+            {t.common.cancel}
+          </button>
+        </form>
+      </li>
+    )
+
+  return (
+    <li>
+      <span>
+        <InlineIcon name="device-mobile-bold" /> {device.label}
+      </span>
+      <RowActions
+        onEdit={() => setEditing(true)}
+        onDelete={onRevoke}
+        editLabel={t.operator.renameDevice}
+        deleteLabel={t.operator.revoke}
+      />
+    </li>
   )
 }

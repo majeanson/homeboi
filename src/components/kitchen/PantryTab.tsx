@@ -6,6 +6,7 @@ import { useUndoToast } from '../../lib/toast'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { VoiceButton, VoiceStatus } from '../VoiceButton'
 import { Icon } from '../Icon'
+import { RowActions } from '../RowActions'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 
@@ -72,6 +73,29 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
       },
     })
   }
+  // Delete a low item WITHOUT putting it on the list (the 🗑️) — a real gap before:
+  // a mis-typed "running low" could only leave by being shopped. Deferred undo.
+  function removeLowItem(l: LowRow) {
+    const prev = qc.getQueryData<PantryData>(PANTRY_KEY)
+    qc.setQueryData<PantryData>(PANTRY_KEY, (d) => (d ? { low: d.low.filter((x) => x.id !== l.id) } : d))
+    undo({
+      message: t.undo.cleared(l.item),
+      onUndo: () => prev && qc.setQueryData(PANTRY_KEY, prev),
+      onCommit: () => {
+        api('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
+      },
+    })
+  }
+  // Rename a low item in place (the ✏️). Optimistic, then persist.
+  async function renameLowItem(l: LowRow, item: string) {
+    const v = item.trim()
+    if (!v || v === l.item) return
+    qc.setQueryData<PantryData>(PANTRY_KEY, (d) =>
+      d ? { low: d.low.map((x) => (x.id === l.id ? { ...x, item: v } : x)) } : d,
+    )
+    await api('pantry', { method: 'PATCH', body: { id: l.id, item: v } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: PANTRY_KEY })
+  }
 
   async function postSoon(item: string, viaVoice = false) {
     const v = item.trim()
@@ -111,6 +135,15 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
       },
     })
   }
+  async function renameSoonItem(s: LowRow, item: string) {
+    const v = item.trim()
+    if (!v || v === s.item) return
+    qc.setQueryData<{ soon: LowRow[] }>(USE_SOON_KEY, (d) =>
+      d ? { soon: d.soon.map((x) => (x.id === s.id ? { ...x, item: v } : x)) } : d,
+    )
+    await api('use-soon', { method: 'PATCH', body: { id: s.id, item: v } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: USE_SOON_KEY })
+  }
 
   return (
     <>
@@ -135,15 +168,14 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
         ) : (
           <ul className="kitchen__low">
             {low.map((l) => (
-              <li key={l.id}>
-                <button type="button" className="board__list-item" onClick={() => checkLowItem(l)}>
-                  <span className="board__check" aria-hidden="true">
-                    <Icon name="square-bold" size={18} />
-                  </span>
-                  <span>{l.item}</span>
-                  <span className="kitchen__low-note mono">{t.kitchen.addToList}</span>
-                </button>
-              </li>
+              <PantryRow
+                key={l.id}
+                row={l}
+                note={t.kitchen.addToList}
+                onCheck={() => checkLowItem(l)}
+                onRename={(item) => renameLowItem(l, item)}
+                onDelete={() => removeLowItem(l)}
+              />
             ))}
           </ul>
         )}
@@ -170,18 +202,87 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
         ) : (
           <ul className="kitchen__soon">
             {soon.map((s) => (
-              <li key={s.id}>
-                <button type="button" className="board__list-item" onClick={() => clearSoonItem(s)}>
-                  <span className="board__check" aria-hidden="true">
-                    <Icon name="square-bold" size={18} />
-                  </span>
-                  <span>{s.item}</span>
-                </button>
-              </li>
+              <PantryRow
+                key={s.id}
+                row={s}
+                onCheck={() => clearSoonItem(s)}
+                onRename={(item) => renameSoonItem(s, item)}
+                onDelete={() => clearSoonItem(s)}
+              />
             ))}
           </ul>
         )}
       </section>
     </>
+  )
+}
+
+// One pantry row: the calm check button stays the primary tap (low → "add to
+// list", use-soon → "used it"), with the uniform ✏️ rename / 🗑️ remove pair
+// beside it. ✏️ swaps the row for an inline input.
+function PantryRow({
+  row,
+  note,
+  onCheck,
+  onRename,
+  onDelete,
+}: {
+  row: LowRow
+  note?: string
+  onCheck: () => void
+  onRename: (item: string) => void
+  onDelete: () => void
+}) {
+  const t = useT()
+  const [editing, setEditing] = useState(false)
+  const [text, setText] = useState(row.item)
+
+  if (editing)
+    return (
+      <li className="kitchen__pantry-row">
+        <form
+          className="operator__inline-form"
+          style={{ flex: '1 1 auto' }}
+          onSubmit={(e) => {
+            e.preventDefault()
+            onRename(text)
+            setEditing(false)
+          }}
+        >
+          <input className="input" value={text} onChange={(e) => setText(e.target.value)} aria-label={t.common.edit} autoFocus />
+          <button type="submit" className="btn" disabled={!text.trim()}>
+            {t.common.save}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost mono"
+            onClick={() => {
+              setText(row.item)
+              setEditing(false)
+            }}
+          >
+            {t.common.cancel}
+          </button>
+        </form>
+      </li>
+    )
+
+  return (
+    <li className="kitchen__pantry-row">
+      <button type="button" className="board__list-item" onClick={onCheck}>
+        <span className="board__check" aria-hidden="true">
+          <Icon name="square-bold" size={18} />
+        </span>
+        <span>{row.item}</span>
+        {note && <span className="kitchen__low-note mono">{note}</span>}
+      </button>
+      <RowActions
+        onEdit={() => {
+          setText(row.item)
+          setEditing(true)
+        }}
+        onDelete={onDelete}
+      />
+    </li>
   )
 }
