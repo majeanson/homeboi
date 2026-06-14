@@ -136,7 +136,11 @@ export function Board() {
   // everyone, the unfiltered board.
   const focusing = !!profileId
   const mineEvent = (e: EventRow) => !focusing || e.member_id === profileId || e.member_id === null
-  const mineChore = (c: ChoreInstance) => !focusing || c.who_id === profileId || c.who_id === null
+  // A chore is "mine" when it's my turn, unassigned (Maisonnée), OR I'm anywhere
+  // in its rotation team — a shared chore stays visible + doable to every teammate
+  // even on someone else's turn (the `who` line still says whose turn it is).
+  const mineChore = (c: ChoreInstance) =>
+    !focusing || c.who_id === profileId || c.who_id === null || (!!profileId && !!c.team?.includes(profileId))
   const todayEvents = (data?.today ?? []).filter(mineEvent)
   const todayChores = (data?.choresToday ?? []).filter(mineChore).filter((c) => !pendingDone.has(c.id))
   const todayTodos = (data?.todos ?? []).filter(mineChore).filter((c) => !pendingDone.has(c.id))

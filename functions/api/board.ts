@@ -192,6 +192,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     at: number
     who: string | null
     who_id: string | null
+    // Every member in the rotation (not just whose turn). The board's personal
+    // focus shows a shared chore to ANYONE on the team, even when it's not their
+    // turn — they can still do it; `who`/`who_id` say whose turn it currently is.
+    team: string[]
   }
   const memberName = (id: string | null) =>
     (id && (members.results as { id: string; display_name: string }[]).find((m) => m.id === id)?.display_name) || null
@@ -206,17 +210,22 @@ export const onRequestGet = authed(async (ctx, actor) => {
     recur_start: number | null
     created_at: number
   }
+  // The rotation as member ids — the whole team sharing the chore. Empty when
+  // there's no rotation (an unassigned "Maisonnée" task shown to everyone).
+  const teamIds = (c: ChoreSrc): string[] => {
+    try {
+      const p = JSON.parse(c.rotation_json)
+      if (Array.isArray(p)) return p.filter((x): x is string => typeof x === 'string')
+    } catch {
+      /* malformed rotation → no team */
+    }
+    return []
+  }
   // Whose turn it is, as a member id (rotation + current_idx). Null when there's
   // no rotation — an unassigned "Maisonnée" task. The board's personal-focus
   // filter keeps these visible to everyone alongside the picked member's own.
   const whoseTurnId = (c: ChoreSrc): string | null => {
-    let rot: string[] = []
-    try {
-      const p = JSON.parse(c.rotation_json)
-      if (Array.isArray(p)) rot = p.filter((x): x is string => typeof x === 'string')
-    } catch {
-      /* malformed rotation → no turn */
-    }
+    const rot = teamIds(c)
     return rot.length ? rot[c.current_idx % rot.length] : null
   }
   const whoseTurn = (c: ChoreSrc): string | null => memberName(whoseTurnId(c))
@@ -235,6 +244,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       at,
       who: whoseTurn(c),
       who_id: whoseTurnId(c),
+      team: teamIds(c),
     })
     if (!r) {
       // No schedule → a to-do. Show it until it's marked done.

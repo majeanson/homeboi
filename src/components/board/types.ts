@@ -65,6 +65,8 @@ export interface NoteRow {
 // A recurring chore expanded onto a specific day (today or an upcoming date).
 // `who`/`who_id` are whose turn it is (rotation + current_idx); null = unassigned
 // (a "Maisonnée" task shown to everyone, surfaced even in a single-member focus).
+// `team` is everyone in the rotation — a shared chore stays visible (and doable)
+// to any teammate in personal focus, even when it's not their turn.
 export interface ChoreInstance {
   id: string
   title: string
@@ -72,6 +74,7 @@ export interface ChoreInstance {
   at: number
   who: string | null
   who_id: string | null
+  team?: string[]
 }
 export interface BoardData {
   syncedAt: number
