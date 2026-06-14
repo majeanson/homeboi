@@ -7,7 +7,7 @@ import { type Recipe } from '../../lib/recipes'
 import { type MealSlot } from '../../lib/mealSlots'
 import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
 import { RecipePickerMenu } from './RecipePickerMenu'
-import { SlotPicker } from './SlotPicker'
+import { MealPlanPicker } from './MealPlanPicker'
 import { Icon, InlineIcon } from '../Icon'
 
 // The "general ideas" pool under the week grid: a reusable shortlist of meal
@@ -163,23 +163,12 @@ export function MealIdeas({
                 </button>
               </div>
               {planFor === idea.id && (
-                <div className="kitchen__idea-days">
-                  <span className="mono kitchen__idea-days-label">{t.recipes.planSlot}</span>
-                  <SlotPicker value={planSlot} onChange={setPlanSlot} />
-                  <span className="mono kitchen__idea-days-label">{t.kitchen.planIt}</span>
-                  <div className="kitchen__recipe-menu">
-                    {week.map((d) => (
-                      <button
-                        key={d.date}
-                        type="button"
-                        className="chip"
-                        onClick={() => planIdea(idea, d.date, planSlot)}
-                      >
-                        {d.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <MealPlanPicker
+                  slot={planSlot}
+                  onSlot={setPlanSlot}
+                  week={week}
+                  onPickDay={(date) => planIdea(idea, date, planSlot)}
+                />
               )}
             </li>
           ))}

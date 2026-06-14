@@ -12,7 +12,7 @@ import { type MealSlot } from '../lib/mealSlots'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { IngredientLine } from './IngredientLine'
-import { SlotPicker } from './kitchen/SlotPicker'
+import { MealPlanPicker } from './kitchen/MealPlanPicker'
 import { useModal } from '../lib/useModal'
 
 // Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method,
@@ -414,18 +414,7 @@ export function RecipeSheet({
             "Planifier un souper" reveals the days next to the button (not lost up
             in the scrolled recipe body). */}
         {planning && (
-          <div className="recipe-plan-days">
-            <span className="recipe-plan-days__label mono">{t.recipes.planSlot}</span>
-            <SlotPicker value={planSlot} onChange={setPlanSlot} />
-            <span className="recipe-plan-days__label mono">{t.recipes.planPick}</span>
-            <div className="recipe-plan-days__chips">
-              {week.map((d) => (
-                <button key={d.date} type="button" className="chip" onClick={() => planOn(d.date)}>
-                  {d.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <MealPlanPicker band slot={planSlot} onSlot={setPlanSlot} week={week} onPickDay={planOn} />
         )}
 
         <div className="recipe-modal__foot recipe-actions">

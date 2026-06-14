@@ -418,23 +418,31 @@
   color: var(--ink-soft);
   font-style: italic;
 }
-.recipe-plan-days {
+/* The shared "place onto the week" picker — recipe sheet "Planifier" + ideas
+   pool "Mettre sur un jour". Choose a meal slot, then a day. `--band` gives it
+   the inset surface treatment used in the recipe-modal footer; plain is inline
+   for the ideas list. See components/kitchen/MealPlanPicker.tsx. */
+.meal-plan-pick {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.4rem;
+  margin: 0.4rem 0 0.2rem;
+}
+.meal-plan-pick--band {
+  margin: 0;
   padding: 0.6rem 1rem;
   border-top: 1px solid var(--line);
   background: var(--surface);
 }
-.recipe-plan-days .slot-picker {
+.meal-plan-pick .slot-picker {
   margin-bottom: 0;
 }
-.recipe-plan-days__label {
+.meal-plan-pick__label {
   color: var(--ink-soft);
   font-size: 0.85rem;
 }
-.recipe-plan-days__chips {
+.meal-plan-pick__days {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
@@ -644,14 +652,6 @@
 }
 .kitchen__idea-del:hover {
   color: var(--ink);
-}
-.kitchen__idea-days {
-  margin: 0.4rem 0 0.2rem;
-}
-.kitchen__idea-days-label {
-  display: block;
-  color: var(--ink-faint);
-  margin-bottom: 0.3rem;
 }
 .kitchen__suggestion-keep {
   margin-left: 0.5rem;
