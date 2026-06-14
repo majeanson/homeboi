@@ -826,6 +826,30 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   }
 }
 
+// A vision/LLM model asked to "read this recipe" very often answers in prose or
+// markdown ("**Ingrédients**\n* 8 choux…\n**Préparation**\n1. …") instead of the
+// JSON we requested — vision models follow structured-output instructions far
+// less reliably than the text model. The OCR itself is usually perfect; only the
+// wrapping is wrong. Flatten the markdown (bold, #-headings, ``` fences, leading
+// bullets stay — the paste parser strips those itself) so the heading-aware
+// parsePastedRecipe can read it, then reuse it. This turns a "returned no JSON"
+// reply into a usable draft instead of a thrown-away read.
+export function parseMarkdownRecipe(text: string): PastedRecipe {
+  const flat = text
+    .replace(/```[a-z]*/gi, '') // ``` / ```json fences → gone (their content stays)
+    .replace(/`/g, '')
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .replace(/^\s{0,3}#{1,6}\s+/, '') // "## Préparation" → "Préparation"
+        .replace(/\*\*([^*]+)\*\*/g, '$1') // **bold** → bold (a "* item" bullet is untouched)
+        .replace(/__([^_]+)__/g, '$1') // __bold__ → bold
+        .trim(),
+    )
+    .join('\n')
+  return parsePastedRecipe(flat)
+}
+
 // Crude HTML→text for the AI fallback when there's no structured data: drop
 // scripts/styles, keep block boundaries as newlines (so the model — and the
 // paste parser — still sees the page's line structure), strip tags, collapse.

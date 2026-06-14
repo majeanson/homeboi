@@ -4,6 +4,7 @@ import {
   parseRecipeJsonLd,
   parseRecipeMicrodata,
   parsePastedRecipe,
+  parseMarkdownRecipe,
   extractJsonLdBlocks,
   findRecipeNode,
   normalizeInstructions,
@@ -577,6 +578,58 @@ Couper les légumes et mélanger avec la vinaigrette.`)
     expect(r.ingredients).toEqual(['1 laitue', '2 tomates'])
     expect(r.steps).toEqual(['Couper les légumes et mélanger avec la vinaigrette.'])
     expect(r.title).toBe('Salade rapide')
+  })
+})
+
+describe('parseMarkdownRecipe', () => {
+  // The real bug: the vision model OCR'd a recipe correctly but answered in
+  // markdown ("**Ingrédients**\n* 8 choux…") instead of JSON, so recipe-vision
+  // threw a perfect read away with "vision returned no JSON". This recovers it.
+  it('recovers a markdown reply the vision model gave instead of JSON', () => {
+    const r = parseMarkdownRecipe(`**Recette de saucisses**
+
+**Ingrédients**
+
+* 8 choux de Bruxelles coupés en deux
+* 6 pommes de terre à chair jaune
+* 4 saucisses italiennes
+
+**Préparation**
+
+1. Préchauffer le four à 200 °C.
+2. Couper les légumes et déposer sur une plaque.
+3. Cuire 30 minutes avec les saucisses.`)
+    expect(r.title).toBe('Recette de saucisses')
+    expect(r.ingredients).toEqual([
+      '8 choux de Bruxelles coupés en deux',
+      '6 pommes de terre à chair jaune',
+      '4 saucisses italiennes',
+    ])
+    expect(r.steps).toEqual([
+      'Préchauffer le four à 200 °C.',
+      'Couper les légumes et déposer sur une plaque.',
+      'Cuire 30 minutes avec les saucisses.',
+    ])
+  })
+
+  it('handles ##/### headings and a ```json fence wrapper', () => {
+    const r = parseMarkdownRecipe(`# Pancakes
+## Ingredients
+- 2 cups flour
+- 1 egg
+## Method
+1. Mix everything.
+2. Cook on a hot pan.`)
+    expect(r.title).toBe('Pancakes')
+    expect(r.ingredients).toEqual(['2 cups flour', '1 egg'])
+    expect(r.steps).toEqual(['Mix everything.', 'Cook on a hot pan.'])
+  })
+
+  it('empty / whitespace in → empty draft (no throw)', () => {
+    const r = parseMarkdownRecipe('   \n  \n')
+    expect(r.title).toBeNull()
+    expect(r.ingredients).toEqual([])
+    expect(r.steps).toEqual([])
   })
 })
 

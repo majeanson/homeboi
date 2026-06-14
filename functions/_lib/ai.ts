@@ -7,6 +7,7 @@
 // never lost and the UI can offer a manual type-picker.
 
 import type { Env } from './env'
+import { parseMarkdownRecipe } from './recipeImport'
 
 // AI output language. Mirrors the UI locale (src/i18n.ts `Lang`). The router and
 // meal suggester pick their prompt by this so the household sees AI text in the
@@ -326,17 +327,21 @@ Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insèr
     const parsed = extractJson(res.response) as
       | { title?: unknown; ingredients?: unknown; steps?: unknown }
       | null
-    // The call SUCCEEDED but gave us nothing usable — the model replied with
-    // prose, refused, or saw no legible text. This used to return empty
-    // silently, so a failing photo-read showed "no errors anywhere" (the vision
-    // ping in Réglages only proves the model RUNS, not that it reads). Log it to
-    // the AI-error journal + surface it, so the breakage is visible like a throw.
-    if (!parsed) {
-      if (report) report.error = logAi('recipeFromImage', new Error(`vision returned no JSON: ${visionSnippet(res.response)}`))
-      return { title: null, ingredients: [], steps: [] }
-    }
-    const title = typeof parsed.title === 'string' ? parsed.title.trim() || null : null
-    const result = { title, ingredients: cleanLines(parsed.ingredients, 30), steps: cleanLines(parsed.steps, 20) }
+    // The model very often OCRs the recipe correctly but answers in PROSE/MARKDOWN
+    // ("**Ingrédients**\n* 8 choux…") instead of the JSON we asked for — vision
+    // models follow structured-output instructions far less reliably than the text
+    // model. Don't throw that perfect read away on a "no JSON": fall back to the
+    // SAME heading-aware parser the paste-import path uses (it knows Ingrédients/
+    // Préparation, bullets, numbered steps, "## " sections). Only a read that's
+    // empty BOTH ways is a real failure — log THAT, since the vision ping in
+    // Réglages only proves the model RUNS, not that it reads anything legible.
+    const result = parsed
+      ? {
+          title: typeof parsed.title === 'string' ? parsed.title.trim() || null : null,
+          ingredients: cleanLines(parsed.ingredients, 30),
+          steps: cleanLines(parsed.steps, 20),
+        }
+      : visionProseToRecipe(res.response)
     if (!result.title && !result.ingredients.length && !result.steps.length && report) {
       report.error = logAi('recipeFromImage', new Error(`vision read nothing legible: ${visionSnippet(res.response)}`))
     }
@@ -345,6 +350,18 @@ Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insèr
     if (report) report.error = logAi('recipeFromImage', err)
     return { title: null, ingredients: [], steps: [] }
   }
+}
+
+// The vision model answered in prose/markdown rather than JSON. Reuse the
+// paste-import parser (markdown-flattened) so a non-JSON reply still becomes a
+// reviewable draft. Maps PastedRecipe → RecipeStructured (the photo path only
+// needs title/ingredients/steps; servings/times aren't legible from a snapshot
+// reliably anyway). Empty in → empty out.
+function visionProseToRecipe(raw: unknown): RecipeStructured {
+  const text = typeof raw === 'string' ? raw : ''
+  if (!text.trim()) return { title: null, ingredients: [], steps: [] }
+  const p = parseMarkdownRecipe(text)
+  return { title: p.title, ingredients: p.ingredients, steps: p.steps }
 }
 
 // A short, log-safe peek at what the vision model actually returned, so an empty
