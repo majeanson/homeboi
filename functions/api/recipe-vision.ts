@@ -21,6 +21,17 @@ export const onRequestPost = authed(async (ctx) => {
   const report = { error: null as string | null }
   const r = await recipeFromImage(ctx.env, new Uint8Array(buf), resolveLang(ctx.env, ctx.request), report)
   // OCR'd steps go through the shared refinement: the model often returns the
-  // page's numbering verbatim ("1. …") or one packed paragraph.
-  return withAiError(ok({ title: r.title, ingredients: r.ingredients, steps: refineSteps(r.steps) }), report)
+  // page's numbering verbatim ("1. …") or one packed paragraph. Servings + times
+  // ride along now — the printed card usually states them and the form has fields.
+  return withAiError(
+    ok({
+      title: r.title,
+      ingredients: r.ingredients,
+      steps: refineSteps(r.steps),
+      servings: r.servings,
+      servingsUnit: r.servingsUnit,
+      times: r.times,
+    }),
+    report,
+  )
 }, 'operator')

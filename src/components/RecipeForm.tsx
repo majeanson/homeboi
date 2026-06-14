@@ -197,7 +197,14 @@ export function RecipeForm({
         setReadMsg(t.recipes.photoTooBig)
         return
       }
-      const r = await api<{ title: string | null; ingredients: string[]; steps: string[] }>('recipe-vision', {
+      const r = await api<{
+        title: string | null
+        ingredients: string[]
+        steps: string[]
+        servings: number | null
+        servingsUnit: string | null
+        times: { prep: number | null; cook: number | null; total: number | null }
+      }>('recipe-vision', {
         method: 'POST',
         body: blob,
       })

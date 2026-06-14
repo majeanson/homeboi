@@ -641,7 +641,7 @@ export interface PastedRecipe {
 const ING_HEADING = /^(?:les\s+)?ingr[ée]dients?\b\s*([^.!?]{0,30}?)\s*:?$/i
 const STEP_HEADING =
   /^(?:pr[ée]paration|instructions?|m[ée]thode|method|directions?|[ée]tapes?(?!\s*\d)|steps?(?!\s*\d)|marche\s+[àa]\s+suivre|mode\s+d['’]emploi)\b\s*([^.!?]{0,30}?)\s*:?$/i
-const NOTE_HEADING = /^(?:notes?|conseils?|astuces?|tips?|variantes?)\b[^.!?]{0,10}:?$/i
+const NOTE_HEADING = /^(?:notes?|remarques?|conseils?|astuces?|tips?|variantes?)\b[^.!?]{0,10}:?$/i
 
 // "Préparation : 20 min", "Cuisson 1 h 30", "Total time: 45 minutes" — the time
 // block most printed recipes start with. Must be checked BEFORE the step
@@ -824,6 +824,31 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     notes,
     confident: sawIngHeading && sawStepHeading && realIngs.length >= 2 && steps.length >= 1,
   }
+}
+
+// Lines that are the model TALKING ABOUT the recipe instead of transcribing it.
+// A vision/LLM model often appends "helpful" remarks, apologies, or observations
+// that were never printed in the photo — "Remarque", "La recette n'indique pas
+// combien de portions…", "I cannot read…". Those leaked into the user's draft as
+// fake ingredients/steps. Anchored to the START of a line (a real step that
+// merely CONTAINS "note" survives) and deliberately narrow — better to miss one
+// stray remark than to eat a real instruction. A leading "## " is peeled first so
+// a "## Remarque" heading the model emitted is caught too.
+const AI_COMMENTARY: RegExp[] = [
+  // A bare leaked label as its own line ("Remarque", "Note :", "N.B.").
+  /^(?:remarques?|notes?|nota(?:\s*bene)?|n\.?\s*b\.?|avertissements?|disclaimer)\s*:?\s*$/i,
+  // "La recette / le texte / l'image n'indique pas / ne précise pas / est illisible…"
+  /^(?:la\s+recette|le\s+texte|l['’]image|la\s+photo|cette\s+(?:recette|image))\b.*\b(?:n['’]indique|ne\s+(?:précise|pr[ée]cise|mentionne|donne|dit|sp[ée]cifie|permet)|est\s+(?:partiellement\s+)?illisible)/i,
+  /^(?:the\s+recipe|the\s+image|the\s+text|this\s+(?:recipe|image))\b.*\b(?:does\s+not|doesn['’]t|is\s+(?:partially\s+)?(?:unclear|illegible|cut|not\s+))/i,
+  // Apologies / inability / hedging the model opens a meta-line with.
+  /^(?:désolé|d[ée]sol[ée]|malheureusement|je\s+ne\s+peux|je\s+n['’]ai\s+pas\s+pu|il\s+(?:semble|para[îi]t|manque|n['’]y\s+a\s+pas)|on\s+ne\s+(?:voit|peut|distingue))/i,
+  /^(?:i\s+(?:cannot|can['’]t|am\s+unable|couldn['’]t|don['’]t)|sorry|unfortunately|please\s+note|as\s+an\s+ai|it\s+(?:seems|appears)\b)/i,
+]
+export function stripAiCommentary(lines: string[]): string[] {
+  return lines.filter((line) => {
+    const s = line.replace(/^#{1,6}\s*/, '').trim()
+    return s !== '' && !AI_COMMENTARY.some((re) => re.test(s))
+  })
 }
 
 // A vision/LLM model asked to "read this recipe" very often answers in prose or

@@ -5,6 +5,7 @@ import {
   parseRecipeMicrodata,
   parsePastedRecipe,
   parseMarkdownRecipe,
+  stripAiCommentary,
   extractJsonLdBlocks,
   findRecipeNode,
   normalizeInstructions,
@@ -630,6 +631,53 @@ describe('parseMarkdownRecipe', () => {
     expect(r.title).toBeNull()
     expect(r.ingredients).toEqual([])
     expect(r.steps).toEqual([])
+  })
+
+  it('reads prep/cook times and servings printed on the card', () => {
+    const r = parseMarkdownRecipe(`**Repas de saucisses**
+Préparation 20 min
+Cuisson 25 min
+Quantité 4 portions
+**Ingrédients**
+* 4 saucisses
+* 6 pommes de terre
+**Préparation**
+1. Cuire les saucisses.
+2. Rôtir les pommes de terre.`)
+    expect(r.title).toBe('Repas de saucisses')
+    expect(r.servings).toBe(4)
+    expect(r.times).toEqual({ prep: 20, cook: 25, total: null })
+    expect(r.ingredients).toEqual(['4 saucisses', '6 pommes de terre'])
+  })
+})
+
+describe('stripAiCommentary', () => {
+  // The real hallucinations the user hit: the model appended its own remarks as
+  // if they were steps. These must be dropped; real steps must survive.
+  it('drops the model commentary the user saw, keeps real steps', () => {
+    const r = stripAiCommentary([
+      'Préchauffer le four à 200 °C.',
+      'Remarque',
+      "La recette n'indique pas combien de portions elle fait, ni de quel type de fruits il s'agit",
+      'Cuire 25 minutes.',
+    ])
+    expect(r).toEqual(['Préchauffer le four à 200 °C.', 'Cuire 25 minutes.'])
+  })
+
+  it('drops EN apologies / "the recipe does not…", keeps genuine lines (conservative)', () => {
+    const r = stripAiCommentary([
+      'The recipe does not specify the oven temperature.',
+      'I cannot read the last line.',
+      'Note: serve warm.', // a "Note:" WITH content is left alone — could be a real note
+      'Add a note of cinnamon to taste.',
+    ])
+    // Only the clear meta-commentary is removed; anything that might be real survives.
+    expect(r).toEqual(['Note: serve warm.', 'Add a note of cinnamon to taste.'])
+  })
+
+  it('peels a leaked "## Remarque" heading, leaves a real "## Section"', () => {
+    const r = stripAiCommentary(['## Version au barbecue', 'Griller 10 min.', '## Remarque'])
+    expect(r).toEqual(['## Version au barbecue', 'Griller 10 min.'])
   })
 })
 
