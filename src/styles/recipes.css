@@ -63,14 +63,24 @@
   position: fixed;
   left: 0;
   right: 0;
-  top: var(--vvt, 0px);
+  top: 0;
+  /* Full dynamic viewport by default — `dvh` already tracks browser chrome, so the
+     scene always fills the screen. We pin to the VISUAL viewport (--vvt/--vvh) ONLY
+     while the keyboard is up (`.kb-open`), to keep the footer above it. Binding to
+     --vvh unconditionally meant a stale value left over from a keyboard that has
+     since closed shrank the form, leaving dead space below — the "form is small but
+     my keyboard is closed" bug. See src/lib/viewportVars.ts. */
   height: 100dvh;
-  height: var(--vvh, 100dvh);
   z-index: 80;
   display: flex;
   align-items: stretch;
   justify-content: center;
   padding: 0;
+}
+/* Keyboard up: shrink to the visible band so the footer buttons clear it. */
+.kb-open .recipe-modal {
+  top: var(--vvt, 0px);
+  height: var(--vvh, 100dvh);
 }
 /* No backdrop on a full-screen route — the card IS the screen. */
 .recipe-modal__scrim {

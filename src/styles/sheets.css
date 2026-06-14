@@ -489,6 +489,14 @@
   opacity: 0.45;
   cursor: default;
 }
+/* "Planifier un repas" day picker — a wrap of day chips; tapping one opens that
+   day's full Gérer sheet on the kitchen page. */
+.addsheet__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
 /* The meal planner's day + slot selects, side by side above the title field. */
 .sheet__row {
   display: flex;

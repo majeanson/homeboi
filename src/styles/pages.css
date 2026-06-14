@@ -495,6 +495,15 @@
   font-size: 0.85rem;
   font-weight: 600;
   margin: 0;
+  min-width: 0;
+}
+/* Slot header line: the slot name on the left, its "＋ Ajouter" on the right —
+   so the add affordance never takes a row of its own under the meals. */
+.day-mng__sec-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 /* Each side slot is now a small stack: an icon+label header, the list of planned
    meals, and an add control (was a single inline chip). */

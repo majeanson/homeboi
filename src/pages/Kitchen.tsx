@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon, InlineIcon } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
@@ -194,6 +194,24 @@ export function Kitchen() {
   // off the calm read-only week grid). One at a time — so the souper/recipe-picker
   // singletons can't fight across days.
   const [manageDate, setManageDate] = useState<number | null>(null)
+  // The ＋ sheet's "Planifier un repas" hands us a day via ?manage=<date> (one
+  // editor, two entry points): open that day's Gérer sheet and consume the param
+  // so it fires once and a refresh/back doesn't reopen it.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const m = searchParams.get('manage')
+    if (!m) return
+    const d = Number(m)
+    if (Number.isFinite(d)) setManageDate(d)
+    setSearchParams(
+      (p) => {
+        const n = new URLSearchParams(p)
+        n.delete('manage')
+        return n
+      },
+      { replace: true },
+    )
+  }, [searchParams, setSearchParams])
   // Quick-add is the default (tap a recipe → it's set, no staples). This toggle
   // opts a pick INTO the grocery flow ("ajouter les ingrédients aussi") for the
   // times you do want the staples chips — kept off so dropping a recipe is one tap.

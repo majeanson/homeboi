@@ -89,6 +89,16 @@ export function trackVisualViewport(): void {
     }, 300)
   })
 
+  // A field blurring usually means the keyboard is closing. Some browsers don't
+  // fire a visualViewport 'resize' on dismiss, which would leave --vvh/--kb (and
+  // the .kb-open class) stuck at their keyboard-open values — shrinking full-screen
+  // scenes that bind to --vvh with the keyboard already gone. Recompute once it has
+  // settled; if focus merely moved to another field, apply() reads the still-small
+  // viewport and correctly keeps things as-is.
+  document.addEventListener('focusout', () => {
+    setTimeout(schedule, 300)
+  })
+
   // Final backstop for iOS Safari browser tabs: block the pinch-zoom gesture
   // outright (it honours user-scalable=no only once installed standalone). These
   // gesture* events are iOS-only.

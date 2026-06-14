@@ -16,6 +16,9 @@ import { type useMealPlanning } from './useMealPlanning'
 // staples step, the day note, clear the day) lives here so two days fit a phone.
 // State + handlers stay owned by the Kitchen page — this only renders them for the
 // one open day, so the souper/recipe-picker singletons can't fight across days.
+//
+// Slots read CHRONOLOGICALLY (déjeuner → dîner → collation → souper, note last),
+// and each slot's "＋ Ajouter" sits on its header line, not a row of its own.
 type Plan = ReturnType<typeof useMealPlanning>
 
 export function DayManageSheet({
@@ -100,6 +103,12 @@ export function DayManageSheet({
   const { clearMeal, moveMeal, clearSlotMeals, clearDay } = actions
   const pickOpenFor = (d: number, slot: string) => recipePickFor?.date === d && recipePickFor.slot === slot
   const dayMealCount = date != null ? SIDE_SLOTS.reduce((n, s) => n + mealsFor(date, s).length, suppers.length) : 0
+  // Add-affordance label: "Ajouter un autre" when the slot already holds a meal,
+  // plain "Ajouter" when it's empty (no redundant "＋ Déjeuner" beside the header).
+  const addLabel = (count: number) => (count ? t.kitchen.addAnother : t.capture.add)
+
+  const supperEditing = date != null && editDate === date
+  const supperStaples = date != null && staplePrompt?.date === date && staplePrompt.slot === 'supper'
 
   return (
     <>
@@ -116,12 +125,130 @@ export function DayManageSheet({
           <>
             <h3>{title}</h3>
 
-            {/* ── Souper: the day's hero meal (its own grocery-staples step) ── */}
+            {/* ── The lighter slots, in time order: déjeuner / dîner / collation.
+                The hero souper follows them so the day reads chronologically. ── */}
+            {SIDE_SLOTS.map((slot) => {
+              const slotMeals = mealsFor(date, slot)
+              const editing = editSlot?.date === date && editSlot.slot === slot
+              return (
+                <section key={slot} className="day-mng__sec">
+                  <div className="day-mng__sec-head-row">
+                    <p className="day-mng__sec-head mono">
+                      <Icon name={SLOT_ICON_NAME[slot]} size={16} color="var(--ink-soft)" /> {t.kitchen.slots[slot]}
+                    </p>
+                    {!editing && (
+                      <button
+                        type="button"
+                        className="kitchen__slot-add mono"
+                        onClick={() => {
+                          setEditSlot({ date, slot })
+                          setSlotText('')
+                        }}
+                      >
+                        ＋ {addLabel(slotMeals.length)}
+                      </button>
+                    )}
+                  </div>
+                  <MealRows
+                    meals={slotMeals}
+                    recipeFor={recipeFor}
+                    memberName={memberName}
+                    onOpenRecipe={onOpenRecipe}
+                    onRemove={clearMeal}
+                    onMove={moveMeal}
+                    onClearAll={() => clearSlotMeals(date, slot)}
+                  />
+                  {editing && (
+                    <div className="kitchen__slot-edit-wrap">
+                      <form
+                        className="kitchen__slot-edit"
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          saveSlot(date, slot, slotText)
+                        }}
+                      >
+                        <input
+                          className="input"
+                          autoFocus
+                          value={slotText}
+                          onChange={(e) => setSlotText(e.target.value)}
+                          placeholder={t.kitchen.slots[slot]}
+                          aria-label={t.kitchen.slots[slot]}
+                        />
+                        {slotText && (
+                          <button
+                            type="button"
+                            className="btn btn--ghost mono kitchen__clear-text"
+                            onClick={() => setSlotText('')}
+                            aria-label={t.kitchen.clearText}
+                            title={t.kitchen.clearText}
+                          >
+                            <Icon name="x-bold" size={15} />
+                          </button>
+                        )}
+                        <button type="submit" className="btn btn--ghost mono">
+                          {t.kitchen.setMeal}
+                        </button>
+                      </form>
+                      {recipes.length > 0 && (
+                        <div className="kitchen__day-recipes">
+                          <div className="kitchen__day-recipes-row">
+                            <button
+                              type="button"
+                              className="btn btn--ghost mono kitchen__pick-recipe"
+                              onClick={() => setRecipePickFor(pickOpenFor(date, slot) ? null : { date, slot })}
+                              aria-expanded={pickOpenFor(date, slot)}
+                            >
+                              <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
+                            </button>
+                          </div>
+                          {pickOpenFor(date, slot) && (
+                            <RecipePickerMenu
+                              recipes={recipes}
+                              lowItems={lowItems}
+                              listItems={listItems}
+                              onPick={(r) => planRecipe(date, slot, r)}
+                            />
+                          )}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn--ghost mono kitchen__add-cancel"
+                        onClick={() => {
+                          setEditSlot(null)
+                          setSlotText('')
+                        }}
+                      >
+                        {t.common.cancel}
+                      </button>
+                    </div>
+                  )}
+                </section>
+              )
+            })}
+
+            {/* ── Souper: the day's hero meal (its own grocery-staples step), shown
+                last in the chronological run. ── */}
             <section className="day-mng__sec">
-              <p className="day-mng__sec-head mono">
-                <Icon name={SLOT_ICON_NAME.supper} size={16} color="var(--ink-soft)" /> {t.kitchen.slots.supper}
-              </p>
-              {staplePrompt?.date === date && staplePrompt.slot === 'supper' ? (
+              <div className="day-mng__sec-head-row">
+                <p className="day-mng__sec-head mono">
+                  <Icon name={SLOT_ICON_NAME.supper} size={16} color="var(--ink-soft)" /> {t.kitchen.slots.supper}
+                </p>
+                {!supperEditing && !supperStaples && (
+                  <button
+                    type="button"
+                    className="kitchen__slot-add mono"
+                    onClick={() => {
+                      setEditDate(date)
+                      setMealText('')
+                    }}
+                  >
+                    ＋ {addLabel(suppers.length)}
+                  </button>
+                )}
+              </div>
+              {supperStaples && staplePrompt ? (
                 <div className="kitchen__staples">
                   <p className="kitchen__staples-q mono">
                     {staplePrompt.title} · {t.kitchen.staplesQ}
@@ -177,7 +304,7 @@ export function DayManageSheet({
                     onMove={moveMeal}
                     onClearAll={() => clearSlotMeals(date, 'supper')}
                   />
-                  {editDate === date ? (
+                  {supperEditing && (
                     <div className="kitchen__day-edit-wrap">
                       <form
                         className="kitchen__day-edit"
@@ -254,122 +381,12 @@ export function DayManageSheet({
                         {t.common.cancel}
                       </button>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="kitchen__slot-add mono"
-                      onClick={() => {
-                        setEditDate(date)
-                        setMealText('')
-                      }}
-                    >
-                      ＋ {suppers.length ? t.kitchen.addAnother : t.kitchen.slots.supper}
-                    </button>
                   )}
                 </>
               )}
             </section>
 
-            {/* ── The lighter side slots — déjeuner / dîner / collation ── */}
-            {SIDE_SLOTS.map((slot) => {
-              const slotMeals = mealsFor(date, slot)
-              const editing = editSlot?.date === date && editSlot.slot === slot
-              return (
-                <section key={slot} className="day-mng__sec">
-                  <p className="day-mng__sec-head mono">
-                    <Icon name={SLOT_ICON_NAME[slot]} size={16} color="var(--ink-soft)" /> {t.kitchen.slots[slot]}
-                  </p>
-                  <MealRows
-                    meals={slotMeals}
-                    recipeFor={recipeFor}
-                    memberName={memberName}
-                    onOpenRecipe={onOpenRecipe}
-                    onRemove={clearMeal}
-                    onMove={moveMeal}
-                    onClearAll={() => clearSlotMeals(date, slot)}
-                  />
-                  {editing ? (
-                    <div className="kitchen__slot-edit-wrap">
-                      <form
-                        className="kitchen__slot-edit"
-                        onSubmit={(e) => {
-                          e.preventDefault()
-                          saveSlot(date, slot, slotText)
-                        }}
-                      >
-                        <input
-                          className="input"
-                          autoFocus
-                          value={slotText}
-                          onChange={(e) => setSlotText(e.target.value)}
-                          placeholder={t.kitchen.slots[slot]}
-                          aria-label={t.kitchen.slots[slot]}
-                        />
-                        {slotText && (
-                          <button
-                            type="button"
-                            className="btn btn--ghost mono kitchen__clear-text"
-                            onClick={() => setSlotText('')}
-                            aria-label={t.kitchen.clearText}
-                            title={t.kitchen.clearText}
-                          >
-                            <Icon name="x-bold" size={15} />
-                          </button>
-                        )}
-                        <button type="submit" className="btn btn--ghost mono">
-                          {t.kitchen.setMeal}
-                        </button>
-                      </form>
-                      {recipes.length > 0 && (
-                        <div className="kitchen__day-recipes">
-                          <div className="kitchen__day-recipes-row">
-                            <button
-                              type="button"
-                              className="btn btn--ghost mono kitchen__pick-recipe"
-                              onClick={() => setRecipePickFor(pickOpenFor(date, slot) ? null : { date, slot })}
-                              aria-expanded={pickOpenFor(date, slot)}
-                            >
-                              <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
-                            </button>
-                          </div>
-                          {pickOpenFor(date, slot) && (
-                            <RecipePickerMenu
-                              recipes={recipes}
-                              lowItems={lowItems}
-                              listItems={listItems}
-                              onPick={(r) => planRecipe(date, slot, r)}
-                            />
-                          )}
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        className="btn btn--ghost mono kitchen__add-cancel"
-                        onClick={() => {
-                          setEditSlot(null)
-                          setSlotText('')
-                        }}
-                      >
-                        {t.common.cancel}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="kitchen__slot-add mono"
-                      onClick={() => {
-                        setEditSlot({ date, slot })
-                        setSlotText('')
-                      }}
-                    >
-                      ＋ {slotMeals.length ? t.kitchen.addAnother : t.kitchen.slots[slot]}
-                    </button>
-                  )}
-                </section>
-              )
-            })}
-
-            {/* ── The day's free-text note ── */}
+            {/* ── The day's free-text note — last, after the meals ── */}
             <section className="day-mng__sec">
               <p className="day-mng__sec-head mono">
                 <Icon name="pencil-simple-bold" size={16} color="var(--ink-soft)" /> {t.kitchen.note}

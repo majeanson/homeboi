@@ -19,7 +19,7 @@ import { live } from '../lib/query'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { formatClock, formatDay, formatTime } from '../lib/format'
 import { pictoFor } from '../lib/picto'
-import { SLOT_ICON_NAME, type MealSlot } from '../lib/mealSlots'
+import { SLOT_ICON_NAME, SLOT_RANK, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { Notes } from '../components/board/Notes'
@@ -106,12 +106,17 @@ export function Board() {
   const memberName = (id: string | null) => data?.members.find((m) => m.id === id)?.display_name ?? null
   const memberColor = (id: string | null) => data?.members.find((m) => m.id === id)?.colour
   const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
+  // Chronological within a day: déjeuner → dîner → collation → souper. The server
+  // returns todayMeals in position order (stable within a slot), so a stable sort
+  // by SLOT_RANK gives time order across slots while keeping intra-slot position.
+  const bySlotTime = (a: { slot: string }, b: { slot: string }) =>
+    SLOT_RANK[a.slot as MealSlot] - SLOT_RANK[b.slot as MealSlot]
   // Today's meals beside the supper hero. Supper is already the "Ce soir" hero, so
   // the day list shows the OTHER slots — together they cover the whole day's table.
-  const otherMeals = (data?.todayMeals ?? []).filter((m) => m.slot !== 'supper')
+  const otherMeals = (data?.todayMeals ?? []).filter((m) => m.slot !== 'supper').sort(bySlotTime)
   // Tomorrow's meals shown in Demain. Supper has its own line there, so list the
   // rest — together they cover tomorrow's table for prep-ahead planning.
-  const otherTomorrowMeals = (data?.tomorrowMeals ?? []).filter((m) => m.slot !== 'supper')
+  const otherTomorrowMeals = (data?.tomorrowMeals ?? []).filter((m) => m.slot !== 'supper').sort(bySlotTime)
 
   // Personal focus: when a face is picked (mobile chip / kiosk switcher), the
   // board narrows to THAT person's things plus shared "Maisonnée" items (no

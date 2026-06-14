@@ -194,6 +194,7 @@ export const FR = {
     // The contextual ＋ sheet (kitchen section).
     addTitle: 'Ajouter à la cuisine',
     planMeal: 'Planifier un repas',
+    whichDay: 'Quel jour veux-tu planifier ?',
     mealPlaceholder: 'Quoi manger ? (ex. spaghetti)',
     plan:'Quoi pour souper ?',
     suggest: 'Qu’est-ce qu’on mange ?',
@@ -854,6 +855,7 @@ export const EN: typeof FR = {
     // The contextual ＋ sheet (kitchen section).
     addTitle: 'Add to the kitchen',
     planMeal: 'Plan a meal',
+    whichDay: 'Which day do you want to plan?',
     mealPlaceholder: 'What to eat? (e.g. spaghetti)',
     plan:'What’s for supper?',
     suggest: 'What should we eat?',

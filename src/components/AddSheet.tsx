@@ -7,8 +7,6 @@ import { useAuth } from '../lib/auth'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { VoiceButton } from './VoiceButton'
 import { formatWeekday } from '../lib/format'
-import { type MealSlot } from '../lib/mealSlots'
-import { SlotPicker } from './kitchen/SlotPicker'
 import { OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
 import { BOARD_KEY } from '../lib/queryKeys'
@@ -110,12 +108,10 @@ export function AddSheet({
   const [pantryText, setPantryText] = useState('')
   const pantryVoice = useVoiceInput(setPantryText)
 
-  // — plan a meal (kitchen) — day options come from the SAME weekStart the
-  // Kitchen grid renders, so the planned day lands exactly where the grid
-  // expects it (the server normalizes to its own dayStart on write anyway).
-  const [mealTitle, setMealTitle] = useState('')
-  const [mealDate, setMealDate] = useState<number | null>(null)
-  const [mealSlot, setMealSlot] = useState<MealSlot>('supper')
+  // — plan a meal (kitchen) — "Planifier un repas" is now a DAY PICKER that opens
+  // that day's full "Gérer" sheet (one real editor, reached two ways), instead of
+  // a divergent mini day+slot+title form. Day options come from the SAME weekStart
+  // the Kitchen grid renders, so picking a day lands on the matching grid row.
   const wantsMeal = shown.includes('meal')
   const { data: mealsData } = useQuery({
     queryKey: MEALS_KEY,
@@ -212,24 +208,12 @@ export function AddSheet({
     }
   }
 
-  // Plan a meal onto a day/slot (kitchen ＋). Deliberately the light version —
-  // no staples step, no recipe picker; that richness stays on the week grid.
-  async function submitMeal(e?: React.FormEvent) {
-    e?.preventDefault()
-    const value = mealTitle.trim()
-    const date = mealDate ?? weekDays[0]
-    if (!value || !date || busy) return
-    setBusy(true)
-    try {
-      await api('meals', { method: 'POST', body: { date, slot: mealSlot, title: value } })
-      setMealTitle('')
-      for (const key of [MEALS_KEY, BOARD_KEY]) qc.invalidateQueries({ queryKey: key })
-      close()
-    } catch (e) {
-      if (!(e instanceof ApiError)) throw e
-    } finally {
-      setBusy(false)
-    }
+  // Open a day's full "Gérer" sheet from the picker: close this sheet and hand the
+  // chosen day to the Kitchen page via ?manage=<date>, which it consumes to open
+  // the DayManageSheet. One editor, no duplicate mini-form.
+  const planDay = (d: number) => {
+    close()
+    nav(`/kitchen?manage=${d}`)
   }
 
   const modeLabel = (m: AddSheetMode) =>
@@ -444,37 +428,16 @@ export function AddSheet({
         )}
 
         {mode === 'meal' && (
-          <form onSubmit={submitMeal}>
-            <div className="sheet__row">
-              <select
-                className="input"
-                value={mealDate ?? weekDays[0] ?? ''}
-                onChange={(e) => setMealDate(Number(e.target.value))}
-                aria-label={t.kitchen.week}
-              >
-                {weekDays.map((d) => (
-                  <option key={d} value={d}>
-                    {formatWeekday(d, lang)}
-                  </option>
-                ))}
-              </select>
+          <div className="addsheet__daypick">
+            <p className="sheet__group-label mono">{t.kitchen.whichDay}</p>
+            <div className="addsheet__days">
+              {weekDays.map((d) => (
+                <button key={d} type="button" className="chip" onClick={() => planDay(d)}>
+                  {formatWeekday(d, lang)}
+                </button>
+              ))}
             </div>
-            {/* Slot as icon chips, not a <select> (an <option> can't hold an SVG). */}
-            <SlotPicker value={mealSlot} onChange={setMealSlot} />
-            <div className="sheet__field">
-              <Icon name="pencil-simple-bold" size={20} color="var(--ink-faint)" />
-              <input
-                value={mealTitle}
-                onChange={(e) => setMealTitle(e.target.value)}
-                placeholder={t.kitchen.mealPlaceholder}
-                aria-label={t.kitchen.planMeal}
-              />
-            </div>
-            <button type="submit" className="btn btn--primary" disabled={!mealTitle.trim() || !weekDays.length || busy}>
-              <Icon name="plus-bold" size={20} />
-              {t.capture.add}
-            </button>
-          </form>
+          </div>
         )}
 
         {mode === 'event' && <EventForm members={members} onSaved={savedWith([['board'], ['events']])} />}
