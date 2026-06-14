@@ -199,6 +199,67 @@
   word-break: break-word;
 }
 
+/* Live AI self-test results (operator). One row per model, green/red rail by
+   verdict — reads like the error log it sits above, but positive when it works. */
+.ai-test {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ai-test__row {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--paper-2, rgba(0, 0, 0, 0.03));
+  border-left: 3px solid var(--line, #ccc);
+  border-radius: 0 8px 8px 0;
+}
+.ai-test__row.is-ok {
+  border-left-color: #6b8a52;
+}
+.ai-test__row.is-fail {
+  border-left-color: #d9776b;
+}
+.ai-test__icon {
+  flex: none;
+  margin-top: 2px;
+}
+.ai-test__row.is-ok .ai-test__icon {
+  color: #6b8a52;
+}
+.ai-test__row.is-fail .ai-test__icon {
+  color: #d9776b;
+}
+.ai-test__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ai-test__label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-weight: 600;
+}
+.ai-test__verdict {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.ai-test__detail {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  word-break: break-word;
+}
+.ai-test__model {
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
 .sheet {
   position: fixed;
   left: 0;
@@ -309,6 +370,24 @@
    describes for the old 3+1). */
 .cat-grid--3 {
   grid-template-columns: repeat(3, 1fr);
+}
+/* A labelled subgroup of tiles inside the sheet (the kitchen week's actions —
+   shop the week / AI ideas / book ideas — sit apart from the add chooser). The
+   tiles reuse .cat-grid/.cat-pick; this just captions and separates them. */
+.sheet__group {
+  border-top: 1px solid var(--hairline, rgba(0, 0, 0, 0.08));
+  margin-top: 4px;
+  padding-top: 12px;
+}
+.sheet__group-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  margin: 0 0 2px;
+}
+.cat-pick:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 /* The meal planner's day + slot selects, side by side above the title field. */
 .sheet__row {

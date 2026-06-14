@@ -15,6 +15,8 @@ import { CalmContext } from './lib/calm'
 import { HelpContext } from './lib/help'
 import { ToastProvider } from './lib/toast'
 import { AiErrorProvider } from './lib/aiErrorToast'
+import { TourProvider } from './lib/tour'
+import { TourOverlay } from './components/tour/TourOverlay'
 import { registerSw } from './lib/registerSw'
 import { trackVisualViewport } from './lib/viewportVars'
 import './styles.css'
@@ -200,7 +202,13 @@ function Root() {
               <AiErrorProvider>
                 <AuthProvider>
                   <BrowserRouter>
-                    <AppRoutes />
+                    {/* TourProvider needs the router (it navigates) + auth/audience
+                        contexts; TourOverlay is rendered once here so a tour can
+                        overlay ANY route, not just the hub. */}
+                    <TourProvider>
+                      <AppRoutes />
+                      <TourOverlay />
+                    </TourProvider>
                   </BrowserRouter>
                 </AuthProvider>
               </AiErrorProvider>

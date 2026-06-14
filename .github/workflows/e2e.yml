@@ -1,0 +1,56 @@
+name: E2E (Playwright)
+
+# E2E is DECOUPLED from CI: it no longer races CI in parallel on every push.
+# Instead it CHAINS off the "CI & Deploy" workflow via `workflow_run` and only
+# runs once that workflow has concluded SUCCESSFULLY on main. So the browser
+# suite gives signal after a green CI/merge, without ever gating the deploy.
+#
+# Also runnable on demand from the Actions tab (workflow_dispatch).
+
+on:
+  workflow_run:
+    workflows: ['CI & Deploy']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# One E2E run per source commit; supersede an in-flight run for the same sha.
+concurrency:
+  group: e2e-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # On the workflow_run path, only proceed if CI actually passed. (A manual
+    # workflow_dispatch has no upstream conclusion, so let that through.)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      # workflow_run checks out the default branch by default — pin to the exact
+      # commit CI validated so E2E tests the same code (no-op on dispatch).
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Only chromium is configured (playwright.config.ts); --with-deps pulls the
+      # Linux system libs the browser needs on the runner.
+      - run: npx playwright install --with-deps chromium
+      # Playwright boots the Vite dev server itself (webServer config) and stubs
+      # every /api/* call per-test — no wrangler/D1/secrets needed.
+      - run: npm run e2e
+      # Always upload the HTML report + the surface×theme×format PNGs so a failure
+      # (or just a visual review) is inspectable from the run page.
+      - name: Upload Playwright report + screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            e2e/report
+            e2e/screenshots
+          retention-days: 7

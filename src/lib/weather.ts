@@ -47,3 +47,19 @@ const ICON: Record<WeatherBucket, IconName> = {
 
 // Clear swaps to a moon at night; everything else reads the same day or night.
 export const weatherIcon = (w: Weather): IconName => (w.bucket === 'clear' && !w.isDay ? 'moon-stars-bold' : ICON[w.bucket])
+
+// A calm colour cue per condition (theme-aware CSS vars), so the monochrome
+// Phosphor glyph keeps the at-a-glance read the old colour emoji gave on the
+// wall: sun=marigold, rain/drizzle=sky, snow=pale sky, storm=alert clay, moon
+// (clear night)=berry, cloud/fog=muted ink.
+const TINT: Record<WeatherBucket, string> = {
+  clear: 'var(--marigold-deep)',
+  cloud: 'var(--ink-soft)',
+  fog: 'var(--ink-faint)',
+  drizzle: 'var(--sky-deep)',
+  rain: 'var(--sky-deep)',
+  snow: 'var(--sky)',
+  storm: 'var(--terracotta-deep)',
+}
+export const weatherTint = (w: Weather): string =>
+  w.bucket === 'clear' && !w.isDay ? 'var(--berry-deep)' : TINT[w.bucket]

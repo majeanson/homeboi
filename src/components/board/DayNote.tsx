@@ -1,5 +1,6 @@
 import { useT } from '../../i18n'
 import { useSpeak } from '../../lib/speak'
+import { InlineIcon } from '../Icon'
 import type { DayNote as DayNoteT, Member } from './types'
 
 // The Aujourd'hui board's note for TODAY — the memo pinned to this day in La
@@ -30,7 +31,7 @@ export function DayNote({
     <section className={'notes day-note' + (toddler ? ' notes--kid' : '')} aria-label={heading}>
       {label && (
         <div className="notes__head mono" aria-hidden="true">
-          📝 {label}
+          <InlineIcon name="pencil-simple-bold" /> {label}
         </div>
       )}
       <div className="notes__grid">

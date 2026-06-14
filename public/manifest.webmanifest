@@ -1,8 +1,9 @@
 {
-  "name": "Babillard",
+  "name": "Babillard — le babillard familial",
   "short_name": "Babillard",
-  "description": "La maisonnée, en un coup d’œil — un planificateur familial calme.",
+  "description": "Le babillard familial sur la tablette de cuisine : le souper, la liste d’épicerie, les routines des enfants et les corvées — d’un coup d’œil. Calme par choix : pas de points, pas de notifications.",
   "lang": "fr",
+  "categories": ["lifestyle", "productivity"],
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

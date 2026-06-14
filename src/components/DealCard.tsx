@@ -1,6 +1,7 @@
 import { useLang, useT } from '../i18n'
 import { type Deal, money } from '../lib/deals'
 import { ZoomableImg } from './ZoomableImg'
+import { InlineIcon } from './Icon'
 
 // One flyer-deal card: clipping image, store (+ best-price star), name, valid
 // dates, price / unit-price / was-price, and a row of actions. Shared by the
@@ -57,7 +58,7 @@ export function DealCard({
         <span className="deal__actions">
           {deal.flyerId != null && onViewFlyer && (
             <button type="button" className="deal__flyer-btn mono" onClick={() => onViewFlyer(deal)}>
-              {t.shop.viewFlyer} →
+              {t.shop.viewFlyer} <InlineIcon name="arrow-right-bold" size={13} />
             </button>
           )}
           {/* One "add to list" action: it links the deal for the cashier when it
@@ -68,11 +69,11 @@ export function DealCard({
               className={`deal__choose mono${staged ? ' is-chosen' : ''}`}
               onClick={() => onStage(deal)}
             >
-              {staged ? `✓ ${t.shop.addToList}` : `+ ${t.shop.addToList}`}
+              <InlineIcon name={staged ? 'check-bold' : 'plus-bold'} /> {t.shop.addToList}
             </button>
           ) : onAddToList ? (
             <button type="button" className="deal__choose mono" onClick={() => onAddToList(deal.name)}>
-              {added ? `✓ ${t.shop.addToList}` : `+ ${t.shop.addToList}`}
+              <InlineIcon name={added ? 'check-bold' : 'plus-bold'} /> {t.shop.addToList}
             </button>
           ) : null}
           {onChoose && (
@@ -90,7 +91,11 @@ export function DealCard({
         <span className="deal__now">{money(deal.price)}</span>
         {deal.unitPrice != null ? (
           <span className={`deal__unit mono${deal.unitApprox ? ' deal__unit--approx' : ''}`}>
-            {deal.unitApprox ? '≈ ' : ''}
+            {deal.unitApprox && (
+              <>
+                <InlineIcon name="approximate-equals-bold" size={11} />{' '}
+              </>
+            )}
             {money(deal.unitPrice)}
             {deal.unitLabel}
           </span>

@@ -10,6 +10,7 @@ import { formatWeekday } from '../lib/format'
 import { type MealSlot } from '../lib/mealSlots'
 import { SlotPicker } from './kitchen/SlotPicker'
 import { OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
+import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { MEALS_KEY, PANTRY_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
@@ -71,6 +72,11 @@ export function AddSheet({
   const qc = useQueryClient()
   const nav = useNavigate()
   const { signedIn } = useAuth()
+  // The kitchen week's three actions (shop the week / AI ideas / ideas from the
+  // book), registered by the Kitchen page. They show as icon tiles here only on
+  // the kitchen Repas tab; tapping one closes the sheet and runs the flow, whose
+  // result lands on the week grid behind us. (Replaces the old floating rail.)
+  const kitchenActions = useKitchenActions()
 
   // Per-action gating, same semantics the old signedIn-only chooser had: the
   // operator forms drop off for an unsigned kiosk; if nothing survives (a kiosk
@@ -289,6 +295,62 @@ export function AddSheet({
                 <span>{modeLabel(m)}</span>
               </button>
             ))}
+          </div>
+        )}
+
+        {/* The kitchen week's actions — only on the Repas tab, where their result
+            (the shop chips / the suggestion card) shows on the grid behind the
+            sheet. Tapping a tile closes the sheet and runs the flow. */}
+        {!noKitchenActions(kitchenActions.flags) && (
+          <div className="sheet__group">
+            <p className="sheet__group-label mono">{t.kitchen.week}</p>
+            <div className="cat-grid">
+              {kitchenActions.flags.canShop && (
+                <button
+                  type="button"
+                  className="cat-pick"
+                  onClick={() => {
+                    kitchenActions.run('shop')
+                    close()
+                  }}
+                >
+                  <span className="ct" style={{ background: 'var(--sage-wash)' }}>
+                    <Icon name="shopping-bag-bold" size={22} color="#6B8A52" />
+                  </span>
+                  <span>{t.kitchen.shopWeek}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="cat-pick"
+                disabled={!kitchenActions.flags.canAiSuggest || kitchenActions.flags.aiBusy}
+                title={kitchenActions.flags.canAiSuggest ? undefined : t.kitchen.suggestAiOff}
+                onClick={() => {
+                  kitchenActions.run('ai')
+                  close()
+                }}
+              >
+                <span className="ct" style={{ background: 'var(--marigold-wash)' }}>
+                  <Icon name="sparkle-bold" size={22} color="#D9842A" />
+                </span>
+                <span>{t.kitchen.aiIdeas}</span>
+              </button>
+              {kitchenActions.flags.hasRecipes && (
+                <button
+                  type="button"
+                  className="cat-pick"
+                  onClick={() => {
+                    kitchenActions.run('book')
+                    close()
+                  }}
+                >
+                  <span className="ct" style={{ background: 'var(--terracotta-wash)' }}>
+                    <Icon name="book-open-bold" size={22} color="#C2563A" />
+                  </span>
+                  <span>{t.kitchen.bookIdeas}</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
 

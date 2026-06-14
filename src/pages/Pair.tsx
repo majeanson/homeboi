@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
+import { Icon } from '../components/Icon'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { setDeviceToken, isPaired } from '../lib/device'
@@ -92,7 +93,7 @@ export function Pair() {
 
         {phase === 'paired' && (
           <p className="pair__ok">
-            <span className="pair__ok-mark" aria-hidden="true">✓</span> {t.pair.paired}
+            <span className="pair__ok-mark" aria-hidden="true"><Icon name="check-bold" size={16} /></span> {t.pair.paired}
           </p>
         )}
 

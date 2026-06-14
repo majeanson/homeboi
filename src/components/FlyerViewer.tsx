@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-quer
 import { api } from '../lib/api'
 import { useLang, useT } from '../i18n'
 import { ZoomableImg } from './ZoomableImg'
-import { Icon } from './Icon'
+import { Icon, InlineIcon } from './Icon'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { useModal } from '../lib/useModal'
 
@@ -258,13 +258,21 @@ export function FlyerViewer({
             className={`flyer-note mono ${resolvedPremium ? 'flyer-note--official' : 'flyer-note--recon'}`}
             aria-live="polite"
           >
-            {resolvedPremium ? `✓ ${t.shop.flyerOfficial}` : `≈ ${t.shop.flyerReconstructed}`}
+            {resolvedPremium ? (
+              <>
+                <InlineIcon name="check-bold" color="var(--sage-deep)" /> {t.shop.flyerOfficial}
+              </>
+            ) : (
+              <>
+                <InlineIcon name="approximate-equals-bold" /> {t.shop.flyerReconstructed}
+              </>
+            )}
           </span>
         )}
         {/* The real, full flyer (dense scanned pages, zoom) lives on Flipp's site —
             we render a quick reconstruction; this opens the complete one. */}
         <a className="flyer-full-link mono" href={officialUrl} target="_blank" rel="noopener noreferrer">
-          {t.shop.flyerFull} ↗
+          {t.shop.flyerFull} <InlineIcon name="arrow-up-right-bold" size={13} />
         </a>
       </div>
 
@@ -276,8 +284,8 @@ export function FlyerViewer({
           onClick={() => selectedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
           title={t.shop.viewFlyer}
         >
-          📍 {t.shop.page} {directions.page} · {t.shop.position.col} {directions.col} · {directions.v}-
-          {directions.h}
+          <InlineIcon name="map-pin-bold" /> {t.shop.page} {directions.page} · {t.shop.position.col} {directions.col} ·{' '}
+          {directions.v}-{directions.h}
         </button>
       )}
 
@@ -329,7 +337,7 @@ export function FlyerViewer({
                         {it.image && <img src={it.image} alt={it.name} loading="lazy" />}
                         {isHit && (
                           <span className="flyer-item__pin" aria-hidden="true">
-                            📍
+                            <Icon name="map-pin-bold" size={16} />
                           </span>
                         )}
                       </button>
@@ -407,7 +415,15 @@ export function FlyerViewer({
                   setAddedName(nm)
                 }}
               >
-                {addedName === selected.name ? `✓ ${t.shop.addToList}` : `+ ${t.shop.addToList}`}
+                {addedName === selected.name ? (
+                  <>
+                    <InlineIcon name="check-bold" /> {t.shop.addToList}
+                  </>
+                ) : (
+                  <>
+                    <InlineIcon name="plus-bold" /> {t.shop.addToList}
+                  </>
+                )}
               </button>
             )}
             <button

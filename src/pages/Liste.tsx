@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
-import { Icon } from '../components/Icon'
+import { Icon, InlineIcon } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
@@ -104,7 +104,7 @@ function ListItemRow({
           finger. Inert/aria-hidden — the swipe drives it; the edit sheet keeps an
           actual Delete button for non-touch. */}
       <span className="list-row__del" aria-hidden="true">
-        <span className="list-row__del-icon">🗑</span>
+        <span className="list-row__del-icon"><Icon name="trash-bold" size={18} /></span>
         <span className="list-row__del-label">{deleteLabel}</span>
       </span>
       <div ref={mainRef} className={`act list-row__main${checked ? ' done' : ''}`}>
@@ -362,7 +362,7 @@ export function Liste() {
 
       {/* Quick add: reopen past/predicted items to restock a week in a few taps. */}
       <button type="button" className="btn btn--ghost list-quick" onClick={() => nav('/liste/quick')}>
-        ⚡ {t.list.quickAdd}
+        <InlineIcon name="lightning-bold" color="var(--marigold-deep)" /> {t.list.quickAdd}
         {quickItems.length > 0 && <span className="list-quick__n mono">{quickItems.length}</span>}
       </button>
 
@@ -387,7 +387,7 @@ export function Liste() {
                 dealLabel={
                   staged ? (
                     <span className="list-row__deal mono">
-                      🏷️ {staged.merchant} · {money(staged.price)}
+                      <InlineIcon name="tag-bold" /> {staged.merchant} · {money(staged.price)}
                     </span>
                   ) : null
                 }
@@ -412,7 +412,7 @@ export function Liste() {
       {checkedIds.length > 0 && (
         <div className="list-actions">
           <button type="button" className="btn btn--primary" onClick={() => clearChecked(checkedIds)}>
-            ✓ {t.list.clearChecked} ({checkedIds.length})
+            <InlineIcon name="check-bold" /> {t.list.clearChecked} ({checkedIds.length})
           </button>
         </div>
       )}
@@ -420,7 +420,7 @@ export function Liste() {
       {/* Shopping tools, always one tap away — no mode to switch into. */}
       <div className="list-actions">
         <button type="button" className="btn btn--ghost mono" onClick={() => nav('/liste/circulaires')}>
-          🔎 {t.shop.browse}
+          <InlineIcon name="magnifying-glass-bold" /> {t.shop.browse}
         </button>
         {list.length > 0 && (
           <button type="button" className="btn btn--ghost mono" onClick={() => autoPick(list)} disabled={auto}>
@@ -428,14 +428,14 @@ export function Liste() {
               t.shop.autoWorking
             ) : (
               <>
-                <Icon name="sparkle-bold" size={15} style={{ display: 'inline-block', verticalAlign: '-2px' }} /> {t.shop.auto}
+                <InlineIcon name="sparkle-bold" /> {t.shop.auto}
               </>
             )}
           </button>
         )}
         {pickList.length > 0 && (
           <button type="button" className="btn btn--primary" onClick={() => nav('/liste/cashier')}>
-            🧾 {t.shop.present} ({pickList.length})
+            <InlineIcon name="receipt-bold" /> {t.shop.present} ({pickList.length})
           </button>
         )}
       </div>

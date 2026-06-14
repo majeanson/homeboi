@@ -1,77 +1,11 @@
-// Pip iconography: Phosphor (bold/fill) paths, inlined as SVG and recoloured via
-// currentColor. The registry is loaded by /pip-icons.js in index.html (a global,
-// ready before this module runs), so we read it off window. Unknown names render
-// nothing rather than throwing — an icon is never load-bearing for meaning here
-// (NFR-KID-2: icon + audio carry meaning, never required reading).
-declare global {
-  interface Window {
-    PIP_ICONS?: Record<string, string>
-  }
-}
+// Pip iconography: Phosphor (bold/fill) paths, recoloured via currentColor. The
+// art + the IconName type both come from lib/pipIcons (one typed source of
+// truth) — no window global, no load-order dependency, and an unknown name is a
+// compile error rather than a silent blank (NFR-KID-2: icon + audio carry
+// meaning, never required reading, so a missing glyph must never ship unnoticed).
+import { PIP_ICONS, type IconName } from '../lib/pipIcons'
 
-export type IconName =
-  | 'arrow-right-bold'
-  | 'bathtub-bold'
-  | 'book-open-bold'
-  | 'calendar-blank-bold'
-  | 'calendar-dots-bold'
-  | 'caret-left-bold'
-  | 'caret-right-bold'
-  | 'caret-up-bold'
-  | 'caret-down-bold'
-  | 'carrot-bold'
-  | 'check-bold'
-  | 'bowl-food-bold'
-  | 'cookie-bold'
-  | 'egg-bold'
-  | 'fork-knife-bold'
-  | 'clock-bold'
-  | 'gear-six-bold'
-  | 'hand-heart-bold'
-  | 'heart-bold'
-  | 'moon-stars-bold'
-  | 'paint-brush-bold'
-  | 'pencil-simple-bold'
-  | 'plus-bold'
-  | 'smiley-bold'
-  | 'sparkle-bold'
-  | 'sun-bold'
-  | 'sun-fill'
-  | 'tooth-bold'
-  | 'tree-bold'
-  // Added for the in-app Guide so every concept reuses the app's Phosphor-bold
-  // icon set instead of emoji (Réglages ▸ Guide).
-  | 'device-tablet-bold'
-  | 'link-bold'
-  | 'tag-bold'
-  | 'receipt-bold'
-  | 'ghost-bold'
-  | 'wifi-high-bold'
-  | 'newspaper-bold'
-  | 'arrow-counter-clockwise-bold'
-  | 'key-bold'
-  | 'users-three-bold'
-  | 'broom-bold'
-  | 'shopping-bag-bold'
-  | 'image-square-bold'
-  | 'first-aid-kit-bold'
-  // App-affordance icons — replacing emoji in live controls so the UI (and the
-  // Guide that documents it) uses one Phosphor set: audience/theme toggles,
-  // weather, time-of-day, close/camera/sound/recurring/original.
-  | 'baby-bold'
-  | 'user-bold'
-  | 'x-bold'
-  | 'camera-bold'
-  | 'speaker-high-bold'
-  | 'speaker-slash-bold'
-  | 'scroll-bold'
-  | 'repeat-bold'
-  | 'sun-horizon-bold'
-  | 'cloud-bold'
-  | 'cloud-fog-bold'
-  | 'cloud-rain-bold'
-  | 'cloud-snow-bold'
-  | 'cloud-lightning-bold'
+export type { IconName }
 
 export function Icon({
   name,
@@ -84,7 +18,7 @@ export function Icon({
   color?: string
   style?: React.CSSProperties
 }) {
-  const inner = (typeof window !== 'undefined' && window.PIP_ICONS?.[name]) || ''
+  const inner = PIP_ICONS[name] || ''
   return (
     <svg
       viewBox="0 0 256 256"
@@ -97,4 +31,11 @@ export function Icon({
       dangerouslySetInnerHTML={{ __html: inner }}
     />
   )
+}
+
+// An icon sized to sit inline with text (baseline-aligned), for mid-sentence use
+// or beside a label in a button/chip. One place for the repeated inline style so
+// every inline glyph lines up the same way.
+export function InlineIcon({ name, size = 15, color }: { name: IconName; size?: number; color?: string }) {
+  return <Icon name={name} size={size} color={color} style={{ display: 'inline-block', verticalAlign: '-0.15em' }} />
 }

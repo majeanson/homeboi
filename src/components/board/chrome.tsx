@@ -47,7 +47,9 @@ export function MemberSwitcher({ members, t }: { members: Member[]; t: Dict }) {
         aria-pressed={memberId === null}
         onClick={() => setMemberId(null)}
       >
-        <span className="mswitch__av mswitch__av--all" aria-hidden="true">👥</span>
+        <span className="mswitch__av mswitch__av--all" aria-hidden="true">
+          <Icon name="users-three-bold" size={18} />
+        </span>
         <span className="mswitch__name">{t.profile.household}</span>
       </button>
       {members.map((m) => {

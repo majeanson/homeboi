@@ -277,6 +277,10 @@ button {
   font: inherit;
   font-size: 16px;
   line-height: 1.4;
+  /* When viewportVars scrolls a focused field to block:'start' (so the
+     content below it stays visible above the on-screen keyboard), leave a small
+     gap above it instead of hugging the very top edge. */
+  scroll-margin-top: 12px;
 }
 /* A multi-line field grows from its rows; keep the min as a floor, not a fixed
    height, so notes/paste boxes still expand. */
@@ -408,6 +412,85 @@ textarea.input {
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.95rem;
+}
+/* Skeleton welcome blocks: wordmark, "what it's for" tiles, the calm promise. */
+.home__wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--ink);
+  margin: 0 0 0.6rem;
+}
+.home__block {
+  margin: 2.5rem 0 0;
+}
+.home__h {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 0.9rem;
+}
+.home__sections {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.75rem;
+}
+.home__section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+.home__section-ic {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home__section-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.home__promise {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 48ch;
+}
+.home__promise li {
+  font-size: 1.05rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.home__foot {
+  margin: 3rem 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+.home__fine {
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+  max-width: 46ch;
+  margin: 0;
 }
 /* First-run role choice: two honest cards, wall display vs personal device. */
 .setup__choices {

@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { useUndoToast } from '../../lib/toast'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { VoiceButton, VoiceStatus } from '../VoiceButton'
+import { Icon } from '../Icon'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 
@@ -137,7 +138,7 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
               <li key={l.id}>
                 <button type="button" className="board__list-item" onClick={() => checkLowItem(l)}>
                   <span className="board__check" aria-hidden="true">
-                    ☐
+                    <Icon name="square-bold" size={18} />
                   </span>
                   <span>{l.item}</span>
                   <span className="kitchen__low-note mono">{t.kitchen.addToList}</span>
@@ -172,7 +173,7 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
               <li key={s.id}>
                 <button type="button" className="board__list-item" onClick={() => clearSoonItem(s)}>
                   <span className="board__check" aria-hidden="true">
-                    ☐
+                    <Icon name="square-bold" size={18} />
                   </span>
                   <span>{s.item}</span>
                 </button>

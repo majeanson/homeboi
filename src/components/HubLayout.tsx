@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
@@ -7,10 +7,17 @@ import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { onAuthLost } from '../lib/authEvents'
 import { clearDeviceToken, isPaired } from '../lib/device'
-import { Icon, type IconName } from './Icon'
+import { Icon, InlineIcon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
 import { KidExitGate } from './KidExitGate'
 import { AddSheetContext, SECTION_MODES, type AddSheetMode } from '../lib/addSheet'
+import {
+  KitchenActionsContext,
+  NO_KITCHEN_ACTIONS,
+  type KitchenAction,
+  type KitchenActionFlags,
+  type KitchenHandlers,
+} from '../lib/kitchenActions'
 
 // The hub shell, surface-aware. KIOSK (wall display): a vertical column of big
 // section buttons down the left, calm and readable across the room. MOBILE
@@ -44,6 +51,30 @@ export function HubLayout() {
   // kitchen, list items on Liste); only an explicit open('routine')-style call
   // pins a mode.
   const [addMode, setAddMode] = useState<AddSheetMode | null>(null)
+  // The Kitchen page registers its three week actions here so the ＋ Add sheet
+  // (rendered below, a sibling of the routed page) can offer them as tiles. The
+  // live handlers ride in a ref — always fresh, never a dependency — while only
+  // the display flags are state, and we bail when they're unchanged so the page
+  // can re-register every render without a setState loop. See lib/kitchenActions.
+  const kitchenHandlers = useRef<KitchenHandlers | null>(null)
+  const [kitchenFlags, setKitchenFlags] = useState<KitchenActionFlags>(NO_KITCHEN_ACTIONS)
+  const registerKitchen = useCallback((handlers: KitchenHandlers | null, flags: KitchenActionFlags) => {
+    kitchenHandlers.current = handlers
+    setKitchenFlags((prev) =>
+      prev.active === flags.active &&
+      prev.canShop === flags.canShop &&
+      prev.canAiSuggest === flags.canAiSuggest &&
+      prev.aiBusy === flags.aiBusy &&
+      prev.hasRecipes === flags.hasRecipes
+        ? prev
+        : flags,
+    )
+  }, [])
+  const runKitchen = useCallback((action: KitchenAction) => kitchenHandlers.current?.[action]?.(), [])
+  const kitchenCtx = useMemo(
+    () => ({ flags: kitchenFlags, register: registerKitchen, run: runKitchen }),
+    [kitchenFlags, registerKitchen, runKitchen],
+  )
   const isSettings = loc.pathname.startsWith('/settings')
   // Which section the ＋ serves, from the first path segment ('/kitchen/…' →
   // kitchen). Unknown paths fall back to the board's generic capture sheet.
@@ -164,8 +195,9 @@ export function HubLayout() {
         },
       }}
     >
+    <KitchenActionsContext.Provider value={kitchenCtx}>
     <div className="page hub" data-audience={audience} data-surface={surface}>
-      <nav className="hubnav" aria-label="sections">
+      <nav className="hubnav" aria-label="sections" data-tour="hubnav">
         {tabs.map((tab) => (
           <NavLink
             key={tab.to}
@@ -197,7 +229,7 @@ export function HubLayout() {
 
       {idleWarn && (
         <p className="board-idle board-idle--shell mono" role="status">
-          ⏳ {t.board.idleSoon}
+          <InlineIcon name="hourglass-high-bold" /> {t.board.idleSoon}
         </p>
       )}
 
@@ -205,6 +237,7 @@ export function HubLayout() {
         <button
           type="button"
           className="add-fab"
+          data-tour="add-fab"
           onClick={() => {
             setAddMode(null)
             setAddOpen(true)
@@ -224,6 +257,7 @@ export function HubLayout() {
       )}
       <AddSheet open={addOpen} modes={sectionModes} initialMode={addMode} onClose={() => setAddOpen(false)} />
     </div>
+    </KitchenActionsContext.Provider>
     </AddSheetContext.Provider>
   )
 }

@@ -5,7 +5,7 @@ import { api, isStatus } from '../lib/api'
 import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
-import { Icon } from './Icon'
+import { Icon, InlineIcon } from './Icon'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { existingListId, stageDeal } from '../lib/picks'
 import { useEscapeKey } from '../lib/sceneNav'
@@ -154,7 +154,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
             onClick={() => setMode('item')}
             aria-selected={mode === 'item'}
           >
-            🔎 {t.shop.byItem}
+            <InlineIcon name="magnifying-glass-bold" /> {t.shop.byItem}
           </button>
           <button
             type="button"
@@ -163,7 +163,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
             onClick={() => setMode('store')}
             aria-selected={mode === 'store'}
           >
-            🏬 {t.shop.byStore}
+            <InlineIcon name="storefront-bold" /> {t.shop.byStore}
           </button>
         </div>
 
@@ -183,8 +183,8 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
             placeholder={t.shop.search}
             aria-label={t.shop.search}
           />
-          <button type="submit" className="btn" disabled={!input.trim()}>
-            🔎
+          <button type="submit" className="btn" disabled={!input.trim()} aria-label={t.shop.search}>
+            <Icon name="magnifying-glass-bold" size={18} />
           </button>
         </form>
 
@@ -275,7 +275,9 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
                       {f.logo ? (
                         <img className="flyer-store__logo" src={f.logo} alt="" loading="lazy" />
                       ) : (
-                        <span className="flyer-store__logo flyer-store__logo--none" aria-hidden="true">🏬</span>
+                        <span className="flyer-store__logo flyer-store__logo--none" aria-hidden="true">
+                          <Icon name="storefront-bold" size={20} />
+                        </span>
                       )}
                       <span className="flyer-store__text">
                         <span className="flyer-store__name">{f.merchant}</span>

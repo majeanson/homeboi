@@ -13,7 +13,6 @@ import react from '@vitejs/plugin-react'
 const PUBLIC_SHELL = [
   '/',
   '/manifest.webmanifest',
-  '/pip-icons.js',
   '/theme-bootstrap.js',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

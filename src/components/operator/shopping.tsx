@@ -4,6 +4,7 @@ import { useT } from '../../i18n'
 import { api, isStatus } from '../../lib/api'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
+import { Icon } from '../Icon'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
 // price-match proof on the list knows where to search. Set once, used every trip.
@@ -138,7 +139,7 @@ export function StoreFilterSection() {
                 <img className="store-filter__logo" src={s.logo} alt="" loading="lazy" />
               ) : (
                 <span className="store-filter__logo store-filter__logo--none" aria-hidden="true">
-                  🏬
+                  <Icon name="storefront-bold" size={20} />
                 </span>
               )}
               <span className="store-filter__name">{s.merchant}</span>

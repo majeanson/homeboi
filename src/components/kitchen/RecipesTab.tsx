@@ -5,6 +5,7 @@ import { rankCookable, rankUseSoon } from '../../lib/cookable'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { formatDuration } from '../../lib/duration'
 import { pictoFor } from '../../lib/picto'
+import { InlineIcon } from '../Icon'
 
 // The recipe book: search, tag chips, and the two stock-aware sorts ("what can
 // I cook" by fewest missing staples, "use it up" by most use-soon items used).
@@ -92,7 +93,7 @@ export function RecipesTab({
               }}
               aria-pressed={cookFilter}
             >
-              🍳 {t.recipes.cookable}
+              <InlineIcon name="cooking-pot-bold" /> {t.recipes.cookable}
             </button>
           )}
           {canUseSoonFilter && (
@@ -105,7 +106,7 @@ export function RecipesTab({
               }}
               aria-pressed={useSoonFilter}
             >
-              ♻️ {t.recipes.useItUp}
+              <InlineIcon name="recycle-bold" /> {t.recipes.useItUp}
             </button>
           )}
           {canFastFilter && (
@@ -184,13 +185,17 @@ export function RecipesTab({
                 <span className="recipe-card__title">{r.title}</span>
                 {useSoonFilter && canUseSoonFilter ? (
                   uses.length > 0 ? (
-                    <span className="recipe-card__sub recipe-card__uses mono">♻ {t.recipes.usesN(uses.length)}</span>
+                    <span className="recipe-card__sub recipe-card__uses mono">
+                      <InlineIcon name="recycle-bold" size={12} /> {t.recipes.usesN(uses.length)}
+                    </span>
                   ) : (
                     nIngs > 0 && <span className="recipe-card__sub mono">{t.recipes.count(nIngs)}</span>
                   )
                 ) : cookFilter && canCookFilter ? (
                   missing.length === 0 ? (
-                    <span className="recipe-card__sub recipe-card__ready mono">✓ {t.recipes.ready}</span>
+                    <span className="recipe-card__sub recipe-card__ready mono">
+                      <InlineIcon name="check-bold" color="var(--sage-deep)" /> {t.recipes.ready}
+                    </span>
                   ) : (
                     <span className="recipe-card__sub recipe-card__missing mono">{t.recipes.missingN(missing.length)}</span>
                   )

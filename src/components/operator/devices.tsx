@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useUndoableRemove } from '../../lib/undoRemove'
+import { InlineIcon } from '../Icon'
 import { type Device } from './types'
 
 export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
@@ -88,7 +89,7 @@ export function DevicesSection({ devices, onChange }: { devices: Device[]; onCha
         <ul className="operator__list">
           {active.map((d) => (
             <li key={d.id}>
-              <span>📱 {d.label}</span>
+              <span><InlineIcon name="device-mobile-bold" /> {d.label}</span>
               <button type="button" className="btn btn--ghost mono operator__del" onClick={() => revoke(d)}>
                 {t.operator.revoke}
               </button>

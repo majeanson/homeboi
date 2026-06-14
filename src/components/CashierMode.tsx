@@ -4,7 +4,7 @@ import { useLang, useT } from '../i18n'
 import { type Pick, money } from '../lib/deals'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
-import { Icon } from './Icon'
+import { Icon, InlineIcon } from './Icon'
 import { useModal } from '../lib/useModal'
 
 // "Show the cashier" mode. Two phases:
@@ -75,7 +75,7 @@ export function CashierMode({
               setPhase('present')
             }}
           >
-            {t.shop.present} ({picks.length}) →
+            {t.shop.present} ({picks.length}) <InlineIcon name="arrow-right-bold" />
           </button>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
             <Icon name="x-bold" size={18} />
@@ -103,7 +103,7 @@ export function CashierMode({
               setPhase('present')
             }}
           >
-            {t.shop.present} ({picks.length}) →
+            {t.shop.present} ({picks.length}) <InlineIcon name="arrow-right-bold" />
           </button>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
             <Icon name="x-bold" size={18} />
@@ -177,7 +177,7 @@ export function CashierMode({
           onClick={() => setPhase('review')}
           aria-label={t.shop.prev}
         >
-          ‹ {t.shop.cashierTitle}
+          <InlineIcon name="caret-left-bold" /> {t.shop.cashierTitle}
         </button>
         <span className="cashier__count mono">
           {idx + 1} / {picks.length}
@@ -198,7 +198,11 @@ export function CashierMode({
           <span className="bigcard__price">{money(d.price)}</span>
           {d.unitPrice != null && (
             <span className="bigcard__unit mono">
-              {d.unitApprox ? '≈ ' : ''}
+              {d.unitApprox && (
+                <>
+                  <InlineIcon name="approximate-equals-bold" size={11} />{' '}
+                </>
+              )}
               {money(d.unitPrice)}
               {d.unitLabel}
             </span>
@@ -210,7 +214,7 @@ export function CashierMode({
           )}
           {d.flyerId != null && (
             <button type="button" className="btn bigcard__flyer" onClick={() => setFlyerOpen(true)}>
-              📄 {t.shop.viewFlyer}
+              <InlineIcon name="file-text-bold" /> {t.shop.viewFlyer}
             </button>
           )}
         </div>
@@ -224,11 +228,11 @@ export function CashierMode({
           disabled={atFirst}
           aria-label={t.shop.prev}
         >
-          ←<span className="cashier__arrow-label">{t.shop.prev}</span>
+          <Icon name="arrow-left-bold" size={20} /><span className="cashier__arrow-label">{t.shop.prev}</span>
         </button>
         {atLast ? (
           <button type="button" className="cashier__arrow cashier__arrow--done" onClick={() => setPhase('thanks')}>
-            ✓<span className="cashier__arrow-label">{t.shop.done}</span>
+            <Icon name="check-bold" size={20} /><span className="cashier__arrow-label">{t.shop.done}</span>
           </button>
         ) : (
           <button
@@ -237,7 +241,7 @@ export function CashierMode({
             onClick={() => setIdx((i) => Math.min(picks.length - 1, i + 1))}
             aria-label={t.shop.next}
           >
-            <span className="cashier__arrow-label">{t.shop.next}</span>→
+            <span className="cashier__arrow-label">{t.shop.next}</span><Icon name="arrow-right-bold" size={20} />
           </button>
         )}
       </div>

@@ -3,7 +3,7 @@ import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { useSpeak } from '../../lib/speak'
-import { Icon } from '../Icon'
+import { Icon, InlineIcon } from '../Icon'
 import type { BoardData, Member, NoteRow } from './types'
 
 // Fridge notes on the Aujourd'hui board: little hand-written cards a parent can
@@ -39,7 +39,7 @@ export function Notes({
   return (
     <section className={'notes' + (toddler ? ' notes--kid' : '')} aria-label={t.notes.title}>
       <div className="notes__head mono" aria-hidden="true">
-        📌 {t.notes.title}
+        <InlineIcon name="push-pin-bold" /> {t.notes.title}
       </div>
       <div className="notes__grid">
         {notes.map((n) => {

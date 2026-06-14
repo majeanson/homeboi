@@ -18,7 +18,7 @@ export function ZoomableImg({ src, alt = '', className }: { src: string; alt?: s
       {open && (
         <div ref={overlayRef} className="zoom-overlay" role="dialog" aria-modal="true" onClick={() => setOpen(false)}>
           <img className="zoom-overlay__img" src={src} alt={alt} />
-          <button type="button" className="zoom-overlay__close" aria-label="✕" onClick={() => setOpen(false)}>
+          <button type="button" className="zoom-overlay__close" aria-label="Fermer / Close" onClick={() => setOpen(false)}>
             <Icon name="x-bold" size={20} />
           </button>
         </div>

@@ -16,6 +16,15 @@ export const TOD_ICON: Record<RoutineTod, IconName> = {
   evening: 'moon-stars-bold',
 }
 
+// A warm→cool colour cue to go with the glyph (theme-aware CSS vars), so the
+// moment reads at a glance even before the word: sunrise marigold, midday sun,
+// evening berry/indigo.
+export const TOD_TINT: Record<RoutineTod, string> = {
+  morning: 'var(--marigold-deep)',
+  afternoon: 'var(--marigold)',
+  evening: 'var(--berry-deep)',
+}
+
 export const isRoutineTod = (v: unknown): v is RoutineTod =>
   v === 'morning' || v === 'afternoon' || v === 'evening'
 

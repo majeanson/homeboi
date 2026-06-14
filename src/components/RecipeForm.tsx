@@ -13,7 +13,7 @@ import {
   tagOptions,
 } from '../lib/recipes'
 import { SECTION_PREFIX, dropDanglingHeadings } from '../lib/recipeSections'
-import { Icon } from './Icon'
+import { Icon, InlineIcon } from './Icon'
 import { useModal } from '../lib/useModal'
 
 // In the EDITOR a row is a section row as soon as it carries the "## " marker —
@@ -294,7 +294,7 @@ export function RecipeForm({
         disabled={i === 0}
         aria-label={t.recipes.moveUp}
       >
-        ↑
+        <Icon name="caret-up-bold" size={16} />
       </button>
       <button
         type="button"
@@ -303,7 +303,7 @@ export function RecipeForm({
         disabled={i === lines(kind).length - 1}
         aria-label={t.recipes.moveDown}
       >
-        ↓
+        <Icon name="caret-down-bold" size={16} />
       </button>
     </span>
   )
@@ -409,7 +409,7 @@ export function RecipeForm({
                     setEditStep(null)
                   }}
                 >
-                  <Icon name="x-bold" size={13} style={{ display: 'inline-block', verticalAlign: '-2px' }} /> {t.recipes.removeStep}
+                  <InlineIcon name="x-bold" size={13} /> {t.recipes.removeStep}
                 </button>
                 <button type="button" className="btn btn--primary mono" onClick={() => setEditStep(null)}>
                   {t.recipes.stepDone}
@@ -428,7 +428,7 @@ export function RecipeForm({
                   {v.trim() || t.recipes.stepPlaceholder}
                 </span>
                 <span className="recipe-step__cue mono" aria-hidden="true">
-                  ✎
+                  <InlineIcon name="pencil-simple-bold" size={13} />
                 </span>
               </button>
               {moveButtons('steps', i)}
@@ -644,7 +644,7 @@ export function RecipeForm({
                 .filter((tag) => !pills.some((p) => p.toLowerCase() === tag.toLowerCase()))
                 .map((tag) => (
                   <button key={tag} type="button" className="chip is-on" onClick={() => toggleTag(tag)} aria-pressed>
-                    {tag} <Icon name="x-bold" size={12} style={{ display: 'inline-block', verticalAlign: '-1px' }} />
+                    {tag} <InlineIcon name="x-bold" size={12} />
                   </button>
                 ))}
             </div>

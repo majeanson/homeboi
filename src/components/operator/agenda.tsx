@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { formatDay, formatTime } from '../../lib/format'
 import { EventForm } from '../forms/EventForm'
-import { Icon } from '../Icon'
+import { InlineIcon } from '../Icon'
 import { type EventRow, type Member } from './types'
 
 // Events: the operator's direct CRUD over the agenda. The form itself is the
@@ -55,7 +55,7 @@ export function EventsSection({
               <span>
                 {ev.recur_json && (
                   <>
-                    <Icon name="repeat-bold" size={13} style={{ display: 'inline-block', verticalAlign: '-2px' }} />{' '}
+                    <InlineIcon name="repeat-bold" size={13} color="var(--sky-deep)" />{' '}
                   </>
                 )}
                 {ev.title}
@@ -67,7 +67,7 @@ export function EventsSection({
                 </span>
               </span>
               <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(ev)} aria-label={t.common.edit}>
-                ✎
+                <InlineIcon name="pencil-simple-bold" />
               </button>
               <button type="button" className="btn btn--ghost mono operator__del" onClick={() => remove(ev)}>
                 {t.operator.delete}

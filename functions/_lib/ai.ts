@@ -335,6 +335,65 @@ Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insèr
   }
 }
 
+// A LIVE self-test of one model, for the operator's "Tester l'IA" button in
+// Réglages. Unlike health.ts (which only reports that the AI binding EXISTS),
+// these actually call Workers AI, so the failures that otherwise stay silent —
+// a retired text model (see the MODEL note) or the gated vision license block
+// (err 5016, see VISION_MODEL) — surface as a concrete pass/fail + message, the
+// same breakages the AI error log records after the fact.
+export interface AiCheck {
+  ok: boolean
+  ms: number // round-trip latency, so a slow-but-working model is visible too
+  model: string
+  detail: string // a snippet of the reply on success, the error message on failure
+}
+
+// Tiny 1×1 transparent PNG — enough to exercise the vision model's license gate
+// and a real inference without shipping a fixture. (The content is irrelevant;
+// the 5016 license error fires before the pixels matter.)
+const PING_PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+
+function pingDetail(res: { response?: unknown }): string {
+  const text = typeof res.response === 'string' ? res.response : JSON.stringify(res.response ?? '')
+  return text.trim().slice(0, 60)
+}
+
+// Ping the TEXT model (capture router, meal suggestions, recap, recipe drafts).
+export async function pingTextModel(env: Env): Promise<AiCheck> {
+  const t0 = Date.now()
+  if (!env.AI) return { ok: false, ms: 0, model: MODEL, detail: 'AI binding not configured' }
+  try {
+    const res = (await env.AI.run(MODEL, {
+      messages: [{ role: 'user', content: 'Reply with the single word: OK.' }],
+      max_tokens: 5,
+    })) as { response?: unknown }
+    const detail = pingDetail(res)
+    if (!detail) return { ok: false, ms: Date.now() - t0, model: MODEL, detail: 'empty response' }
+    return { ok: true, ms: Date.now() - t0, model: MODEL, detail }
+  } catch (err) {
+    return { ok: false, ms: Date.now() - t0, model: MODEL, detail: logAi('pingTextModel', err) }
+  }
+}
+
+// Ping the VISION model (reading a recipe from a photo). Catches the one-time
+// gated-license failure (err 5016) that silently breaks photo import.
+export async function pingVisionModel(env: Env): Promise<AiCheck> {
+  const t0 = Date.now()
+  if (!env.AI) return { ok: false, ms: 0, model: VISION_MODEL, detail: 'AI binding not configured' }
+  try {
+    const bytes = Uint8Array.from(atob(PING_PNG), (c) => c.charCodeAt(0))
+    const res = (await env.AI.run(VISION_MODEL, {
+      image: [...bytes],
+      prompt: 'Reply with the single word: OK.',
+      max_tokens: 5,
+    })) as { response?: unknown }
+    return { ok: true, ms: Date.now() - t0, model: VISION_MODEL, detail: pingDetail(res) || '(ran)' }
+  } catch (err) {
+    return { ok: false, ms: Date.now() - t0, model: VISION_MODEL, detail: logAi('pingVisionModel', err) }
+  }
+}
+
 // Coerce an unknown model field into a clean, de-duped, capped string[] — used by
 // draftRecipe for both the ingredient and step arrays. Never throws.
 function cleanLines(value: unknown, max: number): string[] {

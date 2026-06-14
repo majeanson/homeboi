@@ -5,7 +5,7 @@ import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { useT } from '../i18n'
 import { Loading } from '../components/Fallback'
-import { Icon } from '../components/Icon'
+import { Icon, InlineIcon } from '../components/Icon'
 import { parseDeal, parseTerms, unstageDeal, type ListItem } from '../lib/picks'
 import { money } from '../lib/deals'
 import { BOARD_KEY } from '../lib/queryKeys'
@@ -154,13 +154,13 @@ export function ListEditPage() {
 
           {deal && (
             <button type="button" className="btn btn--ghost li-edit__row" onClick={unlink} disabled={busy}>
-              🏷️ {t.list.unlinkDeal} · {deal.merchant} {money(deal.price)}
+              <InlineIcon name="tag-bold" /> {t.list.unlinkDeal} · {deal.merchant} {money(deal.price)}
             </button>
           )}
 
           <div className="li-edit__actions">
             <button type="button" className="btn btn--ghost li-edit__danger" onClick={remove} disabled={busy}>
-              🗑 {t.list.deleteItem}
+              <InlineIcon name="trash-bold" /> {t.list.deleteItem}
             </button>
             <button type="button" className="btn btn--primary" onClick={save} disabled={busy || !text.trim()}>
               {t.list.save}

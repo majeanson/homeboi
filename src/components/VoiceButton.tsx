@@ -1,5 +1,6 @@
 import { useT } from '../i18n'
 import { isIos, type VoiceInput } from '../lib/useVoiceInput'
+import { Icon } from './Icon'
 
 // The shared "speak it" mic, used by every add field (CaptureBar, the ＋ sheet,
 // La liste, the garde-manger). The caller owns the useVoiceInput hook (so the
@@ -25,7 +26,7 @@ export function VoiceButton({ voice, label }: { voice: VoiceInput; label: string
       aria-pressed={voice.listening}
       title={blocked ? blockedMsg : undefined}
     >
-      🎤
+      <Icon name="microphone-bold" size={20} />
     </button>
   )
 }

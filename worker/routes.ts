@@ -10,6 +10,7 @@ import * as authLogout from '../functions/api/auth/logout'
 import * as authMe from '../functions/api/auth/me'
 import * as authSignup from '../functions/api/auth/signup'
 import * as aiErrors from '../functions/api/ai-errors'
+import * as aiTest from '../functions/api/ai-test'
 import * as board from '../functions/api/board'
 import * as capture from '../functions/api/capture'
 import * as chores from '../functions/api/chores'
@@ -64,6 +65,7 @@ const TABLE: Record<string, RouteMod> = {
   'auth/me': authMe,
   'auth/signup': authSignup,
   'ai-errors': aiErrors,
+  'ai-test': aiTest,
   board,
   capture,
   chores,

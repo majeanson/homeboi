@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
 import { rankCookable } from '../../lib/cookable'
+import { InlineIcon } from '../Icon'
 
 // A searchable, ranked recipe picker — shared by every slot's "Choisir une
 // recette" (the week grid) so picking a recipe is the same everywhere. Instead
@@ -54,7 +55,9 @@ export function RecipePickerMenu({
                 <span className="recipe-picker__title">{recipe.title}</span>
                 {showBadge &&
                   (missing.length === 0 ? (
-                    <span className="recipe-picker__badge is-ready mono">✓ {t.recipes.ready}</span>
+                    <span className="recipe-picker__badge is-ready mono">
+                      <InlineIcon name="check-bold" /> {t.recipes.ready}
+                    </span>
                   ) : (
                     <span className="recipe-picker__badge mono">{t.recipes.missingN(missing.length)}</span>
                   ))}

@@ -10,7 +10,7 @@ import { groupSections, withoutHeadings } from '../lib/recipeSections'
 import { ingredientName } from '../lib/ingredient'
 import { type MealSlot } from '../lib/mealSlots'
 import { ZoomableImg } from './ZoomableImg'
-import { Icon } from './Icon'
+import { Icon, InlineIcon } from './Icon'
 import { IngredientLine } from './IngredientLine'
 import { SlotPicker } from './kitchen/SlotPicker'
 import { useModal } from '../lib/useModal'
@@ -385,7 +385,11 @@ export function RecipeSheet({
                   onClick={() => toggleListItem(o.item)}
                   aria-pressed={o.on}
                 >
-                  {o.on ? '✓ ' : ''}
+                  {o.on && (
+                    <>
+                      <InlineIcon name="check-bold" />{' '}
+                    </>
+                  )}
                   {o.item}
                 </button>
               ))}

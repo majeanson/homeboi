@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { api } from '../../lib/api'
+import { api, ApiError, isStatus } from '../../lib/api'
+import { Icon } from '../Icon'
 
 // The AI error journal (migration 0029 / functions/api/ai-errors). Failures the
 // family acknowledged on-screen land here so the operator can read what broke and
@@ -11,6 +13,81 @@ interface AiErrorRow {
   feature: string
   message: string
   created_at: number
+}
+
+// One model's live-check result (functions/api/ai-test → _lib/ai pingTextModel /
+// pingVisionModel). The labels come from the row index (text first, vision second).
+interface AiCheck {
+  ok: boolean
+  ms: number
+  model: string
+  detail: string
+}
+
+// A "does it actually work?" probe that sits ABOVE the error log: instead of
+// waiting for a feature to fail and reading the journal after the fact, the
+// operator presses Tester l'IA and gets a live pass/fail per model right now.
+function AiStatusTest() {
+  const t = useT()
+  const [checks, setChecks] = useState<AiCheck[] | null>(null)
+  const [running, setRunning] = useState(false)
+  const [unavailable, setUnavailable] = useState(false)
+
+  async function run() {
+    setRunning(true)
+    setUnavailable(false)
+    try {
+      const res = await api<{ checks: AiCheck[] }>('ai-test', { method: 'POST' })
+      setChecks(res.checks)
+    } catch (e) {
+      // 503 = no AI binding on this deployment; say so plainly instead of erroring.
+      if (isStatus(e, 503)) {
+        setUnavailable(true)
+        setChecks(null)
+      } else if (!(e instanceof ApiError)) {
+        throw e
+      }
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  // The two probes map to the two models, in the order the endpoint returns them.
+  const labelFor = (i: number) => (i === 0 ? t.operator.aiTestText : t.operator.aiTestVision)
+
+  return (
+    <section className="surface operator__section">
+      <h2>{t.operator.aiTestTitle}</h2>
+      <p className="mono">{t.operator.aiTestHint}</p>
+      <button type="button" className="btn btn--primary" onClick={run} disabled={running} aria-busy={running}>
+        {running ? t.operator.aiTestRunning : t.operator.aiTestBtn}
+      </button>
+
+      {unavailable && <p className="board__empty mono">{t.operator.aiTestUnavailable}</p>}
+
+      {checks && (
+        <ul className="ai-test">
+          {checks.map((c, i) => (
+            <li key={c.model} className={'ai-test__row' + (c.ok ? ' is-ok' : ' is-fail')}>
+              <span className="ai-test__icon" aria-hidden="true">
+                <Icon name={c.ok ? 'check-bold' : 'x-bold'} size={18} />
+              </span>
+              <span className="ai-test__body">
+                <span className="ai-test__label">
+                  {labelFor(i)}
+                  <span className="ai-test__verdict mono">
+                    {c.ok ? `${t.operator.aiTestOk} · ${c.ms} ms` : t.operator.aiTestFail}
+                  </span>
+                </span>
+                <span className="ai-test__detail mono">{c.detail}</span>
+                <span className="ai-test__model mono">{c.model}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
 }
 
 export function AiErrorLogSection() {
@@ -28,29 +105,32 @@ export function AiErrorLogSection() {
   }
 
   return (
-    <section className="surface operator__section">
-      <h2>{t.operator.aiLogTitle}</h2>
-      <p className="mono">{t.operator.aiLogHint}</p>
-      {errors.length === 0 ? (
-        <p className="board__empty mono">{t.operator.aiLogEmpty}</p>
-      ) : (
-        <>
-          <ul className="ai-log">
-            {errors.map((e) => (
-              <li key={e.id} className="ai-log__row">
-                <div className="ai-log__head mono">
-                  <span className="ai-log__feature">{e.feature}</span>
-                  <span className="ai-log__when">{new Date(e.created_at * 1000).toLocaleString()}</span>
-                </div>
-                <div className="ai-log__msg">{e.message}</div>
-              </li>
-            ))}
-          </ul>
-          <button type="button" className="btn btn--ghost" onClick={clearAll}>
-            {t.operator.aiLogClear}
-          </button>
-        </>
-      )}
-    </section>
+    <>
+      <AiStatusTest />
+      <section className="surface operator__section">
+        <h2>{t.operator.aiLogTitle}</h2>
+        <p className="mono">{t.operator.aiLogHint}</p>
+        {errors.length === 0 ? (
+          <p className="board__empty mono">{t.operator.aiLogEmpty}</p>
+        ) : (
+          <>
+            <ul className="ai-log">
+              {errors.map((e) => (
+                <li key={e.id} className="ai-log__row">
+                  <div className="ai-log__head mono">
+                    <span className="ai-log__feature">{e.feature}</span>
+                    <span className="ai-log__when">{new Date(e.created_at * 1000).toLocaleString()}</span>
+                  </div>
+                  <div className="ai-log__msg">{e.message}</div>
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="btn btn--ghost" onClick={clearAll}>
+              {t.operator.aiLogClear}
+            </button>
+          </>
+        )}
+      </section>
+    </>
   )
 }

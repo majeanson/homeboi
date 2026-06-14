@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { DECK_EMOJIS, type DeckCard } from '../lib/routineTemplates'
 import { useT } from '../i18n'
+import { Icon } from './Icon'
 
 // Edit a routine's deck of picture cards: each card is an emoji + a word. Tap
 // the emoji to switch it from a palette, type the word, reorder by dragging the
@@ -82,7 +83,7 @@ export function CardDeckEditor({
                 disabled={i === 0}
                 aria-label={t.operator.moveUp}
               >
-                ↑
+                <Icon name="caret-up-bold" size={16} />
               </button>
               <button
                 type="button"
@@ -91,7 +92,7 @@ export function CardDeckEditor({
                 disabled={i === cards.length - 1}
                 aria-label={t.operator.moveDown}
               >
-                ↓
+                <Icon name="caret-down-bold" size={16} />
               </button>
             </div>
             <button

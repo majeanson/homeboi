@@ -9,7 +9,7 @@ import { groupSections } from '../lib/recipeSections'
 import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
 import { IngredientLine } from './IngredientLine'
-import { Icon } from './Icon'
+import { Icon, InlineIcon } from './Icon'
 import { useModal } from '../lib/useModal'
 
 // Whether a step reads itself aloud on arrival. Default ON; an explicit opt-out
@@ -364,7 +364,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                       aria-label={got ? t.recipes.gathered : t.recipes.toGather}
                     >
                       <span className="cook__ing-box" aria-hidden="true">
-                        {got ? '✓' : ''}
+                        {got && <Icon name="check-bold" size={14} />}
                       </span>
                     </button>
                     <span
@@ -440,9 +440,15 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                       onClick={toggleTimer}
                       aria-label={t.recipes.timer}
                     >
-                      {timer.remaining === 0
-                        ? `⏱ ${t.recipes.timerDone}`
-                        : `${timer.running ? '⏱' : '▶'} ${clock(timer.remaining)}`}
+                      {timer.remaining === 0 ? (
+                        <>
+                          <InlineIcon name="timer-bold" /> {t.recipes.timerDone}
+                        </>
+                      ) : (
+                        <>
+                          <InlineIcon name={timer.running ? 'timer-bold' : 'play-bold'} /> {clock(timer.remaining)}
+                        </>
+                      )}
                     </button>
                     <button
                       type="button"
@@ -484,7 +490,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             disabled={atFirst}
             aria-label={t.shop.prev}
           >
-            ←<span className="cook__arrow-label">{t.shop.prev}</span>
+            <Icon name="arrow-left-bold" size={20} /><span className="cook__arrow-label">{t.shop.prev}</span>
           </button>
           <button
             type="button"
@@ -493,7 +499,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             disabled={atLast}
             aria-label={t.shop.next}
           >
-            <span className="cook__arrow-label">{t.shop.next}</span>→
+            <span className="cook__arrow-label">{t.shop.next}</span><Icon name="arrow-right-bold" size={20} />
           </button>
         </div>
       )}

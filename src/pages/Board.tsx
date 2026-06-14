@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
 import { HelpDot } from '../components/HelpDot'
-import { Icon } from '../components/Icon'
+import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -16,7 +16,7 @@ import { useSpeak } from '../lib/speak'
 import { timeOfDay } from '../lib/timeofday'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
-import { weatherIcon, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
+import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { formatClock, formatDay, formatTime } from '../lib/format'
 import { pictoFor } from '../lib/picto'
 import { SLOT_ICON_NAME, type MealSlot } from '../lib/mealSlots'
@@ -159,10 +159,10 @@ export function Board() {
           {/* A picture hint beside the word, so "tonight vs tomorrow" doesn't
               hang on reading alone (NFR-KID-2 soft-reading). */}
           <span className="today-hero__sub mono">
-            <Icon
+            <InlineIcon
               name={key === 'tonight' ? 'moon-stars-bold' : 'sun-horizon-bold'}
               size={14}
-              style={{ display: 'inline-block', verticalAlign: '-2px' }}
+              color={key === 'tonight' ? 'var(--berry-deep)' : 'var(--marigold-deep)'}
             />{' '}
             {t.board[key]}
           </span>
@@ -181,7 +181,7 @@ export function Board() {
         }
         aria-label={`${t.weather[weather.bucket]} ${weather.tempC}°`}
       >
-        <span className="today-hero__icon" aria-hidden="true"><Icon name={weatherIcon(weather)} size={56} /></span>
+        <span className="today-hero__icon" aria-hidden="true"><Icon name={weatherIcon(weather)} size={56} color={weatherTint(weather)} /></span>
         <span className="today-hero__label">{weather.tempC}°</span>
         <span className="today-hero__sub mono">{t.weather[weather.bucket]}</span>
       </button>
@@ -452,7 +452,7 @@ export function Board() {
                   <div className="what">{weather.tempC}°</div>
                   {tip && <div className="who">{t.weather.tip[tip]}</div>}
                   <div className="icn" aria-hidden="true">
-                    <Icon name={weatherIcon(weather)} size={38} />
+                    <Icon name={weatherIcon(weather)} size={38} color={weatherTint(weather)} />
                   </div>
                 </div>
               )}
@@ -502,7 +502,11 @@ export function Board() {
             {tomorrowWx && (
               <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
                 <span aria-hidden="true" style={{ display: 'inline-flex' }}>
-                  <Icon name={weatherIcon({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })} size={17} />
+                  <Icon
+                    name={weatherIcon({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
+                    size={17}
+                    color={weatherTint({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
+                  />
                 </span>{' '}
                 {tomorrowWx.highC}° / {tomorrowWx.lowC}°
               </div>

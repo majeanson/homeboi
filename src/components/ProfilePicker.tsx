@@ -4,6 +4,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useProfile } from '../lib/profile'
 import { imgUrl } from '../lib/image'
+import { Icon } from './Icon'
 import { useModal } from '../lib/useModal'
 import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
@@ -68,7 +69,7 @@ export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () =>
             aria-pressed={memberId === null}
           >
             <span className="profile-face__av profile-face__av--all" aria-hidden="true">
-              👥
+              <Icon name="users-three-bold" size={24} />
             </span>
             <span className="profile-face__name">{t.profile.household}</span>
           </button>

@@ -1,21 +1,36 @@
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
+import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { useT } from '../i18n'
 
 // The marketing front door — shown to first-time visitors only (the `/` smart
 // entry in router.tsx redirects a returning kiosk/phone straight to its home).
-// Calm by design: no floating CTA, no shadow lifts, the value props sit flat on
-// the page. Three honest claims (calm / kid / privacy), each its own length so it
-// doesn't read as a parallel triad. ONE CTA — "Get started" → /setup, where the
-// visitor says whether this is a wall display or a personal device.
+// Deliberately a simple, calm SKELETON: a plain-language hero anyone (a grandpa
+// handed the link) can read, a small "what it's for" icon strip, and a short
+// honest promise. Pip design throughout (Phosphor icons, paper tones). No
+// floating CTA, no shadow lifts, no hype — the app's calm tenet starts here.
+
+// "What it's for", in concrete household terms, each with its pip glyph + accent.
+const SECTIONS: { icon: IconName; key: 'forSupper' | 'forList' | 'forRoutines' | 'forChores' | 'forAgenda'; tint: string; wash: string }[] = [
+  { icon: 'fork-knife-bold', key: 'forSupper', tint: 'var(--terracotta-deep)', wash: 'var(--terracotta-wash)' },
+  { icon: 'sparkle-bold', key: 'forList', tint: 'var(--sky-deep)', wash: 'var(--sky-wash)' },
+  { icon: 'smiley-bold', key: 'forRoutines', tint: 'var(--berry-deep)', wash: 'var(--berry-wash)' },
+  { icon: 'broom-bold', key: 'forChores', tint: 'var(--sage-deep)', wash: 'var(--sage-wash)' },
+  { icon: 'calendar-dots-bold', key: 'forAgenda', tint: 'var(--marigold-deep)', wash: 'var(--marigold-wash)' },
+]
+
 export function Home() {
   const t = useT()
+  const promise = [t.home.promise1, t.home.promise2, t.home.promise3, t.home.promise4]
   return (
     <div className="page">
       <TopBar />
       <main className="home">
         <section className="home__hero">
-          <p className="eyebrow mono">{t.home.eyebrow}</p>
+          <p className="home__wordmark">
+            <Icon name="sun-bold" size={24} color="var(--marigold-deep)" />
+            {t.appName}
+          </p>
           <h1 className="home__title">{t.home.title}</h1>
           <p className="home__lead">{t.home.lead}</p>
           <div className="home__cta">
@@ -30,19 +45,38 @@ export function Home() {
           </div>
         </section>
 
-        <section className="home__values">
-          <article className="surface home__value">
-            <h2>{t.home.calmTitle}</h2>
-            <p>{t.home.calmBody}</p>
-          </article>
-          <article className="surface home__value">
-            <h2>{t.home.kidTitle}</h2>
-            <p>{t.home.kidBody}</p>
-          </article>
-          <article className="surface home__value">
-            <h2>{t.home.privacyTitle}</h2>
-            <p>{t.home.privacyBody}</p>
-          </article>
+        {/* What it's for — five plain household things, as calm placeholder tiles. */}
+        <section className="home__block">
+          <h2 className="home__h mono">{t.home.whatHeading}</h2>
+          <ul className="home__sections">
+            {SECTIONS.map((s) => (
+              <li key={s.key} className="home__section">
+                <span className="home__section-ic" style={{ background: s.wash, color: s.tint }}>
+                  <Icon name={s.icon} size={24} />
+                </span>
+                <span className="home__section-label">{t.home[s.key]}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* The promise — the calm tenet, in four short lines. */}
+        <section className="home__block">
+          <h2 className="home__h mono">{t.home.promiseHeading}</h2>
+          <ul className="home__promise">
+            {promise.map((line, i) => (
+              <li key={i}>
+                <InlineIcon name="check-bold" color="var(--sage-deep)" /> {line}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="home__foot">
+          <Link to="/setup" className="btn btn--primary">
+            {t.home.ctaStart}
+          </Link>
+          <p className="home__fine mono">{t.home.privacyLine}</p>
         </section>
       </main>
     </div>

@@ -13,7 +13,7 @@ import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { useOptimisticMutation } from '../lib/optimistic'
 import { timeOfDay } from '../lib/timeofday'
-import { todRank, isRoutineTod, TOD_ICON } from '../lib/routineTod'
+import { todRank, isRoutineTod, TOD_ICON, TOD_TINT } from '../lib/routineTod'
 import { ROUTINES_KEY } from '../lib/queryKeys'
 
 // The pre-reader surface, in Pip's calm "right now / then" picture story: ONE
@@ -206,7 +206,7 @@ export function KidView() {
                     pre-reader spots "the moon one" without reading. */}
                 {isRoutineTod(r.timeOfDay) && (
                   <span className="kid__face-tod" aria-hidden="true">
-                    <Icon name={TOD_ICON[r.timeOfDay]} size={22} />
+                    <Icon name={TOD_ICON[r.timeOfDay]} size={22} color={TOD_TINT[r.timeOfDay]} />
                   </span>
                 )}
                 <span className="kid__face-name">{identified ? r.name : r.memberName ?? r.name}</span>
@@ -346,7 +346,7 @@ export function KidView() {
                   onClick={() => startStep(curIdx)}
                   aria-label={t.kid.start}
                 >
-                  ▶
+                  <Icon name="play-bold" size={22} />
                 </button>
               )}
             </>

@@ -7,7 +7,7 @@ import { type MealSlot } from '../../lib/mealSlots'
 import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
 import { RecipePickerMenu } from './RecipePickerMenu'
 import { SlotPicker } from './SlotPicker'
-import { Icon } from '../Icon'
+import { Icon, InlineIcon } from '../Icon'
 
 // The "general ideas" pool under the week grid: a reusable shortlist of meal
 // ideas — free text ("tacos") or a saved-recipe shortcut. Add by typing or
@@ -104,7 +104,7 @@ export function MealIdeas({
             aria-label={t.kitchen.fromRecipe}
             title={t.kitchen.fromRecipe}
           >
-            📖
+            <Icon name="book-open-bold" size={18} />
           </button>
         )}
       </form>
@@ -133,7 +133,7 @@ export function MealIdeas({
                 >
                   {idea.recipe_id && (
                     <>
-                      <Icon name="book-open-bold" size={14} style={{ display: 'inline-block', verticalAlign: '-2px' }} />{' '}
+                      <InlineIcon name="book-open-bold" size={14} color="var(--berry-deep)" />{' '}
                     </>
                   )}
                   {idea.title}

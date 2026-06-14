@@ -1,10 +1,13 @@
 name: CI & Deploy
 
 # CI (typecheck · test · build) runs on every push and PR, and GATES the deploy.
-# E2E (Playwright) runs in PARALLEL on every push/PR for signal, but does NOT
-# block the deploy — so a push to main ships as soon as typecheck/test/build are
-# green, without waiting on the slower browser suite. Deploy to the Cloudflare
-# Worker is the same `npm run deploy` you run locally, gated behind green CI.
+# Deploy to the Cloudflare Worker is the same `npm run deploy` you run locally,
+# gated behind green CI.
+#
+# E2E (Playwright) lives in its OWN workflow (e2e.yml) and is now CHAINED to run
+# AFTER this workflow concludes successfully (via `workflow_run`), instead of
+# racing it in parallel. So a push to main still ships the moment CI is green,
+# and the slower browser suite runs once afterward for signal.
 
 on:
   push:
@@ -31,34 +34,6 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-
-  e2e:
-    name: E2E (Playwright)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      # Only chromium is configured (playwright.config.ts); --with-deps pulls the
-      # Linux system libs the browser needs on the runner.
-      - run: npx playwright install --with-deps chromium
-      # Playwright boots the Vite dev server itself (webServer config) and stubs
-      # every /api/* call per-test — no wrangler/D1/secrets needed.
-      - run: npm run e2e
-      # Always upload the HTML report + the surface×theme×format PNGs so a failure
-      # (or just a visual review) is inspectable from the run page.
-      - name: Upload Playwright report + screenshots
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report
-          path: |
-            e2e/report
-            e2e/screenshots
-          retention-days: 7
 
   deploy:
     name: Deploy to Cloudflare

@@ -1,0 +1,159 @@
+/* Guided tour overlay (components/tour/TourOverlay.tsx). A full-screen scrim with
+   a spotlight cutout (SVG mask) + a floating caption card. Sits above the sheets
+   (z 31) and scrim (30) but below full-screen scenes (cashier 50 / flyer 70) — a
+   tour is a teaching layer, not a scene. Surface-aware: bigger and calmer on the
+   wall tablet. Mobile- and tablet-friendly (large tap targets, card always
+   clamped on-screen by the JS positioner). */
+
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  /* The container catches all pointer input so the app behind stays inert; the
+     user advances with the card's buttons (or Esc / Skip). */
+}
+
+.tour__scrim {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* A soft ring tracing the spotlighted element, to tie the caption to it. */
+.tour__ring {
+  position: absolute;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 3px var(--accent),
+    0 8px 30px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  transition:
+    top var(--dur-base) var(--ease-out),
+    left var(--dur-base) var(--ease-out),
+    width var(--dur-base) var(--ease-out),
+    height var(--dur-base) var(--ease-out);
+}
+
+.tour__card {
+  position: absolute;
+  width: min(340px, calc(100vw - 24px));
+  background: var(--card);
+  color: var(--ink);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.32);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tour__card--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.tour__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tour__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.tour__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tour__body {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* The hand-off to the matching Guide card — a quiet accent link, not a loud
+   button, so it reads as "go deeper" without competing with Next. */
+.tour__learn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: -2px 0 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tour__learn:hover {
+  text-decoration: underline;
+}
+
+.tour__dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding: 2px 0;
+}
+
+.tour__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  opacity: 0.5;
+  transition: opacity var(--dur-base);
+}
+
+.tour__dot.is-on {
+  opacity: 1;
+  background: var(--accent);
+}
+
+.tour__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.tour__controls-right {
+  display: flex;
+  gap: 8px;
+}
+
+/* Wall tablet: bigger card, larger type, readable across the kitchen. */
+.tour[data-surface='kiosk'] .tour__card {
+  width: min(440px, calc(100vw - 48px));
+  padding: 26px;
+  gap: 16px;
+}
+
+.tour[data-surface='kiosk'] .tour__title {
+  font-size: 1.5rem;
+}
+
+.tour[data-surface='kiosk'] .tour__body {
+  font-size: 1.15rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour__ring {
+    transition: none;
+  }
+}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { TopBar } from '../components/TopBar'
+import { InlineIcon } from '../components/Icon'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -108,7 +109,11 @@ export function Signup() {
                 ? t.signup.passwordHint
                 : password.length < 8
                   ? `${t.signup.passwordHint} (${password.length}/8)`
-                  : `${t.signup.passwordHint} ✓`}
+                  : (
+                      <>
+                        {t.signup.passwordHint} <InlineIcon name="check-bold" />
+                      </>
+                    )}
             </span>
           </label>
           {inviteRequired && (

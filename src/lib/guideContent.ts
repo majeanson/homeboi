@@ -17,7 +17,13 @@ export type Bi = { fr: string; en: string }
 
 export type GuidePoint = {
   label: Bi
+  // `detail` = WHAT it does / how to use it. `why` = WHY it exists / why you'd
+  // reach for it — kept as its own field (not crammed into detail) so the guide
+  // can show it as a distinct line, and so a point that earns a reason says it
+  // out loud. Optional on purpose: a purely navigational point (e.g. "set this
+  // up in Settings") has no reason worth spelling out — don't write filler.
   detail: Bi
+  why?: Bi
 }
 
 export type GuideEntry = {
@@ -25,7 +31,7 @@ export type GuideEntry = {
   // A name from the app's shared Phosphor-bold icon set (see components/Icon),
   // so the Guide reuses the very same glyphs the live UI uses — no emoji.
   icon: IconName
-  group: 'sections' | 'concepts' | 'settings'
+  group: 'start' | 'sections' | 'concepts' | 'settings'
   title: Bi
   what: Bi
   points: GuidePoint[]
@@ -33,9 +39,20 @@ export type GuideEntry = {
   // Guide can offer a direct "go there" link (/settings?tab=<tab>). Must match a
   // SECTION id in pages/Operator.tsx.
   tab?: string
+  // An optional action button the card hosts. 'replay-tour' restarts the guided
+  // tour (lib/tour.tsx) — used by the "Première fois" card.
+  action?: 'replay-tour'
 }
 
 export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] = [
+  {
+    id: 'start',
+    label: { fr: 'Pour commencer', en: 'To get started' },
+    blurb: {
+      fr: 'Nouveau sur Babillard ? Commence ici : l’ensemble en quelques lignes, et le bouton pour rejouer la visite guidée.',
+      en: 'New to Babillard? Start here: the whole thing in a few lines, and the button to replay the guided tour.',
+    },
+  },
   {
     id: 'sections',
     label: { fr: 'Les cinq sections', en: 'The five sections' },
@@ -63,6 +80,78 @@ export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] =
 ]
 
 export const GUIDE: GuideEntry[] = [
+  // ── Pour commencer (the overview + replay) ────────────────────────────────
+  {
+    id: 'first-time',
+    icon: 'sparkle-bold',
+    group: 'start',
+    action: 'replay-tour',
+    title: { fr: 'Première fois', en: 'First time' },
+    what: {
+      fr: 'Tout Babillard en bref — ce que c’est, les cinq sections, comment ajouter, et la promesse « calme ».',
+      en: 'All of Babillard in brief — what it is, the five sections, how to add, and the “calm” promise.',
+    },
+    points: [
+      {
+        label: { fr: 'C’est quoi, Babillard', en: 'What Babillard is' },
+        detail: {
+          fr: 'Un centre de commande familial pour une tablette laissée au mur : l’agenda du jour, le souper de ce soir, les listes, les corvées et les routines des enfants.',
+          en: 'A household command-centre for a tablet left on the wall: today’s agenda, tonight’s supper, the lists, the chores and the kids’ routines.',
+        },
+        why: {
+          fr: 'Calme par choix : pas de points ni de notifications, rien à entretenir pour le plaisir.',
+          en: 'Calm by choice: no points or notifications, nothing to maintain for its own sake.',
+        },
+      },
+      {
+        label: { fr: 'Les cinq sections', en: 'The five sections' },
+        detail: {
+          fr: '[[icon:sun-bold]] Le babillard (le coup d’œil), [[icon:carrot-bold]] La cuisine (soupers et recettes), [[icon:smiley-bold]] Routines (les enfants), [[icon:sparkle-bold]] La liste (l’épicerie) et [[icon:gear-six-bold]] Réglages (ton poste de pilotage).',
+          en: '[[icon:sun-bold]] the Board (the glance), [[icon:carrot-bold]] the Kitchen (suppers and recipes), [[icon:smiley-bold]] Routines (the kids), [[icon:sparkle-bold]] the List (groceries) and [[icon:gear-six-bold]] Settings (your control panel).',
+        },
+      },
+      {
+        label: { fr: 'Ajouter : écris ou parle', en: 'Adding: type or speak' },
+        detail: {
+          fr: 'Le bouton [[icon:plus-bold]] ajoute ce qui convient à la section. Écris en mots normaux (« souper spaghetti vendredi ») ou dicte au [[icon:speaker-high-bold]] micro.',
+          en: 'The [[icon:plus-bold]] button adds whatever fits the section. Type in plain words (“spaghetti supper Friday”) or dictate with the [[icon:speaker-high-bold]] mic.',
+        },
+        why: {
+          fr: 'L’app range la note à la bonne place toute seule — un seul geste pour tout capter.',
+          en: 'The app files the note in the right place by itself — one gesture to capture anything.',
+        },
+      },
+      {
+        label: { fr: 'Deux appareils, deux vues', en: 'Two devices, two views' },
+        detail: {
+          fr: 'La tablette au mur (le kiosque) montre le coup d’œil de toute la maisonnée ; ton téléphone sert aux notes rapides. Et la vue Enfant transforme chaque page en grandes cartes en images pour un pré-lecteur.',
+          en: 'The wall tablet (the kiosk) shows the whole household at a glance; your phone is for quick notes. And the Toddler view turns every page into big picture-cards for a pre-reader.',
+        },
+        why: {
+          fr: 'Pour que chaque appareil — et chaque personne — voie la forme qui lui convient.',
+          en: 'So each device — and each person — sees the form that suits them.',
+        },
+      },
+      {
+        label: { fr: 'Calme par choix', en: 'Calm by choice' },
+        detail: {
+          fr: 'Pas de séquences à entretenir, pas de pastilles rouges, pas de fil sans fin. Les listes se vident et restent vides.',
+          en: 'No streaks to keep up, no red badges, no endless feed. Lists empty and stay empty.',
+        },
+        why: {
+          fr: 'Pour que l’app serve la famille sans chercher à la garder accrochée.',
+          en: 'So the app serves the family without trying to keep it hooked.',
+        },
+      },
+      {
+        label: { fr: 'Rejouer la visite', en: 'Replay the tour' },
+        detail: {
+          fr: 'Le petit tour interactif démarre tout seul la première fois. Pour le revoir, touche le bouton ci-dessous : il t’amène au babillard et te guide.',
+          en: 'The little interactive tour starts on its own the first time. To see it again, tap the button below: it takes you to the board and walks you through.',
+        },
+      },
+    ],
+  },
   // ── Sections (the five hub tabs) ──────────────────────────────────────────
   {
     id: 'board',
@@ -70,29 +159,41 @@ export const GUIDE: GuideEntry[] = [
     group: 'sections',
     title: { fr: 'Le babillard', en: 'The board' },
     what: {
-      fr: 'L’écran « coup d’œil » de la maisonnée : l’heure, l’agenda du jour, le souper de ce soir, la liste et les corvées — tout sur un même mur.',
-      en: 'The household glance screen: the time, today’s agenda, tonight’s supper, the list and the chores — all on one wall.',
+      fr: 'L’écran « coup d’œil » de la maisonnée : l’heure, l’agenda du jour, le souper de ce soir, la liste et les corvées, réunis sur un même mur — pour que tout le monde voie la journée d’un regard, sans demander ni rien toucher.',
+      en: 'The household glance screen: the time, today’s agenda, tonight’s supper, the list and the chores, gathered on one wall — so everyone sees the day at a glance, without asking or touching a thing.',
     },
     points: [
       {
         label: { fr: 'Pensé pour la tablette', en: 'Built for the tablet' },
         detail: {
-          fr: 'Gros caractères, lisibles de l’autre bout de la cuisine. Ça se rafraîchit tout seul; pas besoin d’y toucher.',
-          en: 'Big type, readable across the kitchen. It refreshes itself; no need to touch it.',
+          fr: 'Gros caractères lisibles de l’autre bout de la cuisine, et ça se rafraîchit tout seul.',
+          en: 'Big type readable across the kitchen, and it refreshes itself.',
+        },
+        why: {
+          fr: 'C’est fait pour être lu au passage, jamais manipulé.',
+          en: 'It’s made to be read in passing, never operated.',
         },
       },
       {
         label: { fr: 'Ce soir', en: 'Tonight' },
         detail: {
-          fr: 'Le souper prévu pour aujourd’hui, avec qui cuisine. Vide tant que rien n’est planifié dans La cuisine.',
-          en: 'The supper planned for today, and who’s cooking. Empty until something is planned in the Kitchen.',
+          fr: 'Le souper prévu pour aujourd’hui, et qui cuisine. Vide tant que rien n’est planifié dans La cuisine.',
+          en: 'Today’s planned supper, and who’s cooking. Empty until something is planned in the Kitchen.',
+        },
+        why: {
+          fr: 'La réponse à « qu’est-ce qu’on mange ? » sans que personne ait à demander.',
+          en: 'The answer to “what’s for supper?” without anyone having to ask.',
         },
       },
       {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
-          fr: 'Grille, « Maintenant », par personne, ou le mois — choisis ce qui parle le plus à ta famille.',
-          en: 'Grid, “Now”, by person, or the month — pick whatever speaks to your family.',
+          fr: 'Grille (toute la semaine), « Maintenant » (la prochaine affaire), par personne (la journée d’un seul) ou le mois (la vue d’ensemble).',
+          en: 'Grid (the whole week), “Now” (the next thing), by person (one person’s day) or the month (the big picture).',
+        },
+        why: {
+          fr: 'Chaque vue répond à une question différente; choisis celle qui parle à ta famille.',
+          en: 'Each view answers a different question; pick the one that speaks to your family.',
         },
       },
       {
@@ -101,6 +202,10 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Touche ta photo pour mettre ta journée en avant; touche-la encore pour revenir à « toute la maisonnée ». Sur la tablette, ça revient tout seul après quelques minutes (avec un petit avertissement).',
           en: 'Tap your photo to put your day front and centre; tap it again to go back to “everyone”. On the tablet it drifts back on its own after a few idle minutes (with a small heads-up).',
         },
+        why: {
+          fr: 'Pour qu’un coup d’œil te montre TA journée — et pour que le mur partagé ne reste jamais « bloqué » sur une seule personne.',
+          en: 'So a glance shows YOUR day — and so the shared wall never stays “stuck” on one person.',
+        },
       },
       {
         label: { fr: 'Salutation selon l’heure', en: 'Greeting by time of day' },
@@ -108,12 +213,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Le mot d’accueil suit l’horloge : bon matin, bon après-midi, bonne soirée.',
           en: 'The greeting follows the clock: good morning, good afternoon, good evening.',
         },
+        why: {
+          fr: 'Un petit geste chaleureux pour que le mur se sente vivant plutôt que froid.',
+          en: 'A small warm touch so the wall feels alive rather than cold.',
+        },
       },
       {
         label: { fr: 'À préparer pour demain', en: 'Prep for tomorrow' },
         detail: {
-          fr: 'La note prévue pour demain remonte dès aujourd’hui, avec un aperçu météo (haut/bas), pour t’y prendre à temps.',
-          en: 'Tomorrow’s note surfaces today, with a coarse weather outlook (high/low), so you can act in time.',
+          fr: 'La note prévue pour demain remonte dès aujourd’hui, avec un aperçu météo (haut/bas).',
+          en: 'Tomorrow’s note surfaces today, with a coarse weather outlook (high/low).',
+        },
+        why: {
+          fr: 'Pour t’y prendre à temps — sortir l’habit de neige, préparer le lunch froid.',
+          en: 'So you can act in time — dig out the snowsuit, prep the cold lunch.',
         },
       },
       {
@@ -121,6 +234,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Sous la température, une ligne d’habillement (manteau, parapluie, bois de l’eau). De nuit, le [[icon:sun-bold]] devient [[icon:moon-stars-bold]]. En vue enfant, touche la météo pour l’entendre.',
           en: 'Under the temperature, a dressing tip (coat, umbrella, drink water). At night [[icon:sun-bold]] becomes [[icon:moon-stars-bold]]. In kid view, tap the weather to hear it.',
+        },
+        why: {
+          fr: 'Pour habiller les enfants comme il faut avant de sortir, sans ouvrir une autre app.',
+          en: 'So you dress the kids right before heading out, without opening another app.',
         },
       },
     ],
@@ -138,22 +255,34 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Planifier la semaine', en: 'Plan the week' },
         detail: {
-          fr: 'Mets un repas dans une case et il apparaît sur le babillard la bonne journée — décidé une fois, fini le « qu’est-ce qu’on mange ? » chaque soir. Pas obligé de tout remplir.',
-          en: 'Drop a meal in a slot and it shows on the board on the right day — decided once, no more nightly “what’s for supper?”. No need to fill every box.',
+          fr: 'Mets un repas dans une case et il apparaît sur le babillard la bonne journée. Pas obligé de tout remplir.',
+          en: 'Drop a meal in a slot and it shows on the board on the right day. No need to fill every box.',
+        },
+        why: {
+          fr: 'Décidé une fois, fini le « qu’est-ce qu’on mange ? » chaque soir.',
+          en: 'Decided once, no more nightly “what’s for supper?”.',
         },
       },
       {
         label: { fr: 'Ce qui s’achève', en: 'Running low' },
         detail: {
-          fr: 'Dès qu’un aliment achève, mets-lui le drapeau « il en manque » : il saute direct sur la liste d’épicerie, pour ne pas l’oublier à la prochaine commande. C’est un simple drapeau, pas un inventaire à tenir à jour — moins de corvée, et c’est ça qui garde la cuisine calme.',
-          en: 'The moment a food is almost gone, flag it “running low”: it jumps straight onto the grocery list so you don’t forget it next shop. It’s just a flag, not an inventory to keep current — less busywork, and that’s what keeps the kitchen calm.',
+          fr: 'Dès qu’un aliment achève, mets-lui le drapeau « il en manque » : il saute direct sur la liste d’épicerie. C’est un simple drapeau, pas un inventaire à tenir à jour.',
+          en: 'The moment a food is almost gone, flag it “running low”: it jumps straight onto the grocery list. It’s just a flag, not an inventory to keep current.',
+        },
+        why: {
+          fr: 'Pour ne pas l’oublier à la prochaine commande — et parce qu’« un drapeau, pas un inventaire » garde la cuisine calme, sans corvée de comptage.',
+          en: 'So you don’t forget it next shop — and because “a flag, not an inventory” keeps the kitchen calm, with no counting chore.',
         },
       },
       {
         label: { fr: 'Qu’est-ce qu’on mange ?', en: 'What’s for supper?' },
         detail: {
-          fr: 'Le bouton de suggestion propose une idée de repas. Touche encore pour une autre. (Demande l’IA — caché si elle est hors ligne.)',
-          en: 'The suggest button offers a meal idea. Tap again for another. (Uses AI — hidden when AI is offline.)',
+          fr: 'Le bouton de suggestion propose une idée de repas; touche encore pour une autre. (Demande l’IA — caché si elle est hors ligne.)',
+          en: 'The suggest button offers a meal idea; tap again for another. (Uses AI — hidden when AI is offline.)',
+        },
+        why: {
+          fr: 'De quoi casser le « je sais pas quoi faire » quand tu sèches.',
+          en: 'Enough to break the “I don’t know what to make” when you’re stuck.',
         },
       },
       {
@@ -162,19 +291,31 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Garde tes recettes, importe-les d’une photo ou d’un collé-copié, et planifie-les comme repas.',
           en: 'Keep your recipes, import them from a photo or a paste, and schedule them as meals.',
         },
+        why: {
+          fr: 'Une recette gardée devient un souper au calendrier, puis ses ingrédients arrivent sur la liste.',
+          en: 'A saved recipe becomes a supper on the calendar, then its ingredients land on the list.',
+        },
       },
       {
         label: { fr: 'Les quatre repas', en: 'All four meals' },
         detail: {
-          fr: 'Pas juste le souper : déjeuner, dîner, souper et collation ont chacun leur case dans la semaine.',
-          en: 'Not just supper: breakfast, lunch, supper and snack each have their own slot in the week.',
+          fr: 'Pas juste le souper : déjeuner, dîner, souper et collation ont chacun leur case.',
+          en: 'Not just supper: breakfast, lunch, supper and snack each have their own slot.',
+        },
+        why: {
+          fr: 'Pour planifier aussi les lunchs et les collations à l’avance, pas seulement le repas du soir.',
+          en: 'So you can plan lunchboxes and snacks ahead too, not only the evening meal.',
         },
       },
       {
         label: { fr: 'Idées de repas', en: 'Meal ideas' },
         detail: {
-          fr: 'Une petite réserve d’idées (texte libre ou recette [[icon:book-open-bold]]) sous la grille; touche-en une pour la déposer sur n’importe quel jour. Elle reste dans la réserve pour réutiliser.',
-          en: 'A small pool of ideas (free text or a [[icon:book-open-bold]] recipe) under the grid; tap one to drop it on any day. It stays in the pool to reuse.',
+          fr: 'Une petite réserve d’idées (texte libre ou recette [[icon:book-open-bold]]) sous la grille; touche-en une pour la déposer sur n’importe quel jour. Elle reste dans la réserve.',
+          en: 'A small pool of ideas (free text or a [[icon:book-open-bold]] recipe) under the grid; tap one to drop it on any day. It stays in the pool.',
+        },
+        why: {
+          fr: 'Tes valeurs sûres restent à portée pour les replanifier en un toucher, sans les retaper.',
+          en: 'Your go-to meals stay within reach to re-plan in one tap, without retyping them.',
         },
       },
       {
@@ -182,6 +323,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Un mémo par journée (« souper chez mémé », « lunch froid — sortie ») qui apparaît aussi sur le babillard la bonne date.',
           en: 'A per-day memo (“supper at grandma’s”, “cold lunch — outing”) that also shows on the board on the right date.',
+        },
+        why: {
+          fr: 'Pour prévenir toute la maisonnée d’une journée qui sort de l’ordinaire, au bon moment.',
+          en: 'To flag the whole household about an out-of-the-ordinary day, at the right time.',
         },
       },
     ],
@@ -202,19 +347,31 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Une grande carte « c’est l’heure de… », puis « ensuite ». L’enfant touche pour avancer.',
           en: 'One big “right now…” card, then “next”. The child taps to move forward.',
         },
+        why: {
+          fr: 'Une seule chose à voir à la fois, pour ne pas submerger un tout-petit.',
+          en: 'One thing to see at a time, so it never overwhelms a small child.',
+        },
       },
       {
         label: { fr: 'Lu à voix haute', en: 'Read aloud' },
         detail: {
-          fr: 'L’appareil lit chaque étape — aucune lecture requise de l’enfant.',
-          en: 'The device speaks each step — no reading required from the child.',
+          fr: 'L’appareil lit chaque étape.',
+          en: 'The device speaks each step.',
+        },
+        why: {
+          fr: 'Aucune lecture requise de l’enfant — un pré-lecteur fait sa routine seul.',
+          en: 'No reading required from the child — a pre-reader runs the routine alone.',
         },
       },
       {
         label: { fr: 'Pas de récompenses', en: 'No rewards' },
         detail: {
-          fr: 'Aucun point, aucune étoile, aucune séquence à entretenir. La routine se termine et c’est tout.',
-          en: 'No points, no stars, no streak to keep alive. The routine simply ends.',
+          fr: 'Aucun point, aucune étoile, aucune séquence à entretenir. Elle se termine, et c’est tout.',
+          en: 'No points, no stars, no streak to keep alive. It ends, and that’s it.',
+        },
+        why: {
+          fr: 'Pour que la routine reste une habitude tranquille, pas un jeu à courir.',
+          en: 'So the routine stays a calm habit, not a game to chase.',
         },
       },
       {
@@ -230,12 +387,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Si l’appareil a un visage choisi, on saute le choix du nom et on ouvre direct sa routine; une seule routine se lance toute seule.',
           en: 'If the device has a picked face, it skips the name-picker and opens that child’s routine; a single routine auto-starts.',
         },
+        why: {
+          fr: 'Moins de touchers entre l’enfant et sa routine — pensé pour qu’il démarre seul.',
+          en: 'Fewer taps between the child and their routine — built so they can start on their own.',
+        },
       },
       {
         label: { fr: 'Un chrono qui monte', en: 'A count-up timer' },
         detail: {
-          fr: 'Le temps s’additionne du début à la fin — aucun compte à rebours, aucune pression, aucun score.',
-          en: 'Time adds up from start to finish — no countdown, no pressure, no score.',
+          fr: 'Le temps s’additionne du début à la fin.',
+          en: 'Time adds up from start to finish.',
+        },
+        why: {
+          fr: 'Aucun compte à rebours, aucune pression, aucun score — le temps informe, il ne presse pas.',
+          en: 'No countdown, no pressure, no score — time informs, it doesn’t rush.',
         },
       },
       {
@@ -243,6 +408,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'En vue enfant, toucher la météo, une note ou même le message vide le lit à voix haute. Les grandes tuiles demandent deux touchers (« tape encore pour… ») pour confirmer.',
           en: 'In kid view, tapping the weather, a note or even the empty message reads it aloud. Big tiles ask for two taps (“tap again to…”) to confirm.',
+        },
+        why: {
+          fr: 'Pour qu’un pré-lecteur explore l’écran par l’oreille, sans déclencher une action par accident.',
+          en: 'So a pre-reader can explore the screen by ear, without triggering an action by accident.',
         },
       },
     ],
@@ -263,12 +432,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Coche un article et il se marque fait, sans bouger. Pas de « tablette des faits », pas de modes.',
           en: 'Check an item and it marks done, in place. No “done shelf”, no modes.',
         },
+        why: {
+          fr: 'Pour que la liste reste simple à lire en magasin.',
+          en: 'So the list stays simple to read in the store.',
+        },
       },
       {
         label: { fr: 'Vider les cochés', en: 'Clear checked' },
         detail: {
-          fr: 'Un bouton enlève tout ce qui est coché d’un coup (et le note pour l’ajout rapide la prochaine fois).',
-          en: 'One button removes everything checked at once (and remembers it for quick-add next time).',
+          fr: 'Un bouton enlève tout ce qui est coché d’un coup.',
+          en: 'One button removes everything checked at once.',
+        },
+        why: {
+          fr: 'Et il le retient pour l’ajout rapide la prochaine fois — re-remplir va plus vite.',
+          en: 'And it remembers it for quick-add next time — restocking goes faster.',
         },
       },
       {
@@ -277,6 +454,10 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Re-remplis une semaine en quelques touches à partir de ce que tu achètes souvent.',
           en: 'Restock a week in a few taps from what you buy often.',
         },
+        why: {
+          fr: 'Pour ne pas retaper chaque semaine les mêmes essentiels.',
+          en: 'So you don’t retype the same staples every week.',
+        },
       },
       {
         label: { fr: 'Parler ta liste', en: 'Speak your list' },
@@ -284,26 +465,42 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Touche le micro et nomme tes articles; le micro reste ouvert. Une phrase comme « lait, œufs pis pain » se découpe en trois articles.',
           en: 'Tap the mic and name your items; the mic stays open. A phrase like “milk, eggs and bread” splits into three items.',
         },
+        why: {
+          fr: 'Pour vider ta tête à voix haute, les mains prises, sans taper article par article.',
+          en: 'To empty your head out loud, hands full, without typing item by item.',
+        },
       },
       {
         label: { fr: 'Images d’articles', en: 'Item pictures' },
         detail: {
-          fr: 'Chaque article montre une petite image (lait, pain, pomme) — repérable d’un coup d’œil, sans lire.',
-          en: 'Each item shows a small picture (milk, bread, apple) — spottable at a glance, no reading.',
+          fr: 'Chaque article montre une petite image (lait, pain, pomme).',
+          en: 'Each item shows a small picture (milk, bread, apple).',
+        },
+        why: {
+          fr: 'Repérable d’un coup d’œil, sans lire — utile en magasin et pour un enfant.',
+          en: 'Spottable at a glance, no reading — handy in-store and for a child.',
         },
       },
       {
         label: { fr: 'Qui l’a ajouté', en: 'Who added it' },
         detail: {
-          fr: 'Une pastille de couleur indique la personne qui a ajouté l’article (selon le visage choisi sur l’appareil).',
+          fr: 'Une pastille de couleur indique qui a ajouté l’article (selon le visage choisi sur l’appareil).',
           en: 'A colour dot shows who added the item (based on the face picked on that device).',
+        },
+        why: {
+          fr: 'Pour savoir à qui poser la question quand un article est mystérieux.',
+          en: 'So you know who to ask when an item is a mystery.',
         },
       },
       {
         label: { fr: 'Synonymes de recherche', en: 'Search synonyms' },
         detail: {
-          fr: 'Modifie un article pour lui ajouter des synonymes (ex. œuf, œufs, egg) : les rabais se trouvent mieux. Ils survivent à un re-ajout.',
-          en: 'Edit an item to add synonyms (e.g. egg, eggs, œuf): deals match better. They survive a re-add.',
+          fr: 'Modifie un article pour lui ajouter des synonymes (ex. œuf, œufs, egg). Ils survivent à un re-ajout.',
+          en: 'Edit an item to add synonyms (e.g. egg, eggs, œuf). They survive a re-add.',
+        },
+        why: {
+          fr: 'Les rabais se trouvent mieux quand le nom de l’article colle à celui de la circulaire.',
+          en: 'Deals match better when the item’s name lines up with the flyer’s wording.',
         },
       },
       {
@@ -312,12 +509,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Un bouton [[icon:sparkle-bold]] trouve le meilleur rabais (au prix unitaire) pour chaque article non coché et t’amène au mode caissier.',
           en: 'A [[icon:sparkle-bold]] button finds the best deal (by unit price) for every unchecked item and takes you to cashier mode.',
         },
+        why: {
+          fr: 'Pour comparer à ta place — le vrai meilleur prix par unité, pas juste le plus gros chiffre barré.',
+          en: 'To compare for you — the true best price per unit, not just the biggest crossed-out number.',
+        },
       },
       {
         label: { fr: 'Filet de sécurité (annuler)', en: 'Safety net (undo)' },
         detail: {
-          fr: '« Vider les cochés » attend ~5 s derrière un bandeau « Annuler » — un faux pas ne coûte rien.',
-          en: '“Clear checked” waits ~5 s behind an “Undo” toast — a mis-tap costs nothing.',
+          fr: '« Vider les cochés » attend ~5 s derrière un bandeau « Annuler ».',
+          en: '“Clear checked” waits ~5 s behind an “Undo” toast.',
+        },
+        why: {
+          fr: 'Un faux pas ne coûte rien.',
+          en: 'A mis-tap costs nothing.',
         },
       },
     ],
@@ -335,8 +540,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Maisonnée', en: 'Household' },
         detail: {
-          fr: 'Ajoute les membres de la famille, leur couleur et leur photo. C’est ce qui peuple les visages et les agendas.',
-          en: 'Add the family members, their colour and photo. This is what populates the faces and agendas.',
+          fr: 'Ajoute les membres de la famille, leur couleur et leur photo.',
+          en: 'Add the family members, their colour and photo.',
+        },
+        why: {
+          fr: 'C’est ce qui peuple les visages et les agendas partout dans l’app.',
+          en: 'It’s what populates the faces and agendas everywhere in the app.',
         },
       },
       {
@@ -356,8 +565,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Réservé au parent', en: 'Parent-only' },
         detail: {
-          fr: 'Une tablette ou la vue enfant ne peuvent pas ouvrir Réglages — c’est volontaire.',
-          en: 'A tablet or the kid view can’t open Settings — that’s on purpose.',
+          fr: 'Une tablette ou la vue enfant ne peuvent pas ouvrir Réglages — exprès.',
+          en: 'A tablet or the kid view can’t open Settings — on purpose.',
+        },
+        why: {
+          fr: 'Pour qu’un appareil partagé ou un tout-petit ne touche pas aux membres, au jumelage ou au compte.',
+          en: 'So a shared device or a toddler can’t touch members, pairing or the account.',
         },
       },
     ],
@@ -380,6 +593,10 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Le bouton ＋ s’adapte à la section où tu es (une recette dans la cuisine, un article sur la liste).',
           en: 'The ＋ button adapts to the section you’re in (a recipe in the kitchen, an item on the list).',
         },
+        why: {
+          fr: 'Un seul geste à retenir, jamais à chercher où ajouter quelque chose.',
+          en: 'One gesture to remember, never hunting for where to add something.',
+        },
       },
       {
         label: { fr: 'Parler plutôt qu’écrire', en: 'Speak instead of type' },
@@ -387,12 +604,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'La reconnaissance vocale se fait sur l’appareil. « souper spaghetti jeudi » devient un repas, le bon jour.',
           en: 'Voice recognition runs on the device. “spaghetti supper Thursday” becomes a meal, on the right day.',
         },
+        why: {
+          fr: 'Plus rapide que taper, les mains occupées, et rien n’est envoyé ailleurs.',
+          en: 'Faster than typing, hands full, and nothing is sent away.',
+        },
       },
       {
         label: { fr: 'Si l’IA est hors ligne', en: 'If AI is offline' },
         detail: {
-          fr: 'Tu choisis toi-même le type dans une petite liste. Rien n’est perdu.',
-          en: 'You pick the type yourself from a small list. Nothing is lost.',
+          fr: 'Tu choisis toi-même le type dans une petite liste.',
+          en: 'You pick the type yourself from a small list.',
+        },
+        why: {
+          fr: 'Rien n’est perdu — la capture fonctionne même quand l’IA est absente.',
+          en: 'Nothing is lost — capture works even when AI is down.',
         },
       },
     ],
@@ -410,15 +635,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Choisi à l’installation', en: 'Chosen at setup' },
         detail: {
-          fr: 'On le demande une fois. La tablette montre le grand babillard; le téléphone, une barre d’onglets sous le pouce.',
-          en: 'Asked once. The tablet shows the big board; the phone, a thumb-reach tab bar.',
+          fr: 'On le demande une fois : la tablette montre le grand babillard à lire de loin; le téléphone, une barre d’onglets sous le pouce.',
+          en: 'Asked once: the tablet shows the big board to read from afar; the phone, a thumb-reach tab bar.',
+        },
+        why: {
+          fr: 'Pour que chaque appareil montre la disposition qui convient à son rôle.',
+          en: 'So each device shows the layout that fits its role.',
         },
       },
       {
         label: { fr: 'Ce n’est pas une sécurité', en: 'Not a permission' },
         detail: {
-          fr: 'C’est juste de la présentation. Ce qui protège vraiment l’écriture, c’est la connexion et le jumelage.',
-          en: 'It’s only presentation. What actually protects writing is the login and the pairing.',
+          fr: 'C’est juste de la présentation.',
+          en: 'It’s only presentation.',
+        },
+        why: {
+          fr: 'Ce qui protège vraiment l’écriture, c’est la connexion et le jumelage.',
+          en: 'What actually protects writing is the login and the pairing.',
         },
       },
     ],
@@ -439,19 +672,31 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Touche [[icon:baby-bold]] dans la barre, ou démarre la tablette « verrouillée enfant » pour qu’elle reste sur cette vue.',
           en: 'Tap [[icon:baby-bold]] in the bar, or boot the tablet “kid-locked” so it stays on that view.',
         },
+        why: {
+          fr: 'Pour tendre l’appareil à un tout-petit sans qu’il tombe sur du texte ou des réglages.',
+          en: 'So you can hand the device to a toddler without them landing on text or settings.',
+        },
       },
       {
         label: { fr: 'Une porte à sens unique', en: 'A one-way door' },
         detail: {
-          fr: 'En vue enfant, il n’y a aucun bouton pour revenir — exprès, pour qu’un tout-petit ne se promène pas dans les réglages.',
-          en: 'In kid view there’s no button back — on purpose, so a toddler can’t wander into settings.',
+          fr: 'En vue enfant, il n’y a aucun bouton pour revenir — exprès.',
+          en: 'In kid view there’s no button back — on purpose.',
+        },
+        why: {
+          fr: 'Pour qu’un tout-petit ne se promène pas dans les réglages.',
+          en: 'So a toddler can’t wander into settings.',
         },
       },
       {
         label: { fr: 'Comment ressortir', en: 'How to get out' },
         detail: {
-          fr: 'Garde le doigt appuyé ~3 s dans le coin haut-gauche, puis réponds à la petite addition. Pensé pour un adulte, pas pour l’enfant.',
-          en: 'Press and hold ~3 s in the top-left corner, then answer the little sum. Made for an adult, not the child.',
+          fr: 'Garde le doigt appuyé ~3 s dans le coin haut-gauche, puis réponds à la petite addition.',
+          en: 'Press and hold ~3 s in the top-left corner, then answer the little sum.',
+        },
+        why: {
+          fr: 'Pensé pour un adulte, pas pour l’enfant.',
+          en: 'Made for an adult, not the child.',
         },
       },
       {
@@ -459,6 +704,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Depuis un navigateur (pas l’app installée), ajoute « ?kid=1 » à l’adresse pour démarrer verrouillé enfant, et « ?kid=0 » pour ressortir.',
           en: 'From a browser (not the installed app), add “?kid=1” to the address to boot kid-locked, and “?kid=0” to get back out.',
+        },
+        why: {
+          fr: 'Un raccourci pratique pour verrouiller ou déverrouiller sans passer par les boutons.',
+          en: 'A handy shortcut to lock or unlock without going through the buttons.',
         },
       },
     ],
@@ -476,8 +725,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Les listes se vident', en: 'Lists empty out' },
         detail: {
-          fr: 'La liste du jour se termine et reste vide. Rien à entretenir pour le plaisir d’entretenir.',
-          en: 'The day’s list finishes and stays empty. Nothing to maintain for the sake of maintaining.',
+          fr: 'La liste du jour se termine et reste vide.',
+          en: 'The day’s list finishes and stays empty.',
+        },
+        why: {
+          fr: 'Rien à entretenir pour le plaisir d’entretenir.',
+          en: 'Nothing to maintain for the sake of maintaining.',
         },
       },
       {
@@ -490,8 +743,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Garanti, pas négociable', en: 'Guaranteed, not negotiable' },
         detail: {
-          fr: 'L’absence de points / notifications / inventaire est verrouillée dans le code — impossible de la réactiver par accident.',
-          en: 'The absence of points / notifications / inventory is locked in code — it can’t be switched back on by accident.',
+          fr: 'L’absence de points / notifications / inventaire est verrouillée dans le code.',
+          en: 'The absence of points / notifications / inventory is locked in code.',
+        },
+        why: {
+          fr: 'Impossible de la réactiver par accident — le calme ne peut pas dériver.',
+          en: 'It can’t be switched back on by accident — the calm can’t drift.',
         },
       },
     ],
@@ -509,22 +766,34 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Un code à 6 chiffres', en: 'A 6-digit code' },
         detail: {
-          fr: 'La tablette affiche un code. Tu l’approuves depuis ton téléphone dans Réglages ▸ Appareils.',
-          en: 'The tablet shows a code. You approve it from your phone in Settings ▸ Devices.',
+          fr: 'La tablette affiche un code que tu approuves depuis ton téléphone dans Réglages ▸ Appareils.',
+          en: 'The tablet shows a code you approve from your phone in Settings ▸ Devices.',
+        },
+        why: {
+          fr: 'La preuve que c’est bien toi, et bien cette tablette-là, qui obtient l’accès.',
+          en: 'Proof that it’s really you, and really that tablet, getting access.',
         },
       },
       {
         label: { fr: 'Un jeton révocable', en: 'A revocable token' },
         detail: {
-          fr: 'Une fois approuvée, la tablette garde un jeton — pas ton mot de passe. Tu peux le retirer à tout moment.',
-          en: 'Once approved, the tablet keeps a token — not your password. You can revoke it anytime.',
+          fr: 'Une fois approuvée, la tablette garde un jeton — pas ton mot de passe.',
+          en: 'Once approved, the tablet keeps a token — not your password.',
+        },
+        why: {
+          fr: 'Tu peux le retirer à tout moment, sans avoir à changer ton mot de passe.',
+          en: 'You can revoke it anytime, without having to change your password.',
         },
       },
       {
         label: { fr: 'Si elle perd l’accès', en: 'If it loses access' },
         detail: {
-          fr: 'Si tu retires l’appareil, la tablette montre un écran plein « accès perdu » avec « Re-jumeler » et « Réessayer » (au cas où c’est juste une panne passagère) — toujours avec ton approbation.',
-          en: 'If you remove the device, the tablet shows a full “access lost” screen with “Re-pair” and “Retry” (in case it’s just a passing blip) — always with your approval.',
+          fr: 'Si tu retires l’appareil, la tablette montre un écran plein « accès perdu » avec « Re-jumeler » et « Réessayer ».',
+          en: 'If you remove the device, the tablet shows a full “access lost” screen with “Re-pair” and “Retry”.',
+        },
+        why: {
+          fr: '« Réessayer » couvre une simple panne passagère, et re-jumeler exige toujours ton approbation.',
+          en: '“Retry” covers a passing blip, and re-pairing always needs your approval.',
         },
       },
     ],
@@ -542,15 +811,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Attaché à un article', en: 'Attached to an item' },
         detail: {
-          fr: 'Le rabais voyage avec l’article de liste; il s’affiche sur toutes tes appareils. Il reste générique (pas renommé).',
-          en: 'The deal rides on the list item; it shows on all your devices. It stays generic (not renamed).',
+          fr: 'Le rabais voyage avec l’article de liste et s’affiche sur tous tes appareils. Il reste générique (jamais renommé).',
+          en: 'The deal rides on the list item and shows on all your devices. It stays generic (never renamed).',
+        },
+        why: {
+          fr: 'Pour qu’un même article (« fromage ») puisse porter un rabais différent d’une semaine à l’autre, sans se dédoubler.',
+          en: 'So one item (“cheese”) can carry a different deal week to week, without splitting into duplicates.',
         },
       },
       {
         label: { fr: 'Code postal', en: 'Postal code' },
         detail: {
-          fr: 'Mets ton code postal dans Réglages ▸ Magasinage pour voir les rabais des magasins proches.',
-          en: 'Set your postal code in Settings ▸ Shopping to see deals from nearby stores.',
+          fr: 'Mets ton code postal dans Réglages ▸ Magasinage.',
+          en: 'Set your postal code in Settings ▸ Shopping.',
+        },
+        why: {
+          fr: 'Pour voir les rabais des magasins proches de chez toi.',
+          en: 'So you see deals from the stores near you.',
         },
       },
       {
@@ -558,6 +835,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'L’app reconstruit les rabais; pour la circulaire complète, elle te renvoie vers le site du marchand.',
           en: 'The app reconstructs the deals; for the full flyer it links you out to the merchant’s site.',
+        },
+        why: {
+          fr: 'Pour chercher vite dans l’app, tout en gardant accès à la page officielle complète quand tu la veux.',
+          en: 'So you can search fast in-app, while still reaching the full official page when you want it.',
         },
       },
     ],
@@ -575,15 +856,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Étape par étape', en: 'Step by step' },
         detail: {
-          fr: 'Un gros article à la fois, facile à suivre pendant que ça défile sur le tapis.',
-          en: 'One big item at a time, easy to follow as things move down the belt.',
+          fr: 'Un gros article à la fois.',
+          en: 'One big item at a time.',
+        },
+        why: {
+          fr: 'Facile à suivre pendant que ça défile sur le tapis.',
+          en: 'Easy to follow as things move down the belt.',
         },
       },
       {
         label: { fr: 'Preuve de prix', en: 'Price proof' },
         detail: {
-          fr: 'Montre le rabais accroché à l’article (image de circulaire, magasin, prix, dates de validité) pour l’ajustement « Imbattable ».',
-          en: 'Show the deal attached to the item (flyer image, store, price, valid dates) for a price-match.',
+          fr: 'Montre le rabais accroché à l’article : image de circulaire, magasin, prix, dates de validité.',
+          en: 'Shows the deal attached to the item: flyer image, store, price, valid dates.',
+        },
+        why: {
+          fr: 'De quoi réclamer l’ajustement « Imbattable » à la caisse, preuve à l’appui.',
+          en: 'Enough to claim the price-match at the till, with the proof in hand.',
         },
       },
       {
@@ -592,12 +881,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Réviser la liste → présenter une carte à la fois ([[icon:caret-left-bold]] Précédent / Suivant [[icon:caret-right-bold]], avec « 3/5 ») → un petit écran de remerciement.',
           en: 'Review the list → present one card at a time ([[icon:caret-left-bold]] Back / Next [[icon:caret-right-bold]], with “3/5”) → a small thank-you screen.',
         },
+        why: {
+          fr: 'Une cadence claire pour ne pas fouiller dans l’app devant la caissière.',
+          en: 'A clear rhythm so you’re not fumbling in the app in front of the cashier.',
+        },
       },
       {
         label: { fr: 'Rendre l’appareil calmement', en: 'Hand the device back calmly' },
         detail: {
-          fr: 'À la fin, le bouton « Continuer » n’apparaît qu’après une courte pause — pas de sortie accidentelle en pleine transaction.',
-          en: 'At the end, the “Continue” button only appears after a short pause — no accidental exit mid-transaction.',
+          fr: 'À la fin, le bouton « Continuer » n’apparaît qu’après une courte pause.',
+          en: 'At the end, the “Continue” button only appears after a short pause.',
+        },
+        why: {
+          fr: 'Pas de sortie accidentelle en pleine transaction.',
+          en: 'No accidental exit mid-transaction.',
         },
       },
     ],
@@ -618,12 +915,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'D’une photo, d’un collé-copié de page web, ou à la main. L’IA met les étapes au propre quand elle est là.',
           en: 'From a photo, a pasted web page, or by hand. AI tidies the steps when available.',
         },
+        why: {
+          fr: 'Pour faire entrer une recette sans tout retaper.',
+          en: 'So you can get a recipe in without retyping it all.',
+        },
       },
       {
         label: { fr: 'Mode cuisson', en: 'Cook mode' },
         detail: {
           fr: 'Plein écran, gros texte, une étape à la fois. Il suit la vue (parent/enfant) et se ferme par un petit [[icon:x-bold]].',
           en: 'Full screen, big text, one step at a time. Follows the view (parent/kid) and closes with a small [[icon:x-bold]].',
+        },
+        why: {
+          fr: 'Pour suivre la recette les mains à la pâte, sans rien toucher de fin.',
+          en: 'To follow the recipe hands-in-the-dough, with nothing fiddly to tap.',
         },
       },
       {
@@ -632,12 +937,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Les quantités (c. à thé, tasse…) sont des pastilles colorées; touche-les pour les entendre.',
           en: 'Amounts (tsp, cup…) are colour-coded pills; tap one to hear it.',
         },
+        why: {
+          fr: 'Pour confirmer une mesure sans t’arrêter de lire, les mains pleines, ou pour un enfant qui aide.',
+          en: 'To confirm a measure without stopping to read, hands full, or for a child helping out.',
+        },
       },
       {
         label: { fr: 'Sections de recette', en: 'Recipe sections' },
         detail: {
-          fr: 'Tu peux titrer des groupes (« ## Sauce ») dans les ingrédients et les étapes pour t’y retrouver.',
-          en: 'You can title groups (“## Sauce”) inside ingredients and steps to stay organized.',
+          fr: 'Tu peux titrer des groupes (« ## Sauce ») dans les ingrédients et les étapes.',
+          en: 'You can title groups (“## Sauce”) inside ingredients and steps.',
+        },
+        why: {
+          fr: 'Pour t’y retrouver dans une longue recette à plusieurs préparations.',
+          en: 'To find your way in a long recipe with several preparations.',
         },
       },
       {
@@ -645,6 +958,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Des boutons ×½ / ×1 / ×2 / ×3 (ou ± sur les portions) ajustent les quantités; le mode cuisson suit.',
           en: 'Buttons ×½ / ×1 / ×2 / ×3 (or ± on servings) adjust the amounts; cook mode follows.',
+        },
+        why: {
+          fr: 'Pour cuisiner pour 2 ou pour 12 sans calcul mental.',
+          en: 'To cook for 2 or for 12 without mental math.',
         },
       },
       {
@@ -660,12 +977,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Un bouton montre la recette telle qu’importée, avant tes retouches, avec la date d’import.',
           en: 'A button shows the recipe exactly as imported, before your edits, with the import date.',
         },
+        why: {
+          fr: 'Pour revenir à la version d’origine si une retouche a mal tourné.',
+          en: 'To fall back to the original if an edit went wrong.',
+        },
       },
       {
         label: { fr: 'Réordonner les rangées', en: 'Reorder rows' },
         detail: {
-          fr: 'Des flèches [[icon:caret-up-bold]]/[[icon:caret-down-bold]] montent ou descendent un ingrédient ou une étape, sans glisser-déposer.',
-          en: 'Arrows [[icon:caret-up-bold]]/[[icon:caret-down-bold]] move an ingredient or step up or down, no drag-and-drop.',
+          fr: 'Des flèches [[icon:caret-up-bold]]/[[icon:caret-down-bold]] montent ou descendent un ingrédient ou une étape.',
+          en: 'Arrows [[icon:caret-up-bold]]/[[icon:caret-down-bold]] move an ingredient or step up or down.',
+        },
+        why: {
+          fr: 'Sans glisser-déposer — plus sûr au doigt sur une tablette.',
+          en: 'No drag-and-drop — surer with a finger on a tablet.',
         },
       },
     ],
@@ -683,15 +1008,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Tu choisis', en: 'You choose' },
         detail: {
-          fr: 'Acheter n’inscrit jamais un article tout seul. Rien ne s’active sans que tu le demandes.',
-          en: 'Buying never enrolls an item by itself. Nothing turns on unless you ask.',
+          fr: 'Acheter n’inscrit jamais un article tout seul.',
+          en: 'Buying never enrolls an item by itself.',
+        },
+        why: {
+          fr: 'Rien ne s’active sans que tu le demandes — le suivi reste ton choix.',
+          en: 'Nothing turns on unless you ask — tracking stays your choice.',
         },
       },
       {
         label: { fr: 'À quoi ça sert', en: 'What it’s for' },
         detail: {
-          fr: 'À te resuggérer ce que tu reprends souvent, pour remplir une liste plus vite. C’est tout.',
-          en: 'To re-suggest what you restock often, so a list fills faster. That’s all.',
+          fr: 'À te resuggérer ce que tu reprends souvent.',
+          en: 'To re-suggest what you restock often.',
+        },
+        why: {
+          fr: 'Pour remplir une liste plus vite. C’est tout.',
+          en: 'So a list fills faster. That’s all.',
         },
       },
     ],
@@ -709,8 +1042,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Garde le dernier bon affichage', en: 'Keeps the last good frame' },
         detail: {
-          fr: 'Si la connexion saute, le babillard garde ce qu’il montrait au lieu de devenir blanc.',
-          en: 'If the connection drops, the board keeps what it was showing instead of going blank.',
+          fr: 'Si la connexion saute, le babillard garde ce qu’il montrait.',
+          en: 'If the connection drops, the board keeps what it was showing.',
+        },
+        why: {
+          fr: 'Au lieu de devenir blanc — le mur reste utile même quand le wifi flanche.',
+          en: 'Instead of going blank — the wall stays useful even when the wifi falters.',
         },
       },
       {
@@ -719,12 +1056,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'La tablette peut redémarrer sans wifi et afficher quand même l’app.',
           en: 'The tablet can reboot with no wifi and still show the app.',
         },
+        why: {
+          fr: 'Pour qu’une panne de courant ou une coupure d’internet ne laisse pas le mur blanc.',
+          en: 'So a power blip or an internet outage never leaves the wall blank.',
+        },
       },
       {
         label: { fr: 'Le micro, autorisé une fois', en: 'The mic, allowed once' },
         detail: {
-          fr: 'Pour parler tes articles, le navigateur demande le micro la première fois — accepte une fois et c’est retenu. Astuce : installe l’app sur l’écran d’accueil et garde-la utilisée; l’autorisation tient bien mieux que dans un simple onglet. Sur iPhone/iPad, si tu refuses, on ne peut plus redemander depuis la page : va dans Réglages → Safari → Microphone pour réautoriser.',
-          en: 'To speak your items, the browser asks for the mic the first time — allow it once and it’s remembered. Tip: install the app to the home screen and keep it in use; the grant holds far better than in a plain tab. On iPhone/iPad, if you decline, the page can’t ask again — go to Settings → Safari → Microphone to allow it.',
+          fr: 'Le navigateur demande le micro la première fois — accepte une fois et c’est retenu. Astuce : installe l’app sur l’écran d’accueil et garde-la utilisée; l’autorisation tient bien mieux que dans un simple onglet. Sur iPhone/iPad, si tu refuses, on ne peut plus redemander depuis la page : va dans Réglages → Safari → Microphone pour réautoriser.',
+          en: 'The browser asks for the mic the first time — allow it once and it’s remembered. Tip: install the app to the home screen and keep it in use; the grant holds far better than in a plain tab. On iPhone/iPad, if you decline, the page can’t ask again — go to Settings → Safari → Microphone to allow it.',
+        },
+        why: {
+          fr: 'Pour dicter tes articles à la voix plutôt que de les taper un à un.',
+          en: 'So you can dictate items by voice instead of typing them one by one.',
         },
       },
     ],
@@ -746,12 +1091,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Une étape à la fois; glisse à gauche/droite (ou les flèches du clavier) pour avancer. Le titre de section s’affiche au-dessus.',
           en: 'One step at a time; swipe left/right (or arrow keys) to move. The section title shows above.',
         },
+        why: {
+          fr: 'Pour ne jamais perdre ta place dans la recette, même les mains pleines de pâte.',
+          en: 'So you never lose your place in the recipe, even with hands full of dough.',
+        },
       },
       {
         label: { fr: 'Minuteries automatiques', en: 'Automatic timers' },
         detail: {
           fr: 'Si une étape dit « cuire 25 min », un bouton de minuterie apparaît : un toucher la lance (pause/reprise), et l’appareil vibre à la fin.',
           en: 'If a step says “bake 25 min”, a timer button appears: one tap starts it (pause/resume), and the device buzzes when it’s done.',
+        },
+        why: {
+          fr: 'Pour ne pas jongler avec une minuterie à part — ni rien faire brûler.',
+          en: 'So you don’t juggle a separate timer — or burn anything.',
         },
       },
       {
@@ -763,12 +1116,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Chaque étape se lit toute seule en arrivant; coupe-la d’un toucher si tu préfères le silence (retenu par appareil).',
           en: 'Each step reads itself on arrival; mute it with a tap if you prefer quiet (remembered per device).',
         },
+        why: {
+          fr: 'Pour suivre la recette sans lire ni toucher l’écran, les mains occupées.',
+          en: 'To follow the recipe without reading or touching the screen, hands busy.',
+        },
       },
       {
         label: { fr: 'Les bons ingrédients', en: 'The right ingredients' },
         detail: {
-          fr: 'Chaque étape montre les ingrédients qu’elle utilise — pas besoin de remonter chercher.',
-          en: 'Each step shows the ingredients it uses — no scrolling back to find them.',
+          fr: 'Chaque étape montre les ingrédients qu’elle utilise.',
+          en: 'Each step shows the ingredients it uses.',
+        },
+        why: {
+          fr: 'Pas besoin de remonter chercher dans la liste.',
+          en: 'No scrolling back to the list to find them.',
         },
       },
     ],
@@ -786,22 +1147,34 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Par article ou par magasin', en: 'By item or by store' },
         detail: {
-          fr: 'Cherche un aliment, ou parcours les magasins. Des suggestions (lait, pain, œufs) évitent de taper.',
-          en: 'Search a food, or browse the stores. Suggestions (milk, bread, eggs) save typing.',
+          fr: 'Cherche un aliment, ou parcours les magasins.',
+          en: 'Search a food, or browse the stores.',
+        },
+        why: {
+          fr: 'Des suggestions (lait, pain, œufs) évitent de taper.',
+          en: 'Suggestions (milk, bread, eggs) save typing.',
         },
       },
       {
         label: { fr: 'Cette semaine vs à venir', en: 'This week vs upcoming' },
         detail: {
-          fr: 'Les circulaires courantes et celles de la semaine prochaine (publiées d’avance) sont séparées, pour préparer ta liste à l’avance.',
-          en: 'Current flyers and next week’s (published early) are split, so you can prep your list ahead.',
+          fr: 'Les circulaires courantes et celles de la semaine prochaine (publiées d’avance) sont séparées.',
+          en: 'Current flyers and next week’s (published early) are split.',
+        },
+        why: {
+          fr: 'Pour préparer ta liste à l’avance, dès que les rabais de la semaine prochaine sortent.',
+          en: 'So you can prep your list ahead, as soon as next week’s deals come out.',
         },
       },
       {
         label: { fr: 'Officielle ou reconstruite', en: 'Official or reconstructed' },
         detail: {
-          fr: 'Un ✓ marque une vraie image de circulaire; un ≈ marque une reconstruction. Pour la vraie page complète, le lien Flipp s’ouvre à part.',
-          en: 'A ✓ marks a real flyer image; a ≈ marks a reconstruction. For the full real page, the Flipp link opens separately.',
+          fr: 'Un ✓ marque une vraie image de circulaire; un ≈ marque une reconstruction; le lien Flipp ouvre la vraie page complète à part.',
+          en: 'A ✓ marks a real flyer image; a ≈ marks a reconstruction; the Flipp link opens the full real page separately.',
+        },
+        why: {
+          fr: 'Pour savoir à quel point te fier à chaque rabais avant de te déplacer.',
+          en: 'So you know how much to trust each deal before making the trip.',
         },
       },
       {
@@ -809,6 +1182,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Le rabais indique sa page et sa position (haut/milieu/bas, gauche/centre/droite); feuillette les articles avec [[icon:caret-left-bold]] [[icon:caret-right-bold]], et touche une image pour l’agrandir.',
           en: 'A deal shows its page and position (top/middle/bottom, left/centre/right); step through items with [[icon:caret-left-bold]] [[icon:caret-right-bold]], and tap an image to zoom.',
+        },
+        why: {
+          fr: 'Pour retrouver vite l’article dans une grosse circulaire papier.',
+          en: 'So you can quickly find the item in a big paper flyer.',
         },
       },
     ],
@@ -829,12 +1206,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Supprimer un membre, une corvée, vider les cochés… l’élément disparaît tout de suite, mais la vraie suppression attend ~5 s. Touche « Annuler » et c’est revenu.',
           en: 'Delete a member, a chore, clear checked… the item vanishes at once, but the real delete waits ~5 s. Tap “Undo” and it’s back.',
         },
+        why: {
+          fr: 'Pour qu’une erreur se rattrape toujours, sans confirmation anxiogène à chaque geste.',
+          en: 'So a mistake is always recoverable, without an anxious confirm on every action.',
+        },
       },
       {
         label: { fr: 'Un à la fois', en: 'One at a time' },
         detail: {
-          fr: 'Lancer une nouvelle annulation valide la précédente — pas de pile d’annulations à gérer.',
-          en: 'Starting a new undo commits the previous one — no stack of undos to manage.',
+          fr: 'Lancer une nouvelle annulation valide la précédente.',
+          en: 'Starting a new undo commits the previous one.',
+        },
+        why: {
+          fr: 'Pas de pile d’annulations à gérer — tu sais toujours ce que « Annuler » va défaire.',
+          en: 'No stack of undos to manage — you always know what “Undo” will reverse.',
         },
       },
     ],
@@ -866,8 +1251,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Code d’invitation', en: 'Invite code' },
         detail: {
-          fr: 'Si le déploiement est protégé, l’inscription et la connexion demandent en plus un code partagé — pour garder l’instance privée.',
-          en: 'If the deployment is gated, signup and sign-in also ask for a shared code — to keep the instance private.',
+          fr: 'Si le déploiement est protégé, l’inscription et la connexion demandent en plus un code partagé.',
+          en: 'If the deployment is gated, signup and sign-in also ask for a shared code.',
+        },
+        why: {
+          fr: 'Pour garder l’instance privée, réservée aux gens à qui tu donnes le code.',
+          en: 'To keep the instance private, limited to the people you give the code.',
         },
       },
     ],
@@ -891,26 +1280,42 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Tape un nom et touche Ajouter. Chacun reçoit une couleur distincte automatiquement.',
           en: 'Type a name and tap Add. Each person gets a distinct colour automatically.',
         },
+        why: {
+          fr: 'Pour distinguer chaque personne d’un coup d’œil partout dans l’app.',
+          en: 'So you can tell each person apart at a glance everywhere in the app.',
+        },
       },
       {
         label: { fr: 'Marquer « enfant »', en: 'Mark as “child”' },
         detail: {
-          fr: 'Coche la case enfant : la personne peut alors avoir des routines en images.',
-          en: 'Tick the child box: that person can then have picture routines.',
+          fr: 'Coche la case enfant.',
+          en: 'Tick the child box.',
+        },
+        why: {
+          fr: 'La personne peut alors avoir des routines en images, faites pour un pré-lecteur.',
+          en: 'That person can then have picture routines, built for a pre-reader.',
         },
       },
       {
         label: { fr: 'Photo de visage', en: 'Face photo' },
         detail: {
-          fr: 'Touche [[icon:camera-bold]] pour prendre/choisir une photo (redimensionnée petite). Le [[icon:x-bold]] la retire.',
-          en: 'Tap [[icon:camera-bold]] to take/pick a photo (resized small). The [[icon:x-bold]] removes it.',
+          fr: 'Touche [[icon:camera-bold]] pour prendre/choisir une photo (redimensionnée petite); le [[icon:x-bold]] la retire.',
+          en: 'Tap [[icon:camera-bold]] to take/pick a photo (resized small); the [[icon:x-bold]] removes it.',
+        },
+        why: {
+          fr: 'C’est ce visage qu’on reconnaît et qu’on touche sur le babillard — une photo rend la personne repérable sans lire.',
+          en: 'This is the face people recognize and tap on the board — a photo makes the person spottable without reading.',
         },
       },
       {
         label: { fr: 'Couleur', en: 'Colour' },
         detail: {
-          fr: 'La couleur sert de code partout : événements, corvées, pastille de visage.',
-          en: 'The colour is a code everywhere: events, chores, face dot.',
+          fr: 'La couleur de la personne apparaît partout : événements, corvées, pastille de visage.',
+          en: 'The person’s colour appears everywhere: events, chores, face dot.',
+        },
+        why: {
+          fr: 'Un même repère visuel pour savoir à qui appartient quoi, sans lire.',
+          en: 'One consistent visual cue for who owns what, without reading.',
         },
       },
     ],
@@ -939,12 +1344,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Relie l’événement à un membre; sa couleur apparaît à côté sur le babillard.',
           en: 'Link the event to a member; their colour shows beside it on the board.',
         },
+        why: {
+          fr: 'Pour voir d’un coup à qui appartient chaque rendez-vous, sans lire les noms.',
+          en: 'So you can see at a glance whose appointment each one is, without reading names.',
+        },
       },
       {
         label: { fr: 'Récurrent ([[icon:repeat-bold]])', en: 'Recurring ([[icon:repeat-bold]])' },
         detail: {
           fr: 'Un événement qui revient (chaque jour/semaine/mois) porte le [[icon:repeat-bold]] dans la liste.',
           en: 'An event that repeats (daily/weekly/monthly) carries the [[icon:repeat-bold]] in the list.',
+        },
+        why: {
+          fr: 'Pour entrer une seule fois ce qui se répète (le cours de natation du mardi) au lieu de le retaper chaque semaine.',
+          en: 'So you enter a repeating thing once (Tuesday swim class) instead of retyping it every week.',
         },
       },
     ],
@@ -970,8 +1383,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Donner un horaire', en: 'Give it a schedule' },
         detail: {
-          fr: 'Le bouton « Céduler » ouvre la récurrence — tous les N jours/semaines/mois, et pour « semaine » le choix des jours (D L M M J V S) — plus une date de départ, sans recréer la corvée.',
-          en: 'The “Schedule” button opens the recurrence — every N days/weeks/months, and for “weekly” a choice of days (S M T W T F S) — plus a start date, without recreating the chore.',
+          fr: 'Le bouton « Céduler » ouvre la récurrence — tous les N jours/semaines/mois, et pour « semaine » le choix des jours (D L M M J V S) — plus une date de départ.',
+          en: 'The “Schedule” button opens the recurrence — every N days/weeks/months, and for “weekly” a choice of days (S M T W T F S) — plus a start date.',
+        },
+        why: {
+          fr: 'Pour que la corvée revienne et tourne toute seule, sans la recréer chaque fois.',
+          en: 'So the chore comes back and rotates on its own, without recreating it each time.',
         },
       },
       {
@@ -1004,8 +1421,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Moment de la journée', en: 'Time of day' },
         detail: {
-          fr: 'La pastille fait défiler : n’importe quand → [[icon:sun-horizon-bold]] matin → [[icon:sun-bold]] après-midi → [[icon:moon-stars-bold]] soir. Ça ordonne les routines pour l’enfant.',
-          en: 'The chip cycles: anytime → [[icon:sun-horizon-bold]] morning → [[icon:sun-bold]] afternoon → [[icon:moon-stars-bold]] evening. It orders the routines for the child.',
+          fr: 'La pastille fait défiler : n’importe quand → [[icon:sun-horizon-bold]] matin → [[icon:sun-bold]] après-midi → [[icon:moon-stars-bold]] soir.',
+          en: 'The chip cycles: anytime → [[icon:sun-horizon-bold]] morning → [[icon:sun-bold]] afternoon → [[icon:moon-stars-bold]] evening.',
+        },
+        why: {
+          fr: 'Ça ordonne les routines pour l’enfant — la bonne au bon moment de la journée.',
+          en: 'It orders the routines for the child — the right one at the right time of day.',
         },
       },
       {
@@ -1031,22 +1452,34 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Code postal', en: 'Postal code' },
         detail: {
-          fr: 'Mets-le une fois : il dit aux circulaires où chercher les rabais près de chez toi.',
-          en: 'Set it once: it tells the flyers where to look for deals near you.',
+          fr: 'Mets-le une fois.',
+          en: 'Set it once.',
+        },
+        why: {
+          fr: 'Il dit aux circulaires où chercher les rabais près de chez toi.',
+          en: 'It tells the flyers where to look for deals near you.',
         },
       },
       {
         label: { fr: 'Filtre de magasins', en: 'Store filter' },
         detail: {
-          fr: 'Garde seulement les magasins où tu vas. Ceux que tu retires ne reviennent plus dans les rabais. Rien de coché = tous gardés.',
-          en: 'Keep only the stores you shop. Ones you drop never come back in deals. Nothing ticked = all kept.',
+          fr: 'Garde seulement les magasins où tu vas; ceux que tu retires ne reviennent plus dans les rabais. Rien de coché = tous gardés.',
+          en: 'Keep only the stores you shop; ones you drop never come back in deals. Nothing ticked = all kept.',
+        },
+        why: {
+          fr: 'Pour ne pas noyer tes rabais sous des magasins où tu ne vas jamais.',
+          en: 'So your deals aren’t drowned out by stores you never set foot in.',
         },
       },
       {
         label: { fr: 'Historique', en: 'History' },
         detail: {
-          fr: 'Ce que l’ajout rapide te propose. Tu peux renommer une entrée vers son nom générique ou la supprimer.',
-          en: 'What quick-add suggests. You can rename an entry to its generic name or remove it.',
+          fr: 'Ce que l’ajout rapide te propose. Renomme une entrée vers son nom générique ou supprime-la.',
+          en: 'What quick-add suggests. Rename an entry to its generic name or remove it.',
+        },
+        why: {
+          fr: 'Pour garder les suggestions propres et utiles plutôt qu’encombrées.',
+          en: 'To keep the suggestions clean and useful rather than cluttered.',
         },
       },
     ],
@@ -1068,12 +1501,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Ajoute ou enlève les étiquettes offertes quand tu crées une recette (ex. Végé, Rapide).',
           en: 'Add or remove the tags offered when you create a recipe (e.g. Veggie, Quick).',
         },
+        why: {
+          fr: 'Pour étiqueter vite, à partir de ton propre vocabulaire, et garder les mêmes mots d’une recette à l’autre.',
+          en: 'To tag fast, from your own vocabulary, and keep the same words across recipes.',
+        },
       },
       {
         label: { fr: 'Renommer partout', en: 'Rename everywhere' },
         detail: {
-          fr: 'Renomme une étiquette une fois et toutes les recettes qui la portent suivent — fini « Végé / végé / vege ».',
-          en: 'Rename a tag once and every recipe carrying it follows — no more “Veggie / veggie / vege”.',
+          fr: 'Renomme une étiquette une fois et toutes les recettes qui la portent suivent.',
+          en: 'Rename a tag once and every recipe carrying it follows.',
+        },
+        why: {
+          fr: 'Fini « Végé / végé / vege » — une seule façon d’écrire chaque étiquette, donc un filtre fiable.',
+          en: 'No more “Veggie / veggie / vege” — one spelling per tag, so filtering stays reliable.',
         },
       },
       {
@@ -1099,15 +1540,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Suivre un article', en: 'Track an item' },
         detail: {
-          fr: 'Les achats fréquents apparaissent en suggestions ＋ « le suivre ? ». Un tap, jamais automatique.',
-          en: 'Frequent buys show as ＋ “track it?” suggestions. One tap, never automatic.',
+          fr: 'Les achats fréquents apparaissent en suggestions ＋ « le suivre ? ».',
+          en: 'Frequent buys show as ＋ “track it?” suggestions.',
+        },
+        why: {
+          fr: 'Un tap, jamais automatique — le suivi reste ton choix.',
+          en: 'One tap, never automatic — tracking stays your choice.',
         },
       },
       {
         label: { fr: 'Fréquence (jours)', en: 'Cadence (days)' },
         detail: {
-          fr: 'Règle « tous les N jours » pour chaque article — quand le rappeler pour la liste.',
-          en: 'Set “every N days” per item — when to nudge it back onto the list.',
+          fr: 'Règle « tous les N jours » pour chaque article.',
+          en: 'Set “every N days” per item.',
+        },
+        why: {
+          fr: 'Pour qu’il revienne sur la liste juste quand tu en rachètes d’habitude.',
+          en: 'So it returns to the list right around when you’d normally rebuy it.',
         },
       },
       {
@@ -1115,6 +1564,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Mets un article en sourdine sans le supprimer, ou retire ceux que tu as ajoutés à la main.',
           en: 'Mute an item without deleting it, or remove the ones you added by hand.',
+        },
+        why: {
+          fr: 'Pour faire taire une suggestion encombrante sans perdre son historique.',
+          en: 'To silence a noisy suggestion without losing its history.',
         },
       },
     ],
@@ -1140,8 +1593,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Retirer un appareil', en: 'Revoke a device' },
         detail: {
-          fr: 'Un tap retire l’accès (annulable par le bandeau d’annulation). La tablette devra se re-jumeler.',
-          en: 'One tap removes access (undoable via the undo toast). The tablet will have to re-pair.',
+          fr: 'Un tap retire l’accès (annulable par le bandeau d’annulation); la tablette devra se re-jumeler.',
+          en: 'One tap removes access (undoable via the undo toast); the tablet will have to re-pair.',
+        },
+        why: {
+          fr: 'Pour reprendre l’accès d’une tablette perdue, vendue ou donnée, quand tu veux.',
+          en: 'So you can pull access from a lost, sold or handed-on tablet whenever you want.',
         },
       },
     ],
@@ -1160,15 +1617,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Ajouter plusieurs photos', en: 'Add several photos' },
         detail: {
-          fr: 'Choisis-en une ou plusieurs d’un coup; elles sont redimensionnées petites avant l’envoi (un compteur « 2/5 » suit le lot).',
-          en: 'Pick one or many at once; they’re resized small before upload (a “2/5” counter tracks the batch).',
+          fr: 'Choisis-en une ou plusieurs d’un coup (un compteur « 2/5 » suit le lot).',
+          en: 'Pick one or many at once (a “2/5” counter tracks the batch).',
+        },
+        why: {
+          fr: 'Elles sont redimensionnées petites avant l’envoi, pour charger vite et rester gratuites.',
+          en: 'They’re resized small before upload, to load fast and stay free.',
         },
       },
       {
         label: { fr: 'Retirer', en: 'Remove' },
         detail: {
-          fr: 'Le [[icon:x-bold]] sur une vignette l’enlève. Le nombre total est plafonné côté serveur, alors ça reste gratuit.',
-          en: 'The [[icon:x-bold]] on a thumbnail removes it. The total is capped server-side, so it stays free.',
+          fr: 'Le [[icon:x-bold]] sur une vignette l’enlève.',
+          en: 'The [[icon:x-bold]] on a thumbnail removes it.',
+        },
+        why: {
+          fr: 'Le nombre total est plafonné côté serveur, alors ça reste gratuit.',
+          en: 'The total is capped server-side, so it stays free.',
         },
       },
       {
@@ -1176,6 +1641,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Si le stockage photo (R2) n’est pas branché, cet onglet se cache tout seul.',
           en: 'If photo storage (R2) isn’t wired up, this tab hides itself.',
+        },
+        why: {
+          fr: 'Pour ne pas te montrer une fonction qui ne marcherait pas sur ce déploiement.',
+          en: 'So it doesn’t show you a feature that wouldn’t work on this deployment.',
         },
       },
     ],
@@ -1194,15 +1663,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Sur demande', en: 'On demand' },
         detail: {
-          fr: 'Touche le bouton quand ça te tente; rien ne se génère tout seul, rien ne te relance.',
-          en: 'Tap the button when you feel like it; nothing generates on its own, nothing nags you.',
+          fr: 'Touche le bouton quand ça te tente.',
+          en: 'Tap the button when you feel like it.',
+        },
+        why: {
+          fr: 'Rien ne se génère tout seul, rien ne te relance — un bilan, pas un fil sans fin.',
+          en: 'Nothing generates on its own, nothing nags you — a recap, not an endless feed.',
         },
       },
       {
         label: { fr: 'Peut être absent', en: 'May be hidden' },
         detail: {
-          fr: 'Si l’IA est hors ligne, l’onglet disparaît plutôt que d’afficher un bouton mort.',
-          en: 'If AI is offline, the tab disappears rather than show a dead button.',
+          fr: 'Si l’IA est hors ligne, l’onglet disparaît.',
+          en: 'If AI is offline, the tab disappears.',
+        },
+        why: {
+          fr: 'Plutôt que d’afficher un bouton mort qui ne ferait rien.',
+          en: 'Rather than show a dead button that would do nothing.',
         },
       },
     ],
@@ -1221,15 +1698,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Thème jour / nuit', en: 'Day / night theme' },
         detail: {
-          fr: 'Bascule entre [[icon:sun-bold]] jour et [[icon:moon-stars-bold]] nuit pour la lisibilité selon l’heure.',
-          en: 'Toggle between [[icon:sun-bold]] day and [[icon:moon-stars-bold]] night for readability by time of day.',
+          fr: 'Bascule entre [[icon:sun-bold]] jour et [[icon:moon-stars-bold]] nuit.',
+          en: 'Toggle between [[icon:sun-bold]] day and [[icon:moon-stars-bold]] night.',
+        },
+        why: {
+          fr: 'Pour la lisibilité selon l’heure — doux le soir, net en plein jour.',
+          en: 'For readability by time of day — gentle at night, crisp in daylight.',
         },
       },
       {
         label: { fr: 'Langue', en: 'Language' },
         detail: {
-          fr: 'Français ou anglais. Le réglage suit cet appareil.',
-          en: 'French or English. The setting follows this device.',
+          fr: 'Français ou anglais.',
+          en: 'French or English.',
+        },
+        why: {
+          fr: 'Le réglage suit cet appareil — chacun le sien, sans imposer sa langue aux autres.',
+          en: 'The setting follows this device — each its own, without forcing a language on the others.',
         },
       },
       {
@@ -1255,15 +1740,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Ce que ça change', en: 'What it changes' },
         detail: {
-          fr: 'Quand c’est activé, la routine ne pousse pas l’enfant à tout recommencer — elle se termine, calme.',
-          en: 'When on, the routine doesn’t push the child to start over — it just ends, calmly.',
+          fr: 'Quand c’est activé, la routine ne pousse pas l’enfant à tout recommencer; elle se termine.',
+          en: 'When on, the routine doesn’t push the child to start over; it just ends.',
+        },
+        why: {
+          fr: 'Pour finir sur du calme, sans relancer un enfant déjà prêt à passer à autre chose.',
+          en: 'To end on calm, without re-prompting a child who’s ready to move on.',
         },
       },
       {
         label: { fr: 'Ce que ça ne touche pas', en: 'What it never touches' },
         detail: {
-          fr: 'Pas de points, pas de notifications, pas d’inventaire : ces garanties sont verrouillées, pas ajustables.',
-          en: 'No points, no notifications, no inventory: those guarantees are locked, not adjustable.',
+          fr: 'Pas de points, pas de notifications, pas d’inventaire : ces garanties sont verrouillées.',
+          en: 'No points, no notifications, no inventory: those guarantees are locked.',
+        },
+        why: {
+          fr: 'Ce réglage adoucit une seule friction; il ne déverrouille jamais le calme structurel.',
+          en: 'This toggle softens one friction; it never unlocks the structural calm.',
         },
       },
     ],
@@ -1282,15 +1775,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'À quoi ça sert', en: 'What it’s for' },
         detail: {
-          fr: 'Voir ce qui a brisé et quand, pour comprendre une fonction IA qui ne répond plus.',
-          en: 'See what broke and when, to make sense of an AI feature that stopped responding.',
+          fr: 'Voir ce qui a brisé et quand.',
+          en: 'See what broke and when.',
+        },
+        why: {
+          fr: 'Pour comprendre une fonction IA qui ne répond plus, au lieu de deviner.',
+          en: 'To make sense of an AI feature that stopped responding, instead of guessing.',
         },
       },
       {
         label: { fr: 'Pas une métrique', en: 'Not a metric' },
         detail: {
-          fr: 'Aucun compteur à surveiller : touche « Effacer » quand tu l’as lu, et c’est vide.',
-          en: 'No counter to watch: tap “Clear” once you’ve read it, and it’s empty.',
+          fr: 'Touche « Effacer » quand tu l’as lu, et c’est vide.',
+          en: 'Tap “Clear” once you’ve read it, and it’s empty.',
+        },
+        why: {
+          fr: 'Aucun compteur à surveiller — c’est un carnet d’entretien, pas un tableau de bord.',
+          en: 'No counter to watch — it’s a maintenance log, not a dashboard.',
         },
       },
     ],

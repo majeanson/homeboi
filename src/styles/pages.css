@@ -408,61 +408,10 @@
   gap: 0.5rem;
 }
 
-/* The week's actions as an icon rail stacked just above the ＋ add FAB
-   (bottom-right). Paper discs so they read as secondary to the marigold FAB. */
-.kitchen__fab-rail {
-  position: fixed;
-  right: 20px;
-  bottom: 90px; /* clears the 60px FAB at bottom:20 + a gap */
-  z-index: 24;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.hub[data-surface='mobile'] .kitchen__fab-rail {
-  /* The mobile FAB rides above the bottom tab bar (bottom: 80px + safe). */
-  bottom: calc(150px + env(safe-area-inset-bottom, 0px));
-}
-.kb-open .kitchen__fab-rail {
-  display: none;
-}
-.kitchen__fab-act {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  cursor: pointer;
-  background: var(--card, #fff);
-  color: var(--ink);
-  box-shadow: var(--shadow-md);
-  transition:
-    transform var(--dur-fast) var(--ease-soft),
-    box-shadow var(--dur-fast);
-}
-.kitchen__fab-act:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-.kitchen__fab-act:active {
-  transform: translate(1px, 1px) scale(0.96);
-  box-shadow: var(--shadow-press);
-}
-.kitchen__fab-act[aria-busy='true'] {
-  animation: kitchen-fab-pulse 1s ease-in-out infinite;
-}
-@keyframes kitchen-fab-pulse {
-  50% {
-    opacity: 0.5;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .kitchen__fab-act[aria-busy='true'] {
-    animation: none;
-  }
-}
+/* The week's three actions (shop the week / AI ideas / ideas from the book) live
+   INSIDE the ＋ Add sheet as icon tiles now (see .sheet__group in sheets.css) —
+   the old floating .kitchen__fab-rail was removed so the parent view has one
+   floating affordance, not four. */
 
 /* ── Meals as lists per slot (N per slot, migration 0033) ─────────────────── */
 /* Everything in a day after the date badge stacks vertically in a width-capped
@@ -1701,6 +1650,23 @@
   color: var(--ink-soft);
   font-size: 0.9rem;
   line-height: 1.45;
+}
+/* The WHY line: same indent as the detail, but lighter and italic so it reads as
+   a quiet aside — "what" first, "why" second. A small ↗ marks it without needing
+   a per-string label or an emoji. */
+.guide__point-why {
+  margin: 0;
+  padding: 0 0 0.7rem 0.95rem;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+.guide__point-why::before {
+  content: '↗';
+  margin-right: 0.35rem;
+  font-style: normal;
+  color: var(--accent, var(--ink-soft));
 }
 /* A direct "go there" link on a Settings-tab card — jumps Réglages to that tab. */
 .guide__goto {

@@ -80,8 +80,12 @@ export function trackVisualViewport(): void {
     scrollTimer = setTimeout(() => {
       if (kbInset <= 120 || !el.isConnected) return
       const action = actionBelow(el)
+      // Pin the focused field near the TOP of the visible band so the content
+      // below it (between field and keyboard) stays readable — iOS doesn't
+      // shrink the layout viewport, so 'center' would land mid-screen / behind
+      // the keyboard. scroll-margin-top (core.css) leaves a little breathing gap.
       if (action) action.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-      else el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      else el.scrollIntoView({ block: 'start', behavior: 'smooth' })
     }, 300)
   })
 

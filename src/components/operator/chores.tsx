@@ -3,8 +3,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useUndoableRemove } from '../../lib/undoRemove'
-import { ROUTINE_TODS, TOD_ICON, isRoutineTod } from '../../lib/routineTod'
-import { Icon } from '../Icon'
+import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routineTod'
+import { InlineIcon } from '../Icon'
 import { ChoreForm } from '../forms/ChoreForm'
 import { RoutineForm } from '../forms/RoutineForm'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
@@ -154,7 +154,7 @@ export function RoutinesSection({
             >
               {isRoutineTod(r.timeOfDay) ? (
                 <>
-                  <Icon name={TOD_ICON[r.timeOfDay]} size={15} style={{ display: 'inline-block', verticalAlign: '-2px' }} />{' '}
+                  <InlineIcon name={TOD_ICON[r.timeOfDay]} color={TOD_TINT[r.timeOfDay]} />{' '}
                   {t.routines.tod[r.timeOfDay]}
                 </>
               ) : (

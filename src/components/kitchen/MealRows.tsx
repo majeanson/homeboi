@@ -1,6 +1,6 @@
 import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
-import { Icon } from '../Icon'
+import { Icon, InlineIcon } from '../Icon'
 import { type MealRow } from './types'
 
 // The planned meals in ONE slot (a slot is a list now — migration 0033). Each row
@@ -90,7 +90,7 @@ export function MealRows({
       {onClearAll && meals.length > 1 && (
         <li className="kitchen__meal-clearall">
           <button type="button" className="btn btn--ghost mono" onClick={onClearAll}>
-            🗑 {t.kitchen.clearSlot}
+            <InlineIcon name="trash-bold" /> {t.kitchen.clearSlot}
           </button>
         </li>
       )}

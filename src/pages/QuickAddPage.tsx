@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useT } from '../i18n'
 import { pictoFor } from '../lib/picto'
-import { Icon } from '../components/Icon'
+import { Icon, InlineIcon } from '../components/Icon'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { useQuickItems, type QuickItem } from '../lib/quickItems'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
@@ -66,7 +66,7 @@ export function QuickAddPage() {
         <div>
           <div className="hand-tag">{t.list.quickAddTitle}</div>
           <h2 className="pm-sheet__title">
-            ⚡ {t.list.quickAdd}
+            <InlineIcon name="lightning-bold" color="var(--marigold-deep)" /> {t.list.quickAdd}
             {added.size > 0 && <span className="qa__count"> · {t.list.addedN(added.size)}</span>}
           </h2>
         </div>
@@ -95,7 +95,7 @@ export function QuickAddPage() {
         <div className="qa__list">
           {canAddTyped && (
             <button type="button" className="qa__chip qa__chip--new" onClick={addTyped}>
-              <span className="qa__pic" aria-hidden="true">＋</span>
+              <span className="qa__pic" aria-hidden="true"><Icon name="plus-bold" size={20} /></span>
               <span className="qa__label">{t.list.addNew(q.trim())}</span>
             </button>
           )}
@@ -120,7 +120,7 @@ export function QuickAddPage() {
                   </span>
                 )}
                 <span className="qa__act" aria-hidden="true">
-                  {isAdded ? '✓' : '＋'}
+                  <Icon name={isAdded ? 'check-bold' : 'plus-bold'} size={16} />
                 </span>
               </button>
             )

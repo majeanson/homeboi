@@ -1,30 +1,10 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { GUIDE, GUIDE_GROUPS, type GuideEntry } from '../../lib/guideContent'
-import { Icon, type IconName } from '../Icon'
-
-// An inline `[[icon:name]]` token in the guide prose renders as the app's own
-// Phosphor glyph, so a sentence that points at a button shows the *same* icon the
-// button shows (e.g. "tap [[icon:baby-bold]]"). Keeps the manual and the live UI
-// on one icon set instead of emoji. `stripTokens` removes them for search/length.
-const TOKEN = /\[\[icon:([a-z-]+)\]\]/g
-const stripTokens = (s: string) => s.replace(TOKEN, '')
-function renderRich(text: string): ReactNode {
-  const out: ReactNode[] = []
-  let last = 0
-  let m: RegExpExecArray | null
-  TOKEN.lastIndex = 0
-  while ((m = TOKEN.exec(text))) {
-    if (m.index > last) out.push(<Fragment key={last}>{text.slice(last, m.index)}</Fragment>)
-    out.push(
-      <Icon key={m.index} name={m[1] as IconName} size={15} style={{ display: 'inline-block', verticalAlign: '-2px' }} />,
-    )
-    last = m.index + m[0].length
-  }
-  if (last < text.length) out.push(<Fragment key={last}>{text.slice(last)}</Fragment>)
-  return out
-}
+import { renderRich, stripTokens } from '../../lib/richText'
+import { useTour } from '../../lib/tour'
+import { Icon } from '../Icon'
 
 // Réglages ▸ Guide — the whole how-it-works manual in one place. Each concept is
 // a collapsible card (native <details>, so it stays accessible and calm), and
@@ -36,6 +16,7 @@ function renderRich(text: string): ReactNode {
 export function GuideSection() {
   const t = useT()
   const { lang } = useLang()
+  const { start } = useTour()
   const [query, setQuery] = useState('')
   const [params, setParams] = useSearchParams()
 
@@ -117,6 +98,9 @@ export function GuideSection() {
                       <details key={i} className="guide__point" open={q.length > 0}>
                         <summary className="guide__point-title">{renderRich(p.label[lang])}</summary>
                         <p className="guide__point-detail">{renderRich(p.detail[lang])}</p>
+                        {/* The WHY, when the point earns one: a distinct, softer
+                            line so a parent scans WHAT first, WHY second. */}
+                        {p.why && <p className="guide__point-why">{renderRich(p.why[lang])}</p>}
                       </details>
                     ))}
                     {/* For a Settings-tab card: a direct "go there" link that
@@ -126,6 +110,15 @@ export function GuideSection() {
                         <span>{t.operator.guideGoTo}</span>
                         <Icon name="arrow-right-bold" size={18} />
                       </Link>
+                    )}
+                    {/* The "Première fois" card hosts the replay button: it starts
+                        the guided tour, which navigates to /board itself, so this
+                        works even though we're standing in Réglages. */}
+                    {e.action === 'replay-tour' && (
+                      <button type="button" className="guide__goto" onClick={() => start('essentials')}>
+                        <Icon name="repeat-bold" size={18} />
+                        <span>{t.operator.replayTour}</span>
+                      </button>
                     )}
                   </div>
                 </details>

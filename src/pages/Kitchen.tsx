@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Icon } from '../components/Icon'
+import { Icon, InlineIcon } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -25,6 +25,7 @@ import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { MealRows } from '../components/kitchen/MealRows'
 import { RecipePickerMenu } from '../components/kitchen/RecipePickerMenu'
 import { SIDE_SLOTS, SLOT_ICON_NAME } from '../lib/mealSlots'
+import { useKitchenActions } from '../lib/kitchenActions'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
 // browse the book — one sub-tab at a time. The page owns the queries (one unauth
@@ -225,6 +226,42 @@ export function Kitchen() {
     useRecipeShop(days, recipeForMeal, listItems)
   const suggest = useMealSuggest(recipes, ai, lowItems, listItems)
 
+  // The week's three actions (shop the week / AI ideas / ideas from the book) now
+  // live inside the ＋ Add sheet, not as a floating rail. The sheet is rendered by
+  // HubLayout (a sibling of this page), so register the live handlers + their
+  // availability up to it. Only while the Repas tab is the parent view — that's
+  // where each action's result (the shop chips / the suggestion card) appears.
+  const { register: registerKitchen } = useKitchenActions()
+  const kitchenActionsActive = kitTab === 'meals' && audience === 'parent'
+  useEffect(() => {
+    if (!kitchenActionsActive) {
+      registerKitchen(null, { active: false, canShop: false, canAiSuggest: false, aiBusy: false, hasRecipes: false })
+      return
+    }
+    registerKitchen(
+      { shop: beginShopWeek, ai: suggest.suggestAi, book: suggest.suggestFromRecipes },
+      {
+        active: true,
+        canShop: shoppableCount > 0,
+        canAiSuggest: !suggest.aiOff,
+        aiBusy: suggest.aiBusy,
+        hasRecipes: suggest.hasRecipes,
+      },
+    )
+    return () =>
+      registerKitchen(null, { active: false, canShop: false, canAiSuggest: false, aiBusy: false, hasRecipes: false })
+  }, [
+    kitchenActionsActive,
+    shoppableCount,
+    suggest.aiOff,
+    suggest.aiBusy,
+    suggest.hasRecipes,
+    beginShopWeek,
+    suggest.suggestAi,
+    suggest.suggestFromRecipes,
+    registerKitchen,
+  ])
+
   // Plan a recipe onto ANY slot (the shared picker's onPick). Souper keeps its
   // optional "+ ingredients" staples step; every other slot is a clean quick-add
   // (links the recipe, saves now). Closes whichever editor was open.
@@ -309,48 +346,9 @@ export function Kitchen() {
             <h2>{t.kitchen.week}</h2>
           </div>
 
-          {/* The week's three actions as an icon rail stacked above the ＋ FAB:
-              shop the week, AI ideas, ideas from your own recipes. Icon-only with
-              a tooltip/aria-label; busy + off states disable in place. (Two idea
-              sources — fresh from the AI, or your recipes ranked by stock — never
-              blended.) The result/prompt still surface in the section below. */}
-          <div className="kitchen__fab-rail" role="group" aria-label={t.kitchen.week}>
-            {shoppableCount > 0 && (
-              <button
-                type="button"
-                className="kitchen__fab-act"
-                onClick={beginShopWeek}
-                disabled={shopBusy}
-                aria-busy={shopBusy}
-                aria-label={t.kitchen.shopWeek}
-                title={t.kitchen.shopWeek}
-              >
-                <Icon name="shopping-bag-bold" size={24} />
-              </button>
-            )}
-            <button
-              type="button"
-              className="kitchen__fab-act"
-              onClick={suggest.suggestAi}
-              disabled={suggest.aiBusy || suggest.aiOff}
-              aria-busy={suggest.aiBusy}
-              aria-label={t.kitchen.suggestAi}
-              title={suggest.aiOff ? t.kitchen.suggestAiOff : t.kitchen.suggestAi}
-            >
-              <Icon name="sparkle-bold" size={24} />
-            </button>
-            {suggest.hasRecipes && (
-              <button
-                type="button"
-                className="kitchen__fab-act"
-                onClick={suggest.suggestFromRecipes}
-                aria-label={t.kitchen.suggestFromRecipes}
-                title={t.kitchen.suggestFromRecipes}
-              >
-                <Icon name="book-open-bold" size={24} />
-              </button>
-            )}
-          </div>
+          {/* The week's three actions (shop the week / AI ideas / ideas from the
+              book) moved INTO the ＋ Add sheet as icon tiles (see useKitchenActions
+              above) — no more floating rail. Their results still surface here. */}
           {aiWaking && (
             <p className="kitchen__ai-waking mono" role="status">
               ⏳ {t.kitchen.aiWaking}
@@ -403,7 +401,7 @@ export function Kitchen() {
                         aria-pressed={o.on}
                         title={o.item}
                       >
-                        {o.on ? '☑' : '☐'} {o.item}
+                        <InlineIcon name={o.on ? 'check-square-bold' : 'square-bold'} /> {o.item}
                       </button>
                     ))}
                   </div>
@@ -472,7 +470,7 @@ export function Kitchen() {
                           aria-pressed={o.on}
                           title={o.item}
                         >
-                          {o.on ? '☑' : '☐'} {o.item}
+                          <InlineIcon name={o.on ? 'check-square-bold' : 'square-bold'} /> {o.item}
                         </button>
                       ))}
                     </div>
@@ -554,7 +552,7 @@ export function Kitchen() {
                             }
                             aria-expanded={pickOpenFor(date, 'supper')}
                           >
-                            📖 {t.kitchen.chooseRecipe}
+                            <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
                           </button>
                         </div>
                         {pickOpenFor(date, 'supper') && (
@@ -568,7 +566,7 @@ export function Kitchen() {
                               onClick={() => setPickWithStaples((s) => !s)}
                               aria-pressed={pickWithStaples}
                             >
-                              {pickWithStaples ? '☑' : '☐'} 🛒 {t.kitchen.alsoStaples}
+                              <InlineIcon name={pickWithStaples ? 'check-square-bold' : 'square-bold'} /> 🛒 {t.kitchen.alsoStaples}
                             </button>
                             <RecipePickerMenu
                               recipes={recipes}
@@ -665,7 +663,7 @@ export function Kitchen() {
                                     onClick={() => setRecipePickFor(pickOpenFor(date, slot) ? null : { date, slot })}
                                     aria-expanded={pickOpenFor(date, slot)}
                                   >
-                                    📖 {t.kitchen.chooseRecipe}
+                                    <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
                                   </button>
                                 </div>
                                 {pickOpenFor(date, slot) && (
@@ -714,7 +712,7 @@ export function Kitchen() {
                     className="btn btn--ghost mono kitchen__clear-day"
                     onClick={() => clearDay(date)}
                   >
-                    🗑 {t.kitchen.clearDay}
+                    <InlineIcon name="trash-bold" /> {t.kitchen.clearDay}
                   </button>
                 )}
 
@@ -750,7 +748,7 @@ export function Kitchen() {
                               className="btn btn--ghost mono kitchen__clear-meal"
                               onClick={() => clearNote(date)}
                             >
-                              🗑 {t.kitchen.clearNote}
+                              <InlineIcon name="trash-bold" /> {t.kitchen.clearNote}
                             </button>
                           )}
                         </form>
@@ -763,7 +761,7 @@ export function Kitchen() {
                             setNoteText(note.text)
                           }}
                         >
-                          <span aria-hidden="true">📝</span>
+                          <span aria-hidden="true"><Icon name="pencil-simple-bold" size={16} /></span>
                           <span className="kitchen__note-text">{note.text}</span>
                         </button>
                       ) : (
