@@ -51,6 +51,17 @@ const MODE_META: Record<AddSheetMode, { icon: IconName; deep: string; wash: stri
   meal: { icon: 'calendar-blank-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
   pantry: { icon: 'carrot-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
   'list-item': { icon: 'sparkle-bold', deep: '#5891AC', wash: 'var(--sky-wash)' },
+  'quick-add': { icon: 'lightning-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
+  flyer: { icon: 'magnifying-glass-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
+}
+
+// Modes with no in-sheet form — picking one leaves the sheet for a full-screen
+// route (the recipe builder, the quick-add restock page, the flyer browser).
+// They never become the sheet's default (defMode skips them).
+const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
+  recipe: '/kitchen/recipe/new',
+  'quick-add': '/liste/quick',
+  flyer: '/liste/circulaires',
 }
 
 export function AddSheet({
@@ -82,9 +93,10 @@ export function AddSheet({
   const allowed = signedIn ? modes : modes.filter((m) => !OPERATOR_MODES.has(m))
   const shown = allowed.length ? allowed : (['capture'] as AddSheetMode[])
   // Section default: capture where it exists (the board), else the first
-  // form-backed tile — recipe is navigate-only (it leaves the sheet), so the
-  // kitchen pre-selects the meal planner under its chooser.
-  const defMode = shown.includes('capture') ? 'capture' : (shown.find((m) => m !== 'recipe') ?? shown[0])
+  // form-backed tile — navigate-only modes (recipe, quick-add, flyer) leave the
+  // sheet, so the kitchen pre-selects the meal planner and Liste the add-a-line
+  // form under their choosers.
+  const defMode = shown.includes('capture') ? 'capture' : (shown.find((m) => !NAV_TARGET[m]) ?? shown[0])
   const [mode, setMode] = useState<AddSheetMode>(initialMode ?? defMode)
   // Re-sync on each open so the last visit's pick doesn't leak into this one.
   useEffect(() => {
@@ -231,7 +243,11 @@ export function AddSheet({
                 ? t.kitchen.planMeal
                 : m === 'pantry'
                   ? t.kitchen.lowAdd
-                  : t.list.addTitle
+                  : m === 'quick-add'
+                    ? t.list.quickAdd
+                    : m === 'flyer'
+                      ? t.shop.browse
+                      : t.list.addTitle
 
   // The sheet's title names what this section adds (the chooser-less sections
   // would otherwise just say "Ajouter" over an unexplained form).
@@ -239,7 +255,9 @@ export function AddSheet({
     shown.length > 1
       ? shown.includes('capture')
         ? t.capture.add
-        : t.kitchen.addTitle
+        : shown.includes('list-item')
+          ? t.list.addTitle
+          : t.kitchen.addTitle
       : mode === 'routine'
         ? t.routines.add
         : mode === 'list-item'
@@ -270,9 +288,10 @@ export function AddSheet({
                 type="button"
                 className={'cat-pick' + (mode === m ? ' sel' : '')}
                 onClick={() => {
-                  if (m === 'recipe') {
+                  const target = NAV_TARGET[m]
+                  if (target) {
                     close()
-                    nav('/kitchen/recipe/new')
+                    nav(target)
                     return
                   }
                   setMode(m)

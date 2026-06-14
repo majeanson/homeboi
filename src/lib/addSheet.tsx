@@ -14,17 +14,21 @@ export type AddSheetMode =
   | 'chore'
   | 'routine'
   | 'list-item'
+  | 'quick-add'
+  | 'flyer'
   | 'recipe'
   | 'meal'
   | 'pantry'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
-// action → the sheet skips the chooser and opens that form directly.
+// action → the sheet skips the chooser and opens that form directly. Liste's ＋
+// is a small chooser: add a line, restock past items (Ajout rapide), or shop the
+// flyers — the last two are navigate-only tiles (see NAV_TARGET in AddSheet).
 export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   board: ['capture', 'event', 'chore', 'routine'],
   kitchen: ['recipe', 'meal', 'pantry'],
   routines: ['routine'],
-  liste: ['list-item'],
+  liste: ['list-item', 'quick-add', 'flyer'],
 }
 
 // The operator-grade forms (same gating the old chooser had): a kiosk that

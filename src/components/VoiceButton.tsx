@@ -68,15 +68,5 @@ export function VoiceStatus({ voice }: { voice: VoiceInput }) {
       </p>
     )
   }
-  // Pending grant (Android/Chrome, where we can read 'prompt'): a calm heads-up
-  // that the first tap will ask for the mic, so the system prompt isn't a
-  // surprise. iOS stays 'unknown' here, so it's never nagged pre-grant.
-  if (voice.permission === 'prompt') {
-    return (
-      <p className="list-add__voicemsg" role="status">
-        {t.list.voicePrime}
-      </p>
-    )
-  }
   return null
 }

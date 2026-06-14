@@ -1527,6 +1527,55 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    id: 'set-meals',
+    icon: 'fork-knife-bold',
+    group: 'settings',
+    tab: 'meals',
+    title: { fr: 'Repas (couleurs et affichage)', en: 'Meals (colours and display)' },
+    what: {
+      fr: 'Le look de chaque repas de la journée — déjeuner, dîner, collation, souper. Donne-lui une couleur, et choisis lesquels tu veux voir.',
+      en: 'The look of each meal of the day — breakfast, lunch, snack, supper. Give it a colour, and pick which ones you want to see.',
+    },
+    points: [
+      {
+        label: { fr: 'Une couleur par repas', en: 'A colour per meal' },
+        detail: {
+          fr: 'Touche une pastille pour donner sa couleur à un repas. « Couleur par défaut » la remet comme avant.',
+          en: 'Tap a dot to give a meal its colour. “Default colour” puts it back as it was.',
+        },
+        why: {
+          fr: 'La couleur suit le repas PARTOUT — babillard, calendrier du mois, cuisine — alors un coup d’œil dit « ça, c’est le souper ».',
+          en: 'The colour follows the meal EVERYWHERE — board, month calendar, kitchen — so a glance says “that’s supper”.',
+        },
+      },
+      {
+        label: { fr: 'Afficher / masquer un repas', en: 'Show / hide a meal' },
+        detail: {
+          fr: 'Le bouton Affiché/Masqué enlève un repas du babillard et de l’aperçu de la cuisine (ex. ne garder que le souper).',
+          en: 'The Shown/Hidden button drops a meal from the board and the kitchen glance (e.g. keep only supper).',
+        },
+        why: {
+          fr: 'Pour un babillard calme qui ne montre que ce qui compte pour toi — par défaut, tous les repas sont affichés.',
+          en: 'For a calm board that shows only what matters to you — by default, every meal is shown.',
+        },
+      },
+      {
+        label: { fr: 'Planifier reste toujours possible', en: 'You can still plan everything' },
+        detail: {
+          fr: 'Un repas masqué se planifie quand même : ouvre une journée dans La cuisine avec « Gérer » — tous les repas y sont.',
+          en: 'A hidden meal can still be planned: open a day in the Kitchen with “Gérer” — every meal is there.',
+        },
+      },
+      {
+        label: { fr: 'Pour toute la maisonnée', en: 'For the whole household' },
+        detail: {
+          fr: 'Couleurs et choix sont partagés par tous les appareils — la tablette murale et chaque téléphone voient la même chose.',
+          en: 'Colours and choices are shared across every device — the wall tablet and each phone see the same thing.',
+        },
+      },
+    ],
+  },
+  {
     id: 'set-ghost',
     icon: 'ghost-bold',
     group: 'settings',

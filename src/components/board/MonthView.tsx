@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDayLong, weekdayShort } from '../../lib/format'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
-import { SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
+import { SLOT_ICON_NAME, isMealSlot, type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
@@ -29,17 +29,31 @@ interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes:
 // capitalized.
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
-// The colour-coded dots a cell shows: one per dated thing, ordered the same way
-// the detail panel lists them (events first, by member colour, then meals,
-// chores, notes). Cap is applied by the caller.
-function dotsFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs): string[] {
+// A calendar marker: a colour AND a category, so the cell can tell each kind
+// apart instead of a wall of identical circles. Events/chores/notes are shape-coded
+// dots (circle · diamond · ring); a MEAL shows its slot ICON (egg/fork/cookie/bowl,
+// reusing Réglages ▸ Repas) tinted with the slot colour — far more glanceable than
+// a square and it carries which meal. Colour still carries who (events) / slot
+// (meals) / chore tint.
+type DotKind = 'event' | 'meal' | 'chore' | 'note'
+interface Dot {
+  color: string
+  kind: DotKind
+  slot?: MealSlot // set for meals → which slot icon to draw
+}
+
+// The markers a cell shows: one per dated thing, ordered the same way the detail
+// panel lists them (events first, by member colour, then meals, chores, notes).
+function dotsFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs): Dot[] {
   if (!b) return []
-  const out: string[] = []
-  for (const e of b.events) out.push(colorOf(members, e.member_id) ?? CATS.event.color)
-  // Each shown meal gets its slot colour (Réglages ▸ Repas); hidden slots = no dot.
-  for (const m of b.meals) if (meals.isVisible(m.slot)) out.push(meals.color(m.slot) ?? CATS.meal.color)
-  for (const c of b.chores) out.push(c.color ?? CATS.chore.color)
-  b.notes.forEach(() => out.push(CATS.list.color))
+  const out: Dot[] = []
+  for (const e of b.events) out.push({ color: colorOf(members, e.member_id) ?? CATS.event.color, kind: 'event' })
+  // Each shown meal gets its slot colour + icon (Réglages ▸ Repas); hidden slots = no marker.
+  for (const m of b.meals)
+    if (meals.isVisible(m.slot))
+      out.push({ color: meals.color(m.slot) ?? CATS.meal.color, kind: 'meal', slot: isMealSlot(m.slot) ? m.slot : undefined })
+  for (const c of b.chores) out.push({ color: c.color ?? CATS.chore.color, kind: 'chore' })
+  b.notes.forEach(() => out.push({ color: CATS.list.color, kind: 'note' }))
   return out
 }
 
@@ -107,7 +121,9 @@ export function MonthView({
   const selMeals = sel ? sel.meals.filter((m) => mealPrefs.isVisible(m.slot)) : []
   const selCount = sel ? sel.events.length + selMeals.length + sel.chores.length + sel.notes.length : 0
   const atToday = offset === 0 && selected === todayDay
-  const title = cap(formatMonthYear(grid.monthStart, lang))
+  // UTC labels to match the UTC-day grid (monthgrid.ts) — otherwise a Québec
+  // evening prints the month/weekday ~a day early ("Mai" in June).
+  const title = cap(formatMonthYear(grid.monthStart, lang, true))
 
   return (
     <div className="monthv">
@@ -136,7 +152,7 @@ export function MonthView({
       <div className="monthv__grid" role="grid" aria-label={title}>
         {grid.days.slice(0, 7).map((d) => (
           <div key={`h${d}`} className="monthv__dow mono" role="columnheader">
-            {cap(weekdayShort(d, lang))}
+            {cap(weekdayShort(d, lang, true))}
           </div>
         ))}
         {grid.days.map((d) => {
@@ -152,9 +168,21 @@ export function MonthView({
               <span className="monthv__num">{new Date(d * 1000).getUTCDate()}</span>
               {dots.length > 0 && (
                 <span className="monthv__dots" aria-hidden="true">
-                  {dots.slice(0, 4).map((c, i) => (
-                    <span key={i} className="monthv__dot" style={{ background: c }} />
-                  ))}
+                  {dots.slice(0, 4).map((dot, i) =>
+                    dot.kind === 'meal' && dot.slot ? (
+                      // Meal → its slot icon, tinted with the slot colour (Réglages ▸ Repas).
+                      <span key={i} className="monthv__dot-icon">
+                        <Icon name={SLOT_ICON_NAME[dot.slot]} size={12} color={dot.color} />
+                      </span>
+                    ) : (
+                      <span
+                        key={i}
+                        className={`monthv__dot monthv__dot--${dot.kind}`}
+                        // A ring (note) is drawn from `color`; filled shapes from `background`.
+                        style={dot.kind === 'note' ? { color: dot.color } : { background: dot.color }}
+                      />
+                    ),
+                  )}
                   {dots.length > 4 && <span className="monthv__more mono">+{dots.length - 4}</span>}
                 </span>
               )}
@@ -163,9 +191,30 @@ export function MonthView({
         })}
       </div>
 
+      {/* Shape key: the dots are shape-coded, so a small legend tells a glance which
+          shape is a chore vs a meal vs an event. Neutral swatches — it's about the
+          SHAPE here, not the colour (colour carries who/which-slot in the cells). */}
+      <div className="monthv__legend" aria-hidden="true">
+        <span className="monthv__legend-item">
+          <span className="monthv__dot monthv__dot--event" style={{ background: 'var(--ink-soft)' }} /> {t.monthView.legendEvents}
+        </span>
+        <span className="monthv__legend-item">
+          <span className="monthv__dot-icon">
+            <Icon name={SLOT_ICON_NAME.supper} size={12} color="var(--ink-soft)" />
+          </span>{' '}
+          {t.monthView.legendMeals}
+        </span>
+        <span className="monthv__legend-item">
+          <span className="monthv__dot monthv__dot--chore" style={{ background: 'var(--ink-soft)' }} /> {t.monthView.legendChores}
+        </span>
+        <span className="monthv__legend-item">
+          <span className="monthv__dot monthv__dot--note" style={{ color: 'var(--ink-soft)' }} /> {t.monthView.legendNotes}
+        </span>
+      </div>
+
       <div className="monthv__day">
         <div className="monthv__day-h">
-          <b>{cap(formatDayLong(selected, lang))}</b>
+          <b>{cap(formatDayLong(selected, lang, true))}</b>
         </div>
         {isLoading && !data ? (
           <p className="loading mono">{t.common.loading}</p>

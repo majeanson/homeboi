@@ -194,6 +194,25 @@ test('real add sheet @phone', async ({ page, context }) => {
   }
 })
 
+// The board's Mois (month) calendar with the shape-coded dots (event circle, meal
+// square, chore diamond, note ring) over the real household's events/meals/chores.
+test('real board month view @phone-tall', async ({ page, context }) => {
+  await seed(context)
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem('babillard-boardview', 'month')
+    } catch {
+      /* noop */
+    }
+  })
+  await page.setViewportSize({ width: 390, height: 2400 })
+  await login(page, context)
+  await page.goto('/board')
+  await settle(page)
+  await page.waitForTimeout(700)
+  await page.screenshot({ path: 'e2e/screenshots/real-board-month.png', fullPage: true })
+})
+
 // ── CRUD-row sweep ──────────────────────────────────────────────────────────
 // The uniform add/edit/delete pass put a RowActions pair (✏️/🗑️) on every
 // manageable row. Crowding ("too much on one line") only shows under real content

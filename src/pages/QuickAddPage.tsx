@@ -28,9 +28,13 @@ export function QuickAddPage() {
   const items = useQuickItems()
 
   const [q, setQ] = useState('')
+  const [alpha, setAlpha] = useState(false)
   const [added, setAdded] = useState<Set<string>>(new Set())
   const fq = fold(q)
-  const shown = fq ? items.filter((i) => fold(i.label).includes(fq)) : items
+  const filtered = fq ? items.filter((i) => fold(i.label).includes(fq)) : items
+  // Default order is status/frequency (from useQuickItems); the Aa toggle re-sorts
+  // the same set alphabetically so a long list is easy to scan by name.
+  const shown = alpha ? [...filtered].sort((a, b) => a.label.localeCompare(b.label)) : filtered
   // Offer a free-text add only when what's typed isn't already a known item.
   const canAddTyped = fq.length > 0 && !items.some((i) => fold(i.label) === fq)
 
@@ -90,6 +94,16 @@ export function QuickAddPage() {
             placeholder={t.list.quickSearch}
             aria-label={t.list.quickSearch}
           />
+          <button
+            type="button"
+            className={`qa__sort${alpha ? ' is-on' : ''}`}
+            onClick={() => setAlpha((v) => !v)}
+            aria-pressed={alpha}
+            aria-label={t.list.quickSortAlpha}
+            title={t.list.quickSortAlpha}
+          >
+            Aa
+          </button>
         </div>
 
         <div className="qa__list">

@@ -84,6 +84,11 @@ export function HubLayout() {
   // kitchen). Unknown paths fall back to the board's generic capture sheet.
   const section = loc.pathname.split('/')[1] || 'board'
   const sectionModes = SECTION_MODES[section] ?? SECTION_MODES.board
+  // The kitchen's three sub-tabs live in ?tab= (Kitchen page, useTabParam) —
+  // default 'meals'. The ＋ FAB reads it so it adds what THIS tab is about:
+  // Recettes → straight to the recipe builder, Garde-manger → the low-stock form,
+  // Repas → the meal-planner chooser (default).
+  const kitchenTab = section === 'kitchen' ? new URLSearchParams(loc.search).get('tab') || 'meals' : null
 
   // A PAIRED device getting 401s means its token was revoked (re-paired, device
   // removed in Réglages, DB reset) — latch a recovery screen at the shell level.
@@ -244,13 +249,25 @@ export function HubLayout() {
           className="add-fab"
           data-tour="add-fab"
           onClick={() => {
-            setAddMode(null)
+            // Recettes tab: the recipe builder is a full-screen route, so skip the
+            // sheet and go straight there (its "add" is navigate-only anyway).
+            if (kitchenTab === 'recipes') {
+              nav('/kitchen/recipe/new')
+              return
+            }
+            // Garde-manger tab: pre-select the low-stock form; everything else
+            // opens its section default.
+            setAddMode(kitchenTab === 'pantry' ? 'pantry' : null)
             setAddModes(null)
             setAddOpen(true)
           }}
           aria-label={
             section === 'kitchen'
-              ? t.kitchen.addTitle
+              ? kitchenTab === 'recipes'
+                ? t.recipes.add
+                : kitchenTab === 'pantry'
+                  ? t.kitchen.lowAdd
+                  : t.kitchen.addTitle
               : section === 'routines'
                 ? t.routines.add
                 : section === 'liste'

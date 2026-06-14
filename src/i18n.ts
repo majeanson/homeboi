@@ -97,14 +97,13 @@ export const FR = {
     voiceDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
     // iOS ne laisse pas la page redemander — il faut passer par les réglages.
     voiceDeniedIos: 'Micro bloqué. Ouvre Réglages → Safari → Microphone pour réautoriser.',
-    // Petit mot avant la première demande système (là où on peut la détecter).
-    voicePrime: 'On va demander l’accès au micro pour écrire à voix haute.',
     voiceNoSpeech: 'Rien entendu. Réessaie plus près du micro.',
     voiceUnsupported: 'La reconnaissance vocale n’est pas dispo sur cet appareil.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
     quickAdd: 'Ajout rapide',
     quickAddTitle: 'Déjà acheté',
     quickSearch: 'Chercher ou ajouter…',
+    quickSortAlpha: 'Ordre alphabétique',
     quickEmpty: 'Rien à proposer pour l’instant.',
     addNew: (s: string) => `Ajouter « ${s} »`,
     addedN: (n: number) => `${n} ajouté${n > 1 ? 's' : ''}`,
@@ -169,6 +168,11 @@ export const FR = {
     empty: 'Rien de prévu',
     prev: 'Mois précédent',
     next: 'Mois suivant',
+    // Shape-key labels for the calendar dots (● rendez-vous · ▪ repas · ◆ corvée · ○ note).
+    legendEvents: 'Rendez-vous',
+    legendMeals: 'Repas',
+    legendChores: 'Corvées',
+    legendNotes: 'Notes',
   },
   weather: {
     clear: 'Dégagé', cloud: 'Nuageux', fog: 'Brouillard', drizzle: 'Bruine', rain: 'Pluie', snow: 'Neige', storm: 'Orage',
@@ -785,14 +789,13 @@ export const EN: typeof FR = {
     voiceDenied: 'Mic blocked. Allow the microphone in your browser.',
     // iOS won't let the page re-prompt — recovery has to go through Settings.
     voiceDeniedIos: 'Mic blocked. Open Settings → Safari → Microphone to allow it again.',
-    // A heads-up before the first system prompt (where we can detect it).
-    voicePrime: 'We’ll ask to use the mic so you can add by voice.',
     voiceNoSpeech: 'Didn’t catch that. Try again, closer to the mic.',
     voiceUnsupported: 'Voice recognition isn’t available on this device.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
     quickAdd: 'Quick add',
     quickAddTitle: 'Bought before',
     quickSearch: 'Search or add…',
+    quickSortAlpha: 'Alphabetical order',
     quickEmpty: 'Nothing to suggest yet.',
     addNew: (s: string) => `Add “${s}”`,
     addedN: (n: number) => `${n} added`,
@@ -855,6 +858,11 @@ export const EN: typeof FR = {
     empty: 'Nothing planned',
     prev: 'Previous month',
     next: 'Next month',
+    // Shape-key labels for the calendar dots (● event · ▪ meal · ◆ chore · ○ note).
+    legendEvents: 'Events',
+    legendMeals: 'Meals',
+    legendChores: 'Chores',
+    legendNotes: 'Notes',
   },
   weather: {
     clear: 'Clear', cloud: 'Cloudy', fog: 'Fog', drizzle: 'Drizzle', rain: 'Rain', snow: 'Snow', storm: 'Storm',

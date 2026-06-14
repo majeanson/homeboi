@@ -558,6 +558,45 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  flex: none;
+}
+/* Shape-coded by category so each kind reads apart at a glance. Events stay the
+   plain filled circle; chore = diamond; note = ring. Meals aren't dots — they
+   render their slot ICON (.monthv__dot-icon) — so there's no --meal dot. Only
+   border-radius/transform/border differ here (never the box size), so these hold
+   across the responsive dot sizes below. */
+.monthv__dot--chore {
+  border-radius: 1px;
+  transform: rotate(45deg) scale(0.86); /* diamond, scaled so its diagonal ≈ a dot */
+}
+.monthv__dot--note {
+  /* Hollow ring drawn from `color` (inset shadow keeps the box size exact). */
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+/* A meal's slot icon sits inline with the dots, a touch larger so it reads as a
+   glyph; it carries its slot colour via the Icon's `color`. */
+.monthv__dot-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* The shape key under the grid — small + muted; neutral swatches (it explains the
+   SHAPE, colour is carried per-item in the cells). */
+.monthv__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 0.85rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+}
+.monthv__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
 }
 .monthv__more {
   font-size: 0.6rem;

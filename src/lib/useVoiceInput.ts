@@ -115,6 +115,14 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
   const stoppedRef = useRef(false)
   // Pending "end of item on silence" timer (continuous mode). See PAUSE_MS.
   const silenceRef = useRef<number | null>(null)
+  // Latest interim transcript for the CURRENT utterance, not yet committed. Some
+  // engines (notably iOS Safari in continuous mode) stream interim guesses but
+  // never mark one `isFinal` before our pause-stop fires — so the phrase would be
+  // lost and the mic looks like it "hears nothing." We keep the last interim and
+  // flush it when an utterance ends without a final. A real final supersedes it.
+  const pendingRef = useRef('')
+  // Whether the OS mic grant has been (re)established via getUserMedia this run.
+  const micGrantedRef = useRef(false)
   const hasVoice = !!getCtor()
 
   // Read the browser-remembered mic grant up front, and follow it live (the
@@ -169,6 +177,50 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     }, PAUSE_MS)
   }
 
+  // Commit the last interim transcript when an utterance ended without ever
+  // producing a final (see pendingRef). No-op when a final already cleared it, so
+  // a healthy engine never double-adds.
+  function flushPending() {
+    const phrase = pendingRef.current.trim()
+    pendingRef.current = ''
+    if (!phrase) return
+    const parts = opts.split ? splitItems(phrase) : [phrase]
+    for (const p of parts) onResult(p)
+  }
+
+  // iOS-only: establish (and, on an installed PWA, PERSIST) the mic grant via
+  // getUserMedia before handing off to Web Speech. iOS doesn't remember Web
+  // Speech's own capture across PWA launches — so a backgrounded-then-reopened app
+  // re-prompted every time — but it DOES remember a getUserMedia grant. Priming
+  // here means the next cold launch reuses the grant silently. We don't keep the
+  // stream (Web Speech captures on its own); releasing it clears the recording
+  // indicator while the grant stays. Elsewhere (Android/desktop) the engine's own
+  // permission handling already persists, so we skip this to avoid a 2nd prompt.
+  async function ensureMicGrant(): Promise<boolean> {
+    if (!isIos() || micGrantedRef.current) return true
+    const md = navigator.mediaDevices
+    if (!md?.getUserMedia) return true
+    try {
+      const stream = await md.getUserMedia({ audio: true })
+      stream.getTracks().forEach((tr) => tr.stop())
+      micGrantedRef.current = true
+      setPermission('granted')
+      return true
+    } catch (err) {
+      const name = (err as DOMException)?.name
+      if (name === 'NotAllowedError' || name === 'SecurityError') {
+        setPermission('denied')
+        setError('not-allowed')
+        setListening(false)
+        stoppedRef.current = true
+        return false
+      }
+      // NotFoundError / transient glitch — don't block; let the engine try and
+      // surface its own error.
+      return true
+    }
+  }
+
   function stop() {
     stoppedRef.current = true
     clearSilence()
@@ -206,33 +258,54 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     }
     setError(null)
     stoppedRef.current = false
+    // On iOS, establish/persist the grant first (then begin in its resolution);
+    // everywhere else begin synchronously so the engine's start() stays inside the
+    // user gesture exactly as before.
+    if (isIos() && !micGrantedRef.current && typeof navigator.mediaDevices?.getUserMedia === 'function') {
+      void ensureMicGrant().then((ok) => {
+        if (ok && !stoppedRef.current) begin(Ctor)
+      })
+      return
+    }
+    begin(Ctor)
+  }
 
+  function begin(Ctor: SpeechRecognitionCtor) {
     const recog = new Ctor()
     recog.lang = lang === 'fr' ? 'fr-CA' : 'en-CA'
     recog.continuous = !!opts.continuous
-    // Interim results let the input show a live "…" placeholder and keep Chrome
-    // from cutting recognition short between phrases; we still only ACT on finals.
-    recog.interimResults = !!opts.continuous
+    // Interim results both drive the live "…" placeholder AND give us a fallback
+    // transcript to flush if the engine never marks one final (see pendingRef) —
+    // the "it listens but adds nothing" case on some phones. We still only commit
+    // a final, or that last interim once the utterance ends.
+    recog.interimResults = true
     recog.maxAlternatives = 1
+    pendingRef.current = ''
 
     recog.onresult = (e) => {
-      // Only emit phrases the engine has finalized — interim guesses would add
-      // half-heard junk. Walk from resultIndex so each final fires exactly once.
+      // Walk from resultIndex so each final fires exactly once. Interim guesses
+      // are remembered (not emitted) so a final can supersede them.
       let sawInterim = false
+      let emittedFinal = false
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i]
         if (!r.isFinal) {
           sawInterim = true
+          pendingRef.current = r[0]?.transcript?.trim() ?? pendingRef.current
           continue
         }
         const phrase = r[0]?.transcript?.trim()
+        pendingRef.current = '' // a final supersedes any interim for this utterance
         if (!phrase) continue
+        emittedFinal = true
         const parts = opts.split ? splitItems(phrase) : [phrase]
         for (const p of parts) onResult(p)
       }
-      // Single-shot mode is done after its one phrase.
+      // Single-shot: done once a final lands. An interim-only event must NOT stop
+      // (it would cut before the final); onend flushes the last interim as a
+      // fallback if no final ever comes.
       if (!opts.continuous) {
-        stop()
+        if (emittedFinal) stop()
         return
       }
       // Continuous: a final closes the current item (cancel any pending pause cut);
@@ -244,6 +317,10 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
 
     recog.onend = () => {
       recogRef.current = null
+      // Commit a trailing interim the engine never finalized (no-op if a final
+      // already cleared it). Without this, phones that don't finalize before our
+      // pause-stop dropped every phrase.
+      flushPending()
       // Chrome ends recognition after a stretch of silence. In continuous mode
       // that shouldn't end the session — restart unless the user tapped stop or
       // a fatal permission error fired.
