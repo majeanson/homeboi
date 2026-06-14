@@ -177,8 +177,24 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     recogRef.current = null
   }
 
-  // Drop the timer (and abort a live mic) when the caller unmounts.
-  useEffect(() => () => clearSilence(), [])
+  // Kill the pause timer AND the live mic when the caller unmounts. Without the
+  // abort, a continuous mic left open as the caller unmounts (navigating away
+  // from La liste / the garde-manger) keeps recognising and re-arming itself via
+  // onend — a leaked, perpetually-restarting mic. Set stoppedRef first so onend
+  // sees the teardown and doesn't restart. Refs are stable, so no stale capture.
+  useEffect(
+    () => () => {
+      stoppedRef.current = true
+      clearSilence()
+      try {
+        recogRef.current?.abort()
+      } catch {
+        /* abort on an already-dead engine is a no-op */
+      }
+      recogRef.current = null
+    },
+    [],
+  )
 
   function start() {
     const Ctor = getCtor()

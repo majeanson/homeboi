@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useModal } from '../lib/useModal'
@@ -42,6 +42,10 @@ export function KidExitGate() {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, () => setGateOpen(false), { open: gateOpen })
+
+  // Clear a pending hold timer if we unmount mid-press, so it can't fire
+  // setGateOpen on a gone component.
+  useEffect(() => () => clearTimeout(timer.current ?? undefined), [])
 
   function startHold(e: React.PointerEvent<HTMLButtonElement>) {
     // Capture the pointer so small finger movement during the 3s hold doesn't

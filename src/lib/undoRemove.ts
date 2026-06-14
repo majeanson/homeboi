@@ -18,14 +18,31 @@ export function useUndoableRemove() {
     commit: () => Promise<unknown>
     after: () => void
   }) => {
-    const prev = qc.getQueryData(opts.queryKey)
+    // Snapshot only the removed row + its slot, not the whole query: two deletes
+    // of the same kind can stack within the undo window, and restoring a stale
+    // full-list snapshot would resurrect a row a later (still-pending) delete had
+    // already removed — and discard any edit made to that query in between.
+    const cur = qc.getQueryData<Record<string, { id: string }[]>>(opts.queryKey)
+    const list = cur?.[opts.listProp] ?? []
+    const idx = list.findIndex((x) => x.id === opts.id)
+    const removed = idx >= 0 ? list[idx] : null
     qc.setQueryData(opts.queryKey, (d: Record<string, { id: string }[]> | undefined) =>
       d ? { ...d, [opts.listProp]: d[opts.listProp].filter((x) => x.id !== opts.id) } : d,
     )
     undo({
       message: t.undo.cleared(opts.label),
       onUndo: () => {
-        if (prev) qc.setQueryData(opts.queryKey, prev)
+        // Re-insert just this row at (about) its old spot into whatever the list
+        // is now — leaves other deletes/edits in the same window untouched.
+        if (!removed) return
+        qc.setQueryData(opts.queryKey, (d: Record<string, { id: string }[]> | undefined) => {
+          if (!d) return d
+          const l = d[opts.listProp] ?? []
+          if (l.some((x) => x.id === opts.id)) return d
+          const next = l.slice()
+          next.splice(Math.min(idx < 0 ? next.length : idx, next.length), 0, removed)
+          return { ...d, [opts.listProp]: next }
+        })
       },
       onCommit: () => {
         opts.commit().catch(() => {}).then(opts.after)
