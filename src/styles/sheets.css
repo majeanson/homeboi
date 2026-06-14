@@ -1203,21 +1203,13 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* "⚡ Quick add" — the doorway to past/predicted re-adds. Full-width so it reads
-   as a primary affordance under the add bar, with a quiet count of what's on
-   offer. */
-.list-quick {
-  width: 100%;
-  justify-content: center;
-  margin: -0.25rem 0 1rem;
-}
-.list-quick__n {
-  margin-left: 0.5rem;
-  padding: 0.05rem 0.5rem;
-  border-radius: 999px;
-  background: var(--paper-deep);
-  color: var(--ink-soft);
-  font-size: 0.8rem;
+/* "Vider" (clear checked) sits quietly to the right under the list — a small,
+   secondary control, not a full-width bar. Restocking past items and browsing
+   flyers moved into the ＋ Add sheet, so the page is the list and its add bar. */
+.list-clear {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
 }
 
 /* The ⚡ Quick add scene — re-add candidates inside a .scene__body.qa. Tap one to

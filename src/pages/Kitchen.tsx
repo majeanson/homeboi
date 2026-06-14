@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon, InlineIcon } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
+import { SectionIntro } from '../components/SectionIntro'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
@@ -409,6 +410,8 @@ export function Kitchen() {
             <Icon name="carrot-bold" size={26} color="var(--terracotta-deep)" />
           </div>
         </div>
+
+        <SectionIntro card="kitchen" />
 
         <div className="subtabs" role="tablist" aria-label={t.kitchen.title}>
           {([

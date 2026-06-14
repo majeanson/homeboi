@@ -724,7 +724,8 @@ test.describe('list', () => {
   })
 
   test('the quick-add panel re-adds a past item and stays open', async ({ page }) => {
-    await page.locator('.list-quick').click()
+    await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
+    await page.getByRole('button', { name: 'Ajout rapide' }).click()
     const panel = page.locator('.scene')
     await expect(panel).toBeVisible()
     const chip = panel.locator('.qa__chip', { hasText: 'Beurre' })
@@ -737,7 +738,8 @@ test.describe('list', () => {
   })
 
   test('quick-add re-adds an item with the flyer synonyms it last carried', async ({ page }) => {
-    await page.locator('.list-quick').click()
+    await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
+    await page.getByRole('button', { name: 'Ajout rapide' }).click()
     const chip = page.locator('.scene .qa__chip', { hasText: 'Beurre' })
     const [req] = await Promise.all([
       page.waitForRequest((r) => r.url().includes('/api/list') && r.method() === 'POST'),
@@ -747,7 +749,8 @@ test.describe('list', () => {
   })
 
   test('a due-soon prediction shows in quick-add with a tag', async ({ page }) => {
-    await page.locator('.list-quick').click()
+    await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
+    await page.getByRole('button', { name: 'Ajout rapide' }).click()
     // Œufs is 'soon' in the ghost mock and not on the list → tagged in the panel.
     const oeufs = page.locator('.scene .qa__chip', { hasText: 'Œufs' })
     await expect(oeufs).toHaveCount(1)
@@ -755,11 +758,13 @@ test.describe('list', () => {
   })
 
   test('the flyer browser opens', async ({ page }) => {
+    await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
     await page.getByRole('button', { name: /Parcourir/ }).click()
     await expect(page.locator('.scene .deals-search')).toBeVisible()
   })
 
   test('a browsed deal LINKS onto the matching list item, not a new specific-named line', async ({ page }) => {
+    await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
     await page.getByRole('button', { name: /Parcourir/ }).click()
     await expect(page.locator('.deals-search')).toBeVisible()
     await page.locator('.deals-search input').fill('lait')
@@ -776,6 +781,7 @@ test.describe('list', () => {
   })
 
   test('a browsed deal for a new item adds it under the SEARCHED name, not the product name', async ({ page }) => {
+    await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
     await page.getByRole('button', { name: /Parcourir/ }).click()
     await page.locator('.deals-search input').fill('fromage') // not on the list yet
     await page.locator('.deals-search button[type="submit"]').click()
@@ -802,6 +808,7 @@ test.describe('list', () => {
   })
 
   test('the by-store tab opens a store flyer without searching', async ({ page }) => {
+    await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
     await page.getByRole('button', { name: /Parcourir/ }).click()
     await expect(page.locator('.deal-tabs')).toBeVisible()
     await page.getByRole('tab', { name: /Par magasin/ }).click()

@@ -19,6 +19,7 @@ export type AddSheetMode =
   | 'recipe'
   | 'meal'
   | 'pantry'
+  | 'cook'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
 // action → the sheet skips the chooser and opens that form directly. Liste's ＋
@@ -26,7 +27,10 @@ export type AddSheetMode =
 // flyers — the last two are navigate-only tiles (see NAV_TARGET in AddSheet).
 export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   board: ['capture', 'event', 'chore', 'routine'],
-  kitchen: ['recipe', 'meal', 'pantry'],
+  // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
+  // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
+  // where it's navigate-only and resolves its target from the meal plan).
+  kitchen: ['cook', 'recipe', 'meal', 'pantry'],
   routines: ['routine'],
   liste: ['list-item', 'quick-add', 'flyer'],
 }

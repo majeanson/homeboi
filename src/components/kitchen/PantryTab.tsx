@@ -149,7 +149,6 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
     <>
       <section>
         <h2>{t.kitchen.low}</h2>
-        <p className="kitchen__use-soon-hint mono">{t.kitchen.lowHint}</p>
         <form className="kitchen__low-add" onSubmit={addLow}>
           <input
             className="input"
@@ -183,7 +182,6 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
 
       <section>
         <h2>{t.kitchen.useSoon}</h2>
-        <p className="kitchen__use-soon-hint mono">{t.kitchen.useSoonHint}</p>
         <form className="kitchen__soon-add" onSubmit={addSoon}>
           <input
             className="input"

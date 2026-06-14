@@ -8,6 +8,7 @@ import { ROUTINES_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { Icon, InlineIcon } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
+import { SectionIntro } from '../components/SectionIntro'
 import { imgUrl } from '../lib/image'
 import { dayOrder, isRoutineTod, TOD_ICON, TOD_TINT } from '../lib/routineTod'
 import { KidView } from './KidView'
@@ -63,6 +64,8 @@ function RoutinesParent() {
           <Icon name="paint-brush-bold" size={26} color="var(--berry-deep, #95527A)" />
         </div>
       </div>
+
+      <SectionIntro card="routines" />
 
       {routines.length === 0 ? (
         <p className="feed-empty">{t.kid.none}</p>

@@ -536,6 +536,11 @@ export interface AppState {
   // Pretend this device holds a (possibly revoked) device token — pairs with
   // mockApi({ unauthorized: true }) to exercise the pairing-lost recovery.
   paired?: boolean
+  // The per-section first-visit welcome cards (SectionIntro). Suppressed by
+  // default so screenshots/interaction specs see the real section content, not a
+  // first-run card on top — same idea as pre-seeding the tour as "seen". Pass
+  // `intros: true` to leave them un-dismissed and exercise the feature.
+  intros?: boolean
 }
 
 // Seed localStorage BEFORE any document script runs, so theme-bootstrap.js picks
@@ -553,6 +558,11 @@ export async function seedState(page: Page, s: AppState) {
       if (state.paired) {
         localStorage.setItem('babillard-device-token', 'e2e-device-token')
         localStorage.setItem('babillard-device-household', 'h1')
+      }
+      // Pre-dismiss the per-section welcome cards unless a test opts in, so they
+      // never sit on top of the content a screenshot/interaction spec is after.
+      if (!state.intros) {
+        localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'routines', 'liste']))
       }
     } catch {
       /* noop */

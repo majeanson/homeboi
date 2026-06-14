@@ -23,7 +23,7 @@ export const FR = {
     exitCancel: 'Rester',
     exitWrong: 'Pas tout à fait. Réessaie.',
   },
-  help: { learnMore: 'Aide sur cette section' },
+  help: { learnMore: 'Aide sur cette section', gotIt: 'Compris' },
   tour: { label: 'Visite guidée', stepOf: (n: number, total: number) => `Étape ${n} sur ${total}`, skip: 'Passer', back: 'Retour', next: 'Suivant', done: 'Terminé', learnMore: 'En savoir plus' },
   today: { morning: 'Bon matin', afternoon: 'Bon après-midi', evening: 'Bonne soirée' },
   home: {
@@ -133,6 +133,7 @@ export const FR = {
     prepTomorrow: 'À préparer pour demain',
     nothingTonight: 'Pas de souper prévu',
     cooks: 'aux fourneaux',
+    cook: 'Préparer le repas',
     list: 'La liste',
     listEmpty: 'Liste vide. Rien à acheter.',
     chores: 'Les corvées',
@@ -200,6 +201,8 @@ export const FR = {
     slots: { breakfast: 'Déjeuner', lunch: 'Dîner', supper: 'Souper', snack: 'Collation' },
     // The contextual ＋ sheet (kitchen section).
     addTitle: 'Ajouter à la cuisine',
+    cook: 'Cuisiner',
+    cookNext: 'Cuisiner le prochain repas',
     planMeal: 'Planifier un repas',
     whichDay: 'Quel jour veux-tu planifier ?',
     mealPlaceholder: 'Quoi manger ? (ex. spaghetti)',
@@ -715,7 +718,7 @@ export const EN: typeof FR = {
     exitCancel: 'Stay',
     exitWrong: 'Not quite. Try again.',
   },
-  help: { learnMore: 'Help for this section' },
+  help: { learnMore: 'Help for this section', gotIt: 'Got it' },
   tour: { label: 'Guided tour', stepOf: (n: number, total: number) => `Step ${n} of ${total}`, skip: 'Skip', back: 'Back', next: 'Next', done: 'Done', learnMore: 'Learn more' },
   today: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },
   home: {
@@ -825,6 +828,7 @@ export const EN: typeof FR = {
     prepTomorrow: 'Prep for tomorrow',
     nothingTonight: 'No supper planned',
     cooks: 'cooking',
+    cook: 'Start cooking',
     list: 'The list',
     listEmpty: 'List empty. Nothing to buy.',
     chores: 'Chores',
@@ -890,6 +894,8 @@ export const EN: typeof FR = {
     slots: { breakfast: 'Breakfast', lunch: 'Lunch', supper: 'Supper', snack: 'Snack' },
     // The contextual ＋ sheet (kitchen section).
     addTitle: 'Add to the kitchen',
+    cook: 'Cook',
+    cookNext: 'Cook the next meal',
     planMeal: 'Plan a meal',
     whichDay: 'Which day do you want to plan?',
     mealPlaceholder: 'What to eat? (e.g. spaghetti)',

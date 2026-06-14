@@ -82,7 +82,8 @@ for (const theme of ['day', 'night'] as Theme[]) {
   // ⚡ Quick add: the re-stock page of past/predicted items (now a full-screen scene).
   test(`list-quick-add${sfx}`, async ({ page }) => {
     await boot(page, '/liste', { theme })
-    await page.locator('.list-quick').click()
+    await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
+    await page.getByRole('button', { name: 'Ajout rapide' }).click()
     await page.locator('.scene .qa__list').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `list-quick-add-phone${sfx}`, false)
@@ -112,6 +113,7 @@ test('list-checked', async ({ page }) => {
 // state with the staple chips. The results state is already in sheets.spec.
 test('list-deals-start', async ({ page }) => {
   await boot(page, '/liste')
+  await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
   await page.getByRole('button', { name: /Parcourir/ }).click()
   await page.locator('.scene').waitFor({ state: 'visible' })
   await page.locator('.deal-stores').first().waitFor({ state: 'visible' })

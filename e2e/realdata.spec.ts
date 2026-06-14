@@ -29,6 +29,9 @@ async function seed(context: BrowserContext) {
       // Mark the first-login guided tour as already seen, or its overlay covers
       // every page and the sweep just shoots the coachmark (see lib/tour.tsx).
       localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
+      // Same for the per-section first-visit welcome cards — pre-dismiss them so
+      // the real-data sweep shoots the section content, not a first-run card.
+      localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'routines', 'liste']))
     } catch {
       /* noop */
     }

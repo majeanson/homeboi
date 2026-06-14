@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
 import { HelpDot } from '../components/HelpDot'
+import { SectionIntro } from '../components/SectionIntro'
 import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
 import { wash, tintInk } from '../lib/colors'
@@ -19,7 +20,7 @@ import { timeOfDay } from '../lib/timeofday'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
-import { formatClock, formatDay, formatTime } from '../lib/format'
+import { formatDay, formatTime } from '../lib/format'
 import { pictoFor } from '../lib/picto'
 import { SLOT_ICON_NAME, SLOT_RANK, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
@@ -51,7 +52,6 @@ export function Board() {
   const { memberId: profileId, setMemberId } = useProfile()
   const [profileOpen, setProfileOpen] = useState(false)
   const speak = useSpeak()
-  const [clock, setClock] = useState(() => formatClock(lang, Date.now()))
   // The board layout for this device (bento | next | lanes), remembered locally.
   const [view, setView] = useState<BoardView>(() => readBoardView())
   // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
@@ -90,11 +90,6 @@ export function Board() {
   const weather = wx?.weather ?? null
   const tomorrowWx = wx?.tomorrow ?? null
   const tip = weatherTip(weather)
-
-  useEffect(() => {
-    const c = setInterval(() => setClock(formatClock(lang, Date.now())), 30000)
-    return () => clearInterval(c)
-  }, [lang])
 
   // (The kiosk's idle drift back to Maisonnée lives in HubLayout — shell-level,
   // so wandering to Réglages or the kitchen doesn't pin a picked face forever.)
@@ -411,31 +406,38 @@ export function Board() {
             <h1 className="greet">{me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]}</h1>
             <HelpDot card="board" />
           </div>
-          <div className="subgreet">{clock}</div>
         </div>
-        <div className="board-head__right">
-          {surface === 'mobile' && (
-            <button
-              type="button"
-              className="profile-chip"
-              onClick={() => setProfileOpen(true)}
-              aria-label={t.profile.who}
-            >
-              {me ? (
-                <span className="profile-chip__av" style={{ background: me.colour }}>
-                  {(me.display_name[0] ?? '?').toUpperCase()}
-                </span>
-              ) : (
-                <span className="profile-chip__ask mono">{t.profile.askShort}</span>
-              )}
-            </button>
-          )}
-          <BoardViewToggle view={view} onChange={changeView} t={t} />
-          <div className="avatar" style={{ background: 'var(--marigold-wash)' }}>
-            <Icon name={TOD_ICON[tod]} size={26} color="var(--marigold-deep)" />
-          </div>
+        {/* Time-of-day icon sits in the top-right corner like every other tab's
+            avatar — the view toggle + profile chip drop to their own row below so
+            the avatar reads as the section's identity, not part of the filter. */}
+        <div className="avatar" style={{ background: 'var(--marigold-wash)' }}>
+          <Icon name={TOD_ICON[tod]} size={26} color="var(--marigold-deep)" />
         </div>
       </div>
+
+      {/* Board controls: who's at this phone + which of the four views. Kept off
+          the avatar (top-right) so the header matches the other tabs. */}
+      <div className="board-controls">
+        {surface === 'mobile' && (
+          <button
+            type="button"
+            className="profile-chip"
+            onClick={() => setProfileOpen(true)}
+            aria-label={t.profile.who}
+          >
+            {me ? (
+              <span className="profile-chip__av" style={{ background: me.colour }}>
+                {(me.display_name[0] ?? '?').toUpperCase()}
+              </span>
+            ) : (
+              <span className="profile-chip__ask mono">{t.profile.askShort}</span>
+            )}
+          </button>
+        )}
+        <BoardViewToggle view={view} onChange={changeView} t={t} />
+      </div>
+
+      <SectionIntro card="board" />
 
       {/* Shared kiosk: a one-tap face row to switch between Maisonnée (everyone)
           and an individual member — so anyone at the wall tablet can quickly act
@@ -618,7 +620,7 @@ export function Board() {
         </>
       )}
 
-      <p className="board__synced mono">{stale ? t.board.offline : `${t.board.synced} ${clock}`}</p>
+      <p className="board__synced mono">{stale ? t.board.offline : t.board.synced}</p>
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}
     </main>
   )

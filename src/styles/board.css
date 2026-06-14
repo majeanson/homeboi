@@ -177,13 +177,16 @@
 }
 
 /* ---- Board: weather tip, tomorrow chip, view toggle & alt views ---------- */
-.board-head__right {
+/* The view toggle + profile chip ride on their own right-aligned row under the
+   header, so the time-of-day avatar can sit in the top-right corner like every
+   other tab. Pulled up tight against the header to stay compact. */
+.board-controls {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;
-  margin-left: auto;
+  margin: -8px 0 14px;
 }
 .weather-tip {
   margin-top: 0.35rem;
@@ -292,6 +295,41 @@
 .nownext__then-title {
   font-size: 1.15rem;
 }
+/* "Préparer le repas" — a calm, tappable CTA to jump into cook mode for the next
+   meal due. Reads as a card (matches .nownext__focus), spined with the souper
+   colour so it belongs to the day's meals. */
+.nownext__cook {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  align-self: center;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 0.85rem 1.4rem;
+  cursor: pointer;
+  font-family: var(--sans);
+  color: var(--ink);
+  transition: border-color var(--dur-fast);
+}
+.nownext__cook:hover {
+  border-color: var(--ink-faint);
+}
+.nownext__cook-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.nownext__cook-meal {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
 .nownext__allday {
   text-align: center;
   color: var(--ink-faint);
@@ -309,6 +347,17 @@
 .nownext__meals-label {
   color: var(--ink-faint);
   font-size: 0.9rem;
+}
+/* Today's chores stacked as the same colour-spined Act cards used in the lanes
+   view, with a quiet label — no longer a bare line of text. */
+.nownext__chores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.nownext__chores .nownext__meals-label {
+  text-align: center;
+  margin-bottom: 0.1rem;
 }
 
 /* Per-person "lanes": columns of each member's day. */

@@ -276,6 +276,15 @@ button {
   border-color: var(--accent);
   color: var(--accent);
 }
+/* A de-emphasised, compact button for secondary on-page actions (e.g. Liste's
+   "Vider") — visually small and auto-width so it never competes with the content,
+   while keeping a comfortable tap target. */
+.btn--sm {
+  min-height: 38px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.85rem;
+  box-shadow: none;
+}
 /* The destructive confirm button (in-app confirm dialog). Warn ink with white
    text — the one place delete is meant to read as a deliberate, weighty action,
    unlike the quiet recede of an inline row delete. */

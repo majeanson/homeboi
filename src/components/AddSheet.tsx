@@ -8,6 +8,7 @@ import { useVoiceInput } from '../lib/useVoiceInput'
 import { VoiceButton } from './VoiceButton'
 import { formatWeekday } from '../lib/format'
 import { OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
+import { useNextMeal } from '../lib/nextMeal'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { MEALS_KEY, PANTRY_KEY, type MealsData } from './kitchen/types'
@@ -47,6 +48,7 @@ const MODE_META: Record<AddSheetMode, { icon: IconName; deep: string; wash: stri
   event: { icon: 'calendar-blank-bold', deep: '#5891AC', wash: 'var(--sky-wash)' },
   chore: { icon: 'hand-heart-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
   routine: { icon: 'pencil-simple-bold', deep: '#95527A', wash: 'var(--berry-wash)' },
+  cook: { icon: 'cooking-pot-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
   recipe: { icon: 'book-open-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
   meal: { icon: 'calendar-blank-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
   pantry: { icon: 'carrot-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
@@ -63,6 +65,11 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   'quick-add': '/liste/quick',
   flyer: '/liste/circulaires',
 }
+
+// Navigate-only modes never host an in-sheet form, so they can't be the sheet's
+// default. `cook`'s destination is dynamic (the next meal's recipe), resolved at
+// click time, so it lives here rather than in the static NAV_TARGET map above.
+const isNavOnly = (m: AddSheetMode) => m === 'cook' || m in NAV_TARGET
 
 export function AddSheet({
   open,
@@ -96,7 +103,7 @@ export function AddSheet({
   // form-backed tile — navigate-only modes (recipe, quick-add, flyer) leave the
   // sheet, so the kitchen pre-selects the meal planner and Liste the add-a-line
   // form under their choosers.
-  const defMode = shown.includes('capture') ? 'capture' : (shown.find((m) => !NAV_TARGET[m]) ?? shown[0])
+  const defMode = shown.includes('capture') ? 'capture' : (shown.find((m) => !isNavOnly(m)) ?? shown[0])
   const [mode, setMode] = useState<AddSheetMode>(initialMode ?? defMode)
   // Re-sync on each open so the last visit's pick doesn't leak into this one.
   useEffect(() => {
@@ -130,6 +137,11 @@ export function AddSheet({
     queryFn: () => api<MealsData>('meals'),
     enabled: open && wantsMeal,
   })
+  // "Cuisiner" tile: where it lands — the next meal due → its recipe cook mode,
+  // else the kitchen (so the tap is never dead). Resolved from the shared meal +
+  // recipe caches; fetched only while the sheet's open and the tile is shown.
+  const cook = useNextMeal(open && shown.includes('cook'))
+  const cookTarget = cook.target ?? '/kitchen'
   const weekStart = mealsData?.weekStart ?? 0
   // Same 10-day countdown window the Kitchen grid renders (shrinks 10 → 4 across
   // the week, re-anchored each Tuesday — see functions/api/meals.ts).
@@ -228,26 +240,22 @@ export function AddSheet({
     nav(`/kitchen?manage=${d}`)
   }
 
-  const modeLabel = (m: AddSheetMode) =>
-    m === 'capture'
-      ? t.capture.quick
-      : m === 'event'
-        ? t.capture.types.event
-        : m === 'chore'
-          ? t.operator.chores
-          : m === 'routine'
-            ? t.nav.routines
-            : m === 'recipe'
-              ? t.recipes.add
-              : m === 'meal'
-                ? t.kitchen.planMeal
-                : m === 'pantry'
-                  ? t.kitchen.lowAdd
-                  : m === 'quick-add'
-                    ? t.list.quickAdd
-                    : m === 'flyer'
-                      ? t.shop.browse
-                      : t.list.addTitle
+  const modeLabel = (m: AddSheetMode) => {
+    const labels: Record<AddSheetMode, string> = {
+      capture: t.capture.quick,
+      event: t.capture.types.event,
+      chore: t.operator.chores,
+      cook: t.kitchen.cook,
+      routine: t.nav.routines,
+      recipe: t.recipes.add,
+      meal: t.kitchen.planMeal,
+      pantry: t.kitchen.lowAdd,
+      'list-item': t.list.addTitle,
+      'quick-add': t.list.quickAdd,
+      flyer: t.shop.browse,
+    }
+    return labels[m]
+  }
 
   // The sheet's title names what this section adds (the chooser-less sections
   // would otherwise just say "Ajouter" over an unexplained form).
@@ -288,6 +296,11 @@ export function AddSheet({
                 type="button"
                 className={'cat-pick' + (mode === m ? ' sel' : '')}
                 onClick={() => {
+                  if (m === 'cook') {
+                    close()
+                    nav(cookTarget)
+                    return
+                  }
                   const target = NAV_TARGET[m]
                   if (target) {
                     close()

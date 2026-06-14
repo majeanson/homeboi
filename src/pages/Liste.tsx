@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon, InlineIcon } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
+import { SectionIntro } from '../components/SectionIntro'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
 import { useT } from '../i18n'
@@ -14,9 +15,8 @@ import { Loading, PairPrompt } from '../components/Fallback'
 import { useRecordUndo, useUndoToast } from '../lib/toast'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
-import { money, type Deal } from '../lib/deals'
-import { pickListFrom, parseDeal, parseTerms, stageDeal } from '../lib/picks'
-import { useQuickItems } from '../lib/quickItems'
+import { money } from '../lib/deals'
+import { pickListFrom, parseDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { BOARD_KEY } from '../lib/queryKeys'
@@ -32,12 +32,14 @@ import { BOARD_KEY } from '../lib/queryKeys'
 //   - A check is a MARK, not a move — the item stays in place (struck through),
 //     so you tick what's in the cart and leave what's out of stock. Tap again to
 //     uncheck. Nothing is logged as bought yet.
-//   - "Clear checked" removes every checked line in one go (→ logged as bought,
-//     which feeds the predictions) and leaves the un-ticked items for next time.
-//   - "⚡ Quick add" reopens past/predicted items to restock a week in a few taps,
-//     each carrying the flyer synonyms it last shopped with.
-//   - The shopping tools (browse flyers, auto-pick the best prices, show the
-//     cashier) are always one tap away — no mode to switch into.
+//   - "Clear checked" (a small "Vider" tucked to the side) removes every checked
+//     line in one go (→ logged as bought, which feeds the predictions) and leaves
+//     the un-ticked items for next time.
+//   - The page is deliberately just the list + its add bar. Secondary actions live
+//     behind the ＋ Add sheet, not as buttons on the page: "Ajout rapide" (restock
+//     past/predicted items, carrying their flyer synonyms) and "Circulaires"
+//     (browse flyers / stage deals). The only prominent shopping button is
+//     "Montrer à la caisse", and only once deals are staged.
 interface ListRow {
   id: string
   text: string
@@ -158,7 +160,6 @@ export function Liste() {
   const nav = useNavigate()
   const undo = useUndoToast()
   const recordUndo = useRecordUndo()
-  const [auto, setAuto] = useState(false)
   // Items whose "Clear checked" delete is DEFERRED behind the undo toast. Filtered
   // out of the displayed list at once so a refetch (the live poll, a focus, or an
   // add's invalidation) can't resurrect them before the clear commits.
@@ -181,9 +182,6 @@ export function Liste() {
   )
 
   const { data: board, error } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board'), ...live })
-  // Candidate re-adds for the ⚡ Quick add page; here we only need the count for the
-  // badge. The page itself reads the same hook off the shared caches.
-  const quickItems = useQuickItems()
 
   // Add a line to the list. `terms` (optional) carries flyer synonyms — the
   // quick-add panel passes them so a re-added item keeps its deal search.
@@ -299,30 +297,9 @@ export function Liste() {
   const memberById = new Map((board?.members ?? []).map((m) => [m.id, m]))
 
   // The cashier set = every list line carrying a staged deal (server state, in
-  // sync across devices, gone once the item is cleared).
+  // sync across devices, gone once the item is cleared). Deals get staged from the
+  // flyer browser (reached via the ＋ Add sheet → Circulaires).
   const pickList = pickListFrom(list)
-
-  // Auto-pick: for each list item, grab the top (best-value) deal and stage it,
-  // then jump to the cashier review. Carries each line's saved synonyms.
-  async function autoPick(rows: ListRow[]) {
-    setAuto(true)
-    let any = false
-    for (const item of rows) {
-      try {
-        const terms = parseTerms(item.search_terms)
-        const qs = `deals?q=${encodeURIComponent(item.text)}${terms.length ? `&terms=${encodeURIComponent(terms.join(','))}` : ''}`
-        const r = await api<{ deals: Deal[] }>(qs)
-        if (r.deals[0]) {
-          await stageDeal(qc, item.text, r.deals[0])
-          any = true
-        }
-      } catch {
-        /* skip items with no deals / errors */
-      }
-    }
-    setAuto(false)
-    if (any || pickList.length > 0) nav('/liste/cashier')
-  }
 
   if (audience === 'toddler') {
     // Read-only for toddlers: tapping a tile reads it aloud but never checks it
@@ -358,6 +335,8 @@ export function Liste() {
         </div>
       </div>
 
+      <SectionIntro card="liste" />
+
       {/* Add a line right here — type it or speak it. The direct path; the ＋
           capture sheet still works for the AI-routed quick note. */}
       <form className="list-add" onSubmit={addItem}>
@@ -375,12 +354,6 @@ export function Liste() {
         </button>
       </form>
       <VoiceStatus voice={voice} />
-
-      {/* Quick add: reopen past/predicted items to restock a week in a few taps. */}
-      <button type="button" className="btn btn--ghost list-quick" onClick={() => nav('/liste/quick')}>
-        <InlineIcon name="lightning-bold" color="var(--marigold-deep)" /> {t.list.quickAdd}
-        {quickItems.length > 0 && <span className="list-quick__n mono">{quickItems.length}</span>}
-      </button>
 
       {list.length === 0 ? (
         <p className="feed-empty">{t.board.listEmpty}</p>
@@ -424,37 +397,26 @@ export function Liste() {
       )}
 
       {/* Clear the trip: every checked line goes (logged as bought), the rest
-          stays for next time. The primary action once anything's ticked. */}
+          stays for next time. Kept small and tucked to the side — the list itself
+          is the page, not its controls. */}
       {checkedIds.length > 0 && (
-        <div className="list-actions">
-          <button type="button" className="btn btn--primary" onClick={() => clearChecked(checkedIds)}>
+        <div className="list-clear">
+          <button type="button" className="btn btn--primary btn--sm" onClick={() => clearChecked(checkedIds)}>
             <InlineIcon name="check-bold" /> {t.list.clearChecked} ({checkedIds.length})
           </button>
         </div>
       )}
 
-      {/* Shopping tools, always one tap away — no mode to switch into. */}
-      <div className="list-actions">
-        <button type="button" className="btn btn--ghost mono" onClick={() => nav('/liste/circulaires')}>
-          <InlineIcon name="magnifying-glass-bold" /> {t.shop.browse}
-        </button>
-        {list.length > 0 && (
-          <button type="button" className="btn btn--ghost mono" onClick={() => autoPick(list)} disabled={auto}>
-            {auto ? (
-              t.shop.autoWorking
-            ) : (
-              <>
-                <InlineIcon name="sparkle-bold" /> {t.shop.auto}
-              </>
-            )}
-          </button>
-        )}
-        {pickList.length > 0 && (
+      {/* The one prominent shopping action: take the staged deals to the cashier.
+          Browsing flyers and restocking past items live in the ＋ Add sheet now,
+          so the page stays the list. */}
+      {pickList.length > 0 && (
+        <div className="list-actions">
           <button type="button" className="btn btn--primary" onClick={() => nav('/liste/cashier')}>
             <InlineIcon name="receipt-bold" /> {t.shop.present} ({pickList.length})
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
     </main>
   )

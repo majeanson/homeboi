@@ -533,8 +533,8 @@ export const GUIDE: GuideEntry[] = [
     group: 'sections',
     title: { fr: 'Réglages', en: 'Settings' },
     what: {
-      fr: 'Le poste de pilotage du parent : les personnes, les appareils, les corvées, les routines, l’affichage. Réservé à l’opérateur (pas la tablette).',
-      en: 'The parent’s control panel: people, devices, chores, routines, display. Operator-only (not the tablet).',
+      fr: 'Le poste de pilotage du parent : les personnes, les appareils, les corvées, les routines, l’affichage. Ce que tu montes ici alimente le babillard et la vue enfant. Réservé à l’opérateur (pas la tablette).',
+      en: 'The parent’s control panel: people, devices, chores, routines, display. What you set up here feeds the board and the kid view. Operator-only (not the tablet).',
     },
     points: [
       {
@@ -554,12 +554,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Approuve une tablette qui demande à se jumeler, et retire-la quand tu veux (voir Jumelage).',
           en: 'Approve a tablet asking to pair, and remove it whenever you like (see Pairing).',
         },
+        why: {
+          fr: 'C’est ce qui laisse une tablette au mur voir le babillard, sans lui confier ton mot de passe.',
+          en: 'It’s what lets a wall tablet see the board, without trusting it with your password.',
+        },
       },
       {
         label: { fr: 'Corvées & routines', en: 'Chores & routines' },
         detail: {
           fr: 'Monte la rotation des corvées et les étapes des routines d’enfants ici.',
           en: 'Build the chore rotation and the kid routine steps here.',
+        },
+        why: {
+          fr: 'Monté ici une fois, ça tourne ensuite tout seul — sur le babillard et dans la vue enfant.',
+          en: 'Set up here once, it then runs on its own — on the board and in the kid view.',
         },
       },
       {
@@ -738,6 +746,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Dans Réglages, tu peux adoucir la friction de « refaire » la routine d’enfant. C’est la seule partie ajustable.',
           en: 'In Settings, you can soften the “redo” friction of the kid routine. That’s the only adjustable part.',
+        },
+        why: {
+          fr: 'C’est la seule friction réglable — le reste du calme (listes qui se vident, « annuler » partout, zéro score dans les routines) est partout dans l’app et ne se touche pas.',
+          en: 'It’s the only adjustable friction — the rest of the calm (lists that empty, “undo” everywhere, zero score in routines) is all over the app and can’t be touched.',
         },
       },
       {
@@ -1230,8 +1242,8 @@ export const GUIDE: GuideEntry[] = [
     group: 'concepts',
     title: { fr: 'Compte & connexion', en: 'Account & sign-in' },
     what: {
-      fr: 'L’opérateur (le parent) crée une maisonnée et s’y connecte. La tablette, elle, n’a pas de compte — elle se jumelle (voir Jumelage).',
-      en: 'The operator (the parent) creates a household and signs in. The tablet has no account — it pairs instead (see Pairing).',
+      fr: 'L’opérateur (le parent) crée une maisonnée et s’y connecte — c’est ce compte qui débloque les membres, le jumelage des tablettes et la synchro entre appareils. La tablette, elle, n’a pas de compte : elle se jumelle (voir Jumelage).',
+      en: 'The operator (the parent) creates a household and signs in — this account is what unlocks members, tablet pairing and sync across devices. The tablet has no account: it pairs instead (see Pairing).',
     },
     points: [
       {
@@ -1240,12 +1252,20 @@ export const GUIDE: GuideEntry[] = [
           fr: 'L’inscription crée la maisonnée et t’amène direct à « La maisonnée » pour ajouter les personnes. Une maisonnée par courriel.',
           en: 'Signup creates the household and lands you in “Household” to add people. One household per email.',
         },
+        why: {
+          fr: 'C’est le point de départ : sans maisonnée, rien à peupler, rien à jumeler, rien à synchroniser.',
+          en: 'It’s the starting point: with no household, there’s nothing to populate, pair or sync.',
+        },
       },
       {
         label: { fr: 'Mot de passe', en: 'Password' },
         detail: {
           fr: 'Minimum 8 caractères, avec un petit compteur « N/8 » qui se coche quand c’est bon.',
           en: 'At least 8 characters, with a small “N/8” counter that ticks when it’s enough.',
+        },
+        why: {
+          fr: 'C’est tout ce qui sépare tes données du web — et la tablette au mur n’en a jamais besoin, elle se jumelle.',
+          en: 'It’s all that stands between your data and the web — and the wall tablet never needs it, it pairs.',
         },
       },
       {
@@ -1337,6 +1357,10 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Le même formulaire que le bouton ＋. Titre, date/heure (ou toute la journée), et à qui ça appartient.',
           en: 'The same form as the ＋ button. Title, date/time (or all-day), and whose it is.',
         },
+        why: {
+          fr: 'Tout ce que tu entres ici remonte sur le babillard à la bonne date — c’est ce qui fait que le mur connaît la journée.',
+          en: 'Everything you enter here surfaces on the board on the right date — it’s what lets the wall know the day.',
+        },
       },
       {
         label: { fr: 'Assigner à une personne', en: 'Assign to a person' },
@@ -1379,6 +1403,10 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Donne-lui un titre et une couleur. Tu peux l’assigner à une personne.',
           en: 'Give it a title and a colour. You can assign it to a person.',
         },
+        why: {
+          fr: 'La corvée s’affiche sur le babillard avec « c’est le tour de… » ; ajoute d’abord les membres, car la rotation se choisit parmi eux.',
+          en: 'The chore shows on the board with “whose turn it is…”; add members first, since the rotation is picked from them.',
+        },
       },
       {
         label: { fr: 'Donner un horaire', en: 'Give it a schedule' },
@@ -1396,6 +1424,10 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Remets la récurrence à « Jamais » et la corvée redevient ponctuelle.',
           en: 'Set the recurrence back to “Never” and the chore becomes one-off again.',
+        },
+        why: {
+          fr: 'Pour une corvée qui n’arrive qu’une fois — elle quitte le babillard une fois faite.',
+          en: 'For a chore that happens only once — it leaves the board once it’s done.',
         },
       },
     ],

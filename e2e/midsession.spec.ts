@@ -42,6 +42,7 @@ test('ms: liste add sheet', async ({ page }) => {
 test('ms: liste quick add panel', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await open(page, '/liste')
+  await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
   await page.getByRole('button', { name: /Ajout rapide/ }).first().click()
   await page.waitForTimeout(600)
   await shot(page, 'liste-quickadd')

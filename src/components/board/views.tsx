@@ -1,10 +1,12 @@
+import { useNavigate } from 'react-router-dom'
 import { CATS } from '../../lib/cats'
 import { tintInk } from '../../lib/colors'
 import { useMealPrefs } from '../../lib/mealPrefs'
+import { useNextMeal } from '../../lib/nextMeal'
 import { formatTime } from '../../lib/format'
 import { SLOT_ICON_NAME, SLOT_TIME_ORDER, type MealSlot } from '../../lib/mealSlots'
 import { type Lang } from '../../i18n'
-import { InlineIcon } from '../Icon'
+import { Icon, InlineIcon } from '../Icon'
 import { Act } from './Act'
 import { colorOf, nameOf, type BoardData, type Dict, type EventRow } from './types'
 
@@ -14,6 +16,11 @@ import { colorOf, nameOf, type BoardData, type Dict, type EventRow } from './typ
 // the supper, then a calm empty. All-day items ride along as a quiet footer.
 export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: Lang; t: Dict; profileId: string | null }) {
   const mealPrefs = useMealPrefs()
+  const nav = useNavigate()
+  // "Préparer le repas" — the next meal due that has a recipe → its cook mode.
+  // Only shown when there's a recipe to open (a free-text meal has nothing to
+  // cook), so the action is never a dead end.
+  const cook = useNextMeal()
   const supperColor = mealPrefs.color('supper')
   // The day's meal footer skips slots the household hid (Réglages ▸ Repas), and
   // groups by slot in time order so it reads as one colour chip per slot — the same
@@ -98,6 +105,24 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
         </div>
       )}
 
+      {/* Jump straight to cook mode for the next meal due (déjeuner→souper by the
+          hour). Only when that meal resolves to a saved recipe — otherwise there's
+          nothing to open. The same shortcut the kitchen ＋ "Cuisiner" tile uses. */}
+      {cook.target && cook.meal && (
+        <button
+          type="button"
+          className="nownext__cook"
+          style={{ borderColor: supperColor + '55' }}
+          onClick={() => nav(cook.target!)}
+        >
+          <Icon name="cooking-pot-bold" size={22} color={supperColor} />
+          <span className="nownext__cook-label">
+            {t.board.cook}
+            <span className="nownext__cook-meal">{cook.meal.title}</span>
+          </span>
+        </button>
+      )}
+
       {allDay.length > 0 && (
         <div className="nownext__allday mono">
           {t.board.allDay} · {allDay.map((e) => e.title).join(' · ')}
@@ -106,11 +131,14 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
 
       {/* Recurring chores due today ride as a quiet footer too — so switching to
           "Maintenant" doesn't hide them (they're not time-bound, so they can't be
-          the focus card). */}
+          the focus card). Rendered as the same colour-spined Act cards used
+          everywhere else in this section, not bare text. */}
       {(data.choresToday ?? []).length > 0 && (
-        <div className="nownext__allday mono">
-          {t.board.chores} ·{' '}
-          {(data.choresToday ?? []).map((c) => (c.who ? `${c.title} (${c.who})` : c.title)).join(' · ')}
+        <div className="nownext__chores">
+          <span className="nownext__meals-label mono">{t.board.chores}</span>
+          {(data.choresToday ?? []).map((c) => (
+            <Act key={c.id} cat="chore" title={c.title} who={c.who ?? undefined} color={c.color ?? undefined} />
+          ))}
         </div>
       )}
 
