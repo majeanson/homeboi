@@ -497,6 +497,79 @@
   gap: 8px;
   margin-top: 6px;
 }
+/* "Cuisiner" picker — a column of today's cookable meals; tapping a row jumps
+   straight into that recipe's cook mode. Each row is spined with its slot colour
+   (déjeuner→souper), the next-due meal marked "Prochain". */
+.addsheet__cooklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.addsheet__cookrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 10px 12px;
+  cursor: pointer;
+  font-family: var(--sans);
+  color: var(--ink);
+  transition: border-color var(--dur-fast);
+}
+.addsheet__cookrow:hover {
+  border-color: var(--ink-faint);
+}
+.addsheet__cookrow-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  flex: 0 0 auto;
+}
+.addsheet__cookrow-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.addsheet__cookrow-title {
+  font-weight: 600;
+  font-size: 1.02rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.addsheet__cookrow-sub {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.addsheet__cookrow-next {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.addsheet__cook-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 6px;
+}
 /* The meal planner's day + slot selects, side by side above the title field. */
 .sheet__row {
   display: flex;

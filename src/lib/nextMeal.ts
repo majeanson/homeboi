@@ -9,6 +9,16 @@ import { RECIPES_KEY, type Recipe } from './recipes'
 import { MEALS_KEY, type MealRow, type MealsData } from '../components/kitchen/types'
 import { SLOT_RANK, type MealSlot, isMealSlot } from './mealSlots'
 
+// One cookable choice in the "Cuisiner" picker: a planned meal that resolves to a
+// saved recipe, its cook-mode route, and whether it's the one the app would
+// auto-pick (the next meal due) — so the picker can mark/sort it first.
+export interface CookChoice {
+  meal: MealRow
+  recipe: Recipe
+  target: string
+  isNext: boolean
+}
+
 // Which slot you're most likely about to cook, by local hour. Boundaries chosen
 // so "Cuisiner" lands on the next meal you'd actually prepare, not the one that
 // just passed: <10h déjeuner · <14h dîner · <16h collation · else souper.
@@ -62,4 +72,31 @@ export function useNextMeal(enabled = true): { meal?: MealRow; recipe?: Recipe; 
   const meal = pickNextMeal(todayMeals, new Date().getHours())
   const recipe = meal ? recipeForMeal(meal, recipesData?.recipes ?? []) : undefined
   return { meal, recipe, target: recipe ? `/kitchen/recipe/${recipe.id}/cook` : null }
+}
+
+// Every cookable meal planned for TODAY, in time order — the choices the kitchen
+// ＋ "Cuisiner" picker offers so you're not locked to just the next one. Only
+// meals that resolve to a saved recipe make the list (a free-text meal has no
+// cook mode to open); the meal `useNextMeal` would auto-pick is flagged `isNext`.
+// Empty when nothing cookable is planned today. Same shared caches as useNextMeal.
+export function useCookableMeals(enabled = true): CookChoice[] {
+  const { data: mealsData } = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), enabled })
+  const { data: recipesData } = useQuery({
+    queryKey: RECIPES_KEY,
+    queryFn: () => api<{ recipes: Recipe[] }>('recipes'),
+    enabled,
+  })
+  const today = mealsData?.weekStart ?? 0
+  const todayMeals = today ? (mealsData?.days ?? []).filter((m) => m.date === today) : []
+  const next = pickNextMeal(todayMeals, new Date().getHours())
+  const recipes = recipesData?.recipes ?? []
+  return todayMeals
+    .filter((m) => isMealSlot(m.slot))
+    .sort((a, b) => SLOT_RANK[a.slot as MealSlot] - SLOT_RANK[b.slot as MealSlot])
+    .map((meal): CookChoice | null => {
+      const recipe = recipeForMeal(meal, recipes)
+      if (!recipe) return null
+      return { meal, recipe, target: `/kitchen/recipe/${recipe.id}/cook`, isNext: meal.id === next?.id }
+    })
+    .filter((c): c is CookChoice => c !== null)
 }

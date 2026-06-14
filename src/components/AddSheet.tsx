@@ -8,7 +8,9 @@ import { useVoiceInput } from '../lib/useVoiceInput'
 import { VoiceButton } from './VoiceButton'
 import { formatWeekday } from '../lib/format'
 import { OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
-import { useNextMeal } from '../lib/nextMeal'
+import { useCookableMeals } from '../lib/nextMeal'
+import { useMealPrefs } from '../lib/mealPrefs'
+import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
@@ -69,11 +71,12 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   flyer: '/liste/circulaires',
 }
 
-// Modes with no in-sheet form, so they can't be the sheet's default. `cook`'s
-// destination is dynamic (the next meal's recipe) and `auto-pick` runs an action
-// in place (stage best deals → cashier) — both resolved at click time, so they
-// live here rather than in the static NAV_TARGET map above.
-const isNavOnly = (m: AddSheetMode) => m === 'cook' || m === 'auto-pick' || m in NAV_TARGET
+// Modes that must never be the sheet's pre-selected default: they have no plain
+// in-sheet "add a thing" form. `cook` opens its own in-sheet meal picker, and
+// `auto-pick` runs an action in place (stage best deals → cashier) — both
+// resolved at click time, plus the static nav targets above. The kitchen should
+// open on its meal planner, not on the cook picker, so cook stays out of defMode.
+const isNonDefault = (m: AddSheetMode) => m === 'cook' || m === 'auto-pick' || m in NAV_TARGET
 
 export function AddSheet({
   open,
@@ -107,7 +110,7 @@ export function AddSheet({
   // form-backed tile — navigate-only modes (recipe, quick-add, flyer) leave the
   // sheet, so the kitchen pre-selects the meal planner and Liste the add-a-line
   // form under their choosers.
-  const defMode = shown.includes('capture') ? 'capture' : (shown.find((m) => !isNavOnly(m)) ?? shown[0])
+  const defMode = shown.includes('capture') ? 'capture' : (shown.find((m) => !isNonDefault(m)) ?? shown[0])
   const [mode, setMode] = useState<AddSheetMode>(initialMode ?? defMode)
   // Re-sync on each open so the last visit's pick doesn't leak into this one.
   useEffect(() => {
@@ -141,11 +144,12 @@ export function AddSheet({
     queryFn: () => api<MealsData>('meals'),
     enabled: open && wantsMeal,
   })
-  // "Cuisiner" tile: where it lands — the next meal due → its recipe cook mode,
-  // else the kitchen (so the tap is never dead). Resolved from the shared meal +
-  // recipe caches; fetched only while the sheet's open and the tile is shown.
-  const cook = useNextMeal(open && shown.includes('cook'))
-  const cookTarget = cook.target ?? '/kitchen'
+  // "Cuisiner" tile → an in-sheet picker of today's cookable meals (each planned
+  // meal that has a recipe), so you choose which to cook, not just the next one.
+  // Fetched from the shared meal + recipe caches only while the sheet's open and
+  // the tile is shown. mealPrefs colours each slot the way the rest of the app does.
+  const cookChoices = useCookableMeals(open && shown.includes('cook'))
+  const mealPrefs = useMealPrefs()
   const weekStart = mealsData?.weekStart ?? 0
   // Same 10-day countdown window the Kitchen grid renders (shrinks 10 → 4 across
   // the week, re-anchored each Tuesday — see functions/api/meals.ts).
@@ -343,11 +347,6 @@ export function AddSheet({
                 className={'cat-pick' + (mode === m ? ' sel' : '')}
                 disabled={m === 'auto-pick' && autoBusy}
                 onClick={() => {
-                  if (m === 'cook') {
-                    close()
-                    nav(cookTarget)
-                    return
-                  }
                   if (m === 'auto-pick') {
                     autoPick()
                     return
@@ -522,6 +521,58 @@ export function AddSheet({
             </div>
           </div>
         )}
+
+        {/* "Cuisiner" — pick which of today's planned meals to cook, not just the
+            next one. Each row jumps straight into that recipe's cook mode. The
+            meal the app would auto-pick (next due) is flagged "Prochain". Empty
+            ⇒ nothing with a recipe planned today, so offer to plan one instead. */}
+        {mode === 'cook' &&
+          (cookChoices.length === 0 ? (
+            <div className="addsheet__cook-empty">
+              <p className="sheet__group-label mono">{t.kitchen.cookNone}</p>
+              <button type="button" className="btn" onClick={() => setMode('meal')}>
+                <Icon name="calendar-blank-bold" size={18} />
+                {t.kitchen.planMeal}
+              </button>
+            </div>
+          ) : (
+            <div className="addsheet__cook">
+              <p className="sheet__group-label mono">{t.kitchen.cookWhich}</p>
+              <div className="addsheet__cooklist">
+                {cookChoices.map((c) => {
+                  const slot = c.meal.slot
+                  const color = (isMealSlot(slot) ? mealPrefs.color(slot) : undefined) ?? 'var(--ink-soft)'
+                  return (
+                    <button
+                      key={c.meal.id}
+                      type="button"
+                      className="addsheet__cookrow"
+                      style={{ borderColor: color + '55' }}
+                      onClick={() => {
+                        close()
+                        nav(c.target)
+                      }}
+                    >
+                      <span className="addsheet__cookrow-icon" style={{ background: color + '22' }}>
+                        <Icon name={isMealSlot(slot) ? SLOT_ICON_NAME[slot] : 'cooking-pot-bold'} size={20} color={color} />
+                      </span>
+                      <span className="addsheet__cookrow-text">
+                        <span className="addsheet__cookrow-title">{c.meal.title}</span>
+                        <span className="addsheet__cookrow-sub mono">
+                          {isMealSlot(slot) ? t.kitchen.slots[slot] : ''}
+                          {c.recipe.title.trim().toLowerCase() !== c.meal.title.trim().toLowerCase()
+                            ? ` · ${c.recipe.title}`
+                            : ''}
+                        </span>
+                      </span>
+                      {c.isNext && <span className="addsheet__cookrow-next">{t.kitchen.cookNext}</span>}
+                      <Icon name="caret-right-bold" size={16} color="var(--ink-faint)" />
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
 
         {mode === 'event' && <EventForm members={members} onSaved={savedWith([['board'], ['events']])} />}
         {mode === 'chore' && <ChoreForm members={members} onSaved={savedWith([['board'], ['chores']])} />}
