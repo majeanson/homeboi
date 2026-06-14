@@ -329,7 +329,7 @@
 }
 
 /* Settings ▸ La maisonnée — each member is a boxed card: avatar on top, name,
-   then the photo / delete actions underneath. */
+   then the uniform ✏️/🗑️ actions underneath (photo editing lives inside ✏️). */
 .member-cards {
   list-style: none;
   margin: 0 0 0.85rem;
@@ -361,6 +361,27 @@
   gap: 0.3rem;
   justify-content: center;
   margin-top: auto;
+}
+/* The lone RowActions pair carries margin-left:auto (built for end-of-row use);
+   zero it so the pair sits centred under the avatar, not shoved to the edge. */
+.member-card__actions .row-actions {
+  margin-left: 0;
+}
+/* Editing a member expands the card to the full grid row so its inline form
+   (photo · name · child · colour) has room instead of being crushed into one
+   ~9rem track. */
+.member-card--editing {
+  grid-column: 1 / -1;
+  align-items: stretch;
+  text-align: left;
+}
+/* The photo control inside the edit form: avatar preview + set/replace + remove,
+   on its own full-width row above the text fields. */
+.member-edit__photo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1 1 100%;
 }
 
 /* Cashier "thank you" hand-back screen. */

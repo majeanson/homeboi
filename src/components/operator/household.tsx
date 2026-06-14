@@ -141,6 +141,30 @@ function MemberCard({ member, onChange, onRemove }: { member: Member; onChange: 
     return (
       <li className="member-card member-card--editing surface">
         <form className="operator__inline-form" onSubmit={save}>
+          {/* The photo lives WITH the other member fields now — set/replace + remove
+              here, so the card itself keeps just the uniform ✏️/🗑️ pair. */}
+          <div className="member-edit__photo">
+            <Avatar kind={member.avatar_kind} photo={member.avatar_ref} colour={color} name={name || member.display_name} size={48} />
+            <label className="row-actions__btn operator__photo" title={t.operator.photo}>
+              <Icon name="camera-bold" size={18} />
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                aria-label={t.operator.photo}
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) setPhoto(f)
+                  e.target.value = ''
+                }}
+              />
+            </label>
+            {member.avatar_kind === 'photo' && (
+              <button type="button" className="row-actions__btn" onClick={clearPhoto} aria-label={t.operator.removePhoto}>
+                <Icon name="x-bold" size={18} />
+              </button>
+            )}
+          </div>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label={t.operator.name} autoFocus />
           <label className="operator__check mono">
             <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
@@ -171,29 +195,10 @@ function MemberCard({ member, onChange, onRemove }: { member: Member; onChange: 
       <Avatar kind={member.avatar_kind} photo={member.avatar_ref} colour={member.colour} name={member.display_name} size={64} />
       <span className="member-card__name">{member.display_name}</span>
       {member.is_child ? <span className="tag mono">{t.operator.isChild}</span> : null}
+      {/* Just the uniform ✏️/🗑️ pair, like every other row — edit opens the inline
+          editor (name, child, colour, AND the photo). Two square buttons fit one
+          row, so the cards stay even/square on a phone. */}
       <div className="member-card__actions">
-        {/* Photo set/clear share the bare 40px icon-button shape of RowActions, so
-            all four controls read as one uniform set (no big bordered buttons next
-            to small bare icons). */}
-        <label className="row-actions__btn operator__photo" title={t.operator.photo}>
-          <Icon name="camera-bold" size={18} />
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            aria-label={t.operator.photo}
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) setPhoto(f)
-              e.target.value = ''
-            }}
-          />
-        </label>
-        {member.avatar_kind === 'photo' && (
-          <button type="button" className="row-actions__btn" onClick={clearPhoto} aria-label={t.operator.removePhoto}>
-            <Icon name="x-bold" size={18} />
-          </button>
-        )}
         <RowActions
           onEdit={() => setEditing(true)}
           onDelete={onRemove}
