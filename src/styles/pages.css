@@ -485,20 +485,20 @@
   text-overflow: ellipsis;
   max-width: 100%;
 }
-/* The "Gérer" cue — a quiet, compact pill that never shrinks, so the meal info to
+/* The edit cue — a small icon-only button that never shrinks, so the meal info to
    its left keeps the rest of the width. The ONLY tap target that opens the sheet. */
 .kitchen__day-manage {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
   color: var(--ink-soft);
-  font-size: 0.78rem;
   background: none;
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 0.3rem 0.6rem;
-  min-height: 2rem;
+  padding: 0;
   cursor: pointer;
 }
 .kitchen__day.is-today .kitchen__day-manage {
@@ -1414,8 +1414,8 @@
   padding: 0.2rem 0.6rem;
 }
 .hub .kitchen__day-manage {
-  font-size: 0.95rem;
-  min-height: 2.6rem;
+  width: 2.6rem;
+  height: 2.6rem;
 }
 .hub .chip {
   min-height: 2.9rem;

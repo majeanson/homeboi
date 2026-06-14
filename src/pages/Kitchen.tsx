@@ -572,13 +572,16 @@ export function Kitchen() {
                         <span className="kitchen__day-sum-empty mono">{t.kitchen.planShort}</span>
                       )}
                     </span>
+                    {/* A small, icon-only edit button — the lone tap target that
+                        opens the day's editor. No "Gérer" label: the pencil says it
+                        and keeps the pill tiny so meal info keeps the width. */}
                     <button
                       type="button"
-                      className="kitchen__day-manage mono"
+                      className="kitchen__day-manage"
                       onClick={() => setManageDate(date)}
                       aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
                     >
-                      <Icon name="pencil-simple-bold" size={14} /> {t.kitchen.manage}
+                      <Icon name="pencil-simple-bold" size={16} />
                     </button>
                   </div>
                   {sideRows.length > 0 && (
