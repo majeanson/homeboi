@@ -13,7 +13,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px 24px 28px;
+  padding: clamp(16px, 3.5vh, 40px) 24px 20px;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -73,12 +73,17 @@
      taller than the screen — otherwise centering would push the ▶/✓ button off
      the bottom of a short phone/kiosk and the kid couldn't advance the step. */
   justify-content: safe center;
-  gap: 4px;
-  padding: 24px 0;
+  /* ONE spacing rhythm for the whole column (children carry no own margins), so
+     the stack stays short enough to fit a tablet without scrolling. Shrinks on
+     short screens. */
+  gap: clamp(10px, 2.4vh, 22px);
+  padding: clamp(8px, 2vh, 24px) 0;
 }
 .tdl-illus {
-  width: 232px;
-  height: 232px;
+  /* Height-aware so a short tablet/phone shrinks the picture instead of pushing
+     the advance button off-screen (the whole point of this surface is one tap). */
+  width: min(232px, 34vh);
+  height: min(232px, 34vh);
   border-radius: 64px; /* soft squircle */
   display: flex;
   align-items: center;
@@ -86,7 +91,6 @@
   box-shadow:
     0 18px 38px rgba(72, 54, 30, 0.18),
     inset 0 10px 22px rgba(255, 255, 255, 0.28);
-  margin-bottom: 26px;
   border: 6px solid rgba(255, 255, 255, 0.6);
   padding: 0;
 }
@@ -99,7 +103,7 @@
   transform: scale(0.96);
 }
 .tdl-illus-emoji {
-  font-size: 124px;
+  font-size: min(124px, 18vh);
   line-height: 1;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.16));
 }
@@ -144,9 +148,17 @@
   color: var(--ink);
   text-align: center;
 }
+/* "What's next" and the progress dots ride ONE row so they cost a single line,
+   not two — keeps the column short on a tablet. */
+.tdl-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+}
 /* "What's next" — just the picture, faded, with a small arrow. No word. */
 .tdl-next {
-  margin-top: 22px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -163,7 +175,6 @@
 .tdl-dots {
   display: flex;
   gap: 9px;
-  margin-top: 30px;
 }
 .tdl-dots i {
   width: 9px;
@@ -210,7 +221,6 @@
    big — a toddler taps a picture, not a word. */
 .tdl-start,
 .tdl-finish {
-  margin-top: 24px;
   min-width: 96px;
   min-height: 76px;
   padding: 0 28px;
@@ -235,15 +245,16 @@
 .tdl-finish:active {
   transform: scale(0.95);
 }
+/* Clock + advance button sit SIDE BY SIDE, not stacked — one short row. */
 .tdl-timer {
-  margin-top: 24px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 18px;
 }
 .tdl-clock {
-  font-size: clamp(2.6rem, 12vw, 4rem);
+  font-size: clamp(2rem, 8vh, 3.2rem);
   font-weight: 800;
   color: var(--ink);
   line-height: 1;
@@ -252,11 +263,9 @@
   font-family: var(--font-hand);
   font-size: 32px;
   color: var(--ink);
-  margin-top: 8px;
 }
-/* A quiet running total during the routine — the kid can glance at their time. */
+/* A quiet total on the end recap (a parent's glance). */
 .tdl-total {
-  margin-top: 18px;
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--ink-soft);
@@ -265,7 +274,6 @@
    wearing its ✓ — tap one to hear the step. No table, no numbers to read (the
    small running total above stays for a parent's glance). NFR-KID-2. */
 .tdl-recap {
-  margin-top: 22px;
   width: min(420px, 86vw);
   display: flex;
   flex-wrap: wrap;

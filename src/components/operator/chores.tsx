@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useUndoableRemove } from '../../lib/undoRemove'
+import { useRecordUndo } from '../../lib/toast'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routineTod'
 import { InlineIcon } from '../Icon'
 import { ChoreForm } from '../forms/ChoreForm'
@@ -113,6 +114,7 @@ export function RoutinesSection({
   const t = useT()
   const qc = useQueryClient()
   const undoableRemove = useUndoableRemove()
+  const recordUndo = useRecordUndo()
   function remove(r: Routine) {
     undoableRemove({
       queryKey: ['routines'],
@@ -126,13 +128,25 @@ export function RoutinesSection({
   // Cycle the moment cue: anytime → matin → après-midi → soir → anytime.
   // Optimistic (the chip flips at once); the kid view re-orders on its next poll.
   async function cycleTod(r: Routine) {
+    const prev = r.timeOfDay
     const cur = isRoutineTod(r.timeOfDay) ? ROUTINE_TODS.indexOf(r.timeOfDay) : -1
     const next = cur + 1 >= ROUTINE_TODS.length ? null : ROUTINE_TODS[cur + 1]
-    qc.setQueryData<{ routines: Routine[] }>(['routines'], (d) =>
-      d ? { routines: d.routines.map((x) => (x.id === r.id ? { ...x, timeOfDay: next } : x)) } : d,
-    )
+    const setTod = (tod: string | null) =>
+      qc.setQueryData<{ routines: Routine[] }>(['routines'], (d) =>
+        d ? { routines: d.routines.map((x) => (x.id === r.id ? { ...x, timeOfDay: tod } : x)) } : d,
+      )
+    setTod(next)
     await api('routines', { method: 'PATCH', body: { routineId: r.id, timeOfDay: next } }).catch(() => {})
     onChange()
+    // Compensating undo: put the previous cue back (chip + server).
+    recordUndo({
+      message: t.undo.routineTime(r.name),
+      onUndo: async () => {
+        setTod(prev)
+        await api('routines', { method: 'PATCH', body: { routineId: r.id, timeOfDay: prev } }).catch(() => {})
+        onChange()
+      },
+    })
   }
 
   return (

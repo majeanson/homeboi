@@ -36,10 +36,12 @@ import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from 
 // (Now & Next, per-person lanes) and the card/section atoms live in
 // src/components/board/*.
 import { BOARD_KEY } from '../lib/queryKeys'
+import { useUndoToast } from '../lib/toast'
 
 export function Board() {
   const t = useT()
   const qc = useQueryClient()
+  const undo = useUndoToast()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { surface } = useSurface()
@@ -50,6 +52,11 @@ export function Board() {
   const [clock, setClock] = useState(() => formatClock(lang, Date.now()))
   // The board layout for this device (bento | next | lanes), remembered locally.
   const [view, setView] = useState<BoardView>(() => readBoardView())
+  // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
+  // out of the rendered board at once so the live poll can't resurrect them before
+  // the write commits — same guard as Liste's pendingClear. Tapping Annuler means
+  // the completion simply never happens (no rotation advance, no credit).
+  const [pendingDone, setPendingDone] = useState<Set<string>>(new Set())
   function changeView(v: BoardView) {
     setView(v)
     saveBoardView(v)
@@ -115,8 +122,8 @@ export function Board() {
   const mineEvent = (e: EventRow) => !focusing || e.member_id === profileId || e.member_id === null
   const mineChore = (c: ChoreInstance) => !focusing || c.who_id === profileId || c.who_id === null
   const todayEvents = (data?.today ?? []).filter(mineEvent)
-  const todayChores = (data?.choresToday ?? []).filter(mineChore)
-  const todayTodos = (data?.todos ?? []).filter(mineChore)
+  const todayChores = (data?.choresToday ?? []).filter(mineChore).filter((c) => !pendingDone.has(c.id))
+  const todayTodos = (data?.todos ?? []).filter(mineChore).filter((c) => !pendingDone.has(c.id))
   const tomorrowEvents = (data?.tomorrow ?? []).filter(mineEvent)
   const upcomingEvents = (data?.upcoming ?? []).filter(mineEvent)
   const upcomingChores = (data?.choresUpcoming ?? []).filter(mineChore)
@@ -294,14 +301,30 @@ export function Board() {
     memberName(m.cook_member_id) ? `${memberName(m.cook_member_id)} ${t.board.cooks}` : undefined
 
   // A due recurring chore, surfaced on the board. Tapping marks it done (advances
-  // the rotation server-side); optimistically drop it so the tap feels instant.
+  // the rotation server-side). DEFERRED: hide it now (pendingDone) and hold the
+  // PATCH behind the undo toast, so a mis-tap costs nothing — and because the write
+  // is merely held, an undo means the rotation never advanced (no server "un-do"
+  // for completion exists, so deferring is the only correct way to take it back).
   const markChoreDone = (c: ChoreInstance) => {
-    qc.setQueryData<BoardData>(BOARD_KEY, (d) =>
-      d ? { ...d, choresToday: (d.choresToday ?? []).filter((x) => x.id !== c.id) } : d,
-    )
-    api('chores', { method: 'PATCH', body: { id: c.id, complete: true } })
-      .catch(() => {})
-      .finally(() => qc.invalidateQueries({ queryKey: BOARD_KEY }))
+    setPendingDone((s) => new Set(s).add(c.id))
+    undo({
+      message: t.undo.choreDone(c.title),
+      onUndo: () =>
+        setPendingDone((s) => {
+          const n = new Set(s)
+          n.delete(c.id)
+          return n
+        }),
+      onCommit: async () => {
+        await api('chores', { method: 'PATCH', body: { id: c.id, complete: true } }).catch(() => {})
+        await qc.invalidateQueries({ queryKey: BOARD_KEY })
+        setPendingDone((s) => {
+          const n = new Set(s)
+          n.delete(c.id)
+          return n
+        })
+      },
+    })
   }
   const choreAct = (c: ChoreInstance, withDay?: boolean) => (
     <Act
@@ -318,14 +341,28 @@ export function Board() {
 
   // A one-off to-do (non-recurring task). Checking it marks it done server-side
   // (same /chores PATCH — sets last_done_at), so it drops off the next board read.
-  // Optimistically remove it so the tap feels instant.
+  // DEFERRED behind the undo toast, mirroring markChoreDone: hide it now, hold the
+  // write, and a tap of Annuler leaves it un-done.
   const markTodoDone = (c: ChoreInstance) => {
-    qc.setQueryData<BoardData>(BOARD_KEY, (d) =>
-      d ? { ...d, todos: (d.todos ?? []).filter((x) => x.id !== c.id) } : d,
-    )
-    api('chores', { method: 'PATCH', body: { id: c.id, complete: true } })
-      .catch(() => {})
-      .finally(() => qc.invalidateQueries({ queryKey: BOARD_KEY }))
+    setPendingDone((s) => new Set(s).add(c.id))
+    undo({
+      message: t.undo.todoDone(c.title),
+      onUndo: () =>
+        setPendingDone((s) => {
+          const n = new Set(s)
+          n.delete(c.id)
+          return n
+        }),
+      onCommit: async () => {
+        await api('chores', { method: 'PATCH', body: { id: c.id, complete: true } }).catch(() => {})
+        await qc.invalidateQueries({ queryKey: BOARD_KEY })
+        setPendingDone((s) => {
+          const n = new Set(s)
+          n.delete(c.id)
+          return n
+        })
+      },
+    })
   }
   const todoAct = (c: ChoreInstance) => (
     <Act

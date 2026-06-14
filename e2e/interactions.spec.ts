@@ -455,8 +455,12 @@ test.describe('kitchen', () => {
   })
 
   test('planning a supper asks for its staples', async ({ page }) => {
-    await page.locator('.kitchen__day-meal').first().click()
-    const edit = page.locator('.kitchen__day-edit')
+    // The per-day planning controls live in the "Gérer" sheet now.
+    await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+    const sheet = page.locator('.sheet.show')
+    // The souper section's add control is the sheet's first slot-add button.
+    await sheet.locator('.kitchen__slot-add').first().click()
+    const edit = sheet.locator('.kitchen__day-edit')
     await edit.locator('input.input').fill('Pizza maison')
     await expectApi(page, 'POST', 'meal-staples', () =>
       edit.locator('button[type="submit"]').click(),
@@ -464,12 +468,13 @@ test.describe('kitchen', () => {
   })
 
   test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {
+    await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+    const sheet = page.locator('.sheet.show')
     // Day one's breakfast is seeded ("Crêpes") — a meal row in the déjeuner slot.
-    await expect(page.locator('.kitchen__meal-row', { hasText: 'Crêpes' }).first()).toBeVisible()
+    await expect(sheet.locator('.kitchen__meal-row', { hasText: 'Crêpes' }).first()).toBeVisible()
     // Setting a lunch is a plain title — a straight POST (append), no staples step.
-    const day = page.locator('.kitchen__day').first()
-    await day.locator('.kitchen__slot-add', { hasText: 'Dîner' }).click()
-    const edit = day.locator('.kitchen__slot-edit')
+    await sheet.locator('.kitchen__slot-add', { hasText: 'Dîner' }).click()
+    const edit = sheet.locator('.kitchen__slot-edit')
     await edit.locator('input.input').fill('Sandwich au jambon')
     await expectApi(page, 'POST', 'meals', () => edit.locator('button[type="submit"]').click())
   })

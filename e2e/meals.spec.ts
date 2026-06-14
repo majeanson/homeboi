@@ -25,42 +25,52 @@ function waitMeals(page: Page, method: string, pred: (body: any) => boolean) {
   })
 }
 
+// The per-day editing (rows, add, reorder, clear, note) lives in the "Gérer"
+// bottom sheet now — the week grid is a calm read-only glance. Open the first
+// day's sheet and return it as the scope for the controls.
+async function openManage(page: Page) {
+  await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+  const sheet = page.locator('.sheet.show')
+  await expect(sheet).toBeVisible()
+  return sheet
+}
+
 test('a slot holds several meals — both show, with an add-another', async ({ page }) => {
   await boot(page)
-  const today = page.locator('.kitchen__day').first()
-  // The supper slot is the first meal list in the day card; it holds two suppers.
-  const suppers = today.locator('.kitchen__meal-list').first().locator('.kitchen__meal-row')
+  const sheet = await openManage(page)
+  // The supper slot is the first meal list in the sheet; it holds two suppers.
+  const suppers = sheet.locator('.kitchen__meal-list').first().locator('.kitchen__meal-row')
   await expect(suppers).toHaveCount(2)
-  await expect(today).toContainText('Spaghetti maison')
-  await expect(today).toContainText('Salade César')
-  await expect(today.getByText('Ajouter un autre').first()).toBeVisible()
+  await expect(sheet).toContainText('Spaghetti maison')
+  await expect(sheet).toContainText('Salade César')
+  await expect(sheet.getByText('Ajouter un autre').first()).toBeVisible()
 })
 
 test('removing one meal deletes just that row', async ({ page }) => {
   await boot(page)
-  const today = page.locator('.kitchen__day').first()
+  const sheet = await openManage(page)
   const del = waitMeals(page, 'DELETE', (b) => typeof b.id === 'string')
-  await today.locator('.kitchen__meal-row').first().getByRole('button', { name: 'Effacer le repas' }).click()
+  await sheet.locator('.kitchen__meal-row').first().getByRole('button', { name: 'Effacer le repas' }).click()
   await del
 })
 
 test('reorder posts a move; clear-day posts a clear', async ({ page }) => {
   await boot(page)
-  const today = page.locator('.kitchen__day').first()
+  const sheet = await openManage(page)
   const move = waitMeals(page, 'POST', (b) => b.action === 'move' && b.dir === 'down')
-  await today.locator('.kitchen__meal-row').first().getByRole('button', { name: 'Descendre' }).click()
+  await sheet.locator('.kitchen__meal-row').first().getByRole('button', { name: 'Descendre' }).click()
   await move
 
   const clear = waitMeals(page, 'POST', (b) => b.action === 'clear' && b.slot === undefined)
-  await today.getByRole('button', { name: 'Vider la journée' }).click()
+  await sheet.getByRole('button', { name: 'Vider la journée' }).click()
   await clear
 })
 
 test('clearing one slot posts a clear with that slot', async ({ page }) => {
   await boot(page)
-  const today = page.locator('.kitchen__day').first()
+  const sheet = await openManage(page)
   const clear = waitMeals(page, 'POST', (b) => b.action === 'clear' && b.slot === 'supper')
-  await today.getByRole('button', { name: 'Vider ce repas' }).first().click()
+  await sheet.getByRole('button', { name: 'Vider ce repas' }).first().click()
   await clear
 })
 

@@ -416,12 +416,85 @@
 /* ── Meals as lists per slot (N per slot, migration 0033) ─────────────────── */
 /* Everything in a day after the date badge stacks vertically in a width-capped
    column, so the per-meal control rows never push the card past the viewport. */
-.kitchen__day-body {
+/* The day row is a calm read-only glance now: its whole body is ONE button that
+   opens that day's Gérer sheet (all the add/remove/recipe/note editing moved in
+   there). Summary on the left, a quiet "Gérer" cue on the right. */
+.kitchen__day-open {
   flex: 1;
   min-width: 0;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0.15rem 0;
+}
+.kitchen__day-sum {
+  min-width: 0;
+  display: flex;
   flex-direction: column;
+  gap: 0.15rem;
+}
+.kitchen__day-sum-main {
+  font-size: 1.05rem;
+  line-height: 1.25;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.kitchen__day-sum-empty {
+  color: var(--ink-soft);
+}
+/* The lighter-slot peek + the day note: one tidy muted line each, ellipsized so a
+   long title never grows the card past the two-days-on-a-phone budget. */
+.kitchen__day-sum-meta {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+/* The "Gérer" cue — a quiet pill the thumb lands on; the whole row is tappable. */
+.kitchen__day-manage {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.3rem 0.6rem;
+  min-height: 2rem;
+}
+.kitchen__day.is-today .kitchen__day-manage {
+  border-color: var(--terracotta);
+  color: var(--terracotta-deep);
+}
+/* DayManageSheet — one labelled block per slot + the note, lightly divided. */
+.day-mng__sec {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+}
+.day-mng__sec:first-of-type {
+  border-top: 0;
+}
+.day-mng__sec-head {
+  display: flex;
+  align-items: center;
   gap: 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0;
 }
 /* Each side slot is now a small stack: an icon+label header, the list of planned
    meals, and an add control (was a single inline chip). */
@@ -1178,8 +1251,15 @@
 .hub .kitchen__day {
   min-height: 3.5rem;
 }
-.hub .kitchen__day-meal {
+.hub .kitchen__day-sum-main {
   font-size: 1.25rem;
+}
+.hub .kitchen__day-sum-meta {
+  font-size: 0.95rem;
+}
+.hub .kitchen__day-manage {
+  font-size: 0.95rem;
+  min-height: 2.6rem;
 }
 .hub .chip {
   min-height: 2.9rem;

@@ -176,6 +176,14 @@ export function TourOverlay() {
         aria-modal="true"
         aria-label={step.title[lang]}
       >
+        {/* A clear "you are in a tour" banner: label + which step. Without it the
+            non-blocking overlay can read as just a stray card — this names it. */}
+        <div className="tour__eyebrow mono">
+          <span className="tour__eyebrow-dot" aria-hidden="true" />
+          <span>{t.tour.label}</span>
+          <span className="tour__eyebrow-step">{t.tour.stepOf(stepIndex + 1, total)}</span>
+        </div>
+
         <div className="tour__head">
           {step.icon && (
             <span className="tour__icon">

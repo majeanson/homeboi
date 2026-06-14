@@ -31,4 +31,11 @@ for (const theme of ['day', 'night'] as Theme[]) {
     await boot(page, theme, WIDE)
     await page.screenshot({ path: `e2e/screenshots/home-wide${sfx}.png`, fullPage: true })
   })
+  test(`setup${sfx}`, async ({ page }) => {
+    await boot(page, theme, PHONE)
+    await page.goto('/setup')
+    await page.locator('.setup__choices').waitFor({ state: 'visible', timeout: 15_000 })
+    await page.waitForTimeout(150)
+    await page.screenshot({ path: `e2e/screenshots/setup${sfx}.png`, fullPage: true })
+  })
 }

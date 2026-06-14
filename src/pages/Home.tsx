@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
-import { Icon, InlineIcon, type IconName } from '../components/Icon'
+import { Icon, type IconName } from '../components/Icon'
 import { useT } from '../i18n'
 
 // The marketing front door — shown to first-time visitors only (the `/` smart
@@ -21,7 +21,6 @@ const SECTIONS: { icon: IconName; key: 'forSupper' | 'forList' | 'forRoutines' |
 
 export function Home() {
   const t = useT()
-  const promise = [t.home.promise1, t.home.promise2, t.home.promise3, t.home.promise4]
   return (
     <div className="page">
       <TopBar />
@@ -58,25 +57,6 @@ export function Home() {
               </li>
             ))}
           </ul>
-        </section>
-
-        {/* The promise — the calm tenet, in four short lines. */}
-        <section className="home__block">
-          <h2 className="home__h mono">{t.home.promiseHeading}</h2>
-          <ul className="home__promise">
-            {promise.map((line, i) => (
-              <li key={i}>
-                <InlineIcon name="check-bold" color="var(--sage-deep)" /> {line}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="home__foot">
-          <Link to="/setup" className="btn btn--primary">
-            {t.home.ctaStart}
-          </Link>
-          <p className="home__fine mono">{t.home.privacyLine}</p>
         </section>
       </main>
     </div>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { useRecordUndo } from '../../lib/toast'
 import { type Recipe } from '../../lib/recipes'
 import { type MealSlot } from '../../lib/mealSlots'
 import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
@@ -31,6 +32,7 @@ export function MealIdeas({
 }) {
   const t = useT()
   const qc = useQueryClient()
+  const recordUndo = useRecordUndo()
   const [text, setText] = useState('')
   const [pickRecipe, setPickRecipe] = useState(false)
   const [planFor, setPlanFor] = useState<string | null>(null)
@@ -54,9 +56,21 @@ export function MealIdeas({
     }
   }
 
-  async function removeIdea(id: string) {
-    await api('meal-ideas', { method: 'DELETE', body: { id } }).catch(() => {})
+  async function removeIdea(idea: MealIdea) {
+    await api('meal-ideas', { method: 'DELETE', body: { id: idea.id } }).catch(() => {})
     qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
+    // Compensating undo: re-add the idea from its snapshot (the pool is live-polled,
+    // so holding the delete would let the poll resurrect it). New id, same idea.
+    recordUndo({
+      message: t.undo.mealIdeaRemoved(idea.title),
+      onUndo: async () => {
+        await api('meal-ideas', {
+          method: 'POST',
+          body: { title: idea.title, recipeId: idea.recipe_id ?? null, suggestedBy: idea.suggested_by ?? null },
+        }).catch(() => {})
+        qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
+      },
+    })
   }
 
   // Place an idea onto a day + meal — same shape as a recipe quick-add, so a
@@ -141,7 +155,7 @@ export function MealIdeas({
                 <button
                   type="button"
                   className="kitchen__idea-del"
-                  onClick={() => removeIdea(idea.id)}
+                  onClick={() => removeIdea(idea)}
                   aria-label={t.kitchen.removeIdea}
                   title={t.kitchen.removeIdea}
                 >

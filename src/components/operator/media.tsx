@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api, isStatus } from '../../lib/api'
+import { useUndoToast } from '../../lib/toast'
 import { resizeImage, imgUrl, PHOTO_MAX } from '../../lib/image'
 import { Icon } from '../Icon'
 
@@ -49,6 +50,7 @@ export function PhotosSection() {
     queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
   })
   const photos = data?.photos ?? []
+  const undo = useUndoToast()
   const [busy, setBusy] = useState(false)
   // Batch progress: {done, total} while uploading several at once, null when idle.
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
@@ -77,9 +79,25 @@ export function PhotosSection() {
       setProgress(null)
     }
   }
-  async function remove(id: string) {
-    await api('photos', { method: 'DELETE', body: { id } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: ['photos'] })
+  // Deferred delete: drop the tile now but HOLD the DELETE behind the undo toast,
+  // so the R2 object isn't actually removed until the window passes — a mis-tap
+  // costs nothing and needs no re-upload. (Photos aren't live-polled, so the
+  // optimistic removal won't be resurrected mid-window.)
+  function remove(id: string) {
+    const prev = qc.getQueryData<{ photos: { id: string; key: string }[] }>(['photos'])
+    qc.setQueryData<{ photos: { id: string; key: string }[] }>(['photos'], (d) =>
+      d ? { photos: d.photos.filter((p) => p.id !== id) } : d,
+    )
+    undo({
+      message: t.undo.photoRemoved,
+      onUndo: () => {
+        if (prev) qc.setQueryData(['photos'], prev)
+      },
+      onCommit: async () => {
+        await api('photos', { method: 'DELETE', body: { id } }).catch(() => {})
+        qc.invalidateQueries({ queryKey: ['photos'] })
+      },
+    })
   }
 
   if (unavailable) return null

@@ -11,7 +11,7 @@ import { useAudience } from '../lib/audience'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
-import { useUndoToast } from '../lib/toast'
+import { useRecordUndo, useUndoToast } from '../lib/toast'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { money, type Deal } from '../lib/deals'
@@ -157,6 +157,7 @@ export function Liste() {
   const qc = useQueryClient()
   const nav = useNavigate()
   const undo = useUndoToast()
+  const recordUndo = useRecordUndo()
   const [auto, setAuto] = useState(false)
   // Items whose "Clear checked" delete is DEFERRED behind the undo toast. Filtered
   // out of the displayed list at once so a refetch (the live poll, a focus, or an
@@ -189,7 +190,22 @@ export function Liste() {
   async function postAdd(text: string, terms?: string[]) {
     if (!text) return
     try {
-      await api('list', { method: 'POST', body: terms && terms.length ? { text, search_terms: terms } : { text } })
+      // Adding must show INSTANTLY, so this can't be a held write — instead record
+      // a COMPENSATING undo keyed on the new row's id (the POST returns it): Annuler
+      // deletes exactly that line, even after several quick voice adds stack up.
+      const res = await api<{ id: string }>('list', {
+        method: 'POST',
+        body: terms && terms.length ? { text, search_terms: terms } : { text },
+      })
+      if (res?.id)
+        recordUndo({
+          message: t.undo.added(text),
+          onUndo: async () => {
+            await api('list', { method: 'DELETE', body: { id: res.id } }).catch(() => {})
+            qc.invalidateQueries({ queryKey: BOARD_KEY })
+            qc.invalidateQueries({ queryKey: GHOSTS_KEY })
+          },
+        })
     } finally {
       qc.invalidateQueries({ queryKey: BOARD_KEY })
       qc.invalidateQueries({ queryKey: GHOSTS_KEY })

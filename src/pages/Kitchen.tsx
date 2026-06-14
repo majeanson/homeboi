@@ -8,9 +8,10 @@ import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
 import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
+import { useRecordUndo } from '../lib/toast'
 import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
-import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
+import { formatWeekday, formatDay, formatDayLong, weekdayShort, dayNum } from '../lib/format'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { pictoFor } from '../lib/picto'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
@@ -22,9 +23,8 @@ import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { useMealSuggest } from '../components/kitchen/useMealSuggest'
 import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type DayNotesData, type PantryData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
-import { MealRows } from '../components/kitchen/MealRows'
-import { RecipePickerMenu } from '../components/kitchen/RecipePickerMenu'
-import { SIDE_SLOTS, SLOT_ICON_NAME } from '../lib/mealSlots'
+import { DayManageSheet } from '../components/kitchen/DayManageSheet'
+import { SIDE_SLOTS } from '../lib/mealSlots'
 import { useKitchenActions } from '../lib/kitchenActions'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
@@ -33,6 +33,10 @@ import { useKitchenActions } from '../lib/kitchenActions'
 // the tab components in src/components/kitchen/* (useMealPlanning = type/pick a
 // supper + the AI staples step, useRecipeShop = shop-the-week, useMealSuggest =
 // supper ideas, useAiWake = the shared cold-start/AI-off truth).
+// Intl lowercases the French weekday ("lundi 14 juin"); the sheet title wants it
+// capitalized.
+const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
+
 export function Kitchen() {
   const t = useT()
   const qc = useQueryClient()
@@ -40,6 +44,11 @@ export function Kitchen() {
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
   const nav = useNavigate()
+  // Kitchen reads are live-polled, so a held (deferred) delete would be resurrected
+  // mid-window by the poll. Instead these clears commit immediately and register a
+  // COMPENSATING undo: the inverse re-creates the meal(s)/note from the snapshot we
+  // grab before deleting. A new row id is fine — the plan looks restored.
+  const recordUndo = useRecordUndo()
   // The lighter side slots (déjeuner / dîner / collation): a plain title, no
   // staples/recipe flow — that richness stays on the souper. {date,slot} being
   // edited, plus its text.
@@ -68,12 +77,14 @@ export function Kitchen() {
   // the day goes back to its open "＋" state. On failure the editor stays open so
   // the action can be retried — same posture as saveSlot/saveMeal.
   async function clearMeal(id: string) {
+    const meal = qc.getQueryData<MealsData>(MEALS_KEY)?.days.find((m) => m.id === id)
     try {
       await api('meals', { method: 'DELETE', body: { id } })
       setEditDate(null)
       setMealText('')
       setEditSlot(null)
       setSlotText('')
+      if (meal) recordUndo({ message: t.undo.mealRemoved(meal.title), onUndo: () => restoreMeals([meal]) })
     } catch {
       /* keep the editor open so the clear can be retried */
     }
@@ -85,14 +96,34 @@ export function Kitchen() {
     await api('meals', { method: 'POST', body: { action: 'move', id, dir } }).catch(() => {})
     qc.invalidateQueries({ queryKey: MEALS_KEY })
   }
-  // Easy clearing: wipe one slot's meals, or a whole day's.
+  // Re-create a set of removed meals from their snapshot (the undo inverse). Each
+  // comes back as a fresh row in the same day+slot — order/id may differ, the plan
+  // reads as restored. Refresh the board too (today's supper shows there).
+  async function restoreMeals(meals: MealRow[]) {
+    for (const m of meals) {
+      await api('meals', {
+        method: 'POST',
+        body: { date: m.date, slot: m.slot, title: m.title, recipeId: m.recipe_id ?? null },
+      }).catch(() => {})
+    }
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
+    qc.invalidateQueries({ queryKey: ['board'] })
+  }
+  // Easy clearing: wipe one slot's meals, or a whole day's. Snapshot the rows first
+  // so Annuler can put them back (compensating undo — see recordUndo above).
   async function clearSlotMeals(date: number, slot: string) {
+    const removed = (qc.getQueryData<MealsData>(MEALS_KEY)?.days ?? []).filter(
+      (m) => m.date === date && m.slot === slot,
+    )
     await api('meals', { method: 'POST', body: { action: 'clear', date, slot } }).catch(() => {})
     qc.invalidateQueries({ queryKey: MEALS_KEY })
+    if (removed.length) recordUndo({ message: t.undo.slotCleared, onUndo: () => restoreMeals(removed) })
   }
   async function clearDay(date: number) {
+    const removed = (qc.getQueryData<MealsData>(MEALS_KEY)?.days ?? []).filter((m) => m.date === date)
     await api('meals', { method: 'POST', body: { action: 'clear', date } }).catch(() => {})
     qc.invalidateQueries({ queryKey: MEALS_KEY })
+    if (removed.length) recordUndo({ message: t.undo.dayCleared, onUndo: () => restoreMeals(removed) })
   }
 
   // A free-text memo per day (déjeuner-to-collation context that isn't a meal:
@@ -117,10 +148,20 @@ export function Kitchen() {
     qc.invalidateQueries({ queryKey: DAY_NOTES_KEY })
   }
   async function clearNote(date: number) {
+    const note = qc.getQueryData<DayNotesData>(DAY_NOTES_KEY)?.notes.find((n) => n.date === date)
     try {
       await api('day-notes', { method: 'DELETE', body: { date } })
       setEditNote(null)
       setNoteText('')
+      if (note)
+        recordUndo({
+          message: t.undo.dayNoteCleared,
+          onUndo: async () => {
+            await api('day-notes', { method: 'POST', body: { date: note.date, text: note.text } }).catch(() => {})
+            qc.invalidateQueries({ queryKey: DAY_NOTES_KEY })
+            qc.invalidateQueries({ queryKey: ['board'] })
+          },
+        })
     } catch {
       /* keep the editor open so the clear can be retried */
     }
@@ -149,7 +190,10 @@ export function Kitchen() {
   // Which slot's recipe picker is open ({date, slot}) — any slot can pick a
   // recipe now, not just the souper.
   const [recipePickFor, setRecipePickFor] = useState<{ date: number; slot: string } | null>(null)
-  const pickOpenFor = (date: number, slot: string) => recipePickFor?.date === date && recipePickFor.slot === slot
+  // Which day's "Gérer" sheet is open (its full planning controls live there now,
+  // off the calm read-only week grid). One at a time — so the souper/recipe-picker
+  // singletons can't fight across days.
+  const [manageDate, setManageDate] = useState<number | null>(null)
   // Quick-add is the default (tap a recipe → it's set, no staples). This toggle
   // opts a pick INTO the grocery flow ("ajouter les ingrédients aussi") for the
   // times you do want the staples chips — kept off so dropping a recipe is one tap.
@@ -426,7 +470,16 @@ export function Kitchen() {
               const isTomorrow = date === weekStart + 86400
               const rel = isToday ? t.board.today : isTomorrow ? t.board.tomorrow : null
               const suppers = mealsFor(date, 'supper') // a day can hold several
-              const dayMealCount = days.filter((d) => d.date === date).length
+              const note = noteFor(date)
+              // A one-line glance of the lighter slots, for the read-only card —
+              // "Déjeuner: gruau · Dîner: restes". Empty slots are skipped; the
+              // full per-slot editing lives in the Gérer sheet.
+              const sideSummary = SIDE_SLOTS.map((s) => {
+                const ms = mealsFor(date, s)
+                return ms.length ? `${t.kitchen.slots[s]}: ${ms.map((m) => m.title).join(', ')}` : null
+              })
+                .filter(Boolean)
+                .join(' · ')
               return (
               <li
                 key={date}
@@ -453,337 +506,60 @@ export function Kitchen() {
                     <span className="kitchen__day-add">＋</span>
                   )}
                 </span>
-                <div className="kitchen__day-body">
-                {staplePrompt?.date === date ? (
-                  <div className="kitchen__staples">
-                    <p className="kitchen__staples-q mono">
-                      {staplePrompt.title} · {t.kitchen.staplesQ}
-                    </p>
-                    <p className="kitchen__staples-hint mono">{t.kitchen.staplesHint}</p>
-                    <div className="kitchen__staples-chips">
-                      {staplePrompt.options.map((o) => (
-                        <button
-                          key={o.item}
-                          type="button"
-                          className={`chip${o.on ? ' is-on' : ''}`}
-                          onClick={() => toggleStaple(o.item)}
-                          aria-pressed={o.on}
-                          title={o.item}
-                        >
-                          <InlineIcon name={o.on ? 'check-square-bold' : 'square-bold'} /> {o.item}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="kitchen__staples-actions">
-                      <button
-                        type="button"
-                        className="btn btn--primary mono"
-                        onClick={() =>
-                          saveMeal(
-                            staplePrompt.date,
-                            staplePrompt.slot,
-                            staplePrompt.title,
-                            staplePrompt.options.filter((o) => o.on).map((o) => o.item),
-                            staplePrompt.recipeId,
-                          )
-                        }
-                      >
-                        {t.kitchen.staplesAdd}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--ghost mono"
-                        onClick={() => saveMeal(staplePrompt.date, staplePrompt.slot, staplePrompt.title, [], staplePrompt.recipeId)}
-                      >
-                        {t.kitchen.staplesSkip}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <MealRows
-                      meals={suppers}
-                      recipeFor={recipeForMeal}
-                      memberName={memberName}
-                      onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
-                      onRemove={clearMeal}
-                      onMove={moveMeal}
-                      onClearAll={() => clearSlotMeals(date, 'supper')}
-                    />
-                    {editDate === date ? (
-                  <div className="kitchen__day-edit-wrap">
-                    <form
-                      className="kitchen__day-edit"
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        beginSetMeal(date, 'supper')
-                      }}
-                    >
-                      <input
-                        className="input"
-                        autoFocus
-                        value={mealText}
-                        onChange={(e) => setMealText(e.target.value)}
-                        placeholder={t.kitchen.plan}
-                      />
-                      {mealText && (
-                        <button
-                          type="button"
-                          className="btn btn--ghost mono kitchen__clear-text"
-                          onClick={() => setMealText('')}
-                          aria-label={t.kitchen.clearText}
-                          title={t.kitchen.clearText}
-                        >
-                          <Icon name="x-bold" size={15} />
-                        </button>
-                      )}
-                      <button type="submit" className="btn btn--ghost mono" disabled={staplesBusy}>
-                        {staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
-                      </button>
-                    </form>
-                    {recipes.length > 0 && (
-                      <div className="kitchen__day-recipes">
-                        <div className="kitchen__day-recipes-row">
-                          <button
-                            type="button"
-                            className="btn btn--ghost mono kitchen__pick-recipe"
-                            onClick={() =>
-                              setRecipePickFor(pickOpenFor(date, 'supper') ? null : { date, slot: 'supper' })
-                            }
-                            aria-expanded={pickOpenFor(date, 'supper')}
-                          >
-                            <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
-                          </button>
-                        </div>
-                        {pickOpenFor(date, 'supper') && (
-                          <>
-                            {/* Pick a recipe → quick-add (links it, saves now, no
-                                staples). Flip this on first to also confirm its
-                                ingredients for the grocery list. */}
-                            <button
-                              type="button"
-                              className={'chip kitchen__recipe-staples' + (pickWithStaples ? ' is-on' : '')}
-                              onClick={() => setPickWithStaples((s) => !s)}
-                              aria-pressed={pickWithStaples}
-                            >
-                              <InlineIcon name={pickWithStaples ? 'check-square-bold' : 'square-bold'} /> 🛒 {t.kitchen.alsoStaples}
-                            </button>
-                            <RecipePickerMenu
-                              recipes={recipes}
-                              lowItems={lowItems}
-                              listItems={listItems}
-                              onPick={(r) => planRecipe(date, 'supper', r)}
-                            />
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                {/* Calm, read-only glance — the souper headline, a one-line peek at
+                    the other slots + note, and a single "Gérer" affordance. Every
+                    edit moved into the DayManageSheet so two days fit a phone. */}
+                <button
+                  type="button"
+                  className="kitchen__day-open"
+                  onClick={() => setManageDate(date)}
+                  aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
+                >
+                  <span className="kitchen__day-sum">
+                    {suppers.length ? (
+                      <span className="kitchen__day-sum-main">{suppers.map((m) => m.title).join(' · ')}</span>
                     ) : (
-                      <button
-                        type="button"
-                        className="kitchen__day-meal"
-                        onClick={() => {
-                          setEditDate(date)
-                          setMealText('')
-                        }}
-                      >
-                        {suppers.length ? (
-                          <span className="kitchen__day-add-more mono">＋ {t.kitchen.addAnother}</span>
-                        ) : (
-                          <span className="kitchen__day-empty mono">{t.kitchen.planShort}</span>
-                        )}
-                      </button>
+                      <span className="kitchen__day-sum-empty mono">{t.kitchen.planShort}</span>
                     )}
-                  </>
-                )}
-
-                {/* The lighter slots beside the souper — déjeuner / dîner /
-                    collation. Each shows its planned title (or picture + label);
-                    tapping opens an inline editor with the SAME recipe picker as
-                    the souper, so any meal can link a recipe — just without the
-                    souper's grocery-staples step. */}
-                <div className="kitchen__slots">
-                  {SIDE_SLOTS.map((slot) => {
-                    const slotMeals = mealsFor(date, slot)
-                    const editing = editSlot?.date === date && editSlot.slot === slot
-                    return (
-                      <div key={slot} className="kitchen__slot-wrap">
-                        <div className="kitchen__slot-head">
-                          <Icon name={SLOT_ICON_NAME[slot]} size={16} color="var(--ink-soft)" />
-                          <span className="kitchen__slot-label">{t.kitchen.slots[slot]}</span>
-                        </div>
-                        <MealRows
-                          meals={slotMeals}
-                          recipeFor={recipeForMeal}
-                          memberName={memberName}
-                          onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
-                          onRemove={clearMeal}
-                          onMove={moveMeal}
-                          onClearAll={() => clearSlotMeals(date, slot)}
-                        />
-                        {editing ? (
-                          <div className="kitchen__slot-edit-wrap">
-                            <form
-                              className="kitchen__slot-edit"
-                              onSubmit={(e) => {
-                                e.preventDefault()
-                                saveSlot(date, slot, slotText)
-                              }}
-                            >
-                              <input
-                                className="input"
-                                autoFocus
-                                value={slotText}
-                                onChange={(e) => setSlotText(e.target.value)}
-                                placeholder={t.kitchen.slots[slot]}
-                                aria-label={t.kitchen.slots[slot]}
-                              />
-                              {slotText && (
-                                <button
-                                  type="button"
-                                  className="btn btn--ghost mono kitchen__clear-text"
-                                  onClick={() => setSlotText('')}
-                                  aria-label={t.kitchen.clearText}
-                                  title={t.kitchen.clearText}
-                                >
-                                  <Icon name="x-bold" size={15} />
-                                </button>
-                              )}
-                              <button type="submit" className="btn btn--ghost mono">
-                                {t.kitchen.setMeal}
-                              </button>
-                            </form>
-                            {recipes.length > 0 && (
-                              <div className="kitchen__day-recipes">
-                                <div className="kitchen__day-recipes-row">
-                                  <button
-                                    type="button"
-                                    className="btn btn--ghost mono kitchen__pick-recipe"
-                                    onClick={() => setRecipePickFor(pickOpenFor(date, slot) ? null : { date, slot })}
-                                    aria-expanded={pickOpenFor(date, slot)}
-                                  >
-                                    <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
-                                  </button>
-                                </div>
-                                {pickOpenFor(date, slot) && (
-                                  <RecipePickerMenu
-                                    recipes={recipes}
-                                    lowItems={lowItems}
-                                    listItems={listItems}
-                                    onPick={(r) => planRecipe(date, slot, r)}
-                                  />
-                                )}
-                              </div>
-                            )}
-                            <button
-                              type="button"
-                              className="btn btn--ghost mono kitchen__add-cancel"
-                              onClick={() => {
-                                setEditSlot(null)
-                                setSlotText('')
-                              }}
-                            >
-                              {t.common.cancel}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            className="kitchen__slot-add mono"
-                            onClick={() => {
-                              setEditSlot({ date, slot })
-                              setSlotText('')
-                            }}
-                          >
-                            ＋ {slotMeals.length ? t.kitchen.addAnother : t.kitchen.slots[slot]}
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* Easy clearing: wipe the whole day's meals at once. Only when
-                    there's something to clear, so an empty day stays calm. */}
-                {dayMealCount > 0 && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost mono kitchen__clear-day"
-                    onClick={() => clearDay(date)}
-                  >
-                    <InlineIcon name="trash-bold" /> {t.kitchen.clearDay}
-                  </button>
-                )}
-
-                {/* The day's note — a free-text memo that isn't a meal (a pickup,
-                    an outing, "souper léger"). One per day; it rides under the
-                    slots here and surfaces on the Aujourd'hui board for today. */}
-                {(() => {
-                  const note = noteFor(date)
-                  return (
-                    <div className="kitchen__note">
-                      {editNote === date ? (
-                        <form
-                          className="kitchen__note-edit"
-                          onSubmit={(e) => {
-                            e.preventDefault()
-                            saveNote(date, noteText)
-                          }}
-                        >
-                          <input
-                            className="input"
-                            autoFocus
-                            value={noteText}
-                            onChange={(e) => setNoteText(e.target.value)}
-                            placeholder={t.kitchen.notePlaceholder}
-                            aria-label={t.kitchen.note}
-                          />
-                          <button type="submit" className="btn btn--ghost mono">
-                            {t.kitchen.setMeal}
-                          </button>
-                          {note && (
-                            <button
-                              type="button"
-                              className="btn btn--ghost mono kitchen__clear-meal"
-                              onClick={() => clearNote(date)}
-                            >
-                              <InlineIcon name="trash-bold" /> {t.kitchen.clearNote}
-                            </button>
-                          )}
-                        </form>
-                      ) : note ? (
-                        <button
-                          type="button"
-                          className="kitchen__note-chip"
-                          onClick={() => {
-                            setEditNote(date)
-                            setNoteText(note.text)
-                          }}
-                        >
-                          <span aria-hidden="true"><Icon name="pencil-simple-bold" size={16} /></span>
-                          <span className="kitchen__note-text">{note.text}</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="kitchen__note-add mono"
-                          onClick={() => {
-                            setEditNote(date)
-                            setNoteText('')
-                          }}
-                        >
-                          ＋ {t.kitchen.note}
-                        </button>
-                      )}
-                    </div>
-                  )
-                })()}
-                </div>
+                    {sideSummary && <span className="kitchen__day-sum-meta mono">{sideSummary}</span>}
+                    {note && (
+                      <span className="kitchen__day-sum-meta mono">
+                        <InlineIcon name="pencil-simple-bold" /> {note.text}
+                      </span>
+                    )}
+                  </span>
+                  <span className="kitchen__day-manage mono">
+                    <Icon name="pencil-simple-bold" size={14} /> {t.kitchen.manage}
+                  </span>
+                </button>
               </li>
               )
             })}
           </ul>
+
+          {/* One day's full planning controls, opened from a row's "Gérer" button.
+              State stays owned here (the souper flow + the recipe picker are page
+              singletons); the sheet just renders them for the one open day. */}
+          <DayManageSheet
+            open={manageDate !== null}
+            date={manageDate}
+            title={manageDate !== null ? capitalize(formatDayLong(manageDate, lang)) : ''}
+            onClose={() => setManageDate(null)}
+            recipes={recipes}
+            lowItems={lowItems}
+            listItems={listItems}
+            suppers={manageDate !== null ? mealsFor(manageDate, 'supper') : []}
+            mealsFor={mealsFor}
+            note={manageDate !== null ? noteFor(manageDate) : undefined}
+            recipeFor={recipeForMeal}
+            memberName={memberName}
+            onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
+            plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
+            picker={{ recipePickFor, setRecipePickFor, pickWithStaples, setPickWithStaples, planRecipe }}
+            slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
+            noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
+            actions={{ clearMeal, moveMeal, clearSlotMeals, clearDay }}
+          />
 
           <MealIdeas
             ideas={ideasQ.data?.ideas ?? []}

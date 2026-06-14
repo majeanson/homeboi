@@ -38,8 +38,11 @@
   opacity: 1;
   pointer-events: auto;
 }
-/* Undo toast: a calm, single pill above the FAB. Tap Undo to cancel a deferred
-   write; it auto-commits and disappears after a few seconds. */
+/* Undo toast: a calm pill above the FAB. Tap Undo to cancel a deferred write (or
+   reverse a just-applied one); it auto-commits and disappears after a few seconds.
+   When more than one action is undoable, a "Récents (N)" toggle expands the pill
+   into a small vertical stack — each row independently undoable. Bounded + on-device
+   (lib/undoStack): a glanceable history, never an audit log. */
 .undo-toast {
   position: fixed;
   left: 50%;
@@ -56,11 +59,44 @@
   border-radius: 999px;
   box-shadow: var(--shadow-lg);
 }
+/* Expanded: a rounded card holding the stack of rows + a collapse control. */
+.undo-toast--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 8px;
+  border-radius: 18px;
+}
+.undo-toast__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 50vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.undo-toast__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 12px;
+}
+.undo-toast__row + .undo-toast__row {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
 .undo-toast__msg {
   font-size: 0.92rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.undo-toast__row .undo-toast__msg {
+  flex: 1 1 auto;
 }
 .undo-toast__btn {
   flex: 0 0 auto;
@@ -75,6 +111,32 @@
   -webkit-tap-highlight-color: transparent;
 }
 .undo-toast__btn:active {
+  transform: scale(0.96);
+}
+/* "Récents (N)" / "Masquer" toggle — quieter than the Undo button. Generous tap
+   target so it works on a wall tablet and in Toddler mode. */
+.undo-toast__more {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--paper);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.84rem;
+  opacity: 0.82;
+  padding: 6px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.undo-toast--stack .undo-toast__more {
+  align-self: center;
+}
+.undo-toast__more:active {
   transform: scale(0.96);
 }
 @media (prefers-reduced-motion: no-preference) {

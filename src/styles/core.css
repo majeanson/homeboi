@@ -519,6 +519,18 @@ textarea.input {
   transform: translate(1px, 1px);
   box-shadow: var(--shadow-press);
 }
+/* "Étape 1 / 2" badge — colour comes inline from the choice's accent; the pill is
+   a soft tint of it, so the order (configure your device first, tablet second)
+   reads before the title does. */
+.setup__choice-step {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 14%, var(--card));
+}
 .setup__choice-icon {
   width: 56px;
   height: 56px;

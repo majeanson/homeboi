@@ -304,25 +304,24 @@ export function KidView() {
                 {cur?.label}
               </button>
 
-              {/* What's coming — just the picture, faded. No word. */}
-              {next && (
-                <div className="tdl-next" aria-hidden="true">
-                  <span className="tdl-next-arrow">→</span>
-                  <span className="tdl-next-pic">{next.icon || '○'}</span>
+              {/* "Next" preview + the rhythm dots share ONE row, so the column
+                  stays short enough to fit a tablet without scrolling. The
+                  per-step clock below is the only time shown while running — the
+                  session total is kept for the end recap (a parent's glance),
+                  not doubled up here. */}
+              <div className="tdl-meta">
+                {next && (
+                  <div className="tdl-next" aria-hidden="true">
+                    <span className="tdl-next-arrow">→</span>
+                    <span className="tdl-next-pic">{next.icon || '○'}</span>
+                  </div>
+                )}
+                <div className="tdl-dots" aria-hidden="true">
+                  {picked.cards.map((_, k) => (
+                    <i key={k} className={picked.doneIdx.includes(k) ? 'done' : k === curIdx ? 'on' : ''} />
+                  ))}
                 </div>
-              )}
-
-              <div className="tdl-dots" aria-hidden="true">
-                {picked.cards.map((_, k) => (
-                  <i key={k} className={picked.doneIdx.includes(k) ? 'done' : k === curIdx ? 'on' : ''} />
-                ))}
               </div>
-
-              {totalSecs > 0 && (
-                <div className="tdl-total mono" aria-live="polite">
-                  ⏱ {fmtClock(totalSecs)}
-                </div>
-              )}
 
               {/* Start ONCE (▶), then advance through with →, and ✓ on the last. */}
               {running ? (

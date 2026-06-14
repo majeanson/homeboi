@@ -9,17 +9,25 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  /* The container catches all pointer input so the app behind stays inert; the
-     user advances with the card's buttons (or Esc / Skip). */
+  /* NON-BLOCKING by design (calm ethos: the app never traps you). The layer only
+     DIMS for focus — it does NOT catch input, so the highlighted control (e.g. a
+     nav tab) and the rest of the app stay tappable. Advance with the card, just
+     use the app, or Esc / Skip to dismiss. Only the card opts pointer input back
+     in (below). Previously this caught everything, which made the spotlighted nav
+     feel broken — taps landed on an invisible scrim and did nothing. */
+  pointer-events: none;
 }
 
 .tour__scrim {
   position: absolute;
   inset: 0;
   display: block;
+  pointer-events: none;
 }
 
-/* A soft ring tracing the spotlighted element, to tie the caption to it. */
+/* A soft ring tracing the spotlighted element, to tie the caption to it. It
+   gently pulses an accent halo so a non-blocking tour reads as "look here, this
+   is the tutorial" rather than a stray highlight. */
 .tour__ring {
   position: absolute;
   border-radius: 16px;
@@ -32,10 +40,30 @@
     left var(--dur-base) var(--ease-out),
     width var(--dur-base) var(--ease-out),
     height var(--dur-base) var(--ease-out);
+  animation: tour-ring-pulse 1.9s ease-in-out infinite;
+}
+@keyframes tour-ring-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px var(--accent),
+      0 8px 30px rgba(0, 0, 0, 0.3),
+      0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px var(--accent),
+      0 8px 30px rgba(0, 0, 0, 0.3),
+      0 0 0 12px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
 }
 
 .tour__card {
   position: absolute;
+  /* The one part of the tour that takes pointer input back (the parent is
+     pointer-events:none), so Skip / Back / Next / "En savoir plus" stay clickable
+     while the dim itself lets taps fall through to the app. */
+  pointer-events: auto;
   width: min(340px, calc(100vw - 24px));
   background: var(--card);
   color: var(--ink);
@@ -51,6 +79,43 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+/* "Visite guidée · Étape 2 sur 5" — names the overlay so a non-blocking tour is
+   unmistakably a tour, with a live dot + the step count. */
+.tour__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.tour__eyebrow-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: tour-dot-pulse 1.6s ease-in-out infinite;
+}
+.tour__eyebrow-step {
+  margin-left: auto;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+}
+@keyframes tour-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
+  }
 }
 
 .tour__head {
@@ -155,5 +220,9 @@
 @media (prefers-reduced-motion: reduce) {
   .tour__ring {
     transition: none;
+    animation: none;
+  }
+  .tour__eyebrow-dot {
+    animation: none;
   }
 }
