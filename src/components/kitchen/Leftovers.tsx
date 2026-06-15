@@ -80,12 +80,31 @@ export function Leftovers({
 
   // Plan it onto a day → a real meal tagged is_leftover; the pool row is consumed
   // server-side. Refresh the plan + board (today's supper headline may change).
+  // Compensating undo (the caches are live-polled): delete the created meal AND
+  // re-insert the pool row, so Annuler fully reverses the plan.
   async function planLeftover(l: Leftover, date: number, slot: MealSlot) {
     setPlanFor(null)
-    await api('meal-leftovers', { method: 'POST', body: { action: 'plan', id: l.id, date, slot } }).catch(() => {})
+    const res = await api<{ mealId?: string }>('meal-leftovers', {
+      method: 'POST',
+      body: { action: 'plan', id: l.id, date, slot },
+    }).catch(() => null)
     qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
     qc.invalidateQueries({ queryKey: MEALS_KEY })
     qc.invalidateQueries({ queryKey: BOARD_KEY })
+    const mealId = res?.mealId
+    recordUndo({
+      message: t.undo.leftoverPlanned(l.title),
+      onUndo: async () => {
+        if (mealId) await api('meals', { method: 'DELETE', body: { id: mealId } }).catch(() => {})
+        await api('meal-leftovers', {
+          method: 'POST',
+          body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
+        }).catch(() => {})
+        qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
+        qc.invalidateQueries({ queryKey: MEALS_KEY })
+        qc.invalidateQueries({ queryKey: BOARD_KEY })
+      },
+    })
   }
 
   return (

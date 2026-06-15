@@ -3,7 +3,7 @@ import { badRequest, ok, readJson, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { type Actor } from '../_lib/household'
 import { classifyCapture, resolveLang, type Intent } from '../_lib/ai'
-import { newId, nowSec } from '../_lib/ids'
+import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { parseWhen } from '../_lib/whenparse'
 import { profileMemberId } from '../_lib/profile'
 
@@ -114,10 +114,23 @@ async function routeIntent(
       return { kind: 'meal', label: title }
     }
     case 'leftover': {
-      // A cooked dish with extra → the undated "Restants à finir" pool (like
-      // pantry-low's complement, it never touches the shopping list). Planning it
-      // onto a day happens later from the kitchen's Restants strip. No quantity.
+      // A cooked dish with extra. With a STATED day ("...pour demain") it's a real
+      // badged meal on that day; with no day it lands in the undated "Restants à
+      // finir" pool (like pantry-low's complement, it never touches the shopping
+      // list). No quantity either way. Planning a pooled one happens later from the
+      // kitchen's Restants strip.
       const title = p.title || p.item || raw
+      if (p.when) {
+        const { startAt } = parseWhen(p.when, Date.now())
+        const date = localDayStart(new Date(startAt * 1000))
+        const slot = p.slot && MEAL_SLOTS.has(p.slot) ? p.slot : 'supper'
+        await env.DB.prepare(
+          'INSERT INTO meals (id, household_id, date, slot, title, created_at, is_leftover) VALUES (?, ?, ?, ?, ?, ?, 1)',
+        )
+          .bind(newId(), hh, date, slot, title, ts)
+          .run()
+        return { kind: 'leftover', label: title }
+      }
       await env.DB.prepare(
         'INSERT INTO meal_leftovers (id, household_id, title, created_at) VALUES (?, ?, ?, ?)',
       )

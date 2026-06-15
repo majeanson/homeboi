@@ -179,6 +179,15 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
         </div>
       )}
 
+      {/* Restants à finir — the "eat these first" nudge rides the minimal board too
+          (read-only here; Fini lives on the bento board + kitchen strip). */}
+      {(data.leftovers ?? []).length > 0 && (
+        <div className="nownext__allday mono">
+          <InlineIcon name="arrow-counter-clockwise-bold" /> {t.kitchen.leftoversBoard} ·{' '}
+          {data.leftovers.map((l) => l.title).join(' · ')}
+        </div>
+      )}
+
       {/* Tomorrow's prep note — the night-before reminder, even on the minimal
           "Maintenant" board, so advance prep isn't hidden behind a view switch. */}
       {data.tomorrowNote && (
@@ -217,7 +226,7 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
 
   return (
     <div className="lanes">
-      {(unassigned.length > 0 || sharedChores.length > 0 || laneMeals.length > 0) && (
+      {(unassigned.length > 0 || sharedChores.length > 0 || laneMeals.length > 0 || (data.leftovers ?? []).length > 0) && (
         <div className="lane bento">
           <div className="lane__head lane__head--shared">
             <span className="lane__dot" style={{ background: 'var(--ink-faint)' }} aria-hidden="true" />
@@ -232,6 +241,15 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
               title={`${slotLabel(m.slot)} · ${m.title}`}
               who={cookLine(m.cook_member_id)}
               color={mealPrefs.color(m.slot)}
+            />
+          ))}
+          {/* Restants à finir — family-wide, read-only on the lanes glance. */}
+          {(data.leftovers ?? []).map((l) => (
+            <Act
+              key={l.id}
+              cat="meal"
+              icon="arrow-counter-clockwise-bold"
+              title={`${t.kitchen.leftoversTag} · ${l.title}`}
             />
           ))}
           {unassigned.map((e) => (

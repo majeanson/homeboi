@@ -1075,6 +1075,96 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    id: 'leftovers',
+    icon: 'arrow-counter-clockwise-bold',
+    group: 'concepts',
+    title: { fr: 'Les restants', en: 'Leftovers' },
+    what: {
+      fr: 'Ce qu’il reste d’un souper, noté pour qu’on le mange avant d’ouvrir du neuf. Un rappel calme, pas un inventaire à tenir.',
+      en: 'What’s left from a supper, noted so it gets eaten before anything new is opened. A calm reminder, not an inventory to keep.',
+    },
+    points: [
+      {
+        label: { fr: 'Annonce le restant', en: 'Announce the leftover' },
+        detail: {
+          fr: 'Note le restant d’un souper (« reste de pâté chinois ») et il s’affiche sur le babillard, à côté du repas du jour.',
+          en: 'Note a supper’s leftover (“leftover shepherd’s pie”) and it shows on the board, beside the day’s meal.',
+        },
+        why: {
+          fr: 'Pour que toute la maisonnée sache quoi finir, sans avoir à fouiller dans le frigo.',
+          en: 'So the whole household knows what to finish, without digging through the fridge.',
+        },
+      },
+      {
+        label: { fr: 'À manger en premier', en: 'Eat it first' },
+        detail: {
+          fr: 'Le restant passe avant un nouveau plat : place-le sur un jour comme dîner ou souper, ou laisse-le « à finir bientôt ».',
+          en: 'The leftover comes before a fresh dish: put it on a day as lunch or supper, or leave it “to finish soon”.',
+        },
+        why: {
+          fr: 'Moins de gaspillage, et un repas déjà prêt les soirs pressés.',
+          en: 'Less waste, and a meal already made on busy nights.',
+        },
+      },
+      {
+        label: { fr: 'Disparaît une fois fini', en: 'Gone once finished' },
+        detail: {
+          fr: 'Quand le restant est mangé, marque-le « fini »; il quitte le babillard et rien ne traîne.',
+          en: 'Once the leftover is eaten, mark it “done”; it leaves the board and nothing lingers.',
+        },
+        why: {
+          fr: 'Un simple drapeau « à finir », pas un compte de portions à tenir à jour.',
+          en: 'Just a “finish me” flag, not a portion count to keep current.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'reserve',
+    icon: 'cloud-snow-bold',
+    group: 'concepts',
+    title: { fr: 'La réserve', en: 'The stash' },
+    what: {
+      fr: 'Ce que tu gardes au congélateur ou au fond du garde-manger, noté par endroit pour ne pas l’oublier — ni le racheter pour rien.',
+      en: 'What you keep in the freezer or at the back of the pantry, noted by spot so you don’t forget it — or buy it again for nothing.',
+    },
+    points: [
+      {
+        label: { fr: 'Rangé par endroit', en: 'Grouped by spot' },
+        detail: {
+          fr: 'Note un article et dis où il est : congélateur, garde-manger, sous-sol. La réserve les regroupe par endroit.',
+          en: 'Note an item and say where it is: freezer, pantry, basement. The stash groups them by spot.',
+        },
+        why: {
+          fr: 'Pour retrouver d’un coup d’œil ce qui dort au congélateur avant de planifier un souper.',
+          en: 'So you can spot at a glance what’s tucked in the freezer before planning a supper.',
+        },
+      },
+      {
+        label: { fr: 'Un rappel, pas un inventaire', en: 'A reminder, not an inventory' },
+        detail: {
+          fr: 'Tu notes ce qui vaut la peine d’être retenu — pas chaque boîte de conserve. Aucun chiffre à tenir à jour.',
+          en: 'You note what’s worth remembering — not every can. No numbers to keep current.',
+        },
+        why: {
+          fr: '« Un rappel, pas un inventaire » garde la cuisine calme : zéro corvée de comptage.',
+          en: '“A reminder, not an inventory” keeps the kitchen calm: zero counting chore.',
+        },
+      },
+      {
+        label: { fr: 'Sors-le quand tu l’utilises', en: 'Pull it when you use it' },
+        detail: {
+          fr: 'Quand tu sors un article de la réserve, retire-le; s’il achève, donne-lui plutôt le drapeau « il en manque » pour qu’il saute sur la liste.',
+          en: 'When you take an item out of the stash, clear it; if it’s running low, flag it “running low” instead so it jumps onto the list.',
+        },
+        why: {
+          fr: 'La réserve dit ce que tu as déjà; « il en manque » dit ce qu’il faut racheter — les deux se complètent sans se mélanger.',
+          en: 'The stash says what you already have; “running low” says what to rebuy — the two complement each other without blurring.',
+        },
+      },
+    ],
+  },
+  {
     id: 'offline',
     icon: 'wifi-high-bold',
     group: 'concepts',

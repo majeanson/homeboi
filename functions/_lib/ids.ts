@@ -71,6 +71,17 @@ export function localDayStart(d: Date, tz = HOUSEHOLD_TZ): number {
   return Math.floor((wallMidnight - offset2) / 1000)
 }
 
+// Local midnight (unix s) of the calendar day `n` days after the local-midnight
+// `daySec`. Steps the day field (Date.UTC rolls month/year over) then snaps
+// noon-of-that-day back to its local midnight — so a 23 h/25 h DST day doesn't
+// drift the window an hour off (a plain `+ 86400` would). Mirrors the client
+// addLocalDays in src/lib/localDay.ts so server windows match client grid keys.
+export function addLocalDays(daySec: number, n: number, tz = HOUSEHOLD_TZ): number {
+  const w = wallParts(new Date(daySec * 1000), tz)
+  const noon = new Date(Date.UTC(w.y, w.mo - 1, w.d + n, 12))
+  return localDayStart(noon, tz)
+}
+
 // Day-of-week (0 = Sunday) in `tz` — the week-block anchor must use the local
 // day, not getUTCDay (which flips at 8 PM Eastern).
 export function localDayOfWeek(d: Date, tz = HOUSEHOLD_TZ): number {

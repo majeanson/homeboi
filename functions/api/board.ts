@@ -1,6 +1,6 @@
 import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { dayStart, localDayStart } from '../_lib/ids'
+import { dayStart, localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
 
 interface Ev {
@@ -28,9 +28,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // day rolls at 20:00 Eastern, so "ce soir" would flip to tomorrow's supper all
   // evening. Events and chores keep the UTC `today` above to match _lib/recur's
   // day math (it re-buckets with dayStart internally).
+  // Step by LOCAL calendar days, not a fixed 86 400 s: a local day is 23 h/25 h
+  // across a DST change, so plain arithmetic would land "ce soir"/tomorrow's
+  // supper an hour off and mis-bucket meals near the boundary (twice a year).
   const mealToday = localDayStart(new Date(Date.now()))
-  const mealTomorrow = mealToday + 86400
-  const mealDayAfter = mealToday + 86400 * 2
+  const mealTomorrow = addLocalDays(mealToday, 1)
+  const mealDayAfter = addLocalDays(mealToday, 2)
 
   const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes, leftoversRes] = await Promise.all([
     ctx.env.DB.prepare(

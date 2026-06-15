@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { useUndoToast } from '../../lib/toast'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { wash, PALETTE } from '../../lib/colors'
 import { type ReserveLocation, seedReserveDefaults } from '../../lib/reservePrefs'
@@ -18,6 +19,7 @@ import { RowActions } from '../RowActions'
 export function ReserveLocationsSection() {
   const t = useT()
   const qc = useQueryClient()
+  const undo = useUndoToast()
   const [locs, setLocs] = useState<ReserveLocation[] | null>(null)
   const [adding, setAdding] = useState('')
   const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
@@ -32,9 +34,16 @@ export function ReserveLocationsSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const save = useCallback(
+  // Persist a locations array and refresh the kitchen. Used directly (rename /
+  // recolour / add — applied optimistically by save) and as the deferred commit
+  // behind a location delete's undo toast.
+  // KNOWN LIMITATION: this PATCHes the whole array, so two concurrent OPERATOR tabs
+  // last-write-win (no merge). A merge-by-id would wrongly resurrect deletes (the
+  // array is authoritative, no tombstones), and a correct compare-and-set guard
+  // needs a version baseline on the wire — disproportionate for one-operator-per-
+  // household (and kiosks can no longer write here, see reserve.ts 'operator' gate).
+  const persist = useCallback(
     async (next: ReserveLocation[]) => {
-      setLocs(next)
       setStatus('idle')
       try {
         await api('household', { method: 'PATCH', body: { reserveLocations: next } })
@@ -47,6 +56,14 @@ export function ReserveLocationsSection() {
     [qc],
   )
 
+  const save = useCallback(
+    (next: ReserveLocation[]) => {
+      setLocs(next)
+      void persist(next)
+    },
+    [persist],
+  )
+
   if (locs === null) return <p className="loading mono">{t.common.loading}</p>
 
   function rename(id: string, name: string) {
@@ -55,8 +72,20 @@ export function ReserveLocationsSection() {
   function recolor(id: string, color: string) {
     save(locs!.map((l) => (l.id === id ? { ...l, color } : l)))
   }
+  // Remove a location behind the deferred undo toast (the app-wide calm-delete
+  // shape, like PantryTab.removeLowItem): drop it from the view now, hold the PATCH.
+  // Undo restores the prior list (nothing reached the server); commit persists the
+  // trimmed list. Items in a removed spot simply fall under "Autres" — no data loss.
   function remove(id: string) {
-    save(locs!.filter((l) => l.id !== id))
+    const prev = locs!
+    const loc = prev.find((l) => l.id === id)
+    const next = prev.filter((l) => l.id !== id)
+    setLocs(next)
+    undo({
+      message: t.undo.cleared(loc?.name ?? ''),
+      onUndo: () => setLocs(prev),
+      onCommit: () => void persist(next),
+    })
   }
   function add(e: React.FormEvent) {
     e.preventDefault()

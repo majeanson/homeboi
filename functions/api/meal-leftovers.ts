@@ -47,17 +47,20 @@ export const onRequestPost = authed(async (ctx, actor) => {
     if (!row) return ok({ ok: true }) // gone already
     const slot = slotOf(body.slot)
     const date = localDayStart(new Date(body.date * 1000))
+    // Keep the new meal id so the client can offer a compensating undo (delete the
+    // meal + re-insert the pool row) — planning consumes the pool entry.
+    const mealId = newId()
     await ctx.env.DB.prepare(
       `INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, recipe_id, created_at, position, is_leftover)
        SELECT ?, ?, ?, ?, ?, NULL, NULL, ?, ?, COALESCE(MAX(position), -1) + 1, 1
        FROM meals WHERE household_id = ? AND date = ? AND slot = ?`,
     )
-      .bind(newId(), actor.householdId, date, slot, row.title, row.recipe_id, nowSec(), actor.householdId, date, slot)
+      .bind(mealId, actor.householdId, date, slot, row.title, row.recipe_id, nowSec(), actor.householdId, date, slot)
       .run()
     await ctx.env.DB.prepare('DELETE FROM meal_leftovers WHERE id = ? AND household_id = ?')
       .bind(body.id, actor.householdId)
       .run()
-    return ok({ ok: true, planned: true })
+    return ok({ ok: true, planned: true, mealId, title: row.title })
   }
 
   // ── Add an undated leftover to the pool. Returns the new id so the client can
