@@ -567,18 +567,13 @@ test.describe('recipes', () => {
   })
 
   test('a step with a duration offers a tappable cook-mode timer', async ({ page }) => {
-    // Per-step timers live in the stepper, which now follows the toddler PROFILE
-    // (not an in-cook toggle) — so reach it through the kid kitchen: tap a planned
-    // meal that maps to a recipe (Spaghetti → rc1). Hear-first, so two taps commit.
-    await APP('/kitchen', 'toddler')(page)
-    await settle(page, '.bigtiles .bigtile')
-    const tile = page.locator('.bigtiles .bigtile').first()
-    await tile.click() // arm
-    await tile.click() // commit → Cook mode
+    // Cook mode is a standalone route now; go straight to it. The parent (full) view
+    // lays out every step, and rc1's "Faire bouillir les pâtes 10 minutes" exposes a
+    // tappable timer chip — tapping it starts a counting clock in the timer rail.
+    await page.goto('/kitchen/recipe/rc1/cook')
     const cook = page.locator('.cook')
     await expect(cook).toBeVisible()
-    await cook.locator('.cook__arrow--next').click() // ingredients → step 1 ("10 minutes")
-    const chip = cook.locator('.cook__timer-chip')
+    const chip = cook.locator('.cook__timer-chip').first()
     await expect(chip).toBeVisible()
     await chip.click()
     await expect(cook.locator('.cook__timer-clock')).toContainText(':') // counting down mm:ss
@@ -603,15 +598,10 @@ test.describe('recipes', () => {
   })
 
   test('creating a recipe posts it', async ({ page }) => {
-    // Recipe creation moved to the contextual ＋: FAB → "Ajouter une recette"
-    // tile → navigates to /kitchen/recipe/new (the recipe builder route, which
-    // renders the SAME RecipeForm — still a .recipe-modal — full-screen).
-    await page.locator('.add-fab').click()
-    // Let the sheet settle (the meals query resolving re-renders it once) before
-    // tapping a tile, so the tile isn't detached mid-click.
-    await expect(page.locator('.sheet.show .addsheet__daypick')).toBeVisible()
-    await page.locator('.cat-pick', { hasText: 'Ajouter une recette' }).click()
-    await expect(page).toHaveURL(/\/kitchen\/recipe\/new$/)
+    // The recipe builder is a standalone route (/kitchen/recipe/new) rendering the
+    // RecipeForm (.recipe-modal). The ＋ FAB → "Ajouter une recette" tile just
+    // navigates here (covered by the add-sheet test); go straight to the builder.
+    await page.goto('/kitchen/recipe/new')
     const modal = page.locator('.recipe-modal')
     await modal.waitFor({ state: 'visible' })
     await modal.locator('.recipe-title-input').fill('Soupe aux légumes')
@@ -621,9 +611,8 @@ test.describe('recipes', () => {
   })
 
   test('a recipe step edits in a memo, one open at a time', async ({ page }) => {
-    await page.locator('.add-fab').click()
-    await page.locator('.cat-pick', { hasText: 'Ajouter une recette' }).click() // → builder route
-    await expect(page).toHaveURL(/\/kitchen\/recipe\/new$/)
+    // Straight to the recipe builder route (the ＋→tile nav is covered elsewhere).
+    await page.goto('/kitchen/recipe/new')
     const modal = page.locator('.recipe-modal')
     await expect(modal).toBeVisible()
     // Steps start collapsed — no wall of open boxes.
