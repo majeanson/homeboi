@@ -13,7 +13,7 @@ async function boot(page: Page) {
   await page.setViewportSize({ width: 390, height: 844 })
   await mockApi(page)
   // Signed-in parent, tour NOT marked seen → the essentials tour auto-starts.
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', calm: true })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', calm: true, tour: true })
   await page.goto('/board')
 }
 

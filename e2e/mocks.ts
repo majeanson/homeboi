@@ -541,6 +541,11 @@ export interface AppState {
   // first-run card on top — same idea as pre-seeding the tour as "seen". Pass
   // `intros: true` to leave them un-dismissed and exercise the feature.
   intros?: boolean
+  // The first-login guided tour (lib/tour.tsx) auto-starts for a signed-in parent
+  // when it isn't marked seen — and its centred welcome card sits OVER the page,
+  // so every spec that clicks something would time out. Pre-mark it seen by
+  // default; pass `tour: true` to leave it un-seeded and exercise the tour itself.
+  tour?: boolean
 }
 
 // Seed localStorage BEFORE any document script runs, so theme-bootstrap.js picks
@@ -563,6 +568,13 @@ export async function seedState(page: Page, s: AppState) {
       // never sit on top of the content a screenshot/interaction spec is after.
       if (!state.intros) {
         localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'routines', 'liste']))
+      }
+      // Pre-mark the first-login guided tour seen unless a test opts in, so its
+      // auto-started welcome card / spotlight never covers the elements a spec is
+      // driving — the cause of the whole suite timing out once the tour shipped.
+      // (Several specs already seeded this by hand; doing it here covers them all.)
+      if (!state.tour) {
+        localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
       }
     } catch {
       /* noop */
