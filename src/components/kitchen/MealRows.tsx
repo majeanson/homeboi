@@ -17,6 +17,7 @@ export function MealRows({
   onMove,
   onRename,
   onClearAll,
+  onLeftover,
 }: {
   meals: MealRow[]
   recipeFor: (m: MealRow) => Recipe | undefined
@@ -26,6 +27,10 @@ export function MealRows({
   onMove: (id: string, dir: 'up' | 'down') => void
   onRename: (id: string, title: string) => void
   onClearAll?: () => void // "clear this slot" — shown only when the slot holds several
+  // "Il en reste ?" — announce that this cooked meal has leftovers (drops them into
+  // the Restants pool). Omitted for slots/contexts that shouldn't offer it; never
+  // shown on a row that is ALREADY a leftover.
+  onLeftover?: (meal: MealRow) => void
 }) {
   const t = useT()
   // Inline rename: which row is being edited, and its draft title.
@@ -79,6 +84,13 @@ export function MealRows({
             ) : (
               <>
                 <span className="kitchen__meal-main">
+                  {/* Planned leftovers read as "Restants" so the plan shows it's a
+                      finish-the-fridge meal, not a fresh cook. */}
+                  {m.is_leftover ? (
+                    <span className="kitchen__meal-tag mono">
+                      <InlineIcon name="arrow-counter-clockwise-bold" size={12} /> {t.kitchen.leftoversTag}
+                    </span>
+                  ) : null}
                   <span className="kitchen__meal-title">{m.title}</span>
                   {m.suggested_by != null && (
                     <span className="kitchen__day-sugg mono">💡 {memberName(m.suggested_by) || t.kitchen.suggested}</span>
@@ -120,6 +132,19 @@ export function MealRows({
                         <Icon name="caret-down-bold" size={16} />
                       </button>
                     </>
+                  )}
+                  {/* "Il en reste ?" — announce leftovers from this cooked meal. Not
+                      offered on a row that is itself already a leftover. */}
+                  {onLeftover && !m.is_leftover && (
+                    <button
+                      type="button"
+                      className="kitchen__meal-btn"
+                      onClick={() => onLeftover(m)}
+                      aria-label={t.kitchen.leftoversFromMeal}
+                      title={t.kitchen.leftoversFromMeal}
+                    >
+                      <Icon name="arrow-counter-clockwise-bold" size={15} />
+                    </button>
                   )}
                   <button
                     type="button"

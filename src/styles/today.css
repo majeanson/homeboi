@@ -368,6 +368,43 @@
 .act.done .tile {
   opacity: 0.55;
 }
+/* Photo tile: a recipe's image fills the washed tile (the cook-mode pickers). */
+.act .tile--photo {
+  overflow: hidden;
+  padding: 0;
+}
+.act .tile--photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Navigation row (onActivate, no check): a quiet trailing caret in place of the
+   check disc, so the row reads as "tap to go" rather than "tap to tick". */
+.act__caret {
+  margin-left: auto;
+  flex: none;
+  display: flex;
+  align-items: center;
+  color: var(--ink-faint);
+}
+/* A small marker pill at the trailing edge (e.g. the next-due meal's "Prochain").
+   It claims the auto-margin; a following caret then tucks in beside it. */
+.act__badge {
+  margin-left: auto;
+  flex: none;
+  align-self: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.act__badge + .act__caret {
+  margin-left: 8px;
+}
 
 /* Mobile: tighter padding + a smaller icon tile shrink each row further (the
    inline time · title · who layout is already the default above). */

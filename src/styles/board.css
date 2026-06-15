@@ -253,13 +253,21 @@
   flex-direction: column;
   gap: 1rem;
 }
+/* The tinted cards read their accent from a `--tint` custom property (set inline
+   from the event/meal colour). Moving the alpha into color-mix keeps the maths in
+   CSS and stays valid even if `--tint` is unset or a CSS var — unlike the old
+   `hex + '55'` string, which silently produced no border. 33% ≈ the old 0x55. */
 .nownext__focus {
   background: var(--card);
-  border: 2px solid var(--line);
+  border: 2px solid color-mix(in srgb, var(--tint, var(--line)) 33%, transparent);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   padding: clamp(1.5rem, 5vw, 3rem);
   text-align: center;
+}
+/* No accent on the empty card — keep the plain full-strength hairline. */
+.nownext__focus--empty {
+  border-color: var(--line);
 }
 .nownext__when {
   font-size: clamp(1rem, 2.5vw, 1.6rem);
@@ -305,7 +313,7 @@
   gap: 0.6rem;
   align-self: center;
   background: var(--card);
-  border: 2px solid var(--line);
+  border: 2px solid color-mix(in srgb, var(--tint, var(--line)) 33%, transparent);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   padding: 0.85rem 1.4rem;
@@ -329,6 +337,21 @@
   font-weight: 500;
   font-size: 0.9rem;
   color: var(--ink-soft);
+}
+/* Who's cooking — a quiet third line under the meal, dotted in their colour. */
+.nownext__cook-who {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.nownext__cook-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
 }
 .nownext__allday {
   text-align: center;

@@ -40,6 +40,13 @@ export interface MealRow {
   id: string
   title: string
   cook_member_id: string | null
+  is_leftover?: number // 1 = a planned leftover ("Restants" badge); migration 0035
+}
+// One undated leftover in the "Restants à finir" pool — a calm board reminder to
+// eat it before cooking the rest. Marking it "Fini" removes it.
+export interface LeftoverRow {
+  id: string
+  title: string
 }
 // One of today's planned meals, with its slot (déjeuner/dîner/souper/collation)
 // so the board can label it. The full day's table, shown beside the supper hero.
@@ -49,6 +56,7 @@ export interface DayMealRow {
   title: string
   cook_member_id: string | null
   position?: number
+  is_leftover?: number // 1 = a planned leftover ("Restants" badge); migration 0035
 }
 // Today's day note — the per-day memo set in La cuisine. Read-only on the board.
 export interface DayNote {
@@ -99,6 +107,8 @@ export interface BoardData {
   // marks it done so it drops off. Shares the ChoreInstance shape.
   todos: ChoreInstance[]
   notes: NoteRow[]
+  // Undated leftovers to finish — the "Restants à finir" reminder card.
+  leftovers: LeftoverRow[]
 }
 
 // The bilingual copy object, passed down so the extracted views don't each

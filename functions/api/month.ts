@@ -1,19 +1,21 @@
 import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { dayStart } from '../_lib/ids'
+import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
 
 // Everything dated in the household, for a calendar-month window. /api/board is
 // the 7-day glance; the month view zooms out, so it needs its own read across an
 // arbitrary [from, to) day range. Same item families the board surfaces — events
 // (one-off + recurring), meals, recurring chores, day-notes — expanded and
-// bucketed onto a UTC day key the client groups by. Fridge notes are deliberately
+// bucketed onto a LOCAL day key the client groups by (matching lib/monthgrid +
+// the meal week — local midnight, DST-aware, so an evening event lands on the day
+// the household is living, not the next UTC day). Fridge notes are deliberately
 // absent: they carry no date (always-active), so they have no calendar cell.
 // ZERO AI: a pure D1 read, same as the board (NFR-PERF-1).
 const DAY = 86400
 const MAX_DAYS = 45 // a 6-week grid is 42 days; cap the expansion cost regardless.
 
-const dayOf = (at: number) => dayStart(new Date(at * 1000))
+const dayOf = (at: number) => localDayStart(new Date(at * 1000))
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const hh = actor.householdId
@@ -41,14 +43,14 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json: string }>(),
-    // Meals & day-notes bucket at LOCAL midnight; widen the SQL window a day each
-    // side so an entry near the UTC boundary still lands, then re-bucket by UTC
-    // day below and clip back to [from, to).
+    // Meals & day-notes are stored at LOCAL midnight; widen the SQL window a day
+    // each side so an entry near the window edge still lands, then re-bucket by
+    // local day below and clip back to [from, to).
     ctx.env.DB.prepare(
-      "SELECT id, slot, title, cook_member_id, date, position FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, CASE slot WHEN 'breakfast' THEN 0 WHEN 'lunch' THEN 1 WHEN 'snack' THEN 2 WHEN 'supper' THEN 3 ELSE 9 END, position, created_at, id",
+      "SELECT id, slot, title, cook_member_id, date, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, CASE slot WHEN 'breakfast' THEN 0 WHEN 'lunch' THEN 1 WHEN 'snack' THEN 2 WHEN 'supper' THEN 3 ELSE 9 END, position, created_at, id",
     )
       .bind(hh, from - DAY, to + DAY)
-      .all<{ id: string; slot: string; title: string; cook_member_id: string | null; date: number; position: number }>(),
+      .all<{ id: string; slot: string; title: string; cook_member_id: string | null; date: number; position: number; is_leftover: number }>(),
     ctx.env.DB.prepare(
       'SELECT id, text, member_id, date FROM day_notes WHERE household_id = ? AND date >= ? AND date < ?',
     )
@@ -85,10 +87,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   }
 
-  const meals: { id: string; slot: string; title: string; cook_member_id: string | null; day: number }[] = []
+  const meals: { id: string; slot: string; title: string; cook_member_id: string | null; day: number; is_leftover?: number }[] = []
   for (const m of mealsRes.results) {
     const day = dayOf(m.date)
-    if (inRange(day)) meals.push({ id: m.id, slot: m.slot, title: m.title, cook_member_id: m.cook_member_id, day })
+    if (inRange(day)) meals.push({ id: m.id, slot: m.slot, title: m.title, cook_member_id: m.cook_member_id, day, is_leftover: m.is_leftover })
   }
 
   const dayNotes: { id: string; text: string; member_id: string | null; day: number }[] = []

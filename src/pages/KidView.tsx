@@ -7,7 +7,7 @@ import { useProfile } from '../lib/profile'
 import { useSpeak } from '../lib/speak'
 import { Icon } from '../components/Icon'
 import { Loading, PairPrompt } from '../components/Fallback'
-import { tintInk } from '../lib/colors'
+import { tintInk, wash } from '../lib/colors'
 import { imgUrl } from '../lib/image'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
@@ -246,7 +246,7 @@ export function KidView() {
 
   return (
     <div className="kid">
-      <div className="tdl" style={{ background: tint + '22' }}>
+      <div className="tdl" style={{ background: wash(tint) }}>
         <div className="tdl-top">
           <Link to="/board" className="tdl-exit" aria-label={t.kid.exit}>
             <Icon name="arrow-right-bold" size={20} style={{ transform: 'rotate(180deg)' }} />

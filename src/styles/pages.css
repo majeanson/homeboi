@@ -584,6 +584,33 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* "Restants" badge — a quiet terracotta pill flagging a planned-leftover meal
+   wherever a meal title shows (meal rows, the week-grid glance). */
+.kitchen__meal-tag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  color: var(--terracotta-deep);
+  background: var(--terracotta-wash);
+  white-space: nowrap;
+}
+/* Quick-pick row in the Restants strip — today's planned meals as tap-to-add chips. */
+.kitchen__leftovers-recent {
+  margin: 0.4rem 0;
+}
+.kitchen__leftovers-recent-label {
+  margin: 0 0 0.3rem;
+  color: var(--ink-soft);
+}
+.kitchen__leftovers-recent-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
 .kitchen__meal-ctl {
   flex: none;
   display: inline-flex;
@@ -724,6 +751,34 @@
 .kitchen__pantry-row .board__list-item {
   flex: 1 1 auto;
   min-width: 0;
+}
+/* La réserve: a storage-location picker rides in the add/edit row; keep it from
+   eating the whole width so the item field and "Ajouter" stay usable on a phone. */
+.kitchen__reserve-loc {
+  flex: 0 1 9rem;
+  min-width: 6rem;
+}
+/* Items group under a small coloured location header (tinted with the spot's own
+   colour), then an "Autres" bucket for anything whose location was removed. */
+.kitchen__reserve-group {
+  margin-top: 0.9rem;
+}
+.kitchen__reserve-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: fit-content;
+}
+.kitchen__reserve-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  flex: none;
 }
 
 /* --- Kid view (pre-reader: big targets, calm, deterministic) -------------- */

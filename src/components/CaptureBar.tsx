@@ -11,7 +11,7 @@ import type { IntentType } from '../lib/captureTypes'
 //
 // When the server reports `degraded` (AI binding unset), we show a manual
 // type-picker so the capture is never lost — the same shape the brief promises.
-const FORCE_TYPES: IntentType[] = ['event', 'task', 'list-item', 'pantry-low', 'meal', 'note']
+const FORCE_TYPES: IntentType[] = ['event', 'task', 'list-item', 'pantry-low', 'meal', 'leftover', 'note']
 
 export function CaptureBar({ onCaptured }: { onCaptured?: () => void }) {
   const t = useT()

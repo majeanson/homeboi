@@ -19,6 +19,7 @@ export type AddSheetMode =
   | 'auto-pick'
   | 'recipe'
   | 'meal'
+  | 'leftovers'
   | 'pantry'
   | 'cook'
 
@@ -34,7 +35,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan).
-  kitchen: ['cook', 'recipe', 'meal', 'pantry'],
+  kitchen: ['cook', 'recipe', 'meal', 'leftovers', 'pantry'],
   routines: ['routine'],
   liste: ['list-item', 'quick-add', 'flyer', 'auto-pick'],
 }

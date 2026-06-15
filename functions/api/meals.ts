@@ -38,7 +38,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const today = localDayStart(new Date(Date.now()))
   const windowDays = windowDaysFor(today)
   const { results } = await ctx.env.DB.prepare(
-    `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, ${MEAL_ORDER}`,
+    `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, ${MEAL_ORDER}`,
   )
     .bind(actor.householdId, today, today + DAY * windowDays)
     .all()
@@ -61,6 +61,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
     staples?: string[]
     suggest?: boolean // a kid's pick — recorded with suggested_by
     suggestedBy?: string // the child's member id, for "suggéré par X"
+    isLeftover?: boolean // announce-from-a-meal WITH a day: a planned leftover (badged "Restants")
+    sourceMealId?: string // optional provenance — the meal it was left over from
   }>(ctx.request)
 
   // ── Reorder within a slot: ↑/↓ one step. Renumber the whole slot densely by
@@ -122,8 +124,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
 
   await ctx.env.DB.prepare(
-    `INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, recipe_id, created_at, position)
-     SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1
+    `INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, recipe_id, created_at, position, is_leftover)
+     SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1, ?
      FROM meals WHERE household_id = ? AND date = ? AND slot = ?`,
   )
     .bind(
@@ -136,6 +138,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       body.suggest ? (body.suggestedBy ?? null) : null,
       recipeId,
       ts,
+      body.isLeftover ? 1 : 0,
       actor.householdId,
       date,
       slot,

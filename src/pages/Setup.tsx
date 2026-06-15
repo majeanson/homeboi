@@ -3,6 +3,7 @@ import { TopBar } from '../components/TopBar'
 import { useT } from '../i18n'
 import { useSurface, type Surface } from '../lib/surface'
 import { Icon, type IconName } from '../components/Icon'
+import { wash } from '../lib/colors'
 
 // First-run role choice: is this a wall display or a personal phone? It's the one
 // fork the rest of the flow hangs off — a personal device signs in / creates the
@@ -38,7 +39,7 @@ export function Setup() {
               <span className="setup__choice-step mono" style={{ color: c.color }}>
                 {t.setup[c.key].step}
               </span>
-              <span className="setup__choice-icon" style={{ background: c.color + '22' }}>
+              <span className="setup__choice-icon" style={{ background: wash(c.color) }}>
                 <Icon name={c.icon} size={30} color={c.color} />
               </span>
               <span className="setup__choice-title">{t.setup[c.key].title}</span>

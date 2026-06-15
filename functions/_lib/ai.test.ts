@@ -138,4 +138,12 @@ describe('classifyCapture (response shape)', () => {
     expect(r.type).toBe('pantry-low')
     expect(r.payload.item).toBe('café')
   })
+  // The 7th intent: leftovers from an already-cooked dish (distinct from pantry-low
+  // "out of" and meal "to cook"). Must survive the VALID gate and carry its title.
+  it('routes a leftover intent and keeps the dish title', async () => {
+    const env = mockAiEnv({ type: 'leftover', payload: { title: 'lasagne' } })
+    const r = await classifyCapture(env, 'il reste de la lasagne')
+    expect(r.type).toBe('leftover')
+    expect(r.payload.title).toBe('lasagne')
+  })
 })

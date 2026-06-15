@@ -469,6 +469,87 @@
   border-radius: 999px;
   cursor: pointer;
 }
+/* Persistent timer rail under the bar — several countdowns at once, visible as you
+   move between steps. Scrolls sideways if they pile up, so the step area keeps its
+   height. Each item stacks its step label above the clock + dismiss. */
+.cook__timer-rail {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-end;
+  padding: 0.6rem 1rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+  -webkit-overflow-scrolling: touch;
+}
+.cook__timer-item {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.cook__timer-label {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  max-width: 13rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cook__timer-item.is-done .cook__timer-label {
+  color: var(--sage-deep, #4f6b3a);
+}
+/* Compact the clock inside the rail (the in-step chips stay big). */
+.cook__timer-rail .cook__timer-clock {
+  font-size: 1.2rem;
+  padding: 6px 14px;
+  min-width: 5.5rem;
+}
+.cook__timer-rail .cook__timer-x {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+/* Hands-free mic: glows + pulses while listening so it's clearly "live". */
+.cook__voicectl.is-on {
+  opacity: 1;
+  border-color: var(--terracotta-deep, #a8442b);
+  color: var(--terracotta-deep, #a8442b);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cook__voicectl.is-on {
+    animation: cook-mic-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes cook-mic-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--terracotta-deep, #a8442b) 45%, transparent);
+    }
+    70% {
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--terracotta-deep, #a8442b) 0%, transparent);
+    }
+  }
+}
+/* The spoken-command hint shown while the mic is open. */
+.cook__voicehint {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  text-align: center;
+  background: var(--terracotta-wash, #f3e7e2);
+  border-bottom: 1px solid var(--line);
+}
+/* Per-step timer chips in the parent full-recipe page — a row under the step. */
+.cook__full-timers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}
+.cook__full-timers .cook__timer-chip {
+  font-size: 0.85rem;
+  padding: 4px 11px;
+}
 .cook__nav {
   display: flex;
   gap: 1px;

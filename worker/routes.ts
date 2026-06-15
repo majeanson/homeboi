@@ -25,6 +25,7 @@ import * as household from '../functions/api/household'
 import * as list from '../functions/api/list'
 import * as meals from '../functions/api/meals'
 import * as mealIdeas from '../functions/api/meal-ideas'
+import * as mealLeftovers from '../functions/api/meal-leftovers'
 import * as mealStaples from '../functions/api/meal-staples'
 import * as month from '../functions/api/month'
 import * as members from '../functions/api/members'
@@ -40,6 +41,7 @@ import * as recipeVision from '../functions/api/recipe-vision'
 import * as recipes from '../functions/api/recipes'
 import * as recipeTags from '../functions/api/recipe-tags'
 import * as recipeToList from '../functions/api/recipe-to-list'
+import * as reserve from '../functions/api/reserve'
 import * as routines from '../functions/api/routines'
 import * as suggestMeal from '../functions/api/suggest-meal'
 import * as useSoon from '../functions/api/use-soon'
@@ -80,6 +82,7 @@ const TABLE: Record<string, RouteMod> = {
   list,
   meals,
   'meal-ideas': mealIdeas,
+  'meal-leftovers': mealLeftovers,
   'meal-staples': mealStaples,
   month,
   members,
@@ -95,6 +98,7 @@ const TABLE: Record<string, RouteMod> = {
   recipes,
   'recipe-tags': recipeTags,
   'recipe-to-list': recipeToList,
+  reserve,
   routines,
   'suggest-meal': suggestMeal,
   'use-soon': useSoon,

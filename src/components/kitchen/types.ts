@@ -9,7 +9,20 @@ export interface MealRow {
   suggested_by?: string | null
   recipe_id?: string | null // the saved recipe this slot points at, if any
   position?: number // intra-slot order (migration 0033); a slot can hold several meals
+  is_leftover?: number // 1 = a planned leftover ("Restants" badge); migration 0035
 }
+
+// One entry in the "Restants" (leftovers) pool — a cooked dish with extra that
+// isn't pinned to a day yet. Planning it onto a day consumes it into a real
+// (badged) meal; finishing it removes it. Mirrors the meal-ideas pool shape.
+export interface Leftover {
+  id: string
+  title: string
+  recipe_id?: string | null
+  source_meal_id?: string | null
+  created_at: number
+}
+export type LeftoversData = { leftovers: Leftover[] }
 
 // One entry in the "general ideas" pool — a meal idea not yet pinned to a day.
 // Free text (title only) or a recipe shortcut (recipe_id set).
@@ -26,6 +39,16 @@ export interface LowRow {
   item: string
   marked_at: number
 }
+
+// One stashed item in La réserve — a pantry row plus a soft location_id (which
+// storage spot it's in; null / unknown groups under "Autres").
+export interface ReserveRow {
+  id: string
+  item: string
+  location_id: string | null
+  marked_at: number
+}
+export type ReserveData = { reserve: ReserveRow[] }
 
 // A free-text memo pinned to one day of the meal week (see migration 0028). One
 // per day — editing replaces it. Shown under the day in the kitchen grid and, for
@@ -50,5 +73,7 @@ export type WeekDay = { date: number; meal: MealRow | undefined }
 export const MEALS_KEY = ['meals']
 export const DAY_NOTES_KEY = ['day-notes']
 export const MEAL_IDEAS_KEY = ['meal-ideas']
+export const LEFTOVERS_KEY = ['leftovers']
 export const PANTRY_KEY = ['pantry']
 export const USE_SOON_KEY = ['use-soon']
+export const RESERVE_KEY = ['reserve']

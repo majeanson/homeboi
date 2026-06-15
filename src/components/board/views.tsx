@@ -1,6 +1,7 @@
+import { type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CATS } from '../../lib/cats'
-import { tintInk } from '../../lib/colors'
+import { tintInk, faint, hairline } from '../../lib/colors'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { useNextMeal } from '../../lib/nextMeal'
 import { formatTime } from '../../lib/format'
@@ -71,7 +72,7 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
       {focus ? (
         <div
           className={'nownext__focus' + (focusMine ? ' act--mine' : '')}
-          style={{ borderColor: (focusColor ?? CATS.event.color) + '55' }}
+          style={{ '--tint': focusColor ?? CATS.event.color } as CSSProperties}
         >
           <div className="nownext__when mono">{focusWhen}</div>
           <div className="nownext__title" style={{ color: tintInk(focusColor ?? CATS.event.color) }}>
@@ -85,7 +86,7 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
           )}
         </div>
       ) : data.tonight && mealPrefs.isVisible('supper') ? (
-        <div className="nownext__focus" style={{ borderColor: supperColor + '55' }}>
+        <div className="nownext__focus" style={{ '--tint': supperColor } as CSSProperties}>
           <div className="nownext__when mono">{t.board.tonight}</div>
           <div className="nownext__title" style={{ color: tintInk(supperColor!) }}>
             {data.tonight.title}
@@ -114,13 +115,26 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
         <button
           type="button"
           className="nownext__cook"
-          style={{ borderColor: supperColor + '55' }}
+          style={{ '--tint': supperColor } as CSSProperties}
           onClick={() => nav(cook.target ?? '/kitchen')}
         >
           <Icon name="cooking-pot-bold" size={22} color={supperColor} />
           <span className="nownext__cook-label">
             {cook.target ? t.board.cook : t.board.cookPlan}
             <span className="nownext__cook-meal">{cook.meal.title}</span>
+            {/* Who's at the stove, if the meal names a cook — their member colour,
+                so the board says "Papa cuisine" at a glance, not just "souper". */}
+            {(() => {
+              const who = nameOf(data.members, cook.meal!.cook_member_id)
+              if (!who) return null
+              const c = colorOf(data.members, cook.meal!.cook_member_id)
+              return (
+                <span className="nownext__cook-who">
+                  <span className="nownext__cook-dot" style={{ background: c ?? 'var(--ink-faint)' }} />
+                  {who} {t.board.cooks}
+                </span>
+              )
+            })()}
           </span>
         </button>
       )}
@@ -156,7 +170,7 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
               <span
                 key={slot}
                 className="meal-chip"
-                style={{ color: tintInk(c), background: c + '14', borderColor: c + '40' }}
+                style={{ color: tintInk(c), background: faint(c), borderColor: hairline(c) }}
               >
                 <InlineIcon name={SLOT_ICON_NAME[slot]} /> {titles}
               </span>

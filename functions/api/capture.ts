@@ -113,6 +113,18 @@ async function routeIntent(
         .run()
       return { kind: 'meal', label: title }
     }
+    case 'leftover': {
+      // A cooked dish with extra → the undated "Restants à finir" pool (like
+      // pantry-low's complement, it never touches the shopping list). Planning it
+      // onto a day happens later from the kitchen's Restants strip. No quantity.
+      const title = p.title || p.item || raw
+      await env.DB.prepare(
+        'INSERT INTO meal_leftovers (id, household_id, title, created_at) VALUES (?, ?, ?, ?)',
+      )
+        .bind(newId(), hh, title, ts)
+        .run()
+      return { kind: 'leftover', label: title }
+    }
     case 'note':
     default: {
       // A note now has a home: the `notes` table, shown on the Aujourd'hui board

@@ -32,7 +32,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const mealTomorrow = mealToday + 86400
   const mealDayAfter = mealToday + 86400 * 2
 
-  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes] = await Promise.all([
+  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes, leftoversRes] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
     )
@@ -51,12 +51,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // First supper of today/tomorrow (the headline hero). ORDER BY position so
     // "first" is deterministic now that a slot can hold several suppers.
     ctx.env.DB.prepare(
-      "SELECT id, title, cook_member_id FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1",
+      "SELECT id, title, cook_member_id, is_leftover FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1",
     )
       .bind(hh, mealToday, mealTomorrow)
       .all(),
     ctx.env.DB.prepare(
-      "SELECT id, title, cook_member_id FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1",
+      "SELECT id, title, cook_member_id, is_leftover FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1",
     )
       .bind(hh, mealTomorrow, mealDayAfter)
       .all(),
@@ -64,7 +64,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // full day's table, not just tonight's supper hero. Ordered by time then
     // position; sorted again client-side by slot (stable, so position holds).
     ctx.env.DB.prepare(
-      'SELECT id, slot, title, cook_member_id, position FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
+      'SELECT id, slot, title, cook_member_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
     )
       .bind(hh, mealToday, mealTomorrow)
       .all(),
@@ -78,7 +78,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // so prep that has to happen the night before (thaw the chicken, soak the
     // beans, "sortir le poulet") is visible TODAY, while there's still time.
     ctx.env.DB.prepare(
-      'SELECT id, slot, title, cook_member_id, position FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
+      'SELECT id, slot, title, cook_member_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
     )
       .bind(hh, mealTomorrow, mealDayAfter)
       .all(),
@@ -107,6 +107,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // Fridge notes (uncleared), newest first — shown on the Aujourd'hui board.
     ctx.env.DB.prepare(
       'SELECT id, text, member_id, created_at FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC LIMIT 12',
+    )
+      .bind(hh)
+      .all(),
+    // "Restants à finir" — undated leftovers to eat before cooking the rest. A
+    // calm nudge, newest first; planning or finishing one happens from the card.
+    ctx.env.DB.prepare(
+      'SELECT id, title FROM meal_leftovers WHERE household_id = ? ORDER BY created_at DESC',
     )
       .bind(hh)
       .all(),
@@ -271,7 +278,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // in src/lib/mealSlots.ts). Stable sort, so the SQL position order holds within
   // a slot that has several meals.
   const SLOT_ORDER: Record<string, number> = { breakfast: 0, lunch: 1, snack: 2, supper: 3 }
-  type DayMeal = { id: string; slot: string; title: string; cook_member_id: string | null; position?: number }
+  type DayMeal = { id: string; slot: string; title: string; cook_member_id: string | null; position?: number; is_leftover?: number }
   const bySlot = (rows: unknown) => (rows as DayMeal[]).sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9))
   const todayMeals = bySlot(todayMealsRes.results)
   const tomorrowMeals = bySlot(tomorrowMealsRes.results)
@@ -298,5 +305,6 @@ export const onRequestGet = authed(async (ctx, actor) => {
     choresUpcoming,
     todos,
     notes: notes.results,
+    leftovers: leftoversRes.results,
   })
 })

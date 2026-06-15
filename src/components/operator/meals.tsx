@@ -4,6 +4,7 @@ import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { SLOT_TIME_ORDER, SLOT_COLOR, SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
+import { wash } from '../../lib/colors'
 import { ColorPicker } from '../ColorPicker'
 import { Icon } from '../Icon'
 import type { HouseholdSettings } from '../../lib/mealPrefs'
@@ -85,7 +86,7 @@ export function MealSlotsSection() {
               <span className="meal-slots__name">
                 <span
                   className="meal-slots__chip"
-                  style={{ background: resolved + '22', color: resolved }}
+                  style={{ background: wash(resolved), color: resolved }}
                   aria-hidden="true"
                 >
                   <Icon name={SLOT_ICON_NAME[slot]} size={20} color={resolved} />

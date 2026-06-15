@@ -21,6 +21,7 @@ import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { formatDay, formatTime } from '../lib/format'
+import { todayLocalDay } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { SLOT_ICON_NAME, SLOT_RANK, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
@@ -59,6 +60,10 @@ export function Board() {
   // the write commits — same guard as Liste's pendingClear. Tapping Annuler means
   // the completion simply never happens (no rotation advance, no credit).
   const [pendingDone, setPendingDone] = useState<Set<string>>(new Set())
+  // Leftovers marked "Fini" from the board, held behind the undo toast — filtered
+  // out of the rendered reminder at once so the live poll can't resurrect them
+  // before the delete commits (same guard as pendingDone).
+  const [pendingLeftover, setPendingLeftover] = useState<Set<string>>(new Set())
   function changeView(v: BoardView) {
     setView(v)
     saveBoardView(v)
@@ -142,6 +147,9 @@ export function Board() {
   const tomorrowEvents = (data?.tomorrow ?? []).filter(mineEvent)
   const upcomingEvents = (data?.upcoming ?? []).filter(mineEvent)
   const upcomingChores = (data?.choresUpcoming ?? []).filter(mineChore)
+  // Undated leftovers to finish — a calm "eat these first" nudge. Family-wide (not
+  // personal-focus filtered), minus any just marked Fini (held behind the undo).
+  const leftovers = (data?.leftovers ?? []).filter((l) => !pendingLeftover.has(l.id))
 
   if (unauth) return <PairPrompt />
 
@@ -248,6 +256,18 @@ export function Board() {
                 color: memberColor(m.cook_member_id) ?? undefined,
               })),
             )}
+            {/* Restants à finir — read-aloud reminder to eat leftovers first. A
+                pre-reader just sees/hears them; finishing one is a parent action. */}
+            {kidSection(
+              t.kitchen.leftoversBoard,
+              leftovers.map((l) => ({
+                key: l.id,
+                icon: pictoFor(l.title, '🍽'),
+                label: l.title,
+                sub: t.kitchen.leftoversTag,
+                narration: l.title,
+              })),
+            )}
             {kidSection(t.board.today, eventTiles(todayEvents))}
             {/* Chores due today, as read-aloud tiles — whose turn rides in the sub. */}
             {kidSection(
@@ -299,9 +319,10 @@ export function Board() {
   // now-card (tonight's supper), then a gentle grouped timeline of colour-coded
   // activity cards. Same data + writes as before — just the calm Pip surface.
   const tod = timeOfDay(Date.now())
-  // UTC midnight of "today" — the calendar's day key, matching the server's
-  // dayStart bucketing (functions/_lib/ids + /api/month).
-  const todayDay = Math.floor(new Date(Date.now()).setUTCHours(0, 0, 0, 0) / 1000)
+  // LOCAL midnight of "today" — the calendar's day key, matching the server's
+  // local-day bucketing (lib/monthgrid + /api/month). UTC midnight flipped a day
+  // ahead every evening (~8 PM Eastern), so "today" highlighted tomorrow's cell.
+  const todayDay = todayLocalDay()
   const eventAct = (e: EventRow) => (
     <Act
       key={e.id}
@@ -337,6 +358,30 @@ export function Board() {
         setPendingDone((s) => {
           const n = new Set(s)
           n.delete(c.id)
+          return n
+        })
+      },
+    })
+  }
+  // "Fini" a leftover from the board (we ate it). DEFERRED behind the undo toast,
+  // mirroring markChoreDone: hide it now (pendingLeftover), hold the DELETE, and a
+  // tap of Annuler leaves it in the pool.
+  const markLeftoverDone = (l: { id: string; title: string }) => {
+    setPendingLeftover((s) => new Set(s).add(l.id))
+    undo({
+      message: t.undo.leftoverRemoved(l.title),
+      onUndo: () =>
+        setPendingLeftover((s) => {
+          const n = new Set(s)
+          n.delete(l.id)
+          return n
+        }),
+      onCommit: async () => {
+        await api('meal-leftovers', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
+        await qc.invalidateQueries({ queryKey: BOARD_KEY })
+        setPendingLeftover((s) => {
+          const n = new Set(s)
+          n.delete(l.id)
           return n
         })
       },
@@ -500,6 +545,13 @@ export function Board() {
                   <div className="blob" style={{ background: supperColor }} />
                   <div className="label">{t.board.tonight}</div>
                   <div className="what">{m.title}</div>
+                  {/* A planned leftover reads as "Restants" so the glance shows it's
+                      a finish-the-fridge supper, not a fresh cook. */}
+                  {m.is_leftover ? (
+                    <div className="who">
+                      <InlineIcon name="arrow-counter-clockwise-bold" size={13} /> {t.kitchen.leftoversTag}
+                    </div>
+                  ) : null}
                   {cookLine(m) && <div className="who">{cookLine(m)}</div>}
                   <div className="icn">
                     <Icon name={SLOT_ICON_NAME.supper} size={40} color={supperColor} />
@@ -548,6 +600,23 @@ export function Board() {
               </>
             )}
           </Section>
+
+          {/* Restants à finir — undated leftovers, a calm "eat these first" nudge.
+              Tap the check to mark one Fini (eaten). Hidden when the pool is empty. */}
+          {leftovers.length > 0 && (
+            <Section label={t.kitchen.leftoversBoard} count={leftovers.length}>
+              {leftovers.map((l) => (
+                <Act
+                  key={l.id}
+                  cat="meal"
+                  icon="arrow-counter-clockwise-bold"
+                  when={t.kitchen.leftoversTag}
+                  title={l.title}
+                  onCheck={() => markLeftoverDone(l)}
+                />
+              ))}
+            </Section>
+          )}
 
           {/* One-off to-dos — captured "corvées" / standing tasks with no schedule.
               Tap to check off (drops away). Hidden when there are none. */}

@@ -26,7 +26,7 @@ export function resolveLang(env: Env, request: Request): Lang {
   return 'fr'
 }
 
-export type IntentType = 'event' | 'task' | 'list-item' | 'pantry-low' | 'meal' | 'note'
+export type IntentType = 'event' | 'task' | 'list-item' | 'pantry-low' | 'meal' | 'leftover' | 'note'
 
 export interface Intent {
   type: IntentType
@@ -62,7 +62,8 @@ const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
 // mirrors the same six types and payload shape.
 const SYSTEM: Record<Lang, string> = {
   fr: `Tu classes une note de famille en JSON. Réponds UNIQUEMENT avec du JSON valide, rien d'autre.
-Types possibles: "event" (rendez-vous, activité avec une date/heure), "task" (tâche/corvée à faire), "list-item" (article à acheter ou à ajouter à la liste), "pantry-low" (un aliment qui manque ou achève), "meal" (un souper/repas planifié), "note" (le reste).
+Types possibles: "event" (rendez-vous, activité, sortie, fête, anniversaire — avec une date/heure), "task" (corvée, tâche, ménage, « à faire »), "list-item" (article à acheter, épicerie, commission — « ajoute à la liste »), "pantry-low" (un aliment qui manque, achève ou qu'on n'a PLUS — « pus de », « manque de », « à racheter »), "meal" (un repas à cuisiner — souper, déjeuner, dîner, collation), "leftover" (des RESTES d'un plat déjà cuisiné qu'il faut finir — « il reste », « des restes de », « un restant de »), "note" (rappel, pense-bête, le reste).
+Distinction importante: « pus de lait » = pantry-low (on n'en a plus, à acheter); « il reste du pâté chinois » = leftover (on en a encore, à manger); « souper tacos vendredi » = meal (à cuisiner).
 Format: {"type": <type>, "payload": {"title"?: string, "item"?: string, "text"?: string, "when"?: string, "slot"?: string, "person"?: string}}.
 Exemples:
 "dentiste mardi 15h" -> {"type":"event","payload":{"title":"dentiste","when":"mardi 15h"}}
@@ -70,9 +71,12 @@ Exemples:
 "ajoute du lait" -> {"type":"list-item","payload":{"item":"lait"}}
 "pus de café" -> {"type":"pantry-low","payload":{"item":"café"}}
 "souper spaghetti jeudi" -> {"type":"meal","payload":{"title":"spaghetti","slot":"supper","when":"jeudi"}}
+"il reste de la lasagne" -> {"type":"leftover","payload":{"title":"lasagne"}}
+"des restes de poulet à finir" -> {"type":"leftover","payload":{"title":"poulet"}}
 "penser à appeler maman" -> {"type":"note","payload":{"text":"appeler maman"}}`,
   en: `You sort a family note into JSON. Reply ONLY with valid JSON, nothing else.
-Possible types: "event" (appointment, activity with a date/time), "task" (a chore/task to do), "list-item" (something to buy or add to the list), "pantry-low" (a food that's out or running low), "meal" (a planned supper/meal), "note" (everything else).
+Possible types: "event" (appointment, activity, outing, party, birthday — with a date/time), "task" (a chore, task, cleanup, "to do"), "list-item" (something to buy, groceries, errand — "add to the list"), "pantry-low" (a food that's out, almost gone or you have NO more — "out of", "running low", "need more"), "meal" (a meal to cook — supper, breakfast, lunch, snack), "leftover" (LEFTOVERS from an already-cooked dish to finish — "there's leftover", "some X left", "rest of the"), "note" (reminder, memo, everything else).
+Important distinction: "out of milk" = pantry-low (none left, to buy); "there's leftover shepherd's pie" = leftover (still have some, to eat); "tacos for supper friday" = meal (to cook).
 Format: {"type": <type>, "payload": {"title"?: string, "item"?: string, "text"?: string, "when"?: string, "slot"?: string, "person"?: string}}.
 Examples:
 "dentist tuesday 3pm" -> {"type":"event","payload":{"title":"dentist","when":"tuesday 3pm"}}
@@ -80,6 +84,8 @@ Examples:
 "add milk" -> {"type":"list-item","payload":{"item":"milk"}}
 "out of coffee" -> {"type":"pantry-low","payload":{"item":"coffee"}}
 "supper spaghetti thursday" -> {"type":"meal","payload":{"title":"spaghetti","slot":"supper","when":"thursday"}}
+"there's leftover lasagna" -> {"type":"leftover","payload":{"title":"lasagna"}}
+"leftover chicken to finish" -> {"type":"leftover","payload":{"title":"chicken"}}
 "remember to call mom" -> {"type":"note","payload":{"text":"call mom"}}`,
 }
 
@@ -89,6 +95,7 @@ const VALID: ReadonlySet<IntentType> = new Set([
   'list-item',
   'pantry-low',
   'meal',
+  'leftover',
   'note',
 ])
 

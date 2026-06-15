@@ -13,7 +13,7 @@
 // unchanged — so Kitchen can re-register every render without a setState loop.
 import { createContext, useContext } from 'react'
 
-export type KitchenAction = 'shop' | 'ai' | 'book'
+export type KitchenAction = 'shop' | 'ai' | 'book' | 'useup'
 
 export interface KitchenActionFlags {
   // The kitchen "Repas" (meals) sub-tab is showing AND we're the parent view.
@@ -24,6 +24,7 @@ export interface KitchenActionFlags {
   canAiSuggest: boolean // AI is reachable (else the tile disables)
   aiBusy: boolean
   hasRecipes: boolean // the book has something to suggest from
+  canUseUp: boolean // ≥1 recipe uses something flagged "à utiliser bientôt"
 }
 
 export const NO_KITCHEN_ACTIONS: KitchenActionFlags = {
@@ -32,6 +33,7 @@ export const NO_KITCHEN_ACTIONS: KitchenActionFlags = {
   canAiSuggest: false,
   aiBusy: false,
   hasRecipes: false,
+  canUseUp: false,
 }
 
 export type KitchenHandlers = Record<KitchenAction, () => void>
@@ -46,4 +48,4 @@ export const useKitchenActions = () => useContext(KitchenActionsContext)
 
 // True when nothing actionable is available — AddSheet skips the whole subgroup.
 export const noKitchenActions = (f: KitchenActionFlags) =>
-  !f.active || (!f.canShop && !f.canAiSuggest && !f.hasRecipes)
+  !f.active || (!f.canShop && !f.canAiSuggest && !f.hasRecipes && !f.canUseUp)

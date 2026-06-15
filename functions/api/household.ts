@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { householdIncludedStores, storeKey } from '../_lib/stores'
 import { householdMealSlotPrefs, cleanColors, cleanHidden } from '../_lib/mealSlots'
+import { householdReserveLocations, cleanReserveLocations } from '../_lib/reserveLocations'
 import { nowSec } from '../_lib/ids'
 
 // Household-level settings that aren't members/devices/chores: the postal code
@@ -18,7 +19,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
-  return ok({ postal, includedStores, mealColors: meals.colors, mealHidden: meals.hidden })
+  const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
+  return ok({ postal, includedStores, mealColors: meals.colors, mealHidden: meals.hidden, reserveLocations })
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
@@ -27,6 +29,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     includedStores?: string[]
     mealColors?: Record<string, string>
     mealHidden?: string[]
+    reserveLocations?: unknown
   }>(ctx.request)
 
   // Each field is only touched when its key is present, so the postal form and
@@ -75,8 +78,20 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
   }
 
+  // Storage locations for La réserve: a {id, name, color?} list. Only valid
+  // entries survive. An explicit list (incl. an empty one = "removed them all")
+  // is stored verbatim — we never auto-clear back to NULL, so the household's
+  // "no locations" choice sticks instead of reverting to the seeded defaults.
+  if (body && 'reserveLocations' in body) {
+    const locations = cleanReserveLocations(body.reserveLocations)
+    await ctx.env.DB.prepare('UPDATE households SET reserve_locations = ?, updated_at = ? WHERE id = ?')
+      .bind(JSON.stringify(locations), nowSec(), actor.householdId)
+      .run()
+  }
+
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
-  return ok({ postal, includedStores, mealColors: meals.colors, mealHidden: meals.hidden })
+  const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
+  return ok({ postal, includedStores, mealColors: meals.colors, mealHidden: meals.hidden, reserveLocations })
 }, 'operator')

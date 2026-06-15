@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useT, useLang } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -8,9 +8,15 @@ import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
 import { groupSections } from '../lib/recipeSections'
 import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
+import { useVoiceInput } from '../lib/useVoiceInput'
+import { matchCookCommand } from '../lib/cookCommands'
 import { IngredientLine } from './IngredientLine'
 import { Icon, InlineIcon } from './Icon'
 import { useModal } from '../lib/useModal'
+
+// A live countdown for a duration found in a step. Several can run at once now
+// (start the pasta, then the sauce), so each carries a label + its own id.
+type CookTimer = { id: number; label: string; total: number; remaining: number; running: boolean }
 
 // Whether a step reads itself aloud on arrival. Default ON; an explicit opt-out
 // persists per device (same shape as the calm/lang prefs). OFF = narration only
@@ -69,10 +75,27 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const modeRef = useRef(mode)
   modeRef.current = mode
   const lockRef = useRef<{ release: () => Promise<void> } | null>(null)
-  // A one-tap timer for a duration written into the current step. One at a time:
-  // total is what it started from (so a finished timer can restart), remaining
-  // ticks down while running.
-  const [timer, setTimer] = useState<{ total: number; remaining: number; running: boolean } | null>(null)
+  // Several one-tap timers can run at once (start the pasta, then come back and
+  // start the sauce). Each is named by the step it came from and OUTLIVES step
+  // navigation — that's the point, you set it then move on. `total` is what it
+  // started from (so a finished timer can restart), `remaining` ticks while running.
+  const [timers, setTimers] = useState<CookTimer[]>([])
+  const timerSeq = useRef(0)
+  // Start a new countdown for a duration, labelled by its step so a rail of them
+  // stays legible. The rail shows it immediately; it survives moving steps.
+  function addTimer(seconds: number, durLabel: string, stepN?: number) {
+    const id = ++timerSeq.current
+    const label = stepN ? `${t.recipes.stepLabel} ${stepN} · ${durLabel}` : durLabel
+    setTimers((ts) => [...ts, { id, label, total: seconds, remaining: seconds, running: true }])
+  }
+  // Tap a clock: restart it if it's finished, else pause/resume. ✕ removes it.
+  const toggleTimer = (id: number) =>
+    setTimers((ts) =>
+      ts.map((tm) =>
+        tm.id !== id ? tm : tm.remaining === 0 ? { ...tm, remaining: tm.total, running: true } : { ...tm, running: !tm.running },
+      ),
+    )
+  const removeTimer = (id: number) => setTimers((ts) => ts.filter((tm) => tm.id !== id))
 
   // "## Section" markers group the flat lines (a recipe without markers is one
   // untitled group). A marker is never its own page — each step page carries
@@ -92,9 +115,6 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const atFirst = idx === 0
   const atLast = idx >= stages.length - 1
   const durations = cur?.kind === 'step' ? findDurations(cur.text) : []
-
-  // Moving to another step drops the timer — it belonged to the step you left.
-  useEffect(() => setTimer(null), [idx])
 
   // Read the step aloud when it becomes current, so a pre-reader hears the whole
   // instruction — not only the measurement pills. The navigation tap is the user
@@ -171,32 +191,70 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
       return n
     })
 
-  // Tick once a second while running; at zero, stop and give a gentle buzz
-  // (where supported). The screen wake-lock above keeps the tablet awake for it.
+  // One ticker for ALL running timers: decrement each per second; any that hit
+  // zero stop and buzz once (where supported). The screen wake-lock above keeps
+  // the tablet awake for it. Re-armed only when the "is anything running" flag
+  // flips, so adding/removing a paused timer doesn't churn the interval.
+  const anyRunning = timers.some((tm) => tm.running)
   useEffect(() => {
-    if (!timer?.running) return
+    if (!anyRunning) return
     const id = setInterval(() => {
-      setTimer((tm) => {
-        if (!tm || !tm.running) return tm
-        if (tm.remaining <= 1) {
+      setTimers((ts) => {
+        let buzzed = false
+        const next = ts.map((tm) => {
+          if (!tm.running) return tm
+          if (tm.remaining <= 1) {
+            buzzed = true
+            return { ...tm, remaining: 0, running: false }
+          }
+          return { ...tm, remaining: tm.remaining - 1 }
+        })
+        if (buzzed) {
           try {
             navigator.vibrate?.([200, 100, 200])
           } catch {
             /* no vibration API — the visual "done" state is enough */
           }
-          return { ...tm, remaining: 0, running: false }
         }
-        return { ...tm, remaining: tm.remaining - 1 }
+        return next
       })
     }, 1000)
     return () => clearInterval(id)
-  }, [timer?.running])
+  }, [anyRunning])
 
-  // Tap a finished clock to restart it; otherwise pause/resume.
-  const toggleTimer = () =>
-    setTimer((tm) =>
-      !tm ? tm : tm.remaining === 0 ? { ...tm, remaining: tm.total, running: true } : { ...tm, running: !tm.running },
-    )
+  // — Hands-free stepper (step mode only) —
+  // A continuous on-device mic that maps a spoken phrase to a stepper command, so
+  // you can advance/repeat/start a timer with messy hands. Latest step + durations
+  // are read through refs so the command handler stays stable (empty deps) — it
+  // never re-subscribes the running recogniser mid-session.
+  const curRef = useRef(cur)
+  curRef.current = cur
+  const durationsRef = useRef(durations)
+  durationsRef.current = durations
+  const speakRef = useRef(speak)
+  speakRef.current = speak
+  const stagesLenRef = useRef(stages.length)
+  stagesLenRef.current = stages.length
+  const handleCommand = useCallback((raw: string) => {
+    const cmd = matchCookCommand(raw)
+    if (cmd === 'next') setIdx((i) => Math.min(stagesLenRef.current - 1, i + 1))
+    else if (cmd === 'back') setIdx((i) => Math.max(0, i - 1))
+    else if (cmd === 'repeat') {
+      const c = curRef.current
+      if (c?.kind === 'step') speakRef.current(c.text)
+    } else if (cmd === 'timer') {
+      const d = durationsRef.current[0]
+      const c = curRef.current
+      if (d) addTimer(d.seconds, d.label, c?.kind === 'step' ? c.n : undefined)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const voice = useVoiceInput(handleCommand, { continuous: true })
+  // The mic is a stepper affordance — never leave it open in the parent full page.
+  useEffect(() => {
+    if (mode === 'full') voice.stop()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode])
 
   // Keep the screen awake while cooking; re-acquire on visibility regain.
   useEffect(() => {
@@ -243,6 +301,21 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             <span className="cook__count mono" aria-live="polite">
               {Math.min(idx + 1, total)} / {total}
             </span>
+            {/* Hands-free: tap to listen for "suivant / retour / répète / minuteur".
+                Hidden where the browser has no Web Speech API (a dead button helps
+                no one). Glows while listening. */}
+            {voice.hasVoice && (
+              <button
+                type="button"
+                className={'cook__autoread cook__voicectl' + (voice.listening ? ' is-on' : '')}
+                onClick={voice.start}
+                aria-pressed={voice.listening}
+                title={voice.listening ? t.recipes.voiceCookOn : t.recipes.voiceCookOff}
+                aria-label={voice.listening ? t.recipes.voiceCookOn : t.recipes.voiceCookOff}
+              >
+                <Icon name="microphone-bold" size={20} />
+              </button>
+            )}
             <button
               type="button"
               className={'cook__autoread' + (autoRead ? ' is-on' : '')}
@@ -259,6 +332,53 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
           <Icon name="x-bold" size={20} />
         </button>
       </div>
+
+      {/* A spoken-command hint while the mic is open — so the words are discoverable
+          (you can't see a menu of them otherwise). */}
+      {mode === 'step' && voice.listening && (
+        <p className="cook__voicehint mono" role="status">
+          <InlineIcon name="microphone-bold" /> {t.recipes.voiceCookHint}
+        </p>
+      )}
+
+      {/* Running timers live ABOVE the step so they stay visible as you move on —
+          start one on step 2, watch it while you read step 5. Tap a clock to
+          pause/resume (or restart a finished one); ✕ dismisses it. */}
+      {timers.length > 0 && (
+        <div className="cook__timer-rail" aria-label={t.recipes.timer}>
+          {timers.map((tm) => (
+            <div key={tm.id} className={'cook__timer-item' + (tm.remaining === 0 ? ' is-done' : '')}>
+              <span className="cook__timer-label mono">{tm.label}</span>
+              <div className={'cook__timer' + (tm.remaining === 0 ? ' is-done' : '')}>
+                <button
+                  type="button"
+                  className="cook__timer-clock mono"
+                  onClick={() => toggleTimer(tm.id)}
+                  aria-label={t.recipes.timer}
+                >
+                  {tm.remaining === 0 ? (
+                    <>
+                      <InlineIcon name="timer-bold" /> {t.recipes.timerDone}
+                    </>
+                  ) : (
+                    <>
+                      <InlineIcon name={tm.running ? 'timer-bold' : 'play-bold'} /> {clock(tm.remaining)}
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="cook__timer-x"
+                  onClick={() => removeTimer(tm.id)}
+                  aria-label={t.common.cancel}
+                >
+                  <Icon name="x-bold" size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div
         className={'cook__stage' + (mode === 'full' ? ' cook__stage--full' : '')}
@@ -312,23 +432,47 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                       <div key={gi}>
                         {g.title && <h3 className="cook__full-subh">{g.title}</h3>}
                         <ol className="cook__full-steps" start={olStart}>
-                          {g.items.map(({ text: s, idx }) => (
-                            <li
-                              key={idx}
-                              role="button"
-                              tabIndex={0}
-                              aria-label={t.recipes.readStep}
-                              onClick={() => speak(s)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault()
-                                  speak(s)
-                                }
-                              }}
-                            >
-                              {s}
-                            </li>
-                          ))}
+                          {g.items.map(({ text: s, idx }, i) => {
+                            const stepN = olStart + i
+                            const durs = findDurations(s)
+                            return (
+                              <li
+                                key={idx}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={t.recipes.readStep}
+                                onClick={() => speak(s)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    speak(s)
+                                  }
+                                }}
+                              >
+                                {s}
+                                {/* Start a timer for a duration in this step — same
+                                    rail as the stepper. stopPropagation so the tap
+                                    doesn't also read the step aloud. */}
+                                {durs.length > 0 && (
+                                  <span className="cook__full-timers">
+                                    {durs.map((d) => (
+                                      <button
+                                        key={d.seconds}
+                                        type="button"
+                                        className="cook__timer-chip mono"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          addTimer(d.seconds, d.label, stepN)
+                                        }}
+                                      >
+                                        ⏱ {d.label}
+                                      </button>
+                                    ))}
+                                  </span>
+                                )}
+                              </li>
+                            )
+                          })}
                         </ol>
                       </div>
                     )
@@ -430,47 +574,21 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                   </ul>
                 ) : null
               })()}
+            {/* Start a timer for any duration in the step — tap to add it to the
+                rail above. Chips stay tappable so you can run several at once
+                (the rail, not this row, shows the live countdowns). */}
             {durations.length > 0 && (
               <div className="cook__timers">
-                {timer ? (
-                  <div className={'cook__timer' + (timer.remaining === 0 ? ' is-done' : '')}>
-                    <button
-                      type="button"
-                      className="cook__timer-clock mono"
-                      onClick={toggleTimer}
-                      aria-label={t.recipes.timer}
-                    >
-                      {timer.remaining === 0 ? (
-                        <>
-                          <InlineIcon name="timer-bold" /> {t.recipes.timerDone}
-                        </>
-                      ) : (
-                        <>
-                          <InlineIcon name={timer.running ? 'timer-bold' : 'play-bold'} /> {clock(timer.remaining)}
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className="cook__timer-x mono"
-                      onClick={() => setTimer(null)}
-                      aria-label={t.common.cancel}
-                    >
-                      <Icon name="x-bold" size={16} />
-                    </button>
-                  </div>
-                ) : (
-                  durations.map((d) => (
-                    <button
-                      key={d.seconds}
-                      type="button"
-                      className="cook__timer-chip mono"
-                      onClick={() => setTimer({ total: d.seconds, remaining: d.seconds, running: true })}
-                    >
-                      ⏱ {d.label}
-                    </button>
-                  ))
-                )}
+                {durations.map((d) => (
+                  <button
+                    key={d.seconds}
+                    type="button"
+                    className="cook__timer-chip mono"
+                    onClick={() => addTimer(d.seconds, d.label, cur?.kind === 'step' ? cur.n : undefined)}
+                  >
+                    ⏱ {d.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>

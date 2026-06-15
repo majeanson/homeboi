@@ -8,6 +8,8 @@ import { useVoiceInput } from '../lib/useVoiceInput'
 import { VoiceButton } from './VoiceButton'
 import { formatWeekday } from '../lib/format'
 import { OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
+import { CATS, type CatKey } from '../lib/cats'
+import { Act } from './board/Act'
 import { useCookableMeals } from '../lib/nextMeal'
 import { recipeImg } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
@@ -16,7 +18,7 @@ import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
 import { type Deal } from '../lib/deals'
-import { MEALS_KEY, PANTRY_KEY, type MealsData } from './kitchen/types'
+import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
 import { EventForm } from './forms/EventForm'
 import { ChoreForm } from './forms/ChoreForm'
@@ -29,38 +31,42 @@ import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 // chooser, the kitchen offers recette/repas/garde-manger, Routines and Liste
 // skip the chooser entirely and open their one form. The operator forms
 // (event/chore/routine) are the SAME components Réglages uses.
-type CaptureType = 'event' | 'meal' | 'task' | 'list-item' | 'pantry-low' | 'note'
+type CaptureType = 'event' | 'meal' | 'task' | 'list-item' | 'pantry-low' | 'leftover' | 'note'
 interface FormMember { id: string; display_name: string; is_child: number }
 
-// The 6 AI-router types — only shown as a fallback when a capture comes back
+// Tile dressing — colour comes from ONE source (CATS); each tile only names the
+// family it reads as plus its own glyph. So the ＋ sheet can never drift from the
+// board's colour-coding, and "deep ink + theme-aware --*-wash" is defined once.
+// A few tiles deliberately borrow a DIFFERENT family than their data's: the meal
+// *planner* reads marigold (the "add/plan" family), not a terracotta carrot;
+// pantry-low and auto-pick ride the sage family; list-item is a sky sparkle.
+
+// The 7 AI-router types — only shown as a fallback when a capture comes back
 // degraded (AI off), so the human can re-route the saved note.
-// wash = theme-aware CSS var so the icon tiles follow day↔night (night darkens
-// each --*-wash); deep stays concrete hex (the glyph ink reads on both surfaces).
-const TYPES: { type: CaptureType; icon: IconName; deep: string; wash: string }[] = [
-  { type: 'event', icon: 'calendar-blank-bold', deep: '#5891AC', wash: 'var(--sky-wash)' },
-  { type: 'meal', icon: 'bowl-food-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
-  { type: 'task', icon: 'hand-heart-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
-  { type: 'list-item', icon: 'sparkle-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
-  { type: 'pantry-low', icon: 'carrot-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
-  { type: 'note', icon: 'pencil-simple-bold', deep: '#95527A', wash: 'var(--berry-wash)' },
+const TYPE_DRESS: { type: CaptureType; cat: CatKey; icon: IconName }[] = [
+  { type: 'event', cat: 'event', icon: 'calendar-blank-bold' },
+  { type: 'meal', cat: 'meal', icon: 'bowl-food-bold' },
+  { type: 'leftover', cat: 'meal', icon: 'arrow-counter-clockwise-bold' },
+  { type: 'task', cat: 'chore', icon: 'hand-heart-bold' },
+  { type: 'list-item', cat: 'list', icon: 'sparkle-bold' },
+  { type: 'pantry-low', cat: 'pantry', icon: 'carrot-bold' },
+  { type: 'note', cat: 'routine', icon: 'pencil-simple-bold' },
 ]
 
-// Tile dressing per mode (labels resolve through i18n below). recipe/list-item
-// borrow their hub tab's identity (terracotta book, sky sparkle) so the tile
-// reads as "the thing this section adds".
-const MODE_META: Record<AddSheetMode, { icon: IconName; deep: string; wash: string }> = {
-  capture: { icon: 'sparkle-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
-  event: { icon: 'calendar-blank-bold', deep: '#5891AC', wash: 'var(--sky-wash)' },
-  chore: { icon: 'hand-heart-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
-  routine: { icon: 'pencil-simple-bold', deep: '#95527A', wash: 'var(--berry-wash)' },
-  cook: { icon: 'cooking-pot-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
-  recipe: { icon: 'book-open-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
-  meal: { icon: 'calendar-blank-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
-  pantry: { icon: 'carrot-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
-  'list-item': { icon: 'sparkle-bold', deep: '#5891AC', wash: 'var(--sky-wash)' },
-  'quick-add': { icon: 'lightning-bold', deep: '#D9842A', wash: 'var(--marigold-wash)' },
-  flyer: { icon: 'magnifying-glass-bold', deep: '#C2563A', wash: 'var(--terracotta-wash)' },
-  'auto-pick': { icon: 'tag-bold', deep: '#6B8A52', wash: 'var(--sage-wash)' },
+const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
+  capture: { cat: 'list', icon: 'sparkle-bold' },
+  event: { cat: 'event', icon: 'calendar-blank-bold' },
+  chore: { cat: 'chore', icon: 'hand-heart-bold' },
+  routine: { cat: 'routine', icon: 'pencil-simple-bold' },
+  cook: { cat: 'meal', icon: 'cooking-pot-bold' },
+  recipe: { cat: 'meal', icon: 'book-open-bold' },
+  meal: { cat: 'list', icon: 'calendar-blank-bold' },
+  leftovers: { cat: 'meal', icon: 'arrow-counter-clockwise-bold' },
+  pantry: { cat: 'chore', icon: 'carrot-bold' },
+  'list-item': { cat: 'event', icon: 'sparkle-bold' },
+  'quick-add': { cat: 'list', icon: 'lightning-bold' },
+  flyer: { cat: 'meal', icon: 'magnifying-glass-bold' },
+  'auto-pick': { cat: 'chore', icon: 'tag-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -135,11 +141,17 @@ export function AddSheet({
   const [pantryText, setPantryText] = useState('')
   const pantryVoice = useVoiceInput(setPantryText)
 
+  // — leftovers (kitchen) — announce a cooked dish has extra; lands in the Restants
+  // pool ("à finir bientôt"). Quick-pick one of today's planned meals or type one;
+  // planning onto a day happens from the kitchen's Restants strip.
+  const [leftoverText, setLeftoverText] = useState('')
+  const leftoverVoice = useVoiceInput(setLeftoverText)
+
   // — plan a meal (kitchen) — "Planifier un repas" is now a DAY PICKER that opens
   // that day's full "Gérer" sheet (one real editor, reached two ways), instead of
   // a divergent mini day+slot+title form. Day options come from the SAME weekStart
   // the Kitchen grid renders, so picking a day lands on the matching grid row.
-  const wantsMeal = shown.includes('meal')
+  const wantsMeal = shown.includes('meal') || shown.includes('leftovers')
   const { data: mealsData } = useQuery({
     queryKey: MEALS_KEY,
     queryFn: () => api<MealsData>('meals'),
@@ -235,7 +247,7 @@ export function AddSheet({
       const degraded = res.degraded && !forceType
       setRouted({ label: res.routed?.label ?? value, degraded })
       if (!degraded) setText('')
-      for (const key of [['board'], ['meals'], ['pantry']]) qc.invalidateQueries({ queryKey: key })
+      for (const key of [['board'], ['meals'], ['pantry'], ['leftovers']]) qc.invalidateQueries({ queryKey: key })
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
     } finally {
@@ -281,6 +293,25 @@ export function AddSheet({
     }
   }
 
+  // Announce leftovers into the Restants pool (kitchen ＋). Quick-pick chips pass a
+  // title (+ recipe/source); the typed form passes its own text. Planning onto a
+  // day is done later from the kitchen's Restants strip.
+  async function postLeftover(title: string, recipeId?: string | null, sourceMealId?: string | null) {
+    const value = title.trim()
+    if (!value || busy) return
+    setBusy(true)
+    try {
+      await api('meal-leftovers', { method: 'POST', body: { title: value, recipeId, sourceMealId } })
+      setLeftoverText('')
+      qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
+      close()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+    } finally {
+      setBusy(false)
+    }
+  }
+
   // Open a day's full "Gérer" sheet from the picker: close this sheet and hand the
   // chosen day to the Kitchen page via ?manage=<date>, which it consumes to open
   // the DayManageSheet. One editor, no duplicate mini-form.
@@ -298,6 +329,7 @@ export function AddSheet({
       routine: t.nav.routines,
       recipe: t.recipes.add,
       meal: t.kitchen.planMeal,
+      leftovers: t.kitchen.leftovers,
       pantry: t.kitchen.lowAdd,
       'list-item': t.list.addTitle,
       'quick-add': t.list.quickAdd,
@@ -362,8 +394,8 @@ export function AddSheet({
                 }}
                 aria-pressed={mode === m}
               >
-                <span className="ct" style={{ background: MODE_META[m].wash }}>
-                  <Icon name={MODE_META[m].icon} size={22} color={MODE_META[m].deep} />
+                <span className="ct" style={{ background: CATS[MODE_DRESS[m].cat].wash }}>
+                  <Icon name={MODE_DRESS[m].icon} size={22} color={CATS[MODE_DRESS[m].cat].deep} />
                 </span>
                 <span>{m === 'auto-pick' && autoBusy ? t.shop.autoWorking : modeLabel(m)}</span>
               </button>
@@ -423,6 +455,23 @@ export function AddSheet({
                   <span>{t.kitchen.bookIdeas}</span>
                 </button>
               )}
+              {/* "Use it up" — a recipe that finishes what you flagged à utiliser
+                  bientôt. Only earns a tile when ≥1 recipe actually uses a soon item. */}
+              {kitchenActions.flags.canUseUp && (
+                <button
+                  type="button"
+                  className="cat-pick"
+                  onClick={() => {
+                    kitchenActions.run('useup')
+                    close()
+                  }}
+                >
+                  <span className="ct" style={{ background: 'var(--sage-wash)' }}>
+                    <Icon name="carrot-bold" size={22} color="#6B8A52" />
+                  </span>
+                  <span>{t.kitchen.useUpIdeas}</span>
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -443,15 +492,15 @@ export function AddSheet({
             {/* Fallback only: AI off → let the human re-route the saved note. */}
             {routed?.degraded && (
               <div className="cat-grid">
-                {TYPES.map((ty) => (
+                {TYPE_DRESS.map((ty) => (
                   <button
                     key={ty.type}
                     type="button"
                     className="cat-pick"
                     onClick={() => submit(undefined, ty.type)}
                   >
-                    <span className="ct" style={{ background: ty.wash }}>
-                      <Icon name={ty.icon} size={22} color={ty.deep} />
+                    <span className="ct" style={{ background: CATS[ty.cat].wash }}>
+                      <Icon name={ty.icon} size={22} color={CATS[ty.cat].deep} />
                     </span>
                     <span>{t.capture.types[ty.type]}</span>
                   </button>
@@ -523,6 +572,50 @@ export function AddSheet({
           </div>
         )}
 
+        {mode === 'leftovers' && (
+          <>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                postLeftover(leftoverText)
+              }}
+            >
+              <div className="sheet__field">
+                <Icon name="arrow-counter-clockwise-bold" size={20} color="var(--ink-faint)" />
+                <input
+                  value={leftoverText}
+                  onChange={(e) => setLeftoverText(e.target.value)}
+                  placeholder={leftoverVoice.listening ? t.capture.listening : t.kitchen.leftoversAdd}
+                  aria-label={t.kitchen.leftoversAdd}
+                />
+                <VoiceButton voice={leftoverVoice} label={t.capture.voice} />
+              </div>
+              {/* Quick-pick today's planned meals — "we ate this, there's some left". */}
+              {(mealsData?.days ?? []).filter((d) => d.date === weekStart && !d.is_leftover).length > 0 && (
+                <div className="addsheet__days">
+                  {(mealsData?.days ?? [])
+                    .filter((d) => d.date === weekStart && !d.is_leftover)
+                    .map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className="chip"
+                        disabled={busy}
+                        onClick={() => postLeftover(m.title, m.recipe_id ?? null, m.id)}
+                      >
+                        {m.title}
+                      </button>
+                    ))}
+                </div>
+              )}
+              <button type="submit" className="btn btn--primary" disabled={!leftoverText.trim() || busy}>
+                <Icon name="plus-bold" size={20} />
+                {t.kitchen.leftoversToPool}
+              </button>
+            </form>
+          </>
+        )}
+
         {/* "Cuisiner" — pick which of today's planned meals to cook, not just the
             next one. Each row jumps straight into that recipe's cook mode. The
             meal the app would auto-pick (next due) is flagged "Prochain". Empty
@@ -539,47 +632,41 @@ export function AddSheet({
           ) : (
             <div className="addsheet__cook">
               <p className="sheet__group-label mono">{t.kitchen.cookWhich}</p>
+              {/* Each choice is the app's shared Act row (board/Act) — colour spine,
+                  the recipe's photo (or the slot glyph) in the tile, slot · recipe as
+                  the sub-line, a caret since it navigates, and the next-due meal's
+                  "Prochain" badge. One row primitive, so this matches the board. */}
               <div className="addsheet__cooklist">
                 {cookChoices.map((c) => {
                   const slot = c.meal.slot
-                  const color = (isMealSlot(slot) ? mealPrefs.color(slot) : undefined) ?? 'var(--ink-soft)'
-                  // The recipe's own photo when it has one (tapping it — like the
-                  // rest of the row — drops straight into that recipe's cook mode);
-                  // the slot icon stays the fallback so a photoless meal still reads.
-                  const photo = recipeImg(c.recipe.image)
+                  // Cookable meals are always real slots, so the colour is a hex —
+                  // safe to hand Act as its spine/tile colour (no CSS-var footgun).
+                  const color = isMealSlot(slot) ? mealPrefs.color(slot) : undefined
+                  const sameName = c.recipe.title.trim().toLowerCase() === c.meal.title.trim().toLowerCase()
+                  // Who's assigned to cook this slot, if anyone — appended to the
+                  // sub-line so the picker says who's at the stove, like the board.
+                  const cookName = c.meal.cook_member_id
+                    ? members.find((m) => m.id === c.meal.cook_member_id)?.display_name
+                    : undefined
+                  const sub =
+                    (isMealSlot(slot) ? t.kitchen.slots[slot] : '') +
+                    (sameName ? '' : ` · ${c.recipe.title}`) +
+                    (cookName ? ` · ${cookName}` : '')
                   return (
-                    <button
+                    <Act
                       key={c.meal.id}
-                      type="button"
-                      className="addsheet__cookrow"
-                      style={{ borderColor: color + '55' }}
-                      onClick={() => {
+                      cat="meal"
+                      color={color}
+                      icon={isMealSlot(slot) ? SLOT_ICON_NAME[slot] : 'cooking-pot-bold'}
+                      photo={recipeImg(c.recipe.image) || undefined}
+                      title={c.meal.title}
+                      who={sub}
+                      badge={c.isNext ? t.kitchen.cookNext : undefined}
+                      onActivate={() => {
                         close()
                         nav(c.target)
                       }}
-                    >
-                      <span
-                        className={'addsheet__cookrow-icon' + (photo ? ' addsheet__cookrow-icon--photo' : '')}
-                        style={{ background: color + '22' }}
-                      >
-                        {photo ? (
-                          <img src={photo} alt="" loading="lazy" />
-                        ) : (
-                          <Icon name={isMealSlot(slot) ? SLOT_ICON_NAME[slot] : 'cooking-pot-bold'} size={20} color={color} />
-                        )}
-                      </span>
-                      <span className="addsheet__cookrow-text">
-                        <span className="addsheet__cookrow-title">{c.meal.title}</span>
-                        <span className="addsheet__cookrow-sub mono">
-                          {isMealSlot(slot) ? t.kitchen.slots[slot] : ''}
-                          {c.recipe.title.trim().toLowerCase() !== c.meal.title.trim().toLowerCase()
-                            ? ` · ${c.recipe.title}`
-                            : ''}
-                        </span>
-                      </span>
-                      {c.isNext && <span className="addsheet__cookrow-next">{t.kitchen.cookNext}</span>}
-                      <Icon name="caret-right-bold" size={16} color="var(--ink-faint)" />
-                    </button>
+                    />
                   )
                 })}
               </div>

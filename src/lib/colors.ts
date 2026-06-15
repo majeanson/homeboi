@@ -20,8 +20,14 @@ export const PALETTE = [
   '#4F7C8C', // slate blue
 ]
 
-// A translucent wash of a colour for tinted tiles (works over cream or dark).
-export const wash = (hex: string) => hex + '22'
+// Translucent variants of a colour, as 8-digit hex alpha, for tinted fills and
+// borders (work over cream or dark). The ramp is named by intent so call sites
+// read as design, not magic hex. ONLY valid on a concrete #rrggbb — for a value
+// that might be a CSS var, set `--tint` and use color-mix in CSS instead.
+export const wash = (hex: string) => hex + '22' //  ~13% — tinted tile fill
+export const faint = (hex: string) => hex + '14' //  ~8%  — barely-there fill
+export const hairline = (hex: string) => hex + '40' // ~25% — quiet border
+export const edge = (hex: string) => hex + '55' //  ~33% — tinted border
 
 // A legible, theme-aware ink tint: mostly the colour, pulled toward the current
 // --ink so it stays readable on cream (day) AND dark (night). Use for titles and

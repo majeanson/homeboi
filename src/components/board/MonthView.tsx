@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDayLong, weekdayShort } from '../../lib/format'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
+import { localYMD } from '../../lib/localDay'
 import { SLOT_ICON_NAME, isMealSlot, type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { type Lang } from '../../i18n'
@@ -78,8 +79,8 @@ export function MonthView({
   const [selected, setSelected] = useState(todayDay)
 
   const grid = useMemo(() => {
-    const d = new Date(todayDay * 1000)
-    return monthGrid(d.getUTCFullYear(), d.getUTCMonth() + offset)
+    const { year, month } = localYMD(todayDay)
+    return monthGrid(year, month + offset)
   }, [todayDay, offset])
   const from = grid.days[0]
   const to = grid.days[grid.days.length - 1] + DAY
@@ -121,9 +122,9 @@ export function MonthView({
   const selMeals = sel ? sel.meals.filter((m) => mealPrefs.isVisible(m.slot)) : []
   const selCount = sel ? sel.events.length + selMeals.length + sel.chores.length + sel.notes.length : 0
   const atToday = offset === 0 && selected === todayDay
-  // UTC labels to match the UTC-day grid (monthgrid.ts) — otherwise a Québec
-  // evening prints the month/weekday ~a day early ("Mai" in June).
-  const title = cap(formatMonthYear(grid.monthStart, lang, true))
+  // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
+  // time — the household's wall month/weekday, no UTC flag.
+  const title = cap(formatMonthYear(grid.monthStart, lang))
 
   return (
     <div className="monthv">
@@ -152,7 +153,7 @@ export function MonthView({
       <div className="monthv__grid" role="grid" aria-label={title}>
         {grid.days.slice(0, 7).map((d) => (
           <div key={`h${d}`} className="monthv__dow mono" role="columnheader">
-            {cap(weekdayShort(d, lang, true))}
+            {cap(weekdayShort(d, lang))}
           </div>
         ))}
         {grid.days.map((d) => {
@@ -165,7 +166,7 @@ export function MonthView({
             (d === selected ? ' is-on' : '')
           return (
             <button key={d} type="button" role="gridcell" aria-selected={d === selected} className={cls} onClick={() => setSelected(d)}>
-              <span className="monthv__num">{new Date(d * 1000).getUTCDate()}</span>
+              <span className="monthv__num">{localYMD(d).day}</span>
               {dots.length > 0 && (
                 <span className="monthv__dots" aria-hidden="true">
                   {dots.slice(0, 4).map((dot, i) =>
@@ -214,7 +215,7 @@ export function MonthView({
 
       <div className="monthv__day">
         <div className="monthv__day-h">
-          <b>{cap(formatDayLong(selected, lang, true))}</b>
+          <b>{cap(formatDayLong(selected, lang))}</b>
         </div>
         {isLoading && !data ? (
           <p className="loading mono">{t.common.loading}</p>

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { HOUSEHOLD_KEY } from './queryKeys'
 import { MEAL_SLOTS, SLOT_COLOR, isMealSlot, type MealSlot } from './mealSlots'
+import type { ReserveLocation } from './reservePrefs'
 
 // Household settings as the board/kitchen read them. Only the meal fields matter
 // here; postal/includedStores ride along (same endpoint) and are ignored.
@@ -10,6 +11,7 @@ export interface HouseholdSettings {
   includedStores?: string[]
   mealColors?: Record<string, string> // slot → "#rrggbb" override (only set slots)
   mealHidden?: string[] // slots hidden from glance/plan; empty = show all
+  reserveLocations?: ReserveLocation[] | null // La réserve storage spots; null = seeded defaults
 }
 
 // The per-slot meal colour + visibility, resolved from the household settings.

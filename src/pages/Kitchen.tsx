@@ -13,21 +13,24 @@ import { useRecordUndo } from '../lib/toast'
 import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, formatDayLong, weekdayShort, dayNum } from '../lib/format'
+import { addLocalDays } from '../lib/localDay'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { pictoFor } from '../lib/picto'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
+import { ReserveSection } from '../components/kitchen/ReserveSection'
 import { RecipesTab } from '../components/kitchen/RecipesTab'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { useMealSuggest } from '../components/kitchen/useMealSuggest'
-import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type DayNotesData, type PantryData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, PANTRY_KEY, USE_SOON_KEY } from '../components/kitchen/types'
+import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type LeftoversData, type DayNotesData, type PantryData, type ReserveData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, LEFTOVERS_KEY, PANTRY_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
+import { Leftovers } from '../components/kitchen/Leftovers'
 import { DayManageSheet } from '../components/kitchen/DayManageSheet'
 import { SIDE_SLOTS, SLOT_ICON_NAME } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
-import { tintInk } from '../lib/colors'
+import { tintInk, faint, hairline } from '../lib/colors'
 import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
@@ -129,6 +132,25 @@ export function Kitchen() {
     qc.invalidateQueries({ queryKey: MEALS_KEY })
     qc.invalidateQueries({ queryKey: ['board'] })
   }
+  // "Il en reste ?" from a meal row — announce leftovers into the Restants pool
+  // (undated → the "à finir bientôt" reminder). Compensating undo deletes the row
+  // we just created (the pool is live-polled, so a held delete would resurrect it).
+  async function announceLeftover(meal: MealRow) {
+    const res = await api<{ id?: string }>('meal-leftovers', {
+      method: 'POST',
+      body: { title: meal.title, recipeId: meal.recipe_id ?? null, sourceMealId: meal.id },
+    }).catch(() => null)
+    qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
+    const id = res?.id
+    recordUndo({
+      message: t.undo.leftoverAdded(meal.title),
+      onUndo: async () => {
+        if (id) await api('meal-leftovers', { method: 'DELETE', body: { id } }).catch(() => {})
+        qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
+      },
+    })
+  }
+
   // Easy clearing: wipe one slot's meals, or a whole day's. Snapshot the rows first
   // so Annuler can put them back (compensating undo — see recordUndo above).
   async function clearSlotMeals(date: number, slot: string) {
@@ -192,8 +214,10 @@ export function Kitchen() {
   const dayNotesQ = useQuery({ queryKey: DAY_NOTES_KEY, queryFn: () => api<DayNotesData>('day-notes'), ...live })
   const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry'), ...live })
   const useSoonQ = useQuery({ queryKey: USE_SOON_KEY, queryFn: () => api<{ soon: LowRow[] }>('use-soon'), ...live })
+  const reserveQ = useQuery({ queryKey: RESERVE_KEY, queryFn: () => api<ReserveData>('reserve'), ...live })
   const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live })
   const ideasQ = useQuery({ queryKey: MEAL_IDEAS_KEY, queryFn: () => api<MealIdeasData>('meal-ideas'), ...live })
+  const leftoversQ = useQuery({ queryKey: LEFTOVERS_KEY, queryFn: () => api<LeftoversData>('meal-leftovers'), ...live })
   // Shares the ['board'] cache with the Board/Liste pages — read only for the
   // shopping list, used to rank recipes by "what you could cook now".
   const boardQ = useQuery({
@@ -276,7 +300,11 @@ export function Kitchen() {
   // shop-the-week driver, the kid-suggestion target), so the grid + week shape
   // stay keyed on it; the other slots ride alongside.
   const week: WeekDay[] = Array.from({ length: windowDays }, (_, i) => {
-    const date = weekStart + i * 86400
+    // Step by LOCAL calendar days, not fixed 86 400 s: meals are bucketed at local
+    // midnight (functions/_lib/ids localDayStart), and a local day is 23 h/25 h
+    // across a DST change — plain arithmetic would land those days at 23:00/01:00
+    // and `days.find` would miss them, showing/saving meals a cell off twice a year.
+    const date = addLocalDays(weekStart, i)
     const meal = days.find((d) => d.date === date && d.slot === 'supper')
     return { date, meal }
   })
@@ -306,7 +334,7 @@ export function Kitchen() {
   } = useMealPlanning(ai, profileId)
   const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, confirmShop, shoppableCount } =
     useRecipeShop(days, recipeForMeal, listItems)
-  const suggest = useMealSuggest(recipes, ai, lowItems, listItems)
+  const suggest = useMealSuggest(recipes, ai, lowItems, listItems, soonItems)
 
   // The week's three actions (shop the week / AI ideas / ideas from the book) now
   // live inside the ＋ Add sheet, not as a floating rail. The sheet is rendered by
@@ -326,7 +354,14 @@ export function Kitchen() {
   // Clearing on the way out is a separate, unmount-only effect below.
   useEffect(() => {
     registerKitchen(
-      kitchenActionsActive ? { shop: beginShopWeek, ai: suggest.suggestAi, book: suggest.suggestFromRecipes } : null,
+      kitchenActionsActive
+        ? {
+            shop: beginShopWeek,
+            ai: suggest.suggestAi,
+            book: suggest.suggestFromRecipes,
+            useup: suggest.suggestUseUp,
+          }
+        : null,
       kitchenActionsActive
         ? {
             active: true,
@@ -334,6 +369,7 @@ export function Kitchen() {
             canAiSuggest: !suggest.aiOff,
             aiBusy: suggest.aiBusy,
             hasRecipes: suggest.hasRecipes,
+            canUseUp: suggest.hasUseUp,
           }
         : NO_KITCHEN_ACTIONS,
     )
@@ -343,9 +379,11 @@ export function Kitchen() {
     suggest.aiOff,
     suggest.aiBusy,
     suggest.hasRecipes,
+    suggest.hasUseUp,
     beginShopWeek,
     suggest.suggestAi,
     suggest.suggestFromRecipes,
+    suggest.suggestUseUp,
     registerKitchen,
   ])
   // Clear the shell's kitchen actions once, when La cuisine unmounts — so leaving
@@ -458,8 +496,22 @@ export function Kitchen() {
                 {suggest.current.source === 'book' && (suggest.current.missing ?? 0) > 0 && (
                   <span className="mono kitchen__suggestion-sub"> · {t.recipes.missingN(suggest.current.missing!)}</span>
                 )}
+                {suggest.current.source === 'useup' && (suggest.current.uses ?? 0) > 0 && (
+                  <span className="mono kitchen__suggestion-sub"> · {t.recipes.usesN(suggest.current.uses!)}</span>
+                )}
               </span>
               <span className="kitchen__suggestion-actions">
+                {/* Re-ask the SAME source right here — another idea without
+                    re-opening the ＋ Add sheet. AI re-asks step through its batch
+                    (1 call / 10), the recipe sources cycle their ranked list. */}
+                <button
+                  type="button"
+                  className="btn btn--ghost mono"
+                  onClick={suggest.again}
+                  disabled={suggest.current.source === 'ai' && (suggest.aiBusy || suggest.aiOff)}
+                >
+                  🔁 {t.kitchen.suggestMore}
+                </button>
                 {suggest.current.recipe && (
                   <button
                     type="button"
@@ -471,6 +523,14 @@ export function Kitchen() {
                 )}
                 <button type="button" className="btn btn--ghost mono" onClick={keepSuggestion}>
                   ＋ {t.kitchen.suggestKeep}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost mono kitchen__suggestion-dismiss"
+                  onClick={suggest.clear}
+                  aria-label={t.common.close}
+                >
+                  <Icon name="x-bold" size={16} />
                 </button>
               </span>
             </div>
@@ -515,7 +575,7 @@ export function Kitchen() {
             {week.map(({ date, meal }) => {
               const dow = new Date(date * 1000).getDay()
               const isToday = date === weekStart
-              const isTomorrow = date === weekStart + 86400
+              const isTomorrow = date === addLocalDays(weekStart, 1)
               // Concise relative tag ("Auj."/"Dem.") so the tiny date badge never
               // overflows with "Aujourd'hui"/"Demain".
               const rel = isToday ? t.kitchen.todayShort : isTomorrow ? t.kitchen.tomorrowShort : null
@@ -572,6 +632,13 @@ export function Kitchen() {
                               colour the chips and Réglages ▸ Repas use, not a bare dot. */}
                           <Icon name={SLOT_ICON_NAME.supper} size={18} color={supperColor} />
                           {suppers.map((m) => m.title).join(' · ')}
+                          {/* Flag a leftover souper on the calm glance, so "finish the
+                              fridge" reads without opening the day. */}
+                          {suppers.some((m) => m.is_leftover) && (
+                            <span className="kitchen__meal-tag mono">
+                              <InlineIcon name="arrow-counter-clockwise-bold" size={12} /> {t.kitchen.leftoversTag}
+                            </span>
+                          )}
                         </>
                       ) : (
                         <span className="kitchen__day-sum-empty mono">{t.kitchen.planShort}</span>
@@ -597,7 +664,7 @@ export function Kitchen() {
                           <span
                             key={slot}
                             className="meal-chip"
-                            style={{ color: tintInk(c), background: c + '14', borderColor: c + '40' }}
+                            style={{ color: tintInk(c), background: faint(c), borderColor: hairline(c) }}
                           >
                             <InlineIcon name={SLOT_ICON_NAME[slot]} /> {titles}
                           </span>
@@ -637,7 +704,7 @@ export function Kitchen() {
             picker={{ recipePickFor, setRecipePickFor, pickWithStaples, setPickWithStaples, planRecipe }}
             slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
             noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
-            actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay }}
+            actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover }}
           />
 
           <MealIdeas
@@ -648,10 +715,23 @@ export function Kitchen() {
             listItems={listItems}
             profileId={profileId}
           />
+
+          {/* Restants — leftovers to finish. Quick-pick from today's planned meals
+              (those not already a leftover), or type one; tap to plan onto a day. */}
+          <Leftovers
+            leftovers={leftoversQ.data?.leftovers ?? []}
+            recentMeals={days.filter((d) => d.date === weekStart && !d.is_leftover)}
+            week={week.map((w) => ({ date: w.date, label: formatWeekday(w.date, lang) }))}
+          />
         </section>
         )}
 
-        {kitTab === 'pantry' && <PantryTab low={low} soon={soon} />}
+        {kitTab === 'pantry' && (
+          <>
+            <PantryTab low={low} soon={soon} />
+            <ReserveSection reserve={reserveQ.data?.reserve ?? []} />
+          </>
+        )}
 
         {kitTab === 'recipes' && (
           <RecipesTab
