@@ -813,11 +813,12 @@ export function Kitchen() {
             profileId={profileId}
           />
 
-          {/* Restants — leftovers to finish. Quick-pick from today's planned meals
-              (those not already a leftover), or type one; tap to plan onto a day. */}
+          {/* Restants — leftovers to finish. Quick-pick from the last few days' meals
+              (server-provided `recent`, non-leftover, deduped), or type one; tap to
+              plan onto a day. */}
           <Leftovers
             leftovers={leftoversQ.data?.leftovers ?? []}
-            recentMeals={days.filter((d) => d.date === weekStart && !d.is_leftover)}
+            recentMeals={meals.data?.recent ?? []}
             week={week.map((w) => ({ date: w.date, label: formatWeekday(w.date, lang) }))}
           />
         </section>

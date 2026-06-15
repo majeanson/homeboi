@@ -34,6 +34,12 @@ const windowDaysFor = (today: number): number => {
   return 10 - sinceTue
 }
 
+// "What we ate lately" lookback for the Restants quick-pick suggestions. The
+// forward grid starts at today, so today-only suggestions vanish whenever nothing
+// is planned today; this looks back a few days so "we ate this, there's some left"
+// always has something real to offer.
+const RECENT_DAYS = 3
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = localDayStart(new Date(Date.now()))
   const windowDays = windowDaysFor(today)
@@ -42,7 +48,24 @@ export const onRequestGet = authed(async (ctx, actor) => {
   )
     .bind(actor.householdId, today, today + DAY * windowDays)
     .all()
-  return ok({ days: results, weekStart: today, windowDays })
+
+  // The last RECENT_DAYS days of planned, non-leftover meals (today included),
+  // newest first, deduped by title so a recurring meal shows once. Powers the
+  // Restants "Suggestions" chips ("we ate this lately, there's some left").
+  const { results: recentRows } = await ctx.env.DB.prepare(
+    `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND is_leftover = 0 AND date >= ? AND date <= ? ORDER BY date DESC, ${MEAL_ORDER}`,
+  )
+    .bind(actor.householdId, today - DAY * RECENT_DAYS, today)
+    .all<{ title: string }>()
+  const seen = new Set<string>()
+  const recent = recentRows.filter((m) => {
+    const k = m.title.trim().toLowerCase()
+    if (!k || seen.has(k)) return false
+    seen.add(k)
+    return true
+  })
+
+  return ok({ days: results, weekStart: today, windowDays, recent })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

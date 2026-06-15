@@ -34,8 +34,8 @@ export function Leftovers({
   const [busy, setBusy] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
-  // Today's-meal suggestions stay folded away by default — open them deliberately,
-  // so they never read as restants already in the pool below.
+  // Recent-meal suggestions (the last few days) stay folded away by default — open
+  // them deliberately, so they never read as restants already in the pool below.
   const [showRecent, setShowRecent] = useState(false)
 
   async function addLeftover(title: string, recipeId?: string | null, sourceMealId?: string | null) {
@@ -136,7 +136,7 @@ export function Leftovers({
         </button>
       </form>
 
-      {/* Quick-pick from today's planned meals — "we ate this, there's some left".
+      {/* Quick-pick from the last few days' meals — "we ate this, there's some left".
           Folded under a "Suggestions" disclosure so these candidates don't blur into
           the actual restants already pooled below. */}
       {recentMeals.length > 0 && (

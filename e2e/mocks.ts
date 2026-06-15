@@ -107,6 +107,13 @@ const MEALS = {
     // A déjeuner (breakfast) side slot on day one.
     { id: 'meal4', date: BASE, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
   ],
+  // The last few days of non-leftover meals (deduped by title) — the Restants
+  // "Suggestions" quick-pick source (see functions/api/meals.ts `recent`).
+  recent: [
+    { id: 'meal1', date: BASE, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 },
+    { id: 'meal5', date: BASE, slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
+    { id: 'meal4', date: BASE, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
+  ],
 }
 
 const PANTRY = {
