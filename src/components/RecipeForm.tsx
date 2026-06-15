@@ -556,7 +556,10 @@ export function RecipeForm({
           {readMsg && <p className="recipe-aioff mono">{readMsg}</p>}
 
           {showImport && (
-            <div className="recipe-import">
+            // data-kb-reveal: keep the "Importer" button (below the URL + paste
+            // fields) in view on mobile, not just the focused field — see
+            // viewportVars' focus-scroll. The default elsewhere pins the field itself.
+            <div className="recipe-import" data-kb-reveal>
               <input
                 className="input"
                 value={importUrl}

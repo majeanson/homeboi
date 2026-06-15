@@ -52,13 +52,19 @@ export function trackVisualViewport(): void {
   // on a real keyboard inset, so a plain desktop click never yanks the page.
   // iOS' own scroll-into-view is unreliable inside our fixed sheets/overlays.
   const TEXT = /^(|text|search|email|url|tel|password|number)$/i
-  // A submit/action button sitting just below the focused field in the same
-  // compact group (e.g. the recipe import panel's "Importer", which follows the
-  // URL input + paste box) — reveal IT, not just the field, so the control the
-  // user is typing toward never strands under the keyboard. Disabled buttons
-  // count: import enables only once a URL is typed, but it's where the field
-  // leads, so keep it in view. Returns null for a lone field → centre the field.
+  // DEFAULT everywhere: pin the focused field to the TOP of the visible band so
+  // the keyboard (which slides up from the bottom) can never cover it — this is
+  // the behaviour every text edit in the app gets for free.
+  //
+  // OPT-IN exception: a few compact panels (e.g. the recipe import panel's
+  // "Importer", which follows the URL input + paste box) want the action button
+  // BELOW the field revealed too, not just the field — so the control the user is
+  // typing toward never strands under the keyboard. Mark such a panel with
+  // `data-kb-reveal` and the field-to-button reveal kicks in there only. Disabled
+  // buttons count (import enables only once a URL is typed, but it's where the
+  // field leads). Returns null when there's no eligible button → pin the field.
   const actionBelow = (el: HTMLElement): HTMLElement | null => {
+    if (!el.closest('[data-kb-reveal]')) return null
     const bottom = el.getBoundingClientRect().bottom
     let scope = el.parentElement
     for (let up = 0; up < 3 && scope; up++, scope = scope.parentElement) {
