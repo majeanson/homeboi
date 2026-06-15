@@ -24,7 +24,7 @@ import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { useMealSuggest } from '../components/kitchen/useMealSuggest'
-import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type LeftoversData, type DayNotesData, type PantryData, type ReserveData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, LEFTOVERS_KEY, PANTRY_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
+import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type Leftover, type LeftoversData, type DayNotesData, type PantryData, type ReserveData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, LEFTOVERS_KEY, PANTRY_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers } from '../components/kitchen/Leftovers'
 import { DayManageSheet } from '../components/kitchen/DayManageSheet'
@@ -151,6 +151,46 @@ export function Kitchen() {
     })
   }
 
+  // Plan a pooled leftover onto a day → a real meal tagged is_leftover; the pool
+  // row is consumed server-side (you eat leftovers once). Shared by the Restants
+  // pool's own picker (Leftovers) and the day editor's "Choisir un reste"
+  // (DayManageSheet) so both entry points behave identically. Compensating undo
+  // (the caches are live-polled): delete the created meal AND re-insert the pool
+  // row, fully reversing the plan.
+  async function planLeftover(l: Leftover, date: number, slot: string) {
+    const res = await api<{ mealId?: string }>('meal-leftovers', {
+      method: 'POST',
+      body: { action: 'plan', id: l.id, date, slot },
+    }).catch(() => null)
+    qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
+    qc.invalidateQueries({ queryKey: ['board'] })
+    const mealId = res?.mealId
+    recordUndo({
+      message: t.undo.leftoverPlanned(l.title),
+      onUndo: async () => {
+        if (mealId) await api('meals', { method: 'DELETE', body: { id: mealId } }).catch(() => {})
+        await api('meal-leftovers', {
+          method: 'POST',
+          body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
+        }).catch(() => {})
+        qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
+        qc.invalidateQueries({ queryKey: MEALS_KEY })
+        qc.invalidateQueries({ queryKey: ['board'] })
+      },
+    })
+  }
+  // The day editor's "Choisir un reste" path: close whichever add-editor was open
+  // (mirrors planRecipe), then plan the leftover onto the chosen slot.
+  function planLeftoverOnDay(date: number, slot: string, l: Leftover) {
+    setLeftoverPickFor(null)
+    setEditDate(null)
+    setEditSlot(null)
+    setMealText('')
+    setSlotText('')
+    void planLeftover(l, date, slot)
+  }
+
   // Easy clearing: wipe one slot's meals, or a whole day's. Snapshot the rows first
   // so Annuler can put them back (compensating undo — see recordUndo above).
   async function clearSlotMeals(date: number, slot: string) {
@@ -234,6 +274,9 @@ export function Kitchen() {
   // Which slot's recipe picker is open ({date, slot}) — any slot can pick a
   // recipe now, not just the souper.
   const [recipePickFor, setRecipePickFor] = useState<{ date: number; slot: string } | null>(null)
+  // Which slot's "Choisir un reste" picker is open ({date, slot}) — the leftover
+  // counterpart to recipePickFor; only one of the two opens at a time per slot.
+  const [leftoverPickFor, setLeftoverPickFor] = useState<{ date: number; slot: string } | null>(null)
   // Which day's "Gérer" sheet is open (its full planning controls live there now,
   // off the calm read-only week grid). One at a time — so the souper/recipe-picker
   // singletons can't fight across days.
@@ -702,6 +745,12 @@ export function Kitchen() {
             onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
             plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
             picker={{ recipePickFor, setRecipePickFor, pickWithStaples, setPickWithStaples, planRecipe }}
+            leftovers={{
+              pool: leftoversQ.data?.leftovers ?? [],
+              pickFor: leftoverPickFor,
+              setPickFor: setLeftoverPickFor,
+              plan: planLeftoverOnDay,
+            }}
             slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
             noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
             actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover }}

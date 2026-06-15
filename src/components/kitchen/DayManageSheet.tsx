@@ -8,7 +8,8 @@ import { useMealPrefs } from '../../lib/mealPrefs'
 import { Icon, InlineIcon } from '../Icon'
 import { MealRows } from './MealRows'
 import { RecipePickerMenu } from './RecipePickerMenu'
-import { type MealRow, type DayNoteRow } from './types'
+import { LeftoverPickerMenu } from './LeftoverPickerMenu'
+import { type Leftover, type MealRow, type DayNoteRow } from './types'
 import { type useMealPlanning } from './useMealPlanning'
 
 // One day's full meal-planning controls, lifted off the week grid into a bottom
@@ -38,6 +39,7 @@ export function DayManageSheet({
   onOpenRecipe,
   plan,
   picker,
+  leftovers,
   slotEdit,
   noteEdit,
   actions,
@@ -67,6 +69,14 @@ export function DayManageSheet({
     pickWithStaples: boolean
     setPickWithStaples: (f: (s: boolean) => boolean) => void
     planRecipe: (date: number, slot: string, r: Recipe) => void
+  }
+  // The Restants pool + its own slot picker ("Choisir un reste", parallel to the
+  // recipe picker). Planning one consumes it into a real meal badged Restants.
+  leftovers: {
+    pool: Leftover[]
+    pickFor: { date: number; slot: string } | null
+    setPickFor: (v: { date: number; slot: string } | null) => void
+    plan: (date: number, slot: string, l: Leftover) => void
   }
   // The lighter side slots' inline title editor.
   slotEdit: {
@@ -106,6 +116,17 @@ export function DayManageSheet({
   const { editNote, setEditNote, noteText, setNoteText, saveNote, clearNote } = noteEdit
   const { clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover } = actions
   const pickOpenFor = (d: number, slot: string) => recipePickFor?.date === d && recipePickFor.slot === slot
+  const leftoverOpenFor = (d: number, slot: string) => leftovers.pickFor?.date === d && leftovers.pickFor.slot === slot
+  // The recipe + leftover pickers share a slot's add-row but only one shows at a
+  // time — opening either closes the other so the sheet never stacks two lists.
+  const openRecipePick = (d: number, slot: string) => {
+    leftovers.setPickFor(null)
+    setRecipePickFor(pickOpenFor(d, slot) ? null : { date: d, slot })
+  }
+  const openLeftoverPick = (d: number, slot: string) => {
+    setRecipePickFor(null)
+    leftovers.setPickFor(leftoverOpenFor(d, slot) ? null : { date: d, slot })
+  }
   const dayMealCount = date != null ? SIDE_SLOTS.reduce((n, s) => n + mealsFor(date, s).length, suppers.length) : 0
   // Add-affordance label: "Ajouter un autre" when the slot already holds a meal,
   // plain "Ajouter" when it's empty (no redundant "＋ Déjeuner" beside the header).
@@ -196,17 +217,29 @@ export function DayManageSheet({
                           {t.kitchen.setMeal}
                         </button>
                       </form>
-                      {recipes.length > 0 && (
+                      {(recipes.length > 0 || leftovers.pool.length > 0) && (
                         <div className="kitchen__day-recipes">
                           <div className="kitchen__day-recipes-row">
-                            <button
-                              type="button"
-                              className="btn btn--ghost mono kitchen__pick-recipe"
-                              onClick={() => setRecipePickFor(pickOpenFor(date, slot) ? null : { date, slot })}
-                              aria-expanded={pickOpenFor(date, slot)}
-                            >
-                              <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
-                            </button>
+                            {recipes.length > 0 && (
+                              <button
+                                type="button"
+                                className="btn btn--ghost mono kitchen__pick-recipe"
+                                onClick={() => openRecipePick(date, slot)}
+                                aria-expanded={pickOpenFor(date, slot)}
+                              >
+                                <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
+                              </button>
+                            )}
+                            {leftovers.pool.length > 0 && (
+                              <button
+                                type="button"
+                                className="btn btn--ghost mono kitchen__pick-recipe"
+                                onClick={() => openLeftoverPick(date, slot)}
+                                aria-expanded={leftoverOpenFor(date, slot)}
+                              >
+                                <InlineIcon name="arrow-counter-clockwise-bold" /> {t.kitchen.chooseLeftover}
+                              </button>
+                            )}
                           </div>
                           {pickOpenFor(date, slot) && (
                             <RecipePickerMenu
@@ -215,6 +248,9 @@ export function DayManageSheet({
                               listItems={listItems}
                               onPick={(r) => planRecipe(date, slot, r)}
                             />
+                          )}
+                          {leftoverOpenFor(date, slot) && (
+                            <LeftoverPickerMenu leftovers={leftovers.pool} onPick={(l) => leftovers.plan(date, slot, l)} />
                           )}
                         </div>
                       )}
@@ -343,17 +379,29 @@ export function DayManageSheet({
                           {staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
                         </button>
                       </form>
-                      {recipes.length > 0 && (
+                      {(recipes.length > 0 || leftovers.pool.length > 0) && (
                         <div className="kitchen__day-recipes">
                           <div className="kitchen__day-recipes-row">
-                            <button
-                              type="button"
-                              className="btn btn--ghost mono kitchen__pick-recipe"
-                              onClick={() => setRecipePickFor(pickOpenFor(date, 'supper') ? null : { date, slot: 'supper' })}
-                              aria-expanded={pickOpenFor(date, 'supper')}
-                            >
-                              <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
-                            </button>
+                            {recipes.length > 0 && (
+                              <button
+                                type="button"
+                                className="btn btn--ghost mono kitchen__pick-recipe"
+                                onClick={() => openRecipePick(date, 'supper')}
+                                aria-expanded={pickOpenFor(date, 'supper')}
+                              >
+                                <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
+                              </button>
+                            )}
+                            {leftovers.pool.length > 0 && (
+                              <button
+                                type="button"
+                                className="btn btn--ghost mono kitchen__pick-recipe"
+                                onClick={() => openLeftoverPick(date, 'supper')}
+                                aria-expanded={leftoverOpenFor(date, 'supper')}
+                              >
+                                <InlineIcon name="arrow-counter-clockwise-bold" /> {t.kitchen.chooseLeftover}
+                              </button>
+                            )}
                           </div>
                           {pickOpenFor(date, 'supper') && (
                             <>
@@ -375,6 +423,9 @@ export function DayManageSheet({
                                 onPick={(r) => planRecipe(date, 'supper', r)}
                               />
                             </>
+                          )}
+                          {leftoverOpenFor(date, 'supper') && (
+                            <LeftoverPickerMenu leftovers={leftovers.pool} onPick={(l) => leftovers.plan(date, 'supper', l)} />
                           )}
                         </div>
                       )}
