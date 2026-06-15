@@ -3,7 +3,7 @@ import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
 import { useModal } from '../../lib/useModal'
 import { useSwipeToDismiss } from '../../lib/useSwipeToDismiss'
-import { usePointerDnd, DragGhost } from '../../lib/dnd'
+import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
 import { SIDE_SLOTS, SLOT_ICON_NAME } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { Icon, InlineIcon } from '../Icon'
@@ -134,6 +134,8 @@ export function DayManageSheet({
       if (date != null) rescheduleMeal(id, date, slot)
     },
     canDrop: (id, slot) => slotOfMeal(id) !== slot,
+    // Press-and-hold a meal to move it between slots — deliberate, not a flick.
+    holdMs: DND_HOLD_MS,
   })
   const pickOpenFor = (d: number, slot: string) => recipePickFor?.date === d && recipePickFor.slot === slot
   const leftoverOpenFor = (d: number, slot: string) => leftovers.pickFor?.date === d && leftovers.pickFor.slot === slot

@@ -26,11 +26,19 @@ export interface DragGhostState {
   y: number
 }
 
+// Default long-press delay (ms) for the hold-to-drag mode — deliberate enough that
+// a tap or scroll-flick on the handle never starts an accidental move.
+export const DND_HOLD_MS = 400
+
 export function usePointerDnd(opts: {
   onDrop: (id: string, zone: string) => void
   // Reject a drop (e.g. onto its own day/slot) — also greys the zone out so it
   // never shows a drop cue it won't honour.
   canDrop?: (id: string, zone: string) => boolean
+  // Require a press-and-HOLD of this many ms before the drag engages (touch-
+  // friendly: moving the finger before it fires reads as a scroll/tap and aborts).
+  // Omit/0 → the classic engage-once-moved-past-a-6px-threshold behaviour.
+  holdMs?: number
 }) {
   // The session (id + label) is set once at start; position ticks on every move.
   // Splitting them keeps the window listeners bound once per drag, not per pixel.
@@ -51,21 +59,16 @@ export function usePointerDnd(opts: {
 
   useEffect(() => {
     if (!session) return
-    const move = (e: PointerEvent) => {
-      const o = originRef.current
-      if (!o) return
-      if (!o.started) {
-        if (Math.abs(e.clientX - o.sx) < 6 && Math.abs(e.clientY - o.sy) < 6) return
-        o.started = true
-        setStarted(true)
+    const holdMs = cb.current.holdMs ?? 0
+    let holdTimer: ReturnType<typeof setTimeout> | null = null
+    const clearHold = () => {
+      if (holdTimer != null) {
+        clearTimeout(holdTimer)
+        holdTimer = null
       }
-      e.preventDefault()
-      setPos({ x: e.clientX, y: e.clientY })
-      const z = zoneAt(e.clientX, e.clientY)
-      const ok = z != null && (!cb.current.canDrop || cb.current.canDrop(session.id, z))
-      setOver(ok ? z : null)
     }
     const finish = (e: PointerEvent, commit: boolean) => {
+      clearHold()
       const o = originRef.current
       if (commit && o?.started) {
         const z = zoneAt(e.clientX, e.clientY)
@@ -76,12 +79,44 @@ export function usePointerDnd(opts: {
       setStarted(false)
       setOver(null)
     }
+    // Hold-to-drag: arm the drag only once the finger has rested for holdMs.
+    if (holdMs > 0) {
+      holdTimer = setTimeout(() => {
+        const o = originRef.current
+        if (!o) return
+        o.started = true
+        setStarted(true)
+      }, holdMs)
+    }
+    const move = (e: PointerEvent) => {
+      const o = originRef.current
+      if (!o) return
+      if (!o.started) {
+        const movedFar = Math.abs(e.clientX - o.sx) >= 6 || Math.abs(e.clientY - o.sy) >= 6
+        if (holdMs > 0) {
+          // Moving before the hold fires = a scroll/tap, not a drag — abort so the
+          // gesture falls through to the page (and the finger never half-engages).
+          if (movedFar) finish(e, false)
+          return
+        }
+        // Classic mode: engage once the finger clears the movement threshold.
+        if (!movedFar) return
+        o.started = true
+        setStarted(true)
+      }
+      e.preventDefault()
+      setPos({ x: e.clientX, y: e.clientY })
+      const z = zoneAt(e.clientX, e.clientY)
+      const ok = z != null && (!cb.current.canDrop || cb.current.canDrop(session.id, z))
+      setOver(ok ? z : null)
+    }
     const up = (e: PointerEvent) => finish(e, true)
     const cancel = (e: PointerEvent) => finish(e, false)
     window.addEventListener('pointermove', move, { passive: false })
     window.addEventListener('pointerup', up)
     window.addEventListener('pointercancel', cancel)
     return () => {
+      clearHold()
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
       window.removeEventListener('pointercancel', cancel)

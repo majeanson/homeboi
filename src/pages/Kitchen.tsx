@@ -11,7 +11,7 @@ import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
 import { useRecordUndo } from '../lib/toast'
 import { live } from '../lib/query'
-import { usePointerDnd, DragGhost } from '../lib/dnd'
+import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, formatDayLong, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays } from '../lib/localDay'
@@ -385,6 +385,8 @@ export function Kitchen() {
       for (const m of mealsFor(from, 'supper')) rescheduleMeal(m.id, to, 'supper')
     },
     canDrop: (fromKey, toKey) => fromKey !== toKey,
+    // Press-and-hold to move a day's plan — a calm, deliberate gesture, not a flick.
+    holdMs: DND_HOLD_MS,
   })
 
   // The flows (see components/kitchen/use*). Destructured to the same names the

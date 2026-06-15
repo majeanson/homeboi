@@ -34,6 +34,9 @@ export function Leftovers({
   const [busy, setBusy] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+  // Today's-meal suggestions stay folded away by default — open them deliberately,
+  // so they never read as restants already in the pool below.
+  const [showRecent, setShowRecent] = useState(false)
 
   async function addLeftover(title: string, recipeId?: string | null, sourceMealId?: string | null) {
     const v = title.trim()
@@ -133,23 +136,38 @@ export function Leftovers({
         </button>
       </form>
 
-      {/* Quick-pick from today's planned meals — "we ate this, there's some left". */}
+      {/* Quick-pick from today's planned meals — "we ate this, there's some left".
+          Folded under a "Suggestions" disclosure so these candidates don't blur into
+          the actual restants already pooled below. */}
       {recentMeals.length > 0 && (
         <div className="kitchen__leftovers-recent">
-          <p className="kitchen__leftovers-recent-label mono">{t.kitchen.leftoversRecent}</p>
-          <div className="kitchen__leftovers-recent-chips">
-            {recentMeals.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className="chip"
-                onClick={() => addLeftover(m.title, m.recipe_id ?? null, m.id)}
-                disabled={busy}
-              >
-                <InlineIcon name="arrow-counter-clockwise-bold" size={13} /> {m.title}
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            className="kitchen__leftovers-recent-toggle mono"
+            onClick={() => setShowRecent((v) => !v)}
+            aria-expanded={showRecent}
+          >
+            <InlineIcon name={showRecent ? 'caret-down-bold' : 'caret-right-bold'} size={13} />{' '}
+            {t.kitchen.leftoversRecentToggle}
+          </button>
+          {showRecent && (
+            <>
+              <p className="kitchen__leftovers-recent-label mono">{t.kitchen.leftoversRecent}</p>
+              <div className="kitchen__leftovers-recent-chips">
+                {recentMeals.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className="chip"
+                    onClick={() => addLeftover(m.title, m.recipe_id ?? null, m.id)}
+                    disabled={busy}
+                  >
+                    <InlineIcon name="arrow-counter-clockwise-bold" size={13} /> {m.title}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 

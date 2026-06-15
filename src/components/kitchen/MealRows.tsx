@@ -5,9 +5,9 @@ import { Icon, InlineIcon } from '../Icon'
 import { type MealRow } from './types'
 
 // The planned meals in ONE slot (a slot is a list now — migration 0033). Each row
-// shows its title, an optional recipe-link, ↑/↓ to reorder within the slot, ✏️ to
-// rename it in place, and 🗑️ to remove just that one. Shared by the souper hero
-// and the lighter side slots.
+// shows its title (tap the title body itself to rename it in place — no separate
+// ✏️), an optional recipe-link, ↑/↓ to reorder within the slot, and 🗑️ to remove
+// just that one. Shared by the souper hero and the lighter side slots.
 export function MealRows({
   meals,
   recipeFor,
@@ -108,19 +108,33 @@ export function MealRows({
                     ⠿
                   </span>
                 )}
-                <span className="kitchen__meal-main">
+                {/* The whole title body IS the edit affordance — tap it to rename in
+                    place (no separate ✏️). The control cluster stays its own taps. */}
+                <button
+                  type="button"
+                  className="kitchen__meal-main"
+                  onClick={() => {
+                    setEditId(m.id)
+                    setEditText(m.title)
+                  }}
+                  aria-label={t.common.edit}
+                  title={t.common.edit}
+                >
+                  <span className="kitchen__meal-headline">
+                    <span className="kitchen__meal-title">{m.title}</span>
+                    {m.suggested_by != null && (
+                      <span className="kitchen__day-sugg mono">💡 {memberName(m.suggested_by) || t.kitchen.suggested}</span>
+                    )}
+                  </span>
                   {/* Planned leftovers read as "Restants" so the plan shows it's a
-                      finish-the-fridge meal, not a fresh cook. */}
+                      finish-the-fridge meal, not a fresh cook. Sits BELOW the title so
+                      it never eats into the title's width. */}
                   {m.is_leftover ? (
                     <span className="kitchen__meal-tag mono">
                       <InlineIcon name="arrow-counter-clockwise-bold" size={12} /> {t.kitchen.leftoversTag}
                     </span>
                   ) : null}
-                  <span className="kitchen__meal-title">{m.title}</span>
-                  {m.suggested_by != null && (
-                    <span className="kitchen__day-sugg mono">💡 {memberName(m.suggested_by) || t.kitchen.suggested}</span>
-                  )}
-                </span>
+                </button>
                 <span className="kitchen__meal-ctl">
                   {r && (
                     <button
@@ -171,18 +185,6 @@ export function MealRows({
                       <Icon name="arrow-counter-clockwise-bold" size={15} />
                     </button>
                   )}
-                  <button
-                    type="button"
-                    className="kitchen__meal-btn"
-                    onClick={() => {
-                      setEditId(m.id)
-                      setEditText(m.title)
-                    }}
-                    aria-label={t.common.edit}
-                    title={t.common.edit}
-                  >
-                    <Icon name="pencil-simple-bold" size={15} />
-                  </button>
                   <button
                     type="button"
                     className="kitchen__meal-btn kitchen__meal-remove"
