@@ -521,6 +521,8 @@ test.describe('kitchen', () => {
     await expect(page.locator('.sheet.show')).toBeVisible()
     await page.locator('.sheet.show').getByRole('button', { name: /Magasiner la semaine/ }).click()
     await expect(page.locator('.kitchen__shop')).toBeVisible()
+    // The picker starts all-unchecked now — tick everything, then confirm posts it.
+    await page.locator('.kitchen__shop').getByRole('button', { name: 'Tout cocher' }).click()
     await expectApi(page, 'POST', 'recipe-to-list', () =>
       page.locator('.kitchen__shop .btn--primary').click(),
     )

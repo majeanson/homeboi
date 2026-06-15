@@ -132,9 +132,24 @@
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+/* The week-action results band — AI/book/use-it-up suggestion cards + the shop
+   panel stack here, one under the next. Each action scrolls this into view (so a
+   tap is never an off-screen no-op); scroll-margin gives it a little headroom. */
+.kitchen__results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  scroll-margin-top: 0.75rem;
+}
+.kitchen__results:empty {
+  display: none;
+}
+.kitchen__results > * {
+  margin: 0;
+}
 /* The "shop this week" confirm panel reuses the staples panel styling. */
 .kitchen__shop {
-  margin: 0.5rem 0 1rem;
+  margin: 0;
 }
 .kitchen__suggestion {
   display: flex;
@@ -148,6 +163,10 @@
   background: var(--surface);
 }
 .kitchen__suggestion-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
   min-width: 0;
 }
 .kitchen__suggestion-sub {
@@ -752,14 +771,15 @@
   flex-wrap: wrap;
   gap: 0.4rem;
 }
-/* Long AI ingredient names ("beurre non salé…") otherwise wrap to 3-line chips
-   and the confirm panel turns into a ragged wall — one tidy line each, full
-   name in the title attr. */
+/* These are a CHOICE list now (all unchecked by default — you tick what you want),
+   so every ingredient name must be FULLY readable, not ellipsized. Let long names
+   wrap inside the chip; the checkbox glyph stays pinned at the start (flex: none on
+   the Icon) and the text left-aligns so a wrapped second line reads cleanly. */
 .kitchen__staples-chips .chip {
-  max-width: 14rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  justify-content: flex-start;
 }
 .chip {
   display: inline-flex;

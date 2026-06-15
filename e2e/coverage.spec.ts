@@ -219,8 +219,9 @@ test('kitchen-suggestion', async ({ page }) => {
   await shoot(page, 'kitchen-suggestion-phone', false)
 })
 
-// "Magasiner la semaine" → the pre-checked staples-to-buy prompt. Same move into
-// the ＋ Add sheet; the .kitchen__shop confirm panel renders on the grid behind.
+// "Magasiner la semaine" → the staples-to-buy picker (starts all-unchecked; you
+// tick what you want). Same move into the ＋ Add sheet; the .kitchen__shop confirm
+// panel renders on the grid behind.
 test('kitchen-shop-week', async ({ page }) => {
   await boot(page, '/kitchen')
   await page.locator('.add-fab').click()

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Icon, InlineIcon } from '../components/Icon'
+import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
 import { SectionIntro } from '../components/SectionIntro'
 import { useLang, useT } from '../i18n'
@@ -23,7 +23,7 @@ import { RecipesTab } from '../components/kitchen/RecipesTab'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
-import { useMealSuggest } from '../components/kitchen/useMealSuggest'
+import { useMealSuggest, type MealSuggestion, type SuggestSource } from '../components/kitchen/useMealSuggest'
 import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type Leftover, type LeftoversData, type DayNotesData, type PantryData, type ReserveData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, LEFTOVERS_KEY, PANTRY_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers } from '../components/kitchen/Leftovers'
@@ -42,6 +42,15 @@ import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
 // Intl lowercases the French weekday ("lundi 14 juin"); the sheet title wants it
 // capitalized.
 const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
+
+// Each suggestion card wears the SAME glyph + colour as the ＋ Add-sheet tile that
+// produced it (AI = marigold sparkle, book = terracotta book, use-it-up = sage
+// carrot), so a result reads as "this is the answer to the button I just pressed".
+const SUGGEST_DRESS: Record<SuggestSource, { icon: IconName; color: string }> = {
+  ai: { icon: 'sparkle-bold', color: '#D9842A' },
+  book: { icon: 'book-open-bold', color: '#C2563A' },
+  useup: { icon: 'carrot-bold', color: '#6B8A52' },
+}
 
 export function Kitchen() {
   const t = useT()
@@ -407,9 +416,25 @@ export function Kitchen() {
     kidSuggest,
     toggleStaple,
   } = useMealPlanning(ai, profileId)
-  const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, confirmShop, shoppableCount } =
+  const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, toggleAllShop, confirmShop, shoppableCount } =
     useRecipeShop(days, recipeForMeal, listItems)
   const suggest = useMealSuggest(recipes, ai, lowItems, listItems, soonItems)
+  // How many shop items are currently ticked (the panel starts all-unchecked, so
+  // this drives the "Ajouter (N)" label + disables the confirm until ≥1 is picked).
+  const shopChecked = (shopPrompt ?? []).filter((o) => o.on).length
+
+  // The week-actions (shop / AI / book / use-it-up) run from the ＋ Add sheet, whose
+  // result lands HERE at the top of the Repas tab. If the page is scrolled down to
+  // the week grid, that landing is off-screen and the tap reads as "nothing
+  // happened". So every action bumps a tick that scrolls the results band into view
+  // (showing the ⏳ AI wake-up immediately, then the card). See the wrapped handlers
+  // passed to registerKitchen below.
+  const resultsRef = useRef<HTMLDivElement>(null)
+  const [scrollTick, setScrollTick] = useState(0)
+  const requestScroll = () => setScrollTick((n) => n + 1)
+  useEffect(() => {
+    if (scrollTick) resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [scrollTick])
 
   // The week's three actions (shop the week / AI ideas / ideas from the book) now
   // live inside the ＋ Add sheet, not as a floating rail. The sheet is rendered by
@@ -431,10 +456,24 @@ export function Kitchen() {
     registerKitchen(
       kitchenActionsActive
         ? {
-            shop: beginShopWeek,
-            ai: suggest.suggestAi,
-            book: suggest.suggestFromRecipes,
-            useup: suggest.suggestUseUp,
+            // Wrap each flow so it ALSO scrolls its result into view — the sheet
+            // closes over the page, and the answer otherwise lands above the fold.
+            shop: () => {
+              beginShopWeek()
+              requestScroll()
+            },
+            ai: () => {
+              suggest.suggestAi()
+              requestScroll()
+            },
+            book: () => {
+              suggest.suggestFromRecipes()
+              requestScroll()
+            },
+            useup: () => {
+              suggest.suggestUseUp()
+              requestScroll()
+            },
           }
         : null,
       kitchenActionsActive
@@ -482,12 +521,12 @@ export function Kitchen() {
     qc.invalidateQueries({ queryKey: MEALS_KEY })
   }
 
-  // Keep a suggestion (AI text, or a real recipe link) into the ideas pool.
-  async function keepSuggestion() {
-    if (!suggest.current) return
+  // Keep a suggestion (AI text, or a real recipe link) into the ideas pool. Takes
+  // the specific card now that several can be on screen at once.
+  async function keepSuggestion(s: MealSuggestion) {
     await api('meal-ideas', {
       method: 'POST',
-      body: { title: suggest.current.title, recipeId: suggest.current.recipe?.id ?? null, suggestedBy: profileId },
+      body: { title: s.title, recipeId: s.recipe?.id ?? null, suggestedBy: profileId },
     }).catch(() => {})
     qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
   }
@@ -553,99 +592,128 @@ export function Kitchen() {
 
           {/* The week's three actions (shop the week / AI ideas / ideas from the
               book) moved INTO the ＋ Add sheet as icon tiles (see useKitchenActions
-              above) — no more floating rail. Their results still surface here. */}
-          {aiWaking && (
-            <p className="kitchen__ai-waking mono" role="status">
-              ⏳ {t.kitchen.aiWaking}
-            </p>
-          )}
-          {mealErr && (
-            <p className="error mono" role="alert">
-              {t.common.saveFailed}
-            </p>
-          )}
-          {suggest.current && (
-            <div className="kitchen__suggestion" role="status">
-              <span className="kitchen__suggestion-text">
-                🍽 {suggest.current.title}
-                {suggest.current.source === 'book' && (suggest.current.missing ?? 0) > 0 && (
-                  <span className="mono kitchen__suggestion-sub"> · {t.recipes.missingN(suggest.current.missing!)}</span>
-                )}
-                {suggest.current.source === 'useup' && (suggest.current.uses ?? 0) > 0 && (
-                  <span className="mono kitchen__suggestion-sub"> · {t.recipes.usesN(suggest.current.uses!)}</span>
-                )}
-              </span>
-              <span className="kitchen__suggestion-actions">
-                {/* Re-ask the SAME source right here — another idea without
-                    re-opening the ＋ Add sheet. AI re-asks step through its batch
-                    (1 call / 10), the recipe sources cycle their ranked list. */}
-                <button
-                  type="button"
-                  className="btn btn--ghost mono"
-                  onClick={suggest.again}
-                  disabled={suggest.current.source === 'ai' && (suggest.aiBusy || suggest.aiOff)}
+              above) — no more floating rail. Their results land in THIS band, which
+              every action scrolls into view (requestScroll) so a tap is never a
+              silent no-op when the page is scrolled down to the grid. Several cards
+              can stack — press AI then Book and you see both answers at once. */}
+          <div className="kitchen__results" ref={resultsRef}>
+            {aiWaking && (
+              <p className="kitchen__ai-waking mono" role="status">
+                ⏳ {t.kitchen.aiWaking}
+              </p>
+            )}
+            {mealErr && (
+              <p className="error mono" role="alert">
+                {t.common.saveFailed}
+              </p>
+            )}
+            {suggest.cards.map((s) => {
+              const dress = SUGGEST_DRESS[s.source]
+              return (
+                <div
+                  key={s.source}
+                  className="kitchen__suggestion"
+                  role="status"
+                  style={{ borderLeftColor: dress.color }}
                 >
-                  🔁 {t.kitchen.suggestMore}
-                </button>
-                {suggest.current.recipe && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost mono"
-                    onClick={() => nav(`/kitchen/recipe/${suggest.current!.recipe!.id}`)}
-                  >
-                    {t.kitchen.suggestOpen}
-                  </button>
-                )}
-                <button type="button" className="btn btn--ghost mono" onClick={keepSuggestion}>
-                  ＋ {t.kitchen.suggestKeep}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--ghost mono kitchen__suggestion-dismiss"
-                  onClick={suggest.clear}
-                  aria-label={t.common.close}
-                >
-                  <Icon name="x-bold" size={16} />
-                </button>
-              </span>
-            </div>
-          )}
-          {shopPrompt && (
-            <div className="kitchen__staples kitchen__shop">
-              {shopPrompt.length === 0 ? (
-                <p className="kitchen__staples-q mono">{t.kitchen.shopWeekEmpty}</p>
-              ) : (
-                <>
-                  <p className="kitchen__staples-q mono">{t.kitchen.shopWeekQ}</p>
-                  <p className="kitchen__staples-hint mono">{t.kitchen.shopWeekHint}</p>
-                  <div className="kitchen__staples-chips">
-                    {shopPrompt.map((o) => (
+                  <span className="kitchen__suggestion-text">
+                    {/* The source glyph in its own colour — the card echoes the tile
+                        that produced it, so the answer is self-labelling. */}
+                    <InlineIcon name={dress.icon} size={18} color={dress.color} /> {s.title}
+                    {s.source === 'book' && (s.missing ?? 0) > 0 && (
+                      <span className="mono kitchen__suggestion-sub"> · {t.recipes.missingN(s.missing!)}</span>
+                    )}
+                    {s.source === 'useup' && (s.uses ?? 0) > 0 && (
+                      <span className="mono kitchen__suggestion-sub"> · {t.recipes.usesN(s.uses!)}</span>
+                    )}
+                  </span>
+                  <span className="kitchen__suggestion-actions">
+                    {/* Re-ask the SAME source right here — another idea without
+                        re-opening the ＋ Add sheet. AI re-asks step through its batch
+                        (1 call / 10), the recipe sources cycle their ranked list. */}
+                    <button
+                      type="button"
+                      className="btn btn--ghost mono"
+                      onClick={() => suggest.again(s.source)}
+                      disabled={s.source === 'ai' && (suggest.aiBusy || suggest.aiOff)}
+                    >
+                      🔁 {t.kitchen.suggestMore}
+                    </button>
+                    {s.recipe && (
                       <button
-                        key={o.item}
                         type="button"
-                        className={`chip${o.on ? ' is-on' : ''}`}
-                        onClick={() => toggleShop(o.item)}
-                        aria-pressed={o.on}
-                        title={o.item}
+                        className="btn btn--ghost mono"
+                        onClick={() => nav(`/kitchen/recipe/${s.recipe!.id}`)}
                       >
-                        <InlineIcon name={o.on ? 'check-square-bold' : 'square-bold'} /> {o.item}
+                        {t.kitchen.suggestOpen}
                       </button>
-                    ))}
-                  </div>
-                </>
-              )}
-              <div className="kitchen__staples-actions">
-                {shopPrompt.length > 0 && (
-                  <button type="button" className="btn btn--primary mono" onClick={confirmShop} disabled={shopBusy}>
-                    {t.kitchen.shopWeekAdd}
-                  </button>
+                    )}
+                    <button type="button" className="btn btn--ghost mono" onClick={() => keepSuggestion(s)}>
+                      ＋ {t.kitchen.suggestKeep}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--ghost mono kitchen__suggestion-dismiss"
+                      onClick={() => suggest.clear(s.source)}
+                      aria-label={t.common.close}
+                    >
+                      <Icon name="x-bold" size={16} />
+                    </button>
+                  </span>
+                </div>
+              )
+            })}
+            {shopPrompt && (
+              <div className="kitchen__staples kitchen__shop">
+                {shopPrompt.length === 0 ? (
+                  <p className="kitchen__staples-q mono">{t.kitchen.shopWeekEmpty}</p>
+                ) : (
+                  <>
+                    <p className="kitchen__staples-q mono">
+                      <InlineIcon name="shopping-bag-bold" size={16} color="#6B8A52" /> {t.kitchen.shopWeekQ}
+                    </p>
+                    <p className="kitchen__staples-hint mono">{t.kitchen.shopWeekHint}</p>
+                    <div className="kitchen__staples-chips">
+                      {shopPrompt.map((o) => (
+                        <button
+                          key={o.item}
+                          type="button"
+                          className={`chip${o.on ? ' is-on' : ''}`}
+                          onClick={() => toggleShop(o.item)}
+                          aria-pressed={o.on}
+                          title={o.item}
+                        >
+                          <InlineIcon name={o.on ? 'check-square-bold' : 'square-bold'} /> {o.item}
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 )}
-                <button type="button" className="btn btn--ghost mono" onClick={() => setShopPrompt(null)}>
-                  {t.common.cancel}
-                </button>
+                <div className="kitchen__staples-actions">
+                  {shopPrompt.length > 0 && (
+                    <>
+                      {/* Flip the whole list when most of it is wanted (the panel
+                          starts all-unchecked now), or clear back to none. */}
+                      <button type="button" className="btn btn--ghost mono" onClick={toggleAllShop}>
+                        {shopPrompt.every((o) => o.on) ? t.kitchen.shopWeekNone : t.kitchen.shopWeekAll}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--primary mono"
+                        onClick={confirmShop}
+                        disabled={shopBusy || shopChecked === 0}
+                      >
+                        {shopChecked > 0 ? t.kitchen.shopWeekAddN(shopChecked) : t.kitchen.shopWeekAdd}
+                      </button>
+                    </>
+                  )}
+                  <button type="button" className="btn btn--ghost mono" onClick={() => setShopPrompt(null)}>
+                    {t.common.cancel}
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
           <ul className="kitchen__week">
             {week.map(({ date }) => {
               const dow = new Date(date * 1000).getDay()

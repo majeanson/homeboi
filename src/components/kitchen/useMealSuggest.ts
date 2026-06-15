@@ -16,9 +16,10 @@ import { type AiWake } from './useAiWake'
 //                           "à utiliser bientôt" items they'd finish (rankUseSoon,
 //                           most first). A "this uses up the spinach + the cream"
 //                           nudge; only recipes that use ≥1 soon item are offered.
-// Each click shows ONE suggestion; `current.source` says which button made it.
-// again() re-runs whichever source produced the current card, so the on-screen
-// result can ask for another idea without re-opening the ＋ Add sheet.
+// Each source keeps its OWN card now (`bySource`), so pressing AI then Book shows
+// BOTH answers stacked, instead of the second silently replacing the first — you
+// can compare ideas. again(source) re-runs just that source's card; clear(source)
+// dismisses just it. The AI batch/cursor + each book/use-up cursor stay internal.
 export type SuggestSource = 'ai' | 'book' | 'useup'
 export interface MealSuggestion {
   title: string
@@ -28,6 +29,9 @@ export interface MealSuggestion {
   uses?: number // 'useup' only: how many soon-to-use items it finishes
 }
 
+// Stable display order for the stacked cards, regardless of which was asked first.
+const ORDER: SuggestSource[] = ['ai', 'book', 'useup']
+
 export function useMealSuggest(
   recipes: Recipe[],
   ai: AiWake,
@@ -35,7 +39,14 @@ export function useMealSuggest(
   listItems: string[],
   soonItems: string[],
 ) {
-  const [current, setCurrent] = useState<MealSuggestion | null>(null)
+  // One card slot per source — null until that source is asked, so several can
+  // coexist on screen at once.
+  const [bySource, setBySource] = useState<Record<SuggestSource, MealSuggestion | null>>({
+    ai: null,
+    book: null,
+    useup: null,
+  })
+  const setOne = (s: SuggestSource, v: MealSuggestion | null) => setBySource((p) => ({ ...p, [s]: v }))
   // AI batch + a cursor into it.
   const [aiBatch, setAiBatch] = useState<string[]>([])
   const [aiIdx, setAiIdx] = useState(0)
@@ -51,7 +62,7 @@ export function useMealSuggest(
     if (aiBatch.length && aiIdx < aiBatch.length - 1) {
       const i = aiIdx + 1
       setAiIdx(i)
-      setCurrent({ title: aiBatch[i], source: 'ai' })
+      setOne('ai', { title: aiBatch[i], source: 'ai' })
       return
     }
     if (ai.aiUnavailable) return
@@ -62,7 +73,7 @@ export function useMealSuggest(
       if (res.suggestions.length) {
         setAiBatch(res.suggestions)
         setAiIdx(0)
-        setCurrent({ title: res.suggestions[0], source: 'ai' })
+        setOne('ai', { title: res.suggestions[0], source: 'ai' })
       }
     } catch (e) {
       if (isStatus(e, 503)) ai.markAiUnavailable()
@@ -76,10 +87,10 @@ export function useMealSuggest(
   const cookable = useMemo(() => rankCookable(recipes, lowItems, listItems), [recipes, lowItems, listItems])
   function suggestFromRecipes() {
     if (!cookable.length) return
-    const i = current?.source === 'book' ? (bookIdx + 1) % cookable.length : 0
+    const i = bySource.book ? (bookIdx + 1) % cookable.length : 0
     setBookIdx(i)
     const { recipe, missing } = cookable[i]
-    setCurrent({ title: recipe.title, source: 'book', recipe, missing: missing.length })
+    setOne('book', { title: recipe.title, source: 'book', recipe, missing: missing.length })
   }
 
   // Recipes that would finish what you flagged "à utiliser bientôt", most first.
@@ -91,26 +102,31 @@ export function useMealSuggest(
   )
   function suggestUseUp() {
     if (!useable.length) return
-    const i = current?.source === 'useup' ? (useUpIdx + 1) % useable.length : 0
+    const i = bySource.useup ? (useUpIdx + 1) % useable.length : 0
     setUseUpIdx(i)
     const { recipe, uses } = useable[i]
-    setCurrent({ title: recipe.title, source: 'useup', recipe, uses: uses.length })
+    setOne('useup', { title: recipe.title, source: 'useup', recipe, uses: uses.length })
   }
 
-  // Re-ask the SAME source that made the card on screen — the on-screen "Encore"
-  // affordance, so a next idea doesn't mean re-opening the ＋ Add sheet.
-  function again() {
-    if (current?.source === 'ai') suggestAi()
-    else if (current?.source === 'useup') suggestUseUp()
+  // Re-ask ONE source for another idea (the card's own "Encore" affordance, so a
+  // next idea doesn't mean re-opening the ＋ Add sheet).
+  function again(source: SuggestSource) {
+    if (source === 'ai') suggestAi()
+    else if (source === 'useup') suggestUseUp()
     else suggestFromRecipes()
   }
 
-  function clear() {
-    setCurrent(null)
+  // Dismiss one card; the others (and their cursors) stay put.
+  function clear(source: SuggestSource) {
+    setOne(source, null)
   }
 
+  // The visible cards, in a stable source order (not ask order) so the stack
+  // doesn't reshuffle as you press buttons.
+  const cards = ORDER.map((s) => bySource[s]).filter(Boolean) as MealSuggestion[]
+
   return {
-    current,
+    cards,
     aiBusy,
     aiOff: ai.aiUnavailable,
     hasRecipes: recipes.length > 0,

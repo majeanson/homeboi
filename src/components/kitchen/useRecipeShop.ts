@@ -22,7 +22,10 @@ export function useRecipeShop(
   const [shopPrompt, setShopPrompt] = useState<{ item: string; on: boolean }[] | null>(null)
   const [shopBusy, setShopBusy] = useState(false)
 
-  // Everything pre-checked — untick what you already have.
+  // Everything starts UNCHECKED — tick only what you actually need this trip.
+  // (The opposite of the old "all on, untick what you have": a calmer default that
+  // never dumps a recipe's whole ingredient list onto the grocery list by reflex.)
+  // Items already on the list are dropped entirely — they're not a choice to make.
   function beginShopWeek() {
     const onList = new Set(listItems.map(normKey).filter(Boolean))
     const picked = new Set<string>()
@@ -39,11 +42,21 @@ export function useRecipeShop(
         items.push(ingredientName(ing)) // buyable name, not the measured line
       }
     }
-    setShopPrompt(items.map((item) => ({ item, on: true })))
+    setShopPrompt(items.map((item) => ({ item, on: false })))
   }
 
   function toggleShop(item: string) {
     setShopPrompt((p) => p?.map((o) => (o.item === item ? { ...o, on: !o.on } : o)) ?? p)
+  }
+
+  // One tap to flip the whole list — check everything when most of it is wanted,
+  // or clear back to none. Mirrors the current majority state.
+  function toggleAllShop() {
+    setShopPrompt((p) => {
+      if (!p) return p
+      const allOn = p.every((o) => o.on)
+      return p.map((o) => ({ ...o, on: !allOn }))
+    })
   }
 
   async function confirmShop() {
@@ -69,5 +82,5 @@ export function useRecipeShop(
   // when there's something to gather (never a no-op).
   const shoppableCount = new Set(meals.map((m) => recipeFor(m)?.id).filter(Boolean)).size
 
-  return { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, confirmShop, shoppableCount }
+  return { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, toggleAllShop, confirmShop, shoppableCount }
 }

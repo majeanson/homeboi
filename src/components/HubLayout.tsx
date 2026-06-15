@@ -69,7 +69,8 @@ export function HubLayout() {
       prev.canShop === flags.canShop &&
       prev.canAiSuggest === flags.canAiSuggest &&
       prev.aiBusy === flags.aiBusy &&
-      prev.hasRecipes === flags.hasRecipes
+      prev.hasRecipes === flags.hasRecipes &&
+      prev.canUseUp === flags.canUseUp
         ? prev
         : flags,
     )
