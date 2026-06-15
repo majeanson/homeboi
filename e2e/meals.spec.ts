@@ -38,8 +38,9 @@ async function openManage(page: Page) {
 test('a slot holds several meals — both show, with an add-another', async ({ page }) => {
   await boot(page)
   const sheet = await openManage(page)
-  // The supper slot is the first meal list in the sheet; it holds two suppers.
-  const suppers = sheet.locator('.kitchen__meal-list').first().locator('.kitchen__meal-row')
+  // Slots read chronologically now (déjeuner → souper), so scope to the Souper
+  // section — it holds the two suppers.
+  const suppers = sheet.locator('.day-mng__sec', { hasText: 'Souper' }).locator('.kitchen__meal-row')
   await expect(suppers).toHaveCount(2)
   await expect(sheet).toContainText('Spaghetti maison')
   await expect(sheet).toContainText('Salade César')
@@ -58,7 +59,8 @@ test('reorder posts a move; clear-day posts a clear', async ({ page }) => {
   await boot(page)
   const sheet = await openManage(page)
   const move = waitMeals(page, 'POST', (b) => b.action === 'move' && b.dir === 'down')
-  await sheet.locator('.kitchen__meal-row').first().getByRole('button', { name: 'Descendre' }).click()
+  // Reorder needs a slot with ≥2 meals — the Souper section (Spaghetti + Salade).
+  await sheet.locator('.day-mng__sec', { hasText: 'Souper' }).locator('.kitchen__meal-row').first().getByRole('button', { name: 'Descendre' }).click()
   await move
 
   const clear = waitMeals(page, 'POST', (b) => b.action === 'clear' && b.slot === undefined)

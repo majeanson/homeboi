@@ -43,8 +43,9 @@ test('Gérer sheet lists slots chronologically, note last', async ({ page }) => 
   await boot(page)
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
-  // Open the first day's Gérer sheet straight from the grid.
-  await page.locator('.kitchen__day-open').first().click()
+  // Open the first day's Gérer sheet straight from the grid (the manage button is
+  // icon-only now, named "Gérer · <date>").
+  await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
   await expect(page.locator('.day-mng__sec').first()).toBeVisible({ timeout: 10_000 })
 
   const heads = await page.locator('.day-mng__sec-head').allInnerTexts()

@@ -108,7 +108,7 @@ for (const d of DEVICES) {
     { name: 'quickadd', path: '/liste', field: '.scene input', go: async (p) => { await p.locator('.add-fab').click(); await p.getByRole('button', { name: /Ajout rapide/ }).first().click() } },
     { name: 'deals-browser', path: '/liste', field: '.scene input', go: async (p) => { await p.locator('.add-fab').click(); await p.getByRole('button', { name: /Parcourir les circulaires/ }).click() } },
     { name: 'board-addsheet', path: '/board', field: '.sheet.show input', go: async (p) => void (await p.locator('.add-fab').click()) },
-    { name: 'kitchen-addsheet', path: '/kitchen', field: '.sheet.show input', go: async (p) => void (await p.locator('.add-fab').click()) },
+    { name: 'kitchen-addsheet', path: '/kitchen', field: '.sheet.show input', go: async (p) => { await p.locator('.add-fab').click(); await p.locator('.cat-pick').filter({ hasText: 'Restants' }).click() } },
   ]
   for (const s of SHEETS) {
     test(`kb ${d.name}: ${s.name}`, async ({ page }) => {
@@ -126,9 +126,8 @@ for (const d of DEVICES) {
 
   // --- Recipe modal: create form (title input summons the keyboard) ---
   test(`kb ${d.name}: recipe form`, async ({ page }) => {
-    await open(page, '/kitchen')
-    await page.locator('.add-fab').click()
-    await page.locator('.cat-pick').first().click()
+    // The recipe builder is a standalone route now (RecipeForm → .recipe-modal).
+    await open(page, '/kitchen/recipe/new')
     await page.locator('.recipe-modal').waitFor({ state: 'visible' })
     await page.locator('.recipe-title-input').click()
     await openKeyboard(page, d.kb)
@@ -153,15 +152,13 @@ for (const d of DEVICES) {
 // and keep its footer reachable. Catches plain max-height regressions.
 test('recipe form fits a short viewport', async ({ page }) => {
   const open = boot({ w: 390, h: 844 })
-  await open(page, '/kitchen')
+  await open(page, '/kitchen/recipe/new')
   await page.setViewportSize({ width: 390, height: 480 })
   await page.evaluate(() => {
     const stub = (window as unknown as { __vvStub: { height: number; dispatchEvent: (e: Event) => boolean } }).__vvStub
     stub.height = window.innerHeight
     stub.dispatchEvent(new Event('resize'))
   })
-  await page.locator('.add-fab').click()
-  await page.locator('.cat-pick').first().click()
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
   await expectAbove(page.locator('.recipe-modal__foot .btn--primary'), 480, 'short-vp Enregistrer')
   await expectAbove(page.locator('.recipe-modal__bar button').last(), 480, 'short-vp ✕')

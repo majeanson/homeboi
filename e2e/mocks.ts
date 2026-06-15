@@ -10,6 +10,11 @@ const DAY = 86400
 // A fixed Monday-ish anchor (2026-06-08 08:00 local-ish). Only relative slotting
 // and clock formatting use these; exact values don't matter for visual review.
 const BASE = 1_749_369_600 // 2026-06-08T08:00:00Z
+// Local midnight (America/Toronto, the household TZ) of BASE's day. The meal week
+// + month grids bucket meals at LOCAL midnight (src/lib/localDay addLocalDays), so
+// the fixture's meal `date`s must be local-midnight-aligned or they fall off the
+// grid entirely (every kitchen day would render empty).
+const MMID = 1_749_355_200 // 2026-06-08T00:00:00-04:00
 // An ISO date N days from the real clock — for flyer run dates, since the store
 // browser's current/upcoming split keys on the live Date.now() (not BASE).
 const flyerIso = (days: number): string => new Date(Date.now() + days * DAY * 1000).toISOString()
@@ -92,27 +97,27 @@ const BOARD = {
 }
 
 const MEALS = {
-  weekStart: BASE - 0 * DAY,
+  weekStart: MMID,
   windowDays: 10, // full 10-day countdown block (see functions/api/meals.ts)
   days: [
     // Linked to the saved recipe rc1 (recipe_id) — the grid's 📖 opens it exactly.
-    { id: 'meal1', date: BASE, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 },
+    { id: 'meal1', date: MMID, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 },
     // A SECOND supper in the same slot (N per slot) — the grid lists both, each
     // with its own ✕ / ↑↓.
-    { id: 'meal5', date: BASE, slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
-    { id: 'meal2', date: BASE + DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1', position: 0 },
+    { id: 'meal5', date: MMID, slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
+    { id: 'meal2', date: MMID + DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1', position: 0 },
     // A kid-suggested supper (Léa, m3) sitting in a slot that was empty — shows the
     // "💡 Léa" note in the parent week. cook is null until a parent decides.
-    { id: 'meal3', date: BASE + 3 * DAY, slot: 'supper', title: 'Saumon & riz', cook_member_id: null, suggested_by: 'm3', position: 0 },
+    { id: 'meal3', date: MMID + 3 * DAY, slot: 'supper', title: 'Saumon & riz', cook_member_id: null, suggested_by: 'm3', position: 0 },
     // A déjeuner (breakfast) side slot on day one.
-    { id: 'meal4', date: BASE, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
+    { id: 'meal4', date: MMID, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
   ],
   // The last few days of non-leftover meals (deduped by title) — the Restants
   // "Suggestions" quick-pick source (see functions/api/meals.ts `recent`).
   recent: [
-    { id: 'meal1', date: BASE, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 },
-    { id: 'meal5', date: BASE, slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
-    { id: 'meal4', date: BASE, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
+    { id: 'meal1', date: MMID, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 },
+    { id: 'meal5', date: MMID, slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
+    { id: 'meal4', date: MMID, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
   ],
 }
 

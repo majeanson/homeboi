@@ -101,9 +101,8 @@ test('sheet-add-event', async ({ page }) => {
 
 test('sheet-recipe-form', async ({ page }) => {
   await boot(page, '/kitchen')
-  // Recipe creation lives on the contextual ＋: FAB → recipe tile → /kitchen/recipe/new.
-  await page.locator('.add-fab').click()
-  await page.locator('.cat-pick').first().click()
+  // The recipe builder is a standalone route (the ＋ recipe tile just navigates here).
+  await page.goto('/kitchen/recipe/new')
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'sheet-recipe-form-phone')
