@@ -361,6 +361,16 @@
 .sheet.show {
   transform: translateY(0);
 }
+/* While typing, the sheet's LAST fields (the souper "Ajouter un autre" input,
+   the day note) sit at the bottom of the sheet's own scroller with nothing
+   below them. The sheet itself is lifted clear of the keyboard (bottom:--kb),
+   but block:'start' (viewportVars) still can't raise those fields to a
+   comfortable reading line — they cling to the bottom edge, right on the
+   keyboard. Reserve trailing scroll slack so any focused field can scroll up.
+   Only while .kb-open, so a keyboard-less sheet keeps its tight bottom. */
+.kb-open .sheet {
+  padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px) + var(--vvh, 100dvh) * 0.5);
+}
 .grab {
   width: 44px;
   height: 5px;

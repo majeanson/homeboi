@@ -717,7 +717,7 @@ export function Board() {
         </>
       )}
 
-      <p className="board__synced mono">{stale ? t.board.offline : t.board.synced}</p>
+      {stale && <p className="board__synced mono">{t.board.offline}</p>}
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}
     </main>
   )

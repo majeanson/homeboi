@@ -53,6 +53,16 @@
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
+  /* Clip stray horizontal overflow so no tab can slide left/right. A scroller
+     with overflow-y:auto computes overflow-x to `auto` (not `visible`), so any
+     element wider than the body would otherwise let the whole page drift
+     sideways (the iPad rotate-rescale trigger). Safe because every wide layout
+     in the hub either fits (responsive grids: auto-fill/auto-fit and the
+     minmax(min(100%,Npx),1fr) trick; the kitchen week is a single min-width:0
+     column) or owns its own overflow-x:auto and scrolls inside its box (the
+     Réglages and recipe tab strips). Nothing relies on the BODY to scroll
+     sideways, so nothing is clipped. */
+  overflow-x: hidden;
   /* Always reserve the scrollbar gutter so the modal scroll lock (overflow
      :hidden, core.css) can't nudge the page sideways when a sheet opens over it
      on a desktop classic-scrollbar browser. No-op on overlay-scrollbar (touch). */
@@ -189,6 +199,21 @@
 .kb-open .hub[data-surface='mobile'] .hubnav,
 .kb-open .hub[data-surface='mobile'] .add-fab {
   display: none;
+}
+/* The OSK overlays the bottom of the viewport WITHOUT shrinking the layout
+   viewport, so the page scroller's max scrollTop is unchanged — a field in the
+   lower band (the Recettes search, a Réglages field near the end, the list add
+   bar) has no content below it to pull up, so viewportVars' block:'start' pin
+   can't lift it clear of the keyboard and it stays buried. Reserve the
+   keyboard's height as trailing scroll slack so ANY focused field can scroll
+   above it. Mirrors the .auth login form (pages.css). --kb is 0 with no
+   keyboard, so this only bites while typing; the FAB/nav are hidden meanwhile
+   (above), so replacing their padding-bottom costs nothing. Both surfaces: a
+   wall tablet has an OSK too. Specificity ties the per-surface rules above and
+   wins on source order. */
+.kb-open .hub[data-surface='mobile'] .hub__body,
+.kb-open .hub[data-surface='kiosk'] .hub__body {
+  padding-bottom: var(--kb, 0px);
 }
 
 /* ---- Settings: section nav + anchors + display controls ------------------ */
