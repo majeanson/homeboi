@@ -228,32 +228,6 @@
 .kitchen__day.is-weekend .kitchen__day-dow {
   color: var(--sky-deep);
 }
-.kitchen__day-tile {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--terracotta-wash);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-}
-.kitchen__day.is-today .kitchen__day-tile {
-  background: var(--card);
-}
-.kitchen__day-picto {
-  font-size: 20px;
-  line-height: 1;
-}
-/* Open slot: a muted "+" on a paler tile — reads as "tap to plan", not a meal. */
-.kitchen__day-add {
-  font-size: 20px;
-  line-height: 1;
-  color: var(--ink-faint);
-}
-.kitchen__day:has(.kitchen__day-add) .kitchen__day-tile {
-  background: var(--paper-deep);
-}
 .kitchen__day-meal {
   /* min-width is a real floor, not 0: the title is the headline and must never
      collapse to a sliver. Without it, the unstyled 📖 link + "💡 suggéré par"
@@ -711,12 +685,14 @@
 }
 .kitchen__low-add,
 .kitchen__soon-add,
+.kitchen__reserve-add,
 .kitchen__low,
 .kitchen__soon {
   margin-top: 0.75rem;
 }
 .kitchen__low-add,
-.kitchen__soon-add {
+.kitchen__soon-add,
+.kitchen__reserve-add {
   display: flex;
   gap: 0.5rem;
   align-items: center;
@@ -725,7 +701,8 @@
   flex-wrap: wrap;
 }
 .kitchen__low-add .input,
-.kitchen__soon-add .input {
+.kitchen__soon-add .input,
+.kitchen__reserve-add .input {
   flex: 1 1 10rem;
   min-width: 0;
 }

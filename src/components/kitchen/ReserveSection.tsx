@@ -87,7 +87,7 @@ export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
     <section>
       <h2>{t.kitchen.reserve}</h2>
       <p className="lead">{t.kitchen.reserveHint}</p>
-      <form className="kitchen__low-add" onSubmit={addItem}>
+      <form className="kitchen__reserve-add" onSubmit={addItem}>
         <input
           className="input"
           value={newItem}
