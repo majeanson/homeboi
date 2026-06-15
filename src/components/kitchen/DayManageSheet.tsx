@@ -3,6 +3,7 @@ import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
 import { useModal } from '../../lib/useModal'
 import { useSwipeToDismiss } from '../../lib/useSwipeToDismiss'
+import { usePointerDnd, DragGhost } from '../../lib/dnd'
 import { SIDE_SLOTS, SLOT_ICON_NAME } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { Icon, InlineIcon } from '../Icon'
@@ -102,6 +103,8 @@ export function DayManageSheet({
     clearSlotMeals: (date: number, slot: string) => void
     clearDay: (date: number) => void
     announceLeftover: (meal: MealRow) => void
+    // Drag a meal to another slot (same day) — slot passed, date kept.
+    rescheduleMeal: (id: string, toDate: number, slot?: string) => void
   }
 }) {
   const t = useT()
@@ -114,7 +117,24 @@ export function DayManageSheet({
   const { recipePickFor, setRecipePickFor, pickWithStaples, setPickWithStaples, planRecipe } = picker
   const { editSlot, setEditSlot, slotText, setSlotText, saveSlot } = slotEdit
   const { editNote, setEditNote, noteText, setNoteText, saveNote, clearNote } = noteEdit
-  const { clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover } = actions
+  const { clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal } = actions
+
+  // Cross-slot drag: drag a meal's grip onto another slot's section to move it
+  // there (same day). Zones are keyed by slot name (the day is fixed — this sheet
+  // is one day). A drop on a meal's own slot is rejected so it never shows a cue it
+  // won't honour. Touch-friendly, so it works on the wall tablet.
+  const slotOfMeal = (id: string): string | null => {
+    if (date == null) return null
+    if (suppers.some((m) => m.id === id)) return 'supper'
+    for (const s of SIDE_SLOTS) if (mealsFor(date, s).some((m) => m.id === id)) return s
+    return null
+  }
+  const mealDnd = usePointerDnd({
+    onDrop: (id, slot) => {
+      if (date != null) rescheduleMeal(id, date, slot)
+    },
+    canDrop: (id, slot) => slotOfMeal(id) !== slot,
+  })
   const pickOpenFor = (d: number, slot: string) => recipePickFor?.date === d && recipePickFor.slot === slot
   const leftoverOpenFor = (d: number, slot: string) => leftovers.pickFor?.date === d && leftovers.pickFor.slot === slot
   // The recipe + leftover pickers share a slot's add-row but only one shows at a
@@ -156,7 +176,11 @@ export function DayManageSheet({
               const slotMeals = mealsFor(date, slot)
               const editing = editSlot?.date === date && editSlot.slot === slot
               return (
-                <section key={slot} className="day-mng__sec">
+                <section
+                  key={slot}
+                  data-dnd-zone={slot}
+                  className={'day-mng__sec' + (mealDnd.over === slot ? ' dnd-over' : '')}
+                >
                   <div className="day-mng__sec-head-row">
                     <p className="day-mng__sec-head mono">
                       <Icon name={SLOT_ICON_NAME[slot]} size={16} color={mealPrefs.color(slot)} /> {t.kitchen.slots[slot]}
@@ -184,6 +208,9 @@ export function DayManageSheet({
                     onRename={renameMeal}
                     onClearAll={() => clearSlotMeals(date, slot)}
                     onLeftover={announceLeftover}
+                    onDragStart={mealDnd.start}
+                    draggingId={mealDnd.activeId}
+                    dragLabel={t.kitchen.dragMeal}
                   />
                   {editing && (
                     <div className="kitchen__slot-edit-wrap">
@@ -272,7 +299,10 @@ export function DayManageSheet({
 
             {/* ── Souper: the day's hero meal (its own grocery-staples step), shown
                 last in the chronological run. ── */}
-            <section className="day-mng__sec">
+            <section
+              data-dnd-zone="supper"
+              className={'day-mng__sec' + (mealDnd.over === 'supper' ? ' dnd-over' : '')}
+            >
               <div className="day-mng__sec-head-row">
                 <p className="day-mng__sec-head mono">
                   <Icon name={SLOT_ICON_NAME.supper} size={16} color={mealPrefs.color('supper')} /> {t.kitchen.slots.supper}
@@ -347,6 +377,9 @@ export function DayManageSheet({
                     onRename={renameMeal}
                     onClearAll={() => clearSlotMeals(date, 'supper')}
                     onLeftover={announceLeftover}
+                    onDragStart={mealDnd.start}
+                    draggingId={mealDnd.activeId}
+                    dragLabel={t.kitchen.dragMeal}
                   />
                   {supperEditing && (
                     <div className="kitchen__day-edit-wrap">
@@ -520,6 +553,7 @@ export function DayManageSheet({
             )}
           </>
         )}
+        <DragGhost ghost={mealDnd.ghost} />
       </div>
     </>
   )

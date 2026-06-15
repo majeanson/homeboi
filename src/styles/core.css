@@ -629,12 +629,44 @@ textarea.input {
   color: var(--warn);
   margin-right: 0.3rem;
 }
+.capture__ack {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.6rem;
+}
 .capture__routed {
   margin-top: 0.6rem;
   color: var(--accent);
 }
 .capture__routed-kind {
   color: var(--ink-soft);
+}
+/* "Non, plutôt…" — a quiet inline correction affordance next to the ack. Calm by
+   default (faint underline), the accent only on hover/focus so it never competes
+   with the confirmation it sits beside. */
+.capture__reroute {
+  margin-top: 0.6rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  font: inherit;
+}
+.capture__reroute:hover,
+.capture__reroute:focus-visible {
+  color: var(--accent);
+}
+.capture__reroute[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+/* When the corrector is open the picker grid wants the full row under the ack. */
+.capture__ack .capture__picker {
+  flex-basis: 100%;
 }
 
 /* --- Board ---------------------------------------------------------------- */

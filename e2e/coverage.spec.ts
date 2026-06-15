@@ -206,18 +206,24 @@ test('settings-tag-rename', async ({ page }) => {
 // The two banner/prompt states the meals tab grows after a tap — neither needs
 // AI or the network (both are pure client computations over the seeded data).
 
-// "🥕 Avec mes recettes" → a single book suggestion banner.
+// "Avec mes recettes" → a single book suggestion banner. The kitchen week's
+// actions moved into the ＋ Add sheet (lib/kitchenActions → AddSheet tiles), so
+// open the sheet first; tapping the tile closes it and the suggestion card
+// lands on the meals grid behind it.
 test('kitchen-suggestion', async ({ page }) => {
   await boot(page, '/kitchen')
+  await page.locator('.add-fab').click()
   await page.getByRole('button', { name: /Avec mes recettes/ }).click()
   await page.locator('.kitchen__suggestion').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'kitchen-suggestion-phone', false)
 })
 
-// "🛒 Magasiner la semaine" → the pre-checked staples-to-buy prompt.
+// "Magasiner la semaine" → the pre-checked staples-to-buy prompt. Same move into
+// the ＋ Add sheet; the .kitchen__shop confirm panel renders on the grid behind.
 test('kitchen-shop-week', async ({ page }) => {
   await boot(page, '/kitchen')
+  await page.locator('.add-fab').click()
   await page.getByRole('button', { name: /Magasiner la semaine/ }).click()
   await page.locator('.kitchen__shop').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
@@ -233,14 +239,15 @@ async function openRecipe(page: Page) {
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
 }
 
-// The 'step' stepper now follows the toddler PROFILE (no in-cook toggle), so it's
-// reached through the kid kitchen: a toddler taps a planned meal that maps to a
-// recipe. It's hear-first, so two taps on the first planned tile (Spaghetti →
-// rc1) commit and open Cook mode. Boot with { audience: 'toddler' } first.
+// Cook mode is a standalone route now (/kitchen/recipe/:id/cook); the 'step'
+// stepper vs 'full' page follows the active PROFILE (no in-cook toggle). A
+// toddler reaches it by tapping a planned meal in the kid kitchen, which calls
+// nav(`/kitchen/recipe/${r.id}/cook`) — so booting that route in the toddler
+// audience lands on the exact same stepper, without depending on the seeded
+// meal week happening to surface a cookable planned tile. rc1 (Spaghetti) has
+// steps + a "10 minutes" duration in step 1, which the timer test needs.
 async function openKidCook(page: Page) {
-  const tile = page.locator('.bigtiles .bigtile').first()
-  await tile.click() // tap 1: arm (speaks the proposition)
-  await tile.click() // tap 2: commit → Cook mode
+  await page.goto('/kitchen/recipe/rc1/cook')
   await page.locator('.cook').waitFor({ state: 'visible' })
 }
 
@@ -249,7 +256,9 @@ test('recipe-plan', async ({ page }) => {
   await boot(page, '/kitchen')
   await openRecipe(page)
   await page.getByRole('button', { name: /^Planifier$/ }).click()
-  await page.locator('.recipe-plan-days').waitFor({ state: 'visible' })
+  // The recipe sheet's "Planifier" now opens the shared MealPlanPicker
+  // (slot picker + week chips), which renders .meal-plan-pick / __days.
+  await page.locator('.meal-plan-pick__days').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'recipe-plan-phone', false)
 })

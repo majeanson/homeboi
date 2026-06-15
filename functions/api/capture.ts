@@ -14,11 +14,25 @@ import { profileMemberId } from '../_lib/profile'
 //
 // If `forceType` is sent (the manual type-picker shown when AI is degraded, or
 // a correction of a misroute), we skip classification and use it directly.
+//
+// A correction also passes `undo` — the exact rows the FIRST routing inserted
+// (returned to the client as `routed.cleanup`). We delete those before re-routing,
+// so "non, plutôt…" moves the capture to the right place instead of duplicating it.
+// This also covers the degraded path, where the fallback note is auto-created and
+// must be removed when the human then picks the real type.
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ text?: string; source?: string; forceType?: Intent['type'] }>(ctx.request)
+  const body = await readJson<{
+    text?: string
+    source?: string
+    forceType?: Intent['type']
+    undo?: Cleanup[]
+  }>(ctx.request)
   const text = body?.text?.trim()
   if (!text) return badRequest('Texte vide.')
   const source = body?.source === 'voice' ? 'voice' : 'text'
+
+  // Undo the previous (mis)routing before we lay down the corrected row.
+  if (body?.undo) await applyCleanup(ctx.env, actor.householdId, body.undo)
 
   // A fresh sink per request: if the router's AI call fails (it still degrades to
   // a note), report.error gets the message and we tag the response so the client
@@ -40,6 +54,21 @@ export const onRequestPost = authed(async (ctx, actor) => {
   return withAiError(ok({ type: intent.type, degraded: intent.degraded ?? false, routed }), report)
 })
 
+// One row a routing inserted, named so the client can ask us to undo it on a
+// correction. `table` is checked against an allowlist before it touches SQL.
+type Cleanup = { table: string; id: string }
+
+// Only these tables can be cleaned up, and only within the actor's household — so
+// a round-tripped ref grants no reach the actor doesn't already have.
+const CLEANUP_TABLES = new Set(['events', 'tasks', 'list_items', 'pantry_low', 'meals', 'meal_leftovers', 'notes'])
+
+async function applyCleanup(env: Env, hh: string, undo: Cleanup[]): Promise<void> {
+  const dels = (Array.isArray(undo) ? undo : [])
+    .filter((r) => r && typeof r.id === 'string' && typeof r.table === 'string' && CLEANUP_TABLES.has(r.table))
+    .map((r) => env.DB.prepare(`DELETE FROM ${r.table} WHERE id = ? AND household_id = ?`).bind(r.id, hh))
+  if (dels.length) await env.DB.batch(dels)
+}
+
 // The valid meal slots — the router's proposed slot is checked against these
 // before it reaches the row (mirrors functions/api/meals.ts).
 const MEAL_SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack'])
@@ -51,7 +80,7 @@ async function routeIntent(
   raw: string,
   ts: number,
   addedBy: string | null,
-): Promise<{ kind: string; label: string }> {
+): Promise<{ kind: string; label: string; cleanup: Cleanup[] }> {
   const hh = actor.householdId
   const p = intent.payload
 
@@ -59,59 +88,72 @@ async function routeIntent(
     case 'event': {
       const { startAt, allDay } = parseWhen(p.when, Date.now())
       const title = p.title || raw
+      const id = newId()
       await env.DB.prepare(
         'INSERT INTO events (id, household_id, title, start_at, all_day, created_at) VALUES (?, ?, ?, ?, ?, ?)',
       )
-        .bind(newId(), hh, title, startAt, allDay ? 1 : 0, ts)
+        .bind(id, hh, title, startAt, allDay ? 1 : 0, ts)
         .run()
-      return { kind: 'event', label: title }
+      return { kind: 'event', label: title, cleanup: [{ table: 'events', id }] }
     }
     case 'task': {
       const title = p.title || raw
+      const id = newId()
       await env.DB.prepare(
         'INSERT INTO tasks (id, household_id, title, created_at) VALUES (?, ?, ?, ?)',
       )
-        .bind(newId(), hh, title, ts)
+        .bind(id, hh, title, ts)
         .run()
-      return { kind: 'task', label: title }
+      return { kind: 'task', label: title, cleanup: [{ table: 'tasks', id }] }
     }
     case 'list-item': {
       const itemText = p.item || p.text || raw
+      const id = newId()
       await env.DB.prepare(
         'INSERT INTO list_items (id, household_id, text, source, added_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
       )
-        .bind(newId(), hh, itemText, 'capture', addedBy, ts)
+        .bind(id, hh, itemText, 'capture', addedBy, ts)
         .run()
-      return { kind: 'list-item', label: itemText }
+      return { kind: 'list-item', label: itemText, cleanup: [{ table: 'list_items', id }] }
     }
     case 'pantry-low': {
       // Two writes: record the "low" flag AND drop it on the shared list, so a
       // running-low item shows up where someone will actually buy it.
       const item = p.item || raw
+      const lowId = newId()
+      const listId = newId()
       await env.DB.batch([
         env.DB.prepare('INSERT INTO pantry_low (id, household_id, item, marked_at) VALUES (?, ?, ?, ?)').bind(
-          newId(),
+          lowId,
           hh,
           item,
           ts,
         ),
         env.DB.prepare(
           'INSERT INTO list_items (id, household_id, text, source, added_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-        ).bind(newId(), hh, item, 'pantry-low', addedBy, ts),
+        ).bind(listId, hh, item, 'pantry-low', addedBy, ts),
       ])
-      return { kind: 'pantry-low', label: item }
+      return {
+        kind: 'pantry-low',
+        label: item,
+        cleanup: [
+          { table: 'pantry_low', id: lowId },
+          { table: 'list_items', id: listId },
+        ],
+      }
     }
     case 'meal': {
       const { startAt } = parseWhen(p.when, Date.now())
       const title = p.title || raw
       // Validate the slot the router proposed — never trust it blindly into the row.
       const slot = p.slot && MEAL_SLOTS.has(p.slot) ? p.slot : 'supper'
+      const id = newId()
       await env.DB.prepare(
         'INSERT INTO meals (id, household_id, date, slot, title, created_at) VALUES (?, ?, ?, ?, ?, ?)',
       )
-        .bind(newId(), hh, startAt, slot, title, ts)
+        .bind(id, hh, startAt, slot, title, ts)
         .run()
-      return { kind: 'meal', label: title }
+      return { kind: 'meal', label: title, cleanup: [{ table: 'meals', id }] }
     }
     case 'leftover': {
       // A cooked dish with extra. With a STATED day ("...pour demain") it's a real
@@ -124,19 +166,21 @@ async function routeIntent(
         const { startAt } = parseWhen(p.when, Date.now())
         const date = localDayStart(new Date(startAt * 1000))
         const slot = p.slot && MEAL_SLOTS.has(p.slot) ? p.slot : 'supper'
+        const id = newId()
         await env.DB.prepare(
           'INSERT INTO meals (id, household_id, date, slot, title, created_at, is_leftover) VALUES (?, ?, ?, ?, ?, ?, 1)',
         )
-          .bind(newId(), hh, date, slot, title, ts)
+          .bind(id, hh, date, slot, title, ts)
           .run()
-        return { kind: 'leftover', label: title }
+        return { kind: 'leftover', label: title, cleanup: [{ table: 'meals', id }] }
       }
+      const id = newId()
       await env.DB.prepare(
         'INSERT INTO meal_leftovers (id, household_id, title, created_at) VALUES (?, ?, ?, ?)',
       )
-        .bind(newId(), hh, title, ts)
+        .bind(id, hh, title, ts)
         .run()
-      return { kind: 'leftover', label: title }
+      return { kind: 'leftover', label: title, cleanup: [{ table: 'meal_leftovers', id }] }
     }
     case 'note':
     default: {
@@ -145,12 +189,13 @@ async function routeIntent(
       // Clamp to the same 280 the notes endpoint enforces — one capture can't bloat
       // the board payload.
       const noteText = (p.text || raw).slice(0, 280)
+      const id = newId()
       await env.DB.prepare(
         'INSERT INTO notes (id, household_id, text, member_id, created_at) VALUES (?, ?, ?, ?, ?)',
       )
-        .bind(newId(), hh, noteText, addedBy, ts)
+        .bind(id, hh, noteText, addedBy, ts)
         .run()
-      return { kind: 'note', label: noteText }
+      return { kind: 'note', label: noteText, cleanup: [{ table: 'notes', id }] }
     }
   }
 }

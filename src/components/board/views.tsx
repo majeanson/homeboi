@@ -280,7 +280,7 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
               {mine ? ' ★' : ''}
             </div>
             {empty ? (
-              <p className="feed-empty">—</p>
+              <p className="feed-empty feed-empty--calm">{t.board.laneClear}</p>
             ) : (
               <>
                 {events.map((e) => (

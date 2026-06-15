@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseRecur, normalizeRecur, occurrenceOn, expandRange } from './recur'
+import { parseRecur, normalizeRecur, occurrenceOn, expandRange, rotationOffset } from './recur'
 import { dayStart } from './ids'
 
 // A fixed UTC anchor: Wed 2026-01-07 14:30 UTC. (2026-01-07 is a Wednesday.)
@@ -90,6 +90,32 @@ describe('occurrenceOn (biweekly, two weekdays — same fortnight stays together
   it('hits again two weeks on', () => {
     expect(occurrenceOn(d(2026, 0, 19), MON, r)).not.toBeNull()
     expect(occurrenceOn(d(2026, 0, 22), MON, r)).not.toBeNull()
+  })
+})
+
+describe('rotationOffset (project a shared chore forward)', () => {
+  // Weekly every Wednesday, anchored 2026-01-07. refDay = the anchor Wednesday.
+  const r = { freq: 'weekly' as const, weekdays: [3] }
+  const ref = d(2026, 0, 7) // pending occurrence falls on/after here
+  it('is 0 for the pending occurrence itself', () => {
+    expect(rotationOffset(WED, r, ref, WED)).toBe(0)
+  })
+  it('advances one turn per future occurrence', () => {
+    expect(rotationOffset(WED, r, ref, d(2026, 0, 14))).toBe(1) // next Wed
+    expect(rotationOffset(WED, r, ref, d(2026, 0, 21))).toBe(2)
+    expect(rotationOffset(WED, r, ref, d(2026, 0, 28))).toBe(3)
+  })
+  it('counts only real occurrences between refDay and target', () => {
+    // Jan 15 is a Thursday; the two Wednesdays before it (Jan 7, Jan 14) count.
+    expect(rotationOffset(WED, r, ref, d(2026, 0, 15))).toBe(2)
+  })
+  it('walks backwards for past cells', () => {
+    // refDay one week after the anchor → the anchor Wed is one turn behind.
+    expect(rotationOffset(WED, r, d(2026, 0, 14), WED)).toBe(-1)
+  })
+  it('daily rotation increments every day', () => {
+    const daily = { freq: 'daily' as const }
+    expect(rotationOffset(WED, daily, ref, d(2026, 0, 10))).toBe(3)
   })
 })
 

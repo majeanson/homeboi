@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
 import { Icon, InlineIcon } from '../Icon'
@@ -18,6 +18,9 @@ export function MealRows({
   onRename,
   onClearAll,
   onLeftover,
+  onDragStart,
+  draggingId,
+  dragLabel,
 }: {
   meals: MealRow[]
   recipeFor: (m: MealRow) => Recipe | undefined
@@ -31,6 +34,13 @@ export function MealRows({
   // the Restants pool). Omitted for slots/contexts that shouldn't offer it; never
   // shown on a row that is ALREADY a leftover.
   onLeftover?: (meal: MealRow) => void
+  // Drag-to-move (touch-friendly). When provided, each row gets a grip handle that
+  // starts a drag of that meal; the parent decides the drop (move it to another
+  // slot). `draggingId` greys out the row currently being dragged. `dragLabel`
+  // accessibly names the gesture.
+  onDragStart?: (id: string, label: string, e: ReactPointerEvent) => void
+  draggingId?: string | null
+  dragLabel?: string
 }) {
   const t = useT()
   // Inline rename: which row is being edited, and its draft title.
@@ -46,7 +56,10 @@ export function MealRows({
       {meals.map((m, i) => {
         const r = recipeFor(m)
         return (
-          <li key={m.id} className="kitchen__meal-row">
+          <li
+            key={m.id}
+            className={'kitchen__meal-row' + (draggingId === m.id ? ' is-dragging' : '')}
+          >
             {editId === m.id ? (
               <form
                 className="kitchen__meal-edit"
@@ -83,6 +96,18 @@ export function MealRows({
               </form>
             ) : (
               <>
+                {onDragStart && (
+                  <span
+                    className="dnd-grip mono"
+                    data-dnd-grip=""
+                    onPointerDown={(e) => onDragStart(m.id, m.title, e)}
+                    role="button"
+                    aria-label={dragLabel}
+                    title={dragLabel}
+                  >
+                    ⠿
+                  </span>
+                )}
                 <span className="kitchen__meal-main">
                   {/* Planned leftovers read as "Restants" so the plan shows it's a
                       finish-the-fridge meal, not a fresh cook. */}

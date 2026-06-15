@@ -429,6 +429,35 @@
   font-size: 14px;
   padding: 2px 2px 8px;
 }
+/* A deliberate "nothing planned, and that's the point" line — calm, not a stray
+   dash. A touch more breathing room and softer ink than a bare placeholder, so an
+   empty day reads as intentional on the wall. NFR-CALM-4 (finite lists that empty). */
+.feed-empty--calm {
+  color: var(--ink-soft);
+  font-size: 15px;
+  padding: 0.4rem 0.25rem 0.7rem;
+  text-wrap: balance;
+}
+
+/* Toddler board, nothing planned: one big, centred, tap-to-hear calm line where
+   the sections would be — picture-light, positive, no dead-end. */
+.today-kid__clear {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  margin: 1.5rem 0;
+  padding: 1.5rem 1rem;
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-align: center;
+  text-wrap: balance;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
 
 /* Entrance: transform-only gentle rise, staggered. (Transform — not opacity —
    so a kiosk screenshot/print never captures a blank frame.) */

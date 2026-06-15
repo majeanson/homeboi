@@ -42,6 +42,14 @@ import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from 
 import { BOARD_KEY } from '../lib/queryKeys'
 import { useUndoToast } from '../lib/toast'
 
+// Keep the greeting on one line beside the help dot + section icon: a long
+// display name collapses to its initials (split on spaces/hyphens, e.g.
+// "Marie-Christine" → "MC"), so "Bonne soirée, …" never wraps or overflows.
+const greetName = (name: string) =>
+  name.length > 10
+    ? name.split(/[\s-]+/).filter(Boolean).map((p) => p[0]!.toUpperCase()).join('') || name
+    : name
+
 export function Board() {
   const t = useT()
   const qc = useQueryClient()
@@ -225,7 +233,24 @@ export function Board() {
         </section>
       ) : null
 
-    const greet = me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]
+    const greet = me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]
+    // Nothing planned anywhere today/tomorrow → the kid sections all collapse and
+    // the board reads as a blank gap. Show one calm, tap-to-hear "all clear" line
+    // instead, so an empty day still feels intentional to a pre-reader.
+    const kidAllClear =
+      !!data &&
+      !(mealPrefs.isVisible('supper') && (data.tonight || data.tomorrowMeal)) &&
+      !weather &&
+      (data.notes?.length ?? 0) === 0 &&
+      !data.dayNote &&
+      otherMeals.length === 0 &&
+      leftovers.length === 0 &&
+      todayEvents.length === 0 &&
+      todayChores.length === 0 &&
+      todayTodos.length === 0 &&
+      !data.tomorrowNote &&
+      tomorrowEvents.length === 0 &&
+      (data.tomorrowMeals?.length ?? 0) === 0
     return (
       <main className="kid__main today-kid">
         {/* Greet the picked child by name — same personal touch the parent
@@ -308,6 +333,9 @@ export function Board() {
                 color: memberColor(m.cook_member_id) ?? undefined,
               })),
             ])}
+            {kidAllClear && (
+              <Sayable className="today-kid__clear" text={`🌤️ ${t.board.kidAllClear}`} />
+            )}
             <PhotoFrame />
           </>
         )}
@@ -448,7 +476,7 @@ export function Board() {
             <span className="app-head__date mono">{formatDay(Math.floor(Date.now() / 1000), lang)}</span>
           </div>
           <div className="app-head__titlerow">
-            <h1 className="greet">{me ? `${t.today[tod]}, ${me.display_name}` : t.today[tod]}</h1>
+            <h1 className="greet">{me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]}</h1>
             <HelpDot card="board" />
           </div>
         </div>
@@ -575,7 +603,7 @@ export function Board() {
           <div className="board-grid">
             <Section label={t.board.today} count={todayEvents.length + todayChores.length + otherMeals.length}>
             {todayEvents.length === 0 && todayChores.length === 0 && otherMeals.length === 0 ? (
-              <p className="feed-empty">—</p>
+              <p className="feed-empty feed-empty--calm">{t.board.todayClear}</p>
             ) : (
               <>
                 {/* Today's other meals (déjeuner/dîner/collation) — supper is the
@@ -670,7 +698,7 @@ export function Board() {
             ))}
             {tomorrowEvents.map(eventAct)}
             {tomorrowEvents.length === 0 && !showTomorrowSupper && otherTomorrowMeals.length === 0 && !data.tomorrowNote && (
-              <p className="feed-empty">—</p>
+              <p className="feed-empty feed-empty--calm">{t.board.tomorrowClear}</p>
             )}
           </Section>
 

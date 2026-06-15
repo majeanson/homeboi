@@ -51,8 +51,9 @@ test.describe('navigation', () => {
     await settle(page, '.home__title')
     await page.locator('a[href="/setup"]').first().click()
     await expect(page).toHaveURL(/\/setup$/)
-    // "Wall tablet" (first card) is the pairing path.
-    await page.locator('.setup__choice').first().click()
+    // "Wall tablet" (second card now — your own device leads, step 1) is the
+    // pairing path.
+    await page.locator('.setup__choice').nth(1).click()
     await expect(page).toHaveURL(/\/pair$/)
   })
 
@@ -62,8 +63,8 @@ test.describe('navigation', () => {
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
     await page.goto('/setup')
     await settle(page, '.setup__choices')
-    // "My device" (second card) is the sign-in path.
-    await page.locator('.setup__choice').nth(1).click()
+    // "My device" (first card now — listed first, badged step 1) is the sign-in path.
+    await page.locator('.setup__choice').first().click()
     await expect(page).toHaveURL(/\/login$/)
   })
 
@@ -104,17 +105,20 @@ test.describe('navigation', () => {
     }
   })
 
-  test('the nav audience switch enters the kid view as a one-way door', async ({ page }) => {
-    await APP('/board')(page)
-    await settle(page, '.hub')
-    // Parent → Enfant: the toddler lens comes up and Réglages leaves the nav.
-    await page.locator('.hubnav__peek').click()
+  test('the audience switch enters the kid view as a one-way door', async ({ page }) => {
+    // Entering the toddler lens lives in Réglages ▸ Affichage now (the nav's
+    // one-tap peek is gone). Parent → Enfant from the Display tab's switch.
+    await APP('/settings')(page)
+    await settle(page, '.operator__tabs')
+    await page.getByRole('tab', { name: 'Affichage' }).click()
+    await page.locator('.audience-switch__opt').nth(1).click()
+    // The toddler lens comes up (bounced to /board) and Réglages leaves the nav.
+    await expect(page).toHaveURL(/\/board$/)
     await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'toddler')
     await expect(page.locator('.hubnav a[href="/settings"]')).toHaveCount(0)
-    // The instant entry switch is gone — there's no one-tap flip back to the
-    // parent view, and /settings redirects away. The only way out is the gated
-    // exit switch (3s hold + math), so the door stays one-way for the child.
-    await expect(page.locator('.hubnav__peek')).toHaveCount(0)
+    // There's no one-tap flip back to the parent view, and /settings redirects
+    // away. The only way out is the gated exit switch (3s hold + math), so the
+    // door stays one-way for the child.
     await expect(page.locator('.kid-exit-switch')).toBeVisible()
     // goto reloads the shell, re-running seedState's init (which re-seeds parent);
     // pin the toddler lens first so the reloaded shell still bounces /settings → /board.
@@ -171,9 +175,10 @@ test.describe('settings tabs', () => {
     await settle(page, '.operator__tabs')
     const tabs = page.getByRole('tab')
     const n = await tabs.count()
-    // 14 sections: the in-app Guide (now first/default) + the 12 originals +
-    // the AI-error journal (ai-log).
-    expect(n).toBe(14)
+    // 16 sections: Guide (first/default), Maisonnée, Rendez-vous, Corvées,
+    // Routines, Magasinage, Recettes, Repas, Réserve, Liste fantôme, Tablettes,
+    // Photos, Bilan, Affichage, Mode calme, and the AI-error journal (ai-log).
+    expect(n).toBe(16)
     for (let i = 0; i < n; i++) {
       await tabs.nth(i).click()
       await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true')
@@ -267,7 +272,10 @@ test.describe('settings forms', () => {
 
   test('add an event', async ({ page }) => {
     await page.getByRole('tab', { name: 'Rendez-vous' }).click()
-    const form = page.locator('.operator__panel form.operator__inline-form')
+    // Adding now goes through the ＋ Add sheet (the panel's inline form is EDIT-only):
+    // the "Ajouter un rendez-vous" button opens the sheet with the same EventForm.
+    await page.locator('.operator__add').click()
+    const form = page.locator('.sheet.show form.operator__inline-form')
     await form.locator('input.input').first().fill('Réunion parents')
     await form.locator('input[type="date"]').fill('2026-07-01')
     await expectApi(page, 'POST', 'events', () => form.locator('button[type="submit"]').click())
@@ -275,14 +283,18 @@ test.describe('settings forms', () => {
 
   test('add a chore', async ({ page }) => {
     await page.getByRole('tab', { name: 'Corvées' }).click()
-    const form = page.locator('.operator__chore-form')
+    // Adding a chore opens the same ＋ sheet (Réglages rows are edit/remove only).
+    await page.locator('.operator__add').click()
+    const form = page.locator('.sheet.show .operator__chore-form')
     await form.locator('input.input').first().fill('Balayer la cuisine')
     await expectApi(page, 'POST', 'chores', () => form.locator('button[type="submit"]').click())
   })
 
   test('add a kid routine', async ({ page }) => {
     await page.getByRole('tab', { name: 'Routines (mode enfant)' }).click()
-    const form = page.locator('.operator__routine-form')
+    // The routine builder opens from the ＋ sheet now (panel rows are edit/remove).
+    await page.locator('.operator__add').click()
+    const form = page.locator('.sheet.show .operator__routine-form')
     await form.locator('.picker-chips').first().locator('.chip').first().click() // pick a child
     await form.locator('input.input').first().fill('Routine du soir')
     await expectApi(page, 'POST', 'routines', () => form.locator('button[type="submit"]').click())
@@ -377,29 +389,42 @@ test.describe('add sheet', () => {
     await expect(page.locator('.sheet input[type="date"]')).toBeVisible()
   })
 
-  test('the kitchen ＋ offers recipe / meal / pantry — no quick note', async ({ page }) => {
+  test('the kitchen ＋ offers cuisiner / recette / repas / restants / garde-manger — no quick note', async ({ page }) => {
     await APP('/kitchen')(page)
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    await expect(page.locator('.cat-pick')).toHaveCount(3)
+    // The section chooser (direct child of .sheet) now has FIVE tiles:
+    // Cuisiner, Ajouter une recette, Planifier un repas, Restants, Ajouter un
+    // aliment. (The kitchen-week actions below sit in a separate .sheet__group.)
+    const sectionTiles = page.locator('.sheet > .cat-grid > .cat-pick')
+    await expect(sectionTiles).toHaveCount(5)
+    await expect(sectionTiles, 'no quick-capture in the kitchen sheet').toHaveCount(5)
     await expect(page.locator('.cat-pick', { hasText: 'Note rapide' })).toHaveCount(0)
-    // The meal planner is pre-selected (recipe is a navigate-only tile): a day
-    // select + the slot as icon chips, over a title field, posting {date, slot, title}.
-    await expect(page.locator('.sheet__row select')).toHaveCount(1)
-    await expect(page.locator('.sheet .slot-picker')).toBeVisible()
-    await page.locator('.sheet .sheet__field input').fill('Spaghetti')
-    await expectApi(page, 'POST', 'meals', () =>
-      page.locator('.sheet form button[type="submit"]').click(),
-    )
+    // "Planifier un repas" is pre-selected (cook + recipe are non-default tiles):
+    // it's a DAY PICKER now (chips that navigate to /kitchen?manage=…), not an
+    // inline day-select + slot-picker + POST.
+    await expect(page.locator('.sheet .addsheet__daypick')).toBeVisible()
+    const days = page.locator('.sheet .addsheet__days .chip')
+    await expect(days.first()).toBeVisible()
+    await Promise.all([
+      page.waitForURL(/\/kitchen\?manage=\d+/),
+      days.first().click(),
+    ])
   })
 
-  test('the liste ＋ adds straight to the list (no chooser)', async ({ page }) => {
+  test('the liste ＋ offers add-line / quick-add / flyer / best-prices, defaulting to the add form', async ({ page }) => {
     await APP('/liste')(page)
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    await expect(page.locator('.cat-pick')).toHaveCount(0) // single action → direct form
+    // Liste's ＋ is now a chooser: add a line, Ajout rapide, Parcourir les
+    // circulaires, and (since the seeded list isn't empty) Choisir les meilleurs.
+    const tiles = page.locator('.sheet > .cat-grid > .cat-pick')
+    await expect(tiles).toHaveCount(4)
+    // The add-a-line tile is pre-selected (quick-add/flyer are navigate-only,
+    // best-prices runs an action), so the list form is already up and POSTs to list.
+    await expect(page.locator('.cat-pick', { hasText: 'Ajouter à la liste' })).toHaveAttribute('aria-pressed', 'true')
     await page.locator('.sheet__field input').fill('Beurre')
     await expectApi(page, 'POST', 'list', () =>
       page.locator('.sheet form button[type="submit"]').click(),
@@ -455,11 +480,13 @@ test.describe('kitchen', () => {
   })
 
   test('planning a supper asks for its staples', async ({ page }) => {
-    // The per-day planning controls live in the "Gérer" sheet now.
+    // The per-day planning controls live in the "Gérer" sheet now. Souper renders
+    // LAST (chronological order), with its own grocery-staples step.
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.sheet.show')
-    // The souper section's add control is the sheet's first slot-add button.
-    await sheet.locator('.kitchen__slot-add').first().click()
+    // The souper section's add control opens the supper title form (beginSetMeal →
+    // the staples opt-in, which posts to meal-staples to fetch the staple list).
+    await sheet.locator('[data-dnd-zone="supper"] .kitchen__slot-add').click()
     const edit = sheet.locator('.kitchen__day-edit')
     await edit.locator('input.input').fill('Pizza maison')
     await expectApi(page, 'POST', 'meal-staples', () =>
@@ -470,17 +497,29 @@ test.describe('kitchen', () => {
   test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.sheet.show')
-    // Day one's breakfast is seeded ("Crêpes") — a meal row in the déjeuner slot.
-    await expect(sheet.locator('.kitchen__meal-row', { hasText: 'Crêpes' }).first()).toBeVisible()
-    // Setting a lunch is a plain title — a straight POST (append), no staples step.
-    await sheet.locator('.kitchen__slot-add', { hasText: 'Dîner' }).click()
+    // The Gérer sheet exposes the chronological side slots: déjeuner / dîner /
+    // collation, each with its own "＋ Ajouter" (the per-slot editing the grid
+    // delegates here). (NOTE: the seeded "Crêpes" meal can't be asserted — the
+    // mock seeds meal dates at BASE 08:00Z, not local-midnight, so they don't
+    // bucket onto the grid; a mocks.ts fix would be needed, see report.)
+    await expect(sheet.locator('.day-mng__sec', { hasText: 'Déjeuner' })).toBeVisible()
+    await expect(sheet.locator('.day-mng__sec', { hasText: 'Collation' })).toBeVisible()
+    // Setting a lunch is a plain title — a straight POST (append, saveSlot), no
+    // staples step. The "＋ Ajouter" sits in the Dîner section's header; scope to it.
+    const dinerSec = sheet.locator('.day-mng__sec', { hasText: 'Dîner' })
+    await dinerSec.locator('.kitchen__slot-add').click()
     const edit = sheet.locator('.kitchen__slot-edit')
     await edit.locator('input.input').fill('Sandwich au jambon')
     await expectApi(page, 'POST', 'meals', () => edit.locator('button[type="submit"]').click())
   })
 
   test('shop the week gathers ingredients and adds them to the list', async ({ page }) => {
-    await page.getByRole('button', { name: /Magasiner la semaine/ }).click()
+    // "Magasiner la semaine" moved into the ＋ Add sheet's kitchen-week actions
+    // (Repas tab). Tapping it closes the sheet and surfaces the shop prompt on the
+    // grid; confirming posts the gathered ingredients to the list.
+    await page.locator('.add-fab').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await page.locator('.sheet.show').getByRole('button', { name: /Magasiner la semaine/ }).click()
     await expect(page.locator('.kitchen__shop')).toBeVisible()
     await expectApi(page, 'POST', 'recipe-to-list', () =>
       page.locator('.kitchen__shop .btn--primary').click(),
@@ -565,9 +604,14 @@ test.describe('recipes', () => {
 
   test('creating a recipe posts it', async ({ page }) => {
     // Recipe creation moved to the contextual ＋: FAB → "Ajouter une recette"
-    // tile → navigates to /kitchen/recipe/new (the recipe builder route).
+    // tile → navigates to /kitchen/recipe/new (the recipe builder route, which
+    // renders the SAME RecipeForm — still a .recipe-modal — full-screen).
     await page.locator('.add-fab').click()
-    await page.locator('.cat-pick').first().click()
+    // Let the sheet settle (the meals query resolving re-renders it once) before
+    // tapping a tile, so the tile isn't detached mid-click.
+    await expect(page.locator('.sheet.show .addsheet__daypick')).toBeVisible()
+    await page.locator('.cat-pick', { hasText: 'Ajouter une recette' }).click()
+    await expect(page).toHaveURL(/\/kitchen\/recipe\/new$/)
     const modal = page.locator('.recipe-modal')
     await modal.waitFor({ state: 'visible' })
     await modal.locator('.recipe-title-input').fill('Soupe aux légumes')
@@ -578,7 +622,8 @@ test.describe('recipes', () => {
 
   test('a recipe step edits in a memo, one open at a time', async ({ page }) => {
     await page.locator('.add-fab').click()
-    await page.locator('.cat-pick').first().click() // Ajouter une recette
+    await page.locator('.cat-pick', { hasText: 'Ajouter une recette' }).click() // → builder route
+    await expect(page).toHaveURL(/\/kitchen\/recipe\/new$/)
     const modal = page.locator('.recipe-modal')
     await expect(modal).toBeVisible()
     // Steps start collapsed — no wall of open boxes.
@@ -888,10 +933,14 @@ test.describe('recurring chores on the board', () => {
     await APP('/settings?tab=chores')(page)
     await settle(page, '.operator__tabs')
     await page.getByRole('tab', { name: 'Corvées' }).click()
-    // Open the schedule editor on the first chore, pick weekly → PATCH recur.
-    await page.locator('.operator__chore-row').first().getByRole('button', { name: /céduler|schedule/i }).click()
+    // The "Céduler"-only expander is gone — editing a chore row opens the full
+    // ChoreForm (one editor) with the RecurPicker. Set the frequency to weekly,
+    // then save → PATCH the chore with its new recurrence.
+    await page.locator('.operator__chore-row').first().getByRole('button', { name: 'Modifier la corvée' }).click()
+    const form = page.locator('.operator__chore-row--editing .operator__chore-form')
+    await form.locator('.recur select').selectOption('weekly')
     await expectApi(page, 'PATCH', 'chores', () =>
-      page.locator('.operator__chore-schedule select').selectOption('weekly'),
+      form.getByRole('button', { name: 'Enregistrer' }).click(),
     )
   })
 })

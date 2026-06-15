@@ -1,7 +1,7 @@
 import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { localDayStart } from '../_lib/ids'
-import { parseRecur, expandRange } from '../_lib/recur'
+import { localDayStart, dayStart } from '../_lib/ids'
+import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
 
 // Everything dated in the household, for a calendar-month window. /api/board is
 // the 7-day glance; the month view zooms out, so it needs its own read across an
@@ -57,7 +57,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh, from - DAY, to + DAY)
       .all<{ id: string; text: string; member_id: string | null; date: number }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, color, rotation_json, current_idx, recur_json, recur_start, created_at FROM tasks WHERE household_id = ?',
+      'SELECT id, title, color, rotation_json, current_idx, last_done_at, recur_json, recur_start, created_at FROM tasks WHERE household_id = ?',
     )
       .bind(hh)
       .all<{
@@ -66,6 +66,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         color: string | null
         rotation_json: string
         current_idx: number
+        last_done_at: number | null
         recur_json: string | null
         recur_start: number | null
         created_at: number
@@ -100,28 +101,38 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
 
   const nameOf = (id: string | null) => (id && members.results.find((m) => m.id === id)?.display_name) || null
-  const whoseTurn = (rotationJson: string, idx: number): string | null => {
-    let rot: string[] = []
+  const parseRotation = (rotationJson: string): string[] => {
     try {
       const p = JSON.parse(rotationJson)
-      if (Array.isArray(p)) rot = p.filter((x): x is string => typeof x === 'string')
+      if (Array.isArray(p)) return p.filter((x): x is string => typeof x === 'string')
     } catch {
       /* malformed rotation → no turn */
     }
-    return rot.length ? nameOf(rot[idx % rot.length]) : null
+    return []
   }
-  // Recurring chores expanded across the window. "Whose turn" is the rotation's
-  // CURRENT holder (it only advances on completion, not per date), matching how
-  // the board labels upcoming chores. Non-recurring chores have no schedule, so
-  // they never land on the calendar.
+  // Recurring chores expanded across the window. The rotation's stored current_idx
+  // is the holder of the next PENDING occurrence and advances only on completion —
+  // so we PROJECT it forward per occurrence (rotationOffset) instead of labelling
+  // every future cell with today's holder. Non-recurring chores have no schedule,
+  // so they never land on the calendar.
+  const todayUTC = dayStart(new Date())
   const chores: { id: string; title: string; color: string | null; who: string | null; day: number }[] = []
   for (const c of choresRes.results) {
     const r = parseRecur(c.recur_json)
     if (!r) continue
     const anchor = c.recur_start ?? c.created_at
-    const who = whoseTurn(c.rotation_json, c.current_idx)
-    for (const at of expandRange(anchor, r, from, to)) {
+    const rot = parseRotation(c.rotation_json)
+    // If today's turn was already done, the pending holder is the NEXT occurrence,
+    // so count from tomorrow; otherwise the next occurrence on/after today is it.
+    const refDay = c.last_done_at != null && c.last_done_at >= todayUTC ? todayUTC + DAY : todayUTC
+    const occs = expandRange(anchor, r, from, to)
+    // Each occurrence advances the rotation by one, so resolve the offset of the
+    // first occurrence in the window once, then just step it forward.
+    let offset = occs.length ? rotationOffset(anchor, r, refDay, occs[0]) : 0
+    for (const at of occs) {
+      const who = rot.length ? nameOf(rot[(((c.current_idx + offset) % rot.length) + rot.length) % rot.length]) : null
       chores.push({ id: `${c.id}#${at}`, title: c.title, color: c.color, who, day: dayOf(at) })
+      offset++
     }
   }
 

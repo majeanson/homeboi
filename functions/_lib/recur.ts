@@ -93,3 +93,30 @@ export function expandRange(anchorAt: number, r: Recur, rangeStart: number, rang
   }
   return out
 }
+
+// Project a shared-chore rotation forward. A chore's stored `current_idx` is the
+// holder of the next PENDING occurrence — it advances by one only when someone
+// marks the chore done, never by the date passing. So to label FUTURE occurrences
+// in advance (the calendar showed them all as the current holder), we count how
+// many scheduled occurrences sit between the pending one and the occurrence we're
+// labelling: each future occurrence will advance the rotation by one.
+//
+// `refDay` is the day the pending occurrence falls on or after (today, or the day
+// after a completion already consumed today's turn). Returns the rotation offset
+// to add to `current_idx` — positive into the future, negative for past cells the
+// calendar may also render (best-effort; per-occurrence history isn't stored).
+// Counts day-by-day, bounded by the calendar window the caller renders.
+export function rotationOffset(anchorAt: number, r: Recur, refDay: number, targetAt: number): number {
+  const a = dayStart(new Date(refDay * 1000))
+  const b = dayStart(new Date(targetAt * 1000))
+  let n = 0
+  if (b >= a) {
+    // Occurrences in [refDay, target): the first occurrence on/after refDay is the
+    // pending one (offset 0), each later one adds a turn.
+    for (let day = a; day < b; day += DAY) if (occurrenceOn(day, anchorAt, r) !== null) n++
+  } else {
+    // Past cell: occurrences in [target, refDay) walk the rotation backwards.
+    for (let day = b; day < a; day += DAY) if (occurrenceOn(day, anchorAt, r) !== null) n--
+  }
+  return n
+}

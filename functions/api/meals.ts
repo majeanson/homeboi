@@ -47,10 +47,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{
-    action?: 'move' | 'clear'
+    action?: 'move' | 'clear' | 'reschedule'
     // move
     id?: string
     dir?: 'up' | 'down'
+    // reschedule (drag a meal to another day and/or slot)
+    toDate?: number
     // clear (slot optional → clear the whole day)
     date?: number
     slot?: string // breakfast | lunch | supper | snack (default supper)
@@ -95,6 +97,30 @@ export const onRequestPost = authed(async (ctx, actor) => {
         ),
       ),
     )
+    return ok({ ok: true })
+  }
+
+  // ── Reschedule: drag a meal to another day and/or slot. It APPENDS to the end
+  //    of the target slot (like a fresh add), so it never displaces what's already
+  //    planned there. Slot is preserved when the client omits it (a day→day drag);
+  //    a cross-slot drag passes the new slot. Reading the current row first keeps
+  //    the position math off a self-referencing UPDATE subquery.
+  if (body?.action === 'reschedule') {
+    if (!body.id || typeof body.toDate !== 'number') return badRequest('id + toDate requis.')
+    const cur = await ctx.env.DB.prepare('SELECT slot FROM meals WHERE id = ? AND household_id = ?')
+      .bind(body.id, actor.householdId)
+      .first<{ slot: string }>()
+    if (!cur) return ok({ ok: true }) // gone already — nothing to move
+    const toDate = localDayStart(new Date(body.toDate * 1000))
+    const toSlot = body.slot && SLOTS.has(body.slot) ? body.slot : cur.slot
+    const tail = await ctx.env.DB.prepare(
+      'SELECT COALESCE(MAX(position), -1) AS m FROM meals WHERE household_id = ? AND date = ? AND slot = ?',
+    )
+      .bind(actor.householdId, toDate, toSlot)
+      .first<{ m: number }>()
+    await ctx.env.DB.prepare('UPDATE meals SET date = ?, slot = ?, position = ? WHERE id = ? AND household_id = ?')
+      .bind(toDate, toSlot, (tail?.m ?? -1) + 1, body.id, actor.householdId)
+      .run()
     return ok({ ok: true })
   }
 

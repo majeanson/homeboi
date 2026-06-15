@@ -84,6 +84,8 @@ export const FR = {
     pickType: 'C’était quoi ?',
     types: { event: 'Rendez-vous', task: 'Corvée', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', leftover: 'Restants', note: 'Note' },
     degraded: 'IA hors ligne : choisis le type.',
+    reroute: 'Non, plutôt…',
+    rerouteDone: 'Déplacé.',
   },
   list: {
     // The contextual ＋ sheet (Liste section).
@@ -153,6 +155,10 @@ export const FR = {
     welcomeHint: 'Le babillard est prêt — il manque juste ta famille.',
     welcomeCta: 'Ajouter les personnes',
     idleSoon: 'Retour à la maisonnée dans un instant…',
+    todayClear: 'Rien de prévu. Tout est calme.',
+    tomorrowClear: 'Rien de prévu demain.',
+    laneClear: 'Libre',
+    kidAllClear: 'Rien de prévu. Belle journée !',
   },
   boardView: {
     label: 'Vue du babillard',
@@ -226,6 +232,8 @@ export const FR = {
     manage: 'Gérer',
     moveUp: 'Monter',
     moveDown: 'Descendre',
+    dragDay: 'Glisser vers un autre jour',
+    dragMeal: 'Glisser vers un autre repas',
     clearText: 'Effacer le texte',
     note: 'Note du jour',
     notePlaceholder: 'Une note pour ce jour…',
@@ -820,6 +828,8 @@ export const EN: typeof FR = {
     pickType: 'What was that?',
     types: { event: 'Event', task: 'Chore', 'list-item': 'List', 'pantry-low': 'Low', meal: 'Supper', leftover: 'Leftovers', note: 'Note' },
     degraded: 'AI offline: pick the type.',
+    reroute: 'No, actually…',
+    rerouteDone: 'Moved.',
   },
   list: {
     // The contextual ＋ sheet (Liste section).
@@ -889,6 +899,10 @@ export const EN: typeof FR = {
     welcomeHint: 'The board is ready — it just needs your family.',
     welcomeCta: 'Add the people',
     idleSoon: 'Back to the household view in a moment…',
+    todayClear: 'Nothing planned. All calm.',
+    tomorrowClear: 'Nothing planned for tomorrow.',
+    laneClear: 'Free',
+    kidAllClear: 'Nothing planned. Have a nice day!',
   },
   boardView: {
     label: 'Board view',
@@ -960,6 +974,8 @@ export const EN: typeof FR = {
     manage: 'Manage',
     moveUp: 'Move up',
     moveDown: 'Move down',
+    dragDay: 'Drag to another day',
+    dragMeal: 'Drag to another slot',
     note: 'Day note',
     notePlaceholder: 'A note for this day…',
     clearNote: 'Clear note',

@@ -422,6 +422,67 @@
 .kitchen__day-sum-empty {
   color: var(--ink-soft);
 }
+
+/* ── Drag-to-move (src/lib/dnd.tsx) ──────────────────────────────────────────
+   Touch-friendly pointer DnD: a grip starts the drag, a ghost trails the finger,
+   the hovered drop zone lights up, the source dims. Shared by the week grid
+   (souper → another day) and the day sheet (a meal → another slot). */
+.dnd-grip {
+  /* The handle must own the gesture so the page/sheet doesn't scroll mid-drag. */
+  touch-action: none;
+  cursor: grab;
+  color: var(--ink-faint);
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  flex: none;
+  user-select: none;
+}
+.dnd-grip:active {
+  cursor: grabbing;
+}
+/* The whole souper headline is the grid's drag handle (no separate row of UI on
+   the calm glance) — claim the gesture and read as movable. */
+.kitchen__day-drag {
+  touch-action: none;
+  cursor: grab;
+}
+.kitchen__day-drag:active {
+  cursor: grabbing;
+}
+.is-dragging {
+  opacity: 0.4;
+}
+/* The hovered, droppable zone — a calm dashed accent ring + faint wash, never a
+   loud fill. */
+.dnd-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -3px;
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.dnd-ghost {
+  position: fixed;
+  z-index: 1200;
+  /* Sit just above-left of the finger so the label clears the fingertip. */
+  transform: translate(-50%, calc(-100% - 0.6rem));
+  pointer-events: none;
+  max-width: 60vw;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.55rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dnd-ghost {
+    box-shadow: none;
+  }
+}
 /* The lighter slots wrap as colour chips (.meal-chip, shared — see misc.css) so
    nothing is ever hidden; this is just their row. */
 .kitchen__day-slots {
@@ -429,14 +490,12 @@
   flex-wrap: wrap;
   gap: 0.3rem;
 }
-/* The day note: one tidy muted line, ellipsized so a long memo never grows the
-   card past the two-days-on-a-phone budget. */
+/* The day note: a muted memo that always reads in full — it wraps onto as many
+   lines as it needs rather than ellipsizing, so nothing is ever hidden. */
 .kitchen__day-sum-meta {
   font-size: 0.78rem;
   color: var(--ink-faint);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   max-width: 100%;
 }
 /* The edit cue — a small icon-only button that never shrinks, so the meal info to

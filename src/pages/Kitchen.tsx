@@ -11,11 +11,11 @@ import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
 import { useRecordUndo } from '../lib/toast'
 import { live } from '../lib/query'
+import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, formatDayLong, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays } from '../lib/localDay'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
-import { pictoFor } from '../lib/picto'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { ReserveSection } from '../components/kitchen/ReserveSection'
@@ -105,6 +105,21 @@ export function Kitchen() {
   async function moveMeal(id: string, dir: 'up' | 'down') {
     await api('meals', { method: 'POST', body: { action: 'move', id, dir } }).catch(() => {})
     qc.invalidateQueries({ queryKey: MEALS_KEY })
+  }
+  // Drag-to-move: drop a meal on another day (slot kept) or another slot (same
+  // day). The server appends it to the tail of the target slot. `slot` omitted →
+  // preserve the meal's current slot (a day→day drag). The board re-reads too
+  // (today's supper headline lives there). Optimistic so the row jumps at once;
+  // the invalidate reconciles the authoritative order/position.
+  async function rescheduleMeal(id: string, toDate: number, slot?: string) {
+    qc.setQueryData<MealsData>(MEALS_KEY, (d) =>
+      d
+        ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, date: toDate, slot: slot ?? m.slot } : m)) }
+        : d,
+    )
+    await api('meals', { method: 'POST', body: { action: 'reschedule', id, toDate, slot } }).catch(() => {})
+    qc.invalidateQueries({ queryKey: MEALS_KEY })
+    qc.invalidateQueries({ queryKey: ['board'] })
   }
   // Rename one meal in place (✏️) — keeps its slot/position/recipe link, unlike a
   // remove + re-add. Optimistic so the row updates at once; the board re-reads too
@@ -356,6 +371,21 @@ export function Kitchen() {
   const mealsFor = (date: number, slot: string) => days.filter((d) => d.date === date && d.slot === slot)
   // date → its day note (the per-day memo), if any.
   const noteFor = (date: number) => dayNotesQ.data?.notes?.find((n) => n.date === date)
+
+  // Drag a day's souper to another day — the calm week-grid gesture. Each day cell
+  // is a drop zone keyed by its date; the souper headline is the drag handle. A day
+  // can hold several suppers, so moving the headline moves them ALL to the target
+  // day (the intuitive "move this day's supper plan"). Touch-friendly, so it works
+  // on the wall tablet, not just a mouse.
+  const dayDnd = usePointerDnd({
+    onDrop: (fromKey, toKey) => {
+      const from = Number(fromKey)
+      const to = Number(toKey)
+      if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) return
+      for (const m of mealsFor(from, 'supper')) rescheduleMeal(m.id, to, 'supper')
+    },
+    canDrop: (fromKey, toKey) => fromKey !== toKey,
+  })
 
   // The flows (see components/kitchen/use*). Destructured to the same names the
   // JSX always used, so the markup below reads unchanged.
@@ -615,7 +645,7 @@ export function Kitchen() {
             </div>
           )}
           <ul className="kitchen__week">
-            {week.map(({ date, meal }) => {
+            {week.map(({ date }) => {
               const dow = new Date(date * 1000).getDay()
               const isToday = date === weekStart
               const isTomorrow = date === addLocalDays(weekStart, 1)
@@ -638,10 +668,12 @@ export function Kitchen() {
               return (
               <li
                 key={date}
+                data-dnd-zone={String(date)}
                 className={
                   'surface kitchen__day' +
                   (isToday ? ' is-today' : '') +
-                  (dow === 0 || dow === 6 ? ' is-weekend' : '')
+                  (dow === 0 || dow === 6 ? ' is-weekend' : '') +
+                  (dayDnd.over === String(date) ? ' dnd-over' : '')
                 }
               >
                 {/* Calendar-style date badge — weekday + day number, the row's left
@@ -652,15 +684,6 @@ export function Kitchen() {
                   <span className="kitchen__day-dow mono" aria-hidden="true">{weekdayShort(date, lang)}</span>
                   <span className="kitchen__day-num" aria-hidden="true">{dayNum(date, lang)}</span>
                 </span>
-                {/* The day's own meal picture (pizza/soup/fish) when planned, a quiet
-                    "+" when the slot is open — never seven identical carrots. */}
-                <span className="kitchen__day-tile" aria-hidden="true">
-                  {meal ? (
-                    <span className="kitchen__day-picto">{pictoFor(meal.title, '🍽')}</span>
-                  ) : (
-                    <span className="kitchen__day-add">＋</span>
-                  )}
-                </span>
                 {/* Calm, read-only glance — the souper headline, the other slots as
                     colour chips, the note. The meal info is plain display (no longer
                     a giant button that hid it behind an ellipsis); only the compact
@@ -668,9 +691,26 @@ export function Kitchen() {
                     DayManageSheet so two days still fit a phone. */}
                 <div className="kitchen__day-body">
                   <div className="kitchen__day-top">
-                    <span className="kitchen__day-sum-main">
+                    <span
+                      className={
+                        'kitchen__day-sum-main' +
+                        (showSupper ? ' kitchen__day-drag' : '') +
+                        (showSupper && dayDnd.activeId === String(date) ? ' is-dragging' : '')
+                      }
+                      onPointerDown={
+                        showSupper
+                          ? (e) => dayDnd.start(String(date), suppers.map((m) => m.title).join(' · '), e)
+                          : undefined
+                      }
+                      role={showSupper ? 'button' : undefined}
+                      aria-label={showSupper ? t.kitchen.dragDay : undefined}
+                      title={showSupper ? t.kitchen.dragDay : undefined}
+                    >
                       {showSupper ? (
                         <>
+                          {/* A drag grip so the calm headline reads as "movable" — drag
+                              it onto another day to reschedule the souper. */}
+                          <span className="dnd-grip mono" aria-hidden="true">⠿</span>
                           {/* The souper slot icon in its slot colour — the same icon +
                               colour the chips and Réglages ▸ Repas use, not a bare dot. */}
                           <Icon name={SLOT_ICON_NAME.supper} size={18} color={supperColor} />
@@ -725,6 +765,7 @@ export function Kitchen() {
               )
             })}
           </ul>
+          <DragGhost ghost={dayDnd.ghost} />
 
           {/* One day's full planning controls, opened from a row's "Gérer" button.
               State stays owned here (the souper flow + the recipe picker are page
@@ -753,7 +794,7 @@ export function Kitchen() {
             }}
             slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
             noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
-            actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover }}
+            actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
           />
 
           <MealIdeas

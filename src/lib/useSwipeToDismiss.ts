@@ -39,6 +39,10 @@ export function useSwipeToDismiss(
 
     const onStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return
+      // A drag grip owns its own gesture (the pointer-DnD reorder/move): a
+      // downward drag of a meal there must NOT also pan the sheet toward dismiss.
+      const start = e.target instanceof HTMLElement ? e.target : null
+      if (start?.closest('[data-dnd-grip]')) return
       // Don't arm the dismiss if the finger is over a nested scroller that can
       // still scroll UP (e.g. QuickAdd's `.qa__list`, scrolled partway down).
       // That downward drag belongs to content scrolling — without this check the
