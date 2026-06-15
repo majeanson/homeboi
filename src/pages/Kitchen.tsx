@@ -710,15 +710,20 @@ export function Kitchen() {
                     >
                       {showSupper ? (
                         <>
-                          {/* A drag grip so the calm headline reads as "movable" — drag
-                              it onto another day to reschedule the souper. */}
-                          <span className="dnd-grip mono" aria-hidden="true">⠿</span>
-                          {/* The souper slot icon in its slot colour — the same icon +
-                              colour the chips and Réglages ▸ Repas use, not a bare dot. */}
-                          <Icon name={SLOT_ICON_NAME.supper} size={18} color={supperColor} />
-                          {suppers.map((m) => m.title).join(' · ')}
+                          {/* Grip + slot icon + title on ONE line; the Restants tag drops
+                              to its own line below (the column is set in CSS) so it never
+                              sits to the right of the title and eats its width. */}
+                          <span className="kitchen__day-sum-line">
+                            {/* A drag grip so the calm headline reads as "movable" — drag
+                                it onto another day to reschedule the souper. */}
+                            <span className="dnd-grip mono" aria-hidden="true">⠿</span>
+                            {/* The souper slot icon in its slot colour — the same icon +
+                                colour the chips and Réglages ▸ Repas use, not a bare dot. */}
+                            <Icon name={SLOT_ICON_NAME.supper} size={18} color={supperColor} />
+                            <span className="kitchen__day-sum-titles">{suppers.map((m) => m.title).join(' · ')}</span>
+                          </span>
                           {/* Flag a leftover souper on the calm glance, so "finish the
-                              fridge" reads without opening the day. */}
+                              fridge" reads without opening the day. Below the title. */}
                           {suppers.some((m) => m.is_leftover) && (
                             <span className="kitchen__meal-tag mono">
                               <InlineIcon name="arrow-counter-clockwise-bold" size={12} /> {t.kitchen.leftoversTag}
