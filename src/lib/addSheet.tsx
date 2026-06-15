@@ -45,6 +45,18 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
 // kitchen adds) already works on a paired kiosk via its device token.
 export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'chore', 'routine'])
 
+// The operator forms are full-screen SCENE routes now, not in-sheet forms: a
+// tall multi-field form (a routine's name + member chips + template + card deck)
+// strands its inputs under the mobile keyboard inside a height-capped sheet. As
+// scenes they pin to the visible viewport and scroll. Every launch point routes
+// here: the board chooser tiles (NAV_TARGET in AddSheet), the routines ＋ FAB and
+// the Réglages add buttons (open() in HubLayout).
+export const FORM_ROUTES: Partial<Record<AddSheetMode, string>> = {
+  event: '/event/new',
+  chore: '/chore/new',
+  routine: '/routine/new',
+}
+
 export const AddSheetContext = createContext<{ open: (mode?: AddSheetMode, modes?: AddSheetMode[]) => void }>({
   open: () => {},
 })

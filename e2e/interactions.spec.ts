@@ -272,10 +272,12 @@ test.describe('settings forms', () => {
 
   test('add an event', async ({ page }) => {
     await page.getByRole('tab', { name: 'Rendez-vous' }).click()
-    // Adding now goes through the ＋ Add sheet (the panel's inline form is EDIT-only):
-    // the "Ajouter un rendez-vous" button opens the sheet with the same EventForm.
+    // Adding now opens the full-screen event scene (the panel's inline form is
+    // EDIT-only): "Ajouter un rendez-vous" navigates to /event/new with the same
+    // EventForm — a scene, not a sheet, so its fields ride above the keyboard.
     await page.locator('.operator__add').click()
-    const form = page.locator('.sheet.show form.operator__inline-form')
+    await page.waitForURL(/\/event\/new/)
+    const form = page.locator('.scene form.operator__inline-form')
     await form.locator('input.input').first().fill('Réunion parents')
     await form.locator('input[type="date"]').fill('2026-07-01')
     await expectApi(page, 'POST', 'events', () => form.locator('button[type="submit"]').click())
@@ -283,18 +285,22 @@ test.describe('settings forms', () => {
 
   test('add a chore', async ({ page }) => {
     await page.getByRole('tab', { name: 'Corvées' }).click()
-    // Adding a chore opens the same ＋ sheet (Réglages rows are edit/remove only).
+    // Adding a chore opens the full-screen /chore/new scene (Réglages rows are
+    // edit/remove only).
     await page.locator('.operator__add').click()
-    const form = page.locator('.sheet.show .operator__chore-form')
+    await page.waitForURL(/\/chore\/new/)
+    const form = page.locator('.scene .operator__chore-form')
     await form.locator('input.input').first().fill('Balayer la cuisine')
     await expectApi(page, 'POST', 'chores', () => form.locator('button[type="submit"]').click())
   })
 
   test('add a kid routine', async ({ page }) => {
     await page.getByRole('tab', { name: 'Routines (mode enfant)' }).click()
-    // The routine builder opens from the ＋ sheet now (panel rows are edit/remove).
+    // The routine builder is the full-screen /routine/new scene now (panel rows
+    // are edit/remove).
     await page.locator('.operator__add').click()
-    const form = page.locator('.sheet.show .operator__routine-form')
+    await page.waitForURL(/\/routine\/new/)
+    const form = page.locator('.scene .operator__routine-form')
     await form.locator('.picker-chips').first().locator('.chip').first().click() // pick a child
     await form.locator('input.input').first().fill('Routine du soir')
     await expectApi(page, 'POST', 'routines', () => form.locator('button[type="submit"]').click())
@@ -377,16 +383,21 @@ test.describe('add sheet', () => {
     )
   })
 
-  test('switching to the event mode reveals the full event form', async ({ page }) => {
+  test('the board ＋ event tile opens the full-screen event form', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
     // Wait for the sheet to finish mounting (capture input present) before
-    // switching modes, so a cold-compiled first paint can't race the click.
+    // tapping a tile, so a cold-compiled first paint can't race the click.
     await expect(page.locator('.sheet__field input')).toBeVisible()
-    await page.locator('.cat-pick').nth(1).click() // Event mode
-    await expect(page.locator('.sheet input[type="date"]')).toBeVisible()
+    // The event tile is navigate-only now: it leaves the sheet for the
+    // full-screen /event/new scene (tall forms strand under the keyboard).
+    await Promise.all([
+      page.waitForURL(/\/event\/new/),
+      page.locator('.cat-pick').nth(1).click(),
+    ])
+    await expect(page.locator('.scene input[type="date"]')).toBeVisible()
   })
 
   test('the kitchen ＋ offers cuisiner / recette / repas / restants / garde-manger — no quick note', async ({ page }) => {
@@ -434,10 +445,13 @@ test.describe('add sheet', () => {
   test('the routines ＋ opens the routine builder directly', async ({ page }) => {
     await APP('/routines')(page)
     await settle(page, '.hub')
-    await page.locator('.add-fab').click()
-    await expect(page.locator('.sheet.show')).toBeVisible()
-    await expect(page.locator('.cat-pick')).toHaveCount(0)
-    await expect(page.locator('.sheet .operator__routine-form')).toBeVisible()
+    // The routines ＋ goes straight to the full-screen routine scene — no sheet,
+    // no chooser (its form is the worst keyboard offender as a sheet).
+    await Promise.all([
+      page.waitForURL(/\/routine\/new/),
+      page.locator('.add-fab').click(),
+    ])
+    await expect(page.locator('.scene .operator__routine-form')).toBeVisible()
   })
 })
 

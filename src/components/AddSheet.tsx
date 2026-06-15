@@ -7,7 +7,7 @@ import { useAuth } from '../lib/auth'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { VoiceButton } from './VoiceButton'
 import { formatWeekday } from '../lib/format'
-import { OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
+import { OPERATOR_MODES, FORM_ROUTES, type AddSheetMode } from '../lib/addSheet'
 import { CATS, type CatKey } from '../lib/cats'
 import { Act } from './board/Act'
 import { useCookableMeals } from '../lib/nextMeal'
@@ -20,9 +20,6 @@ import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks
 import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
-import { EventForm } from './forms/EventForm'
-import { ChoreForm } from './forms/ChoreForm'
-import { RoutineForm } from './forms/RoutineForm'
 import { useModal } from '../lib/useModal'
 import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
@@ -70,12 +67,15 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
-// route (the recipe builder, the quick-add restock page, the flyer browser).
+// route (the recipe builder, the quick-add restock page, the flyer browser, and
+// the operator add-forms from FORM_ROUTES: event/chore/routine, which moved out
+// of the sheet because their tall forms stranded inputs under the keyboard).
 // They never become the sheet's default (defMode skips them).
 const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   recipe: '/kitchen/recipe/new',
   'quick-add': '/liste/quick',
   flyer: '/liste/circulaires',
+  ...FORM_ROUTES,
 }
 
 // Modes that must never be the sheet's pre-selected default: they have no plain
@@ -227,10 +227,6 @@ export function AddSheet({
   const sheetRef = useRef<HTMLDivElement>(null)
   useModal(sheetRef, close, { open })
   useSwipeToDismiss(sheetRef, close, { open })
-  const savedWith = (keys: string[][]) => () => {
-    for (const k of keys) qc.invalidateQueries({ queryKey: k })
-    close()
-  }
 
   // Quick capture. forceType (from the degraded fallback) skips the AI router.
   async function submit(e?: React.FormEvent, forceType?: CaptureType) {
@@ -672,10 +668,6 @@ export function AddSheet({
               </div>
             </div>
           ))}
-
-        {mode === 'event' && <EventForm members={members} onSaved={savedWith([['board'], ['events']])} />}
-        {mode === 'chore' && <ChoreForm members={members} onSaved={savedWith([['board'], ['chores']])} />}
-        {mode === 'routine' && <RoutineForm members={members} onSaved={savedWith([['routines'], ['board']])} />}
       </div>
     </>
   )

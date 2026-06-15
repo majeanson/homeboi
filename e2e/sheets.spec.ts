@@ -89,14 +89,19 @@ for (const theme of ['day', 'night'] as Theme[]) {
 }
 
 // Day-only one-offs (forms / secondary states).
-test('sheet-add-event', async ({ page }) => {
+test('scene-add-event', async ({ page }) => {
   await boot(page, '/board')
   await page.locator('.add-fab').click()
   await page.locator('.sheet__field input').waitFor({ state: 'visible' })
-  await page.locator('.cat-pick').nth(1).click()
-  await page.locator('.sheet input[type="date"]').waitFor({ state: 'visible' })
+  // The event tile is navigate-only now — it leaves the sheet for the
+  // full-screen /event/new scene (tall forms strand under the keyboard).
+  await Promise.all([
+    page.waitForURL(/\/event\/new/),
+    page.locator('.cat-pick').nth(1).click(),
+  ])
+  await page.locator('.scene input[type="date"]').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
-  await shoot(page, 'sheet-add-event-phone')
+  await shoot(page, 'scene-add-event-phone')
 })
 
 test('sheet-recipe-form', async ({ page }) => {

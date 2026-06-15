@@ -30,6 +30,11 @@ const QuickAddPage = lazy(() => import('./pages/QuickAddPage').then((m) => ({ de
 const RecipeViewPage = lazy(() => import('./pages/RecipeViewPage').then((m) => ({ default: m.RecipeViewPage })))
 const RecipeFormPage = lazy(() => import('./pages/RecipeFormPage').then((m) => ({ default: m.RecipeFormPage })))
 const CookPage = lazy(() => import('./pages/CookPage').then((m) => ({ default: m.CookPage })))
+// Operator add-forms — full-screen scenes (were tall sheet forms that stranded
+// inputs under the mobile keyboard). Edit still happens inline in Réglages.
+const EventFormPage = lazy(() => import('./pages/EventFormPage').then((m) => ({ default: m.EventFormPage })))
+const ChoreFormPage = lazy(() => import('./pages/ChoreFormPage').then((m) => ({ default: m.ChoreFormPage })))
+const RoutineFormPage = lazy(() => import('./pages/RoutineFormPage').then((m) => ({ default: m.RoutineFormPage })))
 
 function Loading() {
   const t = useT()
@@ -77,6 +82,9 @@ export function AppRoutes() {
         <Route path="/kitchen/recipe/:id" element={<RecipeViewPage />} />
         <Route path="/kitchen/recipe/:id/edit" element={<RecipeFormPage />} />
         <Route path="/kitchen/recipe/:id/cook" element={<CookPage />} />
+        <Route path="/event/new" element={<EventFormPage />} />
+        <Route path="/chore/new" element={<ChoreFormPage />} />
+        <Route path="/routine/new" element={<RoutineFormPage />} />
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />

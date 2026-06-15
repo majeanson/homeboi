@@ -367,9 +367,12 @@
    but block:'start' (viewportVars) still can't raise those fields to a
    comfortable reading line — they cling to the bottom edge, right on the
    keyboard. Reserve trailing scroll slack so any focused field can scroll up.
-   Only while .kb-open, so a keyboard-less sheet keeps its tight bottom. */
+   Only while .kb-open, so a keyboard-less sheet keeps its tight bottom.
+   The slack is half the VISIBLE height, with a 260px floor: a small phone's
+   keyboard can shrink --vvh so far that 50% isn't enough headroom to raise a
+   near-bottom field clear of the keyboard — the floor guarantees it always can. */
 .kb-open .sheet {
-  padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px) + var(--vvh, 100dvh) * 0.5);
+  padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px) + max(260px, var(--vvh, 100dvh) * 0.5));
 }
 .grab {
   width: 44px;

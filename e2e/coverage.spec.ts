@@ -134,25 +134,26 @@ for (const theme of ['day', 'night'] as Theme[]) {
   })
 }
 
-// The Add sheet's other two full forms (the event form is already in sheets.spec
-// as sheet-add-event). Mode tiles order: capture(0) / event(1) / chore(2) /
-// routine(3) — the same shared forms Settings uses.
-test('sheet-add-chore', async ({ page }) => {
+// The two tall operator forms — now full-screen SCENES, not in-sheet forms (tall
+// forms strand inputs under the mobile keyboard in a height-capped sheet). The
+// board ＋ chooser tiles (order: capture(0) / event(1) / chore(2) / routine(3))
+// are navigate-only: tapping one leaves the sheet for the scene.
+test('scene-add-chore', async ({ page }) => {
   await boot(page, '/board')
   await page.locator('.add-fab').click()
-  await page.locator('.cat-pick').nth(2).click()
-  await page.locator('.operator__chore-form').waitFor({ state: 'visible' })
+  await page.locator('.cat-pick').nth(2).click() // Corvée tile → /chore/new scene
+  await page.locator('.scene .operator__chore-form').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
-  await shoot(page, 'sheet-add-chore-phone', false)
+  await shoot(page, 'scene-add-chore-phone', false)
 })
 
-test('sheet-add-routine', async ({ page }) => {
+test('scene-add-routine', async ({ page }) => {
   await boot(page, '/board')
   await page.locator('.add-fab').click()
-  await page.locator('.cat-pick').nth(3).click()
-  await page.locator('.operator__routine-form').waitFor({ state: 'visible' })
+  await page.locator('.cat-pick').nth(3).click() // Routine tile → /routine/new scene
+  await page.locator('.scene .operator__routine-form').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
-  await shoot(page, 'sheet-add-routine-phone', false)
+  await shoot(page, 'scene-add-routine-phone', false)
 })
 
 // ── Settings interactive sub-states ────────────────────────────────────────
@@ -161,12 +162,12 @@ test('sheet-add-routine', async ({ page }) => {
 // states that only appear after a click inside a section.
 
 // RecurPicker, weekly: the weekday chip row only renders once "weekly" is picked.
-// The EventForm is now EDIT-only in Réglages; adding opens the shared ＋ sheet
-// from the agenda tab's "Ajouter un rendez-vous" button, where the form lives.
+// The EventForm is now EDIT-only in Réglages; adding navigates to the /event/new
+// scene from the agenda tab's "Ajouter un rendez-vous" button, where the form lives.
 test('settings-recur-weekly', async ({ page }) => {
   await boot(page, '/settings')
   await page.getByRole('tab', { name: 'Rendez-vous' }).click() // agenda
-  await page.getByRole('button', { name: 'Ajouter un rendez-vous' }).click() // opens the ＋ sheet
+  await page.getByRole('button', { name: 'Ajouter un rendez-vous' }).click() // → /event/new scene
   await page.locator('.recur select').first().waitFor({ state: 'visible' })
   await page.locator('.recur select').first().selectOption('weekly')
   await page.locator('.recur__days').waitFor({ state: 'visible' })
@@ -176,11 +177,12 @@ test('settings-recur-weekly', async ({ page }) => {
 
 // CardDeckEditor emoji palette — add a card, then open its emoji palette. The
 // RoutineForm is now reached from the routines tab's "Créer une routine" button,
-// which opens the shared ＋ sheet (Réglages no longer carries a blank add form).
+// which navigates to the /routine/new scene (Réglages no longer carries a blank
+// add form).
 test('settings-deck-palette', async ({ page }) => {
   await boot(page, '/settings')
   await page.getByRole('tab', { name: 'Routines (mode enfant)' }).click() // routines
-  await page.getByRole('button', { name: 'Créer une routine' }).click() // opens the ＋ sheet
+  await page.getByRole('button', { name: 'Créer une routine' }).click() // → /routine/new scene
   await page.locator('.deck__add').waitFor({ state: 'visible' })
   await page.locator('.deck__add').click() // add a blank card
   await page.locator('.deck__emoji').first().click() // open its palette

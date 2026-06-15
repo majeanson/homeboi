@@ -10,7 +10,8 @@ import { clearDeviceToken, isPaired } from '../lib/device'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
 import { KidExitGate } from './KidExitGate'
-import { AddSheetContext, SECTION_MODES, type AddSheetMode } from '../lib/addSheet'
+import { AddSheetContext, SECTION_MODES, FORM_ROUTES, type AddSheetMode } from '../lib/addSheet'
+import { useAuth } from '../lib/auth'
 import {
   KitchenActionsContext,
   NO_KITCHEN_ACTIONS,
@@ -46,6 +47,7 @@ export function HubLayout() {
   const loc = useLocation()
   const nav = useNavigate()
   const qc = useQueryClient()
+  const { signedIn } = useAuth()
   const [addOpen, setAddOpen] = useState(false)
   // null = "this section's default" — the ＋ is contextual now (recipes in the
   // kitchen, list items on Liste); only an explicit open('routine')-style call
@@ -200,6 +202,13 @@ export function HubLayout() {
     <AddSheetContext.Provider
       value={{
         open: (mode, modes) => {
+          // The operator forms are full-screen scenes now — navigate instead of
+          // opening the sheet (the Réglages add buttons reach them this way).
+          const route = mode ? FORM_ROUTES[mode] : undefined
+          if (route) {
+            nav(route)
+            return
+          }
           setAddMode(mode ?? null)
           setAddModes(modes ?? null)
           setAddOpen(true)
@@ -254,6 +263,13 @@ export function HubLayout() {
             // sheet and go straight there (its "add" is navigate-only anyway).
             if (kitchenTab === 'recipes') {
               nav('/kitchen/recipe/new')
+              return
+            }
+            // Routines: the routine builder is a full-screen scene now (its form
+            // is the worst keyboard offender in a sheet). An unsigned kiosk has
+            // no operator form, so it falls through to the sheet's capture box.
+            if (section === 'routines' && signedIn) {
+              nav('/routine/new')
               return
             }
             // Garde-manger tab: pre-select the low-stock form; everything else

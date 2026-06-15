@@ -2,9 +2,10 @@ import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 
 // A bottom sheet is a vertical surface — it must never scroll left/right. Guards
-// the regression where the chore form ("Ajouter une corvée") in the board ＋ sheet
-// let you pan sideways once you scrolled down (the sheet had overflow-y:auto but no
-// overflow-x, so the cross axis computed to auto). See .sheet in styles/sheets.css.
+// the regression where a wide row in the board ＋ sheet let you pan sideways once
+// you scrolled down (the sheet had overflow-y:auto but no overflow-x, so the cross
+// axis computed to auto). The operator forms are full-screen scenes now, so the
+// remaining widest content is the chooser tile grid. See .sheet in styles/sheets.css.
 
 async function boot(page: Page) {
   await page.setViewportSize({ width: 390, height: 844 })
@@ -26,16 +27,16 @@ async function sheetOverflowsX(page: Page): Promise<number> {
   })
 }
 
-test('board ＋ chore form does not scroll sideways', async ({ page }) => {
+test('board ＋ sheet does not scroll sideways', async ({ page }) => {
   await boot(page)
   await page.goto('/board')
   await expect(page.locator('.board-wall')).toBeVisible({ timeout: 15_000 })
 
   await page.locator('.add-fab').click()
   await expect(page.locator('.sheet.show')).toBeVisible()
-  // Board chooser order is capture / event / chore / routine — open the chore form.
-  await page.getByRole('button', { name: 'Corvées', exact: true }).click()
-  await expect(page.locator('.operator__chore-form')).toBeVisible()
+  // The chooser tile grid (capture / event / chore / routine) is the widest
+  // content now that the operator forms are full-screen scenes.
+  await expect(page.locator('.sheet > .cat-grid')).toBeVisible()
 
   // No horizontal overflow at rest…
   expect(await sheetOverflowsX(page)).toBeLessThanOrEqual(1)
