@@ -300,6 +300,16 @@ button {
 .btn--danger:hover {
   filter: brightness(0.96);
 }
+/* When viewportVars (lib/viewportVars.ts) scrolls a focused field to
+   block:'start' — so what you type stays above the on-screen keyboard — leave a
+   small gap above it instead of hugging the very top edge. Applies to EVERY
+   editable surface, not just `.input`, so fields with their own class
+   (recipe title, paste boxes, contentEditable) get the same breathing room. */
+input,
+textarea,
+[contenteditable] {
+  scroll-margin-top: 12px;
+}
 .input {
   width: 100%;
   padding: 0.6rem 0.8rem;
@@ -314,10 +324,6 @@ button {
   font: inherit;
   font-size: 16px;
   line-height: 1.4;
-  /* When viewportVars scrolls a focused field to block:'start' (so the
-     content below it stays visible above the on-screen keyboard), leave a small
-     gap above it instead of hugging the very top edge. */
-  scroll-margin-top: 12px;
 }
 /* A multi-line field grows from its rows; keep the min as a floor, not a fixed
    height, so notes/paste boxes still expand. */

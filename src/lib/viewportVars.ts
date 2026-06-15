@@ -24,38 +24,21 @@ export function trackVisualViewport(): void {
   //   2. rAF-coalesce bursts so we set the vars at most once per frame.
   // Tracks the current keyboard inset so the focus-scroll below only nudges on a
   // device whose keyboard is actually up (0 on desktop → no jump on click).
+  // KB_THRESHOLD: ignore tiny insets (browser chrome, accessory bar) — only a
+  // real on-screen keyboard clears this.
+  const KB_THRESHOLD = 120
   let kbInset = 0
+  let kbOpen = false
   let queued = false
-  const apply = () => {
-    queued = false
-    if (vv.scale > 1) return
-    kbInset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
-    root.setProperty('--vvh', `${Math.round(vv.height)}px`)
-    root.setProperty('--vvt', `${Math.round(vv.offsetTop)}px`)
-    root.setProperty('--kb', `${kbInset}px`)
-    // While the keyboard is up, hide the bottom chrome (the mobile tab bar + the
-    // ＋ FAB) — it otherwise floats in the gap above the keyboard, fighting the
-    // field being edited for attention. `.kb-open` keys the CSS in hub.css.
-    document.documentElement.classList.toggle('kb-open', kbInset > 120)
-  }
-  const schedule = () => {
-    if (queued) return
-    queued = true
-    requestAnimationFrame(apply)
-  }
-  apply()
-  vv.addEventListener('resize', schedule)
-  vv.addEventListener('scroll', schedule)
 
-  // When a text field is tapped, ease THAT field into the middle of the visible
-  // band ("zoom on the part being edited") once the keyboard has slid in. Gated
-  // on a real keyboard inset, so a plain desktop click never yanks the page.
-  // iOS' own scroll-into-view is unreliable inside our fixed sheets/overlays.
+  // An editable target whose focus should be kept above the keyboard. We pin
+  // text-ish <input>s, every <textarea>, and any contentEditable host. Buttons,
+  // checkboxes, date/colour pickers, etc. are deliberately excluded.
   const TEXT = /^(|text|search|email|url|tel|password|number)$/i
-  // DEFAULT everywhere: pin the focused field to the TOP of the visible band so
-  // the keyboard (which slides up from the bottom) can never cover it — this is
-  // the behaviour every text edit in the app gets for free.
-  //
+  const isEditable = (el: EventTarget | null): el is HTMLElement =>
+    el instanceof HTMLElement &&
+    (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && TEXT.test((el as HTMLInputElement).type)))
+
   // OPT-IN exception: a few compact panels (e.g. the recipe import panel's
   // "Importer", which follows the URL input + paste box) want the action button
   // BELOW the field revealed too, not just the field — so the control the user is
@@ -75,24 +58,62 @@ export function trackVisualViewport(): void {
     }
     return null
   }
+
+  // Ease the CURRENTLY-focused text field to the top of the visible band so the
+  // keyboard (which slides up from the bottom) can never cover what you're typing.
+  // This is the behaviour every text edit in the app gets for free.
+  //
+  // We pin near the TOP (not centre): iOS doesn't shrink the layout viewport, so
+  // 'center' would land mid-screen / behind the keyboard. scroll-margin-top
+  // (core.css) leaves a little breathing gap above it. iOS' own scroll-into-view
+  // is unreliable inside our fixed sheets/overlays, so we drive it ourselves.
+  const pinFocused = () => {
+    if (kbInset <= KB_THRESHOLD) return
+    const el = document.activeElement
+    if (!isEditable(el) || !el.isConnected) return
+    const action = actionBelow(el)
+    if (action) action.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    else el.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }
+
+  const apply = () => {
+    queued = false
+    if (vv.scale > 1) return
+    kbInset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
+    root.setProperty('--vvh', `${Math.round(vv.height)}px`)
+    root.setProperty('--vvt', `${Math.round(vv.offsetTop)}px`)
+    root.setProperty('--kb', `${kbInset}px`)
+    const open = kbInset > KB_THRESHOLD
+    // While the keyboard is up, hide the bottom chrome (the mobile tab bar + the
+    // ＋ FAB) — it otherwise floats in the gap above the keyboard, fighting the
+    // field being edited for attention. `.kb-open` keys the CSS in hub.css.
+    document.documentElement.classList.toggle('kb-open', open)
+    // The keyboard slide-in is what was racing the old fixed 300ms timer: on a
+    // slow device the inset is still ~0 at 300ms, so the one-shot scroll was
+    // skipped and never retried. Re-pin on the RISING edge (keyboard just
+    // arrived) so the focused field lands above it no matter how late it slides
+    // in. We fire only on the transition, not every scroll frame, so a user's
+    // manual scroll while typing isn't fought.
+    if (open && !kbOpen) pinFocused()
+    kbOpen = open
+  }
+  const schedule = () => {
+    if (queued) return
+    queued = true
+    requestAnimationFrame(apply)
+  }
+  apply()
+  vv.addEventListener('resize', schedule)
+  vv.addEventListener('scroll', schedule)
+
+  // Tapping a field while the keyboard is ALREADY up (moving between fields)
+  // gets no viewport resize, so the rising-edge pin above won't fire — handle it
+  // here. The short delay lets focus settle / any layout shift land first.
   let scrollTimer: ReturnType<typeof setTimeout>
   document.addEventListener('focusin', (e) => {
-    const el = e.target
-    if (!(el instanceof HTMLElement)) return
-    const editable =
-      el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && TEXT.test((el as HTMLInputElement).type))
-    if (!editable) return
+    if (!isEditable(e.target)) return
     clearTimeout(scrollTimer)
-    scrollTimer = setTimeout(() => {
-      if (kbInset <= 120 || !el.isConnected) return
-      const action = actionBelow(el)
-      // Pin the focused field near the TOP of the visible band so the content
-      // below it (between field and keyboard) stays readable — iOS doesn't
-      // shrink the layout viewport, so 'center' would land mid-screen / behind
-      // the keyboard. scroll-margin-top (core.css) leaves a little breathing gap.
-      if (action) action.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-      else el.scrollIntoView({ block: 'start', behavior: 'smooth' })
-    }, 300)
+    scrollTimer = setTimeout(pinFocused, 300)
   })
 
   // A field blurring usually means the keyboard is closing. Some browsers don't
