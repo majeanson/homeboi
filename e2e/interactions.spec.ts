@@ -413,13 +413,13 @@ test.describe('add sheet', () => {
     await expect(sectionTiles, 'no quick-capture in the kitchen sheet').toHaveCount(5)
     await expect(page.locator('.cat-pick', { hasText: 'Note rapide' })).toHaveCount(0)
     // "Planifier un repas" is pre-selected (cook + recipe are non-default tiles):
-    // it's a DAY PICKER now (chips that navigate to /kitchen?manage=…), not an
-    // inline day-select + slot-picker + POST.
+    // it's a DAY PICKER now (chips that navigate to the day's editor scene
+    // /kitchen/day/…), not an inline day-select + slot-picker + POST.
     await expect(page.locator('.sheet .addsheet__daypick')).toBeVisible()
     const days = page.locator('.sheet .addsheet__days .chip')
     await expect(days.first()).toBeVisible()
     await Promise.all([
-      page.waitForURL(/\/kitchen\?manage=\d+/),
+      page.waitForURL(/\/kitchen\/day\/\d+/),
       days.first().click(),
     ])
   })
@@ -494,10 +494,11 @@ test.describe('kitchen', () => {
   })
 
   test('planning a supper asks for its staples', async ({ page }) => {
-    // The per-day planning controls live in the "Gérer" sheet now. Souper renders
-    // LAST (chronological order), with its own grocery-staples step.
+    // The per-day planning controls live in the day editor SCENE now
+    // (/kitchen/day/:date). Souper renders LAST (chronological order), with its
+    // own grocery-staples step.
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
-    const sheet = page.locator('.sheet.show')
+    const sheet = page.locator('.scene')
     // The souper section's add control opens the supper title form (beginSetMeal →
     // the staples opt-in, which posts to meal-staples to fetch the staple list).
     await sheet.locator('[data-dnd-zone="supper"] .kitchen__slot-add').click()
@@ -510,8 +511,8 @@ test.describe('kitchen', () => {
 
   test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
-    const sheet = page.locator('.sheet.show')
-    // The Gérer sheet exposes the chronological side slots: déjeuner / dîner /
+    const sheet = page.locator('.scene')
+    // The day editor exposes the chronological side slots: déjeuner / dîner /
     // collation, each with its own "＋ Ajouter" (the per-slot editing the grid
     // delegates here). (NOTE: the seeded "Crêpes" meal can't be asserted — the
     // mock seeds meal dates at BASE 08:00Z, not local-midnight, so they don't

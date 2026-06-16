@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
@@ -9,11 +9,10 @@ import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
 import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
-import { useRecordUndo } from '../lib/toast'
 import { live } from '../lib/query'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
-import { formatWeekday, formatDay, formatDayLong, weekdayShort, dayNum } from '../lib/format'
+import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays } from '../lib/localDay'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
@@ -24,10 +23,11 @@ import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { useMealSuggest, type MealSuggestion, type SuggestSource } from '../components/kitchen/useMealSuggest'
-import { type LowRow, type MealRow, type MealsData, type MealIdeasData, type Leftover, type LeftoversData, type DayNotesData, type PantryData, type ReserveData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, LEFTOVERS_KEY, PANTRY_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
+import { type LowRow, type MealsData, type MealIdeasData, type LeftoversData, type DayNotesData, type PantryData, type ReserveData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, LEFTOVERS_KEY, PANTRY_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers } from '../components/kitchen/Leftovers'
-import { DayManageSheet } from '../components/kitchen/DayManageSheet'
+import { useRecipeForMeal } from '../components/kitchen/mealLookup'
+import { reschedule } from '../components/kitchen/mealMutations'
 import { SIDE_SLOTS, SLOT_ICON_NAME } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { tintInk, faint, hairline } from '../lib/colors'
@@ -39,9 +39,6 @@ import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
 // the tab components in src/components/kitchen/* (useMealPlanning = type/pick a
 // supper + the AI staples step, useRecipeShop = shop-the-week, useMealSuggest =
 // supper ideas, useAiWake = the shared cold-start/AI-off truth).
-// Intl lowercases the French weekday ("lundi 14 juin"); the sheet title wants it
-// capitalized.
-const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
 // Each suggestion card wears the SAME glyph + colour as the ＋ Add-sheet tile that
 // produced it (AI = marigold sparkle, book = terracotta book, use-it-up = sage
@@ -59,220 +56,15 @@ export function Kitchen() {
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
   // Per-slot meal visibility (Réglages ▸ Repas) trims the week's side-summary
-  // glance. The full per-slot editor (DayManageSheet) still shows every slot, so a
-  // hidden slot can always be planned from a day's "Gérer".
+  // glance. The full per-slot editor (DayPlanPage) still shows every slot, so a
+  // hidden slot can always be planned from a day's pencil.
   const mealPrefs = useMealPrefs()
   const nav = useNavigate()
-  // Kitchen reads are live-polled, so a held (deferred) delete would be resurrected
-  // mid-window by the poll. Instead these clears commit immediately and register a
-  // COMPENSATING undo: the inverse re-creates the meal(s)/note from the snapshot we
-  // grab before deleting. A new row id is fine — the plan looks restored.
-  const recordUndo = useRecordUndo()
-  // The lighter side slots (déjeuner / dîner / collation): a plain title, no
-  // staples/recipe flow — that richness stays on the souper. {date,slot} being
-  // edited, plus its text.
-  const [editSlot, setEditSlot] = useState<{ date: number; slot: string } | null>(null)
-  const [slotText, setSlotText] = useState('')
-  async function saveSlot(date: number, slot: string, title: string, recipeId?: string | null) {
-    const v = title.trim()
-    if (!v) {
-      setEditSlot(null)
-      setSlotText('')
-      return
-    }
-    try {
-      await api('meals', { method: 'POST', body: { date, slot, title: v, recipeId } })
-      // Only close the editor once the write lands — a failed plan keeps the
-      // typed title so it can be retried (same as the grocery add bar).
-      setEditSlot(null)
-      setSlotText('')
-    } catch {
-      /* keep the editor open with the text intact */
-    }
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-  }
-
-  // Wipe a planned slot entirely (the ✕ beside the picker). The editor closes and
-  // the day goes back to its open "＋" state. On failure the editor stays open so
-  // the action can be retried — same posture as saveSlot/saveMeal.
-  async function clearMeal(id: string) {
-    const meal = qc.getQueryData<MealsData>(MEALS_KEY)?.days.find((m) => m.id === id)
-    try {
-      await api('meals', { method: 'DELETE', body: { id } })
-      setEditDate(null)
-      setMealText('')
-      setEditSlot(null)
-      setSlotText('')
-      if (meal) recordUndo({ message: t.undo.mealRemoved(meal.title), onUndo: () => restoreMeals([meal]) })
-    } catch {
-      /* keep the editor open so the clear can be retried */
-    }
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-  }
-
-  // Reorder one meal within its slot (↑/↓). The server renumbers the slot.
-  async function moveMeal(id: string, dir: 'up' | 'down') {
-    await api('meals', { method: 'POST', body: { action: 'move', id, dir } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-  }
-  // Drag-to-move: drop a meal on another day (slot kept) or another slot (same
-  // day). The server appends it to the tail of the target slot. `slot` omitted →
-  // preserve the meal's current slot (a day→day drag). The board re-reads too
-  // (today's supper headline lives there). Optimistic so the row jumps at once;
-  // the invalidate reconciles the authoritative order/position.
-  async function rescheduleMeal(id: string, toDate: number, slot?: string) {
-    qc.setQueryData<MealsData>(MEALS_KEY, (d) =>
-      d
-        ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, date: toDate, slot: slot ?? m.slot } : m)) }
-        : d,
-    )
-    await api('meals', { method: 'POST', body: { action: 'reschedule', id, toDate, slot } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-    qc.invalidateQueries({ queryKey: ['board'] })
-  }
-  // Rename one meal in place (✏️) — keeps its slot/position/recipe link, unlike a
-  // remove + re-add. Optimistic so the row updates at once; the board re-reads too
-  // (today's supper headline shows there).
-  async function renameMeal(id: string, title: string) {
-    const v = title.trim()
-    if (!v) return
-    qc.setQueryData<MealsData>(MEALS_KEY, (d) =>
-      d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, title: v } : m)) } : d,
-    )
-    await api('meals', { method: 'PATCH', body: { id, title: v } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-    qc.invalidateQueries({ queryKey: ['board'] })
-  }
-  // Re-create a set of removed meals from their snapshot (the undo inverse). Each
-  // comes back as a fresh row in the same day+slot — order/id may differ, the plan
-  // reads as restored. Refresh the board too (today's supper shows there).
-  async function restoreMeals(meals: MealRow[]) {
-    for (const m of meals) {
-      await api('meals', {
-        method: 'POST',
-        body: { date: m.date, slot: m.slot, title: m.title, recipeId: m.recipe_id ?? null },
-      }).catch(() => {})
-    }
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-    qc.invalidateQueries({ queryKey: ['board'] })
-  }
-  // "Il en reste ?" from a meal row — announce leftovers into the Restants pool
-  // (undated → the "à finir bientôt" reminder). Compensating undo deletes the row
-  // we just created (the pool is live-polled, so a held delete would resurrect it).
-  async function announceLeftover(meal: MealRow) {
-    const res = await api<{ id?: string }>('meal-leftovers', {
-      method: 'POST',
-      body: { title: meal.title, recipeId: meal.recipe_id ?? null, sourceMealId: meal.id },
-    }).catch(() => null)
-    qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
-    const id = res?.id
-    recordUndo({
-      message: t.undo.leftoverAdded(meal.title),
-      onUndo: async () => {
-        if (id) await api('meal-leftovers', { method: 'DELETE', body: { id } }).catch(() => {})
-        qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
-      },
-    })
-  }
-
-  // Plan a pooled leftover onto a day → a real meal tagged is_leftover; the pool
-  // row is consumed server-side (you eat leftovers once). Shared by the Restants
-  // pool's own picker (Leftovers) and the day editor's "Choisir un reste"
-  // (DayManageSheet) so both entry points behave identically. Compensating undo
-  // (the caches are live-polled): delete the created meal AND re-insert the pool
-  // row, fully reversing the plan.
-  async function planLeftover(l: Leftover, date: number, slot: string) {
-    const res = await api<{ mealId?: string }>('meal-leftovers', {
-      method: 'POST',
-      body: { action: 'plan', id: l.id, date, slot },
-    }).catch(() => null)
-    qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-    qc.invalidateQueries({ queryKey: ['board'] })
-    const mealId = res?.mealId
-    recordUndo({
-      message: t.undo.leftoverPlanned(l.title),
-      onUndo: async () => {
-        if (mealId) await api('meals', { method: 'DELETE', body: { id: mealId } }).catch(() => {})
-        await api('meal-leftovers', {
-          method: 'POST',
-          body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
-        }).catch(() => {})
-        qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
-        qc.invalidateQueries({ queryKey: MEALS_KEY })
-        qc.invalidateQueries({ queryKey: ['board'] })
-      },
-    })
-  }
-  // The day editor's "Choisir un reste" path: close whichever add-editor was open
-  // (mirrors planRecipe), then plan the leftover onto the chosen slot.
-  function planLeftoverOnDay(date: number, slot: string, l: Leftover) {
-    setLeftoverPickFor(null)
-    setEditDate(null)
-    setEditSlot(null)
-    setMealText('')
-    setSlotText('')
-    void planLeftover(l, date, slot)
-  }
-
-  // Easy clearing: wipe one slot's meals, or a whole day's. Snapshot the rows first
-  // so Annuler can put them back (compensating undo — see recordUndo above).
-  async function clearSlotMeals(date: number, slot: string) {
-    const removed = (qc.getQueryData<MealsData>(MEALS_KEY)?.days ?? []).filter(
-      (m) => m.date === date && m.slot === slot,
-    )
-    await api('meals', { method: 'POST', body: { action: 'clear', date, slot } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-    if (removed.length) recordUndo({ message: t.undo.slotCleared, onUndo: () => restoreMeals(removed) })
-  }
-  async function clearDay(date: number) {
-    const removed = (qc.getQueryData<MealsData>(MEALS_KEY)?.days ?? []).filter((m) => m.date === date)
-    await api('meals', { method: 'POST', body: { action: 'clear', date } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-    if (removed.length) recordUndo({ message: t.undo.dayCleared, onUndo: () => restoreMeals(removed) })
-  }
-
-  // A free-text memo per day (déjeuner-to-collation context that isn't a meal:
-  // "souper chez mémé", "lunch froid — sortie"). One per day; editing replaces it.
-  // {date} being edited, plus its text.
-  const [editNote, setEditNote] = useState<number | null>(null)
-  const [noteText, setNoteText] = useState('')
-  async function saveNote(date: number, text: string) {
-    const v = text.trim()
-    if (!v) {
-      setEditNote(null)
-      setNoteText('')
-      return
-    }
-    try {
-      await api('day-notes', { method: 'POST', body: { date, text: v } })
-      setEditNote(null)
-      setNoteText('')
-    } catch {
-      /* keep the editor open with the text intact */
-    }
-    qc.invalidateQueries({ queryKey: DAY_NOTES_KEY })
-  }
-  async function clearNote(date: number) {
-    const note = qc.getQueryData<DayNotesData>(DAY_NOTES_KEY)?.notes.find((n) => n.date === date)
-    try {
-      await api('day-notes', { method: 'DELETE', body: { date } })
-      setEditNote(null)
-      setNoteText('')
-      if (note)
-        recordUndo({
-          message: t.undo.dayNoteCleared,
-          onUndo: async () => {
-            await api('day-notes', { method: 'POST', body: { date: note.date, text: note.text } }).catch(() => {})
-            qc.invalidateQueries({ queryKey: DAY_NOTES_KEY })
-            qc.invalidateQueries({ queryKey: ['board'] })
-          },
-        })
-    } catch {
-      /* keep the editor open so the clear can be retried */
-    }
-    qc.invalidateQueries({ queryKey: DAY_NOTES_KEY })
-  }
+  // The full per-day editor (add/remove/reorder meals, the staples step, the day
+  // note, clear the day) lives on its own full-screen scene now — /kitchen/day/:date
+  // (DayPlanPage). This page is the calm read-only week glance: a row's pencil and
+  // the ＋ "Planifier un repas" day picker both navigate there. The grid keeps only
+  // its day→day drag (the shared `reschedule` helper) and the toddler kid-suggest.
 
   const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), ...live })
   const dayNotesQ = useQuery({ queryKey: DAY_NOTES_KEY, queryFn: () => api<DayNotesData>('day-notes'), ...live })
@@ -289,67 +81,16 @@ export function Kitchen() {
     queryFn: () => api<{ list: { text: string }[]; members?: { id: string; display_name: string }[] }>('board'),
     ...live,
   })
-  // member id → name, for "suggéré par X" on a kid-suggested supper.
-  const memberName = (id: string | null | undefined) =>
-    (id && boardQ.data?.members?.find((m) => m.id === id)?.display_name) || ''
   const recipes = recipesQ.data?.recipes ?? []
-  // The recipe book is routes now (/kitchen/recipe/:id, …/edit, …/cook, …/new) —
-  // openers navigate instead of toggling local overlay state.
-  // Which slot's recipe picker is open ({date, slot}) — any slot can pick a
-  // recipe now, not just the souper.
-  const [recipePickFor, setRecipePickFor] = useState<{ date: number; slot: string } | null>(null)
-  // Which slot's "Choisir un reste" picker is open ({date, slot}) — the leftover
-  // counterpart to recipePickFor; only one of the two opens at a time per slot.
-  const [leftoverPickFor, setLeftoverPickFor] = useState<{ date: number; slot: string } | null>(null)
-  // Which day's "Gérer" sheet is open (its full planning controls live there now,
-  // off the calm read-only week grid). One at a time — so the souper/recipe-picker
-  // singletons can't fight across days.
-  const [manageDate, setManageDate] = useState<number | null>(null)
-  // The ＋ sheet's "Planifier un repas" hands us a day via ?manage=<date> (one
-  // editor, two entry points): open that day's Gérer sheet and consume the param
-  // so it fires once and a refresh/back doesn't reopen it.
-  const [searchParams, setSearchParams] = useSearchParams()
-  useEffect(() => {
-    const m = searchParams.get('manage')
-    if (!m) return
-    const d = Number(m)
-    if (Number.isFinite(d)) setManageDate(d)
-    setSearchParams(
-      (p) => {
-        const n = new URLSearchParams(p)
-        n.delete('manage')
-        return n
-      },
-      { replace: true },
-    )
-  }, [searchParams, setSearchParams])
-  // Quick-add is the default (tap a recipe → it's set, no staples). This toggle
-  // opts a pick INTO the grocery flow ("ajouter les ingrédients aussi") for the
-  // times you do want the staples chips — kept off so dropping a recipe is one tap.
-  const [pickWithStaples, setPickWithStaples] = useState(false)
+  // The recipe book + the per-day editor are routes now (/kitchen/recipe/*,
+  // /kitchen/day/:date) — openers navigate instead of toggling local overlay state.
   // Parent kitchen sub-tab: one job at a time so the page isn't an endless scroll.
   // Held in the URL (?tab=) so it survives the return from a full-screen add/edit
   // scene — add a recipe from Recettes and you come back to Recettes. See tabParam.
   const [kitTab, setKitTab] = useTabParam('tab', 'meals', ['meals', 'pantry', 'recipes'] as const)
-  // Match a planned supper to a saved recipe by (loose) title, so a day's meal can
-  // open its recipe.
-  const recipeByTitle = useMemo(() => {
-    const m = new Map<string, Recipe>()
-    for (const r of recipes) m.set(r.title.trim().toLowerCase(), r)
-    return m
-  }, [recipes])
-  // Exact link: a planned meal's recipe_id → its recipe. Preferred over the loose
-  // title match (survives renames/duplicates); title stays the fallback for plain
-  // free-text meals and pre-link rows.
-  const recipeById = useMemo(() => {
-    const m = new Map<string, Recipe>()
-    for (const r of recipes) m.set(r.id, r)
-    return m
-  }, [recipes])
-  // The recipe a planned meal points at: its exact link first, else a title match.
-  const recipeForMeal = (meal: MealRow): Recipe | undefined =>
-    (meal.recipe_id ? recipeById.get(meal.recipe_id) : undefined) ??
-    recipeByTitle.get(meal.title.trim().toLowerCase())
+  // The recipe a planned meal points at (exact recipe_id link first, else a loose
+  // title match) — shared with the day editor via useRecipeForMeal.
+  const recipeForMeal = useRecipeForMeal(recipes)
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const soonItems = useMemo(() => (useSoonQ.data?.soon ?? []).map((s) => s.item), [useSoonQ.data])
@@ -391,31 +132,19 @@ export function Kitchen() {
       const from = Number(fromKey)
       const to = Number(toKey)
       if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) return
-      for (const m of mealsFor(from, 'supper')) rescheduleMeal(m.id, to, 'supper')
+      for (const m of mealsFor(from, 'supper')) reschedule(qc, m.id, to, 'supper')
     },
     canDrop: (fromKey, toKey) => fromKey !== toKey,
     // Press-and-hold to move a day's plan — a calm, deliberate gesture, not a flick.
     holdMs: DND_HOLD_MS,
   })
 
-  // The flows (see components/kitchen/use*). Destructured to the same names the
-  // JSX always used, so the markup below reads unchanged.
+  // The week-action flows (shop / suggest) + the toddler kid-suggest. The per-day
+  // meal editing moved to DayPlanPage; this page keeps only kidSuggest (the toddler
+  // taps a recipe then an empty day — a suggestion, not a decision).
   const ai = useAiWake()
   const { aiWaking } = ai
-  const {
-    editDate,
-    setEditDate,
-    mealText,
-    setMealText,
-    staplesBusy,
-    staplePrompt,
-    mealErr,
-    saveMeal,
-    beginSetMeal,
-    chooseRecipeForMeal,
-    kidSuggest,
-    toggleStaple,
-  } = useMealPlanning(ai, profileId)
+  const { kidSuggest } = useMealPlanning(ai, profileId)
   const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, toggleAllShop, confirmShop, shoppableCount } =
     useRecipeShop(days, recipeForMeal, listItems)
   const suggest = useMealSuggest(recipes, ai, lowItems, listItems, soonItems)
@@ -504,23 +233,6 @@ export function Kitchen() {
   // for another tab never leaves stale tiles in the ＋ sheet.
   useEffect(() => () => registerKitchen(null, NO_KITCHEN_ACTIONS), [registerKitchen])
 
-  // Plan a recipe onto ANY slot (the shared picker's onPick). Souper keeps its
-  // optional "+ ingredients" staples step; every other slot is a clean quick-add
-  // (links the recipe, saves now). Closes whichever editor was open.
-  async function planRecipe(date: number, slot: string, r: Recipe) {
-    setRecipePickFor(null)
-    setEditDate(null)
-    setEditSlot(null)
-    setMealText('')
-    setSlotText('')
-    if (slot === 'supper' && pickWithStaples) {
-      chooseRecipeForMeal(date, slot, r)
-      return
-    }
-    await api('meals', { method: 'POST', body: { date, slot, title: r.title, recipeId: r.id } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-  }
-
   // Keep a suggestion (AI text, or a real recipe link) into the ideas pool. Takes
   // the specific card now that several can be on screen at once.
   async function keepSuggestion(s: MealSuggestion) {
@@ -600,11 +312,6 @@ export function Kitchen() {
             {aiWaking && (
               <p className="kitchen__ai-waking mono" role="status">
                 ⏳ {t.kitchen.aiWaking}
-              </p>
-            )}
-            {mealErr && (
-              <p className="error mono" role="alert">
-                {t.common.saveFailed}
               </p>
             )}
             {suggest.cards.map((s) => {
@@ -808,7 +515,7 @@ export function Kitchen() {
                     <button
                       type="button"
                       className="kitchen__day-manage"
-                      onClick={() => setManageDate(date)}
+                      onClick={() => nav(`/kitchen/day/${date}`)}
                       aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
                     >
                       <Icon name="pencil-simple-bold" size={16} />
@@ -842,35 +549,9 @@ export function Kitchen() {
           </ul>
           <DragGhost ghost={dayDnd.ghost} />
 
-          {/* One day's full planning controls, opened from a row's "Gérer" button.
-              State stays owned here (the souper flow + the recipe picker are page
-              singletons); the sheet just renders them for the one open day. */}
-          <DayManageSheet
-            open={manageDate !== null}
-            date={manageDate}
-            title={manageDate !== null ? capitalize(formatDayLong(manageDate, lang)) : ''}
-            onClose={() => setManageDate(null)}
-            recipes={recipes}
-            lowItems={lowItems}
-            listItems={listItems}
-            suppers={manageDate !== null ? mealsFor(manageDate, 'supper') : []}
-            mealsFor={mealsFor}
-            note={manageDate !== null ? noteFor(manageDate) : undefined}
-            recipeFor={recipeForMeal}
-            memberName={memberName}
-            onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
-            plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
-            picker={{ recipePickFor, setRecipePickFor, pickWithStaples, setPickWithStaples, planRecipe }}
-            leftovers={{
-              pool: leftoversQ.data?.leftovers ?? [],
-              pickFor: leftoverPickFor,
-              setPickFor: setLeftoverPickFor,
-              plan: planLeftoverOnDay,
-            }}
-            slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
-            noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
-            actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
-          />
+          {/* The per-day editor is a full-screen scene now (/kitchen/day/:date,
+              DayPlanPage) — a row's pencil and the ＋ "Planifier un repas" day
+              picker both navigate there. No in-page sheet to render here. */}
 
           <MealIdeas
             ideas={ideasQ.data?.ideas ?? []}

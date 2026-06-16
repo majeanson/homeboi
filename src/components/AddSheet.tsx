@@ -308,12 +308,12 @@ export function AddSheet({
     }
   }
 
-  // Open a day's full "Gérer" sheet from the picker: close this sheet and hand the
-  // chosen day to the Kitchen page via ?manage=<date>, which it consumes to open
-  // the DayManageSheet. One editor, no duplicate mini-form.
+  // Open a day's full editor from the picker: close this sheet and navigate to the
+  // day's planning scene (/kitchen/day/<date>). One editor, two entry points (the
+  // other is the grid's pencil); no duplicate mini-form.
   const planDay = (d: number) => {
     close()
-    nav(`/kitchen?manage=${d}`)
+    nav(`/kitchen/day/${d}`)
   }
 
   const modeLabel = (m: AddSheetMode) => {

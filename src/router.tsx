@@ -27,6 +27,7 @@ const CashierPage = lazy(() => import('./pages/CashierPage').then((m) => ({ defa
 const PriceMatchPage = lazy(() => import('./pages/PriceMatchPage').then((m) => ({ default: m.PriceMatchPage })))
 const ListEditPage = lazy(() => import('./pages/ListEditPage').then((m) => ({ default: m.ListEditPage })))
 const QuickAddPage = lazy(() => import('./pages/QuickAddPage').then((m) => ({ default: m.QuickAddPage })))
+const DayPlanPage = lazy(() => import('./pages/DayPlanPage').then((m) => ({ default: m.DayPlanPage })))
 const RecipeViewPage = lazy(() => import('./pages/RecipeViewPage').then((m) => ({ default: m.RecipeViewPage })))
 const RecipeFormPage = lazy(() => import('./pages/RecipeFormPage').then((m) => ({ default: m.RecipeFormPage })))
 const CookPage = lazy(() => import('./pages/CookPage').then((m) => ({ default: m.CookPage })))
@@ -77,6 +78,9 @@ export function AppRoutes() {
         <Route path="/liste/quick" element={<QuickAddPage />} />
         <Route path="/liste/deals/:itemId" element={<PriceMatchPage />} />
         <Route path="/liste/item/:itemId" element={<ListEditPage />} />
+        {/* One day's full meal-planning editor — a scene (was the DayManageSheet
+            bottom sheet, whose lower inputs stranded under the mobile keyboard). */}
+        <Route path="/kitchen/day/:date" element={<DayPlanPage />} />
         {/* `new` before `:id` so it isn't captured as a recipe id. */}
         <Route path="/kitchen/recipe/new" element={<RecipeFormPage />} />
         <Route path="/kitchen/recipe/:id" element={<RecipeViewPage />} />

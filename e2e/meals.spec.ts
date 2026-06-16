@@ -25,12 +25,12 @@ function waitMeals(page: Page, method: string, pred: (body: any) => boolean) {
   })
 }
 
-// The per-day editing (rows, add, reorder, clear, note) lives in the "Gérer"
-// bottom sheet now — the week grid is a calm read-only glance. Open the first
-// day's sheet and return it as the scope for the controls.
+// The per-day editing (rows, add, reorder, clear, note) lives in the day editor
+// SCENE now (/kitchen/day/:date) — the week grid is a calm read-only glance. Open
+// the first day's editor and return the scene as the scope for the controls.
 async function openManage(page: Page) {
   await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
-  const sheet = page.locator('.sheet.show')
+  const sheet = page.locator('.scene')
   await expect(sheet).toBeVisible()
   return sheet
 }
