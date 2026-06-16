@@ -179,13 +179,15 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
 
   // Commit the last interim transcript when an utterance ended without ever
   // producing a final (see pendingRef). No-op when a final already cleared it, so
-  // a healthy engine never double-adds.
-  function flushPending() {
+  // a healthy engine never double-adds. Returns whether anything was emitted, so
+  // onend can clear a non-fatal error once we've recovered a usable transcript.
+  function flushPending(): boolean {
     const phrase = pendingRef.current.trim()
     pendingRef.current = ''
-    if (!phrase) return
+    if (!phrase) return false
     const parts = opts.split ? splitItems(phrase) : [phrase]
     for (const p of parts) onResult(p)
+    return true
   }
 
   // iOS-only: establish (and, on an installed PWA, PERSIST) the mic grant via
@@ -319,8 +321,15 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
       recogRef.current = null
       // Commit a trailing interim the engine never finalized (no-op if a final
       // already cleared it). Without this, phones that don't finalize before our
-      // pause-stop dropped every phrase.
-      flushPending()
+      // pause-stop dropped every phrase. On iOS the engine often streams interims
+      // then fires a non-fatal 'aborted' at end-of-speech without ever committing
+      // a final (the standalone-PWA dictation restriction) — recovering the last
+      // interim here means the phrase still lands.
+      const recovered = flushPending()
+      // We salvaged a usable transcript, so the transient error that accompanied
+      // it (e.g. 'aborted'/'no-speech') isn't a user-facing failure — clear it so
+      // callers don't show an error over text that actually arrived.
+      if (recovered) setError(null)
       // Chrome ends recognition after a stretch of silence. In continuous mode
       // that shouldn't end the session — restart unless the user tapped stop or
       // a fatal permission error fired.

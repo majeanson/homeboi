@@ -105,6 +105,11 @@ export function MicSelfTest() {
   const timerRef = useRef<number | null>(null)
   const doneRef = useRef(false)
   const taRef = useRef<HTMLTextAreaElement | null>(null)
+  // Stable handle to "finish with the current verdict", set once a run begins so
+  // Stop and the safety timer can ALWAYS produce a report from whatever happened
+  // so far — never leave the probe in 'done' with an empty report (the "I can't
+  // generate a log at all" case).
+  const finishRef = useRef<(() => void) | null>(null)
 
   // Read the browser-remembered mic grant up front (best-effort; Safari often
   // can't answer, where we stay 'unknown' and lean on the live probe's onerror).
@@ -151,6 +156,18 @@ export function MicSelfTest() {
     const at = () => `+${Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - t0)}ms`
     const timeline: string[] = []
 
+    // Earliest-possible finish: until the full verdict machinery is wired below,
+    // Stop (e.g. during the Safari permission prompt, before recognition even
+    // starts) still yields a real report instead of a blank 'done' screen. Gets
+    // overwritten with the verdict-aware version once recognition is set up.
+    finishRef.current = () => {
+      if (doneRef.current) return
+      doneRef.current = true
+      setReport(`Babillard — mic diagnostic (stopped before recognition produced a result)\n\nTIMELINE\n${timeline.join('\n')}`)
+      setInterim('')
+      setPhase('done')
+    }
+
     // 1) getUserMedia — works in iOS PWA + private even where Web Speech doesn't,
     // so its result isolates "mic access" from "recognition".
     let gum = 'not attempted'
@@ -158,12 +175,22 @@ export function MicSelfTest() {
     const hasGum = typeof md?.getUserMedia === 'function'
     if (hasGum) {
       try {
-        const stream = await md.getUserMedia({ audio: true })
+        // Race the prompt against a timeout: in full Safari the permission dialog
+        // blocks getUserMedia until the user answers, and an ignored prompt would
+        // otherwise hang the whole probe forever (→ no log ever). After 7s we give
+        // up on priming and let recognition surface its own permission state.
+        const stream = await Promise.race<MediaStream>([
+          md.getUserMedia({ audio: true }),
+          new Promise<MediaStream>((_, rej) => window.setTimeout(() => rej(new Error('__timeout__')), 7000)),
+        ])
         stream.getTracks().forEach((tr) => tr.stop())
         gum = 'granted'
       } catch (e) {
         const er = e as DOMException
-        gum = `FAILED ${er?.name ?? 'Error'}: ${er?.message ?? ''}`.trim()
+        gum =
+          (er as Error)?.message === '__timeout__'
+            ? 'no response in 7s (permission prompt ignored or blocked) — continuing anyway'
+            : `FAILED ${er?.name ?? 'Error'}: ${er?.message ?? ''}`.trim()
       }
     } else {
       gum = 'getUserMedia MISSING'
@@ -251,17 +278,33 @@ export function MicSelfTest() {
       errorStr = e.error
       timeline.push(`${at()} onerror — "${e.error}"`)
     }
+    // One verdict, read off whatever state we've reached — shared by onend, the
+    // 10s safety timer, and Stop so every exit path yields the same honest read.
+    // Order matters: a captured transcript (final, else interim) is MORE
+    // informative than the error, so "heard 3 interims then aborted" never gets
+    // flattened to a bare "ERROR aborted" that hides that the engine did hear you.
+    const verdictFor = (): string => {
+      if (finalText) return `HEARD "${finalText}" — recognition WORKS here.`
+      if (lastInterim) {
+        // Non-terminal errors ('aborted'/'no-speech') AFTER interims = the engine
+        // transcribed but iOS tore the session down before committing a final.
+        // The usual cause is the home-screen-PWA (standalone WebKit) dictation
+        // restriction; the same device in full Safari usually finalizes.
+        if (errorStr && errorStr !== 'no-speech') {
+          return `INTERIM-ONLY — heard ${interimCount} interim${interimCount === 1 ? '' : 's'} (last: "${lastInterim}") then "${errorStr}" before any final. The engine DID transcribe but never committed a final result — usual cause is the iOS home-screen-PWA (standalone WebKit) dictation restriction. The real app keeps this last interim; the same device in full Safari usually finalizes cleanly.`
+        }
+        return `INTERIM-ONLY "${lastInterim}" but never finalized — engine heard but didn't commit a final. The real app keeps this last interim.`
+      }
+      if (errorStr) return `ERROR "${errorStr}" — recognition refused/failed before any transcript (see timeline).`
+      if (interimCount === 0)
+        return 'SILENT — mic captured but ZERO transcripts came back. Classic iOS sign of a missing dictation language pack, unreachable dictation servers, or a standalone-PWA restriction.'
+      return 'No final result.'
+    }
+    finishRef.current = () => finalize(verdictFor())
+
     recog.onend = () => {
       timeline.push(`${at()} onend  (interims: ${interimCount}, finals: ${finalCount})`)
-      let verdict: string
-      if (finalText) verdict = `HEARD "${finalText}" — recognition WORKS here.`
-      else if (errorStr) verdict = `ERROR "${errorStr}" — recognition refused/failed (see timeline).`
-      else if (lastInterim) verdict = `INTERIM-ONLY "${lastInterim}" but never finalized — engine heard but didn't commit.`
-      else if (interimCount === 0)
-        verdict =
-          'SILENT — mic captured but ZERO transcripts came back. Classic iOS sign of a missing dictation language pack or unreachable dictation servers (or standalone-PWA restriction).'
-      else verdict = 'No final result.'
-      finalize(verdict)
+      finishRef.current?.()
     }
 
     recogRef.current = recog
@@ -273,13 +316,11 @@ export function MicSelfTest() {
       finalize('start() threw — recognition could not begin in this context.')
       return
     }
-    // Safety net: some iOS contexts never fire onend. Force-finish after 10s.
+    // Safety net: some iOS contexts never fire onend. Force-finish after 10s with
+    // whatever state we reached — guarantees a report even when nothing fires.
     timerRef.current = window.setTimeout(() => {
       timeline.push(`${at()} timeout (10s) — forcing stop`)
-      if (finalText) finalize(`HEARD "${finalText}" — recognition WORKS here.`)
-      else if (errorStr) finalize(`ERROR "${errorStr}" — recognition refused/failed.`)
-      else if (lastInterim) finalize(`INTERIM-ONLY "${lastInterim}" — heard but never finalized before timeout.`)
-      else finalize('SILENT after 10s — mic captured but no transcripts (likely missing dictation language or PWA/private restriction).')
+      finishRef.current?.()
     }, 10000)
   }
 
@@ -290,9 +331,15 @@ export function MicSelfTest() {
     } catch {
       /* no-op */
     }
-    // abort() fires onend → finalize; if it doesn't, finalize defensively next tick.
+    // abort() *may* fire onend → finish; but on iOS it often doesn't. So after a
+    // beat, force the report ourselves from the current state. Critically this
+    // builds a real report (via finishRef) instead of just flipping to 'done'
+    // with an empty textarea — otherwise Stop produced "no log at all".
     window.setTimeout(() => {
-      if (!doneRef.current) setPhase('done')
+      if (!doneRef.current) {
+        if (finishRef.current) finishRef.current()
+        else setPhase('done')
+      }
     }, 300)
   }
 
