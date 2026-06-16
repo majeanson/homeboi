@@ -36,6 +36,9 @@ const CookPage = lazy(() => import('./pages/CookPage').then((m) => ({ default: m
 const EventFormPage = lazy(() => import('./pages/EventFormPage').then((m) => ({ default: m.EventFormPage })))
 const ChoreFormPage = lazy(() => import('./pages/ChoreFormPage').then((m) => ({ default: m.ChoreFormPage })))
 const RoutineFormPage = lazy(() => import('./pages/RoutineFormPage').then((m) => ({ default: m.RoutineFormPage })))
+// Dev-only component gallery (unlinked). A live catalogue of the shared primitives
+// across the four presentation axes — see src/pages/DevKit.tsx.
+const DevKit = lazy(() => import('./pages/DevKit').then((m) => ({ default: m.DevKit })))
 
 function Loading() {
   const t = useT()
@@ -92,6 +95,9 @@ export function AppRoutes() {
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+
+        {/* Dev-only component gallery — unlinked, standalone (no hub chrome). */}
+        <Route path="/dev/kit" element={<DevKit />} />
 
         {/* Legacy: kid view folded into Routines-in-toddler-mode. */}
         <Route path="/kid" element={<Navigate to="/routines" replace />} />
