@@ -8,10 +8,11 @@ import { pingTextModel, pingVisionModel } from '../_lib/ai'
 // a retired text model or the gated-vision license block (err 5016) shows up as
 // a concrete pass/fail with the error message, the same breakages that otherwise
 // only surface in the AI error log after a feature has already failed for a user.
-// Operator scope: a kiosk device can't burn inferences poking this.
+// Any actor: a parent-mode kiosk may run it too (it already burns inferences via
+// the capture spine) — only member admin + device pairing stay operator-only.
 export const onRequestPost = authed(async (ctx) => {
   if (!ctx.env.AI) return serviceUnavailable('AI binding not configured on this deployment.')
   // Both pings in parallel — each already swallows its own failure into a result.
   const [text, vision] = await Promise.all([pingTextModel(ctx.env), pingVisionModel(ctx.env)])
   return ok({ checks: [text, vision] })
-}, 'operator')
+})

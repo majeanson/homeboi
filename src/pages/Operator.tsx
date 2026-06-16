@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { isPaired } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { DisplaySection, VoiceSection, CalmSection } from '../components/operator/display'
 import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
@@ -45,12 +46,12 @@ const SECTIONS = [
   { id: 'calm', key: 'calmTitle' as const },
   { id: 'ai-log', key: 'aiLog' as const },
 ]
-const SECTION_IDS = SECTIONS.map((s) => s.id)
-
-// Operator hub (phone/laptop, logged in). The control surface that a kiosk is
-// NOT allowed to reach: members, device pairing approval + revocation, chores,
-// kid routines. Each section is a thin CRUD strip — no dashboards, no metrics,
-// nothing to optimize-against (NFR-CALM).
+// Operator hub. Reached two ways: the signed-in operator (phone/laptop, full
+// access) OR a parent-mode kiosk (a paired wall tablet — device token, no cookie),
+// which gets in to change most settings but NOT member admin or device pairing
+// (those two tabs are hidden + the server keeps their writes operator-only). A
+// locked/toddler kiosk never gets here — HubLayout redirects it away. Each section
+// is a thin CRUD strip — no dashboards, nothing to optimize-against (NFR-CALM).
 export function Operator() {
   const t = useT()
   const nav = useNavigate()
@@ -58,14 +59,21 @@ export function Operator() {
   const { setMemberId } = useProfile()
   const qc = useQueryClient()
 
-  // Only fetch once signed in — a kiosk/anon visitor would 401. Each strip is
-  // independent so one failing read never blanks the rest (data?? [] default).
-  const membersQ = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members'), enabled: signedIn })
+  // A paired wall tablet may open Réglages too; `signedIn` is the full operator.
+  const paired = isPaired()
+  const canEnter = signedIn || paired
+
+  // Fetch for either an operator OR a paired kiosk — an anon visitor still 401s.
+  // Members GET is open (the agenda picker needs the faces even on a kiosk); the
+  // WRITES under Membres stay operator-only and that tab is hidden for a kiosk.
+  // Devices is operator-only top-to-bottom, so its read stays cookie-gated. Each
+  // strip is independent so one failing read never blanks the rest (data?? []).
+  const membersQ = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members'), enabled: canEnter })
   const devicesQ = useQuery({ queryKey: ['devices'], queryFn: () => api<{ devices: Device[] }>('pair/devices'), enabled: signedIn })
-  const choresQ = useQuery({ queryKey: ['chores'], queryFn: () => api<{ chores: Chore[] }>('chores'), enabled: signedIn })
-  const routinesQ = useQuery({ queryKey: ['routines'], queryFn: () => api<{ routines: Routine[] }>('routines'), enabled: signedIn })
-  const eventsQ = useQuery({ queryKey: ['events'], queryFn: () => api<{ events: EventRow[] }>('events'), enabled: signedIn })
-  const healthQ = useQuery({ queryKey: ['health'], queryFn: () => api<{ ai: boolean }>('health'), enabled: signedIn })
+  const choresQ = useQuery({ queryKey: ['chores'], queryFn: () => api<{ chores: Chore[] }>('chores'), enabled: canEnter })
+  const routinesQ = useQuery({ queryKey: ['routines'], queryFn: () => api<{ routines: Routine[] }>('routines'), enabled: canEnter })
+  const eventsQ = useQuery({ queryKey: ['events'], queryFn: () => api<{ events: EventRow[] }>('events'), enabled: canEnter })
+  const healthQ = useQuery({ queryKey: ['health'], queryFn: () => api<{ ai: boolean }>('health'), enabled: canEnter })
 
   const members = membersQ.data?.members ?? []
   const devices = devicesQ.data?.devices ?? []
@@ -84,15 +92,25 @@ export function Operator() {
   }, [qc])
 
   useEffect(() => {
-    if (!loading && !signedIn) nav('/login')
-  }, [loading, signedIn, nav])
+    if (!loading && !canEnter) nav('/login')
+  }, [loading, canEnter, nav])
 
   // Which settings tab is open, held in the URL (?tab=<id>). A deep link selects
   // the matching tab (/settings?tab=routines) and the choice survives a refresh
   // or a return from elsewhere — unlike the old read-only hash. See tabParam.
-  const [tab, setTab] = useTabParam('tab', SECTIONS[0].id, SECTION_IDS)
+  // A kiosk can't admin members or pair devices — drop those two tabs and keep
+  // them out of the valid tab set so a deep link can't land on them. "Still
+  // loading" counts as full access so an operator's deep link (?tab=household)
+  // survives the auth round-trip instead of snapping to the default tab.
+  const fullAccess = signedIn || loading
+  const sections = fullAccess ? SECTIONS : SECTIONS.filter((s) => s.id !== 'household' && s.id !== 'devices')
+  const [tab, setTab] = useTabParam(
+    'tab',
+    sections[0].id,
+    sections.map((s) => s.id),
+  )
 
-  if (loading || !signedIn) return <p className="loading mono">{t.common.loading}</p>
+  if (loading || !canEnter) return <p className="loading mono">{t.common.loading}</p>
 
   return (
     <main className="operator">
@@ -104,24 +122,34 @@ export function Operator() {
         <div className="operator__meta mono">
           <span>{household?.name}</span>
           <span className={`tag ${ai ? 'tag--on' : 'tag--off'}`}>{ai ? t.operator.aiOn : t.operator.aiOff}</span>
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={() => {
-              // Drop the picked face with the session — on a shared device the
-              // next family signing in must not inherit a ghost member id (the
-              // X-Profile header would mis-attribute their writes).
-              setMemberId(null)
-              signOut().then(() => nav('/'))
-            }}
-          >
-            {t.nav.logout}
-          </button>
+          {signedIn ? (
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              onClick={() => {
+                // Drop the picked face with the session — on a shared device the
+                // next family signing in must not inherit a ghost member id (the
+                // X-Profile header would mis-attribute their writes).
+                setMemberId(null)
+                signOut().then(() => nav('/'))
+              }}
+            >
+              {t.nav.logout}
+            </button>
+          ) : (
+            // A kiosk has no session to drop; offer the escalation to operator
+            // (needed for the two hidden tabs: Membres + Tablettes jumelées).
+            <button type="button" className="btn btn--ghost mono" onClick={() => nav('/login')}>
+              {t.operator.kioskSignIn}
+            </button>
+          )}
         </div>
       </div>
 
+      {!signedIn && <p className="operator__kiosk-note mono">{t.operator.kioskNotice}</p>}
+
       <nav className="operator__tabs mono" role="tablist" aria-label={t.operator.sections}>
-        {SECTIONS.map((s) => (
+        {sections.map((s) => (
           <button
             key={s.id}
             type="button"

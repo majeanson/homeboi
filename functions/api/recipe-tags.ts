@@ -185,4 +185,4 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 
   if (updates.length) await ctx.env.DB.batch(updates)
   return ok({ changed: updates.length })
-}, 'operator')
+})

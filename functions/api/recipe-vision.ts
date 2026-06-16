@@ -5,8 +5,9 @@ import { refineSteps } from '../_lib/recipeImport'
 
 // Read a recipe out of a PHOTO. The client sends raw image bytes (resized, same
 // as recipe-image); the vision model OCRs + structures them into a DRAFT the
-// cook reviews before saving — nothing is stored here. Operator-only (writing
-// the recipe book is an adult action). AI unset → 503 so the UI says "fill it
+// cook reviews before saving — nothing is stored here. Any actor — a parent-mode
+// kiosk builds recipes too (recipes CRUD was never operator-gated); only member
+// admin + device pairing stay operator-only. AI unset → 503 so the UI says "fill it
 // in by hand". This is the "read a photo" fast-fill, distinct from recipe-image
 // which STORES the dish's display picture.
 const MAX_BYTES = 6 * 1024 * 1024
@@ -34,4 +35,4 @@ export const onRequestPost = authed(async (ctx) => {
     }),
     report,
   )
-}, 'operator')
+})

@@ -9,7 +9,8 @@ import { profileMemberId } from '../_lib/profile'
 //            Any actor: the notice can pop on a kiosk a toddler is using, and we
 //            still want it recorded for the operator to read later.
 //   GET    — list the log, newest first, for the Réglages journal.
-//   DELETE — clear the whole log (operator-only — it's the "I've read it" reset).
+//   DELETE — clear the whole log (the "I've read it" reset; a parent-mode kiosk
+//            may clear it too — only member admin + device pairing are operator-only).
 //
 // Deliberately tiny: no counts surfaced, no severity, nothing to optimize against
 // (NFR-CALM). It's a maintenance log that empties when you clear it.
@@ -44,4 +45,4 @@ export const onRequestGet = authed(async (ctx, actor) => {
 export const onRequestDelete = authed(async (ctx, actor) => {
   await ctx.env.DB.prepare('DELETE FROM ai_errors WHERE household_id = ?').bind(actor.householdId).run()
   return ok()
-}, 'operator')
+})

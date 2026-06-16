@@ -13,7 +13,9 @@ import { nowSec } from '../_lib/ids'
 // and the per-slot meal colours + hide-list (so a meal reads the same colour on
 // every surface, and "I only care about souper" can drop the other slots).
 // GET is open to any actor (a kiosk needs the location AND the meal colours too);
-// PATCH is operator-only — a wall tablet shouldn't be able to move the household.
+// PATCH accepts any actor too — a parent-mode kiosk may set these household prefs
+// (postal, store filter, meal colours, reserve spots); only member admin + device
+// pairing stay operator-only.
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const postal = await householdPostal(ctx.env, actor.householdId)
@@ -94,4 +96,4 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
   return ok({ postal, includedStores, mealColors: meals.colors, mealHidden: meals.hidden, reserveLocations })
-}, 'operator')
+})

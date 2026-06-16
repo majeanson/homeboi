@@ -1,4 +1,4 @@
-import { badRequest, forbidden, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
@@ -53,7 +53,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     )
     .run()
   return ok({ id, title })
-}, 'operator')
+})
 
 // Mark done / record help. Two shapes, both append a contribution to
 // task_participants (the shared-task "who pitched in" log):
@@ -77,15 +77,15 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
-  // Editing the chore (operator only) — a distinct shape from marking done: any
-  // of title / rotation / color / recur present means "edit this chore in place".
-  // One write covers everything the form changed, so the same ＋ form that
-  // creates a chore also edits it (rename, re-pick the rotation, recolour,
-  // re-schedule) without recreating it. `start` rides along to anchor a recur.
+  // Editing the chore — a distinct shape from marking done: any of title /
+  // rotation / color / recur present means "edit this chore in place". One write
+  // covers everything the form changed, so the same ＋ form that creates a chore
+  // also edits it (rename, re-pick the rotation, recolour, re-schedule) without
+  // recreating it. `start` rides along to anchor a recur. A parent-mode kiosk may
+  // edit too (only member admin + device pairing stay operator-only).
   const editsContent =
     body.title !== undefined || body.rotation !== undefined || body.color !== undefined || body.recur !== undefined
   if (editsContent) {
-    if (actor.scope !== 'operator') return forbidden('Opérateur requis.')
     const sets: string[] = []
     const binds: unknown[] = []
     if (typeof body.title === 'string' && body.title.trim()) {
@@ -165,4 +165,4 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     ctx.env.DB.prepare('DELETE FROM tasks WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId),
   ])
   return ok({ ok: true })
-}, 'operator')
+})

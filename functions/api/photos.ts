@@ -4,7 +4,8 @@ import { newId, nowSec } from '../_lib/ids'
 
 // Family photos for the wall-board frame. Bytes live in R2 (free tier, no
 // egress); these rows index them by key. GET is open to any actor (the kiosk
-// shows the frame); upload + delete are operator-only. To guarantee we never
+// shows the frame); upload + delete accept any actor (a parent-mode kiosk too —
+// only member admin + device pairing stay operator-only). To guarantee we never
 // outgrow the free tier, the set is CAPPED — uploading past MAX_PHOTOS prunes the
 // oldest (row + R2 blob). Resizing happens client-side before upload.
 const MAX_PHOTOS = 30
@@ -46,7 +47,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     await ctx.env.DB.prepare('DELETE FROM photos WHERE id = ?').bind(row.id).run()
   }
   return ok({ key })
-}, 'operator')
+})
 
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
@@ -59,4 +60,4 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .bind(body.id, actor.householdId)
     .run()
   return ok({ ok: true })
-}, 'operator')
+})

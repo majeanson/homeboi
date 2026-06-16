@@ -28,7 +28,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .bind(newId(), actor.householdId, item, locationId, nowSec())
     .run()
   return ok({ ok: true })
-}, 'operator')
+})
 
 // Rename a reserve item and/or move it to another location (the ✏️ affordance).
 // Each field is only touched when present, so a rename and a move are independent.
@@ -49,7 +49,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
   }
   return ok({ ok: true })
-}, 'operator')
+})
 
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
@@ -58,4 +58,4 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .bind(body.id, actor.householdId)
     .run()
   return ok({ ok: true })
-}, 'operator')
+})

@@ -147,7 +147,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     .bind(newId(), actor.householdId, key, label || key, cadence(body?.cadenceDays), body?.muted ? 1 : 0, source, ts, ts)
     .run()
   return ok({ ok: true, key })
-}, 'operator')
+})
 
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ key?: string }>(ctx.request)
@@ -157,4 +157,4 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .bind(actor.householdId, key)
     .run()
   return ok({ ok: true })
-}, 'operator')
+})

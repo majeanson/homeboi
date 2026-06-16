@@ -6,7 +6,9 @@ import { normalizeRecur } from '../_lib/recur'
 // Events (the agenda the board merges). Until now events could only be born from
 // a capture; this is the operator's direct CRUD so a typo can be fixed and a
 // cancelled thing removed. GET is open to any actor (the management list); the
-// writes are operator-only. The board reads events through /api/board, not here.
+// writes accept any actor — a parent-mode kiosk may edit the agenda too (only
+// member admin + device pairing stay operator-only). The board reads events
+// through /api/board, not here.
 //
 // An event may RECUR (recur_json: a {freq,interval?,weekdays?} rule). start_at is
 // the anchor; the board expands the series. See _lib/recur.
@@ -58,7 +60,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     )
     .run()
   return ok({ id, title })
-}, 'operator')
+})
 
 export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<EventBody>(ctx.request)
@@ -79,7 +81,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     .run()
   if (!res.meta.changes) return notFound('Rendez-vous introuvable.')
   return ok({ ok: true })
-}, 'operator')
+})
 
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
@@ -88,4 +90,4 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .bind(body.id, actor.householdId)
     .run()
   return ok({ ok: true })
-}, 'operator')
+})

@@ -1224,6 +1224,18 @@
 .operator__meta > span:first-child {
   white-space: nowrap;
 }
+/* Parent-mode kiosk banner: most settings are editable here, but member admin +
+   device pairing need the operator account (those two tabs are hidden). Quiet by
+   design — a note, not an alarm. */
+.operator__kiosk-note {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.85;
+}
 .operator__section {
   padding: 1.25rem;
   margin-bottom: 1.25rem;

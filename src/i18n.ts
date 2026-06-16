@@ -524,6 +524,9 @@ export const FR = {
     saveLabel: 'Enregistrer',
     colorLabel: 'Couleur',
     sections: 'Sections',
+    kioskNotice:
+      'Tablette jumelée : tu peux ajuster la plupart des réglages ici. La maisonnée et le jumelage des tablettes demandent le compte opérateur (connexion sur un téléphone).',
+    kioskSignIn: 'Se connecter comme opérateur',
     needChild: 'Ajoute d’abord un enfant (coche « Enfant »).',
     forWho: 'Pour qui :',
     tplStart: 'Modèle :',
@@ -1284,6 +1287,9 @@ export const EN: typeof FR = {
     saveLabel: 'Save',
     colorLabel: 'Colour',
     sections: 'Sections',
+    kioskNotice:
+      'Paired tablet: you can change most settings here. Members and tablet pairing need the operator account (sign in on a phone).',
+    kioskSignIn: 'Sign in as operator',
     needChild: 'Add a child first (check “Child”).',
     forWho: 'For whom:',
     tplStart: 'Template:',

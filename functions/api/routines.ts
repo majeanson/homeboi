@@ -1,4 +1,4 @@
-import { badRequest, forbidden, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { dayStart, newId, nowSec } from '../_lib/ids'
 
@@ -95,7 +95,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     ),
   )
   return ok({ ids })
-}, 'operator')
+})
 
 // PATCH wears two hats: toggle a card done for today (the toddler's tap —
 // kiosk-allowed), or retag the routine's time-of-day cue (operator-only).
@@ -117,13 +117,14 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!owns) return notFound('Routine introuvable.')
 
   // Edit the routine itself (name / card deck / time-of-day cue) — a settings
-  // act, not a toddler tap, so operator-only. Any of these fields present means
-  // "edit"; the same ＋ form that builds a routine also edits it in place. The
-  // tod-only shape (the Réglages chip cycle) still lands here unchanged.
+  // act, not a toddler tap. Any of these fields present means "edit"; the same ＋
+  // form that builds a routine also edits it in place. The tod-only shape (the
+  // Réglages chip cycle) still lands here unchanged. A parent-mode kiosk may edit
+  // too (only member admin + device pairing stay operator-only) — the toddler tap
+  // path below is unaffected.
   if (body.cardIdx === undefined) {
     const editsContent = 'timeOfDay' in body || body.name !== undefined || body.cards !== undefined
     if (!editsContent) return badRequest('cardIdx, name, cards ou timeOfDay requis.')
-    if (actor.scope !== 'operator') return forbidden('This action needs the operator account, not a kiosk.')
     const sets: string[] = []
     const binds: unknown[] = []
     if (typeof body.name === 'string' && body.name.trim()) {
@@ -192,4 +193,4 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     ),
   ])
   return ok({ ok: true })
-}, 'operator')
+})

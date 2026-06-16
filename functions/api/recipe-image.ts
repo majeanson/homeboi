@@ -5,8 +5,9 @@ import { newId } from '../_lib/ids'
 // Upload a recipe picture. Bytes go to R2 (same bucket + free tier as family
 // photos) under an opaque `rc_<id>` key, served back by /api/img/<key>. Returns
 // the key; the caller stores it in recipes.image. The client resizes before
-// upload (PHOTO_MAX) so blobs stay small. Operator-only (writing the recipe book
-// is an adult action). Unbound R2 → 503 so the UI can fall back to no picture.
+// upload (PHOTO_MAX) so blobs stay small. Any actor — a parent-mode kiosk builds
+// recipes too (recipes CRUD was never operator-gated); only member admin + device
+// pairing stay operator-only. Unbound R2 → 503 so the UI can fall back to no picture.
 //
 // Unlike /api/photos this does NOT index a row or prune — a recipe owns its
 // image via recipes.image, and recipes.DELETE/PATCH free the R2 blob.
@@ -22,4 +23,4 @@ export const onRequestPost = authed(async (ctx) => {
   const key = `rc_${newId()}`
   await ctx.env.PHOTOS.put(key, buf, { httpMetadata: { contentType: type } })
   return ok({ key })
-}, 'operator')
+})
