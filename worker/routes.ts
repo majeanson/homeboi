@@ -44,6 +44,7 @@ import * as recipeToList from '../functions/api/recipe-to-list'
 import * as reserve from '../functions/api/reserve'
 import * as routines from '../functions/api/routines'
 import * as suggestMeal from '../functions/api/suggest-meal'
+import * as transcribe from '../functions/api/transcribe'
 import * as useSoon from '../functions/api/use-soon'
 import * as weather from '../functions/api/weather'
 import * as pairClaim from '../functions/api/pair/claim'
@@ -101,6 +102,7 @@ const TABLE: Record<string, RouteMod> = {
   reserve,
   routines,
   'suggest-meal': suggestMeal,
+  transcribe,
   'use-soon': useSoon,
   weather,
   'pair/claim': pairClaim,

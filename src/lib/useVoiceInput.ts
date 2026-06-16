@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n'
+import { api } from './api'
 
 // On-device speech-to-text via the browser's Web Speech API. This is the calm,
 // zero-cost, in-browser STT the capture surfaces share: where the browser
-// supports it, nothing we pay for or host runs. `hasVoice` is false where it's
-// unsupported so callers hide the mic entirely rather than show a dead button.
-// (Server STT like Whisper was considered, but this keeps capture free + private
-// and good enough for short household notes.)
+// supports it, nothing we pay for or host runs. `hasVoice` is false where NEITHER
+// path below works, so callers hide the mic rather than show a dead button.
+//
+// One context defeats on-device recognition: an iOS/iPadOS INSTALLED PWA, where
+// webkitSpeechRecognition starts then aborts instantly with zero audio (the
+// standalone-sandbox dictation restriction). getUserMedia/MediaRecorder still work
+// there, so we fall back to recording a short clip and transcribing it server-side
+// via Workers AI Whisper (/api/transcribe) — feeding the SAME onResult the
+// recognizer would. The fallback also catches any browser with no SpeechRecognition
+// at all (e.g. Firefox). On-device stays the default everywhere it actually works;
+// Whisper only runs where recognition is gated, so capture stays free + private
+// for the common case.
 //
 // Two modes, set per caller:
 //   • default (CaptureBar) — single phrase, fills the input for the user to route.
@@ -93,6 +102,30 @@ export function isIos(): boolean {
   return /Macintosh/.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document
 }
 
+// Running as an installed PWA (home-screen icon), not a browser tab. On iOS this
+// is exactly the context where webkitSpeechRecognition is gated, so it picks the
+// Whisper recording fallback. Checks the iOS-only `navigator.standalone` flag AND
+// the standard display-mode media query (Android/desktop installs). Mirrors the
+// same check in components/operator/micTest.tsx.
+export function isStandalone(): boolean {
+  if (typeof window === 'undefined') return false
+  const navAny = navigator as unknown as { standalone?: boolean }
+  const mm = typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches
+  return !!navAny.standalone || !!mm
+}
+
+// Pick a container MediaRecorder can actually produce on THIS engine: iOS Safari
+// only does audio/mp4 (AAC); Chromium/Android prefer audio/webm. '' lets the
+// recorder choose its own default. Whisper decodes any of them server-side.
+function pickAudioMime(): string {
+  if (typeof window === 'undefined' || typeof window.MediaRecorder === 'undefined') return ''
+  const MR = window.MediaRecorder
+  for (const m of ['audio/mp4', 'audio/webm', 'audio/ogg']) {
+    if (typeof MR.isTypeSupported === 'function' && MR.isTypeSupported(m)) return m
+  }
+  return ''
+}
+
 export interface VoiceInput {
   listening: boolean
   hasVoice: boolean
@@ -131,7 +164,27 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
   const sawResultRef = useRef(false)
   const lastErrorRef = useRef<string | null>(null)
   const retriedRef = useRef(false)
-  const hasVoice = !!getCtor()
+  // Whisper fallback (iOS installed PWA / no SpeechRecognition): the live recorder,
+  // its captured chunks, the held mic stream, and the safety auto-stop timer. The
+  // state ref guards against a tap landing mid-transcription starting a 2nd clip.
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<BlobPart[]>([])
+  const audioStreamRef = useRef<MediaStream | null>(null)
+  const whisperTimerRef = useRef<number | null>(null)
+  const whisperStateRef = useRef<'idle' | 'recording' | 'transcribing'>('idle')
+
+  // Which STT path this device uses. On-device recognition is preferred, but it's
+  // gated in an iOS installed PWA (instant abort), so there we record + transcribe
+  // server-side instead. `canRecord` also rescues any browser with no recognition
+  // API. `hasVoice` stays false only when NEITHER works, so the mic hides cleanly.
+  const recognitionUsable = !!getCtor() && !(isIos() && isStandalone())
+  const canRecord =
+    typeof navigator !== 'undefined' &&
+    !!navigator.mediaDevices?.getUserMedia &&
+    typeof window !== 'undefined' &&
+    typeof window.MediaRecorder !== 'undefined'
+  const useWhisper = !recognitionUsable && canRecord
+  const hasVoice = recognitionUsable || useWhisper
 
   // Read the browser-remembered mic grant up front, and follow it live (the
   // operator may flip it in browser/kiosk settings while the app is open). This
@@ -231,12 +284,137 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     }
   }
 
+  function clearWhisperTimer() {
+    if (whisperTimerRef.current != null) {
+      clearTimeout(whisperTimerRef.current)
+      whisperTimerRef.current = null
+    }
+  }
+
+  // Release the held mic so the OS recording indicator clears. Safe to call twice.
+  function teardownStream() {
+    audioStreamRef.current?.getTracks().forEach((t) => t.stop())
+    audioStreamRef.current = null
+  }
+
+  // Whisper path entry. First tap opens the mic and records; a second tap ends and
+  // transcribes (there's no per-word streaming server-side — you speak, pause, the
+  // text lands). A safety cap stops a forgotten mic. Mirrors the recognition path's
+  // single-tap-toggle so VoiceButton needs no special-casing.
+  async function startWhisper() {
+    if (whisperStateRef.current === 'recording') {
+      stopWhisper()
+      return
+    }
+    if (whisperStateRef.current === 'transcribing') return // busy — ignore the tap
+    setError(null)
+    stoppedRef.current = false
+    let stream: MediaStream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch (err) {
+      const name = (err as DOMException)?.name
+      if (name === 'NotAllowedError' || name === 'SecurityError') {
+        setPermission('denied')
+        setError('not-allowed')
+      } else {
+        setError('no-speech')
+      }
+      setListening(false)
+      return
+    }
+    setPermission('granted')
+    audioStreamRef.current = stream
+    audioChunksRef.current = []
+    const mime = pickAudioMime()
+    let mr: MediaRecorder
+    try {
+      mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
+    } catch {
+      mr = new MediaRecorder(stream) // engine rejected the hint — take its default
+    }
+    mediaRecorderRef.current = mr
+    mr.ondataavailable = (e) => {
+      if (e.data && e.data.size) audioChunksRef.current.push(e.data)
+    }
+    mr.onstop = () => {
+      void finishWhisper()
+    }
+    whisperStateRef.current = 'recording'
+    setListening(true)
+    mr.start()
+    // A grocery run (continuous) gets a longer window than one capture; either way
+    // the mic can't run forever if the user walks away.
+    const cap = opts.continuous ? 60000 : 15000
+    whisperTimerRef.current = window.setTimeout(() => stopWhisper(), cap)
+  }
+
+  // End recording (the recorder's onstop runs finishWhisper). 'transcribing' blocks
+  // a re-tap until the text lands.
+  function stopWhisper() {
+    clearWhisperTimer()
+    const mr = mediaRecorderRef.current
+    if (mr && whisperStateRef.current === 'recording') {
+      whisperStateRef.current = 'transcribing'
+      try {
+        mr.stop()
+      } catch {
+        /* already stopped */
+      }
+    }
+  }
+
+  // Assemble the clip, POST it to /api/transcribe, emit the transcript through the
+  // same onResult as recognition (split into items when the caller asked). A clip
+  // abandoned via stop()/unmount (stoppedRef) or an empty recording is dropped.
+  async function finishWhisper() {
+    const mr = mediaRecorderRef.current
+    mediaRecorderRef.current = null
+    const type = mr?.mimeType || pickAudioMime() || 'audio/webm'
+    const blob = new Blob(audioChunksRef.current, { type })
+    audioChunksRef.current = []
+    teardownStream()
+    if (stoppedRef.current || blob.size === 0) {
+      whisperStateRef.current = 'idle'
+      setListening(false)
+      return
+    }
+    try {
+      const res = await api<{ text?: string }>('transcribe', { method: 'POST', body: blob })
+      const phrase = (res?.text ?? '').trim()
+      if (phrase) {
+        const parts = opts.split ? splitItems(phrase) : [phrase]
+        for (const p of parts) onResult(p)
+        setError(null)
+      } else {
+        setError('no-speech')
+      }
+    } catch {
+      // api() already popped the AI-error notice if the server tagged the response;
+      // the inline status just shows the generic "didn't catch that".
+      setError('no-speech')
+    } finally {
+      whisperStateRef.current = 'idle'
+      setListening(false)
+    }
+  }
+
   function stop() {
     stoppedRef.current = true
     clearSilence()
+    clearWhisperTimer()
     setListening(false)
     recogRef.current?.stop()
     recogRef.current = null
+    // Abandon any in-flight recording — finishWhisper sees stoppedRef and drops it.
+    if (mediaRecorderRef.current && whisperStateRef.current === 'recording') {
+      whisperStateRef.current = 'transcribing'
+      try {
+        mediaRecorderRef.current.stop()
+      } catch {
+        /* no-op */
+      }
+    }
   }
 
   // Kill the pause timer AND the live mic when the caller unmounts. Without the
@@ -248,17 +426,33 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     () => () => {
       stoppedRef.current = true
       clearSilence()
+      clearWhisperTimer()
       try {
         recogRef.current?.abort()
       } catch {
         /* abort on an already-dead engine is a no-op */
       }
       recogRef.current = null
+      // Kill a live recording and release the mic so the stream never leaks.
+      if (mediaRecorderRef.current && whisperStateRef.current === 'recording') {
+        try {
+          mediaRecorderRef.current.stop()
+        } catch {
+          /* no-op */
+        }
+      }
+      teardownStream()
     },
     [],
   )
 
   function start() {
+    // iOS installed PWA / no recognition API → record + server-transcribe instead.
+    // startWhisper owns its own tap-toggle, so just hand off.
+    if (useWhisper) {
+      void startWhisper()
+      return
+    }
     const Ctor = getCtor()
     if (!Ctor) return
     // Toggle: a second tap on an open mic stops it (continuous mode).

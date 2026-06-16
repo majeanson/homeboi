@@ -26,15 +26,12 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <!-- minimal-ui test (iPad standalone-PWA Web Speech aborts instantly): iOS
-         honours apple-mobile-web-app-capable OVER the manifest, so "no" is what
-         actually drops the home-screen icon out of the standalone sandbox into a
-         Safari-chrome shell — the only context where webkitSpeechRecognition may
-         survive. Cost: the address bar returns on iOS launches. If voice still
-         aborts here, the standalone restriction isn't the cause and we move to the
-         MediaRecorder→Workers AI STT fallback instead. -->
-    <meta name="apple-mobile-web-app-capable" content="no" />
-    <meta name="mobile-web-app-capable" content="no" />
+    <!-- standalone full-screen kiosk. iOS standalone-PWA blocks webkitSpeechRecognition
+         (instant "aborted") — confirmed via a minimal-ui test where voice revived. We
+         keep full-screen and route iOS-standalone voice through MediaRecorder→Workers AI
+         Whisper instead (getUserMedia works in the sandbox; only the recognizer is gated). -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Babillard" />
     <!-- Pip design system type: Baloo 2 (chunky, friendly, rounded headlines),
