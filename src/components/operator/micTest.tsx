@@ -257,6 +257,13 @@ export function MicSelfTest() {
     // flattened to a bare "ERROR aborted" that hides that the engine did hear you.
     const verdictFor = (): string => {
       const retried = attemptNo >= 2
+      // getUserMedia is, by spec, ONLY defined in a secure context (https://).
+      // Its absence on a Safari that supports it ⇒ a non-HTTPS origin (or a
+      // restricted standalone context). Web Speech needs https too, so this is the
+      // single most likely reason recognition is killed — surface it loudly.
+      const insecureNote = !hasGum
+        ? ' ⚠ getUserMedia is MISSING here — navigator.mediaDevices exists ONLY in a secure context (https://), so this is almost certainly a NON-HTTPS origin (or a restricted standalone PWA). Web Speech needs https; this is very likely a URL/context issue, NOT the mic. Reopen the page over https:// and retry.'
+        : ''
       if (finalText)
         return retried
           ? `HEARD "${finalText}" on the 2nd attempt (no getUserMedia prime) — the FIRST attempt aborted instantly BECAUSE the getUserMedia prime raced the audio session; skipping/deferring the prime fixes it. Recognition WORKS here.`
@@ -271,14 +278,20 @@ export function MicSelfTest() {
         }
         return `INTERIM-ONLY "${lastInterim}" but never finalized — engine heard but didn't commit a final. The real app keeps this last interim.`
       }
-      // Instant abort, zero audio — the getUserMedia/audio-session race signature.
+      // Instant abort, zero audio — getUserMedia/audio-session race OR (when
+      // getUserMedia is also missing) a non-secure context / standalone restriction.
       if (errorStr === 'aborted' && interimCount === 0 && finalCount === 0)
-        return retried
-          ? `ERROR "aborted" on BOTH attempts (WITH and WITHOUT the getUserMedia prime), zero audio each time — deeper than the prime race: a standalone-PWA recognition restriction or an audio-session conflict on this device/OS. Voice likely won't work in this installed-PWA context; full Safari may.`
-          : `ERROR "aborted" instantly with zero audio — recognition was killed right after the mic opened (see timeline).`
-      if (errorStr) return `ERROR "${errorStr}" — recognition refused/failed before any transcript (see timeline).`
+        return (
+          (retried
+            ? `ERROR "aborted" on BOTH attempts (WITH and WITHOUT the getUserMedia prime), zero audio each time — deeper than the prime race: a standalone-PWA recognition restriction or an audio-session conflict on this device/OS. Voice likely won't work in this installed-PWA context; full Safari may.`
+            : `ERROR "aborted" instantly with zero audio — recognition was killed right after the mic opened (see timeline).`) + insecureNote
+        )
+      if (errorStr) return `ERROR "${errorStr}" — recognition refused/failed before any transcript (see timeline).` + insecureNote
       if (interimCount === 0)
-        return 'SILENT — mic captured but ZERO transcripts came back. Classic iOS sign of a missing dictation language pack, unreachable dictation servers, or a standalone-PWA restriction.'
+        return (
+          'SILENT — mic captured but ZERO transcripts came back. Classic iOS sign of a missing dictation language pack, unreachable dictation servers, or a standalone-PWA restriction.' +
+          insecureNote
+        )
       return 'No final result.'
     }
     finishRef.current = () => finalize(verdictFor())
