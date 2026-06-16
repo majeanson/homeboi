@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { useAudience } from '../../lib/audience'
 import { useCalm } from '../../lib/calm'
@@ -90,6 +91,13 @@ export function DisplaySection() {
         </div>
       </div>
       <p className="operator__hint mono">{t.operator.tutorialHint}</p>
+      {/* Dev-only: the live component catalogue. Searchable, collapsed — handy to
+          keep open alongside while building. Settings is operator-only already. */}
+      <p className="operator__hint mono">
+        <Link to="/dev/kit" className="devkit__link">
+          <InlineIcon name="gear-six-bold" size={14} /> Kit de composants (dev)
+        </Link>
+      </p>
     </section>
   )
 }

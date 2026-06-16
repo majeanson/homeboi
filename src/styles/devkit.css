@@ -144,3 +144,87 @@
   font-family: var(--display);
   font-size: 1.4rem;
 }
+
+/* ── Searchable, collapsed catalogue ────────────────────────────────────── */
+.devkit__search {
+  flex: 1 1 14rem;
+  min-width: 9rem;
+  max-width: 26rem;
+}
+.devkit__count {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  background: var(--paper-deep);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+.devkit__cat {
+  margin-bottom: 1.1rem;
+}
+.devkit__cat-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+/* Each component is a collapsed row: name + file path at a glance; the live
+   specimen unfolds on click (or auto-opens while searching). */
+.kit-entry {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  margin-bottom: 0.45rem;
+  overflow: hidden;
+}
+.kit-entry__sum {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.kit-entry__sum::-webkit-details-marker {
+  display: none;
+}
+.kit-entry__sum > svg {
+  color: var(--ink-faint);
+  flex: none;
+  transition: transform var(--dur-fast) ease;
+}
+.kit-entry[open] > .kit-entry__sum > svg {
+  transform: rotate(180deg);
+}
+.kit-entry__name {
+  font-weight: 700;
+}
+.kit-entry__file {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  background: var(--paper-deep);
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 58%;
+}
+.kit-entry__body {
+  padding: 0.2rem 0.8rem 0.85rem;
+}
+
+/* The discreet link into the catalogue from Réglages ▸ Affichage. */
+.devkit__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+.devkit__link:hover {
+  text-decoration: underline;
+}

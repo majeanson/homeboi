@@ -1,0 +1,193 @@
+/* Shared "kit" primitives (src/components/*): EmptyState, StatusMessage, Chip/
+   ChipGroup, SectionHeader, ListRow, Modal, OperatorSection. These collapse the
+   scattered empty-state / chip / row / status one-offs into one look each. Named
+   uniquely so they don't collide with the existing domain classes (.list-row is
+   the shopping swipe-row; .chip is reused on purpose — Chip wraps it). */
+
+/* ── EmptyState ─────────────────────────────────────────────────────────── */
+.empty-state {
+  margin: 0;
+  padding: 0.4rem 0.25rem 0.7rem;
+  color: var(--ink-faint);
+  font-size: 14px;
+}
+.empty-state--calm {
+  color: var(--ink-soft);
+  font-size: 15px;
+  padding: 0.4rem 0.25rem 0.7rem;
+  text-wrap: balance;
+}
+
+/* ── StatusMessage ──────────────────────────────────────────────────────── */
+.status-msg {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+.status-msg--info {
+  color: var(--ink-faint);
+}
+.status-msg--success {
+  color: var(--success);
+}
+.status-msg--error {
+  color: var(--warn);
+}
+
+/* ── ChipGroup (the chip itself is .chip, in pages.css) ─────────────────── */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.chip-group__label {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.chip-group__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ── SectionHeader ──────────────────────────────────────────────────────── */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+.section-header__main {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+.section-header__emoji {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.section-header__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.section-header__title {
+  font-weight: 700;
+}
+.section-header__sub {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.section-header__action {
+  margin-left: auto;
+  flex: none;
+}
+
+/* ── ListRow ────────────────────────────────────────────────────────────── */
+.listrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  min-height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+}
+.listrow--nav {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.listrow--nav:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
+}
+.listrow__lead {
+  flex: none;
+  display: inline-flex;
+}
+.listrow__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.listrow__title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.listrow__sub {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.listrow__actions {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── OperatorSection heading with a trailing action ─────────────────────── */
+.operator__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+/* ── Modal (centred dialog) — mirrors .confirm but generic ──────────────── */
+.kit-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(44, 39, 34, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.kit-modal {
+  position: relative;
+  width: min(94vw, 460px);
+  max-height: 86dvh;
+  overflow: auto;
+  padding: 1.4rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+.kit-modal__title {
+  margin: 0 0 0.8rem;
+  padding-right: 2rem;
+}
+.kit-modal__close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.kit-modal__close:hover,
+.kit-modal__close:focus-visible {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}

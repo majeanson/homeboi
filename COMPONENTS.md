@@ -1,8 +1,11 @@
 # Babillard — component inventory & uniformization backlog
 
-> Living audit of the shared UI. Pair it with the **`/dev/kit`** gallery
-> (`src/pages/DevKit.tsx`) — a dev-only, unlinked route that renders the shared
-> primitives live across the four presentation axes. Open it at `/dev/kit`.
+> Living audit of the shared UI. Pair it with the **`/dev/kit`** catalogue
+> (`src/pages/DevKit.tsx`) — a dev-only page that renders the shared primitives live
+> across the four presentation axes. Every entry is **collapsed by default** (name +
+> file path at a glance), **searchable** by name/path, and unfolds to a live specimen.
+> Reach it from **Réglages ▸ Affichage ▸ "Kit de composants (dev)"**, or `/dev/kit`.
+> Keep it open alongside a chat to point at "this component, here" without running flows.
 
 ## The four axes
 
@@ -95,9 +98,19 @@ cascade — never reorder (append only).
 
 ---
 
-## Uniformization backlog (prioritised)
+## Kit primitives (built — adopt incrementally)
 
-What's still duplicated, highest-leverage first. Evidence from a full-codebase sweep.
+These shared components now EXIST and are demoed in `/dev/kit` (built from the backlog
+below). The call-site sweeps remain — do them with visual QA, not blind:
+`EmptyState` (`components/EmptyState.tsx`), `StatusMessage` (`StatusMessage.tsx`),
+`Chip`+`ChipGroup` (`Chip.tsx`), `SectionHeader` (`SectionHeader.tsx`), `ListRow`
+(`ListRow.tsx`, class `.listrow` — NOT the swipe `.list-row`), `Modal` (`Modal.tsx`),
+`OperatorSection` (`operator/OperatorSection.tsx`). Shared CSS in `styles/kit.css`.
+
+## Uniformization backlog (call-site sweeps — prioritised)
+
+What's still duplicated at the call sites. The primitive now exists for rows 1–7
+(✅); the work left is migrating usages.
 
 | # | Cluster | Spread | Recommendation |
 | --- | --- | --- | --- |
