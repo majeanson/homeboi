@@ -52,6 +52,21 @@ export default {
   // Request (which would mismatch EventContext's request type).
   async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url)
+
+    // Force HTTPS. The custom domain answers plain http://, and Safari defaults a
+    // bare-typed domain to http — so an iPad home-screen PWA added that way loads
+    // in a NON-secure context, where `navigator.mediaDevices` is undefined and Web
+    // Speech recognition is refused (mic instant-aborts). A non-secure origin also
+    // breaks service workers / PWA install. Bounce any http load to https before
+    // anything else; localhost (wrangler/vite dev) stays untouched. Cloudflare's
+    // "Always Use HTTPS" does this at the edge too — this is in-code defence so the
+    // guarantee ships with the Worker regardless of dashboard state.
+    const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+    if (url.protocol === 'http:' && !isLocal) {
+      url.protocol = 'https:'
+      return Response.redirect(url.toString(), 301)
+    }
+
     const path = url.pathname.replace(/^\/+/, '')
 
     // Everything that isn't an API call is the SPA. The assets binding serves a
