@@ -30,6 +30,22 @@
   font-family: var(--display);
   font-size: 1.05rem;
 }
+/* Back to Réglages — small, calm, the catalogue's only chrome. */
+.devkit__backbtn {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.devkit__backbtn:hover,
+.devkit__backbtn:focus-visible {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
 .devkit__axes {
   display: flex;
   flex-wrap: wrap;

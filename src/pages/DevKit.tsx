@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
 import { useSurface, type Surface } from '../lib/surface'
 import { useAudience, type Audience } from '../lib/audience'
@@ -515,6 +516,9 @@ export function DevKit() {
     <div className="devkit">
       <header className="devkit__bar">
         <div className="devkit__bar-title">
+          <Link to="/settings" className="devkit__backbtn" aria-label={t.common.back} title={t.common.back}>
+            <Icon name="arrow-left-bold" size={18} />
+          </Link>
           <Icon name="gear-six-bold" size={22} />
           <strong>Kit · composants</strong>
           <span className="devkit__count mono">{shown.length}</span>
