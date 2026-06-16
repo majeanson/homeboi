@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DECK_EMOJIS, type DeckCard } from '../lib/routineTemplates'
 import { useT } from '../i18n'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
-import { Icon } from './Icon'
+import { EditField } from './EditField'
 
 // Edit a routine's deck of picture cards: each card is an emoji + a word. Tap
 // the emoji to switch it from a palette, type the word, reorder by dragging the
@@ -52,59 +52,43 @@ export function CardDeckEditor({
               (dnd.over === String(i) ? ' dnd-over' : '')
             }
           >
-            <span
-              className="deck__handle dnd-grip mono"
-              data-dnd-grip=""
-              onPointerDown={(e) => dnd.start(String(i), card.label || t.operator.cardWord, e)}
-              role="button"
-              aria-label={t.operator.dragHint}
-              title={t.operator.dragHint}
-            >
-              ⠿
-            </span>
-            <button
-              type="button"
-              className="deck__emoji"
-              onClick={() => setPaletteFor(paletteFor === i ? null : i)}
-              aria-label={t.operator.emojiPick}
-            >
-              {card.icon || '⭐'}
-            </button>
-            <input
-              className="input deck__word"
+            <EditField
               value={card.label}
-              onChange={(e) => update(i, { label: e.target.value })}
+              onChange={(v) => update(i, { label: v })}
               placeholder={t.operator.cardWord}
-              aria-label={t.operator.cardWord}
+              ariaLabel={t.operator.cardWord}
+              clearable={false}
+              leading={
+                <>
+                  <span
+                    className="deck__handle dnd-grip mono"
+                    data-dnd-grip=""
+                    onPointerDown={(e) => dnd.start(String(i), card.label || t.operator.cardWord, e)}
+                    role="button"
+                    aria-label={t.operator.dragHint}
+                    title={t.operator.dragHint}
+                  >
+                    ⠿
+                  </span>
+                  <button
+                    type="button"
+                    className="deck__emoji"
+                    onClick={() => setPaletteFor(paletteFor === i ? null : i)}
+                    aria-label={t.operator.emojiPick}
+                  >
+                    {card.icon || '⭐'}
+                  </button>
+                </>
+              }
+              reorder={{
+                onUp: () => move(i, i - 1),
+                onDown: () => move(i, i + 1),
+                upDisabled: i === 0,
+                downDisabled: i === cards.length - 1,
+              }}
+              onDelete={() => remove(i)}
+              deleteLabel={t.operator.removeCard}
             />
-            <div className="deck__btns">
-              <button
-                type="button"
-                className="deck__mini mono"
-                onClick={() => move(i, i - 1)}
-                disabled={i === 0}
-                aria-label={t.operator.moveUp}
-              >
-                <Icon name="caret-up-bold" size={16} />
-              </button>
-              <button
-                type="button"
-                className="deck__mini mono"
-                onClick={() => move(i, i + 1)}
-                disabled={i === cards.length - 1}
-                aria-label={t.operator.moveDown}
-              >
-                <Icon name="caret-down-bold" size={16} />
-              </button>
-            </div>
-            <button
-              type="button"
-              className="deck__remove mono"
-              onClick={() => remove(i)}
-              aria-label={t.operator.removeCard}
-            >
-              ×
-            </button>
           </div>
           {paletteFor === i && (
             <div className="deck__palette">

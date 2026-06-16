@@ -1,8 +1,9 @@
 import { Fragment, useMemo, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
-import { type Recipe, RECIPES_KEY, recipeImg } from '../lib/recipes'
+import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor } from '../lib/recipes'
+import { wash, tintInk, edge } from '../lib/colors'
 import { formatDuration } from '../lib/duration'
 import { scaleIngredients } from '../lib/scale'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
@@ -54,6 +55,9 @@ export function RecipeSheet({
   const [plannedDate, setPlannedDate] = useState<number | null>(null)
   const canCook = recipe.steps.length > 0 || recipe.ingredients.length > 0
   const imgSrc = recipeImg(recipe.image)
+  // Per-tag household colours (migration 0037) — the same source the form and
+  // search read, so a tag's colour is consistent everywhere it shows.
+  const tagColors = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') }).data?.colors
 
   // "Original" flips the body into the recipe with nothing we added — no
   // scaling, no measure pills, no per-step ingredients, no sentence bullets.
@@ -257,11 +261,18 @@ export function RecipeSheet({
 
           {recipe.tags?.length > 0 && (
             <div className="recipe-view__tags">
-              {recipe.tags.map((tg) => (
-                <span key={tg} className="chip recipe-view__tag">
-                  {tg}
-                </span>
-              ))}
+              {recipe.tags.map((tg) => {
+                const hex = tagColor(tagColors, tg)
+                return (
+                  <span
+                    key={tg}
+                    className="chip recipe-view__tag"
+                    style={hex ? { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) } : undefined}
+                  >
+                    {tg}
+                  </span>
+                )
+              })}
             </div>
           )}
 

@@ -4,6 +4,7 @@ import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { InlineIcon } from '../Icon'
+import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { type Device } from './types'
 
@@ -109,8 +110,7 @@ function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: (
   const [label, setLabel] = useState(device.label)
   const [busy, setBusy] = useState(false)
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault()
+  async function save() {
     const next = label.trim()
     if (!next || busy) return
     setBusy(true)
@@ -127,28 +127,20 @@ function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: (
   if (editing)
     return (
       <li>
-        <form className="operator__inline-form" onSubmit={save} style={{ flex: '1 1 auto' }}>
-          <input
-            className="input"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            aria-label={t.pair.label}
-            autoFocus
-          />
-          <button type="submit" className="btn" disabled={!label.trim() || busy}>
-            {t.common.save}
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={() => {
-              setLabel(device.label)
-              setEditing(false)
-            }}
-          >
-            {t.common.cancel}
-          </button>
-        </form>
+        <EditField
+          value={label}
+          onChange={setLabel}
+          onSubmit={() => save()}
+          submitLabel={t.common.save}
+          busy={busy}
+          clearable={false}
+          onCancel={() => {
+            setLabel(device.label)
+            setEditing(false)
+          }}
+          ariaLabel={t.pair.label}
+          autoFocus
+        />
       </li>
     )
 

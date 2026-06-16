@@ -5,6 +5,7 @@ import { api, isStatus } from '../../lib/api'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 import { Icon } from '../Icon'
+import { EditField } from '../EditField'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
 // price-match proof on the list knows where to search. Set once, used every trip.
@@ -19,8 +20,7 @@ export function ShopSection() {
       .catch(() => {})
   }, [])
 
-  async function save(e: React.FormEvent) {
-    e.preventDefault()
+  async function save() {
     setStatus('idle')
     try {
       const r = await api<{ postal: string | null }>('household', {
@@ -38,22 +38,19 @@ export function ShopSection() {
     <section className="surface operator__section">
       <h2>{t.operator.shopping}</h2>
       <p className="lead">{t.operator.shopHint}</p>
-      <form className="operator__inline-form" onSubmit={save}>
-        <input
-          className="input"
-          value={postal}
-          onChange={(e) => {
-            setPostal(e.target.value.toUpperCase())
-            setStatus('idle')
-          }}
-          placeholder={t.operator.postalPlaceholder}
-          aria-label={t.operator.postalLabel}
-          maxLength={7}
-        />
-        <button type="submit" className="btn btn--primary">
-          {t.common.save}
-        </button>
-      </form>
+      <EditField
+        value={postal}
+        onChange={(v) => {
+          setPostal(v.toUpperCase())
+          setStatus('idle')
+        }}
+        onSubmit={() => save()}
+        submitLabel={t.common.save}
+        submitVariant="primary"
+        placeholder={t.operator.postalPlaceholder}
+        ariaLabel={t.operator.postalLabel}
+        maxLength={7}
+      />
       {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
       {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
     </section>

@@ -1,0 +1,353 @@
+import { useEffect, useRef, useState } from 'react'
+import { useLang, useT } from '../../i18n'
+import { isIos } from '../../lib/useVoiceInput'
+import { Icon } from '../Icon'
+
+// A copy-pasteable mic diagnostic, the recognition twin of the "Test the AI"
+// probe above. The mic feature rides the browser's Web Speech API
+// (webkitSpeechRecognition), which on iOS dies silently in three places —
+// home-screen PWA (standalone WebKit), Private Browsing, and when the device
+// lacks the requested dictation language — with NO usable error reaching our
+// code. "Same settings, works on one iPhone not another" is unsolvable by
+// comparing toggles because the deciding factors (iOS/WebKit build, installed
+// dictation languages, standalone vs full-Safari context) aren't settings.
+//
+// So instead of guessing, this runs a fully-instrumented recognition attempt on
+// the failing device and dumps EVERY lifecycle event with timings plus the full
+// environment. The event timeline is the tell:
+//   • onaudiostart but no onresult, then a clean onend → audio captured, nothing
+//     transcribed: missing dictation language pack or Apple servers unreachable.
+//   • immediate onerror 'not-allowed' / 'service-not-allowed' → blocked /
+//     standalone-PWA restriction.
+//   • no events at all → the API isn't really wired in this context.
+// The user copies the blob and sends it; we read the cause off it.
+
+interface RecogResult {
+  isFinal: boolean
+  0: { transcript: string }
+}
+interface RecogEvent {
+  resultIndex: number
+  results: ArrayLike<RecogResult>
+}
+interface RecogLike {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  maxAlternatives: number
+  start: () => void
+  abort: () => void
+  onstart: (() => void) | null
+  onaudiostart: (() => void) | null
+  onsoundstart: (() => void) | null
+  onspeechstart: (() => void) | null
+  onspeechend: (() => void) | null
+  onsoundend: (() => void) | null
+  onaudioend: (() => void) | null
+  onnomatch: (() => void) | null
+  onresult: ((e: RecogEvent) => void) | null
+  onerror: ((e: { error: string }) => void) | null
+  onend: (() => void) | null
+}
+type RecogCtor = new () => RecogLike
+
+function getCtor(): RecogCtor | null {
+  if (typeof window === 'undefined') return null
+  const w = window as unknown as { SpeechRecognition?: RecogCtor; webkitSpeechRecognition?: RecogCtor }
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
+}
+
+function ctorKind(): string {
+  if (typeof window === 'undefined') return 'MISSING'
+  const w = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }
+  if (w.SpeechRecognition) return 'standard'
+  if (w.webkitSpeechRecognition) return 'webkit'
+  return 'MISSING'
+}
+
+// Home-screen PWA (standalone WebKit) vs full Safari — the single biggest iOS
+// differentiator, and not a setting. navigator.standalone is the iOS-specific
+// signal; display-mode covers the rest.
+function isStandalone(): boolean {
+  if (typeof window === 'undefined') return false
+  const navAny = navigator as unknown as { standalone?: boolean }
+  const mm = typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches
+  return !!navAny.standalone || !!mm
+}
+
+function browserLabel(ua: string): string {
+  if (/CriOS/.test(ua)) return 'Chrome (iOS)'
+  if (/FxiOS/.test(ua)) return 'Firefox (iOS)'
+  if (/EdgiOS/.test(ua)) return 'Edge (iOS)'
+  if (/Safari/.test(ua) && /Version\//.test(ua)) return 'Safari'
+  if (/Chrome/.test(ua)) return 'Chrome'
+  if (/Firefox/.test(ua)) return 'Firefox'
+  return 'unknown'
+}
+
+function iosVersion(ua: string): string | null {
+  const m = ua.match(/OS (\d+)[_.](\d+)(?:[_.](\d+))?/)
+  if (!m) return null
+  return `${m[1]}.${m[2]}${m[3] ? '.' + m[3] : ''}`
+}
+
+type Phase = 'idle' | 'running' | 'done'
+
+export function MicSelfTest() {
+  const t = useT()
+  const { lang } = useLang()
+  const [phase, setPhase] = useState<Phase>('idle')
+  const [report, setReport] = useState('')
+  const [interim, setInterim] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [perm, setPerm] = useState('unknown')
+  const recogRef = useRef<RecogLike | null>(null)
+  const timerRef = useRef<number | null>(null)
+  const doneRef = useRef(false)
+  const taRef = useRef<HTMLTextAreaElement | null>(null)
+
+  // Read the browser-remembered mic grant up front (best-effort; Safari often
+  // can't answer, where we stay 'unknown' and lean on the live probe's onerror).
+  useEffect(() => {
+    const perms = navigator.permissions
+    if (!perms?.query) return
+    let cancelled = false
+    perms
+      .query({ name: 'microphone' as PermissionName })
+      .then((s) => {
+        if (!cancelled) setPerm(s.state)
+      })
+      .catch(() => {
+        /* descriptor unsupported — stay 'unknown' */
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Tear down a probe left running if the operator navigates away mid-test.
+  useEffect(
+    () => () => {
+      if (timerRef.current != null) clearTimeout(timerRef.current)
+      try {
+        recogRef.current?.abort()
+      } catch {
+        /* already dead */
+      }
+    },
+    [],
+  )
+
+  async function run() {
+    setPhase('running')
+    setReport('')
+    setInterim('')
+    setCopied(false)
+    doneRef.current = false
+
+    const ua = navigator.userAgent
+    const reqLang = lang === 'fr' ? 'fr-CA' : 'en-CA'
+    const t0 = typeof performance !== 'undefined' ? performance.now() : 0
+    const at = () => `+${Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - t0)}ms`
+    const timeline: string[] = []
+
+    // 1) getUserMedia — works in iOS PWA + private even where Web Speech doesn't,
+    // so its result isolates "mic access" from "recognition".
+    let gum = 'not attempted'
+    const md = navigator.mediaDevices
+    const hasGum = typeof md?.getUserMedia === 'function'
+    if (hasGum) {
+      try {
+        const stream = await md.getUserMedia({ audio: true })
+        stream.getTracks().forEach((tr) => tr.stop())
+        gum = 'granted'
+      } catch (e) {
+        const er = e as DOMException
+        gum = `FAILED ${er?.name ?? 'Error'}: ${er?.message ?? ''}`.trim()
+      }
+    } else {
+      gum = 'getUserMedia MISSING'
+    }
+    timeline.push(`${at()} getUserMedia → ${gum}`)
+
+    const Ctor = getCtor()
+
+    const finalize = (verdict: string) => {
+      if (doneRef.current) return
+      doneRef.current = true
+      if (timerRef.current != null) {
+        clearTimeout(timerRef.current)
+        timerRef.current = null
+      }
+      try {
+        recogRef.current?.abort()
+      } catch {
+        /* no-op */
+      }
+      recogRef.current = null
+      const env = [
+        'Babillard — mic diagnostic',
+        `when: ${new Date().toISOString()}`,
+        `url: ${typeof location !== 'undefined' ? location.href : '?'}`,
+        `browser: ${browserLabel(ua)}`,
+        `iOS: ${isIos() ? 'yes' : 'no'}${iosVersion(ua) ? ' ' + iosVersion(ua) : ''}`,
+        `standalone PWA: ${isStandalone() ? 'yes' : 'no'}`,
+        `online: ${navigator.onLine ? 'yes' : 'no'}`,
+        `lang requested: ${reqLang}`,
+        `SpeechRecognition: ${ctorKind()}`,
+        `getUserMedia: ${hasGum ? 'present' : 'MISSING'}`,
+        `mic permission: ${perm}`,
+        `userAgent: ${ua}`,
+      ].join('\n')
+      const blob = `${env}\n\nVERDICT: ${verdict}\n\nTIMELINE\n${timeline.join('\n')}`
+      setReport(blob)
+      setInterim('')
+      setPhase('done')
+    }
+
+    if (!Ctor) {
+      timeline.push(`${at()} no SpeechRecognition constructor in this context`)
+      finalize('Web Speech API NOT AVAILABLE here (no recognition constructor). The mic cannot work in this browser/context.')
+      return
+    }
+
+    let interimCount = 0
+    let finalCount = 0
+    let lastInterim = ''
+    let finalText = ''
+    let errorStr = ''
+
+    const recog = new Ctor()
+    recog.lang = reqLang
+    recog.continuous = false
+    recog.interimResults = true
+    recog.maxAlternatives = 1
+
+    recog.onstart = () => timeline.push(`${at()} onstart`)
+    recog.onaudiostart = () => timeline.push(`${at()} onaudiostart (mic capturing)`)
+    recog.onsoundstart = () => timeline.push(`${at()} onsoundstart (sound detected)`)
+    recog.onspeechstart = () => timeline.push(`${at()} onspeechstart (speech detected)`)
+    recog.onspeechend = () => timeline.push(`${at()} onspeechend`)
+    recog.onsoundend = () => timeline.push(`${at()} onsoundend`)
+    recog.onaudioend = () => timeline.push(`${at()} onaudioend`)
+    recog.onnomatch = () => timeline.push(`${at()} onnomatch (heard audio, no match)`)
+    recog.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i]
+        const txt = r[0]?.transcript?.trim() ?? ''
+        if (r.isFinal) {
+          finalCount++
+          finalText = txt
+          timeline.push(`${at()} onresult FINAL — "${txt}"`)
+        } else {
+          interimCount++
+          lastInterim = txt
+          setInterim(txt)
+          if (interimCount === 1) timeline.push(`${at()} onresult interim (first) — "${txt}"`)
+        }
+      }
+    }
+    recog.onerror = (e) => {
+      errorStr = e.error
+      timeline.push(`${at()} onerror — "${e.error}"`)
+    }
+    recog.onend = () => {
+      timeline.push(`${at()} onend  (interims: ${interimCount}, finals: ${finalCount})`)
+      let verdict: string
+      if (finalText) verdict = `HEARD "${finalText}" — recognition WORKS here.`
+      else if (errorStr) verdict = `ERROR "${errorStr}" — recognition refused/failed (see timeline).`
+      else if (lastInterim) verdict = `INTERIM-ONLY "${lastInterim}" but never finalized — engine heard but didn't commit.`
+      else if (interimCount === 0)
+        verdict =
+          'SILENT — mic captured but ZERO transcripts came back. Classic iOS sign of a missing dictation language pack or unreachable dictation servers (or standalone-PWA restriction).'
+      else verdict = 'No final result.'
+      finalize(verdict)
+    }
+
+    recogRef.current = recog
+    timeline.push(`${at()} starting recognition (say "lait, œufs, pain")`)
+    try {
+      recog.start()
+    } catch (e) {
+      timeline.push(`${at()} start() threw — ${(e as Error)?.message ?? e}`)
+      finalize('start() threw — recognition could not begin in this context.')
+      return
+    }
+    // Safety net: some iOS contexts never fire onend. Force-finish after 10s.
+    timerRef.current = window.setTimeout(() => {
+      timeline.push(`${at()} timeout (10s) — forcing stop`)
+      if (finalText) finalize(`HEARD "${finalText}" — recognition WORKS here.`)
+      else if (errorStr) finalize(`ERROR "${errorStr}" — recognition refused/failed.`)
+      else if (lastInterim) finalize(`INTERIM-ONLY "${lastInterim}" — heard but never finalized before timeout.`)
+      else finalize('SILENT after 10s — mic captured but no transcripts (likely missing dictation language or PWA/private restriction).')
+    }, 10000)
+  }
+
+  function stop() {
+    if (timerRef.current != null) clearTimeout(timerRef.current)
+    try {
+      recogRef.current?.abort()
+    } catch {
+      /* no-op */
+    }
+    // abort() fires onend → finalize; if it doesn't, finalize defensively next tick.
+    window.setTimeout(() => {
+      if (!doneRef.current) setPhase('done')
+    }, 300)
+  }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(report)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard blocked (often iOS without a gesture/permission) — select the
+      // textarea so a long-press → Copy works.
+      taRef.current?.focus()
+      taRef.current?.select()
+    }
+  }
+
+  return (
+    <section className="surface operator__section">
+      <h2>{t.operator.micTestTitle}</h2>
+      <p className="mono">{t.operator.micTestHint}</p>
+
+      {phase !== 'running' ? (
+        <button type="button" className="btn btn--primary" onClick={run}>
+          {t.operator.micTestBtn}
+        </button>
+      ) : (
+        <button type="button" className="btn" onClick={stop}>
+          {t.operator.micTestStop}
+        </button>
+      )}
+
+      {phase === 'running' && (
+        <p className="list-add__voicemsg" role="status" aria-live="polite">
+          {t.operator.micTestListening}
+          {interim ? ` — « ${interim} »` : ''}
+        </p>
+      )}
+
+      {phase === 'done' && report && (
+        <div className="mic-test__out">
+          <p className="mono">{t.operator.micTestSend}</p>
+          <textarea
+            ref={taRef}
+            className="input mono"
+            readOnly
+            rows={14}
+            value={report}
+            onFocus={(e) => e.currentTarget.select()}
+            style={{ width: '100%', minHeight: '14rem', whiteSpace: 'pre', overflowWrap: 'normal' }}
+          />
+          <button type="button" className="btn btn--primary" onClick={copy} style={{ marginTop: '0.5rem' }}>
+            <Icon name={copied ? 'check-bold' : 'file-text-bold'} size={18} /> {copied ? t.operator.micTestCopied : t.operator.micTestCopy}
+          </button>
+        </div>
+      )}
+    </section>
+  )
+}

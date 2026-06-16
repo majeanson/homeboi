@@ -5,8 +5,7 @@ import { api } from '../../lib/api'
 import { useUndoToast } from '../../lib/toast'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { VoiceButton, VoiceStatus } from '../VoiceButton'
-import { Icon } from '../Icon'
-import { RowActions } from '../RowActions'
+import { CheckRow } from '../CheckRow'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 
@@ -167,11 +166,12 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
         ) : (
           <ul className="kitchen__low">
             {low.map((l) => (
-              <PantryRow
+              <CheckRow
                 key={l.id}
-                row={l}
+                item={l.item}
                 note={t.kitchen.addToList}
                 onCheck={() => checkLowItem(l)}
+                checkLabel={t.kitchen.addToList}
                 onRename={(item) => renameLowItem(l, item)}
                 onDelete={() => removeLowItem(l)}
               />
@@ -200,87 +200,17 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
         ) : (
           <ul className="kitchen__soon">
             {soon.map((s) => (
-              <PantryRow
+              <CheckRow
                 key={s.id}
-                row={s}
+                item={s.item}
                 onCheck={() => clearSoonItem(s)}
+                checkLabel={t.kitchen.useSoonCheck}
                 onRename={(item) => renameSoonItem(s, item)}
-                onDelete={() => clearSoonItem(s)}
               />
             ))}
           </ul>
         )}
       </section>
     </>
-  )
-}
-
-// One pantry row: the calm check button stays the primary tap (low → "add to
-// list", use-soon → "used it"), with the uniform ✏️ rename / 🗑️ remove pair
-// beside it. ✏️ swaps the row for an inline input.
-function PantryRow({
-  row,
-  note,
-  onCheck,
-  onRename,
-  onDelete,
-}: {
-  row: LowRow
-  note?: string
-  onCheck: () => void
-  onRename: (item: string) => void
-  onDelete: () => void
-}) {
-  const t = useT()
-  const [editing, setEditing] = useState(false)
-  const [text, setText] = useState(row.item)
-
-  if (editing)
-    return (
-      <li className="kitchen__pantry-row">
-        <form
-          className="operator__inline-form"
-          style={{ flex: '1 1 auto' }}
-          onSubmit={(e) => {
-            e.preventDefault()
-            onRename(text)
-            setEditing(false)
-          }}
-        >
-          <input className="input" value={text} onChange={(e) => setText(e.target.value)} aria-label={t.common.edit} autoFocus />
-          <button type="submit" className="btn" disabled={!text.trim()}>
-            {t.common.save}
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={() => {
-              setText(row.item)
-              setEditing(false)
-            }}
-          >
-            {t.common.cancel}
-          </button>
-        </form>
-      </li>
-    )
-
-  return (
-    <li className="kitchen__pantry-row">
-      <button type="button" className="board__list-item" onClick={onCheck}>
-        <span className="board__check" aria-hidden="true">
-          <Icon name="square-bold" size={18} />
-        </span>
-        <span>{row.item}</span>
-        {note && <span className="kitchen__low-note mono">{note}</span>}
-      </button>
-      <RowActions
-        onEdit={() => {
-          setText(row.item)
-          setEditing(true)
-        }}
-        onDelete={onDelete}
-      />
-    </li>
   )
 }

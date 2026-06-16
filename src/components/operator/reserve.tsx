@@ -7,6 +7,7 @@ import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { wash, PALETTE } from '../../lib/colors'
 import { type ReserveLocation, seedReserveDefaults } from '../../lib/reservePrefs'
 import { ColorPicker } from '../ColorPicker'
+import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 
 // Réglages ▸ Réserve. The household-level storage spots that group La réserve
@@ -87,8 +88,7 @@ export function ReserveLocationsSection() {
       onCommit: () => void persist(next),
     })
   }
-  function add(e: React.FormEvent) {
-    e.preventDefault()
+  function add() {
     const name = adding.trim().slice(0, 40)
     if (!name) return
     const id = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)).slice(0, 12)
@@ -125,17 +125,14 @@ export function ReserveLocationsSection() {
           ))}
         </ul>
       )}
-      <form className="operator__inline-form" onSubmit={add}>
-        <input
-          className="input"
-          value={adding}
-          onChange={(e) => setAdding(e.target.value)}
-          placeholder={t.operator.reserveAddLocation}
-        />
-        <button type="submit" className="btn" disabled={!adding.trim()}>
-          {t.capture.add}
-        </button>
-      </form>
+      <EditField
+        value={adding}
+        onChange={setAdding}
+        onSubmit={() => add()}
+        submitLabel={t.capture.add}
+        placeholder={t.operator.reserveAddLocation}
+        ariaLabel={t.operator.reserveAddLocation}
+      />
       {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
       {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
     </section>

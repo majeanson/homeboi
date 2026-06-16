@@ -325,6 +325,16 @@
 .nownext__cook:hover {
   border-color: var(--ink-faint);
 }
+/* Leftover note: not a button — nothing to cook, nothing to tap. Dashed, calm,
+   no pointer/hover so it reads as a glance, not an action. */
+.nownext__cook--leftover {
+  cursor: default;
+  border-style: dashed;
+  box-shadow: none;
+}
+.nownext__cook--leftover:hover {
+  border-color: color-mix(in srgb, var(--tint, var(--line)) 33%, transparent);
+}
 .nownext__cook-label {
   display: flex;
   flex-direction: column;

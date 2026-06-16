@@ -11,7 +11,9 @@ import {
   RECIPE_TAGS_KEY,
   recipeImg,
   tagOptions,
+  tagColor,
 } from '../lib/recipes'
+import { wash, tintInk, edge } from '../lib/colors'
 import { SECTION_PREFIX, dropDanglingHeadings } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
 import { useModal } from '../lib/useModal'
@@ -87,6 +89,16 @@ export function RecipeForm({
     (tagsQ.data?.used ?? []).map((u) => u.tag),
     t.recipes.tagPresets,
   )
+  const tagColors = tagsQ.data?.colors
+  // Tint a tag chip by its household colour (migration 0037): faint when off, a
+  // solid fill when selected, mirroring the search pills. No colour → default chip.
+  const tagChipStyle = (tag: string, on: boolean): React.CSSProperties | undefined => {
+    const hex = tagColor(tagColors, tag)
+    if (!hex) return undefined
+    return on
+      ? { background: tintInk(hex), color: '#fffcf5', borderColor: tintInk(hex) }
+      : { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) }
+  }
 
   const hasTag = (tag: string) => tags.some((x) => x.toLowerCase() === tag.toLowerCase())
   const toggleTag = (tag: string) =>
@@ -654,6 +666,7 @@ export function RecipeForm({
                   key={tag}
                   type="button"
                   className={'chip' + (hasTag(tag) ? ' is-on' : '')}
+                  style={tagChipStyle(tag, hasTag(tag))}
                   onClick={() => toggleTag(tag)}
                   aria-pressed={hasTag(tag)}
                 >
@@ -663,7 +676,14 @@ export function RecipeForm({
               {tags
                 .filter((tag) => !pills.some((p) => p.toLowerCase() === tag.toLowerCase()))
                 .map((tag) => (
-                  <button key={tag} type="button" className="chip is-on" onClick={() => toggleTag(tag)} aria-pressed>
+                  <button
+                    key={tag}
+                    type="button"
+                    className="chip is-on"
+                    style={tagChipStyle(tag, true)}
+                    onClick={() => toggleTag(tag)}
+                    aria-pressed
+                  >
                     {tag} <InlineIcon name="x-bold" size={12} />
                   </button>
                 ))}

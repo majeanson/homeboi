@@ -2,15 +2,25 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
-import { RECIPES_KEY, RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions } from '../../lib/recipes'
+import { RECIPES_KEY, RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions, tagColor } from '../../lib/recipes'
+import { wash, tintInk, edge } from '../../lib/colors'
 import { useConfirm } from '../../lib/confirm'
 import { Icon, InlineIcon } from '../Icon'
+import { ColorPicker } from '../ColorPicker'
 import { RowActions } from '../RowActions'
+
+// A chip tinted by its tag colour (readable on cream AND dark via the theme-aware
+// helpers), so the colour you pick previews in place. No colour → undefined = the
+// default chip styling stays.
+const chipTint = (hex: string | undefined): React.CSSProperties | undefined =>
+  hex ? { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) } : undefined
 
 // Réglages → Recettes: the household tag layer. Two strips:
 //   · the preset pills offered in the recipe form (chips, editable in place)
 //   · every tag in use, with a count — rename or remove it on ALL recipes at
 //     once, so cleaning up "Végé / végé / vege" never means opening each card.
+// Each tag also carries an optional colour (migration 0037), picked here and shown
+// on the chip everywhere the tag renders (recipe view, search pills, the form).
 export function RecipeTagsSection() {
   const t = useT()
   const qc = useQueryClient()
@@ -18,20 +28,28 @@ export function RecipeTagsSection() {
   const tagsQ = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') })
   const presets = tagsQ.data?.presets ?? []
   const used = tagsQ.data?.used ?? []
+  const colors = tagsQ.data?.colors ?? {}
   // What the form actually offers today (presets, or the built-in starters).
   const effective = tagOptions(presets, [], t.recipes.tagPresets)
 
   const [pillInput, setPillInput] = useState('')
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameTo, setRenameTo] = useState('')
+  // Which tag's colour picker is open. Location-qualified ("preset:x" / "used:x")
+  // so a tag that's both a preset and in use opens only where you clicked.
+  const [coloring, setColoring] = useState<string | null>(null)
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: RECIPE_TAGS_KEY })
     qc.invalidateQueries({ queryKey: RECIPES_KEY })
   }
   const patch = useMutation({
-    mutationFn: (body: { presets?: string[]; rename?: { from: string; to: string }; remove?: string }) =>
-      api('recipe-tags', { method: 'PATCH', body }),
+    mutationFn: (body: {
+      presets?: string[]
+      rename?: { from: string; to: string }
+      remove?: string
+      setColor?: { tag: string; color: string | null }
+    }) => api('recipe-tags', { method: 'PATCH', body }),
     onSettled: invalidate,
   })
 
@@ -50,6 +68,23 @@ export function RecipeTagsSection() {
     if (to && to.toLowerCase() !== from.toLowerCase()) patch.mutate({ rename: { from, to } })
   }
 
+  const setColor = (tag: string, color: string | null) => patch.mutate({ setColor: { tag, color } })
+
+  // The PALETTE dot row + a "no colour" clear, reused under both strips.
+  const colorEditor = (tag: string) => {
+    const cur = tagColor(colors, tag)
+    return (
+      <div className="tag-admin__coloredit">
+        <ColorPicker value={cur ?? ''} onChange={(c) => setColor(tag, c)} label={t.operator.tagColorPick(tag)} />
+        {cur && (
+          <button type="button" className="btn btn--ghost mono tag-admin__color-clear" onClick={() => setColor(tag, null)}>
+            {t.operator.tagColorNone}
+          </button>
+        )}
+      </div>
+    )
+  }
+
   return (
     <section className="surface operator__section">
       <h2>{t.operator.tagsTitle}</h2>
@@ -58,18 +93,37 @@ export function RecipeTagsSection() {
       <h3 className="operator__sub">{t.operator.tagPills}</h3>
       <p className="mono operator__hint">{t.operator.tagPillsHint}</p>
       <div className="tag-admin__pills">
-        {effective.map((tg) => (
-          <button
-            key={tg}
-            type="button"
-            className="chip is-on"
-            onClick={() => savePills(effective.filter((x) => x !== tg))}
-            aria-label={`${t.operator.tagRemove} — ${tg}`}
-          >
-            {tg} <InlineIcon name="x-bold" size={12} />
-          </button>
-        ))}
+        {effective.map((tg) => {
+          const key = `preset:${tg.toLowerCase()}`
+          const open = coloring === key
+          return (
+            <span key={tg} className={`chip tag-admin__pill${open ? ' is-editing' : ''}`} style={chipTint(tagColor(colors, tg))}>
+              <button
+                type="button"
+                className="tag-admin__pill-name"
+                onClick={() => setColoring(open ? null : key)}
+                aria-label={t.operator.tagColorPick(tg)}
+                aria-expanded={open}
+              >
+                {tg}
+              </button>
+              <button
+                type="button"
+                className="tag-admin__pill-x"
+                onClick={() => savePills(effective.filter((x) => x !== tg))}
+                aria-label={`${t.operator.tagRemove} — ${tg}`}
+              >
+                <InlineIcon name="x-bold" size={12} />
+              </button>
+            </span>
+          )
+        })}
       </div>
+      {coloring?.startsWith('preset:') &&
+        (() => {
+          const tg = effective.find((x) => `preset:${x.toLowerCase()}` === coloring)
+          return tg ? colorEditor(tg) : null
+        })()}
       <form
         className="operator__inline-form"
         onSubmit={(e) => {
@@ -95,53 +149,71 @@ export function RecipeTagsSection() {
         <p className="board__empty mono">{t.operator.tagNoneUsed}</p>
       ) : (
         <ul className="operator__list tag-admin__list">
-          {used.map(({ tag, count }) => (
-            <li key={tag.toLowerCase()} className="tag-admin__row">
-              {renaming === tag ? (
-                <form
-                  className="tag-admin__rename"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    commitRename(tag)
-                  }}
-                >
-                  <input
-                    className="input"
-                    value={renameTo}
-                    onChange={(e) => setRenameTo(e.target.value)}
-                    maxLength={24}
-                    autoFocus
-                    aria-label={`${t.operator.tagRename} — ${tag}`}
-                  />
-                  <button type="submit" className="btn" disabled={!renameTo.trim()} aria-label={t.operator.tagRename}>
-                    <Icon name="check-bold" size={16} />
-                  </button>
-                  <button type="button" className="btn btn--ghost mono" onClick={() => setRenaming(null)}>
-                    <Icon name="x-bold" size={15} />
-                  </button>
-                </form>
-              ) : (
-                <>
-                  <span className="chip tag-admin__name">{tag}</span>
-                  <span className="tag-admin__count mono">{t.operator.tagOnN(count)}</span>
-                  <RowActions
-                    editLabel={t.operator.tagRename}
-                    deleteLabel={t.operator.tagRemove}
-                    onEdit={() => {
-                      setRenaming(tag)
-                      setRenameTo(tag)
-                    }}
-                    onDelete={async () => {
-                      // Removing a tag strips it from EVERY recipe — heavy, so a
-                      // deliberate confirm (the in-app dialog, not platform confirm).
-                      if (await confirm({ message: t.operator.tagRemoveConfirm(tag), confirmLabel: t.operator.tagRemove, tone: 'danger' }))
-                        patch.mutate({ remove: tag })
-                    }}
-                  />
-                </>
-              )}
-            </li>
-          ))}
+          {used.map(({ tag, count }) => {
+            const key = `used:${tag.toLowerCase()}`
+            const open = coloring === key
+            return (
+              <li key={tag.toLowerCase()} className="tag-admin__row-wrap">
+                <div className="tag-admin__row">
+                  {renaming === tag ? (
+                    <form
+                      className="tag-admin__rename"
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        commitRename(tag)
+                      }}
+                    >
+                      <input
+                        className="input"
+                        value={renameTo}
+                        onChange={(e) => setRenameTo(e.target.value)}
+                        maxLength={24}
+                        autoFocus
+                        aria-label={`${t.operator.tagRename} — ${tag}`}
+                      />
+                      <button type="submit" className="btn" disabled={!renameTo.trim()} aria-label={t.operator.tagRename}>
+                        <Icon name="check-bold" size={16} />
+                      </button>
+                      <button type="button" className="btn btn--ghost mono" onClick={() => setRenaming(null)}>
+                        <Icon name="x-bold" size={15} />
+                      </button>
+                    </form>
+                  ) : (
+                    <>
+                      <span className="chip tag-admin__name" style={chipTint(tagColor(colors, tag))}>
+                        {tag}
+                      </span>
+                      <span className="tag-admin__count mono">{t.operator.tagOnN(count)}</span>
+                      <button
+                        type="button"
+                        className={`tag-admin__color-btn${open ? ' is-on' : ''}`}
+                        onClick={() => setColoring(open ? null : key)}
+                        aria-label={t.operator.tagColorPick(tag)}
+                        aria-expanded={open}
+                      >
+                        <Icon name="paint-brush-bold" size={16} />
+                      </button>
+                      <RowActions
+                        editLabel={t.operator.tagRename}
+                        deleteLabel={t.operator.tagRemove}
+                        onEdit={() => {
+                          setRenaming(tag)
+                          setRenameTo(tag)
+                        }}
+                        onDelete={async () => {
+                          // Removing a tag strips it from EVERY recipe — heavy, so a
+                          // deliberate confirm (the in-app dialog, not platform confirm).
+                          if (await confirm({ message: t.operator.tagRemoveConfirm(tag), confirmLabel: t.operator.tagRemove, tone: 'danger' }))
+                            patch.mutate({ remove: tag })
+                        }}
+                      />
+                    </>
+                  )}
+                </div>
+                {open && colorEditor(tag)}
+              </li>
+            )
+          })}
         </ul>
       )}
     </section>

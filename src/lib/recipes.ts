@@ -55,8 +55,16 @@ export interface RecipeTagInfo {
 export interface RecipeTagsData {
   presets: string[]
   used: RecipeTagInfo[]
+  // Per-tag colour overrides, keyed by lowercase tag name → "#rrggbb"
+  // (migration 0037). A missing key = the default berry chip colour.
+  colors: Record<string, string>
 }
 export const RECIPE_TAGS_KEY = ['recipeTags']
+
+// A tag's household colour, or undefined when none is set (→ default chip).
+// Lowercase lookup, matching how tags are matched everywhere else.
+export const tagColor = (colors: Record<string, string> | undefined, tag: string): string | undefined =>
+  colors?.[tag.toLowerCase()]
 
 // The pills the recipe form offers: the household's saved presets (or the
 // built-in starters when none are saved yet), then every tag already in use —

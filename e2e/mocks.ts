@@ -336,6 +336,7 @@ const ROUTES: Record<string, unknown> = {
       { tag: 'préféré', count: 1 },
       { tag: 'Collation', count: 1 },
     ],
+    colors: { rapide: '#88a36f' },
   },
   routines: ROUTINES,
   members: { members: MEMBERS },

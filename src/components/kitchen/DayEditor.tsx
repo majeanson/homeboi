@@ -4,6 +4,7 @@ import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
 import { SIDE_SLOTS, SLOT_ICON_NAME } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { Icon, InlineIcon } from '../Icon'
+import { EditField } from '../EditField'
 import { MealRows } from './MealRows'
 import { RecipePickerMenu } from './RecipePickerMenu'
 import { LeftoverPickerMenu } from './LeftoverPickerMenu'
@@ -197,37 +198,19 @@ export function DayEditor({
               dragLabel={t.kitchen.dragMeal}
             />
             {editing && (
-              <div className="kitchen__slot-edit-wrap">
-                <form
-                  className="kitchen__slot-edit"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    saveSlot(date, slot, slotText)
-                  }}
-                >
-                  <input
-                    className="input"
-                    autoFocus
-                    value={slotText}
-                    onChange={(e) => setSlotText(e.target.value)}
-                    placeholder={t.kitchen.slots[slot]}
-                    aria-label={t.kitchen.slots[slot]}
-                  />
-                  {slotText && (
-                    <button
-                      type="button"
-                      className="btn btn--ghost mono kitchen__clear-text"
-                      onClick={() => setSlotText('')}
-                      aria-label={t.kitchen.clearText}
-                      title={t.kitchen.clearText}
-                    >
-                      <Icon name="x-bold" size={15} />
-                    </button>
-                  )}
-                  <button type="submit" className="btn btn--ghost mono">
-                    {t.kitchen.setMeal}
-                  </button>
-                </form>
+              <EditField
+                value={slotText}
+                onChange={setSlotText}
+                onSubmit={(v) => saveSlot(date, slot, v)}
+                submitLabel={t.kitchen.setMeal}
+                onCancel={() => {
+                  setEditSlot(null)
+                  setSlotText('')
+                }}
+                autoFocus
+                placeholder={t.kitchen.slots[slot]}
+                ariaLabel={t.kitchen.slots[slot]}
+              >
                 {(recipes.length > 0 || leftovers.pool.length > 0) && (
                   <div className="kitchen__day-recipes">
                     <div className="kitchen__day-recipes-row">
@@ -265,17 +248,7 @@ export function DayEditor({
                     )}
                   </div>
                 )}
-                <button
-                  type="button"
-                  className="btn btn--ghost mono kitchen__add-cancel"
-                  onClick={() => {
-                    setEditSlot(null)
-                    setSlotText('')
-                  }}
-                >
-                  {t.common.cancel}
-                </button>
-              </div>
+              </EditField>
             )}
           </section>
         )
@@ -366,36 +339,19 @@ export function DayEditor({
               dragLabel={t.kitchen.dragMeal}
             />
             {supperEditing && (
-              <div className="kitchen__day-edit-wrap">
-                <form
-                  className="kitchen__day-edit"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    beginSetMeal(date, 'supper')
-                  }}
-                >
-                  <input
-                    className="input"
-                    autoFocus
-                    value={mealText}
-                    onChange={(e) => setMealText(e.target.value)}
-                    placeholder={t.kitchen.plan}
-                  />
-                  {mealText && (
-                    <button
-                      type="button"
-                      className="btn btn--ghost mono kitchen__clear-text"
-                      onClick={() => setMealText('')}
-                      aria-label={t.kitchen.clearText}
-                      title={t.kitchen.clearText}
-                    >
-                      <Icon name="x-bold" size={15} />
-                    </button>
-                  )}
-                  <button type="submit" className="btn btn--ghost mono" disabled={staplesBusy}>
-                    {staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
-                  </button>
-                </form>
+              <EditField
+                value={mealText}
+                onChange={setMealText}
+                onSubmit={() => beginSetMeal(date, 'supper')}
+                submitLabel={staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
+                busy={staplesBusy}
+                onCancel={() => {
+                  setEditDate(null)
+                  setMealText('')
+                }}
+                autoFocus
+                placeholder={t.kitchen.plan}
+              >
                 {(recipes.length > 0 || leftovers.pool.length > 0) && (
                   <div className="kitchen__day-recipes">
                     <div className="kitchen__day-recipes-row">
@@ -446,17 +402,7 @@ export function DayEditor({
                     )}
                   </div>
                 )}
-                <button
-                  type="button"
-                  className="btn btn--ghost mono kitchen__add-cancel"
-                  onClick={() => {
-                    setEditDate(null)
-                    setMealText('')
-                  }}
-                >
-                  {t.common.cancel}
-                </button>
-              </div>
+              </EditField>
             )}
           </>
         )}
@@ -468,24 +414,15 @@ export function DayEditor({
           <Icon name="pencil-simple-bold" size={16} color="var(--ink-soft)" /> {t.kitchen.note}
         </p>
         {editNote === date ? (
-          <form
-            className="kitchen__note-edit"
-            onSubmit={(e) => {
-              e.preventDefault()
-              saveNote(date, noteText)
-            }}
+          <EditField
+            value={noteText}
+            onChange={setNoteText}
+            onSubmit={(v) => saveNote(date, v)}
+            submitLabel={t.kitchen.setMeal}
+            autoFocus
+            placeholder={t.kitchen.notePlaceholder}
+            ariaLabel={t.kitchen.note}
           >
-            <input
-              className="input"
-              autoFocus
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              placeholder={t.kitchen.notePlaceholder}
-              aria-label={t.kitchen.note}
-            />
-            <button type="submit" className="btn btn--ghost mono">
-              {t.kitchen.setMeal}
-            </button>
             {note && (
               <button
                 type="button"
@@ -495,7 +432,7 @@ export function DayEditor({
                 <InlineIcon name="trash-bold" /> {t.kitchen.clearNote}
               </button>
             )}
-          </form>
+          </EditField>
         ) : note ? (
           <button
             type="button"

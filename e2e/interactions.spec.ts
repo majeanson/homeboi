@@ -308,7 +308,8 @@ test.describe('settings forms', () => {
 
   test('save the shopping postal code', async ({ page }) => {
     await page.getByRole('tab', { name: 'Magasinage' }).click()
-    const form = page.locator('.operator__panel form.operator__inline-form')
+    // The postal form is the shared EditField (form.edit-field) now.
+    const form = page.locator('.operator__panel form.edit-field')
     await form.locator('input.input').first().fill('H2X 1Y4')
     await expectApi(page, 'PATCH', 'household', () => form.locator('button[type="submit"]').click())
   })
@@ -478,7 +479,7 @@ test.describe('kitchen', () => {
     // list (marking something low no longer auto-adds). It posts to /list, then
     // clears the low flag; the row leaves the reminder at once.
     await expectApi(page, 'POST', 'list', () =>
-      lows.first().locator('button.board__list-item').click(),
+      lows.first().locator('button.checkrow__check').click(),
     )
     await expect(lows).toHaveCount(2)
   })
@@ -486,7 +487,7 @@ test.describe('kitchen', () => {
   test('undo restores a cleared pantry item', async ({ page }) => {
     await page.locator('.subtabs__opt', { hasText: 'Garde-manger' }).click()
     const lows = page.locator('.kitchen__low li')
-    await lows.first().locator('button.board__list-item').click()
+    await lows.first().locator('button.checkrow__check').click()
     await expect(lows).toHaveCount(2)
     await expect(page.locator('.undo-toast')).toBeVisible()
     await page.locator('.undo-toast__btn').click()
@@ -502,7 +503,8 @@ test.describe('kitchen', () => {
     // The souper section's add control opens the supper title form (beginSetMeal →
     // the staples opt-in, which posts to meal-staples to fetch the staple list).
     await sheet.locator('[data-dnd-zone="supper"] .kitchen__slot-add').click()
-    const edit = sheet.locator('.kitchen__day-edit')
+    // The supper title editor is the shared EditField now (scope to the supper zone).
+    const edit = sheet.locator('[data-dnd-zone="supper"] .edit-field')
     await edit.locator('input.input').fill('Pizza maison')
     await expectApi(page, 'POST', 'meal-staples', () =>
       edit.locator('button[type="submit"]').click(),
@@ -523,7 +525,8 @@ test.describe('kitchen', () => {
     // staples step. The "＋ Ajouter" sits in the Dîner section's header; scope to it.
     const dinerSec = sheet.locator('.day-mng__sec', { hasText: 'Dîner' })
     await dinerSec.locator('.kitchen__slot-add').click()
-    const edit = sheet.locator('.kitchen__slot-edit')
+    // The per-slot title editor is the shared EditField now (scope to the Dîner section).
+    const edit = dinerSec.locator('.edit-field')
     await edit.locator('input.input').fill('Sandwich au jambon')
     await expectApi(page, 'POST', 'meals', () => edit.locator('button[type="submit"]').click())
   })
@@ -768,9 +771,10 @@ test.describe('list', () => {
   })
 
   test('the add bar posts a new line straight to the list', async ({ page }) => {
-    await page.locator('.list-add .input').fill('Bananes')
+    // The list add bar is the shared EditField (form.edit-field) now.
+    await page.locator('.edit-field .input').fill('Bananes')
     await expectApi(page, 'POST', 'list', () =>
-      page.locator('.list-add button[type="submit"]').click(),
+      page.locator('.edit-field button[type="submit"]').click(),
     )
   })
 

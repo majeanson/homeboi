@@ -5,8 +5,7 @@ import { api } from '../../lib/api'
 import { useUndoToast } from '../../lib/toast'
 import { wash } from '../../lib/colors'
 import { useReserveLocations } from '../../lib/reservePrefs'
-import { Icon } from '../Icon'
-import { RowActions } from '../RowActions'
+import { CheckRow } from '../CheckRow'
 import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 
 // La réserve: a reminder of items stashed in the freezer / back of the pantry so
@@ -140,8 +139,9 @@ export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
 }
 
 // One reserve row: the calm clear button (used it / tossed it) is the primary
-// tap, with the uniform ✏️ / 🗑️ pair. ✏️ swaps the row for an inline editor that
-// also lets you move the item to another location.
+// tap, with the uniform ✏️ rename. ✏️ swaps the row for an inline editor that
+// also lets you move the item to another location. No 🗑️ — clearing IS the
+// check, so a separate delete would just duplicate it.
 function ReserveItemRow({
   row,
   locName,
@@ -154,68 +154,59 @@ function ReserveItemRow({
   onSave: (item: string, locationId: string | null) => void
 }) {
   const t = useT()
+  return (
+    <CheckRow
+      item={row.item}
+      onCheck={onClear}
+      checkLabel={t.kitchen.reserveCheck}
+      editLabel={`${t.common.edit} — ${locName(row.location_id)}`}
+      renderEdit={(close) => <ReserveEditForm row={row} onSave={onSave} onClose={close} />}
+    />
+  )
+}
+
+// La réserve's richer inline editor: rename AND move the item to another storage
+// location. Supplied to CheckRow via `renderEdit` (the default rename form can't
+// carry the location <select>).
+function ReserveEditForm({
+  row,
+  onSave,
+  onClose,
+}: {
+  row: ReserveRow
+  onSave: (item: string, locationId: string | null) => void
+  onClose: () => void
+}) {
+  const t = useT()
   const { locations } = useReserveLocations()
-  const [editing, setEditing] = useState(false)
   const [text, setText] = useState(row.item)
   const [loc, setLoc] = useState<string>(row.location_id ?? '')
-
-  if (editing)
-    return (
-      <li className="kitchen__pantry-row">
-        <form
-          className="operator__inline-form"
-          style={{ flex: '1 1 auto' }}
-          onSubmit={(e) => {
-            e.preventDefault()
-            onSave(text, loc || null)
-            setEditing(false)
-          }}
-        >
-          <input className="input" value={text} onChange={(e) => setText(e.target.value)} aria-label={t.common.edit} autoFocus />
-          {locations.length > 0 && (
-            <select className="input kitchen__reserve-loc" value={loc} onChange={(e) => setLoc(e.target.value)} aria-label={t.kitchen.reserveWhere}>
-              {locations.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
-          )}
-          <button type="submit" className="btn" disabled={!text.trim()}>
-            {t.common.save}
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={() => {
-              setText(row.item)
-              setLoc(row.location_id ?? '')
-              setEditing(false)
-            }}
-          >
-            {t.common.cancel}
-          </button>
-        </form>
-      </li>
-    )
-
   return (
-    <li className="kitchen__pantry-row">
-      <button type="button" className="board__list-item" onClick={onClear}>
-        <span className="board__check" aria-hidden="true">
-          <Icon name="square-bold" size={18} />
-        </span>
-        <span>{row.item}</span>
+    <form
+      className="operator__inline-form"
+      style={{ flex: '1 1 auto' }}
+      onSubmit={(e) => {
+        e.preventDefault()
+        onSave(text, loc || null)
+        onClose()
+      }}
+    >
+      <input className="input" value={text} onChange={(e) => setText(e.target.value)} aria-label={t.common.edit} autoFocus />
+      {locations.length > 0 && (
+        <select className="input kitchen__reserve-loc" value={loc} onChange={(e) => setLoc(e.target.value)} aria-label={t.kitchen.reserveWhere}>
+          {locations.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </select>
+      )}
+      <button type="submit" className="btn" disabled={!text.trim()}>
+        {t.common.save}
       </button>
-      <RowActions
-        onEdit={() => {
-          setText(row.item)
-          setLoc(row.location_id ?? '')
-          setEditing(true)
-        }}
-        editLabel={`${t.common.edit} — ${locName(row.location_id)}`}
-        onDelete={onClear}
-      />
-    </li>
+      <button type="button" className="btn btn--ghost mono" onClick={onClose}>
+        {t.common.cancel}
+      </button>
+    </form>
   )
 }

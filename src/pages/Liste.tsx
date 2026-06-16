@@ -14,7 +14,7 @@ import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { useRecordUndo, useUndoToast } from '../lib/toast'
 import { useVoiceInput } from '../lib/useVoiceInput'
-import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
+import { EditField } from '../components/EditField'
 import { money } from '../lib/deals'
 import { pickListFrom, parseDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
@@ -339,21 +339,18 @@ export function Liste() {
 
       {/* Add a line right here — type it or speak it. The direct path; the ＋
           capture sheet still works for the AI-routed quick note. */}
-      <form className="list-add" onSubmit={addItem}>
-        <input
-          className="input"
-          value={addText}
-          onChange={(e) => setAddText(e.target.value)}
-          placeholder={voice.listening ? t.capture.listening : t.list.addPlaceholder}
-          aria-label={t.list.addPlaceholder}
-        />
-        <VoiceButton voice={voice} label={t.capture.voice} />
-        <button type="submit" className="btn btn--primary" disabled={!addText.trim() || adding}>
-          <Icon name="plus-bold" size={18} />
-          {t.capture.add}
-        </button>
-      </form>
-      <VoiceStatus voice={voice} />
+      <EditField
+        value={addText}
+        onChange={setAddText}
+        onSubmit={() => addItem()}
+        submitLabel={t.capture.add}
+        submitLeadingIcon="plus-bold"
+        submitVariant="primary"
+        busy={adding}
+        voice={voice}
+        placeholder={voice.listening ? t.capture.listening : t.list.addPlaceholder}
+        ariaLabel={t.list.addPlaceholder}
+      />
 
       {list.length === 0 ? (
         <p className="feed-empty">{t.board.listEmpty}</p>

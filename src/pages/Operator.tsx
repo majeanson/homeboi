@@ -16,6 +16,7 @@ import { RecipeTagsSection } from '../components/operator/recipesTags'
 import { MealSlotsSection } from '../components/operator/meals'
 import { ReserveLocationsSection } from '../components/operator/reserve'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
+import { MicSelfTest } from '../components/operator/micTest'
 import { GuideSection } from '../components/operator/guide'
 import { SectionGuide } from '../components/operator/sectionGuide'
 import { useTabParam } from '../lib/tabParam'
@@ -168,7 +169,12 @@ export function Operator() {
           </>
         )}
         {tab === 'calm' && <CalmSection />}
-        {tab === 'ai-log' && <AiErrorLogSection />}
+        {tab === 'ai-log' && (
+          <>
+            <MicSelfTest />
+            <AiErrorLogSection />
+          </>
+        )}
         {tab === 'guide' && <GuideSection />}
       </div>
     </main>

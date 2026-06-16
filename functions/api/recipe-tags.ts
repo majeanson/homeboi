@@ -4,13 +4,15 @@ import { nowSec } from '../_lib/ids'
 
 // Recipe tag management — the household-wide layer over recipes.tags_json.
 //
-//   GET   → { presets, used: [{tag, count}] }   presets = the household's saved
-//           pill list (migration 0021, [] = use the UI's built-in starters);
-//           used = every tag currently on a recipe, with how many carry it.
+//   GET   → { presets, used: [{tag, count}], colors }   presets = the household's
+//           saved pill list (migration 0021, [] = use the UI's built-in starters);
+//           used = every tag currently on a recipe, with how many carry it;
+//           colors = per-tag colour overrides {lowercase tag: "#rrggbb"} (migration 0037).
 //   PATCH → any of (operator-only):
 //           { presets: string[] }          replace the preset pill list
-//           { rename: {from, to} }         rename a tag on EVERY recipe (and in presets)
-//           { remove: string }             strip a tag from EVERY recipe (and presets)
+//           { rename: {from, to} }         rename a tag on EVERY recipe (and in presets/colours)
+//           { remove: string }             strip a tag from EVERY recipe (and presets/colours)
+//           { setColor: {tag, color} }     set (or clear, color=null) a tag's colour
 //
 // Rename/remove rewrite each affected recipe's tags_json in one pass — the
 // recipe book is small (a household's worth), so a read-modify-write loop in a
@@ -47,6 +49,38 @@ async function readPresets(env: { DB: D1Database }, householdId: string): Promis
   return cleanTagList(parseJsonArray<string>(row?.recipe_tags_json ?? '[]', isStr))
 }
 
+// A #rrggbb hex, or null for "no colour" / anything malformed. Colours come from
+// the client's PALETTE swatches, so we only need to gate the shape, not a list.
+const cleanColor = (v: unknown): string | null => (isStr(v) && /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : null)
+
+// The per-tag colour map {lowercase tag: "#rrggbb"} (migration 0037). Keys are
+// lowercased and values shape-checked; junk entries are dropped on read.
+async function readColors(env: { DB: D1Database }, householdId: string): Promise<Record<string, string>> {
+  const row = await env.DB.prepare('SELECT recipe_tag_colors_json FROM households WHERE id = ?')
+    .bind(householdId)
+    .first<{ recipe_tag_colors_json: string | null }>()
+  let raw: unknown
+  try {
+    raw = JSON.parse(row?.recipe_tag_colors_json ?? '{}')
+  } catch {
+    raw = {}
+  }
+  const out: Record<string, string> = {}
+  if (raw && typeof raw === 'object' && !Array.isArray(raw))
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      const c = cleanColor(v)
+      if (isStr(k) && k.trim() && c) out[k.toLowerCase()] = c
+    }
+  return out
+}
+
+const writeColors = (env: { DB: D1Database }, householdId: string, colors: Record<string, string>, ts: number) =>
+  env.DB.prepare('UPDATE households SET recipe_tag_colors_json = ?, updated_at = ? WHERE id = ?').bind(
+    JSON.stringify(colors),
+    ts,
+    householdId,
+  )
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const presets = await readPresets(ctx.env, actor.householdId)
   const { results } = await ctx.env.DB.prepare('SELECT tags_json FROM recipes WHERE household_id = ?')
@@ -63,7 +97,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   }
   const used = [...counts.values()].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
-  return ok({ presets, used })
+  const colors = await readColors(ctx.env, actor.householdId)
+  return ok({ presets, used, colors })
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
@@ -71,6 +106,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     presets?: unknown
     rename?: { from?: unknown; to?: unknown }
     remove?: unknown
+    setColor?: { tag?: unknown; color?: unknown }
   }>(ctx.request)
   if (!body) return badRequest('Corps requis.')
 
@@ -79,6 +115,20 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .bind(JSON.stringify(cleanTagList(body.presets)), nowSec(), actor.householdId)
       .run()
     return ok({ presets: await readPresets(ctx.env, actor.householdId) })
+  }
+
+  // Set or clear (color=null) one tag's colour. Keyed by lowercase name so it
+  // tracks the tag regardless of which casing a recipe stored.
+  if (body.setColor) {
+    const tag = cleanTag(body.setColor.tag)
+    if (!tag) return badRequest('tag requis.')
+    const color = cleanColor(body.setColor.color)
+    const colors = await readColors(ctx.env, actor.householdId)
+    const key = tag.toLowerCase()
+    if (color) colors[key] = color
+    else delete colors[key]
+    await writeColors(ctx.env, actor.householdId, colors, nowSec()).run()
+    return ok({ colors })
   }
 
   const renameFrom = cleanTag(body.rename?.from)
@@ -122,6 +172,15 @@ export const onRequestPatch = authed(async (ctx, actor) => {
         actor.householdId,
       ),
     )
+  }
+
+  // Move (rename) or drop (remove) the tag's colour so it follows the tag.
+  const colors = await readColors(ctx.env, actor.householdId)
+  if (fromKey in colors) {
+    const hex = colors[fromKey]
+    delete colors[fromKey]
+    if (renameTo) colors[renameTo.toLowerCase()] = hex
+    updates.push(writeColors(ctx.env, actor.householdId, colors, ts))
   }
 
   if (updates.length) await ctx.env.DB.batch(updates)

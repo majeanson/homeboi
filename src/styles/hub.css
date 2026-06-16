@@ -339,46 +339,19 @@
   align-items: center;
   justify-content: center;
 }
-.deck__word {
+/* The word field + ↑/↓ + delete now come from the shared EditField. Keep the deck
+   row dense: one line (not the add-form's wrap), and let the word box shrink past
+   its generous add-form basis so handle + emoji + actions stay on the card. */
+.deck__card .edit-field {
   flex: 1;
   min-width: 0;
 }
-.deck__btns {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: none;
+.deck__card .edit-field__row {
+  flex-wrap: nowrap;
+  gap: 6px;
 }
-.deck__mini {
-  width: 30px;
-  height: 24px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--card);
-  color: var(--ink-soft);
-  cursor: pointer;
-  line-height: 1;
-  font-size: 13px;
-}
-.deck__mini:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-.deck__remove {
-  width: 34px;
-  height: 34px;
-  flex: none;
-  border: 0;
-  background: transparent;
-  color: var(--ink-faint);
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-  border-radius: 10px;
-}
-.deck__remove:hover {
-  color: var(--warn);
-  background: var(--clay-soft);
+.deck__card .edit-field__box {
+  flex: 1 1 4rem;
 }
 .deck__palette {
   display: flex;

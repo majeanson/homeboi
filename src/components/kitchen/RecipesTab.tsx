@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { type Recipe, recipeImg, allTags, recipeTotalMin } from '../../lib/recipes'
+import { api } from '../../lib/api'
+import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY, recipeImg, allTags, recipeTotalMin, tagColor } from '../../lib/recipes'
+import { wash, tintInk, edge } from '../../lib/colors'
 import { rankCookable, rankUseSoon } from '../../lib/cookable'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { formatDuration } from '../../lib/duration'
@@ -26,8 +29,13 @@ export function RecipesTab({
 }) {
   const t = useT()
   const [recipeQuery, setRecipeQuery] = useState('')
-  // Single active tag filter (null = all). Drives the chip row over the grid.
-  const [tagFilter, setTagFilter] = useState<string | null>(null)
+  // Active tag filters, as lowercase keys. Empty = "Toutes" (no constraint).
+  // Multi-select with AND semantics: a recipe must carry EVERY selected tag.
+  const [tagFilter, setTagFilter] = useState<string[]>([])
+  const toggleTag = (tg: string) => {
+    const key = tg.toLowerCase()
+    setTagFilter((f) => (f.includes(key) ? f.filter((k) => k !== key) : [...f, key]))
+  }
   // "Quoi cuisiner ?" / "À utiliser bientôt": mutually exclusive sorts.
   const [cookFilter, setCookFilter] = useState(false)
   const [useSoonFilter, setUseSoonFilter] = useState(false)
@@ -36,13 +44,19 @@ export function RecipesTab({
   const [fastFilter, setFastFilter] = useState(false)
   const canFastFilter = useMemo(() => recipes.some((r) => recipeTotalMin(r) != null), [recipes])
   const tags = useMemo(() => allTags(recipes), [recipes])
+  // Per-tag household colours (migration 0037) — tint the filter pills to match
+  // the recipe view. Optional binding: undefined until the read lands.
+  const tagColors = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') }).data?.colors
 
   const shownRecipes = useMemo(() => {
     const q = recipeQuery.trim().toLowerCase()
-    const tf = tagFilter?.toLowerCase()
     return recipes.filter((r) => {
       if (q && !(r.title.toLowerCase().includes(q) || r.ingredients.some((i) => i.toLowerCase().includes(q)))) return false
-      if (tf && !(r.tags ?? []).some((tg) => tg.toLowerCase() === tf)) return false
+      // AND: every selected tag must be present on the recipe.
+      if (tagFilter.length) {
+        const rt = new Set((r.tags ?? []).map((tg) => tg.toLowerCase()))
+        if (!tagFilter.every((k) => rt.has(k))) return false
+      }
       if (fastFilter && canFastFilter) {
         const tm = recipeTotalMin(r)
         if (!tm || tm > 30) return false
@@ -125,20 +139,29 @@ export function RecipesTab({
         <div className="kitchen__tag-filter">
           <button
             type="button"
-            className={`chip${!tagFilter ? ' is-on' : ''}`}
-            onClick={() => setTagFilter(null)}
-            aria-pressed={!tagFilter}
+            className={`chip${tagFilter.length === 0 ? ' is-on' : ''}`}
+            onClick={() => setTagFilter([])}
+            aria-pressed={tagFilter.length === 0}
           >
             {t.recipes.allTag}
           </button>
           {tags.map((tg) => {
-            const on = tagFilter?.toLowerCase() === tg.toLowerCase()
+            const on = tagFilter.includes(tg.toLowerCase())
+            const hex = tagColor(tagColors, tg)
+            // Tint by the tag colour: a solid-ish fill when selected, a faint wash
+            // when not, so the colour reads either way without losing the on/off cue.
+            const style = hex
+              ? on
+                ? { background: tintInk(hex), color: '#fffcf5', borderColor: tintInk(hex) }
+                : { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) }
+              : undefined
             return (
               <button
                 key={tg}
                 type="button"
                 className={`chip${on ? ' is-on' : ''}`}
-                onClick={() => setTagFilter(on ? null : tg)}
+                style={style}
+                onClick={() => toggleTag(tg)}
                 aria-pressed={on}
               >
                 {tg}
@@ -159,7 +182,7 @@ export function RecipesTab({
             className="btn btn--ghost mono"
             onClick={() => {
               setRecipeQuery('')
-              setTagFilter(null)
+              setTagFilter([])
               setCookFilter(false)
               setUseSoonFilter(false)
               setFastFilter(false)

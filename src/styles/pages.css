@@ -845,15 +845,47 @@
   color: var(--ink-soft);
   margin-left: auto;
 }
-/* A pantry row: the calm check button takes the slack, the uniform ✏️/🗑️ pair
-   sits at the end (an editing row is the inline rename form, full width). */
+/* A check-list row (CheckRow): a dedicated check button, then the INERT title
+   takes the slack, then the uniform ✏️/🗑️ pair at the end. The title is no
+   longer a tap target — only the check fires the action. An editing row swaps to
+   the inline rename form, full width. */
 .kitchen__pantry-row {
   display: flex;
   align-items: center;
   gap: 0.3rem;
 }
-.kitchen__pantry-row .board__list-item {
+/* The check is its own ≥40px button (square glyph), not the whole row. */
+.checkrow__check {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.3rem;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+}
+.checkrow__check:hover .board__check,
+.checkrow__check:active .board__check {
+  color: var(--accent);
+}
+.checkrow__check:active {
+  transform: translateY(1px);
+}
+/* The inert title area — fills the row, plain text (no pointer cursor). */
+.checkrow__body {
   flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: left;
+  cursor: default;
+}
+.checkrow__title {
   min-width: 0;
 }
 /* La réserve: a storage-location picker rides in the add/edit row; keep it from
@@ -1392,6 +1424,124 @@
     min-width: 100%;
   }
 }
+
+/* --- EditField: the ONE add/edit text box (src/components/EditField.tsx) ----
+   The clear ✕ and the mic live INSIDE a bordered box that looks like an input,
+   so a row reads as "field + at most one or two compact actions" instead of the
+   old tall stack of full-width buttons. Secondary actions demote to a quiet chip
+   row below. Touch targets stay ≥40px for a wall tablet / toddler thumb. */
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex-basis: 100%;
+  min-width: 0;
+}
+.edit-field__row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+/* The box owns the border + focus ring; the input inside is borderless so the
+   clear/mic buttons sit flush with the text as one field. */
+.edit-field__box {
+  flex: 1 1 10rem;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  min-height: 44px;
+  padding-right: 0.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+.edit-field__box:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.edit-field__input.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.edit-field__input.input:focus {
+  outline: none;
+}
+/* The inline clear ✕ / icon submit / trash — a quiet 40px icon button, mirroring
+   the row-actions affordance so the whole app shares one look. */
+.edit-field__icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.edit-field__icon-btn:hover,
+.edit-field__icon-btn:focus-visible {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.edit-field__icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.edit-field__icon-btn--danger:hover,
+.edit-field__icon-btn--danger:focus-visible {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+.edit-field__submit {
+  flex: none;
+}
+/* The mic, dropped inside the box: strip its button chrome so it reads as a field
+   affordance (like the clear ✕), keeping only the listening pulse. */
+.edit-field__box .capture__voice {
+  min-height: 40px;
+  width: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+/* ↑/↓ reorder, reused from the deck editor's mini stack. */
+.edit-field__reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: none;
+}
+.edit-field__mini {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--ink-soft);
+  cursor: pointer;
+  line-height: 1;
+}
+.edit-field__mini:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+/* A thin wrapped row of secondary actions (Choisir une recette, Restants…) —
+   quiet chips under the field, never the old full-width stacked buttons. */
+.edit-field__secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
 .operator__check {
   display: flex;
   align-items: center;
@@ -1530,6 +1680,15 @@
 }
 .hub .board__check {
   font-size: 1.8rem;
+}
+/* Check-list rows on the wall tablet: a roomy check target + larger title. The
+   square glyph keeps its .hub .board__check size (it still lives inside). */
+.hub .checkrow__check {
+  min-width: 3.25rem;
+  min-height: 3.25rem;
+}
+.hub .checkrow__title {
+  font-size: 1.2rem;
 }
 .hub .board__chore {
   min-height: 3.25rem;
@@ -1896,6 +2055,73 @@
 .tag-admin__rename .input {
   flex: 1;
   min-width: 8rem;
+}
+
+/* Preset pill = tag name (tap to recolour) + an × to drop it, tinted by the tag's
+   colour. The chip styling lives on the wrapper; the two buttons are bare so the
+   tint shows through. */
+.tag-admin__pill {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+.tag-admin__pill.is-editing {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.tag-admin__pill-name,
+.tag-admin__pill-x {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+}
+.tag-admin__pill-name {
+  padding: 0 0.4rem 0 0.75rem;
+}
+.tag-admin__pill-x {
+  padding: 0 0.6rem 0 0.4rem;
+  opacity: 0.7;
+}
+.tag-admin__pill-x:active {
+  opacity: 1;
+}
+/* Used-tag row gains a paint button before ✏️/🗑️; the colour picker drops below. */
+.tag-admin__row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.tag-admin__color-btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  min-width: 38px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.tag-admin__color-btn.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.tag-admin__coloredit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.2rem 0 0.4rem;
+}
+.tag-admin__color-clear {
+  flex: 0 0 auto;
 }
 
 /* ========================================================================== */

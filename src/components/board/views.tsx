@@ -106,12 +106,18 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
         </div>
       )}
 
-      {/* Jump straight to cook mode for the next meal due (déjeuner→souper by the
-          hour) when it resolves to a saved recipe — the same shortcut the kitchen
-          ＋ "Cuisiner" tile uses. When a meal IS planned but has no recipe yet, the
-          CTA doesn't vanish: it leads to the kitchen to attach one, so a planned
-          souper is never a dead end. (No meal planned at all → nothing here.) */}
-      {cook.meal && (
+      {/* A planned leftover isn't a cook — eating restes means nothing to prepare.
+          So instead of the "Préparer le repas" CTA (which would send you to a stove
+          you don't need), show a calm, non-actionable note: restes ce soir. */}
+      {cook.meal?.is_leftover ? (
+        <div className="nownext__cook nownext__cook--leftover" style={{ '--tint': supperColor } as CSSProperties}>
+          <Icon name="arrow-counter-clockwise-bold" size={22} color={supperColor} />
+          <span className="nownext__cook-label">
+            {t.board.cookLeftover}
+            <span className="nownext__cook-meal">{cook.meal.title}</span>
+          </span>
+        </div>
+      ) : cook.meal && (
         <button
           type="button"
           className="nownext__cook"

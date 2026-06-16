@@ -2,6 +2,7 @@ import { useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
 import { Icon, InlineIcon } from '../Icon'
+import { EditField } from '../EditField'
 import { type MealRow } from './types'
 
 // The planned meals in ONE slot (a slot is a list now — migration 0033). Each row
@@ -61,39 +62,15 @@ export function MealRows({
             className={'kitchen__meal-row' + (draggingId === m.id ? ' is-dragging' : '')}
           >
             {editId === m.id ? (
-              <form
-                className="kitchen__meal-edit"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  commit(m.id)
-                }}
-              >
-                <input
-                  className="input"
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  aria-label={t.common.edit}
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="kitchen__meal-btn"
-                  aria-label={t.common.save}
-                  title={t.common.save}
-                  disabled={!editText.trim()}
-                >
-                  <Icon name="check-bold" size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="kitchen__meal-btn"
-                  onClick={() => setEditId(null)}
-                  aria-label={t.common.cancel}
-                  title={t.common.cancel}
-                >
-                  <Icon name="x-bold" size={15} />
-                </button>
-              </form>
+              <EditField
+                value={editText}
+                onChange={setEditText}
+                onSubmit={() => commit(m.id)}
+                onCancel={() => setEditId(null)}
+                clearable={false}
+                ariaLabel={t.common.edit}
+                autoFocus
+              />
             ) : (
               <>
                 {onDragStart && (
