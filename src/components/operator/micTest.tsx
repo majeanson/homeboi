@@ -243,48 +243,24 @@ export function MicSelfTest() {
     let lastInterim = ''
     let finalText = ''
     let errorStr = ''
+    let attemptNo = 0
+    // Did getUserMedia actually open+close the mic just now? On iOS/iPadOS that
+    // prime can race the audio session and abort the FIRST recognition attempt
+    // instantly (zero audio). If it did, we retry ONCE without re-priming — both
+    // to confirm the prime is the cause and to mirror the real app's recovery.
+    const primed = gum === 'granted'
 
-    const recog = new Ctor()
-    recog.lang = reqLang
-    recog.continuous = false
-    recog.interimResults = true
-    recog.maxAlternatives = 1
-
-    recog.onstart = () => timeline.push(`${at()} onstart`)
-    recog.onaudiostart = () => timeline.push(`${at()} onaudiostart (mic capturing)`)
-    recog.onsoundstart = () => timeline.push(`${at()} onsoundstart (sound detected)`)
-    recog.onspeechstart = () => timeline.push(`${at()} onspeechstart (speech detected)`)
-    recog.onspeechend = () => timeline.push(`${at()} onspeechend`)
-    recog.onsoundend = () => timeline.push(`${at()} onsoundend`)
-    recog.onaudioend = () => timeline.push(`${at()} onaudioend`)
-    recog.onnomatch = () => timeline.push(`${at()} onnomatch (heard audio, no match)`)
-    recog.onresult = (e) => {
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i]
-        const txt = r[0]?.transcript?.trim() ?? ''
-        if (r.isFinal) {
-          finalCount++
-          finalText = txt
-          timeline.push(`${at()} onresult FINAL — "${txt}"`)
-        } else {
-          interimCount++
-          lastInterim = txt
-          setInterim(txt)
-          if (interimCount === 1) timeline.push(`${at()} onresult interim (first) — "${txt}"`)
-        }
-      }
-    }
-    recog.onerror = (e) => {
-      errorStr = e.error
-      timeline.push(`${at()} onerror — "${e.error}"`)
-    }
     // One verdict, read off whatever state we've reached — shared by onend, the
     // 10s safety timer, and Stop so every exit path yields the same honest read.
     // Order matters: a captured transcript (final, else interim) is MORE
     // informative than the error, so "heard 3 interims then aborted" never gets
     // flattened to a bare "ERROR aborted" that hides that the engine did hear you.
     const verdictFor = (): string => {
-      if (finalText) return `HEARD "${finalText}" — recognition WORKS here.`
+      const retried = attemptNo >= 2
+      if (finalText)
+        return retried
+          ? `HEARD "${finalText}" on the 2nd attempt (no getUserMedia prime) — the FIRST attempt aborted instantly BECAUSE the getUserMedia prime raced the audio session; skipping/deferring the prime fixes it. Recognition WORKS here.`
+          : `HEARD "${finalText}" — recognition WORKS here.`
       if (lastInterim) {
         // Non-terminal errors ('aborted'/'no-speech') AFTER interims = the engine
         // transcribed but iOS tore the session down before committing a final.
@@ -295,6 +271,11 @@ export function MicSelfTest() {
         }
         return `INTERIM-ONLY "${lastInterim}" but never finalized — engine heard but didn't commit a final. The real app keeps this last interim.`
       }
+      // Instant abort, zero audio — the getUserMedia/audio-session race signature.
+      if (errorStr === 'aborted' && interimCount === 0 && finalCount === 0)
+        return retried
+          ? `ERROR "aborted" on BOTH attempts (WITH and WITHOUT the getUserMedia prime), zero audio each time — deeper than the prime race: a standalone-PWA recognition restriction or an audio-session conflict on this device/OS. Voice likely won't work in this installed-PWA context; full Safari may.`
+          : `ERROR "aborted" instantly with zero audio — recognition was killed right after the mic opened (see timeline).`
       if (errorStr) return `ERROR "${errorStr}" — recognition refused/failed before any transcript (see timeline).`
       if (interimCount === 0)
         return 'SILENT — mic captured but ZERO transcripts came back. Classic iOS sign of a missing dictation language pack, unreachable dictation servers, or a standalone-PWA restriction.'
@@ -302,20 +283,71 @@ export function MicSelfTest() {
     }
     finishRef.current = () => finalize(verdictFor())
 
-    recog.onend = () => {
-      timeline.push(`${at()} onend  (interims: ${interimCount}, finals: ${finalCount})`)
-      finishRef.current?.()
+    // Wire + start one recognition attempt. Returns false if start() threw (already
+    // finalized). attemptNo 2 deliberately skips the getUserMedia prime.
+    const startAttempt = (): boolean => {
+      attemptNo++
+      const recog = new Ctor()
+      recog.lang = reqLang
+      recog.continuous = false
+      recog.interimResults = true
+      recog.maxAlternatives = 1
+
+      recog.onstart = () => timeline.push(`${at()} onstart`)
+      recog.onaudiostart = () => timeline.push(`${at()} onaudiostart (mic capturing)`)
+      recog.onsoundstart = () => timeline.push(`${at()} onsoundstart (sound detected)`)
+      recog.onspeechstart = () => timeline.push(`${at()} onspeechstart (speech detected)`)
+      recog.onspeechend = () => timeline.push(`${at()} onspeechend`)
+      recog.onsoundend = () => timeline.push(`${at()} onsoundend`)
+      recog.onaudioend = () => timeline.push(`${at()} onaudioend`)
+      recog.onnomatch = () => timeline.push(`${at()} onnomatch (heard audio, no match)`)
+      recog.onresult = (e) => {
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const r = e.results[i]
+          const txt = r[0]?.transcript?.trim() ?? ''
+          if (r.isFinal) {
+            finalCount++
+            finalText = txt
+            timeline.push(`${at()} onresult FINAL — "${txt}"`)
+          } else {
+            interimCount++
+            lastInterim = txt
+            setInterim(txt)
+            if (interimCount === 1) timeline.push(`${at()} onresult interim (first) — "${txt}"`)
+          }
+        }
+      }
+      recog.onerror = (e) => {
+        errorStr = e.error
+        timeline.push(`${at()} onerror — "${e.error}"`)
+      }
+      recog.onend = () => {
+        timeline.push(`${at()} onend  (interims: ${interimCount}, finals: ${finalCount})`)
+        // iPadOS/iOS: a getUserMedia prime right before start() can race the audio
+        // session and abort the FIRST attempt instantly with zero audio. The grant
+        // persists, so a second attempt WITHOUT re-priming usually starts clean.
+        if (attemptNo === 1 && primed && errorStr === 'aborted' && interimCount === 0 && finalCount === 0 && !doneRef.current) {
+          timeline.push(`${at()} instant abort after the getUserMedia prime — retrying WITHOUT re-priming…`)
+          errorStr = ''
+          startAttempt()
+          return
+        }
+        finishRef.current?.()
+      }
+
+      recogRef.current = recog
+      timeline.push(`${at()} starting recognition (attempt ${attemptNo}${attemptNo === 1 ? ', say "lait, œufs, pain"' : ' — no getUserMedia prime'})`)
+      try {
+        recog.start()
+      } catch (e) {
+        timeline.push(`${at()} start() threw — ${(e as Error)?.message ?? e}`)
+        finalize('start() threw — recognition could not begin in this context.')
+        return false
+      }
+      return true
     }
 
-    recogRef.current = recog
-    timeline.push(`${at()} starting recognition (say "lait, œufs, pain")`)
-    try {
-      recog.start()
-    } catch (e) {
-      timeline.push(`${at()} start() threw — ${(e as Error)?.message ?? e}`)
-      finalize('start() threw — recognition could not begin in this context.')
-      return
-    }
+    if (!startAttempt()) return
     // Safety net: some iOS contexts never fire onend. Force-finish after 10s with
     // whatever state we reached — guarantees a report even when nothing fires.
     timerRef.current = window.setTimeout(() => {

@@ -123,6 +123,14 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
   const pendingRef = useRef('')
   // Whether the OS mic grant has been (re)established via getUserMedia this run.
   const micGrantedRef = useRef(false)
+  // iOS/iPadOS instant-abort recovery (see onend). The getUserMedia grant-prime
+  // fired right before start() can race the audio session and abort the very
+  // FIRST attempt instantly with zero audio (seen on iPadOS 17 installed PWA).
+  // sawResultRef = did this attempt produce any result; lastErrorRef = its last
+  // engine error; retriedRef = have we already spent our one no-prime retry.
+  const sawResultRef = useRef(false)
+  const lastErrorRef = useRef<string | null>(null)
+  const retriedRef = useRef(false)
   const hasVoice = !!getCtor()
 
   // Read the browser-remembered mic grant up front, and follow it live (the
@@ -260,6 +268,8 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     }
     setError(null)
     stoppedRef.current = false
+    // Fresh user-initiated session gets one no-prime retry (begin() keeps it).
+    retriedRef.current = false
     // On iOS, establish/persist the grant first (then begin in its resolution);
     // everywhere else begin synchronously so the engine's start() stays inside the
     // user gesture exactly as before.
@@ -283,12 +293,16 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     recog.interimResults = true
     recog.maxAlternatives = 1
     pendingRef.current = ''
+    // Per-attempt reset for the instant-abort recovery (see onend).
+    sawResultRef.current = false
+    lastErrorRef.current = null
 
     recog.onresult = (e) => {
       // Walk from resultIndex so each final fires exactly once. Interim guesses
       // are remembered (not emitted) so a final can supersede them.
       let sawInterim = false
       let emittedFinal = false
+      sawResultRef.current = true // any result at all rules out the instant-abort retry
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i]
         if (!r.isFinal) {
@@ -330,6 +344,26 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
       // it (e.g. 'aborted'/'no-speech') isn't a user-facing failure — clear it so
       // callers don't show an error over text that actually arrived.
       if (recovered) setError(null)
+      // iOS/iPadOS instant-abort recovery: the getUserMedia grant-prime fired right
+      // before start() can race the audio session and abort the FIRST attempt
+      // instantly — 'aborted' with zero results, before any speech (seen on iPadOS
+      // 17 installed PWA). The grant now persists (micGrantedRef), so retrying via
+      // begin() — which SKIPS the prime — usually starts clean. One retry only
+      // (retriedRef), single-shot only: continuous already restarts via start()
+      // below (which also skips the prime once primed), so it self-heals.
+      if (
+        !opts.continuous &&
+        !recovered &&
+        !stoppedRef.current &&
+        !retriedRef.current &&
+        !sawResultRef.current &&
+        lastErrorRef.current === 'aborted' &&
+        isIos()
+      ) {
+        retriedRef.current = true
+        begin(Ctor)
+        return
+      }
       // Chrome ends recognition after a stretch of silence. In continuous mode
       // that shouldn't end the session — restart unless the user tapped stop or
       // a fatal permission error fired.
@@ -341,6 +375,7 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     }
 
     recog.onerror = (e) => {
+      lastErrorRef.current = e.error
       setError(e.error)
       // A denied mic or unsupported language is terminal — don't auto-restart
       // into the same wall. 'no-speech'/'aborted' are transient; onend handles
