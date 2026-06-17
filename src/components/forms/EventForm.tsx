@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../../lib/api'
 import { useT } from '../../i18n'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
+import { LeadPicker } from '../LeadPicker'
 import { recurOf } from '../../lib/recurLabel'
 
 // The complete event (rendez-vous) form — title, date, optional time (no time =
@@ -20,6 +21,7 @@ export interface EventInit {
   all_day: number
   member_id: string | null
   recur_json?: string | null
+  lead_seconds?: number | null
 }
 
 
@@ -45,6 +47,7 @@ export function EventForm({
   const [time, setTime] = useState(init && !value?.all_day ? `${pad(init.getHours())}:${pad(init.getMinutes())}` : '')
   const [memberId, setMemberId] = useState<string | null>(value?.member_id ?? null)
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
+  const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
 
@@ -56,7 +59,7 @@ export function EventForm({
     // Weekly with no weekday picked → the server defaults to the anchor's (UTC)
     // weekday. We don't compute it here: local getDay() could disagree with the
     // server's UTC expansion and recur on the wrong day.
-    const fields = { title: title.trim(), startAt, allDay: !time, memberId, recur }
+    const fields = { title: title.trim(), startAt, allDay: !time, memberId, recur, leadSeconds: lead }
     setBusy(true)
     setErr(false)
     try {
@@ -102,6 +105,7 @@ export function EventForm({
         ))}
       </div>
       <RecurPicker value={recur} onChange={setRecur} />
+      <LeadPicker value={lead} onChange={setLead} />
       {err && <p className="error mono">{t.common.saveFailed}</p>}
       <button type="submit" className="btn" disabled={!title.trim() || !date || busy}>
         {value ? t.common.save : t.operator.addEvent}

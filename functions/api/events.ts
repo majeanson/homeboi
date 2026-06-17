@@ -17,7 +17,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // may be in the past, e.g. "garbage every Wednesday" set weeks ago).
   const today = dayStart(new Date(Date.now()))
   const { results } = await ctx.env.DB.prepare(
-    `SELECT id, title, start_at, all_day, member_id, recur_json FROM events
+    `SELECT id, title, start_at, all_day, member_id, recur_json, lead_seconds FROM events
       WHERE household_id = ? AND (recur_json IS NOT NULL OR start_at >= ?)
       ORDER BY start_at LIMIT 100`,
   )
@@ -33,11 +33,22 @@ interface EventBody {
   allDay?: boolean
   memberId?: string | null
   recur?: unknown // {freq,interval?,weekdays?} or null/absent for a one-off
+  leadSeconds?: number | null // calm "Bientôt" lead window; null/absent = no reminder
 }
 
 const recurJson = (recur: unknown): string | null => {
   const r = normalizeRecur(recur)
   return r ? JSON.stringify(r) : null
+}
+
+// How far before the event the board flags it "Bientôt" (calm emphasis, never a
+// push — NFR-CALM-1). Clamp to null or [1 s .. 7 days]; 0/absent/garbage = no
+// reminder. 7-day cap matches the board's À venir window — a longer lead would
+// have nothing to highlight against.
+const MAX_LEAD = 7 * 86400
+const leadSeconds = (v: unknown): number | null => {
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), MAX_LEAD) : null
 }
 
 export const onRequestPost = authed(async (ctx, actor) => {
@@ -46,7 +57,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!title || typeof body?.startAt !== 'number') return badRequest('Titre + date requis.')
   const id = newId()
   await ctx.env.DB.prepare(
-    'INSERT INTO events (id, household_id, member_id, title, start_at, all_day, recur_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO events (id, household_id, member_id, title, start_at, all_day, recur_json, lead_seconds, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -56,6 +67,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       Math.floor(body.startAt),
       body.allDay ? 1 : 0,
       recurJson(body.recur),
+      leadSeconds(body.leadSeconds),
       nowSec(),
     )
     .run()
@@ -67,7 +79,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const title = body?.title?.trim()
   if (!body?.id || !title || typeof body?.startAt !== 'number') return badRequest('id + titre + date requis.')
   const res = await ctx.env.DB.prepare(
-    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, recur_json = ? WHERE id = ? AND household_id = ?',
+    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, recur_json = ?, lead_seconds = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title,
@@ -75,6 +87,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       body.allDay ? 1 : 0,
       body.memberId ?? null,
       recurJson(body.recur),
+      leadSeconds(body.leadSeconds),
       body.id,
       actor.householdId,
     )

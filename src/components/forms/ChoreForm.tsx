@@ -3,6 +3,7 @@ import { api } from '../../lib/api'
 import { useLang, useT } from '../../i18n'
 import { ColorPicker } from '../ColorPicker'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
+import { LeadPicker } from '../LeadPicker'
 import { anchorSecToDate, dateToAnchorSec, recurOf, todayAnchorDate } from '../../lib/recurLabel'
 import { choreTemplates } from '../../lib/routineTemplates'
 
@@ -22,6 +23,7 @@ export interface ChoreInit {
   rotation_json?: string | null
   recur_json?: string | null
   recur_start?: number | null
+  lead_seconds?: number | null
 }
 
 function parseRotation(json: string | null | undefined): string[] {
@@ -56,6 +58,9 @@ export function ChoreForm({
   // The recurrence anchor (which date "every 2 weeks" counts from). Defaults to
   // today; only sent when there's a recurrence — a standing chore has no anchor.
   const [start, setStart] = useState(anchorSecToDate(value?.recur_start) || todayAnchorDate())
+  // Calm "Bientôt" lead — only meaningful with a schedule (a no-schedule chore is a
+  // standing to-do with no occurrence date to anchor against).
+  const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
 
@@ -67,7 +72,14 @@ export function ChoreForm({
     if (!title.trim() || busy) return
     setBusy(true)
     setErr(false)
-    const fields = { title: title.trim(), rotation, color, recur, start: recur ? dateToAnchorSec(start) : null }
+    const fields = {
+      title: title.trim(),
+      rotation,
+      color,
+      recur,
+      start: recur ? dateToAnchorSec(start) : null,
+      leadSeconds: recur ? lead : null, // a standing (no-schedule) chore has no occurrence to remind about
+    }
     try {
       await api('chores', {
         method: value ? 'PATCH' : 'POST',
@@ -81,6 +93,7 @@ export function ChoreForm({
         setColor('#88A36F')
         setRecur(null)
         setStart(todayAnchorDate())
+        setLead(null)
       }
       onSaved()
     } catch {
@@ -123,10 +136,13 @@ export function ChoreForm({
       <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
       <RecurPicker value={recur} onChange={setRecur} />
       {recur && (
-        <label className="recur__row mono">
-          <span>{t.operator.choreStart}</span>
-          <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-        </label>
+        <>
+          <label className="recur__row mono">
+            <span>{t.operator.choreStart}</span>
+            <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+          </label>
+          <LeadPicker value={lead} onChange={setLead} />
+        </>
       )}
       {err && <p className="error mono">{t.common.saveFailed}</p>}
       <button type="submit" className="btn" disabled={!title.trim() || busy}>

@@ -146,6 +146,7 @@ export const FR = {
     focusedOn: 'Vue de',
     showAll: 'Tout voir',
     upcoming: 'À venir',
+    soon: 'Bientôt',
     turn: 'C’est le tour de',
     done: 'Fait',
     helpedBy: 'Aidé par',
@@ -194,6 +195,8 @@ export const FR = {
     },
   },
   recur: { repeat: 'Répéter', none: 'Jamais', daily: 'Chaque jour', weekly: 'Chaque semaine', monthly: 'Chaque mois', every: 'tous les', unit: { daily: 'jour(s)', weekly: 'semaine(s)', monthly: 'mois' }, weekdayShort: ['D', 'L', 'M', 'M', 'J', 'V', 'S'] },
+  // Calm "Bientôt" reminder lead — when the board starts highlighting a dated item.
+  lead: { label: 'Afficher dès', none: 'Au moment même', h1: '1 h avant', h3: '3 h avant', h6: '6 h avant', d1: '1 jour avant', d2: '2 jours avant', d3: '3 jours avant', w1: '1 semaine avant' },
   kitchen: {
     title: 'La cuisine',
     week: 'La semaine',
@@ -913,6 +916,7 @@ export const EN: typeof FR = {
     focusedOn: 'Showing',
     showAll: 'Show all',
     upcoming: 'Coming up',
+    soon: 'Soon',
     turn: 'Turn of',
     done: 'Done',
     helpedBy: 'Helped by',
@@ -959,6 +963,7 @@ export const EN: typeof FR = {
     },
   },
   recur: { repeat: 'Repeat', none: 'Never', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', every: 'every', unit: { daily: 'day(s)', weekly: 'week(s)', monthly: 'month(s)' }, weekdayShort: ['S', 'M', 'T', 'W', 'T', 'F', 'S'] },
+  lead: { label: 'Show from', none: 'At the time', h1: '1 h before', h3: '3 h before', h6: '6 h before', d1: '1 day before', d2: '2 days before', d3: '3 days before', w1: '1 week before' },
   kitchen: {
     title: 'Kitchen',
     week: 'The week',

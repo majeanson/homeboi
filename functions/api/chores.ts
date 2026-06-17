@@ -16,6 +16,15 @@ const recurStart = (start: unknown): number | null => {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : null
 }
 
+// Calm "Bientôt" lead window: how far before an occurrence the board highlights
+// the chore (never a push — NFR-CALM-1). Clamp to null or [1 s .. 7 days], matching
+// the À venir window. Chores anchor at local midnight, so this is mostly day-scale.
+const MAX_LEAD = 7 * 86400
+const leadSeconds = (v: unknown): number | null => {
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), MAX_LEAD) : null
+}
+
 // Chores with a round-robin rotation and an optional recurrence ("tous les
 // jeudis", see _lib/recur). The ONLY "credit" that exists is last_done_by +
 // whose-turn — no points, no streak (NFR-CALM-1). Marking done advances the
@@ -23,7 +32,7 @@ const recurStart = (start: unknown): number | null => {
 // Aujourd'hui / À venir; created_at is the recurrence anchor.
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, color, recur_json, recur_start FROM tasks WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, color, recur_json, recur_start, lead_seconds FROM tasks WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all()
@@ -31,15 +40,20 @@ export const onRequestGet = authed(async (ctx, actor) => {
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ title?: string; rotation?: string[]; color?: string; recur?: unknown; start?: unknown }>(
-    ctx.request,
-  )
+  const body = await readJson<{
+    title?: string
+    rotation?: string[]
+    color?: string
+    recur?: unknown
+    start?: unknown
+    leadSeconds?: number | null
+  }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   const color = hexColor(body?.color, '#88a36f')
   await ctx.env.DB.prepare(
-    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, color, recur_json, recur_start, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)',
+    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, color, recur_json, recur_start, lead_seconds, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -49,6 +63,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       color,
       recurJson(body?.recur),
       recurStart(body?.start),
+      leadSeconds(body?.leadSeconds),
       nowSec(),
     )
     .run()
@@ -74,6 +89,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     color?: string
     recur?: unknown
     start?: unknown
+    leadSeconds?: number | null
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
@@ -84,7 +100,11 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // recreating it. `start` rides along to anchor a recur. A parent-mode kiosk may
   // edit too (only member admin + device pairing stay operator-only).
   const editsContent =
-    body.title !== undefined || body.rotation !== undefined || body.color !== undefined || body.recur !== undefined
+    body.title !== undefined ||
+    body.rotation !== undefined ||
+    body.color !== undefined ||
+    body.recur !== undefined ||
+    body.leadSeconds !== undefined
   if (editsContent) {
     const sets: string[] = []
     const binds: unknown[] = []
@@ -109,6 +129,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
         sets.push('recur_start = ?')
         binds.push(recurStart(body.start))
       }
+    }
+    if (body.leadSeconds !== undefined) {
+      sets.push('lead_seconds = ?')
+      binds.push(leadSeconds(body.leadSeconds))
     }
     if (!sets.length) return ok({ ok: true })
     binds.push(body.id, actor.householdId)

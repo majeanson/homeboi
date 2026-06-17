@@ -16,6 +16,7 @@ import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
 import { Act, Section as BoardSection } from '../components/board/Act'
 import { RecurPicker, type RecurValue } from '../components/RecurPicker'
+import { LeadPicker } from '../components/LeadPicker'
 import { BigTiles, Sayable } from '../components/BigTiles'
 import { EmptyState } from '../components/EmptyState'
 import { StatusMessage } from '../components/StatusMessage'
@@ -115,6 +116,7 @@ export function DevKit() {
   const [color, setColor] = useState(PALETTE[0])
   const [cards, setCards] = useState(['toilette', 'rince', 'pyjama'])
   const [recur, setRecur] = useState<RecurValue | null>({ freq: 'weekly', interval: 1, weekdays: [3] })
+  const [lead, setLead] = useState<number | null>(10800)
   const [chipOn, setChipOn] = useState<string[]>(['préféré'])
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
@@ -204,6 +206,17 @@ export function DevKit() {
       render: () => (
         <Demo label="recurrence rule">
           <RecurPicker value={recur} onChange={setRecur} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'LeadPicker',
+      file: 'components/LeadPicker.tsx',
+      kw: 'rappel bientôt reminder lead afficher dès soon',
+      render: () => (
+        <Demo label="reminder lead ('Bientôt')">
+          <LeadPicker value={lead} onChange={setLead} />
         </Demo>
       ),
     },
@@ -351,6 +364,9 @@ export function DevKit() {
           </Demo>
           <Demo label="nav row + badge">
             <Act cat="meal" title="Macaroni chinois" when="Souper" onActivate={() => {}} badge={<Chip>Restants</Chip>} />
+          </Demo>
+          <Demo label="reminder window open ('Bientôt')">
+            <Act cat="event" title="Rendez-vous dentiste" when="jeu. 14:00" who="Camille" soon />
           </Demo>
         </>
       ),

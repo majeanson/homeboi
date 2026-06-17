@@ -1,5 +1,6 @@
 import { CATS, type CatKey } from '../../lib/cats'
 import { tintInk } from '../../lib/colors'
+import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
 
 // Pip section header: label + rule + a quiet count (never a score). Each Section
@@ -39,6 +40,7 @@ export function Act({
   icon,
   photo,
   badge,
+  soon,
 }: {
   cat: CatKey
   title: string
@@ -53,7 +55,9 @@ export function Act({
   icon?: IconName // a specific Phosphor icon (e.g. a meal's slot icon) over the category one
   photo?: string // an image shown IN the tile instead of the glyph (falls back to the icon)
   badge?: React.ReactNode // a small pill/marker at the trailing edge, before any affordance
+  soon?: boolean // calm "Bientôt" reminder window is open now → a quiet clock chip (migration 0038)
 }) {
+  const t = useT()
   const c = CATS[cat]
   const spine = color ?? c.color
   const tileBg = color ? color + '22' : c.wash
@@ -85,6 +89,11 @@ export function Act({
           {title}
         </span>
         {who && <span className="who">{who}</span>}
+        {soon && (
+          <span className="act__soon mono">
+            <Icon name="clock-bold" size={12} /> {t.board.soon}
+          </span>
+        )}
       </span>
       {mine && <span className="act__mine" aria-hidden="true">★</span>}
       {badge && <span className="act__badge">{badge}</span>}

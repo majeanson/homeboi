@@ -17,6 +17,7 @@ export interface EventRow {
   start_at: number
   all_day: number
   member_id: string | null
+  soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
 }
 export interface ListRow {
   id: string
@@ -83,6 +84,7 @@ export interface ChoreInstance {
   who: string | null
   who_id: string | null
   team?: string[]
+  soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
 }
 export interface BoardData {
   syncedAt: number

@@ -360,6 +360,7 @@ export function Board() {
       who={memberName(e.member_id) ?? undefined}
       color={memberColor(e.member_id) ?? undefined}
       mine={!!profileId && e.member_id === profileId}
+      soon={e.soon}
     />
   )
   const cookLine = (m: MealRow) =>
@@ -424,6 +425,7 @@ export function Board() {
       who={c.who ?? undefined}
       color={c.color ?? undefined}
       mine={!!profileId && c.who_id === profileId}
+      soon={c.soon}
       onCheck={withDay ? undefined : () => markChoreDone(c)}
     />
   )
@@ -461,6 +463,7 @@ export function Board() {
       who={c.who ?? undefined}
       color={c.color ?? undefined}
       mine={!!profileId && c.who_id === profileId}
+      soon={c.soon}
       onCheck={() => markTodoDone(c)}
     />
   )
@@ -705,7 +708,7 @@ export function Board() {
           {(upcomingEvents.length > 0 || upcomingChores.length > 0) && (
             <Section label={t.board.upcoming} count={upcomingEvents.length + upcomingChores.length}>
               {upcomingEvents.map((e) => (
-                <Act key={e.id} cat="event" title={e.title} when={formatTime(e.start_at, lang)} />
+                <Act key={e.id} cat="event" title={e.title} when={formatTime(e.start_at, lang)} soon={e.soon} />
               ))}
               {/* Recurring chores coming up later this week, with their day. */}
               {upcomingChores.map((c) => choreAct(c, true))}

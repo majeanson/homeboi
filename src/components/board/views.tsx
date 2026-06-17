@@ -159,7 +159,7 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
         <div className="nownext__chores">
           <span className="nownext__meals-label mono">{t.board.chores}</span>
           {(data.choresToday ?? []).map((c) => (
-            <Act key={c.id} cat="chore" title={c.title} who={c.who ?? undefined} color={c.color ?? undefined} />
+            <Act key={c.id} cat="chore" title={c.title} who={c.who ?? undefined} color={c.color ?? undefined} soon={c.soon} />
           ))}
         </div>
       )}
@@ -264,10 +264,11 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
               cat="event"
               title={e.title}
               when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
+              soon={e.soon}
             />
           ))}
           {sharedChores.map((c) => (
-            <Act key={c.id} cat="chore" title={c.title} color={c.color ?? undefined} />
+            <Act key={c.id} cat="chore" title={c.title} color={c.color ?? undefined} soon={c.soon} />
           ))}
         </div>
       )}
@@ -296,10 +297,11 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
                     title={e.title}
                     when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
                     color={m.colour}
+                    soon={e.soon}
                   />
                 ))}
                 {chores.map((c) => (
-                  <Act key={c.id} cat="chore" title={c.title} color={c.color ?? m.colour} />
+                  <Act key={c.id} cat="chore" title={c.title} color={c.color ?? m.colour} soon={c.soon} />
                 ))}
               </>
             )}

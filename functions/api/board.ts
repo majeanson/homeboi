@@ -2,6 +2,7 @@ import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
+import { isSoon as isSoonAt } from '../_lib/reminder'
 
 interface Ev {
   id: string
@@ -9,8 +10,12 @@ interface Ev {
   start_at: number
   all_day: number
   member_id: string | null
+  soon: boolean // within its calm "Bientôt" lead window right now (see isSoon)
 }
 const sortEvents = (xs: Ev[]) => xs.sort((p, q) => q.all_day - p.all_day || p.start_at - q.start_at)
+// One-off event rows as they come from SQL (lead_seconds joins the client-facing Ev
+// only as the derived `soon` flag).
+type EvRow = { id: string; title: string; start_at: number; all_day: number; member_id: string | null; lead_seconds: number | null }
 
 // The whole board in one read — the kiosk polls this. Deliberately one
 // round-trip so a wall tablet on flaky wifi gets a complete frame or none.
@@ -30,6 +35,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const dayAfter = addLocalDays(today, 2)
   const weekEnd = addLocalDays(today, 7)
 
+  // Calm "Bientôt" reminder (migration 0038): an item is `soon` when NOW sits inside
+  // its lead window [start − lead_seconds, start). Never hides anything — the board
+  // shows the item where it always would; the client just adds a "Bientôt" chip.
+  // null lead → never soon. Past start (now ≥ start) → no longer soon (it's here).
+  const now = Math.floor(Date.now() / 1000)
+  const isSoon = (at: number, lead: number | null | undefined): boolean => isSoonAt(now, at, lead)
+
   // Meals/day-notes share the same local-day boundaries (aliased for the queries
   // below that read those tables by their stored local-midnight `date`).
   const mealToday = today
@@ -43,12 +55,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
+      'SELECT id, title, start_at, all_day, member_id, lead_seconds FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
     )
       .bind(hh, today, tomorrow)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
+      'SELECT id, title, start_at, all_day, member_id, lead_seconds FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
     )
       .bind(hh, tomorrow, dayAfter)
       .all(),
@@ -104,7 +116,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, rotation_json, current_idx, last_done_at, color, recur_json, recur_start, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
+      'SELECT id, title, rotation_json, current_idx, last_done_at, color, recur_json, recur_start, lead_seconds, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
     )
       .bind(hh)
       .all(),
@@ -126,7 +138,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // "Up next" beyond tomorrow (rest of the week) — tomorrow has its own card, so
   // start the day after to avoid showing it twice.
   const upcoming = await ctx.env.DB.prepare(
-    'SELECT id, title, start_at, all_day, member_id FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY start_at LIMIT 8',
+    'SELECT id, title, start_at, all_day, member_id, lead_seconds FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY start_at LIMIT 8',
   )
     .bind(hh, dayAfter, weekEnd)
     .all()
@@ -135,24 +147,50 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // (today → week end) into concrete occurrences, then bucket into the same
   // day ranges as the one-off events above. See _lib/recur.
   const recurring = await ctx.env.DB.prepare(
-    'SELECT id, title, start_at, all_day, member_id, recur_json FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
+    'SELECT id, title, start_at, all_day, member_id, recur_json, lead_seconds FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
   )
     .bind(hh)
-    .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json: string }>()
+    .all<{
+      id: string
+      title: string
+      start_at: number
+      all_day: number
+      member_id: string | null
+      recur_json: string
+      lead_seconds: number | null
+    }>()
 
   const occurrences: Ev[] = []
   for (const e of recurring.results) {
     const rule = parseRecur(e.recur_json)
     if (!rule) continue
     for (const at of expandRange(e.start_at, rule, today, weekEnd)) {
-      occurrences.push({ id: `${e.id}#${at}`, title: e.title, start_at: at, all_day: e.all_day, member_id: e.member_id })
+      // The lead applies to THIS concrete occurrence time, not the anchor.
+      occurrences.push({
+        id: `${e.id}#${at}`,
+        title: e.title,
+        start_at: at,
+        all_day: e.all_day,
+        member_id: e.member_id,
+        soon: isSoon(at, e.lead_seconds),
+      })
     }
   }
   const recurIn = (from: number, to: number) => occurrences.filter((e) => e.start_at >= from && e.start_at < to)
+  // One-off rows carry lead_seconds from SQL; derive each row's `soon` here.
+  const oneOff = (rows: unknown) =>
+    (rows as EvRow[]).map((r) => ({
+      id: r.id,
+      title: r.title,
+      start_at: r.start_at,
+      all_day: r.all_day,
+      member_id: r.member_id,
+      soon: isSoon(r.start_at, r.lead_seconds),
+    }))
 
-  const todayMerged = sortEvents([...(todayEvents.results as unknown as Ev[]), ...recurIn(today, tomorrow)])
-  const tomorrowMerged = sortEvents([...(tomorrowEvents.results as unknown as Ev[]), ...recurIn(tomorrow, dayAfter)])
-  const upcomingMerged = sortEvents([...(upcoming.results as unknown as Ev[]), ...recurIn(dayAfter, weekEnd)]).slice(0, 8)
+  const todayMerged = sortEvents([...oneOff(todayEvents.results), ...recurIn(today, tomorrow)])
+  const tomorrowMerged = sortEvents([...oneOff(tomorrowEvents.results), ...recurIn(tomorrow, dayAfter)])
+  const upcomingMerged = sortEvents([...oneOff(upcoming.results), ...recurIn(dayAfter, weekEnd)]).slice(0, 8)
 
   // Recent helpers per chore (shared-task attribution). Today's contributions
   // only, so "aidé par" reflects who pitched in on the current run, not history.
@@ -201,6 +239,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     title: string
     color: string | null
     at: number
+    soon: boolean // within its calm "Bientôt" lead window right now
     who: string | null
     who_id: string | null
     // Every member in the rotation (not just whose turn). The board's personal
@@ -219,6 +258,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     last_done_at: number | null
     recur_json: string | null
     recur_start: number | null
+    lead_seconds: number | null
     created_at: number
   }
   // The rotation as member ids — the whole team sharing the chore. Empty when
@@ -253,6 +293,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       title: c.title,
       color: c.color,
       at,
+      soon: isSoon(at, c.lead_seconds),
       who: whoseTurn(c),
       who_id: whoseTurnId(c),
       team: teamIds(c),
