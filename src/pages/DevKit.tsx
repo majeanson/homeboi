@@ -169,6 +169,22 @@ export function DevKit() {
               placeholder={voice.listening ? t.capture.listening : 'Parler ou écrire…'}
             />
           </Demo>
+          <Demo label="trailing (a small action beside the submit — Liste's flyer magnifier)">
+            <EditField
+              value={text1}
+              onChange={setText1}
+              onSubmit={() => setText1('')}
+              submitLabel={t.capture.add}
+              submitLeadingIcon="plus-bold"
+              submitVariant="primary"
+              placeholder="Ajouter un article…"
+              trailing={
+                <button type="button" className="edit-field__icon-btn" aria-label={t.shop.browse} title={t.shop.browse}>
+                  <Icon name="magnifying-glass-bold" size={17} />
+                </button>
+              }
+            />
+          </Demo>
           <Demo label="row editor (leading + reorder + delete)">
             {cards.map((c, i) => (
               <EditField

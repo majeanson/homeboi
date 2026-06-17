@@ -60,6 +60,10 @@ export interface EditFieldProps {
   /** Standard trash button after the field (row use). */
   onDelete?: () => void
   deleteLabel?: string
+  /** A custom action rendered right after the submit (e.g. Liste's small
+   *  "search the flyer" magnifier beside Ajouter). Keep it compact — style it
+   *  with `edit-field__icon-btn` so it reads as a peer of the inline icons. */
+  trailing?: ReactNode
   /** A thin wrapped row of secondary actions (small chips) under the field. */
   secondaryActions?: ReactNode
   /** Picker menus etc., rendered after the field block. */
@@ -91,6 +95,7 @@ export function EditField({
   reorder,
   onDelete,
   deleteLabel,
+  trailing,
   secondaryActions,
   children,
   className,
@@ -196,6 +201,8 @@ export function EditField({
             <Icon name={submitIcon} size={17} />
           </button>
         )}
+
+        {trailing}
 
         {reorder && (
           <div className="edit-field__reorder">

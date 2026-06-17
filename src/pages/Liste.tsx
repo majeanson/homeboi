@@ -352,6 +352,20 @@ export function Liste() {
         submitVariant="primary"
         busy={adding}
         voice={voice}
+        // A small magnifier beside Ajouter — searching the week's flyers for an
+        // item is a frequent move, so it earns a one-tap shortcut here instead of
+        // living only behind the ＋ Add sheet → Circulaires.
+        trailing={
+          <button
+            type="button"
+            className="edit-field__icon-btn"
+            onClick={() => nav('/liste/circulaires')}
+            aria-label={t.shop.browse}
+            title={t.shop.browse}
+          >
+            <Icon name="magnifying-glass-bold" size={17} />
+          </button>
+        }
         placeholder={
           voice.listening
             ? t.capture.listening

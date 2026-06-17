@@ -475,6 +475,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Chercher dans la circulaire', en: 'Search the flyer' },
+        detail: {
+          fr: 'La petite loupe [[icon:magnifying-glass-bold]] à côté d’« Ajouter » ouvre les circulaires de la semaine pour chercher un article en aubaine.',
+          en: 'The small magnifier [[icon:magnifying-glass-bold]] beside “Add” opens this week’s flyers to search an item on sale.',
+        },
+        why: {
+          fr: 'Un raccourci d’un geste vers une action fréquente, sans passer par le bouton ＋.',
+          en: 'A one-tap shortcut to a frequent move, without going through the ＋ button.',
+        },
+      },
+      {
         label: { fr: 'Parler ta liste', en: 'Speak your list' },
         detail: {
           fr: 'Touche le micro et nomme tes articles; le micro reste ouvert. Une phrase comme « lait, œufs pis pain » se découpe en trois articles.',
