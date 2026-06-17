@@ -40,20 +40,6 @@ export function isDaypartAuto(): boolean {
   }
 }
 
-export function getDayPart(): DayPart | 'manual' {
-  const attr = document.documentElement.getAttribute('data-daypart')
-  if (
-    attr === 'dawn' ||
-    attr === 'morning' ||
-    attr === 'afternoon' ||
-    attr === 'dusk' ||
-    attr === 'night'
-  ) {
-    return attr
-  }
-  return 'manual'
-}
-
 export function setDayPart(part: DayPart | 'manual'): void {
   document.documentElement.setAttribute('data-daypart', part)
 }
