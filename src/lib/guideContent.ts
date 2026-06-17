@@ -113,12 +113,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Ajouter : écris ou parle', en: 'Adding: type or speak' },
         detail: {
-          fr: 'Le bouton [[icon:plus-bold]] ajoute ce qui convient à la section. Écris en mots normaux (« souper spaghetti vendredi ») ou dicte au [[icon:speaker-high-bold]] micro.',
-          en: 'The [[icon:plus-bold]] button adds whatever fits the section. Type in plain words (“spaghetti supper Friday”) or dictate with the [[icon:speaker-high-bold]] mic.',
+          fr: 'Le bouton [[icon:plus-bold]] ajoute ce qui convient à la section. Écris en mots normaux (« souper spaghetti vendredi ») ou dicte au [[icon:speaker-high-bold]] micro. Tu peux glisser une date et un prénom : « dentiste pour Léa mardi 15h » ou « soccer de Marc le 20 juin » crée le rendez-vous au bon jour, au nom de la bonne personne.',
+          en: 'The [[icon:plus-bold]] button adds whatever fits the section. Type in plain words (“spaghetti supper Friday”) or dictate with the [[icon:speaker-high-bold]] mic. You can slip in a date and a name: “dentist for Léa tuesday 3pm” or “Marc’s soccer on june 20” files the event on the right day, under the right person.',
         },
         why: {
-          fr: 'L’app range la note à la bonne place toute seule — un seul geste pour tout capter.',
-          en: 'The app files the note in the right place by itself — one gesture to capture anything.',
+          fr: 'L’app range la note à la bonne place toute seule — la bonne date, la bonne personne — d’un seul geste.',
+          en: 'The app files the note in the right place by itself — the right date, the right person — in one gesture.',
         },
       },
       {
@@ -194,6 +194,17 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Chaque vue répond à une question différente; choisis celle qui parle à ta famille.',
           en: 'Each view answers a different question; pick the one that speaks to your family.',
+        },
+      },
+      {
+        label: { fr: 'Planifier une journée', en: 'Plan a day' },
+        detail: {
+          fr: 'Dans la vue Mois, touche une journée puis « Planifier cette journée » : sa page s’ouvre pour y mettre repas, note, rendez-vous et corvées — pour n’importe quelle date, pas juste aujourd’hui.',
+          en: 'In the Month view, tap a day then “Plan this day”: that day’s page opens to add meals, a note, events and chores — for any date, not just today.',
+        },
+        why: {
+          fr: 'Pour préparer une journée à l’avance d’un seul endroit, au lieu de chercher où ajouter chaque chose.',
+          en: 'To set a day up ahead from one place, instead of hunting for where to add each thing.',
         },
       },
       {
@@ -772,6 +783,40 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Impossible de la réactiver par accident — le calme ne peut pas dériver.',
           en: 'It can’t be switched back on by accident — the calm can’t drift.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'reminders',
+    icon: 'clock-bold',
+    group: 'concepts',
+    title: { fr: 'Rappels « Bientôt »', en: '“Soon” reminders' },
+    what: {
+      fr: 'Un rendez-vous ou une corvée peut se faire remarquer à l’avance : choisis « Afficher dès » dans son formulaire, et le babillard lui ajoute une petite pastille « Bientôt » quand le moment approche.',
+      en: 'An event or chore can draw attention ahead of time: pick “Show from” in its form, and the board adds a small “Soon” chip as the moment nears.',
+    },
+    points: [
+      {
+        label: { fr: 'Tu choisis le délai', en: 'You pick the lead' },
+        detail: {
+          fr: 'De « 3 h avant » à « 1 semaine avant ». À partir de là, la rangée porte la pastille « Bientôt » jusqu’à l’heure dite.',
+          en: 'From “3 h before” to “1 week before”. From then on, the row carries the “Soon” chip right up to the time itself.',
+        },
+        why: {
+          fr: 'Pour garder l’œil sur ce qui s’en vient — la veille d’un rendez-vous, quelques heures avant un souper.',
+          en: 'To keep an eye on what’s coming — the day before an appointment, a few hours before a supper.',
+        },
+      },
+      {
+        label: { fr: 'Ça ne cache rien', en: 'It hides nothing' },
+        detail: {
+          fr: 'C’est seulement une mise en évidence : rien n’est masqué, rien ne sonne, aucune notification.',
+          en: 'It’s only emphasis: nothing is hidden, nothing rings, no notification.',
+        },
+        why: {
+          fr: 'Fidèle au calme de l’app — un rappel qui attire l’œil au passage, jamais qui interrompt.',
+          en: 'True to the app’s calm — a reminder that catches the eye in passing, never one that interrupts.',
         },
       },
     ],

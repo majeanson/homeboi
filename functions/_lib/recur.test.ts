@@ -8,6 +8,13 @@ const WED = Math.floor(Date.UTC(2026, 0, 7, 14, 30) / 1000)
 // A day boundary the engine expects: LOCAL midnight of a Toronto calendar date.
 // (noon UTC is safely inside that civil date in any North-American zone.)
 const d = (y: number, m: number, day: number) => localDayStart(new Date(Date.UTC(y, m, day, 12)))
+// The wall hour (0–23) of an instant in the household tz.
+const localHour = (at: number) =>
+  Number(
+    new Intl.DateTimeFormat('en-US', { timeZone: 'America/Toronto', hour: '2-digit', hour12: false }).format(
+      new Date(at * 1000),
+    ),
+  ) % 24
 
 describe('parseRecur', () => {
   it('returns null for empty / malformed / bad freq', () => {
@@ -153,5 +160,27 @@ describe('occurrenceOn (local-day correctness — evening anchor that flips the 
     expect(occurrenceOn(d(2026, 0, 15), THU_EVE, r)).toBeNull() // +1 week
     expect(occurrenceOn(d(2026, 0, 22), THU_EVE, r)).toBeNull() // +2 weeks
     expect(occurrenceOn(d(2026, 0, 29), THU_EVE, r)).not.toBeNull() // +3 weeks
+  })
+})
+
+// Regression: the DST exact-boundary hour. A weekly 09:00 series must stay 09:00
+// local even on the spring-forward day, when the naive midnight+elapsed-seconds math
+// lands at 10:00 (the day lost an hour at 02:00). localTimeOnDay holds the wall time.
+describe('occurrenceOn (DST — wall time held across the transition day)', () => {
+  // Sun 2026-03-01 09:00 America/Toronto (EST, UTC-5) = 14:00 UTC. Spring forward is
+  // the 2nd Sunday, 2026-03-08 02:00→03:00. Weekly every Sunday at 09:00.
+  const SUN_9AM = Math.floor(Date.UTC(2026, 2, 1, 14, 0) / 1000)
+  const r = { freq: 'weekly' as const, weekdays: [0] }
+  it('anchor Sunday is 09:00 local', () => {
+    expect(localHour(occurrenceOn(d(2026, 2, 1), SUN_9AM, r) as number)).toBe(9)
+  })
+  it('stays 09:00 ON the spring-forward Sunday (not 10:00)', () => {
+    const at = occurrenceOn(d(2026, 2, 8), SUN_9AM, r)
+    expect(at).not.toBeNull()
+    expect(localDayOfWeek(new Date((at as number) * 1000))).toBe(0) // Sunday
+    expect(localHour(at as number)).toBe(9)
+  })
+  it('stays 09:00 the following EDT Sunday', () => {
+    expect(localHour(occurrenceOn(d(2026, 2, 15), SUN_9AM, r) as number)).toBe(9)
   })
 })

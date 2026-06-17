@@ -12,6 +12,8 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
 import { Act } from '../components/board/Act'
+import { EventForm, type EventInit } from '../components/forms/EventForm'
+import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { DayEditor } from '../components/kitchen/DayEditor'
 import { useAiWake } from '../components/kitchen/useAiWake'
@@ -85,6 +87,37 @@ export function DayPlanPage() {
   })
   const dayEvents = dayItemsQ.data?.events ?? []
   const dayChores = dayItemsQ.data?.chores ?? []
+  // Full editable rows (recur_json, lead_seconds, rotation…) so a day row taps open
+  // to its inline form pre-filled. The /api/month occurrence carries only display
+  // fields; we resolve the series by its base id (recurring ids are `base#at`).
+  const eventsFullQ = useQuery({ queryKey: ['events'], queryFn: () => api<{ events: EventInit[] }>('events'), ...live })
+  const choresFullQ = useQuery({ queryKey: ['chores'], queryFn: () => api<{ chores: ChoreInit[] }>('chores'), ...live })
+  const baseId = (id: string) => id.split('#')[0]
+  const formMembers = boardQ.data?.members ?? []
+
+  // Inline add (no value) / edit (value) for events + chores on this day. null = closed.
+  const [eventForm, setEventForm] = useState<{ value?: EventInit } | null>(null)
+  const [choreForm, setChoreForm] = useState<{ value?: ChoreInit } | null>(null)
+  const openEventEdit = (occId: string) => {
+    const full = eventsFullQ.data?.events.find((e) => e.id === baseId(occId))
+    if (full) setEventForm({ value: full })
+  }
+  const openChoreEdit = (occId: string) => {
+    const full = choresFullQ.data?.chores.find((c) => c.id === baseId(occId))
+    if (full) setChoreForm({ value: full })
+  }
+  const afterEventSave = () => {
+    setEventForm(null)
+    qc.invalidateQueries({ queryKey: ['board'] })
+    qc.invalidateQueries({ queryKey: ['events'] })
+    qc.invalidateQueries({ queryKey: ['month'] })
+  }
+  const afterChoreSave = () => {
+    setChoreForm(null)
+    qc.invalidateQueries({ queryKey: ['board'] })
+    qc.invalidateQueries({ queryKey: ['chores'] })
+    qc.invalidateQueries({ queryKey: ['month'] })
+  }
 
   const recipes = recipesQ.data?.recipes ?? []
   const days = meals.data?.days ?? []
@@ -346,14 +379,14 @@ export function DayPlanPage() {
         />
 
         {/* The day's agenda + chores — so the calendar's day page plans everything,
-            not just meals. Add routes to the seeded create scenes; editing an existing
-            event/chore stays in Réglages for now (fast-follow). */}
+            not just meals. Add + edit are inline (the shared EventForm/ChoreForm,
+            date pre-filled). Editing a recurring row edits the whole series. */}
         <section className="day-plan__sections">
           <div className="sec-label">
             <b>{t.monthView.legendEvents}</b>
             <span className="ln" />
           </div>
-          {dayEvents.length === 0 ? (
+          {dayEvents.length === 0 && !eventForm ? (
             <p className="feed-empty feed-empty--calm">{t.monthView.empty}</p>
           ) : (
             dayEvents.map((e) => (
@@ -363,27 +396,57 @@ export function DayPlanPage() {
                 title={e.title}
                 when={e.all_day ? t.board.allDay : formatTime(e.at, lang)}
                 who={memberName(e.member_id) || undefined}
+                onActivate={() => openEventEdit(e.id)}
               />
             ))
           )}
-          <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => nav(`/event/new?date=${date}`)}>
-            <Icon name="plus-bold" size={16} /> {t.operator.addEvent}
-          </button>
+          {eventForm ? (
+            <EventForm
+              key={eventForm.value?.id ?? 'new-event'}
+              members={formMembers}
+              value={eventForm.value}
+              initialDate={eventForm.value ? undefined : date}
+              onSaved={afterEventSave}
+              onCancel={() => setEventForm(null)}
+            />
+          ) : (
+            <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setEventForm({})}>
+              <Icon name="plus-bold" size={16} /> {t.operator.addEvent}
+            </button>
+          )}
 
           <div className="sec-label">
             <b>{t.board.chores}</b>
             <span className="ln" />
           </div>
-          {dayChores.length === 0 ? (
+          {dayChores.length === 0 && !choreForm ? (
             <p className="feed-empty feed-empty--calm">{t.monthView.empty}</p>
           ) : (
             dayChores.map((c) => (
-              <Act key={c.id} cat="chore" title={c.title} who={c.who || undefined} color={c.color || undefined} />
+              <Act
+                key={c.id}
+                cat="chore"
+                title={c.title}
+                who={c.who || undefined}
+                color={c.color || undefined}
+                onActivate={() => openChoreEdit(c.id)}
+              />
             ))
           )}
-          <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => nav(`/chore/new?start=${date}`)}>
-            <Icon name="plus-bold" size={16} /> {t.operator.addChore}
-          </button>
+          {choreForm ? (
+            <ChoreForm
+              key={choreForm.value?.id ?? 'new-chore'}
+              members={formMembers}
+              value={choreForm.value}
+              initialStart={choreForm.value ? undefined : date}
+              onSaved={afterChoreSave}
+              onCancel={() => setChoreForm(null)}
+            />
+          ) : (
+            <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setChoreForm({})}>
+              <Icon name="plus-bold" size={16} /> {t.operator.addChore}
+            </button>
+          )}
         </section>
       </div>
     </div>

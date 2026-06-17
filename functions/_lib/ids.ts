@@ -82,6 +82,24 @@ export function addLocalDays(daySec: number, n: number, tz = HOUSEHOLD_TZ): numb
   return localDayStart(noon, tz)
 }
 
+// Unix-seconds of the WALL time `secsOfDay` seconds past local midnight on the
+// local day that starts at `daySec` (itself a localDayStart). DST-aware via the
+// same double-offset snap as localDayStart: on a spring-forward day a 09:00 wall
+// time is a real 09:00 even though midnight+9h of elapsed seconds would land at
+// 10:00 (the day "lost" an hour at 02:00). Used by _lib/recur so a recurring
+// occurrence keeps the anchor's WALL time-of-day across a DST change, not drift an
+// hour twice a year. (The non-existent 02:00–03:00 spring-forward gap is inherently
+// ambiguous; nobody schedules it, so the snap landing on either side is fine.)
+export function localTimeOnDay(daySec: number, secsOfDay: number, tz = HOUSEHOLD_TZ): number {
+  const w = wallParts(new Date(daySec * 1000), tz)
+  const wallTarget = Date.UTC(w.y, w.mo - 1, w.d) + secsOfDay * 1000 // desired wall clock as pseudo-UTC ms
+  const dayOffset = Date.UTC(w.y, w.mo - 1, w.d, w.h, w.mi, w.s) - daySec * 1000
+  const approx = new Date(wallTarget - dayOffset)
+  const w2 = wallParts(approx, tz)
+  const offset2 = Date.UTC(w2.y, w2.mo - 1, w2.d, w2.h, w2.mi, w2.s) - approx.getTime()
+  return Math.floor((wallTarget - offset2) / 1000)
+}
+
 // Day-of-week (0 = Sunday) in `tz` — the week-block anchor must use the local
 // day, not getUTCDay (which flips at 8 PM Eastern).
 export function localDayOfWeek(d: Date, tz = HOUSEHOLD_TZ): number {

@@ -36,6 +36,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | **Icon / InlineIcon** | `components/Icon.tsx` | Phosphor-bold SVG via `currentColor`; `IconName` is a compile-time union (`lib/pipIcons.ts`). 40+ call sites. |
 | **ColorPicker** | `components/ColorPicker.tsx` | Row of palette dots; controlled. |
 | **RecurPicker** | `components/RecurPicker.tsx` | Recurrence rule (freq/interval/weekdays). |
+| **LeadPicker** | `components/LeadPicker.tsx` | Calm "Bientôt" reminder lead ("Afficher dès", 1h–1wk → `lead_seconds`); in EventForm + ChoreForm. |
 
 ### Actions & rows
 | Component | File | Purpose |

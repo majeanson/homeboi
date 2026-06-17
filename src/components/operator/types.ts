@@ -22,6 +22,7 @@ export interface Chore {
   rotation_json?: string | null
   recur_json?: string | null
   recur_start?: number | null
+  lead_seconds?: number | null
 }
 export interface RoutineCard {
   icon: string
@@ -44,4 +45,5 @@ export interface EventRow {
   all_day: number
   member_id: string | null
   recur_json?: string | null
+  lead_seconds?: number | null
 }

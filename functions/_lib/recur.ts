@@ -14,7 +14,7 @@
 // blocks are now read in local time so "Thursday" means the household's Thursday.
 // Callers pass LOCAL-midnight day boundaries (board/month already do).
 
-import { localDayStart, localDayOfWeek, addLocalDays } from './ids'
+import { localDayStart, localDayOfWeek, addLocalDays, localTimeOnDay } from './ids'
 
 export interface Recur {
   freq: 'daily' | 'weekly' | 'monthly'
@@ -63,7 +63,7 @@ export function occurrenceOn(day: number, anchorAt: number, r: Recur): number | 
   const anchorDay = localDayStart(new Date(anchorAt * 1000))
   if (day < anchorDay) return null
   const interval = Math.max(1, r.interval ?? 1)
-  const timeOffset = anchorAt - anchorDay // seconds past LOCAL midnight to preserve
+  const timeOffset = anchorAt - anchorDay // the anchor's WALL seconds past LOCAL midnight
 
   let hit = false
   if (r.freq === 'daily') {
@@ -91,7 +91,10 @@ export function occurrenceOn(day: number, anchorAt: number, r: Recur): number | 
       hit = months >= 0 && months % interval === 0
     }
   }
-  return hit ? day + timeOffset : null
+  // localTimeOnDay (not day + timeOffset) so the occurrence keeps the anchor's WALL
+  // time across a DST change — otherwise an occurrence ON a spring-forward/fall-back
+  // day drifts an hour. Only runs on real hits, so it adds no day-scan cost.
+  return hit ? localTimeOnDay(day, timeOffset) : null
 }
 
 // Expand a recurring series into the [rangeStart, rangeEnd) window (both unix
