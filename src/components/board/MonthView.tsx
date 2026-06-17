@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { CATS } from '../../lib/cats'
@@ -73,6 +74,7 @@ export function MonthView({
   t: Dict
   todayDay: number
 }) {
+  const nav = useNavigate()
   // Which month is shown, as an offset (in months) from the real current one.
   // Selected day drives the detail panel; it opens on today.
   const [offset, setOffset] = useState(0)
@@ -216,6 +218,15 @@ export function MonthView({
       <div className="monthv__day">
         <div className="monthv__day-h">
           <b>{cap(formatDayLong(selected, lang))}</b>
+          {/* Open the full day page (meals, note, events, chores) for the selected
+              date — the calendar's way into planning any day, not just today. */}
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm mono monthv__open-day"
+            onClick={() => nav(`/kitchen/day/${selected}`)}
+          >
+            {t.monthView.openDay} <Icon name="caret-right-bold" size={14} />
+          </button>
         </div>
         {isLoading && !data ? (
           <p className="loading mono">{t.common.loading}</p>

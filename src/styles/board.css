@@ -695,6 +695,33 @@
 .monthv__day-h {
   font-size: 1rem;
   color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+/* "Planifier cette journée →" — the calendar's link into the full day page. */
+.monthv__open-day {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* Day page: the events/chores agenda sections below the meal planner. */
+.day-plan__sections {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.day-plan__sections .sec-label {
+  margin-top: 10px;
+}
+.day-plan__add {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 @media (max-width: 520px) {
   .monthv__grid {

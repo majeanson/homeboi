@@ -39,11 +39,13 @@ function parseRotation(json: string | null | undefined): string[] {
 export function ChoreForm({
   members,
   value,
+  initialStart,
   onSaved,
   onCancel,
 }: {
   members: FormMember[]
   value?: ChoreInit | null
+  initialStart?: number // local-midnight unix s to pre-fill a NEW chore's recurrence anchor (from the calendar)
   onSaved: () => void
   onCancel?: () => void
 }) {
@@ -57,7 +59,9 @@ export function ChoreForm({
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
   // The recurrence anchor (which date "every 2 weeks" counts from). Defaults to
   // today; only sent when there's a recurrence — a standing chore has no anchor.
-  const [start, setStart] = useState(anchorSecToDate(value?.recur_start) || todayAnchorDate())
+  const [start, setStart] = useState(
+    anchorSecToDate(value?.recur_start) || (initialStart ? anchorSecToDate(initialStart) : '') || todayAnchorDate(),
+  )
   // Calm "Bientôt" lead — only meaningful with a schedule (a no-schedule chore is a
   // standing to-do with no occurrence date to anchor against).
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)

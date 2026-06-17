@@ -6,10 +6,12 @@ import { useLang, useT } from '../i18n'
 import { live } from '../lib/query'
 import { useProfile } from '../lib/profile'
 import { useRecordUndo } from '../lib/toast'
-import { formatDayLong } from '../lib/format'
+import { formatDayLong, formatTime } from '../lib/format'
+import { addLocalDays } from '../lib/localDay'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
+import { Act } from '../components/board/Act'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { DayEditor } from '../components/kitchen/DayEditor'
 import { useAiWake } from '../components/kitchen/useAiWake'
@@ -32,6 +34,14 @@ import {
 // Intl lowercases the French weekday ("lundi 14 juin"); the scene title wants it
 // capitalized.
 const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
+
+// The slice of /api/month this page needs: the day's events (one-off + expanded
+// recurring) and recurring-chore occurrences. Meals/notes come from their own
+// caches via DayEditor, so they're ignored here.
+interface DayItemsData {
+  events: { id: string; title: string; at: number; all_day: number; member_id: string | null }[]
+  chores: { id: string; title: string; color: string | null; who: string | null }[]
+}
 
 // /kitchen/day/:date — one day's full meal-planning editor, as a full-screen
 // .scene route (was the DayManageSheet bottom sheet). A height-capped sheet floats
@@ -64,6 +74,17 @@ export function DayPlanPage() {
     queryFn: () => api<{ list: { text: string }[]; members?: { id: string; display_name: string }[] }>('board'),
     ...live,
   })
+  // This day's events + recurring-chore occurrences (the calendar's day page plans
+  // these too, not just meals/notes). One narrow /api/month window for [date, +1d);
+  // it already expands recurrence in local time. Keyed by the day so a return from
+  // the add scenes (which invalidate ['month']) refetches.
+  const dayItemsQ = useQuery({
+    queryKey: ['month', date],
+    queryFn: () => api<DayItemsData>(`month?from=${date}&to=${addLocalDays(date, 1)}`),
+    ...live,
+  })
+  const dayEvents = dayItemsQ.data?.events ?? []
+  const dayChores = dayItemsQ.data?.chores ?? []
 
   const recipes = recipesQ.data?.recipes ?? []
   const days = meals.data?.days ?? []
@@ -323,6 +344,47 @@ export function DayPlanPage() {
           noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
           actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
         />
+
+        {/* The day's agenda + chores — so the calendar's day page plans everything,
+            not just meals. Add routes to the seeded create scenes; editing an existing
+            event/chore stays in Réglages for now (fast-follow). */}
+        <section className="day-plan__sections">
+          <div className="sec-label">
+            <b>{t.monthView.legendEvents}</b>
+            <span className="ln" />
+          </div>
+          {dayEvents.length === 0 ? (
+            <p className="feed-empty feed-empty--calm">{t.monthView.empty}</p>
+          ) : (
+            dayEvents.map((e) => (
+              <Act
+                key={e.id}
+                cat="event"
+                title={e.title}
+                when={e.all_day ? t.board.allDay : formatTime(e.at, lang)}
+                who={memberName(e.member_id) || undefined}
+              />
+            ))
+          )}
+          <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => nav(`/event/new?date=${date}`)}>
+            <Icon name="plus-bold" size={16} /> {t.operator.addEvent}
+          </button>
+
+          <div className="sec-label">
+            <b>{t.board.chores}</b>
+            <span className="ln" />
+          </div>
+          {dayChores.length === 0 ? (
+            <p className="feed-empty feed-empty--calm">{t.monthView.empty}</p>
+          ) : (
+            dayChores.map((c) => (
+              <Act key={c.id} cat="chore" title={c.title} who={c.who || undefined} color={c.color || undefined} />
+            ))
+          )}
+          <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => nav(`/chore/new?start=${date}`)}>
+            <Icon name="plus-bold" size={16} /> {t.operator.addChore}
+          </button>
+        </section>
       </div>
     </div>
   )

@@ -30,19 +30,23 @@ const pad = (n: number) => String(n).padStart(2, '0')
 export function EventForm({
   members,
   value,
+  initialDate,
   onSaved,
   onCancel,
 }: {
   members: FormMember[]
   value?: EventInit | null
+  initialDate?: number // local-midnight unix s to pre-fill a NEW event's date (from the calendar)
   onSaved: () => void
   onCancel?: () => void
 }) {
   const t = useT()
   const init = value ? new Date(value.start_at * 1000) : null
+  // Pre-fill the date from the edited event, else a calendar-seeded day, else blank.
+  const dateSeed = init ?? (initialDate ? new Date(initialDate * 1000) : null)
   const [title, setTitle] = useState(value?.title ?? '')
   const [date, setDate] = useState(
-    init ? `${init.getFullYear()}-${pad(init.getMonth() + 1)}-${pad(init.getDate())}` : '',
+    dateSeed ? `${dateSeed.getFullYear()}-${pad(dateSeed.getMonth() + 1)}-${pad(dateSeed.getDate())}` : '',
   )
   const [time, setTime] = useState(init && !value?.all_day ? `${pad(init.getHours())}:${pad(init.getMinutes())}` : '')
   const [memberId, setMemberId] = useState<string | null>(value?.member_id ?? null)
