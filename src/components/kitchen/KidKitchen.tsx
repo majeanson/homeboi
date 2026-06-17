@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { formatWeekday } from '../../lib/format'
 import { pictoFor } from '../../lib/picto'
 import { type Recipe, recipeImg } from '../../lib/recipes'
 import { BigTiles, Sayable, type Tile } from '../BigTiles'
+import { buildCollections } from './CollectionPicker'
+import { KidCollections } from './KidCollections'
 import { type MealRow, type WeekDay } from './types'
 
 // Toddler lens on the kitchen: just "what's for supper" this week, big and
@@ -29,6 +31,15 @@ export function KidKitchen({
   // The recipe a child has tapped and is now choosing a day for (null = still
   // browsing the recipe shelf).
   const [kidRecipe, setKidRecipe] = useState<Recipe | null>(null)
+  // #11 toddler collections: false = the normal supper view (this week + the flat
+  // recipe shelf), true = the hear-first collections flow (KidCollections). A door
+  // INTO the same pick-a-recipe-onto-a-day act, surfaced as one extra big tile so
+  // the existing abilities (hear the week, pick any recipe) are never displaced.
+  const [browsing, setBrowsing] = useState(false)
+
+  // Collections exist when at least one tag groups one or more recipes — only then
+  // is the "Les collections" door worth showing (NFR-CALM: no empty affordances).
+  const hasCollections = useMemo(() => buildCollections(recipes).length > 0, [recipes])
 
   // The toddler lens is just "this week": the next 7 days, one of each weekday.
   // (The parent grid runs a longer 10-day countdown, but two "Mardi" tiles would
@@ -58,13 +69,29 @@ export function KidKitchen({
   // Pizza") doubles as the spoken confirmation, and `planned` above redraws so
   // the child watches their pick appear. Real photo when the recipe has one,
   // the food picto as fallback (NFR-KID-2: pick by sight, never by reading).
-  const recipeTiles: Tile[] = recipes.map((r) => ({
+  // The flat recipe shelf, with the "Les collections" door as its FIRST tile when
+  // collections exist — a calm one-tap (hear "Les collections", tap again to open)
+  // that leads into the by-collection browse, leaving every recipe still reachable
+  // straight from this shelf below it.
+  const recipeShelf: Tile[] = recipes.map((r) => ({
     key: r.id,
     image: recipeImg(r.image),
     icon: pictoFor(r.title, '🍽'),
     label: r.title,
     onTap: () => setKidRecipe(r),
   }))
+  const recipeTiles: Tile[] = hasCollections
+    ? [
+        {
+          key: '__collections__',
+          icon: '📚',
+          label: t.kid.collections,
+          onTap: () => setBrowsing(true),
+          confirmHint: t.recipes.collectionTapToOpen,
+        },
+        ...recipeShelf,
+      ]
+    : recipeShelf
   const dayTiles: Tile[] = kidRecipe
     ? days7.map(({ date, meal }) => ({
         key: String(date),
@@ -85,6 +112,16 @@ export function KidKitchen({
             },
       }))
     : []
+
+  // The collections door takes over the whole kid surface while open — a focused,
+  // one-thing-at-a-time stage for a pre-reader (the supper week is one ← tap away).
+  if (browsing) {
+    return (
+      <main className="kid__main kid__main--feed">
+        <KidCollections recipes={recipes} week={week} onSuggest={onSuggest} onBack={() => setBrowsing(false)} />
+      </main>
+    )
+  }
 
   return (
     <main className={`kid__main${recipes.length > 0 ? ' kid__main--feed' : ''}`}>

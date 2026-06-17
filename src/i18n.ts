@@ -462,6 +462,11 @@ export const FR = {
     tapToCook: 'Tape encore pour cuisiner !',
     okDone: 'Voilà !',
     cook: 'On cuisine !',
+    // #11 toddler hear-first collections (browse recipes by tag/collection).
+    collections: 'Les collections',
+    whichCollection: 'Choisis une collection',
+    collectionPick: 'Choisis une recette',
+    backCollections: 'Les collections',
   },
   routines: {
     tag: 'Le rythme du jour',
@@ -1293,6 +1298,11 @@ export const EN: typeof FR = {
     tapToCook: 'Tap again to cook!',
     okDone: 'There!',
     cook: "Let's cook!",
+    // #11 toddler hear-first collections (browse recipes by tag/collection).
+    collections: 'Collections',
+    whichCollection: 'Pick a collection',
+    collectionPick: 'Pick a recipe',
+    backCollections: 'Collections',
   },
   routines: {
     tag: 'The day’s rhythm',

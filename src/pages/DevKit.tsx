@@ -18,6 +18,9 @@ import { Act, Section as BoardSection } from '../components/board/Act'
 import { RecurPicker, type RecurValue } from '../components/RecurPicker'
 import { LeadPicker } from '../components/LeadPicker'
 import { BigTiles, Sayable } from '../components/BigTiles'
+import { KidCollections } from '../components/kitchen/KidCollections'
+import { type WeekDay } from '../components/kitchen/types'
+import { type Recipe } from '../lib/recipes'
 import { EmptyState } from '../components/EmptyState'
 import { StatusMessage } from '../components/StatusMessage'
 import { Chip, ChipGroup } from '../components/Chip'
@@ -521,6 +524,40 @@ export function DevKit() {
           </Demo>
         </>
       ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'KidCollections',
+      file: 'components/kitchen/KidCollections.tsx',
+      kw: 'toddler bambin collections étiquettes tags recettes hear-first cuisine #11',
+      render: () => {
+        // A tiny fixture: three tagged recipes + an empty week so the 3-stage
+        // hear-first picker (collection → recipe → day) renders end to end.
+        const mk = (id: string, title: string, tags: string[]): Recipe => ({
+          id,
+          title,
+          ingredients: [],
+          steps: [],
+          servings: null,
+          notes: null,
+          source: null,
+          image: null,
+          tags,
+          updatedAt: 0,
+        })
+        const recipes: Recipe[] = [
+          mk('r1', 'Soupe poulet', ['Soupes']),
+          mk('r2', 'Soupe tomate', ['Soupes']),
+          mk('r3', 'Biscuits', ['Desserts']),
+        ]
+        const now = Math.floor(Date.now() / 1000)
+        const week: WeekDay[] = Array.from({ length: 7 }, (_, i) => ({ date: now + i * 86400, meal: undefined }))
+        return (
+          <Demo label="3-stage hear-first picker (flip Audience → Bambin; tap a tile twice to commit)">
+            <KidCollections recipes={recipes} week={week} onSuggest={() => {}} onBack={() => {}} />
+          </Demo>
+        )
+      },
     },
 
     // ── Feedback ───────────────────────────────────────────────────────

@@ -312,6 +312,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Collections', en: 'Collections' },
+        detail: {
+          fr: 'Range tes recettes par étiquette (Soupes, Desserts…) et feuillette-les par collection. En mode bambin, c’est trois écrans tout en images, lus à voix haute : la collection, la recette, puis le jour — deux touches pour confirmer.',
+          en: 'Group your recipes by tag (Soups, Desserts…) and browse them by collection. In toddler mode it’s three all-picture screens, read aloud: the collection, the recipe, then the day — two taps to confirm.',
+        },
+        why: {
+          fr: 'Pour qu’un tout-petit choisisse un souper par lui-même, par l’image et le son, sans savoir lire — et sans rien créer de neuf : ce sont tes étiquettes de recettes, juste rangées.',
+          en: 'So a pre-reader can pick a supper on their own, by picture and sound, without reading — and nothing new to build: it’s your recipe tags, just shelved.',
+        },
+      },
+      {
         label: { fr: 'Les quatre repas', en: 'All four meals' },
         detail: {
           fr: 'Pas juste le souper : déjeuner, dîner, souper et collation ont chacun leur case.',
