@@ -57,6 +57,14 @@ interface FlyerResponse {
 
 const money = (n: number | null) => (n == null ? '' : `$${n.toFixed(2)}`)
 
+// Clipping images live on f.wishabi.net (cross-origin), which the service worker
+// never caches. Route them through the same-origin proxy (functions/api/flyer-img)
+// so the SW caches them cache-first and they survive offline / poor store signal.
+const proxied = (url: string | null | undefined): string =>
+  // Only the cross-origin Flipp CDN needs the proxy; data: URIs (tests) and any
+  // already same-origin src pass through untouched.
+  url ? (/^https?:\/\//i.test(url) ? `/api/flyer-img?u=${encodeURIComponent(url)}` : url) : ''
+
 const FLYER_STALE = 30 * 60 * 1000 // flyers change ~weekly; cache generously
 
 // Warm a flyer (its reconstruction data + clipping images) into the cache. Call
@@ -71,7 +79,7 @@ export async function prefetchFlyer(qc: QueryClient, flyerId: number): Promise<v
     })
     .catch(() => null)
   if (!data) return
-  for (const it of data.items) if (it.image) new Image().src = it.image
+  for (const it of data.items) if (it.image) new Image().src = proxied(it.image)
 }
 
 export function FlyerViewer({
@@ -153,6 +161,42 @@ export function FlyerViewer({
   // - 'plan': the position-faithful page reconstruction — useful in-store to find
   //   where an item sits. We open straight to it when launched on a specific item.
   const [view, setView] = useState<'offres' | 'plan'>(highlightId != null ? 'plan' : 'offres')
+
+  // Manual "download for offline": pull every clipping through the same-origin
+  // proxy so the service worker caches it, before you lose wifi (the store). Just
+  // viewing warms them lazily; this guarantees the whole flyer is there. We
+  // remember it per flyer in localStorage so the ✓ badge shows on re-open.
+  const offlineKey = `bb_flyer_offline_${flyerId}`
+  const [dl, setDl] = useState<{ state: 'idle' | 'busy' | 'done'; done: number; total: number }>(() => ({
+    state: typeof localStorage !== 'undefined' && localStorage.getItem(offlineKey) ? 'done' : 'idle',
+    done: 0,
+    total: 0,
+  }))
+
+  const download = async () => {
+    if (!data || dl.state === 'busy') return
+    const urls = data.items.map((it) => proxied(it.image)).filter(Boolean)
+    if (!urls.length) return
+    setDl({ state: 'busy', done: 0, total: urls.length })
+    let done = 0
+    let next = 0
+    // A small pool keeps the warm-up off the main work without hammering the proxy.
+    const pull = async () => {
+      while (next < urls.length) {
+        const u = urls[next++]
+        await fetch(u).catch(() => {})
+        done++
+        setDl((d) => (d.state === 'busy' ? { ...d, done } : d))
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(6, urls.length) }, pull))
+    try {
+      localStorage.setItem(offlineKey, '1')
+    } catch {
+      /* private mode — the badge just won't persist */
+    }
+    setDl({ state: 'done', done: urls.length, total: urls.length })
+  }
 
   // The selected item drives the ring, the directions banner, and the detail
   // card. We track it by ARRAY INDEX, not id: many flyer items come back with a
@@ -281,6 +325,31 @@ export function FlyerViewer({
             )}
           </span>
         )}
+        {/* Pull every clipping into the offline cache so the flyer survives a weak
+            store signal. Viewing warms them too; this does the whole flyer at once. */}
+        {state === 'ok' && (
+          <button
+            type="button"
+            className={`flyer-dl mono${dl.state === 'done' ? ' is-done' : ''}`}
+            onClick={download}
+            disabled={dl.state !== 'idle'}
+            aria-live="polite"
+          >
+            {dl.state === 'busy' ? (
+              <>
+                <InlineIcon name="cloud-bold" /> {t.shop.flyerSaving} {dl.done}/{dl.total}
+              </>
+            ) : dl.state === 'done' ? (
+              <>
+                <InlineIcon name="check-bold" color="var(--sage-deep)" /> {t.shop.flyerSavedOffline}
+              </>
+            ) : (
+              <>
+                <InlineIcon name="cloud-bold" /> {t.shop.flyerSaveOffline}
+              </>
+            )}
+          </button>
+        )}
         {/* The real, full flyer (dense scanned pages, zoom) lives on Flipp's site —
             we render a quick reconstruction; this opens the complete one. */}
         <a className="flyer-full-link mono" href={officialUrl} target="_blank" rel="noopener noreferrer">
@@ -344,7 +413,7 @@ export function FlyerViewer({
                   onClick={() => setSelectedIdx(idx)}
                   aria-label={it.price != null ? `${it.name} — ${money(it.price)}` : it.name}
                 >
-                  <img src={it.image} alt={it.name} loading="lazy" />
+                  <img src={proxied(it.image)} alt={it.name} loading="lazy" />
                 </button>
               ) : null,
             )}
@@ -393,7 +462,7 @@ export function FlyerViewer({
                         onClick={() => setSelectedIdx(idx)}
                         aria-label={it.price != null ? `${it.name} — ${money(it.price)}` : it.name}
                       >
-                        {it.image && <img src={it.image} alt={it.name} loading="lazy" />}
+                        {it.image && <img src={proxied(it.image)} alt={it.name} loading="lazy" />}
                         {isHit && (
                           <span className="flyer-item__pin" aria-hidden="true">
                             <Icon name="map-pin-bold" size={16} />
@@ -413,7 +482,9 @@ export function FlyerViewer({
       {selected && (
         <div className="flyer-detail">
           <div className="flyer-detail__info">
-            {selected.image && <ZoomableImg className="flyer-detail__img" src={selected.image} alt={selected.name} />}
+            {selected.image && (
+              <ZoomableImg className="flyer-detail__img" src={proxied(selected.image)} alt={selected.name} />
+            )}
             <div className="flyer-detail__body">
               <span className="flyer-detail__name">{selected.name || '—'}</span>
               <span className="flyer-detail__meta mono">

@@ -877,8 +877,12 @@ test.describe('list', () => {
     ).toBeVisible()
     await page.locator('.flyer-store', { hasText: 'Super C' }).click()
     await expect(page.locator('.flyer-overlay')).toBeVisible()
-    // The fixture flyer has 2 pages but only page 1 carries an item; the empty
-    // cover page must be skipped, so exactly one page renders (no blank box).
+    // Opens on the gap-free "Offres" grid by default — one clipping in the fixture.
+    await expect(page.locator('.flyer-grid__cell')).toHaveCount(1)
+    // The position-faithful page reconstruction lives behind the "Plan" tab. The
+    // fixture flyer has 2 pages but only page 1 carries an item; the empty cover
+    // page must be skipped, so exactly one page renders (no blank box).
+    await page.getByRole('tab', { name: /Plan/ }).click()
     await expect(page.locator('.flyer-page-wrap')).toHaveCount(1)
     await expect(page.locator('.flyer-page-label')).toHaveText(/1/)
     // The "full flyer" link deep-links Flipp by id + merchant slug + postal.

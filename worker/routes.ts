@@ -18,6 +18,7 @@ import * as dayNotes from '../functions/api/day-notes'
 import * as deals from '../functions/api/deals'
 import * as events from '../functions/api/events'
 import * as flyer from '../functions/api/flyer'
+import * as flyerImg from '../functions/api/flyer-img'
 import * as flyers from '../functions/api/flyers'
 import * as ghost from '../functions/api/ghost'
 import * as health from '../functions/api/health'
@@ -76,6 +77,7 @@ const TABLE: Record<string, RouteMod> = {
   deals,
   events,
   flyer,
+  'flyer-img': flyerImg,
   flyers,
   ghost,
   health,

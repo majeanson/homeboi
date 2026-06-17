@@ -1003,6 +1003,38 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* "Télécharger hors-ligne" — a quieter outline pill so it sits beside the primary
+   full-flyer link without competing. Turns sage when the flyer is cached. */
+.flyer-dl {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.flyer-dl:disabled {
+  cursor: default;
+}
+.flyer-dl.is-done {
+  color: var(--sage-deep, #2f7d4f);
+  border-color: var(--sage-deep, #2f7d4f);
+}
+.flyer-dl:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.flyer-dl:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 /* Flyer validity span under the merchant name — the dates the cashier checks. */
 .flyer-bar__dates {
   font-family: var(--mono, monospace);
