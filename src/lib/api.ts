@@ -1,7 +1,7 @@
 // The ONLY path to /api/*. Handles CSRF echo (operator), device-token header
 // (kiosk), credentials, and JSON error parsing. Don't call fetch directly for
 // the API — you'll lose one of these and get a silent 403.
-import { getDeviceToken } from './device'
+import { getDeviceToken, getGuestToken } from './device'
 import { emitAiError } from './aiErrorBus'
 
 export class ApiError extends Error {
@@ -61,8 +61,11 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   }
 
   // Kiosk identity. Sent on every call; harmless on operator-only routes
-  // (the server prefers the cookie when both are present).
-  const deviceToken = getDeviceToken()
+  // (the server prefers the cookie when both are present). A guest (babysitter)
+  // token rides the SAME header — the server tells them apart by payload tag and
+  // treats a guest as read-only. The device token wins if both are stored, so a
+  // paired kiosk is never downgraded to guest.
+  const deviceToken = getDeviceToken() ?? getGuestToken()
   if (deviceToken) headers['X-Device-Token'] = deviceToken
 
   // Tell the server which language to answer AI calls in.

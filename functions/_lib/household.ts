@@ -1,26 +1,31 @@
 // Household resolution — the single place that answers "which household is this
 // request acting on, and is it allowed to write?".
 //
-// Two credential paths converge here:
+// Three credential paths converge here:
 //   - operator session cookie  -> their household, full read/write
 //   - device token (kiosk)      -> the bound household, board-scoped writes
+//   - guest token (babysitter)  -> the bound household, READ-ONLY, time-boxed
 //
-// Both return the same shape so handlers use one guard. `scope` lets a handler
+// All return the same shape so handlers use one guard. `scope` lets a handler
 // refuse a kiosk where only the operator should act (billing, member admin).
+// Guests are strictly narrower than a kiosk: route.ts blocks every non-GET.
 
 import type { Env } from './env'
-import { currentEmail, currentDevice } from './auth'
+import { currentEmail, currentDevice, currentGuest } from './auth'
 import { forbidden, unauthorized } from './json'
 import { nowSec } from './ids'
 
 export interface Actor {
   householdId: string
-  scope: 'operator' | 'kiosk'
+  scope: 'operator' | 'kiosk' | 'guest'
   email?: string
   deviceId?: string
+  guestId?: string
 }
 
-async function resolveActor(env: Env, request: Request): Promise<Actor | null> {
+// Exported so the realtime WS upgrade (worker/index.ts → /api/live) can resolve
+// the actor BEFORE hijacking the request, without routing through authed().
+export async function resolveActor(env: Env, request: Request): Promise<Actor | null> {
   // Operator first — a logged-in human outranks a device.
   const email = await currentEmail(env, request)
   if (email) {
@@ -48,6 +53,18 @@ async function resolveActor(env: Env, request: Request): Promise<Actor | null> {
         .catch(() => {})
       return { householdId: device.householdId, scope: 'kiosk', deviceId: device.deviceId }
     }
+  }
+
+  // Guest LAST — checked only after operator + device fail, so a real operator
+  // or kiosk is never downgraded to read-only. Stateless: validity is the signed
+  // expiry alone (no DB row), so there's no revoke-before-TTL. The household must
+  // still exist — a token for a deleted household resolves to nothing.
+  const guest = await currentGuest(env, request)
+  if (guest) {
+    const row = await env.DB.prepare('SELECT id FROM households WHERE id = ?')
+      .bind(guest.householdId)
+      .first<{ id: string }>()
+    if (row) return { householdId: guest.householdId, scope: 'guest', guestId: guest.guestId }
   }
 
   return null

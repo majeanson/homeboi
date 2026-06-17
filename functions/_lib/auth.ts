@@ -158,3 +158,30 @@ export async function currentDevice(
   const payload = await verifyToken<{ d: string; h: string }>(env, request.headers.get(DEVICE_HEADER))
   return payload ? { deviceId: payload.d, householdId: payload.h } : null
 }
+
+// ---- Guest token (babysitter / time-boxed read-mostly access) --------------
+//
+// A stateless HMAC capability that mirrors the device token: same key, same
+// format, sent in the SAME `X-Device-Token` header. The payload tag distinguishes
+// it — { g: guestId, h: householdId, x: expSeconds }. There is NO DB row (so no
+// revoke-before-expiry; the short TTL is the bound). resolveActor() treats a
+// guest as strictly narrower than a kiosk: read-only (enforced in route.ts).
+export async function issueGuestToken(
+  env: Env,
+  guestId: string,
+  householdId: string,
+  ttlSeconds: number,
+): Promise<string> {
+  return signToken(env, { g: guestId, h: householdId, x: nowSec() + ttlSeconds })
+}
+
+export async function currentGuest(
+  env: Env,
+  request: Request,
+): Promise<{ guestId: string; householdId: string } | null> {
+  // Same header as the device token. A device payload has `d` and no `g`, so the
+  // `g`-typed verify yields null-of-g for a real device token (and vice-versa);
+  // expiry (`x`) is checked inside verifyToken for both.
+  const payload = await verifyToken<{ g?: string; h: string }>(env, request.headers.get(DEVICE_HEADER))
+  return payload && typeof payload.g === 'string' ? { guestId: payload.g, householdId: payload.h } : null
+}

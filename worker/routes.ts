@@ -21,6 +21,7 @@ import * as flyer from '../functions/api/flyer'
 import * as flyerImg from '../functions/api/flyer-img'
 import * as flyers from '../functions/api/flyers'
 import * as ghost from '../functions/api/ghost'
+import * as guestStart from '../functions/api/guest/start'
 import * as health from '../functions/api/health'
 import * as household from '../functions/api/household'
 import * as list from '../functions/api/list'
@@ -63,6 +64,10 @@ import type { Env } from '../functions/_lib/env'
 export type RouteMod = Record<string, PagesFunction<Env, any, any> | undefined>
 
 // Keyed by the path AFTER "api/" (no leading slash, no query).
+//
+// NOTE: `api/live` (the realtime WebSocket upgrade, #20) is deliberately NOT in
+// this table — it isn't a Pages-Function handler. index.ts intercepts it before
+// matchRoute() and hijacks the request into the RealtimeHub Durable Object stub.
 const TABLE: Record<string, RouteMod> = {
   'auth/login': authLogin,
   'auth/logout': authLogout,
@@ -80,6 +85,7 @@ const TABLE: Record<string, RouteMod> = {
   'flyer-img': flyerImg,
   flyers,
   ghost,
+  'guest/start': guestStart,
   health,
   household,
   list,
