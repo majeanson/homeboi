@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 
-// Contextual help: the "?" beside a section title (HelpDot) deep-links into the
-// Guide at the matching card; an Expert switch in Réglages ▸ Affichage hides all
-// the dots. Both run frontend-only against mocked APIs.
+// Contextual help: the section identity disc (SectionAvatar, class `.avatar--help`
+// with a corner "?" pip — HelpDot folded into the icon) deep-links into the Guide
+// at the matching card; an Expert switch in Réglages ▸ Affichage hides the help
+// affordance. Both run frontend-only against mocked APIs.
 
 async function boot(page: import('@playwright/test').Page, path: string) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -24,7 +25,7 @@ async function boot(page: import('@playwright/test').Page, path: string) {
 
 test('the contextual ? deep-links into the matching Guide card', async ({ page }) => {
   await boot(page, '/kitchen')
-  const dot = page.locator('.app-head .help-dot').first()
+  const dot = page.locator('.avatar--help').first()
   await expect(dot).toBeVisible()
   await dot.click()
   // The card param is consumed (replaced) once read, leaving a clean URL.
@@ -39,7 +40,7 @@ test('the contextual ? deep-links into the matching Guide card', async ({ page }
 test('tutorial vs expert mode shows / hides the ? dots', async ({ page }) => {
   // Tutorial is the default: the dot shows.
   await boot(page, '/liste')
-  await expect(page.locator('.help-dot')).toHaveCount(1)
+  await expect(page.locator('.avatar--help')).toHaveCount(1)
 
   // Flip to expert in Réglages ▸ Affichage.
   await page.goto('/settings?tab=display')
@@ -49,5 +50,5 @@ test('tutorial vs expert mode shows / hides the ? dots', async ({ page }) => {
   // Back on a hub page, every dot is gone.
   await page.goto('/liste')
   await page.locator('.hub').first().waitFor({ state: 'visible' })
-  await expect(page.locator('.help-dot')).toHaveCount(0)
+  await expect(page.locator('.avatar--help')).toHaveCount(0)
 })

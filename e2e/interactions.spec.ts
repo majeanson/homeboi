@@ -175,10 +175,11 @@ test.describe('settings tabs', () => {
     await settle(page, '.operator__tabs')
     const tabs = page.getByRole('tab')
     const n = await tabs.count()
-    // 16 sections: Guide (first/default), Maisonnée, Rendez-vous, Corvées,
+    // 17 sections: Guide (first/default), Maisonnée, Rendez-vous, Corvées,
     // Routines, Magasinage, Recettes, Repas, Réserve, Liste fantôme, Tablettes,
-    // Photos, Bilan, Affichage, Mode calme, and the AI-error journal (ai-log).
-    expect(n).toBe(16)
+    // Invité (Guest), Photos, Bilan, Affichage, Mode calme, and the AI-error
+    // journal (ai-log).
+    expect(n).toBe(17)
     for (let i = 0; i < n; i++) {
       await tabs.nth(i).click()
       await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true')
@@ -209,7 +210,12 @@ test.describe('toggles', () => {
 
   test('language toggle flips FR ↔ EN', async ({ page }) => {
     await openDisplay(page)
-    const btn = page.locator('.operator__seg').nth(1).locator('button')
+    // Target the language button by its OWN text (Français/English), not the seg
+    // label: the Affichage tab gained an "Ambiance du jour" seg (shifting indices)
+    // AND the "Langue" label itself flips to "Language" on toggle, so a label-based
+    // filter stops matching after the click. The button's text uniquely identifies
+    // it among the segs (theme=Jour/Nuit, ambient=…, lang=Français/English).
+    const btn = page.locator('.operator__seg button').filter({ hasText: /^(Français|English)$/ })
     await expect(btn).toHaveText('Français')
     await btn.click()
     await expect(btn).toHaveText('English')
@@ -378,6 +384,9 @@ test.describe('add sheet', () => {
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
+    // The board ＋ opens a blank-slate chooser (nothing pre-selected); pick the
+    // quick-note tile to reveal the capture form.
+    await page.locator('.cat-pick', { hasText: 'Note rapide' }).click()
     await page.locator('.sheet__field input').fill('Acheter du lait')
     await expectApi(page, 'POST', 'capture', () =>
       page.locator('.sheet form button[type="submit"]').click(),
@@ -389,14 +398,13 @@ test.describe('add sheet', () => {
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    // Wait for the sheet to finish mounting (capture input present) before
-    // tapping a tile, so a cold-compiled first paint can't race the click.
-    await expect(page.locator('.sheet__field input')).toBeVisible()
-    // The event tile is navigate-only now: it leaves the sheet for the
-    // full-screen /event/new scene (tall forms strand under the keyboard).
+    // The board ＋ is a blank-slate chooser; wait for its tiles, then tap the
+    // event tile. It's navigate-only: it leaves the sheet for the full-screen
+    // /event/new scene (tall forms strand under the keyboard).
+    await expect(page.locator('.cat-pick', { hasText: 'Rendez-vous' })).toBeVisible()
     await Promise.all([
       page.waitForURL(/\/event\/new/),
-      page.locator('.cat-pick').nth(1).click(),
+      page.locator('.cat-pick', { hasText: 'Rendez-vous' }).click(),
     ])
     await expect(page.locator('.scene input[type="date"]')).toBeVisible()
   })
@@ -406,9 +414,9 @@ test.describe('add sheet', () => {
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    await expect(page.locator('.sheet__field input')).toBeVisible()
     // The board chooser appends two day-planner shortcuts after capture/event/
     // chore/routine; "Planifier aujourd'hui" navigates to that day's planner scene.
+    await expect(page.locator('.cat-pick', { hasText: 'Planifier aujourd’hui' })).toBeVisible()
     await Promise.all([
       page.waitForURL(/\/kitchen\/day\/\d+/),
       page.locator('.cat-pick', { hasText: 'Planifier aujourd’hui' }).click(),
@@ -428,9 +436,10 @@ test.describe('add sheet', () => {
     await expect(sectionTiles).toHaveCount(6)
     await expect(sectionTiles, 'no quick-capture in the kitchen sheet').toHaveCount(6)
     await expect(page.locator('.cat-pick', { hasText: 'Note rapide' })).toHaveCount(0)
-    // "Planifier un repas" is pre-selected (cook + recipe are non-default tiles):
-    // it's a DAY PICKER now (chips that navigate to the day's editor scene
-    // /kitchen/day/…), not an inline day-select + slot-picker + POST.
+    // The sheet is a blank-slate chooser now: pick "Planifier un repas" to reveal
+    // its DAY PICKER (chips that navigate to the day's editor scene /kitchen/day/…),
+    // not an inline day-select + slot-picker + POST.
+    await page.locator('.cat-pick', { hasText: 'Planifier un repas' }).click()
     await expect(page.locator('.sheet .addsheet__daypick')).toBeVisible()
     const days = page.locator('.sheet .addsheet__days .chip')
     await expect(days.first()).toBeVisible()
@@ -461,8 +470,9 @@ test.describe('add sheet', () => {
     // circulaires, and (since the seeded list isn't empty) Choisir les meilleurs.
     const tiles = page.locator('.sheet > .cat-grid > .cat-pick')
     await expect(tiles).toHaveCount(4)
-    // The add-a-line tile is pre-selected (quick-add/flyer are navigate-only,
-    // best-prices runs an action), so the list form is already up and POSTs to list.
+    // Blank-slate chooser: pick the add-a-line tile (quick-add/flyer are
+    // navigate-only, best-prices runs an action) to reveal the form that POSTs to list.
+    await page.locator('.cat-pick', { hasText: 'Ajouter à la liste' }).click()
     await expect(page.locator('.cat-pick', { hasText: 'Ajouter à la liste' })).toHaveAttribute('aria-pressed', 'true')
     await page.locator('.sheet__field input').fill('Beurre')
     await expectApi(page, 'POST', 'list', () =>
@@ -638,10 +648,17 @@ test.describe('recipes', () => {
   test('tag chips filter the recipe grid', async ({ page }) => {
     const cards = page.locator('.recipe-card')
     await expect(cards).toHaveCount(4)
-    await page.locator('.kitchen__tag-filter .chip', { hasText: 'préféré' }).click()
-    await expect(cards).toHaveCount(1) // only the recipe tagged "préféré"
-    await page.locator('.kitchen__tag-filter .chip', { hasText: 'rapide' }).click()
-    await expect(cards).toHaveCount(2) // two recipes tagged "rapide"
+    const prefere = page.locator('.kitchen__tag-filter .chip', { hasText: 'préféré' })
+    const rapide = page.locator('.kitchen__tag-filter .chip', { hasText: 'rapide' })
+    await prefere.click()
+    await expect(cards).toHaveCount(1) // only the recipe tagged "préféré" (rc1)
+    // Tag filters are multi-select with AND semantics now: adding "rapide" keeps
+    // only recipes that carry BOTH tags — still just rc1.
+    await rapide.click()
+    await expect(cards).toHaveCount(1)
+    // Deselect "préféré" → filtered by "rapide" alone: the two recipes tagged rapide.
+    await prefere.click()
+    await expect(cards).toHaveCount(2)
   })
 
   test('creating a recipe posts it', async ({ page }) => {
@@ -681,8 +698,9 @@ test('a kid recipe pick suggests a supper into an empty day', async ({ page }) =
   await APP('/kitchen', 'toddler')(page)
   await settle(page, '.hub')
   // Hear-first: a toddler action tile speaks on the FIRST tap and arms; a SECOND
-  // tap commits — so nothing happens by accident. Pick the first recipe (two taps).
-  const recipe = page.locator('.kid-pick .bigtile').first()
+  // tap commits — so nothing happens by accident. Pick a recipe by name (the
+  // shelf's first tile is now the "Les collections" door, not a recipe).
+  const recipe = page.locator('.kid-pick .bigtile', { hasText: 'Spaghetti maison' }).first()
   await recipe.click()
   await expect(recipe).toHaveClass(/is-armed/)
   await recipe.click()
@@ -841,13 +859,13 @@ test.describe('list', () => {
 
   test('the flyer browser opens', async ({ page }) => {
     await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
-    await page.getByRole('button', { name: /Parcourir/ }).click()
+    await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
     await expect(page.locator('.scene .deals-search')).toBeVisible()
   })
 
   test('a browsed deal LINKS onto the matching list item, not a new specific-named line', async ({ page }) => {
     await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
-    await page.getByRole('button', { name: /Parcourir/ }).click()
+    await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
     await expect(page.locator('.deals-search')).toBeVisible()
     await page.locator('.deals-search input').fill('lait')
     await page.locator('.deals-search button[type="submit"]').click()
@@ -864,7 +882,7 @@ test.describe('list', () => {
 
   test('a browsed deal for a new item adds it under the SEARCHED name, not the product name', async ({ page }) => {
     await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
-    await page.getByRole('button', { name: /Parcourir/ }).click()
+    await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
     await page.locator('.deals-search input').fill('fromage') // not on the list yet
     await page.locator('.deals-search button[type="submit"]').click()
     await expect(page.locator('.deal').first()).toBeVisible()
@@ -891,7 +909,7 @@ test.describe('list', () => {
 
   test('the by-store tab opens a store flyer without searching', async ({ page }) => {
     await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
-    await page.getByRole('button', { name: /Parcourir/ }).click()
+    await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
     await expect(page.locator('.deal-tabs')).toBeVisible()
     await page.getByRole('tab', { name: /Par magasin/ }).click()
     await expect(page.locator('.flyer-store')).toHaveCount(3)

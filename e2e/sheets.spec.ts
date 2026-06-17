@@ -60,7 +60,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
   test(`sheet-deals${sfx}`, async ({ page }) => {
     await boot(page, '/liste', theme)
     await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
-    await page.getByRole('button', { name: /Parcourir/ }).click()
+    await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
     await page.locator('.scene').waitFor({ state: 'visible' })
     await page.locator('.deal-stores .chip', { hasText: 'lait' }).first().click()
     await page.locator('.deal-list').waitFor({ state: 'visible' }).catch(() => {})
@@ -129,7 +129,7 @@ test('sheet-cashier-present', async ({ page }) => {
 test('sheet-deals-store', async ({ page }) => {
   await boot(page, '/liste')
   await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
-  await page.getByRole('button', { name: /Parcourir/ }).click()
+  await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
   await page.locator('.scene').waitFor({ state: 'visible' })
   await page.locator('.deal-tabs .subtabs__opt', { hasText: 'magasin' }).click()
   await page.locator('.flyer-stores').waitFor({ state: 'visible' }).catch(() => {})
@@ -161,7 +161,7 @@ test('routine-story', async ({ page }) => {
 test('sheet-flyer', async ({ page }) => {
   await boot(page, '/liste')
   await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
-  await page.getByRole('button', { name: /Parcourir/ }).click()
+  await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
   await page.locator('.scene').waitFor({ state: 'visible' })
   await page.locator('.deal-tabs .subtabs__opt', { hasText: 'magasin' }).click()
   await page.locator('.flyer-store').first().click()

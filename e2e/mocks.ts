@@ -573,6 +573,10 @@ export async function seedState(page: Page, s: AppState) {
       if (state.calm !== undefined) localStorage.setItem('babillard-calm', state.calm ? 'on' : 'off')
       if (state.surface) localStorage.setItem('babillard-surface', state.surface)
       if (state.boardView) localStorage.setItem('babillard-boardview', state.boardView)
+      // Pin the day-part ambient drift OFF (feature #1): otherwise the board palette
+      // tints by wall-clock time, making every screenshot non-deterministic. Tests
+      // assert the fixed day/night palette; the drift is covered by unit tests.
+      localStorage.setItem('babillard-daypart-auto', '0')
       if (state.paired) {
         localStorage.setItem('babillard-device-token', 'e2e-device-token')
         localStorage.setItem('babillard-device-household', 'h1')

@@ -114,7 +114,7 @@ test('list-checked', async ({ page }) => {
 test('list-deals-start', async ({ page }) => {
   await boot(page, '/liste')
   await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
-  await page.getByRole('button', { name: /Parcourir/ }).click()
+  await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
   await page.locator('.scene').waitFor({ state: 'visible' })
   await page.locator('.deal-stores').first().waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
