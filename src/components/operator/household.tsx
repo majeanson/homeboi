@@ -4,6 +4,7 @@ import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
+import { isGuest } from '../../lib/device'
 import { PALETTE } from '../../lib/colors'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
 import { Avatar } from '../Avatar'
@@ -91,22 +92,25 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
           <MemberCard key={m.id} member={m} onChange={onChange} onRemove={() => remove(m)} />
         ))}
       </ul>
-      <form className="operator__inline-form" onSubmit={add}>
-        <input
-          className="input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t.operator.name}
-        />
-        <label className="operator__check mono">
-          <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
-          {t.operator.isChild}
-        </label>
-        <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
-        <button type="submit" className="btn" disabled={!name.trim() || busy}>
-          {t.operator.addMember}
-        </button>
-      </form>
+      {/* Adding a member is operator-only — hidden for a read-only guest. */}
+      {!isGuest() && (
+        <form className="operator__inline-form" onSubmit={add}>
+          <input
+            className="input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t.operator.name}
+          />
+          <label className="operator__check mono">
+            <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
+            {t.operator.isChild}
+          </label>
+          <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+          <button type="submit" className="btn" disabled={!name.trim() || busy}>
+            {t.operator.addMember}
+          </button>
+        </form>
+      )}
     </section>
   )
 }

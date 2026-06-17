@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
+import { isGuest } from '../../lib/device'
 import { type Recipe } from '../../lib/recipes'
 import { type MealSlot } from '../../lib/mealSlots'
 import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
@@ -33,6 +34,9 @@ export function MealIdeas({
   const t = useT()
   const recordUndo = useRecordUndo()
   const write = useWrite()
+  // Read-only guest: no add form / recipe-pick / plan-onto-day; chips read as inert
+  // text. RowActions already hides its own ✏️/🗑️ for a guest.
+  const ro = isGuest()
   const [text, setText] = useState('')
   const [pickRecipe, setPickRecipe] = useState(false)
   const [planFor, setPlanFor] = useState<string | null>(null)
@@ -111,6 +115,7 @@ export function MealIdeas({
       </div>
       <p className="kitchen__ideas-hint mono">{t.kitchen.ideasHint}</p>
 
+      {!ro && (
       <form
         className="kitchen__ideas-add"
         onSubmit={(e) => {
@@ -141,8 +146,9 @@ export function MealIdeas({
           </button>
         )}
       </form>
+      )}
 
-      {pickRecipe && (
+      {!ro && pickRecipe && (
         <RecipePickerMenu
           recipes={recipes}
           lowItems={lowItems}
@@ -158,7 +164,7 @@ export function MealIdeas({
           {ideas.map((idea) => (
             <li key={idea.id} className="kitchen__idea">
               <div className="kitchen__idea-row">
-                {editId === idea.id ? (
+                {editId === idea.id && !ro ? (
                   <form
                     className="kitchen__idea-edit"
                     onSubmit={(e) => {
@@ -187,19 +193,30 @@ export function MealIdeas({
                   </form>
                 ) : (
                   <>
-                    <button
-                      type="button"
-                      className="chip kitchen__idea-name"
-                      onClick={() => setPlanFor(planFor === idea.id ? null : idea.id)}
-                      aria-expanded={planFor === idea.id}
-                    >
-                      {idea.recipe_id && (
-                        <>
-                          <InlineIcon name="book-open-bold" size={14} color="var(--berry-deep)" />{' '}
-                        </>
-                      )}
-                      {idea.title}
-                    </button>
+                    {ro ? (
+                      <span className="chip kitchen__idea-name" aria-disabled="true">
+                        {idea.recipe_id && (
+                          <>
+                            <InlineIcon name="book-open-bold" size={14} color="var(--berry-deep)" />{' '}
+                          </>
+                        )}
+                        {idea.title}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="chip kitchen__idea-name"
+                        onClick={() => setPlanFor(planFor === idea.id ? null : idea.id)}
+                        aria-expanded={planFor === idea.id}
+                      >
+                        {idea.recipe_id && (
+                          <>
+                            <InlineIcon name="book-open-bold" size={14} color="var(--berry-deep)" />{' '}
+                          </>
+                        )}
+                        {idea.title}
+                      </button>
+                    )}
                     <RowActions
                       editLabel={t.common.edit}
                       deleteLabel={t.kitchen.removeIdea}
@@ -212,7 +229,7 @@ export function MealIdeas({
                   </>
                 )}
               </div>
-              {planFor === idea.id && (
+              {!ro && planFor === idea.id && (
                 <MealPlanPicker
                   slot={planSlot}
                   onSlot={setPlanSlot}

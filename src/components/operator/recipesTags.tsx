@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { RECIPES_KEY, RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions, tagColor } from '../../lib/recipes'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { useConfirm } from '../../lib/confirm'
+import { isGuest } from '../../lib/device'
 import { Icon, InlineIcon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
 import { RowActions } from '../RowActions'
@@ -25,6 +26,9 @@ export function RecipeTagsSection() {
   const t = useT()
   const qc = useQueryClient()
   const confirm = useConfirm()
+  // Read-only guest: tags read as plain inert chips — no recolor / rename / remove /
+  // add (every interactive control here is a write).
+  const ro = isGuest()
   const tagsQ = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') })
   const presets = tagsQ.data?.presets ?? []
   const used = tagsQ.data?.used ?? []
@@ -96,6 +100,13 @@ export function RecipeTagsSection() {
         {effective.map((tg) => {
           const key = `preset:${tg.toLowerCase()}`
           const open = coloring === key
+          if (ro) {
+            return (
+              <span key={tg} className="chip tag-admin__pill" style={chipTint(tagColor(colors, tg))}>
+                {tg}
+              </span>
+            )
+          }
           return (
             <span key={tg} className={`chip tag-admin__pill${open ? ' is-editing' : ''}`} style={chipTint(tagColor(colors, tg))}>
               <button
@@ -119,30 +130,33 @@ export function RecipeTagsSection() {
           )
         })}
       </div>
-      {coloring?.startsWith('preset:') &&
+      {!ro &&
+        coloring?.startsWith('preset:') &&
         (() => {
           const tg = effective.find((x) => `preset:${x.toLowerCase()}` === coloring)
           return tg ? colorEditor(tg) : null
         })()}
-      <form
-        className="operator__inline-form"
-        onSubmit={(e) => {
-          e.preventDefault()
-          addPill()
-        }}
-      >
-        <input
-          className="input"
-          value={pillInput}
-          onChange={(e) => setPillInput(e.target.value)}
-          placeholder={t.operator.tagAddPill}
-          aria-label={t.operator.tagAddPill}
-          maxLength={24}
-        />
-        <button type="submit" className="btn" disabled={!pillInput.trim()}>
-          ＋
-        </button>
-      </form>
+      {!ro && (
+        <form
+          className="operator__inline-form"
+          onSubmit={(e) => {
+            e.preventDefault()
+            addPill()
+          }}
+        >
+          <input
+            className="input"
+            value={pillInput}
+            onChange={(e) => setPillInput(e.target.value)}
+            placeholder={t.operator.tagAddPill}
+            aria-label={t.operator.tagAddPill}
+            maxLength={24}
+          />
+          <button type="submit" className="btn" disabled={!pillInput.trim()}>
+            ＋
+          </button>
+        </form>
+      )}
 
       <h3 className="operator__sub">{t.operator.tagUsed}</h3>
       {used.length === 0 ? (
@@ -155,7 +169,7 @@ export function RecipeTagsSection() {
             return (
               <li key={tag.toLowerCase()} className="tag-admin__row-wrap">
                 <div className="tag-admin__row">
-                  {renaming === tag ? (
+                  {!ro && renaming === tag ? (
                     <form
                       className="tag-admin__rename"
                       onSubmit={(e) => {
@@ -184,15 +198,17 @@ export function RecipeTagsSection() {
                         {tag}
                       </span>
                       <span className="tag-admin__count mono">{t.operator.tagOnN(count)}</span>
-                      <button
-                        type="button"
-                        className={`tag-admin__color-btn${open ? ' is-on' : ''}`}
-                        onClick={() => setColoring(open ? null : key)}
-                        aria-label={t.operator.tagColorPick(tag)}
-                        aria-expanded={open}
-                      >
-                        <Icon name="paint-brush-bold" size={16} />
-                      </button>
+                      {!ro && (
+                        <button
+                          type="button"
+                          className={`tag-admin__color-btn${open ? ' is-on' : ''}`}
+                          onClick={() => setColoring(open ? null : key)}
+                          aria-label={t.operator.tagColorPick(tag)}
+                          aria-expanded={open}
+                        >
+                          <Icon name="paint-brush-bold" size={16} />
+                        </button>
+                      )}
                       <RowActions
                         editLabel={t.operator.tagRename}
                         deleteLabel={t.operator.tagRemove}
@@ -210,7 +226,7 @@ export function RecipeTagsSection() {
                     </>
                   )}
                 </div>
-                {open && colorEditor(tag)}
+                {!ro && open && colorEditor(tag)}
               </li>
             )
           })}

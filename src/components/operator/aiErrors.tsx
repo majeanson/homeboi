@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api, ApiError, isStatus } from '../../lib/api'
+import { isGuest } from '../../lib/device'
 import { Icon } from '../Icon'
 
 // The AI error journal (migration 0029 / functions/api/ai-errors). Failures the
@@ -59,9 +60,11 @@ function AiStatusTest() {
     <section className="surface operator__section">
       <h2>{t.operator.aiTestTitle}</h2>
       <p className="mono">{t.operator.aiTestHint}</p>
-      <button type="button" className="btn btn--primary" onClick={run} disabled={running} aria-busy={running}>
-        {running ? t.operator.aiTestRunning : t.operator.aiTestBtn}
-      </button>
+      {!isGuest() && (
+        <button type="button" className="btn btn--primary" onClick={run} disabled={running} aria-busy={running}>
+          {running ? t.operator.aiTestRunning : t.operator.aiTestBtn}
+        </button>
+      )}
 
       {unavailable && <p className="board__empty mono">{t.operator.aiTestUnavailable}</p>}
 
@@ -125,9 +128,11 @@ export function AiErrorLogSection() {
                 </li>
               ))}
             </ul>
-            <button type="button" className="btn btn--ghost" onClick={clearAll}>
-              {t.operator.aiLogClear}
-            </button>
+            {!isGuest() && (
+              <button type="button" className="btn btn--ghost" onClick={clearAll}>
+                {t.operator.aiLogClear}
+              </button>
+            )}
           </>
         )}
       </section>

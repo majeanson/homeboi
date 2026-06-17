@@ -3,6 +3,7 @@ import { useLang, useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
 import { useUndoableRemove } from '../../lib/undoRemove'
+import { isGuest } from '../../lib/device'
 import { formatDay, formatTime } from '../../lib/format'
 import { EventForm } from '../forms/EventForm'
 import { InlineIcon } from '../Icon'
@@ -27,6 +28,9 @@ export function EventsSection({
   const { open } = useAddSheet()
   const undoableRemove = useUndoableRemove()
   const write = useWrite()
+  // Read-only guest: hide the add-event button + the inline edit form (RowActions
+  // already hides its own ✏️/🗑️, so a guest can't open the editor anyway).
+  const ro = isGuest()
   const [editing, setEditing] = useState<EventRow | null>(null)
 
   function remove(ev: EventRow) {
@@ -84,7 +88,7 @@ export function EventsSection({
       )}
       {/* Adding lives on the ＋ (open('event')); the inline form is EDIT-only so
           Réglages doesn't carry a second copy of the blank event form. */}
-      {editing ? (
+      {ro ? null : editing ? (
         <EventForm
           key={editing.id}
           members={members}

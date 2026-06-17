@@ -5,6 +5,7 @@ import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { wash, PALETTE } from '../../lib/colors'
+import { isGuest } from '../../lib/device'
 import { type ReserveLocation, seedReserveDefaults } from '../../lib/reservePrefs'
 import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
@@ -24,6 +25,9 @@ export function ReserveLocationsSection() {
   const [locs, setLocs] = useState<ReserveLocation[] | null>(null)
   const [adding, setAdding] = useState('')
   const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
+  // Read-only guest: locations read as a coloured legend — no rename / recolour /
+  // add (RowActions already hides its own delete).
+  const ro = isGuest()
 
   // Seed from the stored list, or the two localized defaults when never set.
   useEffect(() => {
@@ -112,30 +116,38 @@ export function ReserveLocationsSection() {
             <li key={l.id} className="meal-slots__row">
               <span className="meal-slots__name">
                 <span className="meal-slots__chip" style={{ background: wash(l.color ?? '#888888'), color: l.color }} aria-hidden="true" />
-                <input
-                  className="input"
-                  value={l.name}
-                  onChange={(e) => setLocs(locs.map((x) => (x.id === l.id ? { ...x, name: e.target.value } : x)))}
-                  onBlur={(e) => rename(l.id, e.target.value.trim().slice(0, 40) || l.name)}
-                  aria-label={t.operator.reserveLocationName}
-                />
+                {ro ? (
+                  <span className="meal-slots__label">{l.name}</span>
+                ) : (
+                  <input
+                    className="input"
+                    value={l.name}
+                    onChange={(e) => setLocs(locs.map((x) => (x.id === l.id ? { ...x, name: e.target.value } : x)))}
+                    onBlur={(e) => rename(l.id, e.target.value.trim().slice(0, 40) || l.name)}
+                    aria-label={t.operator.reserveLocationName}
+                  />
+                )}
               </span>
-              <div className="meal-slots__pick">
-                <ColorPicker value={l.color ?? '#888888'} onChange={(c) => recolor(l.id, c)} label={t.operator.reserveLocationName} />
-              </div>
+              {!ro && (
+                <div className="meal-slots__pick">
+                  <ColorPicker value={l.color ?? '#888888'} onChange={(c) => recolor(l.id, c)} label={t.operator.reserveLocationName} />
+                </div>
+              )}
               <RowActions onDelete={() => remove(l.id)} deleteLabel={`${t.common.delete} — ${l.name}`} />
             </li>
           ))}
         </ul>
       )}
-      <EditField
-        value={adding}
-        onChange={setAdding}
-        onSubmit={() => add()}
-        submitLabel={t.capture.add}
-        placeholder={t.operator.reserveAddLocation}
-        ariaLabel={t.operator.reserveAddLocation}
-      />
+      {!ro && (
+        <EditField
+          value={adding}
+          onChange={setAdding}
+          onSubmit={() => add()}
+          submitLabel={t.capture.add}
+          placeholder={t.operator.reserveAddLocation}
+          ariaLabel={t.operator.reserveAddLocation}
+        />
+      )}
       {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
       {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
     </section>

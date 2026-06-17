@@ -4,6 +4,7 @@ import { useT } from '../../i18n'
 import { api, isStatus } from '../../lib/api'
 import { useUndoToast } from '../../lib/toast'
 import { resizeImage, imgUrl, PHOTO_MAX } from '../../lib/image'
+import { isGuest } from '../../lib/device'
 import { Icon } from '../Icon'
 
 // Weekly recap: an on-demand, calm reflection (NFR-CALM/COST — a button, never a
@@ -32,9 +33,11 @@ export function RecapSection() {
       <h2>{t.operator.recapTitle}</h2>
       <p className="mono">{t.operator.recapHint}</p>
       {recap && <p className="lead">{recap}</p>}
-      <button type="button" className="btn btn--primary" onClick={generate} disabled={busy}>
-        {busy ? t.operator.recapThinking : t.operator.recapGen}
-      </button>
+      {!isGuest() && (
+        <button type="button" className="btn btn--primary" onClick={generate} disabled={busy}>
+          {busy ? t.operator.recapThinking : t.operator.recapGen}
+        </button>
+      )}
     </section>
   )
 }
@@ -51,6 +54,8 @@ export function PhotosSection() {
   })
   const photos = data?.photos ?? []
   const undo = useUndoToast()
+  // Read-only guest: photos are viewable, but no delete-per-tile and no upload.
+  const ro = isGuest()
   const [busy, setBusy] = useState(false)
   // Batch progress: {done, total} while uploading several at once, null when idle.
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
@@ -112,37 +117,41 @@ export function PhotosSection() {
           {photos.map((p) => (
             <div key={p.id} className="photo-grid__item">
               <img src={imgUrl(p.key)} alt="" loading="lazy" />
-              <button
-                type="button"
-                className="photo-grid__del"
-                onClick={() => remove(p.id)}
-                aria-label={t.operator.delete}
-              >
-                <Icon name="x-bold" size={15} />
-              </button>
+              {!ro && (
+                <button
+                  type="button"
+                  className="photo-grid__del"
+                  onClick={() => remove(p.id)}
+                  aria-label={t.operator.delete}
+                >
+                  <Icon name="x-bold" size={15} />
+                </button>
+              )}
             </div>
           ))}
         </div>
       )}
-      <label className="btn btn--primary">
-        {busy
-          ? progress
-            ? t.operator.photoUploadingN(progress.done, progress.total)
-            : t.operator.photoUploading
-          : t.operator.photoAdd}
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-          disabled={busy}
-          onChange={(e) => {
-            const files = Array.from(e.target.files ?? [])
-            if (files.length) addFiles(files)
-            e.target.value = ''
-          }}
-        />
-      </label>
+      {!ro && (
+        <label className="btn btn--primary">
+          {busy
+            ? progress
+              ? t.operator.photoUploadingN(progress.done, progress.total)
+              : t.operator.photoUploading
+            : t.operator.photoAdd}
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            disabled={busy}
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? [])
+              if (files.length) addFiles(files)
+              e.target.value = ''
+            }}
+          />
+        </label>
+      )}
     </section>
   )
 }

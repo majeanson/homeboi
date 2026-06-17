@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
+import { isGuest } from '../../lib/device'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { type MealSlot } from '../../lib/mealSlots'
 import { type Leftover, type MealRow, LEFTOVERS_KEY, MEALS_KEY } from './types'
@@ -27,6 +28,8 @@ export function Leftovers({
   const t = useT()
   const recordUndo = useRecordUndo()
   const write = useWrite()
+  // Read-only guest: no add / recent quick-pick / plan-onto-day; chips read inert.
+  const ro = isGuest()
   const [text, setText] = useState('')
   const [planFor, setPlanFor] = useState<string | null>(null)
   const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
@@ -118,6 +121,7 @@ export function Leftovers({
       </div>
       <p className="kitchen__ideas-hint mono">{t.kitchen.leftoversHint}</p>
 
+      {!ro && (
       <form
         className="kitchen__ideas-add"
         onSubmit={(e) => {
@@ -136,11 +140,12 @@ export function Leftovers({
           ＋
         </button>
       </form>
+      )}
 
       {/* Quick-pick from the last few days' meals — "we ate this, there's some left".
           Folded under a "Suggestions" disclosure so these candidates don't blur into
           the actual restants already pooled below. */}
-      {recentMeals.length > 0 && (
+      {!ro && recentMeals.length > 0 && (
         <div className="kitchen__leftovers-recent">
           <button
             type="button"
@@ -179,7 +184,7 @@ export function Leftovers({
           {leftovers.map((l) => (
             <li key={l.id} className="kitchen__idea">
               <div className="kitchen__idea-row">
-                {editId === l.id ? (
+                {editId === l.id && !ro ? (
                   <form
                     className="kitchen__idea-edit"
                     onSubmit={(e) => {
@@ -208,15 +213,22 @@ export function Leftovers({
                   </form>
                 ) : (
                   <>
-                    <button
-                      type="button"
-                      className="chip kitchen__idea-name"
-                      onClick={() => setPlanFor(planFor === l.id ? null : l.id)}
-                      aria-expanded={planFor === l.id}
-                    >
-                      <InlineIcon name="arrow-counter-clockwise-bold" size={14} color="var(--terracotta-deep)" />{' '}
-                      {l.title}
-                    </button>
+                    {ro ? (
+                      <span className="chip kitchen__idea-name" aria-disabled="true">
+                        <InlineIcon name="arrow-counter-clockwise-bold" size={14} color="var(--terracotta-deep)" />{' '}
+                        {l.title}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="chip kitchen__idea-name"
+                        onClick={() => setPlanFor(planFor === l.id ? null : l.id)}
+                        aria-expanded={planFor === l.id}
+                      >
+                        <InlineIcon name="arrow-counter-clockwise-bold" size={14} color="var(--terracotta-deep)" />{' '}
+                        {l.title}
+                      </button>
+                    )}
                     <RowActions
                       editLabel={t.common.edit}
                       deleteLabel={t.kitchen.removeLeftover}
@@ -229,7 +241,7 @@ export function Leftovers({
                   </>
                 )}
               </div>
-              {planFor === l.id && (
+              {!ro && planFor === l.id && (
                 <MealPlanPicker
                   slot={planSlot}
                   onSlot={setPlanSlot}

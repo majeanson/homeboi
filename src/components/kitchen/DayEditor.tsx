@@ -1,5 +1,6 @@
 import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
+import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
 import { SIDE_SLOTS, SLOT_ICON_NAME } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
@@ -105,6 +106,9 @@ export function DayEditor({
 }) {
   const t = useT()
   const mealPrefs = useMealPrefs()
+  // Read-only guest: every add/rename/reorder/remove control is hidden. MealRows
+  // already renders inert (no drag handle passed below) and the recipe-open survives.
+  const ro = isGuest()
 
   const { editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple } = plan
   const { recipePickFor, setRecipePickFor, pickWithStaples, setPickWithStaples, planRecipe } = picker
@@ -170,7 +174,7 @@ export function DayEditor({
               <p className="day-mng__sec-head mono">
                 <Icon name={SLOT_ICON_NAME[slot]} size={16} color={mealPrefs.color(slot)} /> {t.kitchen.slots[slot]}
               </p>
-              {!editing && (
+              {!editing && !ro && (
                 <button
                   type="button"
                   className="kitchen__slot-add mono"
@@ -193,11 +197,11 @@ export function DayEditor({
               onRename={renameMeal}
               onClearAll={() => clearSlotMeals(date, slot)}
               onLeftover={announceLeftover}
-              onDragStart={mealDnd.start}
+              onDragStart={ro ? undefined : mealDnd.start}
               draggingId={mealDnd.activeId}
               dragLabel={t.kitchen.dragMeal}
             />
-            {editing && (
+            {editing && !ro && (
               <EditField
                 value={slotText}
                 onChange={setSlotText}
@@ -264,7 +268,7 @@ export function DayEditor({
           <p className="day-mng__sec-head mono">
             <Icon name={SLOT_ICON_NAME.supper} size={16} color={mealPrefs.color('supper')} /> {t.kitchen.slots.supper}
           </p>
-          {!supperEditing && !supperStaples && (
+          {!supperEditing && !supperStaples && !ro && (
             <button
               type="button"
               className="kitchen__slot-add mono"
@@ -277,7 +281,7 @@ export function DayEditor({
             </button>
           )}
         </div>
-        {supperStaples && staplePrompt ? (
+        {supperStaples && staplePrompt && !ro ? (
           <div className="kitchen__staples">
             <p className="kitchen__staples-q mono">
               {staplePrompt.title} · {t.kitchen.staplesQ}
@@ -334,11 +338,11 @@ export function DayEditor({
               onRename={renameMeal}
               onClearAll={() => clearSlotMeals(date, 'supper')}
               onLeftover={announceLeftover}
-              onDragStart={mealDnd.start}
+              onDragStart={ro ? undefined : mealDnd.start}
               draggingId={mealDnd.activeId}
               dragLabel={t.kitchen.dragMeal}
             />
-            {supperEditing && (
+            {supperEditing && !ro && (
               <EditField
                 value={mealText}
                 onChange={setMealText}
@@ -414,7 +418,15 @@ export function DayEditor({
         <p className="day-mng__sec-head mono">
           <Icon name="pencil-simple-bold" size={16} color="var(--ink-soft)" /> {t.kitchen.note}
         </p>
-        {editNote === date ? (
+        {ro ? (
+          // Guest: the note reads as plain text (or nothing) — no edit/add affordance.
+          note ? (
+            <span className="kitchen__note-chip" aria-disabled="true">
+              <span aria-hidden="true"><Icon name="pencil-simple-bold" size={16} /></span>
+              <span className="kitchen__note-text">{note.text}</span>
+            </span>
+          ) : null
+        ) : editNote === date ? (
           <EditField
             value={noteText}
             onChange={setNoteText}
@@ -461,7 +473,7 @@ export function DayEditor({
       </section>
 
       {/* Wipe the whole day's meals at once — only when there's something. */}
-      {dayMealCount > 0 && (
+      {!ro && dayMealCount > 0 && (
         <button
           type="button"
           className="btn btn--ghost mono kitchen__clear-day"

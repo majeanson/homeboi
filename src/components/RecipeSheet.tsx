@@ -4,6 +4,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor } from '../lib/recipes'
+import { isGuest } from '../lib/device'
 import { wash, tintInk, edge } from '../lib/colors'
 import { formatDuration } from '../lib/duration'
 import { scaleIngredients } from '../lib/scale'
@@ -43,6 +44,9 @@ export function RecipeSheet({
   const t = useT()
   const confirm = useConfirm()
   const write = useWrite()
+  // Read-only guest: the recipe stays fully readable + cookable (reads), but the
+  // write actions — add-to-list, plan-a-supper, edit, delete — are hidden.
+  const ro = isGuest()
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onClose)
   const [added, setAdded] = useState(false)
@@ -437,7 +441,7 @@ export function RecipeSheet({
               <InlineIcon name="cooking-pot-bold" /> {t.recipes.cook}
             </button>
           )}
-          {recipe.ingredients.length > 0 && (
+          {!ro && recipe.ingredients.length > 0 && (
             <button
               type="button"
               className="btn btn--ghost mono"
@@ -448,20 +452,26 @@ export function RecipeSheet({
               {added ? t.recipes.addedToList : t.recipes.addToList}
             </button>
           )}
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={() => setPlanning((p) => !p)}
-            disabled={plannedDate != null}
-          >
-            {plannedDate != null ? t.recipes.planned : t.recipes.plan}
-          </button>
-          <button type="button" className="btn btn--ghost mono" onClick={onEdit}>
-            {t.recipes.editBtn}
-          </button>
-          <button type="button" className="btn btn--ghost mono recipe-del" onClick={del}>
-            {t.recipes.delete}
-          </button>
+          {!ro && (
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              onClick={() => setPlanning((p) => !p)}
+              disabled={plannedDate != null}
+            >
+              {plannedDate != null ? t.recipes.planned : t.recipes.plan}
+            </button>
+          )}
+          {!ro && (
+            <button type="button" className="btn btn--ghost mono" onClick={onEdit}>
+              {t.recipes.editBtn}
+            </button>
+          )}
+          {!ro && (
+            <button type="button" className="btn btn--ghost mono recipe-del" onClick={del}>
+              {t.recipes.delete}
+            </button>
+          )}
         </div>
       </div>
     </div>

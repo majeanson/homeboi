@@ -4,6 +4,7 @@ import { useLang, useT } from '../../i18n'
 import { useAudience } from '../../lib/audience'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
+import { isGuest } from '../../lib/device'
 import { getTheme, toggleTheme, type Theme, isDaypartAuto, setDaypartAuto, setDayPart } from '../../lib/theme'
 import { computeDayPart } from '../../lib/timeofday'
 import { InlineIcon } from '../Icon'
@@ -24,6 +25,9 @@ export function DisplaySection() {
   const { lang, setLang } = useLang()
   const { audience, setAudience, guestPreview, setGuestPreview } = useAudience()
   const { tutorial, setTutorial } = useHelp()
+  // Read-only guest: hide every device-preference control EXCEPT the audience
+  // switch, which is the operator's way back out of the Guest preview.
+  const ro = isGuest()
   const [theme, setThemeState] = useState<Theme>(() => getTheme())
   // Ambient day-part drift (feature #1) — calm furniture, default ON, opt-out here.
   const [ambient, setAmbientState] = useState<boolean>(() => isDaypartAuto())
@@ -39,35 +43,41 @@ export function DisplaySection() {
       <h2>{t.operator.display}</h2>
       <p className="lead">{t.operator.displayHint}</p>
       <div className="operator__display">
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.themeLabel}</span>
-          <button type="button" className="btn" onClick={() => setThemeState(toggleTheme())}>
-            <InlineIcon
-              name={theme === 'night' ? 'moon-stars-bold' : 'sun-bold'}
-              size={16}
-              color={theme === 'night' ? 'var(--berry-deep)' : 'var(--marigold-deep)'}
-            />{' '}
-            {theme === 'night' ? t.operator.themeNight : t.operator.themeDay}
-          </button>
-        </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.ambientLabel}</span>
-          <button
-            type="button"
-            className={`btn${ambient ? ' btn--primary' : ''}`}
-            onClick={toggleAmbient}
-            aria-pressed={ambient}
-          >
-            <InlineIcon name={ambient ? 'sun-horizon-bold' : 'sun-bold'} size={16} />{' '}
-            {ambient ? t.operator.ambientOn : t.operator.ambientOff}
-          </button>
-        </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.langLabel}</span>
-          <button type="button" className="btn" onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}>
-            {lang === 'fr' ? 'Français' : 'English'}
-          </button>
-        </div>
+        {!ro && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.themeLabel}</span>
+            <button type="button" className="btn" onClick={() => setThemeState(toggleTheme())}>
+              <InlineIcon
+                name={theme === 'night' ? 'moon-stars-bold' : 'sun-bold'}
+                size={16}
+                color={theme === 'night' ? 'var(--berry-deep)' : 'var(--marigold-deep)'}
+              />{' '}
+              {theme === 'night' ? t.operator.themeNight : t.operator.themeDay}
+            </button>
+          </div>
+        )}
+        {!ro && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.ambientLabel}</span>
+            <button
+              type="button"
+              className={`btn${ambient ? ' btn--primary' : ''}`}
+              onClick={toggleAmbient}
+              aria-pressed={ambient}
+            >
+              <InlineIcon name={ambient ? 'sun-horizon-bold' : 'sun-bold'} size={16} />{' '}
+              {ambient ? t.operator.ambientOn : t.operator.ambientOff}
+            </button>
+          </div>
+        )}
+        {!ro && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.langLabel}</span>
+            <button type="button" className="btn" onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}>
+              {lang === 'fr' ? 'Français' : 'English'}
+            </button>
+          </div>
+        )}
         <div className="operator__seg">
           <span className="operator__seg-label mono">{t.operator.viewLabel}</span>
           <div
@@ -108,29 +118,31 @@ export function DisplaySection() {
           </div>
           {guestPreview && <p className="operator__seg-hint mono">{t.audience.guestPreviewHint}</p>}
         </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.tutorialLabel}</span>
-          <div className="audience-switch mono" role="group" aria-label={t.operator.tutorialTitle}>
-            <button
-              type="button"
-              className={`audience-switch__opt${tutorial ? ' is-active' : ''}`}
-              onClick={() => setTutorial(true)}
-              aria-pressed={tutorial}
-            >
-              <InlineIcon name="graduation-cap-bold" /> {t.operator.tutorialOn}
-            </button>
-            <button
-              type="button"
-              className={`audience-switch__opt${!tutorial ? ' is-active' : ''}`}
-              onClick={() => setTutorial(false)}
-              aria-pressed={!tutorial}
-            >
-              <InlineIcon name="lightning-bold" /> {t.operator.tutorialOff}
-            </button>
+        {!ro && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.tutorialLabel}</span>
+            <div className="audience-switch mono" role="group" aria-label={t.operator.tutorialTitle}>
+              <button
+                type="button"
+                className={`audience-switch__opt${tutorial ? ' is-active' : ''}`}
+                onClick={() => setTutorial(true)}
+                aria-pressed={tutorial}
+              >
+                <InlineIcon name="graduation-cap-bold" /> {t.operator.tutorialOn}
+              </button>
+              <button
+                type="button"
+                className={`audience-switch__opt${!tutorial ? ' is-active' : ''}`}
+                onClick={() => setTutorial(false)}
+                aria-pressed={!tutorial}
+              >
+                <InlineIcon name="lightning-bold" /> {t.operator.tutorialOff}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
-      <p className="operator__hint mono">{t.operator.tutorialHint}</p>
+      {!ro && <p className="operator__hint mono">{t.operator.tutorialHint}</p>}
       {/* Dev-only: the live component catalogue. Searchable, collapsed — handy to
           keep open alongside while building. Settings is operator-only already. */}
       <p className="operator__hint mono">
@@ -162,13 +174,16 @@ export function VoiceSection() {
   }, [lang])
 
   const available = hasVoiceFor(lang) || voicesForLang.length > 0
+  // Read-only guest: voice prefs are write-ish device controls — hide the whole
+  // section (the test button + select + slider all mutate the saved pref).
+  const ro = isGuest()
 
   return (
     <section className="surface operator__section">
       <h2>{t.operator.voiceTitle}</h2>
       <p className="lead">{t.operator.voiceHint}</p>
 
-      {!available ? (
+      {ro ? null : !available ? (
         <p className="operator__hint mono">{t.operator.voiceNone}</p>
       ) : (
         <div className="operator__voice">
@@ -225,18 +240,26 @@ export function VoiceSection() {
 export function CalmSection() {
   const t = useT()
   const { calm, setCalm } = useCalm()
+  // Read-only guest: the calm toggle is a write — show the state as plain text only.
+  const ro = isGuest()
   return (
     <section className="surface operator__section">
       <h2>{t.operator.calmTitle}</h2>
       <p className="lead">{t.operator.calmHint}</p>
-      <button
-        type="button"
-        className={`btn${calm ? ' btn--primary' : ''}`}
-        onClick={() => setCalm(!calm)}
-        aria-pressed={calm}
-      >
-        {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}
-      </button>
+      {ro ? (
+        <p className="operator__hint mono">
+          {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}
+        </p>
+      ) : (
+        <button
+          type="button"
+          className={`btn${calm ? ' btn--primary' : ''}`}
+          onClick={() => setCalm(!calm)}
+          aria-pressed={calm}
+        >
+          {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}
+        </button>
+      )}
     </section>
   )
 }

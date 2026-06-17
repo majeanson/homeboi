@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { SLOT_TIME_ORDER, SLOT_COLOR, SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
 import { wash } from '../../lib/colors'
+import { isGuest } from '../../lib/device'
 import { ColorPicker } from '../ColorPicker'
 import { Icon } from '../Icon'
 import type { HouseholdSettings } from '../../lib/mealPrefs'
@@ -23,6 +24,9 @@ export function MealSlotsSection() {
   const [colors, setColors] = useState<Record<string, string>>({})
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
+  // Read-only guest: the slot rows read as a coloured legend — no recolor / reset /
+  // show-hide controls.
+  const ro = isGuest()
 
   useEffect(() => {
     api<HouseholdSettings>('household')
@@ -93,22 +97,30 @@ export function MealSlotsSection() {
                 </span>
                 {t.kitchen.slots[slot]}
               </span>
-              <div className="meal-slots__pick">
-                <ColorPicker value={resolved} onChange={(c) => pickColor(slot, c)} label={t.operator.mealColors} />
-                {overridden && (
-                  <button type="button" className="btn btn--ghost mono meal-slots__reset" onClick={() => resetColor(slot)}>
-                    {t.operator.mealColorReset}
-                  </button>
-                )}
-              </div>
-              <button
-                type="button"
-                className={'btn mono meal-slots__toggle' + (shown ? ' btn--primary' : ' btn--ghost')}
-                onClick={() => toggleVisible(slot)}
-                aria-pressed={shown}
-              >
-                {shown ? t.operator.mealVisible : t.operator.mealHidden}
-              </button>
+              {!ro && (
+                <div className="meal-slots__pick">
+                  <ColorPicker value={resolved} onChange={(c) => pickColor(slot, c)} label={t.operator.mealColors} />
+                  {overridden && (
+                    <button type="button" className="btn btn--ghost mono meal-slots__reset" onClick={() => resetColor(slot)}>
+                      {t.operator.mealColorReset}
+                    </button>
+                  )}
+                </div>
+              )}
+              {ro ? (
+                <span className="mono meal-slots__toggle">
+                  {shown ? t.operator.mealVisible : t.operator.mealHidden}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className={'btn mono meal-slots__toggle' + (shown ? ' btn--primary' : ' btn--ghost')}
+                  onClick={() => toggleVisible(slot)}
+                  aria-pressed={shown}
+                >
+                  {shown ? t.operator.mealVisible : t.operator.mealHidden}
+                </button>
+              )}
             </li>
           )
         })}

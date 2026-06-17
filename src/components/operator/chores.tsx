@@ -5,6 +5,7 @@ import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { useRecordUndo } from '../../lib/toast'
+import { isGuest } from '../../lib/device'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routineTod'
 import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
@@ -38,10 +39,12 @@ export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange:
         ))}
       </ul>
       {/* Creating a chore is the same ＋ as everywhere; Réglages edits/removes the
-          ones that exist (the rows above). */}
-      <button type="button" className="btn btn--primary operator__add" onClick={() => open('chore', ['chore'])}>
-        <InlineIcon name="plus-bold" /> {t.operator.addChore}
-      </button>
+          ones that exist (the rows above). Hidden for a read-only guest. */}
+      {!isGuest() && (
+        <button type="button" className="btn btn--primary operator__add" onClick={() => open('chore', ['chore'])}>
+          <InlineIcon name="plus-bold" /> {t.operator.addChore}
+        </button>
+      )}
     </section>
   )
 }
@@ -98,6 +101,8 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
   const undoableRemove = useUndoableRemove()
   const recordUndo = useRecordUndo()
   const write = useWrite()
+  // Read-only guest: hide the ToD cycle chip (a write) + the add-routine button.
+  const ro = isGuest()
   const [editing, setEditing] = useState<string | null>(null)
   function remove(r: Routine) {
     if (editing === r.id) setEditing(null)
@@ -167,23 +172,37 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
                 {r.memberName ? ` · ${r.memberName}` : ''}
               </span>
               {/* The moment-of-day cue stays a one-tap chip (a quick content
-                  toggle, not a CRUD affordance); ✏️/🗑️ edit and remove. */}
-              <button
-                type="button"
-                className="chip mono"
-                onClick={() => cycleTod(r)}
-                title={t.routines.todLabel}
-                aria-label={`${t.routines.todLabel} ${isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : t.routines.tod.any}`}
-              >
-                {isRoutineTod(r.timeOfDay) ? (
-                  <>
-                    <InlineIcon name={TOD_ICON[r.timeOfDay]} color={TOD_TINT[r.timeOfDay]} />{' '}
-                    {t.routines.tod[r.timeOfDay]}
-                  </>
-                ) : (
-                  t.routines.tod.any
-                )}
-              </button>
+                  toggle, not a CRUD affordance); ✏️/🗑️ edit and remove. For a guest
+                  it reads as an inert badge (the cue is shown, but can't be cycled). */}
+              {ro ? (
+                <span className="chip mono" title={t.routines.todLabel}>
+                  {isRoutineTod(r.timeOfDay) ? (
+                    <>
+                      <InlineIcon name={TOD_ICON[r.timeOfDay]} color={TOD_TINT[r.timeOfDay]} />{' '}
+                      {t.routines.tod[r.timeOfDay]}
+                    </>
+                  ) : (
+                    t.routines.tod.any
+                  )}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="chip mono"
+                  onClick={() => cycleTod(r)}
+                  title={t.routines.todLabel}
+                  aria-label={`${t.routines.todLabel} ${isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : t.routines.tod.any}`}
+                >
+                  {isRoutineTod(r.timeOfDay) ? (
+                    <>
+                      <InlineIcon name={TOD_ICON[r.timeOfDay]} color={TOD_TINT[r.timeOfDay]} />{' '}
+                      {t.routines.tod[r.timeOfDay]}
+                    </>
+                  ) : (
+                    t.routines.tod.any
+                  )}
+                </button>
+              )}
               <RowActions
                 onEdit={() => setEditing(r.id)}
                 onDelete={() => remove(r)}
@@ -195,10 +214,12 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
         )}
       </ul>
       {/* Building a routine is the same ＋ as everywhere; Réglages edits/removes
-          the ones that exist (the rows above). */}
-      <button type="button" className="btn btn--primary operator__add" onClick={() => open('routine', ['routine'])}>
-        <InlineIcon name="plus-bold" /> {t.operator.addRoutine}
-      </button>
+          the ones that exist (the rows above). Hidden for a read-only guest. */}
+      {!ro && (
+        <button type="button" className="btn btn--primary operator__add" onClick={() => open('routine', ['routine'])}>
+          <InlineIcon name="plus-bold" /> {t.operator.addRoutine}
+        </button>
+      )}
     </section>
   )
 }

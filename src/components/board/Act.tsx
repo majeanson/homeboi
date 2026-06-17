@@ -1,5 +1,6 @@
 import { CATS, type CatKey } from '../../lib/cats'
 import { tintInk } from '../../lib/colors'
+import { isGuest } from '../../lib/device'
 import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
 
@@ -58,6 +59,9 @@ export function Act({
   soon?: boolean // calm "Bientôt" reminder window is open now → a quiet clock chip (migration 0038)
 }) {
   const t = useT()
+  // Read-only guest: a check fires a write (mark done) — drop it so the row reads as
+  // a static informational card. A nav row (onActivate) is a read and stays tappable.
+  if (isGuest()) onCheck = undefined
   const c = CATS[cat]
   const spine = color ?? c.color
   const tileBg = color ? color + '22' : c.wash

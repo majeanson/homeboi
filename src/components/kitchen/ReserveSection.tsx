@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
+import { isGuest } from '../../lib/device'
 import { wash } from '../../lib/colors'
 import { useReserveLocations } from '../../lib/reservePrefs'
 import { CheckRow } from '../CheckRow'
@@ -20,6 +21,9 @@ export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
   const undo = useUndoToast()
   const write = useWrite()
   const { locations, name: locName } = useReserveLocations()
+  // Read-only guest: hide the add form (custom, not EditField). CheckRow inside the
+  // rows already hides its own clear/edit for a guest.
+  const ro = isGuest()
   const [newItem, setNewItem] = useState('')
   const [newLoc, setNewLoc] = useState<string>('')
   // The picked location, guarded against a stale choice — if the household removed
@@ -85,6 +89,7 @@ export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
     <section>
       <h2>{t.kitchen.reserve}</h2>
       <p className="lead">{t.kitchen.reserveHint}</p>
+      {!ro && (
       <form className="kitchen__reserve-add" onSubmit={addItem}>
         <input
           className="input"
@@ -110,6 +115,7 @@ export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
           {t.capture.add}
         </button>
       </form>
+      )}
       {reserve.length === 0 ? (
         <p className="board__empty mono">{t.kitchen.reserveEmpty}</p>
       ) : (

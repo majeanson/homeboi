@@ -1,6 +1,7 @@
 import { useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
+import { isGuest } from '../../lib/device'
 import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { type MealRow } from './types'
@@ -44,6 +45,10 @@ export function MealRows({
   dragLabel?: string
 }) {
   const t = useT()
+  // Read-only guest: render rows as calm inert text — no rename/reorder/remove/
+  // drag/leftover, only the recipe-open (a read) survives. (Server 403s + writeWith
+  // refuses too; this is the VISUAL half of the guarantee.)
+  const ro = isGuest()
   // Inline rename: which row is being edited, and its draft title.
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -61,7 +66,7 @@ export function MealRows({
             key={m.id}
             className={'kitchen__meal-row' + (draggingId === m.id ? ' is-dragging' : '')}
           >
-            {editId === m.id ? (
+            {editId === m.id && !ro ? (
               <EditField
                 value={editText}
                 onChange={setEditText}
@@ -73,7 +78,7 @@ export function MealRows({
               />
             ) : (
               <>
-                {onDragStart && (
+                {onDragStart && !ro && (
                   <span
                     className="dnd-grip mono"
                     data-dnd-grip=""
@@ -86,7 +91,24 @@ export function MealRows({
                   </span>
                 )}
                 {/* The whole title body IS the edit affordance — tap it to rename in
-                    place (no separate ✏️). The control cluster stays its own taps. */}
+                    place (no separate ✏️). The control cluster stays its own taps.
+                    For a guest the body is INERT text (no rename), matching the calm
+                    read-only treatment elsewhere. */}
+                {ro ? (
+                  <span className="kitchen__meal-main">
+                    <span className="kitchen__meal-headline">
+                      <span className="kitchen__meal-title">{m.title}</span>
+                      {m.suggested_by != null && (
+                        <span className="kitchen__day-sugg mono">💡 {memberName(m.suggested_by) || t.kitchen.suggested}</span>
+                      )}
+                    </span>
+                    {m.is_leftover ? (
+                      <span className="kitchen__meal-tag mono">
+                        <InlineIcon name="arrow-counter-clockwise-bold" size={12} /> {t.kitchen.leftoversTag}
+                      </span>
+                    ) : null}
+                  </span>
+                ) : (
                 <button
                   type="button"
                   className="kitchen__meal-main"
@@ -112,6 +134,7 @@ export function MealRows({
                     </span>
                   ) : null}
                 </button>
+                )}
                 <span className="kitchen__meal-ctl">
                   {r && (
                     <button
@@ -125,7 +148,7 @@ export function MealRows({
                     </button>
                   )}
                   {/* Reorder only makes sense once there's another meal to swap with. */}
-                  {meals.length > 1 && (
+                  {!ro && meals.length > 1 && (
                     <>
                       <button
                         type="button"
@@ -151,7 +174,7 @@ export function MealRows({
                   )}
                   {/* "Il en reste ?" — announce leftovers from this cooked meal. Not
                       offered on a row that is itself already a leftover. */}
-                  {onLeftover && !m.is_leftover && (
+                  {!ro && onLeftover && !m.is_leftover && (
                     <button
                       type="button"
                       className="kitchen__meal-btn"
@@ -162,6 +185,7 @@ export function MealRows({
                       <Icon name="arrow-counter-clockwise-bold" size={15} />
                     </button>
                   )}
+                  {!ro && (
                   <button
                     type="button"
                     className="kitchen__meal-btn kitchen__meal-remove"
@@ -171,13 +195,14 @@ export function MealRows({
                   >
                     <Icon name="trash-bold" size={15} />
                   </button>
+                  )}
                 </span>
               </>
             )}
           </li>
         )
       })}
-      {onClearAll && meals.length > 1 && (
+      {!ro && onClearAll && meals.length > 1 && (
         <li className="kitchen__meal-clearall">
           <button type="button" className="btn btn--ghost mono" onClick={onClearAll}>
             <InlineIcon name="trash-bold" /> {t.kitchen.clearSlot}

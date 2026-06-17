@@ -4,6 +4,7 @@ import { RecipeForm } from '../components/RecipeForm'
 import { Loading } from '../components/Fallback'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
+import { isGuest } from '../lib/device'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { useSceneClose } from '../lib/sceneNav'
 
@@ -20,6 +21,10 @@ export function RecipeFormPage() {
     enabled: !!id,
     ...live,
   })
+
+  // Read-only guest: the builder is a pure create/edit form — bounce out (also
+  // guards a deep link). Placed after the hooks so the hook order is stable.
+  if (isGuest()) return <Navigate to={id ? `/kitchen/recipe/${id}` : '/kitchen'} replace />
 
   if (id) {
     const recipe = recipesQ.data?.recipes.find((r) => r.id === id)

@@ -3,6 +3,7 @@ import { useNavigate, useParams, Navigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
+import { isGuest } from '../lib/device'
 import { useLang, useT } from '../i18n'
 import { live } from '../lib/query'
 import { useProfile } from '../lib/profile'
@@ -342,6 +343,10 @@ export function DayPlanPage() {
   if (!Number.isFinite(date)) return <Navigate to="/kitchen" replace />
   if (isUnauthorized(meals.error)) return <PairPrompt />
 
+  // Read-only guest: DayEditor already gates its own controls; here the day-agenda
+  // section's row-taps open edit forms and the ＋ buttons add — hide all of that, so
+  // the events/chores read as plain Act cards.
+  const ro = isGuest()
   const suppers = mealsFor(date, 'supper')
   const title = capitalize(formatDayLong(date, lang))
 
@@ -392,24 +397,25 @@ export function DayPlanPage() {
                 title={e.title}
                 when={e.all_day ? t.board.allDay : formatTime(e.at, lang)}
                 who={memberName(e.member_id) || undefined}
-                onActivate={() => openEventEdit(e.id)}
+                onActivate={ro ? undefined : () => openEventEdit(e.id)}
               />
             ))
           )}
-          {eventForm ? (
-            <EventForm
-              key={eventForm.value?.id ?? 'new-event'}
-              members={formMembers}
-              value={eventForm.value}
-              initialDate={eventForm.value ? undefined : date}
-              onSaved={afterEventSave}
-              onCancel={() => setEventForm(null)}
-            />
-          ) : (
-            <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setEventForm({})}>
-              <Icon name="plus-bold" size={16} /> {t.operator.addEvent}
-            </button>
-          )}
+          {!ro &&
+            (eventForm ? (
+              <EventForm
+                key={eventForm.value?.id ?? 'new-event'}
+                members={formMembers}
+                value={eventForm.value}
+                initialDate={eventForm.value ? undefined : date}
+                onSaved={afterEventSave}
+                onCancel={() => setEventForm(null)}
+              />
+            ) : (
+              <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setEventForm({})}>
+                <Icon name="plus-bold" size={16} /> {t.operator.addEvent}
+              </button>
+            ))}
 
           <div className="sec-label">
             <b>{t.board.chores}</b>
@@ -425,24 +431,25 @@ export function DayPlanPage() {
                 title={c.title}
                 who={c.who || undefined}
                 color={c.color || undefined}
-                onActivate={() => openChoreEdit(c.id)}
+                onActivate={ro ? undefined : () => openChoreEdit(c.id)}
               />
             ))
           )}
-          {choreForm ? (
-            <ChoreForm
-              key={choreForm.value?.id ?? 'new-chore'}
-              members={formMembers}
-              value={choreForm.value}
-              initialStart={choreForm.value ? undefined : date}
-              onSaved={afterChoreSave}
-              onCancel={() => setChoreForm(null)}
-            />
-          ) : (
-            <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setChoreForm({})}>
-              <Icon name="plus-bold" size={16} /> {t.operator.addChore}
-            </button>
-          )}
+          {!ro &&
+            (choreForm ? (
+              <ChoreForm
+                key={choreForm.value?.id ?? 'new-chore'}
+                members={formMembers}
+                value={choreForm.value}
+                initialStart={choreForm.value ? undefined : date}
+                onSaved={afterChoreSave}
+                onCancel={() => setChoreForm(null)}
+              />
+            ) : (
+              <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setChoreForm({})}>
+                <Icon name="plus-bold" size={16} /> {t.operator.addChore}
+              </button>
+            ))}
         </section>
       </div>
     </div>

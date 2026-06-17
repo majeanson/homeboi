@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Navigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { isGuest } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { type IconName } from './Icon'
 import { SceneHead } from './SceneHead'
@@ -49,6 +50,9 @@ export function FormScene({
   // Wait for the auth check before bouncing — a transient loading=false flash
   // would otherwise redirect a signed-in operator on a cold deep-link.
   if (!loading && !signedIn) return <Navigate to={fallback} replace />
+  // Read-only guest (incl. the operator's settings preview, which IS signed in so
+  // the check above won't catch it): these are pure create forms — bounce out.
+  if (isGuest()) return <Navigate to={fallback} replace />
 
   const members = data?.members ?? []
   return (
