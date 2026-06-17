@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { api, ApiError } from '../lib/api'
+import { useWrite } from '../lib/write'
 import { useAuth } from '../lib/auth'
+import { todayLocalDay, addLocalDays } from '../lib/localDay'
+import { useReserveLocations } from '../lib/reservePrefs'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { VoiceButton } from './VoiceButton'
 import { formatWeekday } from '../lib/format'
@@ -18,7 +21,7 @@ import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
 import { type Deal } from '../lib/deals'
-import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, type MealsData } from './kitchen/types'
+import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
 import { useModal } from '../lib/useModal'
 import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
@@ -47,19 +50,25 @@ const TYPE_DRESS: { type: CaptureType; cat: CatKey; icon: IconName }[] = [
   { type: 'task', cat: 'chore', icon: 'hand-heart-bold' },
   { type: 'list-item', cat: 'list', icon: 'sparkle-bold' },
   { type: 'pantry-low', cat: 'pantry', icon: 'carrot-bold' },
-  { type: 'note', cat: 'routine', icon: 'pencil-simple-bold' },
+  { type: 'note', cat: 'routine', icon: CATS.routine.icon },
 ]
 
 const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   capture: { cat: 'list', icon: 'sparkle-bold' },
   event: { cat: 'event', icon: 'calendar-blank-bold' },
   chore: { cat: 'chore', icon: 'hand-heart-bold' },
-  routine: { cat: 'routine', icon: 'pencil-simple-bold' },
+  routine: { cat: 'routine', icon: CATS.routine.icon },
+  // The day-planner shortcuts borrow the marigold "today/tomorrow" sun glyphs the
+  // board heroes use, so the ＋ reads the same as the day it plans.
+  'plan-today': { cat: 'event', icon: 'sun-bold' },
+  'plan-tomorrow': { cat: 'event', icon: 'sun-horizon-bold' },
   cook: { cat: 'meal', icon: 'cooking-pot-bold' },
   recipe: { cat: 'meal', icon: 'book-open-bold' },
   meal: { cat: 'list', icon: 'calendar-blank-bold' },
   leftovers: { cat: 'meal', icon: 'arrow-counter-clockwise-bold' },
   pantry: { cat: 'chore', icon: 'carrot-bold' },
+  // La réserve = the freezer / back-of-pantry stash, so it reads as cold storage.
+  reserve: { cat: 'pantry', icon: 'cloud-snow-bold' },
   'list-item': { cat: 'event', icon: 'sparkle-bold' },
   'quick-add': { cat: 'list', icon: 'lightning-bold' },
   flyer: { cat: 'meal', icon: 'magnifying-glass-bold' },
@@ -83,7 +92,8 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
 // `auto-pick` runs an action in place (stage best deals → cashier) — both
 // resolved at click time, plus the static nav targets above. The kitchen should
 // open on its meal planner, not on the cook picker, so cook stays out of defMode.
-const isNonDefault = (m: AddSheetMode) => m === 'cook' || m === 'auto-pick' || m in NAV_TARGET
+const isNonDefault = (m: AddSheetMode) =>
+  m === 'cook' || m === 'auto-pick' || m === 'plan-today' || m === 'plan-tomorrow' || m in NAV_TARGET
 
 export function AddSheet({
   open,
@@ -100,6 +110,7 @@ export function AddSheet({
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
+  const write = useWrite()
   const nav = useNavigate()
   const { signedIn } = useAuth()
   // The kitchen week's three actions (shop the week / AI ideas / ideas from the
@@ -140,6 +151,19 @@ export function AddSheet({
   // sheet adds one then closes; the page's PantryTab is where you rattle off many).
   const [pantryText, setPantryText] = useState('')
   const pantryVoice = useVoiceInput(setPantryText)
+
+  // — réserve (kitchen) — add to the freezer / back-of-pantry stash, grouped by a
+  // storage location. Mirrors the in-page ReserveSection add (same locations + write),
+  // so the ＋ files an item exactly where the Garde-manger tab would.
+  const [reserveText, setReserveText] = useState('')
+  const reserveVoice = useVoiceInput(setReserveText)
+  const [reserveLoc, setReserveLoc] = useState('')
+  const reservePrefs = useReserveLocations()
+  // Guard against a stale pick (household removed this location) — fall back to the
+  // first configured one rather than silently filing under "Autres".
+  const reserveSelLoc = reservePrefs.locations.some((l) => l.id === reserveLoc)
+    ? reserveLoc
+    : reservePrefs.locations[0]?.id ?? ''
 
   // — leftovers (kitchen) — announce a cooked dish has extra; lands in the Restants
   // pool ("à finir bientôt"). Quick-pick one of today's planned meals or type one;
@@ -289,6 +313,28 @@ export function AddSheet({
     }
   }
 
+  // Add to La réserve (kitchen ＋) — same offline-aware write as ReserveSection,
+  // filing the item under the picked storage location (null ⇒ "Autres").
+  async function submitReserve(e?: React.FormEvent) {
+    e?.preventDefault()
+    const value = reserveText.trim()
+    if (!value || busy) return
+    setBusy(true)
+    try {
+      await write('reserve', {
+        method: 'POST',
+        body: { item: value, location_id: reserveSelLoc || null },
+        affectedKeys: [RESERVE_KEY],
+      })
+      setReserveText('')
+      close()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+    } finally {
+      setBusy(false)
+    }
+  }
+
   // Announce leftovers into the Restants pool (kitchen ＋). Quick-pick chips pass a
   // title (+ recipe/source); the typed form passes its own text. Planning onto a
   // day is done later from the kitchen's Restants strip.
@@ -321,12 +367,15 @@ export function AddSheet({
       capture: t.capture.quick,
       event: t.capture.types.event,
       chore: t.operator.chores,
+      'plan-today': t.board.planToday,
+      'plan-tomorrow': t.board.planTomorrow,
       cook: t.kitchen.cook,
       routine: t.nav.routines,
       recipe: t.recipes.add,
       meal: t.kitchen.planMeal,
       leftovers: t.kitchen.leftovers,
       pantry: t.kitchen.lowAdd,
+      reserve: t.kitchen.reserve,
       'list-item': t.list.addTitle,
       'quick-add': t.list.quickAdd,
       flyer: t.shop.browse,
@@ -378,6 +427,15 @@ export function AddSheet({
                 onClick={() => {
                   if (m === 'auto-pick') {
                     autoPick()
+                    return
+                  }
+                  // The day-planner shortcuts resolve their date at click time
+                  // (today / tomorrow), then jump to that day's full planner.
+                  if (m === 'plan-today' || m === 'plan-tomorrow') {
+                    const base = todayLocalDay()
+                    const d = m === 'plan-today' ? base : addLocalDays(base, 1)
+                    close()
+                    nav(`/kitchen/day/${d}`)
                     return
                   }
                   const target = NAV_TARGET[m]
@@ -549,6 +607,40 @@ export function AddSheet({
               <VoiceButton voice={pantryVoice} label={t.capture.voice} />
             </div>
             <button type="submit" className="btn btn--primary" disabled={!pantryText.trim() || busy}>
+              <Icon name="plus-bold" size={20} />
+              {t.capture.add}
+            </button>
+          </form>
+        )}
+
+        {mode === 'reserve' && (
+          <form onSubmit={submitReserve}>
+            <div className="sheet__field">
+              <Icon name="cloud-snow-bold" size={20} color="var(--ink-faint)" />
+              <input
+                value={reserveText}
+                onChange={(e) => setReserveText(e.target.value)}
+                placeholder={reserveVoice.listening ? t.capture.listening : t.kitchen.reserveAdd}
+                aria-label={t.kitchen.reserveAdd}
+              />
+              <VoiceButton voice={reserveVoice} label={t.capture.voice} />
+            </div>
+            {/* Where it's stashed — the same custom locations the Garde-manger tab uses. */}
+            {reservePrefs.locations.length > 0 && (
+              <select
+                className="input"
+                value={reserveSelLoc}
+                onChange={(e) => setReserveLoc(e.target.value)}
+                aria-label={t.kitchen.reserveWhere}
+              >
+                {reservePrefs.locations.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <button type="submit" className="btn btn--primary" disabled={!reserveText.trim() || busy}>
               <Icon name="plus-bold" size={20} />
               {t.capture.add}
             </button>

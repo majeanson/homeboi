@@ -401,17 +401,32 @@ test.describe('add sheet', () => {
     await expect(page.locator('.scene input[type="date"]')).toBeVisible()
   })
 
-  test('the kitchen ＋ offers cuisiner / recette / repas / restants / garde-manger — no quick note', async ({ page }) => {
+  test('the board ＋ plan-today tile opens the day planner', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    await page.locator('.add-fab').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await expect(page.locator('.sheet__field input')).toBeVisible()
+    // The board chooser appends two day-planner shortcuts after capture/event/
+    // chore/routine; "Planifier aujourd'hui" navigates to that day's planner scene.
+    await Promise.all([
+      page.waitForURL(/\/kitchen\/day\/\d+/),
+      page.locator('.cat-pick', { hasText: 'Planifier aujourd’hui' }).click(),
+    ])
+  })
+
+  test('the kitchen ＋ offers cuisiner / recette / repas / restants / garde-manger / réserve — no quick note', async ({ page }) => {
     await APP('/kitchen')(page)
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    // The section chooser (direct child of .sheet) now has FIVE tiles:
+    // The section chooser (direct child of .sheet) now has SIX tiles:
     // Cuisiner, Ajouter une recette, Planifier un repas, Restants, Ajouter un
-    // aliment. (The kitchen-week actions below sit in a separate .sheet__group.)
+    // aliment, La réserve. (The kitchen-week actions below sit in a separate
+    // .sheet__group.)
     const sectionTiles = page.locator('.sheet > .cat-grid > .cat-pick')
-    await expect(sectionTiles).toHaveCount(5)
-    await expect(sectionTiles, 'no quick-capture in the kitchen sheet').toHaveCount(5)
+    await expect(sectionTiles).toHaveCount(6)
+    await expect(sectionTiles, 'no quick-capture in the kitchen sheet').toHaveCount(6)
     await expect(page.locator('.cat-pick', { hasText: 'Note rapide' })).toHaveCount(0)
     // "Planifier un repas" is pre-selected (cook + recipe are non-default tiles):
     // it's a DAY PICKER now (chips that navigate to the day's editor scene
@@ -423,6 +438,18 @@ test.describe('add sheet', () => {
       page.waitForURL(/\/kitchen\/day\/\d+/),
       days.first().click(),
     ])
+  })
+
+  test('the kitchen ＋ réserve tile posts to reserve', async ({ page }) => {
+    await APP('/kitchen')(page)
+    await settle(page, '.hub')
+    await page.locator('.add-fab').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await page.locator('.cat-pick', { hasText: 'La réserve' }).click()
+    await page.locator('.sheet__field input').fill('Sac de petits pois')
+    await expectApi(page, 'POST', 'reserve', () =>
+      page.locator('.sheet form button[type="submit"]').click(),
+    )
   })
 
   test('the liste ＋ offers add-line / quick-add / flyer / best-prices, defaulting to the add form', async ({ page }) => {

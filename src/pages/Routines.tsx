@@ -10,6 +10,7 @@ import { Icon, InlineIcon } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
 import { SectionIntro } from '../components/SectionIntro'
 import { imgUrl } from '../lib/image'
+import { CATS } from '../lib/cats'
 import { dayOrder, isRoutineTod, TOD_ICON, TOD_TINT } from '../lib/routineTod'
 import { KidView } from './KidView'
 
@@ -60,8 +61,8 @@ function RoutinesParent() {
             <HelpDot card="routines" />
           </div>
         </div>
-        <div className="avatar" style={{ background: 'var(--berry-wash)' }}>
-          <Icon name="paint-brush-bold" size={26} color="var(--berry-deep, #95527A)" />
+        <div className="avatar" style={{ background: CATS.routine.wash }}>
+          <Icon name={CATS.routine.icon} size={26} color={CATS.routine.deep} />
         </div>
       </div>
 

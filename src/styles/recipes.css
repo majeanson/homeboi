@@ -53,6 +53,11 @@
   color: var(--ink-faint);
   padding: 0 0.7rem 0.7rem;
 }
+/* When the time badge follows, the bottom inset belongs to it — drop the sub's
+   so the two lines don't sit a full padding+gap apart. */
+.recipe-card__sub:has(+ .recipe-card__time) {
+  padding-bottom: 0;
+}
 
 /* A recipe (view + edit) is now a full-screen ROUTE, not a centered modal — so
    it owns the whole viewport: no scrim, a card that fills the screen (capped to a
@@ -863,8 +868,12 @@
   color: var(--ink-soft);
   font-size: 0.9rem;
 }
-/* Card: quiet total-time badge under the title. */
+/* Card: quiet total-time badge under the title. Matches the title/sub inset and
+   carries its own bottom padding so the ⏱ glyph — the card's last child — isn't
+   clipped against the card's overflow:hidden edge. */
 .recipe-card__time {
   font-size: 0.8rem;
+  line-height: 1.4;
   color: var(--ink-faint);
+  padding: 0 0.7rem 0.7rem;
 }

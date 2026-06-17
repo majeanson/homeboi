@@ -77,7 +77,7 @@ export function DisplaySection() {
               onClick={() => setTutorial(true)}
               aria-pressed={tutorial}
             >
-              {t.operator.tutorialOn}
+              <InlineIcon name="graduation-cap-bold" /> {t.operator.tutorialOn}
             </button>
             <button
               type="button"
@@ -85,7 +85,7 @@ export function DisplaySection() {
               onClick={() => setTutorial(false)}
               aria-pressed={!tutorial}
             >
-              {t.operator.tutorialOff}
+              <InlineIcon name="lightning-bold" /> {t.operator.tutorialOff}
             </button>
           </div>
         </div>
@@ -170,7 +170,7 @@ export function VoiceSection() {
           </label>
 
           <button type="button" className="btn" onClick={() => speak(t.operator.voiceSample)}>
-            {t.operator.voiceTest}
+            <InlineIcon name="speaker-high-bold" /> {t.operator.voiceTest}
           </button>
         </div>
       )}

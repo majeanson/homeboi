@@ -50,6 +50,27 @@ export function HubLayout() {
   const qc = useQueryClient()
   const { signedIn } = useAuth()
   const [addOpen, setAddOpen] = useState(false)
+  // Kiosk-only: collapse the left section rail to reclaim its width for the body
+  // (a parent who wants the whole wall for the agenda/list). Persisted so the
+  // choice survives a reboot; mobile keeps its bottom bar and ignores this.
+  const [navCollapsed, setNavCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('bb_kiosk_nav_collapsed') === '1'
+    } catch {
+      return false
+    }
+  })
+  const toggleNav = useCallback(() => {
+    setNavCollapsed((c) => {
+      const next = !c
+      try {
+        localStorage.setItem('bb_kiosk_nav_collapsed', next ? '1' : '0')
+      } catch {
+        /* private mode — the toggle still works for this session */
+      }
+      return next
+    })
+  }, [])
   // null = "this section's default" — the ＋ is contextual now (recipes in the
   // kitchen, list items on Liste); only an explicit open('routine')-style call
   // pins a mode.
@@ -198,6 +219,12 @@ export function HubLayout() {
   // holds for an unlocked preview — the kid view is a one-way door, so Réglages
   // only ever returns by relaunching back into the parent view (?kid=0).
   const tabs = locked || toddler ? TABS.filter((tab) => tab.to !== '/settings') : TABS
+  // The collapse only applies on the kiosk left rail; mobile's bottom bar stays.
+  // Never in the toddler lens — a pre-reader mustn't be able to hide their own
+  // navigation (or the KidExitGate that lives in the rail), so the section column
+  // is non-collapsible there even if a parent left it collapsed before flipping.
+  const canCollapse = surface === 'kiosk' && !toddler
+  const railCollapsed = canCollapse && navCollapsed
 
   return (
     <AddSheetContext.Provider
@@ -217,8 +244,20 @@ export function HubLayout() {
       }}
     >
     <KitchenActionsContext.Provider value={kitchenCtx}>
-    <div className="page hub" data-audience={audience} data-surface={surface}>
+    <div className="page hub" data-audience={audience} data-surface={surface} data-nav-collapsed={railCollapsed || undefined} data-fab={showAdd || undefined}>
+      {/* Reclaim the rail's width: a parent can tuck the section column away on a
+          kiosk so the agenda/list gets the whole wall. A small caret re-opens it. */}
+      {railCollapsed && (
+        <button type="button" className="hubnav-reopen" onClick={toggleNav} aria-label={t.nav.showMenu}>
+          <Icon name="caret-right-bold" size={20} />
+        </button>
+      )}
       <nav className="hubnav" aria-label="sections" data-tour="hubnav">
+        {canCollapse && (
+          <button type="button" className="hubnav__collapse" onClick={toggleNav} aria-label={t.nav.hideMenu} title={t.nav.hideMenu}>
+            <Icon name="caret-left-bold" size={18} />
+          </button>
+        )}
         {tabs.map((tab) => (
           <NavLink
             key={tab.to}

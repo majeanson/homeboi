@@ -383,6 +383,15 @@
   margin-top: 0;
   flex: 0 0 auto;
 }
+/* In the phone bottom bar the gated exit shares the row with the section tabs.
+   Its label ("Sortir du mode enfant") is long and, sized as a full nav button,
+   it stole enough width that the tab labels next to it ellipsized ("Aujourd…",
+   "La cuis…"). Drop the text here and lean on the 🚪 — a pre-reader reads icons
+   anyway, the gesture is an adult one, and the accessible name stays on the
+   button's aria-label. The kiosk rail keeps the full label. */
+.hub[data-surface='mobile'] .kid-exit-switch__label {
+  display: none;
+}
 /* The fill bar grows left→right over HOLD_MS so the hold has feedback. The
    duration mirrors HOLD_MS (3s) in KidExitGate. */
 .kid-exit-switch__fill {

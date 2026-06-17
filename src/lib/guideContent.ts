@@ -629,6 +629,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Des raccourcis selon la section', en: 'Shortcuts per section' },
+        detail: {
+          fr: 'Sur le babillard, le ＋ offre aussi « Planifier aujourd’hui » et « Planifier demain » (toute la journée d’un coup : repas, rendez-vous, corvées, note). Dans la cuisine, il ajoute aussi à La réserve.',
+          en: 'On the board, the ＋ also offers “Plan today” and “Plan tomorrow” (a whole day at once: meals, events, chores, note). In the kitchen, it can also add to The stash.',
+        },
+        why: {
+          fr: 'Les gestes les plus utiles de chaque section sont à un seul toucher, sans changer de page.',
+          en: 'Each section’s most-wanted actions are one tap away, no page-hopping.',
+        },
+      },
+      {
         label: { fr: 'Parler plutôt qu’écrire', en: 'Speak instead of type' },
         detail: {
           fr: 'La reconnaissance vocale se fait sur l’appareil. « souper spaghetti jeudi » devient un repas, le bon jour.',

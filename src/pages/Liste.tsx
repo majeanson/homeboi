@@ -9,6 +9,7 @@ import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
+import { useSurface } from '../lib/surface'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
@@ -157,6 +158,7 @@ function ListItemRow({
 export function Liste() {
   const t = useT()
   const { audience } = useAudience()
+  const { surface } = useSurface()
   const nav = useNavigate()
   const undo = useUndoToast()
   const recordUndo = useRecordUndo()
@@ -355,7 +357,13 @@ export function Liste() {
         submitVariant="primary"
         busy={adding}
         voice={voice}
-        placeholder={voice.listening ? t.capture.listening : t.list.addPlaceholder}
+        placeholder={
+          voice.listening
+            ? t.capture.listening
+            : surface === 'mobile'
+              ? t.list.addPlaceholderShort
+              : t.list.addPlaceholder
+        }
         ariaLabel={t.list.addPlaceholder}
       />
 

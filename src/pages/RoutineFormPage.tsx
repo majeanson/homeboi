@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { FormScene } from '../components/FormScene'
 import { RoutineForm } from '../components/forms/RoutineForm'
+import { CATS } from '../lib/cats'
 import { useT } from '../i18n'
 
 // /routine/new — build a kid routine as a full-screen scene (was the worst sheet
@@ -11,7 +12,7 @@ export function RoutineFormPage() {
   const t = useT()
   const qc = useQueryClient()
   return (
-    <FormScene title={t.routines.add} icon="pencil-simple-bold" fallback="/routines">
+    <FormScene title={t.routines.add} icon={CATS.routine.icon} fallback="/routines">
       {(members, close) => (
         <RoutineForm
           members={members}

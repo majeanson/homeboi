@@ -511,7 +511,7 @@ export function RecipeForm({
               </div>
             ) : (
               <label className="btn btn--ghost mono recipe-photo__add">
-                {uploading ? '…' : t.recipes.addPhoto}
+                <InlineIcon name="image-square-bold" /> {uploading ? '…' : t.recipes.addPhoto}
                 <input
                   type="file"
                   accept="image/*"
@@ -543,7 +543,7 @@ export function RecipeForm({
           <span className="recipe-fill-label mono">{t.recipes.fillFrom}</span>
           <div className="recipe-helpers">
             <label className={'btn btn--ghost mono' + (reading ? ' is-busy' : '')}>
-              {reading ? t.recipes.reading : t.recipes.readPhoto}
+              <InlineIcon name="camera-bold" /> {reading ? t.recipes.reading : t.recipes.readPhoto}
               <input
                 type="file"
                 accept="image/*"
@@ -562,7 +562,7 @@ export function RecipeForm({
               onClick={() => setShowImport((s) => !s)}
               aria-expanded={showImport}
             >
-              {t.recipes.import}
+              <InlineIcon name="link-bold" /> {t.recipes.import}
             </button>
           </div>
           {readMsg && <p className="recipe-aioff mono">{readMsg}</p>}

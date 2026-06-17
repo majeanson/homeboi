@@ -9,6 +9,13 @@
   margin: 0 auto;
   padding: 1.25rem 1.25rem 3rem;
 }
+/* On a kiosk (wall tablet) the 38rem column leaves big side margins next to the
+   full-width Board and the wider Réglages — Kitchen/Routines/Liste looked
+   shrunken by comparison. Let them claim the available width too (capped so a
+   single-column list still reads calm, not stretched edge-to-edge). */
+.hub[data-surface='kiosk'] .today-feed {
+  max-width: 52rem;
+}
 .app-head {
   display: flex;
   align-items: flex-start;

@@ -24,7 +24,7 @@ export const CATS: Record<CatKey, Cat> = {
   chore: { icon: 'hand-heart-bold', color: '#88A36F', deep: '#6B8A52', wash: 'var(--sage-wash)' }, // sage
   list: { icon: 'sparkle-bold', color: '#F2A03D', deep: '#D9842A', wash: 'var(--marigold-wash)' }, // marigold
   pantry: { icon: 'carrot-bold', color: '#E0724E', deep: '#C2563A', wash: 'var(--terracotta-wash)' }, // terracotta
-  routine: { icon: 'paint-brush-bold', color: '#B06A93', deep: '#95527A', wash: 'var(--berry-wash)' }, // berry
+  routine: { icon: 'smiley-bold', color: '#B06A93', deep: '#95527A', wash: 'var(--berry-wash)' }, // berry — smiley is the single Routines icon (nav, onboarding, per-item pictos all match)
 }
 
 // The greeting glyph follows the time of day (mirrors lib/timeofday.ts buckets).

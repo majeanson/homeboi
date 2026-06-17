@@ -13,6 +13,8 @@ export type AddSheetMode =
   | 'event'
   | 'chore'
   | 'routine'
+  | 'plan-today'
+  | 'plan-tomorrow'
   | 'list-item'
   | 'quick-add'
   | 'flyer'
@@ -21,6 +23,7 @@ export type AddSheetMode =
   | 'meal'
   | 'leftovers'
   | 'pantry'
+  | 'reserve'
   | 'cook'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
@@ -31,11 +34,16 @@ export type AddSheetMode =
 // the best deal per line, then jumps to the cashier) — the page itself stays just
 // the list, so no shopping action lives as an on-page button anymore.
 export const SECTION_MODES: Record<string, AddSheetMode[]> = {
-  board: ['capture', 'event', 'chore', 'routine'],
+  // plan-today / plan-tomorrow are navigate-only shortcuts to the full day planner
+  // (/kitchen/day/<date>): one place to set a day's meals + events + chores + note.
+  // Their dates are dynamic, so AddSheet resolves the target at click time (like
+  // cook/auto-pick) rather than through the static NAV_TARGET table.
+  board: ['capture', 'event', 'chore', 'routine', 'plan-today', 'plan-tomorrow'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
-  // where it's navigate-only and resolves its target from the meal plan).
-  kitchen: ['cook', 'recipe', 'meal', 'leftovers', 'pantry'],
+  // where it's navigate-only and resolves its target from the meal plan). `reserve`
+  // adds to La réserve (freezer/back-of-pantry stash), the third Garde-manger list.
+  kitchen: ['cook', 'recipe', 'meal', 'leftovers', 'pantry', 'reserve'],
   routines: ['routine'],
   liste: ['list-item', 'quick-add', 'flyer', 'auto-pick'],
 }

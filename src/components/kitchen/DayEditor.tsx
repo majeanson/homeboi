@@ -387,7 +387,8 @@ export function DayEditor({
                           onClick={() => setPickWithStaples((s) => !s)}
                           aria-pressed={pickWithStaples}
                         >
-                          <InlineIcon name={pickWithStaples ? 'check-square-bold' : 'square-bold'} /> 🛒 {t.kitchen.alsoStaples}
+                          <InlineIcon name={pickWithStaples ? 'check-square-bold' : 'square-bold'} />{' '}
+                          <InlineIcon name="shopping-bag-bold" /> {t.kitchen.alsoStaples}
                         </button>
                         <RecipePickerMenu
                           recipes={recipes}

@@ -344,7 +344,7 @@ export function Kitchen() {
                       onClick={() => suggest.again(s.source)}
                       disabled={s.source === 'ai' && (suggest.aiBusy || suggest.aiOff)}
                     >
-                      🔁 {t.kitchen.suggestMore}
+                      <InlineIcon name="repeat-bold" /> {t.kitchen.suggestMore}
                     </button>
                     {s.recipe && (
                       <button
@@ -352,7 +352,7 @@ export function Kitchen() {
                         className="btn btn--ghost mono"
                         onClick={() => nav(`/kitchen/recipe/${s.recipe!.id}`)}
                       >
-                        {t.kitchen.suggestOpen}
+                        <InlineIcon name="book-open-bold" /> {t.kitchen.suggestOpen}
                       </button>
                     )}
                     <button type="button" className="btn btn--ghost mono" onClick={() => keepSuggestion(s)}>

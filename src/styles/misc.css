@@ -56,9 +56,21 @@
 /* The section nav. Held in ONE rounded strip (not 11 separate outlined pills, which
    read as a filter cloud): the shared container + a single filled selection say
    "pick a section" — the same segmented-control language as the board/kitchen. */
+/* Kept as ONE swipeable strip at every width (never wrapped): a phone scrolled it
+   already, but a portrait wall tablet was wrapping the 11 tabs into two rows, which
+   stops reading as a segmented control. A wide landscape wall fits them all with no
+   scroll; anything narrower scrolls horizontally rather than stacking. */
 .operator__tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  /* When a tapped tab is scrolled into view, leave a gutter so the active pill
+     sits INSIDE the strip's rounded corner instead of bleeding past the edge
+     (and its neighbours stay partly visible, signalling "more — swipe"). */
+  scroll-padding-inline: 0.75rem;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
   gap: 0.25rem;
   margin: 1rem 0 1.5rem;
   padding: 0.3rem;
@@ -67,6 +79,9 @@
   border-radius: var(--radius-lg);
 }
 .operator__tab {
+  flex: none;
+  white-space: nowrap;
+  scroll-snap-align: center;
   border: 0;
   background: transparent;
   color: var(--ink-soft);
@@ -80,26 +95,6 @@
   background: var(--accent);
   color: var(--on-primary);
   font-weight: 600;
-}
-/* On a phone, 11 tabs wrapping into a 3-row block stop reading as a segmented
-   control — keep ONE swipeable strip instead. */
-@media (max-width: 640px) {
-  .operator__tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    /* When a tapped tab is scrolled into view, leave a gutter so the active pill
-       sits INSIDE the strip's rounded corner instead of bleeding past the edge
-       (and its neighbours stay partly visible, signalling "more — swipe"). */
-    scroll-padding-inline: 0.75rem;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-  }
-  .operator__tab {
-    flex: none;
-    white-space: nowrap;
-    scroll-snap-align: center;
-  }
 }
 
 /* Add sheet: the quick-capture / event / chore / routine mode chooser. */

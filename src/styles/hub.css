@@ -10,6 +10,8 @@
      the visible viewport — only .hub__body scrolls, never the document behind
      it. This is what removes the second scroll layer. */
   height: 100%;
+  /* Containing block for the floating "re-open rail" caret (collapsed kiosk). */
+  position: relative;
 }
 .hubnav {
   display: flex;
@@ -24,6 +26,51 @@
   border-right: 1px solid var(--line);
   background: var(--paper-deep);
   overflow-y: auto;
+}
+/* The little "tuck the rail away" caret — sits at the top of the kiosk column,
+   quiet chrome (no card) so it reads as a control, not a section. */
+.hubnav__collapse {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 2px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--ink-faint);
+  background: transparent;
+}
+.hubnav__collapse:active {
+  transform: translate(1px, 1px);
+}
+/* Collapsed kiosk rail: drop the whole column so the body takes the full wall. */
+.hub[data-nav-collapsed] .hubnav {
+  display: none;
+}
+/* The way back: a small floating caret tucked top-left over the body. */
+.hubnav-reopen {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--ink-soft);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+.hubnav-reopen:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-press);
 }
 .hubnav__btn {
   display: flex;
@@ -152,6 +199,14 @@
    FAB and centers a few big tiles, so it keeps the smaller pad above. */
 .hub[data-surface='mobile'][data-audience='parent'] .hub__body {
   padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+}
+/* Kiosk: the ＋ FAB floats bottom-right (20px up, 60px tall ≈ 80px band) over a
+   body that has no bottom bar to pad past — so the last row of a full-page scroll
+   (a list item's check, a day's meal) sat UNDER the FAB. Reserve the band, but
+   only where the FAB is actually shown (data-fab — set by HubLayout's showAdd, so
+   Réglages and the toddler lens, which have no FAB, don't get dead space). */
+.hub[data-fab][data-surface='kiosk'] .hub__body {
+  padding-bottom: 96px;
 }
 .hub[data-surface='mobile'] .hubnav {
   order: 2;

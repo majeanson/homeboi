@@ -104,7 +104,7 @@ export function KidExitGate() {
         <span className="hubnav__peek-pic" aria-hidden="true">
           🚪
         </span>
-        <span>{t.audience.exitTitle}</span>
+        <span className="kid-exit-switch__label">{t.audience.exitTitle}</span>
         <span className="kid-exit-switch__fill" aria-hidden="true" />
       </button>
 
