@@ -1,5 +1,6 @@
 import { useT } from '../i18n'
 import { isIos, type VoiceInput } from '../lib/useVoiceInput'
+import { useOnline } from '../lib/online'
 import { Icon } from './Icon'
 
 // The shared "speak it" mic, used by every add field (CaptureBar, the ＋ sheet,
@@ -10,6 +11,7 @@ import { Icon } from './Icon'
 
 export function VoiceButton({ voice, label }: { voice: VoiceInput; label: string }) {
   const t = useT()
+  const online = useOnline()
   if (!voice.hasVoice) return null
   // A grant the browser remembers as refused: keep the button visible but mark
   // it blocked, so it reads as "fix this in settings" rather than a dead tap.
@@ -17,14 +19,19 @@ export function VoiceButton({ voice, label }: { voice: VoiceInput; label: string
   const blocked = voice.permission === 'denied'
   // iOS can't re-prompt from the page, so point at Settings instead of "your browser".
   const blockedMsg = isIos() ? t.list.voiceDeniedIos : t.list.voiceDenied
+  // Speech recognition (Web Speech and our server-STT fallback) both need the
+  // network, so the mic is dead offline — disable it with a calm hint rather than
+  // letting a tap fail silently.
+  const title = !online ? t.offline.unavailable : blocked ? blockedMsg : undefined
   return (
     <button
       type="button"
       className={`btn btn--ghost capture__voice${voice.listening ? ' is-listening' : ''}${blocked ? ' is-blocked' : ''}`}
       onClick={voice.start}
-      aria-label={blocked ? `${label} — ${blockedMsg}` : label}
+      disabled={!online}
+      aria-label={title ? `${label} — ${title}` : label}
       aria-pressed={voice.listening}
-      title={blocked ? blockedMsg : undefined}
+      title={title}
     >
       <Icon name="microphone-bold" size={20} />
     </button>

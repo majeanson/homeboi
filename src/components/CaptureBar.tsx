@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { useT } from '../i18n'
+import { useOnline } from '../lib/online'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { VoiceButton } from './VoiceButton'
 import type { IntentType } from '../lib/captureTypes'
@@ -39,6 +40,10 @@ export function CaptureBar({ onCaptured }: { onCaptured?: () => void }) {
   const [corrected, setCorrected] = useState(false)
   const voice = useVoiceInput(setText)
   const { listening } = voice
+  // Capture routing is server-side (Workers AI), so the spine can't work offline —
+  // disable it with a calm hint rather than letting a submit fail. (Queuing a typed
+  // capture would need the AI route, so we hold it for when the network's back.)
+  const online = useOnline()
 
   // value is passed explicitly so a correction can re-send the already-cleared
   // text. `isCorrection` marks the explicit "Non, plutôt…" path (→ "Déplacé."),
@@ -93,13 +98,19 @@ export function CaptureBar({ onCaptured }: { onCaptured?: () => void }) {
           onChange={(e) => setText(e.target.value)}
           placeholder={listening ? t.capture.listening : t.capture.placeholder}
           aria-label={t.capture.placeholder}
-          disabled={busy}
+          disabled={busy || !online}
         />
         <VoiceButton voice={voice} label={t.capture.voice} />
-        <button type="submit" className="btn capture__add" disabled={busy || !text.trim()}>
+        <button type="submit" className="btn capture__add" disabled={busy || !text.trim() || !online}>
           {t.capture.add}
         </button>
       </form>
+
+      {!online && (
+        <p className="capture__offline mono" role="status">
+          {t.offline.unavailable}
+        </p>
+      )}
 
       {needType && (
         <div className="capture__picker" role="group" aria-label={t.capture.pickType}>

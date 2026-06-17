@@ -8,8 +8,8 @@ export type Lang = 'fr' | 'en'
 export const FR = {
   appName: 'Babillard',
   tagline: 'Le planificateur familial calme.',
-  nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion', today: 'Aujourd’hui', routines: 'Routines', list: 'La liste' },
-  offline: { banner: 'Hors ligne', since: 'Données du', live: 'De nouveau en ligne', pending: 'en attente' },
+  nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion', today: 'Aujourd’hui', routines: 'Routines', list: 'La liste', hideMenu: 'Cacher le menu', showMenu: 'Afficher le menu' },
+  offline: { banner: 'Hors ligne', since: 'Données du', live: 'De nouveau en ligne', pending: 'en attente', unavailable: 'Indisponible hors-ligne' },
   audience: {
     parent: 'Parent',
     kid: 'Enfant',
@@ -783,8 +783,8 @@ export const FR = {
 export const EN: typeof FR = {
   appName: 'Babillard',
   tagline: 'The calm family planner.',
-  nav: { board: 'The board', kitchen: 'Kitchen', kid: 'Kid mode', operator: 'Settings', login: 'Sign in', logout: 'Sign out', today: 'Today', routines: 'Routines', list: 'The list' },
-  offline: { banner: 'Offline', since: 'Data from', live: 'Back online', pending: 'pending' },
+  nav: { board: 'The board', kitchen: 'Kitchen', kid: 'Kid mode', operator: 'Settings', login: 'Sign in', logout: 'Sign out', today: 'Today', routines: 'Routines', list: 'The list', hideMenu: 'Hide menu', showMenu: 'Show menu' },
+  offline: { banner: 'Offline', since: 'Data from', live: 'Back online', pending: 'pending', unavailable: 'Unavailable offline' },
   audience: {
     parent: 'Parent',
     kid: 'Kid',

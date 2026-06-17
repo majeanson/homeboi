@@ -635,6 +635,12 @@ textarea.input {
   color: var(--warn);
   margin-right: 0.3rem;
 }
+/* Calm hint under the capture bar when offline — the AI router can't run. */
+.capture__offline {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
 .capture__ack {
   display: flex;
   flex-wrap: wrap;
