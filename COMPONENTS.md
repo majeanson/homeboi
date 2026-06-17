@@ -51,6 +51,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | --- | --- | --- |
 | **Avatar** | `components/Avatar.tsx` | Person = photo or coloured initial disc. 10+ call sites. |
 | **BigTiles** + **Sayable** | `components/BigTiles.tsx` | Toddler picture-tiles + tap-to-speak text (`useSpeak`). |
+| **KidCollections** | `components/kitchen/KidCollections.tsx` | Toddler hear-first 3-stage recipe-collection picker (collection → recipe → day) over the recipe-tag system (#11). Reuses `buildCollections` + the shared `kidSuggest` meal-plan write. Surfaced as a "Les collections" door tile inside `KidKitchen`. |
 | **IngredientLine** | `components/IngredientLine.tsx` | Recipe line with tappable measure pills. |
 | **ZoomableImg** | `components/ZoomableImg.tsx` | Tap-to-lightbox image. |
 

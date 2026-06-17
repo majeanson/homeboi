@@ -1,22 +1,15 @@
 import { useMemo } from 'react'
 import { useT } from '../../i18n'
-import { useAudience } from '../../lib/audience'
 import { type Recipe, recipeImg, allTags } from '../../lib/recipes'
 import { pictoFor } from '../../lib/picto'
-import { BigTiles, type Tile } from '../BigTiles'
 
 // #11 "Recipe collections" — collections ARE the existing recipe tag system reused
 // as a browse layer (NO new table, NO migration). This groups the book by tag into
-// {tag, count, coverImage = the first tagged recipe's image} and renders the picker
-// two ways off the same data, like every themed tab (audience axis):
-//   • parent  → a card grid (image-forward, count subtitle).
-//   • toddler → BigTiles (huge, picture-first, tap-to-hear) — a pre-reader browses
-//                "soupes / desserts" by sight + sound.
+// {tag, count, coverImage = the first tagged recipe's image}.
 //
-// SCAFFOLD STATUS: the parent grid is DONE. The toddler branch is a deliberate
-// minimal stub (tiles render + speak, tapping a tile picks the collection) — the
-// fuller 3-stage toddler picker (collection → recipe → day, all hear-first) is
-// left as a TODO so it isn't half-polished.
+// This file is the PARENT picker (a card grid). The TODDLER lens has its own
+// dedicated hear-first 3-stage flow in `KidCollections.tsx` (collection → recipe →
+// day), which reuses `buildCollections` below — so there's no audience branch here.
 
 export interface Collection {
   tag: string
@@ -26,8 +19,9 @@ export interface Collection {
 
 // Group the book by tag, first-seen order (allTags), cover = the first recipe in
 // that tag that actually has an image (so a collection isn't a blank disc when its
-// lead recipe has no photo). A recipe with several tags appears in each.
-function buildCollections(recipes: Recipe[]): Collection[] {
+// lead recipe has no photo). A recipe with several tags appears in each. Shared by
+// the parent grid (here) and the toddler BigTiles flow (KidCollections).
+export function buildCollections(recipes: Recipe[]): Collection[] {
   const tags = allTags(recipes)
   return tags.map((tag) => {
     const key = tag.toLowerCase()
@@ -45,28 +39,10 @@ export function CollectionPicker({
   onPick: (tag: string) => void
 }) {
   const t = useT()
-  const { audience } = useAudience()
   const collections = useMemo(() => buildCollections(recipes), [recipes])
 
   if (collections.length === 0) {
     return <p className="board__empty mono">{t.recipes.collectionsEmpty}</p>
-  }
-
-  // Toddler lens — picture-first BigTiles, read-aloud on tap. STUB: one tap picks
-  // the collection (BigTiles speaks the label, the parent flow takes over). A
-  // pre-reader can browse by sight + sound; the full hear-first 3-stage picker
-  // (collection → recipe → day) is deferred.
-  // TODO #11 toddler flow: arm-then-commit picker through to a day, like KidKitchen.
-  if (audience === 'toddler') {
-    const tiles: Tile[] = collections.map((c) => ({
-      key: c.tag,
-      image: c.coverImage,
-      icon: pictoFor(c.tag, '🍽'),
-      label: c.tag,
-      onTap: () => onPick(c.tag),
-      confirmHint: t.recipes.collectionTapToOpen,
-    }))
-    return <BigTiles tiles={tiles} empty={t.recipes.collectionsEmpty} />
   }
 
   // Parent lens — card grid, reusing the recipe-card styling.
