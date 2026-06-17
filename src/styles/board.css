@@ -532,6 +532,119 @@
   max-width: none;
 }
 
+/* --- Media memos (#38 voice / #14 drawing): a note that carries an attachment - */
+.note-card--media {
+  cursor: default;
+  align-items: flex-start;
+}
+.note-card__mediabtn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.note-card__memo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+}
+.note-card__draw {
+  display: block;
+  max-width: 9rem;
+  max-height: 9rem;
+  border-radius: 6px;
+  background: #fffdf7;
+}
+.note-card__clear--btn {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.3rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+  opacity: 0.55;
+}
+
+/* --- The Record / Draw row under the Note rapide text capture (AddSheet) ------ */
+.memo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+.memo-row__rec {
+  color: var(--terracotta-deep, #c2563a);
+}
+.memo-row__dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #c2563a;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+/* --- DrawPad: the full-screen quick paint surface (#14) ----------------------- */
+.drawpad {
+  position: fixed;
+  inset: 0;
+  z-index: 150; /* over the capture sheet that launched it */
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-deep);
+}
+.drawpad__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  flex-wrap: wrap;
+}
+.drawpad__swatch {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  cursor: pointer;
+  flex: none;
+}
+.drawpad__swatch.is-on {
+  box-shadow: 0 0 0 3px var(--accent);
+}
+.drawpad__eraser {
+  border-style: dashed;
+}
+.drawpad__tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  margin-left: auto;
+}
+.drawpad__canvas {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background: #fffdf7;
+  touch-action: none; /* a finger draws, never scrolls/zooms the page */
+}
+.drawpad__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.8rem 0.9rem max(0.8rem, env(safe-area-inset-bottom));
+}
+
 /* ---- Month view: a calm six-week calendar of everything dated -------------
    The fourth board take (after bento · next · lanes): zoom out from the day to
    the whole month. Cells carry colour-coded dots (event = member/sky, meal =

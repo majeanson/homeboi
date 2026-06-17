@@ -27,7 +27,7 @@
 11. **Gentle routing confirm** [S] — after a capture, a soft "I filed this under Events — move it?" chip; one tap re-routes.
 12. **Natural-language queries** [M] ✦ — "what did I add yesterday?", "what's for supper Friday?" answered over your own data. *(reuse: AI + D1.)*
 13. **PWA share-target capture** [M] — share a link/text/photo from any app straight into Babillard capture (a school email, a recipe URL).
-14. **Handwriting capture** [L] ✦ — scribble on the kiosk with a finger/stylus; AI transcribes to a note or list item.
+14. **Drawn fridge note** [M] — ✅ **BUILT** (reframed: a drawn note, NOT OCR). Scribble/paint a little something for the household on a quick canvas (`DrawPad`, signature_pad) → saved as a PNG fridge note. *(in the ＋ Note rapide sheet; `MemoControls`.)*
 
 ## C · Kitchen, meals & recipes
 
@@ -37,7 +37,7 @@
 18. **Calm meal-balance hints** [M] ⚠ — AI tags meals (veg/protein/quick) and shows a soft weekly balance — never calories, never shame.
 19. **Recipe collections / cookbooks** [M] — group recipes (weeknight, holidays, kids-love) and browse by collection. *(reuse: recipe tags.)*
 20. **Hands-free cook mode + multi-timers** [M] — "next step" / "set a 10-min timer" by voice while your hands are messy; several timers at once. *(extend `CookMode`.)*
-21. **Family "favorites" hearts** [S] ⚠ — each member taps a heart on a meal; suggest-meal leans on household love (preference signal, not points).
+21. **Family "favorites" hearts** [S] ⚠ — ✅ **BUILT**. Each member ❤ a recipe (and a planned meal carries its recipe's hearts); suggest-meal leans toward loved dishes. Shows WHICH faces loved it, never a count/rank; the toggle hides as Maisonnée. *(`recipe_loves`, `HeartButton`/`useLoves`.)*
 22. **Seasonal / local produce hints** [S] — tie postal + month to "asparagus is in season" nudges in the kitchen. *(reuse: postal code.)*
 
 ## D · Shopping, list & deals
@@ -63,7 +63,7 @@
 ## F · Family connection & wellbeing
 
 37. **Notes to the fridge** [S] — leave a written note for someone ("Bonne chance à ton examen!") that shows on the kiosk.
-38. **Voice memos to the fridge** [M] ✦ — record a quick audio note that plays on the kiosk when they pass by. *(reuse: R2.)*
+38. **Voice memos to the fridge** [M] ✦ — ✅ **BUILT** (general-audience). Record a quick audio memo → a fridge note with an R2 clip; tap ▶ on the board to play. *(in the ＋ Note rapide sheet; `MemoControls`, served via /api/img.)*
 39. **Private daily mood check-in** [M] ⚠ — each member taps a calm emoji; a soft, private household snapshot.
 40. **Gratitude / highlight of the day** [S] — one line per person, folded into the weekly recap. *(reuse: recap.)*
 41. **"On this day" memories** [S] — surface "1 year ago today" from photos and past events in the frame. *(reuse: R2 + events history.)*

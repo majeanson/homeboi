@@ -37,6 +37,8 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | **ColorPicker** | `components/ColorPicker.tsx` | Row of palette dots; controlled. |
 | **RecurPicker** | `components/RecurPicker.tsx` | Recurrence rule (freq/interval/weekdays). |
 | **LeadPicker** | `components/LeadPicker.tsx` | Calm "Bientôt" reminder lead ("Afficher dès", 1h–1wk → `lead_seconds`); in EventForm + ChoreForm. |
+| **DrawPad** | `components/DrawPad.tsx` | Quick paint canvas for a drawn fridge note (#14): `signature_pad` strokes, calm colour palette + paper-colour eraser; saves a PNG. Full-screen overlay. |
+| **HeartButton** | `components/HeartButton.tsx` | Family "favorites" ❤ on a recipe (#21, `useLoves`): shows the loved-by faces (never a count); toggle only when a face is picked (read-only as Maisonnée). On recipe cards + planned meals. |
 
 ### Actions & rows
 | Component | File | Purpose |
@@ -74,7 +76,8 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 
 ### Page orchestrators — intentionally NOT in the gallery
 Need live data/route context, so they're catalogued but not rendered as specimens:
-`AddSheet`, `HubLayout`, `RecipeSheet`, `RecipeForm`, `CookMode`, `CashierMode`,
+`AddSheet`, `MemoControls` (the ＋ Note-rapide audio-memo + draw controls, #38/#14),
+`HubLayout`, `RecipeSheet`, `RecipeForm`, `CookMode`, `CashierMode`,
 `ProfilePicker`, `TourOverlay`, `DealsBrowser`, `FlyerViewer`, `ChoreLedger`
 (read-only fairness glance, #18), `CookableView` (cook-from-what-I-have, #10),
 `CollectionsTab`/`CollectionPicker` (recipe collections, #11), the kitchen sub-tabs

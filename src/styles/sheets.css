@@ -1088,13 +1088,14 @@
    clipping already carries its own price/name, so a bare image cell is complete.
    Columns flow vertically, so cells of different heights nest without white rows. */
 .flyer-grid {
-  column-width: 8.5rem;
-  column-gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 10px;
+  align-items: start;
 }
 .flyer-grid__cell {
-  break-inside: avoid;
   width: 100%;
-  margin: 0 0 10px;
+  margin: 0;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -1107,7 +1108,8 @@
 }
 .flyer-grid__cell img {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
   display: block;
 }
 .flyer-grid__cell:focus-visible {

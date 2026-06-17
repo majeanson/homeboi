@@ -40,6 +40,9 @@ export interface Routine {
   // Parallel parent-voice clip keys, one R2 key per card ('' = none → TTS).
   // Same length as cards; lets the edit form prefill recorded clips (feature #17 A).
   cardsNarration?: string[]
+  // Parallel card photo keys, one R2 key per card ('' = none → emoji). Same
+  // length as cards; lets the edit form prefill attached photos (feature #17 C).
+  cardsPhoto?: string[]
 }
 export interface EventRow {
   id: string

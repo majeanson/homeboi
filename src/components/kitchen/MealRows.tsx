@@ -4,6 +4,7 @@ import { type Recipe } from '../../lib/recipes'
 import { isGuest } from '../../lib/device'
 import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
+import { HeartButton } from '../HeartButton'
 import { type MealRow } from './types'
 
 // The planned meals in ONE slot (a slot is a list now — migration 0033). Each row
@@ -136,6 +137,8 @@ export function MealRows({
                 </button>
                 )}
                 <span className="kitchen__meal-ctl">
+                  {/* A planned meal carries its linked recipe's ❤ (#21). */}
+                  {r && <HeartButton recipeId={r.id} />}
                   {r && (
                     <button
                       type="button"

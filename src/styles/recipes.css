@@ -912,3 +912,69 @@
   color: var(--ink-faint);
   padding: 0 0.7rem 0.7rem;
 }
+
+/* --- Family "favorites" hearts (#21) — a recipe ❤ + the faces who loved it ---- */
+.hearts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.hearts__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  padding: 0.2rem;
+  line-height: 0;
+}
+.hearts__btn.is-mine {
+  color: #c2563a;
+}
+/* The loved-by faces — small overlapping discs, NEVER a number (calm). */
+.hearts__faces {
+  display: inline-flex;
+}
+.hearts__face {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-left: -0.3rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--card);
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #fff;
+}
+.hearts__face:first-child {
+  margin-left: 0;
+}
+.hearts__face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* The recipe card stays a single tappable button; the heart is a sibling overlay
+   in a relative wrapper (nesting a button in a button is invalid + double-clicks). */
+.recipe-card-wrap {
+  position: relative;
+  display: flex;
+}
+.recipe-card-wrap > .recipe-card {
+  flex: 1;
+  width: 100%;
+}
+/* A heart pinned over a recipe card's photo corner. */
+.recipe-card-wrap .hearts {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  border-radius: 999px;
+  padding: 0.1rem 0.3rem;
+}

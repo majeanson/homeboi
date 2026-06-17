@@ -5,22 +5,26 @@ import { profileMemberId } from '../_lib/profile'
 
 // Fridge notes — short household notes shown on the Aujourd'hui board until
 // cleared. Notes are usually born from the capture router (the catch-all 'note'
-// type), but this endpoint also lets a note be added directly and cleared.
+// type), but this endpoint also lets a note be added directly and cleared. A note
+// may also carry MEDIA (#38 audio memo / #14 drawn note): media_kind +
+// media_key (R2, uploaded via /api/note-media), in which case text may be empty.
 //
 //   GET    /api/notes  -> active notes (newest first)
-//   POST   /api/notes  -> add a note { text }
-//   DELETE /api/notes  -> clear one  { id }  (soft: sets dismissed_at)
+//   POST   /api/notes  -> add a note { text?, media_kind?, media_key? }
+//   DELETE /api/notes  -> clear one  { id }  (soft: sets dismissed_at; frees media)
 
 interface NoteRow {
   id: string
   text: string
   member_id: string | null
   created_at: number
+  media_kind: string | null
+  media_key: string | null
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    'SELECT id, text, member_id, created_at FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC',
+    'SELECT id, text, member_id, created_at, media_kind, media_key FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC',
   )
     .bind(actor.householdId)
     .all<NoteRow>()
@@ -28,14 +32,17 @@ export const onRequestGet = authed(async (ctx, actor) => {
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ text?: string }>(ctx.request)
-  const text = body?.text?.trim()
-  if (!text) return badRequest('Note vide.')
+  const body = await readJson<{ text?: string; media_kind?: string; media_key?: string }>(ctx.request)
+  const text = body?.text?.trim() ?? ''
+  // A note is either a written line or a media memo (audio/drawing). One must be present.
+  const kind = body?.media_kind === 'audio' || body?.media_kind === 'drawing' ? body.media_kind : null
+  const mediaKey = kind ? body?.media_key?.trim() || null : null
+  if (!text && !(kind && mediaKey)) return badRequest('Note vide.')
   const id = newId()
   await ctx.env.DB.prepare(
-    'INSERT INTO notes (id, household_id, text, member_id, created_at) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO notes (id, household_id, text, member_id, created_at, media_kind, media_key) VALUES (?, ?, ?, ?, ?, ?, ?)',
   )
-    .bind(id, actor.householdId, text.slice(0, 280), profileMemberId(ctx.request), nowSec())
+    .bind(id, actor.householdId, text.slice(0, 280), profileMemberId(ctx.request), nowSec(), kind, mediaKey)
     .run()
   return ok({ ok: true, id })
 })
@@ -44,6 +51,21 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   const id = body?.id?.trim()
   if (!id) return badRequest('id requis.')
+  // Free any R2 attachment first — a cleared memo is never shown again, so the
+  // blob is dead weight (keeps the free tier lean; mirrors the routine voice-clip
+  // cleanup). Best-effort: a failed R2 delete must not block clearing the note.
+  const row = await ctx.env.DB.prepare(
+    'SELECT media_key FROM notes WHERE id = ? AND household_id = ? AND dismissed_at IS NULL',
+  )
+    .bind(id, actor.householdId)
+    .first<{ media_key: string | null }>()
+  if (row?.media_key && ctx.env.PHOTOS) {
+    try {
+      await ctx.env.PHOTOS.delete(row.media_key)
+    } catch {
+      /* leave the orphan rather than fail the clear */
+    }
+  }
   // Soft clear (dismissed_at), scoped to the household so a kiosk can clear too.
   await ctx.env.DB.prepare('UPDATE notes SET dismissed_at = ? WHERE id = ? AND household_id = ?')
     .bind(nowSec(), id, actor.householdId)

@@ -1007,58 +1007,142 @@
 }
 .kid__faces {
   display: flex;
-  gap: 1.5rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
   justify-content: center;
+  width: 100%;
+  max-width: 52rem;
 }
+/* A spacious routine card (was a round face): whose it is, a real photo/emoji
+   preview of the steps, and a calm status. There are usually only a few
+   routines, so each gets room to show what's inside. */
 .kid__face {
-  width: 9.5rem;
-  height: 9.5rem;
-  border-radius: 50%;
-  border: 5px solid rgba(255, 255, 255, 0.55);
-  color: #fff;
+  position: relative;
+  width: min(15rem, 80vw);
+  min-height: 12rem;
+  border: 0;
+  border-radius: 24px;
+  padding: 1.1rem 1rem 0.9rem;
+  color: var(--ink);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
+  gap: 0.7rem;
   box-shadow: var(--shadow-md);
-  transition: transform var(--dur-base) var(--ease-soft);
+  transition:
+    transform var(--dur-base) var(--ease-soft),
+    opacity var(--dur-base) var(--ease-soft);
 }
 .kid__face:hover,
 .kid__face:focus-visible {
-  transform: translateY(-5px) scale(1.04);
+  transform: translateY(-4px) scale(1.02);
 }
-.kid__face-initial {
-  font-size: 2.8rem;
-  font-weight: 800;
-  font-family: var(--display);
-  line-height: 1;
+/* A finished routine reads softer — calm, deterministic, resets daily. */
+.kid__face.is-done {
+  opacity: 0.62;
 }
 .kid__face-name {
   font-size: 1.05rem;
-  font-weight: 600;
+  font-weight: 700;
 }
-/* A peek of the routine's first picture-cards, so a face reads as a ROUTINE,
-   not just a name. */
-.kid__face-peek {
-  font-size: 1.2rem;
-  letter-spacing: 3px;
+/* Who it's for: a small avatar + name, shown only on a shared device. */
+.kid__routine-who {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+.kid__routine-ava {
+  width: 2.3rem;
+  height: 2.3rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+.kid__routine-ava--initial {
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.15rem;
   line-height: 1;
 }
-/* The routine's moment badge (🌅/☀️/🌙) riding the face's shoulder — a
-   pre-reader spots "the moon one" without reading. */
-.kid__face {
-  position: relative;
+/* The step preview strip: each step as its photo (feature #17 C) or emoji. */
+.kid__routine-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
 }
-.kid__face-tod {
-  position: absolute;
-  top: 4px;
-  right: 16px;
+.kid__routine-slot {
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.5rem;
   line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  overflow: hidden;
+}
+/* A step already done today reads softer in the preview too. */
+.kid__routine-slot.is-done {
+  opacity: 0.4;
+}
+.kid__routine-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.kid__routine-emoji {
+  line-height: 1;
+}
+.kid__routine-more {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  padding: 0 0.2rem;
+}
+/* Status row: a familiar-voice hint + a calm done / how-far cue. */
+.kid__routine-status {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: auto;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.kid__routine-voice {
+  display: inline-flex;
+  color: var(--ink-soft);
+}
+.kid__routine-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 700;
+  color: var(--sage, #6b8a52);
+}
+.kid__routine-prog {
+  font-weight: 700;
+}
+/* The routine's moment badge (🌅/☀️/🌙) riding the card's top corner — a
+   pre-reader spots "the moon one" without reading. */
+.kid__face-tod {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 1.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
 }
 .kid__pick-title {
   margin-bottom: 2rem;

@@ -5,7 +5,7 @@ import { api } from '../lib/api'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { formatTime, formatDayLong } from '../lib/format'
 import { useAmbient } from '../lib/ambient'
-import { PhotoFrame } from './board/PhotoFrame'
+import { PhotoMosaic } from './PhotoMosaic'
 import { InlineIcon } from './Icon'
 
 // The ambient screensaver (backlog #3): after N idle minutes the kiosk fades to a
@@ -65,7 +65,7 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
     >
       {a.showPhotos && (
         <div className="ambient__bg" aria-hidden="true">
-          <PhotoFrame />
+          <PhotoMosaic />
         </div>
       )}
       <div className="ambient__veil" aria-hidden="true" />

@@ -33,8 +33,18 @@ export const onRequestPost = authed(async (ctx, actor) => {
       .bind(actor.householdId, today + 86400)
       .all<{ title: string }>(),
     // The family's own recipe book — so "what's for supper?" can resurface dishes
-    // they've actually saved, not only AI-invented ones.
-    ctx.env.DB.prepare('SELECT title FROM recipes WHERE household_id = ? ORDER BY updated_at DESC LIMIT 12')
+    // they've actually saved, not only AI-invented ones. LOVED recipes (#21 hearts)
+    // lead the list: a gentle preference passed to the suggester, never a shown
+    // count/rank (the love total stays server-side).
+    ctx.env.DB.prepare(
+      `SELECT r.title AS title
+         FROM recipes r
+         LEFT JOIN recipe_loves rl ON rl.recipe_id = r.id AND rl.household_id = r.household_id
+        WHERE r.household_id = ?
+        GROUP BY r.id
+        ORDER BY COUNT(rl.member_id) DESC, r.updated_at DESC
+        LIMIT 12`,
+    )
       .bind(actor.householdId)
       .all<{ title: string }>(),
     // Recipes whose most recent serving (via meals.recipe_id, migration 0024) is

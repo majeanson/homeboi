@@ -474,7 +474,8 @@
   font-size: 13px;
   cursor: pointer;
 }
-.deck__clip-btn:disabled {
+.deck__clip-btn:disabled,
+.deck__clip-btn.is-disabled {
   opacity: 0.5;
   cursor: default;
 }
@@ -521,6 +522,25 @@
 }
 .deck__clip-note--err {
   color: var(--warn);
+}
+
+/* Per-card photo control (feature #17 C) — sits under the clip row, same indent,
+   reusing the .deck__clip-btn pill for add/change/remove. A thumbnail previews
+   the attached photo. */
+.deck__photo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 2px 56px;
+}
+.deck__photo-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1.5px solid var(--line-strong);
+  display: block;
 }
 
 /* ---- Colour picker (per-person, per-task) -------------------------------- */

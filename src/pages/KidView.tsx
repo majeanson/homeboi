@@ -41,6 +41,9 @@ interface Routine {
   // Parallel parent-voice clip keys (feature #17 A), one per card ('' = none →
   // on-device TTS). Optional: older payloads predate it.
   cardsNarration?: string[]
+  // Parallel card photo keys (feature #17 C), one per card ('' = none → the
+  // card's emoji). Optional: older payloads predate it.
+  cardsPhoto?: string[]
   doneIdx: number[]
 }
 type RoutinesData = { routines: Routine[] }
@@ -185,10 +188,12 @@ export function KidView() {
     (a, b) => todRank(tod, a.timeOfDay) - todRank(tod, b.timeOfDay),
   )
 
-  // "Pick your face" when there are several children's routines; a single
-  // routine auto-selects so the toddler lands straight in the story. When
-  // identified, the faces are all the same member, so we already filtered to
-  // theirs above.
+  // The picker: one spacious card per routine — there are usually only a few, so
+  // each gets room to show what's inside (its step photos/emojis), whose it is,
+  // and a calm status. A single routine auto-selects so the toddler lands straight
+  // in the story. When identified (the device already knows the child) we skip the
+  // avatar and the "Maya ·" prefix — every card is theirs (the operator's ask).
+  const PREVIEW = 4
   const picked = visible.find((r) => r.id === pickedId) ?? (visible.length === 1 ? visible[0] : undefined)
   if (!picked) {
     return (
@@ -196,39 +201,88 @@ export function KidView() {
         <main className="kid__pick">
           <h1 className="kid__pick-title">{identified ? t.kid.pickRoutine : t.kid.pick}</h1>
           <div className="kid__faces">
-            {visible.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                className="kid__face"
-                style={{ background: r.avatarPhoto ? 'var(--card)' : r.color ?? '#88A36F' }}
-                onClick={() => {
-                  // Say what was picked — audio confirmation is the pre-reader's
-                  // "you tapped the right one" (NFR-KID-2).
-                  speak(identified ? r.name : r.memberName ?? r.name)
-                  setPickedId(r.id)
-                }}
-              >
-                {r.avatarPhoto ? (
-                  <img className="kid__face-photo" src={imgUrl(r.avatarPhoto)} alt="" />
-                ) : (
-                  <span className="kid__face-initial">{(r.memberName ?? '?').slice(0, 1).toUpperCase()}</span>
-                )}
-                {/* The routine's moment, worn as a small picture badge — a
-                    pre-reader spots "the moon one" without reading. */}
-                {isRoutineTod(r.timeOfDay) && (
-                  <span className="kid__face-tod" aria-hidden="true">
-                    <Icon name={TOD_ICON[r.timeOfDay]} size={22} color={TOD_TINT[r.timeOfDay]} />
+            {visible.map((r) => {
+              const total = r.cards.length
+              const doneCount = r.doneIdx.filter((i) => i >= 0 && i < total).length
+              const done = total > 0 && doneCount >= total
+              // A familiar-voice hint when the parent recorded any card (feature #17 A).
+              const hasVoice = (r.cardsNarration ?? []).some((k) => !!k)
+              const tint = r.color ?? '#88A36F'
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  className={'kid__face kid__routine' + (done ? ' is-done' : '')}
+                  // A soft per-child colour wash so a shared kiosk reads "by person".
+                  style={{ background: wash(tint) }}
+                  onClick={() => {
+                    // Say what was picked — audio confirmation is the pre-reader's
+                    // "you tapped the right one" (NFR-KID-2).
+                    speak(identified ? r.name : `${r.memberName ?? ''} ${r.name}`.trim())
+                    setPickedId(r.id)
+                  }}
+                >
+                  {/* The routine's moment, worn as a small picture badge — a
+                      pre-reader spots "the moon one" without reading. */}
+                  {isRoutineTod(r.timeOfDay) && (
+                    <span className="kid__face-tod" aria-hidden="true">
+                      <Icon name={TOD_ICON[r.timeOfDay]} size={22} color={TOD_TINT[r.timeOfDay]} />
+                    </span>
+                  )}
+                  {/* Who it's for — only when several children share the device;
+                      an identified device already knows, so we drop the avatar. */}
+                  <span className="kid__routine-who">
+                    {!identified &&
+                      (r.avatarPhoto ? (
+                        <img className="kid__routine-ava" src={imgUrl(r.avatarPhoto)} alt="" />
+                      ) : (
+                        <span className="kid__routine-ava kid__routine-ava--initial" style={{ background: tint }}>
+                          {(r.memberName ?? '?').slice(0, 1).toUpperCase()}
+                        </span>
+                      ))}
+                    <span className="kid__face-name">
+                      {identified ? r.name : r.memberName ? `${r.memberName} · ${r.name}` : r.name}
+                    </span>
                   </span>
-                )}
-                <span className="kid__face-name">{identified ? r.name : r.memberName ?? r.name}</span>
-                {r.cards.length > 0 && (
-                  <span className="kid__face-peek" aria-hidden="true">
-                    {r.cards.slice(0, 4).map((c) => c.icon || '○').join(' ')}
+                  {/* A real preview of the routine: each step as its photo (feature
+                      #17 C) or its emoji — a pre-reader recognises "the one with the
+                      toothbrush". Finished steps read softer (calm, deterministic). */}
+                  {total > 0 && (
+                    <span className="kid__routine-strip" aria-hidden="true">
+                      {r.cards.slice(0, PREVIEW).map((c, i) => (
+                        <span
+                          key={i}
+                          className={'kid__routine-slot' + (r.doneIdx.includes(i) ? ' is-done' : '')}
+                        >
+                          {r.cardsPhoto?.[i] ? (
+                            <img className="kid__routine-thumb" src={imgUrl(r.cardsPhoto[i])} alt="" />
+                          ) : (
+                            <span className="kid__routine-emoji">{c.icon || '○'}</span>
+                          )}
+                        </span>
+                      ))}
+                      {total > PREVIEW && <span className="kid__routine-more">+{total - PREVIEW}</span>}
+                    </span>
+                  )}
+                  {/* Status: a familiar-voice hint, then either a calm "done" or a
+                      quiet how-far cue. Both reset daily — not a streak (NFR-CALM). */}
+                  <span className="kid__routine-status mono">
+                    {hasVoice && (
+                      <span className="kid__routine-voice" title={t.kid.routineVoice}>
+                        <Icon name="microphone-bold" size={15} />
+                      </span>
+                    )}
+                    {done ? (
+                      <span className="kid__routine-done">
+                        <span aria-hidden="true">✓</span> {t.kid.routineDone}
+                      </span>
+                    ) : (
+                      total > 0 && <span className="kid__routine-prog">{doneCount}/{total}</span>
+                    )}
                   </span>
-                )}
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
           <Link to="/board" className="kid__exit mono">
             {t.kid.exit}
@@ -286,7 +340,11 @@ export function KidView() {
                     onClick={() => playNarration(picked.cardsNarration?.[i], c.narration ?? c.label, speak)}
                     aria-label={c.label}
                   >
-                    <span aria-hidden="true">{c.icon || '○'}</span>
+                    {picked.cardsPhoto?.[i] ? (
+                      <img className="tdl-recap__photo" src={imgUrl(picked.cardsPhoto[i])} alt="" aria-hidden="true" />
+                    ) : (
+                      <span aria-hidden="true">{c.icon || '○'}</span>
+                    )}
                     <span className="tdl-recap__check" aria-hidden="true">✓</span>
                   </button>
                 ))}
@@ -304,7 +362,13 @@ export function KidView() {
                 onClick={() => readAloud(curIdx)}
                 aria-label={cur?.label}
               >
-                <span className="tdl-illus-emoji">{cur?.icon || '○'}</span>
+                {/* A parent's photo of the real thing wins over the emoji when set
+                    (feature #17 C); falls back to the emoji otherwise. */}
+                {picked.cardsPhoto?.[curIdx] ? (
+                  <img className="tdl-illus-photo" src={imgUrl(picked.cardsPhoto[curIdx])} alt="" />
+                ) : (
+                  <span className="tdl-illus-emoji">{cur?.icon || '○'}</span>
+                )}
               </button>
               <button
                 type="button"
@@ -325,7 +389,11 @@ export function KidView() {
                 {next && (
                   <div className="tdl-next" aria-hidden="true">
                     <span className="tdl-next-arrow">→</span>
-                    <span className="tdl-next-pic">{next.icon || '○'}</span>
+                    {picked.cardsPhoto?.[curIdx + 1] ? (
+                      <img className="tdl-next-photo" src={imgUrl(picked.cardsPhoto[curIdx + 1])} alt="" />
+                    ) : (
+                      <span className="tdl-next-pic">{next.icon || '○'}</span>
+                    )}
                   </div>
                 )}
                 <div className="tdl-dots" aria-hidden="true">

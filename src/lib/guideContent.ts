@@ -401,6 +401,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Une photo sur une carte', en: 'A photo on a card' },
+        detail: {
+          fr: 'Sur chaque carte (Réglages ▸ Routines), touche 📷 pour ajouter une vraie photo — la vraie brosse à dents, le vrai crochet à manteau. L’enfant la voit à la place de l’émoji; sans photo, l’émoji reste.',
+          en: 'On each card (Settings ▸ Routines), tap 📷 to add a real photo — the actual toothbrush, the actual coat hook. The child sees it instead of the emoji; with no photo, the emoji stays.',
+        },
+        why: {
+          fr: 'Un pré-lecteur reconnaît la vraie chose plus vite qu’un dessin générique. C’est optionnel et ça se change ou s’efface en un toucher.',
+          en: 'A pre-reader recognises the real thing faster than a generic glyph. It’s optional and changes or clears in one tap.',
+        },
+      },
+      {
         label: { fr: 'Pas de récompenses', en: 'No rewards' },
         detail: {
           fr: 'Aucun point, aucune étoile, aucune séquence à entretenir. Elle se termine, et c’est tout.',
@@ -685,6 +696,51 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Rien n’est perdu — la capture fonctionne même quand l’IA est absente.',
           en: 'Nothing is lost — capture works even when AI is down.',
+        },
+      },
+      {
+        label: { fr: 'Mémo vocal ou dessin', en: 'Voice memo or drawing' },
+        detail: {
+          fr: 'Au lieu d’écrire, laisse un mémo vocal ou dessine une petite note pour la maisonnée. Elle s’épingle sur le babillard ; touche ▶ pour l’écouter, ou efface-la d’un geste.',
+          en: 'Instead of typing, leave a voice memo or draw a little note for the household. It pins to the board; tap ▶ to hear it, or clear it with a tap.',
+        },
+        why: {
+          fr: 'Un mot doux, un dessin d’enfant ou un rappel parlé — plus chaleureux qu’un texte, et tout le monde le voit.',
+          en: 'A sweet word, a kid’s drawing or a spoken reminder — warmer than text, and everyone sees it.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'favorites',
+    icon: 'heart-bold',
+    group: 'concepts',
+    title: { fr: 'Les coups de cœur', en: 'Favorites' },
+    what: {
+      fr: 'Mets un ❤ sur les recettes que tu aimes. « Qu’est-ce qu’on mange ? » penchera vers les plats aimés de la maisonnée.',
+      en: 'Put a ❤ on recipes you love. “What’s for supper?” will lean toward the household’s loved dishes.',
+    },
+    points: [
+      {
+        label: { fr: 'Chacun le sien', en: 'Each their own' },
+        detail: {
+          fr: 'Le cœur suit le visage choisi : on voit QUI aime un plat (les frimousses), jamais un nombre ni un classement.',
+          en: 'The heart follows the picked face: you see WHO loves a dish (the little faces), never a number or a ranking.',
+        },
+        why: {
+          fr: 'Une préférence partagée, pas un concours — fidèle au calme.',
+          en: 'A shared preference, not a contest — true to calm.',
+        },
+      },
+      {
+        label: { fr: 'En mode Maisonnée', en: 'In Household mode' },
+        detail: {
+          fr: 'Sans visage choisi, les cœurs s’affichent mais on n’en ajoute pas : choisis ton visage pour aimer.',
+          en: 'With no face picked, the hearts show but you can’t add one: pick your face to love a dish.',
+        },
+        why: {
+          fr: 'Un « j’aime » appartient à quelqu’un — pas à « tout le monde ».',
+          en: 'A “love” belongs to someone — not to “everyone”.',
         },
       },
     ],

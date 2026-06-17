@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { HeartButton } from '../HeartButton'
 import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY, recipeImg, allTags, recipeTotalMin, tagColor } from '../../lib/recipes'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { rankCookable, rankUseSoon, rankNeglected } from '../../lib/cookable'
@@ -252,7 +253,8 @@ export function RecipesTab({
             const nIngs = withoutHeadings(r.ingredients).length
             const totalMin = recipeTotalMin(r)
             return (
-              <button key={r.id} type="button" className="recipe-card surface" onClick={() => onView(r)}>
+              <div key={r.id} className="recipe-card-wrap">
+              <button type="button" className="recipe-card surface" onClick={() => onView(r)}>
                 <span className="recipe-card__thumb" aria-hidden="true">
                   {img ? <img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">{pictoFor(r.title, '🍳')}</span>}
                 </span>
@@ -290,6 +292,10 @@ export function RecipesTab({
                   <span className="recipe-card__time mono">⏱ {formatDuration(totalMin * 60)}</span>
                 )}
               </button>
+              {/* ❤ family favorite (#21) — a sibling overlay (never nested in the
+                  card button); shows who loved it, toggles for the active face. */}
+              <HeartButton recipeId={r.id} />
+              </div>
             )
           })}
         </div>

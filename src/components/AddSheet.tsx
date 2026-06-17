@@ -23,6 +23,7 @@ import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks
 import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
+import { MemoControls } from './MemoControls'
 import { useModal } from '../lib/useModal'
 import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
@@ -525,6 +526,7 @@ export function AddSheet({
         )}
 
         {mode === 'capture' && (
+          <>
           <form onSubmit={submit}>
             <div className="sheet__field">
               <Icon name="pencil-simple-bold" size={20} color="var(--ink-faint)" />
@@ -567,6 +569,10 @@ export function AddSheet({
               {t.capture.add}
             </button>
           </form>
+          {/* Or leave a memo instead of typing: a voice clip (#38) or a quick
+              drawing (#14). Both file a fridge note with an R2 attachment. */}
+          <MemoControls onDone={close} />
+          </>
         )}
 
         {mode === 'list-item' && (

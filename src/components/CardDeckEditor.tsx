@@ -5,8 +5,9 @@ import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { useOnline } from '../lib/online'
 import { api, isStatus } from '../lib/api'
 import { sideInsert, sideRemove, sideMove, sideSet, alignSide } from '../lib/parallelArray'
+import { resizeImage, imgUrl, PHOTO_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { EditField } from './EditField'
-import { Icon } from './Icon'
+import { Icon, InlineIcon } from './Icon'
 
 // Edit a routine's deck of picture cards: each card is an emoji + a word. Tap
 // the emoji to switch it from a palette, type the word, reorder by dragging the
@@ -21,16 +22,27 @@ import { Icon } from './Icon'
 // deck just calls them on both arrays together). The clip is the parent's own
 // voice reading the card aloud for a pre-reader; the kid view plays it on tap and
 // falls back to on-device TTS when a slot is empty (or R2 is unset).
+//
+// Feature #17 C — per-card PHOTOS, the same parallel-array discipline as the
+// clips. When the parent passes `photo` + `onPhotoChange`, each card grows a 📷
+// control (add / change / remove) and the kid view shows the photo in place of
+// the emoji. `photo` is a string[] kept rigorously PARALLEL to `cards` too, so a
+// photo never mis-attaches across add / remove / reorder — every deck mutation
+// moves cards, clips, and photos together.
 export function CardDeckEditor({
   cards,
   onChange,
   narration,
   onNarrationChange,
+  photo,
+  onPhotoChange,
 }: {
   cards: DeckCard[]
   onChange: (cards: DeckCard[]) => void
   narration?: string[]
   onNarrationChange?: (narration: string[]) => void
+  photo?: string[]
+  onPhotoChange?: (photo: string[]) => void
 }) {
   const t = useT()
   const [paletteFor, setPaletteFor] = useState<number | null>(null)
@@ -39,32 +51,48 @@ export function CardDeckEditor({
   // view already falls back to TTS, so nothing breaks — the control just isn't
   // offered when it can't do anything.
   const [audioOff, setAudioOff] = useState(false)
+  // R2 photo storage off (a photo upload 503'd) → hide every photo control too;
+  // the kid view falls back to the card's emoji.
+  const [photoOff, setPhotoOff] = useState(false)
   const clips = onNarrationChange ? alignSide(narration, cards.length) : null
+  const photos = onPhotoChange ? alignSide(photo, cards.length) : null
 
-  // Mutate cards and the parallel clip array TOGETHER so an index never drifts.
-  const setBoth = (nextCards: DeckCard[], nextClips: string[] | null) => {
+  // Mutate cards and the parallel media arrays TOGETHER so an index never drifts.
+  // A `null` side means "leave that array untouched" (a clip-only edit doesn't
+  // disturb photos and vice-versa); a deck change passes BOTH so they ride along.
+  const commit = (nextCards: DeckCard[], nextClips: string[] | null, nextPhotos: string[] | null) => {
     onChange(nextCards)
     if (nextClips && onNarrationChange) onNarrationChange(nextClips)
+    if (nextPhotos && onPhotoChange) onPhotoChange(nextPhotos)
   }
   const update = (i: number, patch: Partial<DeckCard>) =>
     onChange(cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c)))
   const remove = (i: number) => {
-    setBoth(
+    commit(
       cards.filter((_, idx) => idx !== i),
       clips ? sideRemove(clips, i) : null,
+      photos ? sideRemove(photos, i) : null,
     )
     setPaletteFor(null)
   }
-  const add = () => setBoth([...cards, { icon: '⭐', label: '' }], clips ? sideInsert(clips) : null)
+  const add = () =>
+    commit(
+      [...cards, { icon: '⭐', label: '' }],
+      clips ? sideInsert(clips) : null,
+      photos ? sideInsert(photos) : null,
+    )
   const move = (from: number, to: number) => {
     if (to < 0 || to >= cards.length || from === to) return
     const next = [...cards]
     const [m] = next.splice(from, 1)
     next.splice(to, 0, m)
-    setBoth(next, clips ? sideMove(clips, from, to) : null)
+    commit(next, clips ? sideMove(clips, from, to) : null, photos ? sideMove(photos, from, to) : null)
   }
   const setClip = (i: number, key: string) => {
-    if (clips) setBoth(cards, sideSet(clips, i, key))
+    if (clips) commit(cards, sideSet(clips, i, key), null)
+  }
+  const setPhoto = (i: number, key: string) => {
+    if (photos) commit(cards, null, sideSet(photos, i, key))
   }
 
   // Reorder by dragging a card's grip onto another card (commit on drop, not a
@@ -133,6 +161,17 @@ export function CardDeckEditor({
               onUploaded={(key) => setClip(i, key)}
               onClear={() => setClip(i, '')}
               onAudioOff={() => setAudioOff(true)}
+            />
+          )}
+          {/* The 📷 photo control sits under the card too (feature #17 C). A photo,
+              when set, replaces the emoji on the kid surface — a pre-reader spots
+              the real toothbrush, not a generic glyph. */}
+          {photos && !photoOff && (
+            <PhotoControl
+              photoKey={photos[i]}
+              onUploaded={(key) => setPhoto(i, key)}
+              onClear={() => setPhoto(i, '')}
+              onPhotoOff={() => setPhotoOff(true)}
             />
           )}
           {paletteFor === i && (
@@ -332,6 +371,97 @@ function ClipControl({
         </button>
       )}
       {!online && !clipKey && <span className="deck__clip-note">{t.routines.clipOnline}</span>}
+      {err && <span className="deck__clip-note deck__clip-note--err">{t.routines.clipFail}</span>}
+    </div>
+  )
+}
+
+// One card's photo control (feature #17 C). With a photo: a thumbnail + change /
+// remove. Without: a single 📷 add button. The picked file is resized small
+// client-side (PHOTO_MAX, like every other upload) and sent to the sibling
+// /api/routine-card-photo endpoint; the returned R2 key is handed up. A 503 (R2
+// unbound) tells the deck to hide every photo control; any other failure leaves
+// the card un-photographed and never blocks the form — the emoji still covers it.
+function PhotoControl({
+  photoKey,
+  onUploaded,
+  onClear,
+  onPhotoOff,
+}: {
+  photoKey: string
+  onUploaded: (key: string) => void
+  onClear: () => void
+  onPhotoOff: () => void
+}) {
+  const t = useT()
+  const online = useOnline()
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(false)
+
+  async function pick(file: File) {
+    setBusy(true)
+    setErr(false)
+    try {
+      const blob = await resizeImage(file, PHOTO_MAX)
+      if (blob.size > MAX_UPLOAD_BYTES) {
+        setErr(true)
+        return // a format no decoder could shrink; skip rather than hard-reject
+      }
+      const { key } = await api<{ key: string }>('routine-card-photo', { method: 'POST', body: blob })
+      onUploaded(key)
+    } catch (e) {
+      if (isStatus(e, 503)) onPhotoOff()
+      else setErr(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="deck__photo">
+      {photoKey ? (
+        <>
+          <img className="deck__photo-thumb" src={imgUrl(photoKey)} alt="" />
+          <label className={'deck__clip-btn' + (busy || !online ? ' is-disabled' : '')}>
+            <InlineIcon name="camera-bold" size={15} /> {busy ? '…' : t.routines.cardPhotoChange}
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              disabled={busy || !online}
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) void pick(f)
+                e.target.value = ''
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className="deck__clip-btn deck__clip-del"
+            onClick={onClear}
+            aria-label={t.routines.cardPhotoRemove}
+          >
+            <Icon name="x-bold" size={14} />
+          </button>
+        </>
+      ) : (
+        <label className={'deck__clip-btn' + (busy || !online ? ' is-disabled' : '')}>
+          <InlineIcon name="image-square-bold" size={15} /> {busy ? '…' : t.routines.cardPhotoAdd}
+          <input
+            type="file"
+            accept="image/*"
+            hidden
+            disabled={busy || !online}
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) void pick(f)
+              e.target.value = ''
+            }}
+          />
+        </label>
+      )}
+      {!online && !photoKey && <span className="deck__clip-note">{t.routines.clipOnline}</span>}
       {err && <span className="deck__clip-note deck__clip-note--err">{t.routines.clipFail}</span>}
     </div>
   )

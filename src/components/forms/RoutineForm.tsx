@@ -30,6 +30,9 @@ export interface RoutineInit {
   // Parallel parent-voice clip keys (feature #17 A), one R2 key per card
   // ('' = none). Same length as cards; prefills the deck's recorded clips on edit.
   cardsNarration?: string[]
+  // Parallel card photo keys (feature #17 C), one R2 key per card ('' = none).
+  // Same length as cards; prefills the deck's attached photos on edit.
+  cardsPhoto?: string[]
 }
 
 export function RoutineForm({
@@ -60,6 +63,12 @@ export function RoutineForm({
   const [cardsNarration, setCardsNarration] = useState<string[]>(() =>
     alignSide(value?.cardsNarration, value?.cards?.length ?? 0),
   )
+  // Parallel card photo keys (feature #17 C), kept the SAME length as `cards` —
+  // CardDeckEditor mutates this array alongside cards + clips on every
+  // add/remove/reorder. Seeded (and padded) from the loaded routine on edit.
+  const [cardsPhoto, setCardsPhoto] = useState<string[]>(() =>
+    alignSide(value?.cardsPhoto, value?.cards?.length ?? 0),
+  )
   // The moment-of-day cue (null = anytime). Orders the kid view; never a gate.
   const initTod = isRoutineTod(value?.timeOfDay) ? value?.timeOfDay : null
   const [tod, setTod] = useState<RoutineTod | null>(initTod)
@@ -72,9 +81,10 @@ export function RoutineForm({
   }
   function applyTemplate(tpl: { name: string; tod: RoutineTod | null; cards: DeckCard[] }) {
     setCards(tpl.cards.map((c) => ({ ...c })))
-    // A template's cards carry no recorded clips — reset the parallel array to a
-    // fresh all-empty set of the new length so the two never drift.
+    // A template's cards carry no recorded clips or photos — reset both parallel
+    // arrays to a fresh all-empty set of the new length so they never drift.
     setCardsNarration(tpl.cards.map(() => ''))
+    setCardsPhoto(tpl.cards.map(() => ''))
     // The template knows its moment (Matin → morning, Dodo → evening).
     setTod(tpl.tod)
     if (!name.trim()) {
@@ -90,7 +100,12 @@ export function RoutineForm({
     // index-for-index in the saved payload (feature #17 A). Empty cards never had
     // a clip, so nothing is lost.
     const kept = cards
-      .map((c, i) => ({ icon: c.icon, label: c.label.trim(), clip: cardsNarration[i] ?? '' }))
+      .map((c, i) => ({
+        icon: c.icon,
+        label: c.label.trim(),
+        clip: cardsNarration[i] ?? '',
+        photo: cardsPhoto[i] ?? '',
+      }))
       .filter((c) => c.label || c.icon)
     const payload = kept.map((c) => ({
       icon: c.icon,
@@ -98,6 +113,7 @@ export function RoutineForm({
       narration: c.label || c.icon,
     }))
     const narrationPayload = kept.map((c) => c.clip)
+    const photoPayload = kept.map((c) => c.photo)
     setBusy(true)
     setErr(false)
     try {
@@ -109,6 +125,7 @@ export function RoutineForm({
             name: name.trim(),
             cards: payload,
             cardsNarration: narrationPayload,
+            cardsPhoto: photoPayload,
             timeOfDay: tod ?? null,
           },
           affectedKeys: [['routines']],
@@ -121,6 +138,7 @@ export function RoutineForm({
             name: name.trim(),
             cards: payload,
             cardsNarration: narrationPayload,
+            cardsPhoto: photoPayload,
             timeOfDay: tod ?? undefined,
           },
           affectedKeys: [['routines']],
@@ -128,6 +146,7 @@ export function RoutineForm({
         setName('')
         setCards([])
         setCardsNarration([])
+        setCardsPhoto([])
         setMemberIds([])
         setTod(null)
       }
@@ -215,6 +234,8 @@ export function RoutineForm({
         onChange={setCards}
         narration={cardsNarration}
         onNarrationChange={setCardsNarration}
+        photo={cardsPhoto}
+        onPhotoChange={setCardsPhoto}
       />
 
       {err && <p className="error mono">{t.common.saveFailed}</p>}

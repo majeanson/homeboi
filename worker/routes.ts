@@ -34,11 +34,13 @@ import * as month from '../functions/api/month'
 import * as members from '../functions/api/members'
 import * as membersAvatar from '../functions/api/members/avatar'
 import * as notes from '../functions/api/notes'
+import * as noteMedia from '../functions/api/note-media'
 import * as pantry from '../functions/api/pantry'
 import * as photos from '../functions/api/photos'
 import * as recap from '../functions/api/recap'
 import * as recipeDraft from '../functions/api/recipe-draft'
 import * as recipeImage from '../functions/api/recipe-image'
+import * as recipeLoves from '../functions/api/recipe-loves'
 import * as recipeImport from '../functions/api/recipe-import'
 import * as recipeStepImage from '../functions/api/recipe-step-image'
 import * as recipeVision from '../functions/api/recipe-vision'
@@ -47,6 +49,7 @@ import * as recipeTags from '../functions/api/recipe-tags'
 import * as recipeToList from '../functions/api/recipe-to-list'
 import * as reserve from '../functions/api/reserve'
 import * as routineAudio from '../functions/api/routine-audio'
+import * as routineCardPhoto from '../functions/api/routine-card-photo'
 import * as routines from '../functions/api/routines'
 import * as suggestMeal from '../functions/api/suggest-meal'
 import * as transcribe from '../functions/api/transcribe'
@@ -101,11 +104,13 @@ const TABLE: Record<string, RouteMod> = {
   members,
   'members/avatar': membersAvatar,
   notes,
+  'note-media': noteMedia,
   pantry,
   photos,
   recap,
   'recipe-draft': recipeDraft,
   'recipe-image': recipeImage,
+  'recipe-loves': recipeLoves,
   'recipe-import': recipeImport,
   'recipe-step-image': recipeStepImage,
   'recipe-vision': recipeVision,
@@ -114,6 +119,7 @@ const TABLE: Record<string, RouteMod> = {
   'recipe-to-list': recipeToList,
   reserve,
   'routine-audio': routineAudio,
+  'routine-card-photo': routineCardPhoto,
   routines,
   'suggest-meal': suggestMeal,
   transcribe,

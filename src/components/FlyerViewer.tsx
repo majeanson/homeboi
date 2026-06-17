@@ -160,8 +160,9 @@ export function FlyerViewer({
   //   and uncut products aren't in the feed), so the position-faithful page reads
   //   as half-empty. The grid packs the real deals together so it looks complete.
   // - 'plan': the position-faithful page reconstruction — useful in-store to find
-  //   where an item sits. We open straight to it when launched on a specific item.
-  const [view, setView] = useState<'offres' | 'plan'>(highlightId != null ? 'plan' : 'offres')
+  //   where an item sits, and the default: it reads as the real flyer. We also open
+  //   straight to it when launched on a specific item (highlightId).
+  const [view, setView] = useState<'offres' | 'plan'>('plan')
 
   // Manual "download for offline": pull every clipping through the same-origin
   // proxy so the service worker caches it, before you lose wifi (the store). Just
@@ -404,20 +405,30 @@ export function FlyerViewer({
             opens the detail card (and the map can then locate it). */}
         {state === 'ok' && view === 'offres' && (
           <div className="flyer-grid">
-            {data!.items.map((it, idx) =>
-              it.image ? (
+            {data!.items.map((it, idx) => {
+              if (!it.image) return null
+              // Reserve each cell's height from the clipping's true box ratio so the
+              // grid is laid out correctly on first paint — before any image loads.
+              // Without it, cells are 0px tall, lazy images never intersect (so they
+              // stay blank until a tab switch forces a re-layout), and as they
+              // trickle in the cells reflow ("random order until it stabilizes").
+              const w = it.right - it.left
+              const h = it.top - it.bottom
+              const ratio = w > 0 && h > 0 ? `${w} / ${h}` : undefined
+              return (
                 <button
                   type="button"
                   key={idx}
                   ref={selectedIdx === idx ? selectedRef : undefined}
                   className={`flyer-grid__cell${selectedIdx === idx ? ' is-hit' : ''}`}
+                  style={ratio ? { aspectRatio: ratio } : undefined}
                   onClick={() => setSelectedIdx(idx)}
                   aria-label={it.price != null ? `${it.name} — ${money(it.price)}` : it.name}
                 >
                   <img src={proxied(it.image)} alt={it.name} loading="lazy" />
                 </button>
-              ) : null,
-            )}
+              )
+            })}
           </div>
         )}
 

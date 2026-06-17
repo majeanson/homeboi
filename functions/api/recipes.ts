@@ -302,5 +302,10 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   await ctx.env.DB.prepare('DELETE FROM recipes WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .run()
+  // Free the recipe's favorite hearts (#21) — D1 doesn't cascade FKs, so clear
+  // them here or they'd linger as orphans keyed to a gone recipe.
+  await ctx.env.DB.prepare('DELETE FROM recipe_loves WHERE recipe_id = ? AND household_id = ?')
+    .bind(body.id, actor.householdId)
+    .run()
   return ok({ ok: true })
 })

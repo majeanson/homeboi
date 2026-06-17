@@ -1,0 +1,18 @@
+-- Per-card PHOTOS for kid routine cards (feature #17, part C). A parent can attach
+-- a real photo to a routine step ("brush THESE teeth", a picture of the actual
+-- toothbrush / cubby / coat) so a pre-reader recognises the real thing instead of
+-- a generic emoji. The kid view shows the photo in place of the card's emoji when
+-- one is set. The photos live in the R2 PHOTOS bucket under an `rcp_` key prefix;
+-- this column holds the keys.
+--
+-- Like cards_narration_json (0040), this is a PARALLEL array to routines.cards_json,
+-- one entry PER card by position: cards_photo_json[i] is the image R2 key (or
+-- null / "") for cards_json[i]. The API keeps the two arrays the same length.
+-- Empty entries mean "no photo — fall back to the card's emoji" (graceful degrade,
+-- and the no-R2 path). Default '[]' = no photos, so EVERY existing routine reads
+-- exactly as before — purely additive, no backfill.
+--
+-- NOT a streak/points/badge field (calm-tenets.test.ts) — it's a one-shot visual
+-- nicety with no engagement loop. Additive, nullable-by-default, forward-only,
+-- filename-locked.
+ALTER TABLE routines ADD COLUMN cards_photo_json TEXT DEFAULT '[]';

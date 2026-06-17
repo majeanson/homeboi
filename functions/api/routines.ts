@@ -20,14 +20,15 @@ const isStr = (v: unknown): v is string => typeof v === 'string'
 const todOrNull = (v: unknown): string | null =>
   v === 'morning' || v === 'afternoon' || v === 'evening' ? v : null
 
-// Per-card parent-voice narration clips (feature #17 A, migration 0040). A
-// PARALLEL array to cards: cardsNarration[i] is the R2 audio key for card i, or
-// '' when that card has no clip (→ on-device TTS). We keep it the SAME LENGTH as
+// Per-card media key arrays kept PARALLEL to cards: side[i] is the R2 key for
+// card i, or '' when that card has no media. Two of them today — parent-voice
+// narration clips (feature #17 A, migration 0040) and card photos (feature #17 C,
+// migration 0042) — share this one normalizer. We keep each the SAME LENGTH as
 // the deck so the kid view can index it positionally — pad/trim to `count` and
 // validate each entry is an R2-key-shaped token ('' otherwise) so a client can't
 // stuff junk into the column. Defensive on read: a bad/short row reads as all-''.
 const isKeyish = (v: unknown): v is string => isStr(v) && /^[A-Za-z0-9_-]{1,64}$/.test(v)
-function normalizeNarration(v: unknown, count: number): string[] {
+function normalizeKeys(v: unknown, count: number): string[] {
   const src = parseJsonArray<unknown>(typeof v === 'string' ? v : JSON.stringify(v ?? []))
   const out: string[] = []
   for (let i = 0; i < count; i++) out.push(isKeyish(src[i]) ? (src[i] as string) : '')
@@ -38,7 +39,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const today = dayStart(new Date(Date.now()))
 
   const routines = await ctx.env.DB.prepare(
-    `SELECT r.id, r.member_id, r.name, r.cards_json, r.cards_narration_json, r.time_of_day,
+    `SELECT r.id, r.member_id, r.name, r.cards_json, r.cards_narration_json, r.cards_photo_json, r.time_of_day,
             m.display_name AS member_name,
             m.colour AS color, m.avatar_kind AS avatar_kind, m.avatar_ref AS avatar_photo
        FROM routines r LEFT JOIN members m ON m.id = r.member_id
@@ -51,6 +52,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       name: string
       cards_json: string
       cards_narration_json: string | null
+      cards_photo_json: string | null
       time_of_day: string | null
       member_name: string | null
       color: string | null
@@ -79,7 +81,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
       timeOfDay: todOrNull(r.time_of_day),
       cards,
       // Parallel parent-voice clips, one R2 key per card ('' = none → TTS).
-      cardsNarration: normalizeNarration(r.cards_narration_json, cards.length),
+      cardsNarration: normalizeKeys(r.cards_narration_json, cards.length),
+      // Parallel card photos, one R2 key per card ('' = none → the card's emoji).
+      cardsPhoto: normalizeKeys(r.cards_photo_json, cards.length),
       doneIdx: parseJsonArray<number>(doneByRoutine.get(r.id), isNumber),
     }
   })
@@ -94,6 +98,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
     cards?: Card[]
     // Parallel parent-voice clip keys (feature #17 A) — same length as cards.
     cardsNarration?: unknown
+    // Parallel card photo keys (feature #17 C) — same length as cards.
+    cardsPhoto?: unknown
     timeOfDay?: string
   }>(ctx.request)
   // One routine can be assigned to several toddlers at once (e.g. the SAME
@@ -108,16 +114,17 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const cards = (body.cards ?? []).slice(0, 12)
   const name = body.name.trim()
   const cardsJson = JSON.stringify(cards)
-  // Keep the clip array parallel + same-length as the deck (feature #17 A).
-  const narrationJson = JSON.stringify(normalizeNarration(body.cardsNarration, cards.length))
+  // Keep the clip + photo arrays parallel + same-length as the deck (feature #17 A/C).
+  const narrationJson = JSON.stringify(normalizeKeys(body.cardsNarration, cards.length))
+  const photoJson = JSON.stringify(normalizeKeys(body.cardsPhoto, cards.length))
   const tod = todOrNull(body.timeOfDay)
   const ts = nowSec()
   const ids = memberIds.map(() => newId())
   await ctx.env.DB.batch(
     memberIds.map((memberId, i) =>
       ctx.env.DB.prepare(
-        'INSERT INTO routines (id, household_id, member_id, name, cards_json, cards_narration_json, time_of_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      ).bind(ids[i], actor.householdId, memberId, name, cardsJson, narrationJson, tod, ts),
+        'INSERT INTO routines (id, household_id, member_id, name, cards_json, cards_narration_json, cards_photo_json, time_of_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      ).bind(ids[i], actor.householdId, memberId, name, cardsJson, narrationJson, photoJson, tod, ts),
     ),
   )
   return ok({ ids })
@@ -134,18 +141,20 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     cards?: Card[]
     // Parallel parent-voice clip keys (feature #17 A) — same length as cards.
     cardsNarration?: unknown
+    // Parallel card photo keys (feature #17 C) — same length as cards.
+    cardsPhoto?: unknown
     timeOfDay?: string | null
   }>(ctx.request)
   if (!body?.routineId) return badRequest('routineId requis.')
 
   // Ownership check: the routine must belong to this household. We also read the
-  // current deck + clip array so a narration-only edit (or a deck edit that
-  // doesn't resend clips) can keep them aligned by position.
+  // current deck + clip/photo arrays so a media-only edit (or a deck edit that
+  // doesn't resend them) can keep them aligned by position.
   const owns = await ctx.env.DB.prepare(
-    'SELECT cards_json, cards_narration_json FROM routines WHERE id = ? AND household_id = ?',
+    'SELECT cards_json, cards_narration_json, cards_photo_json FROM routines WHERE id = ? AND household_id = ?',
   )
     .bind(body.routineId, actor.householdId)
-    .first<{ cards_json: string; cards_narration_json: string | null }>()
+    .first<{ cards_json: string; cards_narration_json: string | null; cards_photo_json: string | null }>()
   if (!owns) return notFound('Routine introuvable.')
 
   // Edit the routine itself (name / card deck / time-of-day cue) — a settings
@@ -159,8 +168,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       'timeOfDay' in body ||
       body.name !== undefined ||
       body.cards !== undefined ||
-      body.cardsNarration !== undefined
-    if (!editsContent) return badRequest('cardIdx, name, cards, cardsNarration ou timeOfDay requis.')
+      body.cardsNarration !== undefined ||
+      body.cardsPhoto !== undefined
+    if (!editsContent) return badRequest('cardIdx, name, cards, cardsNarration, cardsPhoto ou timeOfDay requis.')
     const sets: string[] = []
     const binds: unknown[] = []
     if (typeof body.name === 'string' && body.name.trim()) {
@@ -179,10 +189,22 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     // one to the (possibly new) deck length so a card add/remove never desyncs.
     if (body.cardsNarration !== undefined) {
       sets.push('cards_narration_json = ?')
-      binds.push(JSON.stringify(normalizeNarration(body.cardsNarration, deckLen)))
+      binds.push(JSON.stringify(normalizeKeys(body.cardsNarration, deckLen)))
     } else if (newCards) {
       sets.push('cards_narration_json = ?')
-      binds.push(JSON.stringify(normalizeNarration(owns.cards_narration_json, deckLen)))
+      binds.push(JSON.stringify(normalizeKeys(owns.cards_narration_json, deckLen)))
+    }
+    // Photos: same alignment discipline as the clips above (feature #17 C). We
+    // resolve the new key list now (when the edit touches it) so any photo no
+    // longer referenced can be freed from R2 after the write — a swapped or
+    // removed card photo would otherwise leak its blob.
+    const prevPhotos = normalizeKeys(owns.cards_photo_json, parseJsonArray<Card>(owns.cards_json).length)
+    let nextPhotos: string[] | null = null
+    if (body.cardsPhoto !== undefined) nextPhotos = normalizeKeys(body.cardsPhoto, deckLen)
+    else if (newCards) nextPhotos = normalizeKeys(owns.cards_photo_json, deckLen)
+    if (nextPhotos) {
+      sets.push('cards_photo_json = ?')
+      binds.push(JSON.stringify(nextPhotos))
     }
     if ('timeOfDay' in body) {
       sets.push('time_of_day = ?')
@@ -193,6 +215,12 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     await ctx.env.DB.prepare(`UPDATE routines SET ${sets.join(', ')} WHERE id = ? AND household_id = ?`)
       .bind(...binds)
       .run()
+    // Free any card photo this edit dropped (best-effort, mirrors the recipe
+    // step-image cleanup). Only when the edit actually resolved a new photo list.
+    if (ctx.env.PHOTOS && nextPhotos) {
+      const kept = new Set(nextPhotos)
+      for (const k of prevPhotos) if (k && !kept.has(k)) await ctx.env.PHOTOS.delete(k).catch(() => {})
+    }
     return ok({ ok: true })
   }
 
@@ -228,18 +256,21 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  // Free any R2 voice clips this routine's cards pointed at before the row is gone
-  // (best-effort, mirrors the recipe step-image cleanup; a leaked blob is harmless
-  // but R2 stays tidy). Reads the narration keys first; skips if R2 is unbound.
+  // Free any R2 voice clips + card photos this routine's cards pointed at before
+  // the row is gone (best-effort, mirrors the recipe step-image cleanup; a leaked
+  // blob is harmless but R2 stays tidy). Reads the keys first; skips if R2 unbound.
   if (ctx.env.PHOTOS) {
     const owns = await ctx.env.DB.prepare(
-      'SELECT cards_json, cards_narration_json FROM routines WHERE id = ? AND household_id = ?',
+      'SELECT cards_json, cards_narration_json, cards_photo_json FROM routines WHERE id = ? AND household_id = ?',
     )
       .bind(body.id, actor.householdId)
-      .first<{ cards_json: string; cards_narration_json: string | null }>()
+      .first<{ cards_json: string; cards_narration_json: string | null; cards_photo_json: string | null }>()
     if (owns) {
       const cards = parseJsonArray<Card>(owns.cards_json)
-      for (const key of normalizeNarration(owns.cards_narration_json, cards.length)) {
+      for (const key of normalizeKeys(owns.cards_narration_json, cards.length)) {
+        if (key) await ctx.env.PHOTOS.delete(key).catch(() => {})
+      }
+      for (const key of normalizeKeys(owns.cards_photo_json, cards.length)) {
         if (key) await ctx.env.PHOTOS.delete(key).catch(() => {})
       }
     }
