@@ -475,12 +475,16 @@ export const FR = {
     empty: 'Aucune carte',
     todLabel: 'Moment :',
     tod: { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir', any: 'N’importe quand' },
-    // Parent-voice clips for routine cards (feature #17 A — recording UI TODO).
+    // Parent-voice clips for routine cards (feature #17 A).
     recordClip: 'Enregistrer ta voix',
     clipRecorded: 'Clip enregistré',
-    clipRecord: 'Enregistrer',
+    clipRecord: 'Réenregistrer',
     clipRemove: 'Retirer le clip',
     clipOff: 'Enregistrement audio indisponible ici',
+    clipPlay: 'Écouter le clip',
+    clipStop: 'Arrêter',
+    clipOnline: 'Hors ligne — branche-toi pour enregistrer',
+    clipFail: 'L’enregistrement n’a pas fonctionné',
   },
   login: {
     title: 'Connexion',
@@ -1311,12 +1315,16 @@ export const EN: typeof FR = {
     empty: 'No cards',
     todLabel: 'Moment:',
     tod: { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening', any: 'Anytime' },
-    // Parent-voice clips for routine cards (feature #17 A — recording UI TODO).
+    // Parent-voice clips for routine cards (feature #17 A).
     recordClip: 'Record your voice',
     clipRecorded: 'Clip recorded',
-    clipRecord: 'Record',
+    clipRecord: 'Re-record',
     clipRemove: 'Remove clip',
     clipOff: 'Audio recording unavailable here',
+    clipPlay: 'Play clip',
+    clipStop: 'Stop',
+    clipOnline: 'Offline — connect to record',
+    clipFail: 'Recording didn’t work',
   },
   login: {
     title: 'Sign in',

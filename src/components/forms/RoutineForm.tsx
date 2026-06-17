@@ -5,6 +5,7 @@ import { useLang, useT } from '../../i18n'
 import { CardDeckEditor } from '../CardDeckEditor'
 import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod, type RoutineTod } from '../../lib/routineTod'
+import { alignSide } from '../../lib/parallelArray'
 import { InlineIcon } from '../Icon'
 
 // The complete kid-routine form — who it's for (one or several toddlers, each
@@ -26,6 +27,9 @@ export interface RoutineInit {
   name: string
   timeOfDay: string | null
   cards?: { icon: string; label: string; narration?: string }[]
+  // Parallel parent-voice clip keys (feature #17 A), one R2 key per card
+  // ('' = none). Same length as cards; prefills the deck's recorded clips on edit.
+  cardsNarration?: string[]
 }
 
 export function RoutineForm({
@@ -49,6 +53,13 @@ export function RoutineForm({
   const [cards, setCards] = useState<DeckCard[]>(
     value?.cards?.map((c) => ({ icon: c.icon, label: c.label })) ?? [],
   )
+  // Parallel parent-voice clip keys (feature #17 A), kept rigorously the SAME
+  // length as `cards` — CardDeckEditor mutates both arrays together on every
+  // add/remove/reorder. Seed (and pad) from the loaded routine so an edit keeps
+  // its recorded clips; a brand-new routine starts all-empty.
+  const [cardsNarration, setCardsNarration] = useState<string[]>(() =>
+    alignSide(value?.cardsNarration, value?.cards?.length ?? 0),
+  )
   // The moment-of-day cue (null = anytime). Orders the kid view; never a gate.
   const initTod = isRoutineTod(value?.timeOfDay) ? value?.timeOfDay : null
   const [tod, setTod] = useState<RoutineTod | null>(initTod)
@@ -61,6 +72,9 @@ export function RoutineForm({
   }
   function applyTemplate(tpl: { name: string; tod: RoutineTod | null; cards: DeckCard[] }) {
     setCards(tpl.cards.map((c) => ({ ...c })))
+    // A template's cards carry no recorded clips — reset the parallel array to a
+    // fresh all-empty set of the new length so the two never drift.
+    setCardsNarration(tpl.cards.map(() => ''))
     // The template knows its moment (Matin → morning, Dodo → evening).
     setTod(tpl.tod)
     if (!name.trim()) {
@@ -71,27 +85,49 @@ export function RoutineForm({
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if ((!editing && !memberIds.length) || !name.trim() || busy) return
-    const payload = cards
-      .map((c) => ({ icon: c.icon, label: c.label.trim() }))
+    // Zip the deck with its parallel clip keys BEFORE filtering, so dropping an
+    // empty card drops its clip slot too — cards and cardsNarration stay aligned
+    // index-for-index in the saved payload (feature #17 A). Empty cards never had
+    // a clip, so nothing is lost.
+    const kept = cards
+      .map((c, i) => ({ icon: c.icon, label: c.label.trim(), clip: cardsNarration[i] ?? '' }))
       .filter((c) => c.label || c.icon)
-      .map((c) => ({ icon: c.icon, label: c.label || c.icon, narration: c.label || c.icon }))
+    const payload = kept.map((c) => ({
+      icon: c.icon,
+      label: c.label || c.icon,
+      narration: c.label || c.icon,
+    }))
+    const narrationPayload = kept.map((c) => c.clip)
     setBusy(true)
     setErr(false)
     try {
       if (editing) {
         await write('routines', {
           method: 'PATCH',
-          body: { routineId: value!.id, name: name.trim(), cards: payload, timeOfDay: tod ?? null },
+          body: {
+            routineId: value!.id,
+            name: name.trim(),
+            cards: payload,
+            cardsNarration: narrationPayload,
+            timeOfDay: tod ?? null,
+          },
           affectedKeys: [['routines']],
         })
       } else {
         await write('routines', {
           method: 'POST',
-          body: { memberIds, name: name.trim(), cards: payload, timeOfDay: tod ?? undefined },
+          body: {
+            memberIds,
+            name: name.trim(),
+            cards: payload,
+            cardsNarration: narrationPayload,
+            timeOfDay: tod ?? undefined,
+          },
           affectedKeys: [['routines']],
         })
         setName('')
         setCards([])
+        setCardsNarration([])
         setMemberIds([])
         setTod(null)
       }
@@ -171,15 +207,15 @@ export function RoutineForm({
         </div>
       )}
 
-      <CardDeckEditor cards={cards} onChange={setCards} />
-
-      {/* TODO #17 record clip — per-card parent-voice recording UI. The data
-          model + endpoint exist (POST /api/routine-audio → { key }, then send a
-          cardsNarration[] parallel to cards on POST/PATCH); this needs a small
-          per-card 🎙️ control (record/preview/clear) wired through CardDeckEditor.
-          Hide the control where R2 is unset (the endpoint 503s) — the kid view
-          already falls back to on-device TTS. Labels are staged in i18n:
-          t.routines.recordClip / clipRecorded / clipRecord / clipRemove / clipOff. */}
+      {/* The deck + its per-card parent-voice clips (feature #17 A). The two
+          arrays are mutated together inside CardDeckEditor so a clip never drifts
+          off its card; the control hides itself where R2 audio is unset. */}
+      <CardDeckEditor
+        cards={cards}
+        onChange={setCards}
+        narration={cardsNarration}
+        onNarrationChange={setCardsNarration}
+      />
 
       {err && <p className="error mono">{t.common.saveFailed}</p>}
       <button
