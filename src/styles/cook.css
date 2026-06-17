@@ -616,7 +616,8 @@
   margin-bottom: 0;
 }
 .kitchen__cook-filter,
-.kitchen__soon-filter {
+.kitchen__soon-filter,
+.kitchen__neglect-filter {
   flex: 0 0 auto;
   cursor: pointer;
   white-space: nowrap;
@@ -634,6 +635,31 @@
 .recipe-card__uses {
   color: var(--sage-deep, #4f6b3a);
   font-weight: 600;
+}
+/* #12 "Oubliées" subtitle — a quiet faint cue ("vu il y a 25 jours"), never a
+   loud badge: this is a gentle re-surfacing, not a stat. */
+.recipe-card__seen {
+  color: var(--ink-faint);
+}
+/* #10 cook-from-have empty-state hint — a soft second line under the calm "rien
+   n'achève" message pointing at the pantry flag that feeds the view. */
+.kitchen__cookable-hint {
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  margin: 0.4rem 0 0;
+}
+/* #11 collections — the filtered-book header carries a back-to-collections button
+   beside the collection name. Keep them on one calm row, wrapping on a phone. */
+.kitchen__collection-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+/* A nested segmented control (recipes-area: book / cookable / collections) sitting
+   inside the Recettes tab. Lighter top margin so it tucks under the tab row. */
+.subtabs--inset {
+  margin-top: 0.2rem;
 }
 .kitchen__use-soon-hint {
   color: var(--ink-faint);

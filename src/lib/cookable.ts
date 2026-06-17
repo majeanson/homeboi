@@ -78,6 +78,42 @@ export function rankUseSoon<R extends { title: string; ingredients: string[] }>(
     .sort((a, b) => b.uses.length - a.uses.length || a.recipe.title.localeCompare(b.recipe.title))
 }
 
+export interface NeglectRanked<R> {
+  recipe: R
+  // Whole days since this recipe was last served, or null when it has no recorded
+  // serving in the data we have (never linked to a meal, or older than the window).
+  // Null sorts FIRST — "haven't had in a while" leads with the longest-untouched.
+  daysSince: number | null
+}
+
+// "Haven't had in a while" (PRD): order the book by how long since each recipe was
+// last served, most-neglected first. `lastServed` maps a recipe id → the local-
+// midnight day-seconds it was last cooked (built from the meals the client holds);
+// `todayDay` is today's local-midnight day-seconds. A recipe absent from the map
+// has no known serving → daysSince null → sorts to the very top. This is a gentle
+// "maybe bring this back" nudge, never a stat or a streak (NFR-CALM): no counts to
+// optimise, no shame for a long gap.
+export function rankNeglected<R extends { id: string; title: string }>(
+  recipes: R[],
+  lastServed: Map<string, number>,
+  todayDay: number,
+): NeglectRanked<R>[] {
+  return recipes
+    .map((recipe) => {
+      const last = lastServed.get(recipe.id)
+      const daysSince = last == null ? null : Math.max(0, Math.round((todayDay - last) / 86400))
+      return { recipe, daysSince }
+    })
+    .sort((a, b) => {
+      // Never-served (null) leads, then longest gap first; ties break by title so
+      // the order is stable, not jittery.
+      if (a.daysSince == null && b.daysSince == null) return a.recipe.title.localeCompare(b.recipe.title)
+      if (a.daysSince == null) return -1
+      if (b.daysSince == null) return 1
+      return b.daysSince - a.daysSince || a.recipe.title.localeCompare(b.recipe.title)
+    })
+}
+
 export function rankCookable<R extends { title: string; ingredients: string[] }>(
   recipes: R[],
   pantryLow: string[],

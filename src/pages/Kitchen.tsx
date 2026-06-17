@@ -19,6 +19,8 @@ import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { ReserveSection } from '../components/kitchen/ReserveSection'
 import { RecipesTab } from '../components/kitchen/RecipesTab'
+import { CookableView } from '../components/kitchen/CookableView'
+import { CollectionsTab } from '../components/kitchen/CollectionsTab'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
@@ -88,12 +90,35 @@ export function Kitchen() {
   // Held in the URL (?tab=) so it survives the return from a full-screen add/edit
   // scene — add a recipe from Recettes and you come back to Recettes. See tabParam.
   const [kitTab, setKitTab] = useTabParam('tab', 'meals', ['meals', 'pantry', 'recipes'] as const)
+  // Within the Recettes tab, a calm segmented control switches the recipes AREA
+  // between the full book, the #10 "Quoi cuisiner?" cook-from-have view, and the
+  // #11 collections browser — held in the URL (?rv=) so it survives a return from
+  // a recipe scene. The cookable/collections views are parent-only affordances;
+  // the toddler lens renders KidKitchen wholesale (handled above).
+  const [recipeView, setRecipeView] = useTabParam('rv', 'book', ['book', 'cookable', 'collections'] as const)
   // The recipe a planned meal points at (exact recipe_id link first, else a loose
   // title match) — shared with the day editor via useRecipeForMeal.
   const recipeForMeal = useRecipeForMeal(recipes)
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const soonItems = useMemo(() => (useSoonQ.data?.soon ?? []).map((s) => s.item), [useSoonQ.data])
+  // #12 "Haven't had in a while": recipe id → the most recent local-midnight day a
+  // meal linked to it (recipe_id, migration 0024) was served. Built from the meals
+  // the page already holds — the 10-day window (`days`) plus the recent-history
+  // tail (`recent`) — so it needs NO new query. A recipe absent here is treated by
+  // rankNeglected as never-served-recently → it leads the "Oubliées" sort. The
+  // server's suggest-meal prompt does the authoritative full-history version; this
+  // is the calm client affordance over the data on hand.
+  const lastServedById = useMemo(() => {
+    const m = new Map<string, number>()
+    const rows = [...(meals.data?.days ?? []), ...(meals.data?.recent ?? [])]
+    for (const r of rows) {
+      if (!r.recipe_id) continue
+      const prev = m.get(r.recipe_id)
+      if (prev == null || r.date > prev) m.set(r.recipe_id, r.date)
+    }
+    return m
+  }, [meals.data])
   const unauth = isUnauthorized(meals.error) || isUnauthorized(pantry.error)
   const days = meals.data?.days ?? []
   const weekStart = meals.data?.weekStart ?? 0
@@ -576,13 +601,57 @@ export function Kitchen() {
         )}
 
         {kitTab === 'recipes' && (
-          <RecipesTab
-            recipes={recipes}
-            lowItems={lowItems}
-            soonItems={soonItems}
-            listItems={listItems}
-            onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
-          />
+          <>
+            {/* Recipes-area mode: the full book / #10 cook-from-have / #11
+                collections. A calm segmented control (same .subtabs vocabulary as
+                the kitchen tabs), shown only once there's a recipe to browse. */}
+            {recipes.length > 0 && (
+              <div className="subtabs subtabs--inset" role="tablist" aria-label={t.recipes.title}>
+                {([
+                  ['book', t.recipes.viewBook],
+                  ['cookable', t.recipes.cookable],
+                  ['collections', t.recipes.collections],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={recipeView === key}
+                    className={'subtabs__opt' + (recipeView === key ? ' is-on' : '')}
+                    onClick={() => setRecipeView(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {recipeView === 'cookable' ? (
+              <CookableView
+                recipes={recipes}
+                lowItems={lowItems}
+                listItems={listItems}
+                onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
+              />
+            ) : recipeView === 'collections' ? (
+              <CollectionsTab
+                recipes={recipes}
+                lowItems={lowItems}
+                soonItems={soonItems}
+                listItems={listItems}
+                lastServed={lastServedById}
+                onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
+              />
+            ) : (
+              <RecipesTab
+                recipes={recipes}
+                lowItems={lowItems}
+                soonItems={soonItems}
+                listItems={listItems}
+                lastServed={lastServedById}
+                onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
+              />
+            )}
+          </>
         )}
       </main>
     </>
