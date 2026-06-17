@@ -1,6 +1,5 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { useSpeak } from '../../lib/speak'
 import { Icon, InlineIcon } from '../Icon'
@@ -21,19 +20,21 @@ export function Notes({
   toddler?: boolean
 }) {
   const t = useT()
-  const qc = useQueryClient()
+  const write = useWrite()
   const speak = useSpeak()
   if (!notes.length) return null
   const colorOf = (id: string | null) => (id ? members.find((m) => m.id === id)?.colour : null)
 
   function dismiss(n: NoteRow) {
-    // Optimistic: drop it from the cached board at once, then persist the clear.
-    qc.setQueryData<BoardData>(BOARD_KEY, (d) =>
-      d ? { ...d, notes: d.notes.filter((x) => x.id !== n.id) } : d,
-    )
-    api('notes', { method: 'DELETE', body: { id: n.id } })
-      .catch(() => {})
-      .finally(() => qc.invalidateQueries({ queryKey: BOARD_KEY }))
+    // Optimistic: drop it from the cached board at once, then persist (queues
+    // offline and replays on reconnect — deleting a note by id is idempotent).
+    void write('notes', {
+      method: 'DELETE',
+      body: { id: n.id },
+      affectedKeys: [BOARD_KEY],
+      optimistic: (qc) =>
+        qc.setQueryData<BoardData>(BOARD_KEY, (d) => (d ? { ...d, notes: d.notes.filter((x) => x.id !== n.id) } : d)),
+    }).catch(() => {})
   }
 
   return (

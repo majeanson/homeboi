@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
 import { HelpDot } from '../components/HelpDot'
@@ -18,6 +18,7 @@ import { readBoardView, saveBoardView, type BoardView } from '../lib/boardview'
 import { useSpeak } from '../lib/speak'
 import { timeOfDay } from '../lib/timeofday'
 import { api, isUnauthorized } from '../lib/api'
+import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { formatDay, formatTime } from '../lib/format'
@@ -52,8 +53,8 @@ const greetName = (name: string) =>
 
 export function Board() {
   const t = useT()
-  const qc = useQueryClient()
   const undo = useUndoToast()
+  const write = useWrite()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { surface } = useSurface()
@@ -382,8 +383,9 @@ export function Board() {
           return n
         }),
       onCommit: async () => {
-        await api('chores', { method: 'PATCH', body: { id: c.id, complete: true } }).catch(() => {})
-        await qc.invalidateQueries({ queryKey: BOARD_KEY })
+        await write('chores', { method: 'PATCH', body: { id: c.id, complete: true }, affectedKeys: [BOARD_KEY] }).catch(
+          () => {},
+        )
         setPendingDone((s) => {
           const n = new Set(s)
           n.delete(c.id)
@@ -406,8 +408,7 @@ export function Board() {
           return n
         }),
       onCommit: async () => {
-        await api('meal-leftovers', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
-        await qc.invalidateQueries({ queryKey: BOARD_KEY })
+        await write('meal-leftovers', { method: 'DELETE', body: { id: l.id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
         setPendingLeftover((s) => {
           const n = new Set(s)
           n.delete(l.id)
@@ -445,8 +446,9 @@ export function Board() {
           return n
         }),
       onCommit: async () => {
-        await api('chores', { method: 'PATCH', body: { id: c.id, complete: true } }).catch(() => {})
-        await qc.invalidateQueries({ queryKey: BOARD_KEY })
+        await write('chores', { method: 'PATCH', body: { id: c.id, complete: true }, affectedKeys: [BOARD_KEY] }).catch(
+          () => {},
+        )
         setPendingDone((s) => {
           const n = new Set(s)
           n.delete(c.id)
