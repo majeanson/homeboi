@@ -480,16 +480,17 @@ export function Board() {
           their own row below so the avatar never reads as part of the filter. */}
       <HubHead
         title={me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]}
-        subtitle={formatDay(Math.floor(Date.now() / 1000), lang)}
         icon={TOD_ICON[tod]}
         iconColor="var(--marigold-deep)"
         background="var(--marigold-wash)"
         card="board"
       />
 
-      {/* Board controls: who's at this phone + which of the four views. Kept off
-          the avatar (top-right) so the header matches the other tabs. */}
+      {/* Board controls: today's date + who's at this phone + which of the four
+          views, all on one row under the avatar (the date rides beside the view
+          selector rather than on its own line under the greeting). */}
       <div className="board-controls">
+        <span className="board-controls__date mono">{formatDay(Math.floor(Date.now() / 1000), lang)}</span>
         {surface === 'mobile' && (
           <button
             type="button"

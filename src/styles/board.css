@@ -188,6 +188,14 @@
   justify-content: flex-end;
   margin: -8px 0 14px;
 }
+/* Today's date rides in the controls row (beside the view selector), not on its
+   own line under the greeting. mr:auto keeps it left while the chip + toggle stay
+   right-aligned under the avatar. */
+.board-controls__date {
+  margin-right: auto;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
 .weather-tip {
   margin-top: 0.35rem;
   font-size: 0.9rem;
