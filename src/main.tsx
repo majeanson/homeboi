@@ -24,7 +24,7 @@ import { startDaypartDrift } from './lib/daypartDrift'
 import { restorePersistedCache, startPersistingCache, clearPersistedCache } from './lib/persist'
 import { startOutbox, clearOutbox } from './lib/outbox'
 import { onAuthLost } from './lib/authEvents'
-import { setGuestToken, clearGuestToken } from './lib/device'
+import { setGuestToken, clearGuestToken, isGuestPreview, setGuestPreview as persistGuestPreview } from './lib/device'
 import { connectRealtime } from './lib/realtime'
 import './styles.css'
 
@@ -135,6 +135,24 @@ function Root() {
     setAudienceState('parent')
   }
 
+  // Operator's read-only "act as a guest" preview (the third Réglages mode). State
+  // is mirrored to localStorage (so the non-React `isGuest()` chokepoint in
+  // writeWith sees it) AND held here so toggling re-renders the read-only guards.
+  // Turning it ON drops to the parent lens (a guest sees the parent board).
+  const [guestPreview, setGuestPreviewState] = useState<boolean>(() => isGuestPreview())
+  function setGuestPreview(on: boolean) {
+    persistGuestPreview(on)
+    setGuestPreviewState(on)
+    if (on && !kidLocked) {
+      setAudienceState('parent')
+      try {
+        localStorage.setItem('babillard-audience', 'parent')
+      } catch {
+        /* noop */
+      }
+    }
+  }
+
   // The device ROLE: kiosk (wall display) or mobile (phone). Chosen at /setup and
   // remembered. `?surface=kiosk|mobile` overrides (provisioning + e2e); `?kid=1`
   // implies kiosk. `chosen` records whether the role was set deliberately — the
@@ -225,7 +243,7 @@ function Root() {
   return (
     <QueryClientProvider client={queryClient}>
       <LangContext.Provider value={{ lang, setLang }}>
-        <AudienceContext.Provider value={{ audience, setAudience, locked: kidLocked, unlock }}>
+        <AudienceContext.Provider value={{ audience, setAudience, locked: kidLocked, unlock, guestPreview, setGuestPreview }}>
           <SurfaceContext.Provider value={{ surface, setSurface, chosen: surfaceChosen }}>
           <ProfileContext.Provider value={{ memberId: profile, setMemberId: setProfile }}>
           <CalmContext.Provider value={{ calm, setCalm }}>

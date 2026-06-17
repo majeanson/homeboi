@@ -64,4 +64,38 @@ export function clearGuestToken(): void {
   }
 }
 
-export const isGuest = () => !getDeviceToken() && !!getGuestToken()
+// Guest mode is read-only and comes two ways:
+//   • by LINK — `?guest=<token>` (the babysitter): a real guest credential. Also
+//     LOCKED out of Réglages (no in-app escape; relaunch without the token to exit).
+//   • by SETTINGS — the operator flips the Parent|Toddler|Guest switch to preview
+//     the read-only board. NOT locked: settings stay reachable so the operator can
+//     switch back to Parent (the same way you leave toddler mode).
+// Both make the session read-only: the UI hides every mutating control and
+// `writeWith` refuses to fire one (so a row can't even appear to delete). The
+// server independently 403s every token-guest write. Reads ride whatever token
+// api.ts sends. Entering guest mode is authoritative even on a paired device — a
+// family tablet handed to a sitter must not keep kiosk delete rights.
+const GUEST_PREVIEW_KEY = 'babillard-guest-preview'
+
+export function isGuestPreview(): boolean {
+  try {
+    return localStorage.getItem(GUEST_PREVIEW_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function setGuestPreview(on: boolean): void {
+  try {
+    if (on) localStorage.setItem(GUEST_PREVIEW_KEY, '1')
+    else localStorage.removeItem(GUEST_PREVIEW_KEY)
+  } catch {
+    /* noop */
+  }
+}
+
+/** Read-only session — link guest OR the operator's settings preview. */
+export const isGuest = () => !!getGuestToken() || isGuestPreview()
+
+/** Link guest only: locked out of Réglages (a settings-preview guest keeps it). */
+export const isGuestLocked = () => !!getGuestToken()

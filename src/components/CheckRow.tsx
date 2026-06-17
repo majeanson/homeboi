@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
+import { isGuest } from '../lib/device'
 import { Icon } from './Icon'
 import { RowActions } from './RowActions'
 
@@ -24,6 +25,7 @@ export function CheckRow({
   onDelete,
   editLabel,
   deleteLabel,
+  readOnly,
 }: {
   item: string
   note?: ReactNode
@@ -34,11 +36,28 @@ export function CheckRow({
   onDelete?: () => void
   editLabel?: string
   deleteLabel?: string
+  /** Drop the check + edit/delete affordances, leaving an inert read-only row.
+   *  Defaults to the read-only guest session. */
+  readOnly?: boolean
 }) {
   const t = useT()
   const [editing, setEditing] = useState(false)
   const [text, setText] = useState(item)
   const canEdit = !!onRename || !!renderEdit
+  const ro = readOnly ?? isGuest()
+
+  // Guest / read-only: the row is a calm, inert label — no check button (the check
+  // is a write), no ✏️/🗑️. Placed after the hooks (rules-of-hooks).
+  if (ro) {
+    return (
+      <li className="kitchen__pantry-row">
+        <span className="checkrow__body">
+          <span className="checkrow__title">{item}</span>
+          {note && <span className="kitchen__low-note mono">{note}</span>}
+        </span>
+      </li>
+    )
+  }
 
   if (editing) {
     if (renderEdit)

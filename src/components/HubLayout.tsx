@@ -5,8 +5,9 @@ import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
+import { onIdleDebug, idleOverrideMs } from '../lib/idleDebug'
 import { onAuthLost } from '../lib/authEvents'
-import { clearDeviceToken, isPaired, isGuest } from '../lib/device'
+import { clearDeviceToken, isPaired, isGuestLocked } from '../lib/device'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
 import { KidExitGate } from './KidExitGate'
@@ -43,7 +44,7 @@ const TABS: {
 
 export function HubLayout() {
   const t = useT()
-  const { audience, locked } = useAudience()
+  const { audience, locked, guestPreview } = useAudience()
   const { surface } = useSurface()
   const loc = useLocation()
   const nav = useNavigate()
@@ -140,13 +141,29 @@ export function HubLayout() {
   // mid-glance isn't silently switched back (mis-attributing what they add).
   const { memberId: profileId, setMemberId } = useProfile()
   const [idleWarn, setIdleWarn] = useState(false)
+  // Debug (Réglages ▸ Debug): force the warn chip / the drift on demand, and bump
+  // a tick so the timer effect below re-arms when the debug speed override changes.
+  const [idleTick, setIdleTick] = useState(0)
+  useEffect(
+    () =>
+      onIdleDebug((kind) => {
+        if (kind === 'warn') setIdleWarn(true)
+        else if (kind === 'drift') {
+          setIdleWarn(false)
+          setMemberId(null)
+        } else setIdleTick((n) => n + 1)
+      }),
+    [setMemberId],
+  )
   useEffect(() => {
     if (surface !== 'kiosk' || !profileId) {
       setIdleWarn(false)
       return
     }
-    const IDLE = 3 * 60 * 1000
-    const WARN = IDLE - 30 * 1000
+    // 3 idle minutes by default; the Debug tab can shrink this to seconds. The
+    // heads-up chip leads the drift by 30 s (or half the window, whichever's less).
+    const IDLE = idleOverrideMs() ?? 3 * 60 * 1000
+    const WARN = IDLE - Math.min(30 * 1000, Math.floor(IDLE / 2))
     let timer: ReturnType<typeof setTimeout>
     let warnTimer: ReturnType<typeof setTimeout>
     const reset = () => {
@@ -168,18 +185,21 @@ export function HubLayout() {
       window.removeEventListener('pointerdown', reset)
       window.removeEventListener('keydown', reset)
     }
-  }, [surface, profileId, setMemberId])
+  }, [surface, profileId, setMemberId, idleTick])
 
   const toddler = audience === 'toddler'
-  // A guest (babysitter) is read-only: Réglages is operator territory (it would
-  // 403 server-side anyway), so hide the tab and bounce a stray /settings URL to
-  // the board. The lock is presentation-only — the real gate is the server, which
-  // rejects every guest write and every operator-scope read regardless of UI.
-  const guest = isGuest()
+  // `guest` = read-only session (hides every mutating control + the ＋ FAB, shows
+  // the banner): a link babysitter OR the operator's settings preview.
+  // `guestLocked` = the LINK guest only — that one is also barred from Réglages
+  // (hide the tab, bounce a stray /settings URL). The settings-PREVIEW guest keeps
+  // Réglages so the operator can switch back to Parent, the way you leave toddler
+  // mode. Either way the server independently 403s every guest write.
+  const guest = isGuestLocked() || guestPreview
+  const guestLocked = isGuestLocked()
   // The toddler lens has no business in Réglages — not on a locked kiosk, and
   // not in an unlocked parent preview either (a kid mustn't reach settings via a
-  // stray /settings URL). Only the parent view opens Réglages.
-  if ((locked || toddler || guest) && isSettings) return <Navigate to="/board" replace />
+  // stray /settings URL). Only the parent view (and the guest PREVIEW) open Réglages.
+  if ((locked || toddler || guestLocked) && isSettings) return <Navigate to="/board" replace />
 
   if (pairingLost) {
     return (
@@ -224,7 +244,7 @@ export function HubLayout() {
   // kiosk a three-year-old must not reach settings/billing (PRD C5), and the same
   // holds for an unlocked preview — the kid view is a one-way door, so Réglages
   // only ever returns by relaunching back into the parent view (?kid=0).
-  const tabs = locked || toddler || guest ? TABS.filter((tab) => tab.to !== '/settings') : TABS
+  const tabs = locked || toddler || guestLocked ? TABS.filter((tab) => tab.to !== '/settings') : TABS
   // The collapse only applies on the kiosk left rail; mobile's bottom bar stays.
   // Never in the toddler lens — a pre-reader mustn't be able to hide their own
   // navigation (or the KidExitGate that lives in the rail), so the section column
@@ -259,11 +279,6 @@ export function HubLayout() {
         </button>
       )}
       <nav className="hubnav" aria-label="sections" data-tour="hubnav">
-        {canCollapse && (
-          <button type="button" className="hubnav__collapse" onClick={toggleNav} aria-label={t.nav.hideMenu} title={t.nav.hideMenu}>
-            <Icon name="caret-left-bold" size={18} />
-          </button>
-        )}
         {tabs.map((tab) => (
           <NavLink
             key={tab.to}
@@ -287,6 +302,15 @@ export function HubLayout() {
             parental gate (3s hold + a math challenge), so the one-way door still
             holds for the child but an adult can leave without an address bar. */}
         {toddler && <KidExitGate />}
+
+        {/* "Tuck the rail away" caret — lives at the BOTTOM of the kiosk column
+            (pushed down by margin-top:auto) so it sits out of the way under the
+            tabs rather than crowning them. */}
+        {canCollapse && (
+          <button type="button" className="hubnav__collapse" onClick={toggleNav} aria-label={t.nav.hideMenu} title={t.nav.hideMenu}>
+            <Icon name="caret-left-bold" size={18} />
+          </button>
+        )}
       </nav>
 
       <div className="hub__body">
@@ -324,9 +348,10 @@ export function HubLayout() {
               nav('/routine/new')
               return
             }
-            // Garde-manger tab: pre-select the low-stock form; everything else
-            // opens its section default.
-            setAddMode(kitchenTab === 'pantry' ? 'pantry' : null)
+            // The sheet always opens on a blank chooser — no tile pre-selected,
+            // no form pre-shown — in every section (Marc's ask). The operator
+            // picks what to add, including the Garde-manger low-stock form.
+            setAddMode(null)
             setAddModes(null)
             setAddOpen(true)
           }}

@@ -1,4 +1,5 @@
 import { useT } from '../i18n'
+import { isGuest } from '../lib/device'
 import { Icon } from './Icon'
 
 // The ONE affordance every manageable row uses: icon-only edit + delete, the
@@ -17,6 +18,7 @@ export function RowActions({
   deleteLabel,
   size = 18,
   className,
+  readOnly,
 }: {
   onEdit?: () => void
   onDelete?: () => void
@@ -24,8 +26,12 @@ export function RowActions({
   deleteLabel?: string
   size?: number
   className?: string
+  /** Hide the edit/delete affordances entirely. Defaults to the read-only guest
+   *  session, so a babysitter never sees a ✏️/🗑️ on any row app-wide. */
+  readOnly?: boolean
 }) {
   const t = useT()
+  if (readOnly ?? isGuest()) return null
   return (
     <span className={'row-actions' + (className ? ` ${className}` : '')}>
       {onEdit && (

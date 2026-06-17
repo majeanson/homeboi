@@ -22,7 +22,7 @@ import {
 export function DisplaySection() {
   const t = useT()
   const { lang, setLang } = useLang()
-  const { audience, setAudience } = useAudience()
+  const { audience, setAudience, guestPreview, setGuestPreview } = useAudience()
   const { tutorial, setTutorial } = useHelp()
   const [theme, setThemeState] = useState<Theme>(() => getTheme())
   // Ambient day-part drift (feature #1) — calm furniture, default ON, opt-out here.
@@ -70,24 +70,43 @@ export function DisplaySection() {
         </div>
         <div className="operator__seg">
           <span className="operator__seg-label mono">{t.operator.viewLabel}</span>
-          <div className="audience-switch mono" role="group" aria-label={t.audience.parent + ' / ' + t.audience.kid}>
+          <div
+            className="audience-switch mono"
+            role="group"
+            aria-label={t.audience.parent + ' / ' + t.audience.kid + ' / ' + t.audience.guest}
+          >
             <button
               type="button"
-              className={`audience-switch__opt${audience === 'parent' ? ' is-active' : ''}`}
-              onClick={() => setAudience('parent')}
-              aria-pressed={audience === 'parent'}
+              className={`audience-switch__opt${audience === 'parent' && !guestPreview ? ' is-active' : ''}`}
+              onClick={() => {
+                setGuestPreview(false)
+                setAudience('parent')
+              }}
+              aria-pressed={audience === 'parent' && !guestPreview}
             >
               <InlineIcon name="user-bold" /> {t.audience.parent}
             </button>
             <button
               type="button"
-              className={`audience-switch__opt${audience === 'toddler' ? ' is-active' : ''}`}
-              onClick={() => setAudience('toddler')}
-              aria-pressed={audience === 'toddler'}
+              className={`audience-switch__opt${audience === 'toddler' && !guestPreview ? ' is-active' : ''}`}
+              onClick={() => {
+                setGuestPreview(false)
+                setAudience('toddler')
+              }}
+              aria-pressed={audience === 'toddler' && !guestPreview}
             >
               <InlineIcon name="baby-bold" /> {t.audience.kid}
             </button>
+            <button
+              type="button"
+              className={`audience-switch__opt${guestPreview ? ' is-active' : ''}`}
+              onClick={() => setGuestPreview(true)}
+              aria-pressed={guestPreview}
+            >
+              <InlineIcon name="user-bold" /> {t.audience.guest}
+            </button>
           </div>
+          {guestPreview && <p className="operator__seg-hint mono">{t.audience.guestPreviewHint}</p>}
         </div>
         <div className="operator__seg">
           <span className="operator__seg-label mono">{t.operator.tutorialLabel}</span>

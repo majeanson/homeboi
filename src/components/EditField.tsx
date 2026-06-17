@@ -1,5 +1,6 @@
 import { useRef, type ReactNode } from 'react'
 import { useT } from '../i18n'
+import { isGuest } from '../lib/device'
 import type { VoiceInput } from '../lib/useVoiceInput'
 import { Icon, type IconName } from './Icon'
 import { VoiceButton, VoiceStatus } from './VoiceButton'
@@ -69,6 +70,9 @@ export interface EditFieldProps {
   /** Picker menus etc., rendered after the field block. */
   children?: ReactNode
   className?: string
+  /** Hide the whole field. Defaults to the read-only guest session, so a guest
+   *  never sees an add/edit box. Pass `false` to force-show in a guest context. */
+  readOnly?: boolean
 }
 
 export function EditField({
@@ -99,9 +103,12 @@ export function EditField({
   secondaryActions,
   children,
   className,
+  readOnly,
 }: EditFieldProps) {
   const t = useT()
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
+  // After the hooks (rules-of-hooks): a guest sees no add/edit box at all.
+  const hidden = readOnly ?? isGuest()
 
   const commit = () => {
     if (!onSubmit || disabled || busy) return
@@ -134,6 +141,8 @@ export function EditField({
 
   const showIconSubmit = !submitLabel && submitIcon != null && !!onSubmit
   const submitDisabled = disabled || busy || !value.trim()
+
+  if (hidden) return null
 
   return (
     <form className={'edit-field' + (className ? ` ${className}` : '')} onSubmit={handleSubmit}>

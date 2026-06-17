@@ -25,11 +25,20 @@ export const AudienceContext = createContext<{
   setAudience: (a: Audience) => void
   locked: boolean
   unlock: () => void
+  // `guestPreview` is the operator's read-only "act as a guest" mode — the third
+  // option beside Parent|Toddler in Réglages. It lives in the context (not just
+  // localStorage) so toggling it re-renders the tree and the read-only guards
+  // (RowActions/EditField hide, `writeWith` refuses) take effect at once. Unlike a
+  // link guest it does NOT lock Réglages, so the operator can switch back to Parent.
+  guestPreview: boolean
+  setGuestPreview: (on: boolean) => void
 }>({
   audience: 'parent',
   setAudience: () => {},
   locked: false,
   unlock: () => {},
+  guestPreview: false,
+  setGuestPreview: () => {},
 })
 
 export const useAudience = () => useContext(AudienceContext)

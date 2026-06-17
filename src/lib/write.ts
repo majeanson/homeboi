@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import { api, ApiError } from './api'
 import { enqueue, onOutboxChange, outboxCount } from './outbox'
+import { isGuest } from './device'
 
 // The offline-aware write helper (NFR-OFFLINE-1). Replaces the scattered
 // `api(…,{method}).catch().finally(invalidate)` pattern with one path that:
@@ -42,6 +43,14 @@ export async function writeWith<T = unknown>(
 ): Promise<WriteResult<T>> {
   const method = spec.method ?? 'POST'
   const affectedKeys = spec.affectedKeys ?? []
+
+  // Read-only guest session: refuse every write at the single chokepoint. We do
+  // NOT apply the optimistic change, hit the network, or queue to the outbox — so
+  // a guest can never see a row "disappear" then reappear (the bug that let it
+  // look like a delete went through). The UI also hides mutating controls for a
+  // guest; this is the structural backstop for any control that slips through.
+  if (isGuest()) return { data: null as T, queued: false }
+
   spec.optimistic?.(qc)
 
   const queue = async (): Promise<WriteResult<T>> => {
