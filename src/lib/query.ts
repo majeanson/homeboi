@@ -8,6 +8,7 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { ApiError, isUnauthorized } from './api'
 import { emitAuthLost } from './authEvents'
+import { isRealtimeConnected } from './realtime'
 
 // Central 401 interception: ANY query or mutation coming back unauthorized
 // broadcasts auth-lost, so a revoked device token / expired session lands the
@@ -39,18 +40,44 @@ export const queryClient = new QueryClient({
 
 // --- Adaptive ("sleep") polling for shared state ----------------------------
 // A wall-mounted board is foreground 24/7, so a flat fast poll would burn the
-// Worker request budget even when nobody's in the room. Instead the poll has two
-// gears: a fast cadence while someone's actively using the screen, and a quiet
-// heartbeat after a stretch of no interaction. The moment someone touches the
-// screen again we snap back to fast AND refetch immediately, so the first tap
-// shows fresh data without waiting for a tick.
-const ACTIVE_POLL_MS = 10_000 // someone's using it → near-instant cross-device sync
-const IDLE_POLL_MS = 120_000 // nobody's touched it for a while → quiet heartbeat
+// Worker request budget even when nobody's in the room. The poll therefore picks
+// a cadence from TWO axes:
+//
+//   • awake vs asleep — fast while someone's actively using the screen, a quiet
+//     heartbeat after a stretch of no interaction. Touching the screen snaps back
+//     to fast AND refetches immediately, so the first tap shows fresh data.
+//   • push vs no-push — when the realtime socket is OPEN (src/lib/realtime.ts),
+//     cross-device changes arrive as instant invalidate messages, so polling only
+//     needs to be a slow safety heartbeat. When the socket is down, polling is the
+//     ONLY freshness mechanism, so it runs fast. realtime.ts also refetches once on
+//     a drop, so no change is missed in the window before the gear switches back.
+//
+// This is the free-tier capacity lever: the board poll is the dominant cost, and a
+// connected household runs it ~6x slower (60s/300s vs 10s/120s), cutting Worker
+// requests + D1 row reads proportionally — without trading away freshness, because
+// push covers the gap. When realtime is gated off, `isRealtimeConnected()` is
+// always false and only the fast pair is ever used (pre-realtime behaviour).
+const ACTIVE_POLL_MS = 10_000 // no push, someone's using it → near-instant sync via polling
+const IDLE_POLL_MS = 120_000 // no push, nobody's touched it for a while → quiet heartbeat
+const RT_ACTIVE_POLL_MS = 60_000 // push live + awake → slow safety heartbeat (push owns instant)
+const RT_IDLE_POLL_MS = 300_000 // push live + asleep → very quiet safety heartbeat
 const IDLE_AFTER_MS = 60_000 // no interaction this long → treat the screen as asleep
 
 // Init to "now" so a fresh load starts in the fast gear.
 let lastActivityAt = Date.now()
 const isAwake = () => Date.now() - lastActivityAt < IDLE_AFTER_MS
+
+// The cadence for a live query right now, off both axes (push and awake). Read by
+// `live.refetchInterval` on every tick, so flipping either axis takes effect at the
+// next tick with no re-subscription.
+const liveInterval = () =>
+  isRealtimeConnected()
+    ? isAwake()
+      ? RT_ACTIVE_POLL_MS
+      : RT_IDLE_POLL_MS
+    : isAwake()
+      ? ACTIVE_POLL_MS
+      : IDLE_POLL_MS
 
 // Re-poll only the shared/live queries (tagged via meta below) — never the
 // external feeds (weather/flyers/deals), which keep their own slow cache.
@@ -80,15 +107,17 @@ if (typeof window !== 'undefined') {
 // change from another device (the board, meal plan, pantry, recipes, routines,
 // photos). Spread into useQuery: `useQuery({ queryKey, queryFn, ...live })`.
 //
-// Freshness here is polling, not push: a change on one phone lands on every
-// other awake screen within the active cadence, and `refetchOnWindowFocus` +
+// Freshness is push-when-available, polling-always: a change on one phone lands on
+// every other awake screen either via a realtime invalidate (instant) or, if the
+// socket is down, within the active poll cadence. `refetchOnWindowFocus` +
 // `staleTime: 0` make re-foregrounding a left-on tablet refetch instantly.
 // TanStack pauses the interval while the tab is hidden and resumes on focus, so
-// backgrounded devices cost nothing. `meta.live` tags these for the wake refetch.
+// backgrounded devices cost nothing. `meta.live` tags these for the wake refetch
+// (and for the catch-up refetch realtime.ts fires when the socket drops).
 // Surfaces showing external feeds (weather, flyers, deals) or settings (Operator)
 // intentionally opt out — they keep their own slower/static cache policy.
 export const live = {
-  refetchInterval: () => (isAwake() ? ACTIVE_POLL_MS : IDLE_POLL_MS),
+  refetchInterval: liveInterval,
   refetchOnWindowFocus: true,
   staleTime: 0,
   meta: { live: true },
