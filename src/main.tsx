@@ -33,7 +33,7 @@ import './styles.css'
 // + OFFLINE/realtime notes). While false, connectRealtime is never called, so an
 // undeployed DO can't even attempt the socket. It's wired here (not a dead file)
 // so enabling is a one-line flip — and connectRealtime is fail-safe regardless.
-const REALTIME_ENABLED = false
+const REALTIME_ENABLED = true
 
 // `?guest=<token>` boots a babysitter / guest session: stash the read-only token
 // in localStorage so lib/api sends it (on the X-Device-Token header) from the very
