@@ -54,9 +54,11 @@ export interface Deal {
   unitApprox: boolean // true when the size came from the AI sniper, not the text
   merchant: string
   logo: string | null // store logo (for the flyer/cashier header band)
-  // True for image-based (scanned) flyers — Super C, Métro, IGA… — whose
-  // reconstruction uses real flyer clippings. False for SFML flyers (Maxi,
-  // Provigo) that are vector-only, so the viewer can flag it as a reconstruction.
+  // Flipp's per-flyer flag: true for an image-based (scanned) flyer, false for an
+  // SFML (vector) flyer. It's set PER FLYER, not per merchant — the same store can
+  // run one of each week to week — so don't read a merchant name into it. Note
+  // most QC grocery flyers (IGA, Maxi, Provigo, Métro, Super C) come back
+  // premium=false, so the viewer flags them as a reconstruction.
   premium: boolean
   image: string | null
   validFrom: string | null

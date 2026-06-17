@@ -118,10 +118,11 @@ export function FlyerViewer({
   }, [logo, qc, flyerId])
   const monogram = (title ?? '').trim().charAt(0).toUpperCase() || '🏬'
 
-  // Premium = image-based flyer (Super C, Métro, IGA): the reconstruction is built
-  // from real scanned clippings, so we present it as the official flyer. SFML flyers
-  // (Maxi, Provigo) are vector-only — flag them as a reconstruction so the cashier
-  // knows. Resolved prop → flyers cache → unknown (null shows no note).
+  // Premium = Flipp's per-flyer flag for an image-based (scanned) flyer: the
+  // reconstruction is built from real scanned clippings, so we present it as the
+  // official flyer. SFML (vector) flyers — which is most QC grocery flyers, incl.
+  // IGA — are flagged as a reconstruction so the cashier knows. It's per flyer,
+  // not per merchant. Resolved prop → flyers cache → unknown (null shows no note).
   const resolvedPremium = useMemo<boolean | null>(() => {
     if (typeof premium === 'boolean') return premium
     for (const [, data] of qc.getQueriesData<{ flyers: FlyerSummary[] }>({ queryKey: ['flyers'] })) {
