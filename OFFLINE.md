@@ -46,13 +46,23 @@ voice, photo upload, pairing, auth) are **not** queued — disable them offline 
 
 ## Migration status
 
-- **Done:** infrastructure (server idempotency, client outbox, `useWrite`),
-  List writes (`Liste`/`QuickAddPage`/`ListEditPage`), Board calm actions
-  (chore/to-do/leftover done, dismiss note), and offline disabling of the capture
-  bar + mic.
-- **Follow-up (same `useWrite` pattern):** Kitchen (`DayPlanPage`, `Leftovers`,
-  `MealIdeas`, `mealMutations`, `useMealPlanning`, `PantryTab`, `ReserveSection`),
-  Operator settings writes, and `lib/picks` deal staging.
+All data writes go through `useWrite()` / `writeWith()`:
+
+- **List:** `Liste`, `QuickAddPage`, `ListEditPage`.
+- **Board:** chore/to-do/leftover done, dismiss note (`Board`, `board/Notes`).
+- **Kitchen:** `DayPlanPage`, `Leftovers`, `MealIdeas`, `mealMutations`,
+  `useMealPlanning`, `PantryTab`, `ReserveSection`.
+- **Forms / recipes / deals:** `EventForm`, `ChoreForm`, `RoutineForm`,
+  `RecipeSheet`, `lib/picks`.
+- **Operator settings:** members add/edit/delete, chore/routine/event delete,
+  routine time-of-day, store-include toggle, list-history, réserve locations.
+
+**Deliberately NOT queued — online-only** (disable via `useOnline()` + an
+`t.offline.unavailable` hint, or just left as direct `api()`): AI capture / voice
+/ recipe vision-import-draft / meal-staples / suggest / recap, photo + avatar +
+recipe-image uploads (Blob bodies), pairing, auth, the **postal save** (reads the
+server-normalized value back), and **recipe-tags** (uses the `useOptimisticMutation`
+wrapper). These need a live server round-trip, so queueing them adds no value.
 
 ## Known limitations
 
