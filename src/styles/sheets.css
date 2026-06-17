@@ -1023,6 +1023,49 @@
   margin: 0 auto;
   width: 100%;
 }
+/* Flyer view toggle (Offres grid vs Plan map) — the segmented control, sized to
+   the flyer column rather than spanning the full-screen overlay. */
+.flyer-tabs {
+  max-width: 46rem;
+  width: calc(100% - 28px);
+  margin: 0 auto 6px;
+}
+
+/* Offres — a masonry of clippings packed tight (no flyer-coordinate gaps). Each
+   clipping already carries its own price/name, so a bare image cell is complete.
+   Columns flow vertically, so cells of different heights nest without white rows. */
+.flyer-grid {
+  column-width: 8.5rem;
+  column-gap: 10px;
+}
+.flyer-grid__cell {
+  break-inside: avoid;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  cursor: pointer;
+  font: inherit;
+  display: block;
+}
+.flyer-grid__cell img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.flyer-grid__cell:focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: 1px;
+}
+.flyer-grid__cell.is-hit {
+  outline: 3px solid var(--marigold);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 4px var(--marigold-wash);
+}
 .flyer-page-wrap {
   margin: 0 auto 22px;
 }

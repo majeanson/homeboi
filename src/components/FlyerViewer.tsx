@@ -143,6 +143,16 @@ export function FlyerViewer({
       : data.pages.length && data.items.length
         ? 'ok'
         : 'empty'
+  // Two ways to look at the same clippings:
+  // - 'offres' (default): a tight grid of every clipping, no white gaps. The
+  //   reconstruction places clippings at their true flyer coordinates, but Flipp
+  //   only exposes ~60-70% of a page as clippable items (banners, promo blocks
+  //   and uncut products aren't in the feed), so the position-faithful page reads
+  //   as half-empty. The grid packs the real deals together so it looks complete.
+  // - 'plan': the position-faithful page reconstruction — useful in-store to find
+  //   where an item sits. We open straight to it when launched on a specific item.
+  const [view, setView] = useState<'offres' | 'plan'>(highlightId != null ? 'plan' : 'offres')
+
   // The selected item drives the ring, the directions banner, and the detail
   // card. We track it by ARRAY INDEX, not id: many flyer items come back with a
   // null id, so id-based selection would collapse them all into "nothing
@@ -157,12 +167,13 @@ export function FlyerViewer({
     if (idx >= 0) setSelectedIdx(idx)
   }, [data, highlightId])
 
-  // Bring the selected item into view whenever it changes (incl. first paint).
+  // Bring the selected item into view whenever it changes (incl. first paint and
+  // when flipping between the grid and the map, so "find it" lands on the item).
   useEffect(() => {
     if (state === 'ok' && selectedRef.current) {
       selectedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
-  }, [state, selectedIdx])
+  }, [state, selectedIdx, view])
 
   const selected = useMemo(
     () => (data && selectedIdx != null ? data.items[selectedIdx] ?? null : null),
@@ -276,7 +287,30 @@ export function FlyerViewer({
         </a>
       </div>
 
-      {directions && (
+      {state === 'ok' && (
+        <div className="subtabs flyer-tabs" role="tablist" aria-label={title ?? t.shop.proofTitle}>
+          <button
+            type="button"
+            role="tab"
+            className={`subtabs__opt${view === 'offres' ? ' is-on' : ''}`}
+            onClick={() => setView('offres')}
+            aria-selected={view === 'offres'}
+          >
+            <InlineIcon name="tag-bold" /> {t.shop.flyerTabOffers}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`subtabs__opt${view === 'plan' ? ' is-on' : ''}`}
+            onClick={() => setView('plan')}
+            aria-selected={view === 'plan'}
+          >
+            <InlineIcon name="map-pin-bold" /> {t.shop.flyerTabMap}
+          </button>
+        </div>
+      )}
+
+      {view === 'plan' && directions && (
         <button
           type="button"
           className="flyer-dir mono"
@@ -293,7 +327,31 @@ export function FlyerViewer({
         {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}
         {(state === 'empty' || state === 'error') && <p className="feed-empty">{t.shop.flyerNone}</p>}
 
+        {/* Offres — a tight grid of every clipping (each carries its own price), so
+            the view reads as complete even though the flyer page has gaps Flipp
+            never clipped. Same index-based selection as the map, so tapping a cell
+            opens the detail card (and the map can then locate it). */}
+        {state === 'ok' && view === 'offres' && (
+          <div className="flyer-grid">
+            {data!.items.map((it, idx) =>
+              it.image ? (
+                <button
+                  type="button"
+                  key={idx}
+                  ref={selectedIdx === idx ? selectedRef : undefined}
+                  className={`flyer-grid__cell${selectedIdx === idx ? ' is-hit' : ''}`}
+                  onClick={() => setSelectedIdx(idx)}
+                  aria-label={it.price != null ? `${it.name} — ${money(it.price)}` : it.name}
+                >
+                  <img src={it.image} alt={it.name} loading="lazy" />
+                </button>
+              ) : null,
+            )}
+          </div>
+        )}
+
         {state === 'ok' &&
+          view === 'plan' &&
           data!.pages.map((page) => {
             const pageW = page.right - page.left
             const pageH = page.top - page.bottom
