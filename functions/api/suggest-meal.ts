@@ -17,7 +17,13 @@ export const onRequestPost = authed(async (ctx, actor) => {
     : []
 
   const today = localDayStart(new Date(Date.now()))
-  const [low, recent, favs] = await Promise.all([
+  // "Haven't had in a while" (PRD): favourites the family hasn't cooked recently.
+  // Join the recipe book to the LAST time each linked recipe was served
+  // (MAX(meals.date) grouped by recipe_id, this household), and keep the ones whose
+  // last serving is older than the neglected cutoff (or never served). Bringing a
+  // few of these back is a GENTLE preference passed to the suggester, never shame.
+  const NEGLECT_CUTOFF = today - 14 * 86400 // not served in > 14 days
+  const [low, recent, favs, neglected] = await Promise.all([
     ctx.env.DB.prepare('SELECT item FROM pantry_low WHERE household_id = ? ORDER BY marked_at DESC LIMIT 10')
       .bind(actor.householdId)
       .all<{ item: string }>(),
@@ -31,6 +37,22 @@ export const onRequestPost = authed(async (ctx, actor) => {
     ctx.env.DB.prepare('SELECT title FROM recipes WHERE household_id = ? ORDER BY updated_at DESC LIMIT 12')
       .bind(actor.householdId)
       .all<{ title: string }>(),
+    // Recipes whose most recent serving (via meals.recipe_id, migration 0024) is
+    // before the cutoff, or that were never linked to a meal at all — "haven't had
+    // in a while". Most-neglected first; capped so the prompt stays short.
+    ctx.env.DB.prepare(
+      `SELECT r.title AS title, MAX(m.date) AS last
+         FROM recipes r
+         LEFT JOIN meals m
+           ON m.recipe_id = r.id AND m.household_id = r.household_id
+        WHERE r.household_id = ?
+        GROUP BY r.id
+       HAVING last IS NULL OR last < ?
+        ORDER BY (last IS NULL) DESC, last ASC
+        LIMIT 8`,
+    )
+      .bind(actor.householdId, NEGLECT_CUTOFF)
+      .all<{ title: string; last: number | null }>(),
   ])
 
   const report = { error: null as string | null }
@@ -42,6 +64,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     favs.results.map((r) => r.title),
     avoid,
     report,
+    neglected.results.map((r) => r.title),
   )
   // The header rides on the 503 too: an empty batch from a real AI failure now
   // carries the reason, while a genuinely empty result stays a quiet 503.

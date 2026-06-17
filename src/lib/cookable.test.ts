@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normKey, rankCookable } from './cookable'
+import { normKey, rankCookable, rankNeglected } from './cookable'
 
 const R = {
   spag: { title: 'Spaghetti', ingredients: ['400 g de pâtes', '1 pot de sauce tomate', '500 g de bœuf', '1 oignon'] },
@@ -47,5 +47,45 @@ describe('rankCookable', () => {
     expect(rankCookable([poultry], ['Ail'], [])[0].missing).toEqual([])
     // "sauce tomate" should match the spaghetti's "1 pot de sauce tomate"
     expect(rankCookable([R.spag], ['Sauce tomate'], [])[0].missing).toEqual(['Sauce tomate'])
+  })
+})
+
+describe('rankNeglected', () => {
+  const DAY = 86400
+  const today = 100 * DAY // arbitrary local-midnight anchor
+  const recipes = [
+    { id: 'a', title: 'Spaghetti' },
+    { id: 'b', title: 'Tacos' },
+    { id: 'c', title: 'Soupe' },
+  ]
+
+  it('orders never-served first, then longest-gap first', () => {
+    // a served 5 days ago, b served 30 days ago, c never served (absent).
+    const last = new Map<string, number>([
+      ['a', today - 5 * DAY],
+      ['b', today - 30 * DAY],
+    ])
+    const ranked = rankNeglected(recipes, last, today)
+    expect(ranked.map((r) => r.recipe.id)).toEqual(['c', 'b', 'a'])
+    expect(ranked.map((r) => r.daysSince)).toEqual([null, 30, 5])
+  })
+
+  it('computes whole-day gaps and never goes negative', () => {
+    const last = new Map<string, number>([['a', today - 25 * DAY]])
+    const ranked = rankNeglected([recipes[0]], last, today)
+    expect(ranked[0].daysSince).toBe(25)
+    // A future-dated serving (planned ahead) clamps to 0, not a negative gap.
+    const future = new Map<string, number>([['a', today + 3 * DAY]])
+    expect(rankNeglected([recipes[0]], future, today)[0].daysSince).toBe(0)
+  })
+
+  it('breaks ties on title for a stable order', () => {
+    const last = new Map<string, number>([
+      ['a', today - 10 * DAY],
+      ['b', today - 10 * DAY],
+    ])
+    // Equal gaps → alphabetical by title (Spaghetti before Tacos).
+    const ranked = rankNeglected([recipes[1], recipes[0]], last, today)
+    expect(ranked.map((r) => r.recipe.title)).toEqual(['Spaghetti', 'Tacos'])
   })
 })

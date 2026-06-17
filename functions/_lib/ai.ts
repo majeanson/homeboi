@@ -625,6 +625,11 @@ export async function suggestMeals(
   favorites: string[] = [],
   avoid: string[] = [],
   report?: AiReport,
+  // "neglected" = the family's OWN dishes not served in a long while ("haven't had
+  // in a while", PRD). Folded in as a GENTLE preference, never shame — privilégie
+  // les recettes oubliées — but the don't-repeat list still wins so we never bring
+  // back something cooked yesterday.
+  neglected: string[] = [],
 ): Promise<string[]> {
   if (!env.AI) return []
   // "avoid" = the batch the user just cycled through, so a re-ask returns DIFFERENT
@@ -637,11 +642,13 @@ export async function suggestMeals(
 Foods running low (use some if helpful): ${lowItems.join(', ') || 'none'}.
 Suppers to AVOID repeating: ${dontRepeat.join(', ') || 'none'}.
 Family's own recipes (feel free to suggest some of these back): ${favorites.join(', ') || 'none'}.
+Favourites not had in a while (gently favour bringing a few of these back): ${neglected.join(', ') || 'none'}.
 Reply ONLY with a JSON array of 10 short dish names. Example: ["spaghetti","chili","tacos"].`
       : `Suggère 10 soupers familiaux simples et variés (français québécois).
 Aliments qui achèvent (utilises-en si utile) : ${lowItems.join(', ') || 'aucun'}.
 Soupers à ÉVITER de répéter : ${dontRepeat.join(', ') || 'aucun'}.
 Recettes de la famille (suggères-en quelques-unes au besoin) : ${favorites.join(', ') || 'aucune'}.
+Recettes oubliées depuis un bon moment (privilégie doucement quelques-unes de celles-ci) : ${neglected.join(', ') || 'aucune'}.
 Réponds UNIQUEMENT avec un tableau JSON de 10 noms de plats courts. Exemple : ["spaghetti","chili","tacos"].`
   try {
     const res = (await env.AI.run(MODEL, {
