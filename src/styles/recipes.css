@@ -681,6 +681,12 @@
   min-width: 0;
   text-align: left;
   justify-content: flex-start;
+  /* A long unbreakable meal-idea name was overflowing the row at 390px (the chip
+     doesn't wrap by default). Let it break + contain so the phone never scrolls
+     sideways (mobile-friendly standing rule). */
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .kitchen__idea-del {
   flex: none;
