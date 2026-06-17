@@ -156,13 +156,17 @@ export function HubLayout() {
     [setMemberId],
   )
   useEffect(() => {
-    if (surface !== 'kiosk' || !profileId) {
+    // Idle drift is normally a KIOSK safety, but the Debug tab's speed override
+    // arms it on ANY surface — otherwise the timed drift can't be observed on a
+    // dev phone/laptop. Either way it needs a picked profile to clear.
+    const override = idleOverrideMs()
+    if ((surface !== 'kiosk' && override == null) || !profileId) {
       setIdleWarn(false)
       return
     }
     // 3 idle minutes by default; the Debug tab can shrink this to seconds. The
     // heads-up chip leads the drift by 30 s (or half the window, whichever's less).
-    const IDLE = idleOverrideMs() ?? 3 * 60 * 1000
+    const IDLE = override ?? 3 * 60 * 1000
     const WARN = IDLE - Math.min(30 * 1000, Math.floor(IDLE / 2))
     let timer: ReturnType<typeof setTimeout>
     let warnTimer: ReturnType<typeof setTimeout>
