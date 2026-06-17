@@ -39,11 +39,13 @@ import * as recap from '../functions/api/recap'
 import * as recipeDraft from '../functions/api/recipe-draft'
 import * as recipeImage from '../functions/api/recipe-image'
 import * as recipeImport from '../functions/api/recipe-import'
+import * as recipeStepImage from '../functions/api/recipe-step-image'
 import * as recipeVision from '../functions/api/recipe-vision'
 import * as recipes from '../functions/api/recipes'
 import * as recipeTags from '../functions/api/recipe-tags'
 import * as recipeToList from '../functions/api/recipe-to-list'
 import * as reserve from '../functions/api/reserve'
+import * as routineAudio from '../functions/api/routine-audio'
 import * as routines from '../functions/api/routines'
 import * as suggestMeal from '../functions/api/suggest-meal'
 import * as transcribe from '../functions/api/transcribe'
@@ -99,11 +101,13 @@ const TABLE: Record<string, RouteMod> = {
   'recipe-draft': recipeDraft,
   'recipe-image': recipeImage,
   'recipe-import': recipeImport,
+  'recipe-step-image': recipeStepImage,
   'recipe-vision': recipeVision,
   recipes,
   'recipe-tags': recipeTags,
   'recipe-to-list': recipeToList,
   reserve,
+  'routine-audio': routineAudio,
   routines,
   'suggest-meal': suggestMeal,
   transcribe,

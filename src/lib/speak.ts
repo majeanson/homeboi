@@ -196,6 +196,44 @@ function spokenOnly(text: string): string {
   }
 }
 
+// Play a parent-voice narration clip (feature #17 A), FALLING BACK to on-device
+// TTS if anything goes wrong — the clip can't load (R2 off / 503 / offline), the
+// browser blocks autoplay, or the key is empty. `speak` is the same nicety this
+// module already provides; pass it from a component that holds useSpeak(). A clip
+// is served by /api/img/<key> (the immutable cache-first image route). Like every
+// narration here, it must never block or throw on a tap. The returned cleanup
+// stops the audio (used when leaving a narrated surface).
+//
+// Lives here, beside speak(), so BigTiles + KidView share ONE play-or-TTS path.
+export function playNarration(
+  audioKey: string | null | undefined,
+  fallbackText: string | undefined,
+  speak: (raw: string | undefined) => void,
+): () => void {
+  if (!audioKey) {
+    speak(fallbackText)
+    return () => {}
+  }
+  try {
+    stopSpeaking() // a clip and TTS must never overlap (same rule as speak())
+    const audio = new Audio(`/api/img/${audioKey}`)
+    audio.onerror = () => speak(fallbackText) // clip unavailable → TTS
+    // play() rejects on a blocked autoplay / decode error — fall back then too.
+    const p = audio.play()
+    if (p && typeof p.catch === 'function') p.catch(() => speak(fallbackText))
+    return () => {
+      try {
+        audio.pause()
+      } catch {
+        /* nothing playing */
+      }
+    }
+  } catch {
+    speak(fallbackText) // Audio unavailable — TTS still works
+    return () => {}
+  }
+}
+
 export function useSpeak() {
   const { lang } = useLang()
   return useCallback(

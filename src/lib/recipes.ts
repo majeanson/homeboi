@@ -32,6 +32,11 @@ export interface Recipe {
   image: string | null // an R2 key (uploaded) OR an https URL (imported)
   tags: string[]
   original?: RecipeOriginal | null
+  // Per-step photo R2 keys (feature #17 B), PARALLEL to steps: stepImages[i] is
+  // the key for steps[i], or '' when that step has no photo. Optional: older
+  // payloads/fixtures predate it. Resolve a non-empty key via imgUrl() (it's
+  // always an upload, never a remote URL). Heading rows carry an empty slot.
+  stepImages?: string[]
   updatedAt: number
 }
 

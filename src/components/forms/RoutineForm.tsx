@@ -173,6 +173,14 @@ export function RoutineForm({
 
       <CardDeckEditor cards={cards} onChange={setCards} />
 
+      {/* TODO #17 record clip — per-card parent-voice recording UI. The data
+          model + endpoint exist (POST /api/routine-audio → { key }, then send a
+          cardsNarration[] parallel to cards on POST/PATCH); this needs a small
+          per-card 🎙️ control (record/preview/clear) wired through CardDeckEditor.
+          Hide the control where R2 is unset (the endpoint 503s) — the kid view
+          already falls back to on-device TTS. Labels are staged in i18n:
+          t.routines.recordClip / clipRecorded / clipRecord / clipRemove / clipOff. */}
+
       {err && <p className="error mono">{t.common.saveFailed}</p>}
       <button
         type="submit"

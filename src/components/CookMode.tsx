@@ -6,6 +6,7 @@ import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
 import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
 import { groupSections } from '../lib/recipeSections'
+import { imgUrl } from '../lib/image'
 import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
 import { useVoiceInput } from '../lib/useVoiceInput'
@@ -54,7 +55,11 @@ const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padStart(2,
 // Holds a Screen Wake Lock so the tablet doesn't sleep mid-recipe; re-acquires it
 // when the tab becomes visible again (locks drop on hide). Silent no-op where the
 // API is missing — it just behaves like a normal screen.
-type Stage = { kind: 'ingredients' } | { kind: 'step'; text: string; n: number; section: string | null }
+// `srcIdx` is the step's position in the ORIGINAL recipe.steps array, so it lines
+// up with the parallel recipe.stepImages array (feature #17 B).
+type Stage =
+  | { kind: 'ingredients' }
+  | { kind: 'step'; text: string; n: number; section: string | null; srcIdx: number }
 
 export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
   const t = useT()
@@ -106,7 +111,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const stages: Stage[] = [
     ...(ingGroups.some((g) => g.items.length) ? [{ kind: 'ingredients' } as Stage] : []),
     ...stepGroups.flatMap((g) =>
-      g.items.map(({ text }) => ({ kind: 'step', text, n: ++stepN, section: g.title }) as Stage),
+      g.items.map(({ text, idx }) => ({ kind: 'step', text, n: ++stepN, section: g.title, srcIdx: idx }) as Stage),
     ),
   ]
   // A recipe with nothing to show shouldn't open, but guard so we never NaN.
@@ -538,6 +543,16 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             <span className="cook__step-n mono">
               {t.recipes.stepLabel} {cur?.kind === 'step' ? cur.n : ''}
             </span>
+            {/* The step's own photo, when one was attached (feature #17 B). Keyed
+                by the step's ORIGINAL index into recipe.stepImages. No image →
+                render nothing (no blank box) — graceful degrade, and the no-R2
+                path leaves every slot empty. */}
+            {(() => {
+              const key = cur?.kind === 'step' ? recipe.stepImages?.[cur.srcIdx] : ''
+              return key ? (
+                <img className="cook__step-photo" src={imgUrl(key)} alt="" loading="lazy" />
+              ) : null
+            })()}
             {/* The instruction as bullet points (one per sentence), and the
                 ingredients this step uses — so you've got the quantities right
                 here, no flipping back to the list. Tap the instruction to hear

@@ -1,0 +1,16 @@
+-- Per-step photos for recipes (feature #17, part B). A parent can attach a photo
+-- to a single prep step ("fold like THIS"), shown in Cook mode beside that step.
+-- The photos live in the R2 PHOTOS bucket under an `rsi_` key prefix; this column
+-- holds the keys.
+--
+-- Recipe steps are a FLAT string array stored as JSON in recipes.steps_json,
+-- with inline "## Title" section headings mixed in (see recipe-sections). We do
+-- NOT nest images into that array — this is a PARALLEL array indexed by step
+-- position: steps_images_json[i] is the image R2 key (or null / "") for
+-- steps_json[i]. The API keeps it sliced to the steps length. A heading row's
+-- slot is simply empty. Empty entries mean "no photo — render nothing" (graceful
+-- degrade, and the no-R2 path). Default '[]' = no photos, so EVERY existing
+-- recipe renders exactly as before — purely additive, no backfill.
+--
+-- Additive, nullable-by-default, forward-only, filename-locked.
+ALTER TABLE recipes ADD COLUMN steps_images_json TEXT DEFAULT '[]';

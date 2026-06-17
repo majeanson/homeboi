@@ -1,0 +1,17 @@
+-- Parent-voice narration clips for kid routine cards (feature #17, part A). A
+-- parent can record their own voice reading a routine step ("Brosse tes dents!")
+-- so a pre-reader hears MUM, not the robotic on-device TTS. The clips live in the
+-- R2 PHOTOS bucket under an `rn_` key prefix; this column holds the keys.
+--
+-- Routine cards are stored as JSON in routines.cards_json — we do NOT reshape
+-- that (it's read in several places). Instead this is a PARALLEL array, one
+-- entry PER card by position: cards_narration_json[i] is the audio R2 key (or
+-- null / "") for cards_json[i]. The API keeps the two arrays the same length.
+-- Empty entries mean "no clip — fall back to on-device TTS" (graceful degrade,
+-- and the no-R2 path). Default '[]' = no clips, so EVERY existing routine reads
+-- exactly as before — purely additive, no backfill.
+--
+-- NOT a streak/points/badge field (calm-tenets.test.ts) — it's a one-shot voice
+-- nicety with no engagement loop. Additive, nullable-by-default, forward-only,
+-- filename-locked.
+ALTER TABLE routines ADD COLUMN cards_narration_json TEXT DEFAULT '[]';

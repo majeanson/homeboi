@@ -608,6 +608,15 @@ export function RecipeForm({
           <h3 className="recipe-sec-h">
             <Icon name="pencil-simple-bold" size={18} color="var(--berry-deep)" /> {t.recipes.steps}
           </h3>
+          {/* TODO #17 step photo upload — per-step photo control inside the step
+              editor. The data model + endpoint exist (resizeImage → POST
+              /api/recipe-image's sibling /api/recipe-step-image → { key }, then
+              send a stepImages[] parallel to steps on POST/PATCH; Cook mode
+              already renders recipe.stepImages[i]). This needs a small 📷 button
+              per step (add/replace/remove), held in a stepImages state array kept
+              the same length as `steps` through add/remove/move/paste. Hide the
+              button where R2 is unset (the endpoint 503s). Labels staged in i18n:
+              t.recipes.stepPhotoAdd / stepPhotoChange / stepPhotoRemove / stepPhotoOff. */}
           {stepsEditor}
 
           {/* Servings (+ optional unit: "24 biscuits") + times + notes */}

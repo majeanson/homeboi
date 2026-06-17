@@ -418,6 +418,11 @@ export const FR = {
     cookModeStep: 'Pas à pas',
     cookModeFull: 'Recette',
     cookModeSwitch: 'Mode d’affichage',
+    // Per-step recipe photos (feature #17 B — upload UI TODO).
+    stepPhotoAdd: 'Ajouter une photo',
+    stepPhotoChange: 'Changer la photo',
+    stepPhotoRemove: 'Retirer la photo',
+    stepPhotoOff: 'Photos d’étape indisponibles ici',
   },
   kid: {
     title: 'Ma routine',
@@ -449,6 +454,12 @@ export const FR = {
     empty: 'Aucune carte',
     todLabel: 'Moment :',
     tod: { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir', any: 'N’importe quand' },
+    // Parent-voice clips for routine cards (feature #17 A — recording UI TODO).
+    recordClip: 'Enregistrer ta voix',
+    clipRecorded: 'Clip enregistré',
+    clipRecord: 'Enregistrer',
+    clipRemove: 'Retirer le clip',
+    clipOff: 'Enregistrement audio indisponible ici',
   },
   login: {
     title: 'Connexion',
@@ -1202,6 +1213,11 @@ export const EN: typeof FR = {
     cookModeStep: 'Step by step',
     cookModeFull: 'Full recipe',
     cookModeSwitch: 'View mode',
+    // Per-step recipe photos (feature #17 B — upload UI TODO).
+    stepPhotoAdd: 'Add a photo',
+    stepPhotoChange: 'Change photo',
+    stepPhotoRemove: 'Remove photo',
+    stepPhotoOff: 'Step photos unavailable here',
   },
   kid: {
     title: 'My routine',
@@ -1233,6 +1249,12 @@ export const EN: typeof FR = {
     empty: 'No cards',
     todLabel: 'Moment:',
     tod: { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening', any: 'Anytime' },
+    // Parent-voice clips for routine cards (feature #17 A — recording UI TODO).
+    recordClip: 'Record your voice',
+    clipRecorded: 'Clip recorded',
+    clipRecord: 'Record',
+    clipRemove: 'Remove clip',
+    clipOff: 'Audio recording unavailable here',
   },
   login: {
     title: 'Sign in',

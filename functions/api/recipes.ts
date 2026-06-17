@@ -25,6 +25,7 @@ interface RecipeRow {
   image: string | null
   tags_json: string
   original_json: string | null
+  steps_images_json: string | null
   updated_at: number
 }
 
@@ -43,6 +44,8 @@ interface RecipeBody {
   image?: string | null
   tags?: string[]
   original?: RecipeOriginal | null
+  // Parallel per-step photo keys (feature #17 B) — same length as steps.
+  stepImages?: unknown
 }
 
 // The as-imported snapshot (migration 0020): what the import (URL / paste /
@@ -89,6 +92,22 @@ function cleanList(v: unknown, max = 40, maxLen = 200): string[] {
     .slice(0, max)
 }
 const cleanSteps = (v: unknown): string[] => cleanList(v, 40, 500)
+
+// Per-step photos (feature #17 B, migration 0041): a PARALLEL array to steps,
+// stepImages[i] is the R2 key for step i, or '' when that step has no photo. We
+// keep it the SAME LENGTH as steps (a heading row's slot is simply empty) so the
+// cook view indexes it positionally — pad/trim to `count`, validate each entry is
+// an R2-key-shaped token ('' otherwise). Defensive on read: a bad/short row reads
+// as all-''. Remote URLs aren't accepted here — step photos are always uploads.
+const isStepImgKey = (v: unknown): v is string => isStr(v) && /^[A-Za-z0-9_-]{1,64}$/.test(v)
+function normalizeStepImages(v: unknown, count: number): string[] {
+  const src = parseJsonArray<unknown>(typeof v === 'string' ? v : JSON.stringify(v ?? []))
+  const out: string[] = []
+  for (let i = 0; i < count; i++) out.push(isStepImgKey(src[i]) ? (src[i] as string) : '')
+  return out
+}
+// The R2 keys actually present in a step-image array — for cleanup on delete.
+const stepImageKeys = (v: unknown): string[] => normalizeStepImages(v, 40).filter((k) => k.length > 0)
 
 // Validate + serialize the as-imported snapshot. Returns the JSON string for
 // the column, or null when the value isn't a usable snapshot. Same caps as the
@@ -139,27 +158,32 @@ function cleanTags(v: unknown): string[] {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, ingredients_json, steps_json, servings, servings_unit, prep_min, cook_min, total_min, notes, source, image, tags_json, original_json, updated_at FROM recipes WHERE household_id = ? ORDER BY title',
+    'SELECT id, title, ingredients_json, steps_json, servings, servings_unit, prep_min, cook_min, total_min, notes, source, image, tags_json, original_json, steps_images_json, updated_at FROM recipes WHERE household_id = ? ORDER BY title',
   )
     .bind(actor.householdId)
     .all<RecipeRow>()
-  const recipes = (results ?? []).map((r) => ({
-    id: r.id,
-    title: r.title,
-    ingredients: parseJsonArray<string>(r.ingredients_json, isStr),
-    steps: parseJsonArray<string>(r.steps_json, isStr),
-    servings: r.servings,
-    servingsUnit: r.servings_unit,
-    prepMin: r.prep_min,
-    cookMin: r.cook_min,
-    totalMin: r.total_min,
-    notes: r.notes,
-    source: r.source,
-    image: r.image,
-    tags: parseJsonArray<string>(r.tags_json, isStr),
-    original: parseOriginal(r.original_json),
-    updatedAt: r.updated_at,
-  }))
+  const recipes = (results ?? []).map((r) => {
+    const steps = parseJsonArray<string>(r.steps_json, isStr)
+    return {
+      id: r.id,
+      title: r.title,
+      ingredients: parseJsonArray<string>(r.ingredients_json, isStr),
+      steps,
+      servings: r.servings,
+      servingsUnit: r.servings_unit,
+      prepMin: r.prep_min,
+      cookMin: r.cook_min,
+      totalMin: r.total_min,
+      notes: r.notes,
+      source: r.source,
+      image: r.image,
+      tags: parseJsonArray<string>(r.tags_json, isStr),
+      original: parseOriginal(r.original_json),
+      // Parallel per-step photo keys, '' = none (feature #17 B).
+      stepImages: normalizeStepImages(r.steps_images_json, steps.length),
+      updatedAt: r.updated_at,
+    }
+  })
   return ok({ recipes })
 })
 
@@ -170,15 +194,16 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const id = newId()
   const ts = nowSec()
   const servings = typeof body?.servings === 'number' && body.servings > 0 ? Math.floor(body.servings) : null
+  const steps = cleanSteps(body?.steps)
   await ctx.env.DB.prepare(
-    'INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, servings_unit, prep_min, cook_min, total_min, notes, source, image, tags_json, original_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, servings_unit, prep_min, cook_min, total_min, notes, source, image, tags_json, original_json, steps_images_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
       actor.householdId,
       title.slice(0, 200),
       JSON.stringify(cleanList(body?.ingredients)),
-      JSON.stringify(cleanSteps(body?.steps)),
+      JSON.stringify(steps),
       servings,
       cleanUnit(body?.servingsUnit),
       cleanMin(body?.prepMin),
@@ -189,6 +214,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
       cleanImage(body?.image),
       JSON.stringify(cleanTags(body?.tags)),
       cleanOriginal(body?.original),
+      // Step photos kept parallel + sliced to the cleaned steps length (feature #17 B).
+      JSON.stringify(normalizeStepImages(body?.stepImages, steps.length)),
       ts,
       ts,
     )
@@ -203,22 +230,32 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!title) return badRequest('Titre requis.')
   const servings = typeof body.servings === 'number' && body.servings > 0 ? Math.floor(body.servings) : null
   const image = cleanImage(body.image)
+  const steps = cleanSteps(body.steps)
   // The previous image, so we can free a now-orphaned R2 blob when it's replaced
-  // or cleared (remote URLs need no cleanup), and the previous original snapshot
-  // so an edit that doesn't carry one never wipes it.
-  const prev = await ctx.env.DB.prepare('SELECT image, original_json FROM recipes WHERE id = ? AND household_id = ?')
+  // or cleared (remote URLs need no cleanup), the previous original snapshot so an
+  // edit that doesn't carry one never wipes it, and the previous step-image keys
+  // so we can free any that this edit drops (feature #17 B).
+  const prev = await ctx.env.DB.prepare(
+    'SELECT image, original_json, steps_images_json FROM recipes WHERE id = ? AND household_id = ?',
+  )
     .bind(body.id, actor.householdId)
-    .first<{ image: string | null; original_json: string | null }>()
+    .first<{ image: string | null; original_json: string | null; steps_images_json: string | null }>()
   if (!prev) return notFound('Recette introuvable.')
   // A fresh import during the edit replaces the snapshot; anything else keeps it.
   const original = cleanOriginal(body.original) ?? prev.original_json
+  // Step photos: a sent array re-aligns to the new step count; otherwise re-pad
+  // the existing one to the new length so a step add/remove never desyncs it.
+  const newStepImages =
+    body.stepImages !== undefined
+      ? normalizeStepImages(body.stepImages, steps.length)
+      : normalizeStepImages(prev.steps_images_json, steps.length)
   await ctx.env.DB.prepare(
-    'UPDATE recipes SET title = ?, ingredients_json = ?, steps_json = ?, servings = ?, servings_unit = ?, prep_min = ?, cook_min = ?, total_min = ?, notes = ?, source = ?, image = ?, tags_json = ?, original_json = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+    'UPDATE recipes SET title = ?, ingredients_json = ?, steps_json = ?, servings = ?, servings_unit = ?, prep_min = ?, cook_min = ?, total_min = ?, notes = ?, source = ?, image = ?, tags_json = ?, original_json = ?, steps_images_json = ?, updated_at = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title.slice(0, 200),
       JSON.stringify(cleanList(body.ingredients)),
-      JSON.stringify(cleanSteps(body.steps)),
+      JSON.stringify(steps),
       servings,
       cleanUnit(body.servingsUnit),
       cleanMin(body.prepMin),
@@ -229,6 +266,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       image,
       JSON.stringify(cleanTags(body.tags)),
       original,
+      JSON.stringify(newStepImages),
       nowSec(),
       body.id,
       actor.householdId,
@@ -237,17 +275,30 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (isR2Key(prev.image) && prev.image !== image && ctx.env.PHOTOS) {
     await ctx.env.PHOTOS.delete(prev.image).catch(() => {})
   }
+  // Free any step-photo blobs this edit orphaned (a key present before but no
+  // longer in the saved array). Best-effort; never blocks the save.
+  if (ctx.env.PHOTOS) {
+    const kept = new Set(newStepImages)
+    const orphaned = stepImageKeys(prev.steps_images_json).filter((k) => !kept.has(k))
+    for (const k of orphaned) await ctx.env.PHOTOS.delete(k).catch(() => {})
+  }
   return ok({ ok: true })
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  // Free the R2 blob if this recipe owned an uploaded picture (remote URLs aren't ours).
-  const row = await ctx.env.DB.prepare('SELECT image FROM recipes WHERE id = ? AND household_id = ?')
+  // Free the R2 blobs this recipe owned: its display picture (remote URLs aren't
+  // ours) AND every per-step photo key (feature #17 B). Best-effort, never blocks.
+  const row = await ctx.env.DB.prepare(
+    'SELECT image, steps_images_json FROM recipes WHERE id = ? AND household_id = ?',
+  )
     .bind(body.id, actor.householdId)
-    .first<{ image: string | null }>()
-  if (isR2Key(row?.image) && ctx.env.PHOTOS) await ctx.env.PHOTOS.delete(row!.image!).catch(() => {})
+    .first<{ image: string | null; steps_images_json: string | null }>()
+  if (ctx.env.PHOTOS) {
+    if (isR2Key(row?.image)) await ctx.env.PHOTOS.delete(row!.image!).catch(() => {})
+    for (const k of stepImageKeys(row?.steps_images_json)) await ctx.env.PHOTOS.delete(k).catch(() => {})
+  }
   await ctx.env.DB.prepare('DELETE FROM recipes WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .run()
