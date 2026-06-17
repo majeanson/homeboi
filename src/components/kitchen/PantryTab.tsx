@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
+import { isGuest } from '../../lib/device'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { VoiceButton, VoiceStatus } from '../VoiceButton'
 import { CheckRow } from '../CheckRow'
@@ -17,6 +18,9 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
   const qc = useQueryClient()
   const undo = useUndoToast()
   const write = useWrite()
+  // Read-only guest: the low/use-soon ADD forms (not EditField — custom voice forms)
+  // are hidden. CheckRow already hides its own check/rename/delete for a guest.
+  const ro = isGuest()
   const [newLow, setNewLow] = useState('')
   const [newSoon, setNewSoon] = useState('')
 
@@ -147,19 +151,23 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
     <>
       <section>
         <h2>{t.kitchen.low}</h2>
-        <form className="kitchen__low-add" onSubmit={addLow}>
-          <input
-            className="input"
-            value={newLow}
-            onChange={(e) => setNewLow(e.target.value)}
-            placeholder={lowVoice.listening ? t.capture.listening : t.kitchen.lowAdd}
-          />
-          <VoiceButton voice={lowVoice} label={t.capture.voice} />
-          <button type="submit" className="btn" disabled={!newLow.trim()}>
-            {t.capture.add}
-          </button>
-        </form>
-        <VoiceStatus voice={lowVoice} />
+        {!ro && (
+          <>
+            <form className="kitchen__low-add" onSubmit={addLow}>
+              <input
+                className="input"
+                value={newLow}
+                onChange={(e) => setNewLow(e.target.value)}
+                placeholder={lowVoice.listening ? t.capture.listening : t.kitchen.lowAdd}
+              />
+              <VoiceButton voice={lowVoice} label={t.capture.voice} />
+              <button type="submit" className="btn" disabled={!newLow.trim()}>
+                {t.capture.add}
+              </button>
+            </form>
+            <VoiceStatus voice={lowVoice} />
+          </>
+        )}
         {low.length === 0 ? (
           <p className="board__empty mono">{t.kitchen.lowEmpty}</p>
         ) : (
@@ -181,19 +189,23 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
 
       <section>
         <h2>{t.kitchen.useSoon}</h2>
-        <form className="kitchen__soon-add" onSubmit={addSoon}>
-          <input
-            className="input"
-            value={newSoon}
-            onChange={(e) => setNewSoon(e.target.value)}
-            placeholder={soonVoice.listening ? t.capture.listening : t.kitchen.useSoonAdd}
-          />
-          <VoiceButton voice={soonVoice} label={t.capture.voice} />
-          <button type="submit" className="btn" disabled={!newSoon.trim()}>
-            {t.capture.add}
-          </button>
-        </form>
-        <VoiceStatus voice={soonVoice} />
+        {!ro && (
+          <>
+            <form className="kitchen__soon-add" onSubmit={addSoon}>
+              <input
+                className="input"
+                value={newSoon}
+                onChange={(e) => setNewSoon(e.target.value)}
+                placeholder={soonVoice.listening ? t.capture.listening : t.kitchen.useSoonAdd}
+              />
+              <VoiceButton voice={soonVoice} label={t.capture.voice} />
+              <button type="submit" className="btn" disabled={!newSoon.trim()}>
+                {t.capture.add}
+              </button>
+            </form>
+            <VoiceStatus voice={soonVoice} />
+          </>
+        )}
         {soon.length === 0 ? (
           <p className="board__empty mono">{t.kitchen.useSoonEmpty}</p>
         ) : (

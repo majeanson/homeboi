@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useCalm } from '../lib/calm'
+import { isGuest } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { useSpeak, playNarration } from '../lib/speak'
 import { Icon } from '../components/Icon'
@@ -50,6 +51,11 @@ const fmtClock = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart
 export function KidView() {
   const t = useT()
   const { calm } = useCalm()
+  // Read-only guest (toddler kiosk handed to a sitter): advancing a routine PATCHes
+  // step progress (a write, via useOptimisticMutation — NOT writeWith, so it isn't
+  // auto-refused). Hide the ▶ start + →/✓ finish so a guest can still browse and
+  // hear steps read aloud, but never commit progress.
+  const ro = isGuest()
   const { memberId: profileId } = useProfile()
   const speak = useSpeak()
   const [pickedId, setPickedId] = useState<string | null>(null)
@@ -329,31 +335,34 @@ export function KidView() {
                 </div>
               </div>
 
-              {/* Start ONCE (▶), then advance through with →, and ✓ on the last. */}
-              {running ? (
-                <div className="tdl-timer">
-                  <span className="tdl-clock mono" aria-live="polite">
-                    {fmtClock(elapsed)}
-                  </span>
+              {/* Start ONCE (▶), then advance through with →, and ✓ on the last.
+                  A guest never sees these (they commit progress) — the tap-to-hear
+                  picture/label above still works. */}
+              {!ro &&
+                (running ? (
+                  <div className="tdl-timer">
+                    <span className="tdl-clock mono" aria-live="polite">
+                      {fmtClock(elapsed)}
+                    </span>
+                    <button
+                      type="button"
+                      className="tdl-finish"
+                      onClick={() => advance(picked, curIdx)}
+                      aria-label={curIdx >= picked.cards.length - 1 ? t.kid.finish : t.kid.tapNext}
+                    >
+                      {curIdx >= picked.cards.length - 1 ? '✓' : '→'}
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    className="tdl-finish"
-                    onClick={() => advance(picked, curIdx)}
-                    aria-label={curIdx >= picked.cards.length - 1 ? t.kid.finish : t.kid.tapNext}
+                    className="tdl-start"
+                    onClick={() => startStep(curIdx)}
+                    aria-label={t.kid.start}
                   >
-                    {curIdx >= picked.cards.length - 1 ? '✓' : '→'}
+                    <Icon name="play-bold" size={22} />
                   </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="tdl-start"
-                  onClick={() => startStep(curIdx)}
-                  aria-label={t.kid.start}
-                >
-                  <Icon name="play-bold" size={22} />
-                </button>
-              )}
+                ))}
             </>
           )}
         </div>

@@ -3,6 +3,7 @@ import { useLang, useT } from '../../i18n'
 import { formatWeekday } from '../../lib/format'
 import { pictoFor } from '../../lib/picto'
 import { type Recipe, recipeImg } from '../../lib/recipes'
+import { isGuest } from '../../lib/device'
 import { BigTiles, Sayable, type Tile } from '../BigTiles'
 import { buildCollections } from './CollectionPicker'
 import { KidCollections } from './KidCollections'
@@ -28,6 +29,10 @@ export function KidKitchen({
 }) {
   const t = useT()
   const { lang } = useLang()
+  // Read-only guest (toddler lens handed to a sitter): the picture-pick "suggest a
+  // meal onto a day" flow commits a write, so hide it. The planned-supper tiles stay
+  // — tapping one only reads it aloud / opens Cook mode (a read).
+  const ro = isGuest()
   // The recipe a child has tapped and is now choosing a day for (null = still
   // browsing the recipe shelf).
   const [kidRecipe, setKidRecipe] = useState<Recipe | null>(null)
@@ -131,7 +136,7 @@ export function KidKitchen({
       </div>
       <BigTiles tiles={planned} empty={t.board.nothingTonight} />
 
-      {recipes.length > 0 &&
+      {!ro && recipes.length > 0 &&
         (kidRecipe ? (
           <section className="kid-pick">
             <div className="kid-head">

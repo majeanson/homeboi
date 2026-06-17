@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useLang, useT } from '../i18n'
+import { isGuest } from '../lib/device'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { type Deal, type FlyerSummary } from '../lib/deals'
@@ -513,7 +514,7 @@ export function FlyerViewer({
             {/* One action: adding from the flyer links the deal for the cashier
                 too (store, price, image) — so the list row shows the ✓ + flyer
                 picture, and there's no separate "show the cashier" button here. */}
-            {(onStage || onAddToList) && selected.name && (
+            {!isGuest() && (onStage || onAddToList) && selected.name && (
               <button
                 type="button"
                 className="btn btn--primary mono flyer-detail__add"

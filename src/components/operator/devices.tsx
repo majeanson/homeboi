@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useUndoableRemove } from '../../lib/undoRemove'
+import { isGuest } from '../../lib/device'
 import { InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
@@ -15,6 +16,8 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
   const [ok, setOk] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Read-only guest: pairing a tablet is a write — hide the whole claim section.
+  if (isGuest()) return null
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()

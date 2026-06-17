@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useWrite } from '../lib/write'
+import { isGuest } from '../lib/device'
 import { live } from '../lib/query'
 import { useT } from '../i18n'
 import { Loading } from '../components/Fallback'
@@ -50,6 +51,9 @@ export function ListEditPage() {
     if (board && !item && !busy) close()
   }, [board, item, busy, close])
 
+  // Read-only guest: this whole scene is an editor (rename / terms / unlink / delete).
+  // Render the line as calm inert text instead, with no inputs or action buttons.
+  const ro = isGuest()
   const deal = parseDeal(item?.deal_json)
 
   function addTerm(raw: string) {
@@ -102,6 +106,31 @@ export function ListEditPage() {
       <SceneHead title={t.list.editTitle} subtitle={item.text} onClose={close} closeLabel={t.shop.close} />
 
       <div className="scene__body">
+        {ro ? (
+          <div className="li-edit">
+            <div className="li-edit__field">
+              <span className="li-edit__label">{t.list.nameLabel}</span>
+              <p className="li-edit__readonly">{item.text}</p>
+            </div>
+            {terms.length > 0 && (
+              <div className="li-edit__field">
+                <span className="li-edit__label">{t.list.termsLabel}</span>
+                <div className="li-terms">
+                  {terms.map((term, i) => (
+                    <span key={`${term}-${i}`} className="li-term">
+                      {term}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {deal && (
+              <p className="li-edit__row mono">
+                <InlineIcon name="tag-bold" /> {deal.merchant} {money(deal.price)}
+              </p>
+            )}
+          </div>
+        ) : (
         <div className="li-edit">
           <label className="li-edit__field">
             <span className="li-edit__label">{t.list.nameLabel}</span>
@@ -164,6 +193,7 @@ export function ListEditPage() {
             </button>
           </div>
         </div>
+        )}
       </div>
     </div>
   )

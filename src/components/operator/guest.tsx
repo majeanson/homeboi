@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { isGuest } from '../../lib/device'
 import { InlineIcon } from '../Icon'
 
 // Babysitter / guest access. The operator picks how long the access lasts and
@@ -18,6 +19,9 @@ const TTL_OPTIONS = [
 
 export function GuestSection() {
   const t = useT()
+  // Issuing a guest token is operator-only — a read-only guest can't mint more
+  // guests, so the whole section is hidden for them.
+  const ro = isGuest()
   const [ttl, setTtl] = useState(3600)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -61,6 +65,8 @@ export function GuestSection() {
       /* user dismissed the share sheet — nothing to do */
     }
   }
+
+  if (ro) return null
 
   return (
     <section className="surface operator__section">

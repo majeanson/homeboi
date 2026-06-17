@@ -1,5 +1,6 @@
 import { useLang, useT } from '../i18n'
 import { type Deal, money } from '../lib/deals'
+import { isGuest } from '../lib/device'
 import { ZoomableImg } from './ZoomableImg'
 import { InlineIcon } from './Icon'
 
@@ -37,6 +38,9 @@ export function DealCard({
 }) {
   const t = useT()
   const { lang } = useLang()
+  // Read-only guest: viewing the deal + opening the flyer are reads (keep), but
+  // add-to-list / choose / stage all write — hide them.
+  const ro = isGuest()
   const fmtDate = (iso: string | null) => {
     if (!iso) return ''
     const d = new Date(iso)
@@ -63,7 +67,7 @@ export function DealCard({
           )}
           {/* One "add to list" action: it links the deal for the cashier when it
               can (onStage), else a plain add. No separate "show the cashier". */}
-          {onStage ? (
+          {ro ? null : onStage ? (
             <button
               type="button"
               className={`deal__choose mono${staged ? ' is-chosen' : ''}`}
@@ -76,7 +80,7 @@ export function DealCard({
               <InlineIcon name={added ? 'check-bold' : 'plus-bold'} /> {t.shop.addToList}
             </button>
           ) : null}
-          {onChoose && (
+          {!ro && onChoose && (
             <button
               type="button"
               className={`deal__choose mono${isChosen ? ' is-chosen' : ''}`}

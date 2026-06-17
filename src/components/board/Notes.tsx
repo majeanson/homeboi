@@ -2,6 +2,7 @@ import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { useSpeak } from '../../lib/speak'
+import { isGuest } from '../../lib/device'
 import { Icon, InlineIcon } from '../Icon'
 import type { BoardData, Member, NoteRow } from './types'
 
@@ -22,6 +23,9 @@ export function Notes({
   const t = useT()
   const write = useWrite()
   const speak = useSpeak()
+  // Read-only guest: clearing a note is a write. In the parent lens the card becomes
+  // inert display text (no ✕, no tap). The toddler read-aloud stays (it's a read).
+  const ro = isGuest()
   if (!notes.length) return null
   const colorOf = (id: string | null) => (id ? members.find((m) => m.id === id)?.colour : null)
 
@@ -45,6 +49,18 @@ export function Notes({
       <div className="notes__grid">
         {notes.map((n) => {
           const tint = colorOf(n.member_id) ?? '#FBD66B'
+          // Guest + parent lens: an inert card — no clear write, no ✕.
+          if (ro && !toddler) {
+            return (
+              <div
+                key={n.id}
+                className="note-card"
+                style={{ '--note-tint': tint } as React.CSSProperties}
+              >
+                <span className="note-card__text">{n.text}</span>
+              </div>
+            )
+          }
           return (
             <button
               key={n.id}

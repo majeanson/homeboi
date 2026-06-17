@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { useWrite } from '../lib/write'
+import { isGuest } from '../lib/device'
 import { useT } from '../i18n'
 import { pictoFor } from '../lib/picto'
 import { Icon, InlineIcon } from '../components/Icon'
@@ -30,6 +32,10 @@ export function QuickAddPage() {
   const [q, setQ] = useState('')
   const [alpha, setAlpha] = useState(false)
   const [added, setAdded] = useState<Set<string>>(new Set())
+  // The entire scene is a restock/add tool — nothing here but writes. A read-only
+  // guest has no business on it; slip back to the list (also guards a deep link).
+  // Placed after every hook so this isn't a conditional-hook violation.
+  const ro = isGuest()
   const fq = fold(q)
   const filtered = fq ? items.filter((i) => fold(i.label).includes(fq)) : items
   // Default order is status/frequency (from useQuickItems); the Aa toggle re-sorts
@@ -61,6 +67,8 @@ export function QuickAddPage() {
     setAdded((s) => new Set(s).add(key))
     setQ('')
   }
+
+  if (ro) return <Navigate to="/liste" replace />
 
   return (
     <div className="scene" aria-label={t.list.quickAddTitle}>

@@ -5,6 +5,7 @@ import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
+import { isGuest } from '../../lib/device'
 import { Icon } from '../Icon'
 import { EditField } from '../EditField'
 
@@ -39,19 +40,21 @@ export function ShopSection() {
     <section className="surface operator__section">
       <h2>{t.operator.shopping}</h2>
       <p className="lead">{t.operator.shopHint}</p>
-      <EditField
-        value={postal}
-        onChange={(v) => {
-          setPostal(v.toUpperCase())
-          setStatus('idle')
-        }}
-        onSubmit={() => save()}
-        submitLabel={t.common.save}
-        submitVariant="primary"
-        placeholder={t.operator.postalPlaceholder}
-        ariaLabel={t.operator.postalLabel}
-        maxLength={7}
-      />
+      {!isGuest() && (
+        <EditField
+          value={postal}
+          onChange={(v) => {
+            setPostal(v.toUpperCase())
+            setStatus('idle')
+          }}
+          onSubmit={() => save()}
+          submitLabel={t.common.save}
+          submitVariant="primary"
+          placeholder={t.operator.postalPlaceholder}
+          ariaLabel={t.operator.postalLabel}
+          maxLength={7}
+        />
+      )}
       {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
       {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
     </section>
@@ -146,15 +149,21 @@ export function StoreFilterSection() {
                 </span>
               )}
               <span className="store-filter__name">{s.merchant}</span>
-              <button
-                type="button"
-                className={'btn mono store-filter__toggle' + (s.included ? ' btn--primary' : ' btn--ghost')}
-                onClick={() => toggle(s)}
-                disabled={pending.has(s.key)}
-                aria-pressed={s.included}
-              >
-                {s.included ? t.operator.storeIncluded : t.operator.storeExcluded}
-              </button>
+              {isGuest() ? (
+                <span className="mono store-filter__toggle">
+                  {s.included ? t.operator.storeIncluded : t.operator.storeExcluded}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className={'btn mono store-filter__toggle' + (s.included ? ' btn--primary' : ' btn--ghost')}
+                  onClick={() => toggle(s)}
+                  disabled={pending.has(s.key)}
+                  aria-pressed={s.included}
+                >
+                  {s.included ? t.operator.storeIncluded : t.operator.storeExcluded}
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -184,6 +193,8 @@ export function HistorySection() {
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState<Set<string>>(new Set())
+  // Read-only guest: history reads as plain rows — no rename / remove.
+  const ro = isGuest()
 
   const load = useCallback(async () => {
     const r = await api<{ items: HistRow[] }>('list?view=history').catch(() => ({ items: [] as HistRow[] }))
@@ -238,7 +249,7 @@ export function HistorySection() {
       ) : (
         <ul className="operator__list ghost-admin">
           {items.map((it) =>
-            editing === it.key ? (
+            !ro && editing === it.key ? (
               <li key={it.key} className="ghost-admin__row">
                 <form
                   className="operator__inline-form"
@@ -266,25 +277,29 @@ export function HistorySection() {
               <li key={it.key} className="ghost-admin__row">
                 <span className="ghost-admin__name">{it.text}</span>
                 <span className="ghost-admin__meta mono">{it.count > 0 ? `${it.count}×` : ''}</span>
-                <button
-                  type="button"
-                  className="btn btn--ghost mono"
-                  disabled={busy.has(it.key)}
-                  onClick={() => {
-                    setEditing(it.key)
-                    setDraft(it.text)
-                  }}
-                >
-                  {t.operator.historyRename}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--ghost mono operator__del"
-                  disabled={busy.has(it.key)}
-                  onClick={() => remove(it)}
-                >
-                  {t.operator.historyRemove}
-                </button>
+                {!ro && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn--ghost mono"
+                      disabled={busy.has(it.key)}
+                      onClick={() => {
+                        setEditing(it.key)
+                        setDraft(it.text)
+                      }}
+                    >
+                      {t.operator.historyRename}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--ghost mono operator__del"
+                      disabled={busy.has(it.key)}
+                      onClick={() => remove(it)}
+                    >
+                      {t.operator.historyRemove}
+                    </button>
+                  </>
+                )}
               </li>
             ),
           )}
@@ -305,6 +320,9 @@ export function GhostSection() {
   const [candidates, setCandidates] = useState<GhostCandidate[]>([])
   const [label, setLabel] = useState('')
   const [days, setDays] = useState('7')
+  // Read-only guest: hide the track-candidate chips + the add-staple form. The
+  // GhostRow controls are gated inside that component.
+  const ro = isGuest()
 
   const load = useCallback(async () => {
     const r = await fetchGhostManage().catch(() => ({ items: [], candidates: [] }))
@@ -359,7 +377,7 @@ export function GhostSection() {
           ))}
         </ul>
       )}
-      {candidates.length > 0 && (
+      {!ro && candidates.length > 0 && (
         <div className="ghost-admin__candidates">
           <p className="mono">{t.ghost.candidatesTitle}</p>
           <div className="ghost-admin__candidate-chips">
@@ -377,32 +395,34 @@ export function GhostSection() {
           </div>
         </div>
       )}
-      <form className="operator__inline-form" onSubmit={add}>
-        <input
-          className="input"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder={t.ghost.staplePlaceholder}
-          aria-label={t.ghost.addStaple}
-        />
-        <label className="ghost-admin__cadence mono">
-          {t.ghost.every}
+      {!ro && (
+        <form className="operator__inline-form" onSubmit={add}>
           <input
-            className="input ghost-admin__days"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={365}
-            value={days}
-            onChange={(e) => setDays(e.target.value)}
-            aria-label={t.ghost.every}
+            className="input"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder={t.ghost.staplePlaceholder}
+            aria-label={t.ghost.addStaple}
           />
-          {t.ghost.days}
-        </label>
-        <button type="submit" className="btn" disabled={!label.trim()}>
-          {t.ghost.addStaple}
-        </button>
-      </form>
+          <label className="ghost-admin__cadence mono">
+            {t.ghost.every}
+            <input
+              className="input ghost-admin__days"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={365}
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+              aria-label={t.ghost.every}
+            />
+            {t.ghost.days}
+          </label>
+          <button type="submit" className="btn" disabled={!label.trim()}>
+            {t.ghost.addStaple}
+          </button>
+        </form>
+      )}
     </section>
   )
 }
@@ -421,6 +441,8 @@ function GhostRow({
   const t = useT()
   const [days, setDays] = useState(String(item.cadenceDays ?? ''))
   const sourceLabel = item.source === 'staple' ? t.ghost.sourceStaple : t.ghost.sourceManual
+  // Read-only guest: cadence reads as text, no mute/unmute, no remove.
+  const ro = isGuest()
 
   function commit() {
     const n = Math.max(1, Math.min(365, Math.round(Number(days) || item.cadenceDays || 7)))
@@ -437,23 +459,29 @@ function GhostRow({
       </span>
       <label className="ghost-admin__cadence mono">
         {t.ghost.every}
-        <input
-          className="input ghost-admin__days"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={365}
-          value={days}
-          onChange={(e) => setDays(e.target.value)}
-          onBlur={commit}
-          aria-label={`${item.label} — ${t.ghost.every}`}
-        />
+        {ro ? (
+          <span className="ghost-admin__days">{item.cadenceDays ?? '—'}</span>
+        ) : (
+          <input
+            className="input ghost-admin__days"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={365}
+            value={days}
+            onChange={(e) => setDays(e.target.value)}
+            onBlur={commit}
+            aria-label={`${item.label} — ${t.ghost.every}`}
+          />
+        )}
         {t.ghost.days}
       </label>
-      <button type="button" className="btn btn--ghost mono" onClick={() => onSave(item, { muted: !item.muted })}>
-        {item.muted ? t.ghost.unmute : t.ghost.mute}
-      </button>
-      {item.source === 'manual' && (
+      {!ro && (
+        <button type="button" className="btn btn--ghost mono" onClick={() => onSave(item, { muted: !item.muted })}>
+          {item.muted ? t.ghost.unmute : t.ghost.mute}
+        </button>
+      )}
+      {!ro && item.source === 'manual' && (
         <button type="button" className="btn btn--ghost mono operator__del" onClick={() => onRemove(item)}>
           {t.ghost.remove}
         </button>

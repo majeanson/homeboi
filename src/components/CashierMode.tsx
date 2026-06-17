@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { type Pick, money } from '../lib/deals'
+import { isGuest } from '../lib/device'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
@@ -27,6 +28,9 @@ export function CashierMode({
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
+  // Read-only guest: the present-phase stepper is all reads (keep), but the review
+  // phase's revise/remove per pick are writes — hide that action cluster.
+  const ro = isGuest()
   // Esc-to-close + scroll-lock + focus-trap. One ref rides whichever phase view
   // is rendered (only one is mounted at a time).
   const cashierRef = useRef<HTMLDivElement>(null)
@@ -123,19 +127,21 @@ export function CashierMode({
                     {p.deal.unitPrice != null ? ` · ${money(p.deal.unitPrice)}${p.deal.unitLabel}` : ''}
                   </span>
                 </div>
-                <div className="review-row__actions">
-                  <button type="button" className="btn btn--ghost mono" onClick={() => onRevise(p)}>
-                    {t.shop.choose}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--ghost mono review-row__del"
-                    onClick={() => onRemove(p.itemId)}
-                    aria-label={t.shop.clearPicks}
-                  >
-                    <Icon name="x-bold" size={15} />
-                  </button>
-                </div>
+                {!ro && (
+                  <div className="review-row__actions">
+                    <button type="button" className="btn btn--ghost mono" onClick={() => onRevise(p)}>
+                      {t.shop.choose}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--ghost mono review-row__del"
+                      onClick={() => onRemove(p.itemId)}
+                      aria-label={t.shop.clearPicks}
+                    >
+                      <Icon name="x-bold" size={15} />
+                    </button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

@@ -16,6 +16,7 @@ import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { useRecordUndo, useUndoToast } from '../lib/toast'
 import { useVoiceInput } from '../lib/useVoiceInput'
+import { isGuest } from '../lib/device'
 import { EditField } from '../components/EditField'
 import { money } from '../lib/deals'
 import { pickListFrom, parseDeal } from '../lib/picks'
@@ -84,6 +85,7 @@ function ListItemRow({
   onToggle,
   onDelete,
   deleteLabel,
+  readOnly = isGuest(),
 }: {
   text: string
   picto: string
@@ -99,18 +101,24 @@ function ListItemRow({
   onToggle: () => void
   onDelete: () => void
   deleteLabel: string
+  // Read-only guest: no check toggle, no swipe-to-delete, no delete pane. The
+  // picture/name taps stay — they only navigate (open the flyer / a read detail).
+  readOnly?: boolean
 }) {
   const mainRef = useRef<HTMLDivElement>(null)
-  useSwipeToDelete(mainRef, onDelete)
+  // Only wire the swipe-delete when writes are allowed; a guest's row never deletes.
+  useSwipeToDelete(mainRef, readOnly ? () => {} : onDelete)
   return (
     <div className="list-row">
       {/* The delete pane revealed behind the row as it slides left under the
           finger. Inert/aria-hidden — the swipe drives it; the edit sheet keeps an
           actual Delete button for non-touch. */}
-      <span className="list-row__del" aria-hidden="true">
-        <span className="list-row__del-icon"><Icon name="trash-bold" size={18} /></span>
-        <span className="list-row__del-label">{deleteLabel}</span>
-      </span>
+      {!readOnly && (
+        <span className="list-row__del" aria-hidden="true">
+          <span className="list-row__del-icon"><Icon name="trash-bold" size={18} /></span>
+          <span className="list-row__del-label">{deleteLabel}</span>
+        </span>
+      )}
       <div ref={mainRef} className={`act list-row__main${checked ? ' done' : ''}`}>
         <span className="spine" style={{ background: CATS.list.color }} aria-hidden="true" />
         <button type="button" className="list-row__img" onClick={onImage} aria-label={imageLabel}>
@@ -147,9 +155,11 @@ function ListItemRow({
             {(adder.display_name[0] ?? '?').toUpperCase()}
           </span>
         )}
-        <button type="button" className="check list-row__toggle" onClick={onToggle} aria-label={toggleLabel}>
-          <Icon name="check-bold" size={18} />
-        </button>
+        {!readOnly && (
+          <button type="button" className="check list-row__toggle" onClick={onToggle} aria-label={toggleLabel}>
+            <Icon name="check-bold" size={18} />
+          </button>
+        )}
       </div>
     </div>
   )
@@ -420,7 +430,7 @@ export function Liste() {
       {/* Clear the trip: every checked line goes (logged as bought), the rest
           stays for next time. Kept small and tucked to the side — the list itself
           is the page, not its controls. */}
-      {checkedIds.length > 0 && (
+      {!isGuest() && checkedIds.length > 0 && (
         <div className="list-clear">
           <button type="button" className="btn btn--primary btn--sm" onClick={() => clearChecked(checkedIds)}>
             <InlineIcon name="check-bold" /> {t.list.clearChecked} ({checkedIds.length})
