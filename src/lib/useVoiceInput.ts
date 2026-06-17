@@ -74,6 +74,17 @@ export function splitItems(text: string): string[] {
 // gap inside "blé d'inde" (~150ms), short enough that a deliberate pause works.
 const PAUSE_MS = 800
 
+// Whisper fallback has no streaming, so the continuous callers can't lean on the
+// engine's own end-of-phrase events the way on-device recognition does. Instead an
+// AnalyserNode watches the mic level and we cut a segment after PAUSE_MS of quiet —
+// each segment is its own clip → its own /api/transcribe → its own item, so rattling
+// off "lait … œufs … pain" word by word lands as three items instead of one mushed
+// transcript (Whisper only inserts the commas splitItems() needs when you speak a
+// flowing SENTENCE, not isolated words). Poll cadence + the RMS level (normalized
+// mic samples, 0–1) that counts as speech rather than room noise.
+const VAD_POLL_MS = 100
+const VAD_THRESHOLD = 0.02
+
 interface VoiceOpts {
   // Keep the mic open and emit every finished phrase (caller adds each). Tap
   // again to stop. Without this the mic captures one phrase then stops.
@@ -172,6 +183,16 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
   const audioStreamRef = useRef<MediaStream | null>(null)
   const whisperTimerRef = useRef<number | null>(null)
   const whisperStateRef = useRef<'idle' | 'recording' | 'transcribing'>('idle')
+  // Whisper continuous-mode pause-cut (VAD). The AudioContext + poll timer watch the
+  // live mic level; vadActive stays true between items so each recorder's onstop
+  // opens the next segment, and a tap-stop clears it to make the current one final.
+  // hadSpeech/silentPolls track "have we heard speech, and for how many quiet polls"
+  // so we only cut AFTER real speech, never on the leading silence before item one.
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const vadIntervalRef = useRef<number | null>(null)
+  const vadActiveRef = useRef(false)
+  const hadSpeechRef = useRef(false)
+  const silentPollsRef = useRef(0)
 
   // Which STT path this device uses. On-device recognition is preferred, but it's
   // gated in an iOS installed PWA (instant abort), so there we record + transcribe
@@ -297,10 +318,166 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     audioStreamRef.current = null
   }
 
+  // Watch the live mic level and cut a segment after PAUSE_MS of quiet (continuous
+  // Whisper mode only). Returns whether VAD actually started — if Web Audio is
+  // missing we fall back to one clip on stop (same as a single capture). Best-effort
+  // throughout: any failure just means no pause-cutting, never a dead mic.
+  function startVad(stream: MediaStream): boolean {
+    const Ctx =
+      (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
+        .AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!Ctx) return false
+    let ctx: AudioContext
+    try {
+      ctx = new Ctx()
+    } catch {
+      return false
+    }
+    audioCtxRef.current = ctx
+    void ctx.resume?.()
+    const analyser = ctx.createAnalyser()
+    analyser.fftSize = 1024
+    try {
+      ctx.createMediaStreamSource(stream).connect(analyser)
+    } catch {
+      stopVad()
+      return false
+    }
+    const buf = new Uint8Array(analyser.fftSize)
+    hadSpeechRef.current = false
+    silentPollsRef.current = 0
+    const silenceToCut = Math.ceil(PAUSE_MS / VAD_POLL_MS)
+    vadIntervalRef.current = window.setInterval(() => {
+      analyser.getByteTimeDomainData(buf)
+      let sum = 0
+      for (let i = 0; i < buf.length; i++) {
+        const v = (buf[i]! - 128) / 128 // centre the 0–255 byte and normalize to ±1
+        sum += v * v
+      }
+      const rms = Math.sqrt(sum / buf.length)
+      if (rms > VAD_THRESHOLD) {
+        hadSpeechRef.current = true
+        silentPollsRef.current = 0
+        return
+      }
+      // Only count quiet AFTER we've heard the current item — leading silence (before
+      // item one, or just after a cut) must not fire an empty segment.
+      if (!hadSpeechRef.current) return
+      if (++silentPollsRef.current >= silenceToCut) {
+        hadSpeechRef.current = false
+        silentPollsRef.current = 0
+        cutSegment()
+      }
+    }, VAD_POLL_MS)
+    return true
+  }
+
+  function stopVad() {
+    if (vadIntervalRef.current != null) {
+      clearInterval(vadIntervalRef.current)
+      vadIntervalRef.current = null
+    }
+    const ctx = audioCtxRef.current
+    audioCtxRef.current = null
+    if (ctx) {
+      try {
+        void ctx.close()
+      } catch {
+        /* already closed */
+      }
+    }
+    hadSpeechRef.current = false
+    silentPollsRef.current = 0
+  }
+
+  // Finalize the current item on a detected pause: stopping the recorder fires its
+  // onstop, which transcribes this segment in the background AND opens the next one.
+  function cutSegment() {
+    const mr = mediaRecorderRef.current
+    if (mr && mr.state === 'recording') {
+      try {
+        mr.stop()
+      } catch {
+        /* already stopped */
+      }
+    }
+  }
+
+  // One MediaRecorder per segment. While vadActive (continuous, mid-run), each
+  // onstop transcribes its clip and immediately opens the next recorder so the
+  // following item is captured — the brief gap is always inside a pause. When
+  // vadActive is false (single capture, or the user ended a continuous run) this is
+  // the LAST segment: transcribe it, release the mic, and reset. A hard stop()/
+  // unmount (stoppedRef) drops the clip instead.
+  function makeRecorder(stream: MediaStream): MediaRecorder {
+    audioChunksRef.current = []
+    const mime = pickAudioMime()
+    let mr: MediaRecorder
+    try {
+      mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
+    } catch {
+      mr = new MediaRecorder(stream) // engine rejected the hint — take its default
+    }
+    mr.ondataavailable = (e) => {
+      if (e.data && e.data.size) audioChunksRef.current.push(e.data)
+    }
+    mr.onstop = () => {
+      const chunks = audioChunksRef.current
+      audioChunksRef.current = []
+      const type = mr.mimeType || pickAudioMime() || 'audio/webm'
+      const blob = new Blob(chunks, { type })
+      const drop = stoppedRef.current
+      if (vadActiveRef.current && !drop) {
+        if (blob.size > 0) void transcribeSegment(blob)
+        const next = makeRecorder(stream)
+        mediaRecorderRef.current = next
+        try {
+          next.start()
+        } catch {
+          /* if the next segment can't open, stopVad on teardown still clears the mic */
+        }
+        return
+      }
+      // Final segment for this run.
+      mediaRecorderRef.current = null
+      stopVad()
+      teardownStream()
+      if (!drop) {
+        if (blob.size > 0) void transcribeSegment(blob)
+        else setError('no-speech')
+      }
+      whisperStateRef.current = 'idle'
+      setListening(false)
+    }
+    return mr
+  }
+
+  // POST one segment's clip and emit its transcript through the same onResult as
+  // recognition (split into items when the caller asked). Mid-stream failures stay
+  // quiet in continuous mode — one dropped item shouldn't error over the run.
+  async function transcribeSegment(blob: Blob) {
+    try {
+      const res = await api<{ text?: string }>('transcribe', { method: 'POST', body: blob })
+      const phrase = (res?.text ?? '').trim()
+      if (phrase) {
+        const parts = opts.split ? splitItems(phrase) : [phrase]
+        for (const p of parts) onResult(p)
+        setError(null)
+      } else if (!opts.continuous) {
+        setError('no-speech')
+      }
+    } catch {
+      // api() already popped the AI-error notice if the server tagged the response.
+      if (!opts.continuous) setError('no-speech')
+    }
+  }
+
   // Whisper path entry. First tap opens the mic and records; a second tap ends and
-  // transcribes (there's no per-word streaming server-side — you speak, pause, the
-  // text lands). A safety cap stops a forgotten mic. Mirrors the recognition path's
-  // single-tap-toggle so VoiceButton needs no special-casing.
+  // transcribes (there's no per-word streaming server-side). In continuous mode an
+  // AnalyserNode cuts items on pauses (see startVad) so a whole grocery run lands as
+  // separate items; a single capture stays one clip. A safety cap stops a forgotten
+  // mic. Mirrors the recognition path's single-tap-toggle.
   async function startWhisper() {
     if (whisperStateRef.current === 'recording') {
       stopWhisper()
@@ -325,34 +502,37 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     }
     setPermission('granted')
     audioStreamRef.current = stream
-    audioChunksRef.current = []
-    const mime = pickAudioMime()
-    let mr: MediaRecorder
-    try {
-      mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
-    } catch {
-      mr = new MediaRecorder(stream) // engine rejected the hint — take its default
-    }
+    // Continuous → pause-cut into per-item segments; single capture → one clip on
+    // stop. If VAD can't start (no Web Audio) the continuous run degrades to one
+    // clip, exactly as before.
+    vadActiveRef.current = opts.continuous ? startVad(stream) : false
+    const mr = makeRecorder(stream)
     mediaRecorderRef.current = mr
-    mr.ondataavailable = (e) => {
-      if (e.data && e.data.size) audioChunksRef.current.push(e.data)
-    }
-    mr.onstop = () => {
-      void finishWhisper()
-    }
     whisperStateRef.current = 'recording'
     setListening(true)
-    mr.start()
+    try {
+      mr.start()
+    } catch {
+      /* recorder refused to start — surface as a missed capture */
+      stopVad()
+      teardownStream()
+      whisperStateRef.current = 'idle'
+      setListening(false)
+      setError('no-speech')
+      return
+    }
     // A grocery run (continuous) gets a longer window than one capture; either way
     // the mic can't run forever if the user walks away.
-    const cap = opts.continuous ? 60000 : 15000
+    const cap = opts.continuous ? 120000 : 15000
     whisperTimerRef.current = window.setTimeout(() => stopWhisper(), cap)
   }
 
-  // End recording (the recorder's onstop runs finishWhisper). 'transcribing' blocks
-  // a re-tap until the text lands.
+  // End the run gracefully: clear vadActive so the current segment becomes the FINAL
+  // one (its onstop transcribes it, then cleans up) rather than chaining another.
+  // 'transcribing' blocks a re-tap until the text lands.
   function stopWhisper() {
     clearWhisperTimer()
+    vadActiveRef.current = false
     const mr = mediaRecorderRef.current
     if (mr && whisperStateRef.current === 'recording') {
       whisperStateRef.current = 'transcribing'
@@ -364,49 +544,16 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     }
   }
 
-  // Assemble the clip, POST it to /api/transcribe, emit the transcript through the
-  // same onResult as recognition (split into items when the caller asked). A clip
-  // abandoned via stop()/unmount (stoppedRef) or an empty recording is dropped.
-  async function finishWhisper() {
-    const mr = mediaRecorderRef.current
-    mediaRecorderRef.current = null
-    const type = mr?.mimeType || pickAudioMime() || 'audio/webm'
-    const blob = new Blob(audioChunksRef.current, { type })
-    audioChunksRef.current = []
-    teardownStream()
-    if (stoppedRef.current || blob.size === 0) {
-      whisperStateRef.current = 'idle'
-      setListening(false)
-      return
-    }
-    try {
-      const res = await api<{ text?: string }>('transcribe', { method: 'POST', body: blob })
-      const phrase = (res?.text ?? '').trim()
-      if (phrase) {
-        const parts = opts.split ? splitItems(phrase) : [phrase]
-        for (const p of parts) onResult(p)
-        setError(null)
-      } else {
-        setError('no-speech')
-      }
-    } catch {
-      // api() already popped the AI-error notice if the server tagged the response;
-      // the inline status just shows the generic "didn't catch that".
-      setError('no-speech')
-    } finally {
-      whisperStateRef.current = 'idle'
-      setListening(false)
-    }
-  }
-
   function stop() {
     stoppedRef.current = true
+    vadActiveRef.current = false
     clearSilence()
     clearWhisperTimer()
+    stopVad()
     setListening(false)
     recogRef.current?.stop()
     recogRef.current = null
-    // Abandon any in-flight recording — finishWhisper sees stoppedRef and drops it.
+    // Abandon any in-flight recording — the recorder's onstop sees stoppedRef and drops it.
     if (mediaRecorderRef.current && whisperStateRef.current === 'recording') {
       whisperStateRef.current = 'transcribing'
       try {
@@ -425,8 +572,10 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
   useEffect(
     () => () => {
       stoppedRef.current = true
+      vadActiveRef.current = false
       clearSilence()
       clearWhisperTimer()
+      stopVad()
       try {
         recogRef.current?.abort()
       } catch {

@@ -6,6 +6,7 @@ import { classifyCapture, resolveLang, type Intent } from '../_lib/ai'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { parseWhen } from '../_lib/whenparse'
 import { profileMemberId } from '../_lib/profile'
+import { resolveMemberByName } from '../_lib/members'
 
 // THE SPINE. One free-text (or already-transcribed voice) capture in; the
 // intent-router classifies it; we route it to the right table. Every capture
@@ -84,27 +85,37 @@ async function routeIntent(
   const hh = actor.householdId
   const p = intent.payload
 
+  // "...pour Léa", "...for Dad": the router echoes a person hint; resolve it to a
+  // real member so the thing lands ON that person (event/meal/chore), not just in
+  // the words. Read-only and forgiving — an unmatched name simply assigns no one.
+  const forMember = await resolveMemberByName(env, hh, p.person)
+  // Append " · Name" to the ack so the capture confirms WHO it was filed for.
+  const withWho = (label: string) => (forMember ? `${label} · ${forMember.displayName}` : label)
+
   switch (intent.type) {
     case 'event': {
       const { startAt, allDay } = parseWhen(p.when, Date.now())
       const title = p.title || raw
       const id = newId()
       await env.DB.prepare(
-        'INSERT INTO events (id, household_id, title, start_at, all_day, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO events (id, household_id, member_id, title, start_at, all_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       )
-        .bind(id, hh, title, startAt, allDay ? 1 : 0, ts)
+        .bind(id, hh, forMember?.id ?? null, title, startAt, allDay ? 1 : 0, ts)
         .run()
-      return { kind: 'event', label: title, cleanup: [{ table: 'events', id }] }
+      return { kind: 'event', label: withWho(title), cleanup: [{ table: 'events', id }] }
     }
     case 'task': {
       const title = p.title || raw
       const id = newId()
+      // A named person ("Léa sort les vidanges") becomes a one-person rotation, so
+      // the chore shows as their turn; no name → the open, unassigned rotation.
+      const rotation = forMember ? JSON.stringify([forMember.id]) : '[]'
       await env.DB.prepare(
-        'INSERT INTO tasks (id, household_id, title, created_at) VALUES (?, ?, ?, ?)',
+        'INSERT INTO tasks (id, household_id, title, rotation_json, created_at) VALUES (?, ?, ?, ?, ?)',
       )
-        .bind(id, hh, title, ts)
+        .bind(id, hh, title, rotation, ts)
         .run()
-      return { kind: 'task', label: title, cleanup: [{ table: 'tasks', id }] }
+      return { kind: 'task', label: withWho(title), cleanup: [{ table: 'tasks', id }] }
     }
     case 'list-item': {
       const itemText = p.item || p.text || raw
@@ -144,16 +155,21 @@ async function routeIntent(
     }
     case 'meal': {
       const { startAt } = parseWhen(p.when, Date.now())
+      // meals.date is a household-LOCAL midnight (day-bucketed, no time-of-day) —
+      // snap whatever parseWhen resolved to that day, like the leftover branch.
+      const date = localDayStart(new Date(startAt * 1000))
       const title = p.title || raw
       // Validate the slot the router proposed — never trust it blindly into the row.
       const slot = p.slot && MEAL_SLOTS.has(p.slot) ? p.slot : 'supper'
       const id = newId()
+      // A named person is the cook ("souper tacos jeudi, Marc cuisine") — feeds the
+      // board's "ce soir" cook row.
       await env.DB.prepare(
-        'INSERT INTO meals (id, household_id, date, slot, title, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       )
-        .bind(id, hh, startAt, slot, title, ts)
+        .bind(id, hh, date, slot, title, forMember?.id ?? null, ts)
         .run()
-      return { kind: 'meal', label: title, cleanup: [{ table: 'meals', id }] }
+      return { kind: 'meal', label: withWho(title), cleanup: [{ table: 'meals', id }] }
     }
     case 'leftover': {
       // A cooked dish with extra. With a STATED day ("...pour demain") it's a real
@@ -168,11 +184,11 @@ async function routeIntent(
         const slot = p.slot && MEAL_SLOTS.has(p.slot) ? p.slot : 'supper'
         const id = newId()
         await env.DB.prepare(
-          'INSERT INTO meals (id, household_id, date, slot, title, created_at, is_leftover) VALUES (?, ?, ?, ?, ?, ?, 1)',
+          'INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, created_at, is_leftover) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
         )
-          .bind(id, hh, date, slot, title, ts)
+          .bind(id, hh, date, slot, title, forMember?.id ?? null, ts)
           .run()
-        return { kind: 'leftover', label: title, cleanup: [{ table: 'meals', id }] }
+        return { kind: 'leftover', label: withWho(title), cleanup: [{ table: 'meals', id }] }
       }
       const id = newId()
       await env.DB.prepare(

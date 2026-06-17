@@ -65,12 +65,16 @@ const SYSTEM: Record<Lang, string> = {
 Types possibles: "event" (rendez-vous, activité, sortie, fête, anniversaire — avec une date/heure), "task" (corvée, tâche, ménage, « à faire »), "list-item" (article à acheter, épicerie, commission — « ajoute à la liste »), "pantry-low" (un aliment qui manque, achève ou qu'on n'a PLUS — « pus de », « manque de », « à racheter »), "meal" (un repas à cuisiner — souper, déjeuner, dîner, collation), "leftover" (des RESTES d'un plat déjà cuisiné qu'il faut finir — « il reste », « des restes de », « un restant de »), "note" (rappel, pense-bête, le reste).
 Distinction importante: « pus de lait » = pantry-low (on n'en a plus, à acheter); « il reste du pâté chinois » = leftover (on en a encore, à manger); « souper tacos vendredi » = meal (à cuisiner).
 Format: {"type": <type>, "payload": {"title"?: string, "item"?: string, "text"?: string, "when"?: string, "slot"?: string, "person"?: string}}.
+Le champ "person" est le NOM de la personne CONCERNÉE (« pour Léa », « le rendez-vous de Marc », « c'est papa qui... »), pas qui parle. Mets-y le prénom seul. "when" accepte aussi « après-demain », « le 20 », « 20 juin », « lundi prochain ».
 Exemples:
 "dentiste mardi 15h" -> {"type":"event","payload":{"title":"dentiste","when":"mardi 15h"}}
+"rendez-vous dentiste pour Léa mardi 15h" -> {"type":"event","payload":{"title":"dentiste","when":"mardi 15h","person":"Léa"}}
+"soccer de Marc le 20 juin" -> {"type":"event","payload":{"title":"soccer","when":"20 juin","person":"Marc"}}
 "Léa sort les vidanges" -> {"type":"task","payload":{"title":"sortir les vidanges","person":"Léa"}}
 "ajoute du lait" -> {"type":"list-item","payload":{"item":"lait"}}
 "pus de café" -> {"type":"pantry-low","payload":{"item":"café"}}
 "souper spaghetti jeudi" -> {"type":"meal","payload":{"title":"spaghetti","slot":"supper","when":"jeudi"}}
+"souper tacos vendredi, c'est papa qui cuisine" -> {"type":"meal","payload":{"title":"tacos","slot":"supper","when":"vendredi","person":"papa"}}
 "il reste de la lasagne" -> {"type":"leftover","payload":{"title":"lasagne"}}
 "des restes de poulet à finir" -> {"type":"leftover","payload":{"title":"poulet"}}
 "penser à appeler maman" -> {"type":"note","payload":{"text":"appeler maman"}}`,
@@ -78,12 +82,16 @@ Exemples:
 Possible types: "event" (appointment, activity, outing, party, birthday — with a date/time), "task" (a chore, task, cleanup, "to do"), "list-item" (something to buy, groceries, errand — "add to the list"), "pantry-low" (a food that's out, almost gone or you have NO more — "out of", "running low", "need more"), "meal" (a meal to cook — supper, breakfast, lunch, snack), "leftover" (LEFTOVERS from an already-cooked dish to finish — "there's leftover", "some X left", "rest of the"), "note" (reminder, memo, everything else).
 Important distinction: "out of milk" = pantry-low (none left, to buy); "there's leftover shepherd's pie" = leftover (still have some, to eat); "tacos for supper friday" = meal (to cook).
 Format: {"type": <type>, "payload": {"title"?: string, "item"?: string, "text"?: string, "when"?: string, "slot"?: string, "person"?: string}}.
+The "person" field is the NAME of the person the note is ABOUT ("for Léa", "Marc's appointment", "dad is..."), not who is speaking. Use the first name alone. "when" also accepts "day after tomorrow", "the 20th", "june 20", "next monday".
 Examples:
 "dentist tuesday 3pm" -> {"type":"event","payload":{"title":"dentist","when":"tuesday 3pm"}}
+"dentist appointment for Léa tuesday 3pm" -> {"type":"event","payload":{"title":"dentist","when":"tuesday 3pm","person":"Léa"}}
+"Marc's soccer on june 20" -> {"type":"event","payload":{"title":"soccer","when":"june 20","person":"Marc"}}
 "Léa takes out the trash" -> {"type":"task","payload":{"title":"take out the trash","person":"Léa"}}
 "add milk" -> {"type":"list-item","payload":{"item":"milk"}}
 "out of coffee" -> {"type":"pantry-low","payload":{"item":"coffee"}}
 "supper spaghetti thursday" -> {"type":"meal","payload":{"title":"spaghetti","slot":"supper","when":"thursday"}}
+"tacos for supper friday, dad is cooking" -> {"type":"meal","payload":{"title":"tacos","slot":"supper","when":"friday","person":"dad"}}
 "there's leftover lasagna" -> {"type":"leftover","payload":{"title":"lasagna"}}
 "leftover chicken to finish" -> {"type":"leftover","payload":{"title":"chicken"}}
 "remember to call mom" -> {"type":"note","payload":{"text":"call mom"}}`,

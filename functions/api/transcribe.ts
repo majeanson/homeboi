@@ -19,6 +19,19 @@ import { resolveLang } from '../_lib/ai'
 // oversized upload reaching the model. Mirrors recipe-vision's byte guard.
 const MAX_BYTES = 8 * 1024 * 1024
 
+// Whisper's `language` hint locks the engine to French/English, but on a ~1.5s clip
+// of two or three ISOLATED nouns ("lait, œufs, pain") that isn't enough — with no
+// sentence context the model spells the SOUNDS rather than the words, so "œufs"
+// came back "Euf" and "pain" "Pin". An `initial_prompt` is Whisper's documented
+// lever for exactly this: it primes the decoder with in-domain vocabulary AND a
+// comma-separated style, which both fixes the spelling and nudges the output toward
+// the commas splitItems() needs to break a rattled-off list into separate items.
+// Québécois register on the FR side (œufs/épicerie), to match the rest of the app.
+const PRIMER: Record<'fr' | 'en', string> = {
+  fr: "Liste d'épicerie en français québécois : lait, œufs, pain, beurre, fromage, pommes, café, poulet.",
+  en: 'Grocery list in English: milk, eggs, bread, butter, cheese, apples, coffee, chicken.',
+}
+
 // ArrayBuffer → base64 for the turbo model's `audio` field. Chunked so a multi-KB
 // clip never blows String.fromCharCode's argument limit (same trick as auth.ts's
 // base64url, minus the url-safe swap — the model wants standard base64).
@@ -51,6 +64,12 @@ export const onRequestPost = authed(async (ctx) => {
       audio: toBase64(new Uint8Array(buf)),
       task: 'transcribe',
       language: lang,
+      // Prime the decoder with in-domain French/English vocabulary so short
+      // isolated-word clips spell real words instead of phonetic mush (see PRIMER).
+      initial_prompt: PRIMER[lang],
+      // The clip is one self-contained utterance, not a stream — don't let the model
+      // condition on (nonexistent) prior text and drift.
+      condition_on_previous_text: false,
     })) as { text?: string; transcription_info?: { text?: string } }
     text = (res?.text ?? res?.transcription_info?.text ?? '').trim()
   } catch (err) {

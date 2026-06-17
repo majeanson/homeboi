@@ -15,7 +15,10 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: clamp(9rem, 22vw, 14rem);
+  /* Portrait tablets are narrow, so 22vw used to squeeze the longest label
+     ("Aujourd'hui") right up against the button's edge. A little more column
+     (24vw) plus the fluid label below keeps every label inside its padding. */
+  width: clamp(9rem, 24vw, 14rem);
   flex: none;
   padding: 18px 14px;
   border-right: 1px solid var(--line);
@@ -25,20 +28,31 @@
 .hubnav__btn {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-height: 3.6rem;
-  padding: 0 16px;
+  padding: 0 14px;
   border-radius: 16px;
   text-decoration: none;
   font-family: var(--display);
   font-weight: 700;
-  font-size: 1.12rem;
+  /* Fluid so "Aujourd'hui" fits with breathing room on a narrow portrait column
+     and grows back to full size on a wide landscape wall. */
+  font-size: clamp(1rem, 1.9vw, 1.12rem);
   color: var(--ink-soft);
   background: var(--card);
   box-shadow: var(--shadow-sm);
   transition:
     transform var(--dur-fast) var(--ease-soft),
     box-shadow var(--dur-fast);
+}
+/* Keep the label on one line and let it shrink within the button (never spill
+   past the right padding). The fluid font above means it won't actually
+   ellipsize at real sizes — this is just a belt-and-suspenders guard. */
+.hubnav__btn span {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .hubnav__btn:active {
   transform: translate(1px, 1px);
