@@ -9,10 +9,8 @@ import { InlineIcon } from '../Icon'
 // CollectionPicker, then drop into the normal RecipesTab scoped to that tag (via
 // its optional `collectionTag` prop), so the cook/use-it-up/fast filters and the
 // recipe cards all work exactly as they do in the full book — collections are just
-// a browse layer over the existing tag system, not a separate screen.
-//
-// SCAFFOLD STATUS: the parent flow (pick → filtered book → back) is DONE. The
-// toddler flow is stubbed in CollectionPicker (see its TODO).
+// a browse layer over the existing tag system, not a separate screen. (The toddler
+// equivalent is `KidCollections`, surfaced from KidKitchen — not this component.)
 export function CollectionsTab({
   recipes,
   lowItems,

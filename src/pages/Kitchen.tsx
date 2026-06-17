@@ -13,7 +13,7 @@ import { live } from '../lib/query'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
-import { addLocalDays } from '../lib/localDay'
+import { addLocalDays, todayLocalDay } from '../lib/localDay'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
@@ -103,17 +103,20 @@ export function Kitchen() {
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const soonItems = useMemo(() => (useSoonQ.data?.soon ?? []).map((s) => s.item), [useSoonQ.data])
   // #12 "Haven't had in a while": recipe id → the most recent local-midnight day a
-  // meal linked to it (recipe_id, migration 0024) was served. Built from the meals
+  // meal linked to it (recipe_id, migration 0024) was *served*. Built from the meals
   // the page already holds — the 10-day window (`days`) plus the recent-history
-  // tail (`recent`) — so it needs NO new query. A recipe absent here is treated by
-  // rankNeglected as never-served-recently → it leads the "Oubliées" sort. The
-  // server's suggest-meal prompt does the authoritative full-history version; this
-  // is the calm client affordance over the data on hand.
+  // tail (`recent`) — so it needs NO new query. The `days` window is a FORWARD
+  // countdown, so we keep only rows dated today-or-earlier: a meal merely PLANNED for
+  // a future day isn't "served" and must not sink the recipe in the Oubliées sort. A
+  // recipe absent here is treated by rankNeglected as never-served-recently → it
+  // leads "Oubliées". The server's suggest-meal prompt does the authoritative
+  // full-history version; this is the calm client affordance over the data on hand.
   const lastServedById = useMemo(() => {
     const m = new Map<string, number>()
+    const today = todayLocalDay()
     const rows = [...(meals.data?.days ?? []), ...(meals.data?.recent ?? [])]
     for (const r of rows) {
-      if (!r.recipe_id) continue
+      if (!r.recipe_id || r.date > today) continue
       const prev = m.get(r.recipe_id)
       if (prev == null || r.date > prev) m.set(r.recipe_id, r.date)
     }

@@ -45,13 +45,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
          FROM recipes r
          LEFT JOIN meals m
            ON m.recipe_id = r.id AND m.household_id = r.household_id
+          AND m.date <= ?
         WHERE r.household_id = ?
         GROUP BY r.id
        HAVING last IS NULL OR last < ?
         ORDER BY (last IS NULL) DESC, last ASC
         LIMIT 8`,
     )
-      .bind(actor.householdId, NEGLECT_CUTOFF)
+      .bind(today, actor.householdId, NEGLECT_CUTOFF)
       .all<{ title: string; last: number | null }>(),
   ])
 

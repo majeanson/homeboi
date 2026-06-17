@@ -73,7 +73,8 @@ main` directly. CI (typecheck/test/build) is the only gate; a red build is caugh
 - **non-`/api/*`** → served from `env.ASSETS` (the built SPA in `dist/`; unknown
   paths fall back to `index.html` for client-side routes).
 - **`/api/*`** → dispatched through `worker/routes.ts` to a handler under
-  `functions/api/`.
+  `functions/api/`. **Exception:** `GET /api/live` is intercepted before the table
+  for a WebSocket upgrade into the `RealtimeHub` Durable Object (see _Realtime_).
 
 **The handlers under `functions/api/` are unchanged Cloudflare _Pages_ Functions.**
 The app began on Pages; the Worker keeps that code intact by adapting each Worker
@@ -89,27 +90,33 @@ request into the `EventContext` a Pages Function expects, and reproducing the ol
   resolves the actor, returns 401/403 if missing/under-privileged, adds an error
   boundary, and hands the handler a guaranteed `Actor`. You can't get an actor
   without passing auth — the guard is structural. Pass `'operator'` to reject kiosk
-  devices (member admin, destructive ops). **New handlers use `authed()`** rather
-  than hand-rolling the guard.
+  devices (member admin, destructive ops). A **guest** actor is blocked centrally:
+  `authed()` 403s any non-GET/HEAD from a guest before the handler runs, so a guest
+  is read-only across every endpoint without per-handler changes. **New handlers use
+  `authed()`** rather than hand-rolling the guard.
 - **`requireActor` / `resolveActor`** (`household.ts`) is the single place that
-  answers "which household, and may it write?". Two credentials converge to one
-  `Actor` shape: an **operator** session cookie (full read/write) or a **kiosk**
-  device token (board-scoped). One household per operator email (prototype-simple).
-- **`auth.ts`** — HMAC-SHA-256 tokens, two kinds sharing one key: operator session
-  cookie `bb_session` + double-submit CSRF `bb_csrf`; device token sent as the
-  `X-Device-Token` header. `SESSION_SECRET` is validated ≥32 chars at use — do not
-  weaken (encoding `undefined` yields a known, forgeable key).
+  answers "which household, and may it write?". Three credentials converge to one
+  `Actor` shape: an **operator** session cookie (full read/write), a **kiosk**
+  device token (board-scoped), or a **guest** token (read-only, time-boxed — the
+  babysitter). One household per operator email (prototype-simple).
+- **`auth.ts`** — HMAC-SHA-256 tokens sharing one key: operator session cookie
+  `bb_session` + double-submit CSRF `bb_csrf`; device **and** guest tokens sent as
+  the `X-Device-Token` header (or `?t=<token>` for the WS handshake, which can't set
+  headers) and verified by the shared `verifyDeviceToken`/`verifyGuestToken` helpers.
+  `SESSION_SECRET` is validated ≥32 chars at use — do not weaken (encoding `undefined`
+  yields a known, forgeable key).
 - **`json.ts`** — `ok`/`unauthorized`/`forbidden`/`notFound`/`serverError` helpers.
 - **Migrations** (`functions/db/migrations/NNNN_*.sql`) are **forward-only and
   filename-locked**. Never rename or edit an applied one; add the next number.
 
 ### Optional bindings degrade gracefully (`functions/_lib/env.ts`)
 
-`DB` and `SESSION_SECRET` are required; **`AI`, `PHOTOS` (R2), and `LOGIN_PASSWORD`
-are optional** and guarded at handler entry. AI-unset → capture falls back to a
-manual type-picker, recap/suggestions hide. R2-unset → photo features hide. Never
-assume an optional binding is present. Locally without `wrangler login`, `AI` is
-unavailable — that's the expected degraded path, not a bug.
+`DB` and `SESSION_SECRET` are required; **`AI`, `PHOTOS` (R2), `REALTIME_HUB` (the
+Durable Object), and `LOGIN_PASSWORD` are optional** and guarded at entry. AI-unset
+→ capture falls back to a manual type-picker, recap/suggestions hide. R2-unset →
+photo / routine-voice-clip / recipe-step-photo features hide. DO-unset → `/api/live`
+503s and clients poll. Never assume an optional binding is present. Locally without
+`wrangler login`, `AI` is unavailable — that's the expected degraded path, not a bug.
 
 ### Frontend (`src/`)
 
@@ -119,7 +126,14 @@ unavailable — that's the expected degraded path, not a bug.
 - **TanStack Query owns all server state** and freshness/offline grace. The board
   polls and keeps the last good frame on a failed poll. Cross-page query keys live in
   `src/lib/queryKeys.ts` (a key spelled twice drifts into two caches); page-local keys
-  sit beside their code.
+  sit beside their code. **Realtime** (`src/lib/realtime.ts`, gated by
+  `REALTIME_ENABLED` in `main.tsx`) only _nudges_ this: a WS `invalidate` message
+  calls `invalidateQueries` so an open board refreshes the moment another device
+  writes. It never replaces Query or polling — if the socket drops, polling still owns
+  correctness. Server side, the write path's broadcast hook in `route.ts` maps the
+  request path → affected keys via `keysForPath` (`_lib/realtime.ts`) and fans them
+  out through the `RealtimeHub` DO; it's fire-and-forget (`waitUntil`, errors
+  swallowed) and never touches the response.
 - **Routing** (`src/router.tsx`): `/` is a smart entry (marketing for a brand-new
   visitor; otherwise → `/board`). The five themed tabs (`/board`, `/kitchen`,
   `/routines`, `/liste`, `/settings`) render inside `HubLayout`. `/pair`, `/login`,
@@ -176,7 +190,8 @@ appear as code identifiers, route names, or `bmad/` requirement tags.
 | **Audience**     | Presentation _lens_: **parent** vs **toddler** (pre-reader). `lib/audience.ts`.                                |
 | **Locked kiosk** | A tablet booted `?kid=1` — toddler audience, can't flip back or reach settings.                                |
 | **Operator**     | The signed-in human who owns the household (full read/write).                                                  |
-| **Actor**        | Resolved request identity — either operator or kiosk — that handlers act on.                                   |
+| **Guest**        | A time-boxed **babysitter** session booted `?guest=<token>` — read-only, no settings/writes; operator issues it from Réglages. |
+| **Actor**        | Resolved request identity — operator, kiosk, **or guest** — that handlers act on.                              |
 
 ### Sections / themed tabs (the five hub routes)
 
@@ -204,6 +219,11 @@ appear as code identifiers, route names, or `bmad/` requirement tags.
 | **Measure pills**            | Colour-coded tap-to-hear spoon/cup amounts in recipes (`measureColors.ts`).                                                                                    |
 | **Calm mode**                | Opt-out of kid-routine redo friction only; structural calm guarantees are non-toggleable.                                                                      |
 | **Pairing**                  | Tablet shows a 6-digit code; operator approves from `/settings`; tablet stores a revocable device token.                                                       |
+| **Day-part theming**         | The board palette gently drifts dawn→day→dusk→night (`data-daypart` over `data-theme`); opt-out toggle, never overrides manual Night. `lib/timeofday.ts` + `lib/daypartDrift.ts`. |
+| **Recipe collections**       | Browse recipes grouped by an existing **tag** (no new table); parent grid (`CollectionsTab`) + toddler hear-first picker (`KidCollections`).                    |
+| **Chore ledger**             | Read-only "who did what this week" glance (Réglages ▸ Corvées) over `task_participants` — names + faces, **never counts/ranks** (calm).                         |
+| **Voice clip / step photo**  | Optional R2 media: a parent's recorded narration per routine card, and a photo per recipe step (parallel arrays; degrade to TTS/text when R2 unset).            |
+| **Realtime**                 | Per-household `RealtimeHub` Durable Object nudges open boards via `/api/live` WS to refresh on another device's write; **polling stays the fallback**.          |
 
 ### Requirement tags
 

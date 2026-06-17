@@ -75,9 +75,11 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 ### Page orchestrators — intentionally NOT in the gallery
 Need live data/route context, so they're catalogued but not rendered as specimens:
 `AddSheet`, `HubLayout`, `RecipeSheet`, `RecipeForm`, `CookMode`, `CashierMode`,
-`ProfilePicker`, `TourOverlay`, `DealsBrowser`, `FlyerViewer`, the kitchen sub-tabs
+`ProfilePicker`, `TourOverlay`, `DealsBrowser`, `FlyerViewer`, `ChoreLedger`
+(read-only fairness glance, #18), `CookableView` (cook-from-what-I-have, #10),
+`CollectionsTab`/`CollectionPicker` (recipe collections, #11), the kitchen sub-tabs
 (`DayEditor`, `MealRows`, `PantryTab`, `ReserveSection`, …), and the `operator/*`
-section bodies.
+section bodies (incl. `operator/guest.tsx` — the babysitter-access issuer, #19).
 
 ---
 

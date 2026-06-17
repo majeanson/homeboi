@@ -22,13 +22,21 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // boundary lines up with the board. `?since=<unix>` narrows it (e.g. this week).
   const url = new URL(ctx.request.url)
   const sinceParam = Number(url.searchParams.get('since'))
-  const defaultSince = addLocalDays(localDayStart(new Date(Date.now())), -30)
-  const since = Number.isFinite(sinceParam) && sinceParam > 0 ? Math.floor(sinceParam) : defaultSince
+  const today = localDayStart(new Date(Date.now()))
+  const defaultSince = addLocalDays(today, -30)
+  // Floor at 90 days back so a tiny `?since` can't widen this into a full-history
+  // scan; this is a calm glance, not an archive (task_participants is small + indexed
+  // anyway, but bound the worst case).
+  const floorSince = addLocalDays(today, -90)
+  const since =
+    Number.isFinite(sinceParam) && sinceParam > 0
+      ? Math.max(floorSince, Math.floor(sinceParam))
+      : defaultSince
 
   // JOIN (not IN-subquery) so the planner walks the household's few tasks via
   // tasks_household_idx, then task_participants_task_idx(task_id, contributed_at).
   // LEFT JOIN members: a member may have been deleted (the contribution stays as
-  // an anonymous record) → null name, the client falls back to the role.
+  // an anonymous record) → null name, the client shows a calm generic helper label.
   const rows = await ctx.env.DB.prepare(
     `SELECT tp.task_id, tp.role, tp.contributed_at,
             tp.member_id AS member_id,
