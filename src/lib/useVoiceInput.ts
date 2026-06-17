@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n'
 import { api } from './api'
+import { cleanSpokenItem } from './voiceText'
 
 // On-device speech-to-text via the browser's Web Speech API. This is the calm,
 // zero-cost, in-browser STT the capture surfaces share: where the browser
@@ -259,6 +260,29 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     }, PAUSE_MS)
   }
 
+  // The single path a finished phrase takes to the caller. In list-collection mode
+  // (`split`) we break it on connectors AND normalize each item — strip the spoken
+  // lead-in/article and capitalize ("ajoute du lait" → "Lait") so the list reads
+  // clean. A general capture (no split) passes through untouched for the AI router.
+  // Returns how many items were emitted (0 when it was all filler).
+  function emitPhrase(phrase: string): number {
+    const trimmed = phrase.trim()
+    if (!trimmed) return 0
+    if (!opts.split) {
+      onResult(trimmed)
+      return 1
+    }
+    let n = 0
+    for (const part of splitItems(trimmed)) {
+      const item = cleanSpokenItem(part)
+      if (item) {
+        onResult(item)
+        n++
+      }
+    }
+    return n
+  }
+
   // Commit the last interim transcript when an utterance ended without ever
   // producing a final (see pendingRef). No-op when a final already cleared it, so
   // a healthy engine never double-adds. Returns whether anything was emitted, so
@@ -266,10 +290,7 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
   function flushPending(): boolean {
     const phrase = pendingRef.current.trim()
     pendingRef.current = ''
-    if (!phrase) return false
-    const parts = opts.split ? splitItems(phrase) : [phrase]
-    for (const p of parts) onResult(p)
-    return true
+    return emitPhrase(phrase) > 0
   }
 
   // iOS-only: establish (and, on an installed PWA, PERSIST) the mic grant via
@@ -460,9 +481,7 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
     try {
       const res = await api<{ text?: string }>('transcribe', { method: 'POST', body: blob })
       const phrase = (res?.text ?? '').trim()
-      if (phrase) {
-        const parts = opts.split ? splitItems(phrase) : [phrase]
-        for (const p of parts) onResult(p)
+      if (phrase && emitPhrase(phrase) > 0) {
         setError(null)
       } else if (!opts.continuous) {
         setError('no-speech')
@@ -657,8 +676,7 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
         pendingRef.current = '' // a final supersedes any interim for this utterance
         if (!phrase) continue
         emittedFinal = true
-        const parts = opts.split ? splitItems(phrase) : [phrase]
-        for (const p of parts) onResult(p)
+        emitPhrase(phrase)
       }
       // Single-shot: done once a final lands. An interim-only event must NOT stop
       // (it would cut before the final); onend flushes the last interim as a

@@ -1,6 +1,7 @@
 import { badRequest, ok, serviceUnavailable, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { resolveLang } from '../_lib/ai'
+import { cleanTranscript } from '../_lib/transcript'
 
 // Server STT for the ONE context where on-device Web Speech is dead: an iOS/iPadOS
 // installed PWA. There webkitSpeechRecognition starts then aborts instantly with
@@ -71,7 +72,10 @@ export const onRequestPost = authed(async (ctx) => {
       // condition on (nonexistent) prior text and drift.
       condition_on_previous_text: false,
     })) as { text?: string; transcription_info?: { text?: string } }
-    text = (res?.text ?? res?.transcription_info?.text ?? '').trim()
+    // Strip Whisper's subtitle-credit hallucinations (it invents "Sous-titrage
+    // Radio-Canada" & co. on near-silent clips). '' here → client shows "didn't
+    // catch that" rather than writing the credit into the capture.
+    text = cleanTranscript((res?.text ?? res?.transcription_info?.text ?? '').trim())
   } catch (err) {
     // Same journal path as the capture router: tag the response so lib/api pops the
     // acknowledge-into-log notice and the prod ai_errors view records the cause.
