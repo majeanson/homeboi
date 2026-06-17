@@ -15,7 +15,7 @@ import type { Env, Ctx } from './env'
 import { type Actor, requireActor } from './household'
 import { forbidden, serverError } from './json'
 import { withIdempotency } from './idempotency'
-import { broadcastInvalidate } from './realtime'
+import { broadcastInvalidate, keysForPath } from './realtime'
 
 // A handler that has already cleared auth: it receives the resolved actor
 // alongside the usual context, and returns (or resolves to) a Response.
@@ -54,22 +54,35 @@ export function authed(handler: ActorHandler, scope?: 'operator'): PagesFunction
           ? await withIdempotency(ctx.env, actor.householdId, idemKey, () => handler(ctx, actor))
           : await handler(ctx, actor)
 
-      // Realtime broadcast HOOK (SCAFFOLD, #20). After a SUCCESSFUL write, nudge
-      // the household's RealtimeHub so awake clients refetch at once instead of
+      // Realtime broadcast HOOK (#20). After a SUCCESSFUL write, nudge the
+      // household's RealtimeHub so awake clients refetch at once instead of
       // waiting for the next poll. BEST-EFFORT + fail-safe: broadcastInvalidate
       // swallows every error and the DO binding is optional, so this can never
       // fail or delay the write. Runs after the response flushes via waitUntil.
       //
-      // Coverage note: this fires a GENERIC board-key invalidate for ALL writes
-      // — correct (a superset refetch) but coarse. TODO(#20): pass per-endpoint
-      // keys (e.g. [['list']] from the list handler) for finer-grained refetch.
+      // Per-write keys: keysForPath maps THIS endpoint to exactly the caches a
+      // write to it touches (mirrors the SPA's affectedKeys), so the push is
+      // fine-grained — an unmapped board-affecting write still defaults to the
+      // board key, and endpoints that change no shared cache broadcast nothing.
       if (!SAFE_METHODS.has(method) && res.status >= 200 && res.status < 300) {
-        const fire = broadcastInvalidate(ctx.env, actor.householdId, [['board']])
-        // Prefer waitUntil so the broadcast runs after the response flushes; fall
-        // back to a fire-and-forget when it's absent (e.g. unit-test ctx). The
-        // helper already swallows all errors, so the dangling promise can't throw.
-        if (typeof ctx.waitUntil === 'function') ctx.waitUntil(fire)
-        else void fire
+        // ctx.request.url is the full request URL; keysForPath strips the origin
+        // + /api/ prefix + query string itself, so a raw pathname is fine here.
+        const apiPath = (() => {
+          try {
+            return new URL(ctx.request.url).pathname
+          } catch {
+            return ctx.request.url
+          }
+        })()
+        const keys = keysForPath(apiPath)
+        if (keys.length > 0) {
+          const fire = broadcastInvalidate(ctx.env, actor.householdId, keys)
+          // Prefer waitUntil so the broadcast runs after the response flushes; fall
+          // back to a fire-and-forget when it's absent (e.g. unit-test ctx). The
+          // helper already swallows all errors, so the dangling promise can't throw.
+          if (typeof ctx.waitUntil === 'function') ctx.waitUntil(fire)
+          else void fire
+        }
       }
       return res
     } catch (err) {

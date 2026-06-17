@@ -19,6 +19,124 @@ interface MaybeRealtimeEnv {
   }
 }
 
+// ---- Per-write invalidation keys (#20) -------------------------------------
+//
+// Map a mutating request's API path to the TanStack Query keys it actually
+// affects, so the hub nudges ONLY the relevant caches instead of a blanket
+// board refetch. The mapping mirrors the `affectedKeys` the SPA call sites
+// already use after each write (src/lib/write.ts call sites) — kept in lockstep
+// so a server push invalidates exactly what the client would have.
+//
+// Keys are plain string[][] (TanStack queryKey arrays). Shared keys: 'board'
+// (the kiosk glance), 'routines', 'household' — see src/lib/queryKeys.ts. The
+// rest are page-local keys (src/components/kitchen/types.ts, src/lib/recipes.ts,
+// src/pages/Liste.tsx). They're duplicated here as literals on purpose: this is
+// the Worker/Functions layer and can't import from the SPA build, and the
+// path→keys test pins them so a rename is caught.
+//
+// PURE + total: never throws, returns [] for unmapped/non-shared writes (those
+// broadcast nothing). Default for an unrecognized but plausibly board-affecting
+// write is the board key (a safe superset refetch), matching the old coarse hook.
+
+// Endpoints whose writes change NO shared client cache → broadcast nothing.
+// (auth/session, pairing, device admin, AI scratch endpoints, image blobs, etc.)
+// These either have no polled query, are per-device, or return data inline.
+const SILENT_PATHS = new Set<string>([
+  'auth/login',
+  'auth/logout',
+  'auth/signup',
+  'auth/me',
+  'ai-errors',
+  'ai-test',
+  'capture-classify', // pure classifier; the follow-up write carries its own path
+  'guest/start',
+  'health',
+  'pair/start',
+  'pair/poll',
+  'pair/claim',
+  'pair/devices',
+  'recipe-draft',
+  'recipe-image',
+  'recipe-import',
+  'recipe-step-image',
+  'recipe-vision',
+  'suggest-meal',
+  'transcribe',
+  'routine-audio',
+  'weather',
+  'photos',
+  'members/avatar',
+])
+
+// Exact path → affected query keys. Listed against the SPA `affectedKeys` used
+// at each write site so the push and the local invalidate agree.
+const PATH_KEYS: Record<string, string[][]> = {
+  // The shared list — drives the board glance, ghost strip, and list history.
+  list: [['board'], ['ghosts'], ['list-history']],
+  // Chores + the rotation ledger feed the board, the chores tab, and the month.
+  chores: [['chores'], ['board'], ['month']],
+  'chores-ledger': [['chores'], ['board'], ['month']],
+  // Calendar events show on the board, the events list, and the month grid.
+  events: [['events'], ['board'], ['month']],
+  // Meal plan: the kitchen week grid + the board's "ce soir".
+  meals: [['meals'], ['board']],
+  'meal-leftovers': [['leftovers'], ['board']],
+  'meal-ideas': [['meal-ideas']],
+  'meal-staples': [['meals']],
+  // Per-day memo pinned to the meal week; today's shows on the board.
+  'day-notes': [['day-notes'], ['board']],
+  // Board-only sticky notes.
+  notes: [['board']],
+  // Garde-manger flags.
+  pantry: [['pantry']],
+  'use-soon': [['use-soon']],
+  reserve: [['reserve']],
+  // Household settings (postal, store filter, meal-slot colours, reserve locns)
+  // re-tint every meal surface and the board.
+  household: [['household'], ['board']],
+  // Members appear on the board (faces) and in Réglages.
+  members: [['members'], ['board']],
+  // Kid routines render on the board and the routines tab.
+  routines: [['routines'], ['board']],
+  // Recipe book.
+  recipes: [['recipes']],
+  'recipe-tags': [['recipes'], ['recipe-tags']],
+  'recipe-to-list': [['board'], ['list']],
+  // Flyer deals ride the board's list surface.
+  deals: [['board']],
+  // Opt-in purchase tracking strip + the board.
+  ghost: [['ghosts'], ['board']],
+  // Capture routes a note to any of these targets, so refetch the lot.
+  capture: [['board'], ['meals'], ['pantry'], ['leftovers']],
+}
+
+// Normalize an API path: strip a leading "api/" / slashes and any query string,
+// then collapse a dynamic trailing segment (e.g. "img/<key>") to its prefix so
+// per-id routes still map. Returns '' for an empty path.
+function normalizePath(path: string): string {
+  let p = (path || '').split('?')[0].replace(/^\/+/, '')
+  if (p.startsWith('api/')) p = p.slice('api/'.length)
+  p = p.replace(/\/+$/, '')
+  return p
+}
+
+// PURE: API path → the query keys a write to it invalidates.
+//   - silent endpoint  → []  (broadcast nothing)
+//   - mapped endpoint  → its keys
+//   - unmapped, non-silent → [['board']] (safe superset; old coarse behaviour)
+// Never throws; safe to call with any string.
+export function keysForPath(path: string): string[][] {
+  const p = normalizePath(path)
+  if (!p) return []
+  if (SILENT_PATHS.has(p)) return []
+  const exact = PATH_KEYS[p]
+  if (exact) return exact
+  // Dynamic single-segment routes (img/<key>) are blobs → silent.
+  if (p.startsWith('img/')) return []
+  // Unknown but plausibly board-affecting write: invalidate the board only.
+  return [['board']]
+}
+
 // Fire the invalidate at the household's hub. Returns a promise the caller MAY
 // pass to ctx.waitUntil() (so it runs after the response flushes), but awaiting
 // it is optional and never throws.

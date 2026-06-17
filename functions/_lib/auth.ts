@@ -151,12 +151,25 @@ export async function issueDeviceToken(env: Env, deviceId: string, householdId: 
   return signToken(env, { d: deviceId, h: householdId, x: nowSec() + SESSION_TTL * 12 })
 }
 
+// Verify a RAW device-token string (HMAC + expiry), independent of transport.
+// The header path (currentDevice) and the realtime WS query-param path
+// (worker/index.ts /api/live, where the browser WebSocket API can't set the
+// X-Device-Token header) both call this, so a token is verified IDENTICALLY no
+// matter how it arrives — no weakened second code path. Returns null for a
+// missing/invalid/expired/wrong-typed token.
+export async function verifyDeviceToken(
+  env: Env,
+  token: string | null,
+): Promise<{ deviceId: string; householdId: string } | null> {
+  const payload = await verifyToken<{ d?: string; h: string }>(env, token)
+  return payload && typeof payload.d === 'string' ? { deviceId: payload.d, householdId: payload.h } : null
+}
+
 export async function currentDevice(
   env: Env,
   request: Request,
 ): Promise<{ deviceId: string; householdId: string } | null> {
-  const payload = await verifyToken<{ d: string; h: string }>(env, request.headers.get(DEVICE_HEADER))
-  return payload ? { deviceId: payload.d, householdId: payload.h } : null
+  return verifyDeviceToken(env, request.headers.get(DEVICE_HEADER))
 }
 
 // ---- Guest token (babysitter / time-boxed read-mostly access) --------------
@@ -175,13 +188,24 @@ export async function issueGuestToken(
   return signToken(env, { g: guestId, h: householdId, x: nowSec() + ttlSeconds })
 }
 
+// Verify a RAW guest-token string (HMAC + expiry), independent of transport —
+// the guest counterpart of verifyDeviceToken, shared by the header path and the
+// realtime WS query-param path so verification is identical either way. A device
+// payload has `d` and no `g`, so the `g`-typed check yields null for a real
+// device token (and vice-versa); expiry (`x`) is checked inside verifyToken.
+export async function verifyGuestToken(
+  env: Env,
+  token: string | null,
+): Promise<{ guestId: string; householdId: string } | null> {
+  const payload = await verifyToken<{ g?: string; h: string }>(env, token)
+  return payload && typeof payload.g === 'string' ? { guestId: payload.g, householdId: payload.h } : null
+}
+
 export async function currentGuest(
   env: Env,
   request: Request,
 ): Promise<{ guestId: string; householdId: string } | null> {
-  // Same header as the device token. A device payload has `d` and no `g`, so the
-  // `g`-typed verify yields null-of-g for a real device token (and vice-versa);
-  // expiry (`x`) is checked inside verifyToken for both.
-  const payload = await verifyToken<{ g?: string; h: string }>(env, request.headers.get(DEVICE_HEADER))
-  return payload && typeof payload.g === 'string' ? { guestId: payload.g, householdId: payload.h } : null
+  // Same header as the device token (see verifyGuestToken for how the two are
+  // told apart).
+  return verifyGuestToken(env, request.headers.get(DEVICE_HEADER))
 }

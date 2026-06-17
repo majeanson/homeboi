@@ -1,0 +1,85 @@
+import { describe, it, expect } from 'vitest'
+import { keysForPath } from './realtime'
+
+// keysForPath is the PURE path→invalidation-keys mapping the realtime broadcast
+// hook (#20) uses to nudge only the caches a given write actually touches. It
+// must mirror the SPA's `affectedKeys` per endpoint, never throw, and default
+// safely. These tests pin the mapping so a renamed endpoint/key is caught.
+
+describe('keysForPath', () => {
+  it('maps the shared list to board + ghosts + history', () => {
+    expect(keysForPath('list')).toEqual([['board'], ['ghosts'], ['list-history']])
+  })
+
+  it('maps chores and the chores ledger to chores + board + month', () => {
+    expect(keysForPath('chores')).toEqual([['chores'], ['board'], ['month']])
+    expect(keysForPath('chores-ledger')).toEqual([['chores'], ['board'], ['month']])
+  })
+
+  it('maps events to events + board + month', () => {
+    expect(keysForPath('events')).toEqual([['events'], ['board'], ['month']])
+  })
+
+  it('maps the meal plan to meals + board', () => {
+    expect(keysForPath('meals')).toEqual([['meals'], ['board']])
+    expect(keysForPath('meal-leftovers')).toEqual([['leftovers'], ['board']])
+  })
+
+  it('maps household settings to household + board (meal-slot re-tint)', () => {
+    expect(keysForPath('household')).toEqual([['household'], ['board']])
+  })
+
+  it('maps routines to routines + board', () => {
+    expect(keysForPath('routines')).toEqual([['routines'], ['board']])
+  })
+
+  it('maps recipe endpoints to the recipe keys', () => {
+    expect(keysForPath('recipes')).toEqual([['recipes']])
+    expect(keysForPath('recipe-tags')).toEqual([['recipes'], ['recipe-tags']])
+    expect(keysForPath('recipe-to-list')).toEqual([['board'], ['list']])
+  })
+
+  it('maps capture to every target it can route a note to', () => {
+    expect(keysForPath('capture')).toEqual([['board'], ['meals'], ['pantry'], ['leftovers']])
+  })
+
+  it('broadcasts NOTHING for endpoints that change no shared cache', () => {
+    for (const p of [
+      'auth/login',
+      'auth/me',
+      'pair/start',
+      'pair/poll',
+      'transcribe',
+      'suggest-meal',
+      'recipe-draft',
+      'weather',
+      'health',
+      'photos',
+      'members/avatar',
+    ]) {
+      expect(keysForPath(p)).toEqual([])
+    }
+  })
+
+  it('treats image blob routes (img/<key>) as silent', () => {
+    expect(keysForPath('img/abc123')).toEqual([])
+  })
+
+  it('defaults an unmapped, non-silent write to the board key (safe superset)', () => {
+    expect(keysForPath('something-new')).toEqual([['board']])
+  })
+
+  it('normalizes leading slash, api/ prefix, query string and trailing slash', () => {
+    expect(keysForPath('/api/list')).toEqual([['board'], ['ghosts'], ['list-history']])
+    expect(keysForPath('api/meals?date=123')).toEqual([['meals'], ['board']])
+    expect(keysForPath('chores/')).toEqual([['chores'], ['board'], ['month']])
+    // A full URL pathname (what route.ts passes) works too.
+    expect(keysForPath('/api/events')).toEqual([['events'], ['board'], ['month']])
+  })
+
+  it('never throws and returns [] on empty input', () => {
+    expect(keysForPath('')).toEqual([])
+    // @ts-expect-error — defensive: the runtime tolerates a non-string.
+    expect(() => keysForPath(undefined)).not.toThrow()
+  })
+})
