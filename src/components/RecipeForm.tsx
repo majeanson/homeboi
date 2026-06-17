@@ -2,7 +2,8 @@ import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
-import { resizeImage, PHOTO_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
+import { resizeImage, imgUrl, PHOTO_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
+import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
 import {
   type Recipe,
   type RecipeOriginal,
@@ -14,8 +15,9 @@ import {
   tagColor,
 } from '../lib/recipes'
 import { wash, tintInk, edge } from '../lib/colors'
-import { SECTION_PREFIX, dropDanglingHeadings } from '../lib/recipeSections'
+import { SECTION_PREFIX, dropDanglingHeadings, isSectionHeading } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
+import { ZoomableImg } from './ZoomableImg'
 import { useModal } from '../lib/useModal'
 
 // In the EDITOR a row is a section row as soon as it carries the "## " marker —
@@ -50,6 +52,20 @@ export function RecipeForm({
   // Keep at least one empty row so there's always somewhere to type.
   const [ingredients, setIngredients] = useState<string[]>(value?.ingredients?.length ? value.ingredients : [''])
   const [steps, setSteps] = useState<string[]>(value?.steps?.length ? value.steps : [''])
+  // Per-step photo R2 keys (feature #17 B), kept rigorously the SAME length as
+  // `steps` — every step mutation below (add / remove / move / paste / import)
+  // updates this array in lockstep through the shared lib/parallelArray ops, so a
+  // photo never mis-attaches to the wrong step. '' = that step has no photo (a
+  // heading row keeps an empty slot). Seeded + padded from the loaded recipe.
+  const [stepImages, setStepImages] = useState<string[]>(() =>
+    alignSide(value?.stepImages, value?.steps?.length ? value.steps.length : 1),
+  )
+  // R2 photo storage off (the step-image upload 503'd once) → hide every per-step
+  // 📷 control for the rest of this edit (mirrors PhotosSection's 503 → hide). Cook
+  // mode already renders no photo for an empty slot, so nothing breaks.
+  const [stepPhotoOff, setStepPhotoOff] = useState(false)
+  // Which step is currently uploading a photo (its index), or null when idle.
+  const [stepUploading, setStepUploading] = useState<number | null>(null)
   const [servings, setServings] = useState(value?.servings ? String(value.servings) : '')
   // Yield unit ("biscuits") + real time fields (minutes) — imports prefill,
   // freely editable by hand afterwards.
@@ -113,20 +129,35 @@ export function RecipeForm({
   const setLines = (kind: LineKind) => (kind === 'ingredients' ? setIngredients : setSteps)
   const updateLine = (kind: LineKind, i: number, v: string) =>
     setLines(kind)(lines(kind).map((x, idx) => (idx === i ? v : x)))
-  const addLine = (kind: LineKind, v = '') => setLines(kind)([...lines(kind), v])
+  const addLine = (kind: LineKind, v = '') => {
+    setLines(kind)([...lines(kind), v])
+    // A new step appends an empty photo slot so stepImages stays the same length.
+    if (kind === 'steps') setStepImages((imgs) => sideInsert(alignSide(imgs, steps.length)))
+  }
   const removeLine = (kind: LineKind, i: number) => {
     const next = lines(kind).filter((_, idx) => idx !== i)
     setLines(kind)(next.length ? next : [''])
+    if (kind === 'steps')
+      setStepImages((imgs) => {
+        const dropped = sideRemove(alignSide(imgs, steps.length), i)
+        // removeLine keeps a single empty row when the list would empty; mirror
+        // that so stepImages is never shorter than the steps array it tracks.
+        return dropped.length ? dropped : ['']
+      })
   }
   // ↑/↓ swap a row with its neighbour — reordering without drag-and-drop (which
-  // fights the page scroll on a phone). The open step memo follows its step.
+  // fights the page scroll on a phone). The open step memo follows its step, and
+  // a step's photo rides along (sideSwap mirrors the array swap).
   const moveLine = (kind: LineKind, i: number, delta: -1 | 1) => {
     const arr = [...lines(kind)]
     const j = i + delta
     if (j < 0 || j >= arr.length) return
     ;[arr[i], arr[j]] = [arr[j], arr[i]]
     setLines(kind)(arr)
-    if (kind === 'steps') setEditStep((es) => (es === i ? j : es === j ? i : es))
+    if (kind === 'steps') {
+      setStepImages((imgs) => sideSwap(alignSide(imgs, steps.length), i, j))
+      setEditStep((es) => (es === i ? j : es === j ? i : es))
+    }
   }
   // Pasting a multi-line block into one row spreads it over rows (bullets,
   // leading step numbers AND "Étape 3 :" / "Step 2" labels stripped — the
@@ -151,7 +182,18 @@ export function RecipeForm({
       })
     if (parts.length <= 1) return false
     const cur = lines(kind)
-    setLines(kind)([...cur.slice(0, i), ...(cur[i].trim() ? [cur[i], ...parts] : parts), ...cur.slice(i + 1)])
+    const keepCurrent = cur[i].trim()
+    setLines(kind)([...cur.slice(0, i), ...(keepCurrent ? [cur[i], ...parts] : parts), ...cur.slice(i + 1)])
+    // Keep stepImages aligned to the same splice: a kept row holds its photo and
+    // the pasted rows insert empty slots AFTER it (remove 0); a blank row is
+    // consumed and replaced by the pasted rows (remove 1). Either way the tail
+    // keeps its photos at the right index (feature #17 B).
+    if (kind === 'steps')
+      setStepImages((imgs) =>
+        keepCurrent
+          ? sideSplice(alignSide(imgs, steps.length), i + 1, 0, parts.length)
+          : sideSplice(alignSide(imgs, steps.length), i, 1, parts.length),
+      )
     return true
   }
 
@@ -170,7 +212,13 @@ export function RecipeForm({
   function applyDraft(d: Draft) {
     if (d.title && !title.trim()) setTitle(d.title)
     if (d.ingredients?.length && ingredients.every((x) => !x.trim())) setIngredients(d.ingredients)
-    if (d.steps?.length && steps.every((x) => !x.trim())) setSteps(d.steps)
+    if (d.steps?.length && steps.every((x) => !x.trim())) {
+      setSteps(d.steps)
+      // The imported steps are fresh rows (we only replace when the editor's steps
+      // were all blank, so no photo is lost) — reset stepImages to a same-length
+      // all-empty array so it can't drift past the new step count (feature #17 B).
+      setStepImages(d.steps.map(() => ''))
+    }
     if (d.servings && !servings.trim()) setServings(String(d.servings))
     if (d.servingsUnit && !servingsUnit.trim()) setServingsUnit(d.servingsUnit)
     // Prep/cook/total land in their REAL fields now (editable like the rest).
@@ -277,6 +325,30 @@ export function RecipeForm({
     }
   }
 
+  // Attach (or replace) one step's photo (feature #17 B). Resized small client-side
+  // like the hero image, uploaded to the sibling /api/recipe-step-image endpoint,
+  // and the returned R2 key is written at THIS step's index in the parallel
+  // stepImages array (sideSet leaves every other slot alone). Same graceful
+  // degrade as the hero image plus the deck clips: a 503 (R2 unbound) hides the
+  // whole per-step control; any other failure leaves the step unphotographed and
+  // never blocks the form.
+  async function uploadStepPhoto(i: number, file: File) {
+    setStepUploading(i)
+    try {
+      const blob = await resizeImage(file, PHOTO_MAX)
+      if (blob.size > MAX_UPLOAD_BYTES) return // a format no decoder could shrink; skip rather than hard-reject
+      const { key } = await api<{ key: string }>('recipe-step-image', { method: 'POST', body: blob })
+      setStepImages((imgs) => sideSet(alignSide(imgs, steps.length), i, key))
+    } catch (e) {
+      if (isStatus(e, 503)) setStepPhotoOff(true)
+      /* other failure — leave the step photo unset, never block the form */
+    } finally {
+      setStepUploading(null)
+    }
+  }
+  const clearStepPhoto = (i: number) =>
+    setStepImages((imgs) => sideSet(alignSide(imgs, steps.length), i, ''))
+
   async function save(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || busy) return
@@ -285,10 +357,34 @@ export function RecipeForm({
     // are editing leftovers, not content — both drop here.
     const cleanRows = (xs: string[]) =>
       dropDanglingHeadings(xs.map((s) => s.trim()).filter((s) => s && !/^##$/.test(s)))
+    // Clean the steps and their PARALLEL photo keys with the SAME row drops, so
+    // stepImages stays index-aligned to the saved steps (feature #17 B). We pair
+    // each row with its photo, run the identical trim/filter/dangling-heading
+    // pass on the pair list, then split back out — a dropped row takes its (empty)
+    // photo slot with it, every surviving photo keeps its step.
+    const cleanStepsWithPhotos = () => {
+      const imgs = alignSide(stepImages, steps.length)
+      const paired = steps
+        .map((s, i) => ({ text: s.trim(), img: imgs[i] ?? '' }))
+        .filter((p) => p.text && !/^##$/.test(p.text))
+      // dropDanglingHeadings, but carrying the photo slot alongside each row (same
+      // isSectionHeading predicate as the real cleanRows path, so the split steps
+      // array is byte-identical to what the server would otherwise receive).
+      const out: { text: string; img: string }[] = []
+      for (const p of paired) {
+        const prev = out[out.length - 1]
+        if (isSectionHeading(p.text) && prev && isSectionHeading(prev.text)) out.pop()
+        out.push(p)
+      }
+      if (out.length && isSectionHeading(out[out.length - 1].text)) out.pop()
+      return { steps: out.map((p) => p.text), stepImages: out.map((p) => p.img) }
+    }
+    const cleanedSteps = cleanStepsWithPhotos()
     const fields = {
       title: title.trim(),
       ingredients: cleanRows(ingredients),
-      steps: cleanRows(steps),
+      steps: cleanedSteps.steps,
+      stepImages: cleanedSteps.stepImages,
       servings: servings.trim() ? Number(servings) : null,
       servingsUnit: servingsUnit.trim() || null,
       prepMin: prepMin.trim() ? Number(prepMin) : null,
@@ -463,6 +559,19 @@ export function RecipeForm({
               {moveButtons('steps', i)}
             </>
           )}
+          {/* The step's own photo (feature #17 B): a thumbnail + add / change /
+              remove, or just the add button when the step has none. Hidden whole
+              when R2 photo storage is unset (the upload 503'd). Keyed by THIS
+              step's index into the parallel stepImages array. */}
+          {!stepPhotoOff && (
+            <StepPhoto
+              imgKey={stepImages[i] ?? ''}
+              uploading={stepUploading === i}
+              onPick={(f) => uploadStepPhoto(i, f)}
+              onClear={() => clearStepPhoto(i)}
+              t={t}
+            />
+          )}
         </div>
         ),
       )}
@@ -608,15 +717,9 @@ export function RecipeForm({
           <h3 className="recipe-sec-h">
             <Icon name="pencil-simple-bold" size={18} color="var(--berry-deep)" /> {t.recipes.steps}
           </h3>
-          {/* TODO #17 step photo upload — per-step photo control inside the step
-              editor. The data model + endpoint exist (resizeImage → POST
-              /api/recipe-image's sibling /api/recipe-step-image → { key }, then
-              send a stepImages[] parallel to steps on POST/PATCH; Cook mode
-              already renders recipe.stepImages[i]). This needs a small 📷 button
-              per step (add/replace/remove), held in a stepImages state array kept
-              the same length as `steps` through add/remove/move/paste. Hide the
-              button where R2 is unset (the endpoint 503s). Labels staged in i18n:
-              t.recipes.stepPhotoAdd / stepPhotoChange / stepPhotoRemove / stepPhotoOff. */}
+          {/* Each step carries an optional photo (feature #17 B). The control is
+              built into stepsEditor (StepPhoto), kept parallel to the steps array
+              and hidden whole where R2 photo storage is unset. */}
           {stepsEditor}
 
           {/* Servings (+ optional unit: "24 biscuits") + times + notes */}
@@ -727,6 +830,71 @@ export function RecipeForm({
           </button>
         </div>
       </form>
+    </div>
+  )
+}
+
+// One step's photo control (feature #17 B). With a photo: a tap-to-enlarge
+// thumbnail (ZoomableImg, the same viewer flyers use) + change / remove. Without:
+// a single 📷 add button. The parent owns the key; this just picks a file and
+// reports add/clear, so the parallel-array bookkeeping stays in RecipeForm.
+function StepPhoto({
+  imgKey,
+  uploading,
+  onPick,
+  onClear,
+  t,
+}: {
+  imgKey: string
+  uploading: boolean
+  onPick: (file: File) => void
+  onClear: () => void
+  t: ReturnType<typeof useT>
+}) {
+  return (
+    <div className="recipe-step__photo">
+      {imgKey ? (
+        <>
+          <ZoomableImg src={imgUrl(imgKey)} className="recipe-step__photo-thumb" alt="" />
+          <label className="btn btn--ghost mono recipe-step__photo-btn">
+            <InlineIcon name="camera-bold" size={14} /> {uploading ? '…' : t.recipes.stepPhotoChange}
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              disabled={uploading}
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) onPick(f)
+                e.target.value = ''
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className="btn btn--ghost mono recipe-step__photo-btn recipe-step__photo-del"
+            onClick={onClear}
+            aria-label={t.recipes.stepPhotoRemove}
+          >
+            <Icon name="x-bold" size={14} />
+          </button>
+        </>
+      ) : (
+        <label className="btn btn--ghost mono recipe-step__photo-btn">
+          <InlineIcon name="image-square-bold" size={14} /> {uploading ? '…' : t.recipes.stepPhotoAdd}
+          <input
+            type="file"
+            accept="image/*"
+            hidden
+            disabled={uploading}
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) onPick(f)
+              e.target.value = ''
+            }}
+          />
+        </label>
+      )}
     </div>
   )
 }

@@ -237,7 +237,36 @@
 .recipe-step {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap; /* let the per-step photo row (#17 B) drop full-width below */
   gap: 0.4rem;
+}
+/* Per-step photo control (feature #17 B): a full-width strip under the step text,
+   indented to line up with the step memo (past the step number). */
+.recipe-step__photo {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 1.8rem; /* clear the step number column */
+}
+.recipe-step__photo-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+}
+.recipe-step__photo-btn {
+  min-height: 36px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+}
+.recipe-step__photo-del {
+  color: var(--ink-faint);
+}
+.recipe-step__photo-del:hover {
+  color: var(--warn);
 }
 .recipe-step__n {
   width: 1.4rem;

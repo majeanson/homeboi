@@ -449,6 +449,77 @@
   margin-top: 4px;
 }
 
+/* Per-card parent-voice clip controls (feature #17 A). Sits under its card,
+   wraps on a narrow phone, big enough to tap on the wall tablet. */
+.deck__clip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 2px 56px; /* indent under the emoji so it reads as the card's own */
+}
+.deck__clip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink-soft);
+  font-size: 13px;
+  cursor: pointer;
+}
+.deck__clip-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.deck__clip-btn.is-on {
+  border-color: var(--accent, var(--terracotta-deep));
+  color: var(--ink);
+}
+.deck__clip-btn.is-recording {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+.deck__clip-del {
+  padding: 6px 8px;
+  color: var(--ink-faint);
+}
+.deck__clip-del:hover {
+  color: var(--warn);
+}
+/* The pulsing "recording" dot. */
+.deck__clip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--warn);
+  animation: deck-clip-pulse 1s ease-in-out infinite;
+}
+@keyframes deck-clip-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .deck__clip-dot {
+    animation: none;
+  }
+}
+.deck__clip-note {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.deck__clip-note--err {
+  color: var(--warn);
+}
+
 /* ---- Colour picker (per-person, per-task) -------------------------------- */
 .colorpick {
   display: flex;

@@ -379,6 +379,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Ta voix sur une carte', en: 'Your voice on a card' },
+        detail: {
+          fr: 'Sur chaque carte (Réglages ▸ Routines), touche 🎙️ pour t’enregistrer en train de la nommer. L’enfant entend ta voix au lieu de la voix de l’appareil; sans clip, ça revient à la lecture automatique.',
+          en: 'On each card (Settings ▸ Routines), tap 🎙️ to record yourself naming it. The child hears your voice instead of the device’s; with no clip, it falls back to read-aloud.',
+        },
+        why: {
+          fr: 'Une voix familière rassure un tout-petit. C’est optionnel et ça se réenregistre ou s’efface en un toucher.',
+          en: 'A familiar voice reassures a small child. It’s optional and re-records or clears in one tap.',
+        },
+      },
+      {
         label: { fr: 'Pas de récompenses', en: 'No rewards' },
         detail: {
           fr: 'Aucun point, aucune étoile, aucune séquence à entretenir. Elle se termine, et c’est tout.',
@@ -1347,6 +1358,17 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Pas besoin de remonter chercher dans la liste.',
           en: 'No scrolling back to the list to find them.',
+        },
+      },
+      {
+        label: { fr: 'Une photo par étape', en: 'A photo per step' },
+        detail: {
+          fr: 'En modifiant une recette, touche 📷 sous une étape pour y joindre une photo (la pâte au bon stade, le pliage…). Elle s’affiche en grand dans le mode cuisson; les étapes sans photo n’en montrent pas.',
+          en: 'When editing a recipe, tap 📷 under a step to attach a photo (the dough at the right stage, the fold…). It shows large in cook mode; steps with no photo simply show none.',
+        },
+        why: {
+          fr: 'Une image vaut mille mots pour un geste délicat — et c’est optionnel, étape par étape.',
+          en: 'A picture is worth a thousand words for a tricky move — and it’s optional, step by step.',
         },
       },
     ],
