@@ -2156,18 +2156,17 @@
 }
 .guide__group-title {
   font-size: 1.05rem;
-  margin: 0 0 0.2rem;
-}
-.guide__group-blurb {
-  color: var(--ink-soft);
-  font-size: 0.85rem;
-  margin: 0 0 0.9rem;
-  max-width: 60ch;
+  margin: 0 0 0.6rem;
 }
 .guide__cards {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+}
+/* The overview card sits above the groups — a touch more breathing room sets it
+   apart as the manual's entry point. */
+.guide__cards--lead {
+  margin-bottom: 1.75rem;
 }
 .guide__card {
   border: 1.5px solid var(--line);
@@ -2209,6 +2208,23 @@
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
+  flex: 1 1 auto;
+}
+/* The card's open/close affordance: a chevron pushed to the right edge of the
+   summary that rotates a half-turn when the card opens. Shows the "this expands"
+   cue visually instead of describing it in the page copy. */
+.guide__chevron {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  margin-top: 0.1rem;
+  transition: transform 0.18s ease;
+}
+.guide__card[open] > .guide__summary .guide__chevron {
+  transform: rotate(180deg);
+  color: var(--accent, var(--ink));
 }
 .guide__title {
   font-weight: 600;

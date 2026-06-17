@@ -104,13 +104,6 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Les cinq sections', en: 'The five sections' },
-        detail: {
-          fr: '[[icon:sun-bold]] Le babillard (le coup d’œil), [[icon:carrot-bold]] La cuisine (soupers et recettes), [[icon:smiley-bold]] Routines (les enfants), [[icon:sparkle-bold]] La liste (l’épicerie) et [[icon:gear-six-bold]] Réglages (ton poste de pilotage).',
-          en: '[[icon:sun-bold]] the Board (the glance), [[icon:carrot-bold]] the Kitchen (suppers and recipes), [[icon:smiley-bold]] Routines (the kids), [[icon:sparkle-bold]] the List (groceries) and [[icon:gear-six-bold]] Settings (your control panel).',
-        },
-      },
-      {
         label: { fr: 'Ajouter : écris ou parle', en: 'Adding: type or speak' },
         detail: {
           fr: 'Le bouton [[icon:plus-bold]] ajoute ce qui convient à la section. Écris en mots normaux (« souper spaghetti vendredi ») ou dicte au [[icon:speaker-high-bold]] micro. Tu peux glisser une date et un prénom : « dentiste pour Léa mardi 15h » ou « soccer de Marc le 20 juin » crée le rendez-vous au bon jour, au nom de la bonne personne.',
@@ -119,17 +112,6 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'L’app range la note à la bonne place toute seule — la bonne date, la bonne personne — d’un seul geste.',
           en: 'The app files the note in the right place by itself — the right date, the right person — in one gesture.',
-        },
-      },
-      {
-        label: { fr: 'Deux appareils, deux vues', en: 'Two devices, two views' },
-        detail: {
-          fr: 'La tablette au mur (le kiosque) montre le coup d’œil de toute la maisonnée ; ton téléphone sert aux notes rapides. Et la vue Enfant transforme chaque page en grandes cartes en images pour un pré-lecteur.',
-          en: 'The wall tablet (the kiosk) shows the whole household at a glance; your phone is for quick notes. And the Toddler view turns every page into big picture-cards for a pre-reader.',
-        },
-        why: {
-          fr: 'Pour que chaque appareil — et chaque personne — voie la forme qui lui convient.',
-          en: 'So each device — and each person — sees the form that suits them.',
         },
       },
       {

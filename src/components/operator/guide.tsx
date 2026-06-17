@@ -41,6 +41,11 @@ export function GuideCard({
           <span className="guide__title">{entry.title[lang]}</span>
           <span className="guide__what">{renderRich(entry.what[lang])}</span>
         </span>
+        {/* A visible expand/collapse chevron — the affordance is shown, not
+            spelled out in prose. Rotates with the card's open state (CSS). */}
+        <span className="guide__chevron" aria-hidden="true">
+          <Icon name="caret-down-bold" size={18} />
+        </span>
       </summary>
       <div className="guide__points">
         {entry.points.map((p, i) => (
@@ -74,6 +79,39 @@ export function GuideCard({
       </div>
     </details>
   )
+}
+
+// The "concepts" cards read best clustered by theme rather than in the order
+// they were authored (the file grows concept-by-concept, so it drifts toward
+// append-order). Display order: the everyday basics first, then board/device
+// concepts, then the kitchen/recipe cluster, then the shopping/deals cluster.
+// This keeps related cards adjacent (recipes↔cook mode, deals↔flyers) without
+// moving the bilingual prose blocks around in guideContent.ts. The "sections"
+// group keeps its file order, which already matches the five tabs.
+// NOTE: a new concept not listed here falls to the end (file order preserved) —
+// add its id below to place it in the right cluster.
+const CONCEPT_ORDER = [
+  'capture',
+  'surface',
+  'audience',
+  'calm',
+  'undo',
+  'offline',
+  'reminders',
+  'pairing',
+  'account',
+  'recipes',
+  'cookmode',
+  'leftovers',
+  'reserve',
+  'deals',
+  'flyers',
+  'cashier',
+  'ghost',
+]
+const conceptRank = (id: string) => {
+  const i = CONCEPT_ORDER.indexOf(id)
+  return i === -1 ? CONCEPT_ORDER.length : i
 }
 
 // Réglages ▸ Guide — the whole how-it-works manual in one place. Each concept is
@@ -119,10 +157,14 @@ export function GuideSection() {
     return GUIDE.filter(hit)
   }, [q, lang])
 
+  // The overview ("start") card is the entry point — pulled out of the group
+  // loop so it can sit at the top, open by default, with no group header or
+  // blurb wrapped around it.
+  const startEntries = matches.filter((e) => e.group === 'start')
+
   return (
     <section className="surface operator__section guide">
       <h2>{t.operator.guideTitle}</h2>
-      <p className="lead">{t.operator.guideHint}</p>
 
       <input
         type="search"
@@ -135,17 +177,39 @@ export function GuideSection() {
 
       {matches.length === 0 && <p className="feed-empty">{t.operator.guideNone}</p>}
 
-      {/* The per-tab "settings" cards now live INLINE in each Réglages tab (see
-          SectionGuide), so the Guide reads as the conceptual manual — start, the
-          five sections, and the cross-cutting concepts — not a second copy of the
-          tab reference. */}
-      {GUIDE_GROUPS.filter((g) => g.id !== 'settings').map((group) => {
+      {/* Overview card(s): expanded on arrival so a newcomer reads the summary at
+          once, then the rest of the manual stays a calm, collapsed list below. */}
+      {startEntries.length > 0 && (
+        <div className="guide__cards guide__cards--lead">
+          {startEntries.map((e) => (
+            <GuideCard
+              key={e.id}
+              entry={e}
+              cardRef={e.id === openId ? targetRef : undefined}
+              isTarget={e.id === openId}
+              open
+              pointsOpen={q.length > 0}
+              onReplayTour={() => start('essentials')}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* The two real groups — five sections, then the cross-cutting concepts.
+          Titles only (no blurb): each card's own one-line "what" carries the
+          explanation, so the landing stays card-focused, not prose-heavy. The
+          per-tab "settings" cards live INLINE in each Réglages tab instead (see
+          SectionGuide). */}
+      {GUIDE_GROUPS.filter((g) => g.id !== 'settings' && g.id !== 'start').map((group) => {
         const entries = matches.filter((e) => e.group === group.id)
         if (entries.length === 0) return null
+        // Concepts are shown clustered by theme (see CONCEPT_ORDER); other groups
+        // keep their file order. Array.sort is stable, so unlisted ids hold their
+        // relative file order at the end.
+        if (group.id === 'concepts') entries.sort((a, b) => conceptRank(a.id) - conceptRank(b.id))
         return (
           <div key={group.id} className="guide__group">
             <h3 className="guide__group-title">{group.label[lang]}</h3>
-            <p className="guide__group-blurb mono">{group.blurb[lang]}</p>
             <div className="guide__cards">
               {entries.map((e) => (
                 // Open the matching cards while searching, so a hit is visible at once;

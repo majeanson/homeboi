@@ -201,7 +201,7 @@ export const FR = {
       hydrate: 'Il fait chaud — bois de l’eau 💧',
     },
   },
-  recur: { repeat: 'Répéter', none: 'Jamais', daily: 'Chaque jour', weekly: 'Chaque semaine', monthly: 'Chaque mois', every: 'tous les', unit: { daily: 'jour(s)', weekly: 'semaine(s)', monthly: 'mois' }, weekdayShort: ['D', 'L', 'M', 'M', 'J', 'V', 'S'] },
+  recur: { repeat: 'Répéter', none: 'Jamais', daily: 'Chaque jour', weekly: 'Chaque semaine', monthly: 'Chaque mois', every: 'tous les', unit: { daily: 'jour(s)', weekly: 'semaine(s)', monthly: 'mois' }, weekdayShort: ['D', 'L', 'Ma', 'Me', 'J', 'V', 'S'] },
   // Calm "Bientôt" reminder lead — when the board starts highlighting a dated item.
   lead: { label: 'Afficher dès', none: 'Au moment même', h1: '1 h avant', h3: '3 h avant', h6: '6 h avant', d1: '1 jour avant', d2: '2 jours avant', d3: '3 jours avant', w1: '1 semaine avant' },
   kitchen: {
@@ -673,7 +673,7 @@ export const FR = {
     micTestCopied: 'Copié !',
     guide: 'Guide',
     guideTitle: 'Comment ça marche',
-    guideHint: 'Tout le fonctionnement de Babillard, expliqué simplement, au même endroit. Touche une carte pour la déplier.',
+    guideHint: 'Tout le fonctionnement de Babillard, expliqué simplement, au même endroit.',
     guideSearch: 'Chercher dans le guide…',
     guideNone: 'Rien trouvé. Essaie un autre mot.',
     guideGoTo: 'Aller à cet onglet',
@@ -1448,7 +1448,7 @@ export const EN: typeof FR = {
     micTestCopied: 'Copied!',
     guide: 'Guide',
     guideTitle: 'How it works',
-    guideHint: 'Everything Babillard does, explained simply, in one place. Tap a card to expand it.',
+    guideHint: 'Everything Babillard does, explained simply, in one place.',
     guideSearch: 'Search the guide…',
     guideNone: 'Nothing found. Try another word.',
     guideGoTo: 'Go to this tab',

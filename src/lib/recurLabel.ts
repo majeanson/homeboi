@@ -27,12 +27,22 @@ export function recurOf(json?: string | null): RecurValue | null {
 export function recurLabel(json: string | null | undefined, t: typeof FR): string {
   const r = recurOf(json)
   if (!r) return ''
+  // Base cadence: "Chaque semaine" at interval 1, "tous les N semaine(s)" beyond —
+  // so the count ("how many weeks") is always spelled out, not just implied.
+  const base =
+    r.interval > 1
+      ? `${t.recur.every} ${r.interval} ${t.recur.unit[r.freq]}`
+      : r.freq === 'daily'
+        ? t.recur.daily
+        : r.freq === 'weekly'
+          ? t.recur.weekly
+          : t.recur.monthly
+  // Weekly rules append the picked days (L Ma Me J V S D), disambiguated in copy.
   if (r.freq === 'weekly' && r.weekdays.length) {
-    const days = r.weekdays.map((d) => t.recur.weekdayShort[d]).join(', ')
-    return `${t.recur.weekly} (${days})`
+    const days = r.weekdays.map((d) => t.recur.weekdayShort[d]).join(' ')
+    return `${base} (${days})`
   }
-  if (r.interval > 1) return `${t.recur.every} ${r.interval} ${t.recur.unit[r.freq]}`
-  return r.freq === 'daily' ? t.recur.daily : r.freq === 'weekly' ? t.recur.weekly : t.recur.monthly
+  return base
 }
 
 // The recurrence anchor is stored as unix-seconds at UTC-midnight of the chosen
