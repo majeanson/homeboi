@@ -12,6 +12,7 @@ import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
 import { EventsSection } from '../components/operator/agenda'
 import { ChoresSection, RoutinesSection } from '../components/operator/chores'
+import { ChoreLedger } from '../components/ChoreLedger'
 import { PhotosSection, RecapSection } from '../components/operator/media'
 import { RecipeTagsSection } from '../components/operator/recipesTags'
 import { MealSlotsSection } from '../components/operator/meals'
@@ -168,7 +169,12 @@ export function Operator() {
         {tab !== 'guide' && <SectionGuide tab={tab} />}
         {tab === 'household' && <MembersSection members={members} onChange={load} />}
         {tab === 'agenda' && <EventsSection events={events} members={members} onChange={load} />}
-        {tab === 'chores' && <ChoresSection chores={chores} onChange={load} />}
+        {tab === 'chores' && (
+          <>
+            <ChoresSection chores={chores} onChange={load} />
+            <ChoreLedger />
+          </>
+        )}
         {tab === 'routines' && <RoutinesSection routines={routines} onChange={load} />}
         {tab === 'shopping' && (
           <>

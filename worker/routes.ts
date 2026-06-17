@@ -14,6 +14,7 @@ import * as aiTest from '../functions/api/ai-test'
 import * as board from '../functions/api/board'
 import * as capture from '../functions/api/capture'
 import * as chores from '../functions/api/chores'
+import * as choresLedger from '../functions/api/chores-ledger'
 import * as dayNotes from '../functions/api/day-notes'
 import * as deals from '../functions/api/deals'
 import * as events from '../functions/api/events'
@@ -73,6 +74,7 @@ const TABLE: Record<string, RouteMod> = {
   board,
   capture,
   chores,
+  'chores-ledger': choresLedger,
   'day-notes': dayNotes,
   deals,
   events,
