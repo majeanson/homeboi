@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon, InlineIcon } from '../components/Icon'
-import { SectionAvatar } from '../components/SectionAvatar'
+import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
@@ -331,19 +331,13 @@ export function Liste() {
 
   return (
     <main className="today-feed">
-      <div className="app-head">
-        <div>
-          <div className="app-head__titlerow">
-            <h1 className="greet">{t.nav.list}</h1>
-          </div>
-        </div>
-        <SectionAvatar
-          icon={CATS.list.icon}
-          iconColor={CATS.list.deep}
-          background="var(--marigold-wash)"
-          card="liste"
-        />
-      </div>
+      <HubHead
+        title={t.nav.list}
+        icon={CATS.list.icon}
+        iconColor={CATS.list.deep}
+        background="var(--marigold-wash)"
+        card="liste"
+      />
 
       <SectionIntro card="liste" />
 

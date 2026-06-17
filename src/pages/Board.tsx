@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
-import { SectionAvatar } from '../components/SectionAvatar'
+import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
@@ -475,25 +475,17 @@ export function Board() {
     <main className="board-wall">
       {/* No per-page add button: the shared yellow ＋ FAB (HubLayout) floats
           bottom-right here just like every other tab. */}
-      <div className="app-head">
-        <div>
-          <div className="app-head__titlerow">
-            <h1 className="greet">{me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]}</h1>
-          </div>
-          <span className="app-head__date mono">{formatDay(Math.floor(Date.now() / 1000), lang)}</span>
-        </div>
-        {/* Time-of-day icon sits in the top-right corner like every other tab's
-            avatar — the view toggle + profile chip drop to their own row below so
-            the avatar reads as the section's identity, not part of the filter.
-            In tutorial mode the disc itself deep-links to the Guide (folds the
-            old "?" help dot into the icon). */}
-        <SectionAvatar
-          icon={TOD_ICON[tod]}
-          iconColor="var(--marigold-deep)"
-          background="var(--marigold-wash)"
-          card="board"
-        />
-      </div>
+      {/* Time-of-day icon sits top-right as the section's identity (and, in
+          tutorial mode, the Guide link); the view toggle + profile chip drop to
+          their own row below so the avatar never reads as part of the filter. */}
+      <HubHead
+        title={me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]}
+        subtitle={formatDay(Math.floor(Date.now() / 1000), lang)}
+        icon={TOD_ICON[tod]}
+        iconColor="var(--marigold-deep)"
+        background="var(--marigold-wash)"
+        card="board"
+      />
 
       {/* Board controls: who's at this phone + which of the four views. Kept off
           the avatar (top-right) so the header matches the other tabs. */}

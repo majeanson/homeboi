@@ -49,13 +49,6 @@
   gap: 10px;
   flex-wrap: wrap;
 }
-/* The "Aujourd'hui" tag with the date to its right — the top-left anchor. */
-.app-head__tagrow {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-}
 .app-head__date {
   color: var(--ink-soft);
   font-size: 0.9rem;

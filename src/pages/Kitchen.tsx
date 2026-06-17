@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
-import { SectionAvatar } from '../components/SectionAvatar'
+import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -262,19 +262,13 @@ export function Kitchen() {
   return (
     <>
       <main className="kitchen today-feed">
-        <div className="app-head">
-          <div>
-            <div className="app-head__titlerow">
-              <h1 className="greet">{t.kitchen.title}</h1>
-            </div>
-          </div>
-          <SectionAvatar
-            icon="carrot-bold"
-            iconColor="var(--terracotta-deep)"
-            background="var(--terracotta-wash)"
-            card="kitchen"
-          />
-        </div>
+        <HubHead
+          title={t.kitchen.title}
+          icon="carrot-bold"
+          iconColor="var(--terracotta-deep)"
+          background="var(--terracotta-wash)"
+          card="kitchen"
+        />
 
         <SectionIntro card="kitchen" />
 

@@ -6,7 +6,7 @@ import { live } from '../lib/query'
 import { ROUTINES_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { InlineIcon } from '../components/Icon'
-import { SectionAvatar } from '../components/SectionAvatar'
+import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { imgUrl } from '../lib/image'
 import { CATS } from '../lib/cats'
@@ -52,19 +52,13 @@ function RoutinesParent() {
 
   return (
     <main className="today-feed routines-parent">
-      <div className="app-head">
-        <div>
-          <div className="app-head__titlerow">
-            <h1 className="greet">{t.nav.routines}</h1>
-          </div>
-        </div>
-        <SectionAvatar
-          icon={CATS.routine.icon}
-          iconColor={CATS.routine.deep}
-          background={CATS.routine.wash}
-          card="routines"
-        />
-      </div>
+      <HubHead
+        title={t.nav.routines}
+        icon={CATS.routine.icon}
+        iconColor={CATS.routine.deep}
+        background={CATS.routine.wash}
+        card="routines"
+      />
 
       <SectionIntro card="routines" />
 

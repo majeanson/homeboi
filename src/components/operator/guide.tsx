@@ -128,7 +128,8 @@ export function GuideSection() {
   const [query, setQuery] = useState('')
   const [params, setParams] = useSearchParams()
 
-  // A contextual "?" elsewhere links here as ?card=<id> (see HelpDot). Open that
+  // A section's help icon elsewhere links here as ?card=<id> (see SectionAvatar,
+  // and HelpDot for section-level dots). Open that
   // card and scroll to it. We mirror the id into local state and CONSUME the
   // param (replace) so a refresh/back doesn't re-force it and the parent can
   // collapse it again. The effect (not initial state) is the real driver — it

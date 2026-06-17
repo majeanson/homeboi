@@ -23,6 +23,7 @@ import { StatusMessage } from '../components/StatusMessage'
 import { Chip, ChipGroup } from '../components/Chip'
 import { SectionHeader } from '../components/SectionHeader'
 import { SectionAvatar } from '../components/SectionAvatar'
+import { HubHead } from '../components/HubHead'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
 import { OperatorSection } from '../components/operator/OperatorSection'
@@ -386,6 +387,35 @@ export function DevKit() {
           </Demo>
           <Demo label="icon + title">
             <SectionHeader icon="carrot-bold" iconColor="var(--marigold-deep)" title="Garde-manger" />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'HubHead',
+      file: 'components/HubHead.tsx',
+      kw: 'header entête hub onglet tab titre title section avatar',
+      render: () => (
+        <>
+          <Demo label="title + subtitle + section disc (the four hub tabs share this)">
+            <HubHead
+              title="Bon matin, Marc"
+              subtitle="mardi 17 juin"
+              icon="sun-bold"
+              iconColor="var(--marigold-deep)"
+              background="var(--marigold-wash)"
+              card="board"
+            />
+          </Demo>
+          <Demo label="title only">
+            <HubHead
+              title="La cuisine"
+              icon="carrot-bold"
+              iconColor="var(--terracotta-deep)"
+              background="var(--terracotta-wash)"
+              card="kitchen"
+            />
           </Demo>
         </>
       ),
