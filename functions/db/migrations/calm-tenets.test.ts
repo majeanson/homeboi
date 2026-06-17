@@ -35,3 +35,33 @@ describe('calm tenets (schema)', () => {
     expect(schema.includes('stock_count')).toBe(false)
   })
 })
+
+// NFR-CALM-1 extends past the schema to the chore fairness ledger: it is an
+// observation surface ("who did what this week"), never a leaderboard. The
+// scoring vocabulary must stay out of the ledger code too, so a future edit
+// can't quietly turn attribution into a score/rank. We scan the ledger sources
+// (handler + component) with the same drift-proof approach as the schema scan.
+// Strip `//` comment lines first — the ledger's own comments NAME the forbidden
+// ideas ("NO count, NO ranking, …") to explain their absence; only live code
+// counts. JS string concatenation keeps these literals out of THIS file's scan.
+const repoRoot = join(here, '..', '..', '..')
+const ledgerSrc = [
+  join(repoRoot, 'functions', 'api', 'chores-ledger.ts'),
+  join(repoRoot, 'src', 'components', 'ChoreLedger.tsx'),
+]
+  .map((f) => readFileSync(f, 'utf8'))
+  .join('\n')
+  .split('\n')
+  .filter((line) => !line.trim().startsWith('//'))
+  .join('\n')
+  .toLowerCase()
+
+describe('calm tenets (chore fairness ledger)', () => {
+  // No scoreboard vocabulary in the live ledger code (comments are stripped above).
+  const banned = ['leaderboard', 'scoreboard', 'ranking', 'tally', 'streak', 'points', 'badge']
+  for (const word of banned) {
+    it(`ledger code has no "${word}"`, () => {
+      expect(ledgerSrc.includes(word)).toBe(false)
+    })
+  }
+})
