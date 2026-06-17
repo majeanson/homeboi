@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { isGuest } from './device'
 
 // The one optimistic-write shape used across the app, factored out of the pages
 // that each re-spelled it (KidView's card toggle, Liste's ghost add): apply the
@@ -15,8 +16,13 @@ export function useOptimisticMutation<TData, TVars>(opts: {
 }) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: opts.mutationFn,
+    // Read-only guest: never fire the write (mirrors the writeWith chokepoint).
+    // This is the OTHER write path — KidView's routine progress — so guard it the
+    // same way: no network, and onMutate below skips the optimistic cache change,
+    // so nothing can even appear to change for a guest.
+    mutationFn: (v: TVars) => (isGuest() ? Promise.resolve() : opts.mutationFn(v)),
     onMutate: async (v: TVars) => {
+      if (isGuest()) return { prev: undefined }
       await qc.cancelQueries({ queryKey: opts.queryKey })
       const prev = qc.getQueryData<TData>(opts.queryKey)
       qc.setQueryData<TData>(opts.queryKey, (old) => (old === undefined ? old : opts.apply(old, v)))
