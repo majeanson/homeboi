@@ -1233,12 +1233,34 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Redémarre hors ligne', en: 'Reboots offline' },
         detail: {
-          fr: 'La tablette peut redémarrer sans wifi et afficher quand même l’app.',
-          en: 'The tablet can reboot with no wifi and still show the app.',
+          fr: 'La tablette peut redémarrer sans wifi et réafficher le dernier babillard, les listes et les recettes déjà consultés.',
+          en: 'The tablet can reboot with no wifi and bring back the last board, lists and recipes you’d already viewed.',
         },
         why: {
           fr: 'Pour qu’une panne de courant ou une coupure d’internet ne laisse pas le mur blanc.',
           en: 'So a power blip or an internet outage never leaves the wall blank.',
+        },
+      },
+      {
+        label: { fr: 'Tes changements attendent et se synchronisent', en: 'Your changes wait, then sync' },
+        detail: {
+          fr: 'Hors ligne, cocher un article, marquer une corvée faite, ajouter à la liste fonctionnent quand même : un bandeau « Hors ligne » indique combien de changements sont en attente, et tout se synchronise tout seul au retour du wifi.',
+          en: 'Offline, checking an item, marking a chore done, adding to the list still work: a “Offline” banner shows how many changes are waiting, and everything syncs by itself when the wifi returns.',
+        },
+        why: {
+          fr: 'Pour que la signal faible à l’épicerie ou au mur ne te fasse pas perdre un geste.',
+          en: 'So weak signal at the store or on the wall never loses a tap.',
+        },
+      },
+      {
+        label: { fr: 'Ce qui a besoin d’internet', en: 'What needs the internet' },
+        detail: {
+          fr: 'Quelques gestes ont besoin du réseau : le micro, l’ajout intelligent qui range tout seul, les photos et les circulaires. Hors ligne, ils s’affichent simplement en grisé.',
+          en: 'A few things need the network: the mic, the smart add that files things for you, photos and flyers. Offline, they simply appear greyed out.',
+        },
+        why: {
+          fr: 'Pour que ce soit clair en un coup d’œil, sans toucher un bouton qui ne pourrait pas répondre.',
+          en: 'So it’s clear at a glance, instead of tapping a button that couldn’t answer.',
         },
       },
       {

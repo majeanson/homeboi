@@ -150,7 +150,16 @@ can't drift in by accident. Keep it green.
 
 `vite.config.ts` generates `dist/sw.js` at build time with the real hashed asset list
 baked in, so a kiosk reboots offline. Policy: navigations network-first→cached shell;
-`/api/img/*` cache-first (immutable); other `/api/*` untouched (Query owns freshness).
+`/api/img/*` + `/api/flyer-img` cache-first (immutable); other `/api/*` untouched
+(Query owns freshness).
+
+Beyond the shell, the **query cache is persisted** to IndexedDB (`src/lib/persist.ts`)
+and restored before first paint, and **offline writes are queued + replayed** through
+an outbox (`src/lib/outbox.ts` + `useWrite` in `src/lib/write.ts`), deduped server-side
+by an idempotency key (`functions/_lib/idempotency.ts`). New writes should use
+`useWrite()`, not `api()` directly; online-only controls disable via `useOnline()`.
+**See [`OFFLINE.md`](./OFFLINE.md) for the full architecture, migration status, and
+known limitations.**
 
 ---
 
