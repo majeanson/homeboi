@@ -10,6 +10,7 @@ import { clearDeviceToken, isPaired } from '../lib/device'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
 import { KidExitGate } from './KidExitGate'
+import { OfflineBanner } from './OfflineBanner'
 import { AddSheetContext, SECTION_MODES, FORM_ROUTES, type AddSheetMode } from '../lib/addSheet'
 import { useAuth } from '../lib/auth'
 import {
@@ -244,6 +245,7 @@ export function HubLayout() {
       </nav>
 
       <div className="hub__body">
+        <OfflineBanner />
         <Outlet />
       </div>
 

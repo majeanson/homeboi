@@ -20,6 +20,8 @@ import { TourProvider } from './lib/tour'
 import { TourOverlay } from './components/tour/TourOverlay'
 import { registerSw } from './lib/registerSw'
 import { trackVisualViewport } from './lib/viewportVars'
+import { restorePersistedCache, startPersistingCache, clearPersistedCache } from './lib/persist'
+import { onAuthLost } from './lib/authEvents'
 import './styles.css'
 
 function Root() {
@@ -241,8 +243,18 @@ registerSw()
 // action buttons stay visible above the on-screen keyboard (iOS overlays it).
 trackVisualViewport()
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <Root />
-  </StrictMode>,
-)
+// Cold-reboot offline (NFR-OFFLINE-1): restore the last query-cache snapshot
+// BEFORE first paint so a kiosk rebooted without network shows the last-known
+// board/lists/recipes, then keep snapshotting. A 401 anywhere wipes it, so a
+// revoked device leaves no household data behind. The await is a quick IndexedDB
+// read (and a no-op when absent), so first paint isn't meaningfully delayed.
+onAuthLost(clearPersistedCache)
+void (async () => {
+  await restorePersistedCache(queryClient)
+  startPersistingCache(queryClient)
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <Root />
+    </StrictMode>,
+  )
+})()

@@ -409,3 +409,26 @@
 .cashier__thanks-hint {
   color: var(--ink-soft);
 }
+
+/* Offline awareness bar — calm amber, full-width at the top of the hub body, so a
+   glance at cached data is clearly flagged as not-live. NFR-OFFLINE-1. Theme
+   tokens keep the text legible in both day and night. */
+.offline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--marigold-wash);
+  border: 1px solid var(--marigold);
+  border-radius: var(--radius-sm);
+}
+.offline-bar__stamp {
+  font-weight: 600;
+  opacity: 0.85;
+}
