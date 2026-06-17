@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
 import { useT } from '../i18n'
 import { Loading } from '../components/Fallback'
@@ -19,6 +20,7 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 export function ListEditPage() {
   const t = useT()
   const qc = useQueryClient()
+  const write = useWrite()
   const { itemId = '' } = useParams()
   const close = useSceneClose('/liste')
   useEscapeKey(close)
@@ -71,8 +73,11 @@ export function ListEditPage() {
     setBusy(true)
     // Fold a still-typed term in rather than silently dropping it.
     const allTerms = draft.trim() ? [...terms, draft.trim()] : terms
-    await api('list', { method: 'PATCH', body: { id: itemId, text: name, search_terms: allTerms } }).catch(() => {})
-    await qc.invalidateQueries({ queryKey: BOARD_KEY })
+    await write('list', {
+      method: 'PATCH',
+      body: { id: itemId, text: name, search_terms: allTerms },
+      affectedKeys: [BOARD_KEY],
+    }).catch(() => {})
     close()
   }
 
@@ -84,8 +89,7 @@ export function ListEditPage() {
 
   async function remove() {
     setBusy(true)
-    await api('list', { method: 'DELETE', body: { id: itemId } }).catch(() => {})
-    await qc.invalidateQueries({ queryKey: BOARD_KEY })
+    await write('list', { method: 'DELETE', body: { id: itemId }, affectedKeys: [BOARD_KEY] }).catch(() => {})
     close()
   }
 

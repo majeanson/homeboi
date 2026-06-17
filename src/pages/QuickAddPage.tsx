@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { api } from '../lib/api'
+import { useWrite } from '../lib/write'
 import { useT } from '../i18n'
 import { pictoFor } from '../lib/picto'
 import { Icon, InlineIcon } from '../components/Icon'
@@ -22,7 +21,7 @@ const HISTORY_KEY = ['list-history']
 // new. The candidate set comes from the shared useQuickItems hook.
 export function QuickAddPage() {
   const t = useT()
-  const qc = useQueryClient()
+  const write = useWrite()
   const close = useSceneClose('/liste')
   useEscapeKey(close)
   const items = useQuickItems()
@@ -41,13 +40,11 @@ export function QuickAddPage() {
   // Add a line (with its remembered flyer synonyms) and refresh so it drops out of
   // the candidate set on the next render. Best-effort, like the rest of quick-add.
   async function postAdd(text: string, terms: string[]) {
-    try {
-      await api('list', { method: 'POST', body: terms.length ? { text, search_terms: terms } : { text } })
-    } finally {
-      qc.invalidateQueries({ queryKey: BOARD_KEY })
-      qc.invalidateQueries({ queryKey: GHOSTS_KEY })
-      qc.invalidateQueries({ queryKey: HISTORY_KEY })
-    }
+    await write('list', {
+      method: 'POST',
+      body: terms.length ? { text, search_terms: terms } : { text },
+      affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
+    }).catch(() => {})
   }
 
   function add(item: QuickItem) {

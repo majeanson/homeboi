@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon, InlineIcon } from '../components/Icon'
 import { HelpDot } from '../components/HelpDot'
@@ -10,6 +10,7 @@ import { tintInk } from '../lib/colors'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { api, isUnauthorized } from '../lib/api'
+import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { useRecordUndo, useUndoToast } from '../lib/toast'
@@ -156,10 +157,10 @@ function ListItemRow({
 export function Liste() {
   const t = useT()
   const { audience } = useAudience()
-  const qc = useQueryClient()
   const nav = useNavigate()
   const undo = useUndoToast()
   const recordUndo = useRecordUndo()
+  const write = useWrite()
   // Items whose "Clear checked" delete is DEFERRED behind the undo toast. Filtered
   // out of the displayed list at once so a refetch (the live poll, a focus, or an
   // add's invalidation) can't resurrect them before the clear commits.
@@ -187,28 +188,31 @@ export function Liste() {
   // quick-add panel passes them so a re-added item keeps its deal search.
   async function postAdd(text: string, terms?: string[]) {
     if (!text) return
-    try {
-      // Adding must show INSTANTLY, so this can't be a held write — instead record
-      // a COMPENSATING undo keyed on the new row's id (the POST returns it): Annuler
-      // deletes exactly that line, even after several quick voice adds stack up.
-      const res = await api<{ id: string }>('list', {
-        method: 'POST',
-        body: terms && terms.length ? { text, search_terms: terms } : { text },
+    // Show the new line INSTANTLY via an optimistic temp row — offline, the
+    // invalidate can't refetch it; on reconnect the queued POST creates the real
+    // row and the invalidate swaps the temp one out.
+    const tmpId = `tmp-${Date.now()}-${Math.floor(Math.random() * 1e6).toString(36)}`
+    const res = await write<{ id: string }>('list', {
+      method: 'POST',
+      body: terms && terms.length ? { text, search_terms: terms } : { text },
+      affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
+      optimistic: (qc) =>
+        qc.setQueryData<BoardListData>(BOARD_KEY, (b) =>
+          b ? { ...b, list: [...b.list, { id: tmpId, text, source: 'manual', checked_at: null }] } : b,
+        ),
+    }).catch(() => null)
+    // Online add returns the real id → offer Annuler that deletes exactly that line
+    // (the COMPENSATING undo), even after several quick voice adds stack up. Offline
+    // adds skip the undo (no server id yet); deleting the row is the way back.
+    const newId = res && !res.queued ? res.data?.id : undefined
+    if (newId)
+      recordUndo({
+        message: t.undo.added(text),
+        onUndo: () =>
+          void write('list', { method: 'DELETE', body: { id: newId }, affectedKeys: [BOARD_KEY, GHOSTS_KEY] }).catch(
+            () => {},
+          ),
       })
-      if (res?.id)
-        recordUndo({
-          message: t.undo.added(text),
-          onUndo: async () => {
-            await api('list', { method: 'DELETE', body: { id: res.id } }).catch(() => {})
-            qc.invalidateQueries({ queryKey: BOARD_KEY })
-            qc.invalidateQueries({ queryKey: GHOSTS_KEY })
-          },
-        })
-    } finally {
-      qc.invalidateQueries({ queryKey: BOARD_KEY })
-      qc.invalidateQueries({ queryKey: GHOSTS_KEY })
-      qc.invalidateQueries({ queryKey: HISTORY_KEY })
-    }
   }
   function addItem(e?: React.FormEvent) {
     e?.preventDefault()
@@ -225,12 +229,15 @@ export function Liste() {
   function toggleChecked(item: ListRow) {
     const checking = !item.checked_at
     const ts = checking ? Math.floor(Date.now() / 1000) : null
-    qc.setQueryData<BoardListData>(BOARD_KEY, (b) =>
-      b ? { ...b, list: b.list.map((i) => (i.id === item.id ? { ...i, checked_at: ts } : i)) } : b,
-    )
-    api('list', { method: 'PATCH', body: { id: item.id, checked: checking } })
-      .catch(() => {})
-      .finally(() => qc.invalidateQueries({ queryKey: BOARD_KEY }))
+    void write('list', {
+      method: 'PATCH',
+      body: { id: item.id, checked: checking },
+      affectedKeys: [BOARD_KEY],
+      optimistic: (qc) =>
+        qc.setQueryData<BoardListData>(BOARD_KEY, (b) =>
+          b ? { ...b, list: b.list.map((i) => (i.id === item.id ? { ...i, checked_at: ts } : i)) } : b,
+        ),
+    }).catch(() => {})
   }
 
   // Clear checked: every ticked line is a confirmed buy. Hide them NOW via
@@ -249,10 +256,11 @@ export function Liste() {
           return n
         }),
       onCommit: async () => {
-        await api('list', { method: 'PATCH', body: { clearChecked: true, ids } }).catch(() => {})
-        await qc.invalidateQueries({ queryKey: BOARD_KEY })
-        qc.invalidateQueries({ queryKey: GHOSTS_KEY })
-        qc.invalidateQueries({ queryKey: HISTORY_KEY })
+        await write('list', {
+          method: 'PATCH',
+          body: { clearChecked: true, ids },
+          affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
+        }).catch(() => {})
         setPendingClear((s) => {
           const n = new Set(s)
           ids.forEach((i) => n.delete(i))
@@ -277,8 +285,7 @@ export function Liste() {
           return n
         }),
       onCommit: async () => {
-        await api('list', { method: 'DELETE', body: { id: item.id } }).catch(() => {})
-        await qc.invalidateQueries({ queryKey: BOARD_KEY })
+        await write('list', { method: 'DELETE', body: { id: item.id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
         setPendingClear((s) => {
           const n = new Set(s)
           n.delete(item.id)
