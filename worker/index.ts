@@ -93,7 +93,27 @@ export default {
       if (request.headers.get('Upgrade') !== 'websocket') {
         return new Response('Expected WebSocket upgrade.', { status: 426 })
       }
-      const actor = await resolveActor(env, request)
+      // Resolve the actor BEFORE any upgrade. Two credential transports converge:
+      //   • operator session cookie — rides the same-origin WS handshake auto-
+      //     matically (preferred; nothing leaks in the URL).
+      //   • device / guest token — the browser WebSocket API CANNOT set the
+      //     X-Device-Token header, so a kiosk/babysitter passes it as ?t=<token>.
+      // SECURITY TRADEOFF: a token in a URL can leak via access logs / referrer,
+      // so the cookie path is preferred and this is the fallback for header-less
+      // WS clients only. We do NOT weaken verification: the ?t= token is folded
+      // onto a CLONED request's X-Device-Token header and run through the SAME
+      // resolveActor() (HMAC verify + device-revocation/household DB checks) as
+      // the normal header path — identical trust, just a different carrier. The
+      // original `request` is left untouched for the DO upgrade forward below.
+      const tokenParam = url.searchParams.get('t')
+      let authRequest = request
+      if (tokenParam && !request.headers.get('X-Device-Token')) {
+        const headers = new Headers(request.headers)
+        headers.set('X-Device-Token', tokenParam)
+        authRequest = new Request(request.url, { headers, method: request.method })
+      }
+      const actor = await resolveActor(env, authRequest)
+      // 401 before any upgrade when the credential is missing/invalid/expired.
       if (!actor) return new Response('Not signed in.', { status: 401 })
       if (!env.REALTIME_HUB) {
         // DO not deployed/eligible — tell the client to stick with polling.
