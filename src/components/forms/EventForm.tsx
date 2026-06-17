@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
@@ -54,6 +54,7 @@ export function EventForm({
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
+  const write = useWrite()
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -67,9 +68,10 @@ export function EventForm({
     setBusy(true)
     setErr(false)
     try {
-      await api('events', {
+      await write('events', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...fields } : fields,
+        affectedKeys: [['events'], ['board'], ['month']],
       })
       onSaved()
     } catch {

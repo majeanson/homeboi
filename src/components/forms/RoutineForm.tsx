@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
 import { CardDeckEditor } from '../CardDeckEditor'
 import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
@@ -54,6 +54,7 @@ export function RoutineForm({
   const [tod, setTod] = useState<RoutineTod | null>(initTod)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
+  const write = useWrite()
 
   function toggleMember(id: string) {
     setMemberIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
@@ -78,14 +79,16 @@ export function RoutineForm({
     setErr(false)
     try {
       if (editing) {
-        await api('routines', {
+        await write('routines', {
           method: 'PATCH',
           body: { routineId: value!.id, name: name.trim(), cards: payload, timeOfDay: tod ?? null },
+          affectedKeys: [['routines']],
         })
       } else {
-        await api('routines', {
+        await write('routines', {
           method: 'POST',
           body: { memberIds, name: name.trim(), cards: payload, timeOfDay: tod ?? undefined },
+          affectedKeys: [['routines']],
         })
         setName('')
         setCards([])

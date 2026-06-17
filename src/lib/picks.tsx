@@ -4,7 +4,7 @@
 // helpers stage / unstage a deal and derive the cashier Pick[] from the list —
 // no per-device localStorage store anymore.
 import { type QueryClient } from '@tanstack/react-query'
-import { api } from './api'
+import { writeWith } from './write'
 import { type Deal, type Pick } from './deals'
 import { normKey } from './cookable'
 
@@ -71,15 +71,17 @@ export function existingListId(qc: QueryClient, name: string): string | null {
 export async function stageDeal(qc: QueryClient, name: string, deal: Deal): Promise<void> {
   const existing = existingListId(qc, name)
   if (existing) {
-    await api('list', { method: 'PATCH', body: { id: existing, deal } }).catch(() => {})
+    await writeWith(qc, 'list', { method: 'PATCH', body: { id: existing, deal }, affectedKeys: [['board']] }).catch(
+      () => {},
+    )
   } else {
-    await api('list', { method: 'POST', body: { text: name, deal } }).catch(() => {})
+    await writeWith(qc, 'list', { method: 'POST', body: { text: name, deal }, affectedKeys: [['board']] }).catch(() => {})
   }
-  qc.invalidateQueries({ queryKey: ['board'] })
 }
 
 // Unstage: keep the grocery line, drop its deal (remove it from the cashier set).
 export async function unstageDeal(qc: QueryClient, itemId: string): Promise<void> {
-  await api('list', { method: 'PATCH', body: { id: itemId, deal: null } }).catch(() => {})
-  qc.invalidateQueries({ queryKey: ['board'] })
+  await writeWith(qc, 'list', { method: 'PATCH', body: { id: itemId, deal: null }, affectedKeys: [['board']] }).catch(
+    () => {},
+  )
 }

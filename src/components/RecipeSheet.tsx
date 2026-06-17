@@ -1,7 +1,8 @@
 import { Fragment, useMemo, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
+import { useWrite } from '../lib/write'
 import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor } from '../lib/recipes'
 import { wash, tintInk, edge } from '../lib/colors'
 import { formatDuration } from '../lib/duration'
@@ -40,8 +41,8 @@ export function RecipeSheet({
   onClose: () => void
 }) {
   const t = useT()
-  const qc = useQueryClient()
   const confirm = useConfirm()
+  const write = useWrite()
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onClose)
   const [added, setAdded] = useState(false)
@@ -147,9 +148,9 @@ export function RecipeSheet({
     if (!items.length) return
     setAdded(true)
     setListPrompt(null)
-    await api('recipe-to-list', { method: 'POST', body: { items } }).catch(() => setAdded(false))
-    qc.invalidateQueries({ queryKey: ['board'] })
-    qc.invalidateQueries({ queryKey: ['list'] })
+    await write('recipe-to-list', { method: 'POST', body: { items }, affectedKeys: [['board'], ['list']] }).catch(() =>
+      setAdded(false),
+    )
   }
 
   async function planOn(date: number) {
@@ -157,20 +158,18 @@ export function RecipeSheet({
     setPlanning(false)
     // Optimistic badge above; roll it back on failure so the sheet never claims
     // a meal the server doesn't have. Lands on the chosen slot (souper default).
-    await api('meals', {
+    await write('meals', {
       method: 'POST',
       body: { date, slot: planSlot, title: recipe.title, staples: [], recipeId: recipe.id },
+      affectedKeys: [['meals'], ['board']],
     }).catch(() => setPlannedDate(null))
-    qc.invalidateQueries({ queryKey: ['meals'] })
-    qc.invalidateQueries({ queryKey: ['board'] })
   }
 
   async function del() {
     // A recipe is a HEAVY object to lose by a stray tap — deliberate yes/no via
     // the in-app confirm dialog (not the platform confirm, which e2e can't see).
     if (!(await confirm({ message: t.recipes.deleteConfirm, confirmLabel: t.recipes.delete, tone: 'danger' }))) return
-    await api('recipes', { method: 'DELETE', body: { id: recipe.id } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: RECIPES_KEY })
+    await write('recipes', { method: 'DELETE', body: { id: recipe.id }, affectedKeys: [RECIPES_KEY] }).catch(() => {})
     onClose()
   }
 
@@ -435,7 +434,7 @@ export function RecipeSheet({
         <div className="recipe-modal__foot recipe-actions">
           {canCook && (
             <button type="button" className="btn btn--primary" onClick={() => onCook(factor)}>
-              {t.recipes.cook}
+              <InlineIcon name="cooking-pot-bold" /> {t.recipes.cook}
             </button>
           )}
           {recipe.ingredients.length > 0 && (

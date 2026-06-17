@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
 import { ColorPicker } from '../ColorPicker'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
@@ -67,6 +67,7 @@ export function ChoreForm({
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
+  const write = useWrite()
 
   function toggleRot(id: string) {
     setRotation((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]))
@@ -85,9 +86,10 @@ export function ChoreForm({
       leadSeconds: recur ? lead : null, // a standing (no-schedule) chore has no occurrence to remind about
     }
     try {
-      await api('chores', {
+      await write('chores', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...fields } : fields,
+        affectedKeys: [['chores'], ['board'], ['month']],
       })
       if (!value) {
         // Create: clear for the next one. Edit: leave the fields (the section
