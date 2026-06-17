@@ -14,16 +14,32 @@ interface Card {
 }
 
 const isNumber = (v: unknown): v is number => typeof v === 'number'
+const isStr = (v: unknown): v is string => typeof v === 'string'
 // The time-of-day cue ('morning'|'afternoon'|'evening'); anything else → null
 // (anytime). An ordering hint for the kid view, never a gate.
 const todOrNull = (v: unknown): string | null =>
   v === 'morning' || v === 'afternoon' || v === 'evening' ? v : null
 
+// Per-card parent-voice narration clips (feature #17 A, migration 0040). A
+// PARALLEL array to cards: cardsNarration[i] is the R2 audio key for card i, or
+// '' when that card has no clip (→ on-device TTS). We keep it the SAME LENGTH as
+// the deck so the kid view can index it positionally — pad/trim to `count` and
+// validate each entry is an R2-key-shaped token ('' otherwise) so a client can't
+// stuff junk into the column. Defensive on read: a bad/short row reads as all-''.
+const isKeyish = (v: unknown): v is string => isStr(v) && /^[A-Za-z0-9_-]{1,64}$/.test(v)
+function normalizeNarration(v: unknown, count: number): string[] {
+  const src = parseJsonArray<unknown>(typeof v === 'string' ? v : JSON.stringify(v ?? []))
+  const out: string[] = []
+  for (let i = 0; i < count; i++) out.push(isKeyish(src[i]) ? (src[i] as string) : '')
+  return out
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = dayStart(new Date(Date.now()))
 
   const routines = await ctx.env.DB.prepare(
-    `SELECT r.id, r.member_id, r.name, r.cards_json, r.time_of_day, m.display_name AS member_name,
+    `SELECT r.id, r.member_id, r.name, r.cards_json, r.cards_narration_json, r.time_of_day,
+            m.display_name AS member_name,
             m.colour AS color, m.avatar_kind AS avatar_kind, m.avatar_ref AS avatar_photo
        FROM routines r LEFT JOIN members m ON m.id = r.member_id
       WHERE r.household_id = ? ORDER BY r.created_at`,
@@ -34,6 +50,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       member_id: string
       name: string
       cards_json: string
+      cards_narration_json: string | null
       time_of_day: string | null
       member_name: string | null
       color: string | null
@@ -50,17 +67,22 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .all<{ routine_id: string; done_idx_json: string }>()
   const doneByRoutine = new Map(runs.results.map((r) => [r.routine_id, r.done_idx_json]))
 
-  const out = routines.results.map((r) => ({
-    id: r.id,
-    memberId: r.member_id,
-    memberName: r.member_name,
-    color: r.color,
-    avatarPhoto: r.avatar_kind === 'photo' ? r.avatar_photo : null,
-    name: r.name,
-    timeOfDay: todOrNull(r.time_of_day),
-    cards: parseJsonArray<Card>(r.cards_json),
-    doneIdx: parseJsonArray<number>(doneByRoutine.get(r.id), isNumber),
-  }))
+  const out = routines.results.map((r) => {
+    const cards = parseJsonArray<Card>(r.cards_json)
+    return {
+      id: r.id,
+      memberId: r.member_id,
+      memberName: r.member_name,
+      color: r.color,
+      avatarPhoto: r.avatar_kind === 'photo' ? r.avatar_photo : null,
+      name: r.name,
+      timeOfDay: todOrNull(r.time_of_day),
+      cards,
+      // Parallel parent-voice clips, one R2 key per card ('' = none → TTS).
+      cardsNarration: normalizeNarration(r.cards_narration_json, cards.length),
+      doneIdx: parseJsonArray<number>(doneByRoutine.get(r.id), isNumber),
+    }
+  })
   return ok({ routines: out, date: today })
 })
 
@@ -70,6 +92,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
     memberIds?: string[]
     name?: string
     cards?: Card[]
+    // Parallel parent-voice clip keys (feature #17 A) — same length as cards.
+    cardsNarration?: unknown
     timeOfDay?: string
   }>(ctx.request)
   // One routine can be assigned to several toddlers at once (e.g. the SAME
@@ -84,14 +108,16 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const cards = (body.cards ?? []).slice(0, 12)
   const name = body.name.trim()
   const cardsJson = JSON.stringify(cards)
+  // Keep the clip array parallel + same-length as the deck (feature #17 A).
+  const narrationJson = JSON.stringify(normalizeNarration(body.cardsNarration, cards.length))
   const tod = todOrNull(body.timeOfDay)
   const ts = nowSec()
   const ids = memberIds.map(() => newId())
   await ctx.env.DB.batch(
     memberIds.map((memberId, i) =>
       ctx.env.DB.prepare(
-        'INSERT INTO routines (id, household_id, member_id, name, cards_json, time_of_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      ).bind(ids[i], actor.householdId, memberId, name, cardsJson, tod, ts),
+        'INSERT INTO routines (id, household_id, member_id, name, cards_json, cards_narration_json, time_of_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      ).bind(ids[i], actor.householdId, memberId, name, cardsJson, narrationJson, tod, ts),
     ),
   )
   return ok({ ids })
@@ -106,14 +132,20 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     done?: boolean
     name?: string
     cards?: Card[]
+    // Parallel parent-voice clip keys (feature #17 A) — same length as cards.
+    cardsNarration?: unknown
     timeOfDay?: string | null
   }>(ctx.request)
   if (!body?.routineId) return badRequest('routineId requis.')
 
-  // Ownership check: the routine must belong to this household.
-  const owns = await ctx.env.DB.prepare('SELECT id FROM routines WHERE id = ? AND household_id = ?')
+  // Ownership check: the routine must belong to this household. We also read the
+  // current deck + clip array so a narration-only edit (or a deck edit that
+  // doesn't resend clips) can keep them aligned by position.
+  const owns = await ctx.env.DB.prepare(
+    'SELECT cards_json, cards_narration_json FROM routines WHERE id = ? AND household_id = ?',
+  )
     .bind(body.routineId, actor.householdId)
-    .first<{ id: string }>()
+    .first<{ cards_json: string; cards_narration_json: string | null }>()
   if (!owns) return notFound('Routine introuvable.')
 
   // Edit the routine itself (name / card deck / time-of-day cue) — a settings
@@ -123,17 +155,34 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // too (only member admin + device pairing stay operator-only) — the toddler tap
   // path below is unaffected.
   if (body.cardIdx === undefined) {
-    const editsContent = 'timeOfDay' in body || body.name !== undefined || body.cards !== undefined
-    if (!editsContent) return badRequest('cardIdx, name, cards ou timeOfDay requis.')
+    const editsContent =
+      'timeOfDay' in body ||
+      body.name !== undefined ||
+      body.cards !== undefined ||
+      body.cardsNarration !== undefined
+    if (!editsContent) return badRequest('cardIdx, name, cards, cardsNarration ou timeOfDay requis.')
     const sets: string[] = []
     const binds: unknown[] = []
     if (typeof body.name === 'string' && body.name.trim()) {
       sets.push('name = ?')
       binds.push(body.name.trim())
     }
-    if (Array.isArray(body.cards)) {
+    // The deck whose length governs the parallel clip array: the freshly sent
+    // cards when editing them, else the routine's current deck.
+    const newCards = Array.isArray(body.cards) ? body.cards.slice(0, 12) : null
+    const deckLen = (newCards ?? parseJsonArray<Card>(owns.cards_json)).length
+    if (newCards) {
       sets.push('cards_json = ?')
-      binds.push(JSON.stringify(body.cards.slice(0, 12)))
+      binds.push(JSON.stringify(newCards))
+    }
+    // Clips: a fresh array re-aligns to the deck; otherwise re-pad the existing
+    // one to the (possibly new) deck length so a card add/remove never desyncs.
+    if (body.cardsNarration !== undefined) {
+      sets.push('cards_narration_json = ?')
+      binds.push(JSON.stringify(normalizeNarration(body.cardsNarration, deckLen)))
+    } else if (newCards) {
+      sets.push('cards_narration_json = ?')
+      binds.push(JSON.stringify(normalizeNarration(owns.cards_narration_json, deckLen)))
     }
     if ('timeOfDay' in body) {
       sets.push('time_of_day = ?')

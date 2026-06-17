@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useCalm } from '../lib/calm'
 import { useProfile } from '../lib/profile'
-import { useSpeak } from '../lib/speak'
+import { useSpeak, playNarration } from '../lib/speak'
 import { Icon } from '../components/Icon'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { tintInk, wash } from '../lib/colors'
@@ -37,6 +37,9 @@ interface Routine {
   name: string
   timeOfDay: string | null
   cards: Card[]
+  // Parallel parent-voice clip keys (feature #17 A), one per card ('' = none →
+  // on-device TTS). Optional: older payloads predate it.
+  cardsNarration?: string[]
   doneIdx: number[]
 }
 type RoutinesData = { routines: Routine[] }
@@ -78,7 +81,10 @@ export function KidView() {
   // then does it. (Separated from finishing it, which is the start/timer flow.)
   function readAloud(idx: number) {
     if (!picked || idx < 0 || idx >= picked.cards.length) return
-    speak(picked.cards[idx].narration ?? picked.cards[idx].label)
+    // Prefer the parent's recorded clip for this card (feature #17 A); fall back
+    // to on-device TTS on any failure / when no clip was recorded.
+    const text = picked.cards[idx].narration ?? picked.cards[idx].label
+    playNarration(picked.cardsNarration?.[idx], text, speak)
   }
 
   // One continuous run, not a per-step start/stop: the kid taps ▶ ONCE to begin
@@ -271,7 +277,7 @@ export function KidView() {
                     key={i}
                     type="button"
                     className="tdl-recap__step"
-                    onClick={() => speak(c.narration ?? c.label)}
+                    onClick={() => playNarration(picked.cardsNarration?.[i], c.narration ?? c.label, speak)}
                     aria-label={c.label}
                   >
                     <span aria-hidden="true">{c.icon || '○'}</span>

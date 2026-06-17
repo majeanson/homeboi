@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useT } from '../i18n'
-import { useSpeak } from '../lib/speak'
+import { useSpeak, playNarration } from '../lib/speak'
 
 // The toddler primitive: a grid of big, picture-first, tappable tiles that read
 // themselves aloud on tap. Touch targets are huge (NFR-KID-1), meaning carried
@@ -21,6 +21,10 @@ export interface Tile {
   label: string
   sub?: string
   narration?: string
+  // A parent-voice clip R2 key (feature #17 A). When set, a speak-only tap plays
+  // the clip and FALLS BACK to TTS (narration ?? label) on any error. Empty/unset
+  // → straight TTS (the original contract, and the no-R2 path).
+  audioKey?: string | null
   done?: boolean
   color?: string // member colour (avatar_ref) — whose thing this is
   onTap?: () => void
@@ -53,8 +57,9 @@ export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
   function tap(tile: Tile) {
     const said = tile.narration ?? tile.label
     if (!tile.onTap) {
-      // Nothing to commit — just read it (the original contract).
-      speak(said)
+      // Nothing to commit — just read it (the original contract). Prefer the
+      // parent-voice clip when there is one; TTS otherwise / on any failure.
+      playNarration(tile.audioKey, said, speak)
       return
     }
     if (armedKey === tile.key) {
