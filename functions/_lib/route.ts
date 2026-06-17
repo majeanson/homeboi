@@ -14,6 +14,7 @@
 import type { Env, Ctx } from './env'
 import { type Actor, requireActor } from './household'
 import { serverError } from './json'
+import { withIdempotency } from './idempotency'
 
 // A handler that has already cleared auth: it receives the resolved actor
 // alongside the usual context, and returns (or resolves to) a Response.
@@ -27,6 +28,14 @@ export function authed(handler: ActorHandler, scope?: 'operator'): PagesFunction
     try {
       const actor = await requireActor(ctx.env, ctx.request, scope)
       if (actor instanceof Response) return actor
+      // Offline-queue dedup: a replayed write carries an Idempotency-Key, so the
+      // same queued action never double-applies. Online writes send no key and
+      // run straight through. GET/HEAD are never queued. See idempotency.ts.
+      const method = ctx.request.method
+      const idemKey = ctx.request.headers.get('Idempotency-Key')
+      if (idemKey && method !== 'GET' && method !== 'HEAD') {
+        return await withIdempotency(ctx.env, actor.householdId, idemKey, () => handler(ctx, actor))
+      }
       return await handler(ctx, actor)
     } catch (err) {
       const { method, url } = ctx.request
