@@ -228,6 +228,22 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
+  // Free any R2 voice clips this routine's cards pointed at before the row is gone
+  // (best-effort, mirrors the recipe step-image cleanup; a leaked blob is harmless
+  // but R2 stays tidy). Reads the narration keys first; skips if R2 is unbound.
+  if (ctx.env.PHOTOS) {
+    const owns = await ctx.env.DB.prepare(
+      'SELECT cards_json, cards_narration_json FROM routines WHERE id = ? AND household_id = ?',
+    )
+      .bind(body.id, actor.householdId)
+      .first<{ cards_json: string; cards_narration_json: string | null }>()
+    if (owns) {
+      const cards = parseJsonArray<Card>(owns.cards_json)
+      for (const key of normalizeNarration(owns.cards_narration_json, cards.length)) {
+        if (key) await ctx.env.PHOTOS.delete(key).catch(() => {})
+      }
+    }
+  }
   // routine_runs.routine_id FK-references this routine, so D1 blocks the delete
   // until the daily runs are gone. Clear them first in one transaction. Runs are
   // scoped through the routine's own household guard, so a wrong household can't
