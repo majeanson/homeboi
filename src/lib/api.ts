@@ -44,7 +44,10 @@ function readProfile(): string | null {
   }
 }
 
-type Options = { method?: string; body?: unknown }
+// `idempotencyKey` is set only by the offline outbox when REPLAYING a queued
+// write — the server (authed → withIdempotency) dedups on it so a replay never
+// double-applies. Online calls omit it and run straight through.
+type Options = { method?: string; body?: unknown; idempotencyKey?: string }
 
 export async function api<T = unknown>(path: string, opts: Options = {}): Promise<T> {
   const method = opts.method ?? 'GET'
@@ -76,6 +79,9 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
     const csrf = readCsrfCookie()
     if (csrf) headers['X-CSRF-Token'] = csrf
   }
+
+  // Replay dedup key (offline outbox only) — see Options.idempotencyKey.
+  if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey
 
   const res = await fetch(`/api/${path.replace(/^\/+/, '')}`, {
     method,

@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useOnline } from '../lib/online'
+import { useOutboxCount } from '../lib/write'
 import { useT, useLang } from '../i18n'
 import { InlineIcon } from './Icon'
 
@@ -13,6 +14,7 @@ export function OfflineBanner() {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
+  const pending = useOutboxCount()
   if (online) return null
 
   let newest = 0
@@ -31,6 +33,7 @@ export function OfflineBanner() {
   return (
     <div className="offline-bar mono" role="status" aria-live="polite">
       <InlineIcon name="wifi-high-bold" /> {t.offline.banner}
+      {pending > 0 && <span className="offline-bar__stamp"> · {pending} {t.offline.pending}</span>}
       {stamp && (
         <span className="offline-bar__stamp">
           {' '}

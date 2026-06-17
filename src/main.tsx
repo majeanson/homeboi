@@ -21,6 +21,7 @@ import { TourOverlay } from './components/tour/TourOverlay'
 import { registerSw } from './lib/registerSw'
 import { trackVisualViewport } from './lib/viewportVars'
 import { restorePersistedCache, startPersistingCache, clearPersistedCache } from './lib/persist'
+import { startOutbox, clearOutbox } from './lib/outbox'
 import { onAuthLost } from './lib/authEvents'
 import './styles.css'
 
@@ -248,10 +249,16 @@ trackVisualViewport()
 // board/lists/recipes, then keep snapshotting. A 401 anywhere wipes it, so a
 // revoked device leaves no household data behind. The await is a quick IndexedDB
 // read (and a no-op when absent), so first paint isn't meaningfully delayed.
-onAuthLost(clearPersistedCache)
+// A 401 also drops any queued offline writes — a revoked device's writes would
+// never land. startOutbox replays anything left from a previous session.
+onAuthLost(() => {
+  clearPersistedCache()
+  void clearOutbox()
+})
 void (async () => {
   await restorePersistedCache(queryClient)
   startPersistingCache(queryClient)
+  startOutbox(queryClient)
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <Root />
