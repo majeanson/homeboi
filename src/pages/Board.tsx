@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
-import { HelpDot } from '../components/HelpDot'
+import { SectionAvatar } from '../components/SectionAvatar'
 import { SectionIntro } from '../components/SectionIntro'
 import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
@@ -24,6 +24,7 @@ import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } f
 import { formatDay, formatTime } from '../lib/format'
 import { todayLocalDay } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
+import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, SLOT_RANK, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
@@ -476,21 +477,22 @@ export function Board() {
           bottom-right here just like every other tab. */}
       <div className="app-head">
         <div>
-          <div className="app-head__tagrow">
-            <span className="hand-tag">{t.board.today}</span>
-            <span className="app-head__date mono">{formatDay(Math.floor(Date.now() / 1000), lang)}</span>
-          </div>
           <div className="app-head__titlerow">
             <h1 className="greet">{me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]}</h1>
-            <HelpDot card="board" />
           </div>
+          <span className="app-head__date mono">{formatDay(Math.floor(Date.now() / 1000), lang)}</span>
         </div>
         {/* Time-of-day icon sits in the top-right corner like every other tab's
             avatar — the view toggle + profile chip drop to their own row below so
-            the avatar reads as the section's identity, not part of the filter. */}
-        <div className="avatar" style={{ background: 'var(--marigold-wash)' }}>
-          <Icon name={TOD_ICON[tod]} size={26} color="var(--marigold-deep)" />
-        </div>
+            the avatar reads as the section's identity, not part of the filter.
+            In tutorial mode the disc itself deep-links to the Guide (folds the
+            old "?" help dot into the icon). */}
+        <SectionAvatar
+          icon={TOD_ICON[tod]}
+          iconColor="var(--marigold-deep)"
+          background="var(--marigold-wash)"
+          card="board"
+        />
       </div>
 
       {/* Board controls: who's at this phone + which of the four views. Kept off
@@ -504,9 +506,16 @@ export function Board() {
             aria-label={t.profile.who}
           >
             {me ? (
-              <span className="profile-chip__av" style={{ background: me.colour }}>
-                {(me.display_name[0] ?? '?').toUpperCase()}
-              </span>
+              (() => {
+                // Show the real photo (small) when the member has one, like the
+                // kiosk member switcher — falls back to the coloured initial.
+                const photo = me.avatar_kind === 'photo' && me.avatar_ref ? imgUrl(me.avatar_ref) : null
+                return (
+                  <span className="profile-chip__av" style={{ background: photo ? undefined : me.colour }}>
+                    {photo ? <img src={photo} alt="" /> : (me.display_name[0] ?? '?').toUpperCase()}
+                  </span>
+                )
+              })()
             ) : (
               <span className="profile-chip__ask mono">{t.profile.askShort}</span>
             )}
@@ -524,19 +533,9 @@ export function Board() {
         <MemberSwitcher members={data.members} t={t} />
       )}
 
-      {/* Focus stamp: when a face is picked the board is narrowed to that person
-          (plus shared Maisonnée items). Say so, and offer a one-tap way back to
-          everyone — so a filtered board never feels like missing data. */}
-      {me && focusing && (
-        <div className="board-focus mono">
-          <span>
-            {t.board.focusedOn} <b style={{ color: me.colour }}>{me.display_name}</b>
-          </span>
-          <button type="button" className="board-focus__all" onClick={() => setMemberId(null)}>
-            {t.board.showAll}
-          </button>
-        </div>
-      )}
+      {/* No "Vue de <nom>" stamp: the profile chip / member switcher above
+          already shows whose view this is (the selected face), so the label was
+          redundant. Picking the face again (or Maisonnée) clears the filter. */}
 
       {/* A fresh household (nobody added yet): one gentle pointer to the next
           step instead of a wall of empty "—" sections. */}

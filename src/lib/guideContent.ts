@@ -126,6 +126,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Besoin d’aide : touche l’icône', en: 'Need help: tap the icon' },
+        detail: {
+          fr: 'En haut à droite de chaque section, la pastille colorée (le soleil, la carotte, etc.) porte un petit « ? » : touche-la pour ouvrir l’aide de cette section, ici dans le Guide.',
+          en: 'Top-right of every section, the coloured disc (the sun, the carrot, etc.) carries a small “?”: tap it to open that section’s help, right here in the Guide.',
+        },
+        why: {
+          fr: 'Une seule cible calme au lieu d’un bouton d’aide en plus — et elle disparaît quand tu connais l’app (Réglages ▸ Affichage).',
+          en: 'One calm target instead of an extra help button — and it disappears once you know the app (Settings ▸ Display).',
+        },
+      },
+      {
         label: { fr: 'Rejouer la visite', en: 'Replay the tour' },
         detail: {
           fr: 'Le petit tour interactif démarre tout seul la première fois. Pour le revoir, touche le bouton ci-dessous : il t’amène au babillard et te guide.',

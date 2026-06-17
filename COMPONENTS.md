@@ -64,6 +64,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | --- | --- | --- |
 | **Loading / PairPrompt** | `components/Fallback.tsx` | Shared page states (PairPrompt is surface-aware). 15+ call sites. |
 | **HelpDot** | `components/HelpDot.tsx` | "?" → Guide; gated by tutorial mode + parent audience. |
+| **SectionAvatar** | `components/SectionAvatar.tsx` | Themed tab's top-right identity disc; in tutorial mode the disc itself deep-links to the Guide (folds HelpDot into the icon, corner "?" pip). Board/Kitchen/Routines headers. |
 | **SectionIntro** | `components/SectionIntro.tsx` | First-visit welcome card (mirrors Guide). |
 | **TopBar** | `components/TopBar.tsx` | Minimal auth/home chrome (brand + day/night + FR/EN). |
 | **FormScene** | `components/FormScene.tsx` | Full-screen shell for operator add-forms. |

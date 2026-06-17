@@ -17,6 +17,14 @@
   color: #fff;
   font-weight: 700;
   font-family: var(--display);
+  overflow: hidden;
+}
+/* Show the member's real photo (small) on the mobile chip, like the kiosk
+   switcher — falls back to the coloured initial when there's no photo. */
+.profile-chip__av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .profile-chip__ask {
   padding: 0.3rem 0.6rem;

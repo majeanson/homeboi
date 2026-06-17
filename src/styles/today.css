@@ -59,6 +59,8 @@
 .app-head__date {
   color: var(--ink-soft);
   font-size: 0.9rem;
+  display: block;
+  margin-top: 3px;
 }
 /* The contextual help "?" beside a section title (HelpDot). Quiet by default,
    a soft ring on hover/focus — discoverable without shouting (calm). Hidden in
@@ -190,6 +192,44 @@
   font-weight: 700;
   font-size: 20px;
   box-shadow: var(--shadow-sm);
+}
+/* In tutorial mode the section disc IS the help link (the old "?" HelpDot folded
+   into the icon): same disc, now tappable, with a small "?" pip in the corner.
+   A toddler / expert household never sees it (SectionAvatar returns a plain div). */
+.avatar--help {
+  position: relative;
+  cursor: pointer;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast, 0.15s) ease, box-shadow var(--dur-fast, 0.15s) ease;
+}
+/* Beat photos.css `.avatar { overflow: hidden }` (same-specificity tie would
+   otherwise hinge on @import order — never reorder styles.css) so the corner pip
+   isn't clipped by the round disc. */
+.avatar.avatar--help {
+  overflow: visible;
+}
+.avatar--help:hover,
+.avatar--help:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.avatar__help {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  color: var(--ink-soft);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1;
 }
 
 /* "Up next" — the one thing surfaced, tinted to its category. */

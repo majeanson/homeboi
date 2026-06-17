@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon, InlineIcon } from '../components/Icon'
-import { HelpDot } from '../components/HelpDot'
+import { SectionAvatar } from '../components/SectionAvatar'
 import { SectionIntro } from '../components/SectionIntro'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
@@ -333,15 +333,16 @@ export function Liste() {
     <main className="today-feed">
       <div className="app-head">
         <div>
-          <div className="hand-tag">{t.capture.add}</div>
           <div className="app-head__titlerow">
             <h1 className="greet">{t.nav.list}</h1>
-            <HelpDot card="liste" />
           </div>
         </div>
-        <div className="avatar" style={{ background: 'var(--marigold-wash)' }}>
-          <Icon name={CATS.list.icon} size={26} color={CATS.list.deep} />
-        </div>
+        <SectionAvatar
+          icon={CATS.list.icon}
+          iconColor={CATS.list.deep}
+          background="var(--marigold-wash)"
+          card="liste"
+        />
       </div>
 
       <SectionIntro card="liste" />

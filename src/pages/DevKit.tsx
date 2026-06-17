@@ -22,6 +22,7 @@ import { EmptyState } from '../components/EmptyState'
 import { StatusMessage } from '../components/StatusMessage'
 import { Chip, ChipGroup } from '../components/Chip'
 import { SectionHeader } from '../components/SectionHeader'
+import { SectionAvatar } from '../components/SectionAvatar'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
 import { OperatorSection } from '../components/operator/OperatorSection'
@@ -385,6 +386,32 @@ export function DevKit() {
           </Demo>
           <Demo label="icon + title">
             <SectionHeader icon="carrot-bold" iconColor="var(--marigold-deep)" title="Garde-manger" />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'SectionAvatar',
+      file: 'components/SectionAvatar.tsx',
+      kw: 'avatar section entête header icône aide help disc pastille',
+      render: () => (
+        <>
+          <Demo label="section disc — help link in tutorial mode (the corner ? shows only for a parent with tutorial on)">
+            <SectionAvatar
+              icon="carrot-bold"
+              iconColor="var(--terracotta-deep)"
+              background="var(--terracotta-wash)"
+              card="kitchen"
+            />
+          </Demo>
+          <Demo label="another section's tint">
+            <SectionAvatar
+              icon="sun-bold"
+              iconColor="var(--marigold-deep)"
+              background="var(--marigold-wash)"
+              card="board"
+            />
           </Demo>
         </>
       ),

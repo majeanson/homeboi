@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -6,8 +5,8 @@ import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { ROUTINES_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
-import { Icon, InlineIcon } from '../components/Icon'
-import { HelpDot } from '../components/HelpDot'
+import { InlineIcon } from '../components/Icon'
+import { SectionAvatar } from '../components/SectionAvatar'
 import { SectionIntro } from '../components/SectionIntro'
 import { imgUrl } from '../lib/image'
 import { CATS } from '../lib/cats'
@@ -55,15 +54,16 @@ function RoutinesParent() {
     <main className="today-feed routines-parent">
       <div className="app-head">
         <div>
-          <div className="hand-tag">{t.routines.tag}</div>
           <div className="app-head__titlerow">
             <h1 className="greet">{t.nav.routines}</h1>
-            <HelpDot card="routines" />
           </div>
         </div>
-        <div className="avatar" style={{ background: CATS.routine.wash }}>
-          <Icon name={CATS.routine.icon} size={26} color={CATS.routine.deep} />
-        </div>
+        <SectionAvatar
+          icon={CATS.routine.icon}
+          iconColor={CATS.routine.deep}
+          background={CATS.routine.wash}
+          card="routines"
+        />
       </div>
 
       <SectionIntro card="routines" />
@@ -124,14 +124,10 @@ function RoutinesParent() {
         </div>
       )}
 
-      {/* Creating a routine is the ＋ FAB's job on this tab (the contextual Add
-          sheet opens straight on the routine builder); the settings link
-          deep-links to the matching tab for edits/deletes. */}
-      <p className="routines-parent__edit">
-        <Link to="/settings?tab=routines" className="btn btn--ghost mono">
-          {t.audience.editInSettings}
-        </Link>
-      </p>
+      {/* Creating AND editing a routine both live on the ＋ FAB now (the
+          contextual Add sheet opens straight on the routine builder), so the old
+          "Modifier dans les réglages" link would just be a second door to the
+          same place — removed. */}
     </main>
   )
 }

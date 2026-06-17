@@ -120,13 +120,6 @@
   color: var(--ink-soft);
   font-size: 0.85rem;
 }
-.routines-parent__edit {
-  margin-top: 1.5rem;
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
 .kitchen__head-actions {
   display: flex;
   gap: 0.5rem;
