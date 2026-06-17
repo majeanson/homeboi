@@ -3,6 +3,7 @@ import { useWrite } from '../lib/write'
 import { useT } from '../i18n'
 import { pictoFor } from '../lib/picto'
 import { Icon, InlineIcon } from '../components/Icon'
+import { SceneHead } from '../components/SceneHead'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { useQuickItems, type QuickItem } from '../lib/quickItems'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
@@ -63,18 +64,17 @@ export function QuickAddPage() {
 
   return (
     <div className="scene" aria-label={t.list.quickAddTitle}>
-      <div className="scene__head">
-        <div>
-          <div className="hand-tag">{t.list.quickAddTitle}</div>
-          <h2 className="pm-sheet__title">
+      <SceneHead
+        title={
+          <>
             <InlineIcon name="lightning-bold" color="var(--marigold-deep)" /> {t.list.quickAdd}
             {added.size > 0 && <span className="qa__count"> · {t.list.addedN(added.size)}</span>}
-          </h2>
-        </div>
-        <button type="button" className="btn btn--ghost mono" onClick={close} aria-label={t.shop.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
-      </div>
+          </>
+        }
+        card="liste"
+        onClose={close}
+        closeLabel={t.shop.close}
+      />
 
       <div className="scene__body qa">
         <div className="qa__search">

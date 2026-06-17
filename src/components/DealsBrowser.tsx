@@ -6,6 +6,7 @@ import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { Icon, InlineIcon } from './Icon'
+import { SceneHead } from './SceneHead'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { existingListId, stageDeal } from '../lib/picks'
 import { useEscapeKey } from '../lib/sceneNav'
@@ -132,15 +133,13 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="scene" aria-label={t.shop.browseTitle}>
-      <div className="scene__head">
-        <div>
-          <div className="hand-tag">{t.shop.browseTitle}</div>
-          <h2 className="pm-sheet__title">{t.shop.browseHint}</h2>
-        </div>
-        <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
-      </div>
+      <SceneHead
+        title={t.shop.browseTitle}
+        subtitle={t.shop.browseHint}
+        card="deals"
+        onClose={onClose}
+        closeLabel={t.shop.close}
+      />
 
       <div className="scene__body">
 

@@ -7,6 +7,7 @@ import { live } from '../lib/query'
 import { useT } from '../i18n'
 import { Loading } from '../components/Fallback'
 import { Icon, InlineIcon } from '../components/Icon'
+import { SceneHead } from '../components/SceneHead'
 import { parseDeal, parseTerms, unstageDeal, type ListItem } from '../lib/picks'
 import { money } from '../lib/deals'
 import { BOARD_KEY } from '../lib/queryKeys'
@@ -98,15 +99,7 @@ export function ListEditPage() {
 
   return (
     <div className="scene" aria-label={t.list.editTitle}>
-      <div className="scene__head">
-        <div>
-          <div className="hand-tag">{t.list.editTitle}</div>
-          <h2 className="pm-sheet__title">{item.text}</h2>
-        </div>
-        <button type="button" className="btn btn--ghost mono" onClick={close} aria-label={t.shop.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
-      </div>
+      <SceneHead title={t.list.editTitle} subtitle={item.text} onClose={close} closeLabel={t.shop.close} />
 
       <div className="scene__body">
         <div className="li-edit">

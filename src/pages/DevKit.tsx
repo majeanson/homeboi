@@ -24,6 +24,7 @@ import { Chip, ChipGroup } from '../components/Chip'
 import { SectionHeader } from '../components/SectionHeader'
 import { SectionAvatar } from '../components/SectionAvatar'
 import { HubHead } from '../components/HubHead'
+import { SceneHead } from '../components/SceneHead'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
 import { OperatorSection } from '../components/operator/OperatorSection'
@@ -387,6 +388,27 @@ export function DevKit() {
           </Demo>
           <Demo label="icon + title">
             <SectionHeader icon="carrot-bold" iconColor="var(--marigold-deep)" title="Garde-manger" />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'SceneHead',
+      file: 'components/SceneHead.tsx',
+      kw: 'scene entête header titre title close fermer aide help plein écran',
+      render: () => (
+        <>
+          <Demo label="title + subtitle + help ? + close (the ? shows for a parent in tutorial mode)">
+            <SceneHead
+              title="Preuve de prix"
+              subtitle="beurre d'arachide Kraft 1 kg"
+              card="cashier"
+              onClose={() => {}}
+            />
+          </Demo>
+          <Demo label="title + leading glyph, no help">
+            <SceneHead title="Nouvel événement" icon="calendar-dots-bold" onClose={() => {}} />
           </Demo>
         </>
       ),

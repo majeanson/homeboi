@@ -26,15 +26,6 @@
      + avatar) drops below the greeting instead of forcing horizontal overflow. */
   flex-wrap: wrap;
 }
-.hand-tag {
-  font-family: var(--font-hand);
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--terracotta-deep);
-  transform: rotate(-3deg);
-  display: inline-block;
-  margin-bottom: -2px;
-}
 .greet {
   font-family: var(--display);
   font-weight: 800;

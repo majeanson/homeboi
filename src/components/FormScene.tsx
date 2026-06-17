@@ -2,10 +2,10 @@ import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Navigate } from 'react-router-dom'
 import { api } from '../lib/api'
-import { useT } from '../i18n'
 import { useAuth } from '../lib/auth'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
-import { Icon, InlineIcon, type IconName } from './Icon'
+import { type IconName } from './Icon'
+import { SceneHead } from './SceneHead'
 
 // Shared shell for the operator add-forms (event / chore / routine). These used
 // to be tall forms inside the ＋ bottom-sheet, where a multi-field form strands
@@ -37,7 +37,6 @@ export function FormScene({
   // Render-prop so the page can wire the form's onSaved (invalidate + close).
   children: (members: FormMember[], close: () => void) => ReactNode
 }) {
-  const t = useT()
   const { signedIn, loading } = useAuth()
   const close = useSceneClose(fallback)
   useEscapeKey(close)
@@ -54,14 +53,7 @@ export function FormScene({
   const members = data?.members ?? []
   return (
     <div className="scene" aria-label={title}>
-      <div className="scene__head">
-        <h2 className="pm-sheet__title">
-          <InlineIcon name={icon} /> {title}
-        </h2>
-        <button type="button" className="btn btn--ghost mono" onClick={close} aria-label={t.common.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
-      </div>
+      <SceneHead title={title} icon={icon} onClose={close} />
       <div className="scene__body">{children(members, close)}</div>
     </div>
   )

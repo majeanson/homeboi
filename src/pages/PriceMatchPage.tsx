@@ -5,7 +5,7 @@ import { api, isStatus } from '../lib/api'
 import { live } from '../lib/query'
 import { useT } from '../i18n'
 import { Loading } from '../components/Fallback'
-import { Icon } from '../components/Icon'
+import { SceneHead } from '../components/SceneHead'
 import { FlyerViewer } from '../components/FlyerViewer'
 import { DealCard } from '../components/DealCard'
 import { type Deal } from '../lib/deals'
@@ -101,15 +101,7 @@ export function PriceMatchPage() {
 
   return (
     <div className="scene" aria-label={t.shop.proofTitle}>
-      <div className="scene__head">
-        <div>
-          <div className="hand-tag">{t.shop.proofTitle}</div>
-          <h2 className="pm-sheet__title">{query}</h2>
-        </div>
-        <button type="button" className="btn btn--ghost mono" onClick={close} aria-label={t.shop.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
-      </div>
+      <SceneHead title={t.shop.proofTitle} subtitle={query} card="cashier" onClose={close} closeLabel={t.shop.close} />
 
       <div className="scene__body">
         {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}

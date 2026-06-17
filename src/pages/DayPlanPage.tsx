@@ -12,6 +12,7 @@ import { addLocalDays } from '../lib/localDay'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
+import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
@@ -346,12 +347,7 @@ export function DayPlanPage() {
 
   return (
     <div className="scene" aria-label={title}>
-      <div className="scene__head">
-        <h2 className="pm-sheet__title">{title}</h2>
-        <button type="button" className="btn btn--ghost mono" onClick={close} aria-label={t.common.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
-      </div>
+      <SceneHead title={title} card="board" onClose={close} closeLabel={t.common.close} />
       <div className="scene__body">
         <DayEditor
           date={date}

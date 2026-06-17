@@ -116,7 +116,6 @@ export function Operator() {
     <main className="operator">
       <div className="operator__head">
         <div>
-          <div className="hand-tag">{t.appName}</div>
           <h1>{t.operator.title}</h1>
         </div>
         <div className="operator__meta mono">
