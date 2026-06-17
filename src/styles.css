@@ -12,6 +12,8 @@
 @import './styles/ghost.css';
 @import './styles/photos.css';
 @import './styles/board.css';
+/* Ambient screensaver — after board.css/photos.css so `.ambient .photo-frame` wins. */
+@import './styles/ambient.css';
 @import './styles/profile.css';
 @import './styles/misc.css';
 @import './styles/recipes.css';

@@ -114,8 +114,12 @@ export function IdleDebugSection() {
         </div>
       </div>
 
-      {/* Force the two moments without waiting for the timer at all. */}
+      {/* Force the moments without waiting for the timer at all. */}
       <div className="operator__debug-actions">
+        <button type="button" className="btn btn--ghost" onClick={() => forceIdle('screensaver')}>
+          <Icon name="image-square-bold" size={18} />
+          {t.operator.debugForceSaver}
+        </button>
         <button type="button" className="btn btn--ghost" onClick={() => forceIdle('warn')} disabled={!memberId}>
           <Icon name="hourglass-high-bold" size={18} />
           {t.operator.debugForceWarn}

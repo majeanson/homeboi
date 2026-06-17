@@ -13,7 +13,7 @@
 
 1. **Day-part ambient theming** [S] — the board's palette drifts dawn→day→dusk→night across the day (beyond the binary day/night theme), so the kiosk feels alive across the room. *(reuse: `lib/timeofday`, theme vars.)*
 2. **"Now & Next" focus mode** [M] — when the kiosk is idle, it collapses to the single next thing in the next ~2h, departure-board style; tap to expand. *(reuse: board today data.)*
-3. **Ambient screensaver** [S] — after N idle minutes, fade to a big clock + the slow photo frame; tap to wake. *(reuse: `PhotoFrame`, R2 photos.)*
+3. **Ambient screensaver** [S] — ✅ **BUILT**. After N idle minutes the kiosk fades to a big clock + date + the slow photo frame (+ optional next-up); tap to wake. Tunable in Réglages ▸ Affichage ▸ Mode veille (show clock/date/photos/next, delay) and bundled with the return-to-Maisonnée drift. *(`AmbientScreen`, `lib/ambient`, driven by `HubLayout`'s idle timer.)*
 4. **Auto-rotating board carousel** [M] — kiosk gently cycles board → meals → routines on a timer (digital-signage glance). *(the "rotating glance" surface option.)*
 5. **Per-person day "lanes"** [M] — a column per family member with their events + chores + routine, color-coded; shines on a wide wall. *(reuse: members colours.)*
 6. **Weather-aware gentle prompts** [S] — "rain today — grab umbrellas"; "cold snap — coats." One calm line, never nagging. *(reuse: `lib/weather`.)*

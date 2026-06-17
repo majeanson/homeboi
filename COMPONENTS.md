@@ -79,9 +79,12 @@ Need live data/route context, so they're catalogued but not rendered as specimen
 (read-only fairness glance, #18), `CookableView` (cook-from-what-I-have, #10),
 `CollectionsTab`/`CollectionPicker` (recipe collections, #11), the kitchen sub-tabs
 (`DayEditor`, `MealRows`, `PantryTab`, `ReserveSection`, …), and the `operator/*`
-section bodies (incl. `operator/guest.tsx` — the babysitter-access issuer, #19, and
-`operator/idleDebug.tsx` — the Réglages ▸ Debug idle-mode tester: shrink the
-shared-kiosk idle-drift window to seconds or force the warn/drift, via `lib/idleDebug.ts`).
+section bodies (incl. `operator/guest.tsx` — the babysitter-access issuer, #19;
+`operator/ambient.tsx` — the Réglages ▸ Affichage ▸ Mode veille settings, `lib/ambient.ts`;
+and `operator/idleDebug.tsx` — the Réglages ▸ Debug idle tester: shrink the idle
+window to seconds or force the screensaver/warn/drift, via `lib/idleDebug.ts`).
+`AmbientScreen` (the full-screen idle screensaver — clock/date/photo-frame, backlog #3)
+mounts in `HubLayout` and is driven by its idle timer.
 
 ---
 

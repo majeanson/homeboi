@@ -6,6 +6,8 @@ import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { onIdleDebug, idleOverrideMs } from '../lib/idleDebug'
+import { useAmbient } from '../lib/ambient'
+import { AmbientScreen } from './AmbientScreen'
 import { onAuthLost } from '../lib/authEvents'
 import { clearDeviceToken, isPaired, isGuestLocked } from '../lib/device'
 import { Icon, InlineIcon, type IconName } from './Icon'
@@ -140,9 +142,11 @@ export function HubLayout() {
   // any interaction; a quiet heads-up appears 30 s before the drift so a parent
   // mid-glance isn't silently switched back (mis-attributing what they add).
   const { memberId: profileId, setMemberId } = useProfile()
+  const ambient = useAmbient()
   const [idleWarn, setIdleWarn] = useState(false)
-  // Debug (Réglages ▸ Debug): force the warn chip / the drift on demand, and bump
-  // a tick so the timer effect below re-arms when the debug speed override changes.
+  const [saver, setSaver] = useState(false)
+  // Debug (Réglages ▸ Debug): force the warn chip / the drift / the screensaver on
+  // demand, and bump a tick so the timers below re-arm when the speed override changes.
   const [idleTick, setIdleTick] = useState(0)
   useEffect(
     () =>
@@ -151,45 +155,73 @@ export function HubLayout() {
         else if (kind === 'drift') {
           setIdleWarn(false)
           setMemberId(null)
-        } else setIdleTick((n) => n + 1)
+        } else if (kind === 'screensaver') setSaver(true)
+        else setIdleTick((n) => n + 1)
       }),
     [setMemberId],
   )
   useEffect(() => {
-    // Idle drift is normally a KIOSK safety, but the Debug tab's speed override
-    // arms it on ANY surface — otherwise the timed drift can't be observed on a
-    // dev phone/laptop. Either way it needs a picked profile to clear.
+    // Idle is normally a KIOSK behaviour, but the Debug tab's speed override arms
+    // it on ANY surface — otherwise the timed drift/screensaver can't be observed
+    // on a dev phone/laptop.
     const override = idleOverrideMs()
-    if ((surface !== 'kiosk' && override == null) || !profileId) {
+    if (surface !== 'kiosk' && override == null) {
       setIdleWarn(false)
+      setSaver(false)
       return
     }
-    // 3 idle minutes by default; the Debug tab can shrink this to seconds. The
-    // heads-up chip leads the drift by 30 s (or half the window, whichever's less).
-    const IDLE = override ?? 3 * 60 * 1000
-    const WARN = IDLE - Math.min(30 * 1000, Math.floor(IDLE / 2))
-    let timer: ReturnType<typeof setTimeout>
-    let warnTimer: ReturnType<typeof setTimeout>
-    const reset = () => {
-      clearTimeout(timer)
-      clearTimeout(warnTimer)
+    // Two independent idle behaviours, each opt-out-able (lib/ambient): the
+    // return-to-Maisonnée drift (needs a picked profile to clear) and the
+    // screensaver. A debug speed override collapses every window to the same few
+    // seconds so the whole thing is observable at once.
+    const driftOn = ambient.returnHome && !!profileId
+    const saverOn = ambient.screensaver
+    if (!driftOn && !saverOn) {
       setIdleWarn(false)
-      warnTimer = setTimeout(() => setIdleWarn(true), WARN)
-      timer = setTimeout(() => {
-        setIdleWarn(false)
-        setMemberId(null)
-      }, IDLE)
+      setSaver(false)
+      return
+    }
+    const DRIFT = override ?? ambient.returnHomeMin * 60_000
+    const WARN = DRIFT - Math.min(30_000, Math.floor(DRIFT / 2)) // heads-up leads the drift
+    const SAVER = override ?? ambient.idleMin * 60_000
+    let tWarn: ReturnType<typeof setTimeout>
+    let tDrift: ReturnType<typeof setTimeout>
+    let tSaver: ReturnType<typeof setTimeout>
+    const reset = () => {
+      clearTimeout(tWarn)
+      clearTimeout(tDrift)
+      clearTimeout(tSaver)
+      setIdleWarn(false)
+      setSaver(false) // any interaction also wakes the screensaver
+      if (driftOn) {
+        tWarn = setTimeout(() => setIdleWarn(true), WARN)
+        tDrift = setTimeout(() => {
+          setIdleWarn(false)
+          setMemberId(null)
+        }, DRIFT)
+      }
+      if (saverOn) tSaver = setTimeout(() => setSaver(true), SAVER)
     }
     reset()
     window.addEventListener('pointerdown', reset, { passive: true })
     window.addEventListener('keydown', reset)
     return () => {
-      clearTimeout(timer)
-      clearTimeout(warnTimer)
+      clearTimeout(tWarn)
+      clearTimeout(tDrift)
+      clearTimeout(tSaver)
       window.removeEventListener('pointerdown', reset)
       window.removeEventListener('keydown', reset)
     }
-  }, [surface, profileId, setMemberId, idleTick])
+  }, [
+    surface,
+    profileId,
+    setMemberId,
+    idleTick,
+    ambient.returnHome,
+    ambient.returnHomeMin,
+    ambient.screensaver,
+    ambient.idleMin,
+  ])
 
   const toddler = audience === 'toddler'
   // `guest` = read-only session (hides every mutating control + the ＋ FAB, shows
@@ -377,6 +409,9 @@ export function HubLayout() {
         </button>
       )}
       <AddSheet open={addOpen} modes={addModes ?? sectionModes} initialMode={addMode} onClose={() => setAddOpen(false)} />
+      {/* Ambient screensaver — full-screen idle face; any pointer/key wakes it
+          (the idle effect's `reset` already clears `saver`, this just mirrors it). */}
+      <AmbientScreen show={saver} onWake={() => setSaver(false)} />
     </div>
     </KitchenActionsContext.Provider>
     </AddSheetContext.Provider>

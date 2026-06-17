@@ -7,6 +7,7 @@ import { useAuth } from '../lib/auth'
 import { isPaired } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { DisplaySection, VoiceSection, CalmSection } from '../components/operator/display'
+import { AmbientSettingsSection } from '../components/operator/ambient'
 import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
@@ -206,6 +207,7 @@ export function Operator() {
         {tab === 'display' && (
           <>
             <DisplaySection />
+            <AmbientSettingsSection />
             <VoiceSection />
           </>
         )}

@@ -2047,6 +2047,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'It’s the same switch as the [[icon:baby-bold]] in the bar: it flips every section at once for this one device, without touching the others.',
         },
       },
+      {
+        label: { fr: 'Mode veille', en: 'Idle mode' },
+        detail: {
+          fr: 'Au repos, le kiosque montre une horloge, la date et tes photos. Choisis le délai et ce qui s’affiche ; touche l’écran pour réveiller.',
+          en: 'At rest the kiosk shows a clock, the date and your photos. Pick the delay and what appears; touch the screen to wake.',
+        },
+        why: {
+          fr: 'Un mur calme et joli quand personne ne s’en sert — et l’option de revenir à « Maisonnée » pour ne pas rester bloqué sur un visage.',
+          en: 'A calm, pretty wall when nobody’s using it — plus the option to return to “Household” so it never stays stuck on one face.',
+        },
+      },
     ],
   },
   {

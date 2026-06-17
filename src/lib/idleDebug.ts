@@ -19,7 +19,7 @@ export const IDLE_SPEED_MS: Record<IdleSpeed, number | null> = {
 }
 
 const EVT = 'bb:idle-debug'
-export type IdleDebugKind = 'warn' | 'drift' | 'speed'
+export type IdleDebugKind = 'warn' | 'drift' | 'screensaver' | 'speed'
 
 // HubLayout reads this each time it (re)arms the idle timer.
 export function idleOverrideMs(): number | null {
@@ -49,8 +49,9 @@ export function setIdleSpeed(speed: IdleSpeed) {
   emit('speed')
 }
 
-// Force the warning chip, or the immediate drift back to Maisonnée, right now.
-export function forceIdle(kind: 'warn' | 'drift') {
+// Force the warning chip, the immediate drift back to Maisonnée, or the
+// screensaver, right now — no waiting for the timer.
+export function forceIdle(kind: 'warn' | 'drift' | 'screensaver') {
   emit(kind)
 }
 
