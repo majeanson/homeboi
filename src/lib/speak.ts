@@ -140,7 +140,7 @@ function pickVoice(want: string): SpeechSynthesisVoice | null {
 
 // Every installed voice in a language's family (fr*/en*), best-quality first —
 // the option list for the voice picker. Reads the live snapshot.
-export function listVoicesFor(lang: Lang): SpeechSynthesisVoice[] {
+function listVoicesFor(lang: Lang): SpeechSynthesisVoice[] {
   if (!voices.length) refreshVoices()
   const two = wantedTag(lang).slice(0, 2)
   const norm = (l: string) => l.toLowerCase().replace('_', '-')

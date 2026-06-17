@@ -24,7 +24,7 @@ export interface Chore {
   recur_start?: number | null
   lead_seconds?: number | null
 }
-export interface RoutineCard {
+interface RoutineCard {
   icon: string
   label: string
   narration?: string

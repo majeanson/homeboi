@@ -26,7 +26,6 @@ export interface RecipeTimes {
 }
 
 export const NO_TIMES: RecipeTimes = { prep: null, cook: null, total: null }
-export const hasTimes = (t: RecipeTimes): boolean => t.prep != null || t.cook != null || t.total != null
 
 export interface ParsedRecipe {
   title: string | null

@@ -44,7 +44,3 @@ export function weekdayShort(unixSec: number, lang: Lang): string {
 export function dayNum(unixSec: number, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { day: 'numeric' }).format(unixSec * 1000)
 }
-
-export function formatClock(lang: Lang, nowMs: number): string {
-  return new Intl.DateTimeFormat(LOCALE[lang], { hour: '2-digit', minute: '2-digit' }).format(nowMs)
-}

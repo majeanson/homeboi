@@ -42,7 +42,7 @@ Use `const write = useWrite()` and call
 Idempotent writes (toggles, deletes-by-id, field sets) replay safely as-is; the
 idempotency key makes creates safe too. Genuinely online-only writes (AI capture,
 voice, photo upload, pairing, auth) are **not** queued — disable them offline with
-`useOnline()` and an `t.offline.unavailable` hint (see `VoiceButton`/`CaptureBar`).
+`useOnline()` and an `t.offline.unavailable` hint (see `VoiceButton`/`AddSheet`).
 
 ## Migration status
 

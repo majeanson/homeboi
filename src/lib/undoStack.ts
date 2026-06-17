@@ -15,7 +15,7 @@
 // the provider fire the side effects, so StrictMode's double-invoked reducers
 // can't double-commit a write.
 
-export type UndoKind = 'deferred' | 'compensating'
+type UndoKind = 'deferred' | 'compensating'
 
 export interface UndoEntry {
   id: number

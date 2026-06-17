@@ -1560,7 +1560,7 @@ export const EN: typeof FR = {
   notFound: { title: 'Page not found', back: 'Back to home' },
 }
 
-export const DICT: Record<Lang, typeof FR> = { fr: FR, en: EN }
+const DICT: Record<Lang, typeof FR> = { fr: FR, en: EN }
 
 export const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({
   lang: 'fr',

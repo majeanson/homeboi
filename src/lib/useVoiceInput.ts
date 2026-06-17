@@ -100,7 +100,7 @@ interface VoiceOpts {
 // 'unknown' = the Permissions API can't tell us (Safari, older engines) — we
 // fall back to the reactive onerror path. Lets callers show a blocked mic
 // BEFORE a dead tap, e.g. a kiosk where the grant was never given.
-export type MicPermission = 'granted' | 'denied' | 'prompt' | 'unknown'
+type MicPermission = 'granted' | 'denied' | 'prompt' | 'unknown'
 
 // iOS (incl. iPadOS, which poses as a Mac). There the Permissions API can't
 // read the mic grant AND a denied mic can't be re-prompted from the page — the
@@ -119,7 +119,7 @@ export function isIos(): boolean {
 // Whisper recording fallback. Checks the iOS-only `navigator.standalone` flag AND
 // the standard display-mode media query (Android/desktop installs). Mirrors the
 // same check in components/operator/micTest.tsx.
-export function isStandalone(): boolean {
+function isStandalone(): boolean {
   if (typeof window === 'undefined') return false
   const navAny = navigator as unknown as { standalone?: boolean }
   const mm = typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches

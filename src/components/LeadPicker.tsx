@@ -5,7 +5,7 @@ import { useT } from '../i18n'
 // hides anything (NFR-CALM-1). null = no reminder. Shared by EventForm + ChoreForm;
 // mirrors RecurPicker's labelled-row style. Values are seconds, clamped server-side
 // to the À venir window (≤ 7 days) in functions/api/events.ts + chores.ts.
-export const LEAD_OPTIONS: { key: 'none' | 'h1' | 'h3' | 'h6' | 'd1' | 'd2' | 'd3' | 'w1'; seconds: number | null }[] = [
+const LEAD_OPTIONS: { key: 'none' | 'h1' | 'h3' | 'h6' | 'd1' | 'd2' | 'd3' | 'w1'; seconds: number | null }[] = [
   { key: 'none', seconds: null },
   { key: 'h1', seconds: 3600 },
   { key: 'h3', seconds: 10800 },

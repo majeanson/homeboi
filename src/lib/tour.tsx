@@ -24,7 +24,7 @@ function readSeen(): string[] {
     return []
   }
 }
-export function hasTourSeen(id: string): boolean {
+function hasTourSeen(id: string): boolean {
   return readSeen().includes(id)
 }
 function markTourSeen(id: string): void {

@@ -64,7 +64,7 @@ export async function enqueue(e: OutboxEntry): Promise<void> {
   notify()
 }
 
-export async function allEntries(): Promise<OutboxEntry[]> {
+async function allEntries(): Promise<OutboxEntry[]> {
   const r = await tx<OutboxEntry[]>('readonly', (s) => s.getAll())
   return (r ?? []).sort((a, b) => a.createdAt - b.createdAt)
 }
@@ -87,7 +87,7 @@ export async function clearOutbox(): Promise<void> {
 // it can resume next trigger; drops an entry the server rejects as moot (4xx — the
 // row's gone/forbidden/conflicting), since the live poll will reconcile the cache.
 let replaying = false
-export async function replayOutbox(qc: QueryClient): Promise<void> {
+async function replayOutbox(qc: QueryClient): Promise<void> {
   if (replaying) return
   if (typeof navigator !== 'undefined' && !navigator.onLine) return
   replaying = true

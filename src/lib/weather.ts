@@ -4,7 +4,7 @@
 // WeatherBucket — the two trees don't share code, so the union is restated.
 import type { IconName } from '../components/Icon'
 
-export type WeatherBucket = 'clear' | 'cloud' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'storm'
+type WeatherBucket = 'clear' | 'cloud' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'storm'
 
 export interface Weather {
   tempC: number

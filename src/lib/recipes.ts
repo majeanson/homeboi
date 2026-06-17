@@ -48,7 +48,7 @@ export const RECIPES_KEY = ['recipes']
 // /api/recipe-tags — the household tag layer: saved preset pills + every tag
 // currently in use (with counts). Shared by the recipe form (pill offer) and
 // the Réglages tag manager.
-export interface RecipeTagInfo {
+interface RecipeTagInfo {
   tag: string
   count: number
 }

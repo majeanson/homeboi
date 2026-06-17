@@ -6,17 +6,11 @@
 // convention as ingredient.ts) — keep the two in sync. The Worker side only
 // needs the marker primitives, not the display grouping.
 
-export const SECTION_PREFIX = '## '
+const SECTION_PREFIX = '## '
 
 const HEADING_RE = /^##\s+\S/
 
 export const isSectionHeading = (line: string): boolean => HEADING_RE.test(line.trim())
-
-// "## Glaçage" → "Glaçage". Safe on a non-heading (returns the line untouched).
-export const sectionTitle = (line: string): string => {
-  const s = line.trim()
-  return HEADING_RE.test(s) ? s.replace(/^##\s+/, '').trim() : s
-}
 
 export const makeSectionHeading = (title: string): string => SECTION_PREFIX + title.trim()
 

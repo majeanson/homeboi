@@ -20,7 +20,7 @@ import type { Measure, MeasureUnit } from './measure'
 
 // The six real spoons, left→right on the fan: 1 tbs, 1/2 tbs, 1 tsp, 1/2 tsp,
 // 1/4 tsp, 1/8 tsp.
-export const MEASURE_COLORS: Record<string, string> = {
+const MEASURE_COLORS: Record<string, string> = {
   // — tablespoon (c. à soupe) —
   '1|tbsp': '#8DB63C', // leaf green   (label "1 tbs")
   '1/2|tbsp': '#8A5A33', // brown        (label "1/2 tbs")
@@ -33,7 +33,7 @@ export const MEASURE_COLORS: Record<string, string> = {
 
 // No colour-coded tool for this amount — a soft, greyed tint per unit so the pill
 // reads as "generic spoon/cup" without competing with the six vivid tool colours.
-export const UNIT_FALLBACK: Record<MeasureUnit, string> = {
+const UNIT_FALLBACK: Record<MeasureUnit, string> = {
   tsp: '#B6A0AE', // soft mauve-grey
   tbsp: '#A9B49A', // soft sage-grey
   cup: '#9DB9C4', // soft blue-grey (the set has no cups)

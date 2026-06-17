@@ -5,7 +5,7 @@
 // across a DST boundary (a local day is 23 h or 25 h), landing days a cell early or
 // late twice a year. Rendering assumes the browser's zone is the household zone
 // (the kiosk lives in the house), matching how the Kitchen grid already formats.
-export const HOUSEHOLD_TZ = 'America/Toronto'
+const HOUSEHOLD_TZ = 'America/Toronto'
 
 // Wall-clock Y/M/D h:m:s for an instant in `tz` (via Intl, DST-aware).
 function wallParts(d: Date, tz: string) {

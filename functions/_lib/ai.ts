@@ -26,7 +26,7 @@ export function resolveLang(env: Env, request: Request): Lang {
   return 'fr'
 }
 
-export type IntentType = 'event' | 'task' | 'list-item' | 'pantry-low' | 'meal' | 'leftover' | 'note'
+type IntentType = 'event' | 'task' | 'list-item' | 'pantry-low' | 'meal' | 'leftover' | 'note'
 
 export interface Intent {
   type: IntentType

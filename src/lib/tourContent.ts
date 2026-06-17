@@ -23,7 +23,7 @@ function guideWhat(id: string): Bi {
   return card.what
 }
 
-export type TourStep = {
+type TourStep = {
   // A `data-tour` key to spotlight; omit for a centred card.
   target?: string
   icon?: IconName

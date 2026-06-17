@@ -19,16 +19,16 @@ export interface EventRow {
   member_id: string | null
   soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
 }
-export interface ListRow {
+interface ListRow {
   id: string
   text: string
   source: string
 }
-export interface Helper {
+interface Helper {
   name: string | null
   role: string
 }
-export interface ChoreRow {
+interface ChoreRow {
   id: string
   title: string
   rotation_json: string
@@ -45,13 +45,13 @@ export interface MealRow {
 }
 // One undated leftover in the "Restants à finir" pool — a calm board reminder to
 // eat it before cooking the rest. Marking it "Fini" removes it.
-export interface LeftoverRow {
+interface LeftoverRow {
   id: string
   title: string
 }
 // One of today's planned meals, with its slot (déjeuner/dîner/souper/collation)
 // so the board can label it. The full day's table, shown beside the supper hero.
-export interface DayMealRow {
+interface DayMealRow {
   id: string
   slot: string
   title: string

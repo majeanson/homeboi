@@ -20,7 +20,7 @@ export interface Actor {
   deviceId?: string
 }
 
-export async function resolveActor(env: Env, request: Request): Promise<Actor | null> {
+async function resolveActor(env: Env, request: Request): Promise<Actor | null> {
   // Operator first — a logged-in human outranks a device.
   const email = await currentEmail(env, request)
   if (email) {

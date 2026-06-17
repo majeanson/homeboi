@@ -192,7 +192,7 @@ appear as code identifiers, route names, or `bmad/` requirement tags.
 
 | Term                         | Means                                                                                                                                                          |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Capture / capture spine**  | Type-or-speak a note; Workers AI routes it to event/task/list-item/pantry-low/meal/note. `CaptureBar`.                                                         |
+| **Capture / capture spine**  | Type-or-speak a note; Workers AI routes it to event/task/list-item/pantry-low/meal/note. `AddSheet` (the contextual ＋ FAB sheet).                                    |
 | **The list (single-list)**   | `/liste` is ONE active list — check marks in place, "Clear checked" logs + removes; no done-shelf/modes (those were removed). `search_terms` survive a re-add. |
 | **Garde-manger**             | The kitchen module: meal planning that fills the grocery list itself. No full inventory — only "running low."                                                  |
 | **Pantry-low / running low** | A low/out flag, deliberately NOT an inventory count (enforced by the calm test).                                                                               |

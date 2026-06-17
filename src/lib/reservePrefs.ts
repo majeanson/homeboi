@@ -19,8 +19,8 @@ export interface ReserveLocation {
 
 // Stable ids for the two seeded defaults — kept fixed so renaming/recolouring a
 // default in Réglages never re-buckets the items already filed under it.
-export const DEFAULT_PANTRY_ID = 'pantry'
-export const DEFAULT_FREEZER_ID = 'freezer'
+const DEFAULT_PANTRY_ID = 'pantry'
+const DEFAULT_FREEZER_ID = 'freezer'
 
 // The two seeded defaults (Garde-manger + Congélateur), built from localized
 // names so the hook AND the Réglages editor agree on the starting point. Soft

@@ -15,7 +15,7 @@ import type { IconName } from '../components/Icon'
 
 export type Bi = { fr: string; en: string }
 
-export type GuidePoint = {
+type GuidePoint = {
   label: Bi
   // `detail` = WHAT it does / how to use it. `why` = WHY it exists / why you'd
   // reach for it — kept as its own field (not crammed into detail) so the guide

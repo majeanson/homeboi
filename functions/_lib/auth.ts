@@ -11,7 +11,6 @@
 // `X-CSRF-Token` for state-changing operator requests.
 
 import type { Env } from './env'
-import { unauthorized } from './json'
 import { nowSec } from './ids'
 
 const SESSION_COOKIE = 'bb_session'
@@ -138,12 +137,6 @@ export function clearSessionCookies(): string[] {
 export async function currentEmail(env: Env, request: Request): Promise<string | null> {
   const payload = await verifyToken<{ e: string }>(env, readCookie(request, SESSION_COOKIE))
   return payload?.e ?? null
-}
-
-// Guard-or-return-early: resolves to the email, or a 401 Response to return.
-export async function requireSignedIn(env: Env, request: Request): Promise<string | Response> {
-  const email = await currentEmail(env, request)
-  return email ?? unauthorized()
 }
 
 export function verifyCsrf(request: Request): boolean {
