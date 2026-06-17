@@ -33,6 +33,9 @@ for (const theme of ['day', 'night'] as Theme[]) {
   test(`sheet-add-capture${sfx}`, async ({ page }) => {
     await boot(page, '/board', theme)
     await page.locator('.add-fab').click()
+    // The board ＋ opens a blank chooser now — pick the "Note rapide" tile to reveal
+    // the capture input.
+    await page.getByRole('dialog').getByRole('button', { name: 'Note rapide' }).first().click()
     await page.locator('.sheet__field input').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `sheet-add-capture-phone${sfx}`)
@@ -92,7 +95,8 @@ for (const theme of ['day', 'night'] as Theme[]) {
 test('scene-add-event', async ({ page }) => {
   await boot(page, '/board')
   await page.locator('.add-fab').click()
-  await page.locator('.sheet__field input').waitFor({ state: 'visible' })
+  // The board ＋ opens a blank chooser of tiles (capture / event / chore / …).
+  await page.locator('.cat-pick').first().waitFor({ state: 'visible' })
   // The event tile is navigate-only now — it leaves the sheet for the
   // full-screen /event/new scene (tall forms strand under the keyboard).
   await Promise.all([

@@ -92,8 +92,16 @@ const BOARD = {
   ],
   notes: [{ id: 'n1', text: 'Bonne chance à ton examen !', member_id: 'm1', created_at: BASE }],
   // A recurring chore due today (Léa's turn) + one coming up later this week.
-  choresToday: [{ id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', at: BASE, who: 'Léa' }],
-  choresUpcoming: [{ id: 'c2', title: 'Vaisselle', color: '#7BB0C9', at: BASE + 3 * DAY, who: 'Papa' }],
+  choresToday: [{ id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', at: BASE, who: 'Léa', who_id: 'm3' }],
+  choresUpcoming: [{ id: 'c2', title: 'Vaisselle', color: '#7BB0C9', at: BASE + 3 * DAY, who: 'Papa', who_id: 'm2' }],
+  // One-off to-dos (ChoreInstance shape) — the Aujourd'hui "À faire" card + the
+  // alternate board views (Now/Next, Lanes) iterate these, so absent → crash.
+  todos: [
+    { id: 't1', title: 'Appeler le garagiste', color: null, at: BASE, who: 'Maman', who_id: 'm1' },
+    { id: 't2', title: 'Sortir le recyclage', color: '#88A36F', at: BASE, who: null, who_id: null },
+  ],
+  // Undated leftovers to finish — the "Restants à finir" reminder card.
+  leftovers: [{ id: 'lo1', title: 'Pâté chinois' }],
 }
 
 const MEALS = {
@@ -484,7 +492,7 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
     if (opts.fresh && path === 'board') {
-      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tonightMeals: [], tomorrowMeal: null, todayMeals: [], dayNote: null, tomorrowMeals: [], tomorrowNote: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [] }
+      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tonightMeals: [], tomorrowMeal: null, todayMeals: [], dayNote: null, tomorrowMeals: [], tomorrowNote: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [], todos: [], leftovers: [] }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
       return
     }

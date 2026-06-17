@@ -27,7 +27,9 @@ test('＋ Planifier un repas → day picker → opens that day’s editor scene'
 
   await page.locator('.add-fab').click()
   await expect(page.locator('.sheet.show')).toBeVisible()
-  // Kitchen ＋ defaults to the meal mode → the day picker is shown.
+  // The kitchen ＋ opens a blank chooser now — pick "Planifier un repas" to reveal
+  // the day picker.
+  await page.getByRole('dialog').getByRole('button', { name: 'Planifier un repas' }).click()
   const dayChip = page.locator('.addsheet__days .chip').first()
   await expect(dayChip).toBeVisible()
   await dayChip.click()

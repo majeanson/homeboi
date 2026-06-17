@@ -196,9 +196,10 @@ test('settings-tag-rename', async ({ page }) => {
   await boot(page, '/settings')
   await page.getByRole('tab', { name: 'Recettes' }).click() // recipes (tags)
   await page.locator('.tag-admin__row').first().waitFor({ state: 'visible' })
-  // Each row ends in the uniform RowActions pair: first button = ✏️ rename, second
-  // = 🗑️ remove (the latter now behind a confirm dialog). Tapping the first renames.
-  await page.locator('.tag-admin__row').first().locator('button').first().click()
+  // Each row ends in the uniform RowActions pair (✏️ Renommer / 🗑️ Retirer); the
+  // row also carries a 🖌 colour button before them, so target the rename by its
+  // accessible name rather than position. Tapping it reveals the inline rename form.
+  await page.locator('.tag-admin__row').first().getByRole('button', { name: 'Renommer' }).click()
   await page.locator('.tag-admin__rename').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'settings-tag-rename-phone', false)

@@ -52,7 +52,7 @@ test('ms: liste deals browser', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await open(page, '/liste')
   await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
-  await page.getByRole('button', { name: /Parcourir les circulaires/ }).click()
+  await page.getByRole('dialog').getByRole('button', { name: /Parcourir les circulaires/ }).click()
   await page.waitForTimeout(800)
   await shot(page, 'liste-deals-browser')
 })
