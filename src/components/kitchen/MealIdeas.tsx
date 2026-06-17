@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
 import { type Recipe } from '../../lib/recipes'
 import { type MealSlot } from '../../lib/mealSlots'
@@ -32,8 +31,8 @@ export function MealIdeas({
   profileId: string | null
 }) {
   const t = useT()
-  const qc = useQueryClient()
   const recordUndo = useRecordUndo()
+  const write = useWrite()
   const [text, setText] = useState('')
   const [pickRecipe, setPickRecipe] = useState(false)
   const [planFor, setPlanFor] = useState<string | null>(null)
@@ -49,31 +48,32 @@ export function MealIdeas({
     if (!v || busy) return
     setBusy(true)
     try {
-      await api('meal-ideas', { method: 'POST', body: { title: v, recipeId, suggestedBy: profileId } })
+      await write('meal-ideas', {
+        method: 'POST',
+        body: { title: v, recipeId, suggestedBy: profileId },
+        affectedKeys: [MEAL_IDEAS_KEY],
+      })
       setText('')
       setPickRecipe(false)
     } catch {
       /* keep the typed text so it can be retried */
     } finally {
       setBusy(false)
-      qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
     }
   }
 
   async function removeIdea(idea: MealIdea) {
-    await api('meal-ideas', { method: 'DELETE', body: { id: idea.id } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
+    await write('meal-ideas', { method: 'DELETE', body: { id: idea.id }, affectedKeys: [MEAL_IDEAS_KEY] }).catch(() => {})
     // Compensating undo: re-add the idea from its snapshot (the pool is live-polled,
     // so holding the delete would let the poll resurrect it). New id, same idea.
     recordUndo({
       message: t.undo.mealIdeaRemoved(idea.title),
-      onUndo: async () => {
-        await api('meal-ideas', {
+      onUndo: () =>
+        void write('meal-ideas', {
           method: 'POST',
           body: { title: idea.title, recipeId: idea.recipe_id ?? null, suggestedBy: idea.suggested_by ?? null },
-        }).catch(() => {})
-        qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
-      },
+          affectedKeys: [MEAL_IDEAS_KEY],
+        }).catch(() => {}),
     })
   }
 
@@ -82,23 +82,26 @@ export function MealIdeas({
     setEditId(null)
     if (!v || v === idea.title) return
     // Optimistic rename, then persist (the pool is live-polled, so reflect it now).
-    qc.setQueryData<{ ideas: MealIdea[] }>(MEAL_IDEAS_KEY, (d) =>
-      d ? { ideas: d.ideas.map((x) => (x.id === idea.id ? { ...x, title: v } : x)) } : d,
-    )
-    await api('meal-ideas', { method: 'PATCH', body: { id: idea.id, title: v } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
+    await write('meal-ideas', {
+      method: 'PATCH',
+      body: { id: idea.id, title: v },
+      affectedKeys: [MEAL_IDEAS_KEY],
+      optimistic: (c) =>
+        c.setQueryData<{ ideas: MealIdea[] }>(MEAL_IDEAS_KEY, (d) =>
+          d ? { ideas: d.ideas.map((x) => (x.id === idea.id ? { ...x, title: v } : x)) } : d,
+        ),
+    }).catch(() => {})
   }
 
   // Place an idea onto a day + meal — same shape as a recipe quick-add, so a
   // recipe-linked idea keeps its link and a free-text idea stays plain text.
   async function planIdea(idea: MealIdea, date: number, slot: MealSlot) {
     setPlanFor(null)
-    await api('meals', {
+    await write('meals', {
       method: 'POST',
       body: { date, slot, title: idea.title, recipeId: idea.recipe_id ?? null, staples: [] },
+      affectedKeys: [MEALS_KEY, ['board']],
     }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-    qc.invalidateQueries({ queryKey: ['board'] })
   }
 
   return (

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useParams, Navigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
+import { useWrite } from '../lib/write'
 import { useLang, useT } from '../i18n'
 import { live } from '../lib/query'
 import { useProfile } from '../lib/profile'
@@ -59,6 +60,7 @@ export function DayPlanPage() {
   const nav = useNavigate()
   const { memberId: profileId } = useProfile()
   const recordUndo = useRecordUndo()
+  const write = useWrite()
   const close = useSceneClose('/kitchen')
   useEscapeKey(close)
 
@@ -156,15 +158,14 @@ export function DayPlanPage() {
       return
     }
     try {
-      await api('meals', { method: 'POST', body: { date: d, slot, title: v, recipeId } })
-      // Only close the editor once the write lands — a failed plan keeps the typed
-      // title so it can be retried (same as the grocery add bar).
+      await write('meals', { method: 'POST', body: { date: d, slot, title: v, recipeId }, affectedKeys: [MEALS_KEY] })
+      // Only close the editor once the write lands (offline: queued) — a real
+      // failure keeps the typed title so it can be retried (like the grocery bar).
       setEditSlot(null)
       setSlotText('')
     } catch {
       /* keep the editor open with the text intact */
     }
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
   }
 
   // — the day's free-text memo —
@@ -178,33 +179,32 @@ export function DayPlanPage() {
       return
     }
     try {
-      await api('day-notes', { method: 'POST', body: { date: d, text: v } })
+      await write('day-notes', { method: 'POST', body: { date: d, text: v }, affectedKeys: [DAY_NOTES_KEY] })
       setEditNote(null)
       setNoteText('')
     } catch {
       /* keep the editor open with the text intact */
     }
-    qc.invalidateQueries({ queryKey: DAY_NOTES_KEY })
   }
   async function clearNote(d: number) {
     const note = qc.getQueryData<DayNotesData>(DAY_NOTES_KEY)?.notes.find((n) => n.date === d)
     try {
-      await api('day-notes', { method: 'DELETE', body: { date: d } })
+      await write('day-notes', { method: 'DELETE', body: { date: d }, affectedKeys: [DAY_NOTES_KEY] })
       setEditNote(null)
       setNoteText('')
       if (note)
         recordUndo({
           message: t.undo.dayNoteCleared,
-          onUndo: async () => {
-            await api('day-notes', { method: 'POST', body: { date: note.date, text: note.text } }).catch(() => {})
-            qc.invalidateQueries({ queryKey: DAY_NOTES_KEY })
-            qc.invalidateQueries({ queryKey: ['board'] })
-          },
+          onUndo: () =>
+            void write('day-notes', {
+              method: 'POST',
+              body: { date: note.date, text: note.text },
+              affectedKeys: [DAY_NOTES_KEY, ['board']],
+            }).catch(() => {}),
         })
     } catch {
       /* keep the editor open so the clear can be retried */
     }
-    qc.invalidateQueries({ queryKey: DAY_NOTES_KEY })
   }
 
   // Wipe a planned slot entirely (the ✕ beside the picker). The editor closes and
@@ -212,7 +212,7 @@ export function DayPlanPage() {
   async function clearMeal(id: string) {
     const meal = qc.getQueryData<MealsData>(MEALS_KEY)?.days.find((m) => m.id === id)
     try {
-      await api('meals', { method: 'DELETE', body: { id } })
+      await write('meals', { method: 'DELETE', body: { id }, affectedKeys: [MEALS_KEY] })
       setEditDate(null)
       setMealText('')
       setEditSlot(null)
@@ -221,41 +221,41 @@ export function DayPlanPage() {
     } catch {
       /* keep the editor open so the clear can be retried */
     }
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
   }
 
   // Reorder one meal within its slot (↑/↓). The server renumbers the slot.
   async function moveMeal(id: string, dir: 'up' | 'down') {
-    await api('meals', { method: 'POST', body: { action: 'move', id, dir } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
+    await write('meals', { method: 'POST', body: { action: 'move', id, dir }, affectedKeys: [MEALS_KEY] }).catch(() => {})
   }
   // Rename one meal in place (✏️) — keeps its slot/position/recipe link. Optimistic;
   // the board re-reads too (today's supper headline shows there).
   async function renameMeal(id: string, title: string) {
     const v = title.trim()
     if (!v) return
-    qc.setQueryData<MealsData>(MEALS_KEY, (d) =>
-      d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, title: v } : m)) } : d,
-    )
-    await api('meals', { method: 'PATCH', body: { id, title: v } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-    qc.invalidateQueries({ queryKey: ['board'] })
+    await write('meals', {
+      method: 'PATCH',
+      body: { id, title: v },
+      affectedKeys: [MEALS_KEY, ['board']],
+      optimistic: (c) =>
+        c.setQueryData<MealsData>(MEALS_KEY, (d) =>
+          d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, title: v } : m)) } : d,
+        ),
+    }).catch(() => {})
   }
 
   // "Il en reste ?" from a meal row — announce leftovers into the Restants pool.
   // Compensating undo deletes the row we just created (the pool is live-polled).
   async function announceLeftover(meal: MealRow) {
-    const res = await api<{ id?: string }>('meal-leftovers', {
+    const res = await write<{ id?: string }>('meal-leftovers', {
       method: 'POST',
       body: { title: meal.title, recipeId: meal.recipe_id ?? null, sourceMealId: meal.id },
+      affectedKeys: [LEFTOVERS_KEY],
     }).catch(() => null)
-    qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
-    const id = res?.id
+    const id = res && !res.queued ? res.data?.id : undefined
     recordUndo({
       message: t.undo.leftoverAdded(meal.title),
-      onUndo: async () => {
-        if (id) await api('meal-leftovers', { method: 'DELETE', body: { id } }).catch(() => {})
-        qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
+      onUndo: () => {
+        if (id) void write('meal-leftovers', { method: 'DELETE', body: { id }, affectedKeys: [LEFTOVERS_KEY] }).catch(() => {})
       },
     })
   }
@@ -264,15 +264,15 @@ export function DayPlanPage() {
   // first so Annuler can put them back (compensating undo).
   async function clearSlotMeals(d: number, slot: string) {
     const removed = (qc.getQueryData<MealsData>(MEALS_KEY)?.days ?? []).filter((m) => m.date === d && m.slot === slot)
-    await api('meals', { method: 'POST', body: { action: 'clear', date: d, slot } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
+    await write('meals', { method: 'POST', body: { action: 'clear', date: d, slot }, affectedKeys: [MEALS_KEY] }).catch(
+      () => {},
+    )
     if (removed.length) recordUndo({ message: t.undo.slotCleared, onUndo: () => restoreMeals(qc, removed) })
   }
   // Clearing the whole day empties the editor — leave the scene back to the grid.
   async function clearDay(d: number) {
     const removed = (qc.getQueryData<MealsData>(MEALS_KEY)?.days ?? []).filter((m) => m.date === d)
-    await api('meals', { method: 'POST', body: { action: 'clear', date: d } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
+    await write('meals', { method: 'POST', body: { action: 'clear', date: d }, affectedKeys: [MEALS_KEY] }).catch(() => {})
     if (removed.length) recordUndo({ message: t.undo.dayCleared, onUndo: () => restoreMeals(qc, removed) })
     close()
   }
@@ -294,33 +294,33 @@ export function DayPlanPage() {
       chooseRecipeForMeal(d, slot, r)
       return
     }
-    await api('meals', { method: 'POST', body: { date: d, slot, title: r.title, recipeId: r.id } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
+    await write('meals', {
+      method: 'POST',
+      body: { date: d, slot, title: r.title, recipeId: r.id },
+      affectedKeys: [MEALS_KEY],
+    }).catch(() => {})
   }
 
   // Plan a pooled leftover onto a day → a real meal tagged is_leftover; the pool
   // row is consumed server-side. Compensating undo: delete the created meal AND
   // re-insert the pool row, fully reversing the plan.
   async function planLeftover(l: Leftover, d: number, slot: string) {
-    const res = await api<{ mealId?: string }>('meal-leftovers', {
+    const keys = [LEFTOVERS_KEY, MEALS_KEY, ['board']]
+    const res = await write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
       body: { action: 'plan', id: l.id, date: d, slot },
+      affectedKeys: keys,
     }).catch(() => null)
-    qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-    qc.invalidateQueries({ queryKey: ['board'] })
-    const mealId = res?.mealId
+    const mealId = res && !res.queued ? res.data?.mealId : undefined
     recordUndo({
       message: t.undo.leftoverPlanned(l.title),
       onUndo: async () => {
-        if (mealId) await api('meals', { method: 'DELETE', body: { id: mealId } }).catch(() => {})
-        await api('meal-leftovers', {
+        if (mealId) await write('meals', { method: 'DELETE', body: { id: mealId }, affectedKeys: keys }).catch(() => {})
+        await write('meal-leftovers', {
           method: 'POST',
           body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
+          affectedKeys: keys,
         }).catch(() => {})
-        qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
-        qc.invalidateQueries({ queryKey: MEALS_KEY })
-        qc.invalidateQueries({ queryKey: ['board'] })
       },
     })
   }

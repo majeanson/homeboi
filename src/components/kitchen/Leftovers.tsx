@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { type MealSlot } from '../../lib/mealSlots'
@@ -26,8 +25,8 @@ export function Leftovers({
   week: { date: number; label: string }[]
 }) {
   const t = useT()
-  const qc = useQueryClient()
   const recordUndo = useRecordUndo()
+  const write = useWrite()
   const [text, setText] = useState('')
   const [planFor, setPlanFor] = useState<string | null>(null)
   const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
@@ -43,30 +42,31 @@ export function Leftovers({
     if (!v || busy) return
     setBusy(true)
     try {
-      await api('meal-leftovers', { method: 'POST', body: { title: v, recipeId, sourceMealId } })
+      await write('meal-leftovers', {
+        method: 'POST',
+        body: { title: v, recipeId, sourceMealId },
+        affectedKeys: [LEFTOVERS_KEY],
+      })
       setText('')
     } catch {
       /* keep the typed text so it can be retried */
     } finally {
       setBusy(false)
-      qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
     }
   }
 
   // Fini / mangé — remove it. Compensating undo (the pool is live-polled, so a held
   // delete would be resurrected): re-add the leftover from its snapshot. New id.
   async function removeLeftover(l: Leftover) {
-    await api('meal-leftovers', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
+    await write('meal-leftovers', { method: 'DELETE', body: { id: l.id }, affectedKeys: [LEFTOVERS_KEY] }).catch(() => {})
     recordUndo({
       message: t.undo.leftoverRemoved(l.title),
-      onUndo: async () => {
-        await api('meal-leftovers', {
+      onUndo: () =>
+        void write('meal-leftovers', {
           method: 'POST',
           body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
-        }).catch(() => {})
-        qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
-      },
+          affectedKeys: [LEFTOVERS_KEY],
+        }).catch(() => {}),
     })
   }
 
@@ -74,11 +74,15 @@ export function Leftovers({
     const v = title.trim()
     setEditId(null)
     if (!v || v === l.title) return
-    qc.setQueryData<{ leftovers: Leftover[] }>(LEFTOVERS_KEY, (d) =>
-      d ? { leftovers: d.leftovers.map((x) => (x.id === l.id ? { ...x, title: v } : x)) } : d,
-    )
-    await api('meal-leftovers', { method: 'PATCH', body: { id: l.id, title: v } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
+    await write('meal-leftovers', {
+      method: 'PATCH',
+      body: { id: l.id, title: v },
+      affectedKeys: [LEFTOVERS_KEY],
+      optimistic: (c) =>
+        c.setQueryData<{ leftovers: Leftover[] }>(LEFTOVERS_KEY, (d) =>
+          d ? { leftovers: d.leftovers.map((x) => (x.id === l.id ? { ...x, title: v } : x)) } : d,
+        ),
+    }).catch(() => {})
   }
 
   // Plan it onto a day → a real meal tagged is_leftover; the pool row is consumed
@@ -87,25 +91,22 @@ export function Leftovers({
   // re-insert the pool row, so Annuler fully reverses the plan.
   async function planLeftover(l: Leftover, date: number, slot: MealSlot) {
     setPlanFor(null)
-    const res = await api<{ mealId?: string }>('meal-leftovers', {
+    const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY]
+    const res = await write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
       body: { action: 'plan', id: l.id, date, slot },
+      affectedKeys: keys,
     }).catch(() => null)
-    qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
-    qc.invalidateQueries({ queryKey: BOARD_KEY })
-    const mealId = res?.mealId
+    const mealId = res && !res.queued ? res.data?.mealId : undefined
     recordUndo({
       message: t.undo.leftoverPlanned(l.title),
       onUndo: async () => {
-        if (mealId) await api('meals', { method: 'DELETE', body: { id: mealId } }).catch(() => {})
-        await api('meal-leftovers', {
+        if (mealId) await write('meals', { method: 'DELETE', body: { id: mealId }, affectedKeys: keys }).catch(() => {})
+        await write('meal-leftovers', {
           method: 'POST',
           body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
+          affectedKeys: keys,
         }).catch(() => {})
-        qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
-        qc.invalidateQueries({ queryKey: MEALS_KEY })
-        qc.invalidateQueries({ queryKey: BOARD_KEY })
       },
     })
   }

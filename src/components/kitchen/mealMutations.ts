@@ -1,6 +1,8 @@
 import { type QueryClient } from '@tanstack/react-query'
-import { api } from '../../lib/api'
+import { writeWith } from '../../lib/write'
 import { MEALS_KEY, type MealRow, type MealsData } from './types'
+
+const BOARD_KEY = ['board']
 
 // Meal-plan mutations shared by the calm week grid (Kitchen) and the day editor
 // (DayPlanPage). Pure functions over the query client — no component state — so
@@ -12,12 +14,15 @@ import { MEALS_KEY, type MealRow, type MealsData } from './types'
 // then the invalidate reconciles the authoritative order/position. The board
 // re-reads too (today's supper headline lives there).
 export async function reschedule(qc: QueryClient, id: string, toDate: number, slot?: string) {
-  qc.setQueryData<MealsData>(MEALS_KEY, (d) =>
-    d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, date: toDate, slot: slot ?? m.slot } : m)) } : d,
-  )
-  await api('meals', { method: 'POST', body: { action: 'reschedule', id, toDate, slot } }).catch(() => {})
-  qc.invalidateQueries({ queryKey: MEALS_KEY })
-  qc.invalidateQueries({ queryKey: ['board'] })
+  await writeWith(qc, 'meals', {
+    method: 'POST',
+    body: { action: 'reschedule', id, toDate, slot },
+    affectedKeys: [MEALS_KEY, BOARD_KEY],
+    optimistic: (c) =>
+      c.setQueryData<MealsData>(MEALS_KEY, (d) =>
+        d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, date: toDate, slot: slot ?? m.slot } : m)) } : d,
+      ),
+  }).catch(() => {})
 }
 
 // Re-create a set of removed meals from their snapshot (the undo inverse). Each
@@ -25,11 +30,10 @@ export async function reschedule(qc: QueryClient, id: string, toDate: number, sl
 // reads as restored. Refresh the board too (today's supper shows there).
 export async function restoreMeals(qc: QueryClient, meals: MealRow[]) {
   for (const m of meals) {
-    await api('meals', {
+    await writeWith(qc, 'meals', {
       method: 'POST',
       body: { date: m.date, slot: m.slot, title: m.title, recipeId: m.recipe_id ?? null },
+      affectedKeys: [MEALS_KEY, BOARD_KEY],
     }).catch(() => {})
   }
-  qc.invalidateQueries({ queryKey: MEALS_KEY })
-  qc.invalidateQueries({ queryKey: ['board'] })
 }

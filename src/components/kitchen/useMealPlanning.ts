@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { ingredientName } from '../../lib/ingredient'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
@@ -19,7 +19,7 @@ export interface StaplePrompt {
 }
 
 export function useMealPlanning(ai: AiWake, profileId: string | null) {
-  const qc = useQueryClient()
+  const write = useWrite()
   const [editDate, setEditDate] = useState<number | null>(null)
   const [mealText, setMealText] = useState('')
   // The meal -> grocery staple step (B3): after a title is entered, we offer the
@@ -36,14 +36,18 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
     setMealErr(false)
     try {
       // Appends to the slot (a slot is a list now — see functions/api/meals.ts).
-      await api('meals', { method: 'POST', body: { date, slot, title, staples, recipeId } })
+      // Offline this queues (resolves, no throw) and syncs on reconnect; a real
+      // server rejection still throws → the error line shows, the title isn't lost.
+      await write('meals', {
+        method: 'POST',
+        body: { date, slot, title, staples, recipeId },
+        affectedKeys: [MEALS_KEY, ['board']],
+      })
       setEditDate(null)
       setMealText('')
       setStaplePrompt(null)
     } catch {
       setMealErr(true)
-    } finally {
-      qc.invalidateQueries({ queryKey: MEALS_KEY })
     }
   }
 
@@ -100,11 +104,11 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
   // not a decision — the server only fills an empty slot (unique-day index) and
   // records "suggested by" this device's child so a parent sees whose idea it was.
   async function kidSuggest(date: number, recipe: Recipe) {
-    await api('meals', {
+    await write('meals', {
       method: 'POST',
       body: { date, title: recipe.title, suggest: true, suggestedBy: profileId },
+      affectedKeys: [MEALS_KEY],
     }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEALS_KEY })
   }
 
   function toggleStaple(item: string) {

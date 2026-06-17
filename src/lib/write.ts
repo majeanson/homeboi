@@ -33,41 +33,49 @@ export interface WriteSpec {
 
 export type WriteResult<T> = { data: T; queued: false } | { data: null; queued: true }
 
+// The offline-aware write, given a query client. `useWrite` wraps this for
+// components; pure-`qc` modules (e.g. kitchen/mealMutations) call it directly.
+export async function writeWith<T = unknown>(
+  qc: QueryClient,
+  path: string,
+  spec: WriteSpec = {},
+): Promise<WriteResult<T>> {
+  const method = spec.method ?? 'POST'
+  const affectedKeys = spec.affectedKeys ?? []
+  spec.optimistic?.(qc)
+
+  const queue = async (): Promise<WriteResult<T>> => {
+    await enqueue({ id: uuid(), key: uuid(), path, method, body: spec.body, affectedKeys, createdAt: Date.now() })
+    return { data: null, queued: true }
+  }
+
+  // Fast path: known offline → don't even attempt the network.
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    try {
+      return await queue()
+    } finally {
+      affectedKeys.forEach((k) => qc.invalidateQueries({ queryKey: k }))
+    }
+  }
+
+  try {
+    const data = await api<T>(path, { method, body: spec.body })
+    return { data, queued: false }
+  } catch (err) {
+    // A network/transport failure rejects with a non-ApiError (TypeError) — queue
+    // it. An ApiError means the server answered (4xx/5xx): a real error, surface
+    // it (the optimistic change is corrected by the invalidate below).
+    if (err instanceof ApiError) throw err
+    return await queue()
+  } finally {
+    affectedKeys.forEach((k) => qc.invalidateQueries({ queryKey: k }))
+  }
+}
+
 export function useWrite() {
   const qc = useQueryClient()
   return useCallback(
-    async <T = unknown>(path: string, spec: WriteSpec = {}): Promise<WriteResult<T>> => {
-      const method = spec.method ?? 'POST'
-      const affectedKeys = spec.affectedKeys ?? []
-      spec.optimistic?.(qc)
-
-      const queue = async (): Promise<WriteResult<T>> => {
-        await enqueue({ id: uuid(), key: uuid(), path, method, body: spec.body, affectedKeys, createdAt: Date.now() })
-        return { data: null, queued: true }
-      }
-
-      // Fast path: known offline → don't even attempt the network.
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        try {
-          return await queue()
-        } finally {
-          affectedKeys.forEach((k) => qc.invalidateQueries({ queryKey: k }))
-        }
-      }
-
-      try {
-        const data = await api<T>(path, { method, body: spec.body })
-        return { data, queued: false }
-      } catch (err) {
-        // A network/transport failure rejects with a non-ApiError (TypeError) —
-        // queue it. An ApiError means the server answered (4xx/5xx): a real error,
-        // surface it (the optimistic change is corrected by the invalidate below).
-        if (err instanceof ApiError) throw err
-        return await queue()
-      } finally {
-        affectedKeys.forEach((k) => qc.invalidateQueries({ queryKey: k }))
-      }
-    },
+    <T = unknown>(path: string, spec: WriteSpec = {}): Promise<WriteResult<T>> => writeWith<T>(qc, path, spec),
     [qc],
   )
 }

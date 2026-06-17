@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
 import { wash } from '../../lib/colors'
 import { useReserveLocations } from '../../lib/reservePrefs'
@@ -18,6 +18,7 @@ export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
   const t = useT()
   const qc = useQueryClient()
   const undo = useUndoToast()
+  const write = useWrite()
   const { locations, name: locName } = useReserveLocations()
   const [newItem, setNewItem] = useState('')
   const [newLoc, setNewLoc] = useState<string>('')
@@ -33,11 +34,10 @@ export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
     setNewItem('')
     const locationId = selectedLoc || null
     try {
-      await api('reserve', { method: 'POST', body: { item: v, location_id: locationId } })
+      await write('reserve', { method: 'POST', body: { item: v, location_id: locationId }, affectedKeys: [RESERVE_KEY] })
     } catch {
-      setNewItem(v) // a failed write must not eat what was typed
+      setNewItem(v) // a failed write must not eat what was typed (offline queues)
     }
-    qc.invalidateQueries({ queryKey: RESERVE_KEY })
   }
 
   // Clear an item (used it / tossed it). Deferred behind the undo toast, like the
@@ -51,7 +51,7 @@ export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
       message: t.undo.cleared(r.item),
       onUndo: () => prev && qc.setQueryData(RESERVE_KEY, prev),
       onCommit: () => {
-        api('reserve', { method: 'DELETE', body: { id: r.id } }).catch(() => {})
+        void write('reserve', { method: 'DELETE', body: { id: r.id } }).catch(() => {})
       },
     })
   }
@@ -68,8 +68,7 @@ export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
     const body: { id: string; item?: string; location_id?: string | null } = { id: r.id }
     if (v !== r.item) body.item = v
     if (locationId !== r.location_id) body.location_id = locationId
-    await api('reserve', { method: 'PATCH', body }).catch(() => {})
-    qc.invalidateQueries({ queryKey: RESERVE_KEY })
+    await write('reserve', { method: 'PATCH', body, affectedKeys: [RESERVE_KEY] }).catch(() => {})
   }
 
   // Group items under their location, in the configured order, then an "Autres"

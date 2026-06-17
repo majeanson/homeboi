@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { VoiceButton, VoiceStatus } from '../VoiceButton'
@@ -16,6 +16,7 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
   const t = useT()
   const qc = useQueryClient()
   const undo = useUndoToast()
+  const write = useWrite()
   const [newLow, setNewLow] = useState('')
   const [newSoon, setNewSoon] = useState('')
 
@@ -25,12 +26,12 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
     const v = item.trim()
     if (!v) return
     try {
-      await api('pantry', { method: 'POST', body: { item: v } })
+      await write('pantry', { method: 'POST', body: { item: v }, affectedKeys: [PANTRY_KEY] })
     } catch {
-      // A failed write must not eat what was typed — put it back to retry.
+      // A failed write must not eat what was typed — put it back to retry. (Offline
+      // queues instead of throwing, so the field clears and the item syncs later.)
       if (!viaVoice) setNewLow(v)
     }
-    qc.invalidateQueries({ queryKey: PANTRY_KEY })
   }
   async function addLow(e: React.FormEvent) {
     e.preventDefault()
@@ -66,9 +67,8 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
         // Add to the shared list first, then drop the low flag. Refresh only the
         // board (where the list lives) — the low list stays optimistic, same as a
         // plain clear, so it can't flicker back mid-commit.
-        await api('list', { method: 'POST', body: { text: l.item } }).catch(() => {})
-        await api('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
-        qc.invalidateQueries({ queryKey: BOARD_KEY })
+        await write('list', { method: 'POST', body: { text: l.item }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+        await write('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
       },
     })
   }
@@ -81,7 +81,7 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
       message: t.undo.cleared(l.item),
       onUndo: () => prev && qc.setQueryData(PANTRY_KEY, prev),
       onCommit: () => {
-        api('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
+        void write('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
       },
     })
   }
@@ -92,19 +92,17 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
     qc.setQueryData<PantryData>(PANTRY_KEY, (d) =>
       d ? { low: d.low.map((x) => (x.id === l.id ? { ...x, item: v } : x)) } : d,
     )
-    await api('pantry', { method: 'PATCH', body: { id: l.id, item: v } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: PANTRY_KEY })
+    await write('pantry', { method: 'PATCH', body: { id: l.id, item: v }, affectedKeys: [PANTRY_KEY] }).catch(() => {})
   }
 
   async function postSoon(item: string, viaVoice = false) {
     const v = item.trim()
     if (!v) return
     try {
-      await api('use-soon', { method: 'POST', body: { item: v } })
+      await write('use-soon', { method: 'POST', body: { item: v }, affectedKeys: [USE_SOON_KEY] })
     } catch {
       if (!viaVoice) setNewSoon(v)
     }
-    qc.invalidateQueries({ queryKey: USE_SOON_KEY })
   }
   async function addSoon(e: React.FormEvent) {
     e.preventDefault()
@@ -130,7 +128,7 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
       message: t.undo.cleared(s.item),
       onUndo: () => prev && qc.setQueryData(USE_SOON_KEY, prev),
       onCommit: () => {
-        api('use-soon', { method: 'DELETE', body: { id: s.id } }).catch(() => {})
+        void write('use-soon', { method: 'DELETE', body: { id: s.id } }).catch(() => {})
       },
     })
   }
@@ -140,8 +138,9 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
     qc.setQueryData<{ soon: LowRow[] }>(USE_SOON_KEY, (d) =>
       d ? { soon: d.soon.map((x) => (x.id === s.id ? { ...x, item: v } : x)) } : d,
     )
-    await api('use-soon', { method: 'PATCH', body: { id: s.id, item: v } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: USE_SOON_KEY })
+    await write('use-soon', { method: 'PATCH', body: { id: s.id, item: v }, affectedKeys: [USE_SOON_KEY] }).catch(
+      () => {},
+    )
   }
 
   return (
