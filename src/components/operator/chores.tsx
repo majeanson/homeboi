@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { useRecordUndo } from '../../lib/toast'
@@ -17,13 +17,14 @@ export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange:
   const t = useT()
   const { open } = useAddSheet()
   const undoableRemove = useUndoableRemove()
+  const write = useWrite()
   function remove(c: Chore) {
     undoableRemove({
       queryKey: ['chores'],
       listProp: 'chores',
       id: c.id,
       label: c.title,
-      commit: () => api('chores', { method: 'DELETE', body: { id: c.id } }),
+      commit: () => write('chores', { method: 'DELETE', body: { id: c.id }, affectedKeys: [['chores']] }),
       after: onChange,
     })
   }
@@ -96,6 +97,7 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
   const { open } = useAddSheet()
   const undoableRemove = useUndoableRemove()
   const recordUndo = useRecordUndo()
+  const write = useWrite()
   const [editing, setEditing] = useState<string | null>(null)
   function remove(r: Routine) {
     if (editing === r.id) setEditing(null)
@@ -104,7 +106,7 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
       listProp: 'routines',
       id: r.id,
       label: r.name,
-      commit: () => api('routines', { method: 'DELETE', body: { id: r.id } }),
+      commit: () => write('routines', { method: 'DELETE', body: { id: r.id }, affectedKeys: [['routines']] }),
       after: onChange,
     })
   }
@@ -119,14 +121,22 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
         d ? { routines: d.routines.map((x) => (x.id === r.id ? { ...x, timeOfDay: tod } : x)) } : d,
       )
     setTod(next)
-    await api('routines', { method: 'PATCH', body: { routineId: r.id, timeOfDay: next } }).catch(() => {})
+    await write('routines', {
+      method: 'PATCH',
+      body: { routineId: r.id, timeOfDay: next },
+      affectedKeys: [['routines']],
+    }).catch(() => {})
     onChange()
     // Compensating undo: put the previous cue back (chip + server).
     recordUndo({
       message: t.undo.routineTime(r.name),
       onUndo: async () => {
         setTod(prev)
-        await api('routines', { method: 'PATCH', body: { routineId: r.id, timeOfDay: prev } }).catch(() => {})
+        await write('routines', {
+          method: 'PATCH',
+          body: { routineId: r.id, timeOfDay: prev },
+          affectedKeys: [['routines']],
+        }).catch(() => {})
         onChange()
       },
     })

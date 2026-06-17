@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLang, useT } from '../../i18n'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { formatDay, formatTime } from '../../lib/format'
@@ -26,6 +26,7 @@ export function EventsSection({
   const { lang } = useLang()
   const { open } = useAddSheet()
   const undoableRemove = useUndoableRemove()
+  const write = useWrite()
   const [editing, setEditing] = useState<EventRow | null>(null)
 
   function remove(ev: EventRow) {
@@ -35,7 +36,8 @@ export function EventsSection({
       listProp: 'events',
       id: ev.id,
       label: ev.title,
-      commit: () => api('events', { method: 'DELETE', body: { id: ev.id } }),
+      commit: () =>
+        write('events', { method: 'DELETE', body: { id: ev.id }, affectedKeys: [['events'], ['board'], ['month']] }),
       after: onChange,
     })
   }

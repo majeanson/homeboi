@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api, isStatus } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 import { Icon } from '../Icon'
@@ -66,6 +67,7 @@ type ManageStore = { key: string; merchant: string; logo: string | null; include
 
 export function StoreFilterSection() {
   const t = useT()
+  const write = useWrite()
   const [stores, setStores] = useState<ManageStore[] | null>(null)
   const [state, setState] = useState<'loading' | 'ok' | 'empty' | 'noPostal' | 'error'>('loading')
   const [pending, setPending] = useState<Set<string>>(new Set())
@@ -108,7 +110,11 @@ export function StoreFilterSection() {
     setStores(next) // optimistic
     setPending((p) => new Set(p).add(s.key))
     try {
-      await api('household', { method: 'PATCH', body: { includedStores: next.filter((x) => x.included).map((x) => x.key) } })
+      await write('household', {
+        method: 'PATCH',
+        body: { includedStores: next.filter((x) => x.included).map((x) => x.key) },
+        affectedKeys: [['flyers']],
+      })
     } catch {
       setStores(prev) // revert on failure
     } finally {
@@ -173,6 +179,7 @@ interface HistRow {
 export function HistorySection() {
   const t = useT()
   const qc = useQueryClient()
+  const write = useWrite()
   const [items, setItems] = useState<HistRow[] | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
@@ -206,7 +213,7 @@ export function HistorySection() {
 
   async function remove(it: HistRow) {
     mark(it.key, true)
-    await api('list', { method: 'DELETE', body: { historyKey: it.key } }).catch(() => {})
+    await write('list', { method: 'DELETE', body: { historyKey: it.key } }).catch(() => {})
     refresh()
     mark(it.key, false)
   }
@@ -215,7 +222,7 @@ export function HistorySection() {
     setEditing(null)
     if (!text || text === it.text) return
     mark(it.key, true)
-    await api('list', { method: 'PATCH', body: { historyKey: it.key, renameTo: text } }).catch(() => {})
+    await write('list', { method: 'PATCH', body: { historyKey: it.key, renameTo: text } }).catch(() => {})
     refresh()
     mark(it.key, false)
   }

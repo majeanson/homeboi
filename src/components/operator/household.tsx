@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { PALETTE } from '../../lib/colors'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
@@ -20,13 +21,18 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   // Default each new person to the next unused palette colour, so a household
   // fills out colour-distinct without anyone having to think about it.
   const [color, setColor] = useState(PALETTE[members.length % PALETTE.length])
+  const write = useWrite()
 
   async function add(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim() || busy) return
     setBusy(true)
     try {
-      await api('members', { method: 'POST', body: { name: name.trim(), isChild, color } })
+      await write('members', {
+        method: 'POST',
+        body: { name: name.trim(), isChild, color },
+        affectedKeys: [['members'], ['board']],
+      })
       setName('')
       setIsChild(false)
       setColor(PALETTE[(members.length + 1) % PALETTE.length])
@@ -48,7 +54,9 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       tone: 'danger',
     })
     if (!okay) return
-    await api('members', { method: 'DELETE', body: { id: m.id } }).catch(() => {})
+    await write('members', { method: 'DELETE', body: { id: m.id }, affectedKeys: [['members'], ['board']] }).catch(
+      () => {},
+    )
     onChange()
   }
 
@@ -114,6 +122,7 @@ function MemberCard({ member, onChange, onRemove }: { member: Member; onChange: 
   const [isChild, setIsChild] = useState(!!member.is_child)
   const [color, setColor] = useState(member.colour)
   const [busy, setBusy] = useState(false)
+  const write = useWrite()
 
   async function setPhoto(file: File) {
     const blob = await resizeImage(file, AVATAR_MAX)
@@ -121,16 +130,21 @@ function MemberCard({ member, onChange, onRemove }: { member: Member; onChange: 
     onChange()
   }
   async function clearPhoto() {
-    await api('members', { method: 'PATCH', body: { id: member.id, clearPhoto: true } }).catch(() => {})
+    await write('members', {
+      method: 'PATCH',
+      body: { id: member.id, clearPhoto: true },
+      affectedKeys: [['members'], ['board']],
+    }).catch(() => {})
     onChange()
   }
   async function save(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim() || busy) return
     setBusy(true)
-    await api('members', {
+    await write('members', {
       method: 'PATCH',
       body: { id: member.id, name: name.trim(), isChild, colour: color },
+      affectedKeys: [['members'], ['board']],
     }).catch(() => {})
     setBusy(false)
     setEditing(false)

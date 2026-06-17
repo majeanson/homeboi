@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { wash, PALETTE } from '../../lib/colors'
@@ -19,7 +19,7 @@ import { RowActions } from '../RowActions'
 // key via useReserveLocations).
 export function ReserveLocationsSection() {
   const t = useT()
-  const qc = useQueryClient()
+  const write = useWrite()
   const undo = useUndoToast()
   const [locs, setLocs] = useState<ReserveLocation[] | null>(null)
   const [adding, setAdding] = useState('')
@@ -47,14 +47,17 @@ export function ReserveLocationsSection() {
     async (next: ReserveLocation[]) => {
       setStatus('idle')
       try {
-        await api('household', { method: 'PATCH', body: { reserveLocations: next } })
-        qc.invalidateQueries({ queryKey: HOUSEHOLD_KEY })
+        await write('household', {
+          method: 'PATCH',
+          body: { reserveLocations: next },
+          affectedKeys: [HOUSEHOLD_KEY],
+        })
         setStatus('saved')
       } catch {
         setStatus('bad')
       }
     },
-    [qc],
+    [write],
   )
 
   const save = useCallback(
