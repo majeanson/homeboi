@@ -10,6 +10,7 @@ import { DisplaySection, VoiceSection, CalmSection } from '../components/operato
 import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
+import { GuestSection } from '../components/operator/guest'
 import { EventsSection } from '../components/operator/agenda'
 import { ChoresSection, RoutinesSection } from '../components/operator/chores'
 import { ChoreLedger } from '../components/ChoreLedger'
@@ -41,6 +42,7 @@ const SECTIONS = [
   { id: 'reserve', key: 'reserveTab' as const },
   { id: 'ghost', key: 'ghost' as const },
   { id: 'devices', key: 'devices' as const },
+  { id: 'guest', key: 'guestTab' as const },
   { id: 'photos', key: 'photos' as const },
   { id: 'recap', key: 'recapTitle' as const },
   { id: 'display', key: 'display' as const },
@@ -104,7 +106,11 @@ export function Operator() {
   // loading" counts as full access so an operator's deep link (?tab=household)
   // survives the auth round-trip instead of snapping to the default tab.
   const fullAccess = signedIn || loading
-  const sections = fullAccess ? SECTIONS : SECTIONS.filter((s) => s.id !== 'household' && s.id !== 'devices')
+  // Guest issuance is operator-only (the server's guest/start is 'operator'
+  // scope), so a kiosk never sees that tab either — same as Membres + Tablettes.
+  const sections = fullAccess
+    ? SECTIONS
+    : SECTIONS.filter((s) => s.id !== 'household' && s.id !== 'devices' && s.id !== 'guest')
   const [tab, setTab] = useTabParam(
     'tab',
     sections[0].id,
@@ -193,6 +199,7 @@ export function Operator() {
             <DevicesSection devices={devices} onChange={load} />
           </>
         )}
+        {tab === 'guest' && <GuestSection />}
         {tab === 'photos' && <PhotosSection />}
         {tab === 'recap' && <RecapSection />}
         {tab === 'display' && (

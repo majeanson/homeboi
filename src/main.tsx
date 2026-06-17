@@ -24,7 +24,34 @@ import { startDaypartDrift } from './lib/daypartDrift'
 import { restorePersistedCache, startPersistingCache, clearPersistedCache } from './lib/persist'
 import { startOutbox, clearOutbox } from './lib/outbox'
 import { onAuthLost } from './lib/authEvents'
+import { setGuestToken, clearGuestToken } from './lib/device'
+import { connectRealtime } from './lib/realtime'
 import './styles.css'
+
+// Realtime push (#20) is SCAFFOLDED, not yet enabled. Flip this on only after the
+// RealtimeHub Durable Object is deployed + verified DO-eligible (see wrangler.toml
+// + OFFLINE/realtime notes). While false, connectRealtime is never called, so an
+// undeployed DO can't even attempt the socket. It's wired here (not a dead file)
+// so enabling is a one-line flip — and connectRealtime is fail-safe regardless.
+const REALTIME_ENABLED = false
+
+// `?guest=<token>` boots a babysitter / guest session: stash the read-only token
+// in localStorage so lib/api sends it (on the X-Device-Token header) from the very
+// first call, then strip it from the URL so it isn't shared/bookmarked verbatim.
+// Mirrors the `?kid=1` latch — a deliberate link the operator hands out. Runs at
+// module load, before first paint and before any api() call.
+try {
+  const q = new URLSearchParams(window.location.search)
+  const guest = q.get('guest')
+  if (guest) {
+    setGuestToken(guest)
+    q.delete('guest')
+    const rest = q.toString()
+    window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash)
+  }
+} catch {
+  /* noop — guest boot is best-effort */
+}
 
 function Root() {
   const [lang, setLangState] = useState<Lang>(() => {
@@ -261,11 +288,18 @@ startDaypartDrift()
 onAuthLost(() => {
   clearPersistedCache()
   void clearOutbox()
+  // A guest (babysitter) token that 401s is expired or revoked-by-secret-rotation
+  // — drop it so the device falls back to the normal not-paired flow instead of
+  // re-sending a dead token forever.
+  clearGuestToken()
 })
 void (async () => {
   await restorePersistedCache(queryClient)
   startPersistingCache(queryClient)
   startOutbox(queryClient)
+  // Realtime: only when the DO is deployed + the flag is on (see above). Fail-safe
+  // either way — polling owns freshness regardless of whether the socket opens.
+  if (REALTIME_ENABLED) connectRealtime(queryClient)
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <Root />

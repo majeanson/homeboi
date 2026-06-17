@@ -15,11 +15,18 @@
 import type { Env } from '../functions/_lib/env'
 import { verifyCsrf } from '../functions/_lib/auth'
 import { forbidden, serverError, notFound } from '../functions/_lib/json'
+import { resolveActor } from '../functions/_lib/household'
 import { matchRoute, type RouteMod } from './routes'
 
+// Re-export the Durable Object class so the Workers runtime can find it (a DO
+// must be exported from the entry module named in wrangler.toml). SCAFFOLD (#20).
+export { RealtimeHub } from './RealtimeHub'
+
 // The Worker env is the Functions Env plus the static-assets binding (declared
-// in wrangler.toml). Handlers receive the same object typed as Env (a subset).
-type WorkerEnv = Env & { ASSETS: Fetcher }
+// in wrangler.toml) and the OPTIONAL realtime DO namespace. REALTIME_HUB is
+// optional so the app still builds/runs when the DO binding isn't provisioned —
+// /api/live then 503s and polling carries on (it's an optimization, not a dep).
+type WorkerEnv = Env & { ASSETS: Fetcher; REALTIME_HUB?: DurableObjectNamespace }
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // Mirror functions/_middleware.ts: these state-changing endpoints have no cookie
@@ -74,6 +81,31 @@ export default {
     if (!path.startsWith('api/')) return env.ASSETS.fetch(request)
 
     const apiPath = path.slice('api/'.length)
+
+    // 0. Realtime WebSocket upgrade (SCAFFOLD, #20). /api/live is the ONE route
+    //    that hijacks the request into a Durable Object instead of a handler. We
+    //    authenticate the upgrade FIRST (401 if no actor) so a socket is only ever
+    //    opened for a real household — then route it to THAT household's DO stub,
+    //    so connections can't cross households. Purely additive + fail-safe: if
+    //    the DO binding isn't provisioned we 503 and the client falls back to
+    //    polling (src/lib/query.ts owns freshness regardless).
+    if (apiPath === 'live') {
+      if (request.headers.get('Upgrade') !== 'websocket') {
+        return new Response('Expected WebSocket upgrade.', { status: 426 })
+      }
+      const actor = await resolveActor(env, request)
+      if (!actor) return new Response('Not signed in.', { status: 401 })
+      if (!env.REALTIME_HUB) {
+        // DO not deployed/eligible — tell the client to stick with polling.
+        return new Response('Realtime unavailable.', { status: 503 })
+      }
+      // One DO per household: derive the instance id from the household id so all
+      // of a household's devices land on the same hub. Forward the upgrade request
+      // unchanged; the DO returns the 101 with the server-side socket.
+      const id = env.REALTIME_HUB.idFromName(actor.householdId)
+      const stub = env.REALTIME_HUB.get(id)
+      return stub.fetch(request)
+    }
 
     // 1. CSRF gate (double-submit), skipped for safe methods, the exempt set,
     //    and header-authenticated device requests (no cookie to ride).

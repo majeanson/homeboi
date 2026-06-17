@@ -6,7 +6,7 @@ import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { onAuthLost } from '../lib/authEvents'
-import { clearDeviceToken, isPaired } from '../lib/device'
+import { clearDeviceToken, isPaired, isGuest } from '../lib/device'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
 import { KidExitGate } from './KidExitGate'
@@ -171,10 +171,15 @@ export function HubLayout() {
   }, [surface, profileId, setMemberId])
 
   const toddler = audience === 'toddler'
+  // A guest (babysitter) is read-only: Réglages is operator territory (it would
+  // 403 server-side anyway), so hide the tab and bounce a stray /settings URL to
+  // the board. The lock is presentation-only — the real gate is the server, which
+  // rejects every guest write and every operator-scope read regardless of UI.
+  const guest = isGuest()
   // The toddler lens has no business in Réglages — not on a locked kiosk, and
   // not in an unlocked parent preview either (a kid mustn't reach settings via a
   // stray /settings URL). Only the parent view opens Réglages.
-  if ((locked || toddler) && isSettings) return <Navigate to="/board" replace />
+  if ((locked || toddler || guest) && isSettings) return <Navigate to="/board" replace />
 
   if (pairingLost) {
     return (
@@ -213,12 +218,13 @@ export function HubLayout() {
   // Capture is a parent action (the ＋ Add sheet). Not for a toddler, not in
   // settings. The floating ＋ FAB rides bottom-right on every parent tab —
   // including the mobile board (no separate in-page add button there).
-  const showAdd = !locked && !isSettings && !toddler
+  // A guest can't write — drop the ＋ entirely (every capture/add 403s anyway).
+  const showAdd = !locked && !isSettings && !toddler && !guest
   // Réglages hides from the nav whenever the toddler lens is up: on a locked
   // kiosk a three-year-old must not reach settings/billing (PRD C5), and the same
   // holds for an unlocked preview — the kid view is a one-way door, so Réglages
   // only ever returns by relaunching back into the parent view (?kid=0).
-  const tabs = locked || toddler ? TABS.filter((tab) => tab.to !== '/settings') : TABS
+  const tabs = locked || toddler || guest ? TABS.filter((tab) => tab.to !== '/settings') : TABS
   // The collapse only applies on the kiosk left rail; mobile's bottom bar stays.
   // Never in the toddler lens — a pre-reader mustn't be able to hide their own
   // navigation (or the KidExitGate that lives in the rail), so the section column
@@ -285,6 +291,11 @@ export function HubLayout() {
 
       <div className="hub__body">
         <OfflineBanner />
+        {guest && (
+          <p className="board__empty mono" role="status" style={{ textAlign: 'center', opacity: 0.8 }}>
+            <InlineIcon name="user-bold" /> {t.guest.banner}
+          </p>
+        )}
         <Outlet />
       </div>
 
