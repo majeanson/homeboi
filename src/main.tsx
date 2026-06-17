@@ -20,6 +20,7 @@ import { TourProvider } from './lib/tour'
 import { TourOverlay } from './components/tour/TourOverlay'
 import { registerSw } from './lib/registerSw'
 import { trackVisualViewport } from './lib/viewportVars'
+import { startDaypartDrift } from './lib/daypartDrift'
 import { restorePersistedCache, startPersistingCache, clearPersistedCache } from './lib/persist'
 import { startOutbox, clearOutbox } from './lib/outbox'
 import { onAuthLost } from './lib/authEvents'
@@ -243,6 +244,12 @@ registerSw()
 // Keep --vvh/--vvt/--kb in sync with the visual viewport so modal and sheet
 // action buttons stay visible above the on-screen keyboard (iOS overlays it).
 trackVisualViewport()
+
+// Ambient day-part drift (feature #1): theme-bootstrap.js set the first tint
+// before paint; this keeps it current for an always-on kiosk by recomputing
+// every ~10 min. No-op (and a no-op cleanup) when the operator opted out. Started
+// once for the app's lifetime, so the cleanup is intentionally unused.
+startDaypartDrift()
 
 // Cold-reboot offline (NFR-OFFLINE-1): restore the last query-cache snapshot
 // BEFORE first paint so a kiosk rebooted without network shows the last-known

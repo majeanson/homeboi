@@ -110,6 +110,91 @@
   --on-primary: #1b1712;
 }
 
+/* --- Ambient day-part drift (feature #1) ---------------------------------- */
+/* A SECOND, orthogonal axis layered on top of day/night: the palette gently
+   drifts dawn→morning→afternoon→dusk→night across the day. Calm furniture —
+   we only nudge a few existing tokens (--paper, --paper-deep, --accent/--marigold,
+   --sky) by a hair, warm, never flashing. `data-daypart='morning'` and
+   `data-daypart='manual'` (the opt-out sentinel) deliberately rebind nothing, so
+   the base palette shows through. Night theme has its own dim palette; the dawn/
+   dusk/night drifts here ride the day palette (the operator who runs auto day/
+   night in tandem gets the binary dim after dark either way).
+
+   The drift transitions slowly so the change is felt, not seen. We transition the
+   whole element's colour-bearing properties at the root; tokens are custom props,
+   which don't animate, so the visible easing comes from elements that read these
+   vars inheriting this transition. Subtle by design. */
+:root[data-daypart='dawn'],
+:root[data-daypart='afternoon'],
+:root[data-daypart='dusk'],
+:root[data-daypart='night'] {
+  transition:
+    background-color var(--dur-slow) var(--ease-out),
+    color var(--dur-slow) var(--ease-out);
+}
+
+/* Dawn — a faint cool-warm wakeup: the cream lifts a touch peachy, accent warms. */
+:root[data-daypart='dawn'] {
+  --paper: #fcf1e0;
+  --paper-deep: #f4e6cf;
+  --accent: #f0a657;
+  --marigold: #f0a657;
+  --sky: #84b6cd;
+}
+
+/* Afternoon — the brightest, most neutral cream (the "plain day" anchor), a
+   hair cooler/cleaner than the warm morning base. */
+:root[data-daypart='afternoon'] {
+  --paper: #fcf4e8;
+  --paper-deep: #f5e9d6;
+  --sky: #74acc6;
+}
+
+/* Dusk — the warmest, golden-hour drift: paper deepens amber, accent goes
+   terracotta-warm, sky cools to balance. */
+:root[data-daypart='dusk'] {
+  --paper: #faecd6;
+  --paper-deep: #f1dec2;
+  --accent: #e88f4a;
+  --marigold: #e88f4a;
+  --sky: #6fa3bd;
+}
+
+/* Night drift (when running the day palette without auto day/night) — settle the
+   cream toward a calm, dim warm-stone so a lit room at night isn't a bright slab.
+   Kept gentle; the real dark mode is the separate data-theme='night' palette. */
+:root[data-daypart='night'] {
+  --paper: #f3e7d2;
+  --paper-deep: #ebdcc0;
+  --accent: #e5944a;
+  --marigold: #e5944a;
+  --sky: #6b9fb9;
+}
+
+/* Body itself reads --paper; ease its background drift to match the tokens above. */
+:root[data-daypart='dawn'] body,
+:root[data-daypart='afternoon'] body,
+:root[data-daypart='dusk'] body,
+:root[data-daypart='night'] body {
+  transition: background-color var(--dur-slow) var(--ease-out);
+}
+
+/* Calm + accessibility: a slow drift is fine, but never animate it for someone who
+   asked for reduced motion — the tint still changes, it just snaps instead of
+   easing (NFR-CALM, prefers-reduced-motion). */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-daypart='dawn'],
+  :root[data-daypart='afternoon'],
+  :root[data-daypart='dusk'],
+  :root[data-daypart='night'],
+  :root[data-daypart='dawn'] body,
+  :root[data-daypart='afternoon'] body,
+  :root[data-daypart='dusk'] body,
+  :root[data-daypart='night'] body {
+    transition: none;
+  }
+}
+
 * {
   box-sizing: border-box;
 }

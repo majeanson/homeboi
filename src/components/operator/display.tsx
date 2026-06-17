@@ -4,7 +4,8 @@ import { useLang, useT } from '../../i18n'
 import { useAudience } from '../../lib/audience'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
-import { getTheme, toggleTheme, type Theme } from '../../lib/theme'
+import { getTheme, toggleTheme, type Theme, isDaypartAuto, setDaypartAuto, setDayPart } from '../../lib/theme'
+import { computeDayPart } from '../../lib/timeofday'
 import { InlineIcon } from '../Icon'
 import {
   getRate,
@@ -24,6 +25,14 @@ export function DisplaySection() {
   const { audience, setAudience } = useAudience()
   const { tutorial, setTutorial } = useHelp()
   const [theme, setThemeState] = useState<Theme>(() => getTheme())
+  // Ambient day-part drift (feature #1) — calm furniture, default ON, opt-out here.
+  const [ambient, setAmbientState] = useState<boolean>(() => isDaypartAuto())
+  function toggleAmbient() {
+    const next = !ambient
+    setAmbientState(next)
+    setDaypartAuto(next) // persists the flag; pins 'manual' when turning OFF
+    if (next) setDayPart(computeDayPart(Date.now())) // resume drift immediately
+  }
 
   return (
     <section className="surface operator__section">
@@ -39,6 +48,18 @@ export function DisplaySection() {
               color={theme === 'night' ? 'var(--berry-deep)' : 'var(--marigold-deep)'}
             />{' '}
             {theme === 'night' ? t.operator.themeNight : t.operator.themeDay}
+          </button>
+        </div>
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.ambientLabel}</span>
+          <button
+            type="button"
+            className={`btn${ambient ? ' btn--primary' : ''}`}
+            onClick={toggleAmbient}
+            aria-pressed={ambient}
+          >
+            <InlineIcon name={ambient ? 'sun-horizon-bold' : 'sun-bold'} size={16} />{' '}
+            {ambient ? t.operator.ambientOn : t.operator.ambientOff}
           </button>
         </div>
         <div className="operator__seg">
