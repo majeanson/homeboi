@@ -78,13 +78,19 @@ DEFAULT_LANG = "fr"
 # is DO-eligible BEFORE `wrangler deploy` — an ineligible account fails the deploy
 # on this binding. If you're not ready to enable DOs, comment this block out and
 # the /api/live route degrades to a 503 (polling continues regardless).
-[[durable_objects.bindings]]
-name = "REALTIME_HUB"
-class_name = "RealtimeHub"
+#
+# DEPLOY-SAFE DEFAULT: these two blocks are commented out so the scaffold ships
+# WITHOUT touching the prod deploy. /api/live → 503, the broadcast hook no-ops, and
+# the client is gated off (REALTIME_ENABLED = false in src/lib/realtime.ts).
+# TO ACTIVATE realtime: (1) confirm the account is DO-eligible, (2) uncomment the
+# two blocks below, (3) flip REALTIME_ENABLED, (4) wire the WS auth token, (5) deploy.
+# [[durable_objects.bindings]]
+# name = "REALTIME_HUB"
+# class_name = "RealtimeHub"
 
 # A new SQLite-backed DO class needs a migration tag. `new_sqlite_classes` is the
 # current free-tier-eligible form; switch to `new_classes` if you provision a
 # key-value-backed DO on a paid plan instead.
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["RealtimeHub"]
+# [[migrations]]
+# tag = "v1"
+# new_sqlite_classes = ["RealtimeHub"]
