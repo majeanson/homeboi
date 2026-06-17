@@ -26,7 +26,7 @@
 10. **Photo-to-events** [M] — snap a school newsletter / sports schedule → AI extracts dates into the calendar. *(reuse: the recipe-vision OCR pipeline.)*
 11. **Gentle routing confirm** [S] — after a capture, a soft "I filed this under Events — move it?" chip; one tap re-routes.
 12. **Natural-language queries** [M] ✦ — "what did I add yesterday?", "what's for supper Friday?" answered over your own data. *(reuse: AI + D1.)*
-13. **PWA share-target capture** [M] — share a link/text/photo from any app straight into Babillard capture (a school email, a recipe URL).
+13. **PWA share-target capture** [M] — ✅ **BUILT** (text/URL). "Share → Babillard" from any app lands on `/share` (manifest `share_target`, GET) → the shared title/text/url drops into the capture spine, pre-filled, one tap to add. *(`SharePage`.)* Photo-sharing (POST + SW file stash) is a follow-on.
 14. **Drawn fridge note** [M] — ✅ **BUILT** (reframed: a drawn note, NOT OCR). Scribble/paint a little something for the household on a quick canvas (`DrawPad`, signature_pad) → saved as a PNG fridge note. *(in the ＋ Note rapide sheet; `MemoControls`.)*
 
 ## C · Kitchen, meals & recipes

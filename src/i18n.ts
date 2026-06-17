@@ -877,6 +877,11 @@ export const FR = {
     byStore: 'Par magasin',
   },
   common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', delete: 'Supprimer', confirmTitle: 'Confirmer', saveFailed: 'Pas enregistré — réessaie.', close: 'Fermer' },
+  share: {
+    title: 'Ajouter à Babillard',
+    lead: 'Partagé depuis une autre app. Ajuste le texte au besoin, puis ajoute — l’app le classe (rendez-vous, liste, repas, note).',
+    added: 'Ajouté :',
+  },
   aiErr: {
     title: 'Erreur IA',
     accept: 'Accepter',
@@ -1777,6 +1782,11 @@ export const EN: typeof FR = {
     byStore: 'By store',
   },
   common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', delete: 'Delete', confirmTitle: 'Confirm', saveFailed: 'Not saved — try again.', close: 'Close' },
+  share: {
+    title: 'Add to Babillard',
+    lead: 'Shared from another app. Tweak the text if needed, then add — the app sorts it (event, list, meal, note).',
+    added: 'Added:',
+  },
   aiErr: {
     title: 'AI error',
     accept: 'Accept',

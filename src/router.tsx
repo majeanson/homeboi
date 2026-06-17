@@ -20,6 +20,8 @@ const Routines = lazy(() => import('./pages/Routines').then((m) => ({ default: m
 const Liste = lazy(() => import('./pages/Liste').then((m) => ({ default: m.Liste })))
 const Pair = lazy(() => import('./pages/Pair').then((m) => ({ default: m.Pair })))
 const Setup = lazy(() => import('./pages/Setup').then((m) => ({ default: m.Setup })))
+// PWA share-target landing (#13): "Share → Babillard" → capture (manifest /share).
+const SharePage = lazy(() => import('./pages/SharePage').then((m) => ({ default: m.SharePage })))
 // Full-screen scenes — real routes (native back, deep-linkable), rendered
 // standalone (no hub chrome) because they take over the whole viewport.
 const CirculairesPage = lazy(() => import('./pages/CirculairesPage').then((m) => ({ default: m.CirculairesPage })))
@@ -92,6 +94,7 @@ export function AppRoutes() {
         <Route path="/event/new" element={<EventFormPage />} />
         <Route path="/chore/new" element={<ChoreFormPage />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />
+        <Route path="/share" element={<SharePage />} />
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />

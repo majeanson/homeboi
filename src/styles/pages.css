@@ -2463,3 +2463,22 @@
   border-color: var(--accent, var(--line-strong));
   background: color-mix(in srgb, var(--accent, var(--ink)) 8%, var(--paper));
 }
+
+/* PWA share-target landing (#13) — a narrow "add this?" page over the capture spine. */
+.share-page__box {
+  width: 100%;
+  margin: 0.8rem 0;
+  resize: vertical;
+}
+.share-page__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.share-page__done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  color: var(--sage-deep, #6b8a52);
+}

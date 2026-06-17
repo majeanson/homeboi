@@ -77,6 +77,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 ### Page orchestrators — intentionally NOT in the gallery
 Need live data/route context, so they're catalogued but not rendered as specimens:
 `AddSheet`, `MemoControls` (the ＋ Note-rapide audio-memo + draw controls, #38/#14),
+`SharePage` (the `/share` PWA share-target landing → capture, #13),
 `HubLayout`, `RecipeSheet`, `RecipeForm`, `CookMode`, `CashierMode`,
 `ProfilePicker`, `TourOverlay`, `DealsBrowser`, `FlyerViewer`, `ChoreLedger`
 (read-only fairness glance, #18), `CookableView` (cook-from-what-I-have, #10),

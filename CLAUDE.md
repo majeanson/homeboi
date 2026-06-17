@@ -137,7 +137,9 @@ photo / routine-voice-clip / recipe-step-photo features hide. DO-unset → `/api
 - **Routing** (`src/router.tsx`): `/` is a smart entry (marketing for a brand-new
   visitor; otherwise → `/board`). The five themed tabs (`/board`, `/kitchen`,
   `/routines`, `/liste`, `/settings`) render inside `HubLayout`. `/pair`, `/login`,
-  `/signup` are standalone. `/kid` is legacy → redirects to `/routines`.
+  `/signup` are standalone. `/share` is the PWA **share-target** landing (#13:
+  manifest `share_target` → pre-fills the capture spine). `/kid` is legacy →
+  redirects to `/routines`.
 - **Two orthogonal presentation axes**, both React contexts persisted to
   localStorage, both overridable by URL param — **neither is a permission boundary;
   auth still gates writes server-side**:
