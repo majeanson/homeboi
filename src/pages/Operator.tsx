@@ -19,6 +19,7 @@ import { RecipeTagsSection } from '../components/operator/recipesTags'
 import { MealSlotsSection } from '../components/operator/meals'
 import { ReserveLocationsSection } from '../components/operator/reserve'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
+import { IdleDebugSection } from '../components/operator/idleDebug'
 import { MicSelfTest } from '../components/operator/micTest'
 import { GuideSection } from '../components/operator/guide'
 import { SectionGuide } from '../components/operator/sectionGuide'
@@ -211,6 +212,7 @@ export function Operator() {
         {tab === 'calm' && <CalmSection />}
         {tab === 'ai-log' && (
           <>
+            <IdleDebugSection />
             <MicSelfTest />
             <AiErrorLogSection />
           </>

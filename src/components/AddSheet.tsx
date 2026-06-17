@@ -87,14 +87,6 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   ...FORM_ROUTES,
 }
 
-// Modes that must never be the sheet's pre-selected default: they have no plain
-// in-sheet "add a thing" form. `cook` opens its own in-sheet meal picker, and
-// `auto-pick` runs an action in place (stage best deals → cashier) — both
-// resolved at click time, plus the static nav targets above. The kitchen should
-// open on its meal planner, not on the cook picker, so cook stays out of defMode.
-const isNonDefault = (m: AddSheetMode) =>
-  m === 'cook' || m === 'auto-pick' || m === 'plan-today' || m === 'plan-tomorrow' || m in NAV_TARGET
-
 export function AddSheet({
   open,
   modes,
@@ -124,12 +116,14 @@ export function AddSheet({
   // on /routines), fall back to quick capture — the AI router still sorts it.
   const allowed = signedIn ? modes : modes.filter((m) => !OPERATOR_MODES.has(m))
   const shown = allowed.length ? allowed : (['capture'] as AddSheetMode[])
-  // Section default: capture where it exists (the board), else the first
-  // form-backed tile — navigate-only modes (recipe, quick-add, flyer) leave the
-  // sheet, so the kitchen pre-selects the meal planner and Liste the add-a-line
-  // form under their choosers.
-  const defMode = shown.includes('capture') ? 'capture' : (shown.find((m) => !isNonDefault(m)) ?? shown[0])
-  const [mode, setMode] = useState<AddSheetMode>(initialMode ?? defMode)
+  // The ＋ sheet opens with NOTHING pre-selected whenever it offers a chooser: no
+  // tile is highlighted and no form shows until the operator picks one (Marc's
+  // ask — a calm, blank-slate sheet in every section). A chooser-less section
+  // (one mode, no tiles to choose between) still drops straight into its single
+  // form, and an explicit initialMode (open('pantry'), the Garde-manger ＋) still
+  // pins that form.
+  const defMode: AddSheetMode | null = shown.length > 1 ? null : shown[0]
+  const [mode, setMode] = useState<AddSheetMode | null>(initialMode ?? defMode)
   // Re-sync on each open so the last visit's pick doesn't leak into this one.
   useEffect(() => {
     if (open) setMode(initialMode ?? defMode)

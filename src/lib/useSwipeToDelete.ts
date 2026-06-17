@@ -14,6 +14,7 @@ import { useEffect, useRef, type RefObject } from 'react'
 // (e.g. via an undo toast) and let it unmount once it's already off-screen.
 
 const ARM_PX = 8 // movement before we commit to an axis
+const H_DOMINANCE = 1.5 // arm horizontal only when |dx| clearly beats |dy| by this factor
 const COMMIT_FRACTION = 0.35 // swipe past this share of the row width to delete
 const COMMIT_MIN_PX = 90 // …but always at least this far
 
@@ -51,9 +52,12 @@ export function useSwipeToDelete(ref: RefObject<HTMLElement | null>, onDelete: (
       const ddy = e.touches[0].clientY - startY
       if (axis === 'undecided') {
         if (Math.abs(ddx) < ARM_PX && Math.abs(ddy) < ARM_PX) return
-        // Arm only for a leftward, mostly-horizontal drag; anything else is a
-        // vertical scroll (or a rightward pan we have no action for) — hand it back.
-        axis = Math.abs(ddx) > Math.abs(ddy) && ddx < 0 ? 'horizontal' : 'vertical'
+        // Arm only for a leftward drag that's CLEARLY horizontal — |dx| has to beat
+        // |dy| by a comfortable margin. A vertical scroll naturally curves a few px
+        // sideways; without this margin that drift would arm horizontal and flash
+        // the red delete pane while the user is only scrolling the list up/down.
+        // Anything ambiguous, diagonal, or rightward defaults to vertical (scroll).
+        axis = ddx < 0 && Math.abs(ddx) > Math.abs(ddy) * H_DOMINANCE ? 'horizontal' : 'vertical'
         if (axis === 'vertical') reset()
       }
       if (axis !== 'horizontal') return

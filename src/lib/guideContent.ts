@@ -2089,12 +2089,23 @@ export const GUIDE: GuideEntry[] = [
     icon: 'first-aid-kit-bold',
     group: 'settings',
     tab: 'ai-log',
-    title: { fr: 'Journal IA', en: 'AI log' },
+    title: { fr: 'Debug', en: 'Debug' },
     what: {
-      fr: 'Un carnet d’entretien : quand une fonction IA échoue (modèle retiré, panne), la note acceptée à l’écran s’inscrit ici.',
-      en: 'A maintenance log: when an AI feature fails (retired model, outage), the note you accepted on-screen lands here.',
+      fr: 'Les outils de mise au point : le journal d’entretien de l’IA, plus de quoi tester le mode inactif du kiosque sans attendre.',
+      en: 'The troubleshooting tools: the AI maintenance log, plus a way to test the kiosk idle mode without waiting.',
     },
     points: [
+      {
+        label: { fr: 'Mode inactif', en: 'Idle mode' },
+        detail: {
+          fr: 'Accélère ou force le retour à « Maisonnée » d’un kiosque pour le voir à l’œuvre.',
+          en: 'Speed up or force a kiosk’s drift back to “Household” to watch it work.',
+        },
+        why: {
+          fr: 'Le vrai délai est de 3 minutes — impossible à vérifier sans un raccourci.',
+          en: 'The real delay is 3 minutes — impossible to check without a shortcut.',
+        },
+      },
       {
         label: { fr: 'À quoi ça sert', en: 'What it’s for' },
         detail: {

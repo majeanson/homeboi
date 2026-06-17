@@ -1464,6 +1464,14 @@
   justify-content: flex-end;
   gap: 0.6rem;
 }
+/* Réglages ▸ Debug: the "force warn / force drift" idle-test buttons, wrapping on
+   a narrow phone so neither gets clipped. */
+.operator__debug-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
 /* The secondary "when · who" line on an event row, quieter than the title. */
 .operator__event-when {
   color: var(--ink-soft);

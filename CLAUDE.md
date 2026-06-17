@@ -224,6 +224,7 @@ appear as code identifiers, route names, or `bmad/` requirement tags.
 | **Chore ledger**             | Read-only "who did what this week" glance (Réglages ▸ Corvées) over `task_participants` — names + faces, **never counts/ranks** (calm).                         |
 | **Voice clip / step photo**  | Optional R2 media: a parent's recorded narration per routine card, and a photo per recipe step (parallel arrays; degrade to TTS/text when R2 unset).            |
 | **Realtime**                 | Per-household `RealtimeHub` Durable Object nudges open boards via `/api/live` WS to refresh on another device's write; **polling stays the fallback**.          |
+| **Idle drift**               | Shared-kiosk safety: once a face is picked (`useProfile`), a **kiosk** drifts back to "Maisonnée" (clears the profile) after 3 idle minutes, with a heads-up chip 30 s before. Shell-level in `HubLayout` (not Board), resets on any pointer/key, mobile is exempt. Test it via **Réglages ▸ Debug** (`lib/idleDebug.ts` + `operator/idleDebug.tsx`): shrink the window to seconds or force the warn/drift on demand. |
 
 ### Requirement tags
 

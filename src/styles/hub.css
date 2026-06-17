@@ -27,10 +27,12 @@
   background: var(--paper-deep);
   overflow-y: auto;
 }
-/* The little "tuck the rail away" caret — sits at the top of the kiosk column,
-   quiet chrome (no card) so it reads as a control, not a section. */
+/* The little "tuck the rail away" caret — sits at the BOTTOM of the kiosk column
+   (margin-top:auto pushes it under the tabs), quiet chrome (no card) so it reads
+   as a control, not a section. */
 .hubnav__collapse {
   align-self: flex-end;
+  margin-top: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -50,10 +52,11 @@
 .hub[data-nav-collapsed] .hubnav {
   display: none;
 }
-/* The way back: a small floating caret tucked top-left over the body. */
+/* The way back: a small floating caret tucked bottom-left over the body, to
+   mirror the collapse caret that lives at the bottom of the rail. */
 .hubnav-reopen {
   position: absolute;
-  top: 10px;
+  bottom: 10px;
   left: 10px;
   z-index: 25;
   display: inline-flex;
