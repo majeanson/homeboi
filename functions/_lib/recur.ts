@@ -6,9 +6,15 @@
 // board expands a recurring event into concrete occurrences for the day range it
 // renders (today / tomorrow / the week), so storage stays one row per series.
 //
-// All day math is UTC-midnight based to match _lib/ids dayStart().
+// All day math is HOUSEHOLD-LOCAL-midnight based (America/Toronto, DST-aware via
+// _lib/ids). It MUST be: on UTC the day flips at 20:00 Eastern, so "every 3 weeks
+// on Thursday" anchored to a Thursday EVENING (= Friday in UTC) pinned every
+// occurrence to UTC-Thursday-midnight = Wednesday evening local — the series
+// surfaced one day early in À venir and on the month grid. Weekdays and week
+// blocks are now read in local time so "Thursday" means the household's Thursday.
+// Callers pass LOCAL-midnight day boundaries (board/month already do).
 
-import { dayStart } from './ids'
+import { localDayStart, localDayOfWeek, addLocalDays } from './ids'
 
 export interface Recur {
   freq: 'daily' | 'weekly' | 'monthly'
@@ -49,30 +55,36 @@ export function normalizeRecur(input: unknown): Recur | null {
   return out
 }
 
-// Does the series (anchored at `anchorAt`, rule `r`) occur on the UTC day that
-// starts at `day`? Returns the occurrence's unix-seconds timestamp (carrying the
-// anchor's time-of-day) or null. Occurrences never precede the anchor's day.
+// Does the series (anchored at `anchorAt`, rule `r`) occur on the LOCAL day that
+// starts at `day` (a household-local-midnight unix-s; see expandRange)? Returns
+// the occurrence's unix-seconds timestamp (carrying the anchor's local time-of-day)
+// or null. Occurrences never precede the anchor's day.
 export function occurrenceOn(day: number, anchorAt: number, r: Recur): number | null {
-  const anchorDay = dayStart(new Date(anchorAt * 1000))
+  const anchorDay = localDayStart(new Date(anchorAt * 1000))
   if (day < anchorDay) return null
   const interval = Math.max(1, r.interval ?? 1)
-  const timeOffset = anchorAt - anchorDay // seconds past midnight to preserve
+  const timeOffset = anchorAt - anchorDay // seconds past LOCAL midnight to preserve
 
   let hit = false
   if (r.freq === 'daily') {
     hit = Math.round((day - anchorDay) / DAY) % interval === 0
   } else if (r.freq === 'weekly') {
-    const weekday = new Date(day * 1000).getUTCDay()
-    const days = r.weekdays?.length ? r.weekdays : [new Date(anchorAt * 1000).getUTCDay()]
+    const weekday = localDayOfWeek(new Date(day * 1000))
+    const days = r.weekdays?.length ? r.weekdays : [localDayOfWeek(new Date(anchorDay * 1000))]
     if (days.includes(weekday)) {
-      // Count fortnights from the START of each week, so every weekday in an
+      // Count fortnights from the START of each LOCAL week, so every weekday in an
       // interval shares one bucket (biweekly Mon+Thu stay in the same fortnight).
-      const weekStart = (sec: number) => sec - new Date(sec * 1000).getUTCDay() * DAY
-      const weeks = Math.floor((weekStart(day) - weekStart(anchorDay)) / (7 * DAY))
+      const weekStart = (sec: number) => sec - localDayOfWeek(new Date(sec * 1000)) * DAY
+      // round, not floor: both day and anchorDay are local midnights, so their
+      // difference is a whole number of days ± a DST hour — round absorbs that hour.
+      const weeks = Math.round((weekStart(day) - weekStart(anchorDay)) / (7 * DAY))
       hit = weeks % interval === 0
     }
   } else if (r.freq === 'monthly') {
-    const a = new Date(anchorAt * 1000)
+    // Both are local midnights (≈ 04:00–05:00 UTC, same calendar date), so getUTC*
+    // reads the LOCAL year/month/day here. Anchor off anchorDay, NOT the raw instant
+    // (whose UTC date can be the next day for an evening anchor).
+    const a = new Date(anchorDay * 1000)
     const d = new Date(day * 1000)
     if (d.getUTCDate() === a.getUTCDate()) {
       const months = (d.getUTCFullYear() - a.getUTCFullYear()) * 12 + (d.getUTCMonth() - a.getUTCMonth())
@@ -87,7 +99,9 @@ export function occurrenceOn(day: number, anchorAt: number, r: Recur): number | 
 // ascending. Bounded by the window, so the board's 7-day expansion is cheap.
 export function expandRange(anchorAt: number, r: Recur, rangeStart: number, rangeEnd: number): number[] {
   const out: number[] = []
-  for (let day = dayStart(new Date(rangeStart * 1000)); day < rangeEnd; day += DAY) {
+  // Step by LOCAL calendar days (DST-safe: a +86400 step would drift an hour twice
+  // a year and skip/duplicate a day near the boundary).
+  for (let day = localDayStart(new Date(rangeStart * 1000)); day < rangeEnd; day = addLocalDays(day, 1)) {
     const at = occurrenceOn(day, anchorAt, r)
     if (at !== null && at >= rangeStart && at < rangeEnd) out.push(at)
   }
@@ -107,16 +121,16 @@ export function expandRange(anchorAt: number, r: Recur, rangeStart: number, rang
 // calendar may also render (best-effort; per-occurrence history isn't stored).
 // Counts day-by-day, bounded by the calendar window the caller renders.
 export function rotationOffset(anchorAt: number, r: Recur, refDay: number, targetAt: number): number {
-  const a = dayStart(new Date(refDay * 1000))
-  const b = dayStart(new Date(targetAt * 1000))
+  const a = localDayStart(new Date(refDay * 1000))
+  const b = localDayStart(new Date(targetAt * 1000))
   let n = 0
   if (b >= a) {
     // Occurrences in [refDay, target): the first occurrence on/after refDay is the
     // pending one (offset 0), each later one adds a turn.
-    for (let day = a; day < b; day += DAY) if (occurrenceOn(day, anchorAt, r) !== null) n++
+    for (let day = a; day < b; day = addLocalDays(day, 1)) if (occurrenceOn(day, anchorAt, r) !== null) n++
   } else {
     // Past cell: occurrences in [target, refDay) walk the rotation backwards.
-    for (let day = b; day < a; day += DAY) if (occurrenceOn(day, anchorAt, r) !== null) n--
+    for (let day = b; day < a; day = addLocalDays(day, 1)) if (occurrenceOn(day, anchorAt, r) !== null) n--
   }
   return n
 }

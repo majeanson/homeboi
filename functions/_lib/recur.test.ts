@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { parseRecur, normalizeRecur, occurrenceOn, expandRange, rotationOffset } from './recur'
-import { dayStart } from './ids'
+import { localDayStart, localDayOfWeek } from './ids'
 
-// A fixed UTC anchor: Wed 2026-01-07 14:30 UTC. (2026-01-07 is a Wednesday.)
+// Recurrence is HOUSEHOLD-LOCAL (America/Toronto). Anchor: Wed 2026-01-07 09:30
+// local (= 14:30 UTC in January/EST). (2026-01-07 is a Wednesday.)
 const WED = Math.floor(Date.UTC(2026, 0, 7, 14, 30) / 1000)
-const d = (y: number, m: number, day: number) => Math.floor(Date.UTC(y, m, day) / 1000)
+// A day boundary the engine expects: LOCAL midnight of a Toronto calendar date.
+// (noon UTC is safely inside that civil date in any North-American zone.)
+const d = (y: number, m: number, day: number) => localDayStart(new Date(Date.UTC(y, m, day, 12)))
 
 describe('parseRecur', () => {
   it('returns null for empty / malformed / bad freq', () => {
@@ -122,9 +125,33 @@ describe('rotationOffset (project a shared chore forward)', () => {
 describe('expandRange', () => {
   it('lists every Wednesday in a 3-week window, ascending', () => {
     const r = { freq: 'weekly' as const, weekdays: [3] }
-    const start = dayStart(new Date(WED * 1000))
+    const start = localDayStart(new Date(WED * 1000))
     const occ = expandRange(WED, r, start, start + 21 * 86400)
     expect(occ).toHaveLength(3)
     expect(occ[0]).toBeLessThan(occ[1])
+  })
+})
+
+// Regression: the one-day-early bug. "Every 3 weeks on Thursday" anchored to a
+// Thursday EVENING — which is the NEXT day in UTC — used to pin every occurrence to
+// UTC-Thursday-midnight (= Wednesday ~19:00 local), so the series showed in À venir
+// and on the month grid one day too early. Local-day math fixes it.
+describe('occurrenceOn (local-day correctness — evening anchor that flips the UTC date)', () => {
+  // Thu 2026-01-08 20:00 America/Toronto (EST, UTC-5) = Fri 2026-01-09 01:00 UTC.
+  const THU_EVE = Math.floor(Date.UTC(2026, 0, 9, 1, 0) / 1000)
+  const r = { freq: 'weekly' as const, interval: 3, weekdays: [4] } // every 3 weeks, Thursday
+  it('the anchor reads as a LOCAL Thursday despite a UTC-Friday timestamp', () => {
+    expect(localDayOfWeek(new Date(THU_EVE * 1000))).toBe(4) // Thu, not Fri
+  })
+  it('fires on the local Thursday and NOT the day before', () => {
+    const at = occurrenceOn(d(2026, 0, 8), THU_EVE, r) // Thu Jan 8 (local)
+    expect(at).not.toBeNull()
+    expect(localDayOfWeek(new Date((at as number) * 1000))).toBe(4) // lands on Thursday
+    expect(occurrenceOn(d(2026, 0, 7), THU_EVE, r)).toBeNull() // NOT Wednesday (the bug)
+  })
+  it('repeats every 3 weeks, skipping the two weeks between', () => {
+    expect(occurrenceOn(d(2026, 0, 15), THU_EVE, r)).toBeNull() // +1 week
+    expect(occurrenceOn(d(2026, 0, 22), THU_EVE, r)).toBeNull() // +2 weeks
+    expect(occurrenceOn(d(2026, 0, 29), THU_EVE, r)).not.toBeNull() // +3 weeks
   })
 })

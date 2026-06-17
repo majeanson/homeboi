@@ -1,6 +1,6 @@
 import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { dayStart, localDayStart, addLocalDays } from '../_lib/ids'
+import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
 
 interface Ev {
@@ -18,22 +18,23 @@ const sortEvents = (xs: Ev[]) => xs.sort((p, q) => q.all_day - p.all_day || p.st
 export const onRequestGet = authed(async (ctx, actor) => {
   const hh = actor.householdId
 
-  const today = dayStart(new Date(Date.now()))
-  const tomorrow = today + 86400
-  const dayAfter = today + 86400 * 2
-  const weekEnd = today + 86400 * 7
+  // Everything dated buckets at LOCAL midnight (America/Toronto, DST-aware) — the
+  // boundary meals.ts / day-notes.ts store at, the household's wall clock, and (now)
+  // _lib/recur's day math. On UTC the day rolls at 20:00 Eastern, so an evening
+  // event/chore — or a recurring "Thursday" anchored to a Thursday evening — landed
+  // one day early (see _lib/recur header). Step by LOCAL calendar days, not a fixed
+  // 86 400 s: a local day is 23 h/25 h across a DST change, so plain arithmetic
+  // would drift the window an hour and mis-bucket near the boundary (twice a year).
+  const today = localDayStart(new Date(Date.now()))
+  const tomorrow = addLocalDays(today, 1)
+  const dayAfter = addLocalDays(today, 2)
+  const weekEnd = addLocalDays(today, 7)
 
-  // Meals and day-notes bucket at LOCAL midnight (America/Toronto) — the same
-  // boundary meals.ts / day-notes.ts store and query them at. On UTC the meal
-  // day rolls at 20:00 Eastern, so "ce soir" would flip to tomorrow's supper all
-  // evening. Events and chores keep the UTC `today` above to match _lib/recur's
-  // day math (it re-buckets with dayStart internally).
-  // Step by LOCAL calendar days, not a fixed 86 400 s: a local day is 23 h/25 h
-  // across a DST change, so plain arithmetic would land "ce soir"/tomorrow's
-  // supper an hour off and mis-bucket meals near the boundary (twice a year).
-  const mealToday = localDayStart(new Date(Date.now()))
-  const mealTomorrow = addLocalDays(mealToday, 1)
-  const mealDayAfter = addLocalDays(mealToday, 2)
+  // Meals/day-notes share the same local-day boundaries (aliased for the queries
+  // below that read those tables by their stored local-midnight `date`).
+  const mealToday = today
+  const mealTomorrow = tomorrow
+  const mealDayAfter = dayAfter
 
   const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes, leftoversRes] = await Promise.all([
     ctx.env.DB.prepare(

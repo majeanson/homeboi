@@ -1,6 +1,6 @@
 import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { localDayStart, dayStart } from '../_lib/ids'
+import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
 
 // Everything dated in the household, for a calendar-month window. /api/board is
@@ -115,7 +115,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // so we PROJECT it forward per occurrence (rotationOffset) instead of labelling
   // every future cell with today's holder. Non-recurring chores have no schedule,
   // so they never land on the calendar.
-  const todayUTC = dayStart(new Date())
+  const todayLocal = localDayStart(new Date())
   const chores: { id: string; title: string; color: string | null; who: string | null; day: number }[] = []
   for (const c of choresRes.results) {
     const r = parseRecur(c.recur_json)
@@ -124,7 +124,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     const rot = parseRotation(c.rotation_json)
     // If today's turn was already done, the pending holder is the NEXT occurrence,
     // so count from tomorrow; otherwise the next occurrence on/after today is it.
-    const refDay = c.last_done_at != null && c.last_done_at >= todayUTC ? todayUTC + DAY : todayUTC
+    const refDay = c.last_done_at != null && c.last_done_at >= todayLocal ? todayLocal + DAY : todayLocal
     const occs = expandRange(anchor, r, from, to)
     // Each occurrence advances the rotation by one, so resolve the offset of the
     // first occurrence in the window once, then just step it forward.
