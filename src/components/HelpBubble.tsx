@@ -12,14 +12,20 @@ export function HelpBubble({
   title,
   body,
   card,
+  point,
   onClose,
 }: {
   title: string
   body: string
   card?: string
+  // Optional 0-based index of the card's sub-point to open + highlight + scroll to.
+  point?: number
   onClose: () => void
 }) {
   const t = useT()
+  const to = card
+    ? `/settings?tab=guide&card=${card}${point != null ? `&point=${point}` : ''}`
+    : null
   return (
     <div className="help-bubble" role="status">
       <div className="help-bubble__head">
@@ -29,8 +35,8 @@ export function HelpBubble({
         </button>
       </div>
       <p className="help-bubble__body">{body}</p>
-      {card && (
-        <Link to={`/settings?tab=guide&card=${card}`} className="help-bubble__guide" onClick={onClose}>
+      {to && (
+        <Link to={to} className="help-bubble__guide" onClick={onClose}>
           {t.help.goToGuide} <Icon name="arrow-right-bold" size={13} />
         </Link>
       )}

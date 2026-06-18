@@ -69,6 +69,11 @@ export interface EntityComboboxProps<T> {
   maxLength?: number
   /** A control rendered above the option list (e.g. the supper "+ ingrédients" opt-in). */
   listHeader?: ReactNode
+  /** Pure type-ahead: the dropdown ONLY appears while there's typed text that
+   *  matches — no caret, no open-on-focus. For fields whose existing values are
+   *  already shown elsewhere (e.g. tag chips) and the list is just a "did you mean
+   *  this existing one?" guard against near-duplicates. */
+  typeaheadOnly?: boolean
   className?: string
   /** Hide the whole control. Defaults to the read-only guest session. */
   readOnly?: boolean
@@ -102,6 +107,7 @@ export function EntityCombobox<T>({
   disabled,
   maxLength,
   listHeader,
+  typeaheadOnly,
   className,
   readOnly,
 }: EntityComboboxProps<T>) {
@@ -182,7 +188,10 @@ export function EntityCombobox<T>({
 
   const showIconSubmit = !submitLabel && submitIcon != null && !!onSubmit
   const submitDisabled = disabled || busy || !value.trim()
-  const listOpen = open && !disabled && (shown.length > 0 || (!!value.trim() && !!noMatchLabel))
+  // In type-ahead mode the list only exists while there's text to match against,
+  // so an empty/focused field stays quiet (the chips above already show what's set).
+  const canOpen = typeaheadOnly ? !!value.trim() : true
+  const listOpen = open && canOpen && !disabled && (shown.length > 0 || (!!value.trim() && !!noMatchLabel))
 
   if (hidden) return null
 
@@ -207,7 +216,7 @@ export function EntityCombobox<T>({
               setActive(-1)
               setOpen(true)
             }}
-            onFocus={() => setOpen(true)}
+            onFocus={() => !typeaheadOnly && setOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             aria-label={ariaLabel ?? placeholder}
@@ -227,7 +236,7 @@ export function EntityCombobox<T>({
             </button>
           )}
           {voice && <VoiceButton voice={voice} label={voiceLabel ?? t.capture.voice} />}
-          {options.length > 0 && (
+          {options.length > 0 && !typeaheadOnly && (
             <button
               type="button"
               className="edit-field__icon-btn combobox__caret"

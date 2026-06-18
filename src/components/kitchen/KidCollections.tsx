@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
+import { api } from '../../lib/api'
 import { formatWeekday } from '../../lib/format'
 import { pictoFor } from '../../lib/picto'
-import { type Recipe, recipeImg } from '../../lib/recipes'
+import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY, recipeImg, tagOptions } from '../../lib/recipes'
 import { BigTiles, Sayable, type Tile } from '../BigTiles'
 import { buildCollections } from './CollectionPicker'
 import { type WeekDay } from './types'
@@ -46,7 +48,11 @@ export function KidCollections({
   const [openTag, setOpenTag] = useState<string | null>(null)
   const [kidRecipe, setKidRecipe] = useState<Recipe | null>(null)
 
-  const collections = useMemo(() => buildCollections(recipes), [recipes])
+  // Follow the household's curated tag order (same as the parent recipe book), so
+  // the toddler's collection tiles match what the operator arranged in Réglages.
+  const tagsData = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') }).data
+  const tagOrder = useMemo(() => tagOptions(tagsData?.presets ?? [], [], t.recipes.tagPresets), [tagsData?.presets, t.recipes.tagPresets])
+  const collections = useMemo(() => buildCollections(recipes, tagOrder), [recipes, tagOrder])
 
   // The same single, unambiguous week KidKitchen uses (two "Mardi" tiles would
   // confuse a pre-reader picking a day by sight + sound).

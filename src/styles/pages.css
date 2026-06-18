@@ -2280,6 +2280,17 @@
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+/* Drag handle to reorder the pills — the order drives the recipe book's tag chips
+   and the #11 collection sections. Dimmed while its own pill is being dragged. */
+.tag-admin__pill-grip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 0.05rem 0 0.5rem;
+}
+.tag-admin__pill.is-dragging {
+  opacity: 0.45;
+}
 .tag-admin__pill-name,
 .tag-admin__pill-x {
   border: 0;
@@ -2292,7 +2303,7 @@
   align-items: center;
 }
 .tag-admin__pill-name {
-  padding: 0 0.4rem 0 0.75rem;
+  padding: 0 0.4rem;
 }
 .tag-admin__pill-x {
   padding: 0 0.6rem 0 0.4rem;
@@ -2445,6 +2456,28 @@
    reveal the one-sentence detail. Calm, no marker chrome — a caret we draw. */
 .guide__point {
   border-top: 1px solid var(--line);
+}
+/* The sub-point a contextual "?" deep-linked to: a gentle accent wash + ring so
+   the eye lands on the exact line after the scroll. Fades once, then settles. */
+.guide__point.is-target {
+  border-radius: var(--radius-sm, 8px);
+  background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 12%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent, var(--marigold-deep)) 34%, transparent);
+  padding: 0 0.5rem;
+  animation: guide-point-pulse 1.6s var(--ease-out, ease) 1;
+}
+@keyframes guide-point-pulse {
+  0% {
+    background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 30%, transparent);
+  }
+  100% {
+    background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 12%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide__point.is-target {
+    animation: none;
+  }
 }
 .guide__point-title {
   display: flex;

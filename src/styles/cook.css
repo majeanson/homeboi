@@ -710,21 +710,9 @@
 .recipe-tags-edit__chips .chip {
   cursor: pointer;
 }
-.recipe-tags-edit__add {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-.recipe-tags-edit__add .input {
-  flex: 1 1 auto;
-}
-/* Phone: the tag field takes the whole line so the typed tag is readable; the
-   ＋ drops beneath it (matches the other kitchen/recipe inline editors). */
-@media (max-width: 540px) {
-  .recipe-tags-edit__add .input {
-    flex: 1 1 100%;
-  }
-}
+/* (The tag add-row is now an EntityCombobox — it brings its own `.edit-field`
+   layout + responsive behaviour, so the old `.recipe-tags-edit__add` row styles
+   were removed; the parent `.recipe-tags-edit` flex-column gap spaces it.) */
 /* Tags shown on the recipe view. */
 .recipe-view__tags {
   display: flex;

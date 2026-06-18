@@ -19,6 +19,7 @@ export function GuideCard({
   cardRef,
   pointsOpen = false,
   showGoTo = true,
+  targetPoint,
   onReplayTour,
 }: {
   entry: GuideEntry
@@ -27,10 +28,20 @@ export function GuideCard({
   cardRef?: Ref<HTMLDetailsElement>
   pointsOpen?: boolean
   showGoTo?: boolean
+  // A specific sub-point to open + highlight + scroll to (contextual "?" deep-link).
+  targetPoint?: number
   onReplayTour?: () => void
 }) {
   const t = useT()
   const { lang } = useLang()
+  const pointRef = useRef<HTMLDetailsElement | null>(null)
+  // Scroll the targeted point into view once (after the card has opened). Runs after
+  // the card-level scroll in GuideSection, so the point wins the final position.
+  useEffect(() => {
+    if (targetPoint != null && pointRef.current) {
+      pointRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [targetPoint])
   return (
     <details ref={cardRef} className={`guide__card${isTarget ? ' is-target' : ''}`} open={open}>
       <summary className="guide__summary">
@@ -48,17 +59,26 @@ export function GuideCard({
         </span>
       </summary>
       <div className="guide__points">
-        {entry.points.map((p, i) => (
-          // Each explanation collapses under its own clickable title;
-          // a search hit opens them so the matched text is visible.
-          <details key={i} className="guide__point" open={pointsOpen}>
-            <summary className="guide__point-title">{renderRich(p.label[lang])}</summary>
-            <p className="guide__point-detail">{renderRich(p.detail[lang])}</p>
-            {/* The WHY, when the point earns one: a distinct, softer line so a
-                parent scans WHAT first, WHY second. */}
-            {p.why && <p className="guide__point-why">{renderRich(p.why[lang])}</p>}
-          </details>
-        ))}
+        {entry.points.map((p, i) => {
+          // A contextual "?" can deep-link to ONE point: open + highlight + scroll it.
+          const isPt = i === targetPoint
+          return (
+            // Each explanation collapses under its own clickable title;
+            // a search hit (or a point deep-link) opens them so the text is visible.
+            <details
+              key={i}
+              ref={isPt ? pointRef : undefined}
+              className={`guide__point${isPt ? ' is-target' : ''}`}
+              open={pointsOpen || isPt}
+            >
+              <summary className="guide__point-title">{renderRich(p.label[lang])}</summary>
+              <p className="guide__point-detail">{renderRich(p.detail[lang])}</p>
+              {/* The WHY, when the point earns one: a distinct, softer line so a
+                  parent scans WHAT first, WHY second. */}
+              {p.why && <p className="guide__point-why">{renderRich(p.why[lang])}</p>}
+            </details>
+          )
+        })}
         {/* For a Settings-tab card surfaced in the Guide: a direct "go there"
             link that switches Réglages straight to that tab (?tab=<id>). Off
             when the card is shown inline on the tab it documents. */}
@@ -135,13 +155,23 @@ export function GuideSection() {
   // collapse it again. The effect (not initial state) is the real driver — it
   // also handles the case where the Guide tab is already mounted.
   const [openId, setOpenId] = useState<string | null>(() => params.get('card'))
+  // A contextual "?" can also target a sub-POINT within the card (?point=<index>) —
+  // the HelpBubble's "→ Voir le guide" link does this. We open + highlight + scroll
+  // to that point, not just the card.
+  const [targetPoint, setTargetPoint] = useState<number | null>(() => {
+    const p = params.get('point')
+    return p != null && p !== '' ? Number(p) : null
+  })
   const targetRef = useRef<HTMLDetailsElement | null>(null)
   useEffect(() => {
     const card = params.get('card')
     if (!card) return
     setOpenId(card)
+    const p = params.get('point')
+    setTargetPoint(p != null && p !== '' ? Number(p) : null)
     const next = new URLSearchParams(params)
     next.delete('card')
+    next.delete('point')
     setParams(next, { replace: true })
   }, [params, setParams])
   useEffect(() => {
@@ -188,6 +218,7 @@ export function GuideSection() {
               entry={e}
               cardRef={e.id === openId ? targetRef : undefined}
               isTarget={e.id === openId}
+              targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
               open
               pointsOpen={q.length > 0}
               onReplayTour={() => start('essentials')}
@@ -220,6 +251,7 @@ export function GuideSection() {
                   entry={e}
                   cardRef={e.id === openId ? targetRef : undefined}
                   isTarget={e.id === openId}
+                  targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
                   open={q.length > 0 || e.id === openId}
                   pointsOpen={q.length > 0}
                   onReplayTour={() => start('essentials')}

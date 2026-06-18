@@ -125,7 +125,7 @@ export function MealIdeas({
           onPick={(o) => addIdea(o.data.title, o.data.id)}
           onSubmit={(v) => addIdea(v)}
           submitIcon="plus-bold"
-          placeholder={t.kitchen.addIdea}
+          placeholder={recipes.length > 0 ? t.combo.typeOrPick : t.kitchen.addIdea}
           ariaLabel={t.kitchen.addIdea}
           noMatchLabel={t.recipes.noMatch}
           busy={busy}

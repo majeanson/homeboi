@@ -914,6 +914,7 @@ export const FR = {
     show: 'Voir les choix',
     hide: 'Cacher les choix',
     noMatch: 'Aucun résultat',
+    typeOrPick: 'Écrire ou choisir…',
   },
   notFound: { title: 'Page introuvable', back: 'Retour à l’accueil' },
 }
@@ -1822,6 +1823,7 @@ export const EN: typeof FR = {
     show: 'Show choices',
     hide: 'Hide choices',
     noMatch: 'No match',
+    typeOrPick: 'Type or choose…',
   },
   notFound: { title: 'Page not found', back: 'Back to home' },
 }

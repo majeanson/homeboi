@@ -26,9 +26,8 @@ import { Icon, type IconName } from './Icon'
 import { MemoControls } from './MemoControls'
 import { EntityCombobox } from './EntityCombobox'
 import { mealOptions } from './kitchen/comboOptions'
-import { HelpBubble } from './HelpBubble'
 import { ADD_HELP } from '../lib/addHelp'
-import { useHelp } from '../lib/help'
+import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { useModal } from '../lib/useModal'
 import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
@@ -130,28 +129,10 @@ export function AddSheet({
   // pins that form.
   const defMode: AddSheetMode | null = shown.length > 1 ? null : shown[0]
   const [mode, setMode] = useState<AddSheetMode | null>(initialMode ?? defMode)
-  // Contextual "?" help mode: tap the "?" to arm it, then tap any tile to read what
-  // it does in place (HelpBubble) instead of running it. `helpKey` is the control
-  // being explained (a mode or a kitchen-action key). Gated on tutorial mode.
-  const { tutorial } = useHelp()
-  const [helpMode, setHelpMode] = useState(false)
-  const [helpKey, setHelpKey] = useState<string | null>(null)
-  // Re-sync on each open so the last visit's pick (and any help state) doesn't leak.
+  // Re-sync on each open so the last visit's pick doesn't leak into this one.
   useEffect(() => {
-    if (open) {
-      setMode(initialMode ?? defMode)
-      setHelpMode(false)
-      setHelpKey(null)
-    }
+    if (open) setMode(initialMode ?? defMode)
   }, [open, initialMode, defMode])
-  // In help mode a tap explains the control instead of running it.
-  const pick = (key: string, run: () => void) => {
-    if (helpMode) {
-      setHelpKey(key)
-      return
-    }
-    run()
-  }
 
   const [busy, setBusy] = useState(false)
 
@@ -416,6 +397,9 @@ export function AddSheet({
     useup: t.kitchen.useUpIdeas,
   }
   const helpTitle = (key: string) => actionLabel[key] ?? modeLabel(key as AddSheetMode)
+  // Contextual "?" help mode (shared hook): arm it, then tapping any tile explains
+  // it in place instead of running it. Resets each time the sheet (re)opens.
+  const help = useHelpMode(ADD_HELP, helpTitle, open)
 
   // The sheet's title names what this section adds (the chooser-less sections
   // would otherwise just say "Ajouter" over an unexplained form).
@@ -444,34 +428,13 @@ export function AddSheet({
         </button>
         {/* Contextual help toggle: arm it, then tap any tile to learn what it does
             in place. Only in tutorial mode (experts hide every "?"). */}
-        {tutorial && (
-          <button
-            type="button"
-            className={'sheet__help' + (helpMode ? ' is-on' : '')}
-            onClick={() => {
-              setHelpMode((v) => !v)
-              setHelpKey(null)
-            }}
-            aria-pressed={helpMode}
-            aria-label={t.help.helpMode}
-            title={t.help.helpMode}
-          >
-            ?
-          </button>
-        )}
+        {help.available && <HelpToggle className="sheet__help" active={help.active} onToggle={help.toggle} />}
         <div className="grab" aria-hidden="true" />
         <h3>{title}</h3>
 
         {/* Help mode: a hint, then (once a tile is tapped) the in-place help box. */}
-        {helpMode && !helpKey && <p className="sheet__help-hint mono">{t.help.tapForHelp}</p>}
-        {helpKey && (
-          <HelpBubble
-            title={helpTitle(helpKey)}
-            body={ADD_HELP[helpKey]?.body[lang] ?? ''}
-            card={ADD_HELP[helpKey]?.card}
-            onClose={() => setHelpKey(null)}
-          />
-        )}
+        {help.hint && <HelpHint />}
+        {help.bubble}
 
         {/* The section's chooser — only when there's a real choice to make.
             The recipe tile is navigate-only: the recipe builder is a full
@@ -484,31 +447,29 @@ export function AddSheet({
                 key={m}
                 type="button"
                 className={'cat-pick' + (mode === m ? ' sel' : '')}
-                disabled={!helpMode && m === 'auto-pick' && autoBusy}
-                onClick={() =>
-                  pick(m, () => {
-                    if (m === 'auto-pick') {
-                      autoPick()
-                      return
-                    }
-                    // The day-planner shortcuts resolve their date at click time
-                    // (today / tomorrow), then jump to that day's full planner.
-                    if (m === 'plan-today' || m === 'plan-tomorrow') {
-                      const base = todayLocalDay()
-                      const d = m === 'plan-today' ? base : addLocalDays(base, 1)
-                      close()
-                      nav(`/kitchen/day/${d}`)
-                      return
-                    }
-                    const target = NAV_TARGET[m]
-                    if (target) {
-                      close()
-                      nav(target)
-                      return
-                    }
-                    setMode(m)
-                  })
-                }
+                disabled={!help.active && m === 'auto-pick' && autoBusy}
+                onClick={help.pick(m, () => {
+                  if (m === 'auto-pick') {
+                    autoPick()
+                    return
+                  }
+                  // The day-planner shortcuts resolve their date at click time
+                  // (today / tomorrow), then jump to that day's full planner.
+                  if (m === 'plan-today' || m === 'plan-tomorrow') {
+                    const base = todayLocalDay()
+                    const d = m === 'plan-today' ? base : addLocalDays(base, 1)
+                    close()
+                    nav(`/kitchen/day/${d}`)
+                    return
+                  }
+                  const target = NAV_TARGET[m]
+                  if (target) {
+                    close()
+                    nav(target)
+                    return
+                  }
+                  setMode(m)
+                })}
                 aria-pressed={mode === m}
               >
                 <span className="ct" style={{ background: CATS[MODE_DRESS[m].cat].wash }}>
@@ -531,7 +492,7 @@ export function AddSheet({
                 <button
                   type="button"
                   className="cat-pick"
-                  onClick={() => pick('shop', () => { kitchenActions.run('shop'); close() })}
+                  onClick={help.pick('shop', () => { kitchenActions.run('shop'); close() })}
                 >
                   <span className="ct" style={{ background: 'var(--sage-wash)' }}>
                     <Icon name="shopping-bag-bold" size={22} color="#6B8A52" />
@@ -542,9 +503,9 @@ export function AddSheet({
               <button
                 type="button"
                 className="cat-pick"
-                disabled={!helpMode && (!kitchenActions.flags.canAiSuggest || kitchenActions.flags.aiBusy)}
+                disabled={!help.active && (!kitchenActions.flags.canAiSuggest || kitchenActions.flags.aiBusy)}
                 title={kitchenActions.flags.canAiSuggest ? undefined : t.kitchen.suggestAiOff}
-                onClick={() => pick('ai', () => { kitchenActions.run('ai'); close() })}
+                onClick={help.pick('ai', () => { kitchenActions.run('ai'); close() })}
               >
                 <span className="ct" style={{ background: 'var(--marigold-wash)' }}>
                   <Icon name="sparkle-bold" size={22} color="#D9842A" />
@@ -555,7 +516,7 @@ export function AddSheet({
                 <button
                   type="button"
                   className="cat-pick"
-                  onClick={() => pick('book', () => { kitchenActions.run('book'); close() })}
+                  onClick={help.pick('book', () => { kitchenActions.run('book'); close() })}
                 >
                   <span className="ct" style={{ background: 'var(--terracotta-wash)' }}>
                     <Icon name="book-open-bold" size={22} color="#C2563A" />
@@ -569,7 +530,7 @@ export function AddSheet({
                 <button
                   type="button"
                   className="cat-pick"
-                  onClick={() => pick('useup', () => { kitchenActions.run('useup'); close() })}
+                  onClick={help.pick('useup', () => { kitchenActions.run('useup'); close() })}
                 >
                   <span className="ct" style={{ background: 'var(--sage-wash)' }}>
                     <Icon name="carrot-bold" size={22} color="#6B8A52" />

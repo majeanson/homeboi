@@ -17,6 +17,7 @@ import {
 import { wash, tintInk, edge } from '../lib/colors'
 import { SECTION_PREFIX, dropDanglingHeadings, isSectionHeading } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
+import { EntityCombobox, type ComboOption } from './EntityCombobox'
 import { ZoomableImg } from './ZoomableImg'
 import { useModal } from '../lib/useModal'
 
@@ -119,11 +120,16 @@ export function RecipeForm({
   const hasTag = (tag: string) => tags.some((x) => x.toLowerCase() === tag.toLowerCase())
   const toggleTag = (tag: string) =>
     setTags((ts) => (hasTag(tag) ? ts.filter((x) => x.toLowerCase() !== tag.toLowerCase()) : [...ts, tag]))
-  function addTag() {
-    const s = tagInput.trim()
+  function addTag(value?: string) {
+    const s = (value ?? tagInput).trim()
     if (s && !hasTag(s)) setTags((ts) => [...ts, s])
     setTagInput('')
   }
+  // Known tags not yet on this recipe → the combobox's "did you mean this existing
+  // one?" suggestions, so typing "veg" surfaces "végé" instead of spawning a near-dupe.
+  const tagSuggestions: ComboOption<string>[] = pills
+    .filter((p) => !hasTag(p))
+    .map((p) => ({ id: p, label: p, data: p }))
 
   const lines = (kind: LineKind) => (kind === 'ingredients' ? ingredients : steps)
   const setLines = (kind: LineKind) => (kind === 'ingredients' ? setIngredients : setSteps)
@@ -800,24 +806,24 @@ export function RecipeForm({
                   </button>
                 ))}
             </div>
-            <div className="recipe-tags-edit__add">
-              <input
-                className="input"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                placeholder={t.recipes.tagAdd}
-                aria-label={t.recipes.tagAdd}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addTag()
-                  }
-                }}
-              />
-              <button type="button" className="btn btn--ghost mono" onClick={addTag} disabled={!tagInput.trim()}>
-                ＋
-              </button>
-            </div>
+            {/* Type a new tag OR pick an existing one as you type — the suggestions
+                surface near-duplicates ("veg" → "végé") so the vocabulary doesn't
+                drift into synonyms. Applied tags already show as chips above, so the
+                box is pure type-ahead (no full-list caret). */}
+            <EntityCombobox
+              value={tagInput}
+              onChange={setTagInput}
+              options={tagSuggestions}
+              onPick={(o) => {
+                toggleTag(o.data)
+                setTagInput('')
+              }}
+              onSubmit={(v) => addTag(v)}
+              submitIcon="plus-bold"
+              placeholder={t.recipes.tagAdd}
+              ariaLabel={t.recipes.tagAdd}
+              typeaheadOnly
+            />
           </div>
         </div>
 

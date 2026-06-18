@@ -541,21 +541,8 @@
   flex: 1;
   min-width: 0;
 }
-.kitchen__day-recipes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-/* Picker + "clear meal" sit on one wrapping row so the trash button is right
-   beside "Choisir une recette" (or alone, when there are no recipes to pick). */
-.kitchen__day-recipes-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-.kitchen__pick-recipe {
-  align-self: flex-start;
-}
+/* (The slot's recipe/leftover toggle buttons + their wrapping row moved into
+   EntityCombobox; `.kitchen__day-recipes*` / `.kitchen__pick-recipe` removed.) */
 /* Quiet destructive cue — only warms to a danger tint on hover/focus, so a full
    planned week isn't a row of red trash buttons. */
 .kitchen__clear-meal {
@@ -570,72 +557,14 @@
   flex: none;
   padding-inline: 0.6rem;
 }
-.kitchen__recipe-menu {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-/* The chip that opts a recipe pick into the grocery flow — quiet until ticked. */
+/* The chip that opts a recipe pick into the grocery flow — quiet until ticked.
+   Now rendered as the souper combobox's dropdown header. */
 .kitchen__recipe-staples {
   align-self: flex-start;
 }
 
-/* Shared recipe picker (every slot's "Choisir une recette"): a search box over a
-   short scrolling list of ranked rows, instead of a flat wall of every title. */
-.recipe-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.recipe-picker__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  max-height: 14rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-.recipe-picker__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  width: 100%;
-  min-height: 44px;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--paper);
-  color: var(--ink);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.recipe-picker__row:active {
-  transform: translateY(1px);
-}
-.recipe-picker__title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.recipe-picker__badge {
-  flex: none;
-  color: var(--ink-faint);
-  font-size: 0.74rem;
-}
-.recipe-picker__badge.is-ready {
-  color: var(--sage-deep);
-}
-.recipe-picker__empty {
-  color: var(--ink-faint);
-  margin: 0.2rem 0;
-}
+/* (The shared recipe/leftover picker list — `.recipe-picker*` — was replaced by
+   EntityCombobox's dropdown; see `.combobox*` in pages.css.) */
 
 /* The meal-slot chooser when planning a recipe (recipe sheet, ideas pool). */
 .slot-picker {

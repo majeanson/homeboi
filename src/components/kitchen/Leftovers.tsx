@@ -132,7 +132,7 @@ export function Leftovers({
           onPick={(o) => addLeftover(o.data.title, o.data.recipe_id ?? null, o.data.id)}
           onSubmit={(v) => addLeftover(v)}
           submitIcon="plus-bold"
-          placeholder={t.kitchen.leftoversAdd}
+          placeholder={recentMeals.length > 0 ? t.combo.typeOrPick : t.kitchen.leftoversAdd}
           ariaLabel={t.kitchen.leftoversAdd}
           busy={busy}
           className="kitchen__ideas-combo"

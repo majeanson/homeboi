@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { HeartButton } from '../HeartButton'
-import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY, recipeImg, allTags, recipeTotalMin, tagColor } from '../../lib/recipes'
+import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY, recipeImg, allTags, orderTags, tagOptions, recipeTotalMin, tagColor } from '../../lib/recipes'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { rankCookable, rankUseSoon, rankNeglected } from '../../lib/cookable'
 import { withoutHeadings } from '../../lib/recipeSections'
@@ -63,10 +63,15 @@ export function RecipesTab({
   // once at least one recipe carries time data, so it never appears as a no-op.
   const [fastFilter, setFastFilter] = useState(false)
   const canFastFilter = useMemo(() => recipes.some((r) => recipeTotalMin(r) != null), [recipes])
-  const tags = useMemo(() => allTags(recipes), [recipes])
-  // Per-tag household colours (migration 0037) — tint the filter pills to match
-  // the recipe view. Optional binding: undefined until the read lands.
-  const tagColors = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') }).data?.colors
+  // Per-tag household colours + the curated pill ORDER (migration 0037 / the saved
+  // preset list). Optional binding: undefined until the read lands.
+  const tagsData = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') }).data
+  const tagColors = tagsData?.colors
+  // The household's curated tag order (presets, or the built-in starters until
+  // customized). Reordering these pills in Réglages reorders the chips + the #11
+  // collection sections, since both iterate `tags`.
+  const tagOrder = useMemo(() => tagOptions(tagsData?.presets ?? [], [], t.recipes.tagPresets), [tagsData?.presets, t.recipes.tagPresets])
+  const tags = useMemo(() => orderTags(allTags(recipes), tagOrder), [recipes, tagOrder])
 
   const shownRecipes = useMemo(() => {
     const q = recipeQuery.trim().toLowerCase()

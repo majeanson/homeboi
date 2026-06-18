@@ -712,6 +712,65 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    id: 'type-or-choose',
+    icon: 'magnifying-glass-bold',
+    group: 'concepts',
+    title: { fr: 'Écrire ou choisir', en: 'Type or choose' },
+    what: {
+      fr: 'Partout où tu ajoutes un repas, une idée ou un reste, la même boîte fait deux choses : écris librement, ou choisis dans la liste qui se filtre à mesure que tu tapes.',
+      en: 'Everywhere you add a meal, an idea or a leftover, one box does two things: type freely, or pick from the list that filters as you type.',
+    },
+    points: [
+      {
+        label: { fr: 'Une seule boîte', en: 'One box' },
+        detail: {
+          fr: 'Plus de bouton séparé « Choisir une recette ». Commence à écrire et les recettes (et les restes) qui correspondent apparaissent dessous — touche-en une pour la lier.',
+          en: 'No more separate “Choose a recipe” button. Start typing and matching recipes (and leftovers) appear below — tap one to link it.',
+        },
+        why: {
+          fr: 'Un seul geste au lieu de deux, et on voit tout de suite ce qui existe déjà.',
+          en: 'One gesture instead of two, and you see right away what already exists.',
+        },
+      },
+      {
+        label: { fr: 'Écrire reste permis', en: 'Free text still works' },
+        detail: {
+          fr: 'Rien dans la liste ne convient ? Écris ton propre texte et touche ＋ (ou Entrée). Ta note passe telle quelle.',
+          en: 'Nothing in the list fits? Type your own text and tap ＋ (or Enter). Your note goes through as-is.',
+        },
+      },
+      {
+        label: { fr: 'La flèche ouvre la liste', en: 'The arrow opens the list' },
+        detail: {
+          fr: 'La petite flèche ▾ au bout de la boîte déroule tous les choix, comme un menu — pour parcourir sans écrire.',
+          en: 'The little ▾ arrow at the end of the box drops the full list, like a menu — to browse without typing.',
+        },
+      },
+      {
+        label: { fr: 'Les recettes, classées', en: 'Recipes, sorted' },
+        detail: {
+          fr: 'Quand tu choisis une recette, celles que tu peux cuisiner maintenant remontent en haut, avec « Prêt » ou « il manque 2 ».',
+          en: 'When you pick a recipe, the ones you could cook now rise to the top, badged “Ready” or “missing 2”.',
+        },
+        why: {
+          fr: 'Décider du souper en regardant ce qui est déjà à portée de main.',
+          en: 'Decide supper from what’s already within reach.',
+        },
+      },
+      {
+        label: { fr: 'Les étiquettes sans doublons', en: 'Tags without duplicates' },
+        detail: {
+          fr: 'En étiquetant une recette, écris quelques lettres : si « végé » existe déjà, elle te la propose au lieu d’en créer une presque pareille.',
+          en: 'When tagging a recipe, type a few letters: if “végé” already exists it suggests it, instead of creating a near-duplicate.',
+        },
+        why: {
+          fr: 'Les collections restent nettes — pas de « végé » ET « végétarien » qui se séparent en deux.',
+          en: 'Collections stay tidy — no “végé” AND “vegetarian” splitting in two.',
+        },
+      },
+    ],
+  },
+  {
     id: 'favorites',
     icon: 'heart-bold',
     group: 'concepts',

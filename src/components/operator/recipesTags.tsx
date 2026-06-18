@@ -6,6 +6,7 @@ import { RECIPES_KEY, RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions, tagColor
 import { wash, tintInk, edge } from '../../lib/colors'
 import { useConfirm } from '../../lib/confirm'
 import { isGuest } from '../../lib/device'
+import { usePointerDnd, DragGhost } from '../../lib/dnd'
 import { Icon, InlineIcon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
 import { RowActions } from '../RowActions'
@@ -66,6 +67,20 @@ export function RecipeTagsSection() {
     setPillInput('')
   }
 
+  // Drag a pill onto another to reorder. The saved order drives the recipe book's
+  // tag chips AND the #11 collection sections (RecipesTab orders tags by it).
+  function movePill(from: number, to: number) {
+    if (from === to || from < 0 || to < 0 || from >= effective.length || to >= effective.length) return
+    const next = [...effective]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    savePills(next)
+  }
+  const dnd = usePointerDnd({
+    onDrop: (from, to) => movePill(Number(from), Number(to)),
+    canDrop: (from, to) => from !== to,
+  })
+
   function commitRename(from: string) {
     const to = renameTo.trim()
     setRenaming(null)
@@ -97,7 +112,7 @@ export function RecipeTagsSection() {
       <h3 className="operator__sub">{t.operator.tagPills}</h3>
       <p className="mono operator__hint">{t.operator.tagPillsHint}</p>
       <div className="tag-admin__pills">
-        {effective.map((tg) => {
+        {effective.map((tg, i) => {
           const key = `preset:${tg.toLowerCase()}`
           const open = coloring === key
           if (ro) {
@@ -108,7 +123,27 @@ export function RecipeTagsSection() {
             )
           }
           return (
-            <span key={tg} className={`chip tag-admin__pill${open ? ' is-editing' : ''}`} style={chipTint(tagColor(colors, tg))}>
+            <span
+              key={tg}
+              data-dnd-zone={String(i)}
+              className={
+                'chip tag-admin__pill' +
+                (open ? ' is-editing' : '') +
+                (dnd.activeId === String(i) ? ' is-dragging' : '') +
+                (dnd.over === String(i) ? ' dnd-over' : '')
+              }
+              style={chipTint(tagColor(colors, tg))}
+            >
+              <span
+                className="tag-admin__pill-grip dnd-grip"
+                data-dnd-grip=""
+                role="button"
+                aria-label={t.operator.dragHint}
+                title={t.operator.dragHint}
+                onPointerDown={(e) => dnd.start(String(i), tg, e)}
+              >
+                ⠿
+              </span>
               <button
                 type="button"
                 className="tag-admin__pill-name"
@@ -232,6 +267,7 @@ export function RecipeTagsSection() {
           })}
         </ul>
       )}
+      <DragGhost ghost={dnd.ghost} />
     </section>
   )
 }

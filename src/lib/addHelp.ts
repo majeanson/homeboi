@@ -7,11 +7,13 @@
 export interface AddHelp {
   body: { fr: string; en: string }
   card: string // a GUIDE entry id (lib/guideContent.ts)
+  point?: number // optional 0-based sub-point in that card to open + highlight
 }
 
 export const ADD_HELP: Record<string, AddHelp> = {
   capture: {
     card: 'capture',
+    point: 0,
     body: {
       fr: 'Écris ou dis une note ; l’app devine si c’est un rendez-vous, une corvée, un article, un repas ou une note.',
       en: 'Type or say a note; the app guesses if it’s an event, chore, item, meal or note.',
@@ -34,6 +36,7 @@ export const ADD_HELP: Record<string, AddHelp> = {
   },
   'plan-today': {
     card: 'capture',
+    point: 1,
     body: {
       fr: 'Ouvre aujourd’hui pour tout planifier d’un coup : repas, rendez-vous, corvées, note.',
       en: 'Open today to plan it all at once: meals, events, chores, a note.',
@@ -41,6 +44,7 @@ export const ADD_HELP: Record<string, AddHelp> = {
   },
   'plan-tomorrow': {
     card: 'capture',
+    point: 1,
     body: { fr: 'Ouvre demain pour tout planifier d’un coup.', en: 'Open tomorrow to plan it all at once.' },
   },
   cook: {
@@ -53,6 +57,7 @@ export const ADD_HELP: Record<string, AddHelp> = {
   },
   meal: {
     card: 'kitchen',
+    point: 0,
     body: { fr: 'Planifie un souper : choisis un jour et remplis-le.', en: 'Plan a supper: pick a day and fill it in.' },
   },
   leftovers: {
@@ -61,6 +66,7 @@ export const ADD_HELP: Record<string, AddHelp> = {
   },
   pantry: {
     card: 'kitchen',
+    point: 1,
     body: { fr: 'Marque un article « il en manque » — un drapeau, jamais un inventaire.', en: 'Mark an item “running low” — a flag, never an inventory.' },
   },
   reserve: {
@@ -92,6 +98,7 @@ export const ADD_HELP: Record<string, AddHelp> = {
   },
   ai: {
     card: 'kitchen',
+    point: 2,
     body: { fr: 'Demande à l’IA une volée d’idées de soupers.', en: 'Ask the AI for a batch of supper ideas.' },
   },
   book: {

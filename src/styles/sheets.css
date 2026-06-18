@@ -439,7 +439,36 @@
 .sheet__help:active {
   transform: scale(0.94);
 }
-.sheet__help-hint {
+/* Generic "?" help-mode toggle for scene/section headers (HelpToggle default class).
+   Round, quiet chrome; highlighted when armed. The ＋ sheet styles its own via
+   `.sheet__help`; everything else uses this. */
+.help-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink-soft);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.help-toggle.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+}
+.help-toggle:active {
+  transform: scale(0.94);
+}
+/* The shared "tap a button to learn what it does" hint (HelpHint). */
+.help-hint {
   margin: 0 0 12px;
   text-align: center;
   color: var(--ink-soft);

@@ -87,6 +87,21 @@ export function tagOptions(presets: string[], used: string[], defaults: readonly
   return out
 }
 
+// Sort a list of tags by the household's curated order (the preset pill list, or
+// `tagOptions(...)` which folds in the built-in starters) — tags present in the
+// order list come first in that order; any leftover (an ad-hoc tag never added to
+// the pills) keeps its incoming relative order, appended after. Case-insensitive.
+// Drives the recipe book's tag chips AND the #11 collection sections, so reordering
+// the pills in Réglages reorders the collections.
+export function orderTags(tags: string[], order: string[]): string[] {
+  const idx = new Map(order.map((tg, i) => [tg.toLowerCase(), i]))
+  // Stable sort: leftovers (both Infinity) keep their original order.
+  return tags
+    .map((tg, i) => ({ tg, i }))
+    .sort((a, b) => (idx.get(a.tg.toLowerCase()) ?? Infinity) - (idx.get(b.tg.toLowerCase()) ?? Infinity) || a.i - b.i)
+    .map((x) => x.tg)
+}
+
 // Every distinct tag across the book, in first-seen order — drives the Kitchen
 // filter chips. Defensive about a recipe whose tags didn't load (older payload).
 export function allTags(recipes: Recipe[]): string[] {
