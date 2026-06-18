@@ -70,8 +70,9 @@ export interface NoteRow {
   text: string
   member_id: string | null
   created_at: number
-  // Optional R2 attachment (#38 audio memo / #14 drawn note); served via /api/img.
-  media_kind?: 'audio' | 'drawing' | null
+  // Optional R2 attachment (#38 audio memo / #14 drawn note / #13 shared photo);
+  // served via /api/img.
+  media_kind?: 'audio' | 'drawing' | 'image' | null
   media_key?: string | null
 }
 // A recurring chore expanded onto a specific day (today or an upcoming date).

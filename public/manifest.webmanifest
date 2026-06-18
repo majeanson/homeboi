@@ -10,8 +10,14 @@
   "orientation": "any",
   "share_target": {
     "action": "/share",
-    "method": "GET",
-    "params": { "title": "title", "text": "text", "url": "url" }
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [{ "name": "files", "accept": ["image/*"] }]
+    }
   },
   "background_color": "#FBF3E4",
   "theme_color": "#FBF3E4",

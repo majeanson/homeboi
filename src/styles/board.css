@@ -558,6 +558,16 @@
   border-radius: 6px;
   background: #fffdf7;
 }
+.note-card__media {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+/* An optional caption under an image/voice memo (e.g. text shared with a photo). */
+.note-card__cap {
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
 .note-card__clear--btn {
   position: absolute;
   top: 0.2rem;

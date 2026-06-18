@@ -66,14 +66,23 @@ export function Notes({
           const tint = colorOf(n.member_id) ?? '#FBD66B'
           const css = { '--note-tint': tint } as React.CSSProperties
           const media = n.media_kind && n.media_key ? n.media_kind : null
-          // The card's inner face by kind: a drawing image (#14), a voice-memo
-          // play affordance (#38), or the written line.
+          // The card's inner face by kind: a drawing (#14) or shared photo (#13)
+          // image, a voice-memo play affordance (#38), or the written line. An
+          // image/audio note may also carry a caption (text), shown beneath.
           const body =
-            media === 'drawing' ? (
-              <img className="note-card__draw" src={imgUrl(n.media_key!)} alt={t.notes.drawing} />
+            media === 'drawing' || media === 'image' ? (
+              <span className="note-card__media">
+                <img
+                  className="note-card__draw"
+                  src={imgUrl(n.media_key!)}
+                  alt={media === 'image' ? t.notes.photo : t.notes.drawing}
+                />
+                {n.text && <span className="note-card__cap">{n.text}</span>}
+              </span>
             ) : media === 'audio' ? (
               <span className="note-card__memo">
                 <Icon name="play-bold" size={16} /> {t.notes.memo}
+                {n.text && <span className="note-card__cap">{n.text}</span>}
               </span>
             ) : (
               <span className="note-card__text">{n.text}</span>

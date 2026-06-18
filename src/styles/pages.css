@@ -2465,6 +2465,14 @@
 }
 
 /* PWA share-target landing (#13) — a narrow "add this?" page over the capture spine. */
+.share-page__img {
+  display: block;
+  max-width: 100%;
+  max-height: 50vh;
+  margin: 0.8rem 0 0;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
 .share-page__box {
   width: 100%;
   margin: 0.8rem 0;

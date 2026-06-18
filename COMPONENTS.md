@@ -80,8 +80,9 @@ Need live data/route context, so they're catalogued but not rendered as specimen
 `SharePage` (the `/share` PWA share-target landing → capture, #13),
 `HubLayout`, `RecipeSheet`, `RecipeForm`, `CookMode`, `CashierMode`,
 `ProfilePicker`, `TourOverlay`, `DealsBrowser`, `FlyerViewer`, `ChoreLedger`
-(read-only fairness glance, #18), `CookableView` (cook-from-what-I-have, #10),
-`CollectionsTab`/`CollectionPicker` (recipe collections, #11), the kitchen sub-tabs
+(read-only fairness glance, #18), `CollectionPicker` (the #11 collections
+toggle group inside the recipe book — "Quoi cuisiner?" is now a pill filter and
+collections a cover-card toggle group, both flat in `RecipesTab`, no sub-tabs), the kitchen sub-tabs
 (`DayEditor`, `MealRows`, `PantryTab`, `ReserveSection`, …), and the `operator/*`
 section bodies (incl. `operator/guest.tsx` — the babysitter-access issuer, #19;
 `operator/ambient.tsx` — the Réglages ▸ Affichage ▸ Mode veille settings, `lib/ambient.ts`;

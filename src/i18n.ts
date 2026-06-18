@@ -137,6 +137,7 @@ export const FR = {
     clear: 'Effacer',
     memo: 'Mémo vocal',
     drawing: 'Dessin',
+    photo: 'Photo',
   },
   memo: {
     record: 'Mémo vocal',
@@ -417,15 +418,8 @@ export const FR = {
     missingN: (n: number) => `il manque ${n}`,
     useItUp: 'À utiliser',
     usesN: (n: number) => `utilise ${n}`,
-    // #10 "Cook from what I have" — dedicated view labels.
-    cookableTitle: 'Avec ce que j’ai',
-    cookableEmpty: 'Rien n’achève en ce moment.',
-    cookableHint: 'Marque ce qui achève dans le garde-manger et tes recettes prêtes apparaîtront ici.',
-    viewBook: 'Recettes',
-    // #11 "Recipe collections" — browse-by-tag layer.
-    collections: 'Collections',
+    // #11 "Recipe collections" — browse-by-tag toggle group inside the recipe book.
     collectionsTitle: 'Collections',
-    collectionsBack: 'Collections',
     collectionsEmpty: 'Ajoute des étiquettes à tes recettes pour créer des collections.',
     collectionCount: (n: number) => `${n} recette${n > 1 ? 's' : ''}`,
     collectionTapToOpen: 'Tape encore pour ouvrir',
@@ -880,7 +874,9 @@ export const FR = {
   share: {
     title: 'Ajouter à Babillard',
     lead: 'Partagé depuis une autre app. Ajuste le texte au besoin, puis ajoute — l’app le classe (rendez-vous, liste, repas, note).',
-    added: 'Ajouté :',
+    photoLead: 'Partagé depuis une autre app. La photo s’épingle sur le babillard ; ajoute une légende au besoin.',
+    caption: 'Légende (optionnel)',
+    done: 'Ajouté !',
   },
   aiErr: {
     title: 'Erreur IA',
@@ -1045,6 +1041,7 @@ export const EN: typeof FR = {
     clear: 'Clear',
     memo: 'Voice memo',
     drawing: 'Drawing',
+    photo: 'Photo',
   },
   memo: {
     record: 'Voice memo',
@@ -1322,15 +1319,8 @@ export const EN: typeof FR = {
     missingN: (n: number) => `${n} to buy`,
     useItUp: 'Use it up',
     usesN: (n: number) => `uses ${n}`,
-    // #10 "Cook from what I have" — dedicated view labels.
-    cookableTitle: 'With what I have',
-    cookableEmpty: 'Nothing is running low right now.',
-    cookableHint: 'Flag what’s running low in the pantry and your ready recipes will show up here.',
-    viewBook: 'Recipes',
-    // #11 "Recipe collections" — browse-by-tag layer.
-    collections: 'Collections',
+    // #11 "Recipe collections" — browse-by-tag toggle group inside the recipe book.
     collectionsTitle: 'Collections',
-    collectionsBack: 'Collections',
     collectionsEmpty: 'Add tags to your recipes to create collections.',
     collectionCount: (n: number) => `${n} recipe${n > 1 ? 's' : ''}`,
     collectionTapToOpen: 'Tap again to open',
@@ -1785,7 +1775,9 @@ export const EN: typeof FR = {
   share: {
     title: 'Add to Babillard',
     lead: 'Shared from another app. Tweak the text if needed, then add — the app sorts it (event, list, meal, note).',
-    added: 'Added:',
+    photoLead: 'Shared from another app. The photo pins to the board; add a caption if you like.',
+    caption: 'Caption (optional)',
+    done: 'Added!',
   },
   aiErr: {
     title: 'AI error',

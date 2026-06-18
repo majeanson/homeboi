@@ -34,8 +34,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ text?: string; media_kind?: string; media_key?: string }>(ctx.request)
   const text = body?.text?.trim() ?? ''
-  // A note is either a written line or a media memo (audio/drawing). One must be present.
-  const kind = body?.media_kind === 'audio' || body?.media_kind === 'drawing' ? body.media_kind : null
+  // A note is either a written line or a media memo: an audio clip (#38), a drawing
+  // (#14), or a shared photo (#13 — 'image'). One of text/media must be present.
+  const kind =
+    body?.media_kind === 'audio' || body?.media_kind === 'drawing' || body?.media_kind === 'image'
+      ? body.media_kind
+      : null
   const mediaKey = kind ? body?.media_key?.trim() || null : null
   if (!text && !(kind && mediaKey)) return badRequest('Note vide.')
   const id = newId()

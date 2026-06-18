@@ -62,15 +62,39 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== 'babillard-share').map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   )
 })
 
 self.addEventListener('fetch', (e) => {
   const req = e.request
-  if (req.method !== 'GET') return
   const url = new URL(req.url)
+
+  // PWA share-target (#13 photos): the OS POSTs the shared payload to /share. A
+  // POST navigation body can't be read by the SPA, so we intercept it here, stash
+  // the image + text fields in a side cache, and 303-redirect to a GET the page
+  // can read. SharePage drains 'babillard-share' on load.
+  if (req.method === 'POST' && url.pathname === '/share') {
+    e.respondWith((async () => {
+      try {
+        const form = await req.formData()
+        const cache = await caches.open('babillard-share')
+        const file = form.get('files')
+        if (file && typeof file !== 'string' && file.size > 0) {
+          await cache.put('/__share/file', new Response(file, { headers: { 'content-type': file.type || 'application/octet-stream' } }))
+        } else {
+          await cache.delete('/__share/file')
+        }
+        const meta = { title: form.get('title') || '', text: form.get('text') || '', url: form.get('url') || '' }
+        await cache.put('/__share/meta', new Response(JSON.stringify(meta), { headers: { 'content-type': 'application/json' } }))
+      } catch (_) { /* malformed share — fall through to an empty /share */ }
+      return Response.redirect('/share?shared=1', 303)
+    })())
+    return
+  }
+
+  if (req.method !== 'GET') return
 
   // Cross-origin: only the font CDNs, cached as they're fetched.
   if (url.origin !== location.origin) {
