@@ -30,6 +30,13 @@ export const ADD_HELP: Record<string, AddHelp> = {
       en: 'Add a chore, one-off or recurring, with who handles it.',
     },
   },
+  todo: {
+    card: 'todos',
+    body: {
+      fr: 'Ajoute une chose « à compléter » : en tout temps, ou juste pour aujourd’hui. Coche-la quand c’est fait.',
+      en: 'Add something “to complete”: anytime, or just for today. Check it off when done.',
+    },
+  },
   routine: {
     card: 'routines',
     body: { fr: 'Crée une routine d’images pour un enfant (matin, dodo…).', en: 'Build a picture routine for a child (morning, bedtime…).' },
