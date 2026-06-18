@@ -118,10 +118,10 @@ function RoutinesParent() {
         </div>
       )}
 
-      {/* Creating AND editing a routine both live on the ＋ FAB now (the
-          contextual Add sheet opens straight on the routine builder), so the old
-          "Modifier dans les réglages" link would just be a second door to the
-          same place — removed. */}
+      {/* Creating AND editing both live on the ＋ FAB now: it opens the manage
+          picker (new routine + this list of existing ones, each tappable to edit),
+          so the old "Modifier dans les réglages" link would just be a second door
+          to the same place — removed. */}
     </main>
   )
 }

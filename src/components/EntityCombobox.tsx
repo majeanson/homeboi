@@ -240,10 +240,12 @@ export function EntityCombobox<T>({
             <button
               type="button"
               className="edit-field__icon-btn combobox__caret"
-              onClick={() => {
-                setOpen((o) => !o)
-                inputRef.current?.focus()
-              }}
+              // Toggle the list WITHOUT focusing the input — focusing it would pop
+              // the on-screen keyboard on a tablet/phone. The caret button itself
+              // lives inside the wrapper, so it holds focus and the menu stays open
+              // (the wrapper's onBlur only fires when focus leaves the control).
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setOpen((o) => !o)}
               aria-label={open ? t.combo.hide : t.combo.show}
               title={open ? t.combo.hide : t.combo.show}
               aria-expanded={listOpen}

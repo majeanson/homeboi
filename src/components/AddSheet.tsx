@@ -18,7 +18,8 @@ import { recipeImg } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
-import { BOARD_KEY, TODOS_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, TODOS_KEY, ROUTINES_KEY } from '../lib/queryKeys'
+import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
 import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
@@ -38,6 +39,15 @@ import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 // (event/chore/routine) are the SAME components Réglages uses.
 type CaptureType = 'event' | 'meal' | 'task' | 'list-item' | 'pantry-low' | 'leftover' | 'note'
 interface FormMember { id: string; display_name: string; is_child: number }
+// Just the shape the routine picker rows need off the /routines payload.
+interface RoutinePick {
+  id: string
+  name: string
+  memberName: string | null
+  color: string | null
+  avatarPhoto: string | null
+  cards?: unknown[]
+}
 
 // Tile dressing — colour comes from ONE source (CATS); each tile only names the
 // family it reads as plus its own glyph. So the ＋ sheet can never drift from the
@@ -64,6 +74,7 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   chore: { cat: 'chore', icon: 'hand-heart-bold' },
   todo: { cat: 'chore', icon: 'check-bold' },
   routine: { cat: 'routine', icon: CATS.routine.icon },
+  'routine-pick': { cat: 'routine', icon: CATS.routine.icon },
   // The day-planner shortcuts borrow the marigold "today/tomorrow" sun glyphs the
   // board heroes use, so the ＋ reads the same as the day it plans.
   'plan-today': { cat: 'event', icon: 'sun-bold' },
@@ -213,6 +224,17 @@ export function AddSheet({
     enabled: signedIn && open,
   })
   const members = membersData?.members ?? []
+
+  // Routines ＋ picker (the /routines tab): the household's routines, so the sheet
+  // can offer "edit this one" alongside "build a new one". Fetched only while the
+  // sheet's open on that tab; the same ROUTINES_KEY the tab + Réglages already use.
+  const wantsRoutinePick = shown.includes('routine-pick')
+  const { data: routinesData } = useQuery({
+    queryKey: ROUTINES_KEY,
+    queryFn: () => api<{ routines: RoutinePick[] }>('routines'),
+    enabled: open && wantsRoutinePick,
+  })
+  const routinePick = routinesData?.routines ?? []
 
   // Liste's "Meilleurs prix" tile (auto-pick): stages the best flyer deal onto
   // each grocery line, then jumps to the cashier. Needs the current list, fetched
@@ -405,6 +427,7 @@ export function AddSheet({
       event: t.capture.types.event,
       chore: t.operator.chores,
       todo: t.todos.title,
+      'routine-pick': t.nav.routines,
       'plan-today': t.board.planToday,
       'plan-tomorrow': t.board.planTomorrow,
       cook: t.kitchen.cook,
@@ -443,7 +466,9 @@ export function AddSheet({
         : shown.includes('list-item')
           ? t.list.addTitle
           : t.kitchen.addTitle
-      : mode === 'routine'
+      : mode === 'routine-pick'
+        ? t.nav.routines
+        : mode === 'routine'
         ? t.routines.add
         : mode === 'list-item'
           ? t.list.addTitle
@@ -830,6 +855,51 @@ export function AddSheet({
               </div>
             </div>
           ))}
+
+        {/* Routines ＋ (the /routines tab): build a new routine OR edit an existing
+            one. Both open the full-screen builder scene (its tall form strands
+            inputs under a sheet's keyboard) — "new" at /routine/new, an edit at
+            /routine/<id>. Listing the routines here is the "modify existing" ask:
+            you pick the one to change instead of hunting it down in Réglages. */}
+        {mode === 'routine-pick' && (
+          <div className="addsheet__cook">
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => {
+                close()
+                nav('/routine/new')
+              }}
+            >
+              <Icon name="plus-bold" size={20} />
+              {t.routines.newRoutine}
+            </button>
+            {routinePick.length > 0 && (
+              <>
+                <p className="sheet__group-label mono">{t.routines.editExisting}</p>
+                <div className="addsheet__cooklist">
+                  {routinePick.map((r) => (
+                    <Act
+                      key={r.id}
+                      cat="routine"
+                      color={r.color ?? undefined}
+                      icon={CATS.routine.icon}
+                      photo={r.avatarPhoto ? imgUrl(r.avatarPhoto) : undefined}
+                      title={r.name}
+                      who={[r.memberName, t.routines.stepsN(r.cards?.length ?? 0)]
+                        .filter(Boolean)
+                        .join(' · ')}
+                      onActivate={() => {
+                        close()
+                        nav(`/routine/${r.id}`)
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </>
   )

@@ -81,10 +81,12 @@
 }
 .tdl-illus {
   /* Height-aware so a short tablet/phone shrinks the picture instead of pushing
-     the advance button off-screen (the whole point of this surface is one tap). */
-  width: min(232px, 34vh);
-  height: min(232px, 34vh);
-  border-radius: 64px; /* soft squircle */
+     the advance button off-screen (the whole point of this surface is one tap).
+     Scales up on a big wall tablet — the "now" picture is the hero, so it should
+     own the space rather than float small in a sea of wash. */
+  width: min(320px, 40vh);
+  height: min(320px, 40vh);
+  border-radius: 72px; /* soft squircle */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,7 +105,7 @@
   transform: scale(0.96);
 }
 .tdl-illus-emoji {
-  font-size: min(124px, 18vh);
+  font-size: min(172px, 24vh);
   line-height: 1;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.16));
 }
@@ -113,7 +115,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 58px;
+  border-radius: 66px;
   display: block;
 }
 /* Gentle float so the picture feels alive — motion-safe only (NFR-KID-3). */
@@ -157,59 +159,81 @@
   color: var(--ink);
   text-align: center;
 }
-/* "What's next" and the progress dots ride ONE row so they cost a single line,
-   not two — keeps the column short on a tablet. */
-.tdl-meta {
+/* The routine as a picture filmstrip — every step in sequence, so the child (and
+   a passing parent) read the whole story and exactly where we are, in real
+   pictures rather than abstract dots. Fills the wall's width; wraps to a second
+   row only on a narrow phone. One short band, so the column still fits a tablet. */
+.tdl-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1.6vw, 18px);
+  max-width: min(60rem, 94vw);
+}
+.tdl-step {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 14px 22px;
+  flex: 0 0 auto;
+  transition:
+    transform var(--dur-base) var(--ease-soft),
+    opacity var(--dur-base) var(--ease-soft);
 }
-/* "What's next" — just the picture, faded, with a small arrow. No word. */
-.tdl-next {
+.tdl-step__pic {
+  width: clamp(46px, 7vh, 70px);
+  height: clamp(46px, 7vh, 70px);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
-  gap: 10px;
-  opacity: 0.55;
+  justify-content: center;
+  overflow: hidden;
 }
-.tdl-next-arrow {
-  font-size: 20px;
-  color: var(--ink-soft);
-}
-.tdl-next-pic {
-  font-size: 28px;
-  line-height: 1;
-}
-/* The "next" preview photo (feature #17 C) — a small thumbnail in place of the
-   next card's emoji. */
-.tdl-next-photo {
-  width: 34px;
-  height: 34px;
+.tdl-step__pic img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 9px;
   display: block;
 }
-.tdl-dots {
-  display: flex;
-  gap: 9px;
+.tdl-step__emoji {
+  font-size: clamp(24px, 3.6vh, 36px);
+  line-height: 1;
 }
-.tdl-dots i {
-  width: 9px;
-  height: 9px;
+/* Upcoming steps wait quietly in the background. */
+.tdl-step--wait {
+  opacity: 0.45;
+}
+/* The current step is lifted + ringed so "we're here" is unmistakable. */
+.tdl-step--on {
+  transform: scale(1.16);
+}
+.tdl-step--on .tdl-step__pic {
+  box-shadow:
+    0 0 0 4px var(--accent),
+    var(--shadow-md);
+}
+/* Finished steps soften and wear a ✓ — calm, deterministic, resets daily. */
+.tdl-step--done {
+  opacity: 0.6;
+}
+.tdl-step__check {
+  position: absolute;
+  right: -5px;
+  top: -5px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--ink-faint);
-  opacity: 0.5;
-}
-.tdl-dots i.on {
-  background: var(--ink);
-  opacity: 1;
-  width: 26px;
-  border-radius: 99px;
-}
-.tdl-dots i.done {
-  background: var(--sage);
-  opacity: 1;
+  background: var(--sage, #6b8a52);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
 }
 .tdl-tap {
   margin-top: 24px;

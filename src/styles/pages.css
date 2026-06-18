@@ -980,20 +980,24 @@
   font-size: 1.6rem;
   font-weight: 600;
 }
+/* A centered, even grid (was a wrapping flex row) so a wall tablet lays the
+   routine cards out in tidy columns that use its width — they don't bunch up
+   left on a wide screen, and each card keeps a comfortable size. */
 .kid__faces {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   gap: 1.25rem;
-  flex-wrap: wrap;
-  justify-content: center;
   width: 100%;
-  max-width: 52rem;
+  max-width: 60rem;
+  justify-items: center;
 }
 /* A spacious routine card (was a round face): whose it is, a real photo/emoji
    preview of the steps, and a calm status. There are usually only a few
    routines, so each gets room to show what's inside. */
 .kid__face {
   position: relative;
-  width: min(15rem, 80vw);
+  width: 100%;
+  max-width: 17rem;
   min-height: 12rem;
   border: 0;
   border-radius: 24px;

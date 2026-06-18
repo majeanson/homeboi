@@ -15,7 +15,6 @@ import { AddSheet } from './AddSheet'
 import { KidExitGate } from './KidExitGate'
 import { OfflineBanner } from './OfflineBanner'
 import { AddSheetContext, SECTION_MODES, FORM_ROUTES, type AddSheetMode } from '../lib/addSheet'
-import { useAuth } from '../lib/auth'
 import {
   KitchenActionsContext,
   NO_KITCHEN_ACTIONS,
@@ -51,7 +50,6 @@ export function HubLayout() {
   const loc = useLocation()
   const nav = useNavigate()
   const qc = useQueryClient()
-  const { signedIn } = useAuth()
   const [addOpen, setAddOpen] = useState(false)
   // Kiosk-only: collapse the left section rail to reclaim its width for the body
   // (a parent who wants the whole wall for the agenda/list). Persisted so the
@@ -377,13 +375,10 @@ export function HubLayout() {
               nav('/kitchen/recipe/new')
               return
             }
-            // Routines: the routine builder is a full-screen scene now (its form
-            // is the worst keyboard offender in a sheet). An unsigned kiosk has
-            // no operator form, so it falls through to the sheet's capture box.
-            if (section === 'routines' && signedIn) {
-              nav('/routine/new')
-              return
-            }
+            // Routines: the ＋ opens the manage picker (new routine + edit an
+            // existing one) in the sheet; each choice routes on to the full-screen
+            // builder scene. An unsigned kiosk has no operator form, so the sheet
+            // falls through to the capture box (OPERATOR_MODES drops routine-pick).
             // The sheet always opens on a blank chooser — no tile pre-selected,
             // no form pre-shown — in every section (Marc's ask). The operator
             // picks what to add, including the Garde-manger low-stock form.

@@ -94,6 +94,7 @@ export function AppRoutes() {
         <Route path="/event/new" element={<EventFormPage />} />
         <Route path="/chore/new" element={<ChoreFormPage />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />
+        <Route path="/routine/:id" element={<RoutineFormPage />} />
         <Route path="/share" element={<SharePage />} />
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />

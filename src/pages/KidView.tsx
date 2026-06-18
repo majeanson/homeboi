@@ -18,8 +18,8 @@ import { todRank, isRoutineTod, TOD_ICON, TOD_TINT } from '../lib/routineTod'
 import { ROUTINES_KEY } from '../lib/queryKeys'
 
 // The pre-reader surface, in Pip's calm "right now / then" picture story: ONE
-// big card at a time, narrated on tap, with the next thing shown small and a
-// row of dots for rhythm. Tapping the big card (or the arrow) speaks it and
+// big hero card at a time, narrated on tap, with the whole routine shown beneath
+// as a picture filmstrip (current step lifted, done ones ✓). Tapping the big card (or the arrow) speaks it and
 // settles it done — the SAME gentle state every time (deterministic, no
 // variable reward, NFR-CALM-2) — then the story moves to the next thing. When
 // the day is done it ends on a handwritten "sweet dreams" and STOPS (no "do it
@@ -302,7 +302,6 @@ export function KidView() {
   const firstUndone = picked.cards.findIndex((_, i) => !picked.doneIdx.includes(i))
   const curIdx = firstUndone === -1 ? picked.cards.length - 1 : firstUndone
   const cur = picked.cards[curIdx]
-  const next = picked.cards[curIdx + 1]
 
   // Time spent so far across the steps finished this session (plus the one
   // running right now) — shown small during the routine and as a quiet line on
@@ -380,27 +379,30 @@ export function KidView() {
                 {cur?.label}
               </button>
 
-              {/* "Next" preview + the rhythm dots share ONE row, so the column
-                  stays short enough to fit a tablet without scrolling. The
-                  per-step clock below is the only time shown while running — the
-                  session total is kept for the end recap (a parent's glance),
-                  not doubled up here. */}
-              <div className="tdl-meta">
-                {next && (
-                  <div className="tdl-next" aria-hidden="true">
-                    <span className="tdl-next-arrow">→</span>
-                    {picked.cardsPhoto?.[curIdx + 1] ? (
-                      <img className="tdl-next-photo" src={imgUrl(picked.cardsPhoto[curIdx + 1])} alt="" />
-                    ) : (
-                      <span className="tdl-next-pic">{next.icon || '○'}</span>
-                    )}
-                  </div>
-                )}
-                <div className="tdl-dots" aria-hidden="true">
-                  {picked.cards.map((_, k) => (
-                    <i key={k} className={picked.doneIdx.includes(k) ? 'done' : k === curIdx ? 'on' : ''} />
-                  ))}
-                </div>
+              {/* The whole routine as a picture filmstrip: every step in order,
+                  the current one lifted + ringed ("you are here"), finished ones
+                  softened with a ✓, the rest waiting quietly. Replaces the abstract
+                  dots + the tiny "next" peek — a pre-reader sees the real sequence
+                  and where we are in it, and it fills the wall's width instead of a
+                  thin dot row. Non-interactive: a calm progress display, not a
+                  jump-around menu (advancing stays the one ▶/→ flow below). */}
+              <div className="tdl-strip" aria-hidden="true">
+                {picked.cards.map((c, k) => {
+                  const done = picked.doneIdx.includes(k)
+                  const state = done ? 'done' : k === curIdx ? 'on' : 'wait'
+                  return (
+                    <span key={k} className={`tdl-step tdl-step--${state}`}>
+                      <span className="tdl-step__pic">
+                        {picked.cardsPhoto?.[k] ? (
+                          <img src={imgUrl(picked.cardsPhoto[k])} alt="" />
+                        ) : (
+                          <span className="tdl-step__emoji">{c.icon || '○'}</span>
+                        )}
+                      </span>
+                      {done && <span className="tdl-step__check">✓</span>}
+                    </span>
+                  )
+                })}
               </div>
 
               {/* Start ONCE (▶), then advance through with →, and ✓ on the last.

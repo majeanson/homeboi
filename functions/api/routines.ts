@@ -1,9 +1,12 @@
 import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { dayStart, newId, nowSec } from '../_lib/ids'
+import { localDayStart, newId, nowSec } from '../_lib/ids'
 
 // Kid-view visual routines. GET returns each routine with TODAY's completion
-// set (which resets daily — the day empties, NFR-CALM-4). POST creates a
+// set (which resets daily — the day empties, NFR-CALM-4). "Today" is the
+// household's LOCAL day (America/Toronto via localDayStart), so a finished
+// routine clears at local MIDNIGHT and can be done again the next morning —
+// not at UTC midnight (≈8 PM local), which used to reset it mid-bedtime. POST creates a
 // routine (operator). PATCH toggles one card done for today (kiosk-friendly:
 // the three-year-old taps it) — or, operator-only, retags the routine's
 // time-of-day cue.
@@ -36,7 +39,7 @@ function normalizeKeys(v: unknown, count: number): string[] {
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
-  const today = dayStart(new Date(Date.now()))
+  const today = localDayStart(new Date(Date.now()))
 
   const routines = await ctx.env.DB.prepare(
     `SELECT r.id, r.member_id, r.name, r.cards_json, r.cards_narration_json, r.cards_photo_json, r.time_of_day,
@@ -226,7 +229,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 
   if (typeof body.cardIdx !== 'number') return badRequest('routineId + cardIdx requis.')
 
-  const today = dayStart(new Date(Date.now()))
+  const today = localDayStart(new Date(Date.now()))
   const existing = await ctx.env.DB.prepare(
     'SELECT done_idx_json FROM routine_runs WHERE routine_id = ? AND date = ?',
   )

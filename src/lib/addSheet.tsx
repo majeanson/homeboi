@@ -14,6 +14,11 @@ export type AddSheetMode =
   | 'chore'
   | 'todo'
   | 'routine'
+  // The Routines ＋ opens a small in-sheet picker (NOT a straight jump to the
+  // builder): a "new routine" button plus the household's existing routines, each
+  // tappable to edit. `routine` stays the create-only nav used by the board tile
+  // and the Réglages add button; `routine-pick` is the manage-from-the-tab sheet.
+  | 'routine-pick'
   | 'plan-today'
   | 'plan-tomorrow'
   | 'list-item'
@@ -45,14 +50,16 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // where it's navigate-only and resolves its target from the meal plan). `reserve`
   // adds to La réserve (freezer/back-of-pantry stash), the third Garde-manger list.
   kitchen: ['cook', 'recipe', 'meal', 'leftovers', 'pantry', 'reserve'],
-  routines: ['routine'],
+  // The Routines tab's ＋ is the manage picker (create new + edit existing),
+  // resolved in-sheet — see the `routine-pick` panel in AddSheet.
+  routines: ['routine-pick'],
   liste: ['list-item', 'quick-add', 'flyer', 'auto-pick'],
 }
 
 // The operator-grade forms (same gating the old chooser had): a kiosk that
 // isn't signed in never sees these tiles. Everything else (capture, list,
 // kitchen adds) already works on a paired kiosk via its device token.
-export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'chore', 'routine'])
+export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'chore', 'routine', 'routine-pick'])
 
 // The operator forms are full-screen SCENE routes now, not in-sheet forms: a
 // tall multi-field form (a routine's name + member chips + template + card deck)
