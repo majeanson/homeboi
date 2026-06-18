@@ -7,6 +7,11 @@ export interface Member {
   avatar_ref: string
   avatar_kind: string
   colour: string
+  email: string | null
+  phone: string | null
+  birthday: string | null
+  notes: string | null
+  gender: string | null
 }
 export interface Device {
   id: string

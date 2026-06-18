@@ -32,8 +32,21 @@ const contact = (id: string, firstName: string, lastName = ''): Contact => ({
   tags: [],
   memberId: null,
   customFields: [],
+  gender: null,
 })
-const member = (id: string, displayName: string): Member => ({ id, displayName, avatarKind: 'color', avatarRef: '#abc', colour: '#abc', isChild: false })
+const member = (id: string, displayName: string): Member => ({
+  id,
+  displayName,
+  avatarKind: 'color',
+  avatarRef: '#abc',
+  colour: '#abc',
+  isChild: false,
+  email: null,
+  phone: null,
+  birthday: null,
+  notes: null,
+  gender: null,
+})
 const link = (
   aId: string,
   bId: string,

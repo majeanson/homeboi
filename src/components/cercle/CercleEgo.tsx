@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { Avatar } from '../Avatar'
-import { type Person, type ContactLink, personKey, relLabel } from '../../lib/cercle'
+import { type Person, type ContactLink, personKey, genderedRelLabel } from '../../lib/cercle'
 
 // « Le cercle » — Liens (ego view). The chosen person sits at the centre; everyone
 // DIRECTLY linked to them fans out on a ring, each connector LABELLED with the
@@ -47,7 +47,7 @@ export function CercleEgo({ people, links, onOpen }: { people: Person[]; links: 
       const other = byKey.get(otherKey)
       if (!other) continue
       const entry = acc.get(otherKey) ?? { person: other, labels: [] }
-      const label = relLabel(rel, lang)
+      const label = genderedRelLabel(rel, other.gender, lang)
       if (!entry.labels.includes(label)) entry.labels.push(label)
       acc.set(otherKey, entry)
     }

@@ -7,25 +7,86 @@ import { hexColor } from '../_lib/validate'
 // "pick your face" attribution); create/edit/delete is operator-only. `colour`
 // is the tint used for board colour-coding; a member may also carry a photo
 // avatar (avatar_kind='photo', avatar_ref=R2 key) — see members/avatar.
+// Phase 3: members now also carry email, phone, birthday, notes to mirror the
+// contact fields in le cercle — the same person, just living in the household.
+
+const BIRTHDAY_RE = /^\d{1,4}-\d{2}-\d{2}$/
+const birthdayOrNull = (v: unknown): string | null =>
+  typeof v === 'string' && BIRTHDAY_RE.test(v.trim()) ? v.trim() : null
+const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
+const genderOrNull = (v: unknown): string | null => (v === 'm' || v === 'f' ? v : null)
+
+interface MemberRow {
+  id: string
+  display_name: string
+  avatar_kind: string
+  avatar_ref: string
+  colour: string
+  is_child: number
+  sort_order: number
+  email: string | null
+  phone: string | null
+  birthday: string | null
+  notes: string | null
+  gender: string | null
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child, sort_order FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child, sort_order, email, phone, birthday, notes, gender FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
   )
     .bind(actor.householdId)
-    .all()
-  return ok({ members: results })
+    .all<MemberRow>()
+  return ok({
+    members: results.map((r) => ({
+      id: r.id,
+      displayName: r.display_name,
+      avatarKind: r.avatar_kind,
+      avatarRef: r.avatar_ref,
+      colour: r.colour,
+      isChild: r.is_child === 1,
+      email: r.email ?? null,
+      phone: r.phone ?? null,
+      birthday: r.birthday ?? null,
+      notes: r.notes ?? null,
+      gender: r.gender ?? null,
+    })),
+  })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ name?: string; color?: string; isChild?: boolean }>(ctx.request)
+  const body = await readJson<{
+    name?: string
+    color?: string
+    isChild?: boolean
+    email?: string
+    phone?: string
+    birthday?: string
+    notes?: string
+    gender?: string
+  }>(ctx.request)
   const name = body?.name?.trim()
   if (!name) return badRequest('Nom requis.')
   const id = newId()
   const colour = hexColor(body?.color, '#7a8b6f')
   await ctx.env.DB.prepare(
-    'INSERT INTO members (id, household_id, display_name, avatar_kind, avatar_ref, colour, is_child, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO members (id, household_id, display_name, avatar_kind, avatar_ref, colour, is_child, email, phone, birthday, notes, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
-    .bind(id, actor.householdId, name, 'color', colour, colour, body?.isChild ? 1 : 0, nowSec())
+    .bind(
+      id,
+      actor.householdId,
+      name,
+      'color',
+      colour,
+      colour,
+      body?.isChild ? 1 : 0,
+      str(body?.email),
+      str(body?.phone),
+      birthdayOrNull(body?.birthday),
+      str(body?.notes),
+      genderOrNull(body?.gender),
+      nowSec(),
+    )
     .run()
   return ok({ id, name })
 }, 'operator')
@@ -33,9 +94,18 @@ export const onRequestPost = authed(async (ctx, actor) => {
 // Edit a member: rename, recolour, toggle child, or revert a photo avatar back
 // to a colour (clearPhoto). Partial — only the fields sent are touched.
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; name?: string; colour?: string; isChild?: boolean; clearPhoto?: boolean }>(
-    ctx.request,
-  )
+  const body = await readJson<{
+    id?: string
+    name?: string
+    colour?: string
+    isChild?: boolean
+    clearPhoto?: boolean
+    email?: string | null
+    phone?: string | null
+    birthday?: string | null
+    notes?: string | null
+    gender?: string | null
+  }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
   const member = await ctx.env.DB.prepare('SELECT avatar_kind, avatar_ref FROM members WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
@@ -61,6 +131,26 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     // Back to a colour avatar; clear the now-deleted R2 key (legacy: color
     // members keep avatar_ref == colour) so no stale key lingers.
     sets.push("avatar_kind = 'color'", 'avatar_ref = colour')
+  }
+  if ('email' in body) {
+    sets.push('email = ?')
+    binds.push(str(body.email))
+  }
+  if ('phone' in body) {
+    sets.push('phone = ?')
+    binds.push(str(body.phone))
+  }
+  if ('birthday' in body) {
+    sets.push('birthday = ?')
+    binds.push(birthdayOrNull(body.birthday))
+  }
+  if ('notes' in body) {
+    sets.push('notes = ?')
+    binds.push(str(body.notes))
+  }
+  if ('gender' in body) {
+    sets.push('gender = ?')
+    binds.push(genderOrNull(body.gender))
   }
   if (!sets.length) return ok({ ok: true })
   binds.push(body.id, actor.householdId)
@@ -106,6 +196,10 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     ctx.env.DB.prepare(
       "DELETE FROM contact_links WHERE household_id = ? AND ((person_a_id = ? AND person_a_kind = 'member') OR (person_b_id = ? AND person_b_kind = 'member'))",
     ).bind(hh, id, id),
+    // Named group memberships for this member (polymorphic, no FK).
+    ctx.env.DB.prepare(
+      "DELETE FROM contact_group_members WHERE person_kind = 'member' AND person_id = ?",
+    ).bind(id),
     ctx.env.DB.prepare('DELETE FROM members WHERE id = ? AND household_id = ?').bind(id, hh),
   ])
   return ok({ ok: true })

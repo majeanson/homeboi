@@ -3,9 +3,10 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 
 // « Le cercle » — the household people directory (contacts). GET returns the
-// whole circle (contacts + their relationship edges) in one shot; the SPA derives
-// family groups + birthday chips client-side (src/lib/cercle.ts). POST/PATCH/DELETE
-// manage one contact. Relationship EDGES live in their own handler (cercle-links).
+// whole circle (contacts + their relationship edges + named groups) in one shot;
+// the SPA derives family groups + birthday chips client-side (src/lib/cercle.ts).
+// POST/PATCH/DELETE manage one contact. Relationship EDGES live in their own
+// handler (cercle-links). Named groups live in cercle-groups.
 //
 // A contact photo rides R2 like every other image: POST a raw image blob and you
 // get back { key } (mirrors note-media); the key then goes on the contact row as
@@ -31,6 +32,7 @@ interface ContactRow {
   tags: string | null
   member_id: string | null
   custom_fields: string | null
+  gender: string | null
 }
 
 interface LinkRow {
@@ -52,9 +54,28 @@ interface MemberRow {
   avatar_ref: string
   colour: string
   is_child: number
+  email: string | null
+  phone: string | null
+  birthday: string | null
+  notes: string | null
+  gender: string | null
+}
+
+interface GroupRow {
+  id: string
+  name: string
+  kind: string
+  colour: string | null
+}
+
+interface GroupMemberRow {
+  group_id: string
+  person_id: string
+  person_kind: string
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
+const genderOrNull = (v: unknown): string | null => (v === 'm' || v === 'f' ? v : null)
 const BIRTHDAY_RE = /^\d{1,4}-\d{2}-\d{2}$/
 const birthdayOrNull = (v: unknown): string | null => (typeof v === 'string' && BIRTHDAY_RE.test(v.trim()) ? v.trim() : null)
 // A JSON value we control, re-serialized defensively (drops anything non-array /
@@ -76,7 +97,7 @@ function parseJson<T>(s: string | null, fallback: T): T {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const contacts = await ctx.env.DB.prepare(
-    `SELECT id, first_name, last_name, nickname, photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields
+    `SELECT id, first_name, last_name, nickname, photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, gender
        FROM contacts WHERE household_id = ? ORDER BY last_name, first_name`,
   )
     .bind(actor.householdId)
@@ -93,10 +114,34 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // links its own faces to each other + to contacts. Returned alongside so the SPA
   // merges them into one "people" set (src/lib/cercle.ts buildPeople).
   const members = await ctx.env.DB.prepare(
-    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child, email, phone, birthday, notes, gender FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
   )
     .bind(actor.householdId)
     .all<MemberRow>()
+
+  // Named people groups (phase 3). Two queries: groups then their members, merged
+  // in JS. Avoids NULL-row duplication from a LEFT JOIN when groups are empty.
+  const groups = await ctx.env.DB.prepare(
+    'SELECT id, name, kind, colour FROM contact_groups WHERE household_id = ? ORDER BY sort_order, created_at',
+  )
+    .bind(actor.householdId)
+    .all<GroupRow>()
+
+  const groupMembers = groups.results.length
+    ? await ctx.env.DB.prepare(
+        `SELECT group_id, person_id, person_kind FROM contact_group_members
+           WHERE group_id IN (SELECT id FROM contact_groups WHERE household_id = ?)`,
+      )
+        .bind(actor.householdId)
+        .all<GroupMemberRow>()
+    : { results: [] as GroupMemberRow[] }
+
+  // Build a map group_id → [{personId, personKind}]
+  const gmByGroup = new Map<string, { personId: string; personKind: string }[]>()
+  for (const gm of groupMembers.results) {
+    if (!gmByGroup.has(gm.group_id)) gmByGroup.set(gm.group_id, [])
+    gmByGroup.get(gm.group_id)!.push({ personId: gm.person_id, personKind: gm.person_kind })
+  }
 
   return ok({
     members: members.results.map((m) => ({
@@ -106,6 +151,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
       avatarRef: m.avatar_ref,
       colour: m.colour,
       isChild: m.is_child === 1,
+      email: m.email ?? null,
+      phone: m.phone ?? null,
+      birthday: m.birthday ?? null,
+      notes: m.notes ?? null,
+      gender: m.gender ?? null,
     })),
     contacts: contacts.results.map((c) => ({
       id: c.id,
@@ -121,6 +171,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       tags: parseJson<string[]>(c.tags, []),
       memberId: c.member_id,
       customFields: parseJson<unknown[]>(c.custom_fields, []),
+      gender: c.gender ?? null,
     })),
     links: links.results.map((l) => ({
       id: l.id,
@@ -132,6 +183,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
       reverseType: l.reverse_type,
       label: l.label,
       notes: l.notes,
+    })),
+    groups: groups.results.map((g) => ({
+      id: g.id,
+      name: g.name,
+      kind: g.kind,
+      colour: g.colour,
+      memberKeys: gmByGroup.get(g.id) ?? [],
     })),
   })
 })
@@ -164,6 +222,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     tags?: unknown
     memberId?: string
     customFields?: unknown
+    gender?: string
   }>(ctx.request)
   const firstName = str(body?.firstName)
   if (!firstName) return badRequest('Prénom requis.')
@@ -172,8 +231,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   await ctx.env.DB.prepare(
     `INSERT INTO contacts
-       (id, household_id, first_name, last_name, nickname, photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, household_id, first_name, last_name, nickname, photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, gender, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       id,
@@ -190,6 +249,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       jsonArray(body?.tags),
       str(body?.memberId),
       jsonArray(body?.customFields),
+      genderOrNull(body?.gender),
       ts,
       ts,
     )
@@ -212,6 +272,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     tags?: unknown
     memberId?: string | null
     customFields?: unknown
+    gender?: string | null
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
@@ -244,6 +305,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   setIf(body.tags !== undefined, 'tags', jsonArray(body.tags))
   setIf('memberId' in body, 'member_id', str(body.memberId))
   setIf(body.customFields !== undefined, 'custom_fields', jsonArray(body.customFields))
+  setIf('gender' in body, 'gender', genderOrNull(body.gender))
 
   if (sets.length) {
     sets.push('updated_at = ?')
@@ -280,6 +342,10 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     ctx.env.DB.prepare(
       'DELETE FROM contact_links WHERE household_id = ? AND (person_a_id = ? OR person_b_id = ?)',
     ).bind(actor.householdId, body.id, body.id),
+    // Named group memberships (polymorphic, no FK).
+    ctx.env.DB.prepare(
+      "DELETE FROM contact_group_members WHERE person_kind = 'contact' AND person_id = ?",
+    ).bind(body.id),
     ctx.env.DB.prepare('DELETE FROM contacts WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId),
   ])
   return ok({ ok: true })

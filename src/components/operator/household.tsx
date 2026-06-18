@@ -14,6 +14,7 @@ import { Avatar } from '../Avatar'
 import { ColorPicker } from '../ColorPicker'
 import { Icon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { BirthdayPicker } from '../cercle/BirthdayPicker'
 import { LinkComposer } from '../cercle/LinkComposer'
 import { buildPeople, personKey, type Person, type ContactLink, type Contact, type Member as CercleMember } from '../../lib/cercle'
 import { type Member } from './types'
@@ -169,6 +170,11 @@ function MemberCard({
   const [name, setName] = useState(member.display_name)
   const [isChild, setIsChild] = useState(!!member.is_child)
   const [color, setColor] = useState(member.colour)
+  const [email, setEmail] = useState(member.email ?? '')
+  const [phone, setPhone] = useState(member.phone ?? '')
+  const [birthday, setBirthday] = useState<string | null>(member.birthday ?? null)
+  const [notes, setNotes] = useState(member.notes ?? '')
+  const [gender, setGender] = useState<'m' | 'f' | null>((member.gender as 'm' | 'f' | null) ?? null)
   const [busy, setBusy] = useState(false)
   const write = useWrite()
 
@@ -191,7 +197,17 @@ function MemberCard({
     setBusy(true)
     await write('members', {
       method: 'PATCH',
-      body: { id: member.id, name: name.trim(), isChild, colour: color },
+      body: {
+        id: member.id,
+        name: name.trim(),
+        isChild,
+        colour: color,
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        birthday,
+        notes: notes.trim() || null,
+        gender,
+      },
       affectedKeys: [['members'], ['board']],
     }).catch(() => {})
     setBusy(false)
@@ -233,6 +249,49 @@ function MemberCard({
             {t.operator.isChild}
           </label>
           <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+          <input
+            className="input"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t.operator.memberEmail}
+            aria-label={t.operator.memberEmail}
+          />
+          <input
+            className="input"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder={t.operator.memberPhone}
+            aria-label={t.operator.memberPhone}
+          />
+          <div className="cf__field cf__field--bday">
+            <label className="cf__label">{t.operator.memberBirthday}</label>
+            <BirthdayPicker value={birthday} onChange={setBirthday} />
+          </div>
+          <div className="cf__field cf__gender">
+            <span className="cf__label">{t.cercle.gender}</span>
+            <div className="cf__gender-chips">
+              {(['m', 'f', null] as const).map((g) => (
+                <button
+                  key={String(g)}
+                  type="button"
+                  className={'chip' + (gender === g ? ' chip--active' : '')}
+                  onClick={() => setGender(g)}
+                >
+                  {g === 'm' ? t.cercle.genderM : g === 'f' ? t.cercle.genderF : t.cercle.genderN}
+                </button>
+              ))}
+            </div>
+          </div>
+          <textarea
+            className="input"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={t.operator.memberNotes}
+            aria-label={t.operator.memberNotes}
+            rows={2}
+          />
           <button type="submit" className="btn" disabled={!name.trim() || busy}>
             {t.common.save}
           </button>
@@ -243,6 +302,11 @@ function MemberCard({
               setName(member.display_name)
               setIsChild(!!member.is_child)
               setColor(member.colour)
+              setEmail(member.email ?? '')
+              setPhone(member.phone ?? '')
+              setBirthday(member.birthday ?? null)
+              setNotes(member.notes ?? '')
+              setGender((member.gender as 'm' | 'f' | null) ?? null)
               setEditing(false)
             }}
           >

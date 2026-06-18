@@ -39,10 +39,12 @@ export interface Contact {
   tags: string[]
   memberId: string | null
   customFields: ContactCustomField[]
+  gender: 'm' | 'f' | null
 }
 
 // A household member, as the cercle GET returns it (phase 2 — members are people
-// in the circle too).
+// in the circle too). Phase 3 adds contact fields so a member is as rich as any
+// contact (email, phone, birthday, notes).
 export interface Member {
   id: string
   displayName: string
@@ -50,6 +52,11 @@ export interface Member {
   avatarRef: string
   colour: string
   isChild: boolean
+  email: string | null
+  phone: string | null
+  birthday: string | null
+  notes: string | null
+  gender: 'm' | 'f' | null
 }
 
 export type PersonKind = 'contact' | 'member'
@@ -79,8 +86,11 @@ export interface Person {
   avatarKind: string | null // 'photo' | 'color' | null → drives <Avatar kind>
   avatarRef: string | null // R2 key (photo) or hex (colour)
   colour: string | null
-  birthday: string | null // contacts only
+  birthday: string | null // contacts + members (phase 3)
   isChild: boolean
+  email: string | null
+  phone: string | null
+  gender: 'm' | 'f' | null
 }
 
 const CONTACT_ACCENT = '#C45E86' // the cercle rose, for photoless contacts
@@ -102,6 +112,9 @@ export function buildPeople(contacts: Contact[], members: Member[]): Person[] {
     colour: CONTACT_ACCENT,
     birthday: c.birthday,
     isChild: false,
+    email: c.email,
+    phone: c.phone,
+    gender: c.gender,
   }))
   const fromMembers: Person[] = members.map((m) => ({
     kind: 'member' as const,
@@ -113,8 +126,11 @@ export function buildPeople(contacts: Contact[], members: Member[]): Person[] {
     avatarKind: m.avatarKind,
     avatarRef: m.avatarRef,
     colour: m.colour,
-    birthday: null,
+    birthday: m.birthday ?? null,
     isChild: m.isChild,
+    email: m.email ?? null,
+    phone: m.phone ?? null,
+    gender: m.gender ?? null,
   }))
   return [...fromMembers, ...fromContacts]
 }
@@ -209,6 +225,46 @@ export const ALL_RELATIONSHIP_TYPES = Object.keys(RELATIONSHIP_CONFIG) as Relati
 
 export function relLabel(type: RelationshipType, lang: keyof Bi): string {
   return RELATIONSHIP_CONFIG[type].label[lang]
+}
+
+// Returns a gender-aware relationship label when the subject's gender is known.
+// Falls back to the neutral label (already in RELATIONSHIP_CONFIG) when unknown.
+export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | null, lang: 'fr' | 'en'): string {
+  if (gender === 'f') {
+    const FEM_FR: Partial<Record<RelationshipType, string>> = {
+      parent: 'Mère', child: 'Fille', sibling: 'Sœur', spouse: 'Conjointe',
+      partner: 'Partenaire', grandparent: 'Grand-mère', grandchild: 'Petite-fille',
+      aunt_uncle: 'Tante', niece_nephew: 'Nièce', in_law: 'Belle-famille',
+      step_family: 'Famille recomposée', friend: 'Amie', colleague: 'Collègue',
+      neighbor: 'Voisine', cousin: 'Cousine',
+    }
+    const FEM_EN: Partial<Record<RelationshipType, string>> = {
+      parent: 'Mother', child: 'Daughter', sibling: 'Sister', spouse: 'Wife',
+      partner: 'Partner', grandparent: 'Grandmother', grandchild: 'Granddaughter',
+      aunt_uncle: 'Aunt', niece_nephew: 'Niece',
+      friend: 'Friend', colleague: 'Colleague', neighbor: 'Neighbour', cousin: 'Cousin',
+    }
+    const map = lang === 'fr' ? FEM_FR : FEM_EN
+    return map[type] ?? relLabel(type, lang)
+  }
+  if (gender === 'm') {
+    const MASC_FR: Partial<Record<RelationshipType, string>> = {
+      parent: 'Père', child: 'Fils', sibling: 'Frère', spouse: 'Conjoint',
+      partner: 'Partenaire', grandparent: 'Grand-père', grandchild: 'Petit-fils',
+      aunt_uncle: 'Oncle', niece_nephew: 'Neveu', in_law: 'Belle-famille',
+      step_family: 'Famille recomposée', friend: 'Ami', colleague: 'Collègue',
+      neighbor: 'Voisin', cousin: 'Cousin',
+    }
+    const MASC_EN: Partial<Record<RelationshipType, string>> = {
+      parent: 'Father', child: 'Son', sibling: 'Brother', spouse: 'Husband',
+      partner: 'Partner', grandparent: 'Grandfather', grandchild: 'Grandson',
+      aunt_uncle: 'Uncle', niece_nephew: 'Nephew',
+      friend: 'Friend', colleague: 'Colleague', neighbor: 'Neighbour', cousin: 'Cousin',
+    }
+    const map = lang === 'fr' ? MASC_FR : MASC_EN
+    return map[type] ?? relLabel(type, lang)
+  }
+  return relLabel(type, lang)
 }
 
 // Relationship types grouped + ordered, for a sectioned picker.
@@ -447,3 +503,115 @@ export function formatBirthday(birthday: string | null | undefined, lang: keyof 
 
 export const fullName = (c: { firstName: string; lastName?: string | null; nickname?: string | null }): string =>
   c.nickname?.trim() || [c.firstName, c.lastName].filter(Boolean).join(' ').trim() || c.firstName
+
+// ---- Named groups -----------------------------------------------------------
+
+export type GroupKind = 'family' | 'friends' | 'work' | 'other'
+
+export interface ContactGroup {
+  id: string
+  name: string
+  kind: GroupKind
+  colour: string | null
+  memberKeys: Set<string> // composite Person.key values
+}
+
+// Wire shape returned by GET /api/cercle (before conversion to Set).
+export interface ContactGroupRaw {
+  id: string
+  name: string
+  kind: GroupKind
+  colour: string | null
+  memberKeys: { personId: string; personKind: PersonKind }[]
+}
+
+export function buildGroups(raw: ContactGroupRaw[]): ContactGroup[] {
+  return raw.map((g) => ({
+    ...g,
+    memberKeys: new Set(g.memberKeys.map((m) => personKey(m.personKind, m.personId))),
+  }))
+}
+
+// ---- Inference suggestions --------------------------------------------------
+
+export interface InferredLink {
+  aKey: string
+  bKey: string
+  type: RelationshipType
+  reverseType: RelationshipType
+  reason: Bi
+}
+
+// Compute transitive relationship suggestions from existing links. Pure — never
+// mutates. Three rules:
+//   1. Two people both parents of the same child → suggest spouse/partner
+//   2. People sharing a parent → suggest sibling
+//   3. Spouse's parents → suggest in-law
+// Returns only suggestions not already present. The caller shows them as
+// dismissable chips (they're never auto-applied).
+export function inferLinks(people: Person[], links: ContactLink[]): InferredLink[] {
+  // Build adjacency: personKey → [{type, otherKey}] FROM THAT PERSON'S PERSPECTIVE.
+  // E.g. adj[A] = [{type:'parent', otherKey:B}] means "A is parent of B".
+  const adj = new Map<string, { type: RelationshipType; otherKey: string }[]>()
+  const present = new Set(people.map((p) => p.key))
+  const addEdge = (from: string, type: RelationshipType, to: string) => {
+    if (!adj.has(from)) adj.set(from, [])
+    adj.get(from)!.push({ type, otherKey: to })
+  }
+  for (const l of links) {
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    if (!present.has(aKey) || !present.has(bKey)) continue
+    addEdge(aKey, l.type, bKey)
+    addEdge(bKey, l.reverseType, aKey)
+  }
+
+  // Order-independent pair key for dedup.
+  const pairKey = (a: string, b: string) => (a < b ? `${a}||${b}` : `${b}||${a}`)
+  const existing = new Set(
+    links.map((l) => pairKey(personKey(l.personAKind, l.personAId), personKey(l.personBKind, l.personBId))),
+  )
+
+  const suggestions = new Map<string, InferredLink>()
+  const suggest = (aKey: string, bKey: string, type: RelationshipType, reason: Bi) => {
+    if (aKey === bKey) return
+    const pk = pairKey(aKey, bKey)
+    if (existing.has(pk) || suggestions.has(pk)) return
+    // Canonicalize: smaller key is always A so the same pair always maps identically.
+    const [fA, fB, fT] =
+      aKey < bKey ? [aKey, bKey, type] : [bKey, aKey, RELATIONSHIP_INVERSES[type]]
+    suggestions.set(pk, { aKey: fA, bKey: fB, type: fT, reverseType: RELATIONSHIP_INVERSES[fT], reason })
+  }
+
+  const neighbors = (key: string, type: RelationshipType) =>
+    (adj.get(key) ?? []).filter((e) => e.type === type).map((e) => e.otherKey)
+
+  for (const person of people) {
+    const key = person.key
+
+    // Rule 1: co-parents → spouse
+    // adj[key].type='parent' means key is parent-of child; find other parents of that child.
+    for (const child of neighbors(key, 'parent')) {
+      // adj[child].type='child' means child is child-of that key — those are child's parents.
+      for (const coParent of neighbors(child, 'child')) {
+        if (coParent !== key) suggest(key, coParent, 'spouse', { fr: 'Parents du même enfant', en: 'Co-parents' })
+      }
+    }
+
+    // Rule 2: siblings from same parent
+    for (const parent of neighbors(key, 'child')) {
+      for (const sib of neighbors(parent, 'parent')) {
+        if (sib !== key) suggest(key, sib, 'sibling', { fr: 'Même parent', en: 'Same parent' })
+      }
+    }
+
+    // Rule 3: spouse's parents → in-laws
+    for (const spouse of [...neighbors(key, 'spouse'), ...neighbors(key, 'partner')]) {
+      for (const spouseParent of neighbors(spouse, 'child')) {
+        suggest(key, spouseParent, 'in_law', { fr: "Parent du conjoint·e", en: "Spouse's parent" })
+      }
+    }
+  }
+
+  return [...suggestions.values()]
+}

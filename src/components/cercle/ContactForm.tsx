@@ -45,6 +45,7 @@ export function ContactForm({
   const [lastName, setLastName] = useState(value?.lastName ?? '')
   const [nickname, setNickname] = useState(value?.nickname ?? '')
   const [birthday, setBirthday] = useState(value?.birthday ?? '')
+  const [gender, setGender] = useState<'m' | 'f' | null>(value?.gender ?? null)
   const [email, setEmail] = useState(value?.email ?? '')
   const [phone, setPhone] = useState(value?.phone ?? '')
   const [notes, setNotes] = useState(value?.notes ?? '')
@@ -84,6 +85,7 @@ export function ContactForm({
       lastName: lastName.trim(),
       nickname: nickname.trim() || null,
       birthday: birthday.trim() || null,
+      gender,
       email: email.trim() || null,
       phone: phone.trim() || null,
       notes: notes.trim() || null,
@@ -111,6 +113,7 @@ export function ContactForm({
             nickname: body.nickname,
             photoKey,
             birthday: body.birthday,
+            gender,
             email: body.email,
             phone: body.phone,
             address: null,
@@ -172,6 +175,21 @@ export function ContactForm({
             <Icon name="cake-bold" size={14} /> {t.cercle.birthday}
           </span>
           <BirthdayPicker value={birthday || null} onChange={(v) => setBirthday(v ?? '')} />
+        </div>
+        <div className="cf__field cf__gender">
+          <span className="cf__label">{t.cercle.gender}</span>
+          <div className="cf__gender-chips">
+            {(['m', 'f', null] as const).map((g) => (
+              <button
+                key={String(g)}
+                type="button"
+                className={'chip' + (gender === g ? ' chip--active' : '')}
+                onClick={() => setGender(g)}
+              >
+                {g === 'm' ? t.cercle.genderM : g === 'f' ? t.cercle.genderF : t.cercle.genderN}
+              </button>
+            ))}
+          </div>
         </div>
         <label className="cf__field">
           <span className="cf__label">

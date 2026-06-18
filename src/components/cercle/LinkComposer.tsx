@@ -7,9 +7,12 @@ import {
   type Person,
   type ContactLink,
   type RelationshipType,
+  type InferredLink,
   personKey,
   groupedRelationshipTypes,
   relLabel,
+  genderedRelLabel,
+  inferLinks,
 } from '../../lib/cercle'
 import { Icon } from '../Icon'
 import { RowActions } from '../RowActions'
@@ -21,6 +24,10 @@ import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 // Works for any subject (a contact OR a household member) over the unified people
 // set; the server derives + stores the inverse. Reused by the contact form and the
 // Réglages ▸ Membres relationships affordance.
+//
+// Also shows inference suggestions: transitive links inferred from the existing
+// graph (co-parents → spouse, shared parent → siblings, spouse's parent → in-law).
+// These are dismissable; accepting them creates the link immediately.
 export function LinkComposer({
   person,
   people,
@@ -41,6 +48,7 @@ export function LinkComposer({
   const [otherKey, setOtherKey] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
   const groups = useMemo(() => groupedRelationshipTypes(), [])
@@ -56,13 +64,23 @@ export function LinkComposer({
     })
     .filter((x): x is { id: string; relType: RelationshipType; otherKey: string } => !!x)
 
+  // Inference suggestions for this person
+  const allSuggestions = useMemo(() => inferLinks(people, links), [people, links])
+  const mySuggestions = useMemo(
+    () =>
+      allSuggestions.filter(
+        (s) => (s.aKey === person.key || s.bKey === person.key) && !dismissed.has(`${s.aKey}||${s.bKey}`),
+      ),
+    [allSuggestions, person.key, dismissed],
+  )
+
   // Everyone except this person, as combobox options.
   const options: ComboOption<Person>[] = people
     .filter((p) => p.key !== person.key)
     .map((p) => ({ id: p.key, label: p.name, data: p, icon: p.kind === 'member' ? 'users-three-bold' : 'user-bold' }))
 
   const otherPerson = otherKey ? byKey.get(otherKey) : null
-  const preview = otherPerson ? `${person.name} · ${relLabel(type, lang)} · ${otherPerson.name}` : null
+  const preview = otherPerson ? `${person.name} · ${genderedRelLabel(type, otherPerson.gender, lang)} · ${otherPerson.name}` : null
 
   async function addLink() {
     if (!otherPerson || busy) return
@@ -88,6 +106,30 @@ export function LinkComposer({
     onChanged()
   }
 
+  async function acceptSuggestion(s: InferredLink) {
+    const firstColon = s.aKey.indexOf(':')
+    const aKind = s.aKey.slice(0, firstColon)
+    const aId = s.aKey.slice(firstColon + 1)
+    const firstColonB = s.bKey.indexOf(':')
+    const bKind = s.bKey.slice(0, firstColonB)
+    const bId = s.bKey.slice(firstColonB + 1)
+    setBusy(true)
+    try {
+      await write('cercle-links', {
+        method: 'POST',
+        body: { aId, aKind, bId, bKind, type: s.type },
+        affectedKeys: [CERCLE_KEY],
+      })
+      onChanged()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function dismissSuggestion(s: InferredLink) {
+    setDismissed((prev) => new Set([...prev, `${s.aKey}||${s.bKey}`]))
+  }
+
   return (
     <div className="lc">
       <span className="cf__label">{t.cercle.relationships}</span>
@@ -101,13 +143,50 @@ export function LinkComposer({
             return (
               <li key={m.id} className="cf__rels-row">
                 <span className="cf__rels-text">
-                  <strong>{relLabel(m.relType, lang)}</strong> · {other ? other.name : '—'}
+                  <strong>{genderedRelLabel(m.relType, other?.gender ?? null, lang)}</strong> · {other ? other.name : '—'}
                 </span>
                 <RowActions onDelete={() => removeLink(m.id)} deleteLabel={t.cercle.removeRelationship} />
               </li>
             )
           })}
         </ul>
+      )}
+
+      {/* Inference suggestions — dismissable transitive link proposals */}
+      {mySuggestions.length > 0 && (
+        <div className="lc__suggestions">
+          <span className="cf__label">{t.cercle.suggestedLinks}</span>
+          {mySuggestions.map((s, i) => {
+            const otherSugKey = s.aKey === person.key ? s.bKey : s.aKey
+            const relType = s.aKey === person.key ? s.type : s.reverseType
+            const other = byKey.get(otherSugKey)
+            if (!other) return null
+            return (
+              <div key={i} className="lc__suggestion">
+                <span className="lc__suggestion-text mono">
+                  {person.name} · <strong>{genderedRelLabel(relType, other.gender, lang)}</strong> · {other.name}
+                </span>
+                <div className="lc__suggestion-actions">
+                  <button
+                    type="button"
+                    className="btn btn--primary btn--sm"
+                    disabled={busy}
+                    onClick={() => acceptSuggestion(s)}
+                  >
+                    <Icon name="check-bold" size={13} /> {t.cercle.acceptSuggestion}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    onClick={() => dismissSuggestion(s)}
+                  >
+                    <Icon name="x-bold" size={13} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       )}
 
       {adding ? (
