@@ -23,9 +23,10 @@ interface TodoRow {
   member_id: string | null
   done_at: number | null
   position: number
+  section: string | null
 }
 
-const COLS = 'id, title, day, member_id, done_at, position, created_at'
+const COLS = 'id, title, day, member_id, done_at, position, section, created_at'
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const dateParam = new URL(ctx.request.url).searchParams.get('date')
@@ -57,25 +58,34 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
 
   // Instantiate a template → a batch of real, independent todos (the departure
-  // checklist made concrete). Items keep their template order via `position`
-  // (they share one created_at, so position breaks the tie). Capped, defensively.
+  // checklist made concrete). A COMPOSED template (one that includes other lists)
+  // flattens to a SECTIONED list: each included sub-list's items land under that
+  // sub-list's title as their `section`; loose items have no section. The same
+  // label from two sub-lists is kept in both (attributed to each source). Items
+  // keep their order via `position` (they share one created_at, so position breaks
+  // the tie). Cycle-safe + capped. Mirrors expandSectioned in src/lib/todos.ts.
   if (body?.templateId) {
-    const tpl = await ctx.env.DB.prepare('SELECT items_json FROM todo_templates WHERE id = ? AND household_id = ?')
-      .bind(body.templateId, actor.householdId)
-      .first<{ items_json: string }>()
-    if (!tpl) return badRequest('Modèle introuvable.')
-    let items: string[] = []
-    try {
-      const v = JSON.parse(tpl.items_json)
-      if (Array.isArray(v)) items = v.filter((x): x is string => typeof x === 'string' && !!x.trim())
-    } catch {
-      items = []
+    const rows = await ctx.env.DB.prepare('SELECT id, title, items_json FROM todo_templates WHERE household_id = ?')
+      .bind(actor.householdId)
+      .all<{ id: string; title: string; items_json: string }>()
+    const tpls = new Map<string, { title: string; items: StoredItem[] }>()
+    for (const r of rows.results) {
+      let items: StoredItem[] = []
+      try {
+        const v = JSON.parse(r.items_json)
+        if (Array.isArray(v)) items = v as StoredItem[]
+      } catch {
+        items = []
+      }
+      tpls.set(r.id, { title: r.title, items })
     }
-    if (items.length === 0) return ok({ ok: true, n: 0 })
-    const stmts = items.slice(0, 50).map((label, i) =>
+    if (!tpls.has(body.templateId)) return badRequest('Modèle introuvable.')
+    const rows2 = expandSectioned(tpls, body.templateId)
+    if (rows2.length === 0) return ok({ ok: true, n: 0 })
+    const stmts = rows2.map((row, i) =>
       ctx.env.DB.prepare(
-        'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?)',
-      ).bind(newId(), actor.householdId, label.trim().slice(0, 200), day, mid, i, ts, ts),
+        'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)',
+      ).bind(newId(), actor.householdId, row.label.slice(0, 200), day, mid, i, row.section, ts, ts),
     )
     await ctx.env.DB.batch(stmts)
     return ok({ ok: true, n: stmts.length })
@@ -85,7 +95,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   await ctx.env.DB.prepare(
-    'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, ?, ?)',
+    'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, ?, ?)',
   )
     .bind(id, actor.householdId, title.slice(0, 200), day, mid, ts, ts)
     .run()
@@ -138,3 +148,79 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   await ctx.env.DB.prepare('DELETE FROM todos WHERE id = ? AND household_id = ?').bind(id, actor.householdId).run()
   return ok({ ok: true })
 })
+
+// ── Template composition (server mirror of src/lib/todos.ts) ──────────────────
+// Kept in lockstep with the client expansion so the editor's count preview and
+// the instantiated rows agree. Operates on the compact STORED item form (a bare
+// string label, or { ref } / { label }), not the API's normalized union.
+type StoredItem = string | { ref?: string; label?: string }
+type Tpls = Map<string, { title: string; items: StoredItem[] }>
+const MAX_EXPAND = 100
+const normLabel = (s: string) => s.trim().toLowerCase()
+
+// Flatten ONE list's tree into labels: refs inline, each list visited once
+// (cycle-safe), labels deduped case-insensitively within the result.
+function flattenList(tpls: Tpls, id: string, max: number): string[] {
+  const seen = new Set<string>()
+  const labels: string[] = []
+  const walk = (tid: string) => {
+    if (seen.has(tid) || labels.length >= max) return
+    seen.add(tid)
+    for (const it of tpls.get(tid)?.items ?? []) {
+      if (labels.length >= max) break
+      if (typeof it === 'string') {
+        const s = it.trim()
+        if (s) labels.push(s)
+      } else if (it && typeof it.ref === 'string' && it.ref.trim()) {
+        walk(it.ref.trim())
+      } else if (it && typeof it.label === 'string' && it.label.trim()) {
+        labels.push(it.label.trim())
+      }
+    }
+  }
+  walk(id)
+  const seenLabel = new Set<string>()
+  const out: string[] = []
+  for (const l of labels) {
+    const k = normLabel(l)
+    if (!k || seenLabel.has(k)) continue
+    seenLabel.add(k)
+    out.push(l)
+  }
+  return out.slice(0, max)
+}
+
+// The instantiated, SECTIONED result: loose items → section null (deduped among
+// loose); a ref → the referenced list's flattened labels under that list's title.
+// The same label from two different sub-lists is kept in BOTH sections.
+function expandSectioned(tpls: Tpls, id: string, max = MAX_EXPAND): { label: string; section: string | null }[] {
+  const root = tpls.get(id)
+  if (!root) return []
+  const out: { label: string; section: string | null }[] = []
+  const looseSeen = new Set<string>()
+  const pushLoose = (raw: string) => {
+    const s = raw.trim()
+    if (!s) return
+    const k = normLabel(s)
+    if (looseSeen.has(k)) return
+    looseSeen.add(k)
+    out.push({ label: s, section: null })
+  }
+  for (const it of root.items) {
+    if (out.length >= max) break
+    if (typeof it === 'string') {
+      pushLoose(it)
+    } else if (it && typeof it.ref === 'string' && it.ref.trim()) {
+      const refId = it.ref.trim()
+      const ref = tpls.get(refId)
+      if (!ref) continue
+      for (const label of flattenList(tpls, refId, max - out.length)) {
+        if (out.length >= max) break
+        out.push({ label, section: ref.title })
+      }
+    } else if (it && typeof it.label === 'string') {
+      pushLoose(it.label)
+    }
+  }
+  return out
+}

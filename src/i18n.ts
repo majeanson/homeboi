@@ -497,6 +497,10 @@ export const FR = {
   routines: {
     tag: 'Le rythme du jour',
     add: 'Ajouter une routine',
+    // The ＋ picker (Routines tab): build a new one, or modify an existing one.
+    newRoutine: 'Nouvelle routine',
+    editExisting: 'Modifier une routine',
+    editTitle: 'Modifier la routine',
     stepsN: (n: number) => `${n} étape${n > 1 ? 's' : ''}`,
     empty: 'Aucune carte',
     todLabel: 'Moment :',
@@ -944,7 +948,9 @@ export const FR = {
     // Réglages ▸ À compléter (modèles de listes).
     templatesTitle: 'Listes à compléter',
     templatesHint:
-      'Prépare des listes réutilisables (ex. « Avant de partir », « Chez grand-papa ») et ajoute-les en un geste quand ça presse.',
+      'Prépare des listes réutilisables (ex. « Avant de partir », « Chez grand-papa ») et ajoute-les en un geste quand ça presse. Une liste peut même en inclure d’autres : elles deviennent des sections.',
+    includeList: 'Inclure une liste…',
+    listDeleted: 'Liste supprimée',
     templateName: 'Nom de la liste',
     templateNamePlaceholder: 'Ex. Avant de partir',
     addTemplate: 'Nouvelle liste',
@@ -1473,6 +1479,10 @@ export const EN: typeof FR = {
   routines: {
     tag: 'The day’s rhythm',
     add: 'Add a routine',
+    // The ＋ picker (Routines tab): build a new one, or modify an existing one.
+    newRoutine: 'New routine',
+    editExisting: 'Edit a routine',
+    editTitle: 'Edit routine',
     stepsN: (n: number) => `${n} step${n === 1 ? '' : 's'}`,
     empty: 'No cards',
     todLabel: 'Moment:',
@@ -1917,7 +1927,9 @@ export const EN: typeof FR = {
     scopeToday: 'Today',
     templatesTitle: 'Checklists',
     templatesHint:
-      'Prep reusable lists (e.g. "Before leaving", "At grandpa\'s") and drop them in with one tap when things get hectic.',
+      'Prep reusable lists (e.g. "Before leaving", "At grandpa\'s") and drop them in with one tap when things get hectic. A list can even include others — they become sections.',
+    includeList: 'Include a list…',
+    listDeleted: 'Deleted list',
     templateName: 'List name',
     templateNamePlaceholder: 'e.g. Before leaving',
     addTemplate: 'New list',

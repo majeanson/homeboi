@@ -1,4 +1,4 @@
-import { badRequest, ok, readJson, parseJsonArray } from '../_lib/json'
+import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 
@@ -19,15 +19,52 @@ interface TplRow {
   position: number
 }
 
-// Tolerant: keep only non-empty strings, trim + cap each, cap the list length.
-function sanitizeItems(items: unknown): string[] {
+// The normalized item form the API serves (mirrors src/lib/todos.ts TemplateItem):
+// a plain label, or a reference to another template.
+type ApiItem = { kind: 'item'; label: string } | { kind: 'ref'; refId: string }
+
+// Parse the compact stored items_json (string | { ref } | { label }) into the
+// normalized union, dropping anything malformed.
+function parseItems(json: string): ApiItem[] {
+  let raw: unknown
+  try {
+    raw = JSON.parse(json)
+  } catch {
+    return []
+  }
+  if (!Array.isArray(raw)) return []
+  const out: ApiItem[] = []
+  for (const x of raw) {
+    if (typeof x === 'string') {
+      const s = x.trim()
+      if (s) out.push({ kind: 'item', label: s })
+    } else if (x && typeof x === 'object') {
+      const o = x as Record<string, unknown>
+      if (typeof o.ref === 'string' && o.ref.trim()) out.push({ kind: 'ref', refId: o.ref.trim() })
+      else if (typeof o.label === 'string' && o.label.trim()) out.push({ kind: 'item', label: o.label.trim() })
+    }
+  }
+  return out
+}
+
+// Sanitize the wire items (string | { ref } | { label }) into the compact STORED
+// form (string | { ref }), trimming + capping. A ref is kept as an id — its
+// existence is only checked at instantiation (a deleted ref is skipped then).
+function sanitizeItems(items: unknown): (string | { ref: string })[] {
   if (!Array.isArray(items)) return []
-  return items
-    .filter((x): x is string => typeof x === 'string')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 50)
-    .map((s) => s.slice(0, 200))
+  const out: (string | { ref: string })[] = []
+  for (const x of items) {
+    if (out.length >= 50) break
+    if (typeof x === 'string') {
+      const s = x.trim()
+      if (s) out.push(s.slice(0, 200))
+    } else if (x && typeof x === 'object') {
+      const o = x as Record<string, unknown>
+      if (typeof o.ref === 'string' && o.ref.trim()) out.push({ ref: o.ref.trim().slice(0, 32) })
+      else if (typeof o.label === 'string' && o.label.trim()) out.push(o.label.trim().slice(0, 200))
+    }
+  }
+  return out
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
@@ -40,7 +77,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     id: r.id,
     title: r.title,
     position: r.position,
-    items: parseJsonArray<string>(r.items_json, (v): v is string => typeof v === 'string'),
+    items: parseItems(r.items_json),
   }))
   return ok({ templates })
 })

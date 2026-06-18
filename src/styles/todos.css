@@ -10,6 +10,22 @@
   flex-direction: column;
   gap: 0.4rem;
 }
+.todo-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.todo-group + .todo-group {
+  margin-top: 0.5rem;
+}
+/* Section heading inside an instantiated composed list ("a list with sections"). */
+.todo-section-head {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 0.1rem 0.1rem 0;
+}
 
 /* The row IS an `.act` (spine + flex). Make the check + name read as peers, and
    strike a done row like La liste's checked items. */
@@ -126,4 +142,37 @@
 }
 .todo-tpl__new {
   margin-top: 0.3rem;
+}
+
+/* A reference to another list, shown as a chip in the editor item list. */
+.todo-tpl__item--ref {
+  align-items: center;
+}
+.todo-tpl__ref {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: var(--sky-wash, #e8eef6);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.todo-tpl__ref em {
+  color: var(--ink-faint);
+  font-style: normal;
+  font-size: 0.8rem;
+}
+
+/* The two adders under a template: a plain-item field + an "include a list" select. */
+.todo-tpl__adders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+.todo-tpl__include {
+  max-width: 100%;
 }

@@ -831,6 +831,14 @@ export const GUIDE: GuideEntry[] = [
         why: { fr: 'On y pense une fois, pas chaque fois qu’on court.', en: 'You think it through once, not every time you’re rushing out.' },
       },
       {
+        label: { fr: 'Des listes dans des listes', en: 'Lists inside lists' },
+        detail: {
+          fr: 'Une liste peut en inclure d’autres : « Le matin » = « Sac à couches » + « Lunchs » + 2-3 extras. Une fois ajoutée, chaque liste incluse devient une section. Le même item venant de deux listes reste dans les deux (jamais fusionné).',
+          en: 'A list can include others: “Morning” = “Diaper bag” + “Lunches” + a couple extras. Once added, each included list becomes a section. The same item from two lists is kept in both (never merged).',
+        },
+        why: { fr: 'Construis de grosses listes à partir de petites, sans tout retaper.', en: 'Build big lists out of small ones, without retyping everything.' },
+      },
+      {
         label: { fr: 'Calme', en: 'Calm' },
         detail: {
           fr: 'Pas de points, pas de pointage : cocher, c’est la récompense. La liste se vide et reste vide.',

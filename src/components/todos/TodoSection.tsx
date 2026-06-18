@@ -13,7 +13,7 @@ import {
   type TemplatesData,
   todosKey,
   todosPath,
-  orderTodos,
+  groupBySection,
   isChecked,
   checkedIds,
 } from '../../lib/todos'
@@ -73,7 +73,9 @@ export function TodoSection({
   const [editText, setEditText] = useState('')
 
   const all = (data?.todos ?? []).filter((todo) => !pending.has(todo.id))
-  const todos = orderTodos(all)
+  // Grouped into sections (a composed list instantiates "as a list with sections");
+  // a plain list / manual adds are one headless run.
+  const groups = groupBySection(all)
   const openCount = all.filter((todo) => !isChecked(todo)).length
   const checked = checkedIds(all)
   const faceOf = (id: string | null) => (id ? members.find((m) => m.id === id) : undefined)
@@ -91,8 +93,8 @@ export function TodoSection({
       optimistic: (qc) =>
         qc.setQueryData<TodosData>(key, (d) =>
           d
-            ? { todos: [...d.todos, { id: tmpId, title: value, day: scope, member_id: null, done_at: null, position: 0 }] }
-            : { todos: [{ id: tmpId, title: value, day: scope, member_id: null, done_at: null, position: 0 }] },
+            ? { todos: [...d.todos, { id: tmpId, title: value, day: scope, member_id: null, done_at: null, position: 0, section: null }] }
+            : { todos: [{ id: tmpId, title: value, day: scope, member_id: null, done_at: null, position: 0, section: null }] },
         ),
     }).catch(() => null)
     const id = res && !res.queued ? res.data?.id : undefined
@@ -196,7 +198,7 @@ export function TodoSection({
 
   const templates = templatesQ.data?.templates ?? []
   // Nothing yet + read-only (guest) → render nothing rather than an empty frame.
-  if (ro && todos.length === 0) return null
+  if (ro && all.length === 0) return null
 
   return (
     <section className={'todo-sec' + (bento ? ' bento' : '')}>
@@ -206,11 +208,14 @@ export function TodoSection({
         {openCount ? <span className="ct">{openCount}</span> : null}
       </div>
 
-      {todos.length === 0 && !ro ? (
+      {all.length === 0 && !ro ? (
         <p className="feed-empty feed-empty--calm">{t.todos.empty}</p>
       ) : (
         <div className="todo-rows">
-          {todos.map((todo) =>
+          {groups.map((g, gi) => (
+            <div key={gi} className="todo-group">
+              {g.section && <div className="todo-section-head mono">{g.section}</div>}
+              {g.todos.map((todo) =>
             editId === todo.id ? (
               <EditField
                 key={todo.id}
@@ -267,7 +272,9 @@ export function TodoSection({
                 <RowActions onDelete={() => remove(todo)} deleteLabel={`${t.common.delete} — ${todo.title}`} />
               </div>
             ),
-          )}
+              )}
+            </div>
+          ))}
         </div>
       )}
 
