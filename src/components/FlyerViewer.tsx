@@ -66,35 +66,51 @@ const proxied = (url: string | null | undefined): string =>
   // already same-origin src pass through untouched.
   url ? (/^https?:\/\//i.test(url) ? `/api/flyer-img?u=${encodeURIComponent(url)}` : url) : ''
 
-// A flyer opens dozens of clippings at once; under that burst a few proxied fetches
-// transiently fail (Flipp CDN hiccup, a dropped connection, an SW 504) and the <img>
-// just stays blank — the "sometimes load, sometimes don't" bug. Retry on error with a
-// cache-buster so a fresh request heals it instead of leaving a hole. First attempt
-// uses the clean URL so an already-cached success is reused untouched.
-const FLYER_IMG_RETRIES = 3
+// A flyer's clippings load eagerly and all at once (not lazy) — a slower start, but
+// the page fills in completely instead of popping in as you scroll. The browser caps
+// itself at ~6 concurrent connections, so "eager" queues rather than truly flooding.
+// data-state drives a calm placeholder (sheets.css): 'loading' shows a soft shimmer so
+// the grid never reads as broken blank boxes; the real bitmap fades in on load. On a
+// genuine failure we retry the SAME url ONCE (a remount via key, cache-friendly — no
+// cache-buster that would re-hit the upstream every time), then settle to a static
+// 'fail' tint rather than a broken-image icon or an endless shimmer.
+type ImgState = 'loading' | 'ok' | 'fail'
+const FLYER_IMG_RETRIES = 1
 function FlyerImg({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const url = proxied(src)
+  const canRetry = url.startsWith('/api/flyer-img')
   const [tries, setTries] = useState(0)
-  const [loaded, setLoaded] = useState(false)
-  const base = proxied(src)
-  const canRetry = base.startsWith('/api/flyer-img')
-  const url = tries === 0 ? base : `${base}&retry=${tries}`
-  // data-loaded drives a calm placeholder (sheets.css): an unloaded cell shows a soft
-  // shimmer so the flyer doesn't paint as broken-looking blank boxes; the real bitmap
-  // fades over it once it arrives.
+  const [state, setState] = useState<ImgState>('loading')
+
+  // Retry after a short backoff so a transient proxy/CDN hiccup clears, instead of
+  // hammering the moment it fails. Remounting (key={tries}) re-fetches the same URL.
+  useEffect(() => {
+    if (state !== 'fail' || !canRetry || tries >= FLYER_IMG_RETRIES) return
+    const id = setTimeout(() => {
+      setTries((n) => n + 1)
+      setState('loading')
+    }, 600)
+    return () => clearTimeout(id)
+  }, [state, tries, canRetry])
+
+  // While a retry is still pending keep the calm shimmer; only settle to the static
+  // fail tint once retries are genuinely exhausted.
+  const exhausted = state === 'fail' && (!canRetry || tries >= FLYER_IMG_RETRIES)
   return (
     <img
+      key={tries}
       // A cache-first hit can finish before React attaches onLoad (the img is already
-      // `complete`), which would otherwise leave it stuck at opacity:0 — reveal it here.
+      // `complete`), which would otherwise leave it stuck hidden — reveal it here.
       ref={(el) => {
-        if (el?.complete && el.naturalWidth > 0) setLoaded(true)
+        if (el?.complete && el.naturalWidth > 0) setState('ok')
       }}
       src={url}
       alt={alt}
       className={className}
-      loading="lazy"
-      data-loaded={loaded ? '1' : '0'}
-      onLoad={() => setLoaded(true)}
-      onError={() => canRetry && setTries((n) => (n < FLYER_IMG_RETRIES ? n + 1 : n))}
+      loading="eager"
+      data-loaded={state === 'ok' ? '1' : exhausted ? 'x' : '0'}
+      onLoad={() => setState('ok')}
+      onError={() => setState('fail')}
     />
   )
 }

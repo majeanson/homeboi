@@ -38,17 +38,18 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
 
   // Flipp's CDN hiccups intermittently under the burst of a whole flyer opening at
   // once (dozens of clippings fetched together) — a transient throw or 5xx leaves
-  // that clipping blank. Retry a couple of times so the proxy self-heals; a success
-  // gets edge-cached above, fixing it for every household device. Don't retry a 404
-  // (genuinely gone — retrying just wastes subrequests).
+  // that clipping blank. Retry ONCE so the proxy self-heals; a success gets edge-
+  // cached above, fixing it for every household device. Only a network throw or a 5xx
+  // is retried — any 4xx (404 gone, 429 rate-limited) is terminal, so we don't hammer
+  // the upstream under load and make things worse.
   let res: Response | undefined
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
       res = await fetch(target.toString(), { headers: { accept: 'image/*' } })
     } catch {
       res = undefined
     }
-    if (res && (res.ok || res.status === 404)) break
+    if (res && res.status < 500) break
   }
   if (!res) return serviceUnavailable('Image indisponible.')
   if (!res.ok) return notFound()

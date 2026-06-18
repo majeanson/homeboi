@@ -1233,6 +1233,8 @@
    soft shimmer placeholder ("loading") while its img is data-loaded='0'; the real
    bitmap fades in over it on load. Shimmer is :has()-driven — where unsupported it
    simply degrades to the plain cell background, and the fade still applies. */
+/* Hidden until loaded (data-loaded='1'); '0' = loading, 'x' = failed after retries —
+   both keep the bitmap hidden so a broken clipping never shows a broken-image icon. */
 .flyer-grid__cell img,
 .flyer-item img {
   opacity: 0;
@@ -1242,6 +1244,7 @@
 .flyer-item img[data-loaded='1'] {
   opacity: 1;
 }
+/* Loading: soft animated shimmer so the cell reads as "loading", not broken. */
 .flyer-grid__cell:has(img[data-loaded='0']),
 .flyer-item:has(img[data-loaded='0']) {
   background: linear-gradient(
@@ -1252,6 +1255,11 @@
   );
   background-size: 200% 100%;
   animation: flyer-img-shimmer 1.3s ease-in-out infinite;
+}
+/* Failed after retries: a calm static tint, no animation, no broken icon. */
+.flyer-grid__cell:has(img[data-loaded='x']),
+.flyer-item:has(img[data-loaded='x']) {
+  background: rgba(0, 0, 0, 0.05);
 }
 @keyframes flyer-img-shimmer {
   from {
