@@ -114,6 +114,10 @@ const PATH_KEYS: Record<string, string[][]> = {
   ghost: [['ghosts'], ['board']],
   // Capture routes a note to any of these targets, so refetch the lot.
   capture: [['board'], ['meals'], ['pantry'], ['leftovers']],
+  // Le cercle (people directory): a contact or relationship edit refreshes the
+  // tab; a birthday edit also re-derives the board's "Anniversaires à venir".
+  cercle: [['cercle'], ['board']],
+  'cercle-links': [['cercle']],
 }
 
 // Normalize an API path: strip a leading "api/" / slashes and any query string,

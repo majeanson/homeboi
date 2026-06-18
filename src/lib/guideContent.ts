@@ -476,6 +476,58 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    id: 'cercle',
+    icon: 'users-three-bold',
+    group: 'sections',
+    title: { fr: 'Le cercle', en: 'The circle' },
+    what: {
+      fr: 'Le carnet des proches : famille et amis, avec photo, fête, courriel et téléphone — pour reconstruire d’un coup d’œil qui est qui.',
+      en: 'The directory of the people close to you: family and friends, with a photo, birthday, email and phone — to see who’s who at a glance.',
+    },
+    points: [
+      {
+        label: { fr: 'Une personne, une fiche', en: 'One person, one card' },
+        detail: {
+          fr: 'Touche le ＋ pour ajouter quelqu’un : prénom, photo, fête, courriel, téléphone, notes. Touche une fiche pour la voir, avec « Appeler » et « Écrire ».',
+          en: 'Tap ＋ to add someone: name, photo, birthday, email, phone, notes. Tap a card to see it, with “Call” and “Email”.',
+        },
+      },
+      {
+        label: { fr: 'Des liens entre les gens', en: 'Links between people' },
+        detail: {
+          fr: 'Dis « X est le parent de Y » : le lien inverse s’ajoute tout seul (Y devient l’enfant de X), et les familles se regroupent d’elles-mêmes.',
+          en: 'Say “X is Y’s parent”: the reverse link is added for you (Y becomes X’s child), and families group themselves automatically.',
+        },
+        why: {
+          fr: 'Pour reconstruire qui est qui sans tout ressaisir des deux côtés.',
+          en: 'So you can rebuild who’s who without re-entering it on both sides.',
+        },
+      },
+      {
+        label: { fr: 'Les fêtes, en douceur', en: 'Birthdays, gently' },
+        detail: {
+          fr: 'Les anniversaires à venir apparaissent sur le babillard avec une petite mention « Bientôt » — jamais de notification.',
+          en: 'Upcoming birthdays show on the board with a small “Soon” note — never a notification.',
+        },
+        why: {
+          fr: 'Un rappel calme, pas une alerte de plus à gérer.',
+          en: 'A calm heads-up, not one more alert to manage.',
+        },
+      },
+      {
+        label: { fr: 'Vue enfant « Qui est-ce ? »', en: 'Kid view “Who is this?”' },
+        detail: {
+          fr: 'En vue enfant, les visages deviennent de grandes cartes : l’enfant touche une photo et entend le nom à voix haute.',
+          en: 'In kid view, the faces become big cards: the child taps a photo and hears the name read aloud.',
+        },
+        why: {
+          fr: 'Pour qu’un tout-petit apprenne à reconnaître grand-maman, mononcle, la gardienne.',
+          en: 'So a small child learns to recognise grandma, uncle, the babysitter.',
+        },
+      },
+    ],
+  },
+  {
     id: 'liste',
     icon: 'sparkle-bold',
     group: 'sections',

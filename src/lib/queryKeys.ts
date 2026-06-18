@@ -17,3 +17,7 @@ export const LOVES_KEY = ['recipe-loves']
 // invalidating TODOS_KEY refreshes both. Templates feed Réglages + the picker.
 export const TODOS_KEY = ['todos']
 export const TODO_TEMPLATES_KEY = ['todo-templates']
+// Le cercle (people directory): contacts + relationship edges, read on the cercle
+// tab AND on the board (upcoming birthdays derive from it), so the key is shared —
+// a contact/birthday edit invalidates it and both surfaces refresh.
+export const CERCLE_KEY = ['cercle']

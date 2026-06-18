@@ -5,6 +5,8 @@
 // useEntityDetail().open(). Colours/icons reuse the one source (lib/cats), dates
 // the shared formatters (lib/format), images imgUrl()/recipeImg().
 import { CATS } from '../../lib/cats'
+import { imgUrl } from '../../lib/image'
+import { type Contact, daysUntilBirthday, ageOnNextBirthday, formatBirthday, fullName } from '../../lib/cercle'
 import { formatDay, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { recipeImg, recipeTotalMin, type Recipe } from '../../lib/recipes'
@@ -12,7 +14,7 @@ import { SLOT_ICON_NAME, isMealSlot } from '../../lib/mealSlots'
 import type { Lang } from '../../i18n'
 import type { IconName } from '../Icon'
 import { nameOf, colorOf, type Dict, type Member, type EventRow, type ChoreInstance } from '../board/types'
-import type { DetailBlock, DetailModel, DetailWho } from '../../lib/detail'
+import type { DetailAction, DetailBlock, DetailModel, DetailWho } from '../../lib/detail'
 
 // What every builder needs to resolve names/faces + locale + copy.
 export interface DetailCtx {
@@ -128,6 +130,33 @@ export function buildMeal(
   }
 }
 
+// — A whole DAY, informative (La cuisine week grid): the day's meals as a list +
+// the day note. No actions on purpose — the grid's pencil is the planner, so the
+// tap-peek and the edit button stay clearly distinct (Marc's ask). The cook name
+// is resolved by the caller (which holds the members), so this stays member-free. —
+export function buildDay(
+  ctx: DetailCtx,
+  opts: { label: string; accent?: string; meals: { slot: string; title: string; cook?: string | null }[]; note?: string | null },
+): DetailModel {
+  const { t } = ctx
+  const blocks: DetailBlock[] = []
+  if (opts.meals.length)
+    blocks.push({
+      kind: 'list',
+      label: t.board.meals,
+      items: opts.meals.map((m) => `${m.slot} · ${m.title}${m.cook ? ` (${m.cook})` : ''}`),
+    })
+  else blocks.push({ kind: 'text', text: t.detail.dayEmpty })
+  if (opts.note) blocks.push({ kind: 'text', text: opts.note, hand: true })
+  return {
+    kind: 'day',
+    title: opts.label,
+    icon: 'calendar-blank-bold',
+    accent: opts.accent ?? CATS.meal.color,
+    blocks,
+  }
+}
+
 // — A recipe from the book —
 export function buildRecipe(r: Recipe, ctx: DetailCtx): DetailModel {
   const { t } = ctx
@@ -152,31 +181,83 @@ export function buildRecipe(r: Recipe, ctx: DetailCtx): DetailModel {
   }
 }
 
-// A routine as the /routines + ＋ picker carry it (id, name, child, colour, cards).
+// — A person in « Le cercle ». Informative peek: the face, the birthday (with a
+// calm countdown), notes, tags, and the relationship lines the caller resolved
+// ("Grand-maman de Léa"). Call / Write are `run` actions (tel:/mailto: can't ride
+// the router href, which the sheet feeds to navigate()); "Modifier" opens the
+// editor the caller owns. —
+export function buildContact(
+  c: Contact,
+  ctx: DetailCtx,
+  opts?: { accent?: string; relations?: string[]; onEdit?: () => void },
+): DetailModel {
+  const { t, lang } = ctx
+  const accent = opts?.accent ?? '#C45E86'
+  const days = daysUntilBirthday(c.birthday)
+  const age = ageOnNextBirthday(c.birthday)
+  const bday = formatBirthday(c.birthday, lang)
+  // "12 mars · aujourd'hui · 5 ans" — only the parts we actually know.
+  const when = bday
+    ? [bday, days != null ? t.cercle.inDaysN(days) : null, age != null ? t.cercle.turnsN(age) : null]
+        .filter(Boolean)
+        .join(' · ')
+    : undefined
+
+  const blocks: DetailBlock[] = []
+  if (c.notes?.trim()) blocks.push({ kind: 'text', text: c.notes.trim() })
+  if (opts?.relations?.length) blocks.push({ kind: 'list', label: t.cercle.relationships, items: opts.relations })
+  if (c.tags.length) blocks.push({ kind: 'chips', chips: c.tags })
+
+  const actions: DetailAction[] = []
+  if (c.phone) actions.push({ key: 'call', label: t.cercle.call, icon: 'phone-bold', run: () => { window.location.href = `tel:${c.phone}` } })
+  if (c.email) actions.push({ key: 'mail', label: t.cercle.write, icon: 'envelope-bold', run: () => { window.location.href = `mailto:${c.email}` } })
+  if (opts?.onEdit) actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
+
+  return {
+    kind: 'contact',
+    title: fullName(c),
+    icon: 'user-bold',
+    accent,
+    photo: c.photoKey ? imgUrl(c.photoKey) : null,
+    when,
+    whoLabel: c.nickname && c.nickname !== c.firstName ? c.nickname : undefined,
+    blocks,
+    actions,
+  }
+}
+
+// A routine as the /routines list carries it (id, name, child, colour). Its cards
+// only carry an `icon` emoji there (no label), so the peek shows the step pictos +
+// a count; the caller passes the resolved time-of-day label + step emojis.
 interface RoutineLike {
   id: string
   name: string
   memberName?: string | null
   color?: string | null
   avatarPhoto?: string | null
-  cards?: Array<{ label?: string }> | unknown[]
 }
 
-// — A kid routine —
-export function buildRoutine(r: RoutineLike, ctx: DetailCtx): DetailModel {
+// — A kid routine — informative: the child, the moment of day, the step count, and
+// the step pictos themselves (the same emojis the toddler run shows), so the peek
+// actually says what the routine IS. "Modifier la routine" opens the builder. —
+export function buildRoutine(
+  r: RoutineLike,
+  ctx: DetailCtx,
+  opts?: { todLabel?: string | null; stepIcons?: string[] },
+): DetailModel {
   const { t } = ctx
-  const labels = (r.cards ?? [])
-    .map((c) => (c && typeof c === 'object' && 'label' in c ? (c as { label?: string }).label : undefined))
-    .filter((l): l is string => !!l)
+  const icons = (opts?.stepIcons ?? []).filter((s): s is string => !!s)
+  const sub = [opts?.todLabel, icons.length ? t.routines.stepsN(icons.length) : null].filter(Boolean).join(' · ')
   return {
     kind: 'routine',
     title: r.name,
     icon: CATS.routine.icon,
     accent: r.color ?? CATS.routine.color,
+    whoLabel: sub || undefined,
     who: r.memberName
       ? { name: r.memberName, colour: r.color ?? null, avatarKind: r.avatarPhoto ? 'photo' : null, avatarRef: r.avatarPhoto ?? null }
       : null,
-    blocks: labels.length ? [{ kind: 'list', label: t.detail.steps, items: labels }] : [],
-    actions: [{ key: 'open', label: t.detail.openRoutine, icon: 'caret-right-bold', primary: true, href: `/routine/${r.id}` }],
+    blocks: icons.length ? [{ kind: 'chips', label: t.detail.steps, chips: icons }] : [],
+    actions: [{ key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold', primary: true, href: `/routine/${r.id}` }],
   }
 }

@@ -5,6 +5,7 @@ import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
+import { CercleBirthdays } from '../components/cercle/CercleBirthdays'
 import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
 import { wash, tintInk } from '../lib/colors'
@@ -586,6 +587,10 @@ export function Board() {
       {/* Today's day note (the per-day memo from La cuisine) rides here too, in
           every view — read-only on the wall, edited in the kitchen. */}
       {data?.dayNote && <DayNote note={data.dayNote} members={data.members} />}
+
+      {/* Upcoming birthdays from « Le cercle » — a calm strip above the day, in
+          every parent view (renders nothing when none are near). */}
+      <CercleBirthdays />
 
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>

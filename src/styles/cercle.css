@@ -1,0 +1,322 @@
+/* « Le cercle » — the household people directory. Uniquely-named classes
+   (.cercle-* parent/toddler views, .cf-* the contact form), so cascade position
+   is immaterial. Mobile-first; the toddler faces grid scales up for the wall. */
+
+.cercle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.cercle-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+  text-align: center;
+}
+
+/* Search */
+.cercle-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+}
+.cercle-search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--ink);
+  outline: none;
+}
+
+/* Section headings (a family group / "others" / birthdays) */
+.cercle-section__label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.cercle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* A person row */
+.cercle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.cercle-row:hover {
+  background: var(--surface);
+}
+.cercle-row__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cercle-row__name {
+  font-weight: 600;
+  color: var(--ink);
+}
+.cercle-row__sub {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Upcoming birthdays — a quiet horizontal strip */
+.cercle-bdays__row {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  scrollbar-width: none;
+}
+.cercle-bdays__row::-webkit-scrollbar {
+  display: none;
+}
+.cercle-bday {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  width: 5.2rem;
+  padding: 0.5rem 0.3rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.cercle-bday__name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.cercle-bday__when {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+/* Wider screens: two columns for the directory rows */
+@media (min-width: 720px) {
+  .cercle-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .cercle-section__label {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ── Toddler faces view ───────────────────────────────────────────────── */
+.cercle-kid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+.cercle-kid__title {
+  font-family: var(--font-display, var(--display));
+  font-size: clamp(1.6rem, 5vw, 2.6rem);
+  color: var(--berry-deep, var(--ink));
+  margin: 0;
+}
+.cercle-kid__hint {
+  color: var(--ink-soft);
+}
+.cercle-kid__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+.cercle-kid__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0.5rem;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.cercle-kid__card:active {
+  transform: scale(0.96);
+}
+.cercle-kid__name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* ── Contact form (the scene body) ────────────────────────────────────── */
+.cf {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  max-width: 640px;
+}
+.cf__photo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.cf__photo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+.cf__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
+}
+@media (min-width: 560px) {
+  .cf__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.cf__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.cf__label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.cf__input {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  font: inherit;
+  color: var(--ink);
+  outline: none;
+}
+.cf__input:focus {
+  border-color: var(--accent, var(--berry));
+}
+.cf__textarea {
+  resize: vertical;
+  min-height: 3rem;
+}
+.cf__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+.cf__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.cf__tag button {
+  display: inline-flex;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+}
+.cf__tagadd {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.cf__tagadd .cf__input {
+  flex: 1;
+}
+.cf__save {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.3rem;
+}
+
+/* Relationships sub-editor */
+.cf__rels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.8rem;
+  margin-top: 0.4rem;
+  border-top: 1px solid var(--line);
+}
+.cf__rels-empty {
+  color: var(--ink-soft);
+}
+.cf__rels-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.cf__rels-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.cf__rels-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cf__rels-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.cf__rels-add .cf__input {
+  flex: 0 0 auto;
+  width: auto;
+}

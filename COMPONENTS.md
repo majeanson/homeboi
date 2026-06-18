@@ -35,6 +35,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | **EditField** | `components/EditField.tsx` | THE add/edit text box — clear+mic inside the field, compact actions; opt-in voice/reorder/delete/secondary chips. See [the convention](#editfield-rollout). |
 | **EntityCombobox** | `components/EntityCombobox.tsx` | THE "search + pick an existing thing + free-text" field. One box: type to filter a grouped dropdown (`ComboOption[]` with icons/badges), tap a row to link it, or just type & submit. Clearable ✕, caret-to-open, optional mic. Replaces the old "type here OR toggle a separate list" split. Kitchen builders in `kitchen/comboOptions.tsx`. Used in MealIdeas, Leftovers, DayEditor (recipes+restants), AddSheet leftovers. |
 | **Icon / InlineIcon** | `components/Icon.tsx` | Phosphor-bold SVG via `currentColor`; `IconName` is a compile-time union (`lib/pipIcons.ts`). 40+ call sites. |
+| **Disclosure** + **useSingleOpen** | `components/Disclosure.tsx` | Calm collapsed-by-default expand/toggle (caret + label + optional count). Tucks a space-hungry secondary group — suggestion chips, an aside — out of sight until tapped, so nothing populates the surface unasked (NFR-CALM-1). Wraps the departure-checklist "Listes prêtes" chips in **TodoSection** + the **AddSheet** todo form. Its per-item sibling, the **`useSingleOpen`** hook, drives the "tap a row → reveal its picker, one open at a time" expand in **MealIdeas** + **Leftovers** (trigger is a chip beside RowActions, body a sibling row — same toggle + rotating-caret cue, different layout). |
 | **ColorPicker** | `components/ColorPicker.tsx` | Row of palette dots; controlled. |
 | **RecurPicker** | `components/RecurPicker.tsx` | Recurrence rule (freq/interval/weekdays). |
 | **LeadPicker** | `components/LeadPicker.tsx` | Calm "Bientôt" reminder lead ("Afficher dès", 1h–1wk → `lead_seconds`); in EventForm + ChoreForm. |
@@ -100,6 +101,22 @@ colour + attribute rules over time / ingredients / servings / tag / favourite, s
 `lib/recipePills.ts`, migration 0045), consumed by `RecipesTab`).
 `AmbientScreen` (the full-screen idle screensaver — clock/date/photo-frame, backlog #3)
 mounts in `HubLayout` and is driven by its idle timer.
+
+**Le cercle** (the people directory tab, `/cercle`) — adapted from the standalone
+`famolo / family-social` relationship visualizer, recast onto our household /
+calm / dual-audience model. Page-level, live-data, so catalogued not gallery-rendered:
+`Cercle` (parent directory grouped by auto-detected family + search + upcoming
+birthdays; toddler "Qui est-ce ?" faces grid, tap → name read aloud), `ContactForm`
++ `RelationshipEditor` (the `/cercle/person/new|:id` scene — fields, R2 photo, tags,
+and structured relationship links with auto-derived inverse), and `CercleBirthdays`
+(the calm board strip — upcoming birthdays with a "Bientôt"-style note, no push/count;
+mounted in `Board`). Domain logic (FR-CA relationship vocabulary + `RELATIONSHIP_INVERSES`
++ Union-Find `detectFamilyGroups` + birthday math) is pure in `lib/cercle.ts`; the
+detail peek uses `buildContact` (`components/detail/adapters.ts`, kind `'contact'`,
+Call/Write `run` actions). Backend: `functions/api/cercle.ts` (contacts CRUD + R2
+photo upload) + `functions/api/cercle-links.ts` (edges; server derives the inverse,
+parity pinned by `src/lib/cercle.test.ts`), migration `0049_cercle.sql`. New shared
+icons added to the registry: `cake-bold`, `envelope-bold`, `phone-bold`.
 
 `CookMode` now offers the PARENT lens three layouts via a bar switcher — **Recette**
 (full scroll page), **Côte à côte** (`split`: ingredients pinned beside the steps,

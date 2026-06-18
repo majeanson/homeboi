@@ -13,12 +13,14 @@ import type { IconName } from '../components/Icon'
 type DetailKind =
   | 'event'
   | 'meal'
+  | 'day' // a whole day's meals, informative (La cuisine week grid)
   | 'chore'
   | 'todo'
   | 'leftover'
   | 'note'
   | 'recipe'
   | 'routine'
+  | 'contact'
 
 // One block of body content. The sheet renders these top-to-bottom.
 export type DetailBlock =

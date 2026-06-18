@@ -33,13 +33,14 @@ import {
 // page except the single ＋ (parent view only).
 const TABS: {
   to: string
-  key: 'today' | 'kitchen' | 'routines' | 'list' | 'operator'
+  key: 'today' | 'kitchen' | 'routines' | 'list' | 'cercle' | 'operator'
   icon: IconName
   color: string
 }[] = [
   { to: '/board', key: 'today', icon: 'sun-bold', color: '#D9842A' }, // marigold
   { to: '/kitchen', key: 'kitchen', icon: 'carrot-bold', color: '#C2563A' }, // terracotta
   { to: '/routines', key: 'routines', icon: 'smiley-bold', color: '#95527A' }, // berry
+  { to: '/cercle', key: 'cercle', icon: 'users-three-bold', color: '#C45E86' }, // rose
   { to: '/liste', key: 'list', icon: 'sparkle-bold', color: '#5891AC' }, // sky
   { to: '/settings', key: 'operator', icon: 'gear-six-bold', color: '#6B8A52' }, // sage
 ]
@@ -377,6 +378,12 @@ export function HubLayout() {
               nav('/kitchen/recipe/new')
               return
             }
+            // Le cercle: the ＋ adds a person — a full-screen form scene (like the
+            // recipe/routine builders), not the capture sheet.
+            if (section === 'cercle') {
+              nav('/cercle/person/new')
+              return
+            }
             // Routines: the ＋ opens the manage picker (new routine + edit an
             // existing one) in the sheet; each choice routes on to the full-screen
             // builder scene. An unsigned kiosk has no operator form, so the sheet
@@ -397,9 +404,11 @@ export function HubLayout() {
                   : t.kitchen.addTitle
               : section === 'routines'
                 ? t.routines.add
-                : section === 'liste'
-                  ? t.list.addTitle
-                  : t.capture.add
+                : section === 'cercle'
+                  ? t.cercle.add
+                  : section === 'liste'
+                    ? t.list.addTitle
+                    : t.capture.add
           }
         >
           <Icon name="plus-bold" size={26} />

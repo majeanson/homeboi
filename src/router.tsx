@@ -17,6 +17,8 @@ const Signup = lazy(() => import('./pages/Signup').then((m) => ({ default: m.Sig
 const Operator = lazy(() => import('./pages/Operator').then((m) => ({ default: m.Operator })))
 const Kitchen = lazy(() => import('./pages/Kitchen').then((m) => ({ default: m.Kitchen })))
 const Routines = lazy(() => import('./pages/Routines').then((m) => ({ default: m.Routines })))
+const Cercle = lazy(() => import('./pages/Cercle').then((m) => ({ default: m.Cercle })))
+const CercleFormPage = lazy(() => import('./pages/CercleFormPage').then((m) => ({ default: m.CercleFormPage })))
 const Liste = lazy(() => import('./pages/Liste').then((m) => ({ default: m.Liste })))
 const Pair = lazy(() => import('./pages/Pair').then((m) => ({ default: m.Pair })))
 const Setup = lazy(() => import('./pages/Setup').then((m) => ({ default: m.Setup })))
@@ -73,6 +75,7 @@ export function AppRoutes() {
           <Route path="/board" element={<Board />} />
           <Route path="/kitchen" element={<Kitchen />} />
           <Route path="/routines" element={<Routines />} />
+          <Route path="/cercle" element={<Cercle />} />
           <Route path="/liste" element={<Liste />} />
           <Route path="/settings" element={<Operator />} />
         </Route>
@@ -91,6 +94,9 @@ export function AppRoutes() {
         <Route path="/kitchen/recipe/:id" element={<RecipeViewPage />} />
         <Route path="/kitchen/recipe/:id/edit" element={<RecipeFormPage />} />
         <Route path="/kitchen/recipe/:id/cook" element={<CookPage />} />
+        {/* `new` before `:id` so it isn't captured as a contact id. */}
+        <Route path="/cercle/person/new" element={<CercleFormPage />} />
+        <Route path="/cercle/person/:id" element={<CercleFormPage />} />
         <Route path="/event/new" element={<EventFormPage />} />
         <Route path="/chore/new" element={<ChoreFormPage />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />

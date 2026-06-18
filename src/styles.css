@@ -29,5 +29,8 @@
 /* Entity-detail peek (components/detail) + the Act split row — uniquely named, so
    position is immaterial, but after today.css so .act__checkbtn overrides button. */
 @import './styles/detail.css';
+/* Le cercle (people directory) — uniquely-named .cercle-/.cf- classes, position
+   immaterial; kept with the late additions. */
+@import './styles/cercle.css';
 /* Dev-only component gallery (/dev/kit) — last so it never affects app cascade. */
 @import './styles/devkit.css';
