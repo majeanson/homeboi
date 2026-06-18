@@ -1,31 +1,22 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useLang, useT } from '../../i18n'
+import { useT } from '../../i18n'
 import { BirthdayPicker } from './BirthdayPicker'
+import { LinkComposer } from './LinkComposer'
 import { api } from '../../lib/api'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
 import { useWrite } from '../../lib/write'
-import { useConfirm } from '../../lib/confirm'
 import { CERCLE_KEY, BOARD_KEY } from '../../lib/queryKeys'
-import {
-  type Contact,
-  type ContactLink,
-  type RelationshipType,
-  fullName,
-  groupedRelationshipTypes,
-  relLabel,
-} from '../../lib/cercle'
+import { type Contact, type ContactLink, type Member, buildPeople, personKey } from '../../lib/cercle'
 import { Avatar } from '../Avatar'
 import { Icon } from '../Icon'
-import { RowActions } from '../RowActions'
-import { EntityCombobox, type ComboOption } from '../EntityCombobox'
-import type { FormMember } from '../FormScene'
 
 // Add / edit one person in « Le cercle ». Plain labelled fields (a multi-field
 // form, not a one-line add row, so EditField doesn't fit) styled by cercle.css.
-// Relationship editing only appears once the contact EXISTS (you need an id to
-// link), so a brand-new person saves first, then gets links on the edit pass.
+// Relationship editing (the LinkComposer) only appears once the contact EXISTS
+// (you need an id to link), so a brand-new person saves first, then lands on the
+// edit pass where the links section is shown.
 export function ContactForm({
   value,
   contacts,
@@ -36,7 +27,7 @@ export function ContactForm({
   value: Contact | null
   contacts: Contact[]
   links: ContactLink[]
-  members: FormMember[]
+  members: Member[]
   onSaved: () => void
 }) {
   const t = useT()
@@ -44,6 +35,11 @@ export function ContactForm({
   const write = useWrite()
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // The unified people set (contacts + members) for the relationship composer, and
+  // this contact as a Person (the link subject) once it exists.
+  const people = useMemo(() => buildPeople(contacts, members), [contacts, members])
+  const subject = value ? people.find((p) => p.key === personKey('contact', value.id)) ?? null : null
 
   const [firstName, setFirstName] = useState(value?.firstName ?? '')
   const [lastName, setLastName] = useState(value?.lastName ?? '')
@@ -198,7 +194,7 @@ export function ContactForm({
             <option value="">—</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.display_name}
+                {m.displayName}
               </option>
             ))}
           </select>
@@ -248,8 +244,8 @@ export function ContactForm({
           ends mid-way. They need a saved person (an id) to link to: on EDIT the
           editor is here; on a NEW person we explain links come right after saving
           (and saving lands you on the edit view where they appear). */}
-      {value ? (
-        <RelationshipEditor person={value} contacts={contacts} links={links} onChanged={() => qc.invalidateQueries({ queryKey: CERCLE_KEY })} />
+      {value && subject ? (
+        <LinkComposer person={subject} people={people} links={links} onChanged={() => qc.invalidateQueries({ queryKey: CERCLE_KEY })} />
       ) : (
         <div className="cf__rels">
           <span className="cf__label">{t.cercle.relationships}</span>
@@ -261,118 +257,6 @@ export function ContactForm({
       <div className="cf__save">
         <button type="button" className="btn btn--primary" disabled={!firstName.trim() || saving || uploading} onClick={save}>
           <Icon name="check-bold" size={18} /> {t.cercle.save}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// The relationship sub-editor: lists this person's existing links (resolved from
-// THEIR perspective — "Grand-parent · Léa") and adds new ones (pick a relation +
-// the other person). The server derives the inverse, so we only send A→B.
-function RelationshipEditor({
-  person,
-  contacts,
-  links,
-  onChanged,
-}: {
-  person: Contact
-  contacts: Contact[]
-  links: ContactLink[]
-  onChanged: () => void
-}) {
-  const t = useT()
-  const { lang } = useLang()
-  const write = useWrite()
-  const confirm = useConfirm()
-  const [type, setType] = useState<RelationshipType>('parent')
-  const [otherText, setOtherText] = useState('')
-  const [otherId, setOtherId] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-
-  const byId = new Map(contacts.map((c) => [c.id, c]))
-  const mine = links.filter((l) => l.personAId === person.id || l.personBId === person.id)
-
-  // Everyone except this person, as combobox options.
-  const options: ComboOption<Contact>[] = contacts
-    .filter((c) => c.id !== person.id)
-    .map((c) => ({ id: c.id, label: fullName(c), data: c, icon: 'user-bold' }))
-
-  async function addLink() {
-    if (!otherId || busy) return
-    setBusy(true)
-    try {
-      await write('cercle-links', { method: 'POST', body: { personAId: person.id, personBId: otherId, type }, affectedKeys: [CERCLE_KEY] })
-      setOtherId(null)
-      setOtherText('')
-      onChanged()
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function removeLink(id: string) {
-    if (!(await confirm({ message: t.cercle.removeRelationship, tone: 'danger' }))) return
-    await write('cercle-links', { method: 'DELETE', body: { id }, affectedKeys: [CERCLE_KEY] })
-    onChanged()
-  }
-
-  const groups = groupedRelationshipTypes()
-
-  return (
-    <div className="cf__rels">
-      <span className="cf__label">{t.cercle.relationships}</span>
-      {mine.length === 0 ? (
-        <p className="cf__rels-empty mono">{t.cercle.noRelationships}</p>
-      ) : (
-        <ul className="cf__rels-list">
-          {mine.map((l) => {
-            // From THIS person's side: if they're A they ARE `type` of B; if B,
-            // they're `reverseType` of A.
-            const isA = l.personAId === person.id
-            const relType = (isA ? l.type : l.reverseType) as RelationshipType
-            const other = byId.get(isA ? l.personBId : l.personAId)
-            return (
-              <li key={l.id} className="cf__rels-row">
-                <span className="cf__rels-text">
-                  <strong>{relLabel(relType, lang)}</strong> · {other ? fullName(other) : '—'}
-                </span>
-                <RowActions onDelete={() => removeLink(l.id)} deleteLabel={t.cercle.removeRelationship} />
-              </li>
-            )
-          })}
-        </ul>
-      )}
-
-      <div className="cf__rels-add">
-        <select className="cf__input" value={type} onChange={(e) => setType(e.target.value as RelationshipType)}>
-          {groups.map((g) => (
-            <optgroup key={g.group} label={g.label[lang]}>
-              {g.types.map((ty) => (
-                <option key={ty} value={ty}>
-                  {relLabel(ty, lang)}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-        <EntityCombobox
-          value={otherText}
-          onChange={(v) => {
-            setOtherText(v)
-            setOtherId(null)
-          }}
-          options={options}
-          onPick={(opt) => {
-            setOtherId(opt.id)
-            setOtherText(opt.label)
-          }}
-          placeholder={t.cercle.pickPerson}
-          submitIcon={null}
-          typeaheadOnly
-        />
-        <button type="button" className="btn btn--sm" disabled={!otherId || busy} onClick={addLink}>
-          <Icon name="plus-bold" size={14} /> {t.cercle.addRelationship}
         </button>
       </div>
     </div>

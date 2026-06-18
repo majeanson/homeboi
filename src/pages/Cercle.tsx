@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
+import { useTabParam } from '../lib/tabParam'
 import { useEntityDetail } from '../components/detail/DetailProvider'
-import { buildContact } from '../components/detail/adapters'
+import { buildContact, buildMemberPerson } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { CERCLE_KEY } from '../lib/queryKeys'
@@ -12,15 +13,19 @@ import { Loading, PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { Avatar } from '../components/Avatar'
-import { Icon, InlineIcon } from '../components/Icon'
+import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { useSpeak } from '../lib/speak'
+import { CercleEgo } from '../components/cercle/CercleEgo'
+import { CercleTree } from '../components/cercle/CercleTree'
 import {
   type Contact,
   type ContactLink,
-  type RelationshipType,
+  type Member,
+  type Person,
+  buildPeople,
+  personKey,
   detectFamilyGroups,
   daysUntilBirthday,
-  fullName,
   formatBirthday,
   relLabel,
 } from '../lib/cercle'
@@ -29,28 +34,36 @@ const ACCENT = '#C45E86' // the cercle tab's rose
 
 interface CercleData {
   contacts: Contact[]
+  members: Member[]
   links: ContactLink[]
 }
 
-// « Le cercle » — the household people directory. Parent: a searchable directory
-// grouped by auto-detected family, with upcoming birthdays surfaced calmly. Toddler:
-// a faces grid, tap to hear the name ("Qui est-ce ? — Grand-maman !").
+type View = 'list' | 'links' | 'tree'
+const VIEW_ICON: Record<View, IconName> = { list: 'user-bold', links: 'users-three-bold', tree: 'tree-bold' }
+
+// « Le cercle » — the household people directory + relationship views. Parent:
+// Liste (calm grouped directory, the default + accessible), Liens (tap-to-focus ego
+// view) and Arbre (generational family tree). Toddler: a faces grid, tap to hear
+// the name. Members (the household faces) AND contacts are unified "people".
 export function Cercle() {
   const { audience } = useAudience()
   if (audience === 'toddler') return <CircleKidView />
   return <CercleParent />
 }
 
-// Resolve a contact's relationships from THEIR perspective → display strings.
-function relationsOf(person: Contact, links: ContactLink[], byId: Map<string, Contact>, lang: 'fr' | 'en'): string[] {
+// A person's relationships, resolved FROM THEIR perspective → display strings
+// ("Grand-parent · Léa"). Works over composite person keys (contacts + members).
+function relationsOf(key: string, links: ContactLink[], byKey: Map<string, Person>, lang: 'fr' | 'en'): string[] {
   return links
-    .filter((l) => l.personAId === person.id || l.personBId === person.id)
     .map((l) => {
-      const isA = l.personAId === person.id
-      const relType = (isA ? l.type : l.reverseType) as RelationshipType
-      const other = byId.get(isA ? l.personBId : l.personAId)
-      return `${relLabel(relType, lang)} · ${other ? fullName(other) : '—'}`
+      const aKey = personKey(l.personAKind, l.personAId)
+      const bKey = personKey(l.personBKind, l.personBId)
+      if (aKey === key) return { rel: l.type, other: bKey }
+      if (bKey === key) return { rel: l.reverseType, other: aKey }
+      return null
     })
+    .filter((x): x is { rel: ContactLink['type']; other: string } => !!x)
+    .map((r) => `${relLabel(r.rel, lang)} · ${byKey.get(r.other)?.name ?? '—'}`)
 }
 
 function CercleParent() {
@@ -58,138 +71,159 @@ function CercleParent() {
   const { lang } = useLang()
   const nav = useNavigate()
   const detail = useEntityDetail()
+  const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
   const [query, setQuery] = useState('')
 
-  const { data, error } = useQuery({
-    queryKey: CERCLE_KEY,
-    queryFn: () => api<CercleData>('cercle'),
-    ...live,
-  })
+  const { data, error } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
 
   const contacts = useMemo(() => data?.contacts ?? [], [data])
+  const members = useMemo(() => data?.members ?? [], [data])
   const links = useMemo(() => data?.links ?? [], [data])
-  const byId = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
+  const people = useMemo(() => buildPeople(contacts, members), [contacts, members])
+  const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
+  const contactsById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
 
-  // Auto-detected families (Union-Find over family edges); everyone else falls
-  // into "Autres personnes".
   const groups = useMemo(
-    () => detectFamilyGroups(contacts, links, (name) => (name ? t.cercle.familyOf(name) : t.cercle.familyGeneric)),
-    [contacts, links, t],
+    () => detectFamilyGroups(people, links, (name) => (name ? t.cercle.familyOf(name) : t.cercle.familyGeneric)),
+    [people, links, t],
   )
 
-  // Birthdays within the next month, soonest first (calm: a gentle heads-up, no
-  // counts, no push).
+  // Upcoming birthdays (contacts carry a birthday; members don't here).
   const birthdays = useMemo(
     () =>
-      contacts
-        .map((c) => ({ c, days: daysUntilBirthday(c.birthday) }))
-        .filter((b): b is { c: Contact; days: number } => b.days != null && b.days <= 31)
+      people
+        .map((p) => ({ p, days: daysUntilBirthday(p.birthday) }))
+        .filter((b): b is { p: Person; days: number } => b.days != null && b.days <= 31)
         .sort((a, b) => a.days - b.days),
-    [contacts],
+    [people],
   )
 
   if (isUnauthorized(error)) return <PairPrompt />
   if (!data && !error) return <Loading />
 
-  const openContact = (c: Contact) =>
-    detail.open(
-      buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations: relationsOf(c, links, byId, lang), onEdit: () => nav(`/cercle/person/${c.id}`) }),
-    )
+  const openPerson = (p: Person) => {
+    const relations = relationsOf(p.key, links, byKey, lang)
+    if (p.kind === 'contact') {
+      const c = contactsById.get(p.id)
+      if (!c) return
+      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, onEdit: () => nav(`/cercle/person/${c.id}`) }))
+    } else {
+      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations }))
+    }
+  }
 
-  const Row = ({ c }: { c: Contact }) => {
-    const rels = relationsOf(c, links, byId, lang)
-    const bday = formatBirthday(c.birthday, lang)
-    const sub = rels[0] ?? (c.phone || c.email || bday || null)
+  const Row = ({ p }: { p: Person }) => {
+    const rels = relationsOf(p.key, links, byKey, lang)
+    const bday = p.kind === 'contact' ? formatBirthday(p.birthday, lang) : null
+    const sub = rels[0] ?? bday ?? null
     return (
-      <button type="button" className="cercle-row" onClick={() => openContact(c)}>
-        <Avatar kind={c.photoKey ? 'photo' : null} photo={c.photoKey} colour={ACCENT} name={c.firstName} size={48} />
+      <button type="button" className="cercle-row" onClick={() => openPerson(p)}>
+        <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={48} />
         <span className="cercle-row__main">
-          <span className="cercle-row__name">{fullName(c)}</span>
+          <span className="cercle-row__name">{p.name}</span>
           {sub && <span className="cercle-row__sub mono">{sub}</span>}
         </span>
+        {p.kind === 'member' && <span className="cercle-row__badge mono">{t.cercle.memberBadge}</span>}
       </button>
     )
   }
 
-  // Search collapses the grouping into one flat, filtered list.
   const q = query.trim().toLowerCase()
-  const filtered = q
-    ? contacts.filter((c) =>
-        [fullName(c), c.nickname ?? '', ...(c.tags ?? [])].join(' ').toLowerCase().includes(q),
-      )
-    : null
+  const filtered = q ? people.filter((p) => p.name.toLowerCase().includes(q)) : null
+  const groupedKeys = new Set(groups.flatMap((g) => [...g.memberKeys]))
+  const others = people.filter((p) => !groupedKeys.has(p.key)).sort((a, b) => a.name.localeCompare(b.name, lang))
 
-  const groupedIds = new Set(groups.flatMap((g) => [...g.memberIds]))
-  const others = [...contacts]
-    .filter((c) => !groupedIds.has(c.id))
-    .sort((a, b) => fullName(a).localeCompare(fullName(b), lang))
+  const viewSwitch = (
+    <div className="cercle-viewswitch" role="tablist" aria-label={t.nav.cercle}>
+      {(['list', 'links', 'tree'] as View[]).map((v) => (
+        <button
+          key={v}
+          type="button"
+          role="tab"
+          aria-selected={view === v}
+          className={'cercle-viewswitch__btn' + (view === v ? ' is-active' : '')}
+          onClick={() => setView(v)}
+        >
+          <InlineIcon name={VIEW_ICON[v]} size={15} /> {t.cercle.view[v]}
+        </button>
+      ))}
+    </div>
+  )
 
   return (
     <main className="today-feed cercle">
       <HubHead title={t.nav.cercle} subtitle={t.cercle.tag} icon="users-three-bold" iconColor={ACCENT} background="var(--berry-wash)" card="cercle" />
-      <SectionIntro card="cercle" />
 
-      {contacts.length === 0 ? (
-        <div className="feed-empty cercle-empty">
-          <p>{t.cercle.empty}</p>
-          <p className="mono">{t.cercle.emptyHint}</p>
-        </div>
+      {people.length === 0 ? (
+        <>
+          <SectionIntro card="cercle" />
+          <div className="feed-empty cercle-empty">
+            <p>{t.cercle.empty}</p>
+            <p className="mono">{t.cercle.emptyHint}</p>
+          </div>
+        </>
       ) : (
         <>
-          <label className="cercle-search">
-            <InlineIcon name="magnifying-glass-bold" size={16} />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.cercle.search} aria-label={t.cercle.search} />
-          </label>
+          {viewSwitch}
 
-          {/* Upcoming birthdays — calm heads-up, hidden during a search. */}
-          {!q && birthdays.length > 0 && (
-            <section className="cercle-bdays">
-              <h2 className="cercle-section__label">
-                <InlineIcon name="cake-bold" size={16} color={ACCENT} /> {t.cercle.birthdaysSoon}
-              </h2>
-              <div className="cercle-bdays__row">
-                {birthdays.map(({ c, days }) => (
-                  <button type="button" key={c.id} className="cercle-bday" onClick={() => openContact(c)}>
-                    <Avatar kind={c.photoKey ? 'photo' : null} photo={c.photoKey} colour={ACCENT} name={c.firstName} size={40} />
-                    <span className="cercle-bday__name">{c.nickname?.trim() || c.firstName}</span>
-                    <span className="cercle-bday__when mono">{days === 0 ? t.cercle.birthdayToday : t.cercle.inDaysN(days)}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {filtered ? (
-            <section className="cercle-group">
-              {filtered.length === 0 ? (
-                <p className="feed-empty">{t.cercle.empty}</p>
-              ) : (
-                filtered.map((c) => <Row key={c.id} c={c} />)
-              )}
-            </section>
+          {view === 'links' ? (
+            <CercleEgo people={people} links={links} onOpen={openPerson} />
+          ) : view === 'tree' ? (
+            <CercleTree people={people} links={links} onOpen={openPerson} />
           ) : (
             <>
-              {groups.map((g) => (
-                <section key={g.id} className="cercle-group">
+              <SectionIntro card="cercle" />
+              <label className="cercle-search">
+                <InlineIcon name="magnifying-glass-bold" size={16} />
+                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.cercle.search} aria-label={t.cercle.search} />
+              </label>
+
+              {!q && birthdays.length > 0 && (
+                <section className="cercle-bdays">
                   <h2 className="cercle-section__label">
-                    <InlineIcon name="users-three-bold" size={16} color={ACCENT} /> {g.name}
+                    <InlineIcon name="cake-bold" size={16} color={ACCENT} /> {t.cercle.birthdaysSoon}
                   </h2>
-                  {[...g.memberIds]
-                    .map((id) => byId.get(id))
-                    .filter((c): c is Contact => !!c)
-                    .sort((a, b) => fullName(a).localeCompare(fullName(b), lang))
-                    .map((c) => (
-                      <Row key={c.id} c={c} />
+                  <div className="cercle-bdays__row">
+                    {birthdays.map(({ p, days }) => (
+                      <button type="button" key={p.key} className="cercle-bday" onClick={() => openPerson(p)}>
+                        <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={40} />
+                        <span className="cercle-bday__name">{p.firstName}</span>
+                        <span className="cercle-bday__when mono">{days === 0 ? t.cercle.birthdayToday : t.cercle.inDaysN(days)}</span>
+                      </button>
                     ))}
+                  </div>
                 </section>
-              ))}
-              {others.length > 0 && (
+              )}
+
+              {filtered ? (
                 <section className="cercle-group">
-                  {groups.length > 0 && <h2 className="cercle-section__label">{t.cercle.others}</h2>}
-                  {others.map((c) => (
-                    <Row key={c.id} c={c} />
-                  ))}
+                  {filtered.length === 0 ? <p className="feed-empty">{t.cercle.empty}</p> : filtered.map((p) => <Row key={p.key} p={p} />)}
                 </section>
+              ) : (
+                <>
+                  {groups.map((g) => (
+                    <section key={g.id} className="cercle-group">
+                      <h2 className="cercle-section__label">
+                        <InlineIcon name="users-three-bold" size={16} color={ACCENT} /> {g.name}
+                      </h2>
+                      {[...g.memberKeys]
+                        .map((k) => byKey.get(k))
+                        .filter((p): p is Person => !!p)
+                        .sort((a, b) => a.name.localeCompare(b.name, lang))
+                        .map((p) => (
+                          <Row key={p.key} p={p} />
+                        ))}
+                    </section>
+                  ))}
+                  {others.length > 0 && (
+                    <section className="cercle-group">
+                      {groups.length > 0 && <h2 className="cercle-section__label">{t.cercle.others}</h2>}
+                      {others.map((p) => (
+                        <Row key={p.key} p={p} />
+                      ))}
+                    </section>
+                  )}
+                </>
               )}
             </>
           )}
@@ -199,37 +233,30 @@ function CercleParent() {
   )
 }
 
-// Toddler lens: a faces grid. Tap a face → hear the name read aloud on-device.
-// No add/edit/settings — the one-way door holds (KidExitGate lives in the shell).
+// Toddler lens: a faces grid of EVERYONE (members + contacts). Tap a face → hear
+// the name read aloud on-device. No view switch, no add/edit (one-way door).
 function CircleKidView() {
   const t = useT()
   const speak = useSpeak()
-  const { data } = useQuery({
-    queryKey: CERCLE_KEY,
-    queryFn: () => api<CercleData>('cercle'),
-    ...live,
-  })
-  const contacts = data?.contacts ?? []
+  const { data } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
+  const people = buildPeople(data?.contacts ?? [], data?.members ?? [])
 
   return (
     <main className="cercle-kid">
       <h1 className="cercle-kid__title">{t.cercle.whoIsThis}</h1>
-      {contacts.length === 0 ? (
+      {people.length === 0 ? (
         <p className="feed-empty">{t.cercle.empty}</p>
       ) : (
         <>
           <p className="cercle-kid__hint mono">{t.cercle.tapToHear}</p>
           <div className="cercle-kid__grid">
-            {contacts.map((c) => {
-              const name = c.nickname?.trim() || c.firstName
-              return (
-                <button type="button" key={c.id} className="cercle-kid__card" onClick={() => speak(name)}>
-                  <Avatar kind={c.photoKey ? 'photo' : null} photo={c.photoKey} colour={ACCENT} name={c.firstName} size={120} />
-                  <span className="cercle-kid__name">{name}</span>
-                  <Icon name="speaker-high-bold" size={20} color={ACCENT} />
-                </button>
-              )
-            })}
+            {people.map((p) => (
+              <button type="button" key={p.key} className="cercle-kid__card" onClick={() => speak(p.firstName)}>
+                <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={120} />
+                <span className="cercle-kid__name">{p.firstName}</span>
+                <Icon name="speaker-high-bold" size={20} color={ACCENT} />
+              </button>
+            ))}
           </div>
         </>
       )}

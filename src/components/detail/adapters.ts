@@ -6,7 +6,7 @@
 // the shared formatters (lib/format), images imgUrl()/recipeImg().
 import { CATS } from '../../lib/cats'
 import { imgUrl } from '../../lib/image'
-import { type Contact, daysUntilBirthday, ageOnNextBirthday, formatBirthday, fullName } from '../../lib/cercle'
+import { type Contact, type Person, daysUntilBirthday, ageOnNextBirthday, formatBirthday, fullName } from '../../lib/cercle'
 import { formatDay, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { recipeImg, recipeTotalMin, type Recipe } from '../../lib/recipes'
@@ -223,6 +223,26 @@ export function buildContact(
     whoLabel: c.nickname && c.nickname !== c.firstName ? c.nickname : undefined,
     blocks,
     actions,
+  }
+}
+
+// — A household MEMBER shown as a person in « Le cercle ». Lighter than a contact
+// (members carry no email/phone/birthday here); their own face + the relationship
+// lines. Editing a member stays in Réglages ▸ Membres, so the action deep-links there. —
+export function buildMemberPerson(p: Person, ctx: DetailCtx, opts?: { relations?: string[] }): DetailModel {
+  const { t } = ctx
+  const accent = p.colour ?? '#C45E86'
+  const blocks: DetailBlock[] = []
+  if (opts?.relations?.length) blocks.push({ kind: 'list', label: t.cercle.relationships, items: opts.relations })
+  return {
+    kind: 'contact',
+    title: p.name,
+    icon: 'users-three-bold',
+    accent,
+    photo: p.avatarKind === 'photo' && p.avatarRef ? imgUrl(p.avatarRef) : null,
+    whoLabel: p.isChild ? t.audience.kid : undefined,
+    blocks,
+    actions: [{ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', href: '/settings?tab=household' }],
   }
 }
 

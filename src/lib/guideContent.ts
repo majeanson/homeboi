@@ -495,12 +495,19 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Des liens entre les gens', en: 'Links between people' },
         detail: {
-          fr: 'Dis « X est le parent de Y » : le lien inverse s’ajoute tout seul (Y devient l’enfant de X), et les familles se regroupent d’elles-mêmes.',
-          en: 'Say “X is Y’s parent”: the reverse link is added for you (Y becomes X’s child), and families group themselves automatically.',
+          fr: 'Dis « X est le parent de Y » dans une phrase à compléter : le lien inverse s’ajoute tout seul (Y devient l’enfant de X), et les familles se regroupent d’elles-mêmes. Tes propres membres de la maisonnée comptent comme des personnes — relie-les entre eux depuis Réglages ▸ Membres.',
+          en: 'Say “X is Y’s parent” in a fill-in sentence: the reverse link is added for you (Y becomes X’s child), and families group themselves. Your own household members count as people too — link them to each other from Settings ▸ Members.',
         },
         why: {
           fr: 'Pour reconstruire qui est qui sans tout ressaisir des deux côtés.',
           en: 'So you can rebuild who’s who without re-entering it on both sides.',
+        },
+      },
+      {
+        label: { fr: 'Trois vues : Liste, Liens, Arbre', en: 'Three views: List, Links, Tree' },
+        detail: {
+          fr: 'Bascule en haut du cercle : Liste (le répertoire, regroupé par famille), Liens (touche un visage, ses liens s’affichent autour — touche un autre pour recentrer) et Arbre (les générations, les couples côte à côte).',
+          en: 'Switch at the top of the circle: List (the directory, grouped by family), Links (tap a face, their ties fan out — tap another to re-center) and Tree (generations, couples side by side).',
         },
       },
       {

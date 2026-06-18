@@ -99,6 +99,13 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     ctx.env.DB.prepare(
       'UPDATE task_participants SET member_id = NULL WHERE member_id = ? AND task_id IN (SELECT id FROM tasks WHERE household_id = ?)',
     ).bind(id, hh),
+    // « Le cercle » edges that point at this member (as a person, kind='member')
+    // — drop them so a removed face leaves no dangling relationship (mirrors the
+    // contact cascade in cercle.ts). Stored without an FK (polymorphic), so it's
+    // our job to clean up.
+    ctx.env.DB.prepare(
+      "DELETE FROM contact_links WHERE household_id = ? AND ((person_a_id = ? AND person_a_kind = 'member') OR (person_b_id = ? AND person_b_kind = 'member'))",
+    ).bind(hh, id, id),
     ctx.env.DB.prepare('DELETE FROM members WHERE id = ? AND household_id = ?').bind(id, hh),
   ])
   return ok({ ok: true })

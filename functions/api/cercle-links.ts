@@ -3,53 +3,82 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { INVERSES, isRelationshipType as isType } from '../_lib/cercleRelations'
 
-// Relationship EDGES for « Le cercle » — a typed link between two contacts, stored
-// ONCE (person_a → person_b) with its derived inverse so either profile can read
-// the relation. The server derives reverse_type from the shared INVERSES map
-// (functions/_lib/cercleRelations.ts), so a client can never desync the edge.
+// Relationship EDGES for « Le cercle » — a typed link between two PEOPLE, stored
+// ONCE (person_a → person_b) with its derived inverse so either side can read the
+// relation. A "person" is polymorphic (migration 0050): a contact OR a household
+// member, identified by (kind, id). The server derives reverse_type from the shared
+// INVERSES map (functions/_lib/cercleRelations.ts) so a client can never desync the
+// edge, and validates each endpoint against ITS table for this household.
 
+type Kind = 'contact' | 'member'
+const kindOf = (v: unknown): Kind => (v === 'member' ? 'member' : 'contact')
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
 
-// Both endpoints of an edge must be contacts in THIS household.
-async function ownsContacts(db: D1Database, householdId: string, ids: string[]): Promise<boolean> {
-  const placeholders = ids.map(() => '?').join(', ')
-  const row = await db
-    .prepare(`SELECT COUNT(*) AS n FROM contacts WHERE household_id = ? AND id IN (${placeholders})`)
-    .bind(householdId, ...ids)
-    .first<{ n: number }>()
-  return (row?.n ?? 0) === ids.length
+interface Person {
+  id: string
+  kind: Kind
+}
+
+// Every endpoint must be a real person in THIS household — a contact id in
+// `contacts`, a member id in `members`. One COUNT per table that's actually used.
+async function ownsPersons(db: D1Database, householdId: string, people: Person[]): Promise<boolean> {
+  const byKind = (kind: Kind) => people.filter((p) => p.kind === kind).map((p) => p.id)
+  const check = async (table: 'contacts' | 'members', ids: string[]): Promise<boolean> => {
+    if (ids.length === 0) return true
+    const placeholders = ids.map(() => '?').join(', ')
+    const row = await db
+      .prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE household_id = ? AND id IN (${placeholders})`)
+      .bind(householdId, ...ids)
+      .first<{ n: number }>()
+    return (row?.n ?? 0) === ids.length
+  }
+  return (await check('contacts', byKind('contact'))) && (await check('members', byKind('member')))
 }
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ personAId?: string; personBId?: string; type?: string; label?: string; notes?: string }>(
-    ctx.request,
-  )
-  const a = str(body?.personAId)
-  const b = str(body?.personBId)
-  if (!a || !b) return badRequest('Deux personnes requises.')
-  if (a === b) return badRequest('Une personne ne peut pas être liée à elle-même.')
+  const body = await readJson<{
+    aId?: string
+    aKind?: string
+    bId?: string
+    bKind?: string
+    // Back-compat: phase-1 callers sent personAId/personBId (contact↔contact).
+    personAId?: string
+    personBId?: string
+    type?: string
+    label?: string
+    notes?: string
+  }>(ctx.request)
+  const aId = str(body?.aId ?? body?.personAId)
+  const bId = str(body?.bId ?? body?.personBId)
+  const aKind = kindOf(body?.aKind)
+  const bKind = kindOf(body?.bKind)
+  if (!aId || !bId) return badRequest('Deux personnes requises.')
+  if (aId === bId && aKind === bKind) return badRequest('Une personne ne peut pas être liée à elle-même.')
   if (!isType(body?.type)) return badRequest('Type de lien invalide.')
-  if (!(await ownsContacts(ctx.env.DB, actor.householdId, [a, b]))) return notFound('Contact introuvable.')
+  if (!(await ownsPersons(ctx.env.DB, actor.householdId, [{ id: aId, kind: aKind }, { id: bId, kind: bKind }])))
+    return notFound('Personne introuvable.')
 
-  // One edge per pair+type, regardless of direction — a→b parent and b→a child are
-  // the SAME relationship, so don't let it be added twice.
+  // One edge per pair+type, either direction — a→b parent and b→a child are the
+  // SAME relationship. Match on (id, kind) both ways so contact/member endpoints
+  // can't sneak a duplicate.
   const dup = await ctx.env.DB.prepare(
     `SELECT id FROM contact_links
       WHERE household_id = ?
-        AND ((person_a_id = ? AND person_b_id = ? AND type = ?)
-          OR (person_a_id = ? AND person_b_id = ? AND type = ?))`,
+        AND ((person_a_id = ? AND person_a_kind = ? AND person_b_id = ? AND person_b_kind = ? AND type = ?)
+          OR (person_a_id = ? AND person_a_kind = ? AND person_b_id = ? AND person_b_kind = ? AND type = ?))`,
   )
-    .bind(actor.householdId, a, b, body.type, b, a, INVERSES[body.type])
+    .bind(actor.householdId, aId, aKind, bId, bKind, body.type, bId, bKind, aId, aKind, INVERSES[body.type])
     .first<{ id: string }>()
   if (dup) return conflict('Ce lien existe déjà.')
 
   const id = newId()
   const ts = nowSec()
   await ctx.env.DB.prepare(
-    `INSERT INTO contact_links (id, household_id, person_a_id, person_b_id, type, reverse_type, label, notes, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO contact_links
+       (id, household_id, person_a_id, person_a_kind, person_b_id, person_b_kind, type, reverse_type, label, notes, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
-    .bind(id, actor.householdId, a, b, body.type, INVERSES[body.type], str(body?.label), str(body?.notes), ts, ts)
+    .bind(id, actor.householdId, aId, aKind, bId, bKind, body.type, INVERSES[body.type], str(body?.label), str(body?.notes), ts, ts)
     .run()
   return ok({ id })
 })

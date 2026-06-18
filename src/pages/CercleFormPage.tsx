@@ -8,8 +8,13 @@ import { CERCLE_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
 import { Loading } from '../components/Fallback'
 import { ContactForm } from '../components/cercle/ContactForm'
-import type { Contact, ContactLink } from '../lib/cercle'
-import type { FormMember } from '../components/FormScene'
+import type { Contact, ContactLink, Member } from '../lib/cercle'
+
+interface CercleData {
+  contacts: Contact[]
+  members: Member[]
+  links: ContactLink[]
+}
 
 // /cercle/person/new — add someone; /cercle/person/:id — edit. A full-screen
 // scene (like the recipe/routine builders) so the multi-field form rides above
@@ -25,11 +30,7 @@ export function CercleFormPage() {
 
   const { data } = useQuery({
     queryKey: CERCLE_KEY,
-    queryFn: () => api<{ contacts: Contact[]; links: ContactLink[] }>('cercle'),
-  })
-  const { data: memberData } = useQuery({
-    queryKey: ['members'],
-    queryFn: () => api<{ members: FormMember[] }>('members'),
+    queryFn: () => api<CercleData>('cercle'),
   })
 
   if (isGuest()) return <Navigate to="/cercle" replace />
@@ -47,7 +48,7 @@ export function CercleFormPage() {
           value={contact}
           contacts={data?.contacts ?? []}
           links={data?.links ?? []}
-          members={memberData?.members ?? []}
+          members={data?.members ?? []}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: CERCLE_KEY })
             qc.invalidateQueries({ queryKey: BOARD_KEY })

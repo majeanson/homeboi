@@ -36,11 +36,22 @@ interface ContactRow {
 interface LinkRow {
   id: string
   person_a_id: string
+  person_a_kind: string
   person_b_id: string
+  person_b_kind: string
   type: string
   reverse_type: string
   label: string | null
   notes: string | null
+}
+
+interface MemberRow {
+  id: string
+  display_name: string
+  avatar_kind: string
+  avatar_ref: string
+  colour: string
+  is_child: number
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
@@ -72,13 +83,30 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .all<ContactRow>()
 
   const links = await ctx.env.DB.prepare(
-    `SELECT id, person_a_id, person_b_id, type, reverse_type, label, notes
+    `SELECT id, person_a_id, person_a_kind, person_b_id, person_b_kind, type, reverse_type, label, notes
        FROM contact_links WHERE household_id = ?`,
   )
     .bind(actor.householdId)
     .all<LinkRow>()
 
+  // Household members are first-class PEOPLE in the circle too (phase 2) — a family
+  // links its own faces to each other + to contacts. Returned alongside so the SPA
+  // merges them into one "people" set (src/lib/cercle.ts buildPeople).
+  const members = await ctx.env.DB.prepare(
+    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+  )
+    .bind(actor.householdId)
+    .all<MemberRow>()
+
   return ok({
+    members: members.results.map((m) => ({
+      id: m.id,
+      displayName: m.display_name,
+      avatarKind: m.avatar_kind,
+      avatarRef: m.avatar_ref,
+      colour: m.colour,
+      isChild: m.is_child === 1,
+    })),
     contacts: contacts.results.map((c) => ({
       id: c.id,
       firstName: c.first_name,
@@ -97,7 +125,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
     links: links.results.map((l) => ({
       id: l.id,
       personAId: l.person_a_id,
+      personAKind: l.person_a_kind,
       personBId: l.person_b_id,
+      personBKind: l.person_b_kind,
       type: l.type,
       reverseType: l.reverse_type,
       label: l.label,

@@ -41,15 +41,89 @@ export interface Contact {
   customFields: ContactCustomField[]
 }
 
+// A household member, as the cercle GET returns it (phase 2 — members are people
+// in the circle too).
+export interface Member {
+  id: string
+  displayName: string
+  avatarKind: string
+  avatarRef: string
+  colour: string
+  isChild: boolean
+}
+
+export type PersonKind = 'contact' | 'member'
+
 export interface ContactLink {
   id: string
   personAId: string
+  personAKind: PersonKind
   personBId: string
+  personBKind: PersonKind
   type: RelationshipType
   reverseType: RelationshipType
   label: string | null
   notes: string | null
 }
+
+// The UNIFIED node in the circle: a contact OR a member, normalized so the
+// directory, the ego view, the tree, and family detection all treat them the same.
+// `key` = `${kind}:${id}` — a stable composite id that can't collide across tables.
+export interface Person {
+  kind: PersonKind
+  id: string
+  key: string
+  name: string // display name
+  firstName: string
+  lastName: string
+  avatarKind: string | null // 'photo' | 'color' | null → drives <Avatar kind>
+  avatarRef: string | null // R2 key (photo) or hex (colour)
+  colour: string | null
+  birthday: string | null // contacts only
+  isChild: boolean
+}
+
+const CONTACT_ACCENT = '#C45E86' // the cercle rose, for photoless contacts
+
+export const personKey = (kind: PersonKind, id: string): string => `${kind}:${id}`
+
+// Merge contacts + members into one people set. Contacts render their photo (or a
+// rose initials tile); members render their member avatar/colour (their board face).
+export function buildPeople(contacts: Contact[], members: Member[]): Person[] {
+  const fromContacts: Person[] = contacts.map((c) => ({
+    kind: 'contact' as const,
+    id: c.id,
+    key: personKey('contact', c.id),
+    name: fullName(c),
+    firstName: c.firstName,
+    lastName: c.lastName,
+    avatarKind: c.photoKey ? 'photo' : null,
+    avatarRef: c.photoKey,
+    colour: CONTACT_ACCENT,
+    birthday: c.birthday,
+    isChild: false,
+  }))
+  const fromMembers: Person[] = members.map((m) => ({
+    kind: 'member' as const,
+    id: m.id,
+    key: personKey('member', m.id),
+    name: m.displayName,
+    firstName: m.displayName,
+    lastName: '',
+    avatarKind: m.avatarKind,
+    avatarRef: m.avatarRef,
+    colour: m.colour,
+    birthday: null,
+    isChild: m.isChild,
+  }))
+  return [...fromMembers, ...fromContacts]
+}
+
+// A link's two endpoints as composite keys (for graph/group math over `Person.key`).
+export const linkEndpoints = (l: ContactLink): { aKey: string; bKey: string } => ({
+  aKey: personKey(l.personAKind, l.personAId),
+  bKey: personKey(l.personBKind, l.personBId),
+})
 
 // ---- Relationship vocabulary -----------------------------------------------
 
@@ -167,26 +241,31 @@ const FAMILY_REL_TYPES = new Set<RelationshipType>([
   'step_family',
 ])
 
+// Is this a blood/family tie (binds a family + appears in the Arbre tree)? Social
+// ties (friend/colleague/neighbor) are not.
+export const isFamilyRel = (type: RelationshipType): boolean => FAMILY_REL_TYPES.has(type)
+
 export interface FamilyGroup {
-  id: string // the root contact id
+  id: string // the root person key
   name: string // "<lastName> family" / "Famille <nom>"
-  memberIds: Set<string>
+  memberKeys: Set<string> // composite Person.key values
   colorIndex: number // assigned in detection order; reserved for a future graph tint
 }
 
-// Detect family groups with Union-Find over the FAMILY edges. People connected by
-// a family relationship land in the same group; pure, deterministic, no React.
-// (Ported from famolo's detectFamilyGroups, trimmed to data-in/data-out.)
+// Detect family groups with Union-Find over the FAMILY edges. People (contacts AND
+// members) connected by a family relationship land in the same group; pure,
+// deterministic, no React. Operates on composite `Person.key` so a contact id and a
+// member id can never be confused. (Ported from famolo's detectFamilyGroups.)
 export function detectFamilyGroups(
-  contacts: { id: string; lastName: string; firstName: string }[],
-  links: { personAId: string; personBId: string; type: RelationshipType }[],
+  people: Person[],
+  links: ContactLink[],
   familyWord: (lastOrFirst: string) => string,
 ): FamilyGroup[] {
   const parent = new Map<string, string>()
   const rank = new Map<string, number>()
-  contacts.forEach((c) => {
-    parent.set(c.id, c.id)
-    rank.set(c.id, 0)
+  people.forEach((p) => {
+    parent.set(p.key, p.key)
+    rank.set(p.key, 0)
   })
 
   function find(x: string): string {
@@ -213,28 +292,89 @@ export function detectFamilyGroups(
   }
 
   links.forEach((l) => {
-    if (FAMILY_REL_TYPES.has(l.type) && parent.has(l.personAId) && parent.has(l.personBId)) {
-      union(l.personAId, l.personBId)
-    }
+    if (!FAMILY_REL_TYPES.has(l.type)) return
+    const { aKey, bKey } = linkEndpoints(l)
+    if (parent.has(aKey) && parent.has(bKey)) union(aKey, bKey)
   })
 
   const byRoot = new Map<string, Set<string>>()
-  contacts.forEach((c) => {
-    const root = find(c.id)
+  people.forEach((p) => {
+    const root = find(p.key)
     if (!byRoot.has(root)) byRoot.set(root, new Set())
-    byRoot.get(root)!.add(c.id)
+    byRoot.get(root)!.add(p.key)
   })
 
-  const map = new Map(contacts.map((c) => [c.id, c]))
+  const map = new Map(people.map((p) => [p.key, p]))
   let colorIndex = 0
   return Array.from(byRoot.entries())
     .filter(([, m]) => m.size > 1) // a lone person isn't a "family"
     .sort((a, b) => b[1].size - a[1].size)
-    .map(([rootId, memberIds]) => {
-      const root = map.get(rootId)
+    .map(([rootKey, memberKeys]) => {
+      const root = map.get(rootKey)
       const word = root ? root.lastName || root.firstName : ''
-      return { id: rootId, name: familyWord(word), memberIds, colorIndex: colorIndex++ }
+      return { id: rootKey, name: familyWord(word), memberKeys, colorIndex: colorIndex++ }
     })
+}
+
+// ---- Generation layout (for the Arbre / family-tree view) -------------------
+
+// How many generations DOWN a relationship moves B relative to A, where the link
+// reads "A is [type] of B" (the stored direction). +1 = B is one generation below
+// A. Only blood/family ties place a generation; social ties aren't in the tree.
+const GEN_DELTA: Partial<Record<RelationshipType, number>> = {
+  parent: 1, // A parent of B → B is below A
+  child: -1,
+  grandparent: 2,
+  grandchild: -2,
+  aunt_uncle: 1, // A aunt/uncle of B → B is a generation below A
+  niece_nephew: -1,
+  sibling: 0,
+  spouse: 0,
+  partner: 0,
+  cousin: 0,
+  in_law: 0,
+  step_family: 0,
+}
+
+// Assign each person a generation number via BFS over family edges (lower = older).
+// Disconnected components each start at 0; within a component generations are
+// relative. Returns a Map keyed by Person.key (only people reachable through a
+// family edge are placed; the tree view shows those). Pure.
+export function generationOf(people: Person[], links: ContactLink[]): Map<string, number> {
+  // Adjacency: for each person key, neighbours with the generation delta to apply.
+  const adj = new Map<string, { key: string; delta: number }[]>()
+  const present = new Set(people.map((p) => p.key))
+  const add = (from: string, to: string, delta: number) => {
+    if (!adj.has(from)) adj.set(from, [])
+    adj.get(from)!.push({ key: to, delta })
+  }
+  for (const l of links) {
+    const d = GEN_DELTA[l.type]
+    if (d === undefined) continue // social tie → not in the tree
+    const { aKey, bKey } = linkEndpoints(l)
+    if (!present.has(aKey) || !present.has(bKey)) continue
+    add(aKey, bKey, d) // A→B
+    add(bKey, aKey, -d) // and back
+  }
+
+  const gen = new Map<string, number>()
+  // Visit components in a stable order (people order) so the result is deterministic.
+  for (const p of people) {
+    if (gen.has(p.key) || !adj.has(p.key)) continue // skip already-placed + isolated
+    gen.set(p.key, 0)
+    const queue = [p.key]
+    while (queue.length) {
+      const cur = queue.shift()!
+      const g = gen.get(cur)!
+      for (const { key, delta } of adj.get(cur) ?? []) {
+        if (!gen.has(key)) {
+          gen.set(key, g + delta)
+          queue.push(key)
+        }
+      }
+    }
+  }
+  return gen
 }
 
 // ---- Birthday math ----------------------------------------------------------

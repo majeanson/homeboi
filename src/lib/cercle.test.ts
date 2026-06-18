@@ -3,12 +3,53 @@ import {
   RELATIONSHIP_INVERSES,
   ALL_RELATIONSHIP_TYPES,
   detectFamilyGroups,
+  generationOf,
+  buildPeople,
+  personKey,
   daysUntilBirthday,
   ageOnNextBirthday,
   parseBirthday,
   formatBirthday,
+  type Contact,
+  type ContactLink,
+  type Member,
   type RelationshipType,
 } from './cercle'
+
+// Test helpers: a minimal contact, a minimal member, and a link (contact↔contact
+// unless kinds given).
+const contact = (id: string, firstName: string, lastName = ''): Contact => ({
+  id,
+  firstName,
+  lastName,
+  nickname: null,
+  photoKey: null,
+  birthday: null,
+  email: null,
+  phone: null,
+  address: null,
+  notes: null,
+  tags: [],
+  memberId: null,
+  customFields: [],
+})
+const member = (id: string, displayName: string): Member => ({ id, displayName, avatarKind: 'color', avatarRef: '#abc', colour: '#abc', isChild: false })
+const link = (
+  aId: string,
+  bId: string,
+  type: RelationshipType,
+  opts?: { aKind?: 'contact' | 'member'; bKind?: 'contact' | 'member' },
+): ContactLink => ({
+  id: `${aId}-${bId}`,
+  personAId: aId,
+  personAKind: opts?.aKind ?? 'contact',
+  personBId: bId,
+  personBKind: opts?.bKind ?? 'contact',
+  type,
+  reverseType: RELATIONSHIP_INVERSES[type],
+  label: null,
+  notes: null,
+})
 import { INVERSES as SERVER_INVERSES } from '../../functions/_lib/cercleRelations'
 
 describe('relationship inverses', () => {
@@ -27,32 +68,52 @@ describe('relationship inverses', () => {
   })
 })
 
-describe('detectFamilyGroups (Union-Find)', () => {
+describe('detectFamilyGroups (Union-Find over unified people)', () => {
   const fam = (n: string) => (n ? `${n} family` : 'Family')
+  const k = (id: string) => personKey('contact', id)
+
   it('merges people connected by family edges, ignores friend/colleague edges', () => {
-    const contacts = [
-      { id: 'a', firstName: 'Ana', lastName: 'Roy' },
-      { id: 'b', firstName: 'Bo', lastName: 'Roy' },
-      { id: 'c', firstName: 'Cy', lastName: 'Roy' },
-      { id: 'z', firstName: 'Zoe', lastName: 'Lee' }, // only a friend link → own (lonely) group
-    ]
-    const links = [
-      { personAId: 'a', personBId: 'b', type: 'parent' as RelationshipType },
-      { personAId: 'b', personBId: 'c', type: 'sibling' as RelationshipType },
-      { personAId: 'a', personBId: 'z', type: 'friend' as RelationshipType },
-    ]
-    const groups = detectFamilyGroups(contacts, links, fam)
+    const people = buildPeople([contact('a', 'Ana', 'Roy'), contact('b', 'Bo', 'Roy'), contact('c', 'Cy', 'Roy'), contact('z', 'Zoe', 'Lee')], [])
+    const links = [link('a', 'b', 'parent'), link('b', 'c', 'sibling'), link('a', 'z', 'friend')]
+    const groups = detectFamilyGroups(people, links, fam)
     // One family of {a,b,c}; z is alone (friend doesn't bind) → filtered out (size 1).
     expect(groups).toHaveLength(1)
-    expect([...groups[0].memberIds].sort()).toEqual(['a', 'b', 'c'])
+    expect([...groups[0].memberKeys].sort()).toEqual([k('a'), k('b'), k('c')])
+  })
+
+  it('binds a household MEMBER and a contact into the same family', () => {
+    const people = buildPeople([contact('c1', 'Mémé')], [member('m1', 'Léa')])
+    // m1 (member) is the grandparent of c1 (contact) — cross-kind family edge.
+    const links = [link('m1', 'c1', 'grandparent', { aKind: 'member', bKind: 'contact' })]
+    const groups = detectFamilyGroups(people, links, fam)
+    expect(groups).toHaveLength(1)
+    expect([...groups[0].memberKeys].sort()).toEqual([personKey('contact', 'c1'), personKey('member', 'm1')].sort())
   })
 
   it('returns no group when nobody is linked', () => {
-    const contacts = [
-      { id: 'a', firstName: 'Ana', lastName: 'Roy' },
-      { id: 'b', firstName: 'Bo', lastName: 'Lee' },
+    expect(detectFamilyGroups(buildPeople([contact('a', 'Ana'), contact('b', 'Bo')], []), [], fam)).toHaveLength(0)
+  })
+})
+
+describe('generationOf', () => {
+  it('places parents above children and spouses on the same band', () => {
+    const people = buildPeople([contact('gp', 'Pépé'), contact('p', 'Papa'), contact('m', 'Maman'), contact('k', 'Léa')], [])
+    const links = [
+      link('gp', 'p', 'parent'), // Pépé parent of Papa
+      link('p', 'm', 'spouse'), // Papa spouse of Maman
+      link('p', 'k', 'parent'), // Papa parent of Léa
     ]
-    expect(detectFamilyGroups(contacts, [], fam)).toHaveLength(0)
+    const gen = generationOf(people, links)
+    const g = (id: string) => gen.get(personKey('contact', id))!
+    expect(g('p')).toBe(g('gp') + 1) // child one below parent
+    expect(g('k')).toBe(g('p') + 1)
+    expect(g('m')).toBe(g('p')) // spouse same band
+  })
+
+  it('omits people with no family edge', () => {
+    const people = buildPeople([contact('a', 'Ana'), contact('lonely', 'Solo')], [])
+    const gen = generationOf(people, [link('a', 'a2', 'sibling')]) // a2 not present → no edge placed
+    expect(gen.has(personKey('contact', 'lonely'))).toBe(false)
   })
 })
 

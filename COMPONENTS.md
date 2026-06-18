@@ -118,6 +118,17 @@ photo upload) + `functions/api/cercle-links.ts` (edges; server derives the inver
 parity pinned by `src/lib/cercle.test.ts`), migration `0049_cercle.sql`. New shared
 icons added to the registry: `cake-bold`, `envelope-bold`, `phone-bold`.
 
+Phase 2 unified members + contacts as **people** (`buildPeople`, `personKey`, polymorphic
+`contact_links` via migration `0050_cercle_people_links.sql` — endpoints are `(kind, id)`,
+kind `contact|member`; server `ownsPersons` validates each side). New pieces: `BirthdayPicker`
+(Month+Day+optional-Year, the easy birthday input), `LinkComposer` (the intuitive sentence-builder
+"{X} est [lien] de {qui}" with a plain-language preview — replaces the old dropdown row; reused in
+the contact form AND Réglages ▸ Membres so a family links its OWN members), and a `Liste / Liens /
+Arbre` view switch on `/cercle` (`useTabParam`): `CercleEgo` (tap-to-focus ego view) + `CercleTree`
+(generation-banded family tree) — both **hand-rolled SVG, zero deps** (research: a force-directed
+graph is the wrong tool at this scale). Domain helpers `detectFamilyGroups`/`generationOf` operate on
+composite keys; deleting a member cascades its cercle links.
+
 `CookMode` now offers the PARENT lens three layouts via a bar switcher — **Recette**
 (full scroll page), **Côte à côte** (`split`: ingredients pinned beside the steps,
 two tabs on a phone) and **Focus** (`step`: the parent-styled stepper) — plus a

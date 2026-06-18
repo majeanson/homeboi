@@ -53,6 +53,45 @@
   gap: 0.4rem;
 }
 
+/* View switch (Liste / Liens / Arbre) — a calm segmented control */
+.cercle-viewswitch {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  align-self: flex-start;
+}
+.cercle-viewswitch__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.cercle-viewswitch__btn.is-active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+/* "Maisonnée" badge marking a household member among the people */
+.cercle-row__badge {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--berry-wash);
+  color: var(--berry-deep, var(--ink-soft));
+}
+
 /* A person row */
 .cercle-row {
   display: flex;
@@ -182,6 +221,78 @@
   font-weight: 700;
   color: var(--ink);
   text-align: center;
+}
+
+/* ── Liens (ego view) + Arbre (tree view): hand-rolled SVG ─────────────── */
+.cercle-ego,
+.cercle-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cercle-ego__hint {
+  color: var(--ink-soft);
+}
+.cercle-ego__svg {
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+}
+.cercle-tree {
+  overflow-x: auto; /* wide trees scroll sideways rather than squish */
+}
+.cercle-tree__svg {
+  width: 100%;
+  min-width: 600px;
+  height: auto;
+}
+.cercle-tree__empty {
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+/* SVG nodes (shared by ego + tree) */
+.ego-node {
+  cursor: pointer;
+}
+.ego-node:focus {
+  outline: none;
+}
+.ego-node:focus-visible .ego-node__inner {
+  outline: 2px solid var(--accent, var(--berry));
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+.ego-node__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.ego-node__name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.ego-edge,
+.tree-edge {
+  stroke: var(--line-strong, var(--line));
+  stroke-width: 2;
+}
+.ego-edge__label {
+  font-size: 12px;
+  fill: var(--ink-soft);
+  /* a paper halo so the label stays legible where it crosses the connector */
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 
 /* ── Contact form (the scene body) ────────────────────────────────────── */
@@ -341,4 +452,41 @@
 .cf__rels-add .cf__input {
   flex: 0 0 auto;
   width: auto;
+}
+
+/* LinkComposer — the sentence builder */
+.lc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.8rem;
+  margin-top: 0.4rem;
+  border-top: 1px solid var(--line);
+}
+.lc__add {
+  align-self: flex-start;
+}
+.lc__compose {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.lc__sentence {
+  margin: 0;
+  color: var(--ink);
+}
+.lc__preview {
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  background: var(--berry-wash);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+}
+.lc__actions {
+  display: flex;
+  gap: 0.4rem;
 }

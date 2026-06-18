@@ -94,8 +94,9 @@ const PATH_KEYS: Record<string, string[][]> = {
   // Household settings (postal, store filter, meal-slot colours, reserve locns)
   // re-tint every meal surface and the board.
   household: [['household'], ['board']],
-  // Members appear on the board (faces) and in Réglages.
-  members: [['members'], ['board']],
+  // Members appear on the board (faces), in Réglages, and as people in Le cercle
+  // (their relationship edits re-derive the circle's families).
+  members: [['members'], ['board'], ['cercle']],
   // Kid routines render on the board and the routines tab.
   routines: [['routines'], ['board']],
   // À compléter (todos): the board glance + day page read ['todos']; the board's own

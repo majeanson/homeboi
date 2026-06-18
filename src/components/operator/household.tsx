@@ -1,21 +1,40 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { live } from '../../lib/query'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { isGuest } from '../../lib/device'
 import { PALETTE } from '../../lib/colors'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
+import { CERCLE_KEY } from '../../lib/queryKeys'
 import { Avatar } from '../Avatar'
 import { ColorPicker } from '../ColorPicker'
 import { Icon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { LinkComposer } from '../cercle/LinkComposer'
+import { buildPeople, personKey, type Person, type ContactLink, type Contact, type Member as CercleMember } from '../../lib/cercle'
 import { type Member } from './types'
+
+// « Le cercle » data, so a household member's own relationships can be set right
+// here in Réglages ▸ Membres (members are people in the circle, phase 2).
+interface CercleData {
+  contacts: Contact[]
+  members: CercleMember[]
+  links: ContactLink[]
+}
 
 export function MembersSection({ members, onChange }: { members: Member[]; onChange: () => void }) {
   const t = useT()
   const confirm = useConfirm()
+  const qc = useQueryClient()
+  // The circle's people + edges, so each member card can edit that member's own
+  // family links inline. Refetched (live) and invalidated when a link changes.
+  const { data: cercle } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
+  const people = useMemo(() => buildPeople(cercle?.contacts ?? [], cercle?.members ?? []), [cercle])
+  const links = cercle?.links ?? []
   const [name, setName] = useState('')
   const [isChild, setIsChild] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -89,7 +108,16 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       )}
       <ul className="member-cards">
         {members.map((m) => (
-          <MemberCard key={m.id} member={m} onChange={onChange} onRemove={() => remove(m)} />
+          <MemberCard
+            key={m.id}
+            member={m}
+            onChange={onChange}
+            onRemove={() => remove(m)}
+            person={people.find((p) => p.key === personKey('member', m.id)) ?? null}
+            people={people}
+            links={links}
+            onLinksChanged={() => qc.invalidateQueries({ queryKey: CERCLE_KEY })}
+          />
         ))}
       </ul>
       {/* Adding a member is operator-only — hidden for a read-only guest. */}
@@ -119,7 +147,23 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
 // recolour — the same fields the add form has); 🗑️ removes (confirmed). The photo
 // camera (and "clear photo") stay as their own affordance — a face is set from
 // the phone's camera/gallery, separate from the text fields.
-function MemberCard({ member, onChange, onRemove }: { member: Member; onChange: () => void; onRemove: () => void }) {
+function MemberCard({
+  member,
+  onChange,
+  onRemove,
+  person,
+  people,
+  links,
+  onLinksChanged,
+}: {
+  member: Member
+  onChange: () => void
+  onRemove: () => void
+  person: Person | null
+  people: Person[]
+  links: ContactLink[]
+  onLinksChanged: () => void
+}) {
   const t = useT()
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(member.display_name)
@@ -205,6 +249,9 @@ function MemberCard({ member, onChange, onRemove }: { member: Member; onChange: 
             {t.common.cancel}
           </button>
         </form>
+        {/* This member's own family links — "Maman est la mère de Léa" — set right
+            where the family is managed. Members are people in the circle (phase 2). */}
+        {person && <LinkComposer person={person} people={people} links={links} onChanged={onLinksChanged} />}
       </li>
     )
 
