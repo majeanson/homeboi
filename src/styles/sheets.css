@@ -1228,6 +1228,50 @@
   object-fit: contain;
   display: block;
 }
+/* Clipping images stream in under the burst of a whole flyer opening; an unloaded
+   cell would otherwise paint as a stark blank box (reads as broken). The cell shows a
+   soft shimmer placeholder ("loading") while its img is data-loaded='0'; the real
+   bitmap fades in over it on load. Shimmer is :has()-driven — where unsupported it
+   simply degrades to the plain cell background, and the fade still applies. */
+.flyer-grid__cell img,
+.flyer-item img {
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+.flyer-grid__cell img[data-loaded='1'],
+.flyer-item img[data-loaded='1'] {
+  opacity: 1;
+}
+.flyer-grid__cell:has(img[data-loaded='0']),
+.flyer-item:has(img[data-loaded='0']) {
+  background: linear-gradient(
+    100deg,
+    rgba(0, 0, 0, 0.04) 30%,
+    rgba(0, 0, 0, 0.08) 50%,
+    rgba(0, 0, 0, 0.04) 70%
+  );
+  background-size: 200% 100%;
+  animation: flyer-img-shimmer 1.3s ease-in-out infinite;
+}
+@keyframes flyer-img-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flyer-grid__cell img,
+  .flyer-item img {
+    transition: none;
+  }
+  .flyer-grid__cell:has(img[data-loaded='0']),
+  .flyer-item:has(img[data-loaded='0']) {
+    animation: none;
+    background: rgba(0, 0, 0, 0.05);
+  }
+}
 .flyer-grid__cell:focus-visible {
   outline: 2px solid var(--marigold);
   outline-offset: 1px;

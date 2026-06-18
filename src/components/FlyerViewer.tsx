@@ -66,6 +66,39 @@ const proxied = (url: string | null | undefined): string =>
   // already same-origin src pass through untouched.
   url ? (/^https?:\/\//i.test(url) ? `/api/flyer-img?u=${encodeURIComponent(url)}` : url) : ''
 
+// A flyer opens dozens of clippings at once; under that burst a few proxied fetches
+// transiently fail (Flipp CDN hiccup, a dropped connection, an SW 504) and the <img>
+// just stays blank — the "sometimes load, sometimes don't" bug. Retry on error with a
+// cache-buster so a fresh request heals it instead of leaving a hole. First attempt
+// uses the clean URL so an already-cached success is reused untouched.
+const FLYER_IMG_RETRIES = 3
+function FlyerImg({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [tries, setTries] = useState(0)
+  const [loaded, setLoaded] = useState(false)
+  const base = proxied(src)
+  const canRetry = base.startsWith('/api/flyer-img')
+  const url = tries === 0 ? base : `${base}&retry=${tries}`
+  // data-loaded drives a calm placeholder (sheets.css): an unloaded cell shows a soft
+  // shimmer so the flyer doesn't paint as broken-looking blank boxes; the real bitmap
+  // fades over it once it arrives.
+  return (
+    <img
+      // A cache-first hit can finish before React attaches onLoad (the img is already
+      // `complete`), which would otherwise leave it stuck at opacity:0 — reveal it here.
+      ref={(el) => {
+        if (el?.complete && el.naturalWidth > 0) setLoaded(true)
+      }}
+      src={url}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      data-loaded={loaded ? '1' : '0'}
+      onLoad={() => setLoaded(true)}
+      onError={() => canRetry && setTries((n) => (n < FLYER_IMG_RETRIES ? n + 1 : n))}
+    />
+  )
+}
+
 const FLYER_STALE = 30 * 60 * 1000 // flyers change ~weekly; cache generously
 
 // Warm a flyer (its reconstruction data + clipping images) into the cache. Call
@@ -425,7 +458,7 @@ export function FlyerViewer({
                   onClick={() => setSelectedIdx(idx)}
                   aria-label={it.price != null ? `${it.name} — ${money(it.price)}` : it.name}
                 >
-                  <img src={proxied(it.image)} alt={it.name} loading="lazy" />
+                  <FlyerImg src={it.image} alt={it.name} />
                 </button>
               )
             })}
@@ -474,7 +507,7 @@ export function FlyerViewer({
                         onClick={() => setSelectedIdx(idx)}
                         aria-label={it.price != null ? `${it.name} — ${money(it.price)}` : it.name}
                       >
-                        {it.image && <img src={proxied(it.image)} alt={it.name} loading="lazy" />}
+                        {it.image && <FlyerImg src={it.image} alt={it.name} />}
                         {isHit && (
                           <span className="flyer-item__pin" aria-hidden="true">
                             <Icon name="map-pin-bold" size={16} />
