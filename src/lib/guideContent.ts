@@ -746,6 +746,85 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    id: 'screensaver',
+    icon: 'clock-bold',
+    group: 'concepts',
+    title: { fr: 'Le mode veille', en: 'The screensaver' },
+    what: {
+      fr: 'Au repos, la tablette se transforme en joli cadran : une grande horloge, la date et tes photos qui défilent doucement. Touche l’écran pour la réveiller.',
+      en: 'At rest the tablet becomes a pretty clock face: a big clock, the date and your photos drifting gently by. Touch the screen to wake it.',
+    },
+    points: [
+      {
+        label: { fr: 'À ton goût', en: 'Your way' },
+        detail: {
+          fr: 'Dans Réglages ▸ Affichage ▸ Mode veille, choisis le délai et ce qui s’affiche (horloge, date, photos, à venir).',
+          en: 'In Settings ▸ Display ▸ Idle mode, pick the delay and what shows (clock, date, photos, next up).',
+        },
+        why: {
+          fr: 'Le mur de la cuisine reste calme et vivant, sans rien faire.',
+          en: 'The kitchen wall stays calm and alive, with nothing to do.',
+        },
+      },
+      {
+        label: { fr: 'Retour à Maisonnée', en: 'Back to Household' },
+        detail: {
+          fr: 'Sur un kiosque, après un moment sans usage, le visage choisi revient à « Maisonnée » (un petit avertissement avant). Réglable, ou désactivable.',
+          en: 'On a kiosk, after a while unused, the picked face drifts back to “Household” (a small heads-up first). Tunable, or off.',
+        },
+        why: {
+          fr: 'Une tablette partagée ne reste jamais bloquée sur une seule personne.',
+          en: 'A shared tablet never stays stuck on one person.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'share',
+    icon: 'device-tablet-bold',
+    group: 'concepts',
+    title: { fr: 'Partager vers Babillard', en: 'Share to Babillard' },
+    what: {
+      fr: 'Depuis une autre app (courriel, navigateur, photos), utilise « Partager » et choisis Babillard : le texte, le lien ou la photo arrive ici.',
+      en: 'From another app (mail, browser, photos), use “Share” and pick Babillard: the text, link or photo lands here.',
+    },
+    points: [
+      {
+        label: { fr: 'Texte ou lien', en: 'Text or link' },
+        detail: {
+          fr: 'Un courriel d’école, une adresse de recette : le texte se pré-remplit dans la capture, et l’app le classe (rendez-vous, liste, repas, note).',
+          en: 'A school email, a recipe URL: the text pre-fills capture, and the app sorts it (event, list, meal, note).',
+        },
+        why: {
+          fr: 'Pas de copier-coller — ça va droit au bon endroit.',
+          en: 'No copy-paste — it goes straight to the right place.',
+        },
+      },
+      {
+        label: { fr: 'Une photo', en: 'A photo' },
+        detail: {
+          fr: 'Une photo partagée s’épingle sur le babillard comme une note ; ajoute une légende au besoin, efface-la d’un geste.',
+          en: 'A shared photo pins to the board like a note; add a caption if you like, clear it with a tap.',
+        },
+        why: {
+          fr: 'L’horaire de sport, un dessin, un souvenir — sur le frigo en deux gestes.',
+          en: 'A sports schedule, a drawing, a memory — on the fridge in two taps.',
+        },
+      },
+      {
+        label: { fr: 'À installer d’abord', en: 'Install first' },
+        detail: {
+          fr: 'Le partage n’apparaît qu’une fois Babillard « installé » sur l’appareil (Ajouter à l’écran d’accueil).',
+          en: 'Sharing only appears once Babillard is “installed” on the device (Add to Home Screen).',
+        },
+        why: {
+          fr: 'C’est ce qui inscrit Babillard dans le menu Partager du téléphone.',
+          en: 'That’s what puts Babillard in the phone’s Share menu.',
+        },
+      },
+    ],
+  },
+  {
     id: 'surface',
     icon: 'device-tablet-bold',
     group: 'concepts',
@@ -1974,6 +2053,52 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Pour reprendre l’accès d’une tablette perdue, vendue ou donnée, quand tu veux.',
           en: 'So you can pull access from a lost, sold or handed-on tablet whenever you want.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'set-guest',
+    icon: 'user-bold',
+    group: 'settings',
+    tab: 'guest',
+    title: { fr: 'Invité', en: 'Guest' },
+    what: {
+      fr: 'Un accès temporaire en lecture seule — pour la gardienne : elle voit la journée et les routines, sans rien pouvoir changer ni atteindre les réglages.',
+      en: 'A temporary read-only access — for the babysitter: she sees the day and the routines, without changing anything or reaching settings.',
+    },
+    points: [
+      {
+        label: { fr: 'En lecture seule', en: 'Read-only' },
+        detail: {
+          fr: 'L’invité voit le babillard et les routines, mais aucun bouton d’ajout, de modification ou de suppression.',
+          en: 'The guest sees the board and routines, but no add, edit or delete buttons.',
+        },
+        why: {
+          fr: 'On confie l’info utile sans confier les commandes.',
+          en: 'You hand over the useful info, not the controls.',
+        },
+      },
+      {
+        label: { fr: 'Limité dans le temps', en: 'Time-boxed' },
+        detail: {
+          fr: 'Le lien expire tout seul après le délai choisi.',
+          en: 'The link expires on its own after the chosen window.',
+        },
+        why: {
+          fr: 'Rien à révoquer à la main — ça se referme.',
+          en: 'Nothing to revoke by hand — it closes itself.',
+        },
+      },
+      {
+        label: { fr: 'Aperçu avant de partager', en: 'Preview before sharing' },
+        detail: {
+          fr: 'Depuis Affichage, tu peux prévisualiser la vue invité pour voir exactement ce que la gardienne verra.',
+          en: 'From Display, you can preview the guest view to see exactly what the sitter will see.',
+        },
+        why: {
+          fr: 'Pour vérifier que tout l’utile est là, et rien de plus.',
+          en: 'To check the useful stuff is there, and nothing more.',
         },
       },
     ],
