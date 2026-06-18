@@ -534,7 +534,7 @@ export const FR = {
     write: 'Écrire',
     relationships: 'Liens',
     addRelationship: 'Ajouter un lien',
-    relationWith: 'Avec qui ?',
+    relationWith: 'Lier à un membre',
     relationType: 'Quel lien ?',
     isThe: 'est',
     ofWhom: 'de',
@@ -1013,6 +1013,7 @@ export const FR = {
     browseStart: 'Cherche un article, ou touche une suggestion.',
     byItem: 'Par article',
     byStore: 'Par magasin',
+    share: 'Partager',
   },
   common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', delete: 'Supprimer', confirmTitle: 'Confirmer', saveFailed: 'Pas enregistré — réessaie.', close: 'Fermer' },
   share: {
@@ -1638,7 +1639,7 @@ export const EN: typeof FR = {
     write: 'Email',
     relationships: 'Relationships',
     addRelationship: 'Add a relationship',
-    relationWith: 'With whom?',
+    relationWith: 'Link to a member',
     relationType: 'What relationship?',
     isThe: 'is the',
     ofWhom: 'of',
@@ -2116,6 +2117,7 @@ export const EN: typeof FR = {
     browseStart: 'Search an item, or tap a suggestion.',
     byItem: 'By item',
     byStore: 'By store',
+    share: 'Share',
   },
   common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', delete: 'Delete', confirmTitle: 'Confirm', saveFailed: 'Not saved — try again.', close: 'Close' },
   share: {
