@@ -313,6 +313,11 @@ export function EntityCombobox<T>({
                       aria-selected={i === active}
                       className={'combobox__row' + (i === active ? ' is-active' : '')}
                       onPointerEnter={() => setActive(i)}
+                      // Keep the input focused on press so the wrapper's onBlur
+                      // never fires (relatedTarget is null on touch / Safari when a
+                      // button isn't focused), which would unmount the menu before
+                      // this click lands — the pick would silently no-op.
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => pick(o)}
                     >
                       <span className="combobox__row-title">

@@ -548,20 +548,42 @@
 .note-card__memo {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   font-size: 1.05rem;
+  padding: 0.4rem 0.8rem 0.4rem 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--note-tint) 30%, var(--card));
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
 }
+/* The ▶ glyph sits in its own little disc so the memo reads as "press to hear". */
+.note-card__memo svg {
+  flex: none;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--note-tint) 55%, white);
+  box-sizing: content-box;
+}
+.note-card__mediabtn:active .note-card__memo {
+  transform: scale(0.96);
+}
+/* Drawing / photo: a taped-up polaroid — white mat, a touch heavier at the foot. */
 .note-card__draw {
   display: block;
   max-width: 9rem;
   max-height: 9rem;
-  border-radius: 6px;
+  border-radius: 4px;
   background: #fffdf7;
+  padding: 0.3rem 0.3rem 0.7rem;
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  object-fit: cover;
 }
 .note-card__media {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.35rem;
 }
 /* An optional caption under an image/voice memo (e.g. text shared with a photo). */
 .note-card__cap {

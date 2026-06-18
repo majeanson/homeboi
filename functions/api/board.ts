@@ -122,7 +122,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .all(),
     // Fridge notes (uncleared), newest first — shown on the Aujourd'hui board.
     ctx.env.DB.prepare(
-      'SELECT id, text, member_id, created_at FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC LIMIT 12',
+      'SELECT id, text, member_id, created_at, media_kind, media_key FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC LIMIT 12',
     )
       .bind(hh)
       .all(),
