@@ -17,6 +17,7 @@ import { ChoresSection, RoutinesSection } from '../components/operator/chores'
 import { ChoreLedger } from '../components/ChoreLedger'
 import { PhotosSection, RecapSection } from '../components/operator/media'
 import { RecipeTagsSection } from '../components/operator/recipesTags'
+import { RecipePillsSection } from '../components/operator/recipePills'
 import { MealSlotsSection } from '../components/operator/meals'
 import { ReserveLocationsSection } from '../components/operator/reserve'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
@@ -191,7 +192,12 @@ export function Operator() {
             <HistorySection />
           </>
         )}
-        {tab === 'recipes' && <RecipeTagsSection />}
+        {tab === 'recipes' && (
+          <>
+            <RecipeTagsSection />
+            <RecipePillsSection />
+          </>
+        )}
         {tab === 'meals' && <MealSlotsSection />}
         {tab === 'reserve' && <ReserveLocationsSection />}
         {tab === 'ghost' && <GhostSection />}

@@ -617,7 +617,8 @@
 }
 .kitchen__cook-filter,
 .kitchen__soon-filter,
-.kitchen__neglect-filter {
+.kitchen__neglect-filter,
+.kitchen__pill {
   flex: 0 0 auto;
   cursor: pointer;
   white-space: nowrap;

@@ -63,6 +63,9 @@ export interface RecipeTagsData {
   // Per-tag colour overrides, keyed by lowercase tag name → "#rrggbb"
   // (migration 0037). A missing key = the default berry chip colour.
   colors: Record<string, string>
+  // The recipe-tab pill config (migration 0045): built-in pills (shown/hidden +
+  // order) plus operator-defined custom pills. See lib/recipePills.ts.
+  pills?: import('./recipePills').Pill[]
 }
 export const RECIPE_TAGS_KEY = ['recipeTags']
 

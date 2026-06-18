@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
 import { LOVES_KEY } from './queryKeys'
@@ -17,9 +18,12 @@ export function useLoves() {
   const loves = data?.loves ?? []
   // Member ids who loved a given recipe (the faces to show — no number).
   const loversOf = (recipeId: string) => loves.filter((l) => l.recipe_id === recipeId).map((l) => l.member_id)
+  // Recipe ids loved by ANYONE — the set the "Favoris" recipe pill filters by.
+  // Memoized on the raw data so it's a stable dependency for downstream filters.
+  const lovedSet = useMemo(() => new Set((data?.loves ?? []).map((l) => l.recipe_id)), [data])
   async function toggle(recipeId: string, mine: boolean) {
     await api('recipe-loves', { method: mine ? 'DELETE' : 'POST', body: { recipeId } }).catch(() => {})
     qc.invalidateQueries({ queryKey: LOVES_KEY })
   }
-  return { loversOf, toggle }
+  return { loversOf, toggle, lovedSet }
 }

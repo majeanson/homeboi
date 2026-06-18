@@ -2346,6 +2346,110 @@
   flex: 0 0 auto;
 }
 
+/* Réglages ▸ Recettes — recipe-tab PILLS config (migration 0045). An ordered list
+   of built-in + custom pills: drag to reorder, an eye to show/hide, and a custom
+   pill editor (label + colour + attribute rules). */
+.pill-admin__list {
+  margin-bottom: 0.8rem;
+}
+.pill-admin__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.3rem 0;
+}
+.pill-admin__row.is-hidden .pill-admin__chip,
+.pill-admin__row.is-hidden .pill-admin__rules {
+  opacity: 0.4;
+}
+.pill-admin__row.is-dragging {
+  opacity: 0.45;
+}
+.pill-admin__grip {
+  flex: 0 0 auto;
+}
+.pill-admin__chip {
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+.pill-admin__rules {
+  flex: 1 1 8rem;
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+.pill-admin__eye {
+  flex: 0 0 auto;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-faint);
+  border-radius: 999px;
+  min-width: 38px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.pill-admin__eye.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* Custom-pill editor card. */
+.pill-admin__editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.9rem;
+  border-radius: var(--radius-md);
+  margin-top: 0.6rem;
+}
+.pill-admin__rules-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.pill-admin__rule {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.pill-admin__rule .input {
+  flex: 1 1 7rem;
+  min-width: 0;
+}
+.pill-admin__op {
+  flex: 0 0 4.5rem;
+}
+.pill-admin__num {
+  flex: 0 0 5rem;
+}
+.pill-admin__unit {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.pill-admin__rule-x {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+}
+.pill-admin__addrule {
+  align-self: flex-start;
+}
+.pill-admin__editor-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 /* ========================================================================== */
 /* Réglages ▸ Guide — the in-app manual. Collapsible concept cards grouped into  */
 /* "sections" and "concepts", with a search filter. Calm, paper-toned, mobile-   */

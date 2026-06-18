@@ -32,6 +32,17 @@ import { SceneHead } from '../components/SceneHead'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
 import { OperatorSection } from '../components/operator/OperatorSection'
+import { DealCard } from '../components/DealCard'
+import { IngredientLine } from '../components/IngredientLine'
+import { ZoomableImg } from '../components/ZoomableImg'
+
+// A tiny inline placeholder image for the image-bearing specimens (DealCard,
+// ZoomableImg) — no network asset needed in the gallery.
+const sampleImg =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><rect width="160" height="120" fill="#e9ddc7"/><text x="80" y="66" font-family="sans-serif" font-size="15" text-anchor="middle" fill="#6b5b3e">exemple</text></svg>',
+  )
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /dev/kit — the component catalogue. A dev-only, unlinked page that renders the
@@ -121,6 +132,7 @@ export function DevKit() {
   const [text2, setText2] = useState('Macaroni chinois')
   const [text3, setText3] = useState('')
   const [comboVal, setComboVal] = useState('')
+  const [tagDemo, setTagDemo] = useState('')
   const [color, setColor] = useState(PALETTE[0])
   const [cards, setCards] = useState(['toilette', 'rince', 'pyjama'])
   const [recur, setRecur] = useState<RecurValue | null>({ freq: 'weekly', interval: 1, weekdays: [3] })
@@ -249,19 +261,42 @@ export function DevKit() {
             iconColor: 'var(--terracotta-deep)',
           },
         ]
+        // typeaheadOnly: suggestions appear ONLY while typing a match (no caret,
+        // no open-on-focus) — for fields whose values already show elsewhere
+        // (the recipe-tag chips), as a "did you mean this existing one?" guard.
+        const tagOpts: ComboOption<string>[] = ['végé', 'rapide', 'réconfort', 'sans gluten'].map((tg) => ({
+          id: tg,
+          label: tg,
+          data: tg,
+        }))
         return (
-          <Demo label="search + pick + free-text (grouped recipes / leftovers)">
-            <EntityCombobox
-              value={comboVal}
-              onChange={setComboVal}
-              options={opts}
-              onPick={(o) => setComboVal(o.label)}
-              onSubmit={() => setComboVal('')}
-              submitLabel={t.kitchen.setMeal}
-              placeholder={t.kitchen.plan}
-              noMatchLabel={t.combo.noMatch}
-            />
-          </Demo>
+          <>
+            <Demo label="search + pick + free-text (grouped recipes / leftovers)">
+              <EntityCombobox
+                value={comboVal}
+                onChange={setComboVal}
+                options={opts}
+                onPick={(o) => setComboVal(o.label)}
+                onSubmit={() => setComboVal('')}
+                submitLabel={t.kitchen.setMeal}
+                placeholder={t.kitchen.plan}
+                noMatchLabel={t.combo.noMatch}
+              />
+            </Demo>
+            <Demo label="typeaheadOnly (tag entry — suggests only while typing, e.g. « vé »)">
+              <EntityCombobox
+                value={tagDemo}
+                onChange={setTagDemo}
+                options={tagOpts}
+                onPick={(o) => setTagDemo(o.label)}
+                onSubmit={() => setTagDemo('')}
+                submitIcon="plus-bold"
+                placeholder={t.recipes.tagAdd}
+                ariaLabel={t.recipes.tagAdd}
+                typeaheadOnly
+              />
+            </Demo>
+          </>
         )
       },
     },
@@ -449,6 +484,36 @@ export function DevKit() {
         </>
       ),
     },
+    {
+      cat: 'Rangées & actions',
+      name: 'DealCard',
+      file: 'components/DealCard.tsx',
+      kw: 'flyer deal circulaire rabais price card aubaine',
+      render: () => {
+        const deal = {
+          id: 1,
+          flyerId: 1,
+          name: 'Fraises 1 lb',
+          price: 2.99,
+          wasPrice: 4.49,
+          unitPrice: 2.99,
+          unitLabel: '/ lb',
+          unitKind: 'mass' as const,
+          unitApprox: false,
+          merchant: 'IGA',
+          logo: null,
+          premium: false,
+          image: sampleImg,
+          validFrom: null,
+          validTo: null,
+        }
+        return (
+          <Demo label="flyer deal — best price, add-to-list + view-flyer actions">
+            <DealCard deal={deal} isBest onAddToList={() => {}} onViewFlyer={() => {}} />
+          </Demo>
+        )
+      },
+    },
 
     // ── Display ────────────────────────────────────────────────────────
     {
@@ -614,6 +679,36 @@ export function DevKit() {
           </Demo>
         )
       },
+    },
+    {
+      cat: 'Affichage',
+      name: 'IngredientLine',
+      file: 'components/IngredientLine.tsx',
+      kw: 'recette ingrédient mesure pills cuillère tasse measure tap-to-hear',
+      render: () => (
+        <>
+          <Demo label="measure pills (sm — parent recipe sheet; tap a pill to hear it)">
+            <IngredientLine line="2 cuillères à soupe de beurre fondu" />
+          </Demo>
+          <Demo label="lg + kid (Cook mode — bigger pills, no 🔊 glyph)">
+            <IngredientLine line="3/4 tasse de farine" size="lg" kid />
+          </Demo>
+          <Demo label="no measurement → plain text (additive, never a rewrite)">
+            <IngredientLine line="une pincée de sel" />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'ZoomableImg',
+      file: 'components/ZoomableImg.tsx',
+      kw: 'image photo zoom lightbox tap agrandir',
+      render: () => (
+        <Demo label="tap to lightbox (Esc / tap to close)">
+          <ZoomableImg src={sampleImg} alt="exemple" className="recipe-thumb" />
+        </Demo>
+      ),
     },
 
     // ── Feedback ───────────────────────────────────────────────────────

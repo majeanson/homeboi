@@ -1,0 +1,279 @@
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useT } from '../../i18n'
+import { api } from '../../lib/api'
+import { RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions } from '../../lib/recipes'
+import {
+  type Pill,
+  type CustomPill,
+  type Criterion,
+  type CriterionField,
+  type BuiltinKey,
+  DEFAULT_PILLS,
+  NUM_FIELDS,
+  isBuiltinPill,
+  isNumCriterion,
+  pillKey,
+} from '../../lib/recipePills'
+import { wash, tintInk, edge } from '../../lib/colors'
+import { useConfirm } from '../../lib/confirm'
+import { isGuest } from '../../lib/device'
+import { usePointerDnd, DragGhost } from '../../lib/dnd'
+import { Icon, InlineIcon } from '../Icon'
+import { ColorPicker } from '../ColorPicker'
+import { RowActions } from '../RowActions'
+
+// Réglages ▸ Recettes → the recipe-tab PILLS (migration 0045). One ordered list:
+// built-in pills (shown/hidden + reorder) plus operator-defined CUSTOM pills (a
+// label + colour + attribute rules). Drag the ⠿ grip to reorder; the eye toggles a
+// pill on the recipe tab; custom pills also rename / recolour / drop. A custom pill
+// is a calm one-tap filter — its rules (AND-ed) test recipe attributes (time,
+// ingredient count, servings, a tag, favourite, photo). Saved whole via setPills.
+const CRITERION_FIELDS: CriterionField[] = [...NUM_FIELDS, 'tag', 'favorite', 'photo']
+const MINUTE_FIELDS = new Set(['totalMin', 'prepMin', 'cookMin'])
+
+export function RecipePillsSection() {
+  const t = useT()
+  const qc = useQueryClient()
+  const confirm = useConfirm()
+  const ro = isGuest()
+  const tagsQ = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') })
+  // Tags an operator can target with a "tag" rule (saved presets + ones in use).
+  const tagList = tagOptions(tagsQ.data?.presets ?? [], (tagsQ.data?.used ?? []).map((u) => u.tag), t.recipes.tagPresets)
+
+  // Local working copy, seeded from the server and saved whole on each change.
+  const [local, setLocal] = useState<Pill[] | null>(null)
+  const list = local ?? tagsQ.data?.pills ?? DEFAULT_PILLS
+
+  const patch = useMutation({
+    mutationFn: (next: Pill[]) => api('recipe-tags', { method: 'PATCH', body: { setPills: next } }),
+    onSettled: () => qc.invalidateQueries({ queryKey: RECIPE_TAGS_KEY }),
+  })
+  const save = (next: Pill[]) => {
+    setLocal(next)
+    patch.mutate(next)
+  }
+
+  // Localized name for a built-in pill (mirrors the recipe-tab labels).
+  const BUILTIN_LABEL: Record<BuiltinKey, string> = {
+    cookable: t.recipes.cookable,
+    useSoon: t.recipes.useItUp,
+    fast: t.recipes.fast30,
+    neglected: t.recipes.neglected,
+    favorites: t.recipes.favorites,
+    recent: t.recipes.recentlyAdded,
+  }
+  const pillLabel = (p: Pill) => (isBuiltinPill(p) ? BUILTIN_LABEL[p.k] : p.label)
+
+  // --- reorder (drag the grip onto another row) ---
+  function move(from: number, to: number) {
+    if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return
+    const next = [...list]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    save(next)
+  }
+  const dnd = usePointerDnd({
+    onDrop: (from, to) => move(Number(from), Number(to)),
+    canDrop: (from, to) => from !== to,
+  })
+
+  const toggleHide = (i: number) => save(list.map((p, j) => (j === i ? ({ ...p, off: !p.off } as Pill) : p)))
+  const removeCustom = (i: number) => save(list.filter((_, j) => j !== i))
+
+  // --- custom pill editor (add / edit) ---
+  const [draft, setDraft] = useState<CustomPill | null>(null)
+  const startAdd = () => setDraft({ id: crypto.randomUUID(), label: '', rules: [{ field: 'totalMin', op: 'lte', n: 30 }] })
+  const startEdit = (p: CustomPill) => setDraft({ ...p, rules: p.rules.map((r) => ({ ...r })) })
+  const draftValid = !!draft && draft.label.trim().length > 0 && draft.rules.length > 0
+  function commitDraft() {
+    if (!draft || !draftValid) return
+    const clean: CustomPill = { ...draft, label: draft.label.trim() }
+    const exists = list.some((p) => !isBuiltinPill(p) && p.id === clean.id)
+    save(exists ? list.map((p) => (!isBuiltinPill(p) && p.id === clean.id ? clean : p)) : [...list, clean])
+    setDraft(null)
+  }
+
+  // Build a criterion of the right shape when the field changes.
+  const blankFor = (field: CriterionField): Criterion =>
+    field === 'tag'
+      ? { field: 'tag', tag: tagList[0] ?? '' }
+      : field === 'favorite' || field === 'photo'
+        ? { field }
+        : { field, op: 'lte', n: MINUTE_FIELDS.has(field) ? 30 : 5 }
+  const setRule = (i: number, c: Criterion) => setDraft((d) => (d ? { ...d, rules: d.rules.map((r, j) => (j === i ? c : r)) } : d))
+  const addRule = () => setDraft((d) => (d ? { ...d, rules: [...d.rules, blankFor('totalMin')] } : d))
+  const removeRule = (i: number) => setDraft((d) => (d ? { ...d, rules: d.rules.filter((_, j) => j !== i) } : d))
+
+  const fieldLabel = (f: string) => t.operator.pillFieldName(f)
+  const ruleText = (c: Criterion): string => {
+    if (c.field === 'tag') return `${fieldLabel('tag')}: ${c.tag}`
+    if (c.field === 'favorite' || c.field === 'photo') return fieldLabel(c.field)
+    const unit = MINUTE_FIELDS.has(c.field) ? ' min' : ''
+    return `${fieldLabel(c.field)} ${c.op === 'gte' ? '≥' : '≤'} ${c.n}${unit}`
+  }
+
+  return (
+    <section className="surface operator__section">
+      <h2>{t.operator.pillsTitle}</h2>
+      <p className="lead">{t.operator.pillsHint}</p>
+
+      <ul className="operator__list pill-admin__list">
+        {list.map((p, i) => {
+          const custom = !isBuiltinPill(p)
+          const hidden = !!p.off
+          const hex = custom ? p.color : undefined
+          const chipStyle = hex ? { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) } : undefined
+          return (
+            <li
+              key={pillKey(p)}
+              data-dnd-zone={String(i)}
+              className={
+                'pill-admin__row' +
+                (hidden ? ' is-hidden' : '') +
+                (dnd.activeId === String(i) ? ' is-dragging' : '') +
+                (dnd.over === String(i) ? ' dnd-over' : '')
+              }
+            >
+              {!ro && (
+                <span
+                  className="pill-admin__grip dnd-grip"
+                  data-dnd-grip=""
+                  role="button"
+                  aria-label={t.operator.dragHint}
+                  title={t.operator.dragHint}
+                  onPointerDown={(e) => dnd.start(String(i), pillLabel(p), e)}
+                >
+                  ⠿
+                </span>
+              )}
+              <span className="chip pill-admin__chip" style={chipStyle}>
+                {pillLabel(p)}
+              </span>
+              {custom && <span className="pill-admin__rules mono">{p.rules.map(ruleText).join(' · ')}</span>}
+              {!ro && (
+                <button
+                  type="button"
+                  className={'pill-admin__eye' + (hidden ? '' : ' is-on')}
+                  onClick={() => toggleHide(i)}
+                  aria-pressed={!hidden}
+                  aria-label={hidden ? t.operator.pillShow : t.operator.pillHide}
+                  title={hidden ? t.operator.pillShow : t.operator.pillHide}
+                >
+                  <Icon name={hidden ? 'x-bold' : 'check-bold'} size={16} />
+                </button>
+              )}
+              {!ro && custom && (
+                <RowActions
+                  editLabel={t.operator.pillEdit}
+                  deleteLabel={t.operator.pillRemove}
+                  onEdit={() => startEdit(p)}
+                  onDelete={async () => {
+                    if (await confirm({ message: t.operator.pillRemoveConfirm(p.label), confirmLabel: t.operator.pillRemove, tone: 'danger' }))
+                      removeCustom(i)
+                  }}
+                />
+              )}
+            </li>
+          )
+        })}
+      </ul>
+
+      {!ro && !draft && (
+        <button type="button" className="btn" onClick={startAdd}>
+          <InlineIcon name="plus-bold" size={14} /> {t.operator.pillAdd}
+        </button>
+      )}
+
+      {!ro && draft && (
+        <div className="pill-admin__editor surface">
+          <input
+            className="input"
+            value={draft.label}
+            onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+            placeholder={t.operator.pillNamePlaceholder}
+            aria-label={t.operator.pillNamePlaceholder}
+            maxLength={24}
+            autoFocus
+          />
+          <ColorPicker value={draft.color ?? ''} onChange={(c) => setDraft({ ...draft, color: c })} label={t.operator.pillColor} />
+
+          <div className="pill-admin__rules-edit">
+            {draft.rules.map((c, i) => (
+              <div key={i} className="pill-admin__rule">
+                <select
+                  className="input"
+                  value={c.field}
+                  onChange={(e) => setRule(i, blankFor(e.target.value as CriterionField))}
+                  aria-label={t.operator.pillRuleField}
+                >
+                  {CRITERION_FIELDS.map((f) => (
+                    <option key={f} value={f}>
+                      {fieldLabel(f)}
+                    </option>
+                  ))}
+                </select>
+                {isNumCriterion(c) ? (
+                  <>
+                    <select
+                      className="input pill-admin__op"
+                      value={c.op}
+                      onChange={(e) => setRule(i, { ...c, op: e.target.value === 'gte' ? 'gte' : 'lte' })}
+                      aria-label={t.operator.pillRuleOp}
+                    >
+                      <option value="lte">≤</option>
+                      <option value="gte">≥</option>
+                    </select>
+                    <input
+                      className="input pill-admin__num"
+                      type="number"
+                      min={0}
+                      value={c.n}
+                      onChange={(e) => setRule(i, { ...c, n: Math.max(0, Math.round(Number(e.target.value) || 0)) })}
+                      aria-label={t.operator.pillRuleValue}
+                    />
+                    {MINUTE_FIELDS.has(c.field) && <span className="pill-admin__unit mono">min</span>}
+                  </>
+                ) : c.field === 'tag' ? (
+                  <select
+                    className="input"
+                    value={c.tag}
+                    onChange={(e) => setRule(i, { field: 'tag', tag: e.target.value })}
+                    aria-label={fieldLabel('tag')}
+                  >
+                    {tagList.map((tg) => (
+                      <option key={tg} value={tg}>
+                        {tg}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+                <button
+                  type="button"
+                  className="pill-admin__rule-x"
+                  onClick={() => removeRule(i)}
+                  aria-label={t.operator.pillRuleRemove}
+                >
+                  <InlineIcon name="x-bold" size={12} />
+                </button>
+              </div>
+            ))}
+            <button type="button" className="btn btn--ghost mono pill-admin__addrule" onClick={addRule}>
+              <InlineIcon name="plus-bold" size={12} /> {t.operator.pillRuleAdd}
+            </button>
+          </div>
+
+          <div className="pill-admin__editor-actions">
+            <button type="button" className="btn" disabled={!draftValid} onClick={commitDraft}>
+              {t.operator.pillSave}
+            </button>
+            <button type="button" className="btn btn--ghost mono" onClick={() => setDraft(null)}>
+              {t.operator.pillCancel}
+            </button>
+          </div>
+        </div>
+      )}
+      <DragGhost ghost={dnd.ghost} />
+    </section>
+  )
+}

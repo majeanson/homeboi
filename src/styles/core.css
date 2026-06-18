@@ -912,6 +912,18 @@ textarea.input {
 .kitchen__head h2 {
   white-space: nowrap;
 }
+/* The sub-tab nav + its contextual "?" help toggle on one row; the segmented
+   control flexes to fill, the round toggle sits beside it (matches the board). */
+.subtabs-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 1.25rem;
+}
+.subtabs-row .subtabs {
+  flex: 1;
+  margin: 0;
+}
 /* In-page section switch (Repas · Garde-manger · Recettes): one job at a time so
    the kitchen isn't a five-section scroll. Mirrors the board's segmented control. */
 .subtabs {

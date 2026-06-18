@@ -89,8 +89,12 @@ now just that helper) is still shared with the toddler `KidCollections` flow. Th
 (`DayEditor`, `MealRows`, `PantryTab`, `ReserveSection`, …), and the `operator/*`
 section bodies (incl. `operator/guest.tsx` — the babysitter-access issuer, #19;
 `operator/ambient.tsx` — the Réglages ▸ Affichage ▸ Mode veille settings, `lib/ambient.ts`;
-and `operator/idleDebug.tsx` — the Réglages ▸ Debug idle tester: shrink the idle
-window to seconds or force the screensaver/warn/drift, via `lib/idleDebug.ts`).
+`operator/idleDebug.tsx` — the Réglages ▸ Debug idle tester: shrink the idle
+window to seconds or force the screensaver/warn/drift, via `lib/idleDebug.ts`; and
+`operator/recipePills.tsx` — the Réglages ▸ Recettes recipe-tab PILLS editor:
+drag-reorder + show/hide the built-in filter pills and build CUSTOM pills (label +
+colour + attribute rules over time / ingredients / servings / tag / favourite, see
+`lib/recipePills.ts`, migration 0045), consumed by `RecipesTab`).
 `AmbientScreen` (the full-screen idle screensaver — clock/date/photo-frame, backlog #3)
 mounts in `HubLayout` and is driven by its idle timer.
 

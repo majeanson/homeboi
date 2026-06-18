@@ -81,6 +81,78 @@ const writeColors = (env: { DB: D1Database }, householdId: string, colors: Recor
     householdId,
   )
 
+// --- recipe-tab pill config (migration 0045) ---------------------------------
+// Mirror of src/lib/recipePills.ts, validated server-side. Built-ins are gated to
+// a known key list; custom pills need a label + ≥1 valid rule. Shape is gated, not
+// trusted — a malformed pill / criterion is dropped on read AND on write.
+const PILL_BUILTINS = ['cookable', 'useSoon', 'fast', 'neglected', 'favorites', 'recent']
+const NUM_FIELDS = ['totalMin', 'prepMin', 'cookMin', 'ingredients', 'servings']
+
+function cleanCriterion(c: unknown): Record<string, unknown> | null {
+  if (!c || typeof c !== 'object') return null
+  const o = c as Record<string, unknown>
+  if (o.field === 'tag') {
+    const tag = cleanTag(o.tag)
+    return tag ? { field: 'tag', tag } : null
+  }
+  if (o.field === 'favorite' || o.field === 'photo') return { field: o.field }
+  if (isStr(o.field) && NUM_FIELDS.includes(o.field)) {
+    const n = Number(o.n)
+    if (!Number.isFinite(n) || n < 0 || n > 100000) return null
+    return { field: o.field, op: o.op === 'gte' ? 'gte' : 'lte', n: Math.round(n) }
+  }
+  return null
+}
+
+function cleanPills(raw: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(raw)) return []
+  const out: Record<string, unknown>[] = []
+  const seenK = new Set<string>()
+  const seenId = new Set<string>()
+  for (const p of raw) {
+    if (!p || typeof p !== 'object') continue
+    const o = p as Record<string, unknown>
+    if (isStr(o.k) && PILL_BUILTINS.includes(o.k)) {
+      if (seenK.has(o.k)) continue
+      seenK.add(o.k)
+      out.push(o.off ? { k: o.k, off: true } : { k: o.k })
+    } else if (isStr(o.id) && Array.isArray(o.rules)) {
+      const id = o.id.slice(0, 40)
+      if (!id || seenId.has(id)) continue
+      const label = isStr(o.label) ? o.label.trim().slice(0, 24) : ''
+      const rules = o.rules.map(cleanCriterion).filter((c): c is Record<string, unknown> => !!c).slice(0, 6)
+      if (!label || !rules.length) continue
+      seenId.add(id)
+      const color = cleanColor(o.color)
+      out.push({ id, label, rules, ...(color ? { color } : {}), ...(o.off ? { off: true } : {}) })
+    }
+    if (out.length >= 30) break
+  }
+  return out
+}
+
+// Ensure every built-in is present (append any missing, shown, at the end) — so a
+// new built-in pill surfaces for households whose saved config predates it.
+function withAllBuiltins(pills: Record<string, unknown>[]): Record<string, unknown>[] {
+  const have = new Set(pills.filter((p) => isStr(p.k)).map((p) => p.k as string))
+  return [...pills, ...PILL_BUILTINS.filter((k) => !have.has(k)).map((k) => ({ k }))]
+}
+
+async function readPills(env: { DB: D1Database }, householdId: string): Promise<Record<string, unknown>[]> {
+  const row = await env.DB.prepare('SELECT recipe_pills_json FROM households WHERE id = ?')
+    .bind(householdId)
+    .first<{ recipe_pills_json: string | null }>()
+  let raw: unknown
+  try {
+    raw = JSON.parse(row?.recipe_pills_json ?? 'null')
+  } catch {
+    raw = null
+  }
+  const cleaned = cleanPills(raw)
+  // null / empty / all-junk → the default set (every built-in, shown, in order).
+  return withAllBuiltins(cleaned.length ? cleaned : PILL_BUILTINS.map((k) => ({ k })))
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const presets = await readPresets(ctx.env, actor.householdId)
   const { results } = await ctx.env.DB.prepare('SELECT tags_json FROM recipes WHERE household_id = ?')
@@ -98,7 +170,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   const used = [...counts.values()].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
   const colors = await readColors(ctx.env, actor.householdId)
-  return ok({ presets, used, colors })
+  const pills = await readPills(ctx.env, actor.householdId)
+  return ok({ presets, used, colors, pills })
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
@@ -107,8 +180,19 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     rename?: { from?: unknown; to?: unknown }
     remove?: unknown
     setColor?: { tag?: unknown; color?: unknown }
+    setPills?: unknown
   }>(ctx.request)
   if (!body) return badRequest('Corps requis.')
+
+  // Replace the whole pill config (order + shown/hidden + custom pills). Cleaned
+  // server-side; an empty/all-junk array resets to the built-in default set.
+  if (body.setPills !== undefined) {
+    const pills = cleanPills(body.setPills)
+    await ctx.env.DB.prepare('UPDATE households SET recipe_pills_json = ?, updated_at = ? WHERE id = ?')
+      .bind(JSON.stringify(pills), nowSec(), actor.householdId)
+      .run()
+    return ok({ pills: withAllBuiltins(pills.length ? pills : PILL_BUILTINS.map((k) => ({ k }))) })
+  }
 
   if (Array.isArray(body.presets)) {
     await ctx.env.DB.prepare('UPDATE households SET recipe_tags_json = ?, updated_at = ? WHERE id = ?')

@@ -32,6 +32,8 @@ import { SIDE_SLOTS, SLOT_ICON_NAME } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { tintInk, faint, hairline } from '../lib/colors'
 import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
+import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
+import { KITCHEN_TAB_HELP } from '../lib/kitchenTabHelp'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
 // browse the book — one sub-tab at a time. The page owns the queries (one unauth
@@ -88,6 +90,11 @@ export function Kitchen() {
   // Held in the URL (?tab=) so it survives the return from a full-screen add/edit
   // scene — add a recipe from Recettes and you come back to Recettes. See tabParam.
   const [kitTab, setKitTab] = useTabParam('tab', 'meals', ['meals', 'pantry', 'recipes'] as const)
+  // Contextual "?" help mode for the sub-tab nav (shared hook): arm it, then tapping
+  // a tab explains what that section does in place instead of switching to it.
+  const tabHelpLabel = (k: string) =>
+    ({ meals: t.kitchen.tabMeals, pantry: t.kitchen.tabPantry, recipes: t.kitchen.tabRecipes })[k] ?? k
+  const tabHelp = useHelpMode(KITCHEN_TAB_HELP, tabHelpLabel)
   // The recipe a planned meal points at (exact recipe_id link first, else a loose
   // title match) — shared with the day editor via useRecipeForMeal.
   const recipeForMeal = useRecipeForMeal(recipes)
@@ -292,24 +299,29 @@ export function Kitchen() {
 
         <SectionIntro card="kitchen" />
 
-        <div className="subtabs" role="tablist" aria-label={t.kitchen.title}>
-          {([
-            ['meals', t.kitchen.tabMeals],
-            ['pantry', t.kitchen.tabPantry],
-            ['recipes', t.kitchen.tabRecipes],
-          ] as const).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={kitTab === key}
-              className={'subtabs__opt' + (kitTab === key ? ' is-on' : '')}
-              onClick={() => setKitTab(key)}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="subtabs-row">
+          <div className="subtabs" role="tablist" aria-label={t.kitchen.title}>
+            {([
+              ['meals', t.kitchen.tabMeals],
+              ['pantry', t.kitchen.tabPantry],
+              ['recipes', t.kitchen.tabRecipes],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={kitTab === key}
+                className={'subtabs__opt' + (kitTab === key ? ' is-on' : '')}
+                onClick={tabHelp.pick(key, () => setKitTab(key))}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {tabHelp.available && <HelpToggle active={tabHelp.active} onToggle={tabHelp.toggle} />}
         </div>
+        {tabHelp.hint && <HelpHint />}
+        {tabHelp.bubble}
 
         {kitTab === 'meals' && (
         <section>
