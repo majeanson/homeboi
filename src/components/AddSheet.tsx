@@ -18,7 +18,8 @@ import { recipeImg } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
-import { BOARD_KEY, TODOS_KEY, ROUTINES_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY } from '../lib/queryKeys'
+import { type TemplatesData } from '../lib/todos'
 import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
 import { type Deal } from '../lib/deals'
@@ -164,6 +165,15 @@ export function AddSheet({
   const [todoText, setTodoText] = useState('')
   const todoVoice = useVoiceInput(setTodoText)
   const [todoToday, setTodoToday] = useState(false)
+  // Quick-add can also drop in a whole departure CHECKLIST (a template), not just a
+  // single line — the same instantiate the board/day chips use, honouring the scope
+  // toggle. Fetched only while the todo form is open.
+  const { data: todoTplData } = useQuery({
+    queryKey: TODO_TEMPLATES_KEY,
+    queryFn: () => api<TemplatesData>('todo-templates'),
+    enabled: open && shown.includes('todo'),
+  })
+  const todoTemplates = todoTplData?.templates ?? []
 
   // — pantry (kitchen) — speak-to-fill, same single-shot mic as capture (the
   // sheet adds one then closes; the page's PantryTab is where you rattle off many).
@@ -345,6 +355,26 @@ export function AddSheet({
         affectedKeys: [TODOS_KEY, BOARD_KEY],
       })
       setTodoText('')
+      setTodoToday(false)
+      close()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Instantiate a whole checklist from the quick-add sheet — a composed list lands
+  // as one sectioned batch (see functions/api/todos.ts). Honours the scope toggle.
+  async function quickAddTemplate(templateId: string) {
+    if (busy) return
+    setBusy(true)
+    try {
+      await write('todos', {
+        method: 'POST',
+        body: { templateId, day: todoToday ? todayLocalDay() : null },
+        affectedKeys: [TODOS_KEY, BOARD_KEY],
+      })
       setTodoToday(false)
       close()
     } catch (e) {
@@ -676,19 +706,10 @@ export function AddSheet({
         )}
 
         {mode === 'todo' && (
-          <form onSubmit={submitTodo}>
-            <div className="sheet__field">
-              <Icon name="check-bold" size={20} color="var(--ink-faint)" />
-              <input
-                value={todoText}
-                onChange={(e) => setTodoText(e.target.value)}
-                placeholder={todoVoice.listening ? t.capture.listening : t.todos.addPlaceholder}
-                aria-label={t.todos.title}
-              />
-              <VoiceButton voice={todoVoice} label={t.capture.voice} />
-            </div>
-            {/* Standing (default) vs just today — two scopes, calm and explicit. */}
-            <div className="addsheet__scope" style={{ display: 'flex', gap: '.5rem' }}>
+          <div className="addsheet__todo">
+            {/* Standing (default) vs just today — applies to BOTH the typed line and
+                a checklist dropped in below. */}
+            <div className="addsheet__scope" role="group" aria-label={t.todos.title}>
               <button
                 type="button"
                 className={'btn btn--sm' + (!todoToday ? ' btn--primary' : '')}
@@ -706,11 +727,42 @@ export function AddSheet({
                 {t.todos.scopeToday}
               </button>
             </div>
-            <button type="submit" className="btn btn--primary" disabled={!todoText.trim() || busy}>
-              <Icon name="plus-bold" size={20} />
-              {t.capture.add}
-            </button>
-          </form>
+            <form onSubmit={submitTodo}>
+              <div className="sheet__field">
+                <Icon name="check-bold" size={20} color="var(--ink-faint)" />
+                <input
+                  value={todoText}
+                  onChange={(e) => setTodoText(e.target.value)}
+                  placeholder={todoVoice.listening ? t.capture.listening : t.todos.addPlaceholder}
+                  aria-label={t.todos.title}
+                />
+                <VoiceButton voice={todoVoice} label={t.capture.voice} />
+              </div>
+              <button type="submit" className="btn btn--primary" disabled={!todoText.trim() || busy}>
+                <Icon name="plus-bold" size={20} />
+                {t.capture.add}
+              </button>
+            </form>
+            {/* Or drop a whole checklist in — a composed list lands as sections. */}
+            {todoTemplates.length > 0 && (
+              <div className="addsheet__todo-templates">
+                <p className="sheet__group-label mono">{t.todos.templatesLabel}</p>
+                <div className="addsheet__todo-chips">
+                  {todoTemplates.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      className="chip"
+                      disabled={busy}
+                      onClick={() => quickAddTemplate(tpl.id)}
+                    >
+                      <Icon name="plus-bold" size={13} /> {tpl.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {mode === 'pantry' && (
