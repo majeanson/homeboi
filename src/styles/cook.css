@@ -75,7 +75,7 @@
   overscroll-behavior: contain;
 }
 .cook__card {
-  width: min(640px, 100%);
+  width: min(900px, 100%);
   text-align: center;
 }
 /* Parent / full-recipe view: a single scrolling page, so anchor to the top and
@@ -84,7 +84,7 @@
   align-items: flex-start;
 }
 .cook__full {
-  width: min(640px, 100%);
+  width: min(1080px, 100%);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -99,13 +99,16 @@
   margin: 0 0 0.7rem;
   color: var(--terracotta-deep);
 }
+/* Ingredients flow into responsive columns so a long list fills a wide tablet
+   instead of a lonely narrow strip. Auto-fill → 1 column on a phone, more as the
+   screen widens. */
 .cook__full-ings {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.45rem 0.8rem;
 }
 .cook__full-ings li {
   font-size: calc(1.1rem * var(--ds, 1));
@@ -117,9 +120,12 @@
 .cook__full-ings .cook__ing-text {
   display: inline-block;
 }
+/* The method stays a single readable column (capped) even in the wide container —
+   long lines hurt step-following — while the ingredients above use the full width. */
 .cook__full-steps {
   margin: 0;
   padding-left: 1.6rem;
+  max-width: 62rem;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -154,14 +160,18 @@
   font-size: 1.6rem;
   margin: 0 0 1rem;
 }
+/* Gather list (the stepper's first page + the split ings pane): responsive columns
+   so a long shopping-gather fills the tablet width; auto-fill collapses to one
+   column in the narrow split pane / on a phone. */
 .cook__ings {
   list-style: none;
   margin: 0 auto;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  max-width: 28rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 0.6rem 1rem;
+  width: 100%;
+  max-width: 100%;
   text-align: left;
 }
 .cook__ings li {
@@ -245,7 +255,7 @@
   list-style: none;
   margin: 0 auto;
   padding: 0;
-  max-width: 32rem;
+  max-width: 46rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -269,13 +279,13 @@
   list-style: none;
   margin: 1.1rem auto 0;
   padding: 0.7rem 0.95rem;
-  max-width: 28rem;
+  max-width: 46rem;
   background: var(--card);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.3rem 0.9rem;
   text-align: left;
   font-size: calc(1.05rem * var(--ds, 1));
   color: var(--ink);
@@ -744,6 +754,7 @@
 /* The gather list's section header row — a label, nothing to tick. The li
    selector below out-specifies .cook__ings li's card styling. */
 .cook__ings li.cook__ing-sec {
+  grid-column: 1 / -1; /* a "## Section" header spans the full ingredient grid */
   background: none;
   box-shadow: none;
   padding: 0.4rem 0 0;
