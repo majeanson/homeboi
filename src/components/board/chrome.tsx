@@ -6,7 +6,19 @@ import { type Dict, type Member } from './types'
 
 // A tiny segmented control in the board header: bento (grid) · next (focus) ·
 // lanes (per-person). Calm and small; the choice is remembered per device.
-export function BoardViewToggle({ view, onChange, t }: { view: BoardView; onChange: (v: BoardView) => void; t: Dict }) {
+export function BoardViewToggle({
+  view,
+  onChange,
+  t,
+  pick,
+}: {
+  view: BoardView
+  onChange: (v: BoardView) => void
+  t: Dict
+  // Optional help-mode wrapper (lib/helpMode): when armed, a tap explains the view
+  // instead of switching to it. Returns the onClick to use. Omit for normal use.
+  pick?: (key: string, run: () => void) => () => void
+}) {
   const opts: { v: BoardView; icon: IconName; label: string }[] = [
     { v: 'bento', icon: 'calendar-blank-bold', label: t.boardView.bento },
     { v: 'next', icon: 'clock-bold', label: t.boardView.next },
@@ -23,7 +35,7 @@ export function BoardViewToggle({ view, onChange, t }: { view: BoardView; onChan
           aria-pressed={view === o.v}
           aria-label={o.label}
           title={o.label}
-          onClick={() => onChange(o.v)}
+          onClick={pick ? pick('view-' + o.v, () => onChange(o.v)) : () => onChange(o.v)}
         >
           <Icon name={o.icon} size={18} />
           <span className="boardview__label">{o.label}</span>

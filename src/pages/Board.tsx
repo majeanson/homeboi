@@ -43,6 +43,8 @@ import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from 
 // src/components/board/*.
 import { BOARD_KEY } from '../lib/queryKeys'
 import { useUndoToast } from '../lib/toast'
+import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
+import { BOARD_HELP } from '../lib/boardHelp'
 
 // Keep the greeting on one line beside the help dot + section icon: a long
 // display name collapses to its initials (split on spaces/hyphens, e.g.
@@ -65,6 +67,9 @@ export function Board() {
   const speak = useSpeak()
   // The board layout for this device (bento | next | lanes), remembered locally.
   const [view, setView] = useState<BoardView>(() => readBoardView())
+  // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
+  // learn what it shows instead of switching. Label = the view's own name.
+  const help = useHelpMode(BOARD_HELP, (k) => t.boardView[k.replace('view-', '') as 'bento' | 'next' | 'lanes' | 'month'] ?? k)
   // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
   // out of the rendered board at once so the live poll can't resurrect them before
   // the write commits — same guard as Liste's pendingClear. Tapping Annuler means
@@ -514,8 +519,11 @@ export function Board() {
             )}
           </button>
         )}
-        <BoardViewToggle view={view} onChange={changeView} t={t} />
+        <BoardViewToggle view={view} onChange={changeView} t={t} pick={help.pick} />
+        {help.available && <HelpToggle active={help.active} onToggle={help.toggle} />}
       </div>
+      {help.hint && <HelpHint />}
+      {help.bubble}
 
       <SectionIntro card="board" />
 
