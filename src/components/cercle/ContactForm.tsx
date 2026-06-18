@@ -11,6 +11,7 @@ import { CERCLE_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { type Contact, type ContactLink, type Member, buildPeople, personKey } from '../../lib/cercle'
 import { Avatar } from '../Avatar'
 import { Icon } from '../Icon'
+import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 
 // Add / edit one person in « Le cercle ». Plain labelled fields (a multi-field
 // form, not a one-line add row, so EditField doesn't fit) styled by cercle.css.
@@ -52,6 +53,7 @@ export function ContactForm({
   const [tags, setTags] = useState<string[]>(value?.tags ?? [])
   const [tagDraft, setTagDraft] = useState('')
   const [memberId, setMemberId] = useState(value?.memberId ?? '')
+  const [memberText, setMemberText] = useState(() => members.find((m) => m.id === value?.memberId)?.displayName ?? '')
   const [photoKey, setPhotoKey] = useState<string | null>(value?.photoKey ?? null)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -206,17 +208,21 @@ export function ContactForm({
       </div>
 
       {members.length > 0 && (
-        <label className="cf__field">
+        <div className="cf__field">
           <span className="cf__label">{t.cercle.relationWith}</span>
-          <select className="cf__input" value={memberId} onChange={(e) => setMemberId(e.target.value)}>
-            <option value="">—</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.displayName}
-              </option>
-            ))}
-          </select>
-        </label>
+          <EntityCombobox<Member>
+            value={memberText}
+            onChange={(v) => {
+              setMemberText(v)
+              if (!v.trim()) setMemberId('')
+            }}
+            options={members.map((m): ComboOption<Member> => ({ id: m.id, label: m.displayName, data: m, icon: 'users-three-bold' }))}
+            onPick={(opt) => { setMemberId(opt.id); setMemberText(opt.label) }}
+            placeholder="—"
+            submitIcon={null}
+            typeaheadOnly
+          />
+        </div>
       )}
 
       <label className="cf__field">
