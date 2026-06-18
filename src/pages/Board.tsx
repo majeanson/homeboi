@@ -47,9 +47,20 @@ import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from
 import { BOARD_KEY, TODOS_KEY } from '../lib/queryKeys'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData } from '../lib/todos'
-import { useUndoToast } from '../lib/toast'
+import { useUndoToast, useRecordUndo } from '../lib/toast'
+import { isGuest } from '../lib/device'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { BOARD_HELP } from '../lib/boardHelp'
+
+// Cut-off minute-of-day after which each meal slot is considered "past". Once the
+// clock passes this threshold the board strikes through that slot's row so it's
+// visually clear it's already been — breakfast at 10:30, lunch at 14:00, etc.
+const SLOT_PAST_MIN: Partial<Record<string, number>> = {
+  breakfast: 10 * 60 + 30,
+  lunch: 14 * 60,
+  snack: 17 * 60,
+  supper: 21 * 60,
+}
 
 // Keep the greeting on one line beside the help dot + section icon: a long
 // display name collapses to its initials (split on spaces/hyphens, e.g.
@@ -62,7 +73,9 @@ const greetName = (name: string) =>
 export function Board() {
   const t = useT()
   const undo = useUndoToast()
+  const recordUndo = useRecordUndo()
   const write = useWrite()
+  const ro = isGuest()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { surface } = useSurface()
@@ -389,6 +402,9 @@ export function Board() {
   // What the adapters (components/detail/adapters) need to resolve faces + copy.
   const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [] }
   const tomorrowDay = addLocalDays(todayDay, 1)
+  // Current minute-of-day used to strike through meals whose slot time has passed.
+  const nowMinOfDay = new Date().getHours() * 60 + new Date().getMinutes()
+  const isSlotPast = (slot: string) => nowMinOfDay > (SLOT_PAST_MIN[slot] ?? Infinity)
   const eventAct = (e: EventRow) => (
     <Act
       key={e.id}
@@ -404,6 +420,51 @@ export function Board() {
   )
   const cookLine = (m: MealRow) =>
     memberName(m.cook_member_id) ? `${memberName(m.cook_member_id)} ${t.board.cooks}` : undefined
+
+  // ── Detail-sheet contextual actions for meals + leftovers ──────────────────
+  // Save a meal as a pool leftover (compensating undo: delete the created entry).
+  const saveAsLeftover = async (id: string, title: string) => {
+    const res = await write<{ id?: string }>('meal-leftovers', {
+      method: 'POST',
+      body: { title, sourceMealId: id },
+      affectedKeys: [BOARD_KEY],
+    }).catch(() => null)
+    const leftoverId = res && !res.queued ? res.data?.id : undefined
+    recordUndo({
+      message: t.undo.leftoverAdded(title),
+      onUndo: async () => {
+        if (leftoverId)
+          await write('meal-leftovers', { method: 'DELETE', body: { id: leftoverId }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+      },
+    })
+  }
+  // Remove a planned meal (compensating undo: re-add it at same day+slot).
+  const removeMealFromPlan = async (id: string, title: string, slot: string, date: number) => {
+    await write('meals', { method: 'DELETE', body: { id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+    recordUndo({
+      message: t.undo.mealRemoved(title),
+      onUndo: () =>
+        write('meals', { method: 'POST', body: { date, slot, title }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+    })
+  }
+  // Plan a pool leftover as tonight's supper (compensating undo: delete the
+  // created meal + re-insert the pool row, exactly like Leftovers.tsx planLeftover).
+  const planLeftoverTonight = async (id: string, title: string) => {
+    const keys = [BOARD_KEY]
+    const res = await write<{ mealId?: string }>('meal-leftovers', {
+      method: 'POST',
+      body: { action: 'plan', id, date: todayDay, slot: 'supper' },
+      affectedKeys: keys,
+    }).catch(() => null)
+    const mealId = res && !res.queued ? res.data?.mealId : undefined
+    recordUndo({
+      message: t.undo.leftoverPlanned(title),
+      onUndo: async () => {
+        if (mealId) await write('meals', { method: 'DELETE', body: { id: mealId }, affectedKeys: keys }).catch(() => {})
+        await write('meal-leftovers', { method: 'POST', body: { title }, affectedKeys: keys }).catch(() => {})
+      },
+    })
+  }
 
   // A due recurring chore, surfaced on the board. Tapping marks it done (advances
   // the rotation server-side). DEFERRED: hide it now (pendingDone) and hold the
@@ -613,7 +674,13 @@ export function Board() {
                   and the souper colour (Réglages ▸ Repas). */}
               {tonightMeals.map((m) => {
                 const openSupper = () =>
-                  detail.open(buildMeal(m, detailCtx, { color: supperColor, slotLabel: t.board.tonight, daySec: todayDay }))
+                  detail.open(buildMeal(m, detailCtx, {
+                    color: supperColor,
+                    slotLabel: t.board.tonight,
+                    daySec: todayDay,
+                    onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+                    onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? 'supper', todayDay),
+                  }))
                 return (
                 <div
                   key={m.id}
@@ -661,7 +728,7 @@ export function Board() {
           )}
 
           <div className="board-grid">
-            <Section label={t.board.today} count={todayEvents.length + todayChores.length + otherMeals.length}>
+            <Section label={t.board.today}>
             {todayEvents.length === 0 && todayChores.length === 0 && otherMeals.length === 0 ? (
               <p className="feed-empty feed-empty--calm">{t.board.todayClear}</p>
             ) : (
@@ -680,8 +747,15 @@ export function Board() {
                     who={cookLine(m)}
                     color={mealPrefs.color(m.slot)}
                     mine={!!profileId && m.cook_member_id === profileId}
+                    past={isSlotPast(m.slot)}
                     onOpen={() =>
-                      detail.open(buildMeal(m, detailCtx, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot), daySec: todayDay }))
+                      detail.open(buildMeal(m, detailCtx, {
+                        color: mealPrefs.color(m.slot),
+                        slotLabel: slotLabel(m.slot),
+                        daySec: todayDay,
+                        onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+                        onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, todayDay),
+                      }))
                     }
                   />
                 ))}
@@ -695,7 +769,7 @@ export function Board() {
           {/* Restants à finir — undated leftovers, a calm "eat these first" nudge.
               Tap the check to mark one Fini (eaten). Hidden when the pool is empty. */}
           {leftovers.length > 0 && (
-            <Section label={t.kitchen.leftoversBoard} count={leftovers.length}>
+            <Section label={t.kitchen.leftoversBoard}>
               {leftovers.map((l) => (
                 <Act
                   key={l.id}
@@ -704,7 +778,10 @@ export function Board() {
                   when={t.kitchen.leftoversTag}
                   title={l.title}
                   onCheck={() => markLeftoverDone(l)}
-                  onOpen={() => detail.open(buildLeftover(l, detailCtx, { onDone: () => markLeftoverDone(l) }))}
+                  onOpen={() => detail.open(buildLeftover(l, detailCtx, {
+                    onDone: () => markLeftoverDone(l),
+                    onPlanTonight: ro ? undefined : () => planLeftoverTonight(l.id, l.title),
+                  }))}
                 />
               ))}
             </Section>
@@ -713,7 +790,7 @@ export function Board() {
           {/* One-off to-dos — captured "corvées" / standing tasks with no schedule.
               Tap to check off (drops away). Hidden when there are none. */}
           {todayTodos.length > 0 && (
-            <Section label={t.board.todos} count={todayTodos.length}>
+            <Section label={t.board.todos}>
               {todayTodos.map(todoAct)}
             </Section>
           )}
@@ -723,10 +800,7 @@ export function Board() {
               cochées", and one-tap departure checklists (templates). */}
           <TodoSection title={t.todos.title} members={data.members} />
 
-          <Section
-            label={t.board.tomorrow}
-            count={tomorrowEvents.length + (showTomorrowSupper ? 1 : 0) + otherTomorrowMeals.length}
-          >
+          <Section label={t.board.tomorrow}>
             {tomorrowWx && (
               <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
                 <span aria-hidden="true" style={{ display: 'inline-flex' }}>
@@ -753,7 +827,13 @@ export function Board() {
                 who={cookLine(data.tomorrowMeal)}
                 color={supperColor}
                 onOpen={() =>
-                  detail.open(buildMeal(data.tomorrowMeal!, detailCtx, { color: supperColor, slotLabel: slotLabel('supper'), daySec: tomorrowDay }))
+                  detail.open(buildMeal(data.tomorrowMeal!, detailCtx, {
+                    color: supperColor,
+                    slotLabel: slotLabel('supper'),
+                    daySec: tomorrowDay,
+                    onLeftover: ro ? undefined : () => saveAsLeftover(data.tomorrowMeal!.id, data.tomorrowMeal!.title),
+                    onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, 'supper', tomorrowDay),
+                  }))
                 }
               />
             )}
@@ -767,7 +847,13 @@ export function Board() {
                 who={cookLine(m)}
                 color={mealPrefs.color(m.slot)}
                 onOpen={() =>
-                  detail.open(buildMeal(m, detailCtx, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot), daySec: tomorrowDay }))
+                  detail.open(buildMeal(m, detailCtx, {
+                    color: mealPrefs.color(m.slot),
+                    slotLabel: slotLabel(m.slot),
+                    daySec: tomorrowDay,
+                    onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+                    onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, tomorrowDay),
+                  }))
                 }
               />
             ))}
@@ -778,7 +864,7 @@ export function Board() {
           </Section>
 
           {(upcomingEvents.length > 0 || upcomingChores.length > 0) && (
-            <Section label={t.board.upcoming} count={upcomingEvents.length + upcomingChores.length}>
+            <Section label={t.board.upcoming}>
               {upcomingEvents.map((e) => (
                 <Act
                   key={e.id}

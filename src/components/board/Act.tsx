@@ -33,6 +33,7 @@ export function Act({
   when,
   who,
   done,
+  past,
   onCheck,
   onActivate,
   onOpen,
@@ -49,6 +50,7 @@ export function Act({
   when?: string
   who?: string // a quiet sub-line under the title
   done?: boolean
+  past?: boolean // meal/event whose time has passed → struck-through, faded
   onCheck?: () => void
   onActivate?: () => void // a plain navigation row: makes it a <button>, shows a caret
   // Tap the row to open the shared entity-detail peek (lib/detail). With NO check
@@ -78,6 +80,7 @@ export function Act({
   const cls =
     'act' +
     (done ? ' done' : '') +
+    (past ? ' act--past' : '') +
     (mine ? ' act--mine' : '') +
     (activate ? ' act--nav' : '') +
     (split ? ' act--split' : '')
@@ -104,7 +107,7 @@ export function Act({
   const textEl = (
     <span className="act__text">
       {when && <span className="when">{when}</span>}
-      <span className="title" style={done ? undefined : { color: tintInk(spine) }}>
+      <span className="title" style={(done || past) ? undefined : { color: tintInk(spine) }}>
         {title}
       </span>
       {who && <span className="who">{who}</span>}

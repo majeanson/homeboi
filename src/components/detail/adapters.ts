@@ -75,17 +75,26 @@ export function buildChore(
 }
 
 // — An undated leftover to finish ("Restants à finir") —
-export function buildLeftover(l: { id: string; title: string }, ctx: DetailCtx, opts?: { onDone?: () => void }): DetailModel {
+export function buildLeftover(
+  l: { id: string; title: string },
+  ctx: DetailCtx,
+  opts?: { onDone?: () => void; onPlanTonight?: () => void },
+): DetailModel {
   const { t } = ctx
+  const actions: DetailAction[] = []
+  // "Planifier ce soir" as the primary CTA when available — more useful than
+  // just dismissing it as eaten; eaten stays as a secondary.
+  if (opts?.onPlanTonight)
+    actions.push({ key: 'plantonight', label: t.detail.planTonight, icon: 'calendar-blank-bold', primary: true, run: opts.onPlanTonight })
+  if (opts?.onDone)
+    actions.push({ key: 'eaten', label: t.detail.markEaten, icon: 'check-bold', primary: !opts.onPlanTonight, run: opts.onDone })
   return {
     kind: 'leftover',
     title: l.title,
     icon: 'arrow-counter-clockwise-bold',
     accent: CATS.meal.color,
     whoLabel: t.kitchen.leftoversTag,
-    actions: opts?.onDone
-      ? [{ key: 'eaten', label: t.detail.markEaten, icon: 'check-bold', primary: true, run: opts.onDone }]
-      : [],
+    actions,
   }
 }
 
@@ -102,11 +111,20 @@ interface MealLike {
 
 // — A planned meal. `recipe` (when the caller has it) lights up the photo, the
 // hearts and "Ouvrir la recette"; `color` is the slot colour (useMealPrefs);
-// `daySec` enables "Voir la journée" (the day planner). —
+// `daySec` enables "Voir la journée" (the day planner).
+// `onLeftover` adds "Créer des restants" (save a leftover entry for this meal).
+// `onRemove` adds a danger "Retirer du plan" (delete the meal from the plan). —
 export function buildMeal(
   m: MealLike,
   ctx: DetailCtx,
-  opts?: { recipe?: Recipe | null; color?: string; slotLabel?: string; daySec?: number },
+  opts?: {
+    recipe?: Recipe | null
+    color?: string
+    slotLabel?: string
+    daySec?: number
+    onLeftover?: () => void
+    onRemove?: () => void
+  },
 ): DetailModel {
   const { t, members } = ctx
   const slot = m.slot
@@ -116,6 +134,11 @@ export function buildMeal(
   if (m.recipe_id)
     actions.push({ key: 'recipe', label: t.detail.openRecipe, icon: 'book-open-bold', primary: true, href: `/kitchen/recipe/${m.recipe_id}` })
   if (opts?.daySec) actions.push({ key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${opts.daySec}` })
+  // "Créer des restants" — skip if the meal is already a replanned leftover
+  if (opts?.onLeftover && !m.is_leftover)
+    actions.push({ key: 'leftover', label: t.detail.makeLeftover, icon: 'arrow-counter-clockwise-bold', run: opts.onLeftover })
+  if (opts?.onRemove)
+    actions.push({ key: 'remove', label: t.detail.removeFromPlan, tone: 'danger', run: opts.onRemove })
   return {
     kind: 'meal',
     title: m.title,
@@ -157,14 +180,21 @@ export function buildDay(
   }
 }
 
-// — A recipe from the book —
-export function buildRecipe(r: Recipe, ctx: DetailCtx): DetailModel {
+// — A recipe from the book.
+// `onShop` adds "Ajouter à la liste" — pushes all ingredients to the grocery list. —
+export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => void }): DetailModel {
   const { t } = ctx
   const total = recipeTotalMin(r)
   const blocks: DetailBlock[] = []
   if (r.tags?.length) blocks.push({ kind: 'chips', chips: r.tags })
   const ing = preview(r.ingredients, 6)
   if (ing.length) blocks.push({ kind: 'list', label: t.detail.ingredients, items: ing })
+  const actions: DetailAction[] = [
+    { key: 'open', label: t.detail.openRecipe, icon: 'book-open-bold', primary: true, href: `/kitchen/recipe/${r.id}` },
+    { key: 'cook', label: t.kitchen.cook, icon: 'cooking-pot-bold', href: `/kitchen/recipe/${r.id}/cook` },
+  ]
+  if (opts?.onShop)
+    actions.push({ key: 'shop', label: t.detail.shopRecipe, icon: 'shopping-bag-bold', run: opts.onShop })
   return {
     kind: 'recipe',
     title: r.title,
@@ -174,10 +204,7 @@ export function buildRecipe(r: Recipe, ctx: DetailCtx): DetailModel {
     whoLabel: total ? `${total} min` : undefined,
     loveRecipeId: r.id,
     blocks,
-    actions: [
-      { key: 'open', label: t.detail.openRecipe, icon: 'book-open-bold', primary: true, href: `/kitchen/recipe/${r.id}` },
-      { key: 'cook', label: t.kitchen.cook, icon: 'cooking-pot-bold', href: `/kitchen/recipe/${r.id}/cook` },
-    ],
+    actions,
   }
 }
 

@@ -580,6 +580,23 @@
     inset 0 0 0 1px rgba(0, 0, 0, 0.05);
   object-fit: cover;
 }
+/* A drawing or shared photo deserves to be seen — span the full notes row and
+   show it at a readable size. object-fit: contain preserves the full canvas. */
+.note-card--visual {
+  flex: 1 1 100%;
+  max-width: none;
+  transform: none;
+}
+.note-card--visual:nth-child(even) {
+  transform: none;
+}
+.note-card--visual .note-card__draw {
+  max-width: 100%;
+  width: 100%;
+  max-height: 22rem;
+  object-fit: contain;
+  background: #fffdf7;
+}
 .note-card__media {
   display: flex;
   flex-direction: column;

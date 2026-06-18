@@ -415,6 +415,17 @@
 .act.done .tile {
   opacity: 0.55;
 }
+/* Past meal: the slot's time has passed today — struck through and faded. */
+.act--past .title {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}
+.act--past .tile {
+  opacity: 0.45;
+}
+.act--past .spine {
+  opacity: 0.35;
+}
 /* Photo tile: a recipe's image fills the washed tile (the cook-mode pickers). */
 .act .tile--photo {
   overflow: hidden;

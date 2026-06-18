@@ -6,6 +6,10 @@ import { useMealPrefs } from '../../lib/mealPrefs'
 import { useNextMeal } from '../../lib/nextMeal'
 import { formatTime } from '../../lib/format'
 import { SLOT_ICON_NAME, SLOT_TIME_ORDER, type MealSlot } from '../../lib/mealSlots'
+import { todayLocalDay } from '../../lib/localDay'
+import { useWrite } from '../../lib/write'
+import { useRecordUndo } from '../../lib/toast'
+import { isGuest } from '../../lib/device'
 import { type Lang } from '../../i18n'
 import { Icon, InlineIcon } from '../Icon'
 import { Act } from './Act'
@@ -13,6 +17,8 @@ import { useEntityDetail } from '../detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../detail/adapters'
 import { type Todo } from '../../lib/todos'
 import { colorOf, nameOf, type BoardData, type Dict, type EventRow } from './types'
+
+const BOARD_KEY = ['board']
 
 // "Now & Next" — a departure-board focus: the next thing up, big, with the one
 // after it small beneath. When today is exhausted it BRIDGES to tomorrow's first
@@ -33,6 +39,9 @@ export function NowNext({
 }) {
   const mealPrefs = useMealPrefs()
   const nav = useNavigate()
+  const write = useWrite()
+  const recordUndo = useRecordUndo()
+  const ro = isGuest()
   // Tap any item to peek its detail — the same sheet the bento board uses.
   const detail = useEntityDetail()
   const detailCtx: DetailCtx = { t, lang, members: data.members }
@@ -40,6 +49,27 @@ export function NowNext({
   // Only shown when there's a recipe to open (a free-text meal has nothing to
   // cook), so the action is never a dead end.
   const cook = useNextMeal()
+  const todaySec = todayLocalDay()
+  const saveAsLeftover = async (id: string, title: string) => {
+    const res = await write<{ id?: string }>('meal-leftovers', {
+      method: 'POST', body: { title, sourceMealId: id }, affectedKeys: [BOARD_KEY],
+    }).catch(() => null)
+    const leftoverId = res && !res.queued ? res.data?.id : undefined
+    recordUndo({
+      message: t.undo.leftoverAdded(title),
+      onUndo: async () => {
+        if (leftoverId) await write('meal-leftovers', { method: 'DELETE', body: { id: leftoverId }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+      },
+    })
+  }
+  const removeMealFromPlan = async (id: string, title: string, slot: string) => {
+    await write('meals', { method: 'DELETE', body: { id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+    recordUndo({
+      message: t.undo.mealRemoved(title),
+      onUndo: () =>
+        write('meals', { method: 'POST', body: { date: todaySec, slot, title }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+    })
+  }
   const supperColor = mealPrefs.color('supper')
   // The day's meal footer skips slots the household hid (Réglages ▸ Repas), and
   // groups by slot in time order so it reads as one colour chip per slot — the same
@@ -123,11 +153,21 @@ export function NowNext({
           style={{ '--tint': supperColor } as CSSProperties}
           role="button"
           tabIndex={0}
-          onClick={() => detail.open(buildMeal(data.tonight!, detailCtx, { color: supperColor, slotLabel: t.board.tonight }))}
+          onClick={() => detail.open(buildMeal(data.tonight!, detailCtx, {
+            color: supperColor,
+            slotLabel: t.board.tonight,
+            onLeftover: ro ? undefined : () => saveAsLeftover(data.tonight!.id, data.tonight!.title),
+            onRemove: ro ? undefined : () => removeMealFromPlan(data.tonight!.id, data.tonight!.title, 'supper'),
+          }))}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault()
-              detail.open(buildMeal(data.tonight!, detailCtx, { color: supperColor, slotLabel: t.board.tonight }))
+              detail.open(buildMeal(data.tonight!, detailCtx, {
+                color: supperColor,
+                slotLabel: t.board.tonight,
+                onLeftover: ro ? undefined : () => saveAsLeftover(data.tonight!.id, data.tonight!.title),
+                onRemove: ro ? undefined : () => removeMealFromPlan(data.tonight!.id, data.tonight!.title, 'supper'),
+              }))
             }
           }}
         >
@@ -293,9 +333,47 @@ export function Lanes({
   todos?: Todo[]
 }) {
   const mealPrefs = useMealPrefs()
+  const write = useWrite()
+  const recordUndo = useRecordUndo()
+  const ro = isGuest()
   // Tap any item to peek its detail — the same sheet the bento board uses.
   const detail = useEntityDetail()
   const detailCtx: DetailCtx = { t, lang, members: data.members }
+  const todaySec = todayLocalDay()
+  const saveAsLeftover = async (id: string, title: string) => {
+    const res = await write<{ id?: string }>('meal-leftovers', {
+      method: 'POST', body: { title, sourceMealId: id }, affectedKeys: [BOARD_KEY],
+    }).catch(() => null)
+    const leftoverId = res && !res.queued ? res.data?.id : undefined
+    recordUndo({
+      message: t.undo.leftoverAdded(title),
+      onUndo: async () => {
+        if (leftoverId) await write('meal-leftovers', { method: 'DELETE', body: { id: leftoverId }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+      },
+    })
+  }
+  const removeMealFromPlan = async (id: string, title: string, slot: string) => {
+    await write('meals', { method: 'DELETE', body: { id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+    recordUndo({
+      message: t.undo.mealRemoved(title),
+      onUndo: () =>
+        write('meals', { method: 'POST', body: { date: todaySec, slot, title }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+    })
+  }
+  const planLeftoverTonight = async (id: string, title: string) => {
+    const keys = [BOARD_KEY]
+    const res = await write<{ mealId?: string }>('meal-leftovers', {
+      method: 'POST', body: { action: 'plan', id, date: todaySec, slot: 'supper' }, affectedKeys: keys,
+    }).catch(() => null)
+    const mealId = res && !res.queued ? res.data?.mealId : undefined
+    recordUndo({
+      message: t.undo.leftoverPlanned(title),
+      onUndo: async () => {
+        if (mealId) await write('meals', { method: 'DELETE', body: { id: mealId }, affectedKeys: keys }).catch(() => {})
+        await write('meal-leftovers', { method: 'POST', body: { title }, affectedKeys: keys }).catch(() => {})
+      },
+    })
+  }
   const memberIds = new Set(data.members.map((m) => m.id))
   // Hidden meal slots (Réglages ▸ Repas) drop off the Maisonnée lane's table.
   const laneMeals = data.todayMeals.filter((m) => mealPrefs.isVisible(m.slot))
@@ -328,17 +406,24 @@ export function Lanes({
               title={`${slotLabel(m.slot)} · ${m.title}`}
               who={cookLine(m.cook_member_id)}
               color={mealPrefs.color(m.slot)}
-              onOpen={() => detail.open(buildMeal(m, detailCtx, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot) }))}
+              onOpen={() => detail.open(buildMeal(m, detailCtx, {
+                color: mealPrefs.color(m.slot),
+                slotLabel: slotLabel(m.slot),
+                onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+                onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot),
+              }))}
             />
           ))}
-          {/* Restants à finir — family-wide, read-only on the lanes glance. */}
+          {/* Restants à finir — the lanes glance now surfaces the plan-tonight action. */}
           {(data.leftovers ?? []).map((l) => (
             <Act
               key={l.id}
               cat="meal"
               icon="arrow-counter-clockwise-bold"
               title={`${t.kitchen.leftoversTag} · ${l.title}`}
-              onOpen={() => detail.open(buildLeftover(l, detailCtx))}
+              onOpen={() => detail.open(buildLeftover(l, detailCtx, {
+                onPlanTonight: ro ? undefined : () => planLeftoverTonight(l.id, l.title),
+              }))}
             />
           ))}
           {unassigned.map((e) => (

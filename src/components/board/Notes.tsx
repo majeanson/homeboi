@@ -92,8 +92,9 @@ export function Notes({
           // ✕ clears (parent only) so a tap on the memo never also dismisses it.
           if (media) {
             const play = media === 'audio' ? () => playClip(n.media_key!) : undefined
+            const isVisual = media === 'drawing' || media === 'image'
             return (
-              <div key={n.id} className="note-card note-card--media" style={css}>
+              <div key={n.id} className={`note-card note-card--media${isVisual ? ' note-card--visual' : ''}`} style={css}>
                 {play ? (
                   <button type="button" className="note-card__mediabtn" onClick={play} aria-label={t.notes.memo}>
                     {body}
