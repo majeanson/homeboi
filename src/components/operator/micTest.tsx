@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLang, useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { isIos } from '../../lib/useVoiceInput'
 import { Icon } from '../Icon'
 
@@ -93,7 +94,7 @@ function iosVersion(ua: string): string | null {
 
 type Phase = 'idle' | 'running' | 'done'
 
-export function MicSelfTest() {
+export function MicSelfTest({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang } = useLang()
   const [phase, setPhase] = useState<Phase>('idle')
@@ -403,8 +404,8 @@ export function MicSelfTest() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.micTestTitle}</h2>
-      <p className="mono">{t.operator.micTestHint}</p>
+      <HelpTitle help={help} k="micTest">{t.operator.micTestTitle}</HelpTitle>
+      {help?.bubbleFor('micTest')}
 
       {phase !== 'running' ? (
         <button type="button" className="btn btn--primary" onClick={run}>

@@ -470,8 +470,8 @@ export const FR = {
     stepPhotoAdd: 'Ajouter une photo',
     stepPhotoChange: 'Changer la photo',
     stepPhotoRemove: 'Retirer la photo',
-    stepPhotoOff: ‘Photos d’étape indisponibles ici’,
-    shareRecipe: ‘Partager’,
+    stepPhotoOff: 'Photos d’étape indisponibles ici',
+    shareRecipe: 'Partager',
   },
   kid: {
     title: 'Ma routine',
@@ -1240,6 +1240,7 @@ export const EN: typeof FR = {
     save: 'Save',
     edit: 'Edit',
     openFlyer: 'See deals',
+    share: 'Share list',
   },
   notes: {
     title: 'Notes',

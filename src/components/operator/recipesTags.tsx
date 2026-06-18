@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { RECIPES_KEY, RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions, tagColor } from '../../lib/recipes'
 import { wash, tintInk, edge } from '../../lib/colors'
@@ -23,7 +24,7 @@ const chipTint = (hex: string | undefined): React.CSSProperties | undefined =>
 //     once, so cleaning up "Végé / végé / vege" never means opening each card.
 // Each tag also carries an optional colour (migration 0037), picked here and shown
 // on the chip everywhere the tag renders (recipe view, search pills, the form).
-export function RecipeTagsSection() {
+export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const confirm = useConfirm()
@@ -113,11 +114,11 @@ export function RecipeTagsSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.tagsTitle}</h2>
-      <p className="lead">{t.operator.tagsHint}</p>
+      <HelpTitle help={help} k="recipeTags">{t.operator.tagsTitle}</HelpTitle>
+      {help?.bubbleFor('recipeTags')}
 
-      <h3 className="operator__sub">{t.operator.tagPills}</h3>
-      <p className="mono operator__hint">{t.operator.tagPillsHint}</p>
+      <HelpTitle as="h3" className="operator__sub" help={help} k="tagPills">{t.operator.tagPills}</HelpTitle>
+      {help?.bubbleFor('tagPills')}
       <div className="tag-admin__pills">
         {effective.map((tg, i) => {
           const key = `preset:${tg.toLowerCase()}`
@@ -202,7 +203,8 @@ export function RecipeTagsSection() {
         </form>
       )}
 
-      <h3 className="operator__sub">{t.operator.tagUsed}</h3>
+      <HelpTitle as="h3" className="operator__sub" help={help} k="tagUsed">{t.operator.tagUsed}</HelpTitle>
+      {help?.bubbleFor('tagUsed')}
       {used.length === 0 ? (
         <p className="board__empty mono">{t.operator.tagNoneUsed}</p>
       ) : (

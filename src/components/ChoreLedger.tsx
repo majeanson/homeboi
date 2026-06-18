@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
+import { HelpTitle, type HelpMode } from '../lib/helpMode'
 import { api } from '../lib/api'
 import { Avatar } from './Avatar'
 import { EmptyState } from './EmptyState'
@@ -31,7 +32,7 @@ interface LedgerRow {
 // stays beside its component rather than in src/lib/queryKeys.ts (cross-page only).
 const LEDGER_KEY = ['chores-ledger']
 
-export function ChoreLedger() {
+export function ChoreLedger({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang } = useLang()
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
@@ -55,8 +56,8 @@ export function ChoreLedger() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.ledgerTitle}</h2>
-      <p className="operator__hint">{t.operator.ledgerHint}</p>
+      <HelpTitle help={help} k="choreLedger">{t.operator.ledgerTitle}</HelpTitle>
+      {help?.bubbleFor('choreLedger')}
 
       {isLoading ? null : days.length === 0 ? (
         <EmptyState tone="calm">{t.operator.ledgerEmpty}</EmptyState>

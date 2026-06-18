@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { SLOT_TIME_ORDER, SLOT_COLOR, SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
@@ -17,7 +18,7 @@ import type { HouseholdSettings } from '../../lib/mealPrefs'
 //     care about souper"). You can still plan a hidden slot in La cuisine.
 // Both persist on /api/household; saving invalidates HOUSEHOLD_KEY so the meal
 // surfaces re-tint/re-filter live (they read the same key via useMealPrefs).
-export function MealSlotsSection() {
+export function MealSlotsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   // Only OVERRIDES live here (a slot absent = its default colour).
@@ -77,9 +78,8 @@ export function MealSlotsSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.mealColors}</h2>
-      <p className="lead">{t.operator.mealColorsHint}</p>
-      <p className="lead">{t.operator.mealShowHint}</p>
+      <HelpTitle help={help} k="mealSlots">{t.operator.mealColors}</HelpTitle>
+      {help?.bubbleFor('mealSlots')}
       <ul className="operator__list meal-slots">
         {SLOT_TIME_ORDER.map((slot) => {
           const resolved = colors[slot] ?? SLOT_COLOR[slot]

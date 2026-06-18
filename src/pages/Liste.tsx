@@ -384,15 +384,32 @@ export function Liste() {
         // item is a frequent move, so it earns a one-tap shortcut here instead of
         // living only behind the ＋ Add sheet → Circulaires.
         trailing={
-          <button
-            type="button"
-            className="edit-field__icon-btn help-pick"
-            onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
-            aria-label={t.shop.browse}
-            title={t.shop.browse}
-          >
-            <Icon name="magnifying-glass-bold" size={17} />
-          </button>
+          <>
+            {!!navigator.share && list.length > 0 && (
+              <button
+                type="button"
+                className="edit-field__icon-btn"
+                onClick={() => {
+                  const unchecked = list.filter((i) => !i.checked_at)
+                  const items = (unchecked.length > 0 ? unchecked : list).map((i) => `• ${i.text}`).join('\n')
+                  void navigator.share({ title: t.list.share, text: items })
+                }}
+                aria-label={t.list.share}
+                title={t.list.share}
+              >
+                <Icon name="arrow-up-right-bold" size={17} />
+              </button>
+            )}
+            <button
+              type="button"
+              className="edit-field__icon-btn help-pick"
+              onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
+              aria-label={t.shop.browse}
+              title={t.shop.browse}
+            >
+              <Icon name="magnifying-glass-bold" size={17} />
+            </button>
+          </>
         }
         placeholder={
           voice.listening

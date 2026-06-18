@@ -9,6 +9,8 @@ import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
 import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
+import { useWrite } from '../lib/write'
+import { withoutHeadings } from '../lib/recipeSections'
 import { live } from '../lib/query'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
@@ -56,6 +58,7 @@ const SUGGEST_DRESS: Record<SuggestSource, { icon: IconName; color: string }> = 
 export function Kitchen() {
   const t = useT()
   const qc = useQueryClient()
+  const write = useWrite()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
@@ -67,6 +70,16 @@ export function Kitchen() {
   // Tapping a recipe in the book opens the shared entity-detail peek (photo, tags,
   // time, hearts) with "Ouvrir la recette" to go deeper — same peek the board uses.
   const detail = useEntityDetail()
+  // Push a recipe's ingredients onto the shared grocery list in one tap.
+  const shopRecipe = (r: Recipe) => {
+    const items = withoutHeadings(r.ingredients ?? [])
+    if (!items.length) return
+    void write('recipe-to-list', {
+      method: 'POST',
+      body: { items },
+      affectedKeys: [['board'], ['list']],
+    }).catch(() => {})
+  }
   // The full per-day editor (add/remove/reorder meals, the staples step, the day
   // note, clear the day) lives on its own full-screen scene now — /kitchen/day/:date
   // (DayPlanPage). This page is the calm read-only week glance: a row's pencil and
@@ -671,7 +684,7 @@ export function Kitchen() {
             soonItems={soonItems}
             listItems={listItems}
             lastServed={lastServedById}
-            onView={(r) => detail.open(buildRecipe(r, { t, lang, members: [] }))}
+            onView={(r) => detail.open(buildRecipe(r, { t, lang, members: [] }, { onShop: () => shopRecipe(r) }))}
             help={tabHelp}
           />
         )}

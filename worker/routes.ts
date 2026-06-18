@@ -14,6 +14,7 @@ import * as aiTest from '../functions/api/ai-test'
 import * as board from '../functions/api/board'
 import * as capture from '../functions/api/capture'
 import * as cercle from '../functions/api/cercle'
+import * as cercleGroups from '../functions/api/cercle-groups'
 import * as cercleLinks from '../functions/api/cercle-links'
 import * as chores from '../functions/api/chores'
 import * as choresLedger from '../functions/api/chores-ledger'
@@ -88,6 +89,7 @@ const TABLE: Record<string, RouteMod> = {
   board,
   capture,
   cercle,
+  'cercle-groups': cercleGroups,
   'cercle-links': cercleLinks,
   chores,
   'chores-ledger': choresLedger,

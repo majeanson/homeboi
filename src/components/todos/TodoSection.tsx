@@ -9,6 +9,7 @@ import { useUndoToast, useRecordUndo } from '../../lib/toast'
 import { TODOS_KEY, TODO_TEMPLATES_KEY } from '../../lib/queryKeys'
 import {
   type Todo,
+  type TodoTemplate,
   type TodosData,
   type TemplatesData,
   todosKey,
@@ -21,8 +22,8 @@ import { CATS } from '../../lib/cats'
 import { tintInk } from '../../lib/colors'
 import { Icon } from '../Icon'
 import { EditField } from '../EditField'
+import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { RowActions } from '../RowActions'
-import { Disclosure } from '../Disclosure'
 
 interface FaceMember {
   id: string
@@ -280,29 +281,26 @@ export function TodoSection({
       )}
 
       {!ro && (
-        <EditField
+        <EntityCombobox<TodoTemplate>
           value={addText}
           onChange={setAddText}
+          options={templates.map((tpl): ComboOption<TodoTemplate> => ({
+            id: tpl.id,
+            label: tpl.title,
+            data: tpl,
+            icon: 'check-square-bold',
+            group: t.todos.templatesLabel,
+          }))}
           onSubmit={(v) => add(v)}
+          onPick={(opt) => {
+            setAddText('')
+            void instantiate(opt.data.id)
+          }}
           submitLabel={t.capture.add}
           submitLeadingIcon="plus-bold"
           placeholder={t.todos.addPlaceholder}
           ariaLabel={t.todos.addPlaceholder}
         />
-      )}
-
-      {/* Departure checklists — one tap drops the whole list in as todos. Tucked
-          behind a collapsed toggle so a long roster of lists never fills the card. */}
-      {!ro && templates.length > 0 && (
-        <Disclosure label={t.todos.templatesToggle} count={templates.length}>
-          <div className="todo-templates mono">
-            {templates.map((tpl) => (
-              <button key={tpl.id} type="button" className="chip todo-templates__chip" onClick={() => instantiate(tpl.id)}>
-                <Icon name="plus-bold" size={13} /> {tpl.title}
-              </button>
-            ))}
-          </div>
-        </Disclosure>
       )}
 
       {!ro && checked.length > 0 && (

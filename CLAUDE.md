@@ -22,6 +22,73 @@ code comments cite requirement tags from there (`NFR-CALM-1`, `PRD C5`, `OD-1`, 
 
 ---
 
+## Build by reuse — read before you write (START HERE)
+
+**This codebase is mature. Almost nothing you'll be asked for is greenfield.** There
+is already a shared component, a lib helper, a CSS class family, or a section pattern
+for it. The recurring failure mode here is building something new beside an existing
+thing and then having to refactor it back onto what we already have. **Default to
+reuse and refactor; treat "create a new component / class / endpoint" as the
+exception you justify, not the starting point.**
+
+Before implementing ANY change, do this first — it's faster than the rework it saves:
+
+1. **Read how the section already works.** Open the page/section you're touching and
+   the components it renders. Match its existing structure, naming, and idioms rather
+   than inventing a parallel one. The five hub tabs are `src/pages/{Board,Kitchen,
+   Routines,Liste,Settings}.tsx`; settings bodies live in `src/components/operator/*`;
+   kitchen sub-tabs in `src/components/kitchen/*`. Grep the feature name first.
+2. **Look for the primitive that already exists.** Check **`COMPONENTS.md`** (the
+   living inventory + uniformization backlog) and open **`/dev/kit`**
+   (`src/pages/DevKit.tsx`, reachable from Réglages ▸ Affichage) — it renders every
+   shared component live across theme/surface/audience/locale. If a primitive fits,
+   use it; if it _almost_ fits, **extend the primitive**, don't fork a copy.
+3. **Check the lib helper / convention** that governs the behaviour (table below).
+   Cross-cutting behaviour (writes, query keys, surface/audience, detail peek, calm,
+   realtime, undo, voice) is centralized on purpose — wiring it by hand silently
+   bypasses offline, CSRF, attribution, or a calm guarantee.
+4. **Reuse the CSS class family**, don't add a one-off. `styles/*.css` already has
+   `.btn`, `.input`, `.chip`/`.tag`, `.card`/`.surface`, `.sheet__*`/`.scene__*`,
+   `.listrow`, `.row-actions__*`, `.edit-field__*`, etc. (`@import` order **is** the
+   cascade — append only, never reorder).
+
+### Reach for these BEFORE hand-rolling
+
+| Need | Use (not a new one) | Where |
+| --- | --- | --- |
+| Type/edit text + clear/mic/actions | **`EditField`** | `components/EditField.tsx` |
+| "Search + pick an existing thing + free-text" | **`EntityCombobox`** | `components/EntityCombobox.tsx` (options in `kitchen/comboOptions.tsx`) |
+| An activity / list row (check / nav / info) | **`Act`** + `Section` | `components/board/Act.tsx` |
+| Generic checklist row | **`CheckRow`** / **`ListRow`** | `components/CheckRow.tsx`, `components/ListRow.tsx` |
+| Edit/delete icon pair on a row | **`RowActions`** | `components/RowActions.tsx` |
+| "Tap an item → detail peek" | **`useEntityDetail()`** + adapters | `components/detail/*`, `lib/detail.ts` |
+| Empty / status / chip / section header | **`EmptyState`/`StatusMessage`/`Chip`+`ChipGroup`/`SectionHeader`** | same-named files in `components/` |
+| Collapse a secondary group (calm) | **`Disclosure`** / `useSingleOpen` | `components/Disclosure.tsx` |
+| A dialog / bottom sheet | **`Modal`** + `useModal` / `useSwipeToDismiss` | `components/Modal.tsx`, `lib/useModal.ts` |
+| A Réglages section wrapper | **`OperatorSection`** | `components/operator/OperatorSection.tsx` |
+| Hub-tab / scene header | **`HubHead`** / **`SceneHead`** | `components/HubHead.tsx`, `components/SceneHead.tsx` |
+| Person photo/initial, mic, icon, image | **`Avatar`/`VoiceButton`/`Icon`/`ZoomableImg`** | `components/*` |
+| Confirm a destructive delete / undo a light one | **`useConfirm`** / the undo toast | `lib/confirm.tsx`, `lib/toast.tsx` (`lib/undoStack.ts`) |
+| Touch drag-and-drop / reorder | **`usePointerDnd`** | `lib/dnd.tsx` (never HTML5 `draggable`) |
+
+### Cross-cutting conventions a new feature MUST respect
+
+| Concern | Use | Don't |
+| --- | --- | --- |
+| Any `/api/*` write | **`useWrite()`** (`lib/write.ts`) | …call `api()` directly for writes (skips the offline outbox) |
+| Any `/api/*` read/fetch | **`api()`** (`lib/api.ts`) | …`fetch` directly (loses CSRF, device token, locale, profile) |
+| Server state / caching | **TanStack Query**; shared keys in `lib/queryKeys.ts` | …a parallel store, or a key spelled twice |
+| Device role / presentation lens | **`useSurface()`** / **`useAudience()`** | …branch on width or invent a flag |
+| Calm guarantees | structural ones are non-negotiable (a **test** enforces no streak/points/badge/push/inventory) | …add counts, ranks, streaks, points, push, or a quantity column |
+| Backend endpoint | handler under `functions/api/` **+** `authed()` wrapper **+** a `TABLE` row in `worker/routes.ts` | …hand-roll the auth guard, or forget the route table |
+
+**When you DO add a new shared component:** register it in `src/pages/DevKit.tsx`,
+add it to `COMPONENTS.md`, and (if user-facing) document it in the in-app Guide
+(`lib/guideContent.ts`). A new primitive that isn't in the gallery is invisible to
+the next session and will get re-invented.
+
+---
+
 ## Commands
 
 ```bash
@@ -240,6 +307,10 @@ Comments cite `bmad/` tags: **`NFR-*`** (non-functional, e.g. `NFR-CALM-1`,
 
 ## Conventions & gotchas
 
+- **Reuse before you create** (standing rule). Read the existing section + check
+  `COMPONENTS.md` / `/dev/kit` for a shared primitive and `src/lib/*` for the
+  governing helper BEFORE writing new code. Extend what exists; don't fork a parallel
+  copy that we then have to refactor back. See [Build by reuse](#build-by-reuse--read-before-you-write-start-here).
 - **Every UI change must be mobile-friendly**, every time (standing rule).
 - **Every UI change must be tablet-friendly, especially for Toddler mode**, every time (standing rule).
 - **Push straight to `main`** — no PR branches; CI (typecheck/test/build) is the

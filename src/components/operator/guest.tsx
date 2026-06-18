@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { isGuest } from '../../lib/device'
 import { InlineIcon } from '../Icon'
@@ -17,7 +18,7 @@ const TTL_OPTIONS = [
   { seconds: 24 * 3600, key: 'ttl24h' as const },
 ]
 
-export function GuestSection() {
+export function GuestSection({ help }: { help?: HelpMode }) {
   const t = useT()
   // Issuing a guest token is operator-only — a read-only guest can't mint more
   // guests, so the whole section is hidden for them.
@@ -70,8 +71,8 @@ export function GuestSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.guest.title}</h2>
-      <p className="lead">{t.guest.hint}</p>
+      <HelpTitle help={help} k="guest">{t.guest.title}</HelpTitle>
+      {help?.bubbleFor('guest')}
 
       <label className="operator__seg">
         <span className="operator__seg-label mono">{t.guest.ttlLabel}</span>
@@ -104,7 +105,6 @@ export function GuestSection() {
               </button>
             )}
           </div>
-          <p className="operator__hint mono">{t.guest.limitation}</p>
         </div>
       )}
     </section>

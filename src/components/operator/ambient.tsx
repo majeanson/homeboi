@@ -1,4 +1,5 @@
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { Icon, type IconName } from '../Icon'
 import { useAmbient, setAmbient, type AmbientSettings } from '../../lib/ambient'
 import { forceIdle } from '../../lib/idleDebug'
@@ -20,15 +21,15 @@ function Toggle({ on, icon, label, onClick }: { on: boolean; icon: IconName; lab
   )
 }
 
-export function AmbientSettingsSection() {
+export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const a = useAmbient()
   const set = (patch: Partial<AmbientSettings>) => setAmbient(patch)
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.ambientTitle}</h2>
-      <p className="lead">{t.operator.ambientHint}</p>
+      <HelpTitle help={help} k="ambient">{t.operator.ambientTitle}</HelpTitle>
+      {help?.bubbleFor('ambient')}
 
       {/* — The screensaver — */}
       <div className="operator__seg">
@@ -101,7 +102,6 @@ export function AmbientSettingsSection() {
         </div>
       )}
 
-      <p className="operator__hint mono">{t.operator.ambientNote}</p>
     </section>
   )
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { useSurface } from '../../lib/surface'
 import { useProfile } from '../../lib/profile'
@@ -25,7 +26,7 @@ interface Member {
   colour: string
 }
 
-export function IdleDebugSection() {
+export function IdleDebugSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { surface } = useSurface()
   const { memberId, setMemberId } = useProfile()
@@ -48,8 +49,8 @@ export function IdleDebugSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.debugIdleTitle}</h2>
-      <p className="mono">{t.operator.debugIdleHint}</p>
+      <HelpTitle help={help} k="idleDebug">{t.operator.debugIdleTitle}</HelpTitle>
+      {help?.bubbleFor('idleDebug')}
 
       {/* Live readout — this is what "pops off": when the drift fires, the name
           here flips to Maisonnée. */}
@@ -130,7 +131,6 @@ export function IdleDebugSection() {
         </button>
       </div>
 
-      <p className="operator__hint mono">{t.operator.debugIdleNote}</p>
     </section>
   )
 }

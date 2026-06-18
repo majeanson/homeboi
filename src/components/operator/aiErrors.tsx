@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { api, ApiError, isStatus } from '../../lib/api'
 import { isGuest } from '../../lib/device'
 import { Icon } from '../Icon'
@@ -28,7 +29,7 @@ interface AiCheck {
 // A "does it actually work?" probe that sits ABOVE the error log: instead of
 // waiting for a feature to fail and reading the journal after the fact, the
 // operator presses Tester l'IA and gets a live pass/fail per model right now.
-function AiStatusTest() {
+function AiStatusTest({ help }: { help?: HelpMode }) {
   const t = useT()
   const [checks, setChecks] = useState<AiCheck[] | null>(null)
   const [running, setRunning] = useState(false)
@@ -58,8 +59,8 @@ function AiStatusTest() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.aiTestTitle}</h2>
-      <p className="mono">{t.operator.aiTestHint}</p>
+      <HelpTitle help={help} k="aiTest">{t.operator.aiTestTitle}</HelpTitle>
+      {help?.bubbleFor('aiTest')}
       {!isGuest() && (
         <button type="button" className="btn btn--primary" onClick={run} disabled={running} aria-busy={running}>
           {running ? t.operator.aiTestRunning : t.operator.aiTestBtn}
@@ -93,7 +94,7 @@ function AiStatusTest() {
   )
 }
 
-export function AiErrorLogSection() {
+export function AiErrorLogSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const { data } = useQuery({
@@ -109,10 +110,10 @@ export function AiErrorLogSection() {
 
   return (
     <>
-      <AiStatusTest />
+      <AiStatusTest help={help} />
       <section className="surface operator__section">
-        <h2>{t.operator.aiLogTitle}</h2>
-        <p className="mono">{t.operator.aiLogHint}</p>
+        <HelpTitle help={help} k="aiLog">{t.operator.aiLogTitle}</HelpTitle>
+        {help?.bubbleFor('aiLog')}
         {errors.length === 0 ? (
           <p className="board__empty mono">{t.operator.aiLogEmpty}</p>
         ) : (

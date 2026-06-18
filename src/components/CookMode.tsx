@@ -499,6 +499,33 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
               </button>
             </>
           )}
+          {!isToddler && !!navigator.share && (
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              onClick={() => {
+                let n = 0
+                const ingredients = recipe.ingredients
+                  .map((s) => (s.startsWith('## ') ? '\n' + s.slice(3) : `• ${s}`))
+                  .join('\n')
+                const steps = recipe.steps
+                  .map((s) => (s.startsWith('## ') ? '\n' + s.slice(3) : `${++n}. ${s}`))
+                  .join('\n')
+                const text = [
+                  t.recipes.ingredients + ':\n' + ingredients,
+                  t.recipes.steps + ':\n' + steps,
+                  recipe.notes ? t.recipes.notes + ':\n' + recipe.notes : '',
+                ]
+                  .filter(Boolean)
+                  .join('\n\n')
+                void navigator.share({ title: recipe.title, text })
+              }}
+              aria-label={t.recipes.shareRecipe}
+              title={t.recipes.shareRecipe}
+            >
+              <Icon name="arrow-up-right-bold" size={20} />
+            </button>
+          )}
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.back}>
             <Icon name="x-bold" size={20} />
           </button>

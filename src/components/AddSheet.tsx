@@ -19,15 +19,14 @@ import { useMealPrefs } from '../lib/mealPrefs'
 import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
 import { BOARD_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY } from '../lib/queryKeys'
-import { type TemplatesData } from '../lib/todos'
+import { type TodoTemplate, type TemplatesData } from '../lib/todos'
 import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
 import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
-import { Disclosure } from './Disclosure'
 import { MemoControls } from './MemoControls'
-import { EntityCombobox } from './EntityCombobox'
+import { EntityCombobox, type ComboOption } from './EntityCombobox'
 import { mealOptions } from './kitchen/comboOptions'
 import { ADD_HELP } from '../lib/addHelp'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
@@ -344,9 +343,8 @@ export function AddSheet({
   // Add an "À compléter" todo (board ＋). Standing (day null) unless "Aujourd'hui"
   // is picked → today's local-midnight day. Offline-safe write; the board glance +
   // any open todo view refetch via TODOS_KEY (prefix-matches day-scoped reads).
-  async function submitTodo(e?: React.FormEvent) {
-    e?.preventDefault()
-    const value = todoText.trim()
+  async function submitTodo(text?: string) {
+    const value = (text ?? todoText).trim()
     if (!value || busy) return
     setBusy(true)
     try {
@@ -728,43 +726,29 @@ export function AddSheet({
                 {t.todos.scopeToday}
               </button>
             </div>
-            <form onSubmit={submitTodo}>
-              <div className="sheet__field">
-                <Icon name="check-bold" size={20} color="var(--ink-faint)" />
-                <input
-                  value={todoText}
-                  onChange={(e) => setTodoText(e.target.value)}
-                  placeholder={todoVoice.listening ? t.capture.listening : t.todos.addPlaceholder}
-                  aria-label={t.todos.title}
-                />
-                <VoiceButton voice={todoVoice} label={t.capture.voice} />
-              </div>
-              <button type="submit" className="btn btn--primary" disabled={!todoText.trim() || busy}>
-                <Icon name="plus-bold" size={20} />
-                {t.capture.add}
-              </button>
-            </form>
-            {/* Or drop a whole checklist in — a composed list lands as sections.
-                Collapsed by default so the chips don't crowd the quick-add form. */}
-            {todoTemplates.length > 0 && (
-              <div className="addsheet__todo-templates">
-                <Disclosure label={t.todos.templatesToggle} count={todoTemplates.length}>
-                  <div className="addsheet__todo-chips">
-                    {todoTemplates.map((tpl) => (
-                      <button
-                        key={tpl.id}
-                        type="button"
-                        className="chip"
-                        disabled={busy}
-                        onClick={() => quickAddTemplate(tpl.id)}
-                      >
-                        <Icon name="plus-bold" size={13} /> {tpl.title}
-                      </button>
-                    ))}
-                  </div>
-                </Disclosure>
-              </div>
-            )}
+            <EntityCombobox<TodoTemplate>
+              value={todoText}
+              onChange={setTodoText}
+              options={todoTemplates.map((tpl): ComboOption<TodoTemplate> => ({
+                id: tpl.id,
+                label: tpl.title,
+                data: tpl,
+                icon: 'check-square-bold',
+                group: t.todos.templatesLabel,
+              }))}
+              onSubmit={(v) => void submitTodo(v)}
+              onPick={(opt) => {
+                setTodoText('')
+                void quickAddTemplate(opt.data.id)
+              }}
+              submitLabel={t.capture.add}
+              submitLeadingIcon="plus-bold"
+              submitVariant="primary"
+              placeholder={todoVoice.listening ? t.capture.listening : t.todos.addPlaceholder}
+              ariaLabel={t.todos.title}
+              voice={todoVoice}
+              busy={busy}
+            />
           </div>
         )}
 

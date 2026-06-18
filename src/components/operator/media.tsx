@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { api, isStatus } from '../../lib/api'
 import { useUndoToast } from '../../lib/toast'
 import { resizeImage, imgUrl, PHOTO_MAX } from '../../lib/image'
@@ -9,7 +10,7 @@ import { Icon } from '../Icon'
 
 // Weekly recap: an on-demand, calm reflection (NFR-CALM/COST — a button, never a
 // loop). Hides itself when AI is unavailable (503) so it never shows a dead button.
-export function RecapSection() {
+export function RecapSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const [recap, setRecap] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -30,8 +31,8 @@ export function RecapSection() {
   if (unavailable) return null
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.recapTitle}</h2>
-      <p className="mono">{t.operator.recapHint}</p>
+      <HelpTitle help={help} k="recap">{t.operator.recapTitle}</HelpTitle>
+      {help?.bubbleFor('recap')}
       {recap && <p className="lead">{recap}</p>}
       {!isGuest() && (
         <button type="button" className="btn btn--primary" onClick={generate} disabled={busy}>
@@ -45,7 +46,7 @@ export function RecapSection() {
 // Home photos: family pictures that drift across the wall board. Upload straight
 // from a phone (camera or gallery); they're resized small before upload and the
 // set is capped server-side, so this stays free. Hides itself if R2 is unbound.
-export function PhotosSection() {
+export function PhotosSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const { data } = useQuery({
@@ -108,8 +109,8 @@ export function PhotosSection() {
   if (unavailable) return null
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.photos}</h2>
-      <p className="mono">{t.operator.photoHint}</p>
+      <HelpTitle help={help} k="photos">{t.operator.photos}</HelpTitle>
+      {help?.bubbleFor('photos')}
       {photos.length === 0 ? (
         <p className="board__empty mono">{t.operator.noPhotos}</p>
       ) : (

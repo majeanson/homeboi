@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { type FlyerSummary } from '../../lib/deals'
@@ -11,7 +12,7 @@ import { EditField } from '../EditField'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
 // price-match proof on the list knows where to search. Set once, used every trip.
-export function ShopSection() {
+export function ShopSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const [postal, setPostal] = useState('')
   const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
@@ -38,8 +39,8 @@ export function ShopSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.shopping}</h2>
-      <p className="lead">{t.operator.shopHint}</p>
+      <HelpTitle help={help} k="shop">{t.operator.shopping}</HelpTitle>
+      {help?.bubbleFor('shop')}
       {!isGuest() && (
         <EditField
           value={postal}
@@ -68,7 +69,7 @@ export function ShopSection() {
 // picker, or the price-match proof. With nothing narrowed, every store is kept.
 type ManageStore = { key: string; merchant: string; logo: string | null; included: boolean }
 
-export function StoreFilterSection() {
+export function StoreFilterSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const write = useWrite()
   const [stores, setStores] = useState<ManageStore[] | null>(null)
@@ -131,8 +132,8 @@ export function StoreFilterSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.storeFilter}</h2>
-      <p className="lead">{t.operator.storeFilterHint}</p>
+      <HelpTitle help={help} k="storeFilter">{t.operator.storeFilter}</HelpTitle>
+      {help?.bubbleFor('storeFilter')}
       {state === 'loading' && <p className="board__empty mono">{t.shop.searching}</p>}
       {state === 'noPostal' && <p className="board__empty mono">{t.operator.storeFilterNoPostal}</p>}
       {state === 'error' && <p className="board__empty mono">{t.operator.storeFilterError}</p>}
@@ -185,7 +186,7 @@ interface HistRow {
   lastAt: number
 }
 
-export function HistorySection() {
+export function HistorySection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const write = useWrite()
@@ -240,8 +241,8 @@ export function HistorySection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.history}</h2>
-      <p className="lead">{t.operator.historyHint}</p>
+      <HelpTitle help={help} k="history">{t.operator.history}</HelpTitle>
+      {help?.bubbleFor('history')}
       {items === null ? (
         <p className="board__empty mono">{t.shop.searching}</p>
       ) : items.length === 0 ? (
@@ -314,7 +315,7 @@ export function HistorySection() {
 // CONSCIOUS step — buying something never enrolls it); the operator retunes the
 // days, hides one, or adds a custom staple. Frequent untracked buys appear as
 // one-tap "track it?" suggestions — the deliberate opt-in.
-export function GhostSection() {
+export function GhostSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const [items, setItems] = useState<GhostManageItem[]>([])
   const [candidates, setCandidates] = useState<GhostCandidate[]>([])
@@ -366,8 +367,8 @@ export function GhostSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.ghost}</h2>
-      <p className="lead">{t.ghost.manageHint}</p>
+      <HelpTitle help={help} k="ghost">{t.operator.ghost}</HelpTitle>
+      {help?.bubbleFor('ghost')}
       {items.length === 0 ? (
         <p className="board__empty mono">{t.ghost.emptyManage}</p>
       ) : (

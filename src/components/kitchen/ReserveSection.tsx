@@ -92,7 +92,6 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
     <section>
       <HelpTitle help={help} k="reserve">{t.kitchen.reserve}</HelpTitle>
       {help?.bubbleFor('reserve')}
-      <p className="lead">{t.kitchen.reserveHint}</p>
       {!ro && (
       <form className="kitchen__reserve-add" onSubmit={addItem}>
         <input

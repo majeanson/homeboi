@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { useAudience } from '../../lib/audience'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
@@ -22,7 +23,7 @@ import {
 
 // Display: theme, language, and the Parent/Toddler view — the chrome that used
 // to live in the top header. Moved here so the hub pages stay calm and headerless.
-export function DisplaySection() {
+export function DisplaySection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang, setLang } = useLang()
   const { audience, setAudience, guestPreview, setGuestPreview } = useAudience()
@@ -42,8 +43,8 @@ export function DisplaySection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.display}</h2>
-      <p className="lead">{t.operator.displayHint}</p>
+      <HelpTitle help={help} k="display">{t.operator.display}</HelpTitle>
+      {help?.bubbleFor('display')}
       <div className="operator__display">
         {!ro && (
           <div className="operator__seg">
@@ -144,7 +145,6 @@ export function DisplaySection() {
           </div>
         )}
       </div>
-      {!ro && <p className="operator__hint mono">{t.operator.tutorialHint}</p>}
       {/* Dev-only: the live component catalogue. Searchable, collapsed — handy to
           keep open alongside while building. Settings is operator-only already. */}
       <p className="operator__hint mono">
@@ -161,7 +161,7 @@ export function DisplaySection() {
 // — no Workers AI, nothing leaves the device (see lib/speak.ts). The override is
 // per-language; the speed is shared. Hidden behavior when the OS has no voice
 // for the current language: we say so and point at the system settings.
-export function VoiceSection() {
+export function VoiceSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
@@ -182,8 +182,8 @@ export function VoiceSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.voiceTitle}</h2>
-      <p className="lead">{t.operator.voiceHint}</p>
+      <HelpTitle help={help} k="voice">{t.operator.voiceTitle}</HelpTitle>
+      {help?.bubbleFor('voice')}
 
       {ro ? null : !available ? (
         <p className="operator__hint mono">{t.operator.voiceNone}</p>
@@ -240,7 +240,7 @@ export function VoiceSection() {
 // every device (everyone uses the same spoons). Persisted on /api/household via the
 // editor hook (lib/measurePrefs); the picker previews live while open and commits
 // one PATCH on close. A sample line below shows the change instantly.
-export function MeasureColorsSection() {
+export function MeasureColorsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang } = useLang()
   const { overrides, preview, commit, reset } = useMeasureColorsEditor()
@@ -253,8 +253,8 @@ export function MeasureColorsSection() {
       : '2 tbsp butter · 1 ½ cup flour · ¼ tsp salt'
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.measureColorsTitle}</h2>
-      <p className="lead">{t.operator.measureColorsHint}</p>
+      <HelpTitle help={help} k="measureColors">{t.operator.measureColorsTitle}</HelpTitle>
+      {help?.bubbleFor('measureColors')}
       <div className="measure-colors">
         {MEASURE_SWATCHES.map((s) => {
           const color = swatchColor(s, overrides)
@@ -290,15 +290,15 @@ export function MeasureColorsSection() {
 // switch it off to stop the kid routine from dead-ending. Only governs that
 // interaction friction — the structural guarantees aren't toggleable. Stored in
 // localStorage for now (see bmad/04, OD-1).
-export function CalmSection() {
+export function CalmSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { calm, setCalm } = useCalm()
   // Read-only guest: the calm toggle is a write — show the state as plain text only.
   const ro = isGuest()
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.calmTitle}</h2>
-      <p className="lead">{t.operator.calmHint}</p>
+      <HelpTitle help={help} k="calm">{t.operator.calmTitle}</HelpTitle>
+      {help?.bubbleFor('calm')}
       {ro ? (
         <p className="operator__hint mono">
           {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}

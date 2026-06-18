@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { live } from '../../lib/query'
@@ -26,7 +27,7 @@ import { Icon } from '../Icon'
 // list flattens to one todo list grouped BY SECTION — each included list becomes a
 // section (see src/lib/todos.ts expandSectioned). Each edit PATCHes the whole items
 // array (small, operator-driven); deletes go behind the app-wide compensating undo.
-export function TodoTemplatesSection() {
+export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const write = useWrite()
   const recordUndo = useRecordUndo()
@@ -117,8 +118,8 @@ export function TodoTemplatesSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.todos.templatesTitle}</h2>
-      <p className="lead">{t.todos.templatesHint}</p>
+      <HelpTitle help={help} k="todoTemplates">{t.todos.templatesTitle}</HelpTitle>
+      {help?.bubbleFor('todoTemplates')}
 
       {templates.length === 0 ? (
         <p className="board__empty mono">{t.todos.noTemplates}</p>

@@ -26,6 +26,8 @@ import { IdleDebugSection } from '../components/operator/idleDebug'
 import { MicSelfTest } from '../components/operator/micTest'
 import { GuideSection } from '../components/operator/guide'
 import { SectionGuide } from '../components/operator/sectionGuide'
+import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
+import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
 
@@ -121,6 +123,35 @@ export function Operator() {
     sections[0].id,
     sections.map((s) => s.id),
   )
+  const operatorHelp = useHelpMode(OPERATOR_HELP, (k: string) => {
+    const labels: Record<string, string> = {
+      reserveLocations: t.operator.reserveTitle,
+      ambient: t.operator.ambientTitle,
+      display: t.operator.display,
+      voice: t.operator.voiceTitle,
+      measureColors: t.operator.measureColorsTitle,
+      calm: t.operator.calmTitle,
+      mealSlots: t.operator.mealColors,
+      todoTemplates: t.todos.templatesTitle,
+      recipeTags: t.operator.tagsTitle,
+      tagPills: t.operator.tagPills,
+      tagUsed: t.operator.tagUsed,
+      shop: t.operator.shopping,
+      storeFilter: t.operator.storeFilter,
+      history: t.operator.history,
+      ghost: t.operator.ghost,
+      recipePills: t.operator.pillsTitle,
+      recap: t.operator.recapTitle,
+      photos: t.operator.photos,
+      micTest: t.operator.micTestTitle,
+      aiTest: t.operator.aiTestTitle,
+      aiLog: t.operator.aiLogTitle,
+      idleDebug: t.operator.debugIdleTitle,
+      guest: t.guest.title,
+      choreLedger: t.operator.ledgerTitle,
+    }
+    return labels[k] ?? k
+  }, tab)
 
   if (loading || !canEnter) return <p className="loading mono">{t.common.loading}</p>
 
@@ -129,6 +160,7 @@ export function Operator() {
       <div className="operator__head">
         <div>
           <h1>{t.operator.title}</h1>
+          {operatorHelp.available && <HelpToggle active={operatorHelp.active} onToggle={operatorHelp.toggle} />}
         </div>
         <div className="operator__meta mono">
           <span>{household?.name}</span>
@@ -173,6 +205,7 @@ export function Operator() {
           </button>
         ))}
       </nav>
+      {operatorHelp.hint && <HelpHint />}
 
       <div className="operator__panel" role="tabpanel">
         {/* Each tab carries its own how-it-works inline (the per-tab cards that
@@ -183,50 +216,50 @@ export function Operator() {
         {tab === 'chores' && (
           <>
             <ChoresSection chores={chores} onChange={load} />
-            <ChoreLedger />
+            <ChoreLedger help={operatorHelp} />
           </>
         )}
         {tab === 'routines' && <RoutinesSection routines={routines} onChange={load} />}
-        {tab === 'todos' && <TodoTemplatesSection />}
+        {tab === 'todos' && <TodoTemplatesSection help={operatorHelp} />}
         {tab === 'shopping' && (
           <>
-            <ShopSection />
-            <StoreFilterSection />
-            <HistorySection />
+            <ShopSection help={operatorHelp} />
+            <StoreFilterSection help={operatorHelp} />
+            <HistorySection help={operatorHelp} />
           </>
         )}
         {tab === 'recipes' && (
           <>
-            <RecipeTagsSection />
-            <RecipePillsSection />
+            <RecipeTagsSection help={operatorHelp} />
+            <RecipePillsSection help={operatorHelp} />
           </>
         )}
-        {tab === 'meals' && <MealSlotsSection />}
-        {tab === 'reserve' && <ReserveLocationsSection />}
-        {tab === 'ghost' && <GhostSection />}
+        {tab === 'meals' && <MealSlotsSection help={operatorHelp} />}
+        {tab === 'reserve' && <ReserveLocationsSection help={operatorHelp} />}
+        {tab === 'ghost' && <GhostSection help={operatorHelp} />}
         {tab === 'devices' && (
           <>
             <ClaimTablet onClaimed={load} />
             <DevicesSection devices={devices} onChange={load} />
           </>
         )}
-        {tab === 'guest' && <GuestSection />}
-        {tab === 'photos' && <PhotosSection />}
-        {tab === 'recap' && <RecapSection />}
+        {tab === 'guest' && <GuestSection help={operatorHelp} />}
+        {tab === 'photos' && <PhotosSection help={operatorHelp} />}
+        {tab === 'recap' && <RecapSection help={operatorHelp} />}
         {tab === 'display' && (
           <>
-            <DisplaySection />
-            <AmbientSettingsSection />
-            <MeasureColorsSection />
-            <VoiceSection />
+            <DisplaySection help={operatorHelp} />
+            <AmbientSettingsSection help={operatorHelp} />
+            <MeasureColorsSection help={operatorHelp} />
+            <VoiceSection help={operatorHelp} />
           </>
         )}
-        {tab === 'calm' && <CalmSection />}
+        {tab === 'calm' && <CalmSection help={operatorHelp} />}
         {tab === 'ai-log' && (
           <>
-            <IdleDebugSection />
-            <MicSelfTest />
-            <AiErrorLogSection />
+            <IdleDebugSection help={operatorHelp} />
+            <MicSelfTest help={operatorHelp} />
+            <AiErrorLogSection help={operatorHelp} />
           </>
         )}
         {tab === 'guide' && <GuideSection />}

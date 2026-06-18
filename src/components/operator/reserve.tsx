@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
@@ -18,7 +19,7 @@ import { RowActions } from '../RowActions'
 // is a valid choice (items then fall under "Autres"). Persists on /api/household;
 // saving invalidates HOUSEHOLD_KEY so La cuisine re-groups live (it reads the same
 // key via useReserveLocations).
-export function ReserveLocationsSection() {
+export function ReserveLocationsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const write = useWrite()
   const undo = useUndoToast()
@@ -106,8 +107,8 @@ export function ReserveLocationsSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.reserveTitle}</h2>
-      <p className="lead">{t.operator.reserveHint}</p>
+      <HelpTitle help={help} k="reserveLocations">{t.operator.reserveTitle}</HelpTitle>
+      {help?.bubbleFor('reserveLocations')}
       {locs.length === 0 ? (
         <p className="board__empty mono">{t.operator.reserveEmpty}</p>
       ) : (

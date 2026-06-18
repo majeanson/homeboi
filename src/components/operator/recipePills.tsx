@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions } from '../../lib/recipes'
 import {
@@ -33,7 +34,7 @@ import { RowActions } from '../RowActions'
 const CRITERION_FIELDS: CriterionField[] = [...NUM_FIELDS, 'tag', 'favorite', 'photo']
 const MINUTE_FIELDS = new Set(['totalMin', 'prepMin', 'cookMin'])
 
-export function RecipePillsSection() {
+export function RecipePillsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const confirm = useConfirm()
@@ -123,8 +124,8 @@ export function RecipePillsSection() {
 
   return (
     <section className="surface operator__section">
-      <h2>{t.operator.pillsTitle}</h2>
-      <p className="lead">{t.operator.pillsHint}</p>
+      <HelpTitle help={help} k="recipePills">{t.operator.pillsTitle}</HelpTitle>
+      {help?.bubbleFor('recipePills')}
 
       <ul className="operator__list pill-admin__list">
         {list.map((p, i) => {
