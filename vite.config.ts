@@ -114,6 +114,10 @@ self.addEventListener('fetch', (e) => {
 
   // Immutable image bytes → cache-first: capability-keyed photos (/api/img/) and
   // proxied Flipp clippings (/api/flyer-img), which the offline download pre-warms.
+  // On a network-level fetch reject (upstream unreachable, connection dropped) fall
+  // back to any cached copy, else a synthetic 504 — never let respondWith reject, or
+  // the browser logs "ServiceWorker intercepted the request and encountered an
+  // unexpected error" and the <img> breaks with no clean failure.
   if (url.pathname.startsWith('/api/img/') || url.pathname.startsWith('/api/flyer-img')) {
     e.respondWith(
       caches.match(req).then((hit) =>
@@ -123,7 +127,7 @@ self.addEventListener('fetch', (e) => {
             caches.open(CACHE).then((c) => c.put(req, copy))
           }
           return res
-        }),
+        }).catch(() => new Response('', { status: 504 })),
       ),
     )
     return
@@ -139,7 +143,8 @@ self.addEventListener('fetch', (e) => {
     return
   }
 
-  // Static assets (hashed → immutable): cache-first, populate on miss.
+  // Static assets (hashed → immutable): cache-first, populate on miss. A failed
+  // fetch falls back to cache, else a 504 — never let respondWith reject.
   e.respondWith(
     caches.match(req).then((hit) =>
       hit ?? fetch(req).then((res) => {
@@ -148,7 +153,7 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE).then((c) => c.put(req, copy))
         }
         return res
-      }),
+      }).catch(() => new Response('', { status: 504 })),
     ),
   )
 })
