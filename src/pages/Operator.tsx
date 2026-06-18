@@ -20,6 +20,7 @@ import { RecipeTagsSection } from '../components/operator/recipesTags'
 import { RecipePillsSection } from '../components/operator/recipePills'
 import { MealSlotsSection } from '../components/operator/meals'
 import { ReserveLocationsSection } from '../components/operator/reserve'
+import { TodoTemplatesSection } from '../components/operator/todos'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
 import { IdleDebugSection } from '../components/operator/idleDebug'
 import { MicSelfTest } from '../components/operator/micTest'
@@ -39,6 +40,7 @@ const SECTIONS = [
   { id: 'agenda', key: 'events' as const },
   { id: 'chores', key: 'chores' as const },
   { id: 'routines', key: 'routines' as const },
+  { id: 'todos', key: 'todosTab' as const },
   { id: 'shopping', key: 'shopping' as const },
   { id: 'recipes', key: 'recipesTab' as const },
   { id: 'meals', key: 'mealsTab' as const },
@@ -185,6 +187,7 @@ export function Operator() {
           </>
         )}
         {tab === 'routines' && <RoutinesSection routines={routines} onChange={load} />}
+        {tab === 'todos' && <TodoTemplatesSection />}
         {tab === 'shopping' && (
           <>
             <ShopSection />

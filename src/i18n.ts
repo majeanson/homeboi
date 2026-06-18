@@ -680,6 +680,7 @@ export const FR = {
       'Choisis les repas à voir sur le babillard et la cuisine. Décoche ceux qui t’encombrent (ex. ne garder que le souper). Tu peux quand même les planifier dans La cuisine.',
     mealVisible: 'Affiché',
     mealHidden: 'Masqué',
+    todosTab: 'À compléter',
     reserveTab: 'Réserve',
     reserveTitle: 'Emplacements de la réserve',
     reserveHint:
@@ -920,6 +921,37 @@ export const FR = {
     accept: 'Accepter',
     saving: 'Enregistrement…',
     more: (n: number) => `+${n} autre${n > 1 ? 's' : ''}`,
+  },
+  // À compléter — listes à cocher autonomes (todos), distinctes du « À faire »
+  // (corvées ponctuelles). Globales ou rattachées à une journée; modèles de
+  // départ réutilisables. Voir src/lib/todos.ts + TodoSection.tsx.
+  todos: {
+    title: 'À compléter',
+    empty: 'Rien à compléter.',
+    addPlaceholder: 'Ajouter à compléter…',
+    check: 'Cocher',
+    uncheck: 'Décocher',
+    edit: 'Modifier',
+    clearChecked: 'Effacer cochées',
+    templatesLabel: 'Modèles :',
+    added: (s: string) => `« ${s} » ajouté`,
+    removed: (s: string) => `« ${s} » retiré`,
+    clearedN: (n: number) => `${n} effacé${n > 1 ? 's' : ''}`,
+    fromTemplate: (s: string) => `Liste « ${s} » ajoutée`,
+    // Portée choisie dans la feuille ＋ : standing (en tout temps) ou aujourd’hui.
+    scopeGlobal: 'En tout temps',
+    scopeToday: 'Aujourd’hui',
+    // Réglages ▸ À compléter (modèles de listes).
+    templatesTitle: 'Listes à compléter',
+    templatesHint:
+      'Prépare des listes réutilisables (ex. « Avant de partir », « Chez grand-papa ») et ajoute-les en un geste quand ça presse.',
+    templateName: 'Nom de la liste',
+    templateNamePlaceholder: 'Ex. Avant de partir',
+    addTemplate: 'Nouvelle liste',
+    templateItems: 'Éléments',
+    addItem: 'Ajouter un élément',
+    noTemplates: 'Aucune liste pour l’instant.',
+    templateItemsCount: (n: number) => `${n} élément${n > 1 ? 's' : ''}`,
   },
   undo: {
     action: 'Annuler',
@@ -1624,6 +1656,7 @@ export const EN: typeof FR = {
       'Pick which meals show on the board and the kitchen. Uncheck the ones that clutter your glance (e.g. keep only supper). You can still plan them in the kitchen.',
     mealVisible: 'Shown',
     mealHidden: 'Hidden',
+    todosTab: 'To complete',
     reserveTab: 'Reserve',
     reserveTitle: 'Reserve locations',
     reserveHint:
@@ -1864,6 +1897,34 @@ export const EN: typeof FR = {
     accept: 'Accept',
     saving: 'Saving…',
     more: (n: number) => `+${n} more`,
+  },
+  // To complete — standalone check-off lists (todos), distinct from "À faire"
+  // (one-off chores). Global or pinned to a day; reusable departure templates.
+  todos: {
+    title: 'To complete',
+    empty: 'Nothing to complete.',
+    addPlaceholder: 'Add something to complete…',
+    check: 'Check',
+    uncheck: 'Uncheck',
+    edit: 'Edit',
+    clearChecked: 'Clear checked',
+    templatesLabel: 'Templates:',
+    added: (s: string) => `"${s}" added`,
+    removed: (s: string) => `"${s}" removed`,
+    clearedN: (n: number) => `${n} cleared`,
+    fromTemplate: (s: string) => `"${s}" list added`,
+    scopeGlobal: 'Anytime',
+    scopeToday: 'Today',
+    templatesTitle: 'Checklists',
+    templatesHint:
+      'Prep reusable lists (e.g. "Before leaving", "At grandpa\'s") and drop them in with one tap when things get hectic.',
+    templateName: 'List name',
+    templateNamePlaceholder: 'e.g. Before leaving',
+    addTemplate: 'New list',
+    templateItems: 'Items',
+    addItem: 'Add an item',
+    noTemplates: 'No lists yet.',
+    templateItemsCount: (n: number) => `${n} item${n > 1 ? 's' : ''}`,
   },
   undo: {
     action: 'Undo',

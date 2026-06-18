@@ -47,6 +47,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | **Act** + **Section** | `components/board/Act.tsx` | The ONE activity-row primitive: colour spine + tile + title/sub; three shapes (check / nav / info). Board **and** kitchen pickers. |
 | **RowActions** | `components/RowActions.tsx` | The ✏️/🗑️ icon pair (40px targets). 8+ call sites. |
 | **CheckRow** | `components/CheckRow.tsx` | Calm checklist row: check is its own tap target. Garde-manger + réserve. |
+| **TodoSection** | `components/todos/TodoSection.tsx` | À compléter (todos, migration 0046): a self-fetching check-off list — global (board) or per-day (day page). Check-in-place + "Effacer cochées", inline add/edit, one-tap departure templates. Distinct from the loose-chore "À faire". |
 | **DealCard** | `components/DealCard.tsx` | Flyer-deal card (image + store + price + actions). |
 
 ### Display / content

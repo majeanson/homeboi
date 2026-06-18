@@ -16,6 +16,7 @@ import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
 import { Act, Section as BoardSection } from '../components/board/Act'
+import { TodoSection } from '../components/todos/TodoSection'
 import { RecurPicker, type RecurValue } from '../components/RecurPicker'
 import { LeadPicker } from '../components/LeadPicker'
 import { BigTiles, Sayable } from '../components/BigTiles'
@@ -482,6 +483,20 @@ export function DevKit() {
             <Act cat="event" title="Rendez-vous dentiste" when="jeu. 14:00" who="Camille" soon />
           </Demo>
         </>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'TodoSection',
+      file: 'components/todos/TodoSection.tsx',
+      kw: 'todo à compléter checklist check-off départ modèle template global journée',
+      // Self-fetches the real ['todos'] cache (live inside the app shell), so this
+      // specimen shows the actual global glance: check-in-place, add bar, template
+      // chips, "Effacer cochées". The board uses bento; the day page passes false.
+      render: () => (
+        <Demo label="board glance (global + today)">
+          <TodoSection title="À compléter" members={[{ id: 'm1', display_name: 'Camille', colour: PALETTE[2] }]} />
+        </Demo>
       ),
     },
     {

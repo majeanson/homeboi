@@ -16,6 +16,9 @@
 @import './styles/ambient.css';
 @import './styles/profile.css';
 @import './styles/misc.css';
+/* À compléter (todos) — uniquely-named .todo-* classes, so cascade position is
+   immaterial (like kit.css); kept with the late additions. */
+@import './styles/todos.css';
 @import './styles/recipes.css';
 @import './styles/cook.css';
 @import './styles/tour.css';

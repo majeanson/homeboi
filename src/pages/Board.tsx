@@ -41,7 +41,9 @@ import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from 
 // and stays empty — no counters, no score for clearing it. The alternate views
 // (Now & Next, per-person lanes) and the card/section atoms live in
 // src/components/board/*.
-import { BOARD_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, TODOS_KEY } from '../lib/queryKeys'
+import { TodoSection } from '../components/todos/TodoSection'
+import { type TodosData } from '../lib/todos'
 import { useUndoToast } from '../lib/toast'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { BOARD_HELP } from '../lib/boardHelp'
@@ -110,6 +112,13 @@ export function Board() {
   const weather = wx?.weather ?? null
   const tomorrowWx = wx?.tomorrow ?? null
   const tip = weatherTip(weather)
+
+  // À compléter (todos, migration 0046) — its own light poll, separate from the
+  // loose-chore "À faire" the board payload already carries (data.todos). The
+  // parent grid renders the full <TodoSection>; this read backs the toddler tiles
+  // + the "all clear" check. Open-only for the read-aloud kid view.
+  const { data: todosData } = useQuery({ queryKey: TODOS_KEY, queryFn: () => api<TodosData>('todos'), ...live })
+  const openTodos = (todosData?.todos ?? []).filter((td) => td.done_at == null)
 
   // (The kiosk's idle drift back to Maisonnée lives in HubLayout — shell-level,
   // so wandering to Réglages or the kitchen doesn't pin a picked face forever.)
@@ -255,6 +264,7 @@ export function Board() {
       todayEvents.length === 0 &&
       todayChores.length === 0 &&
       todayTodos.length === 0 &&
+      openTodos.length === 0 &&
       !data.tomorrowNote &&
       tomorrowEvents.length === 0 &&
       (data.tomorrowMeals?.length ?? 0) === 0
@@ -324,6 +334,18 @@ export function Board() {
                 sub: c.who ?? undefined,
                 narration: c.title,
                 color: c.color ?? undefined,
+              })),
+            )}
+            {/* À compléter (todos) — read aloud too; a parent checks them off in the
+                parent board, here a pre-reader just sees what's left to complete. */}
+            {kidSection(
+              t.todos.title,
+              openTodos.map((td) => ({
+                key: td.id,
+                icon: pictoFor(td.title, '✅'),
+                label: td.title,
+                narration: td.title,
+                color: memberColor(td.member_id) ?? undefined,
               })),
             )}
             {data.tomorrowNote && (
@@ -658,6 +680,11 @@ export function Board() {
               {todayTodos.map(todoAct)}
             </Section>
           )}
+
+          {/* À compléter — standalone check-off todos (global + today), distinct
+              from the loose-chore "À faire" above. Check in place, "Effacer
+              cochées", and one-tap departure checklists (templates). */}
+          <TodoSection title={t.todos.title} members={data.members} />
 
           <Section
             label={t.board.tomorrow}

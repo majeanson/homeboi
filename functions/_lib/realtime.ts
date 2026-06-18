@@ -98,6 +98,11 @@ const PATH_KEYS: Record<string, string[][]> = {
   members: [['members'], ['board']],
   // Kid routines render on the board and the routines tab.
   routines: [['routines'], ['board']],
+  // À cocher (todos): the board glance + day page read ['todos']; the board's own
+  // poll re-reads too. Prefix-invalidating ['todos'] also refreshes day-scoped
+  // queries (['todos', <day>]). Templates only feed Réglages + the picker chips.
+  todos: [['todos'], ['board']],
+  'todo-templates': [['todo-templates']],
   // Recipe book.
   recipes: [['recipes']],
   'recipe-tags': [['recipes'], ['recipe-tags']],

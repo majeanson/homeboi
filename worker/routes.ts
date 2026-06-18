@@ -52,6 +52,8 @@ import * as routineAudio from '../functions/api/routine-audio'
 import * as routineCardPhoto from '../functions/api/routine-card-photo'
 import * as routines from '../functions/api/routines'
 import * as suggestMeal from '../functions/api/suggest-meal'
+import * as todos from '../functions/api/todos'
+import * as todoTemplates from '../functions/api/todo-templates'
 import * as transcribe from '../functions/api/transcribe'
 import * as useSoon from '../functions/api/use-soon'
 import * as weather from '../functions/api/weather'
@@ -122,6 +124,8 @@ const TABLE: Record<string, RouteMod> = {
   'routine-card-photo': routineCardPhoto,
   routines,
   'suggest-meal': suggestMeal,
+  todos,
+  'todo-templates': todoTemplates,
   transcribe,
   'use-soon': useSoon,
   weather,

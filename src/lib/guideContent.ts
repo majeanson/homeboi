@@ -805,6 +805,44 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    id: 'todos',
+    icon: 'check-bold',
+    group: 'concepts',
+    title: { fr: 'À compléter', en: 'To complete' },
+    what: {
+      fr: 'De petites listes à cocher, à part des corvées (« À faire »). Une chose à faire ? Ajoute-la « en tout temps » ou juste « aujourd’hui ». Coche-la quand c’est fait, puis « Effacer cochées » nettoie la liste.',
+      en: 'Small check-off lists, separate from chores (“À faire”). Something to do? Add it “anytime” or just “today”. Check it when done, then “Clear checked” tidies the list.',
+    },
+    points: [
+      {
+        label: { fr: 'Globale ou pour une journée', en: 'Global or for one day' },
+        detail: {
+          fr: 'Depuis le ＋ du babillard, choisis « En tout temps » (ça reste jusqu’à effacé) ou « Aujourd’hui ». Sur la page d’une journée (dans La cuisine), tu l’ajoutes directement à cette date.',
+          en: 'From the board ＋, pick “Anytime” (it stays until cleared) or “Today”. On a day’s page (in the kitchen), you add it straight onto that date.',
+        },
+        why: { fr: 'Ce qui traîne dans la tête se pose quelque part de calme.', en: 'What’s rattling in your head lands somewhere calm.' },
+      },
+      {
+        label: { fr: 'Listes de départ', en: 'Departure lists' },
+        detail: {
+          fr: 'Prépare des modèles réutilisables dans Réglages ▸ À compléter (ex. « Avant de partir », « Chez grand-papa »). D’un geste, tout le modèle s’ajoute en cochables — un départ pressé devient moins stressant.',
+          en: 'Prep reusable templates in Settings ▸ To complete (e.g. “Before leaving”, “At grandpa’s”). One tap drops the whole list in as check-offs — a hectic departure gets less stressful.',
+        },
+        why: { fr: 'On y pense une fois, pas chaque fois qu’on court.', en: 'You think it through once, not every time you’re rushing out.' },
+      },
+      {
+        label: { fr: 'Calme', en: 'Calm' },
+        detail: {
+          fr: 'Pas de points, pas de pointage : cocher, c’est la récompense. La liste se vide et reste vide.',
+          en: 'No points, no score: checking it off is the reward. The list empties and stays empty.',
+        },
+      },
+    ],
+    // Surfaces the same card inline at the top of Réglages ▸ À compléter (where the
+    // departure templates live) and offers a "go there" link from the main Guide.
+    tab: 'todos',
+  },
+  {
     id: 'screensaver',
     icon: 'clock-bold',
     group: 'concepts',

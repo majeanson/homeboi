@@ -15,6 +15,7 @@ import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
+import { TodoSection } from '../components/todos/TodoSection'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
 import { type Recipe, RECIPES_KEY } from '../lib/recipes'
@@ -445,6 +446,10 @@ export function DayPlanPage() {
                 <Icon name="plus-bold" size={16} /> {t.operator.addChore}
               </button>
             ))}
+
+          {/* À compléter for THIS day — per-day check-off todos (migration 0046),
+              with inline add/edit, check-in-place and one-tap departure templates. */}
+          <TodoSection day={date} title={t.todos.title} members={formMembers} bento={false} />
         </section>
       </div>
     </div>

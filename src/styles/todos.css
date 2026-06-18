@@ -1,0 +1,129 @@
+/* À compléter (todos) — standalone check-off lists. Rows reuse the shared `.act`
+   primitive (spine + flex row), so this file only adds the bits the todo row +
+   the Réglages template editor need on top. Uniquely-named, so cascade-neutral. */
+
+.todo-sec {
+  margin-top: 0.5rem;
+}
+.todo-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* The row IS an `.act` (spine + flex). Make the check + name read as peers, and
+   strike a done row like La liste's checked items. */
+.todo-row__check {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.todo-row__check:hover {
+  color: var(--ink);
+}
+.todo-row.done .todo-row__check {
+  color: var(--accent, #6b8a52);
+}
+.todo-row__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.todo-row__name:disabled {
+  cursor: default;
+}
+.todo-row.done .title {
+  text-decoration: line-through;
+  color: var(--ink-faint);
+}
+.todo-row__by {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* Departure-checklist chips — one tap drops a whole list in. */
+.todo-templates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+.todo-templates__label {
+  color: var(--ink-faint);
+}
+.todo-clear {
+  margin-top: 0.5rem;
+}
+
+/* Réglages ▸ À compléter — the template editor. */
+.todo-tpl {
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 12px);
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.7rem;
+  background: var(--surface);
+}
+.todo-tpl__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.todo-tpl__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.todo-tpl__count {
+  flex: none;
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+.todo-tpl__items {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.todo-tpl__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.todo-tpl__item-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 0.2rem 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+}
+.todo-tpl__new {
+  margin-top: 0.3rem;
+}

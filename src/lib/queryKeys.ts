@@ -12,3 +12,8 @@ export const HOUSEHOLD_KEY = ['household']
 // list/view AND on planned meals (board + kitchen), so the key is shared — a
 // heart toggle invalidates it and every surface re-renders its hearts at once.
 export const LOVES_KEY = ['recipe-loves']
+// À cocher (todos): the board glance reads the global-+-today set under this key;
+// the day page reads its day under ['todos', <day>] — a prefix of TODOS_KEY, so
+// invalidating TODOS_KEY refreshes both. Templates feed Réglages + the picker.
+export const TODOS_KEY = ['todos']
+export const TODO_TEMPLATES_KEY = ['todo-templates']

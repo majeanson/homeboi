@@ -18,7 +18,7 @@ import { recipeImg } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
-import { BOARD_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, TODOS_KEY } from '../lib/queryKeys'
 import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
 import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
@@ -62,6 +62,7 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   capture: { cat: 'list', icon: 'sparkle-bold' },
   event: { cat: 'event', icon: 'calendar-blank-bold' },
   chore: { cat: 'chore', icon: 'hand-heart-bold' },
+  todo: { cat: 'chore', icon: 'check-bold' },
   routine: { cat: 'routine', icon: CATS.routine.icon },
   // The day-planner shortcuts borrow the marigold "today/tomorrow" sun glyphs the
   // board heroes use, so the ＋ reads the same as the day it plans.
@@ -145,6 +146,13 @@ export function AddSheet({
   // the grocery list by accident.
   const [listText, setListText] = useState('')
   const listVoice = useVoiceInput(setListText)
+
+  // — todo (board) — a quick "À compléter" item. Standing by default (day null);
+  // the "Aujourd'hui" toggle pins it to today instead. Its own state + mic so a
+  // board draft never lands as a todo by accident.
+  const [todoText, setTodoText] = useState('')
+  const todoVoice = useVoiceInput(setTodoText)
+  const [todoToday, setTodoToday] = useState(false)
 
   // — pantry (kitchen) — speak-to-fill, same single-shot mic as capture (the
   // sheet adds one then closes; the page's PantryTab is where you rattle off many).
@@ -300,6 +308,30 @@ export function AddSheet({
     }
   }
 
+  // Add an "À compléter" todo (board ＋). Standing (day null) unless "Aujourd'hui"
+  // is picked → today's local-midnight day. Offline-safe write; the board glance +
+  // any open todo view refetch via TODOS_KEY (prefix-matches day-scoped reads).
+  async function submitTodo(e?: React.FormEvent) {
+    e?.preventDefault()
+    const value = todoText.trim()
+    if (!value || busy) return
+    setBusy(true)
+    try {
+      await write('todos', {
+        method: 'POST',
+        body: { title: value, day: todoToday ? todayLocalDay() : null },
+        affectedKeys: [TODOS_KEY, BOARD_KEY],
+      })
+      setTodoText('')
+      setTodoToday(false)
+      close()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+    } finally {
+      setBusy(false)
+    }
+  }
+
   // Mark something low in the pantry (kitchen ＋) — mirrors PantryTab's add.
   async function submitPantry(e?: React.FormEvent) {
     e?.preventDefault()
@@ -372,6 +404,7 @@ export function AddSheet({
       capture: t.capture.quick,
       event: t.capture.types.event,
       chore: t.operator.chores,
+      todo: t.todos.title,
       'plan-today': t.board.planToday,
       'plan-tomorrow': t.board.planTomorrow,
       cook: t.kitchen.cook,
@@ -611,6 +644,44 @@ export function AddSheet({
               <VoiceButton voice={listVoice} label={t.capture.voice} />
             </div>
             <button type="submit" className="btn btn--primary" disabled={!listText.trim() || busy}>
+              <Icon name="plus-bold" size={20} />
+              {t.capture.add}
+            </button>
+          </form>
+        )}
+
+        {mode === 'todo' && (
+          <form onSubmit={submitTodo}>
+            <div className="sheet__field">
+              <Icon name="check-bold" size={20} color="var(--ink-faint)" />
+              <input
+                value={todoText}
+                onChange={(e) => setTodoText(e.target.value)}
+                placeholder={todoVoice.listening ? t.capture.listening : t.todos.addPlaceholder}
+                aria-label={t.todos.title}
+              />
+              <VoiceButton voice={todoVoice} label={t.capture.voice} />
+            </div>
+            {/* Standing (default) vs just today — two scopes, calm and explicit. */}
+            <div className="addsheet__scope" style={{ display: 'flex', gap: '.5rem' }}>
+              <button
+                type="button"
+                className={'btn btn--sm' + (!todoToday ? ' btn--primary' : '')}
+                aria-pressed={!todoToday}
+                onClick={() => setTodoToday(false)}
+              >
+                {t.todos.scopeGlobal}
+              </button>
+              <button
+                type="button"
+                className={'btn btn--sm' + (todoToday ? ' btn--primary' : '')}
+                aria-pressed={todoToday}
+                onClick={() => setTodoToday(true)}
+              >
+                {t.todos.scopeToday}
+              </button>
+            </div>
+            <button type="submit" className="btn btn--primary" disabled={!todoText.trim() || busy}>
               <Icon name="plus-bold" size={20} />
               {t.capture.add}
             </button>
