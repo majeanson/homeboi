@@ -11,6 +11,7 @@ export function BoardViewToggle({
   onChange,
   t,
   pick,
+  armed,
 }: {
   view: BoardView
   onChange: (v: BoardView) => void
@@ -18,6 +19,8 @@ export function BoardViewToggle({
   // Optional help-mode wrapper (lib/helpMode): when armed, a tap explains the view
   // instead of switching to it. Returns the onClick to use. Omit for normal use.
   pick?: (key: string, run: () => void) => () => void
+  // When help mode is armed, highlight the options as "tap me to learn".
+  armed?: boolean
 }) {
   const opts: { v: BoardView; icon: IconName; label: string }[] = [
     { v: 'bento', icon: 'calendar-blank-bold', label: t.boardView.bento },
@@ -26,7 +29,7 @@ export function BoardViewToggle({
     { v: 'month', icon: 'calendar-dots-bold', label: t.boardView.month },
   ]
   return (
-    <div className="boardview" role="group" aria-label={t.boardView.label}>
+    <div className={'boardview' + (armed ? ' help-armed' : '')} role="group" aria-label={t.boardView.label}>
       {opts.map((o) => (
         <button
           key={o.v}

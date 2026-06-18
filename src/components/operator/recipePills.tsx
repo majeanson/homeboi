@@ -13,6 +13,7 @@ import {
   NUM_FIELDS,
   isBuiltinPill,
   isNumCriterion,
+  critTags,
   pillKey,
 } from '../../lib/recipePills'
 import { wash, tintInk, edge } from '../../lib/colors'
@@ -85,7 +86,10 @@ export function RecipePillsSection() {
   const [draft, setDraft] = useState<CustomPill | null>(null)
   const startAdd = () => setDraft({ id: crypto.randomUUID(), label: '', rules: [{ field: 'totalMin', op: 'lte', n: 30 }] })
   const startEdit = (p: CustomPill) => setDraft({ ...p, rules: p.rules.map((r) => ({ ...r })) })
-  const draftValid = !!draft && draft.label.trim().length > 0 && draft.rules.length > 0
+  // A tag rule needs ≥1 tag; numeric/flag rules are always shaped-valid.
+  const ruleValid = (c: Criterion) => c.field !== 'tag' || critTags(c).length > 0
+  const draftValid =
+    !!draft && draft.label.trim().length > 0 && draft.rules.length > 0 && draft.rules.every(ruleValid)
   function commitDraft() {
     if (!draft || !draftValid) return
     const clean: CustomPill = { ...draft, label: draft.label.trim() }
@@ -97,7 +101,7 @@ export function RecipePillsSection() {
   // Build a criterion of the right shape when the field changes.
   const blankFor = (field: CriterionField): Criterion =>
     field === 'tag'
-      ? { field: 'tag', tag: tagList[0] ?? '' }
+      ? { field: 'tag', tags: tagList[0] ? [tagList[0]] : [] }
       : field === 'favorite' || field === 'photo'
         ? { field }
         : { field, op: 'lte', n: MINUTE_FIELDS.has(field) ? 30 : 5 }
@@ -107,7 +111,11 @@ export function RecipePillsSection() {
 
   const fieldLabel = (f: string) => t.operator.pillFieldName(f)
   const ruleText = (c: Criterion): string => {
-    if (c.field === 'tag') return `${fieldLabel('tag')}: ${c.tag}`
+    if (c.field === 'tag') {
+      const tags = critTags(c)
+      // OR within the rule reads as "Végé ou Végan".
+      return `${fieldLabel('tag')}: ${tags.length ? tags.join(` ${t.operator.pillRuleOr} `) : '—'}`
+    }
     if (c.field === 'favorite' || c.field === 'photo') return fieldLabel(c.field)
     const unit = MINUTE_FIELDS.has(c.field) ? ' min' : ''
     return `${fieldLabel(c.field)} ${c.op === 'gte' ? '≥' : '≤'} ${c.n}${unit}`
@@ -235,18 +243,31 @@ export function RecipePillsSection() {
                     {MINUTE_FIELDS.has(c.field) && <span className="pill-admin__unit mono">min</span>}
                   </>
                 ) : c.field === 'tag' ? (
-                  <select
-                    className="input"
-                    value={c.tag}
-                    onChange={(e) => setRule(i, { field: 'tag', tag: e.target.value })}
-                    aria-label={fieldLabel('tag')}
-                  >
-                    {tagList.map((tg) => (
-                      <option key={tg} value={tg}>
-                        {tg}
-                      </option>
-                    ))}
-                  </select>
+                  // Multi-select: tap each tag to include it (OR within this rule).
+                  // "Souper végé" without timing = two tags here; add a time rule to
+                  // narrow further (rules AND).
+                  <div className="pill-admin__tagpick" role="group" aria-label={fieldLabel('tag')}>
+                    {tagList.map((tg) => {
+                      const sel = critTags(c).some((x) => x.toLowerCase() === tg.toLowerCase())
+                      return (
+                        <button
+                          key={tg}
+                          type="button"
+                          className={'chip pill-admin__tagopt' + (sel ? ' is-on' : '')}
+                          aria-pressed={sel}
+                          onClick={() => {
+                            const cur = critTags(c)
+                            const next = sel
+                              ? cur.filter((x) => x.toLowerCase() !== tg.toLowerCase())
+                              : [...cur, tg]
+                            setRule(i, { field: 'tag', tags: next })
+                          }}
+                        >
+                          {tg}
+                        </button>
+                      )
+                    })}
+                  </div>
                 ) : null}
                 <button
                   type="button"

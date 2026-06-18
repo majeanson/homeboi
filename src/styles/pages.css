@@ -2421,6 +2421,17 @@
   flex: 1 1 7rem;
   min-width: 0;
 }
+/* A tag rule's multi-select: tap chips to OR several tags into one rule. Drops to
+   its own full-width line below the field picker and wraps. */
+.pill-admin__tagpick {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.pill-admin__tagopt {
+  cursor: pointer;
+}
 .pill-admin__op {
   flex: 0 0 4.5rem;
 }

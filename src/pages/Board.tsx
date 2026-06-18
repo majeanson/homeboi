@@ -519,7 +519,7 @@ export function Board() {
             )}
           </button>
         )}
-        <BoardViewToggle view={view} onChange={changeView} t={t} pick={help.pick} />
+        <BoardViewToggle view={view} onChange={changeView} t={t} pick={help.pick} armed={help.active} />
         {help.available && <HelpToggle active={help.active} onToggle={help.toggle} />}
       </div>
       {help.hint && <HelpHint />}

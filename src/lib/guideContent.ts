@@ -314,8 +314,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Collections', en: 'Collections' },
         detail: {
-          fr: 'Range tes recettes par étiquette (Soupes, Desserts…) et feuillette-les par collection. En mode bambin, c’est trois écrans tout en images, lus à voix haute : la collection, la recette, puis le jour — deux touches pour confirmer.',
-          en: 'Group your recipes by tag (Soups, Desserts…) and browse them by collection. In toddler mode it’s three all-picture screens, read aloud: the collection, the recipe, then the day — two taps to confirm.',
+          fr: 'Range tes recettes par étiquette (Soupes, Desserts…) et feuillette-les par collection. En vue Collections, touche des étiquettes pour n’afficher que ces collections-là (en vue « Aa », les mêmes étiquettes filtrent plutôt les recettes). En mode bambin, c’est trois écrans tout en images, lus à voix haute : la collection, la recette, puis le jour — deux touches pour confirmer.',
+          en: 'Group your recipes by tag (Soups, Desserts…) and browse them by collection. In Collections view, tap tags to show only those collections (in “Aa” view the same tags filter the recipes instead). In toddler mode it’s three all-picture screens, read aloud: the collection, the recipe, then the day — two taps to confirm.',
         },
         why: {
           fr: 'Pour qu’un tout-petit choisisse un souper par lui-même, par l’image et le son, sans savoir lire — et sans rien créer de neuf : ce sont tes étiquettes de recettes, juste rangées.',
@@ -1962,8 +1962,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Pastilles proposées', en: 'Suggested pills' },
         detail: {
-          fr: 'Ajoute ou enlève les étiquettes offertes quand tu crées une recette (ex. Végé, Rapide).',
-          en: 'Add or remove the tags offered when you create a recipe (e.g. Veggie, Quick).',
+          fr: 'Ajoute ou enlève les étiquettes offertes quand tu crées une recette (ex. Végé, Rapide). Glisse le ⠿ pour les réordonner — y compris les étiquettes déjà utilisées — et cet ordre décide aussi de l’ordre des collections.',
+          en: 'Add or remove the tags offered when you create a recipe (e.g. Veggie, Quick). Drag the ⠿ to reorder them — including tags already in use — and that order also sets the order of your collections.',
         },
         why: {
           fr: 'Pour étiqueter vite, à partir de ton propre vocabulaire, et garder les mêmes mots d’une recette à l’autre.',

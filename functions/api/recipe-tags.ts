@@ -92,8 +92,19 @@ function cleanCriterion(c: unknown): Record<string, unknown> | null {
   if (!c || typeof c !== 'object') return null
   const o = c as Record<string, unknown>
   if (o.field === 'tag') {
-    const tag = cleanTag(o.tag)
-    return tag ? { field: 'tag', tag } : null
+    // A tag rule OR-s 1+ tags. Accept the array shape and the LEGACY single `tag`
+    // (pills saved before multi-tag); store normalized as a deduped string[].
+    const rawTags = Array.isArray(o.tags) ? o.tags : o.tag != null ? [o.tag] : []
+    const seen = new Set<string>()
+    const tags: string[] = []
+    for (const r of rawTags.slice(0, 20)) {
+      const tg = cleanTag(r)
+      if (tg && !seen.has(tg.toLowerCase())) {
+        seen.add(tg.toLowerCase())
+        tags.push(tg)
+      }
+    }
+    return tags.length ? { field: 'tag', tags } : null
   }
   if (o.field === 'favorite' || o.field === 'photo') return { field: o.field }
   if (isStr(o.field) && NUM_FIELDS.includes(o.field)) {

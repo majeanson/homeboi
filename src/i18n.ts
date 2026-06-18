@@ -420,6 +420,7 @@ export const FR = {
     usesN: (n: number) => `utilise ${n}`,
     // #11 "Recipe collections" — browse-by-tag view toggle inside the recipe book.
     collectionsTitle: 'Collections',
+    collectionsPickHint: 'Touche des étiquettes pour n’afficher que ces collections.',
     arrange: 'Affichage',
     ungrouped: 'Autres',
     // Recipe-tab pills (migration 0045): the two new built-ins.
@@ -704,6 +705,7 @@ export const FR = {
     pillRuleValue: 'Valeur',
     pillRuleAdd: 'Ajouter un critère',
     pillRuleRemove: 'Retirer le critère',
+    pillRuleOr: 'ou',
     pillSave: 'Enregistrer la pastille',
     pillCancel: 'Annuler',
     pillFieldName: (f: string) =>
@@ -721,7 +723,7 @@ export const FR = {
     tagsHint:
       'Les pastilles proposées quand tu étiquettes une recette, et le grand ménage : renommer ou retirer une étiquette partout d’un coup.',
     tagPills: 'Pastilles proposées',
-    tagPillsHint: 'Ces pastilles apparaissent dans le formulaire de recette. Les étiquettes déjà utilisées s’ajoutent automatiquement.',
+    tagPillsHint: 'Ces pastilles apparaissent dans le formulaire de recette ; leur ordre décide aussi de l’ordre des collections. Glisse le ⠿ pour réorganiser. Les étiquettes déjà utilisées s’ajoutent automatiquement.',
     tagAddPill: 'Ajouter une pastille…',
     tagUsed: 'Étiquettes utilisées',
     tagNoneUsed: 'Aucune étiquette utilisée encore.',
@@ -1362,6 +1364,7 @@ export const EN: typeof FR = {
     usesN: (n: number) => `uses ${n}`,
     // #11 "Recipe collections" — browse-by-tag view toggle inside the recipe book.
     collectionsTitle: 'Collections',
+    collectionsPickHint: 'Tap tags to show only those collections.',
     arrange: 'View',
     ungrouped: 'Other',
     // Recipe-tab pills (migration 0045): the two new built-ins.
@@ -1645,6 +1648,7 @@ export const EN: typeof FR = {
     pillRuleOp: 'Comparison',
     pillRuleValue: 'Value',
     pillRuleAdd: 'Add a criterion',
+    pillRuleOr: 'or',
     pillRuleRemove: 'Remove criterion',
     pillSave: 'Save pill',
     pillCancel: 'Cancel',
@@ -1663,7 +1667,7 @@ export const EN: typeof FR = {
     tagsHint:
       'The pills offered when you tag a recipe, plus the housekeeping: rename or remove a tag everywhere at once.',
     tagPills: 'Suggested pills',
-    tagPillsHint: 'These pills show in the recipe form. Tags already in use join them automatically.',
+    tagPillsHint: 'These pills show in the recipe form; their order also sets the collections order. Drag the ⠿ to rearrange. Tags already in use join them automatically.',
     tagAddPill: 'Add a pill…',
     tagUsed: 'Tags in use',
     tagNoneUsed: 'No tags in use yet.',

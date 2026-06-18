@@ -80,8 +80,11 @@ export function RecipesTab({
     const q = recipeQuery.trim().toLowerCase()
     return recipes.filter((r) => {
       if (q && !(r.title.toLowerCase().includes(q) || r.ingredients.some((i) => i.toLowerCase().includes(q)))) return false
-      // AND: every selected tag must be present on the recipe.
-      if (tagFilter.length) {
+      // Tag chips mean different things per view: in the flat "Aa" list they
+      // AND-FILTER (a recipe must carry every selected tag); in "Collections" they
+      // instead pick WHICH collection sections to show (handled in `groups`), so
+      // here we don't narrow the set — every section shows its full membership.
+      if (!groupView && tagFilter.length) {
         const rt = new Set((r.tags ?? []).map((tg) => tg.toLowerCase()))
         if (!tagFilter.every((k) => rt.has(k))) return false
       }
@@ -103,7 +106,7 @@ export function RecipesTab({
       }
       return true
     })
-  }, [recipes, recipeQuery, tagFilter, pills, filters, canFastFilter, loved])
+  }, [recipes, recipeQuery, tagFilter, groupView, pills, filters, canFastFilter, loved])
   // Cookability: which staple each recipe is missing (out of stock + not on the
   // list), fewest first. The pill only surfaces when there's a low item to rank
   // against, so it never appears as a no-op.
@@ -165,15 +168,19 @@ export function RecipesTab({
   // "Autres". Null unless grouping is on AND there are tags to group by.
   const groups = useMemo(() => {
     if (!groupView || tags.length === 0) return null
-    const byTag = tags
+    // Selected tag chips pick which collection sections to show (a UNION of those
+    // collections). No selection = every collection, in curated order. Untagged
+    // "Autres" only joins when nothing's selected (it isn't a collection you'd pick).
+    const visibleTags = tagFilter.length ? tags.filter((tag) => tagFilter.includes(tag.toLowerCase())) : tags
+    const byTag = visibleTags
       .map((tag) => {
         const key = tag.toLowerCase()
         return { tag, items: recipeOrder.filter((r) => (r.tags ?? []).some((tg) => tg.toLowerCase() === key)) }
       })
       .filter((g) => g.items.length > 0)
-    const untagged = recipeOrder.filter((r) => !(r.tags ?? []).length)
+    const untagged = tagFilter.length ? [] : recipeOrder.filter((r) => !(r.tags ?? []).length)
     return { byTag, untagged }
-  }, [groupView, tags, recipeOrder])
+  }, [groupView, tags, recipeOrder, tagFilter])
 
   // One recipe card — shared by the flat grid and the grouped sections. The ❤
   // favorite (#21) is a sibling overlay of the card button, never nested in it.
@@ -402,9 +409,23 @@ export function RecipesTab({
               </div>
             </div>
           )}
+          {/* In Collections, the tag chips above pick which sections to show (a
+              union), not narrow the recipes — say so once so the change is clear. */}
+          {groupView && tags.length > 0 && (
+            <p className="mono recipe-collections-hint">{t.recipes.collectionsPickHint}</p>
+          )}
           {recipeOrder.length === 0 ? (
             // The book has recipes — the FILTERS hid them all. Say so (instead of
             // the misleading "no recipes yet") and offer the one-tap way back.
+            <div className="board__empty mono">
+              <p>{t.recipes.noMatch}</p>
+              <button type="button" className="btn btn--ghost mono" onClick={clearAll}>
+                {t.recipes.clearFilters}
+              </button>
+            </div>
+          ) : groups && groups.byTag.length === 0 && groups.untagged.length === 0 ? (
+            // Collections view with a selection that no recipe matches (e.g. a sort
+            // pill filtered them out) — same calm "nothing here, clear it" exit.
             <div className="board__empty mono">
               <p>{t.recipes.noMatch}</p>
               <button type="button" className="btn btn--ghost mono" onClick={clearAll}>

@@ -34,8 +34,15 @@ export function RecipeTagsSection() {
   const presets = tagsQ.data?.presets ?? []
   const used = tagsQ.data?.used ?? []
   const colors = tagsQ.data?.colors ?? {}
-  // What the form actually offers today (presets, or the built-in starters).
-  const effective = tagOptions(presets, [], t.recipes.tagPresets)
+  // The ORDER strip folds in every tag in use, not just saved presets — so the
+  // operator can drag ANY tag into place and that order drives the recipe book's
+  // chips AND the #11 collection sections (RecipesTab reads this order). A tag in
+  // use that's dragged once becomes a saved preset (offered in the form too).
+  const effective = tagOptions(presets, used.map((u) => u.tag), t.recipes.tagPresets)
+  // In-use tags can't be removed from the ORDER with the chip ✕ (they'd just
+  // reappear, since they're still on recipes) — they're deleted from the "in use"
+  // list below, which strips them off every recipe. The ✕ stays for spare presets.
+  const usedKeys = new Set(used.map((u) => u.tag.toLowerCase()))
 
   const [pillInput, setPillInput] = useState('')
   const [renaming, setRenaming] = useState<string | null>(null)
@@ -153,14 +160,16 @@ export function RecipeTagsSection() {
               >
                 {tg}
               </button>
-              <button
-                type="button"
-                className="tag-admin__pill-x"
-                onClick={() => savePills(effective.filter((x) => x !== tg))}
-                aria-label={`${t.operator.tagRemove} — ${tg}`}
-              >
-                <InlineIcon name="x-bold" size={12} />
-              </button>
+              {!usedKeys.has(tg.toLowerCase()) && (
+                <button
+                  type="button"
+                  className="tag-admin__pill-x"
+                  onClick={() => savePills(effective.filter((x) => x !== tg))}
+                  aria-label={`${t.operator.tagRemove} — ${tg}`}
+                >
+                  <InlineIcon name="x-bold" size={12} />
+                </button>
+              )}
             </span>
           )
         })}

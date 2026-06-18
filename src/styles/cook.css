@@ -660,6 +660,13 @@
   padding: 0 0.9rem;
   font-size: 0.9rem;
 }
+/* In Collections, the tag chips pick which sections show (a union) rather than
+   narrowing recipes — a one-line cue so that change of meaning is clear. */
+.recipe-collections-hint {
+  margin: -0.4rem 0 0.8rem;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
 /* A collection section: tag heading + its own recipe grid. */
 .recipe-group + .recipe-group {
   margin-top: 1.3rem;

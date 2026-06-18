@@ -419,7 +419,13 @@ export function AddSheet({
   return (
     <>
       <div className={'scrim' + (open ? ' show' : '')} onClick={close} aria-hidden="true" />
-      <div ref={sheetRef} className={'sheet' + (open ? ' show' : '')} role="dialog" aria-modal="true" aria-label={title}>
+      <div
+        ref={sheetRef}
+        className={'sheet' + (open ? ' show' : '') + (help.active ? ' help-armed' : '')}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
         {/* A real, always-reachable way out — the grab handle only hints at the
             drag-down gesture (touch-only, undiscoverable). This ✕ is sticky so a
             tall form (event/chore/routine) can't scroll it off-screen. */}

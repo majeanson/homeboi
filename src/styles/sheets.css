@@ -518,6 +518,32 @@
 .help-bubble__guide:focus-visible {
   text-decoration: underline;
 }
+/* While help mode is ARMED, gently ring the controls a tap will EXPLAIN (not run),
+   so the "tap a button to learn what it does" hint is visually grounded. Targets the
+   pickable controls of each surface that adopts help mode (the ＋ sheet tiles, the
+   board view toggle, the kitchen sub-tabs). Reduced-motion → a static ring. */
+@keyframes help-armed-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+}
+.help-armed .cat-pick,
+.help-armed .boardview__opt,
+.help-armed .subtabs__opt {
+  animation: help-armed-pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .help-armed .cat-pick,
+  .help-armed .boardview__opt,
+  .help-armed .subtabs__opt {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+}
 .sheet h3 {
   font-family: var(--display);
   font-weight: 800;

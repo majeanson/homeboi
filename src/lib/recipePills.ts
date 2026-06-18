@@ -29,7 +29,10 @@ export type Op = 'lte' | 'gte'
 
 export type Criterion =
   | { field: NumField; op: Op; n: number }
-  | { field: 'tag'; tag: string }
+  // A tag rule matches a recipe carrying ANY of its tags (OR within the rule); a
+  // pill's rules still AND across each other. So "Souper végé rapide" = tag in
+  // {Végé, Végan} AND total ≤ 30 min, built as two rules.
+  | { field: 'tag'; tags: string[] }
   | { field: 'favorite' }
   | { field: 'photo' }
 export type CriterionField = Criterion['field']
@@ -37,6 +40,16 @@ export type NumCriterion = { field: NumField; op: Op; n: number }
 export const isNumField = (f: string): f is NumField => (NUM_FIELDS as readonly string[]).includes(f)
 // Narrowing guard so the editor can spread a numeric criterion (op/n) type-safely.
 export const isNumCriterion = (c: Criterion): c is NumCriterion => isNumField(c.field)
+
+// The tags a tag-rule tests (OR-ed). Tolerant of the LEGACY single-tag shape
+// `{tag:'x'}` saved before multi-tag, so old pills keep matching without a migration.
+export function critTags(c: Criterion): string[] {
+  if (c.field !== 'tag') return []
+  const raw = c as { tags?: unknown; tag?: unknown }
+  if (Array.isArray(raw.tags)) return raw.tags.filter((x): x is string => typeof x === 'string' && x.length > 0)
+  if (typeof raw.tag === 'string' && raw.tag) return [raw.tag]
+  return []
+}
 
 export interface BuiltinPill {
   k: BuiltinKey
@@ -77,7 +90,12 @@ export function numFieldValue(r: Recipe, f: NumField): number | null {
 }
 
 export function matchesCriterion(r: Recipe, c: Criterion, loved: Set<string>): boolean {
-  if (c.field === 'tag') return (r.tags ?? []).some((tg) => tg.toLowerCase() === c.tag.toLowerCase())
+  if (c.field === 'tag') {
+    const wanted = critTags(c)
+    if (wanted.length === 0) return false // an empty tag rule matches nothing (incomplete)
+    const rt = new Set((r.tags ?? []).map((tg) => tg.toLowerCase()))
+    return wanted.some((w) => rt.has(w.toLowerCase()))
+  }
   if (c.field === 'favorite') return loved.has(r.id)
   if (c.field === 'photo') return !!r.image
   const v = numFieldValue(r, c.field)
