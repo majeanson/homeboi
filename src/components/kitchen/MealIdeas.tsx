@@ -11,6 +11,7 @@ import { recipeOptions } from './comboOptions'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon, InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { useSingleOpen } from '../Disclosure'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
 // The "general ideas" pool under the week grid: a reusable shortlist of meal
@@ -44,7 +45,9 @@ export function MealIdeas({
   // text. RowActions already hides its own ✏️/🗑️ for a guest.
   const ro = isGuest()
   const [text, setText] = useState('')
-  const [planFor, setPlanFor] = useState<string | null>(null)
+  // Tap an idea to reveal its plan-onto-a-day picker — one open at a time (shared
+  // with Leftovers via useSingleOpen, the per-item sibling of <Disclosure>).
+  const { isOpen, toggle, close } = useSingleOpen()
   // Recipes as combobox options — ranked by cookability, badged "Prêt / il manque N".
   const recipeOpts = useMemo(() => recipeOptions(recipes, lowItems, listItems, t), [recipes, lowItems, listItems, t])
   // Which meal a "plan it" lands on — souper by default, like everywhere else.
@@ -106,7 +109,7 @@ export function MealIdeas({
   // Place an idea onto a day + meal — same shape as a recipe quick-add, so a
   // recipe-linked idea keeps its link and a free-text idea stays plain text.
   async function planIdea(idea: MealIdea, date: number, slot: MealSlot) {
-    setPlanFor(null)
+    close()
     await write('meals', {
       method: 'POST',
       body: { date, slot, title: idea.title, recipeId: idea.recipe_id ?? null, staples: [] },
@@ -187,9 +190,9 @@ export function MealIdeas({
                     ) : (
                       <button
                         type="button"
-                        className="chip kitchen__idea-name"
-                        onClick={() => setPlanFor(planFor === idea.id ? null : idea.id)}
-                        aria-expanded={planFor === idea.id}
+                        className={'chip kitchen__idea-name' + (isOpen(idea.id) ? ' is-open' : '')}
+                        onClick={() => toggle(idea.id)}
+                        aria-expanded={isOpen(idea.id)}
                       >
                         {idea.recipe_id && (
                           <>
@@ -197,6 +200,9 @@ export function MealIdeas({
                           </>
                         )}
                         {idea.title}
+                        <span className="kitchen__idea-caret" aria-hidden="true">
+                          <Icon name="caret-down-bold" size={12} />
+                        </span>
                       </button>
                     )}
                     <RowActions
@@ -211,7 +217,7 @@ export function MealIdeas({
                   </>
                 )}
               </div>
-              {!ro && planFor === idea.id && (
+              {!ro && isOpen(idea.id) && (
                 <MealPlanPicker
                   slot={planSlot}
                   onSlot={setPlanSlot}

@@ -926,13 +926,24 @@
   position: fixed;
   left: 0;
   right: 0;
-  top: var(--vvt, 0px);
+  /* Full dynamic viewport by default — `dvh` already tracks browser chrome. We pin
+     to the VISUAL viewport (--vvt/--vvh) ONLY while the keyboard is up (`.kb-open`),
+     to keep the focused field / footer above it. Binding unconditionally let a stale
+     --vvt/--vvh — left over after the iPad "Hide Keyboard" button dismisses the
+     keyboard WITHOUT blurring (no focusout, so only the viewport `resize` recomputes,
+     and it can leave a scrolled offsetTop) — push the scene down / shrink it, blanking
+     part of the page. Mirrors the .recipe-modal fix. See src/lib/viewportVars.ts. */
+  top: 0;
   height: 100dvh;
-  height: var(--vvh, 100dvh);
   z-index: 1;
   background: var(--paper);
   display: flex;
   flex-direction: column;
+}
+/* Keyboard up: pin to the visible band so the focused field clears it. */
+.kb-open .scene {
+  top: var(--vvt, 0px);
+  height: var(--vvh, 100dvh);
 }
 .scene__head {
   flex: 0 0 auto;
@@ -1739,13 +1750,20 @@
      VISIBLE viewport keeps the whole flow's controls on-screen. */
   left: 0;
   right: 0;
-  top: var(--vvt, 0px);
+  /* Full dvh by default; pin to the visual viewport (--vvt/--vvh) ONLY while the
+     keyboard is up. Unconditional binding stranded the scene at a stale offset after
+     the iPad "Hide Keyboard" button dismissed without blurring — same bug + fix as
+     .scene / .recipe-modal. See src/lib/viewportVars.ts. */
+  top: 0;
   height: 100dvh;
-  height: var(--vvh, 100dvh);
   z-index: 50;
   background: var(--paper);
   display: flex;
   flex-direction: column;
+}
+.kb-open .cashier {
+  top: var(--vvt, 0px);
+  height: var(--vvh, 100dvh);
 }
 .cashier__bar {
   flex: 0 0 auto;

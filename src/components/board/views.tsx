@@ -9,6 +9,8 @@ import { SLOT_ICON_NAME, SLOT_TIME_ORDER, type MealSlot } from '../../lib/mealSl
 import { type Lang } from '../../i18n'
 import { Icon, InlineIcon } from '../Icon'
 import { Act } from './Act'
+import { useEntityDetail } from '../detail/DetailProvider'
+import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../detail/adapters'
 import { type Todo } from '../../lib/todos'
 import { colorOf, nameOf, type BoardData, type Dict, type EventRow } from './types'
 
@@ -31,6 +33,9 @@ export function NowNext({
 }) {
   const mealPrefs = useMealPrefs()
   const nav = useNavigate()
+  // Tap any item to peek its detail — the same sheet the bento board uses.
+  const detail = useEntityDetail()
+  const detailCtx: DetailCtx = { t, lang, members: data.members }
   // "Préparer le repas" — the next meal due that has a recipe → its cook mode.
   // Only shown when there's a recipe to open (a free-text meal has nothing to
   // cook), so the action is never a dead end.
@@ -84,8 +89,17 @@ export function NowNext({
     <div className="nownext">
       {focus ? (
         <div
-          className={'nownext__focus' + (focusMine ? ' act--mine' : '')}
+          className={'nownext__focus nownext__focus--tap' + (focusMine ? ' act--mine' : '')}
           style={{ '--tint': focusColor ?? CATS.event.color } as CSSProperties}
+          role="button"
+          tabIndex={0}
+          onClick={() => detail.open(buildEvent(focus!, detailCtx))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              detail.open(buildEvent(focus!, detailCtx))
+            }
+          }}
         >
           <div className="nownext__when mono">{focusWhen}</div>
           <div className="nownext__title" style={{ color: tintInk(focusColor ?? CATS.event.color) }}>
@@ -104,7 +118,19 @@ export function NowNext({
           )}
         </div>
       ) : data.tonight && mealPrefs.isVisible('supper') ? (
-        <div className="nownext__focus" style={{ '--tint': supperColor } as CSSProperties}>
+        <div
+          className="nownext__focus nownext__focus--tap"
+          style={{ '--tint': supperColor } as CSSProperties}
+          role="button"
+          tabIndex={0}
+          onClick={() => detail.open(buildMeal(data.tonight!, detailCtx, { color: supperColor, slotLabel: t.board.tonight }))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              detail.open(buildMeal(data.tonight!, detailCtx, { color: supperColor, slotLabel: t.board.tonight }))
+            }
+          }}
+        >
           <div className="nownext__when mono">{t.board.tonight}</div>
           <div className="nownext__title" style={{ color: tintInk(supperColor!) }}>
             {data.tonight.title}
@@ -177,7 +203,15 @@ export function NowNext({
         <div className="nownext__chores">
           <span className="nownext__meals-label mono">{t.board.chores}</span>
           {(data.choresToday ?? []).map((c) => (
-            <Act key={c.id} cat="chore" title={c.title} who={c.who ?? undefined} color={c.color ?? undefined} soon={c.soon} />
+            <Act
+              key={c.id}
+              cat="chore"
+              title={c.title}
+              who={c.who ?? undefined}
+              color={c.color ?? undefined}
+              soon={c.soon}
+              onOpen={() => detail.open(buildChore(c, detailCtx))}
+            />
           ))}
         </div>
       )}
@@ -259,6 +293,9 @@ export function Lanes({
   todos?: Todo[]
 }) {
   const mealPrefs = useMealPrefs()
+  // Tap any item to peek its detail — the same sheet the bento board uses.
+  const detail = useEntityDetail()
+  const detailCtx: DetailCtx = { t, lang, members: data.members }
   const memberIds = new Set(data.members.map((m) => m.id))
   // Hidden meal slots (Réglages ▸ Repas) drop off the Maisonnée lane's table.
   const laneMeals = data.todayMeals.filter((m) => mealPrefs.isVisible(m.slot))
@@ -291,6 +328,7 @@ export function Lanes({
               title={`${slotLabel(m.slot)} · ${m.title}`}
               who={cookLine(m.cook_member_id)}
               color={mealPrefs.color(m.slot)}
+              onOpen={() => detail.open(buildMeal(m, detailCtx, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot) }))}
             />
           ))}
           {/* Restants à finir — family-wide, read-only on the lanes glance. */}
@@ -300,6 +338,7 @@ export function Lanes({
               cat="meal"
               icon="arrow-counter-clockwise-bold"
               title={`${t.kitchen.leftoversTag} · ${l.title}`}
+              onOpen={() => detail.open(buildLeftover(l, detailCtx))}
             />
           ))}
           {unassigned.map((e) => (
@@ -309,10 +348,18 @@ export function Lanes({
               title={e.title}
               when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
               soon={e.soon}
+              onOpen={() => detail.open(buildEvent(e, detailCtx))}
             />
           ))}
           {sharedChores.map((c) => (
-            <Act key={c.id} cat="chore" title={c.title} color={c.color ?? undefined} soon={c.soon} />
+            <Act
+              key={c.id}
+              cat="chore"
+              title={c.title}
+              color={c.color ?? undefined}
+              soon={c.soon}
+              onOpen={() => detail.open(buildChore(c, detailCtx))}
+            />
           ))}
           {sharedTodos.map((td) => (
             <Act key={td.id} cat="chore" icon="check-bold" title={td.title} />
@@ -352,10 +399,18 @@ export function Lanes({
                     when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
                     color={m.colour}
                     soon={e.soon}
+                    onOpen={() => detail.open(buildEvent(e, detailCtx))}
                   />
                 ))}
                 {chores.map((c) => (
-                  <Act key={c.id} cat="chore" title={c.title} color={c.color ?? m.colour} soon={c.soon} />
+                  <Act
+                    key={c.id}
+                    cat="chore"
+                    title={c.title}
+                    color={c.color ?? m.colour}
+                    soon={c.soon}
+                    onOpen={() => detail.open(buildChore(c, detailCtx))}
+                  />
                 ))}
                 {myTodos.map((td) => (
                   <Act key={td.id} cat="chore" icon="check-bold" title={td.title} color={m.colour} />

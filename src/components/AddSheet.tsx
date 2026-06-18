@@ -25,6 +25,7 @@ import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks
 import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
+import { Disclosure } from './Disclosure'
 import { MemoControls } from './MemoControls'
 import { EntityCombobox } from './EntityCombobox'
 import { mealOptions } from './kitchen/comboOptions'
@@ -743,23 +744,25 @@ export function AddSheet({
                 {t.capture.add}
               </button>
             </form>
-            {/* Or drop a whole checklist in — a composed list lands as sections. */}
+            {/* Or drop a whole checklist in — a composed list lands as sections.
+                Collapsed by default so the chips don't crowd the quick-add form. */}
             {todoTemplates.length > 0 && (
               <div className="addsheet__todo-templates">
-                <p className="sheet__group-label mono">{t.todos.templatesLabel}</p>
-                <div className="addsheet__todo-chips">
-                  {todoTemplates.map((tpl) => (
-                    <button
-                      key={tpl.id}
-                      type="button"
-                      className="chip"
-                      disabled={busy}
-                      onClick={() => quickAddTemplate(tpl.id)}
-                    >
-                      <Icon name="plus-bold" size={13} /> {tpl.title}
-                    </button>
-                  ))}
-                </div>
+                <Disclosure label={t.todos.templatesToggle} count={todoTemplates.length}>
+                  <div className="addsheet__todo-chips">
+                    {todoTemplates.map((tpl) => (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        className="chip"
+                        disabled={busy}
+                        onClick={() => quickAddTemplate(tpl.id)}
+                      >
+                        <Icon name="plus-bold" size={13} /> {tpl.title}
+                      </button>
+                    ))}
+                  </div>
+                </Disclosure>
               </div>
             )}
           </div>

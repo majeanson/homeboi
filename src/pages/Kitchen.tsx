@@ -29,8 +29,8 @@ import { Leftovers } from '../components/kitchen/Leftovers'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { reschedule } from '../components/kitchen/mealMutations'
 import { useEntityDetail } from '../components/detail/DetailProvider'
-import { buildRecipe } from '../components/detail/adapters'
-import { SIDE_SLOTS, SLOT_ICON_NAME } from '../lib/mealSlots'
+import { buildRecipe, buildDay } from '../components/detail/adapters'
+import { SIDE_SLOTS, SLOT_ICON_NAME, SLOT_TIME_ORDER } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { tintInk, faint, hairline } from '../lib/colors'
 import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
@@ -167,6 +167,24 @@ export function Kitchen() {
   const mealsFor = (date: number, slot: string) => days.filter((d) => d.date === date && d.slot === slot)
   // date → its day note (the per-day memo), if any.
   const noteFor = (date: number) => dayNotesQ.data?.notes?.find((n) => n.date === date)
+
+  // Tapping a day cell opens an INFORMATIVE day peek (the whole day's meals + note),
+  // distinct from the pencil that opens the planner — Marc's ask: in La cuisine the
+  // tap informs, the edit button plans. We guard against the drag: a pointerdown that
+  // then moves >6px is a reschedule, not a tap, so it doesn't also open the peek.
+  const tapDownRef = useRef<{ x: number; y: number } | null>(null)
+  const boardMembers = boardQ.data?.members ?? []
+  const openDayPeek = (date: number) => {
+    const nameById = (id: string | null) => (id ? boardMembers.find((m) => m.id === id)?.display_name ?? null : null)
+    const dayMeals = SLOT_TIME_ORDER.filter((s) => mealPrefs.isVisible(s)).flatMap((s) =>
+      mealsFor(date, s).map((m) => ({ slot: t.kitchen.slots[s], title: m.title, cook: nameById(m.cook_member_id) })),
+    )
+    const rel = date === weekStart ? t.kitchen.todayShort : date === addLocalDays(weekStart, 1) ? t.kitchen.tomorrowShort : null
+    const label = (rel ? `${rel} · ` : '') + formatDay(date, lang).replace(/^./, (c) => c.toUpperCase())
+    detail.open(
+      buildDay({ t, lang, members: [] }, { label, accent: mealPrefs.color('supper'), meals: dayMeals, note: noteFor(date)?.text ?? null }),
+    )
+  }
 
   // Drag a day's souper to another day — the calm week-grid gesture. Each day cell
   // is a drop zone keyed by its date; the souper headline is the drag handle. A day
@@ -517,17 +535,30 @@ export function Kitchen() {
                   <div className="kitchen__day-top">
                     <span
                       className={
-                        'kitchen__day-sum-main' +
+                        'kitchen__day-sum-main kitchen__day-sum-tap' +
                         (showSupper ? ' kitchen__day-drag' : '') +
                         (showSupper && dayDnd.activeId === String(date) ? ' is-dragging' : '')
                       }
-                      onPointerDown={
-                        showSupper
-                          ? (e) => dayDnd.start(String(date), suppers.map((m) => m.title).join(' · '), e)
-                          : undefined
-                      }
-                      role={showSupper ? 'button' : undefined}
-                      aria-label={showSupper ? t.kitchen.dragDay : undefined}
+                      onPointerDown={(e) => {
+                        // Remember where the press began so the click below can tell a
+                        // tap (open the peek) from a drag (reschedule — skip the peek).
+                        tapDownRef.current = { x: e.clientX, y: e.clientY }
+                        if (showSupper) dayDnd.start(String(date), suppers.map((m) => m.title).join(' · '), e)
+                      }}
+                      onClick={(e) => {
+                        const d = tapDownRef.current
+                        if (d && (Math.abs(e.clientX - d.x) > 6 || Math.abs(e.clientY - d.y) > 6)) return
+                        openDayPeek(date)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          openDayPeek(date)
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${t.detail.openDay} · ${formatDay(date, lang)}`}
                       title={showSupper ? t.kitchen.dragDay : undefined}
                     >
                       {showSupper ? (

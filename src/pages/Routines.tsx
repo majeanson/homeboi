@@ -81,7 +81,11 @@ function RoutinesParent() {
             // The same step pictures the toddler sees — so a parent recognizes the
             // routine at a glance (toothbrush → pyjamas → book) instead of reading.
             const steps = r.cards.slice(0, 8)
-            const openR = () => detail.open(buildRoutine(r, { t, lang, members: [] }))
+            // The peek shows real info: the moment of day + every step picto (the same
+            // emojis the toddler run uses) + the count — not just the name.
+            const todLabel = isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : null
+            const stepIcons = r.cards.map((c) => c.icon).filter((i): i is string => !!i)
+            const openR = () => detail.open(buildRoutine(r, { t, lang, members: [] }, { todLabel, stepIcons }))
             return (
               <div
                 key={r.id}

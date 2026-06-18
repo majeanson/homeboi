@@ -22,6 +22,7 @@ import { tintInk } from '../../lib/colors'
 import { Icon } from '../Icon'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
+import { Disclosure } from '../Disclosure'
 
 interface FaceMember {
   id: string
@@ -290,16 +291,18 @@ export function TodoSection({
         />
       )}
 
-      {/* Departure checklists — one tap drops the whole list in as todos. */}
+      {/* Departure checklists — one tap drops the whole list in as todos. Tucked
+          behind a collapsed toggle so a long roster of lists never fills the card. */}
       {!ro && templates.length > 0 && (
-        <div className="todo-templates mono">
-          <span className="todo-templates__label">{t.todos.templatesLabel}</span>
-          {templates.map((tpl) => (
-            <button key={tpl.id} type="button" className="chip todo-templates__chip" onClick={() => instantiate(tpl.id)}>
-              <Icon name="plus-bold" size={13} /> {tpl.title}
-            </button>
-          ))}
-        </div>
+        <Disclosure label={t.todos.templatesToggle} count={templates.length}>
+          <div className="todo-templates mono">
+            {templates.map((tpl) => (
+              <button key={tpl.id} type="button" className="chip todo-templates__chip" onClick={() => instantiate(tpl.id)}>
+                <Icon name="plus-bold" size={13} /> {tpl.title}
+              </button>
+            ))}
+          </div>
+        </Disclosure>
       )}
 
       {!ro && checked.length > 0 && (

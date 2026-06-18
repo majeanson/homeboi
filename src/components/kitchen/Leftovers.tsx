@@ -11,6 +11,7 @@ import { mealOptions } from './comboOptions'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon, InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { useSingleOpen } from '../Disclosure'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
 // "Restants" — the leftovers pool under the week grid. A cooked dish with extra
@@ -38,7 +39,9 @@ export function Leftovers({
   // Read-only guest: no add / recent quick-pick / plan-onto-day; chips read inert.
   const ro = isGuest()
   const [text, setText] = useState('')
-  const [planFor, setPlanFor] = useState<string | null>(null)
+  // Tap a leftover to reveal its plan-onto-a-day picker — one open at a time
+  // (shared with MealIdeas via useSingleOpen, the per-item sibling of <Disclosure>).
+  const { isOpen, toggle, close } = useSingleOpen()
   const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
   const [busy, setBusy] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -100,7 +103,7 @@ export function Leftovers({
   // Compensating undo (the caches are live-polled): delete the created meal AND
   // re-insert the pool row, so Annuler fully reverses the plan.
   async function planLeftover(l: Leftover, date: number, slot: MealSlot) {
-    setPlanFor(null)
+    close()
     const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY]
     const res = await write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
@@ -189,12 +192,15 @@ export function Leftovers({
                     ) : (
                       <button
                         type="button"
-                        className="chip kitchen__idea-name"
-                        onClick={() => setPlanFor(planFor === l.id ? null : l.id)}
-                        aria-expanded={planFor === l.id}
+                        className={'chip kitchen__idea-name' + (isOpen(l.id) ? ' is-open' : '')}
+                        onClick={() => toggle(l.id)}
+                        aria-expanded={isOpen(l.id)}
                       >
                         <InlineIcon name="arrow-counter-clockwise-bold" size={14} color="var(--terracotta-deep)" />{' '}
                         {l.title}
+                        <span className="kitchen__idea-caret" aria-hidden="true">
+                          <Icon name="caret-down-bold" size={12} />
+                        </span>
                       </button>
                     )}
                     <RowActions
@@ -209,7 +215,7 @@ export function Leftovers({
                   </>
                 )}
               </div>
-              {!ro && planFor === l.id && (
+              {!ro && isOpen(l.id) && (
                 <MealPlanPicker
                   slot={planSlot}
                   onSlot={setPlanSlot}

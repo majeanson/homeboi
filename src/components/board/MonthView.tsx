@@ -15,6 +15,8 @@ import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
 import { Act } from './Act'
 import { DayNote } from './DayNote'
+import { useEntityDetail } from '../detail/DetailProvider'
+import { buildEvent, buildChore, buildMeal, type DetailCtx } from '../detail/adapters'
 import { colorOf, nameOf, type Dict, type Member } from './types'
 
 const DAY = 86400
@@ -84,6 +86,13 @@ export function MonthView({
   const nav = useNavigate()
   const write = useWrite()
   const undo = useUndoToast()
+  // Tap a meal/event/chore in the day panel to peek its detail — the same sheet the
+  // bento board uses. The /api/month rows carry slightly different field names, so
+  // each onOpen maps them onto the shared builders (components/detail/adapters).
+  const detail = useEntityDetail()
+  const detailCtx: DetailCtx = { t, lang, members }
+  // — chore `who` is a NAME on the month payload; recover its id for the face. —
+  const choreWhoId = (who: string | null) => (who ? members.find((m) => m.display_name === who)?.id ?? null : null)
   // Which month is shown, as an offset (in months) from the real current one.
   // Selected day drives the detail panel; it opens on today.
   const [offset, setOffset] = useState(0)
@@ -300,6 +309,9 @@ export function MonthView({
                 title={`${slotLabel(m.slot)} · ${m.title}`}
                 who={cookLine(m.cook_member_id)}
                 color={mealPrefs.color(m.slot)}
+                onOpen={() =>
+                  detail.open(buildMeal(m, detailCtx, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot), daySec: selected }))
+                }
               />
             ))}
             {sel!.events.map((e) => (
@@ -310,10 +322,22 @@ export function MonthView({
                 when={e.all_day ? t.board.allDay : formatTime(e.at, lang)}
                 who={nameOf(members, e.member_id) ?? undefined}
                 color={colorOf(members, e.member_id) ?? undefined}
+                onOpen={() =>
+                  detail.open(buildEvent({ id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id }, detailCtx))
+                }
               />
             ))}
             {sel!.chores.map((c) => (
-              <Act key={c.id} cat="chore" title={c.title} who={c.who ?? undefined} color={c.color ?? undefined} />
+              <Act
+                key={c.id}
+                cat="chore"
+                title={c.title}
+                who={c.who ?? undefined}
+                color={c.color ?? undefined}
+                onOpen={() =>
+                  detail.open(buildChore({ id: c.id, title: c.title, color: c.color, at: c.day, who: c.who, who_id: choreWhoId(c.who) }, detailCtx))
+                }
+              />
             ))}
             {/* À compléter todos pinned to this day — check them off right here (the
                 check is its own tap target); tap the rest of the row to open the day

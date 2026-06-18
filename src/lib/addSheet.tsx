@@ -56,10 +56,14 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   liste: ['list-item', 'quick-add', 'flyer', 'auto-pick'],
 }
 
-// The operator-grade forms (same gating the old chooser had): a kiosk that
-// isn't signed in never sees these tiles. Everything else (capture, list,
-// kitchen adds) already works on a paired kiosk via its device token.
-export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'chore', 'routine', 'routine-pick'])
+// The operator-grade forms a kiosk that isn't signed in never sees as ＋ tiles.
+// NOTE: `routine-pick` is deliberately NOT here — managing kid routines is the
+// wall tablet's own job and the /api/routines POST/PATCH already accept a paired
+// kiosk's device token (only member admin + device pairing stay operator-only,
+// see functions/api/routines.ts). So the Routines-tab ＋ manage picker (new + edit
+// existing) works on a parent-audience kiosk, matching the backend. Everything
+// else here (event/chore add forms, capture, list, kitchen adds) is unchanged.
+export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'chore', 'routine'])
 
 // The operator forms are full-screen SCENE routes now, not in-sheet forms: a
 // tall multi-field form (a routine's name + member chips + template + card deck)

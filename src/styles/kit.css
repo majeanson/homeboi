@@ -191,3 +191,48 @@
   color: var(--ink);
   background: color-mix(in srgb, var(--ink) 7%, transparent);
 }
+
+/* ── Disclosure (collapsed-by-default expand/toggle) ────────────────────────
+   A calm summary row that hides a space-hungry group (suggestion chips, asides)
+   until tapped, so nothing populates the surface unasked. */
+.disclosure {
+  margin-top: 0.5rem;
+}
+.disclosure__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.1rem;
+  border: 0;
+  background: none;
+  color: var(--ink-faint);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.disclosure__summary:hover,
+.disclosure__summary:focus-visible {
+  color: var(--ink);
+}
+.disclosure__caret {
+  display: inline-flex;
+  transition: transform 0.15s ease;
+}
+.disclosure--open .disclosure__caret {
+  transform: rotate(180deg);
+}
+.disclosure__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.disclosure__body {
+  margin-top: 0.4rem;
+}

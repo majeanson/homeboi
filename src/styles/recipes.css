@@ -617,6 +617,19 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
+/* Tap-to-expand affordance — a muted caret that rotates open, matching the shared
+   <Disclosure> cue (the picker reveal uses the same useSingleOpen toggle). */
+.kitchen__idea-caret {
+  flex: none;
+  display: inline-flex;
+  margin-left: auto;
+  padding-left: 0.3rem;
+  color: var(--ink-faint);
+  transition: transform 0.15s ease;
+}
+.kitchen__idea-name.is-open .kitchen__idea-caret {
+  transform: rotate(180deg);
+}
 .kitchen__idea-del {
   flex: none;
   width: 2.75rem;

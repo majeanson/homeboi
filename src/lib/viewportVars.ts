@@ -95,6 +95,21 @@ export function trackVisualViewport(): void {
     // in. We fire only on the transition, not every scroll frame, so a user's
     // manual scroll while typing isn't fought.
     if (open && !kbOpen) pinFocused()
+    // Falling edge — the keyboard just LEFT while a text field is still focused.
+    // The only way to get here is the iPad "Hide Keyboard" key (bottom-right of
+    // the OSK): it dismisses the keyboard WITHOUT blurring, so no `focusout`
+    // fires and iOS doesn't restore the scroll it pushed up to reveal the field.
+    // The page is left stranded scrolled-up with a blank band where the keyboard
+    // was — most visible in landscape, where the OSK had eaten most of the
+    // screen. Blur the still-focused field so iOS unwinds that scroll and we fall
+    // through the known-good `focusout` recompute (a normal tap-away already
+    // blurred first → activeElement isn't editable here → this is a no-op for it).
+    // A hardware keyboard never opens the OSK, so there's no falling edge and
+    // typing on it is untouched.
+    else if (!open && kbOpen) {
+      const el = document.activeElement
+      if (isEditable(el)) el.blur()
+    }
     kbOpen = open
   }
   const schedule = () => {

@@ -167,7 +167,9 @@
 
 /* Rows/cards that open a peek on tap — show it's tappable on a pointer device. */
 .now-card--tap,
-.routine-card--tap {
+.routine-card--tap,
+.kitchen__day-sum-tap,
+.nownext__focus--tap {
   cursor: pointer;
 }
 .now-card--tap:active,

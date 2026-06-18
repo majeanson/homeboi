@@ -26,6 +26,7 @@ import { type Recipe } from '../lib/recipes'
 import { EmptyState } from '../components/EmptyState'
 import { StatusMessage } from '../components/StatusMessage'
 import { Chip, ChipGroup } from '../components/Chip'
+import { Disclosure } from '../components/Disclosure'
 import { SectionHeader } from '../components/SectionHeader'
 import { SectionAvatar } from '../components/SectionAvatar'
 import { HubHead } from '../components/HubHead'
@@ -423,6 +424,25 @@ export function DevKit() {
             <Chip icon="check-bold">terminé</Chip>
           </Demo>
         </>
+      ),
+    },
+    {
+      cat: 'Fondations',
+      name: 'Disclosure',
+      file: 'components/Disclosure.tsx',
+      kw: 'disclosure expand toggle collapse repli accordéon suggestions modèles caret',
+      render: () => (
+        <Demo label="collapsed-by-default — tucks a chip group away">
+          <Disclosure label="Listes prêtes" count={3}>
+            <ChipGroup>
+              {['Avant de partir', 'Chez grand-papa', 'Sac de piscine'].map((k) => (
+                <Chip key={k} icon="plus-bold">
+                  {k}
+                </Chip>
+              ))}
+            </ChipGroup>
+          </Disclosure>
+        </Demo>
       ),
     },
     {

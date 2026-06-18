@@ -82,17 +82,14 @@
   font-weight: 700;
 }
 
-/* Departure-checklist chips — one tap drops a whole list in. */
+/* Departure-checklist chips — one tap drops a whole list in. Lives inside a
+   Disclosure (collapsed by default), which owns the spacing above it. */
 .todo-templates {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
-  margin-top: 0.5rem;
   font-size: 0.85rem;
-}
-.todo-templates__label {
-  color: var(--ink-faint);
 }
 .todo-clear {
   margin-top: 0.5rem;
@@ -204,9 +201,6 @@
 .addsheet__todo-templates {
   border-top: 1px solid var(--line);
   padding-top: 0.6rem;
-}
-.addsheet__todo-templates .sheet__group-label {
-  margin: 0 0 0.4rem;
 }
 .addsheet__todo-chips {
   display: flex;
