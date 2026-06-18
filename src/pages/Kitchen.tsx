@@ -28,6 +28,8 @@ import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers } from '../components/kitchen/Leftovers'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { reschedule } from '../components/kitchen/mealMutations'
+import { useEntityDetail } from '../components/detail/DetailProvider'
+import { buildRecipe } from '../components/detail/adapters'
 import { SIDE_SLOTS, SLOT_ICON_NAME } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { tintInk, faint, hairline } from '../lib/colors'
@@ -62,6 +64,9 @@ export function Kitchen() {
   // hidden slot can always be planned from a day's pencil.
   const mealPrefs = useMealPrefs()
   const nav = useNavigate()
+  // Tapping a recipe in the book opens the shared entity-detail peek (photo, tags,
+  // time, hearts) with "Ouvrir la recette" to go deeper — same peek the board uses.
+  const detail = useEntityDetail()
   // The full per-day editor (add/remove/reorder meals, the staples step, the day
   // note, clear the day) lives on its own full-screen scene now — /kitchen/day/:date
   // (DayPlanPage). This page is the calm read-only week glance: a row's pencil and
@@ -90,10 +95,24 @@ export function Kitchen() {
   // Held in the URL (?tab=) so it survives the return from a full-screen add/edit
   // scene — add a recipe from Recettes and you come back to Recettes. See tabParam.
   const [kitTab, setKitTab] = useTabParam('tab', 'meals', ['meals', 'pantry', 'recipes'] as const)
-  // Contextual "?" help mode for the sub-tab nav (shared hook): arm it, then tapping
-  // a tab explains what that section does in place instead of switching to it.
+  // Contextual "?" help mode for the WHOLE tab (shared hook): arm it once at the
+  // sub-tab nav, then tap a tab OR any sub-section heading below (Idées de repas,
+  // Restants, Il en manque, La réserve, Recettes, Collections) to learn what that
+  // concept is in place instead of acting on it. One page-level instance, threaded
+  // down into the sub-tab components so their headings (HelpTitle) become pickable.
   const tabHelpLabel = (k: string) =>
-    ({ meals: t.kitchen.tabMeals, pantry: t.kitchen.tabPantry, recipes: t.kitchen.tabRecipes })[k] ?? k
+    ({
+      meals: t.kitchen.tabMeals,
+      pantry: t.kitchen.tabPantry,
+      recipes: t.kitchen.tabRecipes,
+      ideas: t.kitchen.ideas,
+      leftovers: t.kitchen.leftovers,
+      low: t.kitchen.low,
+      useSoon: t.kitchen.useSoon,
+      reserve: t.kitchen.reserve,
+      recipesBook: t.recipes.title,
+      collections: t.recipes.collectionsTitle,
+    })[k] ?? k
   const tabHelp = useHelpMode(KITCHEN_TAB_HELP, tabHelpLabel)
   // The recipe a planned meal points at (exact recipe_id link first, else a loose
   // title match) — shared with the day editor via useRecipeForMeal.
@@ -288,7 +307,7 @@ export function Kitchen() {
 
   return (
     <>
-      <main className="kitchen today-feed">
+      <main className={'kitchen today-feed' + (tabHelp.active ? ' help-armed' : '')}>
         <HubHead
           title={t.kitchen.title}
           icon="carrot-bold"
@@ -321,7 +340,12 @@ export function Kitchen() {
           {tabHelp.available && <HelpToggle active={tabHelp.active} onToggle={tabHelp.toggle} />}
         </div>
         {tabHelp.hint && <HelpHint />}
-        {tabHelp.bubble}
+        {/* The sub-tab bubbles render HERE (next to the nav). Heading bubbles render
+            next to their own heading via bubbleFor, so a concept explained deep in
+            the page doesn't pop up off-screen at the top. */}
+        {tabHelp.bubbleFor('meals')}
+        {tabHelp.bubbleFor('pantry')}
+        {tabHelp.bubbleFor('recipes')}
 
         {kitTab === 'meals' && (
         <section>
@@ -379,7 +403,7 @@ export function Kitchen() {
                       </button>
                     )}
                     <button type="button" className="btn btn--ghost mono" onClick={() => keepSuggestion(s)}>
-                      ＋ {t.kitchen.suggestKeep}
+                      <InlineIcon name="plus-bold" /> {t.kitchen.suggestKeep}
                     </button>
                     <button
                       type="button"
@@ -583,6 +607,7 @@ export function Kitchen() {
             lowItems={lowItems}
             listItems={listItems}
             profileId={profileId}
+            help={tabHelp}
           />
 
           {/* Restants — leftovers to finish. Quick-pick from the last few days' meals
@@ -592,14 +617,15 @@ export function Kitchen() {
             leftovers={leftoversQ.data?.leftovers ?? []}
             recentMeals={meals.data?.recent ?? []}
             week={week.map((w) => ({ date: w.date, label: formatWeekday(w.date, lang) }))}
+            help={tabHelp}
           />
         </section>
         )}
 
         {kitTab === 'pantry' && (
           <>
-            <PantryTab low={low} soon={soon} />
-            <ReserveSection reserve={reserveQ.data?.reserve ?? []} />
+            <PantryTab low={low} soon={soon} help={tabHelp} />
+            <ReserveSection reserve={reserveQ.data?.reserve ?? []} help={tabHelp} />
           </>
         )}
 
@@ -614,7 +640,8 @@ export function Kitchen() {
             soonItems={soonItems}
             listItems={listItems}
             lastServed={lastServedById}
-            onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
+            onView={(r) => detail.open(buildRecipe(r, { t, lang, members: [] }))}
+            help={tabHelp}
           />
         )}
       </main>

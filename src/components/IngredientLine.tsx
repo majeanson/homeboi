@@ -4,6 +4,8 @@ import { useSpeak } from '../lib/speak'
 import { readableInk } from '../lib/colors'
 import { findMeasures, spokenMeasure } from '../lib/measure'
 import { measureColor } from '../lib/measureColors'
+import { useMeasureColors } from '../lib/measurePrefs'
+import { MeasureScoops } from './MeasureScoops'
 
 // Render one ingredient line with its measuring-tool amounts turned into tappable,
 // colour-coded pills. The pill is tinted to match the real spoon/cup (see
@@ -14,20 +16,26 @@ import { measureColor } from '../lib/measureColors'
 // `size` scales the pill: 'lg' for the kid-facing Cook mode, 'sm' for the parent
 // recipe sheet. `kid` drops the 🔊 glyph (Cook mode narrates the whole step, so a
 // speaker on every pill is noise there) while keeping the colour + tap-to-hear.
+// `scoops` additionally draws the amount as colour-coded fill circles after the
+// pill (one per whole scoop) — used in Cook mode (toddler + the split/focus views)
+// where "fill this spoon twice" reads faster than a number.
 // A line with no scoopable measurement just renders its text — the feature is
 // additive, never a rewrite (the calm/degrade tenet).
 export function IngredientLine({
   line,
   size = 'sm',
   kid = false,
+  scoops = false,
 }: {
   line: string
   size?: 'sm' | 'lg'
   kid?: boolean
+  scoops?: boolean
 }) {
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
+  const ov = useMeasureColors()
   const measures = useMemo(() => findMeasures(line), [line])
 
   if (measures.length === 0) return <>{line}</>
@@ -39,7 +47,7 @@ export function IngredientLine({
   let cursor = 0
   measures.forEach((m, i) => {
     if (m.start > cursor) parts.push(<Fragment key={`t${i}`}>{line.slice(cursor, m.start)}</Fragment>)
-    const color = measureColor(m)
+    const color = measureColor(m, ov)
     parts.push(
       <button
         key={`p${i}`}
@@ -57,6 +65,8 @@ export function IngredientLine({
         {m.text}
       </button>,
     )
+    // The colour-coded fill circles ("scoop this twice"), right after its pill.
+    if (scoops) parts.push(<MeasureScoops key={`s${i}`} measure={m} size={size} />)
     cursor = m.end
   })
   if (cursor < line.length) parts.push(<Fragment key="tend">{line.slice(cursor)}</Fragment>)

@@ -180,7 +180,7 @@ export function DayEditor({
                     setSlotText('')
                   }}
                 >
-                  ＋ {addLabel(slotMeals.length)}
+                  <InlineIcon name="plus-bold" /> {addLabel(slotMeals.length)}
                 </button>
               )}
             </div>
@@ -241,7 +241,7 @@ export function DayEditor({
                 setMealText('')
               }}
             >
-              ＋ {addLabel(suppers.length)}
+              <InlineIcon name="plus-bold" /> {addLabel(suppers.length)}
             </button>
           )}
         </div>
@@ -398,7 +398,7 @@ export function DayEditor({
               setNoteText('')
             }}
           >
-            ＋ {t.kitchen.note}
+            <InlineIcon name="plus-bold" /> {t.kitchen.note}
           </button>
         )}
       </section>

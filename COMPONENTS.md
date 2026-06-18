@@ -44,7 +44,8 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 ### Actions & rows
 | Component | File | Purpose |
 | --- | --- | --- |
-| **Act** + **Section** | `components/board/Act.tsx` | The ONE activity-row primitive: colour spine + tile + title/sub; three shapes (check / nav / info). Board **and** kitchen pickers. |
+| **Act** + **Section** | `components/board/Act.tsx` | The ONE activity-row primitive: colour spine + tile + title/sub; three shapes (check / nav / info). Board **and** kitchen pickers. `onOpen` makes the row peek the entity detail — alone it's a whole-row tap (caret); with a check it **splits** (body peeks, check still ticks). |
+| **EntityDetailSheet** | `components/detail/EntityDetailSheet.tsx` | THE generalized "tap an item → a picture, a date, the relevant text + smart actions" peek (a bottom sheet). Renders a normalized `DetailModel` (`lib/detail.ts`) built per-kind by `components/detail/adapters.ts` (event/meal/chore/todo/leftover/recipe/routine). Opened from any row via **`useEntityDetail()`** (`components/detail/DetailProvider.tsx`, mounted in `HubLayout`). Reuses `ZoomableImg`/`Avatar`/`HeartButton`/`Chip`. Wired on the board (Aujourd'hui rows + the "Ce soir" hero), recipe cards, and routine cards. Parent audience only. |
 | **RowActions** | `components/RowActions.tsx` | The ✏️/🗑️ icon pair (40px targets). 8+ call sites. |
 | **CheckRow** | `components/CheckRow.tsx` | Calm checklist row: check is its own tap target. Garde-manger + réserve. |
 | **TodoSection** | `components/todos/TodoSection.tsx` | À compléter (todos, migration 0046): a self-fetching check-off list — global (board) or per-day (day page). Check-in-place + "Effacer cochées", inline add/edit, one-tap departure templates. Distinct from the loose-chore "À faire". |
@@ -56,7 +57,8 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | **Avatar** | `components/Avatar.tsx` | Person = photo or coloured initial disc. 10+ call sites. |
 | **BigTiles** + **Sayable** | `components/BigTiles.tsx` | Toddler picture-tiles + tap-to-speak text (`useSpeak`). |
 | **KidCollections** | `components/kitchen/KidCollections.tsx` | Toddler hear-first 3-stage recipe-collection picker (collection → recipe → day) over the recipe-tag system (#11). Reuses `buildCollections` + the shared `kidSuggest` meal-plan write. Surfaced as a "Les collections" door tile inside `KidKitchen`. |
-| **IngredientLine** | `components/IngredientLine.tsx` | Recipe line with tappable measure pills. |
+| **IngredientLine** | `components/IngredientLine.tsx` | Recipe line with tappable measure pills; `scoops` adds the fill-circle drawing. Colours come from `lib/measurePrefs` (customizable in Réglages ▸ Affichage). |
+| **MeasureScoops** | `components/MeasureScoops.tsx` | A measure drawn as colour-coded fill circles — one solid per whole scoop, a part-filled circle for a fraction ("2 c. à soupe" = 2 circles; "1½ tasse" = 1 full + ½). Tap to hear. Used by `IngredientLine` (Cook-mode toddler + split/focus views). |
 | **ZoomableImg** | `components/ZoomableImg.tsx` | Tap-to-lightbox image. |
 
 ### Voice
@@ -98,6 +100,14 @@ colour + attribute rules over time / ingredients / servings / tag / favourite, s
 `lib/recipePills.ts`, migration 0045), consumed by `RecipesTab`).
 `AmbientScreen` (the full-screen idle screensaver — clock/date/photo-frame, backlog #3)
 mounts in `HubLayout` and is driven by its idle timer.
+
+`CookMode` now offers the PARENT lens three layouts via a bar switcher — **Recette**
+(full scroll page), **Côte à côte** (`split`: ingredients pinned beside the steps,
+two tabs on a phone) and **Focus** (`step`: the parent-styled stepper) — plus a
+device-wide **density** control (Compact/Normal/Grand). The view choice persists
+per recipe and the density device-wide via `lib/cookPrefs.ts`. The TODDLER lens
+stays locked to the stepper (one-way door). `operator/display.tsx ▸ MeasureColorsSection`
+is the Réglages ▸ Affichage editor for the spoon/cup colours (`lib/measurePrefs.ts`).
 
 ---
 

@@ -7,6 +7,8 @@ import { useHelp } from '../../lib/help'
 import { isGuest } from '../../lib/device'
 import { getTheme, toggleTheme, type Theme, isDaypartAuto, setDaypartAuto, setDayPart } from '../../lib/theme'
 import { computeDayPart } from '../../lib/timeofday'
+import { MEASURE_SWATCHES, swatchColor, useMeasureColorsEditor } from '../../lib/measurePrefs'
+import { IngredientLine } from '../IngredientLine'
 import { InlineIcon } from '../Icon'
 import {
   getRate,
@@ -229,6 +231,57 @@ export function VoiceSection() {
           </button>
         </div>
       )}
+    </section>
+  )
+}
+
+// Customizable measuring-tool colours. Each spoon/cup pill + scoop circle is tinted
+// to the household's OWN physical tools, calibrated here once and shared across
+// every device (everyone uses the same spoons). Persisted on /api/household via the
+// editor hook (lib/measurePrefs); the picker previews live while open and commits
+// one PATCH on close. A sample line below shows the change instantly.
+export function MeasureColorsSection() {
+  const t = useT()
+  const { lang } = useLang()
+  const { overrides, preview, commit, reset } = useMeasureColorsEditor()
+  // Read-only guest: colour edits are writes — hide the whole section.
+  if (isGuest()) return null
+  // A sample line that exercises every colour family + the scoop circles.
+  const sample =
+    lang === 'fr'
+      ? '2 c. à soupe de beurre · 1 ½ tasse de farine · ¼ c. à thé de sel'
+      : '2 tbsp butter · 1 ½ cup flour · ¼ tsp salt'
+  return (
+    <section className="surface operator__section">
+      <h2>{t.operator.measureColorsTitle}</h2>
+      <p className="lead">{t.operator.measureColorsHint}</p>
+      <div className="measure-colors">
+        {MEASURE_SWATCHES.map((s) => {
+          const color = swatchColor(s, overrides)
+          return (
+            <label key={s.id} className="measure-colors__row">
+              <input
+                type="color"
+                className="measure-colors__pick"
+                value={color}
+                onChange={(e) => preview(s.id, e.target.value)}
+                onBlur={(e) => commit(s.id, e.target.value)}
+                aria-label={s.label[lang]}
+              />
+              <span className="measure-colors__name">{s.label[lang]}</span>
+            </label>
+          )
+        })}
+      </div>
+      <div className="measure-colors__preview">
+        <span className="measure-colors__preview-label mono">{t.operator.measureColorsPreview}</span>
+        <span className="measure-colors__preview-line">
+          <IngredientLine line={sample} size="lg" scoops />
+        </span>
+      </div>
+      <button type="button" className="btn" onClick={reset}>
+        <InlineIcon name="arrow-counter-clockwise-bold" /> {t.operator.measureColorsReset}
+      </button>
     </section>
   )
 }

@@ -179,6 +179,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Toucher pour les détails', en: 'Tap for details' },
+        detail: {
+          fr: 'Touche un élément du babillard — un rendez-vous, un repas, une corvée, le souper de ce soir — pour ouvrir une fiche : une image, la date, le texte utile et de qui il s’agit, avec un ou deux gestes rapides (Modifier, Marquer fait, Ouvrir la recette). Sur une corvée, le crochet à droite reste pour cocher; touche le reste de la ligne pour la fiche. La même fiche s’ouvre aussi sur une recette ou une routine.',
+          en: 'Tap an item on the board — an event, a meal, a chore, tonight’s supper — to open a card: a picture, the date, the relevant text and who it’s for, with a quick action or two (Edit, Mark done, Open recipe). On a chore the check on the right still ticks it off; tap the rest of the row for the card. The same card opens on a recipe or a routine too.',
+        },
+        why: {
+          fr: 'Voir le détail d’une affaire sans quitter le coup d’œil.',
+          en: 'See the detail of a thing without leaving the glance.',
+        },
+      },
+      {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
           fr: 'Grille (toute la semaine), « Maintenant » (la prochaine affaire), par personne (la journée d’un seul) ou le mois (la vue d’ensemble).',
@@ -1268,12 +1279,30 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Mode cuisson', en: 'Cook mode' },
         detail: {
-          fr: 'Plein écran, gros texte, une étape à la fois. Il suit la vue (parent/enfant) et se ferme par un petit [[icon:x-bold]].',
-          en: 'Full screen, big text, one step at a time. Follows the view (parent/kid) and closes with a small [[icon:x-bold]].',
+          fr: 'Plein écran, gros texte, les mains à la pâte. Il garde l’écran allumé, lit l’étape à voix haute et se ferme par un petit [[icon:x-bold]].',
+          en: 'Full screen, big text, hands in the dough. It keeps the screen awake, reads the step aloud, and closes with a small [[icon:x-bold]].',
         },
         why: {
           fr: 'Pour suivre la recette les mains à la pâte, sans rien toucher de fin.',
           en: 'To follow the recipe hands-in-the-dough, with nothing fiddly to tap.',
+        },
+      },
+      {
+        label: { fr: 'Trois affichages (parent)', en: 'Three layouts (parent)' },
+        detail: {
+          fr: 'En vue parent, un sélecteur dans la barre choisit : [[icon:scroll-bold]] Recette (toute la page), [[icon:book-open-bold]] Côte à côte (ingrédients à gauche, étapes à droite — deux onglets sur le téléphone) ou [[icon:square-bold]] Focus (une étape à la fois). Ton choix est retenu par recette. L’enfant garde toujours le pas-à-pas.',
+          en: 'In the parent view a bar switcher picks: [[icon:scroll-bold]] Recipe (whole page), [[icon:book-open-bold]] Side by side (ingredients left, steps right — two tabs on a phone) or [[icon:square-bold]] Focus (one step at a time). Your pick is remembered per recipe. The toddler always keeps the stepper.',
+        },
+        why: {
+          fr: 'Pour cuisiner à ta façon : survoler, garder les ingrédients sous les yeux, ou avancer pas à pas.',
+          en: 'To cook your way: skim it, keep the ingredients in view, or move one step at a time.',
+        },
+      },
+      {
+        label: { fr: 'Taille du texte', en: 'Text size' },
+        detail: {
+          fr: 'Un contrôle A / A / A dans la barre règle Compact, Normal ou Grand pour tous les affichages — Grand grossit et contraste pour lire de l’autre bout de la cuisine.',
+          en: 'An A / A / A control in the bar sets Compact, Normal or Large for every layout — Large bumps the size and contrast to read from across the kitchen.',
         },
       },
       {
@@ -1288,14 +1317,25 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Pastilles de mesure', en: 'Measure pills' },
+        label: { fr: 'Mesures en couleurs', en: 'Colour-coded measures' },
         detail: {
-          fr: 'Les quantités (c. à thé, tasse…) sont des pastilles colorées; touche-les pour les entendre.',
-          en: 'Amounts (tsp, cup…) are colour-coded pills; tap one to hear it.',
+          fr: 'Les quantités (c. à thé, tasse…) sont des pastilles colorées; touche-les pour les entendre. En mode cuisson, chaque mesure se dessine aussi en ronds pleins : « 2 c. à soupe » = 2 ronds de la même couleur (remplis cette cuillère 2 fois), une demie = un rond à moitié rempli.',
+          en: 'Amounts (tsp, cup…) are colour-coded pills; tap one to hear it. In Cook mode each measure also draws as fill circles: “2 tbsp” = 2 circles of the same colour (fill this spoon twice), a half = a half-filled circle.',
         },
         why: {
-          fr: 'Pour confirmer une mesure sans t’arrêter de lire, les mains pleines, ou pour un enfant qui aide.',
-          en: 'To confirm a measure without stopping to read, hands full, or for a child helping out.',
+          fr: 'Pour confirmer une mesure sans lire, les mains pleines — et pour qu’un enfant compte les ronds et attrape la bonne cuillère de couleur.',
+          en: 'To confirm a measure without reading, hands full — and so a child can count the circles and grab the right-coloured spoon.',
+        },
+      },
+      {
+        label: { fr: 'Couleurs de tes ustensiles', en: 'Your own tool colours' },
+        detail: {
+          fr: 'Dans Réglages ▸ Affichage, donne à chaque cuillère et tasse la couleur de tes vrais ustensiles. Toutes les pastilles et tous les ronds des recettes suivent, partout.',
+          en: 'In Settings ▸ Display, give each spoon and cup the colour of your real tools. Every recipe pill and circle follows, everywhere.',
+        },
+        why: {
+          fr: 'Pour que la couleur à l’écran soit exactement celle de la cuillère que tu attrapes.',
+          en: 'So the colour on screen is exactly the spoon you reach for.',
         },
       },
       {

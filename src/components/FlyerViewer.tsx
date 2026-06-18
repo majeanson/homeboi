@@ -561,13 +561,13 @@ export function FlyerViewer({
             {data && data.items.length > 1 && (
               <div className="flyer-detail__nav mono">
                 <button type="button" className="flyer-detail__step" onClick={() => step(-1)} aria-label={t.shop.prev}>
-                  ‹
+                  <Icon name="caret-left-bold" size={18} />
                 </button>
                 <span className="flyer-detail__count">
                   {(selectedIdx ?? 0) + 1}/{data.items.length}
                 </span>
                 <button type="button" className="flyer-detail__step" onClick={() => step(1)} aria-label={t.shop.next}>
-                  ›
+                  <Icon name="caret-right-bold" size={18} />
                 </button>
               </div>
             )}

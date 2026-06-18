@@ -35,7 +35,11 @@ import { Modal } from '../components/Modal'
 import { OperatorSection } from '../components/operator/OperatorSection'
 import { DealCard } from '../components/DealCard'
 import { IngredientLine } from '../components/IngredientLine'
+import { MeasureScoops } from '../components/MeasureScoops'
+import { findMeasures } from '../lib/measure'
 import { ZoomableImg } from '../components/ZoomableImg'
+import { EntityDetailSheet } from '../components/detail/EntityDetailSheet'
+import { type DetailModel } from '../lib/detail'
 
 // A tiny inline placeholder image for the image-bearing specimens (DealCard,
 // ZoomableImg) — no network asset needed in the gallery.
@@ -71,6 +75,30 @@ function Demo({ label, children }: { label: string; children: ReactNode }) {
       <div className="devkit__demo-label mono">{label}</div>
       <div className="devkit__demo-body">{children}</div>
     </div>
+  )
+}
+
+// The entity-detail peek opens as a bottom sheet, so its specimen is a button
+// that toggles it (a sample model — no hearts, so it needs no network).
+function DetailSheetDemo() {
+  const [open, setOpen] = useState(false)
+  const model: DetailModel = {
+    kind: 'event',
+    title: 'Rendez-vous dentiste',
+    icon: 'calendar-blank-bold',
+    accent: '#7BB0C9',
+    when: 'mar. 18 juin · 14 h 00',
+    who: { role: 'Tour de', name: 'Camille', colour: '#88A36F' },
+    blocks: [{ kind: 'chips', label: 'Équipe', chips: ['Camille', 'Marc'] }],
+    actions: [{ key: 'day', label: 'Voir la journée', icon: 'calendar-blank-bold', primary: true, run: () => {} }],
+  }
+  return (
+    <>
+      <button type="button" className="btn btn--primary" onClick={() => setOpen(true)}>
+        <Icon name="magnifying-glass-bold" size={18} /> Ouvrir le détail
+      </button>
+      <EntityDetailSheet model={open ? model : null} onClose={() => setOpen(false)} />
+    </>
   )
 }
 
@@ -482,7 +510,25 @@ export function DevKit() {
           <Demo label="reminder window open ('Bientôt')">
             <Act cat="event" title="Rendez-vous dentiste" when="jeu. 14:00" who="Camille" soon />
           </Demo>
+          <Demo label="tap-to-peek: whole row (onOpen) + split (onOpen + check)">
+            <Act cat="event" title="Rendez-vous dentiste" when="14:00" who="Camille" onOpen={() => {}} />
+            <Act cat="chore" title="Sortir les poubelles" who="Marc" onCheck={() => {}} onOpen={() => {}} />
+          </Demo>
         </>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'EntityDetailSheet',
+      file: 'components/detail/EntityDetailSheet.tsx',
+      kw: 'detail peek info entity sheet aperçu détail picture date board recipe routine',
+      // The generalized "tap an item → picture, date, relevant text + smart actions"
+      // peek. Opened from any board/kitchen row via useEntityDetail (DetailProvider);
+      // built per-kind by components/detail/adapters. See lib/detail.ts.
+      render: () => (
+        <Demo label="open the peek (sample event model)">
+          <DetailSheetDemo />
+        </Demo>
       ),
     },
     {
@@ -539,7 +585,7 @@ export function DevKit() {
       render: () => (
         <>
           <Demo label="emoji + subtitle + action">
-            <SectionHeader emoji="🍳" title="Déjeuner" subtitle="Matin" action={<button className="btn btn--sm">＋</button>} />
+            <SectionHeader emoji="🍳" title="Déjeuner" subtitle="Matin" action={<button className="btn btn--sm"><Icon name="plus-bold" size={16} /></button>} />
           </Demo>
           <Demo label="icon + title">
             <SectionHeader icon="carrot-bold" iconColor="var(--marigold-deep)" title="Garde-manger" />
@@ -699,7 +745,7 @@ export function DevKit() {
       cat: 'Affichage',
       name: 'IngredientLine',
       file: 'components/IngredientLine.tsx',
-      kw: 'recette ingrédient mesure pills cuillère tasse measure tap-to-hear',
+      kw: 'recette ingrédient mesure pills cuillère tasse measure tap-to-hear scoops',
       render: () => (
         <>
           <Demo label="measure pills (sm — parent recipe sheet; tap a pill to hear it)">
@@ -708,8 +754,45 @@ export function DevKit() {
           <Demo label="lg + kid (Cook mode — bigger pills, no 🔊 glyph)">
             <IngredientLine line="3/4 tasse de farine" size="lg" kid />
           </Demo>
+          <Demo label="scoops (Cook mode — fill circles after the pill: count = whole scoops)">
+            <IngredientLine line="2 cuillères à soupe de beurre fondu" size="lg" kid scoops />
+          </Demo>
           <Demo label="no measurement → plain text (additive, never a rewrite)">
             <IngredientLine line="une pincée de sel" />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'MeasureScoops',
+      file: 'components/MeasureScoops.tsx',
+      kw: 'mesure scoop ronds cercles cuillère tasse spoon circles fill toddler couleurs measurePrefs',
+      render: () => (
+        <>
+          <Demo label="whole scoops — one coloured circle each (« remplis cette cuillère N fois »)">
+            <span style={{ fontSize: '1.3rem' }}>
+              {findMeasures('2 c. à soupe').map((m, i) => (
+                <MeasureScoops key={i} measure={m} size="lg" />
+              ))}
+            </span>
+          </Demo>
+          <Demo label="fraction — a part-filled circle (½ tsp, ¼ tsp)">
+            <span style={{ fontSize: '1.3rem' }}>
+              {findMeasures('1/2 c. à thé').map((m, i) => (
+                <MeasureScoops key={i} measure={m} size="lg" />
+              ))}
+              {findMeasures('1/4 c. à thé').map((m, i) => (
+                <MeasureScoops key={`b${i}`} measure={m} size="lg" />
+              ))}
+            </span>
+          </Demo>
+          <Demo label="mixed — whole circles + the fraction (1 ½ tasse) · colours from Réglages ▸ Affichage">
+            <span style={{ fontSize: '1.3rem' }}>
+              {findMeasures('1 1/2 tasse').map((m, i) => (
+                <MeasureScoops key={i} measure={m} size="lg" />
+              ))}
+            </span>
           </Demo>
         </>
       ),
@@ -804,7 +887,7 @@ export function DevKit() {
       kw: 'réglages section panneau surface operator',
       render: () => (
         <Demo label="Réglages panel shell">
-          <OperatorSection title="Magasinage" hint="Le code postal, utilisé par les rabais." action={<button className="btn btn--sm">＋</button>}>
+          <OperatorSection title="Magasinage" hint="Le code postal, utilisé par les rabais." action={<button className="btn btn--sm"><Icon name="plus-bold" size={16} /></button>}>
             <p className="mono" style={{ color: 'var(--ink-faint)' }}>…contenu du panneau…</p>
           </OperatorSection>
         </Demo>

@@ -100,7 +100,7 @@ export function MealRows({
                     <span className="kitchen__meal-headline">
                       <span className="kitchen__meal-title">{m.title}</span>
                       {m.suggested_by != null && (
-                        <span className="kitchen__day-sugg mono">💡 {memberName(m.suggested_by) || t.kitchen.suggested}</span>
+                        <span className="kitchen__day-sugg mono"><InlineIcon name="sparkle-bold" size={12} /> {memberName(m.suggested_by) || t.kitchen.suggested}</span>
                       )}
                     </span>
                     {m.is_leftover ? (

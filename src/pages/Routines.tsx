@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { useT } from '../i18n'
+import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
+import { useEntityDetail } from '../components/detail/DetailProvider'
+import { buildRoutine } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { ROUTINES_KEY } from '../lib/queryKeys'
@@ -32,10 +34,18 @@ interface RoutineRow {
   avatarPhoto: string | null
   timeOfDay: string | null
   cards: { icon?: string }[]
+  // Parallel per-card photo keys (feature #17 C), one R2 key per card ('' = none).
+  // When set, the photo replaces the emoji in the step preview — same rule the
+  // toddler view follows, so the two surfaces never disagree.
+  cardsPhoto?: string[]
 }
 
 function RoutinesParent() {
   const t = useT()
+  const { lang } = useLang()
+  // Tap a routine to peek it (child, steps) with "Ouvrir la routine" to edit —
+  // the same shared entity-detail sheet the board uses.
+  const detail = useEntityDetail()
   const { data, error } = useQuery({
     queryKey: ROUTINES_KEY,
     queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
@@ -71,8 +81,22 @@ function RoutinesParent() {
             // The same step pictures the toddler sees — so a parent recognizes the
             // routine at a glance (toothbrush → pyjamas → book) instead of reading.
             const steps = r.cards.slice(0, 8)
+            const openR = () => detail.open(buildRoutine(r, { t, lang, members: [] }))
             return (
-              <div key={r.id} className="routine-card" style={{ '--tint': tint } as React.CSSProperties}>
+              <div
+                key={r.id}
+                className="routine-card routine-card--tap"
+                style={{ '--tint': tint } as React.CSSProperties}
+                role="button"
+                tabIndex={0}
+                onClick={openR}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    openR()
+                  }
+                }}
+              >
                 <span className="routine-card__spine" style={{ background: tint }} aria-hidden="true" />
                 <div className="routine-card__head">
                   <span
@@ -101,7 +125,14 @@ function RoutinesParent() {
                   <div className="routine-card__steps" aria-hidden="true">
                     {steps.map((c, i) => (
                       <span key={i} className="routine-card__step">
-                        {c.icon || '○'}
+                        {/* A parent's photo of the real thing wins over the emoji
+                            when set (feature #17 C) — the same rule the toddler
+                            view follows, so both surfaces show the same picture. */}
+                        {r.cardsPhoto?.[i] ? (
+                          <img className="routine-card__step-photo" src={imgUrl(r.cardsPhoto[i])} alt="" />
+                        ) : (
+                          c.icon || '○'
+                        )}
                       </span>
                     ))}
                     {r.cards.length > steps.length && (

@@ -11,6 +11,7 @@ import { recipeOptions } from './comboOptions'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon, InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
 // The "general ideas" pool under the week grid: a reusable shortlist of meal
 // ideas — free text ("tacos") or a saved-recipe shortcut. Add by typing or
@@ -24,6 +25,7 @@ export function MealIdeas({
   lowItems,
   listItems,
   profileId,
+  help,
 }: {
   ideas: MealIdea[]
   recipes: Recipe[]
@@ -31,6 +33,9 @@ export function MealIdeas({
   lowItems: string[]
   listItems: string[]
   profileId: string | null
+  // The kitchen's page-level help mode (lib/helpMode) — makes the "Idées de repas"
+  // heading tappable-to-explain while armed. Optional: plain heading without it.
+  help?: HelpMode
 }) {
   const t = useT()
   const recordUndo = useRecordUndo()
@@ -112,8 +117,9 @@ export function MealIdeas({
   return (
     <section className="kitchen__ideas">
       <div className="kitchen__head">
-        <h2>{t.kitchen.ideas}</h2>
+        <HelpTitle help={help} k="ideas">{t.kitchen.ideas}</HelpTitle>
       </div>
+      {help?.bubbleFor('ideas')}
 
       {!ro && (
         // Type a free-text idea OR pick a saved recipe from the same box — the

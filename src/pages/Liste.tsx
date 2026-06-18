@@ -23,6 +23,8 @@ import { pickListFrom, parseDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { BOARD_KEY } from '../lib/queryKeys'
+import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
+import { LISTE_HELP } from '../lib/listeHelp'
 
 // The shared list — ONE active list, two lenses on the same data:
 //   - parent: the compact list you check off as you shop.
@@ -173,6 +175,13 @@ export function Liste() {
   const undo = useUndoToast()
   const recordUndo = useRecordUndo()
   const write = useWrite()
+  // Contextual "?" help mode (shared hook): arm it in the header, then tap one of
+  // the list's controls (flyer search / Vider les cochés / cashier) to learn what
+  // it does in place instead of running it. La liste is one flat list, so its help
+  // targets are these buttons, not section headings.
+  const helpLabel = (k: string) =>
+    ({ flyer: t.shop.browse, clear: t.list.clearChecked, cashier: t.shop.present })[k] ?? k
+  const help = useHelpMode(LISTE_HELP, helpLabel)
   // Items whose "Clear checked" delete is DEFERRED behind the undo toast. Filtered
   // out of the displayed list at once so a refetch (the live poll, a focus, or an
   // add's invalidation) can't resurrect them before the clear commits.
@@ -340,7 +349,7 @@ export function Liste() {
   }
 
   return (
-    <main className="today-feed">
+    <main className={'today-feed' + (help.active ? ' help-armed' : '')}>
       <HubHead
         title={t.nav.list}
         icon={CATS.list.icon}
@@ -350,6 +359,15 @@ export function Liste() {
       />
 
       <SectionIntro card="liste" />
+
+      {/* La liste's header has no control group to sit the "?" beside (it's one
+          flat list), so the toggle gets its own quiet right-aligned row. */}
+      {help.available && (
+        <div className="hub-helprow">
+          <HelpToggle active={help.active} onToggle={help.toggle} />
+        </div>
+      )}
+      {help.hint && <HelpHint />}
 
       {/* Add a line right here — type it or speak it. The direct path; the ＋
           capture sheet still works for the AI-routed quick note. */}
@@ -368,8 +386,8 @@ export function Liste() {
         trailing={
           <button
             type="button"
-            className="edit-field__icon-btn"
-            onClick={() => nav('/liste/circulaires')}
+            className="edit-field__icon-btn help-pick"
+            onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
             aria-label={t.shop.browse}
             title={t.shop.browse}
           >
@@ -385,6 +403,7 @@ export function Liste() {
         }
         ariaLabel={t.list.addPlaceholder}
       />
+      {help.bubbleFor('flyer')}
 
       {list.length === 0 ? (
         <p className="feed-empty">{t.board.listEmpty}</p>
@@ -432,22 +451,32 @@ export function Liste() {
           is the page, not its controls. */}
       {!isGuest() && checkedIds.length > 0 && (
         <div className="list-clear">
-          <button type="button" className="btn btn--primary btn--sm" onClick={() => clearChecked(checkedIds)}>
+          <button
+            type="button"
+            className="btn btn--primary btn--sm help-pick"
+            onClick={help.pick('clear', () => clearChecked(checkedIds))}
+          >
             <InlineIcon name="check-bold" /> {t.list.clearChecked} ({checkedIds.length})
           </button>
         </div>
       )}
+      {help.bubbleFor('clear')}
 
       {/* The one prominent shopping action: take the staged deals to the cashier.
           Browsing flyers and restocking past items live in the ＋ Add sheet now,
           so the page stays the list. */}
       {pickList.length > 0 && (
         <div className="list-actions">
-          <button type="button" className="btn btn--primary" onClick={() => nav('/liste/cashier')}>
+          <button
+            type="button"
+            className="btn btn--primary help-pick"
+            onClick={help.pick('cashier', () => nav('/liste/cashier'))}
+          >
             <InlineIcon name="receipt-bold" /> {t.shop.present} ({pickList.length})
           </button>
         </div>
       )}
+      {help.bubbleFor('cashier')}
 
     </main>
   )

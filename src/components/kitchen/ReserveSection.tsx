@@ -7,6 +7,7 @@ import { isGuest } from '../../lib/device'
 import { wash } from '../../lib/colors'
 import { useReserveLocations } from '../../lib/reservePrefs'
 import { CheckRow } from '../CheckRow'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 
 // La réserve: a reminder of items stashed in the freezer / back of the pantry so
@@ -15,7 +16,9 @@ import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 // use-soon, marking/clearing never touches the shopping list — clearing just
 // means "used it / tossed it". Lives as a third section inside the Garde-manger
 // tab. The Kitchen page keeps the query (the unauth gate); this owns the writes.
-export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
+// `help` is the kitchen's page-level help mode — makes the "La réserve" heading
+// explainable in place while armed.
+export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const undo = useUndoToast()
@@ -87,7 +90,8 @@ export function ReserveSection({ reserve }: { reserve: ReserveRow[] }) {
 
   return (
     <section>
-      <h2>{t.kitchen.reserve}</h2>
+      <HelpTitle help={help} k="reserve">{t.kitchen.reserve}</HelpTitle>
+      {help?.bubbleFor('reserve')}
       <p className="lead">{t.kitchen.reserveHint}</p>
       {!ro && (
       <form className="kitchen__reserve-add" onSubmit={addItem}>

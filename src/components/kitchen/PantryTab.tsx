@@ -8,12 +8,14 @@ import { useVoiceInput } from '../../lib/useVoiceInput'
 import { VoiceButton, VoiceStatus } from '../VoiceButton'
 import { CheckRow } from '../CheckRow'
 import { BOARD_KEY } from '../../lib/queryKeys'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 
 // Garde-manger: the "running low" list (never a full inventory — brief tenet 3)
 // and the "use soon" list. Owns its own adds + undo-deferred clears; the parent
-// page only passes the rows (it keeps the queries for the unauth gate).
-export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
+// page only passes the rows (it keeps the queries for the unauth gate). `help` is
+// the kitchen's page-level help mode — makes the two headings explainable in place.
+export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const undo = useUndoToast()
@@ -150,7 +152,8 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
   return (
     <>
       <section>
-        <h2>{t.kitchen.low}</h2>
+        <HelpTitle help={help} k="low">{t.kitchen.low}</HelpTitle>
+        {help?.bubbleFor('low')}
         {!ro && (
           <>
             <form className="kitchen__low-add" onSubmit={addLow}>
@@ -188,7 +191,8 @@ export function PantryTab({ low, soon }: { low: LowRow[]; soon: LowRow[] }) {
       </section>
 
       <section>
-        <h2>{t.kitchen.useSoon}</h2>
+        <HelpTitle help={help} k="useSoon">{t.kitchen.useSoon}</HelpTitle>
+        {help?.bubbleFor('useSoon')}
         {!ro && (
           <>
             <form className="kitchen__soon-add" onSubmit={addSoon}>

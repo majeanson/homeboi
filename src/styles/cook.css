@@ -95,7 +95,7 @@
 }
 .cook__full-h {
   font-family: var(--display);
-  font-size: 1.3rem;
+  font-size: calc(1.3rem * var(--ds, 1));
   margin: 0 0 0.7rem;
   color: var(--terracotta-deep);
 }
@@ -108,7 +108,7 @@
   gap: 0.4rem;
 }
 .cook__full-ings li {
-  font-size: 1.1rem;
+  font-size: calc(1.1rem * var(--ds, 1));
   padding: 0.5rem 0.8rem;
   background: var(--card);
   border-radius: var(--radius-md);
@@ -125,7 +125,7 @@
   gap: 0.9rem;
 }
 .cook__full-steps li {
-  font-size: 1.15rem;
+  font-size: calc(1.15rem * var(--ds, 1));
   line-height: 1.45;
   padding-left: 0.3rem;
   cursor: pointer;
@@ -165,7 +165,7 @@
   text-align: left;
 }
 .cook__ings li {
-  font-size: 1.3rem;
+  font-size: calc(1.3rem * var(--ds, 1));
   padding: 0.6rem 0.9rem;
   background: var(--card);
   border-radius: var(--radius-md);
@@ -233,7 +233,7 @@
 }
 .cook__step-text {
   /* Read across a counter at arm's length with messy hands — bias big. */
-  font-size: clamp(1.9rem, 6.5vw, 3.2rem);
+  font-size: calc(clamp(1.9rem, 6.5vw, 3.2rem) * var(--ds, 1));
   line-height: 1.25;
   font-family: var(--display);
   font-weight: 600;
@@ -277,7 +277,7 @@
   flex-direction: column;
   gap: 0.3rem;
   text-align: left;
-  font-size: 1.05rem;
+  font-size: calc(1.05rem * var(--ds, 1));
   color: var(--ink);
 }
 /* RecipeSheet: per-step sentence bullets (the number is the marker for a lone
@@ -760,4 +760,272 @@
   text-transform: uppercase;
   color: var(--ink-soft);
   margin-bottom: 0.2rem;
+}
+
+/* --- Cook-mode viewer controls: layout switcher + density ------------------ */
+/* The bar can wrap on a narrow phone: the title holds line 1, the tools drop to
+   a second row rather than squashing. */
+.cook__bar {
+  flex-wrap: wrap;
+}
+.cook__bar-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+/* Segmented control shared by the view switcher (Recette/Côte à côte/Focus) and
+   the density control (A / A / A). */
+.cook__segctl {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--card);
+  flex: none;
+}
+.cook__segbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  height: 2.4rem;
+  padding: 0 0.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.cook__segbtn + .cook__segbtn {
+  border-left: 1px solid var(--line);
+}
+.cook__segbtn.is-on {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink);
+}
+.cook__segbtn:active {
+  transform: scale(0.95);
+}
+.cook__segbtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* The density "A" glyphs at three sizes, so the control reads as small/normal/big. */
+.cook__dens-a {
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1;
+}
+.cook__dens-a--compact {
+  font-size: 0.8rem;
+}
+.cook__dens-a--normal {
+  font-size: 1.05rem;
+}
+.cook__dens-a--large {
+  font-size: 1.35rem;
+}
+
+/* Density multiplier `--ds` scales every readable element (wrapped in calc above).
+   Grand also pulls the soft greys up to full ink for across-the-room contrast. */
+.cook[data-density='compact'] {
+  --ds: 0.86;
+}
+.cook[data-density='large'] {
+  --ds: 1.24;
+}
+.cook[data-density='large'] .cook__full-steps li,
+.cook[data-density='large'] .cook__ings li,
+.cook[data-density='large'] .cook__step-ings {
+  color: var(--ink);
+}
+
+/* --- Split view: ingredients pinned beside the steps ----------------------- */
+/* The split stage doesn't centre a card — it fills, and each pane scrolls on its
+   own so the ingredients stay put while the method scrolls. */
+.cook__stage--split {
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+}
+.cook__split {
+  display: grid;
+  grid-template-columns: minmax(14rem, 22rem) 1fr;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.cook__split-tabs {
+  display: none; /* tablet shows both panes; the tab pair is a phone-only fallback */
+}
+.cook__split-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.2rem;
+}
+.cook__split-ings {
+  border-right: 1px solid var(--line);
+  background: var(--card);
+}
+/* Keep each pane's heading in view as that pane scrolls. */
+.cook__split-pane .cook__full-h {
+  position: sticky;
+  top: 0;
+  margin: 0 0 0.7rem;
+  padding: 0.2rem 0;
+}
+.cook__split-ings .cook__full-h {
+  background: var(--card);
+}
+.cook__split-steps .cook__full-h {
+  background: var(--paper);
+}
+@media (max-width: 720px) {
+  /* Narrow: collapse to a tab pair — Ingrédients OR Préparation. */
+  .cook__split {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .cook__split-tabs {
+    display: flex;
+    gap: 1px;
+    background: var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .cook__split-tab {
+    flex: 1;
+    padding: 0.8rem;
+    border: 0;
+    background: var(--card);
+    color: var(--ink-soft);
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cook__split-tab.is-on {
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: inset 0 -3px 0 var(--accent);
+  }
+  .cook__split-ings {
+    border-right: 0;
+  }
+  .cook__split[data-tab='ings'] .cook__split-steps {
+    display: none;
+  }
+  .cook__split[data-tab='steps'] .cook__split-ings {
+    display: none;
+  }
+}
+
+/* --- Scoops: a measure drawn as physical fills of its colour-coded tool ----- */
+/* One solid circle per WHOLE scoop, a part-filled circle for the fraction. So "2
+   c. à soupe" is two coloured circles; "1½ tasse" is one full + one half. Tinted
+   to the household's own spoons (lib/measurePrefs); tap to hear the amount. */
+.scoops {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18em;
+  margin-left: 0.3em;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  vertical-align: -0.18em;
+  line-height: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.scoops:active {
+  transform: scale(0.96);
+}
+.scoops:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.scoop {
+  display: inline-block;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+/* The fraction circle: a conic gradient fills the part used, a ring marks the
+   tool, the rest is a faint tint of the same colour ("half this spoon"). */
+.scoop--part {
+  background: conic-gradient(var(--c) var(--fill), color-mix(in srgb, var(--c) 16%, var(--surface)) 0);
+  box-shadow: inset 0 0 0 2px var(--c);
+}
+.scoop__count {
+  font-weight: 700;
+  font-size: 0.9em;
+  margin-left: 0.05em;
+}
+.scoops--sm .scoop {
+  width: 0.74em;
+  height: 0.74em;
+}
+.scoops--lg .scoop {
+  width: calc(1.4rem * var(--ds, 1));
+  height: calc(1.4rem * var(--ds, 1));
+}
+
+/* --- Réglages ▸ Affichage: editable measuring-tool colours ----------------- */
+.measure-colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0.6rem 0 1rem;
+}
+.measure-colors__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+.measure-colors__pick {
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: none;
+  cursor: pointer;
+  flex: none;
+}
+.measure-colors__pick::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+.measure-colors__pick::-webkit-color-swatch {
+  border: none;
+  border-radius: 0.35rem;
+}
+.measure-colors__name {
+  font-size: 0.92rem;
+}
+.measure-colors__preview {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.9rem;
+  padding: 0.7rem 0.95rem;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 0.8rem;
+}
+.measure-colors__preview-label {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.measure-colors__preview-line {
+  font-size: 1.1rem;
 }

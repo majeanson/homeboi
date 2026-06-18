@@ -12,6 +12,7 @@ import { onAuthLost } from '../lib/authEvents'
 import { clearDeviceToken, isPaired, isGuestLocked } from '../lib/device'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
+import { DetailProvider } from './detail/DetailProvider'
 import { KidExitGate } from './KidExitGate'
 import { OfflineBanner } from './OfflineBanner'
 import { AddSheetContext, SECTION_MODES, FORM_ROUTES, type AddSheetMode } from '../lib/addSheet'
@@ -304,6 +305,7 @@ export function HubLayout() {
       }}
     >
     <KitchenActionsContext.Provider value={kitchenCtx}>
+    <DetailProvider>
     <div className="page hub" data-audience={audience} data-surface={surface} data-nav-collapsed={railCollapsed || undefined} data-fab={showAdd || undefined}>
       {/* Reclaim the rail's width: a parent can tuck the section column away on a
           kiosk so the agenda/list gets the whole wall. A small caret re-opens it. */}
@@ -408,6 +410,7 @@ export function HubLayout() {
           (the idle effect's `reset` already clears `saver`, this just mirrors it). */}
       <AmbientScreen show={saver} onWake={() => setSaver(false)} />
     </div>
+    </DetailProvider>
     </KitchenActionsContext.Provider>
     </AddSheetContext.Provider>
   )

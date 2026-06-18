@@ -22,7 +22,7 @@ import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { formatDay, formatTime } from '../lib/format'
-import { todayLocalDay } from '../lib/localDay'
+import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, SLOT_RANK, type MealSlot } from '../lib/mealSlots'
@@ -34,6 +34,8 @@ import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { NowNext, Lanes } from '../components/board/views'
 import { MonthView } from '../components/board/MonthView'
 import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
+import { useEntityDetail } from '../components/detail/DetailProvider'
+import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -67,6 +69,9 @@ export function Board() {
   const { memberId: profileId, setMemberId } = useProfile()
   const [profileOpen, setProfileOpen] = useState(false)
   const speak = useSpeak()
+  // The shared entity-detail peek (lib/detail) — tap a row to see picture/date/text
+  // + smart actions. Parent audience only; the toddler lens stays hear-first below.
+  const detail = useEntityDetail()
   // The board layout for this device (bento | next | lanes), remembered locally.
   const [view, setView] = useState<BoardView>(() => readBoardView())
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
@@ -380,6 +385,9 @@ export function Board() {
   // local-day bucketing (lib/monthgrid + /api/month). UTC midnight flipped a day
   // ahead every evening (~8 PM Eastern), so "today" highlighted tomorrow's cell.
   const todayDay = todayLocalDay()
+  // What the adapters (components/detail/adapters) need to resolve faces + copy.
+  const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [] }
+  const tomorrowDay = addLocalDays(todayDay, 1)
   const eventAct = (e: EventRow) => (
     <Act
       key={e.id}
@@ -390,6 +398,7 @@ export function Board() {
       color={memberColor(e.member_id) ?? undefined}
       mine={!!profileId && e.member_id === profileId}
       soon={e.soon}
+      onOpen={() => detail.open(buildEvent(e, detailCtx))}
     />
   )
   const cookLine = (m: MealRow) =>
@@ -456,6 +465,7 @@ export function Board() {
       mine={!!profileId && c.who_id === profileId}
       soon={c.soon}
       onCheck={withDay ? undefined : () => markChoreDone(c)}
+      onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, onDone: withDay ? undefined : () => markChoreDone(c) }))}
     />
   )
 
@@ -495,6 +505,7 @@ export function Board() {
       mine={!!profileId && c.who_id === profileId}
       soon={c.soon}
       onCheck={() => markTodoDone(c)}
+      onOpen={() => detail.open(buildChore(c, detailCtx, { todo: true, onDone: () => markTodoDone(c) }))}
     />
   )
 
@@ -595,8 +606,24 @@ export function Board() {
               {/* "Ce soir" lists EVERY supper planned for today — a day can hold more
                   than one. Each carries the souper food icon (no carrot, no emoji)
                   and the souper colour (Réglages ▸ Repas). */}
-              {tonightMeals.map((m) => (
-                <div key={m.id} className="now-card" style={{ background: wash(supperColor!), color: tintInk(supperColor!) }}>
+              {tonightMeals.map((m) => {
+                const openSupper = () =>
+                  detail.open(buildMeal(m, detailCtx, { color: supperColor, slotLabel: t.board.tonight, daySec: todayDay }))
+                return (
+                <div
+                  key={m.id}
+                  className="now-card now-card--tap"
+                  style={{ background: wash(supperColor!), color: tintInk(supperColor!) }}
+                  role="button"
+                  tabIndex={0}
+                  onClick={openSupper}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      openSupper()
+                    }
+                  }}
+                >
                   <div className="blob" style={{ background: supperColor }} />
                   <div className="label">{t.board.tonight}</div>
                   <div className="what">{m.title}</div>
@@ -612,7 +639,8 @@ export function Board() {
                     <Icon name={SLOT_ICON_NAME.supper} size={40} color={supperColor} />
                   </div>
                 </div>
-              ))}
+                )
+              })}
               {weather && (
                 <div className="now-card now-card--wx" style={{ background: CATS.event.wash, color: CATS.event.deep }}>
                   <div className="blob" style={{ background: CATS.event.color }} />
@@ -647,6 +675,9 @@ export function Board() {
                     who={cookLine(m)}
                     color={mealPrefs.color(m.slot)}
                     mine={!!profileId && m.cook_member_id === profileId}
+                    onOpen={() =>
+                      detail.open(buildMeal(m, detailCtx, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot), daySec: todayDay }))
+                    }
                   />
                 ))}
                 {todayEvents.map(eventAct)}
@@ -668,6 +699,7 @@ export function Board() {
                   when={t.kitchen.leftoversTag}
                   title={l.title}
                   onCheck={() => markLeftoverDone(l)}
+                  onOpen={() => detail.open(buildLeftover(l, detailCtx, { onDone: () => markLeftoverDone(l) }))}
                 />
               ))}
             </Section>
@@ -715,6 +747,9 @@ export function Board() {
                 title={data.tomorrowMeal.title}
                 who={cookLine(data.tomorrowMeal)}
                 color={supperColor}
+                onOpen={() =>
+                  detail.open(buildMeal(data.tomorrowMeal!, detailCtx, { color: supperColor, slotLabel: slotLabel('supper'), daySec: tomorrowDay }))
+                }
               />
             )}
             {otherTomorrowMeals.map((m) => (
@@ -726,6 +761,9 @@ export function Board() {
                 title={m.title}
                 who={cookLine(m)}
                 color={mealPrefs.color(m.slot)}
+                onOpen={() =>
+                  detail.open(buildMeal(m, detailCtx, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot), daySec: tomorrowDay }))
+                }
               />
             ))}
             {tomorrowEvents.map(eventAct)}
@@ -737,7 +775,14 @@ export function Board() {
           {(upcomingEvents.length > 0 || upcomingChores.length > 0) && (
             <Section label={t.board.upcoming} count={upcomingEvents.length + upcomingChores.length}>
               {upcomingEvents.map((e) => (
-                <Act key={e.id} cat="event" title={e.title} when={formatTime(e.start_at, lang)} soon={e.soon} />
+                <Act
+                  key={e.id}
+                  cat="event"
+                  title={e.title}
+                  when={formatTime(e.start_at, lang)}
+                  soon={e.soon}
+                  onOpen={() => detail.open(buildEvent(e, detailCtx))}
+                />
               ))}
               {/* Recurring chores coming up later this week, with their day. */}
               {upcomingChores.map((c) => choreAct(c, true))}

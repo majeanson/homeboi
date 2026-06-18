@@ -11,8 +11,16 @@ import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { matchCookCommand } from '../lib/cookCommands'
+import {
+  type CookView,
+  type CookDensity,
+  useCookDensity,
+  setCookDensity,
+  loadCookView,
+  saveCookView,
+} from '../lib/cookPrefs'
 import { IngredientLine } from './IngredientLine'
-import { Icon, InlineIcon } from './Icon'
+import { Icon, InlineIcon, type IconName } from './Icon'
 import { useModal } from '../lib/useModal'
 
 // A live countdown for a duration found in a step. Several can run at once now
@@ -31,26 +39,25 @@ function loadAutoRead(): boolean {
   }
 }
 
-// Which cooking view: 'step' is the one-thing-at-a-time stepper (a pre-reader
-// hears each instruction); 'full' is the whole recipe on one scrollable page —
-// ingredients then every step, the way a parent skims it. This is NOT a toggle in
-// the cooking screen — it follows the active profile (the Parent / Enfant
-// audience), so a toddler always gets the stepper and a parent the full page.
-type CookView = 'step' | 'full'
+// The three cooking layouts. The TODDLER lens is always locked to 'step' (the calm
+// one-thing-at-a-time stepper — its whole point). The PARENT lens picks among all
+// three from the bar, remembered per recipe:
+//   • 'full'  — the whole recipe on one scroll page (skim it top-down).
+//   • 'split' — ingredients pinned beside the steps (tablet) / two tabs (phone).
+//   • 'step'  — Focus: the same big one-step-at-a-time stepper, parent-styled.
+// (CookView lives in lib/cookPrefs so the bar switcher + persistence share it.)
+const VIEW_ICON: Record<CookView, IconName> = { full: 'scroll-bold', split: 'book-open-bold', step: 'square-bold' }
+const VIEW_ORDER: CookView[] = ['full', 'split', 'step']
+const DENSITY_ORDER: CookDensity[] = ['compact', 'normal', 'large']
 
 const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padStart(2, '0')}`
 
-// Full-screen cooking view for the kitchen tablet, in two modes:
-//
-//   • 'step' (toddler): one thing at a time — ingredients as a gather checklist,
-//     then each prep step as its own big page. Back / Next, a progress count,
-//     auto read-aloud, timers. The calm stepper shape, sized for reading across
-//     the counter with messy hands.
-//   • 'full' (parent): the whole recipe on one scrollable page — ingredients,
-//     then every numbered step. The traditional big-picture view, no stepping;
-//     tap any line or step to still hear it read aloud.
-//
-// A segmented toggle in the bar switches between them; the choice persists.
+// Full-screen cooking view for the kitchen tablet. The TODDLER lens gets the calm
+// stepper (one thing at a time — ingredients as a gather checklist, then each prep
+// step as its own big page, auto read-aloud, timers, hands-free). The PARENT lens
+// chooses its layout from the bar — full scroll page, split ingredients|steps, or
+// the same stepper as a "Focus" mode — and that choice is remembered per recipe.
+// A device-wide density control (Compact / Normal / Grand) sizes every view.
 //
 // Holds a Screen Wake Lock so the tablet doesn't sleep mid-recipe; re-acquires it
 // when the tab becomes visible again (locks drop on hide). Silent no-op where the
@@ -69,16 +76,25 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const cookRef = useRef<HTMLDivElement>(null)
   useModal(cookRef, onClose)
   const [idx, setIdx] = useState(0)
-  // Toddler stepper vs parent full-recipe page. A ref mirrors it so the keyboard
-  // handler can ignore arrow keys in full mode without re-binding the listener.
-  // The view follows the active profile: a toddler audience cooks one step at a
-  // time, a parent reads the whole recipe. No in-cook toggle — the cooking screen
-  // stays chrome-light. A ref mirrors it so the keyboard handler can ignore arrow
-  // keys in full mode without re-binding the listener.
+  // The view follows the audience: a toddler is LOCKED to the calm stepper (a
+  // one-way door — no in-cook escape), while a parent picks any of the three and
+  // we remember the pick per recipe. A ref mirrors the resolved mode so the
+  // keyboard / swipe handlers can ignore nav outside the stepper without rebinding.
   const { audience } = useAudience()
-  const mode: CookView = audience === 'toddler' ? 'step' : 'full'
+  const isToddler = audience === 'toddler'
+  const [view, setView] = useState<CookView>(() => (isToddler ? 'step' : loadCookView(recipe.id)))
+  const mode: CookView = isToddler ? 'step' : view
   const modeRef = useRef(mode)
   modeRef.current = mode
+  function changeView(v: CookView) {
+    setView(v)
+    saveCookView(recipe.id, v) // parent-only path; toddler never calls this
+  }
+  // Device-wide text size for every cooking view (the bar's A / A / A control).
+  const density = useCookDensity()
+  // Split view: on a narrow phone the two panes collapse to a tab pair (ingredients
+  // OR steps); on a tablet both show side by side and this is ignored (CSS).
+  const [splitTab, setSplitTab] = useState<'ings' | 'steps'>('ings')
   const lockRef = useRef<{ release: () => Promise<void> } | null>(null)
   // Several one-tap timers can run at once (start the pasta, then come back and
   // start the sauce). Each is named by the step it came from and OUTLIVES step
@@ -132,7 +148,8 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const [autoRead, setAutoRead] = useState(loadAutoRead)
   const autoReadRef = useRef(autoRead)
   autoReadRef.current = autoRead
-  const stepText = cur?.kind === 'step' ? cur.text : null
+  // Only the stepper auto-narrates on arrival; the full / split pages are tap-to-hear.
+  const stepText = mode === 'step' && cur?.kind === 'step' ? cur.text : null
   useEffect(() => {
     if (autoReadRef.current && stepText) speak(stepText)
   }, [stepText, speak])
@@ -158,7 +175,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const goNext = () => setIdx((i) => Math.min(stages.length - 1, i + 1))
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (modeRef.current === 'full') return // full recipe scrolls; no step nav
+      if (modeRef.current !== 'step') return // only the stepper has page nav
       if (e.key === 'ArrowLeft') goPrev()
       else if (e.key === 'ArrowRight') goNext()
     }
@@ -177,7 +194,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const onTouchEnd = (e: ReactTouchEvent) => {
     const start = touch.current
     touch.current = null
-    if (!start || modeRef.current === 'full') return
+    if (!start || modeRef.current !== 'step') return
     const dx = e.changedTouches[0].clientX - start.x
     const dy = e.changedTouches[0].clientY - start.y
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
@@ -255,9 +272,9 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const voice = useVoiceInput(handleCommand, { continuous: true })
-  // The mic is a stepper affordance — never leave it open in the parent full page.
+  // The mic is a stepper affordance — never leave it open outside the stepper.
   useEffect(() => {
-    if (mode === 'full') voice.stop()
+    if (mode !== 'step') voice.stop()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode])
 
@@ -293,49 +310,199 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
     }
   }, [])
 
+  // — Shared renderers (so the full + split views don't duplicate markup) —
+
+  // The whole method as a numbered list; tap any step to hear it, with one-tap
+  // timers for durations written into a step. Numbering runs across sections.
+  const renderSteps = () => {
+    let start = 1
+    return stepGroups.map((g, gi) => {
+      const olStart = start
+      start += g.items.length
+      return (
+        <div key={gi}>
+          {g.title && <h3 className="cook__full-subh">{g.title}</h3>}
+          <ol className="cook__full-steps" start={olStart}>
+            {g.items.map(({ text: s, idx }, i) => {
+              const sN = olStart + i
+              const durs = findDurations(s)
+              return (
+                <li
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t.recipes.readStep}
+                  onClick={() => speak(s)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      speak(s)
+                    }
+                  }}
+                >
+                  {s}
+                  {/* Start a timer for a duration in this step — same rail as the
+                      stepper. stopPropagation so the tap doesn't also read the step. */}
+                  {durs.length > 0 && (
+                    <span className="cook__full-timers">
+                      {durs.map((d) => (
+                        <button
+                          key={d.seconds}
+                          type="button"
+                          className="cook__timer-chip mono"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            addTimer(d.seconds, d.label, sN)
+                          }}
+                        >
+                          ⏱ {d.label}
+                        </button>
+                      ))}
+                    </span>
+                  )}
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      )
+    })
+  }
+
+  // The gather checklist: tick the box as you grab each one (strike-through), tap
+  // the text to hear the whole ingredient, with the colour-coded scoop circles.
+  // Section names sit between the rows as plain headers — nothing to tick.
+  const renderGather = (size: 'sm' | 'lg') => (
+    <ul className="cook__ings">
+      {ingGroups.flatMap((g) => [
+        ...(g.title ? [<li key={`h-${g.title}`} className="cook__ing-sec">{g.title}</li>] : []),
+        ...g.items.map(({ text: ing, idx: i }) => {
+          const got = gathered.has(i)
+          return (
+            <li key={i} className={'cook__ing' + (got ? ' is-got' : '')}>
+              <button
+                type="button"
+                className="cook__ing-check"
+                onClick={() => toggleGot(i)}
+                aria-pressed={got}
+                aria-label={got ? t.recipes.gathered : t.recipes.toGather}
+              >
+                <span className="cook__ing-box" aria-hidden="true">
+                  {got && <Icon name="check-bold" size={14} />}
+                </span>
+              </button>
+              <span
+                className="cook__ing-text"
+                role="button"
+                tabIndex={0}
+                aria-label={t.recipes.hearLine}
+                onClick={() => speak(spokenIngredient(ing, lang))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    speak(spokenIngredient(ing, lang))
+                  }
+                }}
+              >
+                <IngredientLine line={ing} size={size} kid scoops />
+              </span>
+            </li>
+          )
+        }),
+      ])}
+    </ul>
+  )
+
   // Cook mode is a true full-screen MODE, not a panel inside whatever opened it.
   // We portal to <body> so it escapes the recipe modal's stacking/scroll context
   // and owns the whole viewport — the modal it launched from stays mounted (state
   // intact for when you close), just fully covered, never peeking through.
   return createPortal(
-    <div ref={cookRef} className="cook" role="dialog" aria-modal="true" aria-label={recipe.title}>
+    <div
+      ref={cookRef}
+      className="cook"
+      data-density={density}
+      role="dialog"
+      aria-modal="true"
+      aria-label={recipe.title}
+    >
       <div className="cook__bar">
         <span className="cook__title">{recipe.title}</span>
-        {mode === 'step' && (
-          <>
-            <span className="cook__count mono" aria-live="polite">
-              {Math.min(idx + 1, total)} / {total}
-            </span>
-            {/* Hands-free: tap to listen for "suivant / retour / répète / minuteur".
-                Hidden where the browser has no Web Speech API (a dead button helps
-                no one). Glows while listening. */}
-            {voice.hasVoice && (
+        <div className="cook__bar-tools">
+          {/* Parent-only: pick the layout (toddler is locked to the stepper) and
+              the text size. Both wrap below the title on a narrow phone. */}
+          {!isToddler && (
+            <>
+              <div className="cook__segctl" role="group" aria-label={t.recipes.cookViewLabel}>
+                {VIEW_ORDER.map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={'cook__segbtn' + (view === v ? ' is-on' : '')}
+                    onClick={() => changeView(v)}
+                    aria-pressed={view === v}
+                    title={t.recipes.cookView[v]}
+                    aria-label={t.recipes.cookView[v]}
+                  >
+                    <Icon name={VIEW_ICON[v]} size={18} />
+                  </button>
+                ))}
+              </div>
+              <div className="cook__segctl cook__density" role="group" aria-label={t.recipes.cookDensityLabel}>
+                {DENSITY_ORDER.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className={'cook__segbtn' + (density === d ? ' is-on' : '')}
+                    onClick={() => setCookDensity(d)}
+                    aria-pressed={density === d}
+                    title={t.recipes.cookDensity[d]}
+                    aria-label={t.recipes.cookDensity[d]}
+                  >
+                    <span className={`cook__dens-a cook__dens-a--${d}`} aria-hidden="true">
+                      A
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {mode === 'step' && (
+            <>
+              <span className="cook__count mono" aria-live="polite">
+                {Math.min(idx + 1, total)} / {total}
+              </span>
+              {/* Hands-free: tap to listen for "suivant / retour / répète / minuteur".
+                  Hidden where the browser has no Web Speech API (a dead button helps
+                  no one). Glows while listening. */}
+              {voice.hasVoice && (
+                <button
+                  type="button"
+                  className={'cook__autoread cook__voicectl' + (voice.listening ? ' is-on' : '')}
+                  onClick={voice.start}
+                  aria-pressed={voice.listening}
+                  title={voice.listening ? t.recipes.voiceCookOn : t.recipes.voiceCookOff}
+                  aria-label={voice.listening ? t.recipes.voiceCookOn : t.recipes.voiceCookOff}
+                >
+                  <Icon name="microphone-bold" size={20} />
+                </button>
+              )}
               <button
                 type="button"
-                className={'cook__autoread cook__voicectl' + (voice.listening ? ' is-on' : '')}
-                onClick={voice.start}
-                aria-pressed={voice.listening}
-                title={voice.listening ? t.recipes.voiceCookOn : t.recipes.voiceCookOff}
-                aria-label={voice.listening ? t.recipes.voiceCookOn : t.recipes.voiceCookOff}
+                className={'cook__autoread' + (autoRead ? ' is-on' : '')}
+                onClick={toggleAutoRead}
+                aria-pressed={autoRead}
+                title={autoRead ? t.recipes.autoReadOn : t.recipes.autoReadOff}
+                aria-label={autoRead ? t.recipes.autoReadOn : t.recipes.autoReadOff}
               >
-                <Icon name="microphone-bold" size={20} />
+                <Icon name={autoRead ? 'speaker-high-bold' : 'speaker-slash-bold'} size={20} />
               </button>
-            )}
-            <button
-              type="button"
-              className={'cook__autoread' + (autoRead ? ' is-on' : '')}
-              onClick={toggleAutoRead}
-              aria-pressed={autoRead}
-              title={autoRead ? t.recipes.autoReadOn : t.recipes.autoReadOff}
-              aria-label={autoRead ? t.recipes.autoReadOn : t.recipes.autoReadOff}
-            >
-              <Icon name={autoRead ? 'speaker-high-bold' : 'speaker-slash-bold'} size={20} />
-            </button>
-          </>
-        )}
-        <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.back}>
-          <Icon name="x-bold" size={20} />
-        </button>
+            </>
+          )}
+          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.back}>
+            <Icon name="x-bold" size={20} />
+          </button>
+        </div>
       </div>
 
       {/* A spoken-command hint while the mic is open — so the words are discoverable
@@ -386,7 +553,11 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
       )}
 
       <div
-        className={'cook__stage' + (mode === 'full' ? ' cook__stage--full' : '')}
+        className={
+          'cook__stage' +
+          (mode === 'full' ? ' cook__stage--full' : '') +
+          (mode === 'split' ? ' cook__stage--split' : '')
+        }
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -426,63 +597,8 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
             {recipe.steps.length > 0 && (
               <section className="cook__full-sec">
                 <h2 className="cook__full-h">{t.recipes.steps}</h2>
-                {/* The whole method at a glance. Tap any step to hear it read.
-                    Numbering runs across sections, matching the stepper. */}
-                {(() => {
-                  let start = 1
-                  return stepGroups.map((g, gi) => {
-                    const olStart = start
-                    start += g.items.length
-                    return (
-                      <div key={gi}>
-                        {g.title && <h3 className="cook__full-subh">{g.title}</h3>}
-                        <ol className="cook__full-steps" start={olStart}>
-                          {g.items.map(({ text: s, idx }, i) => {
-                            const stepN = olStart + i
-                            const durs = findDurations(s)
-                            return (
-                              <li
-                                key={idx}
-                                role="button"
-                                tabIndex={0}
-                                aria-label={t.recipes.readStep}
-                                onClick={() => speak(s)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault()
-                                    speak(s)
-                                  }
-                                }}
-                              >
-                                {s}
-                                {/* Start a timer for a duration in this step — same
-                                    rail as the stepper. stopPropagation so the tap
-                                    doesn't also read the step aloud. */}
-                                {durs.length > 0 && (
-                                  <span className="cook__full-timers">
-                                    {durs.map((d) => (
-                                      <button
-                                        key={d.seconds}
-                                        type="button"
-                                        className="cook__timer-chip mono"
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          addTimer(d.seconds, d.label, stepN)
-                                        }}
-                                      >
-                                        ⏱ {d.label}
-                                      </button>
-                                    ))}
-                                  </span>
-                                )}
-                              </li>
-                            )
-                          })}
-                        </ol>
-                      </div>
-                    )
-                  })
-                })()}
+                {/* The whole method at a glance. Tap any step to hear it read. */}
+                {renderSteps()}
               </section>
             )}
             {recipe.notes && (
@@ -492,50 +608,45 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
               </section>
             )}
           </div>
+        ) : mode === 'split' ? (
+          // Ingredients pinned beside the steps. On a tablet both panes show; on a
+          // narrow phone the tab pair flips between them (CSS owns the breakpoint).
+          <div className="cook__split" data-tab={splitTab}>
+            <div className="cook__split-tabs" role="tablist" aria-label={t.recipes.cookView.split}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={splitTab === 'ings'}
+                className={'cook__split-tab' + (splitTab === 'ings' ? ' is-on' : '')}
+                onClick={() => setSplitTab('ings')}
+              >
+                {t.recipes.ingredients}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={splitTab === 'steps'}
+                className={'cook__split-tab' + (splitTab === 'steps' ? ' is-on' : '')}
+                onClick={() => setSplitTab('steps')}
+              >
+                {t.recipes.steps}
+              </button>
+            </div>
+            <aside className="cook__split-pane cook__split-ings">
+              <h2 className="cook__full-h">{t.recipes.ingredients}</h2>
+              {recipe.ingredients.length > 0 ? renderGather('lg') : null}
+            </aside>
+            <section className="cook__split-pane cook__split-steps">
+              <h2 className="cook__full-h">{t.recipes.steps}</h2>
+              {recipe.steps.length > 0 ? renderSteps() : null}
+              {recipe.notes && <p className="cook__full-notes">{recipe.notes}</p>}
+            </section>
+          </div>
         ) : cur?.kind === 'ingredients' ? (
           <div className="cook__card">
             <h2 className="cook__h">{t.recipes.ingredients}</h2>
-            {/* Gather list: tick the box as you grab each one (strike-through),
-                tap the text to hear the whole ingredient read aloud. Section
-                names sit between the rows as plain headers — nothing to tick. */}
-            <ul className="cook__ings">
-              {ingGroups.flatMap((g) => [
-                ...(g.title ? [<li key={`h-${g.title}`} className="cook__ing-sec">{g.title}</li>] : []),
-                ...g.items.map(({ text: ing, idx: i }) => {
-                const got = gathered.has(i)
-                return (
-                  <li key={i} className={'cook__ing' + (got ? ' is-got' : '')}>
-                    <button
-                      type="button"
-                      className="cook__ing-check"
-                      onClick={() => toggleGot(i)}
-                      aria-pressed={got}
-                      aria-label={got ? t.recipes.gathered : t.recipes.toGather}
-                    >
-                      <span className="cook__ing-box" aria-hidden="true">
-                        {got && <Icon name="check-bold" size={14} />}
-                      </span>
-                    </button>
-                    <span
-                      className="cook__ing-text"
-                      role="button"
-                      tabIndex={0}
-                      aria-label={t.recipes.hearLine}
-                      onClick={() => speak(spokenIngredient(ing, lang))}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          speak(spokenIngredient(ing, lang))
-                        }
-                      }}
-                    >
-                      <IngredientLine line={ing} size="lg" kid />
-                    </span>
-                  </li>
-                )
-                }),
-              ])}
-            </ul>
+            {/* Gather list: tick the box as you grab each one, tap text to hear it. */}
+            {renderGather('lg')}
           </div>
         ) : (
           <div className="cook__card">
@@ -583,7 +694,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                   <ul className="cook__step-ings mono" aria-label={t.recipes.ingredients}>
                     {used.map((ing, i) => (
                       <li key={i}>
-                        <IngredientLine line={ing} size="sm" kid />
+                        <IngredientLine line={ing} size="sm" kid scoops />
                       </li>
                     ))}
                   </ul>
@@ -610,10 +721,10 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
         )}
       </div>
 
-      {/* Parent/full is one scrolling page — the way out is the small ✕ in the
-          bar, no full-width "Bonne appétit". The toddler stepper keeps its
-          prev/next arrows (its whole point is one page at a time); the last step
-          ends the nav rather than a big done button — the ✕ closes here too. */}
+      {/* The stepper (toddler, or parent Focus) keeps its prev/next arrows — its
+          whole point is one page at a time; the last step ends the nav rather than
+          a big done button (the ✕ closes here too). Full / split are scroll pages,
+          so the way out is the small ✕ in the bar. */}
       {mode === 'step' && (
         <div className="cook__nav">
           <button

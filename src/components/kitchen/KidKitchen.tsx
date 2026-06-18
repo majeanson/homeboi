@@ -5,6 +5,7 @@ import { pictoFor } from '../../lib/picto'
 import { type Recipe, recipeImg } from '../../lib/recipes'
 import { isGuest } from '../../lib/device'
 import { BigTiles, Sayable, type Tile } from '../BigTiles'
+import { InlineIcon } from '../Icon'
 import { buildCollections } from './CollectionPicker'
 import { KidCollections } from './KidCollections'
 import { type MealRow, type WeekDay } from './types'
@@ -147,7 +148,7 @@ export function KidKitchen({
             </div>
             <BigTiles tiles={dayTiles} />
             <button type="button" className="kid-pick__back mono" onClick={() => setKidRecipe(null)}>
-              ← {t.kid.back}
+              <InlineIcon name="arrow-left-bold" /> {t.kid.back}
             </button>
           </section>
         ) : (

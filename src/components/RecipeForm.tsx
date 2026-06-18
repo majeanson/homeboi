@@ -479,14 +479,14 @@ export function RecipeForm({
       })}
       <div className="recipe-add-row">
         <button type="button" className="btn btn--ghost mono recipe-add-line" onClick={() => addLine(kind)}>
-          ＋ {kind === 'ingredients' ? t.recipes.addIngredient : t.recipes.addStep}
+          <InlineIcon name="plus-bold" /> {kind === 'ingredients' ? t.recipes.addIngredient : t.recipes.addStep}
         </button>
         <button
           type="button"
           className="btn btn--ghost mono recipe-add-line"
           onClick={() => addLine(kind, SECTION_PREFIX)}
         >
-          ＋ {t.recipes.addSection}
+          <InlineIcon name="plus-bold" /> {t.recipes.addSection}
         </button>
       </div>
     </div>
@@ -590,14 +590,14 @@ export function RecipeForm({
             setEditStep(steps.length) // open the freshly added step right away
           }}
         >
-          ＋ {t.recipes.addStep}
+          <InlineIcon name="plus-bold" /> {t.recipes.addStep}
         </button>
         <button
           type="button"
           className="btn btn--ghost mono recipe-add-line"
           onClick={() => addLine('steps', SECTION_PREFIX)}
         >
-          ＋ {t.recipes.addSection}
+          <InlineIcon name="plus-bold" /> {t.recipes.addSection}
         </button>
       </div>
     </div>

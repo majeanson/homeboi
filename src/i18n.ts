@@ -459,6 +459,12 @@ export const FR = {
     cookModeStep: 'Pas à pas',
     cookModeFull: 'Recette',
     cookModeSwitch: 'Mode d’affichage',
+    // Cook-mode viewer: the parent's layout switcher (Recette / Côte à côte / Focus)
+    // and the device-wide text-size control. Toddler stays locked to the stepper.
+    cookViewLabel: 'Affichage',
+    cookView: { full: 'Recette', split: 'Côte à côte', step: 'Focus' },
+    cookDensityLabel: 'Taille du texte',
+    cookDensity: { compact: 'Compact', normal: 'Normal', large: 'Grand' },
     // Per-step recipe photos (feature #17 B — upload UI TODO).
     stepPhotoAdd: 'Ajouter une photo',
     stepPhotoChange: 'Changer la photo',
@@ -626,6 +632,12 @@ export const FR = {
     dragHint: 'Glisser pour réordonner',
     display: 'Affichage',
     displayHint: 'Le thème, la langue et la vue.',
+    // Customizable measuring-tool colours (Cook-mode pills + scoop circles).
+    measureColorsTitle: 'Couleurs des mesures',
+    measureColorsHint:
+      'Donne à chaque cuillère et tasse la couleur de tes vrais ustensiles. Les pastilles et les pastilles-pleines des recettes suivent.',
+    measureColorsReset: 'Couleurs d’origine',
+    measureColorsPreview: 'Aperçu',
     themeLabel: 'Thème',
     themeDay: 'Jour',
     themeNight: 'Nuit',
@@ -983,6 +995,21 @@ export const FR = {
     avatarCleared: (s: string) => `Photo de ${s} retirée`,
     historyRemoved: (s: string) => `« ${s} » retiré de l’historique`,
     routineTime: (s: string) => `Moment de « ${s} » changé`,
+  },
+  // The entity-detail peek (lib/detail + components/detail): tap any board/kitchen
+  // item to see a picture, a date, the relevant text + a couple of smart actions.
+  detail: {
+    aria: 'Détails',
+    markDone: 'Marquer fait',
+    markEaten: 'Marquer mangé',
+    openRecipe: 'Ouvrir la recette',
+    openDay: 'Voir la journée',
+    openRoutine: 'Ouvrir la routine',
+    turn: 'Tour de',
+    cook: 'Cuisine',
+    team: 'Équipe',
+    ingredients: 'Ingrédients',
+    steps: 'Étapes',
   },
   combo: {
     show: 'Voir les choix',
@@ -1442,6 +1469,10 @@ export const EN: typeof FR = {
     cookModeStep: 'Step by step',
     cookModeFull: 'Full recipe',
     cookModeSwitch: 'View mode',
+    cookViewLabel: 'View',
+    cookView: { full: 'Recipe', split: 'Side by side', step: 'Focus' },
+    cookDensityLabel: 'Text size',
+    cookDensity: { compact: 'Compact', normal: 'Normal', large: 'Large' },
     // Per-step recipe photos (feature #17 B — upload UI TODO).
     stepPhotoAdd: 'Add a photo',
     stepPhotoChange: 'Change photo',
@@ -1609,6 +1640,11 @@ export const EN: typeof FR = {
     dragHint: 'Drag to reorder',
     display: 'Display',
     displayHint: 'Theme, language and view.',
+    measureColorsTitle: 'Measure colours',
+    measureColorsHint:
+      'Give each spoon and cup the colour of your real tools. The recipe pills and scoop circles follow.',
+    measureColorsReset: 'Default colours',
+    measureColorsPreview: 'Preview',
     themeLabel: 'Theme',
     themeDay: 'Day',
     themeNight: 'Night',
@@ -1963,6 +1999,19 @@ export const EN: typeof FR = {
     avatarCleared: (s: string) => `${s}'s photo removed`,
     historyRemoved: (s: string) => `"${s}" removed from history`,
     routineTime: (s: string) => `"${s}" time of day changed`,
+  },
+  detail: {
+    aria: 'Details',
+    markDone: 'Mark done',
+    markEaten: 'Mark eaten',
+    openRecipe: 'Open recipe',
+    openDay: 'See the day',
+    openRoutine: 'Open routine',
+    turn: 'Turn:',
+    cook: 'Cooking',
+    team: 'Team',
+    ingredients: 'Ingredients',
+    steps: 'Steps',
   },
   combo: {
     show: 'Show choices',

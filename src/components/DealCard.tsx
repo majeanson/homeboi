@@ -55,7 +55,11 @@ export function DealCard({
       <div className="deal__body">
         <span className="deal__merchant mono">
           {deal.merchant}
-          {isBest && <span className="deal__best mono">★ {t.shop.best}</span>}
+          {isBest && (
+            <span className="deal__best mono">
+              <InlineIcon name="star-fill" size={12} /> {t.shop.best}
+            </span>
+          )}
         </span>
         <span className="deal__name">{deal.name}</span>
         <span className="deal__dates mono">{deal.validTo ? `${t.shop.until} ${fmtDate(deal.validTo)}` : ''}</span>

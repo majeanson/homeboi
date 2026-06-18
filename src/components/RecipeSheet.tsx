@@ -260,7 +260,11 @@ export function RecipeSheet({
             </p>
           )}
 
-          {timeParts.length > 0 && <p className="recipe-view__times mono">⏱ {timeParts.join(' · ')}</p>}
+          {timeParts.length > 0 && (
+            <p className="recipe-view__times mono">
+              <InlineIcon name="timer-bold" /> {timeParts.join(' · ')}
+            </p>
+          )}
 
           {recipe.tags?.length > 0 && (
             <div className="recipe-view__tags">

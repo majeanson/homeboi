@@ -19,8 +19,9 @@
 import type { Measure, MeasureUnit } from './measure'
 
 // The six real spoons, left→right on the fan: 1 tbs, 1/2 tbs, 1 tsp, 1/2 tsp,
-// 1/4 tsp, 1/8 tsp.
-const MEASURE_COLORS: Record<string, string> = {
+// 1/4 tsp, 1/8 tsp. These are the DEFAULTS — a household can recolour each one to
+// match its own physical spoon set in Réglages ▸ Affichage (see lib/measurePrefs).
+export const DEFAULT_MEASURE_COLORS: Record<string, string> = {
   // — tablespoon (c. à soupe) —
   '1|tbsp': '#8DB63C', // leaf green   (label "1 tbs")
   '1/2|tbsp': '#8A5A33', // brown        (label "1/2 tbs")
@@ -33,14 +34,22 @@ const MEASURE_COLORS: Record<string, string> = {
 
 // No colour-coded tool for this amount — a soft, greyed tint per unit so the pill
 // reads as "generic spoon/cup" without competing with the six vivid tool colours.
-const UNIT_FALLBACK: Record<MeasureUnit, string> = {
+// Also editable (a household with colour-coded cups can give "cup" a real colour).
+export const DEFAULT_UNIT_FALLBACK: Record<MeasureUnit, string> = {
   tsp: '#B6A0AE', // soft mauve-grey
   tbsp: '#A9B49A', // soft sage-grey
   cup: '#9DB9C4', // soft blue-grey (the set has no cups)
 }
 
-// The colour for a measure: its exact tool colour, else the unit fallback, else
-// null (caller renders a neutral, still-tappable pill).
-export function measureColor(m: Measure): string | null {
-  return MEASURE_COLORS[m.key] ?? UNIT_FALLBACK[m.unit] ?? null
+// A household's colour overrides: tool keys ("1|tbsp") and per-unit fallbacks keyed
+// "unit:<unit>" ("unit:cup"). Empty = pure defaults. Built + persisted by
+// lib/measurePrefs; passed in here so this module stays pure (no React, no storage).
+export type MeasureOverrides = Record<string, string>
+
+// The colour for a measure: a household override for the exact tool, else the
+// default tool colour, else an override for the unit, else the unit default, else
+// null (caller renders a neutral, still-tappable pill). `ov` defaults to empty so
+// non-React callers (and tests) get the stock palette.
+export function measureColor(m: Measure, ov: MeasureOverrides = {}): string | null {
+  return ov[m.key] ?? DEFAULT_MEASURE_COLORS[m.key] ?? ov[`unit:${m.unit}`] ?? DEFAULT_UNIT_FALLBACK[m.unit] ?? null
 }

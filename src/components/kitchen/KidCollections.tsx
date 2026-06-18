@@ -6,6 +6,7 @@ import { formatWeekday } from '../../lib/format'
 import { pictoFor } from '../../lib/picto'
 import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY, recipeImg, tagOptions } from '../../lib/recipes'
 import { BigTiles, Sayable, type Tile } from '../BigTiles'
+import { InlineIcon } from '../Icon'
 import { buildCollections } from './CollectionPicker'
 import { type WeekDay } from './types'
 
@@ -125,7 +126,7 @@ export function KidCollections({
         </div>
         <BigTiles tiles={dayTiles} />
         <button type="button" className="kid-pick__back mono" onClick={() => setKidRecipe(null)}>
-          ← {t.kid.back}
+          <InlineIcon name="arrow-left-bold" /> {t.kid.back}
         </button>
       </section>
     )
@@ -145,7 +146,7 @@ export function KidCollections({
         {/* Big, obvious back to the collections — a pre-reader needs an unmistakable
             way out, so it's a full-width text row like KidKitchen's back. */}
         <button type="button" className="kid-pick__back mono" onClick={() => setOpenTag(null)}>
-          ← {t.kid.backCollections}
+          <InlineIcon name="arrow-left-bold" /> {t.kid.backCollections}
         </button>
       </section>
     )
@@ -161,7 +162,7 @@ export function KidCollections({
       <BigTiles tiles={collectionTiles} empty={t.recipes.collectionsEmpty} />
       {onBack && (
         <button type="button" className="kid-pick__back mono" onClick={onBack}>
-          ← {t.kid.back}
+          <InlineIcon name="arrow-left-bold" /> {t.kid.back}
         </button>
       )}
     </section>

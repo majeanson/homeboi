@@ -6,7 +6,7 @@ import { useWrite } from '../../lib/write'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 import { isGuest } from '../../lib/device'
-import { Icon } from '../Icon'
+import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
@@ -389,7 +389,7 @@ export function GhostSection() {
                 onClick={() => track(c)}
                 title={`${c.label} · ${c.count}× · ${t.ghost.every} ${c.cadenceDays} ${t.ghost.days}`}
               >
-                ＋ {c.label} <span className="ghost-admin__candidate-n">{c.count}×</span>
+                <InlineIcon name="plus-bold" /> {c.label} <span className="ghost-admin__candidate-n">{c.count}×</span>
               </button>
             ))}
           </div>

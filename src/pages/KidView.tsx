@@ -6,7 +6,7 @@ import { useCalm } from '../lib/calm'
 import { isGuest } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { useSpeak, playNarration } from '../lib/speak'
-import { Icon } from '../components/Icon'
+import { Icon, InlineIcon } from '../components/Icon'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { tintInk, wash } from '../lib/colors'
 import { imgUrl } from '../lib/image'
@@ -274,7 +274,7 @@ export function KidView() {
                     )}
                     {done ? (
                       <span className="kid__routine-done">
-                        <span aria-hidden="true">✓</span> {t.kid.routineDone}
+                        <InlineIcon name="check-bold" /> {t.kid.routineDone}
                       </span>
                     ) : (
                       total > 0 && <span className="kid__routine-prog">{doneCount}/{total}</span>
@@ -344,7 +344,9 @@ export function KidView() {
                     ) : (
                       <span aria-hidden="true">{c.icon || '○'}</span>
                     )}
-                    <span className="tdl-recap__check" aria-hidden="true">✓</span>
+                    <span className="tdl-recap__check" aria-hidden="true">
+                      <Icon name="check-bold" size={14} />
+                    </span>
                   </button>
                 ))}
               </div>
@@ -399,7 +401,11 @@ export function KidView() {
                           <span className="tdl-step__emoji">{c.icon || '○'}</span>
                         )}
                       </span>
-                      {done && <span className="tdl-step__check">✓</span>}
+                      {done && (
+                        <span className="tdl-step__check">
+                          <Icon name="check-bold" size={14} />
+                        </span>
+                      )}
                     </span>
                   )
                 })}
@@ -420,7 +426,7 @@ export function KidView() {
                       onClick={() => advance(picked, curIdx)}
                       aria-label={curIdx >= picked.cards.length - 1 ? t.kid.finish : t.kid.tapNext}
                     >
-                      {curIdx >= picked.cards.length - 1 ? '✓' : '→'}
+                      <Icon name={curIdx >= picked.cards.length - 1 ? 'check-bold' : 'arrow-right-bold'} size={34} />
                     </button>
                   </div>
                 ) : (
@@ -442,7 +448,7 @@ export function KidView() {
             {/* The ← marks this as "go back" (to the faces), distinct from the
                 top-left exit that leaves Kid Mode — two same-styled text links
                 were indistinguishable to a pre-reader. */}
-            <span aria-hidden="true">← </span>
+            <InlineIcon name="arrow-left-bold" />{' '}
             {identified ? t.kid.pickRoutine : t.kid.pick}
           </button>
         )}

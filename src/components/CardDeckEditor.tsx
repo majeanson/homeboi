@@ -134,11 +134,19 @@ export function CardDeckEditor({
                   </span>
                   <button
                     type="button"
-                    className="deck__emoji"
+                    className={'deck__emoji' + (photos?.[i] ? ' deck__emoji--photo' : '')}
                     onClick={() => setPaletteFor(paletteFor === i ? null : i)}
                     aria-label={t.operator.emojiPick}
                   >
-                    {card.icon || '⭐'}
+                    {/* A set photo wins over the emoji here too, so the editor
+                        shows exactly what the kid + parent surfaces will show
+                        (feature #17 C). Tapping still opens the emoji palette —
+                        the emoji is the fallback when no photo is attached. */}
+                    {photos?.[i] ? (
+                      <img className="deck__emoji-photo" src={imgUrl(photos[i])} alt="" />
+                    ) : (
+                      card.icon || '⭐'
+                    )}
                   </button>
                 </>
               }
@@ -194,7 +202,7 @@ export function CardDeckEditor({
         </div>
       ))}
       <button type="button" className="btn btn--ghost mono deck__add" onClick={add}>
-        ＋ {t.operator.addCard}
+        <InlineIcon name="plus-bold" /> {t.operator.addCard}
       </button>
       <DragGhost ghost={dnd.ghost} />
     </div>

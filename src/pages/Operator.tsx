@@ -6,7 +6,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { isPaired } from '../lib/device'
 import { useProfile } from '../lib/profile'
-import { DisplaySection, VoiceSection, CalmSection } from '../components/operator/display'
+import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection } from '../components/operator/display'
 import { AmbientSettingsSection } from '../components/operator/ambient'
 import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
@@ -217,6 +217,7 @@ export function Operator() {
           <>
             <DisplaySection />
             <AmbientSettingsSection />
+            <MeasureColorsSection />
             <VoiceSection />
           </>
         )}

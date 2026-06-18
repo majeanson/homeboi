@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useLang, useT } from '../i18n'
 import { useHelp } from './help'
 import { HelpBubble } from '../components/HelpBubble'
@@ -53,25 +53,67 @@ export function useHelpMode(
   }
 
   const entry = key ? content[key] : null
-  const bubble = entry ? (
-    <HelpBubble
-      title={label(key as string)}
-      body={entry.body[lang]}
-      card={entry.card}
-      point={entry.point}
-      onClose={() => setKey(null)}
-    />
-  ) : null
+  const bubbleFor = (k: string): ReactNode =>
+    key === k && entry ? (
+      <HelpBubble
+        title={label(k)}
+        body={entry.body[lang]}
+        card={entry.card}
+        point={entry.point}
+        onClose={() => setKey(null)}
+      />
+    ) : null
+  const bubble = key ? bubbleFor(key) : null
 
   return {
-    available: tutorial, // whether to show the toggle at all
+    // Show the toggle only in tutorial mode AND only when there's actually
+    // something to explain — a surface that renders no helpable control passes an
+    // empty map and gets no "?" at all (the standing rule: no targets → no help).
+    available: tutorial && Object.keys(content).length > 0,
     active,
     toggle,
     reset,
     pick,
-    bubble, // render after the header: the in-place help box for the tapped control
+    bubble, // render once after the header: the in-place box for whatever was tapped
+    // Render the in-place box NEXT TO a specific control (so a heading deep in the
+    // page explains right there, not scrolled off at the top). Only the tapped key
+    // renders; everything else is null. Use this OR `bubble`, never both.
+    bubbleFor,
     hint: active && !key, // render a "tap a button" hint while armed and nothing picked yet
   }
+}
+
+// The shape useHelpMode returns — so a page can thread its help mode down into the
+// child components that own the headings it wants to make explainable.
+export type HelpMode = ReturnType<typeof useHelpMode>
+
+// A section heading that becomes tappable ONLY while help mode is armed: a tap then
+// EXPLAINS the whole concept in place (a HelpBubble) instead of doing nothing, the
+// way a control tile does. Outside help mode (or when no `help` is passed) it's an
+// ordinary heading — identical DOM — so it never adds dead buttons or tab stops.
+// Render the matching `help.bubbleFor(k)` just below the heading's container.
+export function HelpTitle({
+  help,
+  k,
+  as: Tag = 'h2',
+  className,
+  children,
+}: {
+  help?: HelpMode
+  k: string
+  as?: 'h2' | 'h3'
+  className?: string
+  children: ReactNode
+}) {
+  const t = useT()
+  if (!help || !help.active) return <Tag className={className}>{children}</Tag>
+  return (
+    <Tag className={className}>
+      <button type="button" className="help-title" onClick={help.pick(k, () => {})} title={t.help.learnMore}>
+        {children}
+      </button>
+    </Tag>
+  )
 }
 
 // The "?" toggle button. Place it in a sheet/scene header. `className` lets a

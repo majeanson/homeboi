@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useT } from '../i18n'
 import { useSpeak, playNarration } from '../lib/speak'
+import { Icon } from './Icon'
 
 // The toddler primitive: a grid of big, picture-first, tappable tiles that read
 // themselves aloud on tap. Touch targets are huge (NFR-KID-1), meaning carried
@@ -123,7 +124,7 @@ export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
             )}
             {tile.done && (
               <span className="bigtile__check" aria-hidden="true">
-                ✓
+                <Icon name="check-bold" size={22} />
               </span>
             )}
           </button>

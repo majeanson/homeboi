@@ -1,0 +1,176 @@
+/* Entity-detail peek (components/detail/EntityDetailSheet) + the Act split row
+   that opens it. Uniquely-named classes, so cascade position is immaterial — but
+   this sits after today.css so .act__checkbtn (a real <button> now) can override
+   the default button chrome while the .act .check disc rules still win. */
+
+/* The peek renders inside the shared .sheet shell (sheets.css). */
+.detail-sheet__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.detail-sheet__head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-left: 12px;
+}
+.detail-sheet__spine {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 6px;
+  border-radius: 999px;
+}
+.detail-sheet__tile {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.detail-sheet__emoji {
+  font-size: 34px;
+  line-height: 1;
+}
+.detail-sheet__photo {
+  flex: none;
+  width: 84px;
+  height: 84px;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
+}
+.detail-sheet__heading {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail-sheet__when {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+.detail-sheet__title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.detail-sheet__sub {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+.detail-sheet__who {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+/* Body blocks */
+.detail-sheet__text {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.detail-sheet__text--hand {
+  font-family: var(--font-hand, inherit);
+  font-size: 1.2rem;
+}
+.detail-sheet__blocklabel {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+.detail-sheet__chiprow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.detail-sheet__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.detail-sheet__list li {
+  overflow-wrap: anywhere;
+}
+.detail-sheet__img {
+  width: 100%;
+  max-height: 40vh;
+  object-fit: contain;
+  border-radius: 12px;
+}
+.detail-sheet__audio {
+  width: 100%;
+}
+
+/* Footer actions — wrap to fit a phone, each grows to share the row. */
+.detail-sheet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+.detail-sheet__actions .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+/* ---- Act split row: the body opens the peek, the check disc still ticks ---- */
+.act--split:active {
+  /* Don't press the whole card when the check is tapped — the hit handles press. */
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+.act__hit {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.act__hit:active {
+  transform: translate(1px, 1px);
+}
+/* The check is a real <button> in a split row — strip the default button chrome
+   (the `.act .check` rules still draw the disc + the sage "done" fill). */
+.act__checkbtn {
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Rows/cards that open a peek on tap — show it's tappable on a pointer device. */
+.now-card--tap,
+.routine-card--tap {
+  cursor: pointer;
+}
+.now-card--tap:active,
+.routine-card--tap:active {
+  transform: translateY(1px);
+}

@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { householdIncludedStores, storeKey } from '../_lib/stores'
 import { householdMealSlotPrefs, cleanColors, cleanHidden } from '../_lib/mealSlots'
+import { householdMeasureColors, cleanMeasureColors } from '../_lib/measureColors'
 import { householdReserveLocations, cleanReserveLocations } from '../_lib/reserveLocations'
 import { nowSec } from '../_lib/ids'
 
@@ -21,8 +22,16 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
+  const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
-  return ok({ postal, includedStores, mealColors: meals.colors, mealHidden: meals.hidden, reserveLocations })
+  return ok({
+    postal,
+    includedStores,
+    mealColors: meals.colors,
+    mealHidden: meals.hidden,
+    measureColors,
+    reserveLocations,
+  })
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
@@ -31,6 +40,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     includedStores?: string[]
     mealColors?: Record<string, string>
     mealHidden?: string[]
+    measureColors?: Record<string, string>
     reserveLocations?: unknown
   }>(ctx.request)
 
@@ -80,6 +90,15 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
   }
 
+  // Per-tool measure colours: a {swatchId: hex} map. Only valid pairs survive; an
+  // empty result (every tool reset to default) clears the column back to NULL.
+  if (body && 'measureColors' in body) {
+    const colors = cleanMeasureColors(body.measureColors)
+    await ctx.env.DB.prepare('UPDATE households SET measure_colors = ?, updated_at = ? WHERE id = ?')
+      .bind(Object.keys(colors).length ? JSON.stringify(colors) : null, nowSec(), actor.householdId)
+      .run()
+  }
+
   // Storage locations for La réserve: a {id, name, color?} list. Only valid
   // entries survive. An explicit list (incl. an empty one = "removed them all")
   // is stored verbatim — we never auto-clear back to NULL, so the household's
@@ -94,6 +113,14 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
+  const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
-  return ok({ postal, includedStores, mealColors: meals.colors, mealHidden: meals.hidden, reserveLocations })
+  return ok({
+    postal,
+    includedStores,
+    mealColors: meals.colors,
+    mealHidden: meals.hidden,
+    measureColors,
+    reserveLocations,
+  })
 })

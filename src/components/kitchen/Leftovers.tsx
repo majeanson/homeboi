@@ -11,6 +11,7 @@ import { mealOptions } from './comboOptions'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon, InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
 // "Restants" — the leftovers pool under the week grid. A cooked dish with extra
 // that isn't pinned to a day yet: a calm "eat these first" nudge. Add by typing,
@@ -22,10 +23,14 @@ export function Leftovers({
   leftovers,
   recentMeals,
   week,
+  help,
 }: {
   leftovers: Leftover[]
   recentMeals: MealRow[]
   week: { date: number; label: string }[]
+  // Kitchen's page-level help mode — makes the "Restants" heading explainable while
+  // armed (lib/helpMode). Optional: a plain heading without it.
+  help?: HelpMode
 }) {
   const t = useT()
   const recordUndo = useRecordUndo()
@@ -119,8 +124,9 @@ export function Leftovers({
   return (
     <section className="kitchen__ideas">
       <div className="kitchen__head">
-        <h2>{t.kitchen.leftovers}</h2>
+        <HelpTitle help={help} k="leftovers">{t.kitchen.leftovers}</HelpTitle>
       </div>
+      {help?.bubbleFor('leftovers')}
 
       {!ro && (
         // Type a free-text leftover OR pick one of the last few days' meals

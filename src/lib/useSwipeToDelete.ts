@@ -34,9 +34,18 @@ export function useSwipeToDelete(ref: RefObject<HTMLElement | null>, onDelete: (
     let dx = 0
     let axis: 'undecided' | 'horizontal' | 'vertical' = 'undecided'
 
+    // Promote to a compositor layer and reveal the red delete pane ONLY while a
+    // swipe is armed. Both are off at rest (and during vertical scroll), so a
+    // scroll can never flash the pane or thrash a permanently-promoted layer.
+    const setActive = (on: boolean) => {
+      el.style.willChange = on ? 'transform' : ''
+      el.parentElement?.classList.toggle('list-row--swiping', on)
+    }
+
     const reset = () => {
       el.style.transition = ''
       el.style.transform = ''
+      setActive(false)
     }
 
     const onStart = (e: TouchEvent) => {
@@ -64,6 +73,7 @@ export function useSwipeToDelete(ref: RefObject<HTMLElement | null>, onDelete: (
           ddx < 0 && Math.abs(ddy) < ARM_PX && Math.abs(ddx) > Math.abs(ddy) * H_DOMINANCE
         axis = flatSwipe ? 'horizontal' : 'vertical'
         if (axis === 'vertical') reset()
+        else setActive(true) // arm: promote the layer + reveal the pane
       }
       if (axis !== 'horizontal') return
       e.preventDefault() // hijack the horizontal pan to follow the finger
@@ -80,6 +90,16 @@ export function useSwipeToDelete(ref: RefObject<HTMLElement | null>, onDelete: (
       el.style.transition = reduce ? 'none' : 'transform 0.2s ease'
       if (-dx <= threshold) {
         el.style.transform = '' // not far enough — spring back
+        if (reduce) return setActive(false)
+        // Keep the layer + pane until the spring settles, then disarm — dropping
+        // them mid-animation would force a repaint and jank the slide-back.
+        const off = (ev: TransitionEvent) => {
+          if (ev.propertyName !== 'transform') return
+          el.removeEventListener('transitionend', off)
+          setActive(false)
+        }
+        el.addEventListener('transitionend', off)
+        window.setTimeout(() => setActive(false), 300)
         return
       }
       el.style.transform = 'translateX(-110%)' // slide out, then delete

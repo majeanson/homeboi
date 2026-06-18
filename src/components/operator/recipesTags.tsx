@@ -196,8 +196,8 @@ export function RecipeTagsSection() {
             aria-label={t.operator.tagAddPill}
             maxLength={24}
           />
-          <button type="submit" className="btn" disabled={!pillInput.trim()}>
-            ＋
+          <button type="submit" className="btn" disabled={!pillInput.trim()} aria-label={t.operator.tagAddPill}>
+            <Icon name="plus-bold" size={18} />
           </button>
         </form>
       )}

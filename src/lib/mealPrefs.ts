@@ -11,6 +11,7 @@ export interface HouseholdSettings {
   includedStores?: string[]
   mealColors?: Record<string, string> // slot → "#rrggbb" override (only set slots)
   mealHidden?: string[] // slots hidden from glance/plan; empty = show all
+  measureColors?: Record<string, string> // measuring-tool swatchId → "#rrggbb" (only set tools)
   reserveLocations?: ReserveLocation[] | null // La réserve storage spots; null = seeded defaults
 }
 

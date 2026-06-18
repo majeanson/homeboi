@@ -155,7 +155,9 @@ export function CashierMode({
     return (
       <div ref={cashierRef} className="cashier cashier--thanks" role="dialog" aria-modal="true" aria-label={t.shop.thanks}>
         <div className="cashier__thanks">
-          <span className="cashier__thanks-emoji" aria-hidden="true">💛</span>
+          <span className="cashier__thanks-emoji" aria-hidden="true">
+            <Icon name="heart-fill" size={56} color="#E8B84B" />
+          </span>
           <h2 className="cashier__thanks-title">{t.shop.thanks}</h2>
           <p className="cashier__thanks-hint mono">{t.shop.handBack}</p>
           {canContinue && (

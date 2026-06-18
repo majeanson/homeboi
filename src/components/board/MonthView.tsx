@@ -2,6 +2,9 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
+import { useUndoToast } from '../../lib/toast'
+import { TODOS_KEY } from '../../lib/queryKeys'
 import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDayLong, weekdayShort } from '../../lib/format'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
@@ -79,10 +82,16 @@ export function MonthView({
   todayDay: number
 }) {
   const nav = useNavigate()
+  const write = useWrite()
+  const undo = useUndoToast()
   // Which month is shown, as an offset (in months) from the real current one.
   // Selected day drives the detail panel; it opens on today.
   const [offset, setOffset] = useState(0)
   const [selected, setSelected] = useState(todayDay)
+  // À compléter todos marked done from the panel — DEFERRED behind the undo toast:
+  // hidden at once so /api/month can't resurrect them before the PATCH commits, and
+  // a tap of Annuler simply never marks it done (Liste's pendingClear pattern).
+  const [pendingTodo, setPendingTodo] = useState<Set<string>>(new Set())
 
   const grid = useMemo(() => {
     const { year, month } = localYMD(todayDay)
@@ -124,10 +133,40 @@ export function MonthView({
     return who ? `${who} ${t.board.cooks}` : undefined
   }
 
+  // Check an À compléter todo done straight from the calendar panel (the follow-up
+  // to "Ouvrir la journée"). DEFERRED behind the undo toast, mirroring the board's
+  // markTodoDone: hide it now (pendingTodo), hold the PATCH, and a tap of Annuler
+  // leaves it open. /api/month only carries OPEN todos, so a committed one drops off
+  // on the next month read; ['month'] is invalidated so that read happens.
+  const markTodoDone = (td: MTodo) => {
+    setPendingTodo((s) => new Set(s).add(td.id))
+    undo({
+      message: t.undo.todoDone(td.title),
+      onUndo: () =>
+        setPendingTodo((s) => {
+          const n = new Set(s)
+          n.delete(td.id)
+          return n
+        }),
+      onCommit: async () => {
+        await write('todos', { method: 'PATCH', body: { id: td.id, done: true }, affectedKeys: [TODOS_KEY, ['month']] }).catch(
+          () => {},
+        )
+        setPendingTodo((s) => {
+          const n = new Set(s)
+          n.delete(td.id)
+          return n
+        })
+      },
+    })
+  }
+
   const sel = byDay.get(selected)
   // Hidden meal slots (Réglages ▸ Repas) drop out of the day's detail list + count.
   const selMeals = sel ? sel.meals.filter((m) => mealPrefs.isVisible(m.slot)) : []
-  const selCount = sel ? sel.events.length + selMeals.length + sel.chores.length + sel.todos.length + sel.notes.length : 0
+  // Todos just marked done are held out of the panel (and the count) at once.
+  const selTodos = sel ? sel.todos.filter((td) => !pendingTodo.has(td.id)) : []
+  const selCount = sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.notes.length : 0
   const atToday = offset === 0 && selected === todayDay
   // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
   // time — the household's wall month/weekday, no UTC flag.
@@ -276,10 +315,10 @@ export function MonthView({
             {sel!.chores.map((c) => (
               <Act key={c.id} cat="chore" title={c.title} who={c.who ?? undefined} color={c.color ?? undefined} />
             ))}
-            {/* À compléter todos pinned to this day — read-only here (check them off
-                from the board's À compléter card or the day page). The source list,
-                if any, rides as the sub-line. */}
-            {sel!.todos.map((td) => (
+            {/* À compléter todos pinned to this day — check them off right here (the
+                check is its own tap target); tap the rest of the row to open the day
+                page. The source list, if any, rides as the sub-line. */}
+            {selTodos.map((td) => (
               <Act
                 key={td.id}
                 cat="chore"
@@ -287,6 +326,8 @@ export function MonthView({
                 title={td.title}
                 who={td.section ?? undefined}
                 color={colorOf(members, td.member_id) ?? undefined}
+                onCheck={() => markTodoDone(td)}
+                onOpen={() => nav(`/kitchen/day/${selected}`)}
               />
             ))}
             {sel!.notes.map((n) => (

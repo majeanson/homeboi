@@ -94,7 +94,12 @@ export function NowNext({
           {focusWho && (
             <div className="nownext__who">
               {focusWho}
-              {focusMine ? ' ★' : ''}
+              {focusMine && (
+                <>
+                  {' '}
+                  <InlineIcon name="star-fill" size={12} />
+                </>
+              )}
             </div>
           )}
         </div>
@@ -328,7 +333,12 @@ export function Lanes({
             <div className="lane__head" style={{ color: tintInk(m.colour) }}>
               <span className="lane__dot" style={{ background: m.colour }} aria-hidden="true" />
               {m.display_name}
-              {mine ? ' ★' : ''}
+              {mine && (
+                <>
+                  {' '}
+                  <InlineIcon name="star-fill" size={12} />
+                </>
+              )}
             </div>
             {empty ? (
               <p className="feed-empty feed-empty--calm">{t.board.laneClear}</p>

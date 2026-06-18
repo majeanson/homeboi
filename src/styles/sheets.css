@@ -533,16 +533,51 @@
 }
 .help-armed .cat-pick,
 .help-armed .boardview__opt,
-.help-armed .subtabs__opt {
+.help-armed .subtabs__opt,
+.help-armed .help-title,
+.help-armed .help-pick {
   animation: help-armed-pulse 1.6s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .help-armed .cat-pick,
   .help-armed .boardview__opt,
-  .help-armed .subtabs__opt {
+  .help-armed .subtabs__opt,
+  .help-armed .help-title,
+  .help-armed .help-pick {
     animation: none;
     box-shadow: 0 0 0 2px var(--accent);
   }
+}
+/* A heading turned tappable in help mode (HelpTitle). Reads as the plain heading —
+   inherits its font/colour, no box — and only earns a "tap to learn" affordance
+   (dashed underline + the shared armed pulse above) while armed, since the button
+   is rendered only then. */
+.help-title {
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 2px 4px;
+  border-radius: 8px;
+  cursor: help;
+  text-decoration: underline dashed;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 4px;
+}
+/* A non-heading button opted into help mode via the `help-pick` class: no base
+   styling of its own, it just joins the armed pulse so the "tap to learn" hint is
+   grounded on it too (the flyer search, Vider les cochés, the cashier). */
+.help-pick {
+  border-radius: 10px;
+}
+/* A bare right-aligned home for a section's "?" toggle, for hub tabs whose header
+   has no control group to sit it beside (La liste). */
+.hub-helprow {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 8px;
 }
 .sheet h3 {
   font-family: var(--display);
@@ -712,8 +747,13 @@
   margin-bottom: 0;
 }
 /* The delete pane behind the card. Inert (aria-hidden) — the swipe drives it;
-   the edit page keeps a real Delete control for non-touch. The card's opaque
-   --card background covers this at rest. */
+   the edit page keeps a real Delete control for non-touch.
+   Hidden (opacity:0) at rest and revealed ONLY while a swipe is armed
+   (`.list-row--swiping`, set by useSwipeToDelete when the axis locks
+   horizontal). Relying on the card's opaque background to mask it was not
+   enough: on a fast vertical scroll the compositor briefly shows the pane
+   through the (promoted) card layer, flashing every row red. With nothing
+   painted here at rest, there's no red to flash. */
 .list-row__del {
   position: absolute;
   inset: 0;
@@ -727,15 +767,22 @@
   background: var(--clay, #b3463a);
   color: #fff;
   font-weight: 700;
+  opacity: 0;
+}
+.list-row--swiping .list-row__del {
+  opacity: 1;
 }
 .list-row__del-icon {
   font-size: 22px;
   line-height: 1;
 }
-/* The sliding foreground rides above the pane and follows the finger. */
+/* The sliding foreground rides above the pane and follows the finger.
+   `will-change: transform` is set INLINE by useSwipeToDelete only for the
+   duration of an active swipe, never statically — permanently promoting every
+   row to its own compositor layer caused the layer-thrash that flashed the red
+   pane on fast scrolls. */
 .list-row > .list-row__main {
   z-index: 1;
-  will-change: transform;
   /* The browser owns the vertical axis: a vertical scroll is handled natively and
      never waits on (or is misread by) the swipe handler, so it can't flash the red
      delete pane. Only horizontal pans are delivered to useSwipeToDelete. */

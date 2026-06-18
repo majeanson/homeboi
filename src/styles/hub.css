@@ -411,6 +411,19 @@
   align-items: center;
   justify-content: center;
 }
+/* When a card has a photo (feature #17 C) the swatch shows it instead of the
+   emoji — drop the inner padding so the image fills the tile; tapping still
+   opens the emoji palette (the emoji is the fallback). */
+.deck__emoji--photo {
+  overflow: hidden;
+  padding: 0;
+}
+.deck__emoji-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
 /* The word field + ↑/↓ + delete now come from the shared EditField. Keep the deck
    row dense: one line (not the add-form's wrap), and let the word box shrink past
    its generous add-form basis so handle + emoji + actions stay on the card. */

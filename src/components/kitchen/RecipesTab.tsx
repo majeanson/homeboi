@@ -13,6 +13,7 @@ import { formatDuration } from '../../lib/duration'
 import { pictoFor } from '../../lib/picto'
 import { todayLocalDay } from '../../lib/localDay'
 import { InlineIcon } from '../Icon'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
 // The recipe book: search, tag chips, the configurable filter/sort PILLS, and the
 // #11 collections browse layer — all flat in one view (no second-level sub-tabs).
@@ -38,6 +39,7 @@ export function RecipesTab({
   listItems,
   lastServed,
   onView,
+  help,
 }: {
   recipes: Recipe[]
   lowItems: string[]
@@ -45,6 +47,9 @@ export function RecipesTab({
   listItems: string[]
   lastServed?: Map<string, number>
   onView: (r: Recipe) => void
+  // Kitchen's page-level help mode — makes the "Recettes" heading and the
+  // "Aa / Collections" toggle explainable in place while armed (lib/helpMode).
+  help?: HelpMode
 }) {
   const t = useT()
   const [recipeQuery, setRecipeQuery] = useState('')
@@ -227,19 +232,22 @@ export function RecipesTab({
           ) : (
             nIngs > 0 && <span className="recipe-card__sub mono">{t.recipes.count(nIngs)}</span>
           )}
-          {totalMin != null && <span className="recipe-card__time mono">⏱ {formatDuration(totalMin * 60)}</span>}
+          {totalMin != null && (
+            <span className="recipe-card__time mono">
+              <InlineIcon name="timer-bold" size={12} /> {formatDuration(totalMin * 60)}
+            </span>
+          )}
         </button>
         <HeartButton recipeId={r.id} />
       </div>
     )
   }
 
-  // Built-in pill label + icon. (fast keeps its ⏱ glyph from before; the rest use
-  // the shared Phosphor set.)
+  // Built-in pill label + icon — all from the shared Phosphor set (no emoji).
   const BUILTIN_UI: Record<BuiltinKey, { label: string; icon: ReactNode }> = {
     cookable: { label: t.recipes.cookable, icon: <InlineIcon name="cooking-pot-bold" /> },
     useSoon: { label: t.recipes.useItUp, icon: <InlineIcon name="recycle-bold" /> },
-    fast: { label: t.recipes.fast30, icon: <span aria-hidden="true">⏱</span> },
+    fast: { label: t.recipes.fast30, icon: <InlineIcon name="timer-bold" /> },
     neglected: { label: t.recipes.neglected, icon: <InlineIcon name="clock-bold" /> },
     favorites: { label: t.recipes.favorites, icon: <InlineIcon name="heart-bold" /> },
     recent: { label: t.recipes.recentlyAdded, icon: <InlineIcon name="sparkle-bold" /> },
@@ -291,8 +299,9 @@ export function RecipesTab({
   return (
     <section>
       <div className="kitchen__head">
-        <h2>{t.recipes.title}</h2>
+        <HelpTitle help={help} k="recipesBook">{t.recipes.title}</HelpTitle>
       </div>
+      {help?.bubbleFor('recipesBook')}
       {(recipes.length > 3 || shownPills.length > 0) && (
         <div className="kitchen__recipe-tools">
           {recipes.length > 3 && (
@@ -393,7 +402,7 @@ export function RecipesTab({
                   role="tab"
                   aria-selected={!groupView}
                   className={'subtabs__opt' + (!groupView ? ' is-on' : '')}
-                  onClick={() => setGroupView(false)}
+                  onClick={help ? help.pick('collections', () => setGroupView(false)) : () => setGroupView(false)}
                 >
                   Aa
                 </button>
@@ -402,13 +411,14 @@ export function RecipesTab({
                   role="tab"
                   aria-selected={groupView}
                   className={'subtabs__opt' + (groupView ? ' is-on' : '')}
-                  onClick={() => setGroupView(true)}
+                  onClick={help ? help.pick('collections', () => setGroupView(true)) : () => setGroupView(true)}
                 >
                   {t.recipes.collectionsTitle}
                 </button>
               </div>
             </div>
           )}
+          {help?.bubbleFor('collections')}
           {/* In Collections, the tag chips above pick which sections to show (a
               union), not narrow the recipes — say so once so the change is clear. */}
           {groupView && tags.length > 0 && (

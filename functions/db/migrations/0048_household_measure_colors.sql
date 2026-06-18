@@ -1,0 +1,11 @@
+-- Customizable measuring-tool colours, household-level (shared across the wall
+-- tablet and every phone, so the colour-coded measure pills + Cook-mode scoop
+-- circles match the household's OWN physical spoons everywhere). One setting:
+--   measure_colors: JSON object {swatchId: "#rrggbb"} overriding the default
+--     colour for a tool. swatchId is a tool key ("1|tbsp", "1/2|tsp", …) or a
+--     per-unit fallback ("unit:cup", "unit:tbsp", "unit:tsp"). A missing key =
+--     its built-in default (see src/lib/measureColors.ts). Empty/absent = all
+--     defaults.
+-- Nullable; absence means the stock spoon-set palette. Additive, forward-only,
+-- filename-locked.
+ALTER TABLE households ADD COLUMN measure_colors TEXT;
