@@ -277,6 +277,24 @@ export function ageOnNextBirthday(birthday: string | null | undefined, now = new
 const MONTHS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
 const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
+// Localized month names (1-indexed access via [month-1]). Shared by the birthday
+// picker + formatter so the two never disagree.
+export const monthNames = (lang: keyof Bi): string[] => (lang === 'fr' ? MONTHS_FR : MONTHS_EN)
+
+// Days in a month for the picker. February is 29 (leap-day birthdays are valid)
+// since the year may be unknown anyway.
+export function daysInMonth(month: number): number {
+  return [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1] ?? 31
+}
+
+// Build a stored birthday string from parts. Year 0/empty → '0000' (unknown year);
+// returns null until BOTH month and day are chosen (an incomplete date = no birthday).
+export function makeBirthday(month: number, day: number, year: number | null): string | null {
+  if (!month || !day) return null
+  const y = String(year && year > 0 ? year : 0).padStart(4, '0')
+  return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
 // "12 mars" / "March 12" — day + month, no year (years are often unknown and the
 // calm board only cares about the day).
 export function formatBirthday(birthday: string | null | undefined, lang: keyof Bi): string | null {

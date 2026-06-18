@@ -242,6 +242,28 @@
   resize: vertical;
   min-height: 3rem;
 }
+
+/* Birthday picker: Month + Day + optional Year, each a big touch target */
+.cf__bday {
+  display: flex;
+  gap: 0.4rem;
+}
+.cf__bday > .cf__input {
+  min-height: 2.6rem; /* comfortable tap target on a tablet */
+}
+.cf__bday > select.cf__input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.cf__bday-year {
+  flex: 0 0 6.5rem;
+}
+/* The birthday field can span both grid columns so the three controls breathe. */
+@media (min-width: 560px) {
+  .cf__field--bday {
+    grid-column: 1 / -1;
+  }
+}
 .cf__tags {
   display: flex;
   flex-wrap: wrap;

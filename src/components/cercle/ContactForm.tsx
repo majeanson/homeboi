@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
+import { BirthdayPicker } from './BirthdayPicker'
 import { api } from '../../lib/api'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
 import { useWrite } from '../../lib/write'
@@ -38,6 +40,7 @@ export function ContactForm({
   onSaved: () => void
 }) {
   const t = useT()
+  const nav = useNavigate()
   const write = useWrite()
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -93,9 +96,39 @@ export function ContactForm({
       photoKey,
     }
     try {
-      if (value) await write('cercle', { method: 'PATCH', body: { id: value.id, ...body }, affectedKeys: [CERCLE_KEY, BOARD_KEY] })
-      else await write('cercle', { method: 'POST', body, affectedKeys: [CERCLE_KEY, BOARD_KEY] })
-      onSaved()
+      if (value) {
+        await write('cercle', { method: 'PATCH', body: { id: value.id, ...body }, affectedKeys: [CERCLE_KEY, BOARD_KEY] })
+        onSaved()
+        return
+      }
+      const res = await write<{ id: string }>('cercle', { method: 'POST', body, affectedKeys: [CERCLE_KEY, BOARD_KEY] })
+      const newId = res.queued ? null : res.data?.id ?? null
+      if (newId) {
+        // Seed the cache so the edit page finds the new person at once (no refetch
+        // race that would bounce back), then land on their EDIT view — where the
+        // « Liens » section lives, so adding a relationship is the obvious next step.
+        qc.setQueryData<{ contacts: Contact[]; links: ContactLink[] }>(CERCLE_KEY, (old) => {
+          const fresh: Contact = {
+            id: newId,
+            firstName: body.firstName,
+            lastName: body.lastName,
+            nickname: body.nickname,
+            photoKey,
+            birthday: body.birthday,
+            email: body.email,
+            phone: body.phone,
+            address: null,
+            notes: body.notes,
+            tags,
+            memberId: body.memberId,
+            customFields: [],
+          }
+          return old ? { contacts: [...old.contacts, fresh], links: old.links } : { contacts: [fresh], links: [] }
+        })
+        nav(`/cercle/person/${newId}`, { replace: true })
+      } else {
+        onSaved() // offline: the create is queued with no id yet — just close
+      }
     } finally {
       setSaving(false)
     }
@@ -138,18 +171,12 @@ export function ContactForm({
           <span className="cf__label">{t.cercle.nickname}</span>
           <input className="cf__input" value={nickname} onChange={(e) => setNickname(e.target.value)} />
         </label>
-        <label className="cf__field">
+        <div className="cf__field cf__field--bday">
           <span className="cf__label">
             <Icon name="cake-bold" size={14} /> {t.cercle.birthday}
           </span>
-          <input
-            className="cf__input"
-            value={birthday}
-            onChange={(e) => setBirthday(e.target.value)}
-            placeholder={t.cercle.birthdayHint}
-            inputMode="numeric"
-          />
-        </label>
+          <BirthdayPicker value={birthday || null} onChange={(v) => setBirthday(v ?? '')} />
+        </div>
         <label className="cf__field">
           <span className="cf__label">
             <Icon name="phone-bold" size={14} /> {t.cercle.phone}
@@ -217,16 +244,25 @@ export function ContactForm({
         </div>
       </div>
 
+      {/* Relationships sit ABOVE the save button so the form doesn't look like it
+          ends mid-way. They need a saved person (an id) to link to: on EDIT the
+          editor is here; on a NEW person we explain links come right after saving
+          (and saving lands you on the edit view where they appear). */}
+      {value ? (
+        <RelationshipEditor person={value} contacts={contacts} links={links} onChanged={() => qc.invalidateQueries({ queryKey: CERCLE_KEY })} />
+      ) : (
+        <div className="cf__rels">
+          <span className="cf__label">{t.cercle.relationships}</span>
+          <p className="cf__rels-empty mono">{t.cercle.saveFirstForLinks}</p>
+        </div>
+      )}
+
+      {/* Save is the VERY LAST thing in the form. */}
       <div className="cf__save">
         <button type="button" className="btn btn--primary" disabled={!firstName.trim() || saving || uploading} onClick={save}>
           <Icon name="check-bold" size={18} /> {t.cercle.save}
         </button>
       </div>
-
-      {/* Relationships — only once the person exists (needs an id to link). */}
-      {value && (
-        <RelationshipEditor person={value} contacts={contacts} links={links} onChanged={() => qc.invalidateQueries({ queryKey: CERCLE_KEY })} />
-      )}
     </div>
   )
 }
