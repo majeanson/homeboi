@@ -1,0 +1,96 @@
+import { type ComboOption } from '../EntityCombobox'
+import { InlineIcon } from '../Icon'
+import { type Recipe } from '../../lib/recipes'
+import { rankCookable } from '../../lib/cookable'
+import { type Leftover, type MealRow } from './types'
+import { type useT } from '../../i18n'
+
+// Shared builders that turn kitchen entities into EntityCombobox options, so the
+// recipe / leftover / recent-meal dropdowns read identically wherever they appear
+// (the day editor, the ideas pool, the leftovers pool, the ＋ sheet). Recipes keep
+// the cookable ranking + "Prêt / il manque N" badges that RecipePickerMenu had.
+type T = ReturnType<typeof useT>
+
+// Recipes, ranked by what you could cook now (fewest missing staples first), each
+// badged like the old picker. `group` tags them for a grouped dropdown (the day
+// editor mixes recipes with leftovers); omit it for a single-source field.
+export function recipeOptions(
+  recipes: Recipe[],
+  lowItems: string[],
+  listItems: string[],
+  t: T,
+  group?: string,
+): ComboOption<Recipe>[] {
+  // Badges only mean something against a low list — with an empty pantry-low every
+  // recipe is "ready", which is just noise (same rule as RecipePickerMenu).
+  const showBadge = lowItems.length > 0
+  return rankCookable(recipes, lowItems, listItems).map(({ recipe, missing }) => ({
+    id: recipe.id,
+    label: recipe.title,
+    data: recipe,
+    group,
+    icon: 'book-open-bold',
+    iconColor: 'var(--berry-deep)',
+    keywords: recipe.ingredients,
+    badge: showBadge
+      ? missing.length === 0
+        ? (
+            <span className="combobox__badge is-ready mono">
+              <InlineIcon name="check-bold" /> {t.recipes.ready}
+            </span>
+          )
+        : <span className="combobox__badge mono">{t.recipes.missingN(missing.length)}</span>
+      : undefined,
+  }))
+}
+
+// The Restants pool — no cookability (a leftover is already cooked), just the
+// recycle picto, so it reads as a leftover beside the recipe rows.
+export function leftoverOptions(leftovers: Leftover[], group?: string): ComboOption<Leftover>[] {
+  return leftovers.map((l) => ({
+    id: l.id,
+    label: l.title,
+    data: l,
+    group,
+    icon: 'arrow-counter-clockwise-bold',
+    iconColor: 'var(--terracotta-deep)',
+  }))
+}
+
+// The day editor's slot field mixes both sources in one dropdown: pick a recipe
+// (links it, optional staples) OR a pooled leftover (consumes it into the slot).
+// `kind` lets the caller route the pick to the right handler. Group headings only
+// appear when BOTH sources are present (a single source needs no label).
+export type MealPick = { kind: 'recipe'; recipe: Recipe } | { kind: 'leftover'; leftover: Leftover }
+
+export function mealPickOptions(
+  recipes: Recipe[],
+  lowItems: string[],
+  listItems: string[],
+  leftovers: Leftover[],
+  t: T,
+): ComboOption<MealPick>[] {
+  const both = recipes.length > 0 && leftovers.length > 0
+  const r: ComboOption<MealPick>[] = recipeOptions(recipes, lowItems, listItems, t, both ? t.recipes.title : undefined).map(
+    (o) => ({ ...o, data: { kind: 'recipe', recipe: o.data } }),
+  )
+  const l: ComboOption<MealPick>[] = leftoverOptions(leftovers, both ? t.kitchen.leftovers : undefined).map((o) => ({
+    ...o,
+    data: { kind: 'leftover', leftover: o.data },
+  }))
+  return [...r, ...l]
+}
+
+// Recent / today's planned meals — "we ate this, there's some left" suggestions
+// for the leftovers field. Carries recipe_id + the source meal id so a leftover
+// born from a cooked recipe keeps its link.
+export function mealOptions(meals: MealRow[], group?: string): ComboOption<MealRow>[] {
+  return meals.map((m) => ({
+    id: m.id,
+    label: m.title,
+    data: m,
+    group,
+    icon: 'arrow-counter-clockwise-bold',
+    iconColor: 'var(--terracotta-deep)',
+  }))
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
@@ -6,6 +6,8 @@ import { isGuest } from '../../lib/device'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { type MealSlot } from '../../lib/mealSlots'
 import { type Leftover, type MealRow, LEFTOVERS_KEY, MEALS_KEY } from './types'
+import { EntityCombobox } from '../EntityCombobox'
+import { mealOptions } from './comboOptions'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon, InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
@@ -36,9 +38,9 @@ export function Leftovers({
   const [busy, setBusy] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
-  // Recent-meal suggestions (the last few days) stay folded away by default — open
-  // them deliberately, so they never read as restants already in the pool below.
-  const [showRecent, setShowRecent] = useState(false)
+  // Recent meals (the last few days) become "we ate this, there's some left"
+  // suggestions in the combobox — pick one to carry its recipe link + source meal.
+  const recentOpts = useMemo(() => mealOptions(recentMeals), [recentMeals])
 
   async function addLeftover(title: string, recipeId?: string | null, sourceMealId?: string | null) {
     const v = title.trim()
@@ -119,62 +121,22 @@ export function Leftovers({
       <div className="kitchen__head">
         <h2>{t.kitchen.leftovers}</h2>
       </div>
-      <p className="kitchen__ideas-hint mono">{t.kitchen.leftoversHint}</p>
 
       {!ro && (
-      <form
-        className="kitchen__ideas-add"
-        onSubmit={(e) => {
-          e.preventDefault()
-          addLeftover(text)
-        }}
-      >
-        <input
-          className="input"
+        // Type a free-text leftover OR pick one of the last few days' meals
+        // ("we ate this, there's some left") from the same box.
+        <EntityCombobox
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={setText}
+          options={recentOpts}
+          onPick={(o) => addLeftover(o.data.title, o.data.recipe_id ?? null, o.data.id)}
+          onSubmit={(v) => addLeftover(v)}
+          submitIcon="plus-bold"
           placeholder={t.kitchen.leftoversAdd}
-          aria-label={t.kitchen.leftoversAdd}
+          ariaLabel={t.kitchen.leftoversAdd}
+          busy={busy}
+          className="kitchen__ideas-combo"
         />
-        <button type="submit" className="btn btn--ghost mono" disabled={!text.trim() || busy}>
-          ＋
-        </button>
-      </form>
-      )}
-
-      {/* Quick-pick from the last few days' meals — "we ate this, there's some left".
-          Folded under a "Suggestions" disclosure so these candidates don't blur into
-          the actual restants already pooled below. */}
-      {!ro && recentMeals.length > 0 && (
-        <div className="kitchen__leftovers-recent">
-          <button
-            type="button"
-            className="kitchen__leftovers-recent-toggle mono"
-            onClick={() => setShowRecent((v) => !v)}
-            aria-expanded={showRecent}
-          >
-            <InlineIcon name={showRecent ? 'caret-down-bold' : 'caret-right-bold'} size={13} />{' '}
-            {t.kitchen.leftoversRecentToggle}
-          </button>
-          {showRecent && (
-            <>
-              <p className="kitchen__leftovers-recent-label mono">{t.kitchen.leftoversRecent}</p>
-              <div className="kitchen__leftovers-recent-chips">
-                {recentMeals.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className="chip"
-                    onClick={() => addLeftover(m.title, m.recipe_id ?? null, m.id)}
-                    disabled={busy}
-                  >
-                    <InlineIcon name="arrow-counter-clockwise-bold" size={13} /> {m.title}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
       )}
 
       {leftovers.length === 0 ? (

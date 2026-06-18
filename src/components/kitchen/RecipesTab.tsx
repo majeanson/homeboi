@@ -12,16 +12,18 @@ import { pictoFor } from '../../lib/picto'
 import { todayLocalDay } from '../../lib/localDay'
 import { InlineIcon } from '../Icon'
 
-// The recipe book: search, tag chips, and the stock-aware sorts ("what can I
-// cook" by fewest missing staples, "use it up" by most use-soon items used,
-// "oubliées" by longest since last served). Owns all its filter state; the page
-// just hands in the data and the open callback. (Creating a recipe moved to the
+// The recipe book: search, tag chips, the stock-aware sorts ("what can I cook" by
+// fewest missing staples, "use it up" by most use-soon items used, "oubliées" by
+// longest since last served), and the #11 collections browse layer — all flat in
+// one view (no second-level sub-tabs). Owns all its filter state; the page just
+// hands in the data and the open callback. (Creating a recipe moved to the
 // contextual ＋ FAB → ?add=recipe.)
 //
-// `collectionTag` (#11): when set, the book is pre-scoped to that ONE tag (the
-// collections browse layer drops in here) — the tag is applied silently and the
-// tag-filter chip row hides, so the view reads as "this collection" not "the whole
-// book with a chip pressed".
+// Collections (#11): an "Aa vs Collections" view toggle (`groupView`). "Aa" is a
+// flat alphabetical list; "Collections" clusters the SAME filtered list into
+// per-tag sections (untagged recipes fall under "Autres"). The pills and tag chips
+// keep filtering in both modes — the toggle only re-arranges, never filters — so a
+// collection is a VIEW of the tag system, not a second copy of it.
 // `lastServed` (#12): recipe id → local-midnight day-seconds it was last cooked,
 // built by the page from the meals it holds; powers the calm "Oubliées" sort.
 export function RecipesTab({
@@ -30,7 +32,6 @@ export function RecipesTab({
   soonItems,
   listItems,
   lastServed,
-  collectionTag,
   onView,
 }: {
   recipes: Recipe[]
@@ -38,11 +39,13 @@ export function RecipesTab({
   soonItems: string[]
   listItems: string[]
   lastServed?: Map<string, number>
-  collectionTag?: string
   onView: (r: Recipe) => void
 }) {
   const t = useT()
   const [recipeQuery, setRecipeQuery] = useState('')
+  // #11 "Collections": flat alphabetical list ("Aa") vs grouped-by-collection.
+  // A presentation toggle only — it never filters the set.
+  const [groupView, setGroupView] = useState(false)
   // Active tag filters, as lowercase keys. Empty = "Toutes" (no constraint).
   // Multi-select with AND semantics: a recipe must carry EVERY selected tag.
   const [tagFilter, setTagFilter] = useState<string[]>([])
@@ -65,12 +68,9 @@ export function RecipesTab({
   // the recipe view. Optional binding: undefined until the read lands.
   const tagColors = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') }).data?.colors
 
-  const collectionKey = collectionTag?.toLowerCase()
   const shownRecipes = useMemo(() => {
     const q = recipeQuery.trim().toLowerCase()
     return recipes.filter((r) => {
-      // #11: a collection pre-scopes the whole view to one tag, silently.
-      if (collectionKey && !(r.tags ?? []).some((tg) => tg.toLowerCase() === collectionKey)) return false
       if (q && !(r.title.toLowerCase().includes(q) || r.ingredients.some((i) => i.toLowerCase().includes(q)))) return false
       // AND: every selected tag must be present on the recipe.
       if (tagFilter.length) {
@@ -83,7 +83,7 @@ export function RecipesTab({
       }
       return true
     })
-  }, [recipes, recipeQuery, tagFilter, fastFilter, canFastFilter, collectionKey])
+  }, [recipes, recipeQuery, tagFilter, fastFilter, canFastFilter])
   // Cookability: which staple each recipe is missing (out of stock + not on the
   // list), fewest first. The filter only surfaces when there's a low item to
   // rank against, so it never appears as a no-op.
@@ -107,6 +107,12 @@ export function RecipesTab({
     [rankedNeglect],
   )
   const canNeglectFilter = (lastServed?.size ?? 0) > 0 && recipes.length > 1
+  // Default order is alphabetical ("Aa"); an active sort pill (cookable / use-soon
+  // / neglected) overrides it. localeCompare keeps accented titles in sane order.
+  const alphaOrder = useMemo(
+    () => [...shownRecipes].sort((a, b) => a.title.localeCompare(b.title)),
+    [shownRecipes],
+  )
   const recipeOrder =
     useSoonFilter && canUseSoonFilter
       ? rankedSoon.map((r) => r.recipe)
@@ -114,7 +120,75 @@ export function RecipesTab({
         ? ranked.map((r) => r.recipe)
         : neglectFilter && canNeglectFilter
           ? rankedNeglect.map((r) => r.recipe)
-          : shownRecipes
+          : alphaOrder
+  // "Collections" view: cluster the SAME ordered/filtered list into per-tag
+  // sections (a recipe with several tags appears in each), untagged ones under
+  // "Autres". Null unless grouping is on AND there are tags to group by.
+  const groups = useMemo(() => {
+    if (!groupView || tags.length === 0) return null
+    const byTag = tags
+      .map((tag) => {
+        const key = tag.toLowerCase()
+        return { tag, items: recipeOrder.filter((r) => (r.tags ?? []).some((tg) => tg.toLowerCase() === key)) }
+      })
+      .filter((g) => g.items.length > 0)
+    const untagged = recipeOrder.filter((r) => !(r.tags ?? []).length)
+    return { byTag, untagged }
+  }, [groupView, tags, recipeOrder])
+
+  // One recipe card — shared by the flat grid and the grouped sections. The ❤
+  // favorite (#21) is a sibling overlay of the card button, never nested in it.
+  const renderCard = (r: Recipe) => {
+    const img = recipeImg(r.image)
+    const missing = missingById.get(r.id) ?? []
+    const uses = usesById.get(r.id) ?? []
+    // Badge counts real ingredients, not "## Section" markers.
+    const nIngs = withoutHeadings(r.ingredients).length
+    const totalMin = recipeTotalMin(r)
+    return (
+      <div key={r.id} className="recipe-card-wrap">
+        <button type="button" className="recipe-card surface" onClick={() => onView(r)}>
+          <span className="recipe-card__thumb" aria-hidden="true">
+            {img ? <img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">{pictoFor(r.title, '🍳')}</span>}
+          </span>
+          <span className="recipe-card__title">{r.title}</span>
+          {useSoonFilter && canUseSoonFilter ? (
+            uses.length > 0 ? (
+              <span className="recipe-card__sub recipe-card__uses mono">
+                <InlineIcon name="recycle-bold" size={12} /> {t.recipes.usesN(uses.length)}
+              </span>
+            ) : (
+              nIngs > 0 && <span className="recipe-card__sub mono">{t.recipes.count(nIngs)}</span>
+            )
+          ) : cookFilter && canCookFilter ? (
+            missing.length === 0 ? (
+              <span className="recipe-card__sub recipe-card__ready mono">
+                <InlineIcon name="check-bold" color="var(--sage-deep)" /> {t.recipes.ready}
+              </span>
+            ) : (
+              <span className="recipe-card__sub recipe-card__missing mono">{t.recipes.missingN(missing.length)}</span>
+            )
+          ) : neglectFilter && canNeglectFilter ? (
+            // #12 subtle, no-shame subtitle: when last it was served, or a calm
+            // "jamais encore" for one that's never been cooked.
+            <span className="recipe-card__sub recipe-card__seen mono">
+              <InlineIcon name="clock-bold" size={12} />{' '}
+              {(() => {
+                const d = daysSinceById.get(r.id)
+                return d == null ? t.recipes.neverSeen : t.recipes.seenAgo(d)
+              })()}
+            </span>
+          ) : (
+            nIngs > 0 && <span className="recipe-card__sub mono">{t.recipes.count(nIngs)}</span>
+          )}
+          {totalMin != null && (
+            <span className="recipe-card__time mono">⏱ {formatDuration(totalMin * 60)}</span>
+          )}
+        </button>
+        <HeartButton recipeId={r.id} />
+      </div>
+    )
+  }
 
   return (
     <section>
@@ -184,9 +258,7 @@ export function RecipesTab({
           )}
         </div>
       )}
-      {/* #11: a collection pre-scopes the view to one tag — hide the tag-filter
-          row so it doesn't double as a "press the tag again" control. */}
-      {!collectionTag && tags.length > 0 && (
+      {tags.length > 0 && (
         <div className="kitchen__tag-filter">
           <button
             type="button"
@@ -223,82 +295,79 @@ export function RecipesTab({
       )}
       {recipes.length === 0 ? (
         <p className="board__empty mono">{t.recipes.empty}</p>
-      ) : recipeOrder.length === 0 ? (
-        // The book has recipes — the FILTERS hid them all. Say so (instead of
-        // the misleading "no recipes yet") and offer the one-tap way back.
-        <div className="board__empty mono">
-          <p>{t.recipes.noMatch}</p>
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={() => {
-              setRecipeQuery('')
-              setTagFilter([])
-              setCookFilter(false)
-              setUseSoonFilter(false)
-              setFastFilter(false)
-              setNeglectFilter(false)
-            }}
-          >
-            {t.recipes.clearFilters}
-          </button>
-        </div>
       ) : (
-        <div className="recipe-grid">
-          {recipeOrder.map((r) => {
-            const img = recipeImg(r.image)
-            const missing = missingById.get(r.id) ?? []
-            const uses = usesById.get(r.id) ?? []
-            // Badge counts real ingredients, not "## Section" markers.
-            const nIngs = withoutHeadings(r.ingredients).length
-            const totalMin = recipeTotalMin(r)
-            return (
-              <div key={r.id} className="recipe-card-wrap">
-              <button type="button" className="recipe-card surface" onClick={() => onView(r)}>
-                <span className="recipe-card__thumb" aria-hidden="true">
-                  {img ? <img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">{pictoFor(r.title, '🍳')}</span>}
-                </span>
-                <span className="recipe-card__title">{r.title}</span>
-                {useSoonFilter && canUseSoonFilter ? (
-                  uses.length > 0 ? (
-                    <span className="recipe-card__sub recipe-card__uses mono">
-                      <InlineIcon name="recycle-bold" size={12} /> {t.recipes.usesN(uses.length)}
-                    </span>
-                  ) : (
-                    nIngs > 0 && <span className="recipe-card__sub mono">{t.recipes.count(nIngs)}</span>
-                  )
-                ) : cookFilter && canCookFilter ? (
-                  missing.length === 0 ? (
-                    <span className="recipe-card__sub recipe-card__ready mono">
-                      <InlineIcon name="check-bold" color="var(--sage-deep)" /> {t.recipes.ready}
-                    </span>
-                  ) : (
-                    <span className="recipe-card__sub recipe-card__missing mono">{t.recipes.missingN(missing.length)}</span>
-                  )
-                ) : neglectFilter && canNeglectFilter ? (
-                  // #12 subtle, no-shame subtitle: when last it was served, or a
-                  // calm "jamais encore" for one that's never been cooked.
-                  <span className="recipe-card__sub recipe-card__seen mono">
-                    <InlineIcon name="clock-bold" size={12} />{' '}
-                    {(() => {
-                      const d = daysSinceById.get(r.id)
-                      return d == null ? t.recipes.neverSeen : t.recipes.seenAgo(d)
-                    })()}
-                  </span>
-                ) : (
-                  nIngs > 0 && <span className="recipe-card__sub mono">{t.recipes.count(nIngs)}</span>
-                )}
-                {totalMin != null && (
-                  <span className="recipe-card__time mono">⏱ {formatDuration(totalMin * 60)}</span>
-                )}
-              </button>
-              {/* ❤ family favorite (#21) — a sibling overlay (never nested in the
-                  card button); shows who loved it, toggles for the active face. */}
-              <HeartButton recipeId={r.id} />
+        <>
+          {/* #11 view toggle — "Aa" flat alphabetical list vs "Collections"
+              grouped-by-tag sections. Re-arranges only; pills/tags still filter.
+              Hidden when there are no tags (nothing to group by). */}
+          {tags.length > 0 && (
+            <div className="recipe-view-toggle">
+              <div className="subtabs subtabs--mini" role="tablist" aria-label={t.recipes.arrange}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={!groupView}
+                  className={'subtabs__opt' + (!groupView ? ' is-on' : '')}
+                  onClick={() => setGroupView(false)}
+                >
+                  Aa
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={groupView}
+                  className={'subtabs__opt' + (groupView ? ' is-on' : '')}
+                  onClick={() => setGroupView(true)}
+                >
+                  {t.recipes.collectionsTitle}
+                </button>
               </div>
-            )
-          })}
-        </div>
+            </div>
+          )}
+          {recipeOrder.length === 0 ? (
+            // The book has recipes — the FILTERS hid them all. Say so (instead of
+            // the misleading "no recipes yet") and offer the one-tap way back.
+            <div className="board__empty mono">
+              <p>{t.recipes.noMatch}</p>
+              <button
+                type="button"
+                className="btn btn--ghost mono"
+                onClick={() => {
+                  setRecipeQuery('')
+                  setTagFilter([])
+                  setCookFilter(false)
+                  setUseSoonFilter(false)
+                  setFastFilter(false)
+                  setNeglectFilter(false)
+                }}
+              >
+                {t.recipes.clearFilters}
+              </button>
+            </div>
+          ) : groups ? (
+            // "Collections" view — one section per tag, untagged under "Autres".
+            <>
+              {groups.byTag.map((g) => (
+                <div key={g.tag} className="recipe-group">
+                  <h3 className="recipe-group__head mono">
+                    {g.tag} <span className="recipe-group__count">{t.recipes.collectionCount(g.items.length)}</span>
+                  </h3>
+                  <div className="recipe-grid">{g.items.map(renderCard)}</div>
+                </div>
+              ))}
+              {groups.untagged.length > 0 && (
+                <div className="recipe-group">
+                  <h3 className="recipe-group__head mono">
+                    {t.recipes.ungrouped} <span className="recipe-group__count">{t.recipes.collectionCount(groups.untagged.length)}</span>
+                  </h3>
+                  <div className="recipe-grid">{groups.untagged.map(renderCard)}</div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="recipe-grid">{recipeOrder.map(renderCard)}</div>
+          )}
+        </>
       )}
     </section>
   )

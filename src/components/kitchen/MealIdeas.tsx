@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
@@ -6,7 +6,8 @@ import { isGuest } from '../../lib/device'
 import { type Recipe } from '../../lib/recipes'
 import { type MealSlot } from '../../lib/mealSlots'
 import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
-import { RecipePickerMenu } from './RecipePickerMenu'
+import { EntityCombobox } from '../EntityCombobox'
+import { recipeOptions } from './comboOptions'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon, InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
@@ -38,8 +39,9 @@ export function MealIdeas({
   // text. RowActions already hides its own ✏️/🗑️ for a guest.
   const ro = isGuest()
   const [text, setText] = useState('')
-  const [pickRecipe, setPickRecipe] = useState(false)
   const [planFor, setPlanFor] = useState<string | null>(null)
+  // Recipes as combobox options — ranked by cookability, badged "Prêt / il manque N".
+  const recipeOpts = useMemo(() => recipeOptions(recipes, lowItems, listItems, t), [recipes, lowItems, listItems, t])
   // Which meal a "plan it" lands on — souper by default, like everywhere else.
   const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
   const [busy, setBusy] = useState(false)
@@ -58,7 +60,6 @@ export function MealIdeas({
         affectedKeys: [MEAL_IDEAS_KEY],
       })
       setText('')
-      setPickRecipe(false)
     } catch {
       /* keep the typed text so it can be retried */
     } finally {
@@ -113,47 +114,22 @@ export function MealIdeas({
       <div className="kitchen__head">
         <h2>{t.kitchen.ideas}</h2>
       </div>
-      <p className="kitchen__ideas-hint mono">{t.kitchen.ideasHint}</p>
 
       {!ro && (
-      <form
-        className="kitchen__ideas-add"
-        onSubmit={(e) => {
-          e.preventDefault()
-          addIdea(text)
-        }}
-      >
-        <input
-          className="input"
+        // Type a free-text idea OR pick a saved recipe from the same box — the
+        // dropdown filters as you type, the caret opens the full book.
+        <EntityCombobox
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={setText}
+          options={recipeOpts}
+          onPick={(o) => addIdea(o.data.title, o.data.id)}
+          onSubmit={(v) => addIdea(v)}
+          submitIcon="plus-bold"
           placeholder={t.kitchen.addIdea}
-          aria-label={t.kitchen.addIdea}
-        />
-        <button type="submit" className="btn btn--ghost mono" disabled={!text.trim() || busy}>
-          ＋
-        </button>
-        {recipes.length > 0 && (
-          <button
-            type="button"
-            className={'btn btn--ghost mono' + (pickRecipe ? ' is-on' : '')}
-            onClick={() => setPickRecipe((s) => !s)}
-            aria-expanded={pickRecipe}
-            aria-label={t.kitchen.fromRecipe}
-            title={t.kitchen.fromRecipe}
-          >
-            <Icon name="book-open-bold" size={18} />
-          </button>
-        )}
-      </form>
-      )}
-
-      {!ro && pickRecipe && (
-        <RecipePickerMenu
-          recipes={recipes}
-          lowItems={lowItems}
-          listItems={listItems}
-          onPick={(r) => addIdea(r.title, r.id)}
+          ariaLabel={t.kitchen.addIdea}
+          noMatchLabel={t.recipes.noMatch}
+          busy={busy}
+          className="kitchen__ideas-combo"
         />
       )}
 

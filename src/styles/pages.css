@@ -676,34 +676,9 @@
   background: var(--terracotta-wash);
   white-space: nowrap;
 }
-/* Quick-pick row in the Restants strip — today's planned meals as tap-to-add chips,
-   folded behind a "Suggestions" disclosure so they don't blur into the real pool. */
-.kitchen__leftovers-recent {
-  margin: 0.4rem 0;
-}
-/* Read as a real, tappable control (not soft-ink body text) so the folded
-   suggestions never look "gone" — a faint hairline pill with a caret. */
-.kitchen__leftovers-recent-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-height: 2.2rem;
-  padding: 0.25rem 0.7rem;
-  border: 1px solid var(--hairline, rgba(0, 0, 0, 0.12));
-  border-radius: 999px;
-  background: var(--surface-soft, transparent);
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.kitchen__leftovers-recent-label {
-  margin: 0.3rem 0 0.3rem;
-  color: var(--ink-soft);
-}
-.kitchen__leftovers-recent-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
+/* (The Restants recent-meal quick-pick chips moved into EntityCombobox — its
+   dropdown now surfaces today's meals as suggestions; the old folded strip and
+   its `.kitchen__leftovers-recent*` classes were removed.) */
 .kitchen__meal-ctl {
   flex: none;
   display: inline-flex;
@@ -1697,6 +1672,87 @@
   flex-wrap: wrap;
   gap: 0.4rem;
 }
+
+/* ── EntityCombobox: the unified "search + pick + free-text" field. ──────────
+   Reuses the .edit-field box shell above; this adds the dropdown that unfolds
+   under it (in-flow, so it never clips inside an overflow-hidden sheet/scene). */
+.combobox__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.combobox__caret {
+  color: var(--ink-faint);
+}
+.combobox__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-height: 15rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+}
+.combobox__group {
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  margin: 0.3rem 0 0.1rem;
+  padding-inline: 0.3rem;
+}
+/* First group heading shouldn't push a gap above the list's own padding. */
+.combobox__list > li:first-child .combobox__group {
+  margin-top: 0;
+}
+.combobox__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+/* Keyboard-active and hover share one highlight, so arrow-keys and the pointer
+   point at the same row. */
+.combobox__row.is-active,
+.combobox__row:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.combobox__row:active {
+  transform: translateY(1px);
+}
+.combobox__row-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.combobox__badge {
+  flex: none;
+  color: var(--ink-faint);
+  font-size: 0.74rem;
+}
+.combobox__badge.is-ready {
+  color: var(--sage-deep);
+}
+.combobox__empty {
+  color: var(--ink-faint);
+  margin: 0.2rem 0;
+}
+
 .operator__check {
   display: flex;
   align-items: center;

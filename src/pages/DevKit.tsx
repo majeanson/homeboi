@@ -8,6 +8,7 @@ import { PALETTE } from '../lib/colors'
 import { PIP_ICONS, type IconName } from '../lib/pipIcons'
 import { Icon, InlineIcon } from '../components/Icon'
 import { EditField } from '../components/EditField'
+import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
 import { RowActions } from '../components/RowActions'
 import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
@@ -119,6 +120,7 @@ export function DevKit() {
   const [text1, setText1] = useState('')
   const [text2, setText2] = useState('Macaroni chinois')
   const [text3, setText3] = useState('')
+  const [comboVal, setComboVal] = useState('')
   const [color, setColor] = useState(PALETTE[0])
   const [cards, setCards] = useState(['toilette', 'rince', 'pyjama'])
   const [recur, setRecur] = useState<RecurValue | null>({ freq: 'weekly', interval: 1, weekdays: [3] })
@@ -208,6 +210,60 @@ export function DevKit() {
           </Demo>
         </>
       ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'EntityCombobox',
+      file: 'components/EntityCombobox.tsx',
+      kw: 'combobox select searchable pick free text recette reste choisir liste déroulante search',
+      render: () => {
+        // The unified "search + pick an existing thing + free-text" field. One box
+        // filters a grouped dropdown (recipes / leftovers…); pick a row to link it,
+        // or just type and submit. Replaces the old "type here OR toggle a list" split.
+        const opts: ComboOption<string>[] = [
+          {
+            id: 'r1',
+            label: 'Macaroni chinois',
+            data: 'r1',
+            group: 'Recettes',
+            icon: 'book-open-bold',
+            iconColor: 'var(--berry-deep)',
+            keywords: ['pâtes', 'boeuf'],
+            badge: <span className="combobox__badge is-ready mono">Prêt</span>,
+          },
+          {
+            id: 'r2',
+            label: 'Pâté chinois',
+            data: 'r2',
+            group: 'Recettes',
+            icon: 'book-open-bold',
+            iconColor: 'var(--berry-deep)',
+            badge: <span className="combobox__badge mono">il manque 2</span>,
+          },
+          {
+            id: 'l1',
+            label: 'Reste de spaghetti',
+            data: 'l1',
+            group: 'Restants',
+            icon: 'arrow-counter-clockwise-bold',
+            iconColor: 'var(--terracotta-deep)',
+          },
+        ]
+        return (
+          <Demo label="search + pick + free-text (grouped recipes / leftovers)">
+            <EntityCombobox
+              value={comboVal}
+              onChange={setComboVal}
+              options={opts}
+              onPick={(o) => setComboVal(o.label)}
+              onSubmit={() => setComboVal('')}
+              submitLabel={t.kitchen.setMeal}
+              placeholder={t.kitchen.plan}
+              noMatchLabel={t.combo.noMatch}
+            />
+          </Demo>
+        )
+      },
     },
     {
       cat: 'Saisie',

@@ -279,15 +279,13 @@ export function DayPlanPage() {
     close()
   }
 
-  // — the shared recipe / leftover pickers —
-  const [recipePickFor, setRecipePickFor] = useState<{ date: number; slot: string } | null>(null)
-  const [leftoverPickFor, setLeftoverPickFor] = useState<{ date: number; slot: string } | null>(null)
+  // — the souper "+ ingredients" opt-in (the recipe/leftover dropdown is now the
+  //   combobox's own; only this cross-pick toggle stays page state) —
   const [pickWithStaples, setPickWithStaples] = useState(false)
 
   // Plan a recipe onto ANY slot. Souper keeps its optional "+ ingredients" staples
   // step; every other slot is a clean quick-add (links the recipe, saves now).
   async function planRecipe(d: number, slot: string, r: Recipe) {
-    setRecipePickFor(null)
     setEditDate(null)
     setEditSlot(null)
     setMealText('')
@@ -326,9 +324,8 @@ export function DayPlanPage() {
       },
     })
   }
-  // The "Choisir un reste" path: close whichever add-editor was open, then plan.
+  // The leftover-pick path: close whichever add-editor was open, then plan.
   function planLeftoverOnDay(d: number, slot: string, l: Leftover) {
-    setLeftoverPickFor(null)
     setEditDate(null)
     setEditSlot(null)
     setMealText('')
@@ -367,11 +364,9 @@ export function DayPlanPage() {
           onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
           mealErr={mealErr}
           plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
-          picker={{ recipePickFor, setRecipePickFor, pickWithStaples, setPickWithStaples, planRecipe }}
+          picker={{ pickWithStaples, setPickWithStaples, planRecipe }}
           leftovers={{
             pool: leftoversQ.data?.leftovers ?? [],
-            pickFor: leftoverPickFor,
-            setPickFor: setLeftoverPickFor,
             plan: planLeftoverOnDay,
           }}
           slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}

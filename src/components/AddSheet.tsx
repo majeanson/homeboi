@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
@@ -24,6 +24,11 @@ import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
 import { MemoControls } from './MemoControls'
+import { EntityCombobox } from './EntityCombobox'
+import { mealOptions } from './kitchen/comboOptions'
+import { HelpBubble } from './HelpBubble'
+import { ADD_HELP } from '../lib/addHelp'
+import { useHelp } from '../lib/help'
 import { useModal } from '../lib/useModal'
 import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 
@@ -125,10 +130,28 @@ export function AddSheet({
   // pins that form.
   const defMode: AddSheetMode | null = shown.length > 1 ? null : shown[0]
   const [mode, setMode] = useState<AddSheetMode | null>(initialMode ?? defMode)
-  // Re-sync on each open so the last visit's pick doesn't leak into this one.
+  // Contextual "?" help mode: tap the "?" to arm it, then tap any tile to read what
+  // it does in place (HelpBubble) instead of running it. `helpKey` is the control
+  // being explained (a mode or a kitchen-action key). Gated on tutorial mode.
+  const { tutorial } = useHelp()
+  const [helpMode, setHelpMode] = useState(false)
+  const [helpKey, setHelpKey] = useState<string | null>(null)
+  // Re-sync on each open so the last visit's pick (and any help state) doesn't leak.
   useEffect(() => {
-    if (open) setMode(initialMode ?? defMode)
+    if (open) {
+      setMode(initialMode ?? defMode)
+      setHelpMode(false)
+      setHelpKey(null)
+    }
   }, [open, initialMode, defMode])
+  // In help mode a tap explains the control instead of running it.
+  const pick = (key: string, run: () => void) => {
+    if (helpMode) {
+      setHelpKey(key)
+      return
+    }
+    run()
+  }
 
   const [busy, setBusy] = useState(false)
 
@@ -188,6 +211,12 @@ export function AddSheet({
   const weekDays = weekStart
     ? Array.from({ length: mealsData?.windowDays ?? 10 }, (_, i) => weekStart + i * 86400)
     : []
+  // Today's planned (non-leftover) meals → "we ate this, there's some left"
+  // suggestions for the leftovers combobox; picking one carries its recipe link.
+  const leftoverMealOpts = useMemo(
+    () => mealOptions((mealsData?.days ?? []).filter((d) => d.date === weekStart && !d.is_leftover)),
+    [mealsData, weekStart],
+  )
 
   const { data: membersData } = useQuery({
     queryKey: ['members'],
@@ -379,6 +408,15 @@ export function AddSheet({
     return labels[m]
   }
 
+  // The HelpBubble title for a help key — a mode label, or a kitchen-action label.
+  const actionLabel: Record<string, string> = {
+    shop: t.kitchen.shopWeek,
+    ai: t.kitchen.aiIdeas,
+    book: t.kitchen.bookIdeas,
+    useup: t.kitchen.useUpIdeas,
+  }
+  const helpTitle = (key: string) => actionLabel[key] ?? modeLabel(key as AddSheetMode)
+
   // The sheet's title names what this section adds (the chooser-less sections
   // would otherwise just say "Ajouter" over an unexplained form).
   const title =
@@ -404,8 +442,36 @@ export function AddSheet({
         <button type="button" className="sheet__close" onClick={close} aria-label={t.common.close}>
           <Icon name="x-bold" size={18} />
         </button>
+        {/* Contextual help toggle: arm it, then tap any tile to learn what it does
+            in place. Only in tutorial mode (experts hide every "?"). */}
+        {tutorial && (
+          <button
+            type="button"
+            className={'sheet__help' + (helpMode ? ' is-on' : '')}
+            onClick={() => {
+              setHelpMode((v) => !v)
+              setHelpKey(null)
+            }}
+            aria-pressed={helpMode}
+            aria-label={t.help.helpMode}
+            title={t.help.helpMode}
+          >
+            ?
+          </button>
+        )}
         <div className="grab" aria-hidden="true" />
         <h3>{title}</h3>
+
+        {/* Help mode: a hint, then (once a tile is tapped) the in-place help box. */}
+        {helpMode && !helpKey && <p className="sheet__help-hint mono">{t.help.tapForHelp}</p>}
+        {helpKey && (
+          <HelpBubble
+            title={helpTitle(helpKey)}
+            body={ADD_HELP[helpKey]?.body[lang] ?? ''}
+            card={ADD_HELP[helpKey]?.card}
+            onClose={() => setHelpKey(null)}
+          />
+        )}
 
         {/* The section's chooser — only when there's a real choice to make.
             The recipe tile is navigate-only: the recipe builder is a full
@@ -418,29 +484,31 @@ export function AddSheet({
                 key={m}
                 type="button"
                 className={'cat-pick' + (mode === m ? ' sel' : '')}
-                disabled={m === 'auto-pick' && autoBusy}
-                onClick={() => {
-                  if (m === 'auto-pick') {
-                    autoPick()
-                    return
-                  }
-                  // The day-planner shortcuts resolve their date at click time
-                  // (today / tomorrow), then jump to that day's full planner.
-                  if (m === 'plan-today' || m === 'plan-tomorrow') {
-                    const base = todayLocalDay()
-                    const d = m === 'plan-today' ? base : addLocalDays(base, 1)
-                    close()
-                    nav(`/kitchen/day/${d}`)
-                    return
-                  }
-                  const target = NAV_TARGET[m]
-                  if (target) {
-                    close()
-                    nav(target)
-                    return
-                  }
-                  setMode(m)
-                }}
+                disabled={!helpMode && m === 'auto-pick' && autoBusy}
+                onClick={() =>
+                  pick(m, () => {
+                    if (m === 'auto-pick') {
+                      autoPick()
+                      return
+                    }
+                    // The day-planner shortcuts resolve their date at click time
+                    // (today / tomorrow), then jump to that day's full planner.
+                    if (m === 'plan-today' || m === 'plan-tomorrow') {
+                      const base = todayLocalDay()
+                      const d = m === 'plan-today' ? base : addLocalDays(base, 1)
+                      close()
+                      nav(`/kitchen/day/${d}`)
+                      return
+                    }
+                    const target = NAV_TARGET[m]
+                    if (target) {
+                      close()
+                      nav(target)
+                      return
+                    }
+                    setMode(m)
+                  })
+                }
                 aria-pressed={mode === m}
               >
                 <span className="ct" style={{ background: CATS[MODE_DRESS[m].cat].wash }}>
@@ -463,10 +531,7 @@ export function AddSheet({
                 <button
                   type="button"
                   className="cat-pick"
-                  onClick={() => {
-                    kitchenActions.run('shop')
-                    close()
-                  }}
+                  onClick={() => pick('shop', () => { kitchenActions.run('shop'); close() })}
                 >
                   <span className="ct" style={{ background: 'var(--sage-wash)' }}>
                     <Icon name="shopping-bag-bold" size={22} color="#6B8A52" />
@@ -477,12 +542,9 @@ export function AddSheet({
               <button
                 type="button"
                 className="cat-pick"
-                disabled={!kitchenActions.flags.canAiSuggest || kitchenActions.flags.aiBusy}
+                disabled={!helpMode && (!kitchenActions.flags.canAiSuggest || kitchenActions.flags.aiBusy)}
                 title={kitchenActions.flags.canAiSuggest ? undefined : t.kitchen.suggestAiOff}
-                onClick={() => {
-                  kitchenActions.run('ai')
-                  close()
-                }}
+                onClick={() => pick('ai', () => { kitchenActions.run('ai'); close() })}
               >
                 <span className="ct" style={{ background: 'var(--marigold-wash)' }}>
                   <Icon name="sparkle-bold" size={22} color="#D9842A" />
@@ -493,10 +555,7 @@ export function AddSheet({
                 <button
                   type="button"
                   className="cat-pick"
-                  onClick={() => {
-                    kitchenActions.run('book')
-                    close()
-                  }}
+                  onClick={() => pick('book', () => { kitchenActions.run('book'); close() })}
                 >
                   <span className="ct" style={{ background: 'var(--terracotta-wash)' }}>
                     <Icon name="book-open-bold" size={22} color="#C2563A" />
@@ -510,10 +569,7 @@ export function AddSheet({
                 <button
                   type="button"
                   className="cat-pick"
-                  onClick={() => {
-                    kitchenActions.run('useup')
-                    close()
-                  }}
+                  onClick={() => pick('useup', () => { kitchenActions.run('useup'); close() })}
                 >
                   <span className="ct" style={{ background: 'var(--sage-wash)' }}>
                     <Icon name="carrot-bold" size={22} color="#6B8A52" />
@@ -661,47 +717,23 @@ export function AddSheet({
         )}
 
         {mode === 'leftovers' && (
-          <>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                postLeftover(leftoverText)
-              }}
-            >
-              <div className="sheet__field">
-                <Icon name="arrow-counter-clockwise-bold" size={20} color="var(--ink-faint)" />
-                <input
-                  value={leftoverText}
-                  onChange={(e) => setLeftoverText(e.target.value)}
-                  placeholder={leftoverVoice.listening ? t.capture.listening : t.kitchen.leftoversAdd}
-                  aria-label={t.kitchen.leftoversAdd}
-                />
-                <VoiceButton voice={leftoverVoice} label={t.capture.voice} />
-              </div>
-              {/* Quick-pick today's planned meals — "we ate this, there's some left". */}
-              {(mealsData?.days ?? []).filter((d) => d.date === weekStart && !d.is_leftover).length > 0 && (
-                <div className="addsheet__days">
-                  {(mealsData?.days ?? [])
-                    .filter((d) => d.date === weekStart && !d.is_leftover)
-                    .map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        className="chip"
-                        disabled={busy}
-                        onClick={() => postLeftover(m.title, m.recipe_id ?? null, m.id)}
-                      >
-                        {m.title}
-                      </button>
-                    ))}
-                </div>
-              )}
-              <button type="submit" className="btn btn--primary" disabled={!leftoverText.trim() || busy}>
-                <Icon name="plus-bold" size={20} />
-                {t.kitchen.leftoversToPool}
-              </button>
-            </form>
-          </>
+          // Type a free-text leftover OR pick one of today's planned meals ("we ate
+          // this, there's some left") from the same box — the unified field shared
+          // with the Restants pool and the day editor.
+          <EntityCombobox
+            value={leftoverText}
+            onChange={setLeftoverText}
+            options={leftoverMealOpts}
+            onPick={(o) => postLeftover(o.data.title, o.data.recipe_id ?? null, o.data.id)}
+            onSubmit={(v) => postLeftover(v)}
+            submitLabel={t.kitchen.leftoversToPool}
+            submitLeadingIcon="plus-bold"
+            submitVariant="primary"
+            voice={leftoverVoice}
+            placeholder={leftoverVoice.listening ? t.capture.listening : t.kitchen.leftoversAdd}
+            ariaLabel={t.kitchen.leftoversAdd}
+            busy={busy}
+          />
         )}
 
         {/* "Cuisiner" — pick which of today's planned meals to cook, not just the

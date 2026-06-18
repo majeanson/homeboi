@@ -641,25 +641,39 @@
 .recipe-card__seen {
   color: var(--ink-faint);
 }
-/* #10 cook-from-have empty-state hint — a soft second line under the calm "rien
-   n'achève" message pointing at the pantry flag that feeds the view. */
-.kitchen__cookable-hint {
-  color: var(--ink-faint);
-  font-size: 0.85rem;
-  margin: 0.4rem 0 0;
-}
-/* #11 collections — the filtered-book header carries a back-to-collections button
-   beside the collection name. Keep them on one calm row, wrapping on a phone. */
-.kitchen__collection-head {
+/* #11 collections — an "Aa vs Collections" view toggle inside the recipe book.
+   A compact 2-segment control (reuses .subtabs): "Aa" = flat alphabetical list,
+   "Collections" = the same list clustered into per-tag sections below. */
+.recipe-view-toggle {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+  justify-content: flex-end;
+  margin: 0 0 0.8rem;
 }
-/* A nested segmented control (recipes-area: book / cookable / collections) sitting
-   inside the Recettes tab. Lighter top margin so it tucks under the tab row. */
-.subtabs--inset {
-  margin-top: 0.2rem;
+.subtabs--mini {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.subtabs--mini .subtabs__opt {
+  flex: 0 0 auto;
+  min-height: 2.2rem;
+  padding: 0 0.9rem;
+  font-size: 0.9rem;
+}
+/* A collection section: tag heading + its own recipe grid. */
+.recipe-group + .recipe-group {
+  margin-top: 1.3rem;
+}
+.recipe-group__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  margin: 0 0 0.6rem;
+}
+.recipe-group__count {
+  font-size: 0.76rem;
+  color: var(--ink-faint);
 }
 .kitchen__use-soon-hint {
   color: var(--ink-faint);

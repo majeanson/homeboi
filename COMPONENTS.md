@@ -33,6 +33,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | Component | File | Purpose |
 | --- | --- | --- |
 | **EditField** | `components/EditField.tsx` | THE add/edit text box — clear+mic inside the field, compact actions; opt-in voice/reorder/delete/secondary chips. See [the convention](#editfield-rollout). |
+| **EntityCombobox** | `components/EntityCombobox.tsx` | THE "search + pick an existing thing + free-text" field. One box: type to filter a grouped dropdown (`ComboOption[]` with icons/badges), tap a row to link it, or just type & submit. Clearable ✕, caret-to-open, optional mic. Replaces the old "type here OR toggle a separate list" split. Kitchen builders in `kitchen/comboOptions.tsx`. Used in MealIdeas, Leftovers, DayEditor (recipes+restants), AddSheet leftovers. |
 | **Icon / InlineIcon** | `components/Icon.tsx` | Phosphor-bold SVG via `currentColor`; `IconName` is a compile-time union (`lib/pipIcons.ts`). 40+ call sites. |
 | **ColorPicker** | `components/ColorPicker.tsx` | Row of palette dots; controlled. |
 | **RecurPicker** | `components/RecurPicker.tsx` | Recurrence rule (freq/interval/weekdays). |
@@ -80,9 +81,11 @@ Need live data/route context, so they're catalogued but not rendered as specimen
 `SharePage` (the `/share` PWA share-target landing → capture, #13),
 `HubLayout`, `RecipeSheet`, `RecipeForm`, `CookMode`, `CashierMode`,
 `ProfilePicker`, `TourOverlay`, `DealsBrowser`, `FlyerViewer`, `ChoreLedger`
-(read-only fairness glance, #18), `CollectionPicker` (the #11 collections
-toggle group inside the recipe book — "Quoi cuisiner?" is now a pill filter and
-collections a cover-card toggle group, both flat in `RecipesTab`, no sub-tabs), the kitchen sub-tabs
+(read-only fairness glance, #18). #11 collections is now an "Aa vs Collections"
+view toggle inside the recipe book (`RecipesTab`): "Aa" = flat alphabetical list,
+"Collections" = grouped-by-tag sections; "Quoi cuisiner?" is a pill filter — both
+flat in `RecipesTab`, no sub-tabs. `buildCollections` (in `CollectionPicker.tsx`,
+now just that helper) is still shared with the toddler `KidCollections` flow. The kitchen sub-tabs
 (`DayEditor`, `MealRows`, `PantryTab`, `ReserveSection`, …), and the `operator/*`
 section bodies (incl. `operator/guest.tsx` — the babysitter-access issuer, #19;
 `operator/ambient.tsx` — the Réglages ▸ Affichage ▸ Mode veille settings, `lib/ambient.ts`;
@@ -138,7 +141,7 @@ What's still duplicated at the call sites. The primitive now exists for rows 1�
 | 5 | **Modal / sheet / scene** | 12+ overlays, mixed mount strategies (`.show` toggle vs mount/unmount), confirm has its own CSS | `<Modal open>` + `<Sheet>` (swipe/handle); fold confirm into the modal pattern. Architectural. |
 | 6 | **Status / feedback lines** | 15+ sites (`.error mono`, `.capture__routed`, `.list-add__voicemsg`, `ai-error-toast`) | `<StatusMessage type icon>`; `role=status` vs `alert`. |
 | 7 | **Section headers** | kitchen/kid/reserve header variants | `<SectionHeader title subtitle emoji onMore>`. |
-| 8 | **Picker menus** | RecipePicker/LeftoverPicker share class names + structure | `<PickerMenu items onPick renderItem search?>`. |
+| 8 | **Picker menus** ✅ | ~~RecipePicker/LeftoverPicker~~ | **Done** — folded into **EntityCombobox** (search + pick + free-text, grouped). RecipePickerMenu/LeftoverPickerMenu deleted; MealIdeas/Leftovers/DayEditor/AddSheet migrated. |
 | 9 | **Inline forms → EditField** | remaining `.operator__inline-form` users | migrate to EditField (see below). |
 
 ### EditField rollout

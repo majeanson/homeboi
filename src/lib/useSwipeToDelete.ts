@@ -52,12 +52,17 @@ export function useSwipeToDelete(ref: RefObject<HTMLElement | null>, onDelete: (
       const ddy = e.touches[0].clientY - startY
       if (axis === 'undecided') {
         if (Math.abs(ddx) < ARM_PX && Math.abs(ddy) < ARM_PX) return
-        // Arm only for a leftward drag that's CLEARLY horizontal — |dx| has to beat
-        // |dy| by a comfortable margin. A vertical scroll naturally curves a few px
-        // sideways; without this margin that drift would arm horizontal and flash
-        // the red delete pane while the user is only scrolling the list up/down.
-        // Anything ambiguous, diagonal, or rightward defaults to vertical (scroll).
-        axis = ddx < 0 && Math.abs(ddx) > Math.abs(ddy) * H_DOMINANCE ? 'horizontal' : 'vertical'
+        // Vertical-biased axis lock — the gesture is a SCROLL unless it's plainly a
+        // flat leftward swipe. Arm horizontal only when ALL hold: it's leftward,
+        // vertical travel is still under the arm threshold (a real scroll crosses
+        // it almost immediately), and |dx| clearly beats |dy|. The vertical-cap is
+        // the load-bearing part: a fast scroll's first touchmove can land already
+        // large on BOTH axes (e.g. dx=-40, dy=20) — a ratio test alone passes that
+        // and flashes the red delete pane on every row you scroll past. Requiring
+        // |dy| < ARM_PX means any meaningful vertical travel locks scroll first.
+        const flatSwipe =
+          ddx < 0 && Math.abs(ddy) < ARM_PX && Math.abs(ddx) > Math.abs(ddy) * H_DOMINANCE
+        axis = flatSwipe ? 'horizontal' : 'vertical'
         if (axis === 'vertical') reset()
       }
       if (axis !== 'horizontal') return

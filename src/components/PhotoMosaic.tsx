@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
@@ -10,10 +10,28 @@ import { imgUrl } from '../lib/image'
 // time, never a churning wall of motion. Silent no-op with no photos (or R2 off).
 // Used by AmbientScreen; the board wall keeps the single-photo PhotoFrame.
 
-const TILE_PX = 260 // target tile edge; the grid fills to whole tiles of this size
+const TILE_PX = 260 // target tile edge at full density; the dense cap is set by this
 const SWAP_MS = 4500 // how often one tile gently changes photo
 
 type Tile = { photo: number; nonce: number }
+
+// Choose the grid shape from the container size AND the photo count. The photo
+// count drives density: below the dense cap we use exactly as many tiles as there
+// are photos (so every tile is a distinct photo — few photos → fewer, bigger
+// tiles, one photo → full-screen), and once there are enough photos it locks to
+// the fixed dense grid (TILE_PX tiles). Tiles are shaped to the container aspect.
+function gridFor(w: number, h: number, photoCount: number): { cols: number; rows: number } {
+  if (w <= 0 || h <= 0 || photoCount < 1) return { cols: 1, rows: 1 }
+  const maxCols = Math.max(1, Math.round(w / TILE_PX))
+  const maxRows = Math.max(1, Math.round(h / TILE_PX))
+  const denseCap = maxCols * maxRows
+  const target = Math.min(photoCount, denseCap)
+  let cols = Math.round(Math.sqrt((target * w) / h))
+  cols = Math.max(1, Math.min(maxCols, cols))
+  let rows = Math.max(1, Math.ceil(target / cols))
+  rows = Math.min(rows, maxRows)
+  return { cols, rows }
+}
 
 function shuffle(arr: number[]): number[] {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -48,22 +66,25 @@ export function PhotoMosaic() {
   })
   const photos = data?.photos ?? []
 
-  // Grid shape from the live container size, so it fills any wall or phone.
+  // Track the live container size, so the grid fills any wall or phone.
   const ref = useRef<HTMLDivElement>(null)
-  const [grid, setGrid] = useState({ cols: 1, rows: 1 })
+  const [size, setSize] = useState({ w: 0, h: 0 })
   useEffect(() => {
     const el = ref.current
     if (!el) return
     const measure = () => {
-      const cols = Math.max(1, Math.round(el.clientWidth / TILE_PX))
-      const rows = Math.max(1, Math.round(el.clientHeight / TILE_PX))
-      setGrid((g) => (g.cols === cols && g.rows === rows ? g : { cols, rows }))
+      const w = el.clientWidth
+      const h = el.clientHeight
+      setSize((s) => (s.w === w && s.h === h ? s : { w, h }))
     }
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+
+  // Density scales with the photo count (see gridFor).
+  const grid = useMemo(() => gridFor(size.w, size.h, photos.length), [size.w, size.h, photos.length])
   const count = grid.cols * grid.rows
 
   // Per-tile photo index + a nonce that bumps to retrigger the fade on a swap.

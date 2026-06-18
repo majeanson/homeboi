@@ -4,11 +4,12 @@ import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
 import { SIDE_SLOTS, SLOT_ICON_NAME } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
+import { useMemo } from 'react'
 import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
+import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { MealRows } from './MealRows'
-import { RecipePickerMenu } from './RecipePickerMenu'
-import { LeftoverPickerMenu } from './LeftoverPickerMenu'
+import { mealPickOptions, type MealPick } from './comboOptions'
 import { type Leftover, type MealRow, type DayNoteRow } from './types'
 import { type useMealPlanning } from './useMealPlanning'
 
@@ -60,20 +61,17 @@ export function DayEditor({
     Plan,
     'editDate' | 'setEditDate' | 'mealText' | 'setMealText' | 'staplesBusy' | 'staplePrompt' | 'saveMeal' | 'beginSetMeal' | 'toggleStaple'
   >
-  // The shared recipe picker (which {date,slot} is open) + the souper staples opt-in.
+  // Planning a recipe onto a slot + the souper staples opt-in. The dropdown is now
+  // the combobox's own; only the pick handler + the staples toggle live here.
   picker: {
-    recipePickFor: { date: number; slot: string } | null
-    setRecipePickFor: (v: { date: number; slot: string } | null) => void
     pickWithStaples: boolean
     setPickWithStaples: (f: (s: boolean) => boolean) => void
     planRecipe: (date: number, slot: string, r: Recipe) => void
   }
-  // The Restants pool + its own slot picker ("Choisir un reste", parallel to the
-  // recipe picker). Planning one consumes it into a real meal badged Restants.
+  // The Restants pool — a leftover picked from the combobox is consumed into the
+  // slot (it leaves the pool, badged Restants).
   leftovers: {
     pool: Leftover[]
-    pickFor: { date: number; slot: string } | null
-    setPickFor: (v: { date: number; slot: string } | null) => void
     plan: (date: number, slot: string, l: Leftover) => void
   }
   // The lighter side slots' inline title editor.
@@ -111,7 +109,7 @@ export function DayEditor({
   const ro = isGuest()
 
   const { editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple } = plan
-  const { recipePickFor, setRecipePickFor, pickWithStaples, setPickWithStaples, planRecipe } = picker
+  const { pickWithStaples, setPickWithStaples, planRecipe } = picker
   const { editSlot, setEditSlot, slotText, setSlotText, saveSlot } = slotEdit
   const { editNote, setEditNote, noteText, setNoteText, saveNote, clearNote } = noteEdit
   const { clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal } = actions
@@ -131,17 +129,16 @@ export function DayEditor({
     // Press-and-hold a meal to move it between slots — deliberate, not a flick.
     holdMs: DND_HOLD_MS,
   })
-  const pickOpenFor = (d: number, slot: string) => recipePickFor?.date === d && recipePickFor.slot === slot
-  const leftoverOpenFor = (d: number, slot: string) => leftovers.pickFor?.date === d && leftovers.pickFor.slot === slot
-  // The recipe + leftover pickers share a slot's add-row but only one shows at a
-  // time — opening either closes the other so the page never stacks two lists.
-  const openRecipePick = (d: number, slot: string) => {
-    leftovers.setPickFor(null)
-    setRecipePickFor(pickOpenFor(d, slot) ? null : { date: d, slot })
-  }
-  const openLeftoverPick = (d: number, slot: string) => {
-    setRecipePickFor(null)
-    leftovers.setPickFor(leftoverOpenFor(d, slot) ? null : { date: d, slot })
+  // Recipes + leftovers as one grouped dropdown for the slot field — pick a recipe
+  // (links it) or a pooled leftover (consumes it), or just type a free-text meal.
+  const mealOpts = useMemo(
+    () => mealPickOptions(recipes, lowItems, listItems, leftovers.pool, t),
+    [recipes, lowItems, listItems, leftovers.pool, t],
+  )
+  // Route a combobox pick to the right handler for the given slot.
+  const pickMeal = (d: number, slot: string) => (o: ComboOption<MealPick>) => {
+    if (o.data.kind === 'recipe') planRecipe(d, slot, o.data.recipe)
+    else leftovers.plan(d, slot, o.data.leftover)
   }
   const dayMealCount = SIDE_SLOTS.reduce((n, s) => n + mealsFor(date, s).length, suppers.length)
   // Add-affordance label: "Ajouter un autre" when the slot already holds a meal,
@@ -202,11 +199,16 @@ export function DayEditor({
               dragLabel={t.kitchen.dragMeal}
             />
             {editing && !ro && (
-              <EditField
+              // One box: type a free-text meal, or pick a recipe / leftover from
+              // the filtered dropdown (grouped when both exist).
+              <EntityCombobox
                 value={slotText}
                 onChange={setSlotText}
+                options={mealOpts}
+                onPick={pickMeal(date, slot)}
                 onSubmit={(v) => saveSlot(date, slot, v)}
                 submitLabel={t.kitchen.setMeal}
+                noMatchLabel={t.recipes.noMatch}
                 onCancel={() => {
                   setEditSlot(null)
                   setSlotText('')
@@ -214,45 +216,7 @@ export function DayEditor({
                 autoFocus
                 placeholder={t.kitchen.slots[slot]}
                 ariaLabel={t.kitchen.slots[slot]}
-              >
-                {(recipes.length > 0 || leftovers.pool.length > 0) && (
-                  <div className="kitchen__day-recipes">
-                    <div className="kitchen__day-recipes-row">
-                      {recipes.length > 0 && (
-                        <button
-                          type="button"
-                          className="btn btn--ghost mono kitchen__pick-recipe"
-                          onClick={() => openRecipePick(date, slot)}
-                          aria-expanded={pickOpenFor(date, slot)}
-                        >
-                          <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
-                        </button>
-                      )}
-                      {leftovers.pool.length > 0 && (
-                        <button
-                          type="button"
-                          className="btn btn--ghost mono kitchen__pick-recipe"
-                          onClick={() => openLeftoverPick(date, slot)}
-                          aria-expanded={leftoverOpenFor(date, slot)}
-                        >
-                          <InlineIcon name="arrow-counter-clockwise-bold" /> {t.kitchen.chooseLeftover}
-                        </button>
-                      )}
-                    </div>
-                    {pickOpenFor(date, slot) && (
-                      <RecipePickerMenu
-                        recipes={recipes}
-                        lowItems={lowItems}
-                        listItems={listItems}
-                        onPick={(r) => planRecipe(date, slot, r)}
-                      />
-                    )}
-                    {leftoverOpenFor(date, slot) && (
-                      <LeftoverPickerMenu leftovers={leftovers.pool} onPick={(l) => leftovers.plan(date, slot, l)} />
-                    )}
-                  </div>
-                )}
-              </EditField>
+              />
             )}
           </section>
         )
@@ -343,71 +307,38 @@ export function DayEditor({
               dragLabel={t.kitchen.dragMeal}
             />
             {supperEditing && !ro && (
-              <EditField
+              // Souper's box: type a free-text supper (→ AI staples) or pick a
+              // recipe / leftover. When recipes exist, the dropdown leads with the
+              // "+ ingrédients" opt-in so a recipe pick can also fill the grocery list.
+              <EntityCombobox
                 value={mealText}
                 onChange={setMealText}
+                options={mealOpts}
+                onPick={pickMeal(date, 'supper')}
                 onSubmit={() => beginSetMeal(date, 'supper')}
                 submitLabel={staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
                 busy={staplesBusy}
+                noMatchLabel={t.recipes.noMatch}
                 onCancel={() => {
                   setEditDate(null)
                   setMealText('')
                 }}
                 autoFocus
                 placeholder={t.kitchen.plan}
-              >
-                {(recipes.length > 0 || leftovers.pool.length > 0) && (
-                  <div className="kitchen__day-recipes">
-                    <div className="kitchen__day-recipes-row">
-                      {recipes.length > 0 && (
-                        <button
-                          type="button"
-                          className="btn btn--ghost mono kitchen__pick-recipe"
-                          onClick={() => openRecipePick(date, 'supper')}
-                          aria-expanded={pickOpenFor(date, 'supper')}
-                        >
-                          <InlineIcon name="book-open-bold" /> {t.kitchen.chooseRecipe}
-                        </button>
-                      )}
-                      {leftovers.pool.length > 0 && (
-                        <button
-                          type="button"
-                          className="btn btn--ghost mono kitchen__pick-recipe"
-                          onClick={() => openLeftoverPick(date, 'supper')}
-                          aria-expanded={leftoverOpenFor(date, 'supper')}
-                        >
-                          <InlineIcon name="arrow-counter-clockwise-bold" /> {t.kitchen.chooseLeftover}
-                        </button>
-                      )}
-                    </div>
-                    {pickOpenFor(date, 'supper') && (
-                      <>
-                        {/* Pick a recipe → quick-add (links it, saves now, no
-                            staples). Flip this on first to also confirm its
-                            ingredients for the grocery list. */}
-                        <button
-                          type="button"
-                          className={'chip kitchen__recipe-staples' + (pickWithStaples ? ' is-on' : '')}
-                          onClick={() => setPickWithStaples((s) => !s)}
-                          aria-pressed={pickWithStaples}
-                        >
-                          <InlineIcon name={pickWithStaples ? 'check-square-bold' : 'square-bold'} />{' '}
-                          <InlineIcon name="shopping-bag-bold" /> {t.kitchen.alsoStaples}
-                        </button>
-                        <RecipePickerMenu
-                          recipes={recipes}
-                          lowItems={lowItems}
-                          listItems={listItems}
-                          onPick={(r) => planRecipe(date, 'supper', r)}
-                        />
-                      </>
-                    )}
-                    {leftoverOpenFor(date, 'supper') && (
-                      <LeftoverPickerMenu leftovers={leftovers.pool} onPick={(l) => leftovers.plan(date, 'supper', l)} />
-                    )}
-                  </div>
-                )}
-              </EditField>
+                listHeader={
+                  recipes.length > 0 ? (
+                    <button
+                      type="button"
+                      className={'chip kitchen__recipe-staples' + (pickWithStaples ? ' is-on' : '')}
+                      onClick={() => setPickWithStaples((s) => !s)}
+                      aria-pressed={pickWithStaples}
+                    >
+                      <InlineIcon name={pickWithStaples ? 'check-square-bold' : 'square-bold'} />{' '}
+                      <InlineIcon name="shopping-bag-bold" /> {t.kitchen.alsoStaples}
+                    </button>
+                  ) : undefined
+                }
+              />
             )}
           </>
         )}

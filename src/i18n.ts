@@ -26,7 +26,7 @@ export const FR = {
     exitCancel: 'Rester',
     exitWrong: 'Pas tout à fait. Réessaie.',
   },
-  help: { learnMore: 'Aide sur cette section', gotIt: 'Compris' },
+  help: { learnMore: 'Aide sur cette section', gotIt: 'Compris', goToGuide: 'Voir le guide', helpMode: 'Aide', tapForHelp: 'Touche un bouton pour savoir ce qu’il fait.' },
   tour: { label: 'Visite guidée', stepOf: (n: number, total: number) => `Étape ${n} sur ${total}`, skip: 'Passer', back: 'Retour', next: 'Suivant', done: 'Terminé', learnMore: 'En savoir plus' },
   today: { morning: 'Bon matin', afternoon: 'Bon après-midi', evening: 'Bonne soirée' },
   home: {
@@ -418,8 +418,10 @@ export const FR = {
     missingN: (n: number) => `il manque ${n}`,
     useItUp: 'À utiliser',
     usesN: (n: number) => `utilise ${n}`,
-    // #11 "Recipe collections" — browse-by-tag toggle group inside the recipe book.
+    // #11 "Recipe collections" — browse-by-tag view toggle inside the recipe book.
     collectionsTitle: 'Collections',
+    arrange: 'Affichage',
+    ungrouped: 'Autres',
     collectionsEmpty: 'Ajoute des étiquettes à tes recettes pour créer des collections.',
     collectionCount: (n: number) => `${n} recette${n > 1 ? 's' : ''}`,
     collectionTapToOpen: 'Tape encore pour ouvrir',
@@ -908,6 +910,11 @@ export const FR = {
     historyRemoved: (s: string) => `« ${s} » retiré de l’historique`,
     routineTime: (s: string) => `Moment de « ${s} » changé`,
   },
+  combo: {
+    show: 'Voir les choix',
+    hide: 'Cacher les choix',
+    noMatch: 'Aucun résultat',
+  },
   notFound: { title: 'Page introuvable', back: 'Retour à l’accueil' },
 }
 
@@ -932,7 +939,7 @@ export const EN: typeof FR = {
     exitCancel: 'Stay',
     exitWrong: 'Not quite. Try again.',
   },
-  help: { learnMore: 'Help for this section', gotIt: 'Got it' },
+  help: { learnMore: 'Help for this section', gotIt: 'Got it', goToGuide: 'See the guide', helpMode: 'Help', tapForHelp: 'Tap a button to see what it does.' },
   tour: { label: 'Guided tour', stepOf: (n: number, total: number) => `Step ${n} of ${total}`, skip: 'Skip', back: 'Back', next: 'Next', done: 'Done', learnMore: 'Learn more' },
   today: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },
   home: {
@@ -1319,8 +1326,10 @@ export const EN: typeof FR = {
     missingN: (n: number) => `${n} to buy`,
     useItUp: 'Use it up',
     usesN: (n: number) => `uses ${n}`,
-    // #11 "Recipe collections" — browse-by-tag toggle group inside the recipe book.
+    // #11 "Recipe collections" — browse-by-tag view toggle inside the recipe book.
     collectionsTitle: 'Collections',
+    arrange: 'View',
+    ungrouped: 'Other',
     collectionsEmpty: 'Add tags to your recipes to create collections.',
     collectionCount: (n: number) => `${n} recipe${n > 1 ? 's' : ''}`,
     collectionTapToOpen: 'Tap again to open',
@@ -1808,6 +1817,11 @@ export const EN: typeof FR = {
     avatarCleared: (s: string) => `${s}'s photo removed`,
     historyRemoved: (s: string) => `"${s}" removed from history`,
     routineTime: (s: string) => `"${s}" time of day changed`,
+  },
+  combo: {
+    show: 'Show choices',
+    hide: 'Hide choices',
+    noMatch: 'No match',
   },
   notFound: { title: 'Page not found', back: 'Back to home' },
 }

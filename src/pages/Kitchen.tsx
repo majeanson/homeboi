@@ -19,8 +19,6 @@ import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { ReserveSection } from '../components/kitchen/ReserveSection'
 import { RecipesTab } from '../components/kitchen/RecipesTab'
-import { CookableView } from '../components/kitchen/CookableView'
-import { CollectionsTab } from '../components/kitchen/CollectionsTab'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
@@ -90,12 +88,6 @@ export function Kitchen() {
   // Held in the URL (?tab=) so it survives the return from a full-screen add/edit
   // scene — add a recipe from Recettes and you come back to Recettes. See tabParam.
   const [kitTab, setKitTab] = useTabParam('tab', 'meals', ['meals', 'pantry', 'recipes'] as const)
-  // Within the Recettes tab, a calm segmented control switches the recipes AREA
-  // between the full book, the #10 "Quoi cuisiner?" cook-from-have view, and the
-  // #11 collections browser — held in the URL (?rv=) so it survives a return from
-  // a recipe scene. The cookable/collections views are parent-only affordances;
-  // the toddler lens renders KidKitchen wholesale (handled above).
-  const [recipeView, setRecipeView] = useTabParam('rv', 'book', ['book', 'cookable', 'collections'] as const)
   // The recipe a planned meal points at (exact recipe_id link first, else a loose
   // title match) — shared with the day editor via useRecipeForMeal.
   const recipeForMeal = useRecipeForMeal(recipes)
@@ -321,10 +313,6 @@ export function Kitchen() {
 
         {kitTab === 'meals' && (
         <section>
-          <div className="kitchen__head">
-            <h2>{t.kitchen.week}</h2>
-          </div>
-
           {/* The week's three actions (shop the week / AI ideas / ideas from the
               book) moved INTO the ＋ Add sheet as icon tiles (see useKitchenActions
               above) — no more floating rail. Their results land in THIS band, which
@@ -604,57 +592,18 @@ export function Kitchen() {
         )}
 
         {kitTab === 'recipes' && (
-          <>
-            {/* Recipes-area mode: the full book / #10 cook-from-have / #11
-                collections. A calm segmented control (same .subtabs vocabulary as
-                the kitchen tabs), shown only once there's a recipe to browse. */}
-            {recipes.length > 0 && (
-              <div className="subtabs subtabs--inset" role="tablist" aria-label={t.recipes.title}>
-                {([
-                  ['book', t.recipes.viewBook],
-                  ['cookable', t.recipes.cookable],
-                  ['collections', t.recipes.collections],
-                ] as const).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    role="tab"
-                    aria-selected={recipeView === key}
-                    className={'subtabs__opt' + (recipeView === key ? ' is-on' : '')}
-                    onClick={() => setRecipeView(key)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-            {recipeView === 'cookable' ? (
-              <CookableView
-                recipes={recipes}
-                lowItems={lowItems}
-                listItems={listItems}
-                onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
-              />
-            ) : recipeView === 'collections' ? (
-              <CollectionsTab
-                recipes={recipes}
-                lowItems={lowItems}
-                soonItems={soonItems}
-                listItems={listItems}
-                lastServed={lastServedById}
-                onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
-              />
-            ) : (
-              <RecipesTab
-                recipes={recipes}
-                lowItems={lowItems}
-                soonItems={soonItems}
-                listItems={listItems}
-                lastServed={lastServedById}
-                onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
-              />
-            )}
-          </>
+          // One recipe book. "Quoi cuisiner?" is a pill filter and #11 collections
+          // a browse-by-tag toggle group — both live INSIDE RecipesTab now, so the
+          // recipes area is a single flat view (no second-level sub-tabs). The
+          // toddler lens renders KidKitchen wholesale (handled above).
+          <RecipesTab
+            recipes={recipes}
+            lowItems={lowItems}
+            soonItems={soonItems}
+            listItems={listItems}
+            lastServed={lastServedById}
+            onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
+          />
         )}
       </main>
     </>
