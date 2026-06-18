@@ -33,6 +33,11 @@ describe('keysForPath', () => {
     expect(keysForPath('routines')).toEqual([['routines'], ['board']])
   })
 
+  it('maps À compléter todos to todos + board + month, templates to their own key', () => {
+    expect(keysForPath('todos')).toEqual([['todos'], ['board'], ['month']])
+    expect(keysForPath('todo-templates')).toEqual([['todo-templates']])
+  })
+
   it('maps recipe endpoints to the recipe keys', () => {
     expect(keysForPath('recipes')).toEqual([['recipes']])
     expect(keysForPath('recipe-tags')).toEqual([['recipes'], ['recipe-tags']])

@@ -213,6 +213,7 @@ export const FR = {
     legendEvents: 'Rendez-vous',
     legendMeals: 'Repas',
     legendChores: 'Corvées',
+    legendTodos: 'À compléter',
     legendNotes: 'Notes',
   },
   weather: {
@@ -1196,6 +1197,7 @@ export const EN: typeof FR = {
     legendEvents: 'Events',
     legendMeals: 'Meals',
     legendChores: 'Chores',
+    legendTodos: 'To complete',
     legendNotes: 'Notes',
   },
   weather: {

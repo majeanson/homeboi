@@ -579,9 +579,9 @@ export function Board() {
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
       ) : view === 'next' ? (
-        <NowNext data={data} lang={lang} t={t} profileId={profileId} />
+        <NowNext data={data} lang={lang} t={t} profileId={profileId} todos={openTodos} />
       ) : view === 'lanes' ? (
-        <Lanes data={data} lang={lang} t={t} profileId={profileId} />
+        <Lanes data={data} lang={lang} t={t} profileId={profileId} todos={openTodos} />
       ) : view === 'month' ? (
         <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
       ) : (

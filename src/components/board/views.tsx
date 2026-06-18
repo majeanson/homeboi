@@ -9,13 +9,26 @@ import { SLOT_ICON_NAME, SLOT_TIME_ORDER, type MealSlot } from '../../lib/mealSl
 import { type Lang } from '../../i18n'
 import { Icon, InlineIcon } from '../Icon'
 import { Act } from './Act'
+import { type Todo } from '../../lib/todos'
 import { colorOf, nameOf, type BoardData, type Dict, type EventRow } from './types'
 
 // "Now & Next" — a departure-board focus: the next thing up, big, with the one
 // after it small beneath. When today is exhausted it BRIDGES to tomorrow's first
 // event (rather than a stale "tonight" card); only an empty tomorrow falls back to
 // the supper, then a calm empty. All-day items ride along as a quiet footer.
-export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: Lang; t: Dict; profileId: string | null }) {
+export function NowNext({
+  data,
+  lang,
+  t,
+  profileId,
+  todos = [],
+}: {
+  data: BoardData
+  lang: Lang
+  t: Dict
+  profileId: string | null
+  todos?: Todo[]
+}) {
   const mealPrefs = useMealPrefs()
   const nav = useNavigate()
   // "Préparer le repas" — the next meal due that has a recipe → its cook mode.
@@ -164,6 +177,18 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
         </div>
       )}
 
+      {/* À compléter — open todos (global + today) ride as a quiet footer here too,
+          so switching to "Maintenant" doesn't hide them. Read-only on this glance;
+          check them off from the bento À compléter card or the day page. */}
+      {todos.length > 0 && (
+        <div className="nownext__chores">
+          <span className="nownext__meals-label mono">{t.todos.title}</span>
+          {todos.map((td) => (
+            <Act key={td.id} cat="chore" icon="check-bold" title={td.title} who={td.section ?? undefined} />
+          ))}
+        </div>
+      )}
+
       {/* Today's full meal table rides as a footer too — every slot, not just the
           supper (which can also be the fallback focus above). One colour chip per
           slot: slot icon + meals, tinted with the slot's colour. */}
@@ -215,7 +240,19 @@ export function NowNext({ data, lang, t, profileId }: { data: BoardData; lang: L
 // chores that occur today and aren't already done — see functions/api/board.ts),
 // NOT every chore in rotation. A weekly chore shows in its person's lane on its
 // day, not all week. Upcoming occurrences live in the Mois (month) view instead.
-export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lang; t: Dict; profileId: string | null }) {
+export function Lanes({
+  data,
+  lang,
+  t,
+  profileId,
+  todos = [],
+}: {
+  data: BoardData
+  lang: Lang
+  t: Dict
+  profileId: string | null
+  todos?: Todo[]
+}) {
   const mealPrefs = useMealPrefs()
   const memberIds = new Set(data.members.map((m) => m.id))
   // Hidden meal slots (Réglages ▸ Repas) drop off the Maisonnée lane's table.
@@ -224,6 +261,8 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
   // Chores/to-dos due today with no rotation turn (who_id null) belong to the
   // whole household — they ride the Maisonnée lane beside unassigned events.
   const sharedChores = [...data.choresToday, ...data.todos].filter((c) => !c.who_id || !memberIds.has(c.who_id))
+  // À compléter todos with no face (or a stale one) are household-wide too.
+  const sharedTodos = todos.filter((td) => !td.member_id || !memberIds.has(td.member_id))
   const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
   const cookLine = (cookId: string | null) => {
     const who = nameOf(data.members, cookId)
@@ -232,7 +271,7 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
 
   return (
     <div className="lanes">
-      {(unassigned.length > 0 || sharedChores.length > 0 || laneMeals.length > 0 || (data.leftovers ?? []).length > 0) && (
+      {(unassigned.length > 0 || sharedChores.length > 0 || sharedTodos.length > 0 || laneMeals.length > 0 || (data.leftovers ?? []).length > 0) && (
         <div className="lane bento">
           <div className="lane__head lane__head--shared">
             <span className="lane__dot" style={{ background: 'var(--ink-faint)' }} aria-hidden="true" />
@@ -270,6 +309,9 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
           {sharedChores.map((c) => (
             <Act key={c.id} cat="chore" title={c.title} color={c.color ?? undefined} soon={c.soon} />
           ))}
+          {sharedTodos.map((td) => (
+            <Act key={td.id} cat="chore" icon="check-bold" title={td.title} />
+          ))}
         </div>
       )}
       {data.members.map((m) => {
@@ -277,7 +319,9 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
         // Only what's due today and theirs: recurring chores occurring today plus
         // one-off to-dos on their turn. Future occurrences stay in the Mois view.
         const chores = [...data.choresToday, ...data.todos].filter((c) => c.who_id === m.id)
-        const empty = events.length === 0 && chores.length === 0
+        // À compléter todos this member owns (optional face).
+        const myTodos = todos.filter((td) => td.member_id === m.id)
+        const empty = events.length === 0 && chores.length === 0 && myTodos.length === 0
         const mine = m.id === profileId
         return (
           <div key={m.id} className={'lane bento' + (mine ? ' lane--mine' : '')}>
@@ -302,6 +346,9 @@ export function Lanes({ data, lang, t, profileId }: { data: BoardData; lang: Lan
                 ))}
                 {chores.map((c) => (
                   <Act key={c.id} cat="chore" title={c.title} color={c.color ?? m.colour} soon={c.soon} />
+                ))}
+                {myTodos.map((td) => (
+                  <Act key={td.id} cat="chore" icon="check-bold" title={td.title} color={m.colour} />
                 ))}
               </>
             )}

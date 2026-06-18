@@ -29,7 +29,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes] = await Promise.all([
+  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
@@ -71,6 +71,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
         recur_start: number | null
         created_at: number
       }>(),
+    // À compléter todos pinned to a DAY (migration 0046/0047) — open ones only, so
+    // the calendar shows what's still to do. `day` is already local midnight, so a
+    // direct range match works (no ±DAY re-bucket needed). Global (day NULL) todos
+    // have no calendar cell, like fridge notes.
+    ctx.env.DB.prepare(
+      'SELECT id, title, member_id, day, section FROM todos WHERE household_id = ? AND day IS NOT NULL AND day >= ? AND day < ? AND done_at IS NULL ORDER BY day, position, created_at',
+    )
+      .bind(hh, from, to)
+      .all<{ id: string; title: string; member_id: string | null; day: number; section: string | null }>(),
   ])
 
   const inRange = (day: number) => day >= from && day < to
@@ -98,6 +107,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
   for (const n of dayNotesRes.results) {
     const day = dayOf(n.date)
     if (inRange(day)) dayNotes.push({ id: n.id, text: n.text, member_id: n.member_id, day })
+  }
+
+  // Dated todos — already bucketed on a local-midnight `day`, the same key the grid
+  // groups by. (inRange is a belt-and-braces guard; the SQL already bounds it.)
+  const todos: { id: string; title: string; member_id: string | null; day: number; section: string | null }[] = []
+  for (const td of todosRes.results) {
+    if (inRange(td.day)) todos.push({ id: td.id, title: td.title, member_id: td.member_id, day: td.day, section: td.section })
   }
 
   const nameOf = (id: string | null) => (id && members.results.find((m) => m.id === id)?.display_name) || null
@@ -136,5 +152,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   }
 
-  return ok({ events, meals, chores, dayNotes })
+  return ok({ events, meals, chores, dayNotes, todos })
 })

@@ -23,9 +23,10 @@ interface MEvent { id: string; title: string; at: number; all_day: number; membe
 interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number }
 interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 interface MNote { id: string; text: string; member_id: string | null; day: number }
-export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[] }
+interface MTodo { id: string; title: string; member_id: string | null; day: number; section: string | null }
+export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[] }
 
-interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[] }
+interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[] }
 
 // Intl gives a lowercase French month/weekday ("juin", "lun") — calendars want it
 // capitalized.
@@ -37,7 +38,7 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 // reusing Réglages ▸ Repas) tinted with the slot colour — far more glanceable than
 // a square and it carries which meal. Colour still carries who (events) / slot
 // (meals) / chore tint.
-type DotKind = 'event' | 'meal' | 'chore' | 'note'
+type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo'
 interface Dot {
   color: string
   kind: DotKind
@@ -55,6 +56,9 @@ function dotsFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs):
     if (meals.isVisible(m.slot))
       out.push({ color: meals.color(m.slot) ?? CATS.meal.color, kind: 'meal', slot: isMealSlot(m.slot) ? m.slot : undefined })
   for (const c of b.chores) out.push({ color: c.color ?? CATS.chore.color, kind: 'chore' })
+  // À compléter todos → a check icon tinted with the member colour (drawn like the
+  // meal slot icons), so they read apart from the filled chore/event dots.
+  for (const td of b.todos) out.push({ color: colorOf(members, td.member_id) ?? CATS.chore.color, kind: 'todo' })
   b.notes.forEach(() => out.push({ color: CATS.list.color, kind: 'note' }))
   return out
 }
@@ -100,7 +104,7 @@ export function MonthView({
     const at = (d: number) => {
       let b = m.get(d)
       if (!b) {
-        b = { events: [], meals: [], chores: [], notes: [] }
+        b = { events: [], meals: [], chores: [], notes: [], todos: [] }
         m.set(d, b)
       }
       return b
@@ -108,6 +112,7 @@ export function MonthView({
     for (const e of data?.events ?? []) at(e.day).events.push(e)
     for (const x of data?.meals ?? []) at(x.day).meals.push(x)
     for (const c of data?.chores ?? []) at(c.day).chores.push(c)
+    for (const td of data?.todos ?? []) at(td.day).todos.push(td)
     for (const n of data?.dayNotes ?? []) at(n.day).notes.push(n)
     return m
   }, [data])
@@ -122,7 +127,7 @@ export function MonthView({
   const sel = byDay.get(selected)
   // Hidden meal slots (Réglages ▸ Repas) drop out of the day's detail list + count.
   const selMeals = sel ? sel.meals.filter((m) => mealPrefs.isVisible(m.slot)) : []
-  const selCount = sel ? sel.events.length + selMeals.length + sel.chores.length + sel.notes.length : 0
+  const selCount = sel ? sel.events.length + selMeals.length + sel.chores.length + sel.todos.length + sel.notes.length : 0
   const atToday = offset === 0 && selected === todayDay
   // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
   // time — the household's wall month/weekday, no UTC flag.
@@ -177,6 +182,11 @@ export function MonthView({
                       <span key={i} className="monthv__dot-icon">
                         <Icon name={SLOT_ICON_NAME[dot.slot]} size={12} color={dot.color} />
                       </span>
+                    ) : dot.kind === 'todo' ? (
+                      // À compléter → a check icon tinted with the member colour.
+                      <span key={i} className="monthv__dot-icon">
+                        <Icon name="check-bold" size={12} color={dot.color} />
+                      </span>
                     ) : (
                       <span
                         key={i}
@@ -209,6 +219,12 @@ export function MonthView({
         </span>
         <span className="monthv__legend-item">
           <span className="monthv__dot monthv__dot--chore" style={{ background: 'var(--ink-soft)' }} /> {t.monthView.legendChores}
+        </span>
+        <span className="monthv__legend-item">
+          <span className="monthv__dot-icon">
+            <Icon name="check-bold" size={12} color="var(--ink-soft)" />
+          </span>{' '}
+          {t.monthView.legendTodos}
         </span>
         <span className="monthv__legend-item">
           <span className="monthv__dot monthv__dot--note" style={{ color: 'var(--ink-soft)' }} /> {t.monthView.legendNotes}
@@ -259,6 +275,19 @@ export function MonthView({
             ))}
             {sel!.chores.map((c) => (
               <Act key={c.id} cat="chore" title={c.title} who={c.who ?? undefined} color={c.color ?? undefined} />
+            ))}
+            {/* À compléter todos pinned to this day — read-only here (check them off
+                from the board's À compléter card or the day page). The source list,
+                if any, rides as the sub-line. */}
+            {sel!.todos.map((td) => (
+              <Act
+                key={td.id}
+                cat="chore"
+                icon="check-bold"
+                title={td.title}
+                who={td.section ?? undefined}
+                color={colorOf(members, td.member_id) ?? undefined}
+              />
             ))}
             {sel!.notes.map((n) => (
               <DayNote key={n.id} note={n} members={members} />
