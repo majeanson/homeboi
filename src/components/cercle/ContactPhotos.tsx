@@ -21,7 +21,12 @@ interface ContactPhoto {
 // shared /api/cercle image upload (like the avatar); the row links {key, caption}
 // to this contact. Online-only (a photo can't be queued offline — the blob upload
 // needs R2), so the add control disables when offline.
-export function ContactPhotos({ contactId }: { contactId: string }) {
+//
+// `memberPhoto` is the R2 key of the linked Maisonnée member's board avatar (when it
+// IS a photo). We surface it as a leading READ-ONLY tile so all of this person's
+// pictures show together, while keeping the household face the single source of truth
+// (it's edited in Réglages ▸ Membres, never here).
+export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; memberPhoto?: string | null }) {
   const t = useT()
   const qc = useQueryClient()
   const confirm = useConfirm()
@@ -85,8 +90,14 @@ export function ContactPhotos({ contactId }: { contactId: string }) {
         <Icon name="image-square-bold" size={14} /> {t.cercle.photos}
       </span>
 
-      {photos.length > 0 && (
+      {(memberPhoto || photos.length > 0) && (
         <div className="cf-photos__grid">
+          {memberPhoto && (
+            <figure className="cf-photos__item cf-photos__item--member">
+              <ZoomableImg src={imgUrl(memberPhoto)} alt={t.cercle.photoFromMaisonneeTile} className="cf-photos__img" />
+              <figcaption className="cf-photos__caption cf-photos__caption--ro mono">{t.cercle.photoFromMaisonneeTile}</figcaption>
+            </figure>
+          )}
           {photos.map((p) => (
             <figure key={p.id} className="cf-photos__item">
               <ZoomableImg src={imgUrl(p.photoKey)} alt={p.caption ?? ''} className="cf-photos__img" />

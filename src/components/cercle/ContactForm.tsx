@@ -84,6 +84,13 @@ export function ContactForm({
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  // If this person is a Maisonnée member (hard-linked), their face is the member's
+  // board avatar — the ONE photo, managed in Réglages ▸ Membres — not a separate
+  // contact photo. Resolve it live off the picked member so it tracks an inline link
+  // change. `memberPhoto` is the R2 key only when that avatar is an uploaded photo.
+  const linkedMember = useMemo(() => members.find((m) => m.id === memberId) ?? null, [members, memberId])
+  const memberPhoto = linkedMember?.avatarKind === 'photo' ? linkedMember.avatarRef : null
+
   const hasContactPicker = 'contacts' in navigator && 'ContactsManager' in window
 
   async function importFromContacts() {
@@ -274,31 +281,44 @@ export function ContactForm({
 
   return (
     <div className="cf">
-      {/* Photo */}
+      {/* Photo. A member's face comes from the Maisonnée (their board avatar) and is
+          edited there, so for a linked member we SHOW that face read-only; otherwise
+          this is the contact's own editable photo. */}
       <div className="cf__photo">
-        <Avatar kind={photoKey ? 'photo' : null} photo={photoKey} colour="#C45E86" name={firstName} size={84} />
-        <div className="cf__photo-actions">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => pickPhoto(e.target.files?.[0])}
-          />
-          <button type="button" className="btn btn--sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
-            <Icon name="camera-bold" size={16} /> {photoKey ? t.cercle.changePhoto : t.cercle.addPhoto}
-          </button>
-          {photoKey && (
-            <button type="button" className="btn btn--sm btn--ghost" onClick={() => setPhotoKey(null)}>
-              {t.cercle.removePhoto}
-            </button>
-          )}
-          {hasContactPicker && !value && (
-            <button type="button" className="btn btn--sm btn--ghost" onClick={importFromContacts}>
-              <Icon name="book-open-bold" size={15} /> {t.cercle.importContact}
-            </button>
-          )}
-        </div>
+        {linkedMember ? (
+          <>
+            <Avatar kind={linkedMember.avatarKind} photo={linkedMember.avatarRef} colour={linkedMember.colour} name={firstName} size={84} />
+            <div className="cf__photo-actions">
+              <p className="cf-photos__hint mono">{t.cercle.photoFromMaisonnee}</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <Avatar kind={photoKey ? 'photo' : null} photo={photoKey} colour="#C45E86" name={firstName} size={84} />
+            <div className="cf__photo-actions">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => pickPhoto(e.target.files?.[0])}
+              />
+              <button type="button" className="btn btn--sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                <Icon name="camera-bold" size={16} /> {photoKey ? t.cercle.changePhoto : t.cercle.addPhoto}
+              </button>
+              {photoKey && (
+                <button type="button" className="btn btn--sm btn--ghost" onClick={() => setPhotoKey(null)}>
+                  {t.cercle.removePhoto}
+                </button>
+              )}
+              {hasContactPicker && !value && (
+                <button type="button" className="btn btn--sm btn--ghost" onClick={importFromContacts}>
+                  <Icon name="book-open-bold" size={15} /> {t.cercle.importContact}
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="cf__grid">
@@ -502,7 +522,7 @@ export function ContactForm({
 
       {/* Per-person photo gallery (ID card, screenshot, snapshot together). Edit-only —
           attachments hang off a saved contact id. */}
-      {value && <ContactPhotos contactId={value.id} />}
+      {value && <ContactPhotos contactId={value.id} memberPhoto={memberPhoto} />}
 
       {/* Relationships sit ABOVE the save button so the form doesn't look like it
           ends mid-way. They need a saved person (an id) to link to: on EDIT the

@@ -603,6 +603,8 @@ export const FR = {
     photoOnline: 'Hors ligne — branche-toi pour ajouter une photo',
     removePhotoFromGallery: 'Retirer la photo',
     importContact: 'Importer un contact',
+    photoFromMaisonnee: 'Photo gérée dans la Maisonnée',
+    photoFromMaisonneeTile: 'Maisonnée',
   },
   routines: {
     tag: 'Le rythme du jour',
@@ -1728,6 +1730,8 @@ export const EN: typeof FR = {
     photoOnline: 'Offline — connect to add a photo',
     removePhotoFromGallery: 'Remove photo',
     importContact: 'Import from contacts',
+    photoFromMaisonnee: 'Photo managed in the household',
+    photoFromMaisonneeTile: 'Household',
   },
   routines: {
     tag: "The day’s rhythm",

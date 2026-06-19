@@ -486,6 +486,17 @@
 .cf-photos__caption:focus {
   border-color: var(--accent, var(--berry));
 }
+/* The Maisonnée face tile: read-only (the household owns it) — a flat, centred
+   label instead of an editable caption field, and a soft accent ring on the image. */
+.cf-photos__item--member .cf-photos__img {
+  border-color: var(--berry);
+}
+.cf-photos__caption--ro {
+  background: transparent;
+  border-color: transparent;
+  text-align: center;
+  color: var(--ink-soft);
+}
 .cf-photos__hint {
   font-size: 0.8rem;
   color: var(--ink-soft);
