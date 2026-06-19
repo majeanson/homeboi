@@ -9,6 +9,7 @@ import { isGuest } from '../../lib/device'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routineTod'
 import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { ListRow } from '../ListRow'
 import { OperatorSection } from './OperatorSection'
 import { ChoreForm } from '../forms/ChoreForm'
 import { RoutineForm } from '../forms/RoutineForm'
@@ -78,17 +79,19 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
     )
 
   return (
-    <li className="operator__chore-row">
-      <span className="operator__avatar" style={{ background: chore.color ?? '#88A36F' }} aria-hidden="true" />
-      <span className="operator__chore-name">
-        {chore.title}
-        {label && <span className="operator__chore-recur mono"> · {label}</span>}
-      </span>
-      <RowActions
-        onEdit={() => setEditing(true)}
-        onDelete={onRemove}
-        editLabel={t.operator.editChore}
-        deleteLabel={t.operator.deleteChore}
+    <li>
+      <ListRow
+        leading={<span className="operator__avatar" style={{ background: chore.color ?? '#88A36F' }} aria-hidden="true" />}
+        title={chore.title}
+        subtitle={label || undefined}
+        actions={
+          <RowActions
+            onEdit={() => setEditing(true)}
+            onDelete={onRemove}
+            editLabel={t.operator.editChore}
+            deleteLabel={t.operator.deleteChore}
+          />
+        }
       />
     </li>
   )

@@ -9,6 +9,7 @@ import { EventForm } from '../forms/EventForm'
 import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
+import { ListRow } from '../ListRow'
 import { OperatorSection } from './OperatorSection'
 import { type EventRow, type Member } from './types'
 
@@ -58,30 +59,39 @@ export function EventsSection({
         <ul className="operator__list">
           {events.map((ev) => (
             <li key={ev.id}>
-              <span
-                className="operator__avatar"
-                style={{ background: memberColor(ev.member_id) ?? 'var(--ink-faint)' }}
-                aria-hidden="true"
-              />
-              <span>
-                {ev.recur_json && (
+              <ListRow
+                leading={
+                  <span
+                    className="operator__avatar"
+                    style={{ background: memberColor(ev.member_id) ?? 'var(--ink-faint)' }}
+                    aria-hidden="true"
+                  />
+                }
+                title={
                   <>
-                    <InlineIcon name="repeat-bold" size={13} color="var(--sky-deep)" />{' '}
+                    {ev.recur_json && (
+                      <>
+                        <InlineIcon name="repeat-bold" size={13} color="var(--sky-deep)" />{' '}
+                      </>
+                    )}
+                    {ev.title}
                   </>
-                )}
-                {ev.title}
-                <span className="mono operator__event-when">
-                  {' · '}
-                  {formatDay(ev.start_at, lang)}
-                  {ev.all_day ? '' : ` ${formatTime(ev.start_at, lang)}`}
-                  {memberName(ev.member_id) ? ` · ${memberName(ev.member_id)}` : ''}
-                </span>
-              </span>
-              <RowActions
-                onEdit={() => setEditing(ev)}
-                onDelete={() => remove(ev)}
-                editLabel={t.operator.editEvent}
-                deleteLabel={t.operator.deleteEvent}
+                }
+                subtitle={
+                  <>
+                    {formatDay(ev.start_at, lang)}
+                    {ev.all_day ? '' : ` ${formatTime(ev.start_at, lang)}`}
+                    {memberName(ev.member_id) ? ` · ${memberName(ev.member_id)}` : ''}
+                  </>
+                }
+                actions={
+                  <RowActions
+                    onEdit={() => setEditing(ev)}
+                    onDelete={() => remove(ev)}
+                    editLabel={t.operator.editEvent}
+                    deleteLabel={t.operator.deleteEvent}
+                  />
+                }
               />
             </li>
           ))}

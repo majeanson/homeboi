@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { InlineIcon, type IconName } from './Icon'
 
 // The ONE chip — the small mono pill used for filters, toggles, day-pickers and
@@ -17,6 +17,8 @@ export function Chip({
   ariaLabel,
   title,
   disabled,
+  className,
+  style,
 }: {
   children: ReactNode
   selected?: boolean
@@ -27,16 +29,21 @@ export function Chip({
   ariaLabel?: string
   title?: string
   disabled?: boolean
+  /** Extra modifier class(es) appended after `chip`/`is-on` (e.g. `kitchen__pill`,
+   *  `tag-admin__pill`) — for the chips that carry a layout/scope variant. */
+  className?: string
+  /** Inline style — the colour-tinted tag pills (`chipTint(...)`) need this. */
+  style?: CSSProperties
 }) {
   // A removable chip is itself the remove button (tap the pill to drop it) — the
   // pattern the recipe tag-pills use. Otherwise it's a toggle or a static label.
   const handler = onRemove ?? onClick
   const interactive = !!handler
-  const cls = 'chip' + (selected ? ' is-on' : '')
+  const cls = 'chip' + (selected ? ' is-on' : '') + (className ? ` ${className}` : '')
 
   if (!interactive) {
     return (
-      <span className={cls} title={title}>
+      <span className={cls} title={title} style={style}>
         {icon && <InlineIcon name={icon} />} {children}
       </span>
     )
@@ -45,6 +52,7 @@ export function Chip({
     <button
       type="button"
       className={cls}
+      style={style}
       onClick={handler}
       aria-pressed={onClick && !onRemove ? !!selected : undefined}
       aria-label={ariaLabel ?? (onRemove ? removeLabel : undefined)}

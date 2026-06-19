@@ -352,15 +352,9 @@ export function RecipesTab({
             if (isBuiltinPill(p)) {
               const ui = BUILTIN_UI[p.k]
               return (
-                <button
-                  key={pillKey(p)}
-                  type="button"
-                  className={`chip kitchen__pill${on ? ' is-on' : ''}`}
-                  onClick={() => togglePill(p)}
-                  aria-pressed={on}
-                >
+                <Chip key={pillKey(p)} selected={on} onClick={() => togglePill(p)} className="kitchen__pill">
                   {ui.icon} {ui.label}
-                </button>
+                </Chip>
               )
             }
             // Custom pill — tinted by its colour (wash when off, solid when on),
@@ -372,16 +366,9 @@ export function RecipesTab({
                 : { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) }
               : undefined
             return (
-              <button
-                key={pillKey(p)}
-                type="button"
-                className={`chip kitchen__pill${on ? ' is-on' : ''}`}
-                style={style}
-                onClick={() => togglePill(p)}
-                aria-pressed={on}
-              >
+              <Chip key={pillKey(p)} selected={on} onClick={() => togglePill(p)} className="kitchen__pill" style={style}>
                 {p.label}
-              </button>
+              </Chip>
             )
           })}
         </div>
@@ -402,16 +389,9 @@ export function RecipesTab({
                 : { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) }
               : undefined
             return (
-              <button
-                key={tg}
-                type="button"
-                className={`chip${on ? ' is-on' : ''}`}
-                style={style}
-                onClick={() => toggleTag(tg)}
-                aria-pressed={on}
-              >
+              <Chip key={tg} selected={on} onClick={() => toggleTag(tg)} style={style}>
                 {tg}
-              </button>
+              </Chip>
             )
           })}
         </div>

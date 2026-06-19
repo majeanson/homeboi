@@ -432,12 +432,14 @@ export function ContactForm({
         {tags.length > 0 && (
           <div className="cf__tags">
             {tags.map((tag) => (
-              <span key={tag} className="chip cf__tag">
+              <Chip
+                key={tag}
+                className="cf__tag"
+                onRemove={() => setTags(tags.filter((x) => x !== tag))}
+                removeLabel={t.common.delete}
+              >
                 {tag}
-                <button type="button" aria-label={t.common.delete} onClick={() => setTags(tags.filter((x) => x !== tag))}>
-                  <Icon name="x-bold" size={12} />
-                </button>
-              </span>
+              </Chip>
             ))}
           </div>
         )}
@@ -476,9 +478,9 @@ export function ContactForm({
               </Chip>
             ))}
             {!creatingGroup && (
-              <button type="button" className="chip cf__group-add" onClick={() => setCreatingGroup(true)}>
+              <Chip className="cf__group-add" onClick={() => setCreatingGroup(true)}>
                 <InlineIcon name="plus-bold" size={12} /> {t.cercle.addGroup}
-              </button>
+              </Chip>
             )}
           </div>
           {creatingGroup && (
