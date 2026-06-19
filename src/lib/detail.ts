@@ -25,11 +25,14 @@ type DetailKind =
 // One block of body content. The sheet renders these top-to-bottom.
 export type DetailBlock =
   | { kind: 'text'; text: string; hand?: boolean } // a paragraph (hand = handwritten note look)
-  | { kind: 'chips'; label?: string; chips: string[] } // a tag/chip row
+  | { kind: 'chips'; label?: string; chips: string[]; tones?: (string | undefined)[] } // a tag/chip row; `tones[i]` = a per-chip household hex (recipe tag colours)
   | { kind: 'pictos'; label?: string; items: { photo?: string; emoji?: string }[] } // step pictos: a card's photo (preferred) or its emoji — same rule the grid/kid run follow
   | { kind: 'list'; label?: string; items: string[] } // a short bullet list (ingredients/steps preview)
   | { kind: 'image'; src: string; alt?: string } // a media image (note photo/drawing), tap-to-zoom
   | { kind: 'audio'; src: string } // a media audio memo (a <audio controls>)
+  // Tappable chips that ADD/REMOVE membership inline (e.g. a person's named groups in
+  // Le cercle). Each option carries its current on/off; onToggle persists the change.
+  | { kind: 'togglechips'; label?: string; options: { id: string; label: string; on: boolean }[]; onToggle: (id: string, on: boolean) => void }
 
 // A face to attribute the entity to — drawn with the shared <Avatar>.
 export interface DetailWho {

@@ -18,8 +18,10 @@ import { SectionIntro } from '../components/SectionIntro'
 import { Avatar } from '../components/Avatar'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { useSpeak } from '../lib/speak'
+import { fold } from '../lib/normalize'
 import { CercleEgo } from '../components/cercle/CercleEgo'
 import { CercleTree } from '../components/cercle/CercleTree'
+import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import {
   type Contact,
   type ContactLink,
@@ -28,7 +30,6 @@ import {
   type RelationshipType,
   type ContactGroupRaw,
   type ContactGroup,
-  type GroupKind,
   buildGroups,
   unifyCircle,
   personKey,
@@ -91,8 +92,7 @@ function CercleParent() {
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
   const [query, setQuery] = useState('')
   const [addingGroup, setAddingGroup] = useState(false)
-  const [newGroupName, setNewGroupName] = useState('')
-  const [newGroupKind, setNewGroupKind] = useState<GroupKind>('other')
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
 
   const { data, error } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
   // The household name (set in Réglages) titles the Maisonnée family card below. Same
@@ -172,27 +172,47 @@ function CercleParent() {
 
   const openPerson = (p: Person) => {
     const relations = relationsOf(p.key, links, byKey, lang)
-    const groupNames = namedGroups.filter((g) => g.memberKeys.has(p.key)).map((g) => g.name)
     // Seed a brand-new family with THIS person, so a family can grow out of anyone.
     const buildFamilyHref = `/cercle/family/new?seed=${encodeURIComponent(p.key)}`
+    // Tappable group chips: every named group + whether this person is in it. Toggle
+    // adds/removes membership inline (POST/DELETE the pivot), scoped to this person.
+    const groupToggle = namedGroups.length
+      ? {
+          options: namedGroups.map((g) => ({ id: g.id, label: g.name, on: g.memberKeys.has(p.key) })),
+          onToggle: (groupId: string, on: boolean) => {
+            void write('cercle-groups', {
+              method: on ? 'POST' : 'DELETE',
+              body: { groupId, personId: p.id, personKind: p.kind },
+              affectedKeys: [CERCLE_KEY],
+            }).catch(() => {})
+          },
+        }
+      : undefined
     if (p.kind === 'contact') {
       const c = contactsById.get(p.id)
       if (!c) return
-      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groups: groupNames, onEdit: () => nav(`/cercle/person/${c.id}`), buildFamilyHref }))
+      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), buildFamilyHref }))
     } else {
-      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, onDetail: () => openSheet({ id: p.id, name: p.name }), buildFamilyHref }))
+      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, groupToggle, onDetail: () => openSheet({ id: p.id, name: p.name }), buildFamilyHref }))
     }
   }
 
-  async function createGroup() {
-    if (!newGroupName.trim()) return
+  async function createGroup(v: GroupFormValue) {
     await write('cercle-groups', {
       method: 'POST',
-      body: { name: newGroupName.trim(), kind: newGroupKind },
+      body: { name: v.name, kind: v.kind, colour: v.colour },
       affectedKeys: [CERCLE_KEY],
     })
-    setNewGroupName('')
     setAddingGroup(false)
+  }
+
+  async function saveGroupEdit(id: string, v: GroupFormValue) {
+    await write('cercle-groups', {
+      method: 'PATCH',
+      body: { id, name: v.name, kind: v.kind, colour: v.colour },
+      affectedKeys: [CERCLE_KEY],
+    })
+    setEditingGroupId(null)
   }
 
   async function deleteGroup(g: ContactGroup) {
@@ -207,19 +227,36 @@ function CercleParent() {
     const groupNames = myGroups.map((g) => g.name).join(', ')
     const sub = rels[0] ?? bday ?? (groupNames || null)
     return (
-      <button type="button" className="cercle-row" onClick={() => openPerson(p)}>
-        <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={48} />
-        <span className="cercle-row__main">
-          <span className="cercle-row__name">{p.name}</span>
-          {sub && <span className="cercle-row__sub mono">{sub}</span>}
-        </span>
+      <div className="cercle-row">
+        <button type="button" className="cercle-row__open" onClick={() => openPerson(p)}>
+          <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={48} />
+          <span className="cercle-row__main">
+            <span className="cercle-row__name">{p.name}</span>
+            {sub && <span className="cercle-row__sub mono">{sub}</span>}
+          </span>
+        </button>
+        {/* Quick reach — call / write without opening the peek (only when known). */}
+        {p.phone && (
+          <a className="cercle-row__quick" href={`tel:${p.phone}`} aria-label={t.cercle.call} title={t.cercle.call}>
+            <InlineIcon name="phone-bold" size={16} />
+          </a>
+        )}
+        {p.email && (
+          <a className="cercle-row__quick" href={`mailto:${p.email}`} aria-label={t.cercle.write} title={t.cercle.write}>
+            <InlineIcon name="envelope-bold" size={16} />
+          </a>
+        )}
         {p.kind === 'member' && !hideBadge && <span className="cercle-row__badge mono">{t.cercle.memberBadge}</span>}
-      </button>
+      </div>
     )
   }
 
-  const q = query.trim().toLowerCase()
-  const filtered = q ? people.filter((p) => p.name.toLowerCase().includes(q)) : null
+  // Accent-insensitive search over name AND first/last name — so a contact saved
+  // under a nickname still surfaces by their real name (and "Lea" finds "Léa").
+  const needle = fold(query.trim())
+  const filtered = needle
+    ? people.filter((p) => fold(`${p.name} ${p.firstName} ${p.lastName}`).includes(needle))
+    : null
 
   const viewSwitch = (
     <div className="cercle-viewswitch" role="tablist" aria-label={t.nav.cercle}>
@@ -266,7 +303,7 @@ function CercleParent() {
                 <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.cercle.search} aria-label={t.cercle.search} />
               </label>
 
-              {!q && birthdays.length > 0 && (
+              {!needle && birthdays.length > 0 && (
                 <section className="cercle-bdays">
                   <h2 className="cercle-section__label">
                     <InlineIcon name="cake-bold" size={16} color={ACCENT} /> {t.cercle.birthdaysSoon}
@@ -297,6 +334,19 @@ function CercleParent() {
                         <span className="cercle-group__dot" style={{ background: ACCENT }} />
                         {householdName}
                         <span className="mono cercle-group__kind">{t.cercle.memberBadge}</span>
+                        {/* Wire up who's whose parent/sibling/spouse — links only,
+                            no redundant group (the household already IS this card). */}
+                        <button
+                          type="button"
+                          className="row-actions__btn"
+                          aria-label={t.cercle.familyDefineLinks}
+                          title={t.cercle.familyDefineLinks}
+                          onClick={() =>
+                            nav(`/cercle/family/new?linksOnly=1&seed=${encodeURIComponent(householdPeople.map((p) => p.key).join(','))}`)
+                          }
+                        >
+                          <InlineIcon name="tree-bold" size={12} />
+                        </button>
                       </h2>
                       {householdPeople.map((p) => (
                         <Row key={p.key} p={p} hideBadge />
@@ -307,29 +357,46 @@ function CercleParent() {
                   {/* Named explicit groups */}
                   {namedGroups.map((g) => (
                     <section key={g.id} className="cercle-group cercle-group--named">
-                      <h2 className="cercle-section__label">
-                        <span className="cercle-group__dot" style={{ background: g.colour ?? ACCENT }} />
-                        {g.name}
-                        <span className="mono cercle-group__kind">{t.cercle.groupKinds[g.kind]}</span>
-                        {g.kind === 'family' && (
+                      {editingGroupId === g.id ? (
+                        <GroupForm
+                          initial={{ name: g.name, kind: g.kind, colour: g.colour ?? '' }}
+                          submitLabel={t.common.save}
+                          onSubmit={(v) => saveGroupEdit(g.id, v)}
+                          onCancel={() => setEditingGroupId(null)}
+                        />
+                      ) : (
+                        <h2 className="cercle-section__label">
+                          <span className="cercle-group__dot" style={{ background: g.colour ?? ACCENT }} />
+                          {g.name}
+                          <span className="mono cercle-group__kind">{t.cercle.groupKinds[g.kind]}</span>
+                          {g.kind === 'family' && (
+                            <button
+                              type="button"
+                              className="row-actions__btn"
+                              aria-label={t.cercle.familyEditBuilder}
+                              onClick={() => nav(`/cercle/family/${g.id}`)}
+                            >
+                              <InlineIcon name="tree-bold" size={12} />
+                            </button>
+                          )}
                           <button
                             type="button"
                             className="row-actions__btn"
-                            aria-label={t.cercle.familyEditBuilder}
-                            onClick={() => nav(`/cercle/family/${g.id}`)}
+                            aria-label={t.cercle.editGroup}
+                            onClick={() => setEditingGroupId(g.id)}
                           >
-                            <InlineIcon name="tree-bold" size={12} />
+                            <InlineIcon name="pencil-simple-bold" size={12} />
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          className="row-actions__btn cercle-group__delete"
-                          aria-label={t.cercle.deleteGroup}
-                          onClick={() => deleteGroup(g)}
-                        >
-                          <InlineIcon name="x-bold" size={12} />
-                        </button>
-                      </h2>
+                          <button
+                            type="button"
+                            className="row-actions__btn cercle-group__delete"
+                            aria-label={t.cercle.deleteGroup}
+                            onClick={() => deleteGroup(g)}
+                          >
+                            <InlineIcon name="x-bold" size={12} />
+                          </button>
+                        </h2>
+                      )}
                       {[...g.memberKeys]
                         .map((k) => byKey.get(k))
                         .filter((p): p is Person => !!p)
@@ -373,50 +440,9 @@ function CercleParent() {
                   {/* Create new named group */}
                   <div className="cercle-add-group">
                     {addingGroup ? (
-                      <div className="cercle-new-group">
-                        <input
-                          className="input"
-                          value={newGroupName}
-                          onChange={(e) => setNewGroupName(e.target.value)}
-                          placeholder={t.cercle.groupName}
-                          autoFocus
-                          onKeyDown={(e) => e.key === 'Enter' && createGroup()}
-                        />
-                        <select
-                          className="cf__input"
-                          value={newGroupKind}
-                          onChange={(e) => setNewGroupKind(e.target.value as GroupKind)}
-                        >
-                          {(['family', 'friends', 'work', 'other'] as GroupKind[]).map((k) => (
-                            <option key={k} value={k}>
-                              {t.cercle.groupKinds[k]}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="lc__actions">
-                          <button
-                            type="button"
-                            className="btn btn--primary btn--sm"
-                            disabled={!newGroupName.trim()}
-                            onClick={createGroup}
-                          >
-                            <InlineIcon name="check-bold" size={13} /> {t.cercle.addGroup}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm"
-                            onClick={() => setAddingGroup(false)}
-                          >
-                            {t.common.cancel}
-                          </button>
-                        </div>
-                      </div>
+                      <GroupForm submitLabel={t.cercle.addGroup} onSubmit={createGroup} onCancel={() => setAddingGroup(false)} />
                     ) : (
-                      <button
-                        type="button"
-                        className="btn btn--sm btn--ghost"
-                        onClick={() => setAddingGroup(true)}
-                      >
+                      <button type="button" className="btn btn--sm btn--ghost" onClick={() => setAddingGroup(true)}>
                         <InlineIcon name="plus-bold" size={14} /> {t.cercle.addGroup}
                       </button>
                     )}

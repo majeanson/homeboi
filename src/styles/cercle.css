@@ -92,22 +92,54 @@
   color: var(--berry-deep, var(--ink-soft));
 }
 
-/* A person row */
+/* A person row: a card holding the tap-to-open button + optional quick actions
+   (call / write). The whole left part opens the peek; the quick icons act on their
+   own without opening it. */
 .cercle-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.35rem;
   width: 100%;
-  padding: 0.55rem 0.7rem;
+  padding-right: 0.4rem;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  text-align: left;
-  cursor: pointer;
   transition: background var(--dur-fast) var(--ease-out);
 }
 .cercle-row:hover {
   background: var(--surface);
+}
+.cercle-row__open {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+/* Quick call / write — subtle until hovered, never competes with the name. */
+.cercle-row__quick {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.cercle-row__quick:hover {
+  color: var(--berry-deep, var(--ink));
+  background: var(--berry-wash);
 }
 .cercle-row__main {
   display: flex;
@@ -602,6 +634,23 @@
   opacity: 0.65;
   margin-left: 0.1rem;
 }
+/* Tappable membership chips in the detail peek (a person's named groups): off =
+   quiet outline, on = filled berry. */
+.chip--toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+.chip--toggle.is-on {
+  background: var(--berry-wash);
+  color: var(--berry-deep, var(--ink));
+  border-color: var(--berry-deep, var(--line));
+}
+
 /* The Maisonnée card: its "Maisonnée" tag reads as a filled berry pill (like the
    per-row badge) so the household's own family stands apart from a plain group. */
 .cercle-group--household .cercle-group__kind {

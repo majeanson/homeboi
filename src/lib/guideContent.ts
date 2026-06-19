@@ -488,8 +488,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Ta Maisonnée, ta famille', en: 'Your Household, your family' },
         detail: {
-          fr: 'En haut du cercle, une seule carte « famille » regroupe tous les membres de ta maisonnée. Son titre, c’est le nom que tu donnes à ta maisonnée dans Réglages — change-le là et il se met à jour ici. C’est ta famille de base : pas besoin de la bâtir à la main, et aucune copie en double ne s’ajoute en dessous.',
-          en: 'At the top of the circle, a single “family” card gathers everyone in your household. Its title is the name you give your household in Settings — change it there and it updates here. It’s your home family: no need to build it by hand, and no duplicate copy is added below.',
+          fr: 'En haut du cercle, une seule carte « famille » regroupe tous les membres de ta maisonnée. Son titre, c’est le nom que tu donnes à ta maisonnée dans Réglages — change-le là et il se met à jour ici. C’est ta famille de base : pas besoin de la bâtir à la main, et aucune copie en double ne s’ajoute en dessous. L’icône arbre sur la carte ouvre « Définir les liens » : dis qui est le parent, l’enfant, le frère ou la sœur de qui — sans créer de groupe.',
+          en: 'At the top of the circle, a single “family” card gathers everyone in your household. Its title is the name you give your household in Settings — change it there and it updates here. It’s your home family: no need to build it by hand, and no duplicate copy is added below. The tree icon on the card opens “Set relationships”: say who’s the parent, child, brother or sister of whom — without creating a group.',
         },
         why: {
           fr: 'Une seule famille — la tienne — au lieu de visages éparpillés en double.',
@@ -535,8 +535,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Groupes, adresse et photos', en: 'Groups, address and photos' },
         detail: {
-          fr: 'En modifiant une fiche : range la personne dans un groupe nommé (Famille Tremblay, Collègues…) d’une touche, ajoute son adresse — un bouton « Itinéraire » ouvre alors la carte — et joins des photos avec une légende (une carte d’identité, une capture avec un collègue, une photo ensemble). Touche une photo pour l’agrandir et pince pour zoomer.',
-          en: 'While editing a card: drop the person into a named group (Tremblay family, Coworkers…) with one tap, add their address — a “Directions” button then opens the map — and attach photos with a caption (an ID card, a screenshot with a coworker, a photo together). Tap a photo to enlarge it and pinch to zoom.',
+          fr: 'Crée un groupe nommé (Famille Tremblay, Collègues…) avec son type et sa couleur, puis touche le crayon sur l’en-tête d’un groupe pour le renommer ou le recolorer. Range quelqu’un dedans en touchant sa fiche : les pastilles de groupes sont des boutons — touche pour l’ajouter, retouche pour le retirer. Sur une fiche tu ajoutes aussi son adresse (un bouton « Itinéraire » ouvre la carte) et des photos avec légende. Dans la liste, les icônes 📞 et ✉ appellent ou écrivent directement, sans ouvrir la fiche. Cherche quelqu’un par prénom OU nom de famille.',
+          en: 'Create a named group (Tremblay family, Coworkers…) with its kind and colour, then tap the pencil on a group’s header to rename or recolour it. Drop someone in by tapping their card: the group chips are buttons — tap to add, tap again to remove. On a card you can also add their address (a “Directions” button opens the map) and photos with a caption. In the list, the 📞 and ✉ icons call or write directly, without opening the card. Search someone by first name OR last name.',
         },
         why: {
           fr: 'Tout ce qu’on garde sur un proche au même endroit, sans appli de contacts en plus.',

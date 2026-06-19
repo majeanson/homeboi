@@ -1,5 +1,6 @@
 import { useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
+import { fold } from '../lib/normalize'
 import { isGuest } from '../lib/device'
 import type { VoiceInput } from '../lib/useVoiceInput'
 import { Icon, InlineIcon, type IconName } from './Icon'
@@ -78,13 +79,6 @@ export interface EntityComboboxProps<T> {
   /** Hide the whole control. Defaults to the read-only guest session. */
   readOnly?: boolean
 }
-
-// Accent-insensitive, case-insensitive needle (Québécois: souper vs soupér…).
-const fold = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
 
 export function EntityCombobox<T>({
   value,

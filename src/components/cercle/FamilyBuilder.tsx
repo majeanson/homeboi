@@ -38,6 +38,7 @@ export function FamilyBuilder({
   links,
   group,
   seedKeys,
+  linksOnly,
   onSaved,
 }: {
   people: Person[]
@@ -46,6 +47,10 @@ export function FamilyBuilder({
   /** Build a NEW family pre-seeded with these person keys (e.g. from a person's
    *  detail peek — "build their family"). Ignored when editing an existing group. */
   seedKeys?: string[]
+  /** Relationships-only mode (from the Maisonnée card): wire up who's whose
+   *  parent/sibling/spouse WITHOUT creating a named group — no name field, save
+   *  writes links only. Keeps the household from spawning a redundant group. */
+  linksOnly?: boolean
   onSaved: () => void
 }) {
   const t = useT()
@@ -173,6 +178,20 @@ export function FamilyBuilder({
     if (saving) return
     setSaving(true)
     try {
+      // Relationships-only (Maisonnée card): skip the group entirely, write links.
+      if (linksOnly) {
+        for (const g of dedupeNewLinks(generated, links)) {
+          const a = parsePersonKey(g.aKey)
+          const b = parsePersonKey(g.bKey)
+          await write('cercle-links', {
+            method: 'POST',
+            body: { aId: a.id, aKind: a.kind, bId: b.id, bKind: b.kind, type: g.type },
+            affectedKeys: [CERCLE_KEY],
+          }).catch(() => {})
+        }
+        onSaved()
+        return
+      }
       const trimmed = name.trim() || suggestedName
       // 1. The family group: create it, or rename an existing one.
       let groupId = group?.id ?? null
@@ -241,18 +260,22 @@ export function FamilyBuilder({
 
   return (
     <div className="cercle-fam">
-      {/* Name */}
-      <label className="cf__field">
-        <span className="cf__label">
-          <Icon name="users-three-bold" size={14} /> {t.cercle.familyName}
-        </span>
-        <input
-          className="cf__input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={suggestedName || t.cercle.familyName}
-        />
-      </label>
+      {/* Name — hidden in relationships-only mode (no group is created). */}
+      {linksOnly ? (
+        <p className="cercle-fam__hint mono">{t.cercle.familyLinksOnlyHint}</p>
+      ) : (
+        <label className="cf__field">
+          <span className="cf__label">
+            <Icon name="users-three-bold" size={14} /> {t.cercle.familyName}
+          </span>
+          <input
+            className="cf__input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={suggestedName || t.cercle.familyName}
+          />
+        </label>
+      )}
 
       {/* Add people to the family */}
       <div className="cf__field">
@@ -407,11 +430,11 @@ export function FamilyBuilder({
         <button
           type="button"
           className="btn btn--primary"
-          disabled={saving || (!name.trim() && !suggestedName && !group)}
+          disabled={saving || (linksOnly ? freshCount === 0 : !name.trim() && !suggestedName && !group)}
           onClick={save}
         >
           <Icon name="check-bold" size={18} />{' '}
-          {group ? t.cercle.familySaveEdit : t.cercle.familySave}
+          {linksOnly ? t.cercle.familySaveLinks : group ? t.cercle.familySaveEdit : t.cercle.familySave}
           {freshCount > 0 && <span className="cercle-fam__count">{t.cercle.familyLinkCount(freshCount)}</span>}
         </button>
       </div>

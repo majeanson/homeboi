@@ -9,7 +9,7 @@ import { imgUrl } from '../../lib/image'
 import { type Contact, type Person, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, fullName } from '../../lib/cercle'
 import { formatDay, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
-import { recipeImg, recipeTotalMin, type Recipe } from '../../lib/recipes'
+import { recipeImg, recipeTotalMin, tagColor, type Recipe } from '../../lib/recipes'
 import { SLOT_ICON_NAME, isMealSlot } from '../../lib/mealSlots'
 import type { Lang } from '../../i18n'
 import type { IconName } from '../Icon'
@@ -25,6 +25,17 @@ export interface DetailCtx {
   lang: Lang
   members: Member[]
   recipeFor?: (m: { recipe_id?: string | null; title: string }) => Recipe | undefined
+  // Per-tag household colours (migration 0037, keyed lowercase tag → "#rrggbb"),
+  // from the RECIPE_TAGS_KEY query. Lets the recipe/meal peek tint its tag chips
+  // the SAME colour the recipe book + RecipeSheet use. Absent → plain chips.
+  tagColors?: Record<string, string>
+}
+
+// A recipe's tags → a chips block tinted with the household tag colours, matching
+// RecipeSheet/RecipesTab. Kept in the recipe's stored order (the order the cook
+// typed them) — same as RecipeSheet shows a single recipe's own tags.
+function tagChips(tags: string[], ctx: DetailCtx): DetailBlock {
+  return { kind: 'chips', chips: tags, tones: tags.map((tg) => tagColor(ctx.tagColors, tg)) }
 }
 
 // A face for the header, drawn by the shared <Avatar>. Null when no member.
@@ -142,7 +153,7 @@ export function buildMeal(
   // Quick glance at what the meal IS (skip for a leftover — it has no recipe to
   // preview): its tags then the first few ingredients, mirroring the recipe peek.
   if (recipe && !m.is_leftover) {
-    if (recipe.tags?.length) blocks.push({ kind: 'chips', chips: recipe.tags })
+    if (recipe.tags?.length) blocks.push(tagChips(recipe.tags, ctx))
     const ing = preview(recipe.ingredients, 6)
     if (ing.length) blocks.push({ kind: 'list', label: t.detail.ingredients, items: ing })
   }
@@ -210,7 +221,7 @@ export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => v
   const { t } = ctx
   const total = recipeTotalMin(r)
   const blocks: DetailBlock[] = []
-  if (r.tags?.length) blocks.push({ kind: 'chips', chips: r.tags })
+  if (r.tags?.length) blocks.push(tagChips(r.tags, ctx))
   const ing = preview(r.ingredients, 6)
   if (ing.length) blocks.push({ kind: 'list', label: t.detail.ingredients, items: ing })
   const actions: DetailAction[] = [
@@ -237,10 +248,17 @@ export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => v
 // ("Grand-maman de Léa"). Call / Write are `run` actions (tel:/mailto: can't ride
 // the router href, which the sheet feeds to navigate()); "Modifier" opens the
 // editor the caller owns. —
+// `groupToggle` (when provided) makes the named-group chips TAPPABLE — add/remove
+// the person from any group inline, instead of the read-only `groups` chips.
+export interface GroupToggle {
+  options: { id: string; label: string; on: boolean }[]
+  onToggle: (groupId: string, on: boolean) => void
+}
+
 export function buildContact(
   c: Contact,
   ctx: DetailCtx,
-  opts?: { accent?: string; relations?: string[]; groups?: string[]; onEdit?: () => void; buildFamilyHref?: string },
+  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; buildFamilyHref?: string },
 ): DetailModel {
   const { t, lang } = ctx
   const accent = opts?.accent ?? '#C45E86'
@@ -261,7 +279,9 @@ export function buildContact(
   if (c.notes?.trim()) blocks.push({ kind: 'text', text: c.notes.trim() })
   if (addr) blocks.push({ kind: 'text', text: addr })
   if (opts?.relations?.length) blocks.push({ kind: 'list', label: t.cercle.relationships, items: opts.relations })
-  if (opts?.groups?.length) blocks.push({ kind: 'chips', label: t.cercle.groups, chips: opts.groups })
+  if (opts?.groupToggle?.options.length)
+    blocks.push({ kind: 'togglechips', label: t.cercle.groups, options: opts.groupToggle.options, onToggle: opts.groupToggle.onToggle })
+  else if (opts?.groups?.length) blocks.push({ kind: 'chips', label: t.cercle.groups, chips: opts.groups })
   if (c.gender) blocks.push({ kind: 'chips', label: t.cercle.gender, chips: [t.cercle.genderWord[c.gender]] })
   if (c.tags.length) blocks.push({ kind: 'chips', chips: c.tags })
 
@@ -296,12 +316,14 @@ export function buildContact(
 export function buildMemberPerson(
   p: Person,
   ctx: DetailCtx,
-  opts?: { relations?: string[]; onDetail?: () => void; buildFamilyHref?: string },
+  opts?: { relations?: string[]; groupToggle?: GroupToggle; onDetail?: () => void; buildFamilyHref?: string },
 ): DetailModel {
   const { t } = ctx
   const accent = p.colour ?? '#C45E86'
   const blocks: DetailBlock[] = []
   if (opts?.relations?.length) blocks.push({ kind: 'list', label: t.cercle.relationships, items: opts.relations })
+  if (opts?.groupToggle?.options.length)
+    blocks.push({ kind: 'togglechips', label: t.cercle.groups, options: opts.groupToggle.options, onToggle: opts.groupToggle.onToggle })
   const actions: DetailAction[] = []
   if (opts?.onDetail)
     actions.push({ key: 'detail', label: t.cercle.detailPerson, icon: 'users-three-bold', primary: true, run: opts.onDetail })

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { useModal } from '../../lib/useModal'
 import { useSwipeToDismiss } from '../../lib/useSwipeToDismiss'
-import { wash, tintInk } from '../../lib/colors'
+import { wash, tintInk, edge } from '../../lib/colors'
 import { Icon } from '../Icon'
 import { Avatar } from '../Avatar'
 import { ZoomableImg } from '../ZoomableImg'
@@ -136,11 +136,16 @@ function Block({ block }: { block: DetailBlock }) {
         <div className="detail-sheet__chips">
           {block.label && <span className="detail-sheet__blocklabel mono">{block.label}</span>}
           <span className="detail-sheet__chiprow">
-            {block.chips.map((c, i) => (
-              <span key={i} className="chip">
-                {c}
-              </span>
-            ))}
+            {block.chips.map((c, i) => {
+              // A per-chip household tag colour (recipe peek) tints it the SAME way
+              // RecipeSheet/RecipesTab do; absent → the default berry chip.
+              const hex = block.tones?.[i]
+              return (
+                <span key={i} className="chip" style={hex ? { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) } : undefined}>
+                  {c}
+                </span>
+              )
+            })}
           </span>
         </div>
       )
@@ -176,5 +181,41 @@ function Block({ block }: { block: DetailBlock }) {
     case 'audio':
       // eslint-disable-next-line jsx-a11y/media-has-caption -- a personal memo, no caption track
       return <audio className="detail-sheet__audio" controls src={block.src} />
+    case 'togglechips':
+      return <ToggleChips block={block} />
   }
+}
+
+// Tappable membership chips (a person's named groups): toggles optimistically and
+// fires onToggle to persist. Stays interactive while the peek is open; on reopen it
+// reflects the refetched truth.
+function ToggleChips({ block }: { block: Extract<DetailBlock, { kind: 'togglechips' }> }) {
+  const [on, setOn] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(block.options.map((o) => [o.id, o.on])),
+  )
+  return (
+    <div className="detail-sheet__chips">
+      {block.label && <span className="detail-sheet__blocklabel mono">{block.label}</span>}
+      <span className="detail-sheet__chiprow">
+        {block.options.map((o) => {
+          const active = on[o.id]
+          return (
+            <button
+              key={o.id}
+              type="button"
+              className={'chip chip--toggle' + (active ? ' is-on' : '')}
+              aria-pressed={active}
+              onClick={() => {
+                const next = !active
+                setOn((s) => ({ ...s, [o.id]: next }))
+                block.onToggle(o.id, next)
+              }}
+            >
+              <Icon name={active ? 'check-bold' : 'plus-bold'} size={11} /> {o.label}
+            </button>
+          )
+        })}
+      </span>
+    </div>
+  )
 }

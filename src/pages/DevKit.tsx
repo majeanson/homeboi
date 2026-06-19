@@ -12,6 +12,7 @@ import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
 import { RowActions } from '../components/RowActions'
 import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
+import { GroupForm } from '../components/cercle/GroupForm'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
@@ -340,6 +341,19 @@ export function DevKit() {
       render: () => (
         <Demo label="palette dots">
           <ColorPicker value={color} onChange={setColor} label="Couleur" />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'GroupForm',
+      file: 'components/cercle/GroupForm.tsx',
+      kw: 'cercle groupe nom type couleur créer modifier group name kind colour',
+      render: () => (
+        // The name + kind + colour editor for a « Le cercle » named group — shared by
+        // the create flow and the inline edit on a group header.
+        <Demo label="name + kind + colour — create / edit a Cercle group">
+          <GroupForm submitLabel={t.cercle.addGroup} onSubmit={() => {}} onCancel={() => {}} />
         </Demo>
       ),
     },

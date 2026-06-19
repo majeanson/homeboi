@@ -41,10 +41,15 @@ export function CercleFamilyPage() {
   // Editing but the group is gone (loaded + not found) → bounce back to the directory.
   if (groupId && !group) return <Navigate to="/cercle" replace />
 
-  // Building a NEW family "from" a person (their detail peek passed ?seed=<key>):
-  // pre-seed the roster with that person — but only if they're a real circle node.
-  const seed = !groupId ? params.get('seed') : null
-  const seedKeys = seed && unified.people.some((p) => p.key === seed) ? [seed] : undefined
+  // Building a NEW family "from" one or more people (a person's detail peek passes
+  // ?seed=<key>; the Maisonnée card passes the whole household, comma-joined):
+  // pre-seed the roster, keeping only keys that are real circle nodes.
+  const validKeys = new Set(unified.people.map((p) => p.key))
+  const seedKeys = !groupId
+    ? (params.get('seed') ?? '').split(',').filter((k) => validKeys.has(k))
+    : []
+  // ?linksOnly=1 (Maisonnée card) → wire relationships without making a group.
+  const linksOnly = !groupId && params.get('linksOnly') === '1'
 
   return (
     <div className="scene" aria-label={t.cercle.familyBuild}>
@@ -54,7 +59,8 @@ export function CercleFamilyPage() {
           people={unified.people}
           links={unified.links}
           group={group}
-          seedKeys={seedKeys}
+          seedKeys={seedKeys.length ? seedKeys : undefined}
+          linksOnly={linksOnly}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: CERCLE_KEY })
             qc.invalidateQueries({ queryKey: BOARD_KEY })
