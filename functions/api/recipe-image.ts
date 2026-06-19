@@ -1,6 +1,6 @@
-import { badRequest, ok, serviceUnavailable } from '../_lib/json'
+import { ok, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { newId } from '../_lib/ids'
+import { uploadR2Media } from '../_lib/r2'
 
 // Upload a recipe picture. Bytes go to R2 (same bucket + free tier as family
 // photos) under an opaque `rc_<id>` key, served back by /api/img/<key>. Returns
@@ -15,12 +15,7 @@ const MAX_BYTES = 3 * 1024 * 1024
 
 export const onRequestPost = authed(async (ctx) => {
   if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage image indisponible ici.')
-  const type = ctx.request.headers.get('content-type') ?? ''
-  if (!type.startsWith('image/')) return badRequest('Image requise.')
-  const buf = await ctx.request.arrayBuffer()
-  if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
-
-  const key = `rc_${newId()}`
-  await ctx.env.PHOTOS.put(key, buf, { httpMetadata: { contentType: type } })
-  return ok({ key })
+  const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, { prefix: 'rc', maxBytes: MAX_BYTES })
+  if ('error' in up) return up.error
+  return ok({ key: up.key })
 })

@@ -1,7 +1,7 @@
 import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
-import { deleteR2Blob } from '../_lib/r2'
+import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
 
 // Family photos for the wall-board frame. Bytes live in R2 (free tier, no
 // egress); these rows index them by key. GET is open to any actor (the kiosk
@@ -23,15 +23,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
 export const onRequestPost = authed(async (ctx, actor) => {
   if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage photo indisponible ici.')
-  const type = ctx.request.headers.get('content-type') ?? ''
-  if (!type.startsWith('image/')) return badRequest('Image requise.')
-  const buf = await ctx.request.arrayBuffer()
-  if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
-
   // Flat, URL-safe key (single path segment so /api/img/[key] serves it). The
   // random id is the unguessable capability; household scope lives in the row.
-  const key = `ph_${newId()}`
-  await ctx.env.PHOTOS.put(key, buf, { httpMetadata: { contentType: type } })
+  const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, { prefix: 'ph', maxBytes: MAX_BYTES })
+  if ('error' in up) return up.error
+  const key = up.key
   await ctx.env.DB.prepare('INSERT INTO photos (id, household_id, r2_key, created_at) VALUES (?, ?, ?, ?)')
     .bind(newId(), actor.householdId, key, nowSec())
     .run()

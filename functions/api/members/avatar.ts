@@ -1,7 +1,6 @@
 import { badRequest, notFound, ok, serviceUnavailable } from '../../_lib/json'
 import { authed } from '../../_lib/route'
-import { newId } from '../../_lib/ids'
-import { deleteR2Blob } from '../../_lib/r2'
+import { deleteR2Blob, uploadR2Media } from '../../_lib/r2'
 
 // Set a member's avatar to a PHOTO (operator). Raw image body, member id in the
 // query: POST /api/members/avatar?id=<memberId>. Stores the resized image in R2
@@ -25,12 +24,11 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .first<{ avatar_kind: string; avatar_ref: string }>()
   if (!member) return notFound('Membre introuvable.')
 
-  const buf = await ctx.request.arrayBuffer()
-  if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
-
-  // Flat, URL-safe key (single path segment so /api/img/[key] serves it).
-  const key = `av_${newId()}`
-  await ctx.env.PHOTOS.put(key, buf, { httpMetadata: { contentType: type } })
+  // Flat, URL-safe key (single path segment so /api/img/[key] serves it). The type
+  // was already validated above (fast-fail before the DB lookup), so accept any here.
+  const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, { prefix: 'av', maxBytes: MAX_BYTES, accept: () => true })
+  if ('error' in up) return up.error
+  const key = up.key
   if (member.avatar_kind === 'photo') await deleteR2Blob(ctx.env.PHOTOS, member.avatar_ref)
   await ctx.env.DB.prepare("UPDATE members SET avatar_kind = 'photo', avatar_ref = ? WHERE id = ? AND household_id = ?")
     .bind(key, id, actor.householdId)

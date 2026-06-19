@@ -1,6 +1,6 @@
 import { badRequest, ok, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { newId } from '../_lib/ids'
+import { uploadR2Media } from '../_lib/r2'
 
 // Upload a fridge-note attachment (#38 audio memo / #14 drawn note). Bytes go to
 // R2 (the shared PHOTOS bucket + free tier) under an opaque `nm_<id>` key, served
@@ -25,10 +25,14 @@ export const onRequestPost = authed(async (ctx) => {
         ? 'scene'
         : null
   if (!kind) return badRequest('Audio, image ou scène requis.')
-  const buf = await ctx.request.arrayBuffer()
-  if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Fichier vide ou trop grand.')
-
-  const key = `${kind === 'scene' ? 'ns' : 'nm'}_${newId()}`
-  await ctx.env.PHOTOS.put(key, buf, { httpMetadata: { contentType: type } })
-  return ok({ key, kind })
+  // Type already validated to audio/image/json above → accept any here; the prefix
+  // is dynamic (ns_ for the editable scene, nm_ otherwise).
+  const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, {
+    prefix: kind === 'scene' ? 'ns' : 'nm',
+    maxBytes: MAX_BYTES,
+    accept: () => true,
+    sizeError: 'Fichier vide ou trop grand.',
+  })
+  if ('error' in up) return up.error
+  return ok({ key: up.key, kind })
 })

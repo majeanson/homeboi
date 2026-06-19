@@ -1,7 +1,7 @@
 import { badRequest, notFound, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
-import { deleteR2Blob } from '../_lib/r2'
+import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
 
 // « Le cercle » — the household people directory (contacts). GET returns the
 // whole circle (contacts + their relationship edges + named groups) in one shot;
@@ -203,11 +203,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   if (type.startsWith('image/')) {
     if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage photo indisponible ici.')
-    const buf = await ctx.request.arrayBuffer()
-    if (buf.byteLength === 0 || buf.byteLength > MAX_PHOTO_BYTES) return badRequest('Image vide ou trop grande.')
-    const key = `cn_${newId()}`
-    await ctx.env.PHOTOS.put(key, buf, { httpMetadata: { contentType: type } })
-    return ok({ key })
+    // Already image-gated by the dispatch above → accept any here.
+    const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, {
+      prefix: 'cn',
+      maxBytes: MAX_PHOTO_BYTES,
+      accept: () => true,
+    })
+    if ('error' in up) return up.error
+    return ok({ key: up.key })
   }
 
   const body = await readJson<{
