@@ -194,12 +194,12 @@ What's still duplicated at the call sites. The primitive now exists for rows 1�
 
 | # | Cluster | Spread | Recommendation |
 | --- | --- | --- | --- |
-| 1 | **Empty states** | 20+ sites, ~7 class variants (`feed-empty`, `board__empty`, `*-empty`, `bigtiles__empty`…) | `<EmptyState message interactive?>`; one `.empty-state` class. Quick win. |
-| 2 | **Chips / tags / pills** | 40+ sites, ~7 impls (`.chip`, `.tag`, `.picker-chips`, `.meal-chip`, `.tag-admin__pill`, `.lt-term`…) | `<Chip selected onClick>` + `<ChipGroup label>`. Highest visibility. |
-| 3 | **List rows** | 40+ sites, ~6 row types (recipe-picker, pantry, operator rows, review-row, list-row, idea-row) | `<ListRow image title subtitle actions>` with `standard`/`checkable`/`swipeable` variants. Unblocks kitchen/operator. |
-| 4 | **OperatorSection wrapper** | 13 identical `<section class="surface operator__section"><h2/><p class="lead"/>` | `<OperatorSection title hint>`. One-liner, 100% consistent. |
+| 1 | **Empty states** ✅ | ~~20+ sites~~ | **Done** (2026-06-19) — ~45 `feed-empty`/`board__empty` `<p>` lines folded onto `<EmptyState>` (tone="calm" for --calm; className preserves layout classes). Left: `<div>`/`<span>` empties with content, HubLayout's inline-styled line, specialized per-context `*-empty` cells. |
+| 2 | **Chips / tags / pills** | 40+ sites, ~7 impls (`.chip`, `.tag`, `.picker-chips`, `.meal-chip`, `.tag-admin__pill`, `.lt-term`…) | `<Chip selected onClick>` + `<ChipGroup label>`. Highest visibility. **NOT yet swept — visually risky (colours/selected states), eyeball e2e.** |
+| 3 | **List rows** | 40+ sites, ~6 row types (recipe-picker, pantry, operator rows, review-row, list-row, idea-row) | `<ListRow image title subtitle actions>` with `standard`/`checkable`/`swipeable` variants. **NOT yet swept — structural, eyeball e2e.** |
+| 4 | **OperatorSection wrapper** ✅ | ~~13 identical~~ | **Done** (2026-06-19) — all ~28 sections (incl. help-mode + className variants); primitive extended to render `HelpTitle`+`bubbleFor` from `help`/`helpKey`. No hand-rolled block remains. |
 | 5 | **Modal / sheet / scene** | 12+ overlays, mixed mount strategies (`.show` toggle vs mount/unmount), confirm has its own CSS | `<Modal open>` + `<Sheet>` (swipe/handle); fold confirm into the modal pattern. Architectural. |
-| 6 | **Status / feedback lines** | 15+ sites (`.error mono`, `.capture__routed`, `.list-add__voicemsg`, `ai-error-toast`) | `<StatusMessage type icon>`; `role=status` vs `alert`. |
+| 6 | **Status / feedback lines** ✅ | ~~15+ sites~~ | **Done** (2026-06-19) — 17 `error mono`/`capture__routed` lines onto `<StatusMessage>` (tone error/success; primitive owns role + icon). Left: VoiceStatus voicemsg, ai-error structured toast, kid routine status, AddSheet routing summary. |
 | 7 | **Section headers** | kitchen/kid/reserve header variants | `<SectionHeader title subtitle emoji onMore>`. |
 | 8 | **Picker menus** ✅ | ~~RecipePicker/LeftoverPicker~~ | **Done** — folded into **EntityCombobox** (search + pick + free-text, grouped). RecipePickerMenu/LeftoverPickerMenu deleted; MealIdeas/Leftovers/DayEditor/AddSheet migrated. |
 | 9 | **Inline forms → EditField** | remaining `.operator__inline-form` users | migrate to EditField (see below). |
