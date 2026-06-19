@@ -21,7 +21,8 @@ import { isMealSlot } from '../lib/mealSlots'
 import { TodoSection } from '../components/todos/TodoSection'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
-import { type Recipe, RECIPES_KEY } from '../lib/recipes'
+import { type Recipe } from '../lib/recipes'
+import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
 import { DayEditor } from '../components/kitchen/DayEditor'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
@@ -32,11 +33,8 @@ import {
   type MealRow,
   type MealsData,
   type DayNotesData,
-  type PantryData,
-  type LeftoversData,
   MEALS_KEY,
   DAY_NOTES_KEY,
-  PANTRY_KEY,
   LEFTOVERS_KEY,
 } from '../components/kitchen/types'
 
@@ -87,11 +85,11 @@ function DayPlanInner() {
   const date = Number(dateParam)
 
   // — server state (live-polled, same caches the Kitchen grid reads) —
-  const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), ...live })
-  const dayNotesQ = useQuery({ queryKey: DAY_NOTES_KEY, queryFn: () => api<DayNotesData>('day-notes'), ...live })
-  const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry'), ...live })
-  const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live })
-  const leftoversQ = useQuery({ queryKey: LEFTOVERS_KEY, queryFn: () => api<LeftoversData>('meal-leftovers'), ...live })
+  const meals = useMeals()
+  const dayNotesQ = useDayNotes()
+  const pantry = usePantry()
+  const recipesQ = useRecipes()
+  const leftoversQ = useLeftovers()
   const boardQ = useQuery({
     queryKey: ['board'],
     queryFn: () => api<{ list: { text: string }[]; members?: { id: string; display_name: string }[] }>('board'),

@@ -15,7 +15,8 @@ import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays, todayLocalDay } from '../lib/localDay'
-import { type Recipe, RECIPES_KEY } from '../lib/recipes'
+import { type Recipe } from '../lib/recipes'
+import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { ReserveSection } from '../components/kitchen/ReserveSection'
@@ -24,7 +25,7 @@ import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { useMealSuggest, type MealSuggestion, type SuggestSource } from '../components/kitchen/useMealSuggest'
-import { type LowRow, type MealsData, type MealIdeasData, type LeftoversData, type DayNotesData, type PantryData, type ReserveData, type WeekDay, MEALS_KEY, DAY_NOTES_KEY, MEAL_IDEAS_KEY, LEFTOVERS_KEY, PANTRY_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
+import { type LowRow, type MealIdeasData, type ReserveData, type WeekDay, MEAL_IDEAS_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers } from '../components/kitchen/Leftovers'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
@@ -83,14 +84,14 @@ export function Kitchen() {
   // the ＋ "Planifier un repas" day picker both navigate there. The grid keeps only
   // its day→day drag (the shared `reschedule` helper) and the toddler kid-suggest.
 
-  const meals = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), ...live })
-  const dayNotesQ = useQuery({ queryKey: DAY_NOTES_KEY, queryFn: () => api<DayNotesData>('day-notes'), ...live })
-  const pantry = useQuery({ queryKey: PANTRY_KEY, queryFn: () => api<PantryData>('pantry'), ...live })
+  const meals = useMeals()
+  const dayNotesQ = useDayNotes()
+  const pantry = usePantry()
   const useSoonQ = useQuery({ queryKey: USE_SOON_KEY, queryFn: () => api<{ soon: LowRow[] }>('use-soon'), ...live })
   const reserveQ = useQuery({ queryKey: RESERVE_KEY, queryFn: () => api<ReserveData>('reserve'), ...live })
-  const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live })
+  const recipesQ = useRecipes()
   const ideasQ = useQuery({ queryKey: MEAL_IDEAS_KEY, queryFn: () => api<MealIdeasData>('meal-ideas'), ...live })
-  const leftoversQ = useQuery({ queryKey: LEFTOVERS_KEY, queryFn: () => api<LeftoversData>('meal-leftovers'), ...live })
+  const leftoversQ = useLeftovers()
   // Shares the ['board'] cache with the Board/Liste pages — read only for the
   // shopping list, used to rank recipes by "what you could cook now".
   const boardQ = useQuery({

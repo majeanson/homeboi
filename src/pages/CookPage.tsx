@@ -1,11 +1,8 @@
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import { CookMode } from '../components/CookMode'
 import { Loading } from '../components/Fallback'
-import { api } from '../lib/api'
-import { live } from '../lib/query'
 import { scaleIngredients } from '../lib/scale'
-import { type Recipe, RECIPES_KEY } from '../lib/recipes'
+import { useRecipes } from '../lib/queryHooks'
 import { useSceneClose } from '../lib/sceneNav'
 
 // /kitchen/recipe/:id/cook — full-screen cook mode as a route (was stacked over
@@ -15,7 +12,7 @@ export function CookPage() {
   const { id } = useParams()
   const [sp] = useSearchParams()
   const close = useSceneClose(`/kitchen/recipe/${id}`)
-  const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live })
+  const recipesQ = useRecipes()
 
   const recipe = recipesQ.data?.recipes.find((r) => r.id === id)
   if (!recipe) return recipesQ.isLoading ? <Loading /> : <Navigate to="/kitchen" replace />

@@ -1,11 +1,8 @@
 import { Navigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import { RecipeForm } from '../components/RecipeForm'
 import { Loading } from '../components/Fallback'
-import { api } from '../lib/api'
-import { live } from '../lib/query'
 import { isGuest } from '../lib/device'
-import { type Recipe, RECIPES_KEY } from '../lib/recipes'
+import { useRecipes } from '../lib/queryHooks'
 import { useSceneClose } from '../lib/sceneNav'
 
 // /kitchen/recipe/new and /kitchen/recipe/:id/edit — the recipe builder as a
@@ -15,12 +12,7 @@ import { useSceneClose } from '../lib/sceneNav'
 export function RecipeFormPage() {
   const { id } = useParams()
   const close = useSceneClose(id ? `/kitchen/recipe/${id}` : '/kitchen')
-  const recipesQ = useQuery({
-    queryKey: RECIPES_KEY,
-    queryFn: () => api<{ recipes: Recipe[] }>('recipes'),
-    enabled: !!id,
-    ...live,
-  })
+  const recipesQ = useRecipes({ enabled: !!id })
 
   // Read-only guest: the builder is a pure create/edit form — bounce out (also
   // guards a deep link). Placed after the hooks so the hook order is stable.

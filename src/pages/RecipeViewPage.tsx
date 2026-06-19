@@ -1,13 +1,9 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import { RecipeSheet } from '../components/RecipeSheet'
 import { Loading } from '../components/Fallback'
 import { useLang } from '../i18n'
-import { api } from '../lib/api'
-import { live } from '../lib/query'
 import { formatWeekday } from '../lib/format'
-import { type Recipe, RECIPES_KEY } from '../lib/recipes'
-import { type MealsData, MEALS_KEY } from '../components/kitchen/types'
+import { useRecipes, useMeals } from '../lib/queryHooks'
 import { useSceneClose } from '../lib/sceneNav'
 
 // /kitchen/recipe/:id — read a recipe (full-screen route, was a centered modal
@@ -18,8 +14,8 @@ export function RecipeViewPage() {
   const nav = useNavigate()
   const { lang } = useLang()
   const close = useSceneClose('/kitchen')
-  const recipesQ = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live })
-  const mealsQ = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), ...live })
+  const recipesQ = useRecipes()
+  const mealsQ = useMeals()
 
   const recipe = recipesQ.data?.recipes.find((r) => r.id === id)
   const weekStart = mealsQ.data?.weekStart ?? 0

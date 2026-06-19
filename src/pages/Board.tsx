@@ -34,10 +34,11 @@ import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { NowNext, Lanes } from '../components/board/views'
 import { MonthView } from '../components/board/MonthView'
-import { nameOf, colorOf, type BoardData, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
+import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
+import { useBoardData } from '../lib/queryHooks'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -114,12 +115,7 @@ export function Board() {
   // the last good frame when a poll fails, so on wifi loss we keep rendering it
   // and just flip the "offline" stamp. retry:false overrides the default → the
   // stale stamp appears promptly and the next poll recovers.
-  const { data, error, isError } = useQuery({
-    queryKey: BOARD_KEY,
-    queryFn: () => api<BoardData>('board'),
-    ...live,
-    retry: false,
-  })
+  const { data, error, isError } = useBoardData({ retry: false })
   const unauth = isUnauthorized(error)
   const stale = isError && !unauth && !!data
 
