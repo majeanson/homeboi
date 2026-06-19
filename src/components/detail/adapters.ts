@@ -240,7 +240,7 @@ export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => v
 export function buildContact(
   c: Contact,
   ctx: DetailCtx,
-  opts?: { accent?: string; relations?: string[]; groups?: string[]; onEdit?: () => void },
+  opts?: { accent?: string; relations?: string[]; groups?: string[]; onEdit?: () => void; buildFamilyHref?: string },
 ): DetailModel {
   const { t, lang } = ctx
   const accent = opts?.accent ?? '#C45E86'
@@ -271,6 +271,8 @@ export function buildContact(
   // External Maps link — open in a new tab (the sheet feeds href to the SPA router,
   // which can't navigate an absolute URL, so route it through run/window.open).
   if (maps) actions.push({ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold', run: () => { window.open(maps, '_blank', 'noopener') } })
+  // "Bâtir sa famille" — open the family builder seeded with this person.
+  if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
   if (opts?.onEdit) actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
 
   return {
@@ -294,7 +296,7 @@ export function buildContact(
 export function buildMemberPerson(
   p: Person,
   ctx: DetailCtx,
-  opts?: { relations?: string[]; onDetail?: () => void },
+  opts?: { relations?: string[]; onDetail?: () => void; buildFamilyHref?: string },
 ): DetailModel {
   const { t } = ctx
   const accent = p.colour ?? '#C45E86'
@@ -303,6 +305,8 @@ export function buildMemberPerson(
   const actions: DetailAction[] = []
   if (opts?.onDetail)
     actions.push({ key: 'detail', label: t.cercle.detailPerson, icon: 'users-three-bold', primary: true, run: opts.onDetail })
+  // "Bâtir sa famille" — open the family builder seeded with this member.
+  if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
   actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', href: '/settings?tab=household' })
   return {
     kind: 'contact',

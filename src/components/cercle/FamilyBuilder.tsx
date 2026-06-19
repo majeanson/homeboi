@@ -37,11 +37,15 @@ export function FamilyBuilder({
   people,
   links,
   group,
+  seedKeys,
   onSaved,
 }: {
   people: Person[]
   links: ContactLink[]
   group: ContactGroupRaw | null
+  /** Build a NEW family pre-seeded with these person keys (e.g. from a person's
+   *  detail peek — "build their family"). Ignored when editing an existing group. */
+  seedKeys?: string[]
   onSaved: () => void
 }) {
   const t = useT()
@@ -54,9 +58,10 @@ export function FamilyBuilder({
   const allPeople = useMemo(() => [...people, ...extra], [people, extra])
   const byKey = useMemo(() => new Map(allPeople.map((p) => [p.key, p])), [allPeople])
 
-  // Roster = everyone in this family. Seeded from the group being edited.
+  // Roster = everyone in this family. Seeded from the group being edited, or from
+  // the person a "build their family" entry point handed in.
   const [roster, setRoster] = useState<string[]>(() =>
-    group ? group.memberKeys.map((m) => personKey(m.personKind, m.personId)) : [],
+    group ? group.memberKeys.map((m) => personKey(m.personKind, m.personId)) : seedKeys ?? [],
   )
   const [band, setBand] = useState<Record<string, FamilyBand>>({})
   const [pick, setPick] = useState<Record<string, RelationshipType>>({})
@@ -81,7 +86,15 @@ export function FamilyBuilder({
   const rosterSet = useMemo(() => new Set(roster), [roster])
   const addOptions: ComboOption<Person>[] = allPeople
     .filter((p) => !rosterSet.has(p.key))
-    .map((p) => ({ id: p.key, label: p.name, data: p, icon: p.kind === 'member' ? 'users-three-bold' : 'user-bold' }))
+    // keywords fold first name AND last name into the type-to-filter match, so a
+    // search hits either — even when the label is a nickname (fullName prefers it).
+    .map((p) => ({
+      id: p.key,
+      label: p.name,
+      data: p,
+      icon: p.kind === 'member' ? 'users-three-bold' : 'user-bold',
+      keywords: [p.firstName, p.lastName].filter(Boolean) as string[],
+    }))
 
   // The links the current mode would create (before de-duping against what exists).
   const generated = useMemo(() => {

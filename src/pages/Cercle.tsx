@@ -173,12 +173,14 @@ function CercleParent() {
   const openPerson = (p: Person) => {
     const relations = relationsOf(p.key, links, byKey, lang)
     const groupNames = namedGroups.filter((g) => g.memberKeys.has(p.key)).map((g) => g.name)
+    // Seed a brand-new family with THIS person, so a family can grow out of anyone.
+    const buildFamilyHref = `/cercle/family/new?seed=${encodeURIComponent(p.key)}`
     if (p.kind === 'contact') {
       const c = contactsById.get(p.id)
       if (!c) return
-      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groups: groupNames, onEdit: () => nav(`/cercle/person/${c.id}`) }))
+      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groups: groupNames, onEdit: () => nav(`/cercle/person/${c.id}`), buildFamilyHref }))
     } else {
-      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, onDetail: () => openSheet({ id: p.id, name: p.name }) }))
+      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, onDetail: () => openSheet({ id: p.id, name: p.name }), buildFamilyHref }))
     }
   }
 

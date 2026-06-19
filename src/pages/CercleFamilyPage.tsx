@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { isGuest } from '../lib/device'
@@ -25,6 +25,7 @@ export function CercleFamilyPage() {
   const t = useT()
   const qc = useQueryClient()
   const { groupId } = useParams()
+  const [params] = useSearchParams()
   const close = useSceneClose('/cercle')
   useEscapeKey(close)
 
@@ -40,6 +41,11 @@ export function CercleFamilyPage() {
   // Editing but the group is gone (loaded + not found) → bounce back to the directory.
   if (groupId && !group) return <Navigate to="/cercle" replace />
 
+  // Building a NEW family "from" a person (their detail peek passed ?seed=<key>):
+  // pre-seed the roster with that person — but only if they're a real circle node.
+  const seed = !groupId ? params.get('seed') : null
+  const seedKeys = seed && unified.people.some((p) => p.key === seed) ? [seed] : undefined
+
   return (
     <div className="scene" aria-label={t.cercle.familyBuild}>
       <SceneHead title={t.cercle.familyBuild} icon="tree-bold" card="cercle" onClose={close} />
@@ -48,6 +54,7 @@ export function CercleFamilyPage() {
           people={unified.people}
           links={unified.links}
           group={group}
+          seedKeys={seedKeys}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: CERCLE_KEY })
             qc.invalidateQueries({ queryKey: BOARD_KEY })

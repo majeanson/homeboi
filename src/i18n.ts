@@ -646,6 +646,7 @@ export const FR = {
     photoFromMaisonneeTile: 'Maisonnée',
     // Family builder — define a whole family's relationships at once.
     familyBuild: 'Bâtir une famille',
+    familyFromPerson: 'Bâtir sa famille',
     familyName: 'Nom de la famille',
     familyMembers: 'Qui fait partie de la famille',
     familyAddPerson: 'Ajouter quelqu’un du cercle',
@@ -1833,6 +1834,7 @@ export const EN: typeof FR = {
     photoFromMaisonneeTile: 'Household',
     // Family builder — define a whole family's relationships at once.
     familyBuild: 'Build a family',
+    familyFromPerson: 'Build their family',
     familyName: 'Family name',
     familyMembers: 'Who is in the family',
     familyAddPerson: 'Add someone from the circle',
