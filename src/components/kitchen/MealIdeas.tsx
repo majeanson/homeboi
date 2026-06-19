@@ -10,6 +10,8 @@ import { EntityCombobox } from '../EntityCombobox'
 import { recipeOptions } from './comboOptions'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon, InlineIcon } from '../Icon'
+import { EditField } from '../EditField'
+import { useInlineEdit } from '../../lib/useInlineEdit'
 import { RowActions } from '../RowActions'
 import { useSingleOpen } from '../Disclosure'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
@@ -53,9 +55,8 @@ export function MealIdeas({
   // Which meal a "plan it" lands on — souper by default, like everywhere else.
   const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
   const [busy, setBusy] = useState(false)
-  // Inline rename (✏️): which idea is being renamed, and its draft text.
-  const [editId, setEditId] = useState<string | null>(null)
-  const [editText, setEditText] = useState('')
+  // Inline rename (✏️): which idea is being renamed + its draft (shared useInlineEdit).
+  const edit = useInlineEdit()
 
   async function addIdea(title: string, recipeId?: string | null) {
     const v = title.trim()
@@ -92,7 +93,6 @@ export function MealIdeas({
 
   async function renameIdea(idea: MealIdea, title: string) {
     const v = title.trim()
-    setEditId(null)
     if (!v || v === idea.title) return
     // Optimistic rename, then persist (the pool is live-polled, so reflect it now).
     await write('meal-ideas', {
@@ -149,33 +149,19 @@ export function MealIdeas({
           {ideas.map((idea) => (
             <li key={idea.id} className="kitchen__idea">
               <div className="kitchen__idea-row">
-                {editId === idea.id && !ro ? (
-                  <form
-                    className="kitchen__idea-edit"
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      renameIdea(idea, editText)
+                {edit.editId === idea.id && !ro ? (
+                  <EditField
+                    value={edit.text}
+                    onChange={edit.setText}
+                    onSubmit={(v) => {
+                      edit.cancel()
+                      renameIdea(idea, v)
                     }}
-                  >
-                    <input
-                      className="input"
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      aria-label={t.common.edit}
-                      autoFocus
-                    />
-                    <button type="submit" className="btn" aria-label={t.common.save} disabled={!editText.trim()}>
-                      <Icon name="check-bold" size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn--ghost mono"
-                      aria-label={t.common.cancel}
-                      onClick={() => setEditId(null)}
-                    >
-                      <Icon name="x-bold" size={15} />
-                    </button>
-                  </form>
+                    onCancel={edit.cancel}
+                    clearable={false}
+                    ariaLabel={t.common.edit}
+                    autoFocus
+                  />
                 ) : (
                   <>
                     {ro ? (
@@ -208,10 +194,7 @@ export function MealIdeas({
                     <RowActions
                       editLabel={t.common.edit}
                       deleteLabel={t.kitchen.removeIdea}
-                      onEdit={() => {
-                        setEditId(idea.id)
-                        setEditText(idea.title)
-                      }}
+                      onEdit={() => edit.open(idea.id, idea.title)}
                       onDelete={() => removeIdea(idea)}
                     />
                   </>

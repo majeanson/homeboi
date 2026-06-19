@@ -10,6 +10,8 @@ import { EntityCombobox } from '../EntityCombobox'
 import { mealOptions } from './comboOptions'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon, InlineIcon } from '../Icon'
+import { EditField } from '../EditField'
+import { useInlineEdit } from '../../lib/useInlineEdit'
 import { RowActions } from '../RowActions'
 import { useSingleOpen } from '../Disclosure'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
@@ -44,8 +46,8 @@ export function Leftovers({
   const { isOpen, toggle, close } = useSingleOpen()
   const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
   const [busy, setBusy] = useState(false)
-  const [editId, setEditId] = useState<string | null>(null)
-  const [editText, setEditText] = useState('')
+  // Inline rename (✏️): which leftover is open + its draft (shared useInlineEdit).
+  const edit = useInlineEdit()
   // Recent meals (the last few days) become "we ate this, there's some left"
   // suggestions in the combobox — pick one to carry its recipe link + source meal.
   const recentOpts = useMemo(() => mealOptions(recentMeals), [recentMeals])
@@ -85,7 +87,6 @@ export function Leftovers({
 
   async function renameLeftover(l: Leftover, title: string) {
     const v = title.trim()
-    setEditId(null)
     if (!v || v === l.title) return
     await write('meal-leftovers', {
       method: 'PATCH',
@@ -155,33 +156,19 @@ export function Leftovers({
           {leftovers.map((l) => (
             <li key={l.id} className="kitchen__idea">
               <div className="kitchen__idea-row">
-                {editId === l.id && !ro ? (
-                  <form
-                    className="kitchen__idea-edit"
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      renameLeftover(l, editText)
+                {edit.editId === l.id && !ro ? (
+                  <EditField
+                    value={edit.text}
+                    onChange={edit.setText}
+                    onSubmit={(v) => {
+                      edit.cancel()
+                      renameLeftover(l, v)
                     }}
-                  >
-                    <input
-                      className="input"
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      aria-label={t.common.edit}
-                      autoFocus
-                    />
-                    <button type="submit" className="btn" aria-label={t.common.save} disabled={!editText.trim()}>
-                      <Icon name="check-bold" size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn--ghost mono"
-                      aria-label={t.common.cancel}
-                      onClick={() => setEditId(null)}
-                    >
-                      <Icon name="x-bold" size={15} />
-                    </button>
-                  </form>
+                    onCancel={edit.cancel}
+                    clearable={false}
+                    ariaLabel={t.common.edit}
+                    autoFocus
+                  />
                 ) : (
                   <>
                     {ro ? (
@@ -206,10 +193,7 @@ export function Leftovers({
                     <RowActions
                       editLabel={t.common.edit}
                       deleteLabel={t.kitchen.removeLeftover}
-                      onEdit={() => {
-                        setEditId(l.id)
-                        setEditText(l.title)
-                      }}
+                      onEdit={() => edit.open(l.id, l.title)}
                       onDelete={() => removeLeftover(l)}
                     />
                   </>
