@@ -43,7 +43,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
   test(`kitchen-pantry${sfx}`, async ({ page }) => {
     await boot(page, '/kitchen', { theme })
     await page.locator('.subtabs__opt').nth(1).click()
-    await page.locator('.kitchen__low-add').waitFor({ state: 'visible' })
+    await page.getByRole('textbox', { name: 'Ajouter un aliment', exact: true }).waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `kitchen-pantry-phone${sfx}`)
   })
@@ -62,7 +62,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 test('kitchen-pantry-wall', async ({ page }) => {
   await boot(page, '/kitchen', { surface: 'kiosk', format: WALL })
   await page.locator('.subtabs__opt').nth(1).click()
-  await page.locator('.kitchen__low-add').waitFor({ state: 'visible' })
+  await page.getByRole('textbox', { name: 'Ajouter un aliment', exact: true }).waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'kitchen-pantry-wall')
 })

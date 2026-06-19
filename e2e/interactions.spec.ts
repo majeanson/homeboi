@@ -503,9 +503,9 @@ test.describe('kitchen', () => {
 
   test('add a running-low pantry item', async ({ page }) => {
     await page.locator('.subtabs__opt', { hasText: 'Garde-manger' }).click()
-    const form = page.locator('.kitchen__low-add')
-    await form.locator('input.input').fill('Lait')
-    await expectApi(page, 'POST', 'pantry', () => form.locator('button[type="submit"]').click())
+    const input = page.getByRole('textbox', { name: 'Ajouter un aliment', exact: true })
+    await input.fill('Lait')
+    await expectApi(page, 'POST', 'pantry', () => input.press('Enter'))
   })
 
   test('checking a low item adds it to the list (explicit) and clears the reminder', async ({ page }) => {
@@ -585,9 +585,9 @@ test.describe('kitchen', () => {
 
   test('adding a use-soon item posts it (and never touches the list)', async ({ page }) => {
     await page.locator('.subtabs__opt', { hasText: 'Garde-manger' }).click()
-    const form = page.locator('.kitchen__soon-add')
-    await form.locator('input.input').fill('Épinards')
-    await expectApi(page, 'POST', 'use-soon', () => form.locator('button[type="submit"]').click())
+    const input = page.getByLabel('Ajouter un aliment à finir', { exact: true })
+    await input.fill('Épinards')
+    await expectApi(page, 'POST', 'use-soon', () => input.press('Enter'))
   })
 })
 
