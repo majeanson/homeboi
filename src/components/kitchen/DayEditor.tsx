@@ -9,6 +9,7 @@ import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { StatusMessage } from '../StatusMessage'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
+import { Chip } from '../Chip'
 import { MealRows } from './MealRows'
 import { mealPickOptions, type MealPick } from './comboOptions'
 import { type Leftover, type MealRow, type DayNoteRow } from './types'
@@ -250,16 +251,9 @@ export function DayEditor({
             <p className="kitchen__staples-hint mono">{t.kitchen.staplesHint}</p>
             <div className="kitchen__staples-chips">
               {staplePrompt.options.map((o) => (
-                <button
-                  key={o.item}
-                  type="button"
-                  className={`chip${o.on ? ' is-on' : ''}`}
-                  onClick={() => toggleStaple(o.item)}
-                  aria-pressed={o.on}
-                  title={o.item}
-                >
+                <Chip key={o.item} selected={o.on} onClick={() => toggleStaple(o.item)} title={o.item}>
                   <InlineIcon name={o.on ? 'check-square-bold' : 'square-bold'} /> {o.item}
-                </button>
+                </Chip>
               ))}
             </div>
             <div className="kitchen__staples-actions">

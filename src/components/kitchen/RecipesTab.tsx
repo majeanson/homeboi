@@ -13,6 +13,7 @@ import { formatDuration } from '../../lib/duration'
 import { pictoFor } from '../../lib/picto'
 import { todayLocalDay } from '../../lib/localDay'
 import { InlineIcon } from '../Icon'
+import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
@@ -387,14 +388,9 @@ export function RecipesTab({
       )}
       {tags.length > 0 && (
         <div className="kitchen__tag-filter">
-          <button
-            type="button"
-            className={`chip${tagFilter.length === 0 ? ' is-on' : ''}`}
-            onClick={() => setTagFilter([])}
-            aria-pressed={tagFilter.length === 0}
-          >
+          <Chip selected={tagFilter.length === 0} onClick={() => setTagFilter([])}>
             {t.recipes.allTag}
-          </button>
+          </Chip>
           {tags.map((tg) => {
             const on = tagFilter.includes(tg.toLowerCase())
             const hex = tagColor(tagColors, tg)

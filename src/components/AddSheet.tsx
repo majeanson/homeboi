@@ -27,6 +27,7 @@ import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } fro
 import { Icon, type IconName } from './Icon'
 import { MemoControls } from './MemoControls'
 import { EntityCombobox, type ComboOption } from './EntityCombobox'
+import { Chip } from './Chip'
 import { mealOptions } from './kitchen/comboOptions'
 import { ADD_HELP } from '../lib/addHelp'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
@@ -842,9 +843,9 @@ export function AddSheet({
             <p className="sheet__group-label mono">{t.kitchen.whichDay}</p>
             <div className="addsheet__days">
               {weekDays.map((d) => (
-                <button key={d} type="button" className="chip" onClick={() => planDay(d)}>
+                <Chip key={d} onClick={() => planDay(d)}>
                   {formatWeekday(d, lang)}
-                </button>
+                </Chip>
               ))}
             </div>
           </div>

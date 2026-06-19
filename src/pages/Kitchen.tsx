@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { HubHead } from '../components/HubHead'
+import { Chip } from '../components/Chip'
 import { SectionIntro } from '../components/SectionIntro'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -459,16 +460,9 @@ export function Kitchen() {
                     <p className="kitchen__staples-hint mono">{t.kitchen.shopWeekHint}</p>
                     <div className="kitchen__staples-chips">
                       {shopPrompt.map((o) => (
-                        <button
-                          key={o.item}
-                          type="button"
-                          className={`chip${o.on ? ' is-on' : ''}`}
-                          onClick={() => toggleShop(o.item)}
-                          aria-pressed={o.on}
-                          title={o.item}
-                        >
+                        <Chip key={o.item} selected={o.on} onClick={() => toggleShop(o.item)} title={o.item}>
                           <InlineIcon name={o.on ? 'check-square-bold' : 'square-bold'} /> {o.item}
-                        </button>
+                        </Chip>
                       ))}
                     </div>
                   </>

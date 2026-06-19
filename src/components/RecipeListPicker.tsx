@@ -5,6 +5,7 @@ import { useWrite } from '../lib/write'
 import { withoutHeadings } from '../lib/recipeSections'
 import { ingredientName } from '../lib/ingredient'
 import { InlineIcon } from './Icon'
+import { Chip } from './Chip'
 import type { Recipe } from '../lib/recipes'
 
 // "Which ingredients?" picker for adding a recipe's ingredients to the shared
@@ -60,20 +61,14 @@ export function RecipeListPicker({ recipe, onClose }: { recipe: Recipe; onClose:
         </div>
         <div className="recipe-list-pick__items">
           {names.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className={'chip' + (on[item] ? ' is-on' : '')}
-              onClick={() => toggle(item)}
-              aria-pressed={!!on[item]}
-            >
+            <Chip key={item} selected={!!on[item]} onClick={() => toggle(item)}>
               {on[item] && (
                 <>
                   <InlineIcon name="check-bold" />{' '}
                 </>
               )}
               {item}
-            </button>
+            </Chip>
           ))}
         </div>
         <div className="recipe-list-pick__actions">

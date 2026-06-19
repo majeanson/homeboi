@@ -1,5 +1,6 @@
 import { useT } from '../../i18n'
 import { type MealSlot } from '../../lib/mealSlots'
+import { Chip } from '../Chip'
 import { SlotPicker } from './SlotPicker'
 
 // The shared "place this onto the week" picker: choose a meal slot, then a day.
@@ -29,9 +30,9 @@ export function MealPlanPicker({
       <span className="meal-plan-pick__label mono">{t.recipes.planPick}</span>
       <div className="meal-plan-pick__days">
         {week.map((d) => (
-          <button key={d.date} type="button" className="chip" onClick={() => onPickDay(d.date)}>
+          <Chip key={d.date} onClick={() => onPickDay(d.date)}>
             {d.label}
-          </button>
+          </Chip>
         ))}
       </div>
     </div>

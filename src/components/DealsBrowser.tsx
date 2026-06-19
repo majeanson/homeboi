@@ -6,6 +6,7 @@ import { api, isStatus } from '../lib/api'
 import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
+import { Chip } from './Chip'
 import { Icon, InlineIcon } from './Icon'
 import { SceneHead } from './SceneHead'
 import { type Deal, type FlyerSummary } from '../lib/deals'
@@ -190,9 +191,9 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
 
         <div className="deal-stores mono">
           {STAPLES[lang].map((s) => (
-            <button key={s} type="button" className={`chip${query === s ? ' is-on' : ''}`} onClick={() => search(s)}>
+            <Chip key={s} selected={query === s} onClick={() => search(s)}>
               {s}
-            </button>
+            </Chip>
           ))}
         </div>
 
@@ -212,13 +213,13 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
 
         {state === 'ok' && stores.length > 1 && (
           <div className="deal-stores mono">
-            <button type="button" className={`chip${store === null ? ' is-on' : ''}`} onClick={() => setStore(null)}>
+            <Chip selected={store === null} onClick={() => setStore(null)}>
               {t.shop.allStores}
-            </button>
+            </Chip>
             {stores.map((s) => (
-              <button key={s} type="button" className={`chip${store === s ? ' is-on' : ''}`} onClick={() => setStore(s)}>
+              <Chip key={s} selected={store === s} onClick={() => setStore(s)}>
                 {s}
-              </button>
+              </Chip>
             ))}
           </div>
         )}

@@ -25,6 +25,7 @@ import {
 import { ContactPhotos } from './ContactPhotos'
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon } from '../Icon'
+import { Chip } from '../Chip'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 
 // Add / edit one person in « Le cercle ». Plain labelled fields (a multi-field
@@ -344,14 +345,9 @@ export function ContactForm({
           <span className="cf__label">{t.cercle.gender}</span>
           <div className="cf__gender-chips">
             {(['m', 'f', null] as const).map((g) => (
-              <button
-                key={String(g)}
-                type="button"
-                className={'chip' + (gender === g ? ' is-on' : '')}
-                onClick={() => setGender(g)}
-              >
+              <Chip key={String(g)} selected={gender === g} onClick={() => setGender(g)}>
                 {g === 'm' ? t.cercle.genderM : g === 'f' ? t.cercle.genderF : t.cercle.genderN}
-              </button>
+              </Chip>
             ))}
           </div>
         </div>
@@ -474,15 +470,10 @@ export function ContactForm({
           </span>
           <div className="cf__groups-chips">
             {groupList.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                className={'chip' + (memberOf.has(g.id) ? ' is-on' : '')}
-                onClick={() => toggleGroup(g)}
-              >
+              <Chip key={g.id} selected={memberOf.has(g.id)} onClick={() => toggleGroup(g)}>
                 <span className="cercle-group__dot" style={{ background: g.colour ?? '#C45E86' }} />
                 {g.name}
-              </button>
+              </Chip>
             ))}
             {!creatingGroup && (
               <button type="button" className="chip cf__group-add" onClick={() => setCreatingGroup(true)}>

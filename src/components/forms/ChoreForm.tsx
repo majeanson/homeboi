@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
 import { ColorPicker } from '../ColorPicker'
+import { Chip } from '../Chip'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
@@ -116,14 +117,9 @@ export function ChoreForm({
       <div className="picker-chips mono">
         <span className="picker-chips__label">{t.operator.choreCommon}</span>
         {presets.map((p) => (
-          <button
-            key={p.label}
-            type="button"
-            className="chip"
-            onClick={() => setTitle(p.icon ? `${p.icon} ${p.label}` : p.label)}
-          >
+          <Chip key={p.label} onClick={() => setTitle(p.icon ? `${p.icon} ${p.label}` : p.label)}>
             {p.icon} {p.label}
-          </button>
+          </Chip>
         ))}
       </div>
       <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t.operator.addChore} />

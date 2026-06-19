@@ -14,6 +14,7 @@ import { ingredientName } from '../lib/ingredient'
 import { type MealSlot } from '../lib/mealSlots'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
+import { Chip } from './Chip'
 import { IngredientLine } from './IngredientLine'
 import { MealPlanPicker } from './kitchen/MealPlanPicker'
 import { useModal } from '../lib/useModal'
@@ -400,20 +401,14 @@ export function RecipeSheet({
             </div>
             <div className="recipe-list-pick__items">
               {listPrompt.map((o) => (
-                <button
-                  key={o.item}
-                  type="button"
-                  className={'chip' + (o.on ? ' is-on' : '')}
-                  onClick={() => toggleListItem(o.item)}
-                  aria-pressed={o.on}
-                >
+                <Chip key={o.item} selected={o.on} onClick={() => toggleListItem(o.item)}>
                   {o.on && (
                     <>
                       <InlineIcon name="check-bold" />{' '}
                     </>
                   )}
                   {o.item}
-                </button>
+                </Chip>
               ))}
             </div>
             <div className="recipe-list-pick__actions">

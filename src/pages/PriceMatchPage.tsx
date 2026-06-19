@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
+import { Chip } from '../components/Chip'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
 import { live } from '../lib/query'
@@ -120,13 +121,13 @@ export function PriceMatchPage() {
 
         {state === 'ok' && stores.length > 1 && (
           <div className="deal-stores mono">
-            <button type="button" className={`chip${store === null ? ' is-on' : ''}`} onClick={() => setStore(null)}>
+            <Chip selected={store === null} onClick={() => setStore(null)}>
               {t.shop.allStores}
-            </button>
+            </Chip>
             {stores.map((s) => (
-              <button key={s} type="button" className={`chip${store === s ? ' is-on' : ''}`} onClick={() => setStore(s)}>
+              <Chip key={s} selected={store === s} onClick={() => setStore(s)}>
                 {s}
-              </button>
+              </Chip>
             ))}
           </div>
         )}

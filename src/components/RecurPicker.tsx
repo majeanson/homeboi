@@ -1,4 +1,5 @@
 import { useT } from '../i18n'
+import { Chip } from './Chip'
 
 // Recurrence control for the event form: pick a frequency (or "never"), an
 // interval, and — for weekly — which weekdays ("garbage every Wednesday"). Mirror
@@ -56,16 +57,9 @@ export function RecurPicker({ value, onChange }: { value: RecurValue | null; onC
       {value?.freq === 'weekly' && (
         <div className="recur__days">
           {t.recur.weekdayShort.map((lbl, d) => (
-            <button
-              key={d}
-              type="button"
-              className={`chip${value.weekdays.includes(d) ? ' is-on' : ''}`}
-              onClick={() => toggleDay(d)}
-              aria-pressed={value.weekdays.includes(d)}
-              aria-label={lbl}
-            >
+            <Chip key={d} selected={value.weekdays.includes(d)} onClick={() => toggleDay(d)} ariaLabel={lbl}>
               {lbl}
-            </button>
+            </Chip>
           ))}
         </div>
       )}

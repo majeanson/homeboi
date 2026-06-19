@@ -10,6 +10,7 @@ import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type Gh
 import { isGuest } from '../../lib/device'
 import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
+import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
 
@@ -378,15 +379,13 @@ export function GhostSection({ help }: { help?: HelpMode }) {
           <p className="mono">{t.ghost.candidatesTitle}</p>
           <div className="ghost-admin__candidate-chips">
             {candidates.map((c) => (
-              <button
+              <Chip
                 key={c.key}
-                type="button"
-                className="chip"
                 onClick={() => track(c)}
                 title={`${c.label} · ${c.count}× · ${t.ghost.every} ${c.cadenceDays} ${t.ghost.days}`}
               >
                 <InlineIcon name="plus-bold" /> {c.label} <span className="ghost-admin__candidate-n">{c.count}×</span>
-              </button>
+              </Chip>
             ))}
           </div>
         </div>

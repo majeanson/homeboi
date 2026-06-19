@@ -7,6 +7,7 @@ import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod, type RoutineTod } from '../../lib/routineTod'
 import { alignSide } from '../../lib/parallelArray'
 import { InlineIcon } from '../Icon'
+import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
 
@@ -183,15 +184,9 @@ export function RoutineForm({
         <div className="picker-chips mono">
           <span className="picker-chips__label">{t.operator.forWho}</span>
           {children.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              className={'chip' + (memberIds.includes(m.id) ? ' is-on' : '')}
-              onClick={() => toggleMember(m.id)}
-              aria-pressed={memberIds.includes(m.id)}
-            >
+            <Chip key={m.id} selected={memberIds.includes(m.id)} onClick={() => toggleMember(m.id)}>
               <InlineIcon name={memberIds.includes(m.id) ? 'check-square-bold' : 'square-bold'} /> {m.display_name}
-            </button>
+            </Chip>
           ))}
         </div>
       )}
@@ -201,24 +196,13 @@ export function RoutineForm({
       {/* The moment of day: orders the kid view (morning shows Matin first). */}
       <div className="picker-chips mono">
         <span className="picker-chips__label">{t.routines.todLabel}</span>
-        <button
-          type="button"
-          className={'chip' + (tod === null ? ' is-on' : '')}
-          onClick={() => setTod(null)}
-          aria-pressed={tod === null}
-        >
+        <Chip selected={tod === null} onClick={() => setTod(null)}>
           {t.routines.tod.any}
-        </button>
+        </Chip>
         {ROUTINE_TODS.map((v) => (
-          <button
-            key={v}
-            type="button"
-            className={'chip' + (tod === v ? ' is-on' : '')}
-            onClick={() => setTod(tod === v ? null : v)}
-            aria-pressed={tod === v}
-          >
+          <Chip key={v} selected={tod === v} onClick={() => setTod(tod === v ? null : v)}>
             <InlineIcon name={TOD_ICON[v]} color={TOD_TINT[v]} /> {t.routines.tod[v]}
-          </button>
+          </Chip>
         ))}
       </div>
 
@@ -226,9 +210,9 @@ export function RoutineForm({
         <div className="picker-chips mono">
           <span className="picker-chips__label">{t.operator.tplStart}</span>
           {templates.map((tpl) => (
-            <button key={tpl.id} type="button" className="chip" onClick={() => applyTemplate(tpl)}>
+            <Chip key={tpl.id} onClick={() => applyTemplate(tpl)}>
               {tpl.cards[0]?.icon} {tpl.name}
-            </button>
+            </Chip>
           ))}
         </div>
       )}
