@@ -18,7 +18,7 @@ import {
   type GroupKind,
   type Member,
   buildGroups,
-  buildPeople,
+  unifyCircle,
   fullName,
   personKey,
 } from '../../lib/cercle'
@@ -54,10 +54,19 @@ export function ContactForm({
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
 
-  // The unified people set (contacts + members) for the relationship composer, and
-  // this contact as a Person (the link subject) once it exists.
-  const people = useMemo(() => buildPeople(contacts, members), [contacts, members])
-  const subject = value ? people.find((p) => p.key === personKey('contact', value.id)) ?? null : null
+  // The unified people set (contacts + members, deduped) for the relationship
+  // composer, plus this contact as a Person (the link subject) once it exists. A
+  // contact hard-linked to a member IS that member (unifyCircle keeps the member as
+  // the canonical node), so relationships attach to the single identity and existing
+  // ties stored either way still resolve against it.
+  const unified = useMemo(() => unifyCircle(contacts, members, links, groups), [contacts, members, links, groups])
+  const people = unified.people
+  const subjectKey = value
+    ? value.memberId && members.some((m) => m.id === value.memberId)
+      ? personKey('member', value.memberId)
+      : personKey('contact', value.id)
+    : null
+  const subject = subjectKey ? people.find((p) => p.key === subjectKey) ?? null : null
 
   const [firstName, setFirstName] = useState(value?.firstName ?? '')
   const [lastName, setLastName] = useState(value?.lastName ?? '')
@@ -500,7 +509,7 @@ export function ContactForm({
           editor is here; on a NEW person we explain links come right after saving
           (and saving lands you on the edit view where they appear). */}
       {value && subject ? (
-        <LinkComposer person={subject} people={people} links={links} onChanged={() => qc.invalidateQueries({ queryKey: CERCLE_KEY })} />
+        <LinkComposer person={subject} people={people} links={unified.links} onChanged={() => qc.invalidateQueries({ queryKey: CERCLE_KEY })} />
       ) : (
         <div className="cf__rels">
           <span className="cf__label">{t.cercle.relationships}</span>

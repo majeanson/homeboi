@@ -29,8 +29,8 @@ import {
   type ContactGroupRaw,
   type ContactGroup,
   type GroupKind,
-  buildPeople,
   buildGroups,
+  unifyCircle,
   personKey,
   detectFamilyGroups,
   daysUntilBirthday,
@@ -94,14 +94,21 @@ function CercleParent() {
 
   const contacts = useMemo(() => data?.contacts ?? [], [data])
   const members = useMemo(() => data?.members ?? [], [data])
-  const links = useMemo(() => data?.links ?? [], [data])
-  const people = useMemo(() => buildPeople(contacts, members), [contacts, members])
+  const rawLinks = useMemo(() => data?.links ?? [], [data])
+  const rawGroups = useMemo(() => data?.groups ?? [], [data])
+  // Collapse each member + its hard-linked contact into ONE person (and remap that
+  // contact's links/groups onto the member) so nobody shows up twice.
+  const unified = useMemo(
+    () => unifyCircle(contacts, members, rawLinks, rawGroups),
+    [contacts, members, rawLinks, rawGroups],
+  )
+  const people = unified.people
+  const links = unified.links
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
   const contactsById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
 
   // Named explicit groups (phase 3)
-  const rawGroups = useMemo(() => data?.groups ?? [], [data])
-  const namedGroups = useMemo(() => buildGroups(rawGroups), [rawGroups])
+  const namedGroups = useMemo(() => buildGroups(unified.groups), [unified])
 
   // Auto-detected family groups (Union-Find over family edges)
   const familyGroups = useMemo(
@@ -374,8 +381,11 @@ function CircleKidView() {
 
   const contacts = data?.contacts ?? []
   const members = data?.members ?? []
-  const links = data?.links ?? []
-  const people = useMemo(() => buildPeople(contacts, members), [contacts, members])
+  const rawLinks = data?.links ?? []
+  // Same dedup as the parent view: a member + its linked contact are one face.
+  const unified = useMemo(() => unifyCircle(contacts, members, rawLinks, []), [contacts, members, rawLinks])
+  const people = unified.people
+  const links = unified.links
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
 
   function tap(p: Person) {

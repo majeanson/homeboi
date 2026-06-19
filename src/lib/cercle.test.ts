@@ -5,6 +5,7 @@ import {
   detectFamilyGroups,
   generationOf,
   buildPeople,
+  unifyCircle,
   personKey,
   daysUntilBirthday,
   ageOnNextBirthday,
@@ -105,6 +106,60 @@ describe('detectFamilyGroups (Union-Find over unified people)', () => {
 
   it('returns no group when nobody is linked', () => {
     expect(detectFamilyGroups(buildPeople([contact('a', 'Ana'), contact('b', 'Bo')], []), [], fam)).toHaveLength(0)
+  })
+})
+
+describe('unifyCircle (a member + its hard-linked contact are ONE person)', () => {
+  const mk = (id: string) => personKey('member', id)
+  const ck = (id: string) => personKey('contact', id)
+  const linked = (id: string, first: string, memberId: string, extra: Partial<Contact> = {}): Contact => ({
+    ...contact(id, first),
+    memberId,
+    ...extra,
+  })
+
+  it('absorbs the linked contact into its member and fills gender from the contact', () => {
+    const people = unifyCircle([linked('c1', 'Marie', 'm1', { gender: 'f' })], [member('m1', 'Marie')], [], []).people
+    expect(people).toHaveLength(1) // one human, not two
+    expect(people[0].key).toBe(mk('m1')) // the member is canonical
+    expect(people[0].gender).toBe('f') // gender carried over from the contact
+  })
+
+  it('remaps a contact-keyed link onto the member', () => {
+    const { links } = unifyCircle(
+      [linked('c1', 'Marie', 'm1'), contact('c2', 'Bo')],
+      [member('m1', 'Marie')],
+      [link('c1', 'c2', 'parent')],
+      [],
+    )
+    expect(links).toHaveLength(1)
+    expect(personKey(links[0].personAKind, links[0].personAId)).toBe(mk('m1'))
+    expect(personKey(links[0].personBKind, links[0].personBId)).toBe(ck('c2'))
+  })
+
+  it('drops a tie that collapses onto the same person', () => {
+    const self = link('m1', 'c1', 'sibling', { aKind: 'member', bKind: 'contact' })
+    expect(unifyCircle([linked('c1', 'Marie', 'm1')], [member('m1', 'Marie')], [self], []).links).toHaveLength(0)
+  })
+
+  it('remaps group membership onto the member, de-duping within the group', () => {
+    const { groups } = unifyCircle([linked('c1', 'Marie', 'm1')], [member('m1', 'Marie')], [], [
+      {
+        id: 'g1',
+        name: 'Fam',
+        kind: 'family',
+        colour: null,
+        memberKeys: [
+          { personId: 'c1', personKind: 'contact' },
+          { personId: 'm1', personKind: 'member' },
+        ],
+      },
+    ])
+    expect(groups[0].memberKeys).toEqual([{ personId: 'm1', personKind: 'member' }])
+  })
+
+  it('is a thin pass-through when no contact is linked', () => {
+    expect(unifyCircle([contact('c1', 'A')], [member('m1', 'B')], [], []).people).toHaveLength(2)
   })
 })
 

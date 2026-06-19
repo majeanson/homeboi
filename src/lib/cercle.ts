@@ -135,6 +135,98 @@ export function buildPeople(contacts: Contact[], members: Member[]): Person[] {
   return [...fromMembers, ...fromContacts]
 }
 
+// A Maisonnée member and a « Le cercle » contact hard-linked to it (contact.memberId)
+// are the SAME human — the member is the lean board identity, the contact the rich
+// record (coordonnées, anniversaire, genre, liens, groupes; see lib/personSheet.ts).
+// buildPeople alone would emit BOTH, so the person appeared twice in the directory,
+// the picker, the tree and the family math. unifyCircle collapses them:
+//   • the MEMBER is canonical — it keeps its board face + « Membre » badge and opens
+//     the same rich sheet — enriched with any cercle-only field the contact carries
+//     (gender / birthday / email / phone) so a known gender is never dropped;
+//   • links and group memberships that referenced the absorbed contact's key are
+//     remapped onto the member's key, so the single node aggregates every tie (and a
+//     tie that collapses onto itself, or a now-duplicate one, is dropped).
+// Pure; returns a ready-to-use people set + the remapped links/groups. No linked
+// contacts → it's a thin pass-through over buildPeople.
+export function unifyCircle(
+  contacts: Contact[],
+  members: Member[],
+  links: ContactLink[],
+  groups: ContactGroupRaw[],
+): { people: Person[]; links: ContactLink[]; groups: ContactGroupRaw[] } {
+  const memberById = new Map(members.map((m) => [m.id, m]))
+  // contact.id → member.id, for contacts hard-linked to a member that still exists.
+  const absorbed = new Map<string, string>()
+  for (const c of contacts) {
+    if (c.memberId && memberById.has(c.memberId)) absorbed.set(c.id, c.memberId)
+  }
+  if (absorbed.size === 0) return { people: buildPeople(contacts, members), links, groups }
+
+  // member.id → its linked contact (first wins if several somehow point at one member).
+  const contactByMember = new Map<string, Contact>()
+  for (const c of contacts) {
+    const mid = absorbed.get(c.id)
+    if (mid && !contactByMember.has(mid)) contactByMember.set(mid, c)
+  }
+
+  // Enrich each member with the cercle-only fields its contact carries. The member's
+  // own value wins when set (it's the identity record); the contact only fills gaps.
+  const enrichedMembers = members.map((m) => {
+    const c = contactByMember.get(m.id)
+    if (!c) return m
+    return {
+      ...m,
+      gender: m.gender ?? c.gender,
+      birthday: m.birthday ?? c.birthday,
+      email: m.email ?? c.email,
+      phone: m.phone ?? c.phone,
+    }
+  })
+
+  const people = buildPeople(
+    contacts.filter((c) => !absorbed.has(c.id)),
+    enrichedMembers,
+  )
+
+  // An endpoint pointing at an absorbed contact becomes its member.
+  const remap = (kind: PersonKind, id: string): { kind: PersonKind; id: string } => {
+    const mid = kind === 'contact' ? absorbed.get(id) : undefined
+    return mid ? { kind: 'member', id: mid } : { kind, id }
+  }
+
+  // Remap links; drop self-links and de-dupe pairs that now coincide.
+  const seen = new Set<string>()
+  const remappedLinks: ContactLink[] = []
+  for (const l of links) {
+    const a = remap(l.personAKind, l.personAId)
+    const b = remap(l.personBKind, l.personBId)
+    const aKey = personKey(a.kind, a.id)
+    const bKey = personKey(b.kind, b.id)
+    if (aKey === bKey) continue // collapsed onto itself — meaningless
+    const pair = aKey < bKey ? `${aKey}|${bKey}|${l.type}` : `${bKey}|${aKey}|${l.reverseType}`
+    if (seen.has(pair)) continue
+    seen.add(pair)
+    remappedLinks.push({ ...l, personAId: a.id, personAKind: a.kind, personBId: b.id, personBKind: b.kind })
+  }
+
+  // Remap group memberships the same way, de-duping within each group.
+  const remappedGroups = groups.map((g) => {
+    const within = new Set<string>()
+    const memberKeys = g.memberKeys
+      .map((mk) => remap(mk.personKind, mk.personId))
+      .filter((r) => {
+        const key = personKey(r.kind, r.id)
+        if (within.has(key)) return false
+        within.add(key)
+        return true
+      })
+      .map((r) => ({ personId: r.id, personKind: r.kind }))
+    return { ...g, memberKeys }
+  })
+
+  return { people, links: remappedLinks, groups: remappedGroups }
+}
+
 // A link's two endpoints as composite keys (for graph/group math over `Person.key`).
 export const linkEndpoints = (l: ContactLink): { aKey: string; bKey: string } => ({
   aKey: personKey(l.personAKind, l.personAId),
