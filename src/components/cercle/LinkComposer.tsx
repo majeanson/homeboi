@@ -80,7 +80,9 @@ export function LinkComposer({
     .map((p) => ({ id: p.key, label: p.name, data: p, icon: p.kind === 'member' ? 'users-three-bold' : 'user-bold' }))
 
   const otherPerson = otherKey ? byKey.get(otherKey) : null
-  const preview = otherPerson ? `${person.name} · ${genderedRelLabel(type, otherPerson.gender, lang)} · ${otherPerson.name}` : null
+  // The sentence reads "{person} est [type] de {other}", so the relation describes the
+  // SUBJECT (`person`) and is gendered by THEIR gender — not the other person's.
+  const preview = otherPerson ? `${person.name} · ${genderedRelLabel(type, person.gender, lang)} · ${otherPerson.name}` : null
 
   async function addLink() {
     if (!otherPerson || busy) return
@@ -143,7 +145,7 @@ export function LinkComposer({
             return (
               <li key={m.id} className="cf__rels-row">
                 <span className="cf__rels-text">
-                  <strong>{genderedRelLabel(m.relType, other?.gender ?? null, lang)}</strong> · {other ? other.name : '—'}
+                  <strong>{genderedRelLabel(m.relType, person.gender, lang)}</strong> · {other ? other.name : '—'}
                 </span>
                 <RowActions onDelete={() => removeLink(m.id)} deleteLabel={t.cercle.removeRelationship} />
               </li>
@@ -164,7 +166,7 @@ export function LinkComposer({
             return (
               <div key={i} className="lc__suggestion">
                 <span className="lc__suggestion-text mono">
-                  {person.name} · <strong>{genderedRelLabel(relType, other.gender, lang)}</strong> · {other.name}
+                  {person.name} · <strong>{genderedRelLabel(relType, person.gender, lang)}</strong> · {other.name}
                 </span>
                 <div className="lc__suggestion-actions">
                   <button

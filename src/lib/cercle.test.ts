@@ -6,6 +6,7 @@ import {
   generationOf,
   buildPeople,
   unifyCircle,
+  genderedRelLabel,
   personKey,
   daysUntilBirthday,
   ageOnNextBirthday,
@@ -182,6 +183,32 @@ describe('generationOf', () => {
     const people = buildPeople([contact('a', 'Ana'), contact('lonely', 'Solo')], [])
     const gen = generationOf(people, [link('a', 'a2', 'sibling')]) // a2 not present → no edge placed
     expect(gen.has(personKey('contact', 'lonely'))).toBe(false)
+  })
+})
+
+describe('genderedRelLabel (the label describes the SUBJECT, gendered by THEIR sex)', () => {
+  it('genders the common family roles in FR', () => {
+    expect(genderedRelLabel('parent', 'f', 'fr')).toBe('Mère')
+    expect(genderedRelLabel('parent', 'm', 'fr')).toBe('Père')
+    expect(genderedRelLabel('child', 'f', 'fr')).toBe('Fille')
+    expect(genderedRelLabel('child', 'm', 'fr')).toBe('Fils')
+    expect(genderedRelLabel('sibling', 'f', 'fr')).toBe('Sœur')
+    expect(genderedRelLabel('sibling', 'm', 'fr')).toBe('Frère')
+    expect(genderedRelLabel('aunt_uncle', 'f', 'fr')).toBe('Tante')
+    expect(genderedRelLabel('aunt_uncle', 'm', 'fr')).toBe('Oncle')
+    expect(genderedRelLabel('niece_nephew', 'f', 'fr')).toBe('Nièce')
+    expect(genderedRelLabel('niece_nephew', 'm', 'fr')).toBe('Neveu')
+  })
+
+  it('falls back to the neutral label when the gender is unknown', () => {
+    expect(genderedRelLabel('parent', null, 'fr')).toBe('Parent')
+    expect(genderedRelLabel('sibling', null, 'fr')).toBe('Frère / sœur')
+    expect(genderedRelLabel('child', null, 'en')).toBe('Child')
+  })
+
+  it('genders in EN too', () => {
+    expect(genderedRelLabel('parent', 'f', 'en')).toBe('Mother')
+    expect(genderedRelLabel('sibling', 'm', 'en')).toBe('Brother')
   })
 })
 

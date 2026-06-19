@@ -47,7 +47,9 @@ export function CercleEgo({ people, links, onOpen }: { people: Person[]; links: 
       const other = byKey.get(otherKey)
       if (!other) continue
       const entry = acc.get(otherKey) ?? { person: other, labels: [] }
-      const label = genderedRelLabel(rel, other.gender, lang)
+      // `rel` is the relation read from the FOCUS's side ("focus est [rel] de other"),
+      // so the label describes the focus and is gendered by THEIR gender.
+      const label = genderedRelLabel(rel, focus.gender, lang)
       if (!entry.labels.includes(label)) entry.labels.push(label)
       acc.set(otherKey, entry)
     }

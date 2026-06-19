@@ -62,8 +62,12 @@ export function Cercle() {
 }
 
 // A person's relationships, resolved FROM THEIR perspective → display strings
-// ("Grand-parent · Léa"). Works over composite person keys (contacts + members).
+// ("Mère · Léa" = "[this person] est la mère de Léa"). Works over composite person
+// keys (contacts + members). The relation type describes the SUBJECT (the person
+// whose list this is), so it's gendered by the SUBJECT's gender — NOT the other
+// person's (a female subject who is a parent is "Mère", regardless of the child's sex).
 function relationsOf(key: string, links: ContactLink[], byKey: Map<string, Person>, lang: 'fr' | 'en'): string[] {
+  const subjectGender = byKey.get(key)?.gender ?? null
   return links
     .map((l) => {
       const aKey = personKey(l.personAKind, l.personAId)
@@ -73,7 +77,7 @@ function relationsOf(key: string, links: ContactLink[], byKey: Map<string, Perso
       return null
     })
     .filter((x): x is { rel: ContactLink['type']; other: string } => !!x)
-    .map((r) => `${genderedRelLabel(r.rel, byKey.get(r.other)?.gender ?? null, lang)} · ${byKey.get(r.other)?.name ?? '—'}`)
+    .map((r) => `${genderedRelLabel(r.rel, subjectGender, lang)} · ${byKey.get(r.other)?.name ?? '—'}`)
 }
 
 function CercleParent() {
@@ -394,18 +398,22 @@ function CircleKidView() {
   }
 
   function speakRel(rel: RelationshipType, other: Person) {
-    // Gender-aware when the other person's gender is set (Mère/Père), neutral otherwise.
+    // Each card shows the OTHER person; the label is THEIR role toward the focused
+    // child ("Papa" → Père), so it's gendered by that other person.
     speak(t.cercle.kidRelSpeak(genderedRelLabel(rel, other.gender, lang), other.firstName))
   }
 
   const kidRels = useMemo(() => {
     if (!focused) return []
+    // Each entry is a card for the OTHER person, labelled with how THEY relate to the
+    // focused child — i.e. the link read from the other person's side (the inverse of
+    // the focused child's own role), so a tapped "Papa" reads as "Père", not "Fils".
     return links
       .map((l) => {
         const aKey = personKey(l.personAKind, l.personAId)
         const bKey = personKey(l.personBKind, l.personBId)
-        if (aKey === focused.key) return { rel: l.type as RelationshipType, other: byKey.get(bKey) }
-        if (bKey === focused.key) return { rel: l.reverseType as RelationshipType, other: byKey.get(aKey) }
+        if (aKey === focused.key) return { rel: l.reverseType as RelationshipType, other: byKey.get(bKey) }
+        if (bKey === focused.key) return { rel: l.type as RelationshipType, other: byKey.get(aKey) }
         return null
       })
       .filter((x): x is { rel: RelationshipType; other: Person } => !!x && !!x.other)
