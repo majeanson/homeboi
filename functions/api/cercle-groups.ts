@@ -51,7 +51,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .bind(id, actor.householdId, name, kind, colour, nowSec())
     .run()
   return ok({ id, name })
-}, 'operator')
+})
 
 export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string; name?: string; kind?: string; colour?: string | null }>(ctx.request)
@@ -81,7 +81,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     .bind(...binds)
     .run()
   return ok({ ok: true })
-}, 'operator')
+})
 
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string; groupId?: string; personId?: string; personKind?: string }>(ctx.request)
@@ -106,4 +106,4 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .run()
   if (!meta.changes) return notFound('Groupe introuvable.')
   return ok({ ok: true })
-}, 'operator')
+})

@@ -9,6 +9,7 @@ import { buildContact, buildMemberPerson } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { useWrite } from '../lib/write'
+import { useConfirm } from '../lib/confirm'
 import { useOpenPersonSheet } from '../lib/personSheet'
 import { CERCLE_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
@@ -82,6 +83,7 @@ function CercleParent() {
   const nav = useNavigate()
   const detail = useEntityDetail()
   const write = useWrite()
+  const confirm = useConfirm()
   const openSheet = useOpenPersonSheet()
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
   const [query, setQuery] = useState('')
@@ -156,6 +158,7 @@ function CercleParent() {
   }
 
   async function deleteGroup(g: ContactGroup) {
+    if (!(await confirm({ message: t.cercle.deleteGroupConfirm, tone: 'danger' }))) return
     await write('cercle-groups', { method: 'DELETE', body: { id: g.id }, affectedKeys: [CERCLE_KEY] })
   }
 
