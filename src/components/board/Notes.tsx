@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
@@ -23,6 +23,7 @@ export function Notes({
   members,
   toddler,
   variant = 'all',
+  action,
 }: {
   notes: NoteRow[]
   members: Member[]
@@ -31,6 +32,10 @@ export function Notes({
   // ONLY in the Grille/bento view (`drawings`), every other note rides above all
   // views (`notes`). Toddler + default render everything (`all`).
   variant?: 'all' | 'notes' | 'drawings'
+  // Optional trailing control rendered as the last item of the grid (e.g. the
+  // "La galerie" door under the drawings strip) — sits beside the cards on a wide
+  // tablet, wraps under them on a phone, instead of taking its own row.
+  action?: ReactNode
 }) {
   const t = useT()
   const write = useWrite()
@@ -100,8 +105,10 @@ export function Notes({
     }).catch(() => {})
   }
 
-  // Nothing to show and nothing being edited — render nothing.
-  if (!shown.length && !editing) return null
+  // Nothing to show and nothing being edited — render nothing. The trailing
+  // `action` (the gallery door) keeps the section alive even with zero current
+  // drawings, since saved drawings live on in the gallery regardless.
+  if (!shown.length && !editing && !action) return null
 
   return (
     <section className={'notes' + (toddler ? ' notes--kid' : '') + (variant === 'drawings' ? ' notes--drawings' : '')} aria-label={title}>
@@ -206,6 +213,9 @@ export function Notes({
             </button>
           )
         })}
+        {/* Trailing door (e.g. "La galerie") — a flex item beside the cards on a
+            wide tablet, wrapping under them on a phone. */}
+        {action && <div className="notes__action">{action}</div>}
       </div>
       {editing && (
         <DrawPad

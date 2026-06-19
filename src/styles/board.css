@@ -1109,11 +1109,17 @@
   line-height: 0;
   box-shadow: var(--shadow-sm);
 }
-/* Parent "La galerie" door under the Grille drawings strip. */
-.board-gallery-link {
+/* Parent "La galerie" door inside the Grille drawings strip: a small trailing
+   chip that rides beside the photos/drawings on a wide tablet and wraps under
+   them on a phone, instead of claiming its own centered row. */
+.notes__action {
   display: flex;
-  justify-content: center;
-  margin: 0.3rem 0 0.2rem;
+  align-items: center;
+  align-self: center; /* don't stretch to the tallest card in the row */
+}
+/* A touch more room between the drawing/photo cards (and the trailing door). */
+.notes--drawings .notes__grid {
+  gap: 0.8rem;
 }
 
 /* ---- Month view: a calm six-week calendar of everything dated -------------

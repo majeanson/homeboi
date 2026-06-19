@@ -180,6 +180,12 @@ export function DrawPad({
   const stampsRef = useRef<Stamp[]>([])
   const shapesRef = useRef<Shape[]>([])
   const previewRef = useRef<Shape | null>(null)
+  // Offscreen snapshot of the committed canvas, captured once at the start of a
+  // live shape drag. While dragging we blit this + draw the preview on top, so a
+  // shape preview costs O(1) per frame instead of re-rasterizing every stroke via
+  // signature_pad's fromData (the source of both the lag and the per-frame stroke
+  // shimmer on previous lines).
+  const snapshotRef = useRef<HTMLCanvasElement | null>(null)
   const historyRef = useRef<Op[]>([])
   const redoRef = useRef<Redo[]>([])
   const rafRef = useRef<number | null>(null)
@@ -194,6 +200,12 @@ export function DrawPad({
   const tplRef = useRef<{ kind: TemplateKind; ch: string; shape: ColoringShape }>({ kind: 'none', ch: 'A', shape: 'star' })
   const dragRef = useRef<{ active: boolean; changes: PixelChange[]; last: string | null }>({ active: false, changes: [], last: null })
   const shapeDragRef = useRef<{ active: boolean; x0: number; y0: number } | null>(null)
+  // The one pointer that owns the in-progress gesture — a second finger on a
+  // tablet is ignored so it can't reset a drag or bake a ghost into the snapshot.
+  const activePointerRef = useRef<number | null>(null)
+  // Canvas rect cached at gesture start; reused for the move/up of that gesture so
+  // a fast drag doesn't call getBoundingClientRect() on every pointer event.
+  const rectRef = useRef<DOMRect | null>(null)
 
   const [mode, setMode] = useState<Mode>('pen')
   const [color, setColor] = useState<string>(COLORS[0])
@@ -236,6 +248,15 @@ export function DrawPad({
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!pad || !canvas || !ctx) return
+    // signature_pad's fromData(clear:false) APPENDS pointGroups to its internal
+    // _data, so redrawing with pad.toData() doubles the strokes every call
+    // (1→2→4→8…). render() runs on every op — and ~60×/s during a drag — so the
+    // data grew exponentially: that was the real lag/crash, and the stacked
+    // overlapping strokes were the "glitches on previous lines" (shimmering
+    // anti-aliasing). clear() resets _data (and the canvas) first; we repaint our
+    // own layers below and re-add `strokes` exactly once via fromData. `strokes`
+    // is captured by the caller before this clear, so it still holds the data.
+    pad.clear()
     const w = canvas.width / ratio()
     const h = canvas.height / ratio()
     ctx.save()
@@ -267,14 +288,45 @@ export function DrawPad({
     for (const st of stampsRef.current) { ctx.font = `${st.font}px sans-serif`; ctx.fillText(st.text, st.x, st.y) }
     ctx.restore()
   }
-  // Coalesce rapid paints (pixel drag / shape preview) to one redraw per frame.
+  // Coalesce rapid paints (pixel drag) to one full redraw per frame.
   function scheduleRender() {
     if (rafRef.current != null) return
     rafRef.current = requestAnimationFrame(() => { rafRef.current = null; render(padRef.current?.toData() ?? []) })
   }
+  // Freeze the committed drawing into an offscreen buffer (device-pixel space).
+  function captureSnapshot() {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const snap = snapshotRef.current ?? (snapshotRef.current = document.createElement('canvas'))
+    snap.width = canvas.width
+    snap.height = canvas.height
+    const sctx = snap.getContext('2d')
+    if (sctx) { sctx.clearRect(0, 0, snap.width, snap.height); sctx.drawImage(canvas, 0, 0) }
+  }
+  // Live shape drag: blit the frozen snapshot + draw the preview on top. No
+  // fromData, so cost is constant regardless of how much was already drawn.
+  function renderShapePreview() {
+    const canvas = canvasRef.current
+    const snap = snapshotRef.current
+    const ctx = canvas?.getContext('2d')
+    if (!canvas || !snap || !ctx || !previewRef.current) return // drag ended → leave the committed render alone
+    ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0) // snapshot is device-pixel; draw 1:1
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(snap, 0, 0)
+    ctx.restore() // back to the ratio()-scaled transform → preview uses CSS coords
+    const p = previewRef.current
+    drawShape(ctx, p)
+    if (symmetryRef.current) { const w = cssW(); drawShape(ctx, { ...p, x0: w - p.x0, x1: w - p.x1 }) } // mirror, matching commitShape
+  }
+  // Coalesce shape-preview frames to one blit per animation frame.
+  function schedulePreview() {
+    if (rafRef.current != null) return
+    rafRef.current = requestAnimationFrame(() => { rafRef.current = null; renderShapePreview() })
+  }
 
   function pointAt(e: PointerEvent) {
-    const rect = canvasRef.current!.getBoundingClientRect()
+    const rect = rectRef.current ?? canvasRef.current!.getBoundingClientRect()
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
   }
   function pushStamps(items: Stamp[]) {
@@ -291,6 +343,8 @@ export function DrawPad({
     pushStamps(items)
   }
   function setCell(x: number, y: number, cell: number) {
+    // Key embeds the cell size, so pixels painted at one brush size sit on a
+    // different grid than another — flood-fill / eraser only see same-cell cells.
     const cx = Math.floor(x / cell), cy = Math.floor(y / cell)
     const key = `${cx},${cy}:${cell}`
     const map = pixelsRef.current
@@ -373,34 +427,37 @@ export function DrawPad({
     const onDown = (e: PointerEvent) => {
       const m = modeRef.current
       if (m === 'pen') return
+      if (activePointerRef.current != null) return // a gesture is already in flight — ignore the 2nd finger
+      rectRef.current = canvas.getBoundingClientRect()
       canvas.setPointerCapture?.(e.pointerId)
       const { x, y } = pointAt(e)
-      if (m === 'sticker') return stampAt(x, y, stickerRef.current)
-      if (m === 'text') return stampAt(x, y, textRef.current.trim())
-      if (m === 'shape') { shapeDragRef.current = { active: true, x0: x, y0: y }; return }
+      if (m === 'sticker') { stampAt(x, y, stickerRef.current); rectRef.current = null; return }
+      if (m === 'text') { stampAt(x, y, textRef.current.trim()); rectRef.current = null; return }
+      activePointerRef.current = e.pointerId
+      if (m === 'shape') { captureSnapshot(); shapeDragRef.current = { active: true, x0: x, y0: y }; return }
       // pixel
-      if (fillRef.current) return floodFill(x, y)
+      if (fillRef.current) { floodFill(x, y); activePointerRef.current = null; rectRef.current = null; return }
       dragRef.current = { active: true, changes: [], last: null }
       paintPixel(x, y)
     }
     const onMove = (e: PointerEvent) => {
+      if (e.pointerId !== activePointerRef.current) return
       const m = modeRef.current
       if (m === 'pixel' && dragRef.current.active && !fillRef.current) { const { x, y } = pointAt(e); paintPixel(x, y); return }
       if (m === 'shape' && shapeDragRef.current?.active) {
         const { x, y } = pointAt(e)
         const d = shapeDragRef.current
         previewRef.current = { type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: x, y1: y, color: colorRef.current, size: SIZES[sizeRef.current].max }
-        scheduleRender()
+        schedulePreview()
       }
     }
     const onUp = (e: PointerEvent) => {
+      if (e.pointerId !== activePointerRef.current) return
       if (modeRef.current === 'pixel' && dragRef.current.active) {
         const { changes } = dragRef.current
         dragRef.current = { active: false, changes: [], last: null }
         if (changes.length) { historyRef.current.push({ kind: 'pixel', changes }); redoRef.current = [] }
-        return
-      }
-      if (modeRef.current === 'shape' && shapeDragRef.current?.active) {
+      } else if (modeRef.current === 'shape' && shapeDragRef.current?.active) {
         const d = shapeDragRef.current
         const { x, y } = pointAt(e)
         shapeDragRef.current = null
@@ -409,6 +466,8 @@ export function DrawPad({
           commitShape({ type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: x, y1: y, color: colorRef.current, size: SIZES[sizeRef.current].max })
         else render(pad.toData())
       }
+      activePointerRef.current = null
+      rectRef.current = null
     }
     canvas.addEventListener('pointerdown', onDown)
     canvas.addEventListener('pointermove', onMove)
@@ -442,6 +501,10 @@ export function DrawPad({
       stampsRef.current = []
       shapesRef.current = []
       previewRef.current = null
+      snapshotRef.current = null
+      shapeDragRef.current = null
+      activePointerRef.current = null
+      rectRef.current = null
       historyRef.current = []
       redoRef.current = []
     }
