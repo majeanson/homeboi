@@ -33,6 +33,7 @@ import { HubHead } from '../components/HubHead'
 import { SceneHead } from '../components/SceneHead'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
+import { RecipeListPicker } from '../components/RecipeListPicker'
 import { OperatorSection } from '../components/operator/OperatorSection'
 import { DealCard } from '../components/DealCard'
 import { IngredientLine } from '../components/IngredientLine'
@@ -170,6 +171,7 @@ export function DevKit() {
   const [chipOn, setChipOn] = useState<string[]>(['préféré'])
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
+  const [listPickOpen, setListPickOpen] = useState(false)
   const voice = useVoiceInput(setText3, { continuous: true, split: true })
   const icons = Object.keys(PIP_ICONS) as IconName[]
 
@@ -899,6 +901,36 @@ export function DevKit() {
           </div>
         </Demo>
       ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'RecipeListPicker',
+      file: 'components/RecipeListPicker.tsx',
+      kw: 'recipe ingredients grocery list shop add modal liste ingrédients épicerie',
+      render: () => {
+        const recipe: Recipe = {
+          id: 'demo',
+          title: 'Spaghetti bolognaise',
+          ingredients: ['500 g de bœuf haché', '1 oignon', '2 gousses d’ail', '800 ml de tomates', 'Spaghettis', 'Parmesan'],
+          steps: [],
+          servings: null,
+          notes: null,
+          source: null,
+          image: null,
+          tags: [],
+          updatedAt: 0,
+        }
+        return (
+          <Demo label="pick which ingredients to add to the list (not all)">
+            <div>
+              <button className="btn" onClick={() => setListPickOpen(true)}>
+                Ajouter à la liste
+              </button>
+              {listPickOpen && <RecipeListPicker recipe={recipe} onClose={() => setListPickOpen(false)} />}
+            </div>
+          </Demo>
+        )
+      },
     },
     {
       cat: 'Overlays & chrome',

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon, InlineIcon } from '../components/Icon'
 import { HubHead } from '../components/HubHead'
@@ -175,6 +175,7 @@ export function Liste() {
   const undo = useUndoToast()
   const recordUndo = useRecordUndo()
   const write = useWrite()
+  const qc = useQueryClient()
   // Contextual "?" help mode (shared hook): arm it in the header, then tap one of
   // the list's controls (flyer search / Vider les cochés / cashier) to learn what
   // it does in place instead of running it. La liste is one flat list, so its help
@@ -282,6 +283,10 @@ export function Liste() {
           body: { clearChecked: true, ids },
           affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
         }).catch(() => {})
+        // Wait for the board to actually reflect the removal before un-hiding.
+        // `write`'s invalidate only *fires* a background refetch — un-hiding before
+        // it lands flashes the just-removed rows back from the stale cached frame.
+        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
         setPendingClear((s) => {
           const n = new Set(s)
           ids.forEach((i) => n.delete(i))
@@ -307,6 +312,9 @@ export function Liste() {
         }),
       onCommit: async () => {
         await write('list', { method: 'DELETE', body: { id: item.id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+        // Wait for the board to reflect the delete before un-hiding, else the stale
+        // cached frame (still holding the row) flashes it back for a frame.
+        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
         setPendingClear((s) => {
           const n = new Set(s)
           n.delete(item.id)
@@ -384,32 +392,17 @@ export function Liste() {
         // item is a frequent move, so it earns a one-tap shortcut here instead of
         // living only behind the ＋ Add sheet → Circulaires.
         trailing={
-          <>
-            {!!navigator.share && list.length > 0 && (
-              <button
-                type="button"
-                className="edit-field__icon-btn"
-                onClick={() => {
-                  const unchecked = list.filter((i) => !i.checked_at)
-                  const items = (unchecked.length > 0 ? unchecked : list).map((i) => `• ${i.text}`).join('\n')
-                  void navigator.share({ title: t.list.share, text: items })
-                }}
-                aria-label={t.list.share}
-                title={t.list.share}
-              >
-                <Icon name="arrow-up-right-bold" size={17} />
-              </button>
-            )}
-            <button
-              type="button"
-              className="edit-field__icon-btn help-pick"
-              onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
-              aria-label={t.shop.browse}
-              title={t.shop.browse}
-            >
-              <Icon name="magnifying-glass-bold" size={17} />
-            </button>
-          </>
+          // Sharing the list moved to the ＋ Add sheet (→ "Partager"), so the page
+          // stays just the list + the one frequent flyer-search shortcut.
+          <button
+            type="button"
+            className="edit-field__icon-btn help-pick"
+            onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
+            aria-label={t.shop.browse}
+            title={t.shop.browse}
+          >
+            <Icon name="magnifying-glass-bold" size={17} />
+          </button>
         }
         placeholder={
           voice.listening

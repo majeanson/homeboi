@@ -9,7 +9,6 @@ import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
 import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
-import { useWrite } from '../lib/write'
 import { withoutHeadings } from '../lib/recipeSections'
 import { live } from '../lib/query'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
@@ -32,6 +31,7 @@ import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { reschedule } from '../components/kitchen/mealMutations'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildRecipe, buildDay } from '../components/detail/adapters'
+import { RecipeListPicker } from '../components/RecipeListPicker'
 import { SIDE_SLOTS, SLOT_ICON_NAME, SLOT_TIME_ORDER } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { tintInk, faint, hairline } from '../lib/colors'
@@ -58,7 +58,6 @@ const SUGGEST_DRESS: Record<SuggestSource, { icon: IconName; color: string }> = 
 export function Kitchen() {
   const t = useT()
   const qc = useQueryClient()
-  const write = useWrite()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
@@ -70,15 +69,13 @@ export function Kitchen() {
   // Tapping a recipe in the book opens the shared entity-detail peek (photo, tags,
   // time, hearts) with "Ouvrir la recette" to go deeper — same peek the board uses.
   const detail = useEntityDetail()
-  // Push a recipe's ingredients onto the shared grocery list in one tap.
+  // "Ajouter à la liste" from the recipe peek opens the same "which ingredients?"
+  // checklist the recipe sheet uses — you rarely need EVERY ingredient (most are
+  // staples), so you tick the few you're missing instead of dumping them all.
+  const [shopFor, setShopFor] = useState<Recipe | null>(null)
   const shopRecipe = (r: Recipe) => {
-    const items = withoutHeadings(r.ingredients ?? [])
-    if (!items.length) return
-    void write('recipe-to-list', {
-      method: 'POST',
-      body: { items },
-      affectedKeys: [['board'], ['list']],
-    }).catch(() => {})
+    if (!withoutHeadings(r.ingredients ?? []).length) return
+    setShopFor(r)
   }
   // The full per-day editor (add/remove/reorder meals, the staples step, the day
   // note, clear the day) lives on its own full-screen scene now — /kitchen/day/:date
@@ -689,6 +686,8 @@ export function Kitchen() {
           />
         )}
       </main>
+      {/* "Ajouter à la liste" from a recipe peek → pick which ingredients (not all). */}
+      {shopFor && <RecipeListPicker recipe={shopFor} onClose={() => setShopFor(null)} />}
     </>
   )
 }

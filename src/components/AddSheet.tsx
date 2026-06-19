@@ -91,6 +91,7 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   'quick-add': { cat: 'list', icon: 'lightning-bold' },
   flyer: { cat: 'meal', icon: 'magnifying-glass-bold' },
   'auto-pick': { cat: 'chore', icon: 'tag-bold' },
+  share: { cat: 'list', icon: 'arrow-up-right-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -251,17 +252,27 @@ export function AddSheet({
   // only while the sheet's open on Liste. An empty list ⇒ nothing to price-match,
   // so the tile hides (see `tiles` below). Replaces the old on-page button — the
   // list page is now just the list; its shopping actions live behind the ＋.
-  const wantsAutoPick = shown.includes('auto-pick')
+  // Both the auto-pick (price-match) and share tiles need the current list, fetched
+  // only while the sheet's open on Liste.
+  const wantsList = shown.includes('auto-pick') || shown.includes('share')
   const { data: listBoard } = useQuery({
     queryKey: BOARD_KEY,
     queryFn: () => api<{ list: ListItem[] }>('board'),
-    enabled: open && wantsAutoPick,
+    enabled: open && wantsList,
   })
   const listItems = listBoard?.list ?? []
   const [autoBusy, setAutoBusy] = useState(false)
-  // The tiles actually rendered: auto-pick only earns a spot once there's a list
-  // to price-match against (an empty Liste shows just add/quick-add/flyer).
-  const tiles = shown.filter((m) => m !== 'auto-pick' || listItems.length > 0)
+  // The OS share sheet exists (mobile/PWA, not every desktop). Gate the share tile
+  // on it so we never offer a dead button.
+  const canShare = typeof navigator !== 'undefined' && !!navigator.share
+  // The tiles actually rendered: auto-pick + share only earn a spot once there's a
+  // list to act on (an empty Liste shows just add/quick-add/flyer); share also needs
+  // OS share support.
+  const tiles = shown.filter((m) => {
+    if (m === 'auto-pick') return listItems.length > 0
+    if (m === 'share') return canShare && listItems.length > 0
+    return true
+  })
 
   async function autoPick() {
     if (autoBusy) return
@@ -284,6 +295,22 @@ export function AddSheet({
     setAutoBusy(false)
     close()
     if (any || hadPicks) nav('/liste/cashier')
+  }
+
+  // Share the list through the OS share sheet — the unchecked lines (or the whole
+  // list if nothing's unchecked), one bullet per line. Moved off the Liste page
+  // (where it sat beside the flyer search) to here, so the page stays just the list.
+  async function shareList() {
+    if (!canShare) return
+    const unchecked = listItems.filter((i) => !i.checked_at)
+    const items = (unchecked.length > 0 ? unchecked : listItems).map((i) => `• ${i.text}`).join('\n')
+    if (!items) return
+    close()
+    try {
+      await navigator.share({ title: t.list.share, text: items })
+    } catch {
+      /* user dismissed the share sheet, or it's unavailable — nothing to do */
+    }
   }
 
   const close = useCallback(() => {
@@ -470,6 +497,7 @@ export function AddSheet({
       'quick-add': t.list.quickAdd,
       flyer: t.shop.browse,
       'auto-pick': t.shop.auto,
+      share: t.list.share,
     }
     return labels[m]
   }
@@ -544,6 +572,10 @@ export function AddSheet({
                 onClick={help.pick(m, () => {
                   if (m === 'auto-pick') {
                     autoPick()
+                    return
+                  }
+                  if (m === 'share') {
+                    void shareList()
                     return
                   }
                   // The day-planner shortcuts resolve their date at click time

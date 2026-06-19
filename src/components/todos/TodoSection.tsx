@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
@@ -54,6 +54,7 @@ export function TodoSection({
   const t = useT()
   const write = useWrite()
   const undo = useUndoToast()
+  const qc = useQueryClient()
   const recordUndo = useRecordUndo()
   const ro = isGuest()
   const scope = day ?? null
@@ -153,6 +154,8 @@ export function TodoSection({
         }),
       onCommit: async () => {
         await write('todos', { method: 'DELETE', body: { id: todo.id }, affectedKeys: [TODOS_KEY] }).catch(() => {})
+        // Wait for the refetch so the stale cached frame can't flash the row back.
+        await qc.refetchQueries({ queryKey: key }).catch(() => {})
         setPending((s) => {
           const n = new Set(s)
           n.delete(todo.id)
@@ -178,6 +181,8 @@ export function TodoSection({
         await write('todos', { method: 'PATCH', body: { clearChecked: true, ids }, affectedKeys: [TODOS_KEY] }).catch(
           () => {},
         )
+        // Wait for the refetch so the stale cached frame can't flash the rows back.
+        await qc.refetchQueries({ queryKey: key }).catch(() => {})
         setPending((s) => {
           const n = new Set(s)
           ids.forEach((i) => n.delete(i))

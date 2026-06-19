@@ -78,6 +78,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | **SectionIntro** | `components/SectionIntro.tsx` | First-visit welcome card (mirrors Guide). |
 | **TopBar** | `components/TopBar.tsx` | Minimal auth/home chrome (brand + day/night + FR/EN). |
 | **FormScene** | `components/FormScene.tsx` | Full-screen shell for operator add-forms. |
+| **RecipeListPicker** | `components/RecipeListPicker.tsx` | "Which ingredients?" picker (shared `Modal`) — tick the few you're missing, then add to the grocery list (`recipe-to-list`), instead of dumping every line. Opens all-unticked, select-all/none. Same checklist as the inline one in `RecipeSheet`; used by the Kitchen recipe **peek**'s "Ajouter à la liste". |
 
 ### Page orchestrators — intentionally NOT in the gallery
 Need live data/route context, so they're catalogued but not rendered as specimens:

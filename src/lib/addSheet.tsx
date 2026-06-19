@@ -25,6 +25,9 @@ export type AddSheetMode =
   | 'quick-add'
   | 'flyer'
   | 'auto-pick'
+  // Share the list out (the OS share sheet) — runs in place like auto-pick. Lives
+  // behind the ＋ so the list page itself stays just the list.
+  | 'share'
   | 'recipe'
   | 'meal'
   | 'leftovers'
@@ -53,7 +56,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // The Routines tab's ＋ is the manage picker (create new + edit existing),
   // resolved in-sheet — see the `routine-pick` panel in AddSheet.
   routines: ['routine-pick'],
-  liste: ['list-item', 'quick-add', 'flyer', 'auto-pick'],
+  liste: ['list-item', 'quick-add', 'flyer', 'auto-pick', 'share'],
 }
 
 // The operator-grade forms a kiosk that isn't signed in never sees as ＋ tiles.

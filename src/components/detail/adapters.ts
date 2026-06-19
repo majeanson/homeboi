@@ -181,7 +181,8 @@ export function buildDay(
 }
 
 // — A recipe from the book.
-// `onShop` adds "Ajouter à la liste" — pushes all ingredients to the grocery list. —
+// `onShop` adds "Ajouter à la liste" — opens the "which ingredients?" picker so you
+// add just the ones you're missing (not the whole list). —
 export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => void }): DetailModel {
   const { t } = ctx
   const total = recipeTotalMin(r)

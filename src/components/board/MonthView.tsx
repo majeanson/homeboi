@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
@@ -86,6 +86,7 @@ export function MonthView({
   const nav = useNavigate()
   const write = useWrite()
   const undo = useUndoToast()
+  const qc = useQueryClient()
   // Tap a meal/event/chore in the day panel to peek its detail — the same sheet the
   // bento board uses. The /api/month rows carry slightly different field names, so
   // each onOpen maps them onto the shared builders (components/detail/adapters).
@@ -161,6 +162,9 @@ export function MonthView({
         await write('todos', { method: 'PATCH', body: { id: td.id, done: true }, affectedKeys: [TODOS_KEY, ['month']] }).catch(
           () => {},
         )
+        // Wait for the month read to reflect the change before un-hiding, else the
+        // stale cached frame (still holding the todo) flashes it back for a frame.
+        await qc.refetchQueries({ queryKey: ['month'] }).catch(() => {})
         setPendingTodo((s) => {
           const n = new Set(s)
           n.delete(td.id)

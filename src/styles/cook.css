@@ -625,6 +625,22 @@
   flex: 1 1 12rem;
   margin-bottom: 0;
 }
+/* Search on its own line (full width), with the Aa/Collections toggle beside it. */
+.kitchen__recipe-searchbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+.kitchen__recipe-searchbar .kitchen__recipe-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+}
+.kitchen__recipe-searchbar .recipe-view-toggle {
+  flex: 0 0 auto;
+  margin: 0;
+}
 .kitchen__cook-filter,
 .kitchen__soon-filter,
 .kitchen__neglect-filter,

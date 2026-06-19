@@ -16,6 +16,7 @@ export interface ListItem {
   added_by?: string | null
   deal_json?: string | null
   search_terms?: string | null // JSON array of extra flyer-search synonyms, if any
+  checked_at?: number | null // ticked-off timestamp (null/absent = still to buy)
 }
 
 // Parse a staged deal off a list row (null when none / malformed).

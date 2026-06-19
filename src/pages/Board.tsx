@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
@@ -75,6 +75,7 @@ export function Board() {
   const undo = useUndoToast()
   const recordUndo = useRecordUndo()
   const write = useWrite()
+  const qc = useQueryClient()
   const ro = isGuest()
   const { lang } = useLang()
   const { audience } = useAudience()
@@ -485,6 +486,9 @@ export function Board() {
         await write('chores', { method: 'PATCH', body: { id: c.id, complete: true }, affectedKeys: [BOARD_KEY] }).catch(
           () => {},
         )
+        // Wait for the board to reflect the change before un-hiding, else the stale
+        // cached frame (still holding the row) flashes it back for a frame.
+        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
         setPendingDone((s) => {
           const n = new Set(s)
           n.delete(c.id)
@@ -508,6 +512,8 @@ export function Board() {
         }),
       onCommit: async () => {
         await write('meal-leftovers', { method: 'DELETE', body: { id: l.id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+        // Wait for the refetch so the stale frame can't flash the row back.
+        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
         setPendingLeftover((s) => {
           const n = new Set(s)
           n.delete(l.id)
@@ -549,6 +555,8 @@ export function Board() {
         await write('chores', { method: 'PATCH', body: { id: c.id, complete: true }, affectedKeys: [BOARD_KEY] }).catch(
           () => {},
         )
+        // Wait for the refetch so the stale frame can't flash the row back.
+        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
         setPendingDone((s) => {
           const n = new Set(s)
           n.delete(c.id)

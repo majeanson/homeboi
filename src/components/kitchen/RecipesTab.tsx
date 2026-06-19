@@ -302,8 +302,11 @@ export function RecipesTab({
         <HelpTitle help={help} k="recipesBook">{t.recipes.title}</HelpTitle>
       </div>
       {help?.bubbleFor('recipesBook')}
-      {(recipes.length > 3 || shownPills.length > 0) && (
-        <div className="kitchen__recipe-tools">
+      {/* Search on its own line, good width, with the #11 "Aa vs Collections"
+          view toggle beside it. The filter/sort PILLS get their own wrapping
+          row below so they agglomerate cleanly like the custom pills. */}
+      {(recipes.length > 3 || (recipes.length > 0 && tags.length > 0)) && (
+        <div className="kitchen__recipe-searchbar">
           {recipes.length > 3 && (
             <input
               className="input kitchen__recipe-search"
@@ -313,6 +316,35 @@ export function RecipesTab({
               aria-label={t.recipes.search}
             />
           )}
+          {recipes.length > 0 && tags.length > 0 && (
+            <div className="recipe-view-toggle">
+              <div className="subtabs subtabs--mini" role="tablist" aria-label={t.recipes.arrange}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={!groupView}
+                  className={'subtabs__opt' + (!groupView ? ' is-on' : '')}
+                  onClick={help ? help.pick('collections', () => setGroupView(false)) : () => setGroupView(false)}
+                >
+                  Aa
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={groupView}
+                  className={'subtabs__opt' + (groupView ? ' is-on' : '')}
+                  onClick={help ? help.pick('collections', () => setGroupView(true)) : () => setGroupView(true)}
+                >
+                  {t.recipes.collectionsTitle}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {help?.bubbleFor('collections')}
+      {shownPills.length > 0 && (
+        <div className="kitchen__recipe-tools">
           {shownPills.map((p) => {
             const on = pillOn(p)
             if (isBuiltinPill(p)) {
@@ -391,34 +423,8 @@ export function RecipesTab({
         <p className="board__empty mono">{t.recipes.empty}</p>
       ) : (
         <>
-          {/* #11 view toggle — "Aa" flat alphabetical list vs "Collections"
-              grouped-by-tag sections. Re-arranges only; pills/tags still filter.
-              Hidden when there are no tags (nothing to group by). */}
-          {tags.length > 0 && (
-            <div className="recipe-view-toggle">
-              <div className="subtabs subtabs--mini" role="tablist" aria-label={t.recipes.arrange}>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={!groupView}
-                  className={'subtabs__opt' + (!groupView ? ' is-on' : '')}
-                  onClick={help ? help.pick('collections', () => setGroupView(false)) : () => setGroupView(false)}
-                >
-                  Aa
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={groupView}
-                  className={'subtabs__opt' + (groupView ? ' is-on' : '')}
-                  onClick={help ? help.pick('collections', () => setGroupView(true)) : () => setGroupView(true)}
-                >
-                  {t.recipes.collectionsTitle}
-                </button>
-              </div>
-            </div>
-          )}
-          {help?.bubbleFor('collections')}
+          {/* #11 "Aa vs Collections" view toggle now lives up beside the search;
+              re-arranges only — pills/tags still filter. */}
           {/* In Collections, the tag chips above pick which sections to show (a
               union), not narrow the recipes — say so once so the change is clear. */}
           {groupView && tags.length > 0 && (
