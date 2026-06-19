@@ -6,6 +6,7 @@ import { BirthdayPicker } from './BirthdayPicker'
 import { LinkComposer } from './LinkComposer'
 import { api } from '../../lib/api'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
+import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { CERCLE_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import {
@@ -18,6 +19,7 @@ import {
   type Member,
   buildGroups,
   buildPeople,
+  fullName,
   personKey,
 } from '../../lib/cercle'
 import { ContactPhotos } from './ContactPhotos'
@@ -48,6 +50,7 @@ export function ContactForm({
   const t = useT()
   const nav = useNavigate()
   const write = useWrite()
+  const confirm = useConfirm()
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -235,6 +238,26 @@ export function ContactForm({
       } else {
         onSaved() // offline: the create is queued with no id yet — just close
       }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // HEAVY delete (the person + their relationship edges + group memberships, all
+  // cascaded server-side), so it asks first via the confirm dialog rather than the
+  // forgiving undo toast lighter rows use. Edit-only — a brand-new person has no id.
+  async function remove() {
+    if (!value || saving) return
+    const okay = await confirm({
+      message: t.cercle.deleteConfirm(fullName(value)),
+      confirmLabel: t.cercle.deletePerson,
+      tone: 'danger',
+    })
+    if (!okay) return
+    setSaving(true)
+    try {
+      await write('cercle', { method: 'DELETE', body: { id: value.id }, affectedKeys: [CERCLE_KEY, BOARD_KEY] })
+      onSaved()
     } finally {
       setSaving(false)
     }
@@ -485,11 +508,17 @@ export function ContactForm({
         </div>
       )}
 
-      {/* Save is the VERY LAST thing in the form. */}
+      {/* Save is the VERY LAST thing in the form; a saved person can also be removed
+          (cascades their links + group memberships). */}
       <div className="cf__save">
         <button type="button" className="btn btn--primary" disabled={!firstName.trim() || saving || uploading} onClick={save}>
           <Icon name="check-bold" size={18} /> {t.cercle.save}
         </button>
+        {value && (
+          <button type="button" className="btn btn--ghost btn--danger" disabled={saving} onClick={remove}>
+            <Icon name="trash-bold" size={16} /> {t.cercle.deletePerson}
+          </button>
+        )}
       </div>
     </div>
   )
