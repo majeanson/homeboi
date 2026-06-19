@@ -7,6 +7,7 @@ import { isGuest } from '../../lib/device'
 import { InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
+import { ListRow } from '../ListRow'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
 import { OperatorSection } from './OperatorSection'
@@ -149,14 +150,17 @@ function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: (
 
   return (
     <li>
-      <span>
-        <InlineIcon name="device-mobile-bold" /> {device.label}
-      </span>
-      <RowActions
-        onEdit={() => setEditing(true)}
-        onDelete={onRevoke}
-        editLabel={t.operator.renameDevice}
-        deleteLabel={t.operator.revoke}
+      <ListRow
+        leading={<InlineIcon name="device-mobile-bold" />}
+        title={device.label}
+        actions={
+          <RowActions
+            onEdit={() => setEditing(true)}
+            onDelete={onRevoke}
+            editLabel={t.operator.renameDevice}
+            deleteLabel={t.operator.revoke}
+          />
+        }
       />
     </li>
   )
