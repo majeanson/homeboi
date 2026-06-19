@@ -2,6 +2,7 @@ import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
+import { deleteR2Blob } from '../_lib/r2'
 
 // Fridge notes — short household notes shown on the Aujourd'hui board until
 // cleared. Notes are usually born from the capture router (the catch-all 'note'
@@ -63,13 +64,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   )
     .bind(id, actor.householdId)
     .first<{ media_key: string | null }>()
-  if (row?.media_key && ctx.env.PHOTOS) {
-    try {
-      await ctx.env.PHOTOS.delete(row.media_key)
-    } catch {
-      /* leave the orphan rather than fail the clear */
-    }
-  }
+  await deleteR2Blob(ctx.env.PHOTOS, row?.media_key)
   // Soft clear (dismissed_at), scoped to the household so a kiosk can clear too.
   await ctx.env.DB.prepare('UPDATE notes SET dismissed_at = ? WHERE id = ? AND household_id = ?')
     .bind(nowSec(), id, actor.householdId)

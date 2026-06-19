@@ -1,6 +1,7 @@
 import { badRequest, notFound, ok, serviceUnavailable } from '../../_lib/json'
 import { authed } from '../../_lib/route'
 import { newId } from '../../_lib/ids'
+import { deleteR2Blob } from '../../_lib/r2'
 
 // Set a member's avatar to a PHOTO (operator). Raw image body, member id in the
 // query: POST /api/members/avatar?id=<memberId>. Stores the resized image in R2
@@ -30,9 +31,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // Flat, URL-safe key (single path segment so /api/img/[key] serves it).
   const key = `av_${newId()}`
   await ctx.env.PHOTOS.put(key, buf, { httpMetadata: { contentType: type } })
-  if (member.avatar_kind === 'photo' && member.avatar_ref) {
-    await ctx.env.PHOTOS.delete(member.avatar_ref).catch(() => {})
-  }
+  if (member.avatar_kind === 'photo') await deleteR2Blob(ctx.env.PHOTOS, member.avatar_ref)
   await ctx.env.DB.prepare("UPDATE members SET avatar_kind = 'photo', avatar_ref = ? WHERE id = ? AND household_id = ?")
     .bind(key, id, actor.householdId)
     .run()

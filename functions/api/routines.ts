@@ -1,6 +1,7 @@
 import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
+import { deleteR2Blob } from '../_lib/r2'
 
 // Kid-view visual routines. GET returns each routine with TODAY's completion
 // set (which resets daily — the day empties, NFR-CALM-4). "Today" is the
@@ -222,7 +223,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     // step-image cleanup). Only when the edit actually resolved a new photo list.
     if (ctx.env.PHOTOS && nextPhotos) {
       const kept = new Set(nextPhotos)
-      for (const k of prevPhotos) if (k && !kept.has(k)) await ctx.env.PHOTOS.delete(k).catch(() => {})
+      for (const k of prevPhotos) if (k && !kept.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
     }
     return ok({ ok: true })
   }
@@ -270,12 +271,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
       .first<{ cards_json: string; cards_narration_json: string | null; cards_photo_json: string | null }>()
     if (owns) {
       const cards = parseJsonArray<Card>(owns.cards_json)
-      for (const key of normalizeKeys(owns.cards_narration_json, cards.length)) {
-        if (key) await ctx.env.PHOTOS.delete(key).catch(() => {})
-      }
-      for (const key of normalizeKeys(owns.cards_photo_json, cards.length)) {
-        if (key) await ctx.env.PHOTOS.delete(key).catch(() => {})
-      }
+      for (const key of normalizeKeys(owns.cards_narration_json, cards.length)) await deleteR2Blob(ctx.env.PHOTOS, key)
+      for (const key of normalizeKeys(owns.cards_photo_json, cards.length)) await deleteR2Blob(ctx.env.PHOTOS, key)
     }
   }
   // routine_runs.routine_id FK-references this routine, so D1 blocks the delete

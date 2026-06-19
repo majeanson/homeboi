@@ -1,6 +1,7 @@
 import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
+import { deleteR2Blob } from '../_lib/r2'
 
 // Family photos for the wall-board frame. Bytes live in R2 (free tier, no
 // egress); these rows index them by key. GET is open to any actor (the kiosk
@@ -43,7 +44,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .bind(actor.householdId, MAX_PHOTOS)
     .all<{ id: string; r2_key: string }>()
   for (const row of stale.results) {
-    await ctx.env.PHOTOS.delete(row.r2_key).catch(() => {})
+    await deleteR2Blob(ctx.env.PHOTOS, row.r2_key)
     await ctx.env.DB.prepare('DELETE FROM photos WHERE id = ?').bind(row.id).run()
   }
   return ok({ key })
@@ -55,7 +56,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const row = await ctx.env.DB.prepare('SELECT r2_key FROM photos WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .first<{ r2_key: string }>()
-  if (row && ctx.env.PHOTOS) await ctx.env.PHOTOS.delete(row.r2_key).catch(() => {})
+  await deleteR2Blob(ctx.env.PHOTOS, row?.r2_key)
   await ctx.env.DB.prepare('DELETE FROM photos WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .run()

@@ -2,6 +2,7 @@ import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
+import { deleteR2Blob } from '../_lib/r2'
 
 // Household members. Read is open to the kiosk (the board needs faces +
 // "pick your face" attribution); create/edit/delete is operator-only. `colour`
@@ -121,7 +122,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     binds.push(body.isChild ? 1 : 0)
   }
   if (body.clearPhoto && member.avatar_kind === 'photo') {
-    if (ctx.env.PHOTOS && member.avatar_ref) await ctx.env.PHOTOS.delete(member.avatar_ref).catch(() => {})
+    await deleteR2Blob(ctx.env.PHOTOS, member.avatar_ref)
     // Back to a colour avatar; clear the now-deleted R2 key (legacy: color
     // members keep avatar_ref == colour) so no stale key lingers.
     sets.push("avatar_kind = 'color'", 'avatar_ref = colour')
@@ -169,9 +170,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const m = await ctx.env.DB.prepare('SELECT avatar_kind, avatar_ref FROM members WHERE id = ? AND household_id = ?')
     .bind(id, hh)
     .first<{ avatar_kind: string; avatar_ref: string }>()
-  if (ctx.env.PHOTOS && m?.avatar_kind === 'photo' && m.avatar_ref) {
-    await ctx.env.PHOTOS.delete(m.avatar_ref).catch(() => {})
-  }
+  if (m?.avatar_kind === 'photo') await deleteR2Blob(ctx.env.PHOTOS, m.avatar_ref)
   await ctx.env.DB.batch([
     ctx.env.DB.prepare(
       'DELETE FROM routine_runs WHERE routine_id IN (SELECT id FROM routines WHERE member_id = ? AND household_id = ?)',

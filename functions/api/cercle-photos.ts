@@ -1,6 +1,7 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
+import { deleteR2Blob } from '../_lib/r2'
 
 // Per-person photo gallery for « Le cercle » — extra pictures attached to one
 // contact with a short caption (an ID card, a screenshot of a coworker, a snapshot
@@ -71,7 +72,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .first<{ photo_key: string }>()
   if (!row) return notFound('Photo introuvable.')
   // Free the R2 blob first (best-effort — a leak is harmless but R2 stays tidy).
-  if (row.photo_key && ctx.env.PHOTOS) await ctx.env.PHOTOS.delete(row.photo_key).catch(() => {})
+  await deleteR2Blob(ctx.env.PHOTOS, row.photo_key)
   await ctx.env.DB.prepare('DELETE FROM contact_photos WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .run()

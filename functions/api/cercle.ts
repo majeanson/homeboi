@@ -1,6 +1,7 @@
 import { badRequest, notFound, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
+import { deleteR2Blob } from '../_lib/r2'
 
 // « Le cercle » — the household people directory (contacts). GET returns the
 // whole circle (contacts + their relationship edges + named groups) in one shot;
@@ -319,7 +320,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // harmless but R2 stays tidy).
   if ('photoKey' in body && ctx.env.PHOTOS) {
     const next = str(body.photoKey)
-    if (owns.photo_key && owns.photo_key !== next) await ctx.env.PHOTOS.delete(owns.photo_key).catch(() => {})
+    if (owns.photo_key !== next) await deleteR2Blob(ctx.env.PHOTOS, owns.photo_key)
   }
   return ok({ ok: true })
 })
@@ -333,7 +334,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .first<{ photo_key: string | null }>()
   if (!owns) return notFound('Contact introuvable.')
 
-  if (owns.photo_key && ctx.env.PHOTOS) await ctx.env.PHOTOS.delete(owns.photo_key).catch(() => {})
+  await deleteR2Blob(ctx.env.PHOTOS, owns.photo_key)
 
   // Free the gallery blobs (contact_photos rows cascade with the contact, but the
   // R2 objects don't — fetch their keys first, then best-effort delete each blob).
@@ -344,7 +345,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
       .bind(body.id, actor.householdId)
       .all<{ photo_key: string }>()
     for (const row of gallery.results) {
-      if (row.photo_key) await ctx.env.PHOTOS.delete(row.photo_key).catch(() => {})
+      await deleteR2Blob(ctx.env.PHOTOS, row.photo_key)
     }
   }
 

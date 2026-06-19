@@ -1,5 +1,6 @@
 import { badRequest, ok, created, notFound, readJson, parseJsonArray } from '../_lib/json'
 import { authed } from '../_lib/route'
+import { deleteR2Blob } from '../_lib/r2'
 import { newId, nowSec } from '../_lib/ids'
 
 // Recipe book CRUD (the "consultation + meal-planning helper" layer). A recipe is
@@ -272,15 +273,13 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       actor.householdId,
     )
     .run()
-  if (isR2Key(prev.image) && prev.image !== image && ctx.env.PHOTOS) {
-    await ctx.env.PHOTOS.delete(prev.image).catch(() => {})
-  }
+  if (isR2Key(prev.image) && prev.image !== image) await deleteR2Blob(ctx.env.PHOTOS, prev.image)
   // Free any step-photo blobs this edit orphaned (a key present before but no
   // longer in the saved array). Best-effort; never blocks the save.
   if (ctx.env.PHOTOS) {
     const kept = new Set(newStepImages)
     const orphaned = stepImageKeys(prev.steps_images_json).filter((k) => !kept.has(k))
-    for (const k of orphaned) await ctx.env.PHOTOS.delete(k).catch(() => {})
+    for (const k of orphaned) await deleteR2Blob(ctx.env.PHOTOS, k)
   }
   return ok({ ok: true })
 })
@@ -296,8 +295,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .bind(body.id, actor.householdId)
     .first<{ image: string | null; steps_images_json: string | null }>()
   if (ctx.env.PHOTOS) {
-    if (isR2Key(row?.image)) await ctx.env.PHOTOS.delete(row!.image!).catch(() => {})
-    for (const k of stepImageKeys(row?.steps_images_json)) await ctx.env.PHOTOS.delete(k).catch(() => {})
+    if (isR2Key(row?.image)) await deleteR2Blob(ctx.env.PHOTOS, row?.image)
+    for (const k of stepImageKeys(row?.steps_images_json)) await deleteR2Blob(ctx.env.PHOTOS, k)
   }
   await ctx.env.DB.prepare('DELETE FROM recipes WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
