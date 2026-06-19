@@ -16,11 +16,15 @@ import type { IconName } from '../Icon'
 import { nameOf, colorOf, type Dict, type Member, type EventRow, type ChoreInstance } from '../board/types'
 import type { DetailAction, DetailBlock, DetailModel, DetailWho } from '../../lib/detail'
 
-// What every builder needs to resolve names/faces + locale + copy.
+// What every builder needs to resolve names/faces + locale + copy. `recipeFor`
+// (optional) lets buildMeal light up a planned meal's recipe — photo + ingredient
+// glance — without each callsite threading the recipe; pages set it from
+// useRecipeForMeal(). Absent → a meal peek still works, just without the photo.
 export interface DetailCtx {
   t: Dict
   lang: Lang
   members: Member[]
+  recipeFor?: (m: { recipe_id?: string | null; title: string }) => Recipe | undefined
 }
 
 // A face for the header, drawn by the shared <Avatar>. Null when no member.
@@ -129,10 +133,29 @@ export function buildMeal(
   const { t, members } = ctx
   const slot = m.slot
   const icon: IconName = slot && isMealSlot(slot) ? SLOT_ICON_NAME[slot] : CATS.meal.icon
+  // Resolve the linked recipe: an explicit one wins, else the ctx resolver
+  // (useRecipeForMeal) maps the meal → its saved recipe by link/title. With it the
+  // peek shows the food's real photo + a quick-glance of the ingredients.
+  const recipe = opts?.recipe ?? ctx.recipeFor?.(m) ?? null
+  const recipeId = recipe?.id ?? m.recipe_id ?? null
   const blocks: DetailBlock[] = m.is_leftover ? [{ kind: 'text', text: t.kitchen.leftoversTag }] : []
+  // Quick glance at what the meal IS (skip for a leftover — it has no recipe to
+  // preview): its tags then the first few ingredients, mirroring the recipe peek.
+  if (recipe && !m.is_leftover) {
+    if (recipe.tags?.length) blocks.push({ kind: 'chips', chips: recipe.tags })
+    const ing = preview(recipe.ingredients, 6)
+    if (ing.length) blocks.push({ kind: 'list', label: t.detail.ingredients, items: ing })
+  }
+  const total = recipe ? recipeTotalMin(recipe) : 0
+  // Slot label + cook time read together as the sub-line ("Souper · 35 min").
+  const sub = [opts?.slotLabel, total ? `${total} min` : null].filter(Boolean).join(' · ') || undefined
   const actions: DetailModel['actions'] = []
-  if (m.recipe_id)
-    actions.push({ key: 'recipe', label: t.detail.openRecipe, icon: 'book-open-bold', primary: true, href: `/kitchen/recipe/${m.recipe_id}` })
+  if (recipeId)
+    actions.push({ key: 'recipe', label: t.detail.openRecipe, icon: 'book-open-bold', primary: true, href: `/kitchen/recipe/${recipeId}` })
+  // "Cuisiner" — jump straight into cook mode, but only when we have the resolved
+  // recipe (a bare recipe_id without the loaded row can't be cooked from here).
+  if (recipe)
+    actions.push({ key: 'cook', label: t.kitchen.cook, icon: 'cooking-pot-bold', href: `/kitchen/recipe/${recipe.id}/cook` })
   if (opts?.daySec) actions.push({ key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${opts.daySec}` })
   // "Créer des restants" — skip if the meal is already a replanned leftover
   if (opts?.onLeftover && !m.is_leftover)
@@ -143,11 +166,11 @@ export function buildMeal(
     kind: 'meal',
     title: m.title,
     icon,
-    photo: opts?.recipe ? recipeImg(opts.recipe.image) : null,
+    photo: recipe ? recipeImg(recipe.image) : null,
     accent: opts?.color ?? CATS.meal.color,
-    whoLabel: opts?.slotLabel,
+    whoLabel: sub,
     who: whoOf(members, m.cook_member_id ?? null, t.detail.cook),
-    loveRecipeId: m.recipe_id ?? undefined,
+    loveRecipeId: recipeId ?? undefined,
     blocks,
     actions,
   }

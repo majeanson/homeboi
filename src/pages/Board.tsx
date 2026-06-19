@@ -37,6 +37,7 @@ import { MonthView } from '../components/board/MonthView'
 import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
+import { useRecipeForMeal } from '../lib/nextMeal'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -87,6 +88,8 @@ export function Board() {
   // The shared entity-detail peek (lib/detail) — tap a row to see picture/date/text
   // + smart actions. Parent audience only; the toddler lens stays hear-first below.
   const detail = useEntityDetail()
+  // Resolves a tapped meal → its saved recipe so the peek shows the photo + glance.
+  const recipeFor = useRecipeForMeal()
   // The board layout for this device (bento | next | lanes), remembered locally.
   const [view, setView] = useState<BoardView>(() => readBoardView())
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
@@ -401,7 +404,8 @@ export function Board() {
   // ahead every evening (~8 PM Eastern), so "today" highlighted tomorrow's cell.
   const todayDay = todayLocalDay()
   // What the adapters (components/detail/adapters) need to resolve faces + copy.
-  const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [] }
+  // recipeFor lets a tapped meal show its recipe photo + ingredient glance.
+  const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [], recipeFor }
   const tomorrowDay = addLocalDays(todayDay, 1)
   // Current minute-of-day used to strike through meals whose slot time has passed.
   const nowMinOfDay = new Date().getHours() * 60 + new Date().getMinutes()
@@ -774,40 +778,8 @@ export function Board() {
             )}
           </Section>
 
-          {/* Restants à finir — undated leftovers, a calm "eat these first" nudge.
-              Tap the check to mark one Fini (eaten). Hidden when the pool is empty. */}
-          {leftovers.length > 0 && (
-            <Section label={t.kitchen.leftoversBoard}>
-              {leftovers.map((l) => (
-                <Act
-                  key={l.id}
-                  cat="meal"
-                  icon="arrow-counter-clockwise-bold"
-                  when={t.kitchen.leftoversTag}
-                  title={l.title}
-                  onCheck={() => markLeftoverDone(l)}
-                  onOpen={() => detail.open(buildLeftover(l, detailCtx, {
-                    onDone: () => markLeftoverDone(l),
-                    onPlanTonight: ro ? undefined : () => planLeftoverTonight(l.id, l.title),
-                  }))}
-                />
-              ))}
-            </Section>
-          )}
-
-          {/* One-off to-dos — captured "corvées" / standing tasks with no schedule.
-              Tap to check off (drops away). Hidden when there are none. */}
-          {todayTodos.length > 0 && (
-            <Section label={t.board.todos}>
-              {todayTodos.map(todoAct)}
-            </Section>
-          )}
-
-          {/* À compléter — standalone check-off todos (global + today), distinct
-              from the loose-chore "À faire" above. Check in place, "Effacer
-              cochées", and one-tap departure checklists (templates). */}
-          <TodoSection title={t.todos.title} members={data.members} />
-
+          {/* Demain rides directly under today — the second-most-important glance
+              (what's coming + prep-ahead), above the day's standing lists. */}
           <Section label={t.board.tomorrow}>
             {tomorrowWx && (
               <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
@@ -870,6 +842,40 @@ export function Board() {
               <p className="feed-empty feed-empty--calm">{t.board.tomorrowClear}</p>
             )}
           </Section>
+
+          {/* Restants à finir — undated leftovers, a calm "eat these first" nudge.
+              Tap the check to mark one Fini (eaten). Hidden when the pool is empty. */}
+          {leftovers.length > 0 && (
+            <Section label={t.kitchen.leftoversBoard}>
+              {leftovers.map((l) => (
+                <Act
+                  key={l.id}
+                  cat="meal"
+                  icon="arrow-counter-clockwise-bold"
+                  when={t.kitchen.leftoversTag}
+                  title={l.title}
+                  onCheck={() => markLeftoverDone(l)}
+                  onOpen={() => detail.open(buildLeftover(l, detailCtx, {
+                    onDone: () => markLeftoverDone(l),
+                    onPlanTonight: ro ? undefined : () => planLeftoverTonight(l.id, l.title),
+                  }))}
+                />
+              ))}
+            </Section>
+          )}
+
+          {/* One-off to-dos — captured "corvées" / standing tasks with no schedule.
+              Tap to check off (drops away). Hidden when there are none. */}
+          {todayTodos.length > 0 && (
+            <Section label={t.board.todos}>
+              {todayTodos.map(todoAct)}
+            </Section>
+          )}
+
+          {/* À compléter — standalone check-off todos (global + today), distinct
+              from the loose-chore "À faire" above. Check in place, "Effacer
+              cochées", and one-tap departure checklists (templates). */}
+          <TodoSection title={t.todos.title} members={data.members} />
 
           {(upcomingEvents.length > 0 || upcomingChores.length > 0) && (
             <Section label={t.board.upcoming}>

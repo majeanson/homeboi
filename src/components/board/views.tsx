@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { CATS } from '../../lib/cats'
 import { tintInk, faint, hairline } from '../../lib/colors'
 import { useMealPrefs } from '../../lib/mealPrefs'
-import { useNextMeal } from '../../lib/nextMeal'
+import { useNextMeal, useRecipeForMeal } from '../../lib/nextMeal'
 import { formatTime } from '../../lib/format'
 import { SLOT_ICON_NAME, SLOT_TIME_ORDER, type MealSlot } from '../../lib/mealSlots'
 import { todayLocalDay } from '../../lib/localDay'
@@ -44,7 +44,7 @@ export function NowNext({
   const ro = isGuest()
   // Tap any item to peek its detail — the same sheet the bento board uses.
   const detail = useEntityDetail()
-  const detailCtx: DetailCtx = { t, lang, members: data.members }
+  const detailCtx: DetailCtx = { t, lang, members: data.members, recipeFor: useRecipeForMeal() }
   // "Préparer le repas" — the next meal due that has a recipe → its cook mode.
   // Only shown when there's a recipe to open (a free-text meal has nothing to
   // cook), so the action is never a dead end.
@@ -338,7 +338,7 @@ export function Lanes({
   const ro = isGuest()
   // Tap any item to peek its detail — the same sheet the bento board uses.
   const detail = useEntityDetail()
-  const detailCtx: DetailCtx = { t, lang, members: data.members }
+  const detailCtx: DetailCtx = { t, lang, members: data.members, recipeFor: useRecipeForMeal() }
   const todaySec = todayLocalDay()
   const saveAsLeftover = async (id: string, title: string) => {
     const res = await write<{ id?: string }>('meal-leftovers', {

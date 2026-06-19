@@ -42,16 +42,31 @@ export function pickNextMeal(todayMeals: MealRow[], hour: number): MealRow | und
   return planned.find((m) => SLOT_RANK[m.slot as MealSlot] >= rank) ?? planned[planned.length - 1]
 }
 
+// The minimum a meal needs to resolve to its recipe — a link and/or a title.
+// Loosened from MealRow so the detail peek's MealLike (board + kitchen shapes)
+// can resolve too without importing the full row type.
+export type MealLink = { recipe_id?: string | null; title: string }
+
 // Resolve a planned meal to its saved recipe — exact link first, loose title
 // match second (mirrors Kitchen's recipeForMeal). Undefined = a free-text meal
 // with no matching recipe.
-export function recipeForMeal(meal: MealRow, recipes: Recipe[]): Recipe | undefined {
+export function recipeForMeal(meal: MealLink, recipes: Recipe[]): Recipe | undefined {
   if (meal.recipe_id) {
     const byId = recipes.find((r) => r.id === meal.recipe_id)
     if (byId) return byId
   }
   const key = meal.title.trim().toLowerCase()
   return recipes.find((r) => r.title.trim().toLowerCase() === key)
+}
+
+// A resolver the detail peek hands to buildMeal so a meal's tap shows its recipe
+// (photo + ingredient glance). Reads the SHARED recipes cache (RECIPES_KEY, same
+// rows Kitchen loads) — and deliberately does NOT poll: recipes change rarely, so
+// the board's poll cost stays put while a peek still gets a fresh-enough recipe.
+export function useRecipeForMeal(): (meal: MealLink) => Recipe | undefined {
+  const { data } = useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes') })
+  const recipes = data?.recipes ?? []
+  return (meal) => recipeForMeal(meal, recipes)
 }
 
 // The next meal to cook + its recipe + the cook-mode route, from the shared
