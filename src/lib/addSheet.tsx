@@ -34,6 +34,13 @@ export type AddSheetMode =
   | 'pantry'
   | 'reserve'
   | 'cook'
+  // « Le cercle » ＋ chooser — all four are navigate-only (NAV_TARGET): a person
+  // form, the family builder, and the connect / new-group flows opened on /cercle
+  // via a ?param the page reads. No in-sheet form.
+  | 'person'
+  | 'family'
+  | 'connect'
+  | 'group'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
 // action → the sheet skips the chooser and opens that form directly. Liste's ＋
@@ -57,6 +64,9 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // resolved in-sheet — see the `routine-pick` panel in AddSheet.
   routines: ['routine-pick'],
   liste: ['list-item', 'quick-add', 'flyer', 'auto-pick', 'share'],
+  // Le cercle: add a person, build a family, connect two people, or a new group —
+  // all navigate-only tiles (the page opens connect/group from a ?param).
+  cercle: ['person', 'family', 'connect', 'group'],
 }
 
 // The operator-grade forms a kiosk that isn't signed in never sees as ＋ tiles.

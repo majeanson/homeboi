@@ -12,7 +12,7 @@ export interface Cat {
   wash: string // the pale tile background
 }
 
-export type CatKey = 'event' | 'meal' | 'chore' | 'list' | 'pantry' | 'routine' | 'birthday'
+export type CatKey = 'event' | 'meal' | 'chore' | 'list' | 'pantry' | 'routine' | 'birthday' | 'cercle'
 
 // `wash` points at the theme-aware CSS variable (not a static hex) so a tile's
 // pale background follows day↔night — night.css darkens every --*-wash. The
@@ -26,6 +26,7 @@ export const CATS: Record<CatKey, Cat> = {
   pantry: { icon: 'carrot-bold', color: '#E0724E', deep: '#C2563A', wash: 'var(--terracotta-wash)' }, // terracotta
   routine: { icon: 'smiley-bold', color: '#B06A93', deep: '#95527A', wash: 'var(--berry-wash)' }, // berry — smiley is the single Routines icon (nav, onboarding, per-item pictos all match)
   birthday: { icon: 'cake-bold', color: '#C45E86', deep: '#95527A', wash: 'var(--berry-wash)' }, // rose — derived birthdays (the cercle accent), cake distinguishes it from routine
+  cercle: { icon: 'users-three-bold', color: '#C45E86', deep: '#95527A', wash: 'var(--berry-wash)' }, // rose — Le cercle's ＋ tiles (person/family/connect/group)
 }
 
 // The greeting glyph follows the time of day (mirrors lib/timeofday.ts buckets).

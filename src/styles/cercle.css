@@ -53,6 +53,13 @@
   gap: 0.4rem;
 }
 
+/* View switch row: the segmented control + the contextual-help "?" toggle. */
+.cercle-viewswitch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* View switch (Liste / Liens / Arbre) — a calm segmented control */
 .cercle-viewswitch {
   display: flex;

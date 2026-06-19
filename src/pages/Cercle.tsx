@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -26,6 +26,8 @@ import { CercleTree } from '../components/cercle/CercleTree'
 import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { Modal } from '../components/Modal'
+import { useHelpMode, HelpToggle, HelpHint, HelpTitle } from '../lib/helpMode'
+import { CERCLE_HELP } from '../lib/cercleHelp'
 import {
   type Contact,
   type ContactLink,
@@ -103,8 +105,42 @@ function CercleParent() {
   const [addingGroup, setAddingGroup] = useState(false)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   // The "Relier deux personnes" connector, opened (optionally seeded with one side)
-  // from the directory button, a person's peek, or a family group header.
+  // from the ＋ chooser, a person's peek, or a family group header.
   const [connect, setConnect] = useState<{ seedAKey?: string } | null>(null)
+
+  // Contextual help (shared engine): arm the "?" then tap a button/title to learn
+  // what it does in place, with a deep-link into the `cercle` guide card.
+  const helpLabel = (k: string): string =>
+    ({
+      list: t.cercle.view.list,
+      links: t.cercle.view.links,
+      tree: t.cercle.view.tree,
+      search: t.cercle.search,
+      birthdays: t.cercle.birthdaysSoon,
+      household: t.cercle.memberBadge,
+      householdLinks: t.cercle.familyDefineLinks,
+      namedGroup: t.cercle.groups,
+      familyAuto: t.cercle.familyGeneric,
+      groupBuilder: t.cercle.familyEditBuilder,
+      groupConnect: t.cercle.connectTwo,
+      editGroup: t.cercle.editGroup,
+      deleteGroup: t.cercle.deleteGroup,
+      others: t.cercle.others,
+    })[k] ?? k
+  const help = useHelpMode(CERCLE_HELP, helpLabel)
+
+  // The ＋ chooser opens the connect / new-group flows by navigating to /cercle with
+  // a ?param (connect/group can't be routes — they're page-local). Read + strip it.
+  const [params, setParams] = useSearchParams()
+  useEffect(() => {
+    if (params.get('connect') === '1') setConnect({})
+    else if (params.get('add') === 'group') setAddingGroup(true)
+    else return
+    const next = new URLSearchParams(params)
+    next.delete('connect')
+    next.delete('add')
+    setParams(next, { replace: true })
+  }, [params, setParams])
 
   const { data, error } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
   // The household name (set in Réglages) titles the Maisonnée family card below. Same
@@ -285,30 +321,44 @@ function CercleParent() {
     : null
 
   const viewSwitch = (
-    <div className="cercle-viewswitch" role="tablist" aria-label={t.nav.cercle}>
-      {(['list', 'links', 'tree'] as View[]).map((v) => (
-        <button
-          key={v}
-          type="button"
-          role="tab"
-          aria-selected={view === v}
-          className={'cercle-viewswitch__btn' + (view === v ? ' is-active' : '')}
-          onClick={() => setView(v)}
-        >
-          <InlineIcon name={VIEW_ICON[v]} size={15} /> {t.cercle.view[v]}
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="cercle-viewswitch-row">
+        <div className="cercle-viewswitch" role="tablist" aria-label={t.nav.cercle}>
+          {(['list', 'links', 'tree'] as View[]).map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="tab"
+              aria-selected={view === v}
+              className={'cercle-viewswitch__btn' + (view === v ? ' is-active' : '')}
+              onClick={help.pick(v, () => setView(v))}
+            >
+              <InlineIcon name={VIEW_ICON[v]} size={15} /> {t.cercle.view[v]}
+            </button>
+          ))}
+        </div>
+        {help.available && <HelpToggle active={help.active} onToggle={help.toggle} />}
+      </div>
+      {help.hint && <HelpHint />}
+      {help.bubbleFor('list')}
+      {help.bubbleFor('links')}
+      {help.bubbleFor('tree')}
+    </>
   )
 
   return (
-    <main className="today-feed cercle">
+    <main className={'today-feed cercle' + (help.active ? ' help-armed' : '')}>
       <HubHead title={t.nav.cercle} icon="users-three-bold" iconColor={ACCENT} background="var(--berry-wash)" card="cercle" />
 
-      {/* The connector — a bottom-modal so it's prominent from any entry point
-          (directory button, a person's peek, a family group header). */}
+      {/* The connector — a modal so it's prominent from any entry point (the ＋
+          chooser, a person's peek, a family group header). */}
       <Modal open={!!connect} onClose={() => setConnect(null)} title={t.cercle.connectTwo}>
         <ConnectPeople people={people} seedAKey={connect?.seedAKey} onConnected={() => setConnect(null)} />
+      </Modal>
+
+      {/* Create a named group — opened from the ＋ chooser (?add=group). */}
+      <Modal open={addingGroup} onClose={() => setAddingGroup(false)} title={t.cercle.addGroup}>
+        <GroupForm submitLabel={t.cercle.addGroup} onSubmit={createGroup} onCancel={() => setAddingGroup(false)} />
       </Modal>
 
 
@@ -338,9 +388,10 @@ function CercleParent() {
 
               {!needle && birthdays.length > 0 && (
                 <section className="cercle-bdays">
-                  <h2 className="cercle-section__label">
+                  <HelpTitle help={help} k="birthdays" className="cercle-section__label">
                     <InlineIcon name="cake-bold" size={16} color={ACCENT} /> {t.cercle.birthdaysSoon}
-                  </h2>
+                  </HelpTitle>
+                  {help.bubbleFor('birthdays')}
                   <div className="cercle-bdays__row">
                     {birthdays.map(({ p, days }) => (
                       <button type="button" key={p.key} className="cercle-bday" onClick={() => openPerson(p)}>
@@ -365,7 +416,13 @@ function CercleParent() {
                     <section className="cercle-group cercle-group--named cercle-group--household">
                       <h2 className="cercle-section__label">
                         <span className="cercle-group__dot" style={{ background: ACCENT }} />
-                        {householdName}
+                        {help.active ? (
+                          <button type="button" className="help-title" onClick={help.pick('household', () => {})}>
+                            {householdName}
+                          </button>
+                        ) : (
+                          householdName
+                        )}
                         <span className="mono cercle-group__kind">{t.cercle.memberBadge}</span>
                         {/* Wire up who's whose parent/sibling/spouse — links only,
                             no redundant group (the household already IS this card). */}
@@ -374,13 +431,15 @@ function CercleParent() {
                           className="row-actions__btn"
                           aria-label={t.cercle.familyDefineLinks}
                           title={t.cercle.familyDefineLinks}
-                          onClick={() =>
-                            nav(`/cercle/family/new?linksOnly=1&seed=${encodeURIComponent(householdPeople.map((p) => p.key).join(','))}`)
-                          }
+                          onClick={help.pick('householdLinks', () =>
+                            nav(`/cercle/family/new?linksOnly=1&seed=${encodeURIComponent(householdPeople.map((p) => p.key).join(','))}`),
+                          )}
                         >
                           <InlineIcon name="tree-bold" size={12} />
                         </button>
                       </h2>
+                      {help.bubbleFor('household')}
+                      {help.bubbleFor('householdLinks')}
                       {householdPeople.map((p) => (
                         <Row key={p.key} p={p} hideBadge />
                       ))}
@@ -400,7 +459,13 @@ function CercleParent() {
                       ) : (
                         <h2 className="cercle-section__label">
                           <span className="cercle-group__dot" style={{ background: g.colour ?? ACCENT }} />
-                          {g.name}
+                          {help.active ? (
+                            <button type="button" className="help-title" onClick={help.pick('namedGroup', () => {})}>
+                              {g.name}
+                            </button>
+                          ) : (
+                            g.name
+                          )}
                           <span className="mono cercle-group__kind">{t.cercle.groupKinds[g.kind]}</span>
                           {g.kind === 'family' && (
                             <>
@@ -408,7 +473,7 @@ function CercleParent() {
                                 type="button"
                                 className="row-actions__btn"
                                 aria-label={t.cercle.familyEditBuilder}
-                                onClick={() => nav(`/cercle/family/${g.id}`)}
+                                onClick={help.pick('groupBuilder', () => nav(`/cercle/family/${g.id}`))}
                               >
                                 <InlineIcon name="tree-bold" size={12} />
                               </button>
@@ -417,7 +482,7 @@ function CercleParent() {
                                 type="button"
                                 className="row-actions__btn"
                                 aria-label={t.cercle.connectTwo}
-                                onClick={() => setConnect({})}
+                                onClick={help.pick('groupConnect', () => setConnect({}))}
                               >
                                 <InlineIcon name="users-three-bold" size={12} />
                               </button>
@@ -427,7 +492,7 @@ function CercleParent() {
                             type="button"
                             className="row-actions__btn"
                             aria-label={t.cercle.editGroup}
-                            onClick={() => setEditingGroupId(g.id)}
+                            onClick={help.pick('editGroup', () => setEditingGroupId(g.id))}
                           >
                             <InlineIcon name="pencil-simple-bold" size={12} />
                           </button>
@@ -435,12 +500,17 @@ function CercleParent() {
                             type="button"
                             className="row-actions__btn cercle-group__delete"
                             aria-label={t.cercle.deleteGroup}
-                            onClick={() => deleteGroup(g)}
+                            onClick={help.pick('deleteGroup', () => deleteGroup(g))}
                           >
                             <InlineIcon name="x-bold" size={12} />
                           </button>
                         </h2>
                       )}
+                      {help.bubbleFor('namedGroup')}
+                      {help.bubbleFor('groupBuilder')}
+                      {help.bubbleFor('groupConnect')}
+                      {help.bubbleFor('editGroup')}
+                      {help.bubbleFor('deleteGroup')}
                       {[...g.memberKeys]
                         .map((k) => byKey.get(k))
                         .filter((p): p is Person => !!p)
@@ -455,9 +525,10 @@ function CercleParent() {
                   {/* Auto-detected family groups */}
                   {familyGroups.map((g) => (
                     <section key={g.id} className="cercle-group">
-                      <h2 className="cercle-section__label">
+                      <HelpTitle help={help} k="familyAuto" className="cercle-section__label">
                         <InlineIcon name="users-three-bold" size={16} color={ACCENT} /> {g.name}
-                      </h2>
+                      </HelpTitle>
+                      {help.bubbleFor('familyAuto')}
                       {[...g.memberKeys]
                         .map((k) => byKey.get(k))
                         .filter((p): p is Person => !!p)
@@ -470,34 +541,18 @@ function CercleParent() {
                   {others.length > 0 && (
                     <section className="cercle-group">
                       {(householdPeople.length > 0 || namedGroups.length > 0 || familyGroups.length > 0) && (
-                        <h2 className="cercle-section__label">{t.cercle.others}</h2>
+                        <>
+                          <HelpTitle help={help} k="others" className="cercle-section__label">
+                            {t.cercle.others}
+                          </HelpTitle>
+                          {help.bubbleFor('others')}
+                        </>
                       )}
                       {others.map((p) => <Row key={p.key} p={p} />)}
                     </section>
                   )}
-
-                  {/* Build a whole family's relationships at once */}
-                  <button type="button" className="btn cercle-build-family" onClick={() => nav('/cercle/family/new')}>
-                    <InlineIcon name="tree-bold" size={15} /> {t.cercle.familyBuild}
-                  </button>
-
-                  {/* Connect two people / families at a single junction — the closure
-                      then propagates the tie through each side (opens the modal). */}
-                  <button type="button" className="btn cercle-build-family" onClick={() => setConnect({})}>
-                    <InlineIcon name="users-three-bold" size={15} /> {t.cercle.connectTwo}
-                  </button>
-
-
-                  {/* Create new named group */}
-                  <div className="cercle-add-group">
-                    {addingGroup ? (
-                      <GroupForm submitLabel={t.cercle.addGroup} onSubmit={createGroup} onCancel={() => setAddingGroup(false)} />
-                    ) : (
-                      <button type="button" className="btn btn--sm btn--ghost" onClick={() => setAddingGroup(true)}>
-                        <InlineIcon name="plus-bold" size={14} /> {t.cercle.addGroup}
-                      </button>
-                    )}
-                  </div>
+                  {/* Creation actions (add person / family / connect / new group) all
+                      live on the ＋ chooser now — no in-page add buttons here. */}
                 </>
               )}
             </>

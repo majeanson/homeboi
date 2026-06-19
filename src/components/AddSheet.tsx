@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
@@ -31,8 +31,7 @@ import { Chip } from './Chip'
 import { mealOptions } from './kitchen/comboOptions'
 import { ADD_HELP } from '../lib/addHelp'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
-import { useModal } from '../lib/useModal'
-import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
+import { Sheet } from './Sheet'
 
 // Pip's "Add" bottom-sheet — CONTEXTUAL now. HubLayout hands in the current
 // section's modes (lib/addSheet SECTION_MODES): the board keeps the quick-note
@@ -93,6 +92,11 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   flyer: { cat: 'meal', icon: 'magnifying-glass-bold' },
   'auto-pick': { cat: 'chore', icon: 'tag-bold' },
   share: { cat: 'list', icon: 'arrow-up-right-bold' },
+  // Le cercle's four creation tiles — all the rose 'cercle' family, distinct glyphs.
+  person: { cat: 'cercle', icon: 'user-bold' },
+  family: { cat: 'cercle', icon: 'tree-bold' },
+  connect: { cat: 'cercle', icon: 'users-three-bold' },
+  group: { cat: 'cercle', icon: 'tag-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -104,6 +108,12 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   recipe: '/kitchen/recipe/new',
   'quick-add': '/liste/quick',
   flyer: '/liste/circulaires',
+  // Le cercle: person + family are scene routes; connect + group open on /cercle
+  // itself via a ?param the page reads (then strips).
+  person: '/cercle/person/new',
+  family: '/cercle/family/new',
+  connect: '/cercle?connect=1',
+  group: '/cercle?add=group',
   ...FORM_ROUTES,
 }
 
@@ -319,11 +329,6 @@ export function AddSheet({
     onClose()
   }, [onClose])
 
-  // Esc / scroll-lock / focus-trap, plus drag-the-grab-handle-down to dismiss.
-  // Gated on `open` so the always-mounted sheet does nothing while tucked away.
-  const sheetRef = useRef<HTMLDivElement>(null)
-  useModal(sheetRef, close, { open })
-  useSwipeToDismiss(sheetRef, close, { open })
 
   // Quick capture. forceType (from the degraded fallback) skips the AI router.
   async function submit(e?: React.FormEvent, forceType?: CaptureType) {
@@ -499,6 +504,10 @@ export function AddSheet({
       flyer: t.shop.browse,
       'auto-pick': t.shop.auto,
       share: t.list.share,
+      person: t.cercle.add,
+      family: t.cercle.familyBuild,
+      connect: t.cercle.connectTwo,
+      group: t.cercle.addGroup,
     }
     return labels[m]
   }
@@ -523,7 +532,9 @@ export function AddSheet({
         ? t.capture.add
         : shown.includes('list-item')
           ? t.list.addTitle
-          : t.kitchen.addTitle
+          : shown.includes('person')
+            ? t.cercle.addTitle
+            : t.kitchen.addTitle
       : mode === 'routine-pick'
         ? t.nav.routines
         : mode === 'routine'
@@ -533,26 +544,11 @@ export function AddSheet({
           : t.capture.add
 
   return (
-    <>
-      <div className={'scrim' + (open ? ' show' : '')} onClick={close} aria-hidden="true" />
-      <div
-        ref={sheetRef}
-        className={'sheet' + (open ? ' show' : '') + (help.active ? ' help-armed' : '')}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-      >
-        {/* A real, always-reachable way out — the grab handle only hints at the
-            drag-down gesture (touch-only, undiscoverable). This ✕ is sticky so a
-            tall form (event/chore/routine) can't scroll it off-screen. */}
-        <button type="button" className="sheet__close" onClick={close} aria-label={t.common.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
-        {/* Contextual help toggle: arm it, then tap any tile to learn what it does
-            in place. Only in tutorial mode (experts hide every "?"). */}
-        {help.available && <HelpToggle className="sheet__help" active={help.active} onToggle={help.toggle} />}
-        <div className="grab" aria-hidden="true" />
-        <h3>{title}</h3>
+    <Sheet open={open} onClose={close} ariaLabel={title} className={help.active ? 'help-armed' : undefined}>
+      {/* Contextual help toggle: arm it, then tap any tile to learn what it does
+          in place. Only in tutorial mode (experts hide every "?"). */}
+      {help.available && <HelpToggle className="sheet__help" active={help.active} onToggle={help.toggle} />}
+      <h3>{title}</h3>
 
         {/* Help mode: a hint, then (once a tile is tapped) the in-place help box. */}
         {help.hint && <HelpHint />}
@@ -972,7 +968,6 @@ export function AddSheet({
             )}
           </div>
         )}
-      </div>
-    </>
+    </Sheet>
   )
 }

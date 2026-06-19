@@ -116,4 +116,25 @@ export const ADD_HELP: Record<string, AddHelp> = {
     card: 'kitchen',
     body: { fr: 'Propose une recette qui finit ce que tu as marqué « à utiliser bientôt ».', en: 'Suggest a recipe that uses up what you flagged “use soon”.' },
   },
+  // « Le cercle » ＋ chooser tiles.
+  person: {
+    card: 'cercle',
+    point: 1,
+    body: { fr: 'Ajoute une personne au cercle : prénom, photo, fête, courriel, téléphone.', en: 'Add someone to the circle: name, photo, birthday, email, phone.' },
+  },
+  family: {
+    card: 'cercle',
+    point: 3,
+    body: { fr: 'Bâtis une famille d’un coup : place les visages et les liens se créent tout seuls.', en: 'Build a family in one pass: place the faces and the links create themselves.' },
+  },
+  connect: {
+    card: 'cercle',
+    point: 4,
+    body: { fr: 'Relie deux personnes (donc deux familles) d’un seul lien ; le reste se déduit.', en: 'Connect two people (so two families) with one link; the rest is inferred.' },
+  },
+  group: {
+    card: 'cercle',
+    point: 6,
+    body: { fr: 'Crée un groupe nommé (Famille Tremblay, Collègues…) avec sa couleur.', en: 'Create a named group (Tremblay family, Coworkers…) with its colour.' },
+  },
 }

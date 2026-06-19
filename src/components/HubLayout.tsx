@@ -378,12 +378,8 @@ export function HubLayout() {
               nav('/kitchen/recipe/new')
               return
             }
-            // Le cercle: the ＋ adds a person — a full-screen form scene (like the
-            // recipe/routine builders), not the capture sheet.
-            if (section === 'cercle') {
-              nav('/cercle/person/new')
-              return
-            }
+            // Le cercle: the ＋ opens the section chooser (person / family / connect /
+            // group) like the other tabs — all navigate-only tiles (SECTION_MODES.cercle).
             // Routines: the ＋ opens the manage picker (new routine + edit an
             // existing one) in the sheet; each choice routes on to the full-screen
             // builder scene. An unsigned kiosk has no operator form, so the sheet
@@ -405,7 +401,7 @@ export function HubLayout() {
               : section === 'routines'
                 ? t.routines.add
                 : section === 'cercle'
-                  ? t.cercle.add
+                  ? t.cercle.addTitle
                   : section === 'liste'
                     ? t.list.addTitle
                     : t.capture.add
