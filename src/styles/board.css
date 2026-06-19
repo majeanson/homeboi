@@ -838,6 +838,149 @@
   padding: 0.8rem 0.9rem max(0.8rem, env(safe-area-inset-bottom));
 }
 
+/* ---- DrawPad extras: stickers packs · text · custom colour · templates ------- */
+/* Sticker mode is a column: a row of pack icons over the chosen pack's emoji set. */
+.drawpad__stickers {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+.drawpad__packs,
+.drawpad__stickerset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.drawpad__pack {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  border: 2px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--card);
+  cursor: pointer;
+}
+.drawpad__pack.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+/* Type a word, then tap the canvas to stamp it (practise names + spelling). */
+.drawpad__text {
+  flex: 1 1 12rem;
+  max-width: 22rem;
+}
+/* Custom colour = a swatch wrapping the native picker; a faint + marks it. */
+.drawpad__custom {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.drawpad__custom input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.drawpad__custom span {
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+/* Template row: the learning/creative guide picker under the toolbar. */
+.drawpad__tplbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding: 0 0.9rem 0.55rem;
+}
+.drawpad__tpllabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--ink-soft);
+}
+/* A-Z / 0-9 tracing picker — a horizontal scroller so 62 chars don't wrap a wall. */
+.drawpad__tracepick {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  flex: 1 1 100%;
+  padding-bottom: 0.25rem;
+  -webkit-overflow-scrolling: touch;
+}
+.drawpad__trace {
+  flex: none;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  border: 2px solid var(--line);
+  border-radius: 0.4rem;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 600;
+}
+.drawpad__trace.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+/* Toddler lens: bigger, friendlier targets across the whole pad. */
+.drawpad--kid .drawpad__mode,
+.drawpad--kid .drawpad__size,
+.drawpad--kid .drawpad__pack,
+.drawpad--kid .drawpad__sticker,
+.drawpad--kid .drawpad__tool {
+  width: 2.9rem;
+  height: 2.9rem;
+}
+.drawpad--kid .drawpad__swatch {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+.drawpad--kid .drawpad__pack,
+.drawpad--kid .drawpad__sticker {
+  font-size: 1.7rem;
+}
+.drawpad--kid .btn {
+  font-size: 1.15rem;
+  padding: 0.7rem 1.2rem;
+}
+
+/* Toddler "Dessiner" door on the kid board — a big, warm tile. */
+.today-kid__draw {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 1rem;
+  border: 0;
+  border-radius: 1.1rem;
+  background: color-mix(in srgb, var(--marigold) 22%, var(--card));
+  color: var(--ink);
+  font-family: var(--font-hand, inherit);
+  font-size: 1.3rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.today-kid__draw:active {
+  transform: scale(0.98);
+}
+.today-kid__draw-icn {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
 /* ---- Month view: a calm six-week calendar of everything dated -------------
    The fourth board take (after bento · next · lanes): zoom out from the day to
    the whole month. Cells carry colour-coded dots (event = member/sky, meal =

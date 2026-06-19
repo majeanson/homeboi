@@ -21,10 +21,15 @@ export function Notes({
   notes,
   members,
   toddler,
+  variant = 'all',
 }: {
   notes: NoteRow[]
   members: Member[]
   toddler?: boolean
+  // Which notes this instance shows. The parent board splits them: drawings ride
+  // ONLY in the Grille/bento view (`drawings`), every other note rides above all
+  // views (`notes`). Toddler + default render everything (`all`).
+  variant?: 'all' | 'notes' | 'drawings'
 }) {
   const t = useT()
   const write = useWrite()
@@ -39,6 +44,9 @@ export function Notes({
   // inert display text (no ✕, no tap). The toddler read-aloud stays (it's a read).
   const ro = isGuest()
   const colorOf = (id: string | null) => memberColorOf(members, id)
+  const isDrawing = (n: NoteRow) => n.media_kind === 'drawing' && !!n.media_key
+  const shown = notes.filter((n) => (variant === 'drawings' ? isDrawing(n) : variant === 'notes' ? !isDrawing(n) : true))
+  const title = variant === 'drawings' ? t.notes.drawings : t.notes.title
 
   // Save the added-to drawing: upload the new PNG, then PATCH the note in place
   // (re-tints to whoever drew, resurfaces it). Media uploads can't be queued
@@ -82,15 +90,15 @@ export function Notes({
   }
 
   // Nothing to show and nothing being edited — render nothing.
-  if (!notes.length && !editing) return null
+  if (!shown.length && !editing) return null
 
   return (
-    <section className={'notes' + (toddler ? ' notes--kid' : '')} aria-label={t.notes.title}>
+    <section className={'notes' + (toddler ? ' notes--kid' : '') + (variant === 'drawings' ? ' notes--drawings' : '')} aria-label={title}>
       <div className="notes__head mono" aria-hidden="true">
-        <InlineIcon name="push-pin-bold" /> {t.notes.title}
+        <InlineIcon name={variant === 'drawings' ? 'paint-brush-bold' : 'push-pin-bold'} /> {title}
       </div>
       <div className="notes__grid">
-        {notes.map((n) => {
+        {shown.map((n) => {
           const tint = colorOf(n.member_id) ?? '#FBD66B'
           const css = { '--note-tint': tint } as React.CSSProperties
           const media = n.media_kind && n.media_key ? n.media_kind : null
@@ -122,7 +130,9 @@ export function Notes({
           // dismisses it.
           if (media) {
             const play = media === 'audio' ? () => playClip(n.media_key!) : undefined
-            const editable = !ro && !toddler && media === 'drawing'
+            // A drawing is the family doodle: parent OR toddler (not a guest) can tap
+            // it to add to it. Clearing (✕) stays parent-only below.
+            const editable = !ro && media === 'drawing'
             const isVisual = media === 'drawing' || media === 'image'
             return (
               <div key={n.id} className={`note-card note-card--media${isVisual ? ' note-card--visual' : ''}`} style={css}>
@@ -189,10 +199,11 @@ export function Notes({
       {editing && (
         <DrawPad
           open
+          toddler={toddler}
           initial={editing.media_key ? imgUrl(editing.media_key) : undefined}
           onCancel={() => setEditing(null)}
           onSave={(png) => void saveDrawing(png)}
-          onMakeRoutine={(png) => void toRoutine(png)}
+          onMakeRoutine={toddler ? undefined : (png) => void toRoutine(png)}
         />
       )}
     </section>

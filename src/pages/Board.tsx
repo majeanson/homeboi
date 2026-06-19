@@ -30,6 +30,8 @@ import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } f
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { Notes } from '../components/board/Notes'
+import { DrawPad } from '../components/DrawPad'
+import { useSaveDrawingNote } from '../lib/drawingNote'
 import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { NowNext, Lanes } from '../components/board/views'
@@ -105,6 +107,10 @@ export function Board() {
   // out of the rendered reminder at once so the live poll can't resurrect them
   // before the delete commits (same guard as pendingDone).
   const [pendingLeftover, setPendingLeftover] = useState<Set<string>>(new Set())
+  // Toddler "Dessiner" tile → a fresh drawing pinned to the fridge (#14). Kids draw
+  // without needing the parent ＋ capture sheet.
+  const [kidDraw, setKidDraw] = useState(false)
+  const saveDrawingNote = useSaveDrawingNote()
   function changeView(v: BoardView) {
     setView(v)
     saveBoardView(v)
@@ -316,6 +322,14 @@ export function Board() {
               {weatherHero}
             </div>
             <Notes notes={data.notes ?? []} members={data.members} toddler />
+            {/* A big, friendly "Dessiner" door — a kid starts a drawing (handwriting
+                lines, tracing, colour-in, stickers…) and it pins to the fridge. */}
+            {!ro && (
+              <button type="button" className="today-kid__draw" onClick={() => setKidDraw(true)}>
+                <span className="today-kid__draw-icn" aria-hidden="true">🎨</span>
+                <span>{t.memo.draw}</span>
+              </button>
+            )}
             {data.dayNote && <DayNote note={data.dayNote} members={data.members} toddler />}
             {/* Every meal planned for today, read-aloud — supper rides up in the
                 heroes, so this lists the rest of the day's table. */}
@@ -399,6 +413,17 @@ export function Board() {
             )}
             <PhotoFrame />
           </>
+        )}
+        {kidDraw && (
+          <DrawPad
+            open
+            toddler
+            onCancel={() => setKidDraw(false)}
+            onSave={(png) => {
+              setKidDraw(false)
+              void saveDrawingNote(png)
+            }}
+          />
         )}
       </main>
     )
@@ -663,8 +688,10 @@ export function Board() {
         </p>
       )}
 
-      {/* Fridge notes ride above the day in every parent view — tap one to clear. */}
-      {data && <Notes notes={data.notes ?? []} members={data.members} />}
+      {/* Fridge notes (text / voice / photo) ride above the day in every parent
+          view. DRAWINGS are split out to the Grille/bento view only (below) — they
+          deserve room and shouldn't crowd the compact Next/Lanes/Month layouts. */}
+      {data && <Notes notes={data.notes ?? []} members={data.members} variant="notes" />}
 
       {/* Today's day note (the per-day memo from La cuisine) rides here too, in
           every view — read-only on the wall, edited in the kitchen. */}
@@ -684,6 +711,9 @@ export function Board() {
         <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
       ) : (
         <>
+          {/* Family drawings (#14) live only here in the Grille view — tap one to
+              add to it. Kept off the compact Next/Lanes/Month layouts. */}
+          <Notes notes={data.notes ?? []} members={data.members} variant="drawings" />
           {/* The "today" zone: tonight's supper and today's weather as equal hero
               cards (mirrors the toddler heroes row), so weather has a real bubble
               instead of hiding in the timestamp line. The dressing tip rides under
