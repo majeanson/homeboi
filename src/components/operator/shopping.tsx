@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
+import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { type FlyerSummary } from '../../lib/deals'
@@ -38,9 +39,7 @@ export function ShopSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="shop">{t.operator.shopping}</HelpTitle>
-      {help?.bubbleFor('shop')}
+    <OperatorSection title={t.operator.shopping} help={help} helpKey="shop">
       {!isGuest() && (
         <EditField
           value={postal}
@@ -58,7 +57,7 @@ export function ShopSection({ help }: { help?: HelpMode }) {
       )}
       {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
       {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
-    </section>
+    </OperatorSection>
   )
 }
 
@@ -131,9 +130,7 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="storeFilter">{t.operator.storeFilter}</HelpTitle>
-      {help?.bubbleFor('storeFilter')}
+    <OperatorSection title={t.operator.storeFilter} help={help} helpKey="storeFilter">
       {state === 'loading' && <p className="board__empty mono">{t.shop.searching}</p>}
       {state === 'noPostal' && <p className="board__empty mono">{t.operator.storeFilterNoPostal}</p>}
       {state === 'error' && <p className="board__empty mono">{t.operator.storeFilterError}</p>}
@@ -169,7 +166,7 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
           ))}
         </ul>
       )}
-    </section>
+    </OperatorSection>
   )
 }
 
@@ -240,9 +237,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="history">{t.operator.history}</HelpTitle>
-      {help?.bubbleFor('history')}
+    <OperatorSection title={t.operator.history} help={help} helpKey="history">
       {items === null ? (
         <p className="board__empty mono">{t.shop.searching}</p>
       ) : items.length === 0 ? (
@@ -306,7 +301,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
           )}
         </ul>
       )}
-    </section>
+    </OperatorSection>
   )
 }
 
@@ -366,9 +361,7 @@ export function GhostSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="ghost">{t.operator.ghost}</HelpTitle>
-      {help?.bubbleFor('ghost')}
+    <OperatorSection title={t.operator.ghost} help={help} helpKey="ghost">
       {items.length === 0 ? (
         <p className="board__empty mono">{t.ghost.emptyManage}</p>
       ) : (
@@ -424,7 +417,7 @@ export function GhostSection({ help }: { help?: HelpMode }) {
           </button>
         </form>
       )}
-    </section>
+    </OperatorSection>
   )
 }
 

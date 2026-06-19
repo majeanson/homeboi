@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { live } from '../../lib/query'
@@ -20,6 +20,7 @@ import {
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { Icon } from '../Icon'
+import { OperatorSection } from './OperatorSection'
 
 // Réglages ▸ À compléter. Reusable check-off checklists ("Avant de partir", "Chez
 // grand-papa"): a title + an ordered list of items. An item is a plain label OR a
@@ -117,10 +118,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
   if (ro) return null
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="todoTemplates">{t.todos.templatesTitle}</HelpTitle>
-      {help?.bubbleFor('todoTemplates')}
-
+    <OperatorSection title={t.todos.templatesTitle} help={help} helpKey="todoTemplates">
       {templates.length === 0 ? (
         <p className="board__empty mono">{t.todos.noTemplates}</p>
       ) : (
@@ -252,7 +250,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
           ariaLabel={t.todos.templateName}
         />
       </div>
-    </section>
+    </OperatorSection>
   )
 }
 

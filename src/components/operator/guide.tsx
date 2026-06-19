@@ -4,6 +4,7 @@ import { useLang, useT } from '../../i18n'
 import { GUIDE, GUIDE_GROUPS, type GuideEntry } from '../../lib/guideContent'
 import { renderRich, stripTokens } from '../../lib/richText'
 import { useTour } from '../../lib/tour'
+import { OperatorSection } from './OperatorSection'
 import { Icon } from '../Icon'
 
 // One documentation card (native <details>, so it stays accessible and calm):
@@ -194,9 +195,7 @@ export function GuideSection() {
   const startEntries = matches.filter((e) => e.group === 'start')
 
   return (
-    <section className="surface operator__section guide">
-      <h2>{t.operator.guideTitle}</h2>
-
+    <OperatorSection title={t.operator.guideTitle} className="guide">
       <input
         type="search"
         className="guide__search"
@@ -261,6 +260,6 @@ export function GuideSection() {
           </div>
         )
       })}
-    </section>
+    </OperatorSection>
   )
 }

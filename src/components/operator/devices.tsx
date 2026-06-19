@@ -7,6 +7,7 @@ import { isGuest } from '../../lib/device'
 import { InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
+import { OperatorSection } from './OperatorSection'
 import { type Device } from './types'
 
 export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
@@ -39,9 +40,7 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
   }
 
   return (
-    <section className="surface operator__section operator__claim">
-      <h2>{t.pair.claimTitle}</h2>
-      <p className="lead">{t.pair.claimLead}</p>
+    <OperatorSection title={t.pair.claimTitle} hint={t.pair.claimLead} className="operator__claim">
       <form className="operator__inline-form" onSubmit={submit}>
         <input
           className="input"
@@ -66,7 +65,7 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
       </form>
       {ok && <p className="capture__routed mono">{t.pair.claimOk}</p>}
       {err && <p className="error mono">{err}</p>}
-    </section>
+    </OperatorSection>
   )
 }
 
@@ -88,8 +87,7 @@ export function DevicesSection({ devices, onChange }: { devices: Device[]; onCha
     })
   }
   return (
-    <section className="surface operator__section">
-      <h2>{t.operator.devices}</h2>
+    <OperatorSection title={t.operator.devices}>
       {active.length === 0 ? (
         <p className="board__empty mono">{t.operator.noDevices}</p>
       ) : (
@@ -99,7 +97,7 @@ export function DevicesSection({ devices, onChange }: { devices: Device[]; onCha
           ))}
         </ul>
       )}
-    </section>
+    </OperatorSection>
   )
 }
 

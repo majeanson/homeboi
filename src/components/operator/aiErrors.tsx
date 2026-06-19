@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
+import { OperatorSection } from './OperatorSection'
 import { api, ApiError, isStatus } from '../../lib/api'
 import { isGuest } from '../../lib/device'
 import { Icon } from '../Icon'
@@ -58,9 +59,7 @@ function AiStatusTest({ help }: { help?: HelpMode }) {
   const labelFor = (i: number) => (i === 0 ? t.operator.aiTestText : t.operator.aiTestVision)
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="aiTest">{t.operator.aiTestTitle}</HelpTitle>
-      {help?.bubbleFor('aiTest')}
+    <OperatorSection title={t.operator.aiTestTitle} help={help} helpKey="aiTest">
       {!isGuest() && (
         <button type="button" className="btn btn--primary" onClick={run} disabled={running} aria-busy={running}>
           {running ? t.operator.aiTestRunning : t.operator.aiTestBtn}
@@ -90,7 +89,7 @@ function AiStatusTest({ help }: { help?: HelpMode }) {
           ))}
         </ul>
       )}
-    </section>
+    </OperatorSection>
   )
 }
 
@@ -111,9 +110,7 @@ export function AiErrorLogSection({ help }: { help?: HelpMode }) {
   return (
     <>
       <AiStatusTest help={help} />
-      <section className="surface operator__section">
-        <HelpTitle help={help} k="aiLog">{t.operator.aiLogTitle}</HelpTitle>
-        {help?.bubbleFor('aiLog')}
+      <OperatorSection title={t.operator.aiLogTitle} help={help} helpKey="aiLog">
         {errors.length === 0 ? (
           <p className="board__empty mono">{t.operator.aiLogEmpty}</p>
         ) : (
@@ -136,7 +133,7 @@ export function AiErrorLogSection({ help }: { help?: HelpMode }) {
             )}
           </>
         )}
-      </section>
+      </OperatorSection>
     </>
   )
 }

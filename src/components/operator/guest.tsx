@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
+import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
 import { isGuest } from '../../lib/device'
 import { InlineIcon } from '../Icon'
@@ -70,10 +71,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   if (ro) return null
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="guest">{t.guest.title}</HelpTitle>
-      {help?.bubbleFor('guest')}
-
+    <OperatorSection title={t.guest.title} help={help} helpKey="guest">
       <label className="operator__seg">
         <span className="operator__seg-label mono">{t.guest.ttlLabel}</span>
         <select className="input" value={ttl} onChange={(e) => setTtl(Number(e.target.value))} disabled={busy}>
@@ -107,6 +105,6 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           </div>
         </div>
       )}
-    </section>
+    </OperatorSection>
   )
 }

@@ -8,6 +8,7 @@ import { formatDay, formatTime } from '../../lib/format'
 import { EventForm } from '../forms/EventForm'
 import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { OperatorSection } from './OperatorSection'
 import { type EventRow, type Member } from './types'
 
 // Events: the operator manages the agenda here (edit/delete + reschedule), but
@@ -49,8 +50,7 @@ export function EventsSection({
   const memberColor = (id: string | null) => members.find((m) => m.id === id)?.colour
 
   return (
-    <section className="surface operator__section">
-      <h2>{t.operator.events}</h2>
+    <OperatorSection title={t.operator.events}>
       {events.length === 0 ? (
         <p className="board__empty mono">{t.operator.noEvents}</p>
       ) : (
@@ -104,6 +104,6 @@ export function EventsSection({
           <InlineIcon name="plus-bold" /> {t.operator.addEvent}
         </button>
       )}
-    </section>
+    </OperatorSection>
   )
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { SLOT_TIME_ORDER, SLOT_COLOR, SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
@@ -9,6 +9,7 @@ import { wash } from '../../lib/colors'
 import { isGuest } from '../../lib/device'
 import { ColorPicker } from '../ColorPicker'
 import { Icon } from '../Icon'
+import { OperatorSection } from './OperatorSection'
 import type { HouseholdSettings } from '../../lib/mealPrefs'
 
 // Réglages ▸ Repas. Two household-level settings, shared by every device:
@@ -77,9 +78,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="mealSlots">{t.operator.mealColors}</HelpTitle>
-      {help?.bubbleFor('mealSlots')}
+    <OperatorSection title={t.operator.mealColors} help={help} helpKey="mealSlots">
       <ul className="operator__list meal-slots">
         {SLOT_TIME_ORDER.map((slot) => {
           const resolved = colors[slot] ?? SLOT_COLOR[slot]
@@ -127,6 +126,6 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
       </ul>
       {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
       {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
-    </section>
+    </OperatorSection>
   )
 }

@@ -14,6 +14,7 @@ import { Avatar } from '../Avatar'
 import { ColorPicker } from '../ColorPicker'
 import { Icon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { OperatorSection } from './OperatorSection'
 import { type Member } from './types'
 
 export function MembersSection({ members, onChange }: { members: Member[]; onChange: () => void }) {
@@ -65,9 +66,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   }
 
   return (
-    <section className="surface operator__section">
-      <h2>{t.operator.members}</h2>
-
+    <OperatorSection title={t.operator.members}>
       {/* The household's own name (set at signup) — renamable here. Operator-only. */}
       {!isGuest() && <HouseholdNameField />}
 
@@ -118,7 +117,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
           </button>
         </form>
       )}
-    </section>
+    </OperatorSection>
   )
 }
 

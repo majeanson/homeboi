@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
+import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useUndoToast } from '../../lib/toast'
 import { resizeImage, imgUrl, PHOTO_MAX } from '../../lib/image'
@@ -30,16 +31,13 @@ export function RecapSection({ help }: { help?: HelpMode }) {
 
   if (unavailable) return null
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="recap">{t.operator.recapTitle}</HelpTitle>
-      {help?.bubbleFor('recap')}
-      {recap && <p className="lead">{recap}</p>}
+    <OperatorSection title={t.operator.recapTitle} help={help} helpKey="recap" hint={recap || undefined}>
       {!isGuest() && (
         <button type="button" className="btn btn--primary" onClick={generate} disabled={busy}>
           {busy ? t.operator.recapThinking : t.operator.recapGen}
         </button>
       )}
-    </section>
+    </OperatorSection>
   )
 }
 
@@ -108,9 +106,7 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
 
   if (unavailable) return null
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="photos">{t.operator.photos}</HelpTitle>
-      {help?.bubbleFor('photos')}
+    <OperatorSection title={t.operator.photos} help={help} helpKey="photos">
       {photos.length === 0 ? (
         <p className="board__empty mono">{t.operator.noPhotos}</p>
       ) : (
@@ -153,6 +149,6 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
           />
         </label>
       )}
-    </section>
+    </OperatorSection>
   )
 }

@@ -12,6 +12,7 @@ import { Icon, InlineIcon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
+import { OperatorSection } from './OperatorSection'
 
 // A chip tinted by its tag colour (readable on cream AND dark via the theme-aware
 // helpers), so the colour you pick previews in place. No colour → undefined = the
@@ -114,10 +115,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="recipeTags">{t.operator.tagsTitle}</HelpTitle>
-      {help?.bubbleFor('recipeTags')}
-
+    <OperatorSection title={t.operator.tagsTitle} help={help} helpKey="recipeTags">
       <HelpTitle as="h3" className="operator__sub" help={help} k="tagPills">{t.operator.tagPills}</HelpTitle>
       {help?.bubbleFor('tagPills')}
       <div className="tag-admin__pills">
@@ -259,6 +257,6 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
         </ul>
       )}
       <DragGhost ghost={dnd.ghost} />
-    </section>
+    </OperatorSection>
   )
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions } from '../../lib/recipes'
 import {
@@ -24,6 +24,7 @@ import { usePointerDnd, DragGhost } from '../../lib/dnd'
 import { Icon, InlineIcon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
 import { RowActions } from '../RowActions'
+import { OperatorSection } from './OperatorSection'
 
 // Réglages ▸ Recettes → the recipe-tab PILLS (migration 0045). One ordered list:
 // built-in pills (shown/hidden + reorder) plus operator-defined CUSTOM pills (a
@@ -123,10 +124,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="recipePills">{t.operator.pillsTitle}</HelpTitle>
-      {help?.bubbleFor('recipePills')}
-
+    <OperatorSection title={t.operator.pillsTitle} help={help} helpKey="recipePills">
       <ul className="operator__list pill-admin__list">
         {list.map((p, i) => {
           const custom = !isBuiltinPill(p)
@@ -296,6 +294,6 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
         </div>
       )}
       <DragGhost ghost={dnd.ghost} />
-    </section>
+    </OperatorSection>
   )
 }

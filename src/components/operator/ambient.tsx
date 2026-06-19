@@ -1,5 +1,6 @@
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
+import { OperatorSection } from './OperatorSection'
 import { Icon, type IconName } from '../Icon'
 import { useAmbient, setAmbient, type AmbientSettings } from '../../lib/ambient'
 import { forceIdle } from '../../lib/idleDebug'
@@ -27,10 +28,7 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
   const set = (patch: Partial<AmbientSettings>) => setAmbient(patch)
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="ambient">{t.operator.ambientTitle}</HelpTitle>
-      {help?.bubbleFor('ambient')}
-
+    <OperatorSection title={t.operator.ambientTitle} help={help} helpKey="ambient">
       {/* — The screensaver — */}
       <div className="operator__seg">
         <span className="operator__seg-label mono">{t.operator.ambientScreensaver}</span>
@@ -102,6 +100,6 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
         </div>
       )}
 
-    </section>
+    </OperatorSection>
   )
 }

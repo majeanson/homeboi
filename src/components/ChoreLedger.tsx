@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
-import { HelpTitle, type HelpMode } from '../lib/helpMode'
+import { type HelpMode } from '../lib/helpMode'
+import { OperatorSection } from './operator/OperatorSection'
 import { api } from '../lib/api'
 import { Avatar } from './Avatar'
 import { EmptyState } from './EmptyState'
@@ -55,10 +56,7 @@ export function ChoreLedger({ help }: { help?: HelpMode }) {
     new Date(sec * 1000).toLocaleDateString(loc, { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="choreLedger">{t.operator.ledgerTitle}</HelpTitle>
-      {help?.bubbleFor('choreLedger')}
-
+    <OperatorSection title={t.operator.ledgerTitle} help={help} helpKey="choreLedger">
       {isLoading ? null : days.length === 0 ? (
         <EmptyState tone="calm">{t.operator.ledgerEmpty}</EmptyState>
       ) : (
@@ -105,6 +103,6 @@ export function ChoreLedger({ help }: { help?: HelpMode }) {
           ))}
         </div>
       )}
-    </section>
+    </OperatorSection>
   )
 }

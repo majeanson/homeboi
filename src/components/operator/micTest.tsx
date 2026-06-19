@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLang, useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
 import { isIos } from '../../lib/useVoiceInput'
 import { Icon } from '../Icon'
+import { OperatorSection } from './OperatorSection'
 
 // A copy-pasteable mic diagnostic, the recognition twin of the "Test the AI"
 // probe above. The mic feature rides the browser's Web Speech API
@@ -403,10 +404,7 @@ export function MicSelfTest({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="micTest">{t.operator.micTestTitle}</HelpTitle>
-      {help?.bubbleFor('micTest')}
-
+    <OperatorSection title={t.operator.micTestTitle} help={help} helpKey="micTest">
       {phase !== 'running' ? (
         <button type="button" className="btn btn--primary" onClick={run}>
           {t.operator.micTestBtn}
@@ -441,6 +439,6 @@ export function MicSelfTest({ help }: { help?: HelpMode }) {
           </button>
         </div>
       )}
-    </section>
+    </OperatorSection>
   )
 }

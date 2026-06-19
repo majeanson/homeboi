@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
@@ -11,6 +11,7 @@ import { type ReserveLocation, seedReserveDefaults } from '../../lib/reservePref
 import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
+import { OperatorSection } from './OperatorSection'
 
 // Réglages ▸ Réserve. The household-level storage spots that group La réserve
 // (the freezer / back-of-pantry reminder in La cuisine). Custom & editable:
@@ -106,9 +107,7 @@ export function ReserveLocationsSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="reserveLocations">{t.operator.reserveTitle}</HelpTitle>
-      {help?.bubbleFor('reserveLocations')}
+    <OperatorSection title={t.operator.reserveTitle} help={help} helpKey="reserveLocations">
       {locs.length === 0 ? (
         <p className="board__empty mono">{t.operator.reserveEmpty}</p>
       ) : (
@@ -151,6 +150,6 @@ export function ReserveLocationsSection({ help }: { help?: HelpMode }) {
       )}
       {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
       {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
-    </section>
+    </OperatorSection>
   )
 }

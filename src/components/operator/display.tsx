@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
+import { OperatorSection } from './OperatorSection'
 import { useAudience } from '../../lib/audience'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
@@ -42,9 +43,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="display">{t.operator.display}</HelpTitle>
-      {help?.bubbleFor('display')}
+    <OperatorSection title={t.operator.display} help={help} helpKey="display">
       <div className="operator__display">
         {!ro && (
           <div className="operator__seg">
@@ -152,7 +151,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           <InlineIcon name="gear-six-bold" size={14} /> Kit de composants (dev)
         </Link>
       </p>
-    </section>
+    </OperatorSection>
   )
 }
 
@@ -181,10 +180,7 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
   const ro = isGuest()
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="voice">{t.operator.voiceTitle}</HelpTitle>
-      {help?.bubbleFor('voice')}
-
+    <OperatorSection title={t.operator.voiceTitle} help={help} helpKey="voice">
       {ro ? null : !available ? (
         <p className="operator__hint mono">{t.operator.voiceNone}</p>
       ) : (
@@ -231,7 +227,7 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
           </button>
         </div>
       )}
-    </section>
+    </OperatorSection>
   )
 }
 
@@ -252,9 +248,7 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
       ? '2 c. à soupe de beurre · 1 ½ tasse de farine · ¼ c. à thé de sel'
       : '2 tbsp butter · 1 ½ cup flour · ¼ tsp salt'
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="measureColors">{t.operator.measureColorsTitle}</HelpTitle>
-      {help?.bubbleFor('measureColors')}
+    <OperatorSection title={t.operator.measureColorsTitle} help={help} helpKey="measureColors">
       <div className="measure-colors">
         {MEASURE_SWATCHES.map((s) => {
           const color = swatchColor(s, overrides)
@@ -282,7 +276,7 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
       <button type="button" className="btn" onClick={reset}>
         <InlineIcon name="arrow-counter-clockwise-bold" /> {t.operator.measureColorsReset}
       </button>
-    </section>
+    </OperatorSection>
   )
 }
 
@@ -296,9 +290,7 @@ export function CalmSection({ help }: { help?: HelpMode }) {
   // Read-only guest: the calm toggle is a write — show the state as plain text only.
   const ro = isGuest()
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="calm">{t.operator.calmTitle}</HelpTitle>
-      {help?.bubbleFor('calm')}
+    <OperatorSection title={t.operator.calmTitle} help={help} helpKey="calm">
       {ro ? (
         <p className="operator__hint mono">
           {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}
@@ -313,6 +305,6 @@ export function CalmSection({ help }: { help?: HelpMode }) {
           {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}
         </button>
       )}
-    </section>
+    </OperatorSection>
   )
 }
