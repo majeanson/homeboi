@@ -273,7 +273,7 @@ export interface GroupToggle {
 export function buildContact(
   c: Contact,
   ctx: DetailCtx,
-  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onExport?: () => void; buildFamilyHref?: string },
+  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onExport?: () => void; onConnect?: () => void; buildFamilyHref?: string },
 ): DetailModel {
   const { t, lang } = ctx
   const accent = opts?.accent ?? '#C45E86'
@@ -308,6 +308,8 @@ export function buildContact(
   if (maps) actions.push({ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold', run: () => { window.open(maps, '_blank', 'noopener') } })
   // "Bâtir sa famille" — open the family builder seeded with this person.
   if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
+  // "Relier à quelqu'un" — open the connector with this person as side A.
+  if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', run: opts.onConnect })
   // "Exporter (vCard)" — download a .vcf to drop this person into any phone/Mac.
   if (opts?.onExport) actions.push({ key: 'export', label: t.cercle.exportVcard, icon: 'arrow-up-right-bold', run: opts.onExport })
   if (opts?.onEdit) actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
@@ -333,7 +335,7 @@ export function buildContact(
 export function buildMemberPerson(
   p: Person,
   ctx: DetailCtx,
-  opts?: { relations?: string[]; groupToggle?: GroupToggle; onDetail?: () => void; buildFamilyHref?: string },
+  opts?: { relations?: string[]; groupToggle?: GroupToggle; onDetail?: () => void; onConnect?: () => void; buildFamilyHref?: string },
 ): DetailModel {
   const { t } = ctx
   const accent = p.colour ?? '#C45E86'
@@ -346,6 +348,8 @@ export function buildMemberPerson(
     actions.push({ key: 'detail', label: t.cercle.detailPerson, icon: 'users-three-bold', primary: true, run: opts.onDetail })
   // "Bâtir sa famille" — open the family builder seeded with this member.
   if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
+  // "Relier à quelqu'un" — open the connector with this member as side A.
+  if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', run: opts.onConnect })
   actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', href: '/settings?tab=household' })
   return {
     kind: 'contact',

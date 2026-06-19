@@ -667,6 +667,7 @@ export const FR = {
     familyFromPerson: 'Bâtir sa famille',
     // Connect two people / families at a single junction
     connectTwo: 'Relier deux personnes',
+    connectFromPerson: 'Relier à quelqu’un',
     connectHint: 'Un seul lien suffit : le reste de la famille se déduit tout seul (les frères et sœurs partagent parents et grands-parents).',
     connectPersonA: 'Cette personne…',
     connectPersonB: '…et cette personne',
@@ -1884,6 +1885,7 @@ export const EN: typeof FR = {
     familyFromPerson: 'Build their family',
     // Connect two people / families at a single junction
     connectTwo: 'Connect two people',
+    connectFromPerson: 'Connect to someone',
     connectHint: 'One link is enough: the rest of the family is inferred for you (siblings share parents and grandparents).',
     connectPersonA: 'This person…',
     connectPersonB: '…and this person',

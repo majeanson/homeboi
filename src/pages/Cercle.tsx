@@ -25,6 +25,7 @@ import { CercleEgo } from '../components/cercle/CercleEgo'
 import { CercleTree } from '../components/cercle/CercleTree'
 import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
+import { Modal } from '../components/Modal'
 import {
   type Contact,
   type ContactLink,
@@ -101,7 +102,9 @@ function CercleParent() {
   const [query, setQuery] = useState('')
   const [addingGroup, setAddingGroup] = useState(false)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
-  const [connecting, setConnecting] = useState(false)
+  // The "Relier deux personnes" connector, opened (optionally seeded with one side)
+  // from the directory button, a person's peek, or a family group header.
+  const [connect, setConnect] = useState<{ seedAKey?: string } | null>(null)
 
   const { data, error } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
   // The household name (set in Réglages) titles the Maisonnée family card below. Same
@@ -209,12 +212,14 @@ function CercleParent() {
           },
         }
       : undefined
+    // "Relier à quelqu'un" — open the connector seeded with this person as side A.
+    const onConnect = () => setConnect({ seedAKey: p.key })
     if (p.kind === 'contact') {
       const c = contactsById.get(p.id)
       if (!c) return
-      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onExport: () => downloadVCard(c), buildFamilyHref }))
+      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onExport: () => downloadVCard(c), onConnect, buildFamilyHref }))
     } else {
-      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, groupToggle, onDetail: () => openSheet({ id: p.id, name: p.name }), buildFamilyHref }))
+      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, groupToggle, onDetail: () => openSheet({ id: p.id, name: p.name }), onConnect, buildFamilyHref }))
     }
   }
 
@@ -299,6 +304,13 @@ function CercleParent() {
   return (
     <main className="today-feed cercle">
       <HubHead title={t.nav.cercle} icon="users-three-bold" iconColor={ACCENT} background="var(--berry-wash)" card="cercle" />
+
+      {/* The connector — a bottom-modal so it's prominent from any entry point
+          (directory button, a person's peek, a family group header). */}
+      <Modal open={!!connect} onClose={() => setConnect(null)} title={t.cercle.connectTwo}>
+        <ConnectPeople people={people} seedAKey={connect?.seedAKey} onConnected={() => setConnect(null)} />
+      </Modal>
+
 
       {people.length === 0 ? (
         <>
@@ -391,14 +403,25 @@ function CercleParent() {
                           {g.name}
                           <span className="mono cercle-group__kind">{t.cercle.groupKinds[g.kind]}</span>
                           {g.kind === 'family' && (
-                            <button
-                              type="button"
-                              className="row-actions__btn"
-                              aria-label={t.cercle.familyEditBuilder}
-                              onClick={() => nav(`/cercle/family/${g.id}`)}
-                            >
-                              <InlineIcon name="tree-bold" size={12} />
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                className="row-actions__btn"
+                                aria-label={t.cercle.familyEditBuilder}
+                                onClick={() => nav(`/cercle/family/${g.id}`)}
+                              >
+                                <InlineIcon name="tree-bold" size={12} />
+                              </button>
+                              {/* Connect this family to another person/family in one link. */}
+                              <button
+                                type="button"
+                                className="row-actions__btn"
+                                aria-label={t.cercle.connectTwo}
+                                onClick={() => setConnect({})}
+                              >
+                                <InlineIcon name="users-three-bold" size={12} />
+                              </button>
+                            </>
                           )}
                           <button
                             type="button"
@@ -459,16 +482,11 @@ function CercleParent() {
                   </button>
 
                   {/* Connect two people / families at a single junction — the closure
-                      then propagates the tie through each side. */}
-                  {connecting ? (
-                    <section className="cercle-group cercle-group--named">
-                      <ConnectPeople people={people} onConnected={() => setConnecting(false)} onCancel={() => setConnecting(false)} />
-                    </section>
-                  ) : (
-                    <button type="button" className="btn cercle-build-family" onClick={() => setConnecting(true)}>
-                      <InlineIcon name="users-three-bold" size={15} /> {t.cercle.connectTwo}
-                    </button>
-                  )}
+                      then propagates the tie through each side (opens the modal). */}
+                  <button type="button" className="btn cercle-build-family" onClick={() => setConnect({})}>
+                    <InlineIcon name="users-three-bold" size={15} /> {t.cercle.connectTwo}
+                  </button>
+
 
                   {/* Create new named group */}
                   <div className="cercle-add-group">

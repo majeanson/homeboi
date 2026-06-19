@@ -20,13 +20,25 @@ import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 // don't re-link every pair. Both ends are searchable across the WHOLE circle (by first
 // OR last name, via EntityCombobox), so this reaches people in different family groups.
 // Writes one offline-safe /api/cercle-links row; the server derives the inverse.
-export function ConnectPeople({ people, onConnected, onCancel }: { people: Person[]; onConnected?: () => void; onCancel?: () => void }) {
+export function ConnectPeople({
+  people,
+  seedAKey,
+  onConnected,
+  onCancel,
+}: {
+  people: Person[]
+  /** Pre-fill side A with this person (e.g. opened from their detail peek). */
+  seedAKey?: string
+  onConnected?: () => void
+  onCancel?: () => void
+}) {
   const t = useT()
   const { lang } = useLang()
   const write = useWrite()
 
-  const [aText, setAText] = useState('')
-  const [aKey, setAKey] = useState<string | null>(null)
+  const seedA = seedAKey ? people.find((p) => p.key === seedAKey) ?? null : null
+  const [aText, setAText] = useState(seedA?.name ?? '')
+  const [aKey, setAKey] = useState<string | null>(seedA?.key ?? null)
   const [bText, setBText] = useState('')
   const [bKey, setBKey] = useState<string | null>(null)
   const [type, setType] = useState<RelationshipType | ''>('')
