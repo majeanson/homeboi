@@ -1,4 +1,5 @@
 import type { IconName } from '../components/Icon'
+import type { Dict } from '../components/board/types'
 
 // The meals of a Québec day: déjeuner / dîner / souper, plus a collation (snack).
 // `supper` stays the primary slot — the board headline, the kid suggestion target,
@@ -43,3 +44,9 @@ export const SLOT_COLOR: Record<MealSlot, string> = {
 
 export const isMealSlot = (v: unknown): v is MealSlot =>
   typeof v === 'string' && (MEAL_SLOTS as readonly string[]).includes(v)
+
+// THE localized label for a meal slot ("Souper", "Déjeuner"…), falling back to the
+// raw key for an unknown/custom slot. One home for the `t.kitchen.slots[slot] ?? slot`
+// lookup that was copy-pasted across the board views and inlined in the kitchen.
+export const slotLabel = (slot: string, t: Dict): string =>
+  (t.kitchen.slots as Record<string, string>)[slot] ?? slot

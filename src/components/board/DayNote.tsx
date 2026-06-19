@@ -1,7 +1,7 @@
 import { useT } from '../../i18n'
 import { useSpeak } from '../../lib/speak'
 import { InlineIcon } from '../Icon'
-import type { DayNote as DayNoteT, Member } from './types'
+import { colorOf, type DayNote as DayNoteT, type Member } from './types'
 
 // The Aujourd'hui board's note for TODAY — the memo pinned to this day in La
 // cuisine (functions/api/day-notes). Read-only here: unlike a fridge note it
@@ -25,7 +25,7 @@ export function DayNote({
   // when an explicit label carries meaning (e.g. "À préparer demain"). The
   // aria-label keeps the section named for screen readers either way.
   const heading = label ?? t.board.dayNote
-  const tint = (note.member_id ? members.find((m) => m.id === note.member_id)?.colour : null) ?? '#9BD1C9'
+  const tint = colorOf(members, note.member_id) ?? '#9BD1C9'
   const style = { '--note-tint': tint } as React.CSSProperties
   return (
     <section className={'notes day-note' + (toddler ? ' notes--kid' : '')} aria-label={heading}>

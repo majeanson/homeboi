@@ -6,7 +6,7 @@ import { useMealPrefs } from '../../lib/mealPrefs'
 import { useNextMeal } from '../../lib/nextMeal'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { formatTime } from '../../lib/format'
-import { SLOT_ICON_NAME, SLOT_TIME_ORDER, type MealSlot } from '../../lib/mealSlots'
+import { SLOT_ICON_NAME, SLOT_TIME_ORDER, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
 import { todayLocalDay } from '../../lib/localDay'
 import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
@@ -384,7 +384,7 @@ export function Lanes({
   const sharedChores = [...data.choresToday, ...data.todos].filter((c) => !c.who_id || !memberIds.has(c.who_id))
   // À compléter todos with no face (or a stale one) are household-wide too.
   const sharedTodos = todos.filter((td) => !td.member_id || !memberIds.has(td.member_id))
-  const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
+  const slotLabel = (slot: string) => slotLabelFor(slot, t)
   const cookLine = (cookId: string | null) => {
     const who = nameOf(data.members, cookId)
     return who ? `${who} ${t.board.cooks}` : undefined

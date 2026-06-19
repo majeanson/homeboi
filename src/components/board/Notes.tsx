@@ -6,7 +6,7 @@ import { useSpeak } from '../../lib/speak'
 import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
 import { Icon, InlineIcon } from '../Icon'
-import type { BoardData, Member, NoteRow } from './types'
+import { colorOf as memberColorOf, type BoardData, type Member, type NoteRow } from './types'
 
 // Fridge notes on the Aujourd'hui board: little hand-written cards a parent can
 // clear with a tap. Tinted by who left it (pick-your-face). Optimistically
@@ -31,7 +31,7 @@ export function Notes({
   // inert display text (no ✕, no tap). The toddler read-aloud stays (it's a read).
   const ro = isGuest()
   if (!notes.length) return null
-  const colorOf = (id: string | null) => (id ? members.find((m) => m.id === id)?.colour : null)
+  const colorOf = (id: string | null) => memberColorOf(members, id)
 
   function playClip(key: string) {
     try {

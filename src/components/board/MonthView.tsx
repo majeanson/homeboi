@@ -9,7 +9,7 @@ import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDayLong, weekdayShort } from '../../lib/format'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
 import { localYMD } from '../../lib/localDay'
-import { SLOT_ICON_NAME, isMealSlot, type MealSlot } from '../../lib/mealSlots'
+import { SLOT_ICON_NAME, isMealSlot, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { type Lang } from '../../i18n'
@@ -138,7 +138,7 @@ export function MonthView({
   }, [data])
 
   const mealPrefs = useMealPrefs()
-  const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
+  const slotLabel = (slot: string) => slotLabelFor(slot, t)
   const cookLine = (id: string | null) => {
     const who = nameOf(members, id)
     return who ? `${who} ${t.board.cooks}` : undefined

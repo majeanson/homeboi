@@ -26,7 +26,7 @@ import { formatDay, formatTime } from '../lib/format'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
-import { SLOT_ICON_NAME, SLOT_RANK, type MealSlot } from '../lib/mealSlots'
+import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { Notes } from '../components/board/Notes'
@@ -34,7 +34,7 @@ import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { NowNext, Lanes } from '../components/board/views'
 import { MonthView } from '../components/board/MonthView'
-import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
+import { nameOf, colorOf, type BoardData, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
@@ -165,9 +165,9 @@ export function Board() {
     if (profileId && data?.members && !data.members.some((m) => m.id === profileId)) setMemberId(null)
   }, [data?.members, profileId, setMemberId])
 
-  const memberName = (id: string | null) => data?.members.find((m) => m.id === id)?.display_name ?? null
-  const memberColor = (id: string | null) => data?.members.find((m) => m.id === id)?.colour
-  const slotLabel = (slot: string) => t.kitchen.slots[slot as keyof typeof t.kitchen.slots] ?? slot
+  const memberName = (id: string | null) => nameOf(data?.members ?? [], id)
+  const memberColor = (id: string | null) => colorOf(data?.members ?? [], id)
+  const slotLabel = (slot: string) => slotLabelFor(slot, t)
   // Chronological within a day: déjeuner → dîner → collation → souper. The server
   // returns todayMeals in position order (stable within a slot), so a stable sort
   // by SLOT_RANK gives time order across slots while keeping intra-slot position.

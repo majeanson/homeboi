@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { useConfirm } from '../../lib/confirm'
 import { imgUrl, resizeImage, PHOTO_MAX } from '../../lib/image'
 import { useOnline } from '../../lib/online'
 import { ZoomableImg } from '../ZoomableImg'
@@ -23,6 +24,7 @@ interface ContactPhoto {
 export function ContactPhotos({ contactId }: { contactId: string }) {
   const t = useT()
   const qc = useQueryClient()
+  const confirm = useConfirm()
   const online = useOnline()
   const fileRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -65,6 +67,10 @@ export function ContactPhotos({ contactId }: { contactId: string }) {
   }
 
   async function removePhoto(p: ContactPhoto) {
+    // Deleting frees the R2 blob server-side — irreversible, so gate it behind a
+    // confirm (no undo can bring the photo back). Matches the app's destructive-
+    // delete convention (useConfirm for heavy deletes, undo toast for light ones).
+    if (!(await confirm({ message: t.cercle.removePhotoFromGallery, tone: 'danger' }))) return
     try {
       await api('cercle-photos', { method: 'DELETE', body: { id: p.id } })
       refresh()
