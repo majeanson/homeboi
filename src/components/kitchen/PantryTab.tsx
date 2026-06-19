@@ -6,6 +6,7 @@ import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { EditField } from '../EditField'
 import { CheckRow } from '../CheckRow'
+import { EmptyState } from '../EmptyState'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
@@ -135,7 +136,7 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
           ariaLabel={t.kitchen.lowAdd}
         />
         {lowRemoval.visible(low).length === 0 ? (
-          <p className="board__empty mono">{t.kitchen.lowEmpty}</p>
+          <EmptyState>{t.kitchen.lowEmpty}</EmptyState>
         ) : (
           <ul className="kitchen__low">
             {lowRemoval.visible(low).map((l) => (
@@ -169,7 +170,7 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
           ariaLabel={t.kitchen.useSoonAdd}
         />
         {soonRemoval.visible(soon).length === 0 ? (
-          <p className="board__empty mono">{t.kitchen.useSoonEmpty}</p>
+          <EmptyState>{t.kitchen.useSoonEmpty}</EmptyState>
         ) : (
           <ul className="kitchen__soon">
             {soonRemoval.visible(soon).map((s) => (

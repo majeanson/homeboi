@@ -6,6 +6,7 @@ import { renderRich, stripTokens } from '../../lib/richText'
 import { useTour } from '../../lib/tour'
 import { OperatorSection } from './OperatorSection'
 import { Icon } from '../Icon'
+import { EmptyState } from '../EmptyState'
 
 // One documentation card (native <details>, so it stays accessible and calm):
 // an icon, a title, the one-line "what", then every point as its own nested
@@ -205,7 +206,7 @@ export function GuideSection() {
         aria-label={t.operator.guideSearch}
       />
 
-      {matches.length === 0 && <p className="feed-empty">{t.operator.guideNone}</p>}
+      {matches.length === 0 && <EmptyState>{t.operator.guideNone}</EmptyState>}
 
       {/* Overview card(s): expanded on arrival so a newcomer reads the summary at
           once, then the rest of the manual stays a calm, collapsed list below. */}

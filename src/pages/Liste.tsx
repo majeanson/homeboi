@@ -5,6 +5,7 @@ import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon, InlineIcon } from '../components/Icon'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
+import { EmptyState } from '../components/EmptyState'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
 import { useT } from '../i18n'
@@ -375,7 +376,7 @@ export function Liste() {
       {help.bubbleFor('flyer')}
 
       {list.length === 0 ? (
-        <p className="feed-empty">{t.board.listEmpty}</p>
+        <EmptyState>{t.board.listEmpty}</EmptyState>
       ) : (
         <div className="list-rows">
           {list.map((item) => {

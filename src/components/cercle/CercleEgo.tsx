@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { Avatar } from '../Avatar'
+import { EmptyState } from '../EmptyState'
 import { type Person, type ContactLink, personKey, genderedRelLabel } from '../../lib/cercle'
 
 // « Le cercle » — Liens (ego view). The chosen person sits at the centre; everyone
@@ -56,7 +57,7 @@ export function CercleEgo({ people, links, onOpen }: { people: Person[]; links: 
     return [...acc.values()]
   }, [focus, links, byKey, lang])
 
-  if (!focus) return <p className="feed-empty">{t.cercle.empty}</p>
+  if (!focus) return <EmptyState>{t.cercle.empty}</EmptyState>
 
   const positions = neighbours.map((n, i) => {
     const angle = -Math.PI / 2 + (i * 2 * Math.PI) / Math.max(1, neighbours.length)
@@ -80,7 +81,7 @@ export function CercleEgo({ people, links, onOpen }: { people: Person[]; links: 
   return (
     <div className="cercle-ego">
       <p className="cercle-ego__hint mono">{t.cercle.egoHint}</p>
-      {neighbours.length === 0 && <p className="feed-empty">{t.cercle.linksEmpty}</p>}
+      {neighbours.length === 0 && <EmptyState>{t.cercle.linksEmpty}</EmptyState>}
       <svg className="cercle-ego__svg" viewBox={`0 0 ${VW} ${VH}`} role="img" aria-label={focus.name}>
         {/* Connectors first (under the nodes), each labelled with the relation. */}
         {positions.map((n) => {

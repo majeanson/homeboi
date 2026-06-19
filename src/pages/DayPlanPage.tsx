@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useParams, Navigate } from 'react-router-dom'
+import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
@@ -403,7 +404,7 @@ function DayPlanInner() {
             <span className="ln" />
           </div>
           {dayEvents.length === 0 && !eventForm ? (
-            <p className="feed-empty feed-empty--calm">{t.monthView.empty}</p>
+            <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
           ) : (
             dayEvents.map((e) => (
               <div key={e.id} className="day-plan__act-row">
@@ -454,7 +455,7 @@ function DayPlanInner() {
             <span className="ln" />
           </div>
           {dayChores.length === 0 && !choreForm ? (
-            <p className="feed-empty feed-empty--calm">{t.monthView.empty}</p>
+            <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
           ) : (
             dayChores.map((c) => (
               <Act

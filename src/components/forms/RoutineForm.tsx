@@ -7,6 +7,7 @@ import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod, type RoutineTod } from '../../lib/routineTod'
 import { alignSide } from '../../lib/parallelArray'
 import { InlineIcon } from '../Icon'
+import { EmptyState } from '../EmptyState'
 
 // The complete kid-routine form — who it's for (one or several toddlers, each
 // gets their own copy), a name, a template starting point, and the picture-card
@@ -170,9 +171,9 @@ export function RoutineForm({
   // hits this since its child already exists.)
   if (!editing && children.length === 0)
     return (
-      <p className="board__empty mono">
+      <EmptyState>
         {t.operator.needChild} <Link to="/settings?tab=household">{t.board.welcomeCta}</Link>
-      </p>
+      </EmptyState>
     )
 
   return (

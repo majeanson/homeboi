@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
 import { live } from '../lib/query'
@@ -105,17 +106,17 @@ export function PriceMatchPage() {
 
       <div className="scene__body">
         {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}
-        {state === 'empty' && <p className="feed-empty">{t.shop.none}</p>}
+        {state === 'empty' && <EmptyState>{t.shop.none}</EmptyState>}
         {state === 'noPostal' && (
           // Not a dead-end: jump straight to Réglages ▸ Magasinage to fix it.
-          <p className="feed-empty">
+          <EmptyState>
             {t.shop.noPostal}{' '}
             <Link to="/settings?tab=shopping" className="btn btn--ghost mono">
               {t.shop.setPostal}
             </Link>
-          </p>
+          </EmptyState>
         )}
-        {state === 'error' && <p className="feed-empty">{t.shop.none}</p>}
+        {state === 'error' && <EmptyState>{t.shop.none}</EmptyState>}
 
         {state === 'ok' && stores.length > 1 && (
           <div className="deal-stores mono">

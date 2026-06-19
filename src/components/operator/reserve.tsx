@@ -11,6 +11,7 @@ import { type ReserveLocation, seedReserveDefaults } from '../../lib/reservePref
 import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
+import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
 
 // Réglages ▸ Réserve. The household-level storage spots that group La réserve
@@ -109,7 +110,7 @@ export function ReserveLocationsSection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.operator.reserveTitle} help={help} helpKey="reserveLocations">
       {locs.length === 0 ? (
-        <p className="board__empty mono">{t.operator.reserveEmpty}</p>
+        <EmptyState>{t.operator.reserveEmpty}</EmptyState>
       ) : (
         <ul className="operator__list meal-slots">
           {locs.map((l) => (

@@ -7,6 +7,7 @@ import { isGuest } from '../../lib/device'
 import { InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
+import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
 import { type Device } from './types'
 
@@ -89,7 +90,7 @@ export function DevicesSection({ devices, onChange }: { devices: Device[]; onCha
   return (
     <OperatorSection title={t.operator.devices}>
       {active.length === 0 ? (
-        <p className="board__empty mono">{t.operator.noDevices}</p>
+        <EmptyState>{t.operator.noDevices}</EmptyState>
       ) : (
         <ul className="operator__list">
           {active.map((d) => (

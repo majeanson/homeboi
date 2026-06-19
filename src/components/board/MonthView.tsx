@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { EmptyState } from '../EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
@@ -301,7 +302,7 @@ export function MonthView({
         {isLoading && !data ? (
           <p className="loading mono">{t.common.loading}</p>
         ) : selCount === 0 ? (
-          <p className="feed-empty">{t.monthView.empty}</p>
+          <EmptyState>{t.monthView.empty}</EmptyState>
         ) : (
           <>
             {/* Same order, same cards as the bento day: meals, then events, then

@@ -8,6 +8,7 @@ import { formatDay, formatTime } from '../../lib/format'
 import { EventForm } from '../forms/EventForm'
 import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
 import { type EventRow, type Member } from './types'
 
@@ -52,7 +53,7 @@ export function EventsSection({
   return (
     <OperatorSection title={t.operator.events}>
       {events.length === 0 ? (
-        <p className="board__empty mono">{t.operator.noEvents}</p>
+        <EmptyState>{t.operator.noEvents}</EmptyState>
       ) : (
         <ul className="operator__list">
           {events.map((ev) => (

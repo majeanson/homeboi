@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { EmptyState } from '../EmptyState'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
@@ -248,7 +249,7 @@ export function TodoSection({
       </div>
 
       {all.length === 0 && !ro ? (
-        <p className="feed-empty feed-empty--calm">{t.todos.empty}</p>
+        <EmptyState tone="calm">{t.todos.empty}</EmptyState>
       ) : (
         <div className="todo-rows">
           {groups.map((g, gi) =>

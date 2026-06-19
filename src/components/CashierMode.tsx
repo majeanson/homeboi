@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
 import { type Pick, money } from '../lib/deals'
 import { isGuest } from '../lib/device'
@@ -85,7 +86,7 @@ export function CashierMode({
             <Icon name="x-bold" size={18} />
           </button>
         </div>
-        <p className="feed-empty">{t.shop.none}</p>
+        <EmptyState>{t.shop.none}</EmptyState>
       </div>
     )
   }

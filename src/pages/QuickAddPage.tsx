@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import { EmptyState } from '../components/EmptyState'
 import { useWrite } from '../lib/write'
 import { isGuest } from '../lib/device'
 import { useT } from '../i18n'
@@ -144,7 +145,7 @@ export function QuickAddPage() {
               </button>
             )
           })}
-          {shown.length === 0 && !canAddTyped && <p className="feed-empty">{t.list.quickEmpty}</p>}
+          {shown.length === 0 && !canAddTyped && <EmptyState>{t.list.quickEmpty}</EmptyState>}
         </div>
       </div>
     </div>

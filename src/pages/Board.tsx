@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
@@ -768,7 +769,7 @@ export function Board() {
           <div className="board-grid">
             <Section label={t.board.today}>
             {todayEvents.length === 0 && todayChores.length === 0 && otherMeals.length === 0 ? (
-              <p className="feed-empty feed-empty--calm">{t.board.todayClear}</p>
+              <EmptyState tone="calm">{t.board.todayClear}</EmptyState>
             ) : (
               <>
                 {/* Today's other meals (déjeuner/dîner/collation) — supper is the
@@ -868,7 +869,7 @@ export function Board() {
                 checklist stays a compact glance here; check/add stay functional. */}
             <TodoSection day={tomorrowTodoDay} title={t.todos.title} members={data.members} bento={false} hideWhenEmpty />
             {tomorrowEvents.length === 0 && !showTomorrowSupper && otherTomorrowMeals.length === 0 && !data.tomorrowNote && tomorrowTodoCount === 0 && (
-              <p className="feed-empty feed-empty--calm">{t.board.tomorrowClear}</p>
+              <EmptyState tone="calm">{t.board.tomorrowClear}</EmptyState>
             )}
           </Section>
 

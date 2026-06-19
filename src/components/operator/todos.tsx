@@ -20,6 +20,7 @@ import {
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { Icon } from '../Icon'
+import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
 
 // Réglages ▸ À compléter. Reusable check-off checklists ("Avant de partir", "Chez
@@ -120,7 +121,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.todos.templatesTitle} help={help} helpKey="todoTemplates">
       {templates.length === 0 ? (
-        <p className="board__empty mono">{t.todos.noTemplates}</p>
+        <EmptyState>{t.todos.noTemplates}</EmptyState>
       ) : (
         <ul className="operator__list">
           {templates.map((tpl) => {

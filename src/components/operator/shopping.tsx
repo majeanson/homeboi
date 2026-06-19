@@ -10,6 +10,7 @@ import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type Gh
 import { isGuest } from '../../lib/device'
 import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
+import { EmptyState } from '../EmptyState'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
 // price-match proof on the list knows where to search. Set once, used every trip.
@@ -131,10 +132,10 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
 
   return (
     <OperatorSection title={t.operator.storeFilter} help={help} helpKey="storeFilter">
-      {state === 'loading' && <p className="board__empty mono">{t.shop.searching}</p>}
-      {state === 'noPostal' && <p className="board__empty mono">{t.operator.storeFilterNoPostal}</p>}
-      {state === 'error' && <p className="board__empty mono">{t.operator.storeFilterError}</p>}
-      {state === 'empty' && <p className="board__empty mono">{t.operator.storeFilterEmpty}</p>}
+      {state === 'loading' && <EmptyState>{t.shop.searching}</EmptyState>}
+      {state === 'noPostal' && <EmptyState>{t.operator.storeFilterNoPostal}</EmptyState>}
+      {state === 'error' && <EmptyState>{t.operator.storeFilterError}</EmptyState>}
+      {state === 'empty' && <EmptyState>{t.operator.storeFilterEmpty}</EmptyState>}
       {state === 'ok' && stores && (
         <ul className="operator__list store-filter">
           {stores.map((s) => (
@@ -239,9 +240,9 @@ export function HistorySection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.operator.history} help={help} helpKey="history">
       {items === null ? (
-        <p className="board__empty mono">{t.shop.searching}</p>
+        <EmptyState>{t.shop.searching}</EmptyState>
       ) : items.length === 0 ? (
-        <p className="board__empty mono">{t.operator.historyEmpty}</p>
+        <EmptyState>{t.operator.historyEmpty}</EmptyState>
       ) : (
         <ul className="operator__list ghost-admin">
           {items.map((it) =>
@@ -363,7 +364,7 @@ export function GhostSection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.operator.ghost} help={help} helpKey="ghost">
       {items.length === 0 ? (
-        <p className="board__empty mono">{t.ghost.emptyManage}</p>
+        <EmptyState>{t.ghost.emptyManage}</EmptyState>
       ) : (
         <ul className="operator__list ghost-admin">
           {items.map((it) => (

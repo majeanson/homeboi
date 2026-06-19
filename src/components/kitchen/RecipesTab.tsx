@@ -13,6 +13,7 @@ import { formatDuration } from '../../lib/duration'
 import { pictoFor } from '../../lib/picto'
 import { todayLocalDay } from '../../lib/localDay'
 import { InlineIcon } from '../Icon'
+import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
 // The recipe book: search, tag chips, the configurable filter/sort PILLS, and the
@@ -420,7 +421,7 @@ export function RecipesTab({
         </div>
       )}
       {recipes.length === 0 ? (
-        <p className="board__empty mono">{t.recipes.empty}</p>
+        <EmptyState>{t.recipes.empty}</EmptyState>
       ) : (
         <>
           {/* #11 "Aa vs Collections" view toggle now lives up beside the search;

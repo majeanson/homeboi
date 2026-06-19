@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useT } from '../../i18n'
 import { Avatar } from '../Avatar'
+import { EmptyState } from '../EmptyState'
 import { type Person, type ContactLink, generationOf, linkEndpoints, isFamilyRel } from '../../lib/cercle'
 // (byKey lookups aren't needed here — the layout works off positions + placed[].)
 
@@ -58,7 +59,7 @@ export function CercleTree({ people, links, onOpen }: { people: Person[]; links:
     return { placed, pos, width, height, edges }
   }, [people, links])
 
-  if (!layout) return <p className="feed-empty cercle-tree__empty">{t.cercle.treeEmpty}</p>
+  if (!layout) return <EmptyState className="cercle-tree__empty">{t.cercle.treeEmpty}</EmptyState>
 
   const { placed, pos, width, height, edges } = layout
   return (

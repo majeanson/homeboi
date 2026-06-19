@@ -13,6 +13,7 @@ import { useConfirm } from '../lib/confirm'
 import { useOpenPersonSheet } from '../lib/personSheet'
 import { CERCLE_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
+import { EmptyState } from '../components/EmptyState'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { Avatar } from '../components/Avatar'
@@ -323,7 +324,7 @@ function CercleParent() {
 
               {filtered ? (
                 <section className="cercle-group">
-                  {filtered.length === 0 ? <p className="feed-empty">{t.cercle.empty}</p> : filtered.map((p) => <Row key={p.key} p={p} />)}
+                  {filtered.length === 0 ? <EmptyState>{t.cercle.empty}</EmptyState> : filtered.map((p) => <Row key={p.key} p={p} />)}
                 </section>
               ) : (
                 <>
@@ -404,7 +405,7 @@ function CercleParent() {
                         .sort((a, b) => a.name.localeCompare(b.name, lang))
                         .map((p) => <Row key={p.key} p={p} />)}
                       {g.memberKeys.size === 0 && (
-                        <p className="feed-empty mono cercle-group__empty">{t.cercle.groupEmpty}</p>
+                        <EmptyState className="cercle-group__empty">{t.cercle.groupEmpty}</EmptyState>
                       )}
                     </section>
                   ))}
@@ -539,7 +540,7 @@ function CircleKidView() {
     <main className="cercle-kid">
       <h1 className="cercle-kid__title">{t.cercle.whoIsThis}</h1>
       {people.length === 0 ? (
-        <p className="feed-empty">{t.cercle.empty}</p>
+        <EmptyState>{t.cercle.empty}</EmptyState>
       ) : (
         <>
           <p className="cercle-kid__hint mono">{t.cercle.tapForFamily}</p>

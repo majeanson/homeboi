@@ -12,6 +12,7 @@ import { Icon, InlineIcon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
+import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
 
 // A chip tinted by its tag colour (readable on cream AND dark via the theme-aware
@@ -195,7 +196,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
       <HelpTitle as="h3" className="operator__sub" help={help} k="tagUsed">{t.operator.tagUsed}</HelpTitle>
       {help?.bubbleFor('tagUsed')}
       {used.length === 0 ? (
-        <p className="board__empty mono">{t.operator.tagNoneUsed}</p>
+        <EmptyState>{t.operator.tagNoneUsed}</EmptyState>
       ) : (
         <ul className="operator__list tag-admin__list">
           {used.map(({ tag, count }) => {

@@ -7,6 +7,7 @@ import { isGuest } from '../../lib/device'
 import { wash } from '../../lib/colors'
 import { useReserveLocations } from '../../lib/reservePrefs'
 import { CheckRow } from '../CheckRow'
+import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 
@@ -117,7 +118,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
       </form>
       )}
       {rows.length === 0 ? (
-        <p className="board__empty mono">{t.kitchen.reserveEmpty}</p>
+        <EmptyState>{t.kitchen.reserveEmpty}</EmptyState>
       ) : (
         groups.map((g) => (
           <div key={g.id} className="kitchen__reserve-group">

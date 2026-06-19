@@ -8,6 +8,7 @@ import { useUndoToast } from '../../lib/toast'
 import { resizeImage, imgUrl, PHOTO_MAX } from '../../lib/image'
 import { isGuest } from '../../lib/device'
 import { Icon } from '../Icon'
+import { EmptyState } from '../EmptyState'
 
 // Weekly recap: an on-demand, calm reflection (NFR-CALM/COST — a button, never a
 // loop). Hides itself when AI is unavailable (503) so it never shows a dead button.
@@ -108,7 +109,7 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.operator.photos} help={help} helpKey="photos">
       {photos.length === 0 ? (
-        <p className="board__empty mono">{t.operator.noPhotos}</p>
+        <EmptyState>{t.operator.noPhotos}</EmptyState>
       ) : (
         <div className="photo-grid">
           {photos.map((p) => (

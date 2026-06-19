@@ -1,5 +1,6 @@
 import { type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { EmptyState } from '../EmptyState'
 import { CATS } from '../../lib/cats'
 import { tintInk, faint, hairline } from '../../lib/colors'
 import { useMealPrefs } from '../../lib/mealPrefs'
@@ -475,7 +476,7 @@ export function Lanes({
               )}
             </div>
             {empty ? (
-              <p className="feed-empty feed-empty--calm">{t.board.laneClear}</p>
+              <EmptyState tone="calm">{t.board.laneClear}</EmptyState>
             ) : (
               <>
                 {events.map((e) => (

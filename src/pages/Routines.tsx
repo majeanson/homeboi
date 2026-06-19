@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
+import { EmptyState } from '../components/EmptyState'
 import { useAudience } from '../lib/audience'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildRoutine } from '../components/detail/adapters'
@@ -73,7 +74,7 @@ function RoutinesParent() {
       <SectionIntro card="routines" />
 
       {routines.length === 0 ? (
-        <p className="feed-empty">{t.kid.none}</p>
+        <EmptyState>{t.kid.none}</EmptyState>
       ) : (
         <div className="routines-grid">
           {routines.map((r) => {

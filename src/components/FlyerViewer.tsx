@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { EmptyState } from './EmptyState'
 import { api } from '../lib/api'
 import { useLang, useT } from '../i18n'
 import { isGuest } from '../lib/device'
@@ -446,7 +447,7 @@ export function FlyerViewer({
 
       <div className="flyer-scroll">
         {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}
-        {(state === 'empty' || state === 'error') && <p className="feed-empty">{t.shop.flyerNone}</p>}
+        {(state === 'empty' || state === 'error') && <EmptyState>{t.shop.flyerNone}</EmptyState>}
 
         {/* Offres — a tight grid of every clipping (each carries its own price), so
             the view reads as complete even though the flyer page has gaps Flipp

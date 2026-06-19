@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { EmptyState } from './EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
 import { useLang, useT } from '../i18n'
@@ -195,19 +196,19 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
-        {state === 'start' && <p className="feed-empty">{t.shop.browseStart}</p>}
+        {state === 'start' && <EmptyState>{t.shop.browseStart}</EmptyState>}
         {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}
-        {state === 'empty' && <p className="feed-empty">{t.shop.none}</p>}
+        {state === 'empty' && <EmptyState>{t.shop.none}</EmptyState>}
         {state === 'noPostal' && (
           // Not a dead-end: jump straight to Réglages ▸ Magasinage to fix it.
-          <p className="feed-empty">
+          <EmptyState>
             {t.shop.noPostal}{' '}
             <Link to="/settings?tab=shopping" className="btn btn--ghost mono">
               {t.shop.setPostal}
             </Link>
-          </p>
+          </EmptyState>
         )}
-        {state === 'error' && <p className="feed-empty">{t.shop.none}</p>}
+        {state === 'error' && <EmptyState>{t.shop.none}</EmptyState>}
 
         {state === 'ok' && stores.length > 1 && (
           <div className="deal-stores mono">
@@ -245,7 +246,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
           <>
             {flyersQ.isLoading && <p className="loading mono">{t.shop.searching}</p>}
             {flyersQ.error && (
-              <p className="feed-empty">
+              <EmptyState>
                 {isStatus(flyersQ.error, 400) ? (
                   <>
                     {t.shop.noPostal}{' '}
@@ -256,9 +257,9 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
                 ) : (
                   t.shop.none
                 )}
-              </p>
+              </EmptyState>
             )}
-            {storeFlyers && storeFlyers.length === 0 && <p className="feed-empty">{t.shop.none}</p>}
+            {storeFlyers && storeFlyers.length === 0 && <EmptyState>{t.shop.none}</EmptyState>}
             {storeFlyers && storeFlyers.length > 0 && (
               <div className="flyer-stores">
                 {storeFlyers.map((f) => {

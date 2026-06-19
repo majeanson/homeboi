@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
+import { EmptyState } from '../EmptyState'
 import { api, ApiError, isStatus } from '../../lib/api'
 import { isGuest } from '../../lib/device'
 import { Icon } from '../Icon'
@@ -66,7 +67,7 @@ function AiStatusTest({ help }: { help?: HelpMode }) {
         </button>
       )}
 
-      {unavailable && <p className="board__empty mono">{t.operator.aiTestUnavailable}</p>}
+      {unavailable && <EmptyState>{t.operator.aiTestUnavailable}</EmptyState>}
 
       {checks && (
         <ul className="ai-test">
@@ -112,7 +113,7 @@ export function AiErrorLogSection({ help }: { help?: HelpMode }) {
       <AiStatusTest help={help} />
       <OperatorSection title={t.operator.aiLogTitle} help={help} helpKey="aiLog">
         {errors.length === 0 ? (
-          <p className="board__empty mono">{t.operator.aiLogEmpty}</p>
+          <EmptyState>{t.operator.aiLogEmpty}</EmptyState>
         ) : (
           <>
             <ul className="ai-log">
