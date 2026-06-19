@@ -239,7 +239,10 @@ test('kitchen-shop-week', async ({ page }) => {
 // the Recettes sub-tab; the base recipe modal is already in sheets.spec.
 async function openRecipe(page: Page) {
   await page.locator('.subtabs__opt').nth(2).click() // Recettes
+  // A recipe card now opens the detail peek; its primary action navigates to the
+  // recipe view route (/kitchen/recipe/:id) where the .recipe-modal lives.
   await page.locator('.recipe-card').first().click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la recette' }).click()
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
 }
 

@@ -602,7 +602,9 @@ test.describe('recipes', () => {
   })
 
   test('the servings scaler rescales ingredient quantities', async ({ page }) => {
-    await page.locator('.recipe-card').first().click() // Spaghetti, 4 servings
+    // A card opens the detail peek; its primary action opens the recipe view route.
+    await page.locator('.recipe-card', { hasText: 'Spaghetti' }).first().click() // 4 servings, 400 g pâtes
+    await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la recette' }).click()
     const modal = page.locator('.recipe-modal')
     await expect(modal.locator('.recipe-view__ings')).toContainText('400 g')
     await modal.locator('[aria-label="Plus de portions"]').click() // 4 → 5 servings
@@ -611,6 +613,7 @@ test.describe('recipes', () => {
 
   test('a recipe pushes its ingredients to the list and opens cook mode', async ({ page }) => {
     await page.locator('.recipe-card').first().click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la recette' }).click()
     const modal = page.locator('.recipe-modal')
     // "Ajouter à la liste" now opens an ingredient PICKER (e40f990) with nothing
     // pre-selected; pick all, then confirm — that's what posts recipe-to-list.
@@ -637,7 +640,8 @@ test.describe('recipes', () => {
   })
 
   test('"quoi cuisiner?" toggles a cookability ranking with badges', async ({ page }) => {
-    const toggle = page.locator('.kitchen__cook-filter')
+    // "Quoi cuisiner?" is now a filter pill (recipePills system), not a standalone toggle.
+    const toggle = page.locator('.kitchen__pill', { hasText: 'Quoi cuisiner' })
     await expect(toggle).toBeVisible() // pantry has out-of-stock items to rank against
     await toggle.click()
     await expect(toggle).toHaveAttribute('aria-pressed', 'true')

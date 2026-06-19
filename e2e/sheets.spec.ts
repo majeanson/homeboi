@@ -23,7 +23,10 @@ const shoot = (page: Page, name: string) => page.screenshot({ path: `e2e/screens
 // Open the recipe book (behind the Recettes sub-tab) and a recipe modal.
 async function openRecipe(page: Page) {
   await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
+  // A recipe card now opens the detail peek; its primary action navigates to the
+  // recipe view route (/kitchen/recipe/:id) where the .recipe-modal lives.
   await page.locator('.recipe-card').first().click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la recette' }).click()
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
 }
 

@@ -104,10 +104,11 @@ test('ms: recipe sheet + cook mode', async ({ page }) => {
   await page.waitForTimeout(400)
   const card = page.locator('.recipe-card').first()
   if (await card.count()) {
+    // A card opens the detail peek; its Cuisiner action navigates to cook mode.
     await card.click()
     await page.waitForTimeout(600)
     await shot(page, 'recipe-sheet')
-    const cook = page.getByRole('button', { name: /Cuisiner/ })
+    const cook = page.locator('.detail-sheet__actions button').filter({ hasText: 'Cuisiner' })
     if (await cook.count()) {
       await cook.first().click()
       await page.waitForTimeout(600)
