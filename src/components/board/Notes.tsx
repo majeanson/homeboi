@@ -114,10 +114,13 @@ export function Notes({
               <span className="note-card__text">{n.text}</span>
             )
 
-          // Media notes: the body plays (audio) or just shows (drawing); a separate
-          // ✕ clears (parent only) so a tap on the memo never also dismisses it.
+          // Media notes: the body plays (audio), or — for a drawing — IS the tap
+          // target to re-open and add to it (shared family doodle); a shared photo
+          // just shows. A separate ✕ clears (parent only) so a tap never also
+          // dismisses it.
           if (media) {
             const play = media === 'audio' ? () => playClip(n.media_key!) : undefined
+            const editable = !ro && !toddler && media === 'drawing'
             const isVisual = media === 'drawing' || media === 'image'
             return (
               <div key={n.id} className={`note-card note-card--media${isVisual ? ' note-card--visual' : ''}`} style={css}>
@@ -125,20 +128,16 @@ export function Notes({
                   <button type="button" className="note-card__mediabtn" onClick={play} aria-label={t.notes.memo}>
                     {body}
                   </button>
+                ) : editable ? (
+                  // The whole drawing is the edit target; the corner ✏️ is the cue.
+                  <button type="button" className="note-card__mediabtn" onClick={() => setEditing(n)} aria-label={t.memo.edit}>
+                    {body}
+                    <span className="note-card__edit-badge" aria-hidden="true">
+                      <Icon name="pencil-simple-bold" size={14} />
+                    </span>
+                  </button>
                 ) : (
                   body
-                )}
-                {/* A drawing is a shared family doodle — anyone (parent lens, not a
-                    guest) can re-open it and add to it. ✏️ top-left, ✕ top-right. */}
-                {!ro && !toddler && media === 'drawing' && (
-                  <button
-                    type="button"
-                    className="note-card__clear note-card__edit--btn"
-                    onClick={() => setEditing(n)}
-                    aria-label={t.memo.edit}
-                  >
-                    <Icon name="pencil-simple-bold" size={14} />
-                  </button>
                 )}
                 {!ro && !toddler && (
                   <button

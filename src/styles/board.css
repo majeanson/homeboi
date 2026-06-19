@@ -627,18 +627,27 @@
   line-height: 0;
   opacity: 0.55;
 }
-/* ✏️ to re-open a drawing and add to it (shared family doodle, #14) — top-left,
-   mirroring the ✕ at top-right. */
-.note-card__edit--btn {
+/* A drawing IS the tap target to re-open + add to it (shared family doodle, #14).
+   The button wraps the image full-width; a ✏️ badge in the corner is the cue. */
+.note-card__mediabtn {
+  position: relative;
+}
+.note-card--visual .note-card__mediabtn {
+  display: block;
+  width: 100%;
+}
+.note-card__edit-badge {
   position: absolute;
-  top: 0.2rem;
-  left: 0.3rem;
-  right: auto;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
+  top: 0.4rem;
+  left: 0.4rem;
+  display: inline-flex;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-sm);
   line-height: 0;
-  opacity: 0.55;
+  pointer-events: none; /* the surrounding button owns the tap */
 }
 
 /* --- The Record / Draw row under the Note rapide text capture (AddSheet) ------ */
