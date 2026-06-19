@@ -6,7 +6,7 @@ import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { live } from '../../lib/query'
 import { isGuest } from '../../lib/device'
-import { useRecordUndo } from '../../lib/toast'
+import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { TODOS_KEY, TODO_TEMPLATES_KEY } from '../../lib/queryKeys'
 import {
@@ -61,7 +61,7 @@ export function TodoSection({
 }) {
   const t = useT()
   const write = useWrite()
-  const recordUndo = useRecordUndo()
+  const createWithUndo = useCreateWithUndo()
   const ro = isGuest()
   const scope = day ?? null
 
@@ -96,8 +96,8 @@ export function TodoSection({
     if (!value) return
     setAddText('')
     const tmpId = `tmp-${Date.now()}-${Math.floor(Math.random() * 1e6).toString(36)}`
-    const res = await write<{ id: string }>('todos', {
-      method: 'POST',
+    await createWithUndo({
+      endpoint: 'todos',
       body: { title: value, day: scope },
       affectedKeys: [TODOS_KEY],
       optimistic: (qc) =>
@@ -106,13 +106,8 @@ export function TodoSection({
             ? { todos: [...d.todos, { id: tmpId, title: value, day: scope, member_id: null, done_at: null, position: 0, section: null }] }
             : { todos: [{ id: tmpId, title: value, day: scope, member_id: null, done_at: null, position: 0, section: null }] },
         ),
-    }).catch(() => null)
-    const id = res && !res.queued ? res.data?.id : undefined
-    if (id)
-      recordUndo({
-        message: t.todos.added(value),
-        onUndo: () => void write('todos', { method: 'DELETE', body: { id }, affectedKeys: [TODOS_KEY] }).catch(() => {}),
-      })
+      message: t.todos.added(value),
+    })
   }
 
   // — toggle done (a MARK in place; optimistic flip, then resync) —

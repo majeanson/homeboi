@@ -15,7 +15,7 @@ import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
-import { useRecordUndo } from '../lib/toast'
+import { useCreateWithUndo } from '../lib/undoCreate'
 import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { isGuest } from '../lib/device'
@@ -174,7 +174,7 @@ export function Liste() {
   const { audience } = useAudience()
   const { surface } = useSurface()
   const nav = useNavigate()
-  const recordUndo = useRecordUndo()
+  const createWithUndo = useCreateWithUndo()
   const write = useWrite()
   // Bulletproof calm-delete for the list (the shared hook codifies what this page
   // pioneered): hide cleared/deleted ids + filter them out, and await a refetch
@@ -214,27 +214,20 @@ export function Liste() {
     // invalidate can't refetch it; on reconnect the queued POST creates the real
     // row and the invalidate swaps the temp one out.
     const tmpId = `tmp-${Date.now()}-${Math.floor(Math.random() * 1e6).toString(36)}`
-    const res = await write<{ id: string }>('list', {
-      method: 'POST',
+    // Online add returns the real id → offer Annuler that deletes exactly that line
+    // (the COMPENSATING undo), even after several quick voice adds stack up. Offline
+    // adds skip the undo (no server id yet); deleting the row is the way back.
+    await createWithUndo({
+      endpoint: 'list',
       body: terms && terms.length ? { text, search_terms: terms } : { text },
       affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
       optimistic: (qc) =>
         qc.setQueryData<BoardListData>(BOARD_KEY, (b) =>
           b ? { ...b, list: [...b.list, { id: tmpId, text, source: 'manual', checked_at: null }] } : b,
         ),
-    }).catch(() => null)
-    // Online add returns the real id → offer Annuler that deletes exactly that line
-    // (the COMPENSATING undo), even after several quick voice adds stack up. Offline
-    // adds skip the undo (no server id yet); deleting the row is the way back.
-    const newId = res && !res.queued ? res.data?.id : undefined
-    if (newId)
-      recordUndo({
-        message: t.undo.added(text),
-        onUndo: () =>
-          void write('list', { method: 'DELETE', body: { id: newId }, affectedKeys: [BOARD_KEY, GHOSTS_KEY] }).catch(
-            () => {},
-          ),
-      })
+      message: t.undo.added(text),
+      undoAffectedKeys: [BOARD_KEY, GHOSTS_KEY],
+    })
   }
   function addItem(e?: React.FormEvent) {
     e?.preventDefault()
