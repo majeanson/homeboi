@@ -605,7 +605,7 @@ export function Board() {
                 const photo = me.avatar_kind === 'photo' && me.avatar_ref ? imgUrl(me.avatar_ref) : null
                 return (
                   <span className="profile-chip__av" style={{ background: photo ? undefined : me.colour }}>
-                    {photo ? <img src={photo} alt="" /> : (me.display_name[0] ?? '?').toUpperCase()}
+                    {photo ? <img src={photo} alt="" /> : (me.display_name?.[0] ?? '?').toUpperCase()}
                   </span>
                 )
               })()

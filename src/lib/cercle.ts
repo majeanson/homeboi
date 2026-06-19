@@ -504,6 +504,23 @@ export function formatBirthday(birthday: string | null | undefined, lang: keyof 
 export const fullName = (c: { firstName: string; lastName?: string | null; nickname?: string | null }): string =>
   c.nickname?.trim() || [c.firstName, c.lastName].filter(Boolean).join(' ').trim() || c.firstName
 
+// ---- Address ----------------------------------------------------------------
+
+// "123 rue Principale, Québec, QC, G1A 1A1" — the address parts we hold, in postal
+// order, dropping the empty ones. Null when nothing's filled in.
+export function formatAddress(a: ContactAddress | null | undefined): string | null {
+  if (!a) return null
+  const parts = [a.street, a.city, a.state, a.postalCode, a.country].map((p) => p?.trim()).filter(Boolean)
+  return parts.length ? parts.join(', ') : null
+}
+
+// A Google Maps DIRECTIONS link to the address (opens turn-by-turn in the Maps app
+// on a phone, the web map on a tablet). Null when there's no address to route to.
+export function mapsUrl(a: ContactAddress | null | undefined): string | null {
+  const s = formatAddress(a)
+  return s ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s)}` : null
+}
+
 // ---- Named groups -----------------------------------------------------------
 
 export type GroupKind = 'family' | 'friends' | 'work' | 'other'

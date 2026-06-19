@@ -893,6 +893,13 @@
   align-items: center;
   gap: 6px;
 }
+.day-plan__act-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.day-plan__act-row > .act { flex: 1; min-width: 0; }
+.day-plan__act-share { flex-shrink: 0; padding: 4px 6px; }
 @media (max-width: 520px) {
   .monthv__grid {
     gap: 2px;

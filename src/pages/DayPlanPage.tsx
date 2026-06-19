@@ -387,14 +387,31 @@ export function DayPlanPage() {
             <p className="feed-empty feed-empty--calm">{t.monthView.empty}</p>
           ) : (
             dayEvents.map((e) => (
-              <Act
-                key={e.id}
-                cat="event"
-                title={e.title}
-                when={e.all_day ? t.board.allDay : formatTime(e.at, lang)}
-                who={memberName(e.member_id) || undefined}
-                onActivate={ro ? undefined : () => openEventEdit(e.id)}
-              />
+              <div key={e.id} className="day-plan__act-row">
+                <Act
+                  cat="event"
+                  title={e.title}
+                  when={e.all_day ? t.board.allDay : formatTime(e.at, lang)}
+                  who={memberName(e.member_id) || undefined}
+                  onActivate={ro ? undefined : () => openEventEdit(e.id)}
+                />
+                {!!navigator.share && (
+                  <button
+                    type="button"
+                    className="btn btn--ghost mono day-plan__act-share"
+                    onClick={() => {
+                      const when = e.all_day
+                        ? capitalize(formatDayLong(date, lang))
+                        : `${capitalize(formatDayLong(date, lang))} · ${formatTime(e.at, lang)}`
+                      void navigator.share({ title: e.title, text: `${e.title}\n${when}` })
+                    }}
+                    aria-label={t.guest.share}
+                    title={t.guest.share}
+                  >
+                    <Icon name="arrow-up-right-bold" size={16} />
+                  </button>
+                )}
+              </div>
             ))
           )}
           {!ro &&

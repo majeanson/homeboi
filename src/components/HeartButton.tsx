@@ -39,7 +39,7 @@ export function HeartButton({ recipeId }: { recipeId: string }) {
         const photo = m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null
         return (
           <span key={m.id} className="hearts__face" style={{ background: photo ? undefined : m.colour }}>
-            {photo ? <img src={photo} alt="" /> : (m.display_name[0] ?? '?').toUpperCase()}
+            {photo ? <img src={photo} alt="" /> : (m.display_name?.[0] ?? '?').toUpperCase()}
           </span>
         )
       })}

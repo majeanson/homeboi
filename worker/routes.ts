@@ -16,6 +16,7 @@ import * as capture from '../functions/api/capture'
 import * as cercle from '../functions/api/cercle'
 import * as cercleGroups from '../functions/api/cercle-groups'
 import * as cercleLinks from '../functions/api/cercle-links'
+import * as cerclePhotos from '../functions/api/cercle-photos'
 import * as chores from '../functions/api/chores'
 import * as choresLedger from '../functions/api/chores-ledger'
 import * as dayNotes from '../functions/api/day-notes'
@@ -91,6 +92,7 @@ const TABLE: Record<string, RouteMod> = {
   cercle,
   'cercle-groups': cercleGroups,
   'cercle-links': cercleLinks,
+  'cercle-photos': cerclePhotos,
   chores,
   'chores-ledger': choresLedger,
   'day-notes': dayNotes,

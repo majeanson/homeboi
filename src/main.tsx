@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { AppRoutes } from './router'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { AuthProvider } from './lib/auth'
 import { queryClient } from './lib/query'
 import { LangContext, type Lang } from './i18n'
@@ -257,7 +258,12 @@ function Root() {
                         contexts; TourOverlay is rendered once here so a tour can
                         overlay ANY route, not just the hub. */}
                     <TourProvider>
-                      <AppRoutes />
+                      {/* A render throw anywhere in the routes degrades to a calm,
+                          recoverable card instead of unmounting the whole app to a
+                          blank cream page (React's default with no boundary). */}
+                      <ErrorBoundary>
+                        <AppRoutes />
+                      </ErrorBoundary>
                       <TourOverlay />
                     </TourProvider>
                   </BrowserRouter>

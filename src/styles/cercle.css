@@ -408,6 +408,90 @@
   padding-top: 0.3rem;
 }
 
+/* Address — street on its own line, then city / province / postal in a row that
+   wraps on a narrow phone. */
+.cf__addr-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.cf__addr-row > .cf__input {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+.cf__addr-prov {
+  flex: 0 1 6rem !important;
+}
+.cf__addr-postal {
+  flex: 0 1 7rem !important;
+}
+
+/* Named-group toggle chips inside the form (reuse .chip + .chip.is-on). */
+.cf__groups-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.cf__group-add {
+  border-style: dashed;
+}
+
+/* Per-person photo gallery */
+.cf-photos__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+.cf-photos__item {
+  position: relative;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.cf-photos__img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.cf-photos__del {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+}
+.cf-photos__caption {
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.8rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  outline: none;
+}
+.cf-photos__caption:focus {
+  border-color: var(--accent, var(--berry));
+}
+.cf-photos__hint {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin: 0.3rem 0 0;
+}
+
 /* Relationships sub-editor */
 .cf__rels {
   display: flex;

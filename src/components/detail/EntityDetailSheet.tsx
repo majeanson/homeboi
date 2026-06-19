@@ -144,6 +144,22 @@ function Block({ block }: { block: DetailBlock }) {
           </span>
         </div>
       )
+    case 'pictos':
+      // A routine's step pictos: each card shows its parent-set photo when there is
+      // one, else its emoji — the SAME photo-wins rule the Routines grid + kid run
+      // use, so the peek never disagrees with them (feature #17 C).
+      return (
+        <div className="detail-sheet__chips">
+          {block.label && <span className="detail-sheet__blocklabel mono">{block.label}</span>}
+          <span className="detail-sheet__chiprow">
+            {block.items.map((it, i) => (
+              <span key={i} className={'detail-sheet__picto' + (it.photo ? ' detail-sheet__picto--photo' : '')}>
+                {it.photo ? <img src={it.photo} alt="" loading="lazy" /> : <span>{it.emoji || '○'}</span>}
+              </span>
+            ))}
+          </span>
+        </div>
+      )
     case 'list':
       return (
         <div className="detail-sheet__listwrap">

@@ -56,7 +56,7 @@ export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () =>
                 aria-pressed={sel}
               >
                 <span className="profile-face__av" style={{ background: photo ? undefined : m.colour }}>
-                  {photo ? <img src={photo} alt="" /> : (m.display_name[0] ?? '?').toUpperCase()}
+                  {photo ? <img src={photo} alt="" /> : (m.display_name?.[0] ?? '?').toUpperCase()}
                 </span>
                 <span className="profile-face__name">{m.display_name}</span>
               </button>

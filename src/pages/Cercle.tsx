@@ -132,10 +132,11 @@ function CercleParent() {
 
   const openPerson = (p: Person) => {
     const relations = relationsOf(p.key, links, byKey, lang)
+    const groupNames = namedGroups.filter((g) => g.memberKeys.has(p.key)).map((g) => g.name)
     if (p.kind === 'contact') {
       const c = contactsById.get(p.id)
       if (!c) return
-      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, onEdit: () => nav(`/cercle/person/${c.id}`) }))
+      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groups: groupNames, onEdit: () => nav(`/cercle/person/${c.id}`) }))
     } else {
       detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations }))
     }

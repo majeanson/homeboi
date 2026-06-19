@@ -26,6 +26,7 @@ type DetailKind =
 export type DetailBlock =
   | { kind: 'text'; text: string; hand?: boolean } // a paragraph (hand = handwritten note look)
   | { kind: 'chips'; label?: string; chips: string[] } // a tag/chip row
+  | { kind: 'pictos'; label?: string; items: { photo?: string; emoji?: string }[] } // step pictos: a card's photo (preferred) or its emoji — same rule the grid/kid run follow
   | { kind: 'list'; label?: string; items: string[] } // a short bullet list (ingredients/steps preview)
   | { kind: 'image'; src: string; alt?: string } // a media image (note photo/drawing), tap-to-zoom
   | { kind: 'audio'; src: string } // a media audio memo (a <audio controls>)

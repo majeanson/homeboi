@@ -154,7 +154,7 @@ function ListItemRow({
             title={adder.display_name}
             aria-label={adder.display_name}
           >
-            {(adder.display_name[0] ?? '?').toUpperCase()}
+            {(adder.display_name?.[0] ?? '?').toUpperCase()}
           </span>
         )}
         {!readOnly && (

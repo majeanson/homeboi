@@ -16,6 +16,13 @@
   object-fit: contain;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
+  /* The overlay drives pinch/pan itself with pointer events — take touch gestures
+     off the browser so it sends every pointer through and never starts a native
+     scroll/zoom (which would fire pointercancel mid-pinch). */
+  touch-action: none;
+  transform-origin: center center;
+  will-change: transform;
+  cursor: grab;
 }
 .zoom-overlay__close {
   position: fixed;
@@ -426,4 +433,44 @@
 .offline-bar__stamp {
   font-weight: 600;
   opacity: 0.85;
+}
+
+/* App-level error boundary fallback (components/ErrorBoundary). A calm, centered
+   recovery card shown when a render throw would otherwise blank the whole app.
+   Uniquely-named, so cascade position is immaterial. */
+.errboundary {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.errboundary__card {
+  max-width: 30rem;
+  width: 100%;
+  padding: 24px;
+  border-radius: var(--radius);
+  text-align: center;
+}
+.errboundary__title {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+.errboundary__msg {
+  margin: 0 0 18px;
+  color: var(--ink-soft, var(--ink));
+  line-height: 1.5;
+}
+.errboundary__en {
+  opacity: 0.7;
+  font-size: 0.85em;
+}
+.errboundary__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
 }

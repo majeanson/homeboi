@@ -79,7 +79,7 @@ export function MemberSwitcher({ members, t }: { members: Member[]; t: Dict }) {
             onClick={() => setMemberId(on ? null : m.id)}
           >
             <span className="mswitch__av" style={{ background: photo ? undefined : m.colour }}>
-              {photo ? <img src={photo} alt="" /> : (m.display_name[0] ?? '?').toUpperCase()}
+              {photo ? <img src={photo} alt="" /> : (m.display_name?.[0] ?? '?').toUpperCase()}
             </span>
             <span className="mswitch__name">{m.display_name}</span>
           </button>

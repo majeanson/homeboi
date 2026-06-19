@@ -511,6 +511,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Groupes, adresse et photos', en: 'Groups, address and photos' },
+        detail: {
+          fr: 'En modifiant une fiche : range la personne dans un groupe nommé (Famille Tremblay, Collègues…) d’une touche, ajoute son adresse — un bouton « Itinéraire » ouvre alors la carte — et joins des photos avec une légende (une carte d’identité, une capture avec un collègue, une photo ensemble). Touche une photo pour l’agrandir et pince pour zoomer.',
+          en: 'While editing a card: drop the person into a named group (Tremblay family, Coworkers…) with one tap, add their address — a “Directions” button then opens the map — and attach photos with a caption (an ID card, a screenshot with a coworker, a photo together). Tap a photo to enlarge it and pinch to zoom.',
+        },
+        why: {
+          fr: 'Tout ce qu’on garde sur un proche au même endroit, sans appli de contacts en plus.',
+          en: 'Everything you keep about someone in one place, without a separate contacts app.',
+        },
+      },
+      {
         label: { fr: 'Les fêtes, en douceur', en: 'Birthdays, gently' },
         detail: {
           fr: 'Les anniversaires à venir apparaissent sur le babillard avec une petite mention « Bientôt » — jamais de notification.',

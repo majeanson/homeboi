@@ -50,6 +50,7 @@ export function CercleFormPage() {
           contacts={data?.contacts ?? []}
           links={data?.links ?? []}
           members={data?.members ?? []}
+          groups={data?.groups ?? []}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: CERCLE_KEY })
             qc.invalidateQueries({ queryKey: BOARD_KEY })

@@ -32,26 +32,20 @@ interface MemberRow {
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
+  // Return raw snake_case rows (display_name, avatar_kind, avatar_ref, is_child,
+  // …). The WHOLE frontend consumes this shape (Board greeting, ProfilePicker,
+  // HeartButton, AddSheet, Réglages ▸ Membres, …); a camelCase remap here in
+  // d3af3cc silently broke every one of them — e.g. `m.display_name[0]` threw and
+  // unmounted the app to a blank page. The cercle's own camelCase `Member` comes
+  // from /api/cercle, NOT here — keep these two shapes distinct. The phase-3
+  // columns (email/phone/birthday/notes/gender) ride along in snake_case, which is
+  // exactly what operator/types.ts and household.tsx expect.
   const { results } = await ctx.env.DB.prepare(
     'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child, sort_order, email, phone, birthday, notes, gender FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
   )
     .bind(actor.householdId)
     .all<MemberRow>()
-  return ok({
-    members: results.map((r) => ({
-      id: r.id,
-      displayName: r.display_name,
-      avatarKind: r.avatar_kind,
-      avatarRef: r.avatar_ref,
-      colour: r.colour,
-      isChild: r.is_child === 1,
-      email: r.email ?? null,
-      phone: r.phone ?? null,
-      birthday: r.birthday ?? null,
-      notes: r.notes ?? null,
-      gender: r.gender ?? null,
-    })),
-  })
+  return ok({ members: results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

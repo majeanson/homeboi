@@ -119,6 +119,10 @@ const PATH_KEYS: Record<string, string[][]> = {
   // tab; a birthday edit also re-derives the board's "Anniversaires à venir".
   cercle: [['cercle'], ['board']],
   'cercle-links': [['cercle']],
+  // Named-group membership + a contact's photo gallery both live under the cercle
+  // cache (the photos query key is prefixed ['cercle', …]), so one nudge refreshes them.
+  'cercle-groups': [['cercle']],
+  'cercle-photos': [['cercle']],
 }
 
 // Normalize an API path: strip a leading "api/" / slashes and any query string,

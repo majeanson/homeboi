@@ -93,6 +93,24 @@ export function DealCard({
               {isChosen ? t.shop.chosen : t.shop.choose}
             </button>
           )}
+          {!!navigator.share && (
+            <button
+              type="button"
+              className="deal__flyer-btn mono"
+              onClick={() => {
+                const lines = [
+                  `${deal.name} — ${money(deal.price)}`,
+                  deal.merchant,
+                  deal.validTo ? `${t.shop.until} ${fmtDate(deal.validTo)}` : '',
+                ].filter(Boolean)
+                void navigator.share({ title: deal.name, text: lines.join('\n') })
+              }}
+              aria-label={t.shop.share}
+              title={t.shop.share}
+            >
+              <InlineIcon name="arrow-up-right-bold" size={13} /> {t.shop.share}
+            </button>
+          )}
         </span>
       </div>
       <div className="deal__price">

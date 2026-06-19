@@ -84,8 +84,11 @@ function RoutinesParent() {
             // The peek shows real info: the moment of day + every step picto (the same
             // emojis the toddler run uses) + the count — not just the name.
             const todLabel = isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : null
-            const stepIcons = r.cards.map((c) => c.icon).filter((i): i is string => !!i)
-            const openR = () => detail.open(buildRoutine(r, { t, lang, members: [] }, { todLabel, stepIcons }))
+            // Hand the peek each step's emoji AND its photo key (parallel to cards),
+            // so a card with a parent-set picture shows the picture, not the emoji —
+            // the same rule this grid follows just above (feature #17 C).
+            const stepPictos = r.cards.map((c, i) => ({ emoji: c.icon, photoKey: r.cardsPhoto?.[i] }))
+            const openR = () => detail.open(buildRoutine(r, { t, lang, members: [] }, { todLabel, steps: stepPictos }))
             return (
               <div
                 key={r.id}

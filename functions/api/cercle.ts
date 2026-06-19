@@ -335,6 +335,19 @@ export const onRequestDelete = authed(async (ctx, actor) => {
 
   if (owns.photo_key && ctx.env.PHOTOS) await ctx.env.PHOTOS.delete(owns.photo_key).catch(() => {})
 
+  // Free the gallery blobs (contact_photos rows cascade with the contact, but the
+  // R2 objects don't — fetch their keys first, then best-effort delete each blob).
+  if (ctx.env.PHOTOS) {
+    const gallery = await ctx.env.DB.prepare(
+      'SELECT photo_key FROM contact_photos WHERE contact_id = ? AND household_id = ?',
+    )
+      .bind(body.id, actor.householdId)
+      .all<{ photo_key: string }>()
+    for (const row of gallery.results) {
+      if (row.photo_key) await ctx.env.PHOTOS.delete(row.photo_key).catch(() => {})
+    }
+  }
+
   // contact_links FK-reference this contact on either side, so D1 blocks the
   // delete until the edges are gone. Clear them first in one transaction, scoped
   // through the household guard so a wrong household can't wipe another's edges.

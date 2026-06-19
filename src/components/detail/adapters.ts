@@ -6,7 +6,7 @@
 // the shared formatters (lib/format), images imgUrl()/recipeImg().
 import { CATS } from '../../lib/cats'
 import { imgUrl } from '../../lib/image'
-import { type Contact, type Person, daysUntilBirthday, ageOnNextBirthday, formatBirthday, fullName } from '../../lib/cercle'
+import { type Contact, type Person, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, fullName } from '../../lib/cercle'
 import { formatDay, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { recipeImg, recipeTotalMin, type Recipe } from '../../lib/recipes'
@@ -216,7 +216,7 @@ export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => v
 export function buildContact(
   c: Contact,
   ctx: DetailCtx,
-  opts?: { accent?: string; relations?: string[]; onEdit?: () => void },
+  opts?: { accent?: string; relations?: string[]; groups?: string[]; onEdit?: () => void },
 ): DetailModel {
   const { t, lang } = ctx
   const accent = opts?.accent ?? '#C45E86'
@@ -230,14 +230,23 @@ export function buildContact(
         .join(' · ')
     : undefined
 
+  const addr = formatAddress(c.address)
+  const maps = mapsUrl(c.address)
+
   const blocks: DetailBlock[] = []
   if (c.notes?.trim()) blocks.push({ kind: 'text', text: c.notes.trim() })
+  if (addr) blocks.push({ kind: 'text', text: addr })
   if (opts?.relations?.length) blocks.push({ kind: 'list', label: t.cercle.relationships, items: opts.relations })
+  if (opts?.groups?.length) blocks.push({ kind: 'chips', label: t.cercle.groups, chips: opts.groups })
+  if (c.gender) blocks.push({ kind: 'chips', label: t.cercle.gender, chips: [t.cercle.genderWord[c.gender]] })
   if (c.tags.length) blocks.push({ kind: 'chips', chips: c.tags })
 
   const actions: DetailAction[] = []
   if (c.phone) actions.push({ key: 'call', label: t.cercle.call, icon: 'phone-bold', run: () => { window.location.href = `tel:${c.phone}` } })
   if (c.email) actions.push({ key: 'mail', label: t.cercle.write, icon: 'envelope-bold', run: () => { window.location.href = `mailto:${c.email}` } })
+  // External Maps link — open in a new tab (the sheet feeds href to the SPA router,
+  // which can't navigate an absolute URL, so route it through run/window.open).
+  if (maps) actions.push({ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold', run: () => { window.open(maps, '_blank', 'noopener') } })
   if (opts?.onEdit) actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
 
   return {
@@ -273,9 +282,9 @@ export function buildMemberPerson(p: Person, ctx: DetailCtx, opts?: { relations?
   }
 }
 
-// A routine as the /routines list carries it (id, name, child, colour). Its cards
-// only carry an `icon` emoji there (no label), so the peek shows the step pictos +
-// a count; the caller passes the resolved time-of-day label + step emojis.
+// A routine as the /routines list carries it (id, name, child, colour). The caller
+// passes the resolved time-of-day label + each step's emoji AND its R2 photo key
+// (feature #17 C) so the peek can show the real card pictures, not just the emojis.
 interface RoutineLike {
   id: string
   name: string
@@ -285,16 +294,22 @@ interface RoutineLike {
 }
 
 // — A kid routine — informative: the child, the moment of day, the step count, and
-// the step pictos themselves (the same emojis the toddler run shows), so the peek
-// actually says what the routine IS. "Modifier la routine" opens the builder. —
+// the step pictos themselves. A card with a parent-set PHOTO shows the photo (the
+// same photo-wins rule the Routines grid + toddler run follow); otherwise its emoji.
+// So the peek shows exactly what the routine IS. "Modifier la routine" opens the
+// builder. —
 export function buildRoutine(
   r: RoutineLike,
   ctx: DetailCtx,
-  opts?: { todLabel?: string | null; stepIcons?: string[] },
+  opts?: { todLabel?: string | null; steps?: { emoji?: string; photoKey?: string }[] },
 ): DetailModel {
   const { t } = ctx
-  const icons = (opts?.stepIcons ?? []).filter((s): s is string => !!s)
-  const sub = [opts?.todLabel, icons.length ? t.routines.stepsN(icons.length) : null].filter(Boolean).join(' · ')
+  // Keep a step only when it has something to show (a photo or an emoji), then
+  // resolve each photo key to a real src — empty keys ('') fall back to the emoji.
+  const items = (opts?.steps ?? [])
+    .map((s) => ({ emoji: s.emoji || undefined, photo: s.photoKey ? imgUrl(s.photoKey) : undefined }))
+    .filter((s) => s.photo || s.emoji)
+  const sub = [opts?.todLabel, items.length ? t.routines.stepsN(items.length) : null].filter(Boolean).join(' · ')
   return {
     kind: 'routine',
     title: r.name,
@@ -304,7 +319,7 @@ export function buildRoutine(
     who: r.memberName
       ? { name: r.memberName, colour: r.color ?? null, avatarKind: r.avatarPhoto ? 'photo' : null, avatarRef: r.avatarPhoto ?? null }
       : null,
-    blocks: icons.length ? [{ kind: 'chips', label: t.detail.steps, chips: icons }] : [],
+    blocks: items.length ? [{ kind: 'pictos', label: t.detail.steps, items }] : [],
     actions: [{ key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold', primary: true, href: `/routine/${r.id}` }],
   }
 }
