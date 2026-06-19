@@ -150,7 +150,8 @@ test('scene-add-chore', async ({ page }) => {
 test('scene-add-routine', async ({ page }) => {
   await boot(page, '/board')
   await page.locator('.add-fab').click()
-  await page.locator('.cat-pick').nth(3).click() // Routine tile → /routine/new scene
+  // Target by text (a todo tile was inserted before routine, shifting indices).
+  await page.locator('.cat-pick', { hasText: 'Routines' }).click() // Routine tile → /routine/new scene
   await page.locator('.scene .operator__routine-form').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'scene-add-routine-phone', false)

@@ -175,11 +175,11 @@ test.describe('settings tabs', () => {
     await settle(page, '.operator__tabs')
     const tabs = page.getByRole('tab')
     const n = await tabs.count()
-    // 17 sections: Guide (first/default), Maisonnée, Rendez-vous, Corvées,
+    // 18 sections: Guide (first/default), Maisonnée, Rendez-vous, Corvées,
     // Routines, Magasinage, Recettes, Repas, Réserve, Liste fantôme, Tablettes,
-    // Invité (Guest), Photos, Bilan, Affichage, Mode calme, and the AI-error
-    // journal (ai-log).
-    expect(n).toBe(17)
+    // Invité (Guest), Photos, Bilan, Affichage, Mode calme, the AI-error journal
+    // (ai-log), and Debug (the idle tester).
+    expect(n).toBe(18)
     for (let i = 0; i < n; i++) {
       await tabs.nth(i).click()
       await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true')
@@ -483,11 +483,12 @@ test.describe('add sheet', () => {
   test('the routines ＋ opens the routine builder directly', async ({ page }) => {
     await APP('/routines')(page)
     await settle(page, '.hub')
-    // The routines ＋ goes straight to the full-screen routine scene — no sheet,
-    // no chooser (its form is the worst keyboard offender as a sheet).
+    // The routines ＋ opens a manage picker (new + edit existing routines); its
+    // "Nouvelle routine" goes to the full-screen routine scene.
+    await page.locator('.add-fab').click()
     await Promise.all([
       page.waitForURL(/\/routine\/new/),
-      page.locator('.add-fab').click(),
+      page.getByRole('dialog').getByRole('button', { name: 'Nouvelle routine' }).click(),
     ])
     await expect(page.locator('.scene .operator__routine-form')).toBeVisible()
   })
@@ -540,12 +541,11 @@ test.describe('kitchen', () => {
     // The souper section's add control opens the supper title form (beginSetMeal →
     // the staples opt-in, which posts to meal-staples to fetch the staple list).
     await sheet.locator('[data-dnd-zone="supper"] .kitchen__slot-add').click()
-    // The supper title editor is the shared EditField now (scope to the supper zone).
+    // The supper title editor is an EntityCombobox (reuses .edit-field styling but
+    // is NOT a form — Enter commits the free text → beginSetMeal → POST meal-staples).
     const edit = sheet.locator('[data-dnd-zone="supper"] .edit-field')
     await edit.locator('input.input').fill('Pizza maison')
-    await expectApi(page, 'POST', 'meal-staples', () =>
-      edit.locator('button[type="submit"]').click(),
-    )
+    await expectApi(page, 'POST', 'meal-staples', () => edit.locator('input.input').press('Enter'))
   })
 
   test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {
@@ -562,10 +562,11 @@ test.describe('kitchen', () => {
     // staples step. The "＋ Ajouter" sits in the Dîner section's header; scope to it.
     const dinerSec = sheet.locator('.day-mng__sec', { hasText: 'Dîner' })
     await dinerSec.locator('.kitchen__slot-add').click()
-    // The per-slot title editor is the shared EditField now (scope to the Dîner section).
+    // The per-slot title editor is an EntityCombobox (reuses .edit-field styling but
+    // is NOT a form — Enter commits the free text → saveSlot → POST meals).
     const edit = dinerSec.locator('.edit-field')
     await edit.locator('input.input').fill('Sandwich au jambon')
-    await expectApi(page, 'POST', 'meals', () => edit.locator('button[type="submit"]').click())
+    await expectApi(page, 'POST', 'meals', () => edit.locator('input.input').press('Enter'))
   })
 
   test('shop the week gathers ingredients and adds them to the list', async ({ page }) => {
@@ -926,7 +927,9 @@ test.describe('list', () => {
     ).toBeVisible()
     await page.locator('.flyer-store', { hasText: 'Super C' }).click()
     await expect(page.locator('.flyer-overlay')).toBeVisible()
-    // Opens on the gap-free "Offres" grid by default — one clipping in the fixture.
+    // The viewer now opens on the Plan reconstruction; switch to the gap-free "Offres"
+    // grid — one clipping in the fixture.
+    await page.getByRole('tab', { name: /Offres/ }).click()
     await expect(page.locator('.flyer-grid__cell')).toHaveCount(1)
     // The position-faithful page reconstruction lives behind the "Plan" tab. The
     // fixture flyer has 2 pages but only page 1 carries an item; the empty cover
@@ -983,7 +986,8 @@ test.describe('recurring chores on the board', () => {
     const chore = page.locator('.act', { hasText: 'Sortir les poubelles' })
     await expect(chore).toBeVisible()
     await expect(chore).toContainText('Léa') // whose turn
-    await expectApi(page, 'PATCH', 'chores', () => chore.click())
+    // The row is split now (body peeks the detail, the check disc ticks) — click the check.
+    await expectApi(page, 'PATCH', 'chores', () => chore.locator('.act__checkbtn').click())
   })
 
   test('an upcoming chore shows under À venir with its day', async ({ page }) => {

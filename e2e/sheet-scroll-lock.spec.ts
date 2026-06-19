@@ -54,8 +54,9 @@ test('open ＋ sheet freezes the page behind; closing releases it', async ({ pag
   expect(open.sheetScrolls).toBe(true)
   expect(open.sheetOverflowY).toBe('auto')
 
-  // Closing the sheet must release the lock (the page must not stay frozen).
-  await page.locator('.sheet__close').click()
+  // Closing the sheet must release the lock (the page must not stay frozen). Scope to
+  // the shown sheet — the detail-peek sheet shell also carries a .sheet__close.
+  await page.locator('.sheet.show .sheet__close').click()
   await expect(page.locator('.sheet.show')).toBeHidden()
   const lockedAfter = await page.evaluate(() => document.documentElement.classList.contains('scroll-locked'))
   expect(lockedAfter).toBe(false)

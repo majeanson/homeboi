@@ -91,7 +91,8 @@ for (const d of DEVICES) {
   test(`kb ${d.name}: settings add-person`, async ({ page }) => {
     // Guide is the default settings tab now; deep-link to La maisonnée for the form.
     await open(page, '/settings?tab=household')
-    const nom = page.getByPlaceholder('Nom')
+    // exact: the household-rename field (placeholder Nom de la maisonnée) also matches a loose Nom.
+    const nom = page.getByPlaceholder('Nom', { exact: true })
     await nom.scrollIntoViewIfNeeded()
     await nom.focus()
     await openKeyboard(page, d.kb)
