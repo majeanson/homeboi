@@ -35,7 +35,6 @@ import {
   detectFamilyGroups,
   daysUntilBirthday,
   formatBirthday,
-  relLabel,
   genderedRelLabel,
 } from '../lib/cercle'
 
@@ -385,7 +384,8 @@ function CircleKidView() {
   }
 
   function speakRel(rel: RelationshipType, other: Person) {
-    speak(t.cercle.kidRelSpeak(relLabel(rel, lang), other.firstName))
+    // Gender-aware when the other person's gender is set (Mère/Père), neutral otherwise.
+    speak(t.cercle.kidRelSpeak(genderedRelLabel(rel, other.gender, lang), other.firstName))
   }
 
   const kidRels = useMemo(() => {
@@ -419,7 +419,7 @@ function CircleKidView() {
                 <button type="button" key={i} className="cercle-kid__rel-card" onClick={() => speakRel(rel, other)}>
                   <Avatar kind={other.avatarKind} photo={other.avatarRef} colour={other.colour} name={other.firstName} size={80} />
                   <span className="cercle-kid__rel-name">{other.firstName}</span>
-                  <span className="cercle-kid__rel-label mono">{relLabel(rel, lang)}</span>
+                  <span className="cercle-kid__rel-label mono">{genderedRelLabel(rel, other.gender, lang)}</span>
                   <Icon name="speaker-high-bold" size={16} color={ACCENT} />
                 </button>
               ))}
