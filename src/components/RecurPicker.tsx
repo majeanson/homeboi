@@ -4,7 +4,7 @@ import { useT } from '../i18n'
 // interval, and — for weekly — which weekdays ("garbage every Wednesday"). Mirror
 // of functions/_lib/recur's Recur shape; the two trees don't share code.
 export interface RecurValue {
-  freq: 'daily' | 'weekly' | 'monthly'
+  freq: 'daily' | 'weekly' | 'monthly' | 'yearly'
   interval: number
   weekdays: number[] // 0=Sun … 6=Sat
 }
@@ -34,6 +34,7 @@ export function RecurPicker({ value, onChange }: { value: RecurValue | null; onC
           <option value="daily">{t.recur.daily}</option>
           <option value="weekly">{t.recur.weekly}</option>
           <option value="monthly">{t.recur.monthly}</option>
+          <option value="yearly">{t.recur.yearly}</option>
         </select>
       </label>
 

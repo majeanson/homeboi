@@ -17,8 +17,8 @@
 import { localDayStart, localDayOfWeek, addLocalDays, localTimeOnDay } from './ids'
 
 export interface Recur {
-  freq: 'daily' | 'weekly' | 'monthly'
-  interval?: number // every N days/weeks/months (default 1)
+  freq: 'daily' | 'weekly' | 'monthly' | 'yearly'
+  interval?: number // every N days/weeks/months/years (default 1)
   weekdays?: number[] // weekly only: 0=Sun … 6=Sat
 }
 
@@ -30,7 +30,7 @@ export function parseRecur(json: string | null | undefined): Recur | null {
   if (!json) return null
   try {
     const v = JSON.parse(json) as Recur
-    if (v && (v.freq === 'daily' || v.freq === 'weekly' || v.freq === 'monthly')) return v
+    if (v && (v.freq === 'daily' || v.freq === 'weekly' || v.freq === 'monthly' || v.freq === 'yearly')) return v
     return null
   } catch {
     return null
@@ -41,7 +41,7 @@ export function parseRecur(json: string | null | undefined): Recur | null {
 // rule. Clamps interval and validates weekdays so we never store garbage.
 export function normalizeRecur(input: unknown): Recur | null {
   const v = input as Partial<Recur> | null | undefined
-  if (!v || (v.freq !== 'daily' && v.freq !== 'weekly' && v.freq !== 'monthly')) return null
+  if (!v || (v.freq !== 'daily' && v.freq !== 'weekly' && v.freq !== 'monthly' && v.freq !== 'yearly')) return null
   const interval = Math.min(52, Math.max(1, Math.round(Number(v.interval) || 1)))
   const out: Recur = { freq: v.freq, interval }
   if (v.freq === 'weekly') {
@@ -89,6 +89,16 @@ export function occurrenceOn(day: number, anchorAt: number, r: Recur): number | 
     if (d.getUTCDate() === a.getUTCDate()) {
       const months = (d.getUTCFullYear() - a.getUTCFullYear()) * 12 + (d.getUTCMonth() - a.getUTCMonth())
       hit = months >= 0 && months % interval === 0
+    }
+  } else if (r.freq === 'yearly') {
+    // Same calendar month+day as the anchor (a birthday/anniversary), every N years.
+    // Same local-midnight getUTC* reasoning as monthly. A Feb-29 anchor only hits in
+    // leap years — by design (no JS rollover to Mar 1), which is the calm choice.
+    const a = new Date(anchorDay * 1000)
+    const d = new Date(day * 1000)
+    if (d.getUTCMonth() === a.getUTCMonth() && d.getUTCDate() === a.getUTCDate()) {
+      const years = d.getUTCFullYear() - a.getUTCFullYear()
+      hit = years >= 0 && years % interval === 0
     }
   }
   // localTimeOnDay (not day + timeOffset) so the occurrence keeps the anchor's WALL

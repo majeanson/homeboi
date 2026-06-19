@@ -14,7 +14,10 @@ describe('recurOf', () => {
     expect(recurOf(null)).toBeNull()
     expect(recurOf('')).toBeNull()
     expect(recurOf('not json')).toBeNull()
-    expect(recurOf('{"freq":"yearly"}')).toBeNull()
+    expect(recurOf('{"freq":"hourly"}')).toBeNull()
+  })
+  it('parses a stored yearly rule', () => {
+    expect(recurOf('{"freq":"yearly","interval":1}')).toEqual({ freq: 'yearly', interval: 1, weekdays: [] })
   })
   it('defaults a missing interval/weekdays', () => {
     expect(recurOf('{"freq":"daily"}')).toEqual({ freq: 'daily', interval: 1, weekdays: [] })
@@ -43,5 +46,13 @@ describe('recurLabel', () => {
   it('labels an every-N interval', () => {
     const label = recurLabel('{"freq":"weekly","interval":2,"weekdays":[]}', EN)
     expect(label).toContain('2')
+  })
+  it('labels a plain yearly rule', () => {
+    expect(recurLabel('{"freq":"yearly","interval":1,"weekdays":[]}', EN)).toBe(EN.recur.yearly)
+  })
+  it('labels an every-N-years interval with the year unit', () => {
+    const label = recurLabel('{"freq":"yearly","interval":3,"weekdays":[]}', EN)
+    expect(label).toContain('3')
+    expect(label).toContain(EN.recur.unit.yearly)
   })
 })

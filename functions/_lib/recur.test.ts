@@ -21,17 +21,23 @@ describe('parseRecur', () => {
     expect(parseRecur(null)).toBeNull()
     expect(parseRecur('')).toBeNull()
     expect(parseRecur('{nope')).toBeNull()
-    expect(parseRecur('{"freq":"yearly"}')).toBeNull()
+    expect(parseRecur('{"freq":"hourly"}')).toBeNull()
   })
   it('parses a valid weekly rule', () => {
     expect(parseRecur('{"freq":"weekly","weekdays":[3]}')).toEqual({ freq: 'weekly', weekdays: [3] })
+  })
+  it('parses a yearly rule', () => {
+    expect(parseRecur('{"freq":"yearly","interval":1}')).toEqual({ freq: 'yearly', interval: 1 })
   })
 })
 
 describe('normalizeRecur', () => {
   it('rejects non-rules', () => {
     expect(normalizeRecur(null)).toBeNull()
-    expect(normalizeRecur({ freq: 'yearly' })).toBeNull()
+    expect(normalizeRecur({ freq: 'hourly' })).toBeNull()
+  })
+  it('accepts yearly and drops any weekday cruft (weekly-only)', () => {
+    expect(normalizeRecur({ freq: 'yearly', interval: 2, weekdays: [1] })).toEqual({ freq: 'yearly', interval: 2 })
   })
   it('clamps interval and dedupes/sorts/validates weekdays', () => {
     expect(normalizeRecur({ freq: 'weekly', interval: 99, weekdays: [3, 3, 9, 1, -1] })).toEqual({
@@ -85,6 +91,33 @@ describe('occurrenceOn (daily every 3 days, monthly)', () => {
   })
 })
 
+describe('occurrenceOn (yearly on the anchor month+day — a birthday/anniversary)', () => {
+  const r = { freq: 'yearly' as const }
+  it('hits the anchor date and the same date next year, carrying the time-of-day', () => {
+    expect(occurrenceOn(d(2026, 0, 7), WED, r)).toBe(WED) // anchor Jan 7, 14:30 offset
+    expect(occurrenceOn(d(2027, 0, 7), WED, r)).not.toBeNull() // Jan 7 next year
+  })
+  it('misses another day, and the anchor day in a different month', () => {
+    expect(occurrenceOn(d(2027, 0, 8), WED, r)).toBeNull() // Jan 8
+    expect(occurrenceOn(d(2027, 1, 7), WED, r)).toBeNull() // Feb 7
+  })
+  it('never precedes the anchor year', () => {
+    expect(occurrenceOn(d(2025, 0, 7), WED, r)).toBeNull()
+  })
+  it('respects an interval (every 2 years)', () => {
+    const r2 = { freq: 'yearly' as const, interval: 2 }
+    expect(occurrenceOn(d(2027, 0, 7), WED, r2)).toBeNull() // +1 year, skip
+    expect(occurrenceOn(d(2028, 0, 7), WED, r2)).not.toBeNull() // +2 years, hit
+  })
+  it('a Feb-29 anchor recurs only in leap years (no rollover to Mar 1)', () => {
+    // Sat 2028-02-29 09:30 local (2028 is a leap year).
+    const FEB29 = Math.floor(Date.UTC(2028, 1, 29, 14, 30) / 1000)
+    expect(occurrenceOn(d(2028, 1, 29), FEB29, r)).not.toBeNull() // the anchor
+    expect(occurrenceOn(d(2032, 1, 29), FEB29, r)).not.toBeNull() // next leap-year Feb 29
+    expect(occurrenceOn(d(2029, 1, 29), FEB29, r)).toBeNull() // 2029 has no Feb 29
+  })
+})
+
 describe('occurrenceOn (biweekly, two weekdays — same fortnight stays together)', () => {
   // Anchor Mon 2026-01-05; rule = every 2 weeks on Mon(1)+Thu(4).
   const MON = Math.floor(Date.UTC(2026, 0, 5, 8, 0) / 1000)
@@ -135,6 +168,13 @@ describe('expandRange', () => {
     const start = localDayStart(new Date(WED * 1000))
     const occ = expandRange(WED, r, start, start + 21 * 86400)
     expect(occ).toHaveLength(3)
+    expect(occ[0]).toBeLessThan(occ[1])
+  })
+  it('lists a yearly series across a 2-year window (anchor year + next)', () => {
+    const r = { freq: 'yearly' as const }
+    const start = localDayStart(new Date(WED * 1000))
+    const occ = expandRange(WED, r, start, start + 400 * 86400)
+    expect(occ).toHaveLength(2)
     expect(occ[0]).toBeLessThan(occ[1])
   })
 })

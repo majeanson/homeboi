@@ -9,7 +9,7 @@ export function recurOf(json?: string | null): RecurValue | null {
   if (!json) return null
   try {
     const v = JSON.parse(json) as Partial<RecurValue>
-    if (v.freq === 'daily' || v.freq === 'weekly' || v.freq === 'monthly') {
+    if (v.freq === 'daily' || v.freq === 'weekly' || v.freq === 'monthly' || v.freq === 'yearly') {
       const weekdays = Array.isArray(v.weekdays)
         ? v.weekdays.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
         : []
@@ -36,7 +36,9 @@ export function recurLabel(json: string | null | undefined, t: typeof FR): strin
         ? t.recur.daily
         : r.freq === 'weekly'
           ? t.recur.weekly
-          : t.recur.monthly
+          : r.freq === 'monthly'
+            ? t.recur.monthly
+            : t.recur.yearly
   // Weekly rules append the picked days (L Ma Me J V S D), disambiguated in copy.
   if (r.freq === 'weekly' && r.weekdays.length) {
     const days = r.weekdays.map((d) => t.recur.weekdayShort[d]).join(' ')
