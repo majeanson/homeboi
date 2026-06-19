@@ -602,6 +602,15 @@
   opacity: 0.65;
   margin-left: 0.1rem;
 }
+/* The Maisonnée card: its "Maisonnée" tag reads as a filled berry pill (like the
+   per-row badge) so the household's own family stands apart from a plain group. */
+.cercle-group--household .cercle-group__kind {
+  opacity: 1;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-pill);
+  background: var(--berry-wash);
+  color: var(--berry-deep, var(--ink-soft));
+}
 .cercle-group__delete {
   margin-left: auto;
   opacity: 0.5;

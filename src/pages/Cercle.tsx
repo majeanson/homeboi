@@ -11,7 +11,7 @@ import { live } from '../lib/query'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { useOpenPersonSheet } from '../lib/personSheet'
-import { CERCLE_KEY } from '../lib/queryKeys'
+import { CERCLE_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
@@ -95,6 +95,9 @@ function CercleParent() {
   const [newGroupKind, setNewGroupKind] = useState<GroupKind>('other')
 
   const { data, error } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
+  // The household name (set in Réglages) titles the Maisonnée family card below. Same
+  // query key as HouseholdNameField, so a rename there refreshes here reactively.
+  const { data: household } = useQuery({ queryKey: HOUSEHOLD_KEY, queryFn: () => api<{ name: string }>('household') })
 
   const contacts = useMemo(() => data?.contacts ?? [], [data])
   const members = useMemo(() => data?.members ?? [], [data])
@@ -111,13 +114,36 @@ function CercleParent() {
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
   const contactsById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
 
-  // Named explicit groups (phase 3)
-  const namedGroups = useMemo(() => buildGroups(unified.groups), [unified])
+  // The Maisonnée IS your one family: every household member, in a single card
+  // titled with the household name from Réglages (auto-synced). It supersedes both
+  // the auto-detected family clone and any hand-built group that's just the
+  // household, so the same faces never scatter across two cards.
+  const householdName = household?.name?.trim() || t.cercle.memberBadge
+  const householdPeople = useMemo(
+    () => people.filter((p) => p.kind === 'member').sort((a, b) => a.name.localeCompare(b.name, lang)),
+    [people, lang],
+  )
+  const householdKeys = useMemo(() => new Set(householdPeople.map((p) => p.key)), [householdPeople])
 
-  // Auto-detected family groups (Union-Find over family edges)
+  // Named explicit groups (phase 3) — but hide any FAMILY group whose every member
+  // is a household member: it's redundant with the Maisonnée card above (a group
+  // that also includes outsiders, e.g. an extended family, still shows).
+  const allNamedGroups = useMemo(() => buildGroups(unified.groups), [unified])
+  const namedGroups = useMemo(
+    () =>
+      allNamedGroups.filter(
+        (g) => g.memberKeys.size === 0 || g.kind !== 'family' || ![...g.memberKeys].every((k) => householdKeys.has(k)),
+      ),
+    [allNamedGroups, householdKeys],
+  )
+
+  // Auto-detected family groups (Union-Find over family edges), over NON-household
+  // people only — household members already live in the Maisonnée card, so they
+  // can't seed a second "Famille X" clone of the same faces.
+  const familyPeople = useMemo(() => people.filter((p) => !householdKeys.has(p.key)), [people, householdKeys])
   const familyGroups = useMemo(
-    () => detectFamilyGroups(people, links, (name) => (name ? t.cercle.familyOf(name) : t.cercle.familyGeneric)),
-    [people, links, t],
+    () => detectFamilyGroups(familyPeople, links, (name) => (name ? t.cercle.familyOf(name) : t.cercle.familyGeneric)),
+    [familyPeople, links, t],
   )
 
   // Upcoming birthdays — contacts AND members (now members carry birthday too)
@@ -130,15 +156,15 @@ function CercleParent() {
     [people],
   )
 
-  // Keys that belong to at least one named group or auto-detected family group
+  // Keys already shown: the Maisonnée, a named group, or an auto-detected family.
   const namedGroupedKeys = useMemo(() => new Set(namedGroups.flatMap((g) => [...g.memberKeys])), [namedGroups])
   const familyGroupedKeys = useMemo(() => new Set(familyGroups.flatMap((g) => [...g.memberKeys])), [familyGroups])
   const others = useMemo(
     () =>
       people
-        .filter((p) => !namedGroupedKeys.has(p.key) && !familyGroupedKeys.has(p.key))
+        .filter((p) => !householdKeys.has(p.key) && !namedGroupedKeys.has(p.key) && !familyGroupedKeys.has(p.key))
         .sort((a, b) => a.name.localeCompare(b.name, lang)),
-    [people, namedGroupedKeys, familyGroupedKeys, lang],
+    [people, householdKeys, namedGroupedKeys, familyGroupedKeys, lang],
   )
 
   if (isUnauthorized(error)) return <PairPrompt />
@@ -172,7 +198,7 @@ function CercleParent() {
     await write('cercle-groups', { method: 'DELETE', body: { id: g.id }, affectedKeys: [CERCLE_KEY] })
   }
 
-  const Row = ({ p }: { p: Person }) => {
+  const Row = ({ p, hideBadge }: { p: Person; hideBadge?: boolean }) => {
     const rels = relationsOf(p.key, links, byKey, lang)
     const bday = p.birthday ? formatBirthday(p.birthday, lang) : null
     const myGroups = namedGroups.filter((g) => g.memberKeys.has(p.key))
@@ -185,7 +211,7 @@ function CercleParent() {
           <span className="cercle-row__name">{p.name}</span>
           {sub && <span className="cercle-row__sub mono">{sub}</span>}
         </span>
-        {p.kind === 'member' && <span className="cercle-row__badge mono">{t.cercle.memberBadge}</span>}
+        {p.kind === 'member' && !hideBadge && <span className="cercle-row__badge mono">{t.cercle.memberBadge}</span>}
       </button>
     )
   }
@@ -261,6 +287,21 @@ function CercleParent() {
                 </section>
               ) : (
                 <>
+                  {/* The Maisonnée — your one family, titled from Réglages. Always at
+                      the top; badge is dropped per-row since the whole card IS it. */}
+                  {householdPeople.length > 0 && (
+                    <section className="cercle-group cercle-group--named cercle-group--household">
+                      <h2 className="cercle-section__label">
+                        <span className="cercle-group__dot" style={{ background: ACCENT }} />
+                        {householdName}
+                        <span className="mono cercle-group__kind">{t.cercle.memberBadge}</span>
+                      </h2>
+                      {householdPeople.map((p) => (
+                        <Row key={p.key} p={p} hideBadge />
+                      ))}
+                    </section>
+                  )}
+
                   {/* Named explicit groups */}
                   {namedGroups.map((g) => (
                     <section key={g.id} className="cercle-group cercle-group--named">
@@ -315,7 +356,7 @@ function CercleParent() {
                   {/* People in no group */}
                   {others.length > 0 && (
                     <section className="cercle-group">
-                      {(namedGroups.length > 0 || familyGroups.length > 0) && (
+                      {(householdPeople.length > 0 || namedGroups.length > 0 || familyGroups.length > 0) && (
                         <h2 className="cercle-section__label">{t.cercle.others}</h2>
                       )}
                       {others.map((p) => <Row key={p.key} p={p} />)}

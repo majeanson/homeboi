@@ -486,6 +486,17 @@ export const GUIDE: GuideEntry[] = [
     },
     points: [
       {
+        label: { fr: 'Ta Maisonnée, ta famille', en: 'Your Household, your family' },
+        detail: {
+          fr: 'En haut du cercle, une seule carte « famille » regroupe tous les membres de ta maisonnée. Son titre, c’est le nom que tu donnes à ta maisonnée dans Réglages — change-le là et il se met à jour ici. C’est ta famille de base : pas besoin de la bâtir à la main, et aucune copie en double ne s’ajoute en dessous.',
+          en: 'At the top of the circle, a single “family” card gathers everyone in your household. Its title is the name you give your household in Settings — change it there and it updates here. It’s your home family: no need to build it by hand, and no duplicate copy is added below.',
+        },
+        why: {
+          fr: 'Une seule famille — la tienne — au lieu de visages éparpillés en double.',
+          en: 'One family — yours — instead of the same faces scattered twice.',
+        },
+      },
+      {
         label: { fr: 'Une personne, une fiche', en: 'One person, one card' },
         detail: {
           fr: 'Touche le ＋ pour ajouter quelqu’un : prénom, photo, fête, courriel, téléphone, notes. Touche une fiche pour la voir, avec « Appeler » et « Écrire ».',
