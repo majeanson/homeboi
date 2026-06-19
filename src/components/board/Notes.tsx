@@ -48,17 +48,26 @@ export function Notes({
   const shown = notes.filter((n) => (variant === 'drawings' ? isDrawing(n) : variant === 'notes' ? !isDrawing(n) : true))
   const title = variant === 'drawings' ? t.notes.drawings : t.notes.title
 
-  // Save the added-to drawing: upload the new PNG, then PATCH the note in place
-  // (re-tints to whoever drew, resurfaces it). Media uploads can't be queued
-  // offline (the R2 blob must land), so this uses api() directly like MemoControls;
-  // the board poll/realtime reconciles the card.
-  async function saveDrawing(png: Blob) {
+  // Save the added-to drawing: upload the new PNG + editable scene (#1), then PATCH
+  // the note in place (re-tints to whoever drew, resurfaces it). Media uploads can't
+  // be queued offline (the R2 blob must land), so this uses api() directly like
+  // MemoControls; the board poll/realtime reconciles the card.
+  async function saveDrawing(png: Blob, scene: string) {
     const note = editing
     setEditing(null)
     if (!note) return
     try {
       const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: png })
-      await api('notes', { method: 'PATCH', body: { id: note.id, media_key: key } })
+      let sceneKey: string | undefined
+      if (scene) {
+        try {
+          const r = await api<{ key: string }>('note-media', { method: 'POST', body: new Blob([scene], { type: 'application/json' }) })
+          sceneKey = r.key
+        } catch {
+          /* scene optional — keep the PNG even if the scene upload fails */
+        }
+      }
+      await api('notes', { method: 'PATCH', body: { id: note.id, media_key: key, scene_key: sceneKey } })
     } catch (e) {
       if (!(e instanceof ApiError)) throw e // server said no → let the refetch correct it
     } finally {
@@ -201,8 +210,9 @@ export function Notes({
           open
           toddler={toddler}
           initial={editing.media_key ? imgUrl(editing.media_key) : undefined}
+          initialSceneUrl={editing.scene_key ? imgUrl(editing.scene_key) : undefined}
           onCancel={() => setEditing(null)}
-          onSave={(png) => void saveDrawing(png)}
+          onSave={(png, scene) => void saveDrawing(png, scene)}
           onMakeRoutine={toddler ? undefined : (png) => void toRoutine(png)}
         />
       )}

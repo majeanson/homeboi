@@ -692,8 +692,20 @@
   display: flex;
   align-items: center;
   gap: 0.4rem 0.6rem;
-  padding: 0.7rem 0.9rem;
-  flex-wrap: wrap;
+  padding: 0.45rem 0.7rem;
+  /* Single compact line that scrolls sideways instead of wrapping tall — keeps the
+     drawing surface as large as possible on a phone (NFR mobile/tablet). */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.drawpad__bar::-webkit-scrollbar {
+  display: none;
+}
+.drawpad__bar--tools {
+  gap: 0.5rem;
 }
 .drawpad__swatch {
   width: 2rem;
@@ -979,6 +991,66 @@
 .today-kid__draw-icn {
   font-size: 2.4rem;
   line-height: 1;
+}
+
+/* ---- DrawPad compaction: keep every toolbar row a single scrollable line so the
+   drawing surface stays wide on phones + tablets, and shrink the controls. ------ */
+.drawpad__colors,
+.drawpad__packs,
+.drawpad__stickerset {
+  flex-wrap: nowrap;
+}
+.drawpad__stickers {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+.drawpad__bar--ctx {
+  min-height: 2.4rem;
+}
+/* Smaller default targets (toddler keeps its bigger ones from .drawpad--kid). */
+.drawpad:not(.drawpad--kid) .drawpad__mode,
+.drawpad:not(.drawpad--kid) .drawpad__size,
+.drawpad:not(.drawpad--kid) .drawpad__pack,
+.drawpad:not(.drawpad--kid) .drawpad__tool,
+.drawpad:not(.drawpad--kid) .drawpad__shape {
+  width: 1.85rem;
+  height: 1.85rem;
+}
+.drawpad:not(.drawpad--kid) .drawpad__swatch {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+.drawpad:not(.drawpad--kid) .drawpad__sticker {
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.25rem;
+}
+/* Shape-tool picker: a glyph per shape (line/rect/oval/triangle/star/heart). */
+.drawpad__shapes {
+  display: inline-flex;
+  gap: 0.3rem;
+  flex: none;
+}
+.drawpad__shape {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  border: 2px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+.drawpad__shape.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.drawpad__fill {
+  flex: none;
 }
 
 /* ---- Month view: a calm six-week calendar of everything dated -------------

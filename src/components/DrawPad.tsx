@@ -5,29 +5,26 @@ import { useT } from '../i18n'
 import { useModal } from '../lib/useModal'
 import { Icon } from './Icon'
 
-// The family draw pad for a fridge note (#14) — a little canvas the household, and
-// ESPECIALLY the kids, actually want to open. Built useful-at-home first: it doubles
-// as an EDUCATIONAL surface (handwriting lines, letter/number tracing, colour-in
-// pages) and a creative one (mirror/kaleidoscope, stickers, pixel art).
-//
-// Tools (modes): freehand PEN (signature_pad), tap-to-stamp STICKER packs, chunky
-// PIXEL grid, and a TEXT stamp (type a word — practise names + spelling). Across all
-// of them: a family rainbow + custom/recent colours, three sizes, a
-// MIRROR toggle (everything you draw is echoed across the middle), full UNDO/REDO,
-// and a paper-colour eraser. A TEMPLATE layer can sit under the drawing — ruled
-// handwriting lines, a big letter/number to trace, dot/graph paper, or a colour-in
+// The family draw pad for a fridge note (#14) — useful + educational, ~80% for the
+// kids. Tools: freehand PEN (signature_pad), tap-to-stamp STICKER packs, chunky
+// PIXEL grid (with flood-FILL), drag-out SHAPES, and a TEXT stamp. Across all:
+// MIRROR/kaleidoscope, UNDO/REDO, a family rainbow + custom/recent colours, three
+// sizes, paper-colour eraser. A collapsible TEMPLATE layer sits under the drawing —
+// ruled handwriting lines, a letter/number to trace, dot paper, or a colour-in
 // outline.
 //
-// Composition (render(), bottom-up): paper → template → base image → pixels → pen
-// strokes → stickers/text. The base image is the EXISTING drawing when re-opened
-// (prop `initial`) — anyone can add to what someone else started; undo/redo only
-// touch this session's additions, the original underneath is redrawn intact.
+// NON-DESTRUCTIVE (#1): a drawing is stored as an editable SCENE (the strokes,
+// stamps, pixels, shapes + the template), not just a flat PNG. Re-opening rebuilds
+// those layers, so adding on top NEVER destroys what someone drew before — the
+// earlier marks are still there, on their own layers, and saving keeps them all.
+// (The PNG is still produced for the board glance + sharing.) Old PNG-only drawings
+// degrade gracefully: no scene → load the PNG as a flat base image to draw over.
 //
-// Export is size-capped (MAX_EDGE) so a drawing can never bloat to multi-MB and jank
-// the board. `useModal` + CSS lock the page so a stroke can't scroll/select behind it.
-//
-// `toddler` trims the toolbar to the big, safe, fun controls (no text/custom-colour/
-// share/routine) so a pre-reader can draw without getting lost.
+// Performance: the canvas backing store is capped at 2× DPR (a full-screen tablet
+// canvas at 3× was multi-MB and could OOM/crash), pixel painting skips repeats and
+// coalesces redraws to one per animation frame, and export is size-capped.
+// `useModal` + CSS lock the page so a stroke can't scroll/select behind it.
+// `toddler` trims the toolbar to the big, safe, fun controls.
 const PAPER = '#fffdf7'
 const COLORS = [
   '#2b2b2b', '#C2563A', '#E8632E', '#D9842A', '#F2B705', '#6B8A52',
@@ -38,9 +35,6 @@ const SIZES = [
   { key: 'm', min: 2.5, max: 5, dot: 3.5, ui: 13, cell: 26, font: 48 },
   { key: 'l', min: 6, max: 11, dot: 8, ui: 19, cell: 40, font: 72 },
 ] as const
-
-// Sticker packs — content pictos, so emoji (not the control-icon set). Family +
-// seasonal + a learning pack of letters/numbers to stamp.
 const PACKS: { key: string; icon: string; items: string[] }[] = [
   { key: 'faces', icon: '😀', items: ['😀', '😄', '😍', '🤩', '😎', '😇', '🥳', '😴', '🤗', '😜'] },
   { key: 'animals', icon: '🐱', items: ['🐱', '🐶', '🐰', '🐻', '🦊', '🐸', '🐥', '🦄', '🐝', '🐢'] },
@@ -53,30 +47,32 @@ const TRACE_CHARS = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz'
 type TemplateKind = 'none' | 'lines' | 'trace' | 'dots' | 'coloring'
 const COLORING = ['star', 'heart', 'flower', 'house', 'fish', 'sun'] as const
 type ColoringShape = (typeof COLORING)[number]
+const SHAPE_TYPES = ['line', 'rect', 'oval', 'tri', 'star', 'heart'] as const
+type ShapeType = (typeof SHAPE_TYPES)[number]
+const SHAPE_GLYPH: Record<ShapeType, string> = { line: '╱', rect: '▭', oval: '◯', tri: '△', star: '★', heart: '♥' }
 
-type Mode = 'pen' | 'sticker' | 'pixel' | 'text'
+type Mode = 'pen' | 'sticker' | 'pixel' | 'text' | 'shape'
 type Stamp = { x: number; y: number; text: string; font: number }
+type Shape = { type: ShapeType; x0: number; y0: number; x1: number; y1: number; color: string; size: number }
 type PixelChange = { key: string; prev: string | undefined }
-// Undo entries (in order). Stroke/stamp track HOW MANY canvas items the action
-// added (1, or 2 with mirror) so undo peels the whole action.
-type Op = { kind: 'stroke'; n: number } | { kind: 'stamp'; n: number } | { kind: 'pixel'; changes: PixelChange[] }
-// Redo entries carry the payload to re-apply.
+type Op = { kind: 'stroke'; n: number } | { kind: 'stamp'; n: number } | { kind: 'shape'; n: number } | { kind: 'pixel'; changes: PixelChange[] }
 type Redo =
   | { kind: 'stroke'; strokes: PointGroup[] }
   | { kind: 'stamp'; stamps: Stamp[] }
+  | { kind: 'shape'; shapes: Shape[] }
   | { kind: 'pixel'; changes: { key: string; prev: string | undefined; next: string | undefined }[] }
+// The editable, persisted drawing (#1) — everything needed to rebuild the layers.
+type Scene = { v: 1; strokes: PointGroup[]; stamps: Stamp[]; pixels: [string, string][]; shapes: Shape[]; template: { kind: TemplateKind; ch: string; shape: ColoringShape } }
+const SCENE_MAX = 1_500_000 // chars — skip persisting an unusually heavy scene
 
-// ── Template painters (faint, drawn under the drawing; baked into the PNG so the
-// finished worksheet shows what was practised). CSS-px space (ctx pre-scaled). ──
+// ── Template painters (faint, drawn under the drawing). CSS-px space. ──
 function tplLines(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const band = Math.max(64, h / 8)
   ctx.lineWidth = 1.5
   for (let y = band; y < h; y += band) {
-    ctx.strokeStyle = 'rgba(72,120,180,0.45)'
-    ctx.setLineDash([])
+    ctx.strokeStyle = 'rgba(72,120,180,0.45)'; ctx.setLineDash([])
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke()
-    ctx.strokeStyle = 'rgba(72,120,180,0.28)'
-    ctx.setLineDash([7, 7])
+    ctx.strokeStyle = 'rgba(72,120,180,0.28)'; ctx.setLineDash([7, 7])
     ctx.beginPath(); ctx.moveTo(0, y - band / 2); ctx.lineTo(w, y - band / 2); ctx.stroke()
   }
   ctx.setLineDash([])
@@ -89,17 +85,18 @@ function tplDots(ctx: CanvasRenderingContext2D, w: number, h: number) {
 function tplTrace(ctx: CanvasRenderingContext2D, w: number, h: number, ch: string) {
   tplLines(ctx, w, h)
   ctx.save()
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.font = `bold ${Math.min(w, h) * 0.72}px Georgia, "Times New Roman", serif`
-  ctx.fillStyle = 'rgba(40,40,40,0.10)'
-  ctx.fillText(ch, w / 2, h / 2)
-  ctx.lineWidth = 2
-  ctx.strokeStyle = 'rgba(40,40,40,0.22)'
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  // A THIN, non-bold DASHED OUTLINE of the letter — a path to trace along, not a
+  // solid shape to colour in. (No fill: the kid practises the strokes.)
+  ctx.font = `${Math.min(w, h) * 0.7}px Georgia, "Times New Roman", serif`
+  ctx.lineWidth = Math.max(1.5, Math.min(w, h) * 0.006)
+  ctx.strokeStyle = 'rgba(40,40,40,0.32)'
+  ctx.setLineDash([5, 8])
   ctx.strokeText(ch, w / 2, h / 2)
+  ctx.setLineDash([])
   ctx.restore()
 }
-function shapePath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, shape: ColoringShape) {
+function shapePath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, shape: ColoringShape | 'tri') {
   ctx.beginPath()
   if (shape === 'heart') {
     for (let t = 0; t <= Math.PI * 2 + 0.05; t += 0.04) {
@@ -108,6 +105,8 @@ function shapePath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
       const x = cx + (hx / 16) * r, y = cy - (hy / 16) * r
       t === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
     }
+  } else if (shape === 'tri') {
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r * 0.92, cy + r * 0.8); ctx.lineTo(cx - r * 0.92, cy + r * 0.8); ctx.closePath()
   } else if (shape === 'star' || shape === 'flower' || shape === 'sun') {
     const pts = shape === 'flower' ? 8 : shape === 'sun' ? 12 : 5
     const inner = shape === 'flower' ? 0.55 : shape === 'sun' ? 0.78 : 0.45
@@ -124,17 +123,26 @@ function shapePath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
     ctx.lineTo(cx + s, cy - s * 0.2); ctx.lineTo(cx + s, cy + s); ctx.closePath()
     ctx.moveTo(cx - s * 0.3, cy + s); ctx.lineTo(cx - s * 0.3, cy + s * 0.2); ctx.lineTo(cx + s * 0.3, cy + s * 0.2); ctx.lineTo(cx + s * 0.3, cy + s)
   } else {
-    // fish: body ellipse + tail
     ctx.ellipse(cx - r * 0.15, cy, r, r * 0.6, 0, 0, Math.PI * 2)
     ctx.moveTo(cx + r * 0.8, cy); ctx.lineTo(cx + r * 1.3, cy - r * 0.4); ctx.lineTo(cx + r * 1.3, cy + r * 0.4); ctx.closePath()
   }
   ctx.stroke()
 }
 function tplColoring(ctx: CanvasRenderingContext2D, w: number, h: number, shape: ColoringShape) {
+  ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(40,40,40,0.30)'
+  shapePath(ctx, w / 2, h / 2, Math.min(w, h) * 0.34, shape); ctx.restore()
+}
+function drawShape(ctx: CanvasRenderingContext2D, s: Shape) {
   ctx.save()
-  ctx.lineWidth = 3
-  ctx.strokeStyle = 'rgba(40,40,40,0.30)'
-  shapePath(ctx, w / 2, h / 2, Math.min(w, h) * 0.34, shape)
+  ctx.strokeStyle = s.color
+  ctx.lineWidth = Math.max(2, s.size)
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+  const x = Math.min(s.x0, s.x1), y = Math.min(s.y0, s.y1), w = Math.abs(s.x1 - s.x0), h = Math.abs(s.y1 - s.y0)
+  if (s.type === 'line') { ctx.beginPath(); ctx.moveTo(s.x0, s.y0); ctx.lineTo(s.x1, s.y1); ctx.stroke() }
+  else if (s.type === 'rect') ctx.strokeRect(x, y, w, h)
+  else if (s.type === 'oval') { ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, Math.max(1, w / 2), Math.max(1, h / 2), 0, 0, Math.PI * 2); ctx.stroke() }
+  else shapePath(ctx, x + w / 2, y + h / 2, Math.max(w, h) / 2, s.type) // tri / star / heart
   ctx.restore()
 }
 
@@ -144,13 +152,19 @@ export function DrawPad({
   onSave,
   onMakeRoutine,
   initial,
+  initialSceneUrl,
   toddler,
 }: {
   open: boolean
   onCancel: () => void
-  onSave: (png: Blob) => void
+  // Save hands up the flat PNG (board glance / share) AND the editable scene JSON
+  // ('' if too heavy to persist) so the caller can store both (#1).
+  onSave: (png: Blob, scene: string) => void
   onMakeRoutine?: (png: Blob) => void
+  // Fallback for old PNG-only drawings: drawn as a flat, non-editable base layer.
   initial?: string
+  // Preferred: a URL to the editable scene JSON; rebuilt into editable layers.
+  initialSceneUrl?: string
   toddler?: boolean
 }) {
   const t = useT()
@@ -160,17 +174,22 @@ export function DrawPad({
   const baseImgRef = useRef<HTMLImageElement | null>(null)
   const pixelsRef = useRef<Map<string, string>>(new Map())
   const stampsRef = useRef<Stamp[]>([])
+  const shapesRef = useRef<Shape[]>([])
+  const previewRef = useRef<Shape | null>(null)
   const historyRef = useRef<Op[]>([])
   const redoRef = useRef<Redo[]>([])
-  // Live tool settings the once-attached pointer handlers read.
+  const rafRef = useRef<number | null>(null)
   const modeRef = useRef<Mode>('pen')
   const colorRef = useRef<string>(COLORS[0])
   const sizeRef = useRef<number>(1)
   const stickerRef = useRef<string>(PACKS[0].items[0])
   const textRef = useRef<string>('')
   const symmetryRef = useRef<boolean>(false)
+  const fillRef = useRef<boolean>(false)
+  const shapeTypeRef = useRef<ShapeType>('rect')
   const tplRef = useRef<{ kind: TemplateKind; ch: string; shape: ColoringShape }>({ kind: 'none', ch: 'A', shape: 'star' })
-  const dragRef = useRef<{ active: boolean; changes: PixelChange[] }>({ active: false, changes: [] })
+  const dragRef = useRef<{ active: boolean; changes: PixelChange[]; last: string | null }>({ active: false, changes: [], last: null })
+  const shapeDragRef = useRef<{ active: boolean; x0: number; y0: number } | null>(null)
 
   const [mode, setMode] = useState<Mode>('pen')
   const [color, setColor] = useState<string>(COLORS[0])
@@ -180,7 +199,10 @@ export function DrawPad({
   const [sticker, setSticker] = useState(PACKS[0].items[0])
   const [text, setText] = useState('')
   const [symmetry, setSymmetry] = useState(false)
+  const [fill, setFill] = useState(false)
+  const [shapeType, setShapeType] = useState<ShapeType>('rect')
   const [tpl, setTpl] = useState<TemplateKind>('none')
+  const [tplOpen, setTplOpen] = useState(false)
   const [traceCh, setTraceCh] = useState('A')
   const [shape, setShape] = useState<ColoringShape>('star')
   const [busy, setBusy] = useState(false)
@@ -191,17 +213,19 @@ export function DrawPad({
   useEffect(() => void (stickerRef.current = sticker), [sticker])
   useEffect(() => void (textRef.current = text), [text])
   useEffect(() => void (symmetryRef.current = symmetry), [symmetry])
+  useEffect(() => void (fillRef.current = fill), [fill])
+  useEffect(() => void (shapeTypeRef.current = shapeType), [shapeType])
   useEffect(() => {
     tplRef.current = { kind: tpl, ch: traceCh, shape }
     render(padRef.current?.toData() ?? [])
-    // render is stable for the open lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tpl, traceCh, shape])
 
   useModal(rootRef, onCancel, { open })
 
-  const ratio = () => Math.max(window.devicePixelRatio || 1, 1)
+  const ratio = () => Math.min(Math.max(window.devicePixelRatio || 1, 1), 2) // cap 2× → bounded memory
   const cssW = () => (canvasRef.current ? canvasRef.current.width / ratio() : 0)
+  const cssH = () => (canvasRef.current ? canvasRef.current.height / ratio() : 0)
 
   function render(strokes: PointGroup[]) {
     const pad = padRef.current
@@ -224,7 +248,7 @@ export function DrawPad({
       ctx.drawImage(img, (w - img.width * s) / 2, (h - img.height * s) / 2, img.width * s, img.height * s)
     }
     for (const [key, col] of pixelsRef.current) {
-      const [coords, cellStr] = key.split(':') // "cx,cy:cell"
+      const [coords, cellStr] = key.split(':')
       const [cx, cy] = coords.split(',').map(Number)
       const cell = Number(cellStr)
       ctx.fillStyle = col
@@ -232,21 +256,23 @@ export function DrawPad({
     }
     ctx.restore()
     pad.fromData(strokes, { clear: false })
+    for (const s of shapesRef.current) drawShape(ctx, s)
+    if (previewRef.current) drawShape(ctx, previewRef.current)
     ctx.save()
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    for (const st of stampsRef.current) {
-      ctx.font = `${st.font}px sans-serif`
-      ctx.fillText(st.text, st.x, st.y)
-    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    for (const st of stampsRef.current) { ctx.font = `${st.font}px sans-serif`; ctx.fillText(st.text, st.x, st.y) }
     ctx.restore()
+  }
+  // Coalesce rapid paints (pixel drag / shape preview) to one redraw per frame.
+  function scheduleRender() {
+    if (rafRef.current != null) return
+    rafRef.current = requestAnimationFrame(() => { rafRef.current = null; render(padRef.current?.toData() ?? []) })
   }
 
   function pointAt(e: PointerEvent) {
     const rect = canvasRef.current!.getBoundingClientRect()
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
   }
-
   function pushStamps(items: Stamp[]) {
     stampsRef.current.push(...items)
     historyRef.current.push({ kind: 'stamp', n: items.length })
@@ -260,8 +286,7 @@ export function DrawPad({
     if (symmetryRef.current) items.push({ x: cssW() - x, y, text: txt, font })
     pushStamps(items)
   }
-  function paintCell(x: number, y: number) {
-    const cell = SIZES[sizeRef.current].cell
+  function setCell(x: number, y: number, cell: number) {
     const cx = Math.floor(x / cell), cy = Math.floor(y / cell)
     const key = `${cx},${cy}:${cell}`
     const map = pixelsRef.current
@@ -270,27 +295,70 @@ export function DrawPad({
     else map.set(key, colorRef.current)
   }
   function paintPixel(x: number, y: number) {
-    paintCell(x, y)
-    if (symmetryRef.current) paintCell(cssW() - x, y)
+    const cell = SIZES[sizeRef.current].cell
+    const cx = Math.floor(x / cell), cy = Math.floor(y / cell)
+    const tag = `${cx},${cy}`
+    if (dragRef.current.last === tag) return // same cell as last move — skip the redraw
+    dragRef.current.last = tag
+    setCell(x, y, cell)
+    if (symmetryRef.current) setCell(cssW() - x, y, cell)
+    scheduleRender()
+  }
+  // Flood-fill the contiguous run of like-valued grid cells from (x,y) — the pixel
+  // "bucket". Bounded by the visible grid (cap guards a pathological canvas).
+  function floodFill(x: number, y: number) {
+    const cell = SIZES[sizeRef.current].cell
+    const cols = Math.ceil(cssW() / cell), rows = Math.ceil(cssH() / cell)
+    const map = pixelsRef.current
+    const at = (cx: number, cy: number) => map.get(`${cx},${cy}:${cell}`)
+    const sx = Math.floor(x / cell), sy = Math.floor(y / cell)
+    const target = at(sx, sy)
+    const fillVal = colorRef.current === PAPER ? undefined : colorRef.current
+    if (target === fillVal) return
+    const changes: PixelChange[] = []
+    const seen = new Set<string>()
+    const stack: [number, number][] = [[sx, sy]]
+    let guard = cols * rows + 1
+    while (stack.length && guard-- > 0) {
+      const [cx, cy] = stack.pop()!
+      if (cx < 0 || cy < 0 || cx >= cols || cy >= rows) continue
+      const tag = `${cx},${cy}`
+      if (seen.has(tag)) continue
+      seen.add(tag)
+      if (at(cx, cy) !== target) continue
+      const key = `${cx},${cy}:${cell}`
+      changes.push({ key, prev: map.get(key) })
+      if (fillVal === undefined) map.delete(key); else map.set(key, fillVal)
+      stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1])
+    }
+    if (changes.length) { historyRef.current.push({ kind: 'pixel', changes }); redoRef.current = [] }
     render(padRef.current?.toData() ?? [])
   }
+  function commitShape(s: Shape) {
+    const items = [s]
+    if (symmetryRef.current) {
+      const w = cssW()
+      items.push({ ...s, x0: w - s.x0, x1: w - s.x1 })
+    }
+    shapesRef.current.push(...items)
+    historyRef.current.push({ kind: 'shape', n: items.length })
+    redoRef.current = []
+    previewRef.current = null
+    render(padRef.current?.toData() ?? [])
+  }
+
   useEffect(() => {
     if (!open || !canvasRef.current) return
     const canvas = canvasRef.current
     const s = SIZES[sizeRef.current]
     const pad = new SignaturePad(canvas, { backgroundColor: PAPER, penColor: colorRef.current, minWidth: s.min, maxWidth: s.max, dotSize: s.dot })
     padRef.current = pad
-    // A finished pen stroke (mirrored too when symmetry is on) is one undo step.
     const onEnd = () => {
       const data = pad.toData()
       let n = 1
       if (symmetryRef.current) {
         const last = data[data.length - 1]
-        if (last) {
-          const w = cssW()
-          data.push({ ...last, points: last.points.map((p) => ({ ...p, x: w - p.x })) })
-          n = 2
-        }
+        if (last) { const w = cssW(); data.push({ ...last, points: last.points.map((p) => ({ ...p, x: w - p.x })) }); n = 2 }
       }
       historyRef.current.push({ kind: 'stroke', n })
       redoRef.current = []
@@ -299,24 +367,44 @@ export function DrawPad({
     pad.addEventListener('endStroke', onEnd)
 
     const onDown = (e: PointerEvent) => {
-      const { x, y } = pointAt(e)
-      if (modeRef.current === 'pen') return
+      const m = modeRef.current
+      if (m === 'pen') return
       canvas.setPointerCapture?.(e.pointerId)
-      if (modeRef.current === 'sticker') return stampAt(x, y, stickerRef.current)
-      if (modeRef.current === 'text') return stampAt(x, y, textRef.current.trim())
-      dragRef.current = { active: true, changes: [] }
+      const { x, y } = pointAt(e)
+      if (m === 'sticker') return stampAt(x, y, stickerRef.current)
+      if (m === 'text') return stampAt(x, y, textRef.current.trim())
+      if (m === 'shape') { shapeDragRef.current = { active: true, x0: x, y0: y }; return }
+      // pixel
+      if (fillRef.current) return floodFill(x, y)
+      dragRef.current = { active: true, changes: [], last: null }
       paintPixel(x, y)
     }
     const onMove = (e: PointerEvent) => {
-      if (modeRef.current !== 'pixel' || !dragRef.current.active) return
-      const { x, y } = pointAt(e)
-      paintPixel(x, y)
+      const m = modeRef.current
+      if (m === 'pixel' && dragRef.current.active && !fillRef.current) { const { x, y } = pointAt(e); paintPixel(x, y); return }
+      if (m === 'shape' && shapeDragRef.current?.active) {
+        const { x, y } = pointAt(e)
+        const d = shapeDragRef.current
+        previewRef.current = { type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: x, y1: y, color: colorRef.current, size: SIZES[sizeRef.current].max }
+        scheduleRender()
+      }
     }
-    const onUp = () => {
-      if (modeRef.current !== 'pixel' || !dragRef.current.active) return
-      const { changes } = dragRef.current
-      dragRef.current = { active: false, changes: [] }
-      if (changes.length) { historyRef.current.push({ kind: 'pixel', changes }); redoRef.current = [] }
+    const onUp = (e: PointerEvent) => {
+      if (modeRef.current === 'pixel' && dragRef.current.active) {
+        const { changes } = dragRef.current
+        dragRef.current = { active: false, changes: [], last: null }
+        if (changes.length) { historyRef.current.push({ kind: 'pixel', changes }); redoRef.current = [] }
+        return
+      }
+      if (modeRef.current === 'shape' && shapeDragRef.current?.active) {
+        const d = shapeDragRef.current
+        const { x, y } = pointAt(e)
+        shapeDragRef.current = null
+        previewRef.current = null
+        if (Math.abs(x - d.x0) > 3 || Math.abs(y - d.y0) > 3)
+          commitShape({ type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: x, y1: y, color: colorRef.current, size: SIZES[sizeRef.current].max })
+        else render(pad.toData())
+      }
     }
     canvas.addEventListener('pointerdown', onDown)
     canvas.addEventListener('pointermove', onMove)
@@ -336,6 +424,8 @@ export function DrawPad({
     window.addEventListener('resize', resize)
     return () => {
       window.removeEventListener('resize', resize)
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
       canvas.removeEventListener('pointerdown', onDown)
       canvas.removeEventListener('pointermove', onMove)
       canvas.removeEventListener('pointerup', onUp)
@@ -346,24 +436,48 @@ export function DrawPad({
       baseImgRef.current = null
       pixelsRef.current = new Map()
       stampsRef.current = []
+      shapesRef.current = []
+      previewRef.current = null
       historyRef.current = []
       redoRef.current = []
     }
-    // Handlers read live settings from refs; build the pad once per open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // Load an existing drawing: prefer the editable SCENE (#1, lossless layers); fall
+  // back to the flat PNG base image for old scene-less drawings.
   useEffect(() => {
     baseImgRef.current = null
-    if (!open || !initial) return
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => { baseImgRef.current = img; render(padRef.current?.toData() ?? []) }
-    img.src = initial
+    if (!open) return
+    let cancelled = false
+    const loadBase = () => {
+      if (!initial) return
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => { if (!cancelled) { baseImgRef.current = img; render(padRef.current?.toData() ?? []) } }
+      img.src = initial
+    }
+    if (initialSceneUrl) {
+      fetch(initialSceneUrl)
+        .then((r) => r.text())
+        .then((txt) => {
+          if (cancelled) return
+          const s = JSON.parse(txt) as Scene
+          if (s?.v !== 1) throw new Error('bad scene')
+          stampsRef.current = Array.isArray(s.stamps) ? s.stamps : []
+          shapesRef.current = Array.isArray(s.shapes) ? s.shapes : []
+          pixelsRef.current = new Map(Array.isArray(s.pixels) ? s.pixels : [])
+          if (s.template?.kind) { setTpl(s.template.kind); setTraceCh(s.template.ch || 'A'); setShape(s.template.shape || 'star'); tplRef.current = s.template }
+          render(Array.isArray(s.strokes) ? s.strokes : [])
+        })
+        .catch(() => { if (!cancelled) loadBase() }) // unreadable scene → flat base image
+    } else {
+      loadBase()
+    }
+    return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initial])
+  }, [open, initial, initialSceneUrl])
 
-  // Pen draws only in pen mode; in sticker/pixel/text modes signature_pad is off.
   useEffect(() => {
     const pad = padRef.current
     if (!pad) return
@@ -390,12 +504,13 @@ export function DrawPad({
     if (!op) return
     if (op.kind === 'stroke') {
       const data = padRef.current?.toData() ?? []
-      const strokes = data.splice(data.length - op.n, op.n)
-      redoRef.current.push({ kind: 'stroke', strokes })
+      redoRef.current.push({ kind: 'stroke', strokes: data.splice(data.length - op.n, op.n) })
       render(data)
     } else if (op.kind === 'stamp') {
-      const stamps = stampsRef.current.splice(stampsRef.current.length - op.n, op.n)
-      redoRef.current.push({ kind: 'stamp', stamps })
+      redoRef.current.push({ kind: 'stamp', stamps: stampsRef.current.splice(stampsRef.current.length - op.n, op.n) })
+      render(padRef.current?.toData() ?? [])
+    } else if (op.kind === 'shape') {
+      redoRef.current.push({ kind: 'shape', shapes: shapesRef.current.splice(shapesRef.current.length - op.n, op.n) })
       render(padRef.current?.toData() ?? [])
     } else {
       const map = pixelsRef.current
@@ -417,6 +532,10 @@ export function DrawPad({
       stampsRef.current.push(...op.stamps)
       historyRef.current.push({ kind: 'stamp', n: op.stamps.length })
       render(padRef.current?.toData() ?? [])
+    } else if (op.kind === 'shape') {
+      shapesRef.current.push(...op.shapes)
+      historyRef.current.push({ kind: 'shape', n: op.shapes.length })
+      render(padRef.current?.toData() ?? [])
     } else {
       const map = pixelsRef.current
       for (const c of op.changes) { if (c.next === undefined) map.delete(c.key); else map.set(c.key, c.next) }
@@ -425,16 +544,23 @@ export function DrawPad({
     }
   }
   const clear = () => {
-    pixelsRef.current.clear()
-    stampsRef.current = []
-    historyRef.current = []
-    redoRef.current = []
+    pixelsRef.current.clear(); stampsRef.current = []; shapesRef.current = []; historyRef.current = []; redoRef.current = []
     render([])
   }
 
   const hasContent = () =>
-    !!padRef.current && (!padRef.current.isEmpty() || stampsRef.current.length > 0 || pixelsRef.current.size > 0)
+    !!padRef.current && (!padRef.current.isEmpty() || stampsRef.current.length > 0 || pixelsRef.current.size > 0 || shapesRef.current.length > 0)
   const isEmpty = () => !hasContent() && !baseImgRef.current && tpl === 'none'
+
+  function sceneJson(): string {
+    try {
+      const scene: Scene = { v: 1, strokes: padRef.current?.toData() ?? [], stamps: stampsRef.current, pixels: [...pixelsRef.current], shapes: shapesRef.current, template: tplRef.current }
+      const json = JSON.stringify(scene)
+      return json.length > SCENE_MAX ? '' : json
+    } catch {
+      return ''
+    }
+  }
 
   const MAX_EDGE = 1280
   function exportBlob(cb: (blob: Blob | null) => void) {
@@ -453,7 +579,8 @@ export function DrawPad({
   const save = () => {
     if (isEmpty()) return onCancel()
     setBusy(true)
-    exportBlob((blob) => { setBusy(false); if (blob) onSave(blob) })
+    const scene = sceneJson()
+    exportBlob((blob) => { setBusy(false); if (blob) onSave(blob, scene) })
   }
   const share = () => {
     if (isEmpty() || busy) return
@@ -474,6 +601,7 @@ export function DrawPad({
 
   const MODES: { key: Mode; icon: Parameters<typeof Icon>[0]['name']; label: string }[] = [
     { key: 'pen', icon: 'paint-brush-bold', label: t.memo.drawPen },
+    { key: 'shape', icon: 'star-fill', label: t.memo.drawShape },
     { key: 'sticker', icon: 'smiley-bold', label: t.memo.drawSticker },
     { key: 'pixel', icon: 'square-bold', label: t.memo.drawPixel },
     ...(toddler ? [] : [{ key: 'text' as Mode, icon: 'file-text-bold' as const, label: t.memo.drawText }]),
@@ -487,70 +615,19 @@ export function DrawPad({
   ]
 
   return (
-    <div
-      ref={rootRef}
-      className={'drawpad' + (toddler ? ' drawpad--kid' : '')}
-      role="dialog"
-      aria-modal="true"
-      aria-label={initial ? t.memo.editTitle : t.memo.drawTitle}
-    >
-      <div className="drawpad__bar">
+    <div ref={rootRef} className={'drawpad' + (toddler ? ' drawpad--kid' : '')} role="dialog" aria-modal="true" aria-label={initial || initialSceneUrl ? t.memo.editTitle : t.memo.drawTitle}>
+      {/* Row 1 — compact tool row (scrolls sideways, never wraps tall). */}
+      <div className="drawpad__bar drawpad__bar--tools">
         <div className="drawpad__modes" role="group" aria-label={t.memo.tool}>
           {MODES.map((m) => (
             <button key={m.key} type="button" className={'drawpad__mode' + (mode === m.key ? ' is-on' : '')} onClick={() => setMode(m.key)} aria-label={m.label} aria-pressed={mode === m.key}>
               <Icon name={m.icon} size={18} />
             </button>
           ))}
-          {/* Mirror / kaleidoscope — everything you draw is echoed across the middle. */}
           <button type="button" className={'drawpad__mode' + (symmetry ? ' is-on' : '')} onClick={() => setSymmetry((v) => !v)} aria-label={t.memo.symmetry} aria-pressed={symmetry}>
             <Icon name="sparkle-bold" size={18} />
           </button>
         </div>
-
-        {mode === 'text' ? (
-          <input
-            className="input drawpad__text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={t.memo.textPlaceholder}
-            aria-label={t.memo.drawText}
-            maxLength={24}
-          />
-        ) : mode === 'sticker' ? (
-          <div className="drawpad__stickers">
-            <div className="drawpad__packs" role="group" aria-label={t.memo.drawSticker}>
-              {PACKS.map((p, i) => (
-                <button key={p.key} type="button" className={'drawpad__pack' + (pack === i ? ' is-on' : '')} onClick={() => { setPack(i); setSticker(p.items[0]) }} aria-label={t.memo.packs[p.key as keyof typeof t.memo.packs]} aria-pressed={pack === i}>
-                  {p.icon}
-                </button>
-              ))}
-            </div>
-            <div className="drawpad__stickerset" role="group">
-              {PACKS[pack].items.map((e) => (
-                <button key={e} type="button" className={'drawpad__sticker' + (sticker === e ? ' is-on' : '')} onClick={() => setSticker(e)} aria-label={e} aria-pressed={sticker === e}>
-                  {e}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="drawpad__colors">
-            {COLORS.map((c) => (
-              <button key={c} type="button" className={'drawpad__swatch' + (color === c ? ' is-on' : '')} style={{ background: c }} onClick={() => pickColor(c)} aria-label={t.memo.pen} aria-pressed={color === c} />
-            ))}
-            <button type="button" className={'drawpad__swatch drawpad__eraser' + (color === PAPER ? ' is-on' : '')} style={{ background: PAPER }} onClick={() => pickColor(PAPER)} aria-label={t.memo.eraser} aria-pressed={color === PAPER} />
-            {recent.map((c) => (
-              <button key={c} type="button" className={'drawpad__swatch' + (color === c ? ' is-on' : '')} style={{ background: c }} onClick={() => pickColor(c)} aria-label={t.memo.recent} aria-pressed={color === c} />
-            ))}
-            {!toddler && (
-              <label className="drawpad__swatch drawpad__custom" aria-label={t.memo.customColor} style={{ background: color }}>
-                <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : '#000000'} onChange={(e) => pickColor(e.target.value)} />
-                <span aria-hidden="true">+</span>
-              </label>
-            )}
-          </div>
-        )}
-
         <div className="drawpad__sizes" role="group" aria-label={t.memo.size}>
           {SIZES.map((s, i) => (
             <button key={s.key} type="button" className={'drawpad__size' + (size === i ? ' is-on' : '')} onClick={() => setSize(i)} aria-label={t.memo.size} aria-pressed={size === i}>
@@ -558,37 +635,85 @@ export function DrawPad({
             </button>
           ))}
         </div>
-
         <div className="drawpad__tools">
+          <button type="button" className={'drawpad__tool' + (tplOpen ? ' is-on' : '')} onClick={() => setTplOpen((v) => !v)} aria-label={t.memo.template} aria-pressed={tplOpen}><Icon name="book-open-bold" size={18} /></button>
           <button type="button" className="drawpad__tool" onClick={undo} aria-label={t.memo.undo}><Icon name="arrow-counter-clockwise-bold" size={18} /></button>
           <button type="button" className="drawpad__tool" onClick={redo} aria-label={t.memo.redo}><Icon name="repeat-bold" size={18} /></button>
           <button type="button" className="drawpad__tool" onClick={clear} aria-label={t.memo.clear}><Icon name="trash-bold" size={18} /></button>
         </div>
       </div>
 
-      {/* Template row: a learning/creative guide under the drawing. */}
-      <div className="drawpad__tplbar">
-        <span className="drawpad__tpllabel mono" aria-hidden="true"><Icon name="book-open-bold" size={15} /> {t.memo.template}</span>
-        {TEMPLATES.map((tp) => (
-          <button key={tp.key} type="button" className={'chip' + (tpl === tp.key ? ' is-on' : '')} onClick={() => setTpl(tp.key)} aria-pressed={tpl === tp.key}>
-            {tp.label}
-          </button>
-        ))}
-        {tpl === 'trace' && (
-          <div className="drawpad__tracepick" role="group" aria-label={t.memo.tplTrace}>
-            {TRACE_CHARS.map((c) => (
-              <button key={c} type="button" className={'drawpad__trace' + (traceCh === c ? ' is-on' : '')} onClick={() => setTraceCh(c)} aria-label={c} aria-pressed={traceCh === c}>{c}</button>
-            ))}
+      {/* Row 2 — context for the active tool (scrolls sideways). */}
+      <div className="drawpad__bar drawpad__bar--ctx">
+        {mode === 'text' ? (
+          <input className="input drawpad__text" value={text} onChange={(e) => setText(e.target.value)} placeholder={t.memo.textPlaceholder} aria-label={t.memo.drawText} maxLength={24} />
+        ) : mode === 'sticker' ? (
+          <div className="drawpad__stickers">
+            <div className="drawpad__packs" role="group" aria-label={t.memo.drawSticker}>
+              {PACKS.map((p, i) => (
+                <button key={p.key} type="button" className={'drawpad__pack' + (pack === i ? ' is-on' : '')} onClick={() => { setPack(i); setSticker(p.items[0]) }} aria-label={t.memo.packs[p.key as keyof typeof t.memo.packs]} aria-pressed={pack === i}>{p.icon}</button>
+              ))}
+            </div>
+            <div className="drawpad__stickerset" role="group">
+              {PACKS[pack].items.map((e) => (
+                <button key={e} type="button" className={'drawpad__sticker' + (sticker === e ? ' is-on' : '')} onClick={() => setSticker(e)} aria-label={e} aria-pressed={sticker === e}>{e}</button>
+              ))}
+            </div>
           </div>
-        )}
-        {tpl === 'coloring' && (
-          <div className="drawpad__tracepick" role="group" aria-label={t.memo.tplColoring}>
-            {COLORING.map((sh) => (
-              <button key={sh} type="button" className={'chip' + (shape === sh ? ' is-on' : '')} onClick={() => setShape(sh)} aria-pressed={shape === sh}>{t.memo.shapes[sh]}</button>
-            ))}
-          </div>
+        ) : (
+          <>
+            {mode === 'shape' && (
+              <div className="drawpad__shapes" role="group" aria-label={t.memo.drawShape}>
+                {SHAPE_TYPES.map((s) => (
+                  <button key={s} type="button" className={'drawpad__shape' + (shapeType === s ? ' is-on' : '')} onClick={() => setShapeType(s)} aria-label={t.memo.shapeTools[s]} aria-pressed={shapeType === s}>{SHAPE_GLYPH[s]}</button>
+                ))}
+              </div>
+            )}
+            {mode === 'pixel' && (
+              <button type="button" className={'chip drawpad__fill' + (fill ? ' is-on' : '')} onClick={() => setFill((v) => !v)} aria-pressed={fill}>{t.memo.fillTool}</button>
+            )}
+            <div className="drawpad__colors">
+              {COLORS.map((c) => (
+                <button key={c} type="button" className={'drawpad__swatch' + (color === c ? ' is-on' : '')} style={{ background: c }} onClick={() => pickColor(c)} aria-label={t.memo.pen} aria-pressed={color === c} />
+              ))}
+              <button type="button" className={'drawpad__swatch drawpad__eraser' + (color === PAPER ? ' is-on' : '')} style={{ background: PAPER }} onClick={() => pickColor(PAPER)} aria-label={t.memo.eraser} aria-pressed={color === PAPER} />
+              {recent.map((c) => (
+                <button key={c} type="button" className={'drawpad__swatch' + (color === c ? ' is-on' : '')} style={{ background: c }} onClick={() => pickColor(c)} aria-label={t.memo.recent} aria-pressed={color === c} />
+              ))}
+              {!toddler && (
+                <label className="drawpad__swatch drawpad__custom" aria-label={t.memo.customColor} style={{ background: color }}>
+                  <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : '#000000'} onChange={(e) => pickColor(e.target.value)} />
+                  <span aria-hidden="true">+</span>
+                </label>
+              )}
+            </div>
+          </>
         )}
       </div>
+
+      {/* Row 3 — template picker, collapsed by default to keep the surface wide. */}
+      {tplOpen && (
+        <div className="drawpad__tplbar">
+          <span className="drawpad__tpllabel mono" aria-hidden="true"><Icon name="book-open-bold" size={15} /> {t.memo.template}</span>
+          {TEMPLATES.map((tp) => (
+            <button key={tp.key} type="button" className={'chip' + (tpl === tp.key ? ' is-on' : '')} onClick={() => setTpl(tp.key)} aria-pressed={tpl === tp.key}>{tp.label}</button>
+          ))}
+          {tpl === 'trace' && (
+            <div className="drawpad__tracepick" role="group" aria-label={t.memo.tplTrace}>
+              {TRACE_CHARS.map((c) => (
+                <button key={c} type="button" className={'drawpad__trace' + (traceCh === c ? ' is-on' : '')} onClick={() => setTraceCh(c)} aria-label={c} aria-pressed={traceCh === c}>{c}</button>
+              ))}
+            </div>
+          )}
+          {tpl === 'coloring' && (
+            <div className="drawpad__tracepick" role="group" aria-label={t.memo.tplColoring}>
+              {COLORING.map((sh) => (
+                <button key={sh} type="button" className={'chip' + (shape === sh ? ' is-on' : '')} onClick={() => setShape(sh)} aria-pressed={shape === sh}>{t.memo.shapes[sh]}</button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="drawpad__stage">
         <canvas ref={canvasRef} className="drawpad__canvas" />

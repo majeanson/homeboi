@@ -15,12 +15,20 @@ const MAX_BYTES = 3 * 1024 * 1024
 export const onRequestPost = authed(async (ctx) => {
   if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage indisponible ici.')
   const type = ctx.request.headers.get('content-type') ?? ''
-  const kind = type.startsWith('audio/') ? 'audio' : type.startsWith('image/') ? 'drawing' : null
-  if (!kind) return badRequest('Audio ou image requis.')
+  // audio (#38) / image drawing (#14) — plus application/json, the editable drawing
+  // SCENE (#1, prefix ns_) so a drawing can be re-opened and added to losslessly.
+  const kind = type.startsWith('audio/')
+    ? 'audio'
+    : type.startsWith('image/')
+      ? 'drawing'
+      : type.startsWith('application/json')
+        ? 'scene'
+        : null
+  if (!kind) return badRequest('Audio, image ou scène requis.')
   const buf = await ctx.request.arrayBuffer()
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Fichier vide ou trop grand.')
 
-  const key = `nm_${newId()}`
+  const key = `${kind === 'scene' ? 'ns' : 'nm'}_${newId()}`
   await ctx.env.PHOTOS.put(key, buf, { httpMetadata: { contentType: type } })
   return ok({ key, kind })
 })

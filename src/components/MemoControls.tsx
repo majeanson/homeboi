@@ -26,11 +26,22 @@ export function MemoControls({ onDone }: { onDone: () => void }) {
   const recRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
-  async function postMemo(kind: 'audio' | 'drawing', blob: Blob) {
+  async function postMemo(kind: 'audio' | 'drawing', blob: Blob, scene = '') {
     setBusy(true)
     try {
       const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: blob })
-      await api('notes', { method: 'POST', body: { media_kind: kind, media_key: key, text: '' } })
+      // A drawing also persists its editable scene (#1) so it can be re-opened and
+      // added to losslessly — best-effort, the PNG stands on its own if it fails.
+      let sceneKey: string | undefined
+      if (scene) {
+        try {
+          const r = await api<{ key: string }>('note-media', { method: 'POST', body: new Blob([scene], { type: 'application/json' }) })
+          sceneKey = r.key
+        } catch {
+          /* scene optional */
+        }
+      }
+      await api('notes', { method: 'POST', body: { media_kind: kind, media_key: key, scene_key: sceneKey, text: '' } })
       qc.invalidateQueries({ queryKey: BOARD_KEY })
       onDone()
     } catch (e) {
@@ -105,9 +116,9 @@ export function MemoControls({ onDone }: { onDone: () => void }) {
       <DrawPad
         open={draw}
         onCancel={() => setDraw(false)}
-        onSave={(png) => {
+        onSave={(png, scene) => {
           setDraw(false)
-          void postMemo('drawing', png)
+          void postMemo('drawing', png, scene)
         }}
         onMakeRoutine={(png) => {
           setDraw(false)

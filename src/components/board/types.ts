@@ -74,6 +74,9 @@ export interface NoteRow {
   // served via /api/img.
   media_kind?: 'audio' | 'drawing' | 'image' | null
   media_key?: string | null
+  // The editable drawing SCENE (#1) — JSON in R2; lets a drawing be re-opened and
+  // added to losslessly. Only present on 'drawing' notes saved by the newer pad.
+  scene_key?: string | null
 }
 // A recurring chore expanded onto a specific day (today or an upcoming date).
 // `who`/`who_id` are whose turn it is (rotation + current_idx); null = unassigned

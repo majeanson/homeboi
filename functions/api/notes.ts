@@ -23,11 +23,15 @@ interface NoteRow {
   created_at: number
   media_kind: string | null
   media_key: string | null
+  scene_key: string | null
 }
+
+// An R2 key shape (nm_/ns_/rcp_…): opaque token, no path separators.
+const keyish = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v.trim())
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    'SELECT id, text, member_id, created_at, media_kind, media_key FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC',
+    'SELECT id, text, member_id, created_at, media_kind, media_key, scene_key FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC',
   )
     .bind(actor.householdId)
     .all<NoteRow>()
@@ -35,7 +39,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ text?: string; media_kind?: string; media_key?: string }>(ctx.request)
+  const body = await readJson<{ text?: string; media_kind?: string; media_key?: string; scene_key?: string }>(ctx.request)
   const text = body?.text?.trim() ?? ''
   // A note is either a written line or a media memo: an audio clip (#38), a drawing
   // (#14), or a shared photo (#13 — 'image'). One of text/media must be present.
@@ -45,11 +49,13 @@ export const onRequestPost = authed(async (ctx, actor) => {
       : null
   const mediaKey = kind ? body?.media_key?.trim() || null : null
   if (!text && !(kind && mediaKey)) return badRequest('Note vide.')
+  // The editable drawing scene (#1) — only meaningful for a drawing.
+  const sceneKey = kind === 'drawing' && keyish(body?.scene_key) ? body!.scene_key!.trim() : null
   const id = newId()
   await ctx.env.DB.prepare(
-    'INSERT INTO notes (id, household_id, text, member_id, created_at, media_kind, media_key) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO notes (id, household_id, text, member_id, created_at, media_kind, media_key, scene_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
   )
-    .bind(id, actor.householdId, text.slice(0, 280), profileMemberId(ctx.request), nowSec(), kind, mediaKey)
+    .bind(id, actor.householdId, text.slice(0, 280), profileMemberId(ctx.request), nowSec(), kind, mediaKey, sceneKey)
     .run()
   return ok({ ok: true, id })
 })
@@ -59,20 +65,22 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // a drawing (DrawPad `initial`), add to it, and save back. We swap media_key,
   // re-tint to whoever just contributed, and bump created_at so the freshly-touched
   // doodle resurfaces — no counts/ranks (calm), just "someone added to it".
-  const body = await readJson<{ id?: string; media_key?: string }>(ctx.request)
+  const body = await readJson<{ id?: string; media_key?: string; scene_key?: string }>(ctx.request)
   const id = body?.id?.trim()
   const mediaKey = body?.media_key?.trim()
   if (!id || !mediaKey) return badRequest('id et media_key requis.')
+  const sceneKey = keyish(body?.scene_key) ? body!.scene_key!.trim() : null
   const row = await ctx.env.DB.prepare(
-    "SELECT media_key FROM notes WHERE id = ? AND household_id = ? AND media_kind = 'drawing' AND dismissed_at IS NULL",
+    "SELECT media_key, scene_key FROM notes WHERE id = ? AND household_id = ? AND media_kind = 'drawing' AND dismissed_at IS NULL",
   )
     .bind(id, actor.householdId)
-    .first<{ media_key: string | null }>()
+    .first<{ media_key: string | null; scene_key: string | null }>()
   if (!row) return notFound('Dessin introuvable.')
-  // Free the superseded blob first (keeps the free tier lean; best-effort).
+  // Free the superseded blobs first (PNG + scene) — best-effort, keeps R2 lean.
   if (row.media_key && row.media_key !== mediaKey) await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
-  await ctx.env.DB.prepare('UPDATE notes SET media_key = ?, member_id = ?, created_at = ? WHERE id = ? AND household_id = ?')
-    .bind(mediaKey, profileMemberId(ctx.request), nowSec(), id, actor.householdId)
+  if (row.scene_key && row.scene_key !== sceneKey) await deleteR2Blob(ctx.env.PHOTOS, row.scene_key)
+  await ctx.env.DB.prepare('UPDATE notes SET media_key = ?, scene_key = ?, member_id = ?, created_at = ? WHERE id = ? AND household_id = ?')
+    .bind(mediaKey, sceneKey, profileMemberId(ctx.request), nowSec(), id, actor.householdId)
     .run()
   return ok({ ok: true })
 })
@@ -85,11 +93,12 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   // blob is dead weight (keeps the free tier lean; mirrors the routine voice-clip
   // cleanup). Best-effort: a failed R2 delete must not block clearing the note.
   const row = await ctx.env.DB.prepare(
-    'SELECT media_key FROM notes WHERE id = ? AND household_id = ? AND dismissed_at IS NULL',
+    'SELECT media_key, scene_key FROM notes WHERE id = ? AND household_id = ? AND dismissed_at IS NULL',
   )
     .bind(id, actor.householdId)
-    .first<{ media_key: string | null }>()
+    .first<{ media_key: string | null; scene_key: string | null }>()
   await deleteR2Blob(ctx.env.PHOTOS, row?.media_key)
+  await deleteR2Blob(ctx.env.PHOTOS, row?.scene_key)
   // Soft clear (dismissed_at), scoped to the household so a kiosk can clear too.
   await ctx.env.DB.prepare('UPDATE notes SET dismissed_at = ? WHERE id = ? AND household_id = ?')
     .bind(nowSec(), id, actor.householdId)

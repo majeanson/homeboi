@@ -9,10 +9,19 @@ import { BOARD_KEY } from './queryKeys'
 // own "Dessiner" tile, so a kid can start a drawing without a parent's ＋ sheet.
 export function useSaveDrawingNote() {
   const qc = useQueryClient()
-  return async (png: Blob) => {
+  return async (png: Blob, scene = '') => {
     try {
       const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: png })
-      await api('notes', { method: 'POST', body: { media_kind: 'drawing', media_key: key, text: '' } })
+      let sceneKey: string | undefined
+      if (scene) {
+        try {
+          const r = await api<{ key: string }>('note-media', { method: 'POST', body: new Blob([scene], { type: 'application/json' }) })
+          sceneKey = r.key
+        } catch {
+          /* scene optional — keep the PNG even if the scene upload fails */
+        }
+      }
+      await api('notes', { method: 'POST', body: { media_kind: 'drawing', media_key: key, scene_key: sceneKey, text: '' } })
     } catch (e) {
       if (!(e instanceof ApiError)) throw e // server said no → let the refetch correct it
     } finally {

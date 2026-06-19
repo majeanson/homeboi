@@ -419,9 +419,9 @@ export function Board() {
             open
             toddler
             onCancel={() => setKidDraw(false)}
-            onSave={(png) => {
+            onSave={(png, scene) => {
               setKidDraw(false)
-              void saveDrawingNote(png)
+              void saveDrawingNote(png, scene)
             }}
           />
         )}
