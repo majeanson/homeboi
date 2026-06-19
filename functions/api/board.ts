@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
 import { isSoon as isSoonAt } from '../_lib/reminder'
+import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 
 interface Ev {
   id: string
@@ -11,6 +12,8 @@ interface Ev {
   all_day: number
   member_id: string | null
   soon: boolean // within its calm "Bientôt" lead window right now (see isSoon)
+  birthday?: boolean // a derived birthday occurrence (cake icon, read-only → person)
+  age?: number | null // the age turned, when the birth year is known
 }
 const sortEvents = (xs: Ev[]) => xs.sort((p, q) => q.all_day - p.all_day || p.start_at - q.start_at)
 // One-off event rows as they come from SQL (lead_seconds joins the client-facing Ev
@@ -177,6 +180,21 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   }
   const recurIn = (from: number, to: number) => occurrences.filter((e) => e.start_at >= from && e.start_at < to)
+
+  // Automatic birthdays — derived from members + contacts (never event rows), as
+  // all-day items across the board window. Read-only on the client (cake → person).
+  const birthdayPeople = await fetchBirthdayPeople(ctx.env.DB, hh)
+  const bdayOccs: Ev[] = birthdayOccurrences(birthdayPeople, today, weekEnd).map((o) => ({
+    id: o.id,
+    title: o.name,
+    start_at: o.at,
+    all_day: 1,
+    member_id: o.memberId,
+    soon: false,
+    birthday: true,
+    age: o.age,
+  }))
+  const bdayIn = (from: number, to: number) => bdayOccs.filter((e) => e.start_at >= from && e.start_at < to)
   // One-off rows carry lead_seconds from SQL; derive each row's `soon` here.
   const oneOff = (rows: unknown) =>
     (rows as EvRow[]).map((r) => ({
@@ -188,9 +206,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
       soon: isSoon(r.start_at, r.lead_seconds),
     }))
 
-  const todayMerged = sortEvents([...oneOff(todayEvents.results), ...recurIn(today, tomorrow)])
-  const tomorrowMerged = sortEvents([...oneOff(tomorrowEvents.results), ...recurIn(tomorrow, dayAfter)])
-  const upcomingMerged = sortEvents([...oneOff(upcoming.results), ...recurIn(dayAfter, weekEnd)]).slice(0, 8)
+  const todayMerged = sortEvents([...oneOff(todayEvents.results), ...recurIn(today, tomorrow), ...bdayIn(today, tomorrow)])
+  const tomorrowMerged = sortEvents([...oneOff(tomorrowEvents.results), ...recurIn(tomorrow, dayAfter), ...bdayIn(tomorrow, dayAfter)])
+  const upcomingMerged = sortEvents([...oneOff(upcoming.results), ...recurIn(dayAfter, weekEnd), ...bdayIn(dayAfter, weekEnd)]).slice(0, 8)
 
   // Recent helpers per chore (shared-task attribution). Today's contributions
   // only, so "aidé par" reflects who pitched in on the current run, not history.

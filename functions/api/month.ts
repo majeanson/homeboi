@@ -2,6 +2,7 @@ import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
+import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 
 // Everything dated in the household, for a calendar-month window. /api/board is
 // the 7-day glance; the month view zooms out, so it needs its own read across an
@@ -29,7 +30,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes] = await Promise.all([
+  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
@@ -80,11 +81,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh, from, to)
       .all<{ id: string; title: string; member_id: string | null; day: number; section: string | null }>(),
+    // Automatic birthdays — derived from members + contacts, never stored as events.
+    fetchBirthdayPeople(ctx.env.DB, hh),
   ])
 
   const inRange = (day: number) => day >= from && day < to
 
-  const events: { id: string; title: string; at: number; all_day: number; member_id: string | null; day: number }[] = []
+  const events: { id: string; title: string; at: number; all_day: number; member_id: string | null; day: number; birthday?: boolean; age?: number | null }[] = []
   for (const e of oneOff.results) {
     const day = dayOf(e.start_at)
     if (inRange(day)) events.push({ id: e.id, title: e.title, at: e.start_at, all_day: e.all_day, member_id: e.member_id, day })
@@ -95,6 +98,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
     for (const at of expandRange(e.start_at, rule, from, to)) {
       events.push({ id: `${e.id}#${at}`, title: e.title, at, all_day: e.all_day, member_id: e.member_id, day: dayOf(at) })
     }
+  }
+  // Derived birthdays — all-day, read-only (the client renders a cake + routes the
+  // tap to the person, not an event editor).
+  for (const o of birthdayOccurrences(birthdayPeople, from, to)) {
+    events.push({ id: o.id, title: o.name, at: o.at, all_day: 1, member_id: o.memberId, day: dayOf(o.at), birthday: true, age: o.age })
   }
 
   const meals: { id: string; slot: string; title: string; cook_member_id: string | null; day: number; is_leftover?: number }[] = []

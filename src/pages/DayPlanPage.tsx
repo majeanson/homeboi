@@ -47,7 +47,7 @@ const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 // recurring) and recurring-chore occurrences. Meals/notes come from their own
 // caches via DayEditor, so they're ignored here.
 interface DayItemsData {
-  events: { id: string; title: string; at: number; all_day: number; member_id: string | null }[]
+  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; birthday?: boolean; age?: number | null }[]
   chores: { id: string; title: string; color: string | null; who: string | null }[]
 }
 
@@ -409,11 +409,11 @@ function DayPlanInner() {
             dayEvents.map((e) => (
               <div key={e.id} className="day-plan__act-row">
                 <Act
-                  cat="event"
+                  cat={e.birthday ? 'birthday' : 'event'}
                   title={e.title}
-                  when={e.all_day ? t.board.allDay : formatTime(e.at, lang)}
+                  when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
                   who={memberName(e.member_id) || undefined}
-                  onActivate={ro ? undefined : () => openEventEdit(e.id)}
+                  onActivate={ro || e.birthday ? undefined : () => openEventEdit(e.id)}
                 />
                 {!!navigator.share && (
                   <button

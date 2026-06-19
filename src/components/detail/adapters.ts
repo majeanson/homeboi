@@ -54,6 +54,21 @@ const preview = (lines: string[] | undefined, n: number) => (lines ?? []).filter
 export function buildEvent(e: EventRow, ctx: DetailCtx): DetailModel {
   const { t, lang, members } = ctx
   const day = localDayStart(new Date(e.start_at * 1000))
+  // A DERIVED birthday (not a stored event): a cake peek that routes to the person
+  // in Le cercle rather than an event editor (it can't be edited here — the date
+  // lives on the person). Age shown when known.
+  if (e.birthday) {
+    return {
+      kind: 'contact',
+      title: e.title,
+      icon: CATS.birthday.icon,
+      accent: colorOf(members, e.member_id) ?? CATS.birthday.color,
+      when: `${formatDay(e.start_at, lang)} · ${t.board.birthday}`,
+      whoLabel: e.age != null ? t.cercle.turnsN(e.age) : undefined,
+      who: whoOf(members, e.member_id),
+      actions: [{ key: 'cercle', label: t.nav.cercle, icon: 'users-three-bold', primary: true, href: '/cercle' }],
+    }
+  }
   return {
     kind: 'event',
     title: e.title,

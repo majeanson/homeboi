@@ -27,7 +27,7 @@ const DAY = 86400
 // The /api/month payload: every dated thing, already bucketed onto a UTC `day`
 // key by the server. Mirrors the families on the bento board so the calendar is a
 // faithful "is it all here?" inventory — events, meals, recurring chores, notes.
-interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; day: number }
+interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; day: number; birthday?: boolean; age?: number | null }
 interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number }
 interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 interface MNote { id: string; text: string; member_id: string | null; day: number }
@@ -46,7 +46,7 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 // reusing Réglages ▸ Repas) tinted with the slot colour — far more glanceable than
 // a square and it carries which meal. Colour still carries who (events) / slot
 // (meals) / chore tint.
-type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo'
+type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday'
 interface Dot {
   color: string
   kind: DotKind
@@ -58,7 +58,12 @@ interface Dot {
 function dotsFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs): Dot[] {
   if (!b) return []
   const out: Dot[] = []
-  for (const e of b.events) out.push({ color: colorOf(members, e.member_id) ?? CATS.event.color, kind: 'event' })
+  for (const e of b.events)
+    out.push(
+      e.birthday
+        ? { color: CATS.birthday.color, kind: 'birthday' }
+        : { color: colorOf(members, e.member_id) ?? CATS.event.color, kind: 'event' },
+    )
   // Each shown meal gets its slot colour + icon (Réglages ▸ Repas); hidden slots = no marker.
   for (const m of b.meals)
     if (meals.isVisible(m.slot))
@@ -242,6 +247,11 @@ export function MonthView({
                       <span key={i} className="monthv__dot-icon">
                         <Icon name="check-bold" size={12} color={dot.color} />
                       </span>
+                    ) : dot.kind === 'birthday' ? (
+                      // A derived birthday → a cake, tinted with the cercle rose.
+                      <span key={i} className="monthv__dot-icon">
+                        <Icon name="cake-bold" size={12} color={dot.color} />
+                      </span>
                     ) : (
                       <span
                         key={i}
@@ -324,13 +334,18 @@ export function MonthView({
             {sel!.events.map((e) => (
               <Act
                 key={e.id}
-                cat="event"
+                cat={e.birthday ? 'birthday' : 'event'}
                 title={e.title}
-                when={e.all_day ? t.board.allDay : formatTime(e.at, lang)}
+                when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
                 who={nameOf(members, e.member_id) ?? undefined}
                 color={colorOf(members, e.member_id) ?? undefined}
                 onOpen={() =>
-                  detail.open(buildEvent({ id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id }, detailCtx))
+                  detail.open(
+                    buildEvent(
+                      { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, birthday: e.birthday, age: e.age },
+                      detailCtx,
+                    ),
+                  )
                 }
               />
             ))}

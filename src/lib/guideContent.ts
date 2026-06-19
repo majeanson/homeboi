@@ -546,8 +546,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Les fêtes, en douceur', en: 'Birthdays, gently' },
         detail: {
-          fr: 'Les anniversaires à venir apparaissent sur le babillard avec une petite mention « Bientôt » — jamais de notification.',
-          en: 'Upcoming birthdays show on the board with a small “Soon” note — never a notification.',
+          fr: 'Les anniversaires à venir apparaissent sur le babillard, et automatiquement dans le calendrier et l’agenda (un petit gâteau 🎂 le jour même) — tirés de la date de fête de chaque personne, sans rien créer. Touche-en un pour ouvrir sa fiche. Jamais de notification.',
+          en: 'Upcoming birthdays show on the board, and automatically in the calendar and agenda (a little cake 🎂 on the day) — pulled from each person’s birthday, nothing to create. Tap one to open their card. Never a notification.',
         },
         why: {
           fr: 'Un rappel calme, pas une alerte de plus à gérer.',

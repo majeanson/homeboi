@@ -187,6 +187,14 @@ export function Board() {
   // Tomorrow's supper line, gated the same way.
   const showTomorrowSupper = !!data?.tomorrowMeal && mealPrefs.isVisible('supper')
 
+  // "La galerie" door, shown in the Grille view. It rides as a small trailing
+  // chip inside the drawings strip (beside the photos on tablet, under them on
+  // mobile) so it never claims its own row; when there are no drawings yet it
+  // still appears so saved gallery drawings stay reachable.
+  const galleryLink = (
+    <Link to="/drawings" className="chip"><InlineIcon name="paint-brush-bold" /> {t.memo.galleryLink}</Link>
+  )
+
   // Personal focus: when a face is picked (mobile chip / kiosk switcher), the
   // board narrows to THAT person's things plus shared "Maisonnée" items (no
   // owner) — others' personal events/chores drop away. Meals are the family's
@@ -428,12 +436,14 @@ export function Board() {
   // Current minute-of-day used to strike through meals whose slot time has passed.
   const nowMinOfDay = new Date().getHours() * 60 + new Date().getMinutes()
   const isSlotPast = (slot: string) => nowMinOfDay > (SLOT_PAST_MIN[slot] ?? Infinity)
+  const eventWhen = (e: EventRow) =>
+    e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.start_at, lang)
   const eventAct = (e: EventRow) => (
     <Act
       key={e.id}
-      cat="event"
+      cat={e.birthday ? 'birthday' : 'event'}
       title={e.title}
-      when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
+      when={eventWhen(e)}
       who={memberName(e.member_id) ?? undefined}
       color={memberColor(e.member_id) ?? undefined}
       mine={!!profileId && e.member_id === profileId}
@@ -696,12 +706,10 @@ export function Board() {
       ) : (
         <>
           {/* Family drawings (#14) live only here in the Grille view — tap one to
-              add to it. Kept off the compact Next/Lanes/Month layouts. */}
-          <Notes notes={data.notes ?? []} members={data.members} variant="drawings" />
-          {/* Door to the lasting drawing collection ("Mes dessins"). */}
-          <div className="board-gallery-link">
-            <Link to="/drawings" className="chip"><InlineIcon name="paint-brush-bold" /> {t.memo.galleryLink}</Link>
-          </div>
+              add to it. Kept off the compact Next/Lanes/Month layouts. The door to
+              the lasting collection ("Mes dessins") rides as a trailing chip inside
+              the strip rather than on its own row. */}
+          <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
           {/* The "today" zone: tonight's supper and today's weather as equal hero
               cards (mirrors the toddler heroes row), so weather has a real bubble
               instead of hiding in the timestamp line. The dressing tip rides under
@@ -912,9 +920,9 @@ export function Board() {
               {upcomingEvents.map((e) => (
                 <Act
                   key={e.id}
-                  cat="event"
+                  cat={e.birthday ? 'birthday' : 'event'}
                   title={e.title}
-                  when={formatTime(e.start_at, lang)}
+                  when={eventWhen(e)}
                   soon={e.soon}
                   onOpen={() => detail.open(buildEvent(e, detailCtx))}
                 />
