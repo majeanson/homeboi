@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { useSurface } from '../../lib/surface'
 import { useProfile } from '../../lib/profile'
 import { imgUrl } from '../../lib/image'
 import { Icon, InlineIcon } from '../Icon'
+import { OperatorSection } from './OperatorSection'
 import { currentIdleSpeed, setIdleSpeed, forceIdle, IDLE_SPEED_MS, type IdleSpeed } from '../../lib/idleDebug'
 
 // Debug the shared-kiosk idle drift (HubLayout): once a face is picked, the app
@@ -48,10 +49,7 @@ export function IdleDebugSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <section className="surface operator__section">
-      <HelpTitle help={help} k="idleDebug">{t.operator.debugIdleTitle}</HelpTitle>
-      {help?.bubbleFor('idleDebug')}
-
+    <OperatorSection title={t.operator.debugIdleTitle} help={help} helpKey="idleDebug">
       {/* Live readout — this is what "pops off": when the drift fires, the name
           here flips to Maisonnée. */}
       <p className="operator__hint mono" role="status">
@@ -130,7 +128,6 @@ export function IdleDebugSection({ help }: { help?: HelpMode }) {
           {t.operator.debugForceDrift}
         </button>
       </div>
-
-    </section>
+    </OperatorSection>
   )
 }

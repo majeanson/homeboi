@@ -9,6 +9,7 @@ import { isGuest } from '../../lib/device'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routineTod'
 import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
+import { OperatorSection } from './OperatorSection'
 import { ChoreForm } from '../forms/ChoreForm'
 import { RoutineForm } from '../forms/RoutineForm'
 import { recurLabel } from '../../lib/recurLabel'
@@ -31,8 +32,7 @@ export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange:
   }
 
   return (
-    <section className="surface operator__section">
-      <h2>{t.operator.chores}</h2>
+    <OperatorSection title={t.operator.chores}>
       <ul className="operator__list">
         {chores.map((c) => (
           <ChoreRow key={c.id} chore={c} onChange={onChange} onRemove={() => remove(c)} />
@@ -45,7 +45,7 @@ export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange:
           <InlineIcon name="plus-bold" /> {t.operator.addChore}
         </button>
       )}
-    </section>
+    </OperatorSection>
   )
 }
 
@@ -148,8 +148,7 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
   }
 
   return (
-    <section className="surface operator__section">
-      <h2>{t.operator.routines}</h2>
+    <OperatorSection title={t.operator.routines}>
       <ul className="operator__list">
         {routines.map((r) =>
           editing === r.id ? (
@@ -220,6 +219,6 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
           <InlineIcon name="plus-bold" /> {t.operator.addRoutine}
         </button>
       )}
-    </section>
+    </OperatorSection>
   )
 }
