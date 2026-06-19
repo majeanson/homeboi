@@ -276,7 +276,7 @@ function MemberCard({
                 <button
                   key={String(g)}
                   type="button"
-                  className={'chip' + (gender === g ? ' chip--active' : '')}
+                  className={'chip' + (gender === g ? ' is-on' : '')}
                   onClick={() => setGender(g)}
                 >
                   {g === 'm' ? t.cercle.genderM : g === 'f' ? t.cercle.genderF : t.cercle.genderN}
