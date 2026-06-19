@@ -38,7 +38,7 @@ import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow } from
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
-import { useBoardData } from '../lib/queryHooks'
+import { useBoardData, useTagColors } from '../lib/queryHooks'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -91,6 +91,7 @@ export function Board() {
   const detail = useEntityDetail()
   // Resolves a tapped meal → its saved recipe so the peek shows the photo + glance.
   const recipeFor = useRecipeForMeal()
+  const tagColors = useTagColors()
   // The board layout for this device (bento | next | lanes), remembered locally.
   const [view, setView] = useState<BoardView>(() => readBoardView())
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
@@ -421,7 +422,7 @@ export function Board() {
   const todayDay = todayLocalDay()
   // What the adapters (components/detail/adapters) need to resolve faces + copy.
   // recipeFor lets a tapped meal show its recipe photo + ingredient glance.
-  const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [], recipeFor }
+  const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [], recipeFor, tagColors }
   const tomorrowDay = addLocalDays(todayDay, 1)
   // Current minute-of-day used to strike through meals whose slot time has passed.
   const nowMinOfDay = new Date().getHours() * 60 + new Date().getMinutes()

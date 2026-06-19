@@ -16,7 +16,7 @@ import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays, todayLocalDay } from '../lib/localDay'
 import { type Recipe } from '../lib/recipes'
-import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
+import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers, useTagColors } from '../lib/queryHooks'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { ReserveSection } from '../components/kitchen/ReserveSection'
@@ -90,6 +90,7 @@ export function Kitchen() {
   const useSoonQ = useQuery({ queryKey: USE_SOON_KEY, queryFn: () => api<{ soon: LowRow[] }>('use-soon'), ...live })
   const reserveQ = useQuery({ queryKey: RESERVE_KEY, queryFn: () => api<ReserveData>('reserve'), ...live })
   const recipesQ = useRecipes()
+  const tagColors = useTagColors()
   const ideasQ = useQuery({ queryKey: MEAL_IDEAS_KEY, queryFn: () => api<MealIdeasData>('meal-ideas'), ...live })
   const leftoversQ = useLeftovers()
   // Shares the ['board'] cache with the Board/Liste pages — read only for the
@@ -682,7 +683,7 @@ export function Kitchen() {
             soonItems={soonItems}
             listItems={listItems}
             lastServed={lastServedById}
-            onView={(r) => detail.open(buildRecipe(r, { t, lang, members: [] }, { onShop: () => shopRecipe(r) }))}
+            onView={(r) => detail.open(buildRecipe(r, { t, lang, members: [], tagColors }, { onShop: () => shopRecipe(r) }))}
             help={tabHelp}
           />
         )}

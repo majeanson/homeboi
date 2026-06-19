@@ -12,6 +12,7 @@ import { localYMD } from '../../lib/localDay'
 import { SLOT_ICON_NAME, isMealSlot, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
+import { useTagColors } from '../../lib/queryHooks'
 import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
 import { Act } from './Act'
@@ -92,7 +93,7 @@ export function MonthView({
   // bento board uses. The /api/month rows carry slightly different field names, so
   // each onOpen maps them onto the shared builders (components/detail/adapters).
   const detail = useEntityDetail()
-  const detailCtx: DetailCtx = { t, lang, members, recipeFor: useRecipeForMeal() }
+  const detailCtx: DetailCtx = { t, lang, members, recipeFor: useRecipeForMeal(), tagColors: useTagColors() }
   // — chore `who` is a NAME on the month payload; recover its id for the face. —
   const choreWhoId = (who: string | null) => (who ? members.find((m) => m.display_name === who)?.id ?? null : null)
   // Which month is shown, as an offset (in months) from the real current one.

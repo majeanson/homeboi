@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
-import { useUndoToast } from '../../lib/toast'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { isGuest } from '../../lib/device'
 import { wash } from '../../lib/colors'
 import { useReserveLocations } from '../../lib/reservePrefs'
@@ -21,8 +21,11 @@ import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
-  const undo = useUndoToast()
   const write = useWrite()
+  // Bulletproof calm-delete for this LIVE-POLLED list (see useDeferredRemoval):
+  // hide + filter the cleared row and await a refetch before un-hiding, so a poll
+  // can't flash it back during the undo window.
+  const removal = useDeferredRemoval(RESERVE_KEY)
   const { locations, name: locName } = useReserveLocations()
   // Read-only guest: hide the add form (custom, not EditField). CheckRow inside the
   // rows already hides its own clear/edit for a guest.
@@ -50,17 +53,9 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
   // Clear an item (used it / tossed it). Deferred behind the undo toast, like the
   // other pantry lists — a mis-tap costs nothing and never round-trips.
   function clearItem(r: ReserveRow) {
-    const prev = qc.getQueryData<ReserveData>(RESERVE_KEY)
-    qc.setQueryData<ReserveData>(RESERVE_KEY, (d) =>
-      d ? { reserve: d.reserve.filter((x) => x.id !== r.id) } : d,
+    removal.remove([r.id], t.undo.cleared(r.item), () =>
+      write('reserve', { method: 'DELETE', body: { id: r.id }, affectedKeys: [RESERVE_KEY] }).catch(() => {}),
     )
-    undo({
-      message: t.undo.cleared(r.item),
-      onUndo: () => prev && qc.setQueryData(RESERVE_KEY, prev),
-      onCommit: () => {
-        void write('reserve', { method: 'DELETE', body: { id: r.id } }).catch(() => {})
-      },
-    })
   }
 
   // Rename and/or move an item to another location (the ✏️). Optimistic, then
@@ -80,12 +75,14 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
 
   // Group items under their location, in the configured order, then an "Autres"
   // bucket for anything whose location was removed (or never set) — so a deleted
-  // location never makes its items vanish.
+  // location never makes its items vanish. Drop rows whose clear is still settling
+  // (removal.visible) so a poll can't resurrect them mid-undo.
+  const rows = removal.visible(reserve)
   const known = new Set(locations.map((l) => l.id))
   const groups = locations
-    .map((loc) => ({ id: loc.id, label: loc.name, color: loc.color, items: reserve.filter((r) => r.location_id === loc.id) }))
+    .map((loc) => ({ id: loc.id, label: loc.name, color: loc.color, items: rows.filter((r) => r.location_id === loc.id) }))
     .filter((g) => g.items.length > 0)
-  const others = reserve.filter((r) => !r.location_id || !known.has(r.location_id))
+  const others = rows.filter((r) => !r.location_id || !known.has(r.location_id))
   if (others.length) groups.push({ id: '__other', label: t.kitchen.reserveOther, color: undefined, items: others })
 
   return (
@@ -119,7 +116,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
         </button>
       </form>
       )}
-      {reserve.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="board__empty mono">{t.kitchen.reserveEmpty}</p>
       ) : (
         groups.map((g) => (

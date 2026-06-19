@@ -81,6 +81,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Device role / presentation lens | **`useSurface()`** / **`useAudience()`** | …branch on width or invent a flag |
 | Calm guarantees | structural ones are non-negotiable (a **test** enforces no streak/points/badge/push/inventory) | …add counts, ranks, streaks, points, push, or a quantity column |
 | Backend endpoint | handler under `functions/api/` **+** `authed()` wrapper **+** a `TABLE` row in `worker/routes.ts` | …hand-roll the auth guard, or forget the route table |
+| Delete / clear a row from a **live-polled** list | **`useDeferredRemoval(queryKey)`** (`lib/useDeferredRemoval.ts`) — `visible()` filters the rows, `remove()` holds the write behind the undo toast + awaits a refetch | …optimistically `setQueryData` then defer the write: the next poll resurrects the row mid-undo (flash-back glitch) |
 
 **When you DO add a new shared component:** register it in `src/pages/DevKit.tsx`,
 add it to `COMPONENTS.md`, and (if user-facing) document it in the in-app Guide

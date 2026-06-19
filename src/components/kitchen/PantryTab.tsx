@@ -2,10 +2,9 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
-import { useUndoToast } from '../../lib/toast'
-import { isGuest } from '../../lib/device'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useVoiceInput } from '../../lib/useVoiceInput'
-import { VoiceButton, VoiceStatus } from '../VoiceButton'
+import { EditField } from '../EditField'
 import { CheckRow } from '../CheckRow'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
@@ -18,11 +17,16 @@ import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
-  const undo = useUndoToast()
   const write = useWrite()
-  // Read-only guest: the low/use-soon ADD forms (not EditField — custom voice forms)
-  // are hidden. CheckRow already hides its own check/rename/delete for a guest.
-  const ro = isGuest()
+  // Bulletproof calm-delete for these two LIVE-POLLED lists: hide the row in local
+  // state + filter it out of the render, hold the real write behind the undo toast,
+  // and await a refetch before un-hiding — so a background poll can't resurrect it
+  // mid-undo (the "remove fast, it comes back, then vanishes" glitch). One instance
+  // per list (low / use-soon), since each has its own query key + poll.
+  const lowRemoval = useDeferredRemoval(PANTRY_KEY)
+  const soonRemoval = useDeferredRemoval(USE_SOON_KEY)
+  // The low/use-soon adds are EditField — it hides its own box for a read-only guest.
+  // CheckRow already hides its own check/rename/delete for a guest.
   const [newLow, setNewLow] = useState('')
   const [newSoon, setNewSoon] = useState('')
 
@@ -39,14 +43,6 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
       if (!viaVoice) setNewLow(v)
     }
   }
-  async function addLow(e: React.FormEvent) {
-    e.preventDefault()
-    if (!newLow.trim()) return
-    const item = newLow
-    setNewLow('')
-    await postLow(item)
-  }
-
   // Speak a string of items into the low list, hands-free — same continuous +
   // split + pause-cut mic as La liste, so "patate … blé d'inde … tarte" lands as
   // three. Each finished phrase posts straight away. [shared VoiceButton]
@@ -60,36 +56,21 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
 
   // Checking a low item is the ONLY thing that puts it on the shopping list:
   // marking something low never touched the list (see api/pantry POST). The tap
-  // adds it to the shared list AND clears the low flag — deferred behind an undo
-  // toast so a mis-tap costs nothing and never round-trips. Removed from the low
-  // view at once so a refetch can't resurrect it mid-undo.
+  // adds it to the shared list AND clears the low flag — deferred behind the undo
+  // toast so a mis-tap costs nothing and never round-trips.
   function checkLowItem(l: LowRow) {
-    const prev = qc.getQueryData<PantryData>(PANTRY_KEY)
-    qc.setQueryData<PantryData>(PANTRY_KEY, (d) => (d ? { low: d.low.filter((x) => x.id !== l.id) } : d))
-    undo({
-      message: t.undo.addedToList(l.item),
-      onUndo: () => prev && qc.setQueryData(PANTRY_KEY, prev),
-      onCommit: async () => {
-        // Add to the shared list first, then drop the low flag. Refresh only the
-        // board (where the list lives) — the low list stays optimistic, same as a
-        // plain clear, so it can't flicker back mid-commit.
-        await write('list', { method: 'POST', body: { text: l.item }, affectedKeys: [BOARD_KEY] }).catch(() => {})
-        await write('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
-      },
+    lowRemoval.remove([l.id], t.undo.addedToList(l.item), async () => {
+      // Add to the shared list first, then drop the low flag.
+      await write('list', { method: 'POST', body: { text: l.item }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+      await write('pantry', { method: 'DELETE', body: { id: l.id }, affectedKeys: [PANTRY_KEY] }).catch(() => {})
     })
   }
   // Delete a low item WITHOUT putting it on the list (the 🗑️) — a real gap before:
   // a mis-typed "running low" could only leave by being shopped. Deferred undo.
   function removeLowItem(l: LowRow) {
-    const prev = qc.getQueryData<PantryData>(PANTRY_KEY)
-    qc.setQueryData<PantryData>(PANTRY_KEY, (d) => (d ? { low: d.low.filter((x) => x.id !== l.id) } : d))
-    undo({
-      message: t.undo.cleared(l.item),
-      onUndo: () => prev && qc.setQueryData(PANTRY_KEY, prev),
-      onCommit: () => {
-        void write('pantry', { method: 'DELETE', body: { id: l.id } }).catch(() => {})
-      },
-    })
+    lowRemoval.remove([l.id], t.undo.cleared(l.item), () =>
+      write('pantry', { method: 'DELETE', body: { id: l.id }, affectedKeys: [PANTRY_KEY] }).catch(() => {}),
+    )
   }
   // Rename a low item in place (the ✏️). Optimistic, then persist.
   async function renameLowItem(l: LowRow, item: string) {
@@ -110,13 +91,6 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
       if (!viaVoice) setNewSoon(v)
     }
   }
-  async function addSoon(e: React.FormEvent) {
-    e.preventDefault()
-    if (!newSoon.trim()) return
-    const item = newSoon
-    setNewSoon('')
-    await postSoon(item)
-  }
   const soonVoice = useVoiceInput(
     (text) => {
       setNewSoon('')
@@ -128,15 +102,9 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
   // Clear a use-soon item (used it / tossed it). Deferred behind the undo toast,
   // like the low list. No list side-effects — use-soon never touches shopping.
   function clearSoonItem(s: LowRow) {
-    const prev = qc.getQueryData<{ soon: LowRow[] }>(USE_SOON_KEY)
-    qc.setQueryData<{ soon: LowRow[] }>(USE_SOON_KEY, (d) => (d ? { soon: d.soon.filter((x) => x.id !== s.id) } : d))
-    undo({
-      message: t.undo.cleared(s.item),
-      onUndo: () => prev && qc.setQueryData(USE_SOON_KEY, prev),
-      onCommit: () => {
-        void write('use-soon', { method: 'DELETE', body: { id: s.id } }).catch(() => {})
-      },
-    })
+    soonRemoval.remove([s.id], t.undo.cleared(s.item), () =>
+      write('use-soon', { method: 'DELETE', body: { id: s.id }, affectedKeys: [USE_SOON_KEY] }).catch(() => {}),
+    )
   }
   async function renameSoonItem(s: LowRow, item: string) {
     const v = item.trim()
@@ -154,28 +122,23 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
       <section>
         <HelpTitle help={help} k="low">{t.kitchen.low}</HelpTitle>
         {help?.bubbleFor('low')}
-        {!ro && (
-          <>
-            <form className="kitchen__low-add" onSubmit={addLow}>
-              <input
-                className="input"
-                value={newLow}
-                onChange={(e) => setNewLow(e.target.value)}
-                placeholder={lowVoice.listening ? t.capture.listening : t.kitchen.lowAdd}
-              />
-              <VoiceButton voice={lowVoice} label={t.capture.voice} />
-              <button type="submit" className="btn" disabled={!newLow.trim()}>
-                {t.capture.add}
-              </button>
-            </form>
-            <VoiceStatus voice={lowVoice} />
-          </>
-        )}
-        {low.length === 0 ? (
+        <EditField
+          value={newLow}
+          onChange={setNewLow}
+          onSubmit={(v) => {
+            setNewLow('')
+            void postLow(v)
+          }}
+          voice={lowVoice}
+          submitLabel={t.capture.add}
+          placeholder={lowVoice.listening ? t.capture.listening : t.kitchen.lowAdd}
+          ariaLabel={t.kitchen.lowAdd}
+        />
+        {lowRemoval.visible(low).length === 0 ? (
           <p className="board__empty mono">{t.kitchen.lowEmpty}</p>
         ) : (
           <ul className="kitchen__low">
-            {low.map((l) => (
+            {lowRemoval.visible(low).map((l) => (
               <CheckRow
                 key={l.id}
                 item={l.item}
@@ -193,28 +156,23 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
       <section>
         <HelpTitle help={help} k="useSoon">{t.kitchen.useSoon}</HelpTitle>
         {help?.bubbleFor('useSoon')}
-        {!ro && (
-          <>
-            <form className="kitchen__soon-add" onSubmit={addSoon}>
-              <input
-                className="input"
-                value={newSoon}
-                onChange={(e) => setNewSoon(e.target.value)}
-                placeholder={soonVoice.listening ? t.capture.listening : t.kitchen.useSoonAdd}
-              />
-              <VoiceButton voice={soonVoice} label={t.capture.voice} />
-              <button type="submit" className="btn" disabled={!newSoon.trim()}>
-                {t.capture.add}
-              </button>
-            </form>
-            <VoiceStatus voice={soonVoice} />
-          </>
-        )}
-        {soon.length === 0 ? (
+        <EditField
+          value={newSoon}
+          onChange={setNewSoon}
+          onSubmit={(v) => {
+            setNewSoon('')
+            void postSoon(v)
+          }}
+          voice={soonVoice}
+          submitLabel={t.capture.add}
+          placeholder={soonVoice.listening ? t.capture.listening : t.kitchen.useSoonAdd}
+          ariaLabel={t.kitchen.useSoonAdd}
+        />
+        {soonRemoval.visible(soon).length === 0 ? (
           <p className="board__empty mono">{t.kitchen.useSoonEmpty}</p>
         ) : (
           <ul className="kitchen__soon">
-            {soon.map((s) => (
+            {soonRemoval.visible(soon).map((s) => (
               <CheckRow
                 key={s.id}
                 item={s.item}

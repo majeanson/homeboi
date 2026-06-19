@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { live } from '../../lib/query'
 import { isGuest } from '../../lib/device'
-import { useUndoToast, useRecordUndo } from '../../lib/toast'
+import { useRecordUndo } from '../../lib/toast'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { TODOS_KEY, TODO_TEMPLATES_KEY } from '../../lib/queryKeys'
 import {
   type Todo,
@@ -59,14 +60,16 @@ export function TodoSection({
 }) {
   const t = useT()
   const write = useWrite()
-  const undo = useUndoToast()
-  const qc = useQueryClient()
   const recordUndo = useRecordUndo()
   const ro = isGuest()
   const scope = day ?? null
 
   const key = todosKey(scope)
   const { data } = useQuery({ queryKey: key, queryFn: () => api<TodosData>(todosPath(scope)), ...live })
+  // Bulletproof calm-delete (the shared hook): hide cleared/deleted rows + filter
+  // them out and await a refetch before un-hiding so the live poll can't flash a
+  // just-removed row back.
+  const removal = useDeferredRemoval(key)
   const templatesQ = useQuery({
     queryKey: TODO_TEMPLATES_KEY,
     queryFn: () => api<TemplatesData>('todo-templates'),
@@ -74,14 +77,11 @@ export function TodoSection({
     enabled: !ro,
   })
 
-  // Items whose clear/delete is DEFERRED behind the undo toast — filtered out now so
-  // the live poll can't resurrect them before the write commits (Liste's pattern).
-  const [pending, setPending] = useState<Set<string>>(new Set())
   const [addText, setAddText] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
 
-  const all = (data?.todos ?? []).filter((todo) => !pending.has(todo.id))
+  const all = removal.visible(data?.todos ?? [])
   // Grouped into sections (a composed list instantiates "as a list with sections");
   // a plain list / manual adds are one headless run.
   const groups = groupBySection(all)
@@ -149,53 +149,16 @@ export function TodoSection({
 
   // — delete one (behind a deferred undo — a mis-tap costs nothing) —
   function remove(todo: Todo) {
-    setPending((s) => new Set(s).add(todo.id))
-    undo({
-      message: t.todos.removed(todo.title),
-      onUndo: () =>
-        setPending((s) => {
-          const n = new Set(s)
-          n.delete(todo.id)
-          return n
-        }),
-      onCommit: async () => {
-        await write('todos', { method: 'DELETE', body: { id: todo.id }, affectedKeys: [TODOS_KEY] }).catch(() => {})
-        // Wait for the refetch so the stale cached frame can't flash the row back.
-        await qc.refetchQueries({ queryKey: key }).catch(() => {})
-        setPending((s) => {
-          const n = new Set(s)
-          n.delete(todo.id)
-          return n
-        })
-      },
-    })
+    removal.remove([todo.id], t.todos.removed(todo.title), () =>
+      write('todos', { method: 'DELETE', body: { id: todo.id }, affectedKeys: [TODOS_KEY] }).catch(() => {}),
+    )
   }
 
   // — "Effacer cochées" — sweep the ticked rows (deferred; pass exact ids) —
   function clearChecked(ids: string[]) {
-    if (ids.length === 0) return
-    setPending((s) => new Set([...s, ...ids]))
-    undo({
-      message: t.todos.clearedN(ids.length),
-      onUndo: () =>
-        setPending((s) => {
-          const n = new Set(s)
-          ids.forEach((i) => n.delete(i))
-          return n
-        }),
-      onCommit: async () => {
-        await write('todos', { method: 'PATCH', body: { clearChecked: true, ids }, affectedKeys: [TODOS_KEY] }).catch(
-          () => {},
-        )
-        // Wait for the refetch so the stale cached frame can't flash the rows back.
-        await qc.refetchQueries({ queryKey: key }).catch(() => {})
-        setPending((s) => {
-          const n = new Set(s)
-          ids.forEach((i) => n.delete(i))
-          return n
-        })
-      },
-    })
+    removal.remove(ids, t.todos.clearedN(ids.length), () =>
+      write('todos', { method: 'PATCH', body: { clearChecked: true, ids }, affectedKeys: [TODOS_KEY] }).catch(() => {}),
+    )
   }
 
   // — instantiate a template → a batch of real todos in this scope. Purely

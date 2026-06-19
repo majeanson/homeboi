@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { isGuest } from '../../lib/device'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { type MealSlot } from '../../lib/mealSlots'
@@ -38,6 +39,11 @@ export function Leftovers({
   const t = useT()
   const recordUndo = useRecordUndo()
   const write = useWrite()
+  // Bulletproof calm-delete for this LIVE-POLLED pool (see useDeferredRemoval):
+  // hide + filter the removed row and await a refetch before un-hiding, so a poll
+  // can't resurrect it mid-undo. Undo just cancels the held DELETE — no re-POST, so
+  // the row keeps its id (and recipe/source links) instead of coming back as a copy.
+  const removal = useDeferredRemoval(LEFTOVERS_KEY)
   // Read-only guest: no add / recent quick-pick / plan-onto-day; chips read inert.
   const ro = isGuest()
   const [text, setText] = useState('')
@@ -70,19 +76,12 @@ export function Leftovers({
     }
   }
 
-  // Fini / mangé — remove it. Compensating undo (the pool is live-polled, so a held
-  // delete would be resurrected): re-add the leftover from its snapshot. New id.
-  async function removeLeftover(l: Leftover) {
-    await write('meal-leftovers', { method: 'DELETE', body: { id: l.id }, affectedKeys: [LEFTOVERS_KEY] }).catch(() => {})
-    recordUndo({
-      message: t.undo.leftoverRemoved(l.title),
-      onUndo: () =>
-        void write('meal-leftovers', {
-          method: 'POST',
-          body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
-          affectedKeys: [LEFTOVERS_KEY],
-        }).catch(() => {}),
-    })
+  // Fini / mangé — remove it. Deferred behind the undo toast; the row is hidden +
+  // filtered out (removal.visible) so the live poll can't resurrect it mid-undo.
+  function removeLeftover(l: Leftover) {
+    removal.remove([l.id], t.undo.leftoverRemoved(l.title), () =>
+      write('meal-leftovers', { method: 'DELETE', body: { id: l.id }, affectedKeys: [LEFTOVERS_KEY] }).catch(() => {}),
+    )
   }
 
   async function renameLeftover(l: Leftover, title: string) {
@@ -149,11 +148,11 @@ export function Leftovers({
         />
       )}
 
-      {leftovers.length === 0 ? (
+      {removal.visible(leftovers).length === 0 ? (
         <p className="kitchen__ideas-empty mono">{t.kitchen.leftoversEmpty}</p>
       ) : (
         <ul className="kitchen__ideas-list">
-          {leftovers.map((l) => (
+          {removal.visible(leftovers).map((l) => (
             <li key={l.id} className="kitchen__idea">
               <div className="kitchen__idea-row">
                 {edit.editId === l.id && !ro ? (

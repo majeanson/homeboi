@@ -22,7 +22,7 @@ import { TodoSection } from '../components/todos/TodoSection'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
 import { type Recipe } from '../lib/recipes'
-import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
+import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers, useTagColors } from '../lib/queryHooks'
 import { DayEditor } from '../components/kitchen/DayEditor'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
@@ -145,6 +145,7 @@ function DayPlanInner() {
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const recipeForMeal = useRecipeForMeal(recipes)
+  const tagColors = useTagColors()
   const memberName = (id: string | null | undefined) =>
     (id && boardQ.data?.members?.find((m) => m.id === id)?.display_name) || ''
 
@@ -378,7 +379,7 @@ function DayPlanInner() {
           memberName={memberName}
           onOpenRecipe={(r, m) =>
             detail.open(
-              buildMeal(m, { t, lang, members: [] }, { recipe: r, slotLabel: isMealSlot(m.slot) ? t.kitchen.slots[m.slot] : undefined }),
+              buildMeal(m, { t, lang, members: [], tagColors }, { recipe: r, slotLabel: isMealSlot(m.slot) ? t.kitchen.slots[m.slot] : undefined }),
             )
           }
           mealErr={mealErr}

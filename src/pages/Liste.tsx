@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon, InlineIcon } from '../components/Icon'
 import { HubHead } from '../components/HubHead'
@@ -14,7 +14,8 @@ import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
 import { Loading, PairPrompt } from '../components/Fallback'
-import { useRecordUndo, useUndoToast } from '../lib/toast'
+import { useRecordUndo } from '../lib/toast'
+import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { isGuest } from '../lib/device'
 import { EditField } from '../components/EditField'
@@ -172,10 +173,12 @@ export function Liste() {
   const { audience } = useAudience()
   const { surface } = useSurface()
   const nav = useNavigate()
-  const undo = useUndoToast()
   const recordUndo = useRecordUndo()
   const write = useWrite()
-  const qc = useQueryClient()
+  // Bulletproof calm-delete for the list (the shared hook codifies what this page
+  // pioneered): hide cleared/deleted ids + filter them out, and await a refetch
+  // before un-hiding so the poll can't flash a just-removed row back.
+  const removal = useDeferredRemoval(BOARD_KEY)
   // Contextual "?" help mode (shared hook): arm it in the header, then tap one of
   // the list's controls (flyer search / Vider les cochés / cashier) to learn what
   // it does in place instead of running it. La liste is one flat list, so its help
@@ -183,10 +186,6 @@ export function Liste() {
   const helpLabel = (k: string) =>
     ({ flyer: t.shop.browse, clear: t.list.clearChecked, cashier: t.shop.present })[k] ?? k
   const help = useHelpMode(LISTE_HELP, helpLabel)
-  // Items whose "Clear checked" delete is DEFERRED behind the undo toast. Filtered
-  // out of the displayed list at once so a refetch (the live poll, a focus, or an
-  // add's invalidation) can't resurrect them before the clear commits.
-  const [pendingClear, setPendingClear] = useState<Set<string>>(new Set())
   const [addText, setAddText] = useState('')
   const [adding, setAdding] = useState(false)
   // The mic is "add by voice", not dictation: each recognised phrase goes straight
@@ -262,72 +261,32 @@ export function Liste() {
     }).catch(() => {})
   }
 
-  // Clear checked: every ticked line is a confirmed buy. Hide them NOW via
-  // pendingClear and DEFER the delete behind the undo toast — a mis-tap costs
-  // nothing. Pass the exact ids so a check made AFTER scheduling the undo isn't
-  // swept up. Committing logs the buys (→ predictions shift, refresh the ghosts).
+  // Clear checked: every ticked line is a confirmed buy. The shared hook hides them
+  // NOW + filters them out and holds the delete behind the undo toast — a mis-tap
+  // costs nothing. Pass the exact ids so a check made AFTER scheduling isn't swept
+  // up. Committing logs the buys (→ predictions shift, refresh the ghosts).
   function clearChecked(ids: string[]) {
-    if (ids.length === 0) return
-    setPendingClear((s) => new Set([...s, ...ids]))
-    undo({
-      message: t.undo.clearedN(ids.length),
-      onUndo: () =>
-        setPendingClear((s) => {
-          const n = new Set(s)
-          ids.forEach((i) => n.delete(i))
-          return n
-        }),
-      onCommit: async () => {
-        await write('list', {
-          method: 'PATCH',
-          body: { clearChecked: true, ids },
-          affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
-        }).catch(() => {})
-        // Wait for the board to actually reflect the removal before un-hiding.
-        // `write`'s invalidate only *fires* a background refetch — un-hiding before
-        // it lands flashes the just-removed rows back from the stale cached frame.
-        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
-        setPendingClear((s) => {
-          const n = new Set(s)
-          ids.forEach((i) => n.delete(i))
-          return n
-        })
-      },
-    })
+    removal.remove(ids, t.undo.clearedN(ids.length), () =>
+      write('list', {
+        method: 'PATCH',
+        body: { clearChecked: true, ids },
+        affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
+      }).catch(() => {}),
+    )
   }
 
   // Swipe-left delete: a plain remove from the list — NOT logged as bought (that
-  // path is the check + "Clear checked"). Mirrors clearChecked's deferred shape:
-  // hide the row NOW via pendingClear (so the live poll can't resurrect it) and
-  // hold the DELETE behind the undo toast, so a mis-swipe costs nothing.
+  // path is the check + "Clear checked"). Same deferred shape via the shared hook.
   function deleteItem(item: ListRow) {
-    setPendingClear((s) => new Set([...s, item.id]))
-    undo({
-      message: t.undo.cleared(item.text),
-      onUndo: () =>
-        setPendingClear((s) => {
-          const n = new Set(s)
-          n.delete(item.id)
-          return n
-        }),
-      onCommit: async () => {
-        await write('list', { method: 'DELETE', body: { id: item.id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
-        // Wait for the board to reflect the delete before un-hiding, else the stale
-        // cached frame (still holding the row) flashes it back for a frame.
-        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
-        setPendingClear((s) => {
-          const n = new Set(s)
-          n.delete(item.id)
-          return n
-        })
-      },
-    })
+    removal.remove([item.id], t.undo.cleared(item.text), () =>
+      write('list', { method: 'DELETE', body: { id: item.id }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+    )
   }
 
   if (isUnauthorized(error)) return <PairPrompt />
   if (!board && !error) return <Loading />
   // Hide items whose clear is still settling so they can't be resurrected.
-  const list = (board?.list ?? []).filter((i) => !pendingClear.has(i.id))
+  const list = removal.visible(board?.list ?? [])
   const checkedIds = list.filter((i) => i.checked_at).map((i) => i.id)
   // Who-added-it faces: map member id → member so each row can show a tiny tint.
   const memberById = new Map((board?.members ?? []).map((m) => [m.id, m]))

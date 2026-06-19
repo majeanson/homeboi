@@ -5,6 +5,7 @@ import { tintInk, faint, hairline } from '../../lib/colors'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { useNextMeal } from '../../lib/nextMeal'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
+import { useTagColors } from '../../lib/queryHooks'
 import { formatTime } from '../../lib/format'
 import { SLOT_ICON_NAME, SLOT_TIME_ORDER, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
 import { todayLocalDay } from '../../lib/localDay'
@@ -45,7 +46,7 @@ export function NowNext({
   const ro = isGuest()
   // Tap any item to peek its detail — the same sheet the bento board uses.
   const detail = useEntityDetail()
-  const detailCtx: DetailCtx = { t, lang, members: data.members, recipeFor: useRecipeForMeal() }
+  const detailCtx: DetailCtx = { t, lang, members: data.members, recipeFor: useRecipeForMeal(), tagColors: useTagColors() }
   // "Préparer le repas" — the next meal due that has a recipe → its cook mode.
   // Only shown when there's a recipe to open (a free-text meal has nothing to
   // cook), so the action is never a dead end.
@@ -339,7 +340,7 @@ export function Lanes({
   const ro = isGuest()
   // Tap any item to peek its detail — the same sheet the bento board uses.
   const detail = useEntityDetail()
-  const detailCtx: DetailCtx = { t, lang, members: data.members, recipeFor: useRecipeForMeal() }
+  const detailCtx: DetailCtx = { t, lang, members: data.members, recipeFor: useRecipeForMeal(), tagColors: useTagColors() }
   const todaySec = todayLocalDay()
   const saveAsLeftover = async (id: string, title: string) => {
     const res = await write<{ id?: string }>('meal-leftovers', {

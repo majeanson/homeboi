@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
-import { useRecordUndo } from '../../lib/toast'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { isGuest } from '../../lib/device'
 import { type Recipe } from '../../lib/recipes'
 import { type MealSlot } from '../../lib/mealSlots'
@@ -41,8 +41,12 @@ export function MealIdeas({
   help?: HelpMode
 }) {
   const t = useT()
-  const recordUndo = useRecordUndo()
   const write = useWrite()
+  // Bulletproof calm-delete for this LIVE-POLLED pool (see useDeferredRemoval):
+  // hide + filter the removed idea and await a refetch before un-hiding, so a poll
+  // can't resurrect it mid-undo. Undo cancels the held DELETE — the idea keeps its
+  // id (and recipe link) rather than coming back as a copy.
+  const removal = useDeferredRemoval(MEAL_IDEAS_KEY)
   // Read-only guest: no add form / recipe-pick / plan-onto-day; chips read as inert
   // text. RowActions already hides its own ✏️/🗑️ for a guest.
   const ro = isGuest()
@@ -76,19 +80,12 @@ export function MealIdeas({
     }
   }
 
-  async function removeIdea(idea: MealIdea) {
-    await write('meal-ideas', { method: 'DELETE', body: { id: idea.id }, affectedKeys: [MEAL_IDEAS_KEY] }).catch(() => {})
-    // Compensating undo: re-add the idea from its snapshot (the pool is live-polled,
-    // so holding the delete would let the poll resurrect it). New id, same idea.
-    recordUndo({
-      message: t.undo.mealIdeaRemoved(idea.title),
-      onUndo: () =>
-        void write('meal-ideas', {
-          method: 'POST',
-          body: { title: idea.title, recipeId: idea.recipe_id ?? null, suggestedBy: idea.suggested_by ?? null },
-          affectedKeys: [MEAL_IDEAS_KEY],
-        }).catch(() => {}),
-    })
+  // Remove an idea, deferred behind the undo toast; the row is hidden + filtered out
+  // (removal.visible) so the live poll can't resurrect it mid-undo.
+  function removeIdea(idea: MealIdea) {
+    removal.remove([idea.id], t.undo.mealIdeaRemoved(idea.title), () =>
+      write('meal-ideas', { method: 'DELETE', body: { id: idea.id }, affectedKeys: [MEAL_IDEAS_KEY] }).catch(() => {}),
+    )
   }
 
   async function renameIdea(idea: MealIdea, title: string) {
@@ -142,11 +139,11 @@ export function MealIdeas({
         />
       )}
 
-      {ideas.length === 0 ? (
+      {removal.visible(ideas).length === 0 ? (
         <p className="kitchen__ideas-empty mono">{t.kitchen.ideasEmpty}</p>
       ) : (
         <ul className="kitchen__ideas-list">
-          {ideas.map((idea) => (
+          {removal.visible(ideas).map((idea) => (
             <li key={idea.id} className="kitchen__idea">
               <div className="kitchen__idea-row">
                 {edit.editId === idea.id && !ro ? (
