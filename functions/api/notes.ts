@@ -1,4 +1,4 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
@@ -12,6 +12,8 @@ import { deleteR2Blob } from '../_lib/r2'
 //
 //   GET    /api/notes  -> active notes (newest first)
 //   POST   /api/notes  -> add a note { text?, media_kind?, media_key? }
+//   PATCH  /api/notes  -> re-draw a drawing note { id, media_key } (a family doodle
+//                         anyone can add to — see Notes.tsx / DrawPad #14)
 //   DELETE /api/notes  -> clear one  { id }  (soft: sets dismissed_at; frees media)
 
 interface NoteRow {
@@ -50,6 +52,29 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .bind(id, actor.householdId, text.slice(0, 280), profileMemberId(ctx.request), nowSec(), kind, mediaKey)
     .run()
   return ok({ ok: true, id })
+})
+
+export const onRequestPatch = authed(async (ctx, actor) => {
+  // Re-draw an existing drawing note in place: anyone in the household can re-open
+  // a drawing (DrawPad `initial`), add to it, and save back. We swap media_key,
+  // re-tint to whoever just contributed, and bump created_at so the freshly-touched
+  // doodle resurfaces — no counts/ranks (calm), just "someone added to it".
+  const body = await readJson<{ id?: string; media_key?: string }>(ctx.request)
+  const id = body?.id?.trim()
+  const mediaKey = body?.media_key?.trim()
+  if (!id || !mediaKey) return badRequest('id et media_key requis.')
+  const row = await ctx.env.DB.prepare(
+    "SELECT media_key FROM notes WHERE id = ? AND household_id = ? AND media_kind = 'drawing' AND dismissed_at IS NULL",
+  )
+    .bind(id, actor.householdId)
+    .first<{ media_key: string | null }>()
+  if (!row) return notFound('Dessin introuvable.')
+  // Free the superseded blob first (keeps the free tier lean; best-effort).
+  if (row.media_key && row.media_key !== mediaKey) await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
+  await ctx.env.DB.prepare('UPDATE notes SET media_key = ?, member_id = ?, created_at = ? WHERE id = ? AND household_id = ?')
+    .bind(mediaKey, profileMemberId(ctx.request), nowSec(), id, actor.householdId)
+    .run()
+  return ok({ ok: true })
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {

@@ -1,11 +1,14 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
+import { api, ApiError } from '../../lib/api'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { useSpeak } from '../../lib/speak'
 import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
 import { Icon, InlineIcon } from '../Icon'
+import { DrawPad } from '../DrawPad'
 import { colorOf as memberColorOf, type BoardData, type Member, type NoteRow } from './types'
 
 // Fridge notes on the Aujourd'hui board: little hand-written cards a parent can
@@ -24,14 +27,34 @@ export function Notes({
 }) {
   const t = useT()
   const write = useWrite()
+  const qc = useQueryClient()
   const speak = useSpeak()
   // One shared <audio> so playing a voice memo (#38) stops any previous one.
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  // A drawing being re-opened in DrawPad to add to it (#14, the shared family doodle).
+  const [editing, setEditing] = useState<NoteRow | null>(null)
   // Read-only guest: clearing a note is a write. In the parent lens the card becomes
   // inert display text (no ✕, no tap). The toddler read-aloud stays (it's a read).
   const ro = isGuest()
-  if (!notes.length) return null
   const colorOf = (id: string | null) => memberColorOf(members, id)
+
+  // Save the added-to drawing: upload the new PNG, then PATCH the note in place
+  // (re-tints to whoever drew, resurfaces it). Media uploads can't be queued
+  // offline (the R2 blob must land), so this uses api() directly like MemoControls;
+  // the board poll/realtime reconciles the card.
+  async function saveDrawing(png: Blob) {
+    const note = editing
+    setEditing(null)
+    if (!note) return
+    try {
+      const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: png })
+      await api('notes', { method: 'PATCH', body: { id: note.id, media_key: key } })
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e // server said no → let the refetch correct it
+    } finally {
+      qc.invalidateQueries({ queryKey: BOARD_KEY })
+    }
+  }
 
   function playClip(key: string) {
     try {
@@ -55,6 +78,9 @@ export function Notes({
         qc.setQueryData<BoardData>(BOARD_KEY, (d) => (d ? { ...d, notes: d.notes.filter((x) => x.id !== n.id) } : d)),
     }).catch(() => {})
   }
+
+  // Nothing to show and nothing being edited — render nothing.
+  if (!notes.length && !editing) return null
 
   return (
     <section className={'notes' + (toddler ? ' notes--kid' : '')} aria-label={t.notes.title}>
@@ -102,6 +128,18 @@ export function Notes({
                 ) : (
                   body
                 )}
+                {/* A drawing is a shared family doodle — anyone (parent lens, not a
+                    guest) can re-open it and add to it. ✏️ top-left, ✕ top-right. */}
+                {!ro && !toddler && media === 'drawing' && (
+                  <button
+                    type="button"
+                    className="note-card__clear note-card__edit--btn"
+                    onClick={() => setEditing(n)}
+                    aria-label={t.memo.edit}
+                  >
+                    <Icon name="pencil-simple-bold" size={14} />
+                  </button>
+                )}
                 {!ro && !toddler && (
                   <button
                     type="button"
@@ -147,6 +185,14 @@ export function Notes({
           )
         })}
       </div>
+      {editing && (
+        <DrawPad
+          open
+          initial={editing.media_key ? imgUrl(editing.media_key) : undefined}
+          onCancel={() => setEditing(null)}
+          onSave={(png) => void saveDrawing(png)}
+        />
+      )}
     </section>
   )
 }
