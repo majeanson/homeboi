@@ -13,6 +13,8 @@ import { RowActions } from '../components/RowActions'
 import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
 import { GroupForm } from '../components/cercle/GroupForm'
+import { ConnectPeople } from '../components/cercle/ConnectPeople'
+import type { Person } from '../lib/cercle'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
@@ -70,6 +72,12 @@ type Entry = {
   kw?: string // extra search keywords
   render: () => ReactNode
 }
+
+// Two stand-in people for the ConnectPeople specimen.
+const DEMO_PEOPLE: Person[] = [
+  { kind: 'contact', id: 'a', key: 'contact:a', name: 'Aliss Descôteaux', firstName: 'Aliss', lastName: 'Descôteaux', avatarKind: null, avatarRef: null, colour: '#C45E86', birthday: null, isChild: false, email: null, phone: null, gender: 'f' },
+  { kind: 'contact', id: 'b', key: 'contact:b', name: 'Félix Descôteaux', firstName: 'Félix', lastName: 'Descôteaux', avatarKind: null, avatarRef: null, colour: '#C45E86', birthday: null, isChild: false, email: null, phone: null, gender: 'm' },
+]
 
 // One labelled specimen inside an entry.
 function Demo({ label, children }: { label: string; children: ReactNode }) {
@@ -354,6 +362,19 @@ export function DevKit() {
         // the create flow and the inline edit on a group header.
         <Demo label="name + kind + colour — create / edit a Cercle group">
           <GroupForm submitLabel={t.cercle.addGroup} onSubmit={() => {}} onCancel={() => {}} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'ConnectPeople',
+      file: 'components/cercle/ConnectPeople.tsx',
+      kw: 'cercle relier famille lien connect families junction relationship closure',
+      render: () => (
+        // Connect two people (hence two families) at ONE junction: "X est [lien] de Y".
+        // The relationship closure (lib/cercle closedLinks) propagates the rest.
+        <Demo label='"X est [lien] de Y" — one link connects two families'>
+          <ConnectPeople people={DEMO_PEOPLE} />
         </Demo>
       ),
     },

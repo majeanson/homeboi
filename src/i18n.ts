@@ -665,6 +665,14 @@ export const FR = {
     // Family builder — define a whole family's relationships at once.
     familyBuild: 'Bâtir une famille',
     familyFromPerson: 'Bâtir sa famille',
+    // Connect two people / families at a single junction
+    connectTwo: 'Relier deux personnes',
+    connectHint: 'Un seul lien suffit : le reste de la famille se déduit tout seul (les frères et sœurs partagent parents et grands-parents).',
+    connectPersonA: 'Cette personne…',
+    connectPersonB: '…et cette personne',
+    connectPick: 'Cherche par prénom ou nom',
+    connectRelation: 'est le / la…',
+    connectSave: 'Relier',
     familyName: 'Nom de la famille',
     familyMembers: 'Qui fait partie de la famille',
     familyAddPerson: 'Ajouter quelqu’un du cercle',
@@ -1874,6 +1882,14 @@ export const EN: typeof FR = {
     // Family builder — define a whole family's relationships at once.
     familyBuild: 'Build a family',
     familyFromPerson: 'Build their family',
+    // Connect two people / families at a single junction
+    connectTwo: 'Connect two people',
+    connectHint: 'One link is enough: the rest of the family is inferred for you (siblings share parents and grandparents).',
+    connectPersonA: 'This person…',
+    connectPersonB: '…and this person',
+    connectPick: 'Search by first or last name',
+    connectRelation: 'is the…',
+    connectSave: 'Connect',
     familyName: 'Family name',
     familyMembers: 'Who is in the family',
     familyAddPerson: 'Add someone from the circle',

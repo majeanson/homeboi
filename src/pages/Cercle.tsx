@@ -24,6 +24,7 @@ import { downloadVCard } from '../lib/vcard'
 import { CercleEgo } from '../components/cercle/CercleEgo'
 import { CercleTree } from '../components/cercle/CercleTree'
 import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
+import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import {
   type Contact,
   type ContactLink,
@@ -100,6 +101,7 @@ function CercleParent() {
   const [query, setQuery] = useState('')
   const [addingGroup, setAddingGroup] = useState(false)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
+  const [connecting, setConnecting] = useState(false)
 
   const { data, error } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
   // The household name (set in Réglages) titles the Maisonnée family card below. Same
@@ -455,6 +457,18 @@ function CercleParent() {
                   <button type="button" className="btn cercle-build-family" onClick={() => nav('/cercle/family/new')}>
                     <InlineIcon name="tree-bold" size={15} /> {t.cercle.familyBuild}
                   </button>
+
+                  {/* Connect two people / families at a single junction — the closure
+                      then propagates the tie through each side. */}
+                  {connecting ? (
+                    <section className="cercle-group cercle-group--named">
+                      <ConnectPeople people={people} onConnected={() => setConnecting(false)} onCancel={() => setConnecting(false)} />
+                    </section>
+                  ) : (
+                    <button type="button" className="btn cercle-build-family" onClick={() => setConnecting(true)}>
+                      <InlineIcon name="users-three-bold" size={15} /> {t.cercle.connectTwo}
+                    </button>
+                  )}
 
                   {/* Create new named group */}
                   <div className="cercle-add-group">

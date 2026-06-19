@@ -526,6 +526,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Relier deux familles', en: 'Connect two families' },
+        detail: {
+          fr: '« Relier deux personnes » (sous la liste) joint deux familles d’un seul lien : choisis une personne de chaque côté, dis comment elles sont liées, et c’est tout. Comme les liens se propagent, ce point de jonction unique suffit — pas besoin de tout relier à la main.',
+          en: '“Connect two people” (under the list) joins two families with a single link: pick a person on each side, say how they’re related, and that’s it. Because links propagate, that one junction is enough — no need to wire everything by hand.',
+        },
+        why: {
+          fr: 'Rattacher la belle-famille ou un nouveau conjoint sans tout ressaisir.',
+          en: 'Attach the in-laws or a new partner without re-entering everything.',
+        },
+      },
+      {
         label: { fr: 'Trois vues : Liste, Liens, Arbre', en: 'Three views: List, Links, Tree' },
         detail: {
           fr: 'Bascule en haut du cercle : Liste (le répertoire, regroupé par famille), Liens (touche un visage, ses liens s’affichent autour — touche un autre pour recentrer) et Arbre (les générations, les couples côte à côte).',

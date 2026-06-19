@@ -634,6 +634,28 @@
   opacity: 0.65;
   margin-left: 0.1rem;
 }
+/* Connect two people / families at a single junction (relationship closure does
+   the rest). A stacked form + a calm, gendered preview line. */
+.cercle-connect {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.cercle-connect__preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: var(--berry-wash);
+  border-radius: var(--radius-md);
+}
+.cercle-connect__sentence {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
 /* Tappable membership chips in the detail peek (a person's named groups): off =
    quiet outline, on = filled berry. */
 .chip--toggle {
