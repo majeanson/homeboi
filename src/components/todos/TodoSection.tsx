@@ -24,6 +24,7 @@ import { Icon } from '../Icon'
 import { EditField } from '../EditField'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { RowActions } from '../RowActions'
+import { Disclosure } from '../Disclosure'
 
 interface FaceMember {
   id: string
@@ -39,17 +40,22 @@ interface FaceMember {
 //
 // `day` undefined/null = the board glance (adds a GLOBAL/standing todo). A number =
 // that calendar day (adds a per-day todo). `bento` wraps it as a board card; the
-// day page passes false for the plainer sectioned look.
+// day page passes false for the plainer sectioned look. `hideWhenEmpty` renders
+// nothing at all when there are no todos in scope — used where the section is
+// embedded inside another card (the board's Demain glance) and an empty add-frame
+// would just be clutter.
 export function TodoSection({
   day,
   title,
   members = [],
   bento = true,
+  hideWhenEmpty = false,
 }: {
   day?: number | null
   title: string
   members?: FaceMember[]
   bento?: boolean
+  hideWhenEmpty?: boolean
 }) {
   const t = useT()
   const write = useWrite()
@@ -206,6 +212,69 @@ export function TodoSection({
   const templates = templatesQ.data?.templates ?? []
   // Nothing yet + read-only (guest) → render nothing rather than an empty frame.
   if (ro && all.length === 0) return null
+  // Embedded glance (Demain) with nothing in scope → render nothing, not an empty
+  // add-frame.
+  if (hideWhenEmpty && all.length === 0) return null
+
+  // One check-off row. Extracted so it renders identically whether it sits loose or
+  // inside a collapsed section Disclosure.
+  const renderRow = (todo: Todo) =>
+    editId === todo.id ? (
+      <EditField
+        key={todo.id}
+        value={editText}
+        onChange={setEditText}
+        onSubmit={(v) => rename(todo, v)}
+        onCancel={() => setEditId(null)}
+        autoFocus
+        ariaLabel={t.todos.edit}
+      />
+    ) : (
+      <div key={todo.id} className={'act todo-row' + (isChecked(todo) ? ' done' : '')}>
+        <span className="spine" style={{ background: faceOf(todo.member_id)?.colour ?? CATS.chore.color }} aria-hidden="true" />
+        {!ro ? (
+          <button
+            type="button"
+            className="check todo-row__check"
+            onClick={() => toggle(todo)}
+            aria-pressed={isChecked(todo)}
+            aria-label={isChecked(todo) ? t.todos.uncheck : t.todos.check}
+          >
+            <Icon name="check-bold" size={18} />
+          </button>
+        ) : (
+          // Read-only guest: a static state marker (check only when done).
+          <span className="todo-row__check" aria-hidden="true">
+            {isChecked(todo) ? <Icon name="check-bold" size={16} /> : null}
+          </span>
+        )}
+        <button
+          type="button"
+          className="todo-row__name act__text"
+          onClick={ro ? undefined : () => {
+            setEditId(todo.id)
+            setEditText(todo.title)
+          }}
+          disabled={ro}
+          aria-label={ro ? undefined : t.todos.edit}
+        >
+          <span className="title" style={isChecked(todo) ? undefined : { color: tintInk(faceOf(todo.member_id)?.colour ?? CATS.chore.color) }}>
+            {todo.title}
+          </span>
+        </button>
+        {faceOf(todo.member_id) && (
+          <span
+            className="todo-row__by"
+            style={{ background: faceOf(todo.member_id)!.colour ?? 'var(--ink-faint)' }}
+            title={faceOf(todo.member_id)!.display_name}
+            aria-label={faceOf(todo.member_id)!.display_name}
+          >
+            {(faceOf(todo.member_id)!.display_name[0] ?? '?').toUpperCase()}
+          </span>
+        )}
+        <RowActions onDelete={() => remove(todo)} deleteLabel={`${t.common.delete} — ${todo.title}`} />
+      </div>
+    )
 
   return (
     <section className={'todo-sec' + (bento ? ' bento' : '')}>
@@ -219,69 +288,25 @@ export function TodoSection({
         <p className="feed-empty feed-empty--calm">{t.todos.empty}</p>
       ) : (
         <div className="todo-rows">
-          {groups.map((g, gi) => (
-            <div key={gi} className="todo-group">
-              {g.section && <div className="todo-section-head mono">{g.section}</div>}
-              {g.todos.map((todo) =>
-            editId === todo.id ? (
-              <EditField
-                key={todo.id}
-                value={editText}
-                onChange={setEditText}
-                onSubmit={(v) => rename(todo, v)}
-                onCancel={() => setEditId(null)}
-                autoFocus
-                ariaLabel={t.todos.edit}
-              />
+          {groups.map((g, gi) =>
+            // A named section (from a composed checklist) collapses to its title +
+            // open count so a 5–10 item list doesn't fill the glance — tap to expand.
+            // Loose items (manual / global adds) have no header, so they stay inline.
+            g.section ? (
+              <Disclosure
+                key={gi}
+                className="todo-group"
+                label={g.section}
+                count={g.todos.filter((todo) => !isChecked(todo)).length}
+              >
+                {g.todos.map(renderRow)}
+              </Disclosure>
             ) : (
-              <div key={todo.id} className={'act todo-row' + (isChecked(todo) ? ' done' : '')}>
-                <span className="spine" style={{ background: faceOf(todo.member_id)?.colour ?? CATS.chore.color }} aria-hidden="true" />
-                {!ro ? (
-                  <button
-                    type="button"
-                    className="check todo-row__check"
-                    onClick={() => toggle(todo)}
-                    aria-pressed={isChecked(todo)}
-                    aria-label={isChecked(todo) ? t.todos.uncheck : t.todos.check}
-                  >
-                    <Icon name="check-bold" size={18} />
-                  </button>
-                ) : (
-                  // Read-only guest: a static state marker (check only when done).
-                  <span className="todo-row__check" aria-hidden="true">
-                    {isChecked(todo) ? <Icon name="check-bold" size={16} /> : null}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  className="todo-row__name act__text"
-                  onClick={ro ? undefined : () => {
-                    setEditId(todo.id)
-                    setEditText(todo.title)
-                  }}
-                  disabled={ro}
-                  aria-label={ro ? undefined : t.todos.edit}
-                >
-                  <span className="title" style={isChecked(todo) ? undefined : { color: tintInk(faceOf(todo.member_id)?.colour ?? CATS.chore.color) }}>
-                    {todo.title}
-                  </span>
-                </button>
-                {faceOf(todo.member_id) && (
-                  <span
-                    className="todo-row__by"
-                    style={{ background: faceOf(todo.member_id)!.colour ?? 'var(--ink-faint)' }}
-                    title={faceOf(todo.member_id)!.display_name}
-                    aria-label={faceOf(todo.member_id)!.display_name}
-                  >
-                    {(faceOf(todo.member_id)!.display_name[0] ?? '?').toUpperCase()}
-                  </span>
-                )}
-                <RowActions onDelete={() => remove(todo)} deleteLabel={`${t.common.delete} — ${todo.title}`} />
+              <div key={gi} className="todo-group">
+                {g.todos.map(renderRow)}
               </div>
             ),
-              )}
-            </div>
-          ))}
+          )}
         </div>
       )}
 

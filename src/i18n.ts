@@ -586,6 +586,7 @@ export const FR = {
     genderF: 'F',
     genderN: '—',
     genderWord: { m: 'Homme', f: 'Femme' },
+    detailPerson: 'Fiche complète',
     // Address + Google Maps directions
     address: 'Adresse',
     addressStreet: 'Rue',
@@ -701,6 +702,8 @@ export const FR = {
     cardsHint: 'Cartes (icône + mot), séparées par des virgules. Ex. : 🪥 brosse,👕 habille,🥞 déjeuner',
     delete: 'Supprimer',
     editMember: 'Modifier la personne',
+    detailInCercle: 'Fiche complète dans Le cercle',
+    detailInCercleHint: 'Coordonnées, anniversaire, genre et liens familiaux y vivent.',
     deleteMember: 'Supprimer la personne',
     deleteMemberConfirm: (name: string) =>
       `Supprimer « ${name} » de la maisonnée ? Ses routines seront aussi effacées; les rendez-vous et corvées resteront, sans personne d’assigné.`,
@@ -1707,6 +1710,7 @@ export const EN: typeof FR = {
     genderF: 'F',
     genderN: '—',
     genderWord: { m: 'Male', f: 'Female' },
+    detailPerson: 'Full profile',
     // Address + Google Maps directions
     address: 'Address',
     addressStreet: 'Street',
@@ -1822,6 +1826,8 @@ export const EN: typeof FR = {
     cardsHint: 'Cards (icon + word), comma-separated. E.g.: 🪥 brush,👕 dress,🥞 breakfast',
     delete: 'Delete',
     editMember: 'Edit person',
+    detailInCercle: 'Full profile in Le cercle',
+    detailInCercleHint: 'Contact info, birthday, gender and family links live there.',
     deleteMember: 'Remove person',
     deleteMemberConfirm: (name: string) =>
       `Remove "${name}" from the household? Their routines will be erased too; events and chores stay, with no one assigned.`,

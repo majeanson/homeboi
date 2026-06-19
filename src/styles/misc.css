@@ -386,6 +386,22 @@
   flex: 1 1 100%;
 }
 
+/* "Fiche complète dans Le cercle" — the bridge from the lean member editor to the
+   person's rich linked contact sheet. Full-width below the save/cancel row, with a
+   quiet hint explaining where the exhaustive person info now lives. */
+.member-card__detail {
+  flex: 1 1 100%;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+.member-card__detail-hint {
+  flex: 1 1 100%;
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  text-align: center;
+}
+
 /* Cashier "thank you" hand-back screen. */
 .cashier--thanks {
   display: flex;

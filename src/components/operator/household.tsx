@@ -1,41 +1,22 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
-import { live } from '../../lib/query'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
+import { useOpenPersonSheet } from '../../lib/personSheet'
 import { isGuest } from '../../lib/device'
 import { PALETTE } from '../../lib/colors'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
-import { CERCLE_KEY } from '../../lib/queryKeys'
 import { Avatar } from '../Avatar'
 import { ColorPicker } from '../ColorPicker'
 import { Icon } from '../Icon'
 import { RowActions } from '../RowActions'
-import { BirthdayPicker } from '../cercle/BirthdayPicker'
-import { LinkComposer } from '../cercle/LinkComposer'
-import { buildPeople, personKey, type Person, type ContactLink, type Contact, type Member as CercleMember } from '../../lib/cercle'
 import { type Member } from './types'
-
-// « Le cercle » data, so a household member's own relationships can be set right
-// here in Réglages ▸ Membres (members are people in the circle, phase 2).
-interface CercleData {
-  contacts: Contact[]
-  members: CercleMember[]
-  links: ContactLink[]
-}
 
 export function MembersSection({ members, onChange }: { members: Member[]; onChange: () => void }) {
   const t = useT()
   const confirm = useConfirm()
-  const qc = useQueryClient()
-  // The circle's people + edges, so each member card can edit that member's own
-  // family links inline. Refetched (live) and invalidated when a link changes.
-  const { data: cercle } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
-  const people = useMemo(() => buildPeople(cercle?.contacts ?? [], cercle?.members ?? []), [cercle])
-  const links = cercle?.links ?? []
   const [name, setName] = useState('')
   const [isChild, setIsChild] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -109,16 +90,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       )}
       <ul className="member-cards">
         {members.map((m) => (
-          <MemberCard
-            key={m.id}
-            member={m}
-            onChange={onChange}
-            onRemove={() => remove(m)}
-            person={people.find((p) => p.key === personKey('member', m.id)) ?? null}
-            people={people}
-            links={links}
-            onLinksChanged={() => qc.invalidateQueries({ queryKey: CERCLE_KEY })}
-          />
+          <MemberCard key={m.id} member={m} onChange={onChange} onRemove={() => remove(m)} />
         ))}
       </ul>
       {/* Adding a member is operator-only — hidden for a read-only guest. */}
@@ -144,39 +116,28 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   )
 }
 
-// One person card. ✏️ flips it to an inline editor (rename, child toggle,
-// recolour — the same fields the add form has); 🗑️ removes (confirmed). The photo
-// camera (and "clear photo") stay as their own affordance — a face is set from
-// the phone's camera/gallery, separate from the text fields.
+// One person card. ✏️ flips it to an inline editor — and on purpose it stays LEAN:
+// just the Maisonnée identity the board/routines/chores need (name, face, child,
+// colour). The exhaustive "everything about this human" (coordonnées, anniversaire,
+// genre, notes, liens familiaux, groupes…) lives in « Le cercle » on a linked
+// contact, reached via "Fiche complète" → useOpenPersonSheet (find-or-create).
 function MemberCard({
   member,
   onChange,
   onRemove,
-  person,
-  people,
-  links,
-  onLinksChanged,
 }: {
   member: Member
   onChange: () => void
   onRemove: () => void
-  person: Person | null
-  people: Person[]
-  links: ContactLink[]
-  onLinksChanged: () => void
 }) {
   const t = useT()
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(member.display_name)
   const [isChild, setIsChild] = useState(!!member.is_child)
   const [color, setColor] = useState(member.colour)
-  const [email, setEmail] = useState(member.email ?? '')
-  const [phone, setPhone] = useState(member.phone ?? '')
-  const [birthday, setBirthday] = useState<string | null>(member.birthday ?? null)
-  const [notes, setNotes] = useState(member.notes ?? '')
-  const [gender, setGender] = useState<'m' | 'f' | null>((member.gender as 'm' | 'f' | null) ?? null)
   const [busy, setBusy] = useState(false)
   const write = useWrite()
+  const openSheet = useOpenPersonSheet()
 
   async function setPhoto(file: File) {
     const blob = await resizeImage(file, AVATAR_MAX)
@@ -197,17 +158,7 @@ function MemberCard({
     setBusy(true)
     await write('members', {
       method: 'PATCH',
-      body: {
-        id: member.id,
-        name: name.trim(),
-        isChild,
-        colour: color,
-        email: email.trim() || null,
-        phone: phone.trim() || null,
-        birthday,
-        notes: notes.trim() || null,
-        gender,
-      },
+      body: { id: member.id, name: name.trim(), isChild, colour: color },
       affectedKeys: [['members'], ['board']],
     }).catch(() => {})
     setBusy(false)
@@ -249,49 +200,6 @@ function MemberCard({
             {t.operator.isChild}
           </label>
           <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
-          <input
-            className="input"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t.operator.memberEmail}
-            aria-label={t.operator.memberEmail}
-          />
-          <input
-            className="input"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder={t.operator.memberPhone}
-            aria-label={t.operator.memberPhone}
-          />
-          <div className="cf__field cf__field--bday">
-            <label className="cf__label">{t.operator.memberBirthday}</label>
-            <BirthdayPicker value={birthday} onChange={setBirthday} />
-          </div>
-          <div className="cf__field cf__gender">
-            <span className="cf__label">{t.cercle.gender}</span>
-            <div className="cf__gender-chips">
-              {(['m', 'f', null] as const).map((g) => (
-                <button
-                  key={String(g)}
-                  type="button"
-                  className={'chip' + (gender === g ? ' is-on' : '')}
-                  onClick={() => setGender(g)}
-                >
-                  {g === 'm' ? t.cercle.genderM : g === 'f' ? t.cercle.genderF : t.cercle.genderN}
-                </button>
-              ))}
-            </div>
-          </div>
-          <textarea
-            className="input"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder={t.operator.memberNotes}
-            aria-label={t.operator.memberNotes}
-            rows={2}
-          />
           <button type="submit" className="btn" disabled={!name.trim() || busy}>
             {t.common.save}
           </button>
@@ -302,20 +210,19 @@ function MemberCard({
               setName(member.display_name)
               setIsChild(!!member.is_child)
               setColor(member.colour)
-              setEmail(member.email ?? '')
-              setPhone(member.phone ?? '')
-              setBirthday(member.birthday ?? null)
-              setNotes(member.notes ?? '')
-              setGender((member.gender as 'm' | 'f' | null) ?? null)
               setEditing(false)
             }}
           >
             {t.common.cancel}
           </button>
         </form>
-        {/* This member's own family links — "Maman est la mère de Léa" — set right
-            where the family is managed. Members are people in the circle (phase 2). */}
-        {person && <LinkComposer person={person} people={people} links={links} onChanged={onLinksChanged} />}
+        {/* Everything else about this person — coordonnées, anniversaire, genre,
+            notes, liens familiaux — lives in « Le cercle ». One tap finds (or, the
+            first time, creates) their linked contact sheet and opens it. */}
+        <button type="button" className="btn btn--ghost member-card__detail" onClick={() => openSheet({ id: member.id, name: member.display_name })}>
+          <Icon name="users-three-bold" size={16} /> {t.operator.detailInCercle}
+        </button>
+        <p className="member-card__detail-hint mono">{t.operator.detailInCercleHint}</p>
       </li>
     )
 

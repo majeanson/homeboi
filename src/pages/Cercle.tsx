@@ -9,6 +9,7 @@ import { buildContact, buildMemberPerson } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { useWrite } from '../lib/write'
+import { useOpenPersonSheet } from '../lib/personSheet'
 import { CERCLE_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
@@ -81,6 +82,7 @@ function CercleParent() {
   const nav = useNavigate()
   const detail = useEntityDetail()
   const write = useWrite()
+  const openSheet = useOpenPersonSheet()
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
   const [query, setQuery] = useState('')
   const [addingGroup, setAddingGroup] = useState(false)
@@ -138,7 +140,7 @@ function CercleParent() {
       if (!c) return
       detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groups: groupNames, onEdit: () => nav(`/cercle/person/${c.id}`) }))
     } else {
-      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations }))
+      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, onDetail: () => openSheet({ id: p.id, name: p.name }) }))
     }
   }
 
@@ -197,7 +199,7 @@ function CercleParent() {
 
   return (
     <main className="today-feed cercle">
-      <HubHead title={t.nav.cercle} subtitle={t.cercle.tag} icon="users-three-bold" iconColor={ACCENT} background="var(--berry-wash)" card="cercle" />
+      <HubHead title={t.nav.cercle} icon="users-three-bold" iconColor={ACCENT} background="var(--berry-wash)" card="cercle" />
 
       {people.length === 0 ? (
         <>

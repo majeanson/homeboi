@@ -22,13 +22,15 @@
 .todo-group + .todo-group {
   margin-top: 0.5rem;
 }
-/* Section heading inside an instantiated composed list ("a list with sections"). */
-.todo-section-head {
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  padding: 0.1rem 0.1rem 0;
+/* A named section ("a list with sections") is now a collapsed-by-default
+   <Disclosure>; its title + open count ride the disclosure summary, and the rows
+   sit in the disclosure body. Indent that body a touch so the list reads as nested
+   under its heading. */
+.disclosure.todo-group > .disclosure__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-left: 0.15rem;
 }
 
 /* The row IS an `.act` (spine + flex). Make the check + name read as peers, and

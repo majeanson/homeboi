@@ -286,14 +286,24 @@ export function buildContact(
   }
 }
 
-// — A household MEMBER shown as a person in « Le cercle ». Lighter than a contact
-// (members carry no email/phone/birthday here); their own face + the relationship
-// lines. Editing a member stays in Réglages ▸ Membres, so the action deep-links there. —
-export function buildMemberPerson(p: Person, ctx: DetailCtx, opts?: { relations?: string[] }): DetailModel {
+// — A household MEMBER shown as a person in « Le cercle ». Lighter than a contact:
+// the lean Maisonnée identity (their own face + the relationship lines). Member
+// identity (name/face/colour) is edited in Réglages ▸ Membres; the exhaustive
+// person info lives on a linked « Le cercle » contact — so the primary action
+// "Fiche complète" (onDetail) finds-or-creates that contact sheet. —
+export function buildMemberPerson(
+  p: Person,
+  ctx: DetailCtx,
+  opts?: { relations?: string[]; onDetail?: () => void },
+): DetailModel {
   const { t } = ctx
   const accent = p.colour ?? '#C45E86'
   const blocks: DetailBlock[] = []
   if (opts?.relations?.length) blocks.push({ kind: 'list', label: t.cercle.relationships, items: opts.relations })
+  const actions: DetailAction[] = []
+  if (opts?.onDetail)
+    actions.push({ key: 'detail', label: t.cercle.detailPerson, icon: 'users-three-bold', primary: true, run: opts.onDetail })
+  actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', href: '/settings?tab=household' })
   return {
     kind: 'contact',
     title: p.name,
@@ -302,7 +312,7 @@ export function buildMemberPerson(p: Person, ctx: DetailCtx, opts?: { relations?
     photo: p.avatarKind === 'photo' && p.avatarRef ? imgUrl(p.avatarRef) : null,
     whoLabel: p.isChild ? t.audience.kid : undefined,
     blocks,
-    actions: [{ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', href: '/settings?tab=household' }],
+    actions,
   }
 }
 

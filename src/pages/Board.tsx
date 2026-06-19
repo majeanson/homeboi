@@ -47,7 +47,7 @@ import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 // src/components/board/*.
 import { BOARD_KEY, TODOS_KEY } from '../lib/queryKeys'
 import { TodoSection } from '../components/todos/TodoSection'
-import { type TodosData } from '../lib/todos'
+import { type TodosData, todosKey, todosPath } from '../lib/todos'
 import { useUndoToast, useRecordUndo } from '../lib/toast'
 import { isGuest } from '../lib/device'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
@@ -142,6 +142,19 @@ export function Board() {
   // + the "all clear" check. Open-only for the read-aloud kid view.
   const { data: todosData } = useQuery({ queryKey: TODOS_KEY, queryFn: () => api<TodosData>('todos'), ...live })
   const openTodos = (todosData?.todos ?? []).filter((td) => td.done_at == null)
+
+  // Tomorrow's per-day À compléter todos — surfaced inside the Demain card so a
+  // checklist pinned to tomorrow is visible there too. The À compléter card itself
+  // stays global + today; this is the same data the day page shows, just glanced on
+  // the board. Shares TODOS_KEY's prefix, so a write/realtime invalidate refreshes
+  // it; TanStack dedupes the fetch with the embedded <TodoSection> below.
+  const tomorrowTodoDay = addLocalDays(todayLocalDay(), 1)
+  const { data: tomorrowTodosData } = useQuery({
+    queryKey: todosKey(tomorrowTodoDay),
+    queryFn: () => api<TodosData>(todosPath(tomorrowTodoDay)),
+    ...live,
+  })
+  const tomorrowTodoCount = (tomorrowTodosData?.todos ?? []).length
 
   // (The kiosk's idle drift back to Maisonnée lives in HubLayout — shell-level,
   // so wandering to Réglages or the kitchen doesn't pin a picked face forever.)
@@ -838,7 +851,10 @@ export function Board() {
               />
             ))}
             {tomorrowEvents.map(eventAct)}
-            {tomorrowEvents.length === 0 && !showTomorrowSupper && otherTomorrowMeals.length === 0 && !data.tomorrowNote && (
+            {/* À compléter pinned to tomorrow — its named sections collapse so a long
+                checklist stays a compact glance here; check/add stay functional. */}
+            <TodoSection day={tomorrowTodoDay} title={t.todos.title} members={data.members} bento={false} hideWhenEmpty />
+            {tomorrowEvents.length === 0 && !showTomorrowSupper && otherTomorrowMeals.length === 0 && !data.tomorrowNote && tomorrowTodoCount === 0 && (
               <p className="feed-empty feed-empty--calm">{t.board.tomorrowClear}</p>
             )}
           </Section>

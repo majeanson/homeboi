@@ -71,11 +71,24 @@
 .hub[data-surface='mobile'] .board-idle--shell {
   bottom: 92px;
 }
+/* TRUE MASONRY via CSS multi-column, NOT a real grid. The day sections vary
+   wildly in height — Aujourd'hui is tall + unpredictable, Demain / Restants /
+   À venir are short — and a real grid row is as tall as its tallest tile, so a
+   short tile stranded a dead gap below it down to the tallest sibling's bottom.
+   Multi-column lets each later tile rise into the nearest gap instead. ~300px
+   columns: as many as the wall fits, one on a phone; column-fill: balance keeps
+   them roughly even. Source order is by importance (Aujourd'hui → Demain →
+   today's standing lists → À venir → photo). */
 .board-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-  gap: 1rem;
-  align-items: start;
+  columns: 300px;
+  column-gap: 1rem;
+}
+/* Each tile is never split across a column break, and carries its own bottom
+   rhythm (multi-column has no grid `gap`). */
+.board-grid > .bento,
+.board-grid > .photo-frame {
+  break-inside: avoid;
+  margin: 0 0 1rem;
 }
 /* Each section is a calm bento tile. */
 .board-grid > .bento {
@@ -84,23 +97,20 @@
   padding: 0.9rem 1rem 1.1rem;
   box-shadow: var(--shadow-sm);
 }
-/* The hero supper card and the photo frame get more room on a wide wall. */
-.board-grid > .now-card {
-  grid-column: span 2;
-}
+/* The photo frame closes the board as a full-width band beneath the columns. */
 .board-grid > .photo-frame {
-  grid-column: 1 / -1;
-  margin: 0;
+  column-span: all;
 }
 @media (max-width: 680px) {
   .board-wall {
     padding: 1rem 0.9rem 1.5rem;
   }
   .board-grid {
-    gap: 0.75rem;
+    column-gap: 0.75rem;
   }
-  .board-grid > .now-card {
-    grid-column: auto;
+  .board-grid > .bento,
+  .board-grid > .photo-frame {
+    margin-bottom: 0.75rem;
   }
 }
 
