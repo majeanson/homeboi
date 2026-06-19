@@ -28,7 +28,9 @@ export function MealRows({
   meals: MealRow[]
   recipeFor: (m: MealRow) => Recipe | undefined
   memberName: (id: string | null | undefined) => string
-  onOpenRecipe: (r: Recipe) => void
+  // Tap the recipe glyph → peek the meal's recipe (photo + ingredient glance). The
+  // meal rides along so the peek can title/attribute it, not just the recipe.
+  onOpenRecipe: (r: Recipe, m: MealRow) => void
   onRemove: (id: string) => void
   onMove: (id: string, dir: 'up' | 'down') => void
   onRename: (id: string, title: string) => void
@@ -143,7 +145,7 @@ export function MealRows({
                     <button
                       type="button"
                       className="kitchen__meal-btn"
-                      onClick={() => onOpenRecipe(r)}
+                      onClick={() => onOpenRecipe(r, m)}
                       aria-label={t.recipes.title}
                       title={t.recipes.title}
                     >

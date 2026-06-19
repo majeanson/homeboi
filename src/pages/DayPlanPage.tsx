@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams, Navigate } from 'react-router-dom'
+import { useParams, Navigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
@@ -15,6 +15,9 @@ import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
+import { DetailProvider, useEntityDetail } from '../components/detail/DetailProvider'
+import { buildMeal } from '../components/detail/adapters'
+import { isMealSlot } from '../lib/mealSlots'
 import { TodoSection } from '../components/todos/TodoSection'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
@@ -56,16 +59,29 @@ interface DayItemsData {
 // Reached two ways — the ＋ "Planifier un repas" day picker and the grid's pencil —
 // both navigate here. This page OWNS the editing state + handlers (lifted off the
 // Kitchen page, which is now a read-only glance); DayEditor renders them.
+//
+// Wrapped in its own DetailProvider (this scene lives OUTSIDE HubLayout, where the
+// app's provider sits) so a meal's recipe glyph opens the SAME peek the board uses
+// — photo + ingredient glance — instead of hard-navigating off the editor.
 export function DayPlanPage() {
+  return (
+    <DetailProvider>
+      <DayPlanInner />
+    </DetailProvider>
+  )
+}
+
+function DayPlanInner() {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
-  const nav = useNavigate()
   const { memberId: profileId } = useProfile()
   const recordUndo = useRecordUndo()
   const write = useWrite()
   const close = useSceneClose('/kitchen')
   useEscapeKey(close)
+  // Tap a meal's recipe glyph → peek its recipe (photo + glance), same as the board.
+  const detail = useEntityDetail()
 
   const { date: dateParam } = useParams()
   const date = Number(dateParam)
@@ -362,7 +378,11 @@ export function DayPlanPage() {
           note={noteFor(date)}
           recipeFor={recipeForMeal}
           memberName={memberName}
-          onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
+          onOpenRecipe={(r, m) =>
+            detail.open(
+              buildMeal(m, { t, lang, members: [] }, { recipe: r, slotLabel: isMealSlot(m.slot) ? t.kitchen.slots[m.slot] : undefined }),
+            )
+          }
           mealErr={mealErr}
           plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
           picker={{ pickWithStaples, setPickWithStaples, planRecipe }}

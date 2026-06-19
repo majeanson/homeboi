@@ -37,7 +37,7 @@ import { MonthView } from '../components/board/MonthView'
 import { type BoardData, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
-import { useRecipeForMeal } from '../lib/nextMeal'
+import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and

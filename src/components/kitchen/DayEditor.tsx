@@ -53,7 +53,7 @@ export function DayEditor({
   note: DayNoteRow | undefined
   recipeFor: (m: MealRow) => Recipe | undefined
   memberName: (id: string | null | undefined) => string
-  onOpenRecipe: (r: Recipe) => void
+  onOpenRecipe: (r: Recipe, m: MealRow) => void
   // A meal save failed (offline / 503) — surface it inline so it never reads as saved.
   mealErr?: boolean
   // The souper planning flow (type a title → AI staples → save). Owned by the page.
