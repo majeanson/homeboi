@@ -4,7 +4,8 @@ import { useAudience } from '../lib/audience'
 import { isGuest } from '../lib/device'
 import { imgUrl } from '../lib/image'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
-import { useGallery, useSaveToGallery, useDeleteFromGallery } from '../lib/drawingGallery'
+import { useGallery, useSaveToGallery, useUpdateInGallery, useDeleteFromGallery } from '../lib/drawingGallery'
+import { useDrawingToRoutine } from '../lib/drawingToRoutine'
 import { useConfirm } from '../lib/confirm'
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
@@ -25,15 +26,19 @@ export function DrawingGalleryPage() {
   const ro = isGuest()
   const { data } = useGallery()
   const save = useSaveToGallery()
+  const update = useUpdateInGallery()
   const remove = useDeleteFromGallery()
+  const toRoutine = useDrawingToRoutine()
   const confirm = useConfirm()
-  // The pad: closed, or open as a fresh sheet / continuing an existing drawing.
-  const [pad, setPad] = useState<{ open: boolean; initial?: string; sceneUrl?: string }>({ open: false })
+  // The pad: closed, or open as a fresh sheet / continuing an existing drawing (id).
+  const [pad, setPad] = useState<{ open: boolean; id?: string; initial?: string; sceneUrl?: string }>({ open: false })
   const drawings = data?.drawings ?? []
 
   async function onSaved(png: Blob, scene: string) {
+    const id = pad.id
     setPad({ open: false })
-    await save(png, scene).catch(() => {}) // failure → the gallery just doesn't gain it
+    // Continuing a kept drawing replaces it in place; the ＋ flow keeps a new one.
+    await (id ? update(id, png, scene) : save(png, scene)).catch(() => {})
   }
   async function onDelete(id: string) {
     if (await confirm({ message: t.memo.galleryDelete, tone: 'danger' })) await remove(id).catch(() => {})
@@ -57,7 +62,7 @@ export function DrawingGalleryPage() {
                 <button
                   type="button"
                   className="drawgallery__open"
-                  onClick={() => setPad({ open: true, initial: imgUrl(d.media_key), sceneUrl: d.scene_key ? imgUrl(d.scene_key) : undefined })}
+                  onClick={() => setPad({ open: true, id: d.id, initial: imgUrl(d.media_key), sceneUrl: d.scene_key ? imgUrl(d.scene_key) : undefined })}
                   aria-label={ro ? t.notes.drawing : t.memo.editTitle}
                 >
                   <img src={imgUrl(d.media_key)} alt={t.notes.drawing} loading="lazy" />
@@ -80,6 +85,7 @@ export function DrawingGalleryPage() {
           initialSceneUrl={pad.sceneUrl}
           onCancel={() => setPad({ open: false })}
           onSave={(png, scene) => void onSaved(png, scene)}
+          onMakeRoutine={toddler ? undefined : (png) => void toRoutine(png)}
         />
       )}
     </div>

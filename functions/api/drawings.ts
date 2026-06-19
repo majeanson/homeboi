@@ -1,4 +1,4 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
@@ -12,6 +12,8 @@ import { deleteR2Blob } from '../_lib/r2'
 //
 //   GET    /api/drawings -> the collection (newest first)
 //   POST   /api/drawings -> keep one { media_key, scene_key? }
+//   PATCH  /api/drawings -> replace one in place { id, media_key, scene_key? }
+//                           (continuing a kept drawing — frees the old blobs)
 //   DELETE /api/drawings -> remove one { id } (frees its R2 blobs)
 
 interface DrawingRow {
@@ -44,6 +46,27 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .bind(id, actor.householdId, profileMemberId(ctx.request), body!.media_key!.trim(), sceneKey, nowSec())
     .run()
   return ok({ ok: true, id })
+})
+
+export const onRequestPatch = authed(async (ctx, actor) => {
+  // Continue a kept drawing: swap to the freshly-uploaded blobs, free the old ones,
+  // re-tint to whoever edited + resurface it (newest first). Same shape as the note
+  // re-draw path; calm — no counts.
+  const body = await readJson<{ id?: string; media_key?: string; scene_key?: string }>(ctx.request)
+  const id = body?.id?.trim()
+  if (!id || !keyish(body?.media_key)) return badRequest('id et media_key requis.')
+  const mediaKey = body!.media_key!.trim()
+  const sceneKey = keyish(body?.scene_key) ? body!.scene_key!.trim() : null
+  const row = await ctx.env.DB.prepare('SELECT media_key, scene_key FROM drawings WHERE id = ? AND household_id = ?')
+    .bind(id, actor.householdId)
+    .first<{ media_key: string | null; scene_key: string | null }>()
+  if (!row) return notFound('Dessin introuvable.')
+  if (row.media_key && row.media_key !== mediaKey) await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
+  if (row.scene_key && row.scene_key !== sceneKey) await deleteR2Blob(ctx.env.PHOTOS, row.scene_key)
+  await ctx.env.DB.prepare('UPDATE drawings SET media_key = ?, scene_key = ?, member_id = ?, created_at = ? WHERE id = ? AND household_id = ?')
+    .bind(mediaKey, sceneKey, profileMemberId(ctx.request), nowSec(), id, actor.householdId)
+    .run()
+  return ok({ ok: true })
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {

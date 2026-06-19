@@ -388,7 +388,20 @@ const ROUTES: Record<string, unknown> = {
   },
   ghost: GHOSTS,
   recap: { recap: 'Belle semaine : 3 soupers planifiés, 2 sorties, liste à jour.' },
+  // The kept-drawing collection / gallery (#14). Two works so /drawings renders a
+  // populated wall; the images resolve via /api/img/* (served a tiny SVG below).
+  drawings: {
+    drawings: [
+      { id: 'dg1', member_id: 'm3', media_key: 'nm_g1', scene_key: 'ns_g1', created_at: BASE },
+      { id: 'dg2', member_id: 'm1', media_key: 'nm_g2', scene_key: null, created_at: BASE - DAY },
+    ],
+  },
 }
+
+// A tiny placeholder image for any /api/img/<key> in the offline harness (avatars,
+// note/gallery drawings…) so thumbnails render instead of broken-image icons.
+const IMG_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect width="80" height="80" fill="%23fffdf7"/><text x="40" y="48" font-size="34" text-anchor="middle">🎨</text></svg>'
 
 // signedIn defaults true (the populated household). Pass { signedIn: false } to
 // simulate a brand-new visitor — used by the `/` marketing-page screenshot, since
@@ -477,7 +490,19 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
           /* no body */
         }
       }
+      // Media uploads (note-media) hand back a usable key + kind so save flows
+      // (drawing notes, gallery keeps) get a real key instead of a bare {ok}.
+      if (path === 'note-media') {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ key: 'nm_e2e', kind: 'drawing' }) })
+        return
+      }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+      return
+    }
+
+    // Stored images (avatars, drawings…) — a tiny SVG so thumbnails render offline.
+    if (path.startsWith('img/') || path === 'flyer-img') {
+      await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: IMG_SVG.replace(/%23/g, '#') })
       return
     }
 

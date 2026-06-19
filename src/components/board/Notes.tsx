@@ -8,6 +8,7 @@ import { useSpeak } from '../../lib/speak'
 import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
 import { useDrawingToRoutine } from '../../lib/drawingToRoutine'
+import { useSaveToGallery } from '../../lib/drawingGallery'
 import { Icon, InlineIcon } from '../Icon'
 import { DrawPad } from '../DrawPad'
 import { colorOf as memberColorOf, type BoardData, type Member, type NoteRow } from './types'
@@ -36,6 +37,7 @@ export function Notes({
   const qc = useQueryClient()
   const speak = useSpeak()
   const toRoutine = useDrawingToRoutine()
+  const keepInGallery = useSaveToGallery()
   // One shared <audio> so playing a voice memo (#38) stops any previous one.
   const audioRef = useRef<HTMLAudioElement | null>(null)
   // A drawing being re-opened in DrawPad to add to it (#14, the shared family doodle).
@@ -213,6 +215,7 @@ export function Notes({
           initialSceneUrl={editing.scene_key ? imgUrl(editing.scene_key) : undefined}
           onCancel={() => setEditing(null)}
           onSave={(png, scene) => void saveDrawing(png, scene)}
+          onKeep={toddler ? undefined : (png, scene) => void keepInGallery(png, scene).catch(() => {})}
           onMakeRoutine={toddler ? undefined : (png) => void toRoutine(png)}
         />
       )}

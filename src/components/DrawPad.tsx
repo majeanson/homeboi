@@ -150,6 +150,7 @@ export function DrawPad({
   open,
   onCancel,
   onSave,
+  onKeep,
   onMakeRoutine,
   initial,
   initialSceneUrl,
@@ -160,6 +161,9 @@ export function DrawPad({
   // Save hands up the flat PNG (board glance / share) AND the editable scene JSON
   // ('' if too heavy to persist) so the caller can store both (#1).
   onSave: (png: Blob, scene: string) => void
+  // Optional "Garder": keep a copy in the lasting gallery (separate from pinning to
+  // the fridge). Shown as its own action when provided. Same (png, scene) payload.
+  onKeep?: (png: Blob, scene: string) => void
   onMakeRoutine?: (png: Blob) => void
   // Fallback for old PNG-only drawings: drawn as a flat, non-editable base layer.
   initial?: string
@@ -598,6 +602,11 @@ export function DrawPad({
     if (!onMakeRoutine || isEmpty() || busy) return
     exportBlob((blob) => { if (blob) onMakeRoutine(blob) })
   }
+  const keep = () => {
+    if (!onKeep || isEmpty() || busy) return
+    const scene = sceneJson()
+    exportBlob((blob) => { if (blob) onKeep(blob, scene) })
+  }
 
   const MODES: { key: Mode; icon: Parameters<typeof Icon>[0]['name']; label: string }[] = [
     { key: 'pen', icon: 'paint-brush-bold', label: t.memo.drawPen },
@@ -723,6 +732,9 @@ export function DrawPad({
       <div className="drawpad__actions">
         <button type="button" className="btn btn--ghost" onClick={onCancel}>{t.memo.cancel}</button>
         <div className="drawpad__actions-end">
+          {!toddler && onKeep && (
+            <button type="button" className="btn btn--ghost" onClick={keep} disabled={busy}><Icon name="push-pin-bold" size={18} /> {t.memo.keep}</button>
+          )}
           {!toddler && <button type="button" className="btn btn--ghost" onClick={share} disabled={busy}>{t.memo.share}</button>}
           {!toddler && onMakeRoutine && (
             <button type="button" className="btn btn--ghost" onClick={makeRoutine} disabled={busy}><Icon name="baby-bold" size={18} /> {t.memo.routine}</button>
