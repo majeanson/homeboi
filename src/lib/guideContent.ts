@@ -506,12 +506,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Des liens entre les gens', en: 'Links between people' },
         detail: {
-          fr: 'Dis « X est le parent de Y » dans une phrase à compléter : le lien inverse s’ajoute tout seul (Y devient l’enfant de X), et les familles se regroupent d’elles-mêmes. Tes propres membres de la maisonnée comptent comme des personnes — relie-les entre eux depuis Réglages ▸ Membres.',
-          en: 'Say “X is Y’s parent” in a fill-in sentence: the reverse link is added for you (Y becomes X’s child), and families group themselves. Your own household members count as people too — link them to each other from Settings ▸ Members.',
+          fr: 'Dis « X est le parent de Y » dans une phrase à compléter : le lien inverse s’ajoute tout seul (Y devient l’enfant de X), et les familles se regroupent d’elles-mêmes. Mieux : les liens se propagent. Marque deux personnes comme frère et sœur, puis relie un seul grand-parent (ou un parent) à l’une d’elles — l’autre l’obtient aussi. Les grands-parents, oncles/tantes et cousins se déduisent tout seuls. Pas besoin de relier chaque paire ni de tout accrocher à une seule personne. Tes propres membres de la maisonnée comptent comme des personnes — relie-les depuis Réglages ▸ Membres.',
+          en: 'Say “X is Y’s parent” in a fill-in sentence: the reverse link is added for you (Y becomes X’s child), and families group themselves. Better: links propagate. Mark two people as siblings, then link a single grandparent (or a parent) to just one of them — the other gets it too. Grandparents, aunts/uncles and cousins are inferred for you. No need to link every pair, or to hang everything off one person. Your own household members count as people too — link them from Settings ▸ Members.',
         },
         why: {
-          fr: 'Pour reconstruire qui est qui sans tout ressaisir des deux côtés.',
-          en: 'So you can rebuild who’s who without re-entering it on both sides.',
+          fr: 'Relie le minimum ; l’appli déduit le reste de la famille — un lien ajouté à un endroit profite à toute la fratrie.',
+          en: 'Link the minimum; the app infers the rest of the family — a tie added in one place reaches the whole set of siblings.',
         },
       },
       {

@@ -819,3 +819,188 @@ export function inferLinks(people: Person[], links: ContactLink[]): InferredLink
 
   return [...suggestions.values()]
 }
+
+// ---- Relationship closure (derive implied family ties) ----------------------
+
+// The family types the closure REASONS over. spouse/partner/in_law/step_family are
+// deliberately excluded — a spouse's blood relatives aren't yours, and step ties
+// don't propagate like full ones (they pass through to display untouched).
+const CLOSURE_TYPES = new Set<RelationshipType>([
+  'parent',
+  'child',
+  'sibling',
+  'grandparent',
+  'grandchild',
+  'aunt_uncle',
+  'niece_nephew',
+  'cousin',
+])
+
+// Show-order priority for a person's relationships (lower = first): immediate
+// family before extended before social. Drives which tie a one-line row surfaces.
+const REL_PRIORITY: Record<RelationshipType, number> = {
+  spouse: 0,
+  partner: 0,
+  parent: 1,
+  child: 1,
+  sibling: 2,
+  grandparent: 3,
+  grandchild: 3,
+  aunt_uncle: 4,
+  niece_nephew: 4,
+  cousin: 5,
+  in_law: 6,
+  step_family: 6,
+  friend: 7,
+  colleague: 7,
+  neighbor: 7,
+  other: 8,
+}
+export const relPriority = (t: RelationshipType): number => REL_PRIORITY[t]
+
+// Derive the FULL family relationship set from the minimal stored links, so a tie
+// added at ONE point propagates the way a real family does:
+//   • siblings are a set (symmetric + transitive)
+//   • siblings share their parents AND their grandparents
+//   • a parent's parent is a grandparent (parent-of-parent chains)
+//   • a parent's sibling is an aunt/uncle; the children of siblings are cousins
+// Spouse/partner/in-law/step and every social tie pass through UNCHANGED (never
+// derived). Pure + deterministic; returns ONE ContactLink per undirected pair+type
+// — stored links keep their real id, derived ones get a `derived:` id — so every
+// existing consumer (relationsOf, the tree, the ego/kid views) works on the richer,
+// correct set without changing shape. This is what makes "link a grandparent to one
+// grandchild" show up for ALL their siblings, and lets two families connect through
+// a single junction link.
+export function closedLinks(people: Person[], links: ContactLink[]): ContactLink[] {
+  const present = new Set(people.map((p) => p.key))
+
+  type E = { a: string; b: string; t: RelationshipType }
+  const list: E[] = []
+  const seen = new Set<string>() // `${a}|${b}|${t}`
+  const idOf = new Map<string, string>() // stored edges only → their real link id
+  const k3 = (a: string, b: string, t: RelationshipType) => `${a}|${b}|${t}`
+
+  // Add a directed edge AND its inverse; a stored id always wins over a later
+  // derived re-add. Returns true when it introduced something new (fixpoint signal).
+  function add(a: string, b: string, t: RelationshipType, id: string | null): boolean {
+    if (a === b || !present.has(a) || !present.has(b)) return false
+    let changed = false
+    const pairs: [string, string, RelationshipType][] = [
+      [a, b, t],
+      [b, a, RELATIONSHIP_INVERSES[t]],
+    ]
+    for (const [x, y, ty] of pairs) {
+      const k = k3(x, y, ty)
+      if (!seen.has(k)) {
+        seen.add(k)
+        list.push({ a: x, b: y, t: ty })
+        if (id) idOf.set(k, id)
+        changed = true
+      } else if (id && !idOf.has(k)) idOf.set(k, id)
+    }
+    return changed
+  }
+
+  // Seed: closure-type stored links feed the engine; everything else passes through.
+  const passthrough: ContactLink[] = []
+  for (const l of links) {
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    if (!present.has(aKey) || !present.has(bKey) || !CLOSURE_TYPES.has(l.type)) {
+      passthrough.push(l)
+      continue
+    }
+    add(aKey, bKey, l.type, l.id)
+  }
+
+  // Per-pass adjacency (small graphs → rebuilding each pass is cheap).
+  const adj = new Map<string, Map<RelationshipType, string[]>>()
+  const rebuild = () => {
+    adj.clear()
+    for (const e of list) {
+      let m = adj.get(e.a)
+      if (!m) adj.set(e.a, (m = new Map()))
+      let arr = m.get(e.t)
+      if (!arr) m.set(e.t, (arr = []))
+      arr.push(e.b)
+    }
+  }
+  const nbr = (key: string, t: RelationshipType) => adj.get(key)?.get(t) ?? []
+
+  // Sibling closure first: union-find over sibling edges → everyone in a component
+  // is a sibling of everyone else (symmetric + transitive).
+  const parent = new Map<string, string>()
+  const find = (x: string): string => {
+    const p = parent.get(x)
+    if (p === undefined || p === x) return x
+    const r = find(p)
+    parent.set(x, r)
+    return r
+  }
+  const union = (x: string, y: string) => {
+    if (!parent.has(x)) parent.set(x, x)
+    if (!parent.has(y)) parent.set(y, y)
+    parent.set(find(x), find(y))
+  }
+  for (const e of list) if (e.t === 'sibling') union(e.a, e.b)
+  const comp = new Map<string, string[]>()
+  for (const key of parent.keys()) {
+    const r = find(key)
+    if (!comp.has(r)) comp.set(r, [])
+    comp.get(r)!.push(key)
+  }
+  for (const members of comp.values())
+    for (let i = 0; i < members.length; i++)
+      for (let j = i + 1; j < members.length; j++) add(members[i], members[j], 'sibling', null)
+
+  // Fixpoint over the propagation rules (bounded — only ever adds, so it converges).
+  let changed = true
+  let guard = 0
+  while (changed && guard++ < 30) {
+    changed = false
+    rebuild()
+    const snap = [...list]
+    for (const e of snap) {
+      if (e.t === 'parent') {
+        // siblings share parents: (P parent C) & (C sib S) ⟹ P parent S
+        for (const s of nbr(e.b, 'sibling')) changed = add(e.a, s, 'parent', null) || changed
+        // parent-of-parent is a grandparent: (G parent P) & (P parent C) ⟹ G grandparent C
+        for (const c of nbr(e.b, 'parent')) changed = add(e.a, c, 'grandparent', null) || changed
+      } else if (e.t === 'grandparent') {
+        // siblings share grandparents: (G grandparent C) & (C sib S) ⟹ G grandparent S
+        for (const s of nbr(e.b, 'sibling')) changed = add(e.a, s, 'grandparent', null) || changed
+      } else if (e.t === 'sibling') {
+        // a parent's sibling is an aunt/uncle: (U sib P) & (P parent C) ⟹ U aunt/uncle C
+        for (const c of nbr(e.b, 'parent')) changed = add(e.a, c, 'aunt_uncle', null) || changed
+      } else if (e.t === 'aunt_uncle') {
+        // children of siblings are cousins: (U aunt/uncle C1) & (U parent C2) ⟹ C1 cousin C2
+        for (const c2 of nbr(e.a, 'parent')) changed = add(e.b, c2, 'cousin', null) || changed
+      }
+    }
+  }
+
+  // Emit one ContactLink per CANONICAL undirected pair+type (smaller key as A).
+  const out: ContactLink[] = [...passthrough]
+  const emitted = new Set<string>()
+  for (const e of list) {
+    const [a, b, t] = e.a < e.b ? [e.a, e.b, e.t] : [e.b, e.a, RELATIONSHIP_INVERSES[e.t]]
+    const ck = k3(a, b, t)
+    if (emitted.has(ck)) continue
+    emitted.add(ck)
+    const id = idOf.get(k3(e.a, e.b, e.t)) ?? idOf.get(ck) ?? `derived:${ck}`
+    const aP = parsePersonKey(a)
+    const bP = parsePersonKey(b)
+    out.push({
+      id,
+      personAId: aP.id,
+      personAKind: aP.kind,
+      personBId: bP.id,
+      personBKind: bP.kind,
+      type: t,
+      reverseType: RELATIONSHIP_INVERSES[t],
+      label: null,
+      notes: null,
+    })
+  }
+  return out
+}

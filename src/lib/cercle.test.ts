@@ -10,6 +10,7 @@ import {
   familyLinksFromBands,
   familyLinksFromMatrix,
   dedupeNewLinks,
+  closedLinks,
   parsePersonKey,
   personKey,
   daysUntilBirthday,
@@ -296,5 +297,83 @@ describe('birthday math', () => {
   it('formats day + month without the year', () => {
     expect(formatBirthday('1990-03-12', 'fr')).toBe('12 mars')
     expect(formatBirthday('1990-03-12', 'en')).toBe('March 12')
+  })
+})
+
+describe('closedLinks (relationship closure / propagation)', () => {
+  const k = (id: string) => personKey('contact', id)
+  // The set of `type:otherId` ties a person has in the closed set, read from THEIR
+  // perspective (so a child of P reads 'child:P', a grandchild of G reads 'grandchild:G').
+  const relsOf = (closed: ContactLink[], id: string): Set<string> => {
+    const key = k(id)
+    const out = new Set<string>()
+    for (const l of closed) {
+      const a = personKey(l.personAKind, l.personAId)
+      const b = personKey(l.personBKind, l.personBId)
+      if (a === key) out.add(`${l.type}:${parsePersonKey(b).id}`)
+      else if (b === key) out.add(`${l.reverseType}:${parsePersonKey(a).id}`)
+    }
+    return out
+  }
+  const ppl = (...ids: string[]) => buildPeople(ids.map((id) => contact(id, id)), [])
+
+  it("propagates a sibling's parent and grandparent to all siblings (the matrix-anchor case)", () => {
+    // Everything entered against ONE anchor (Olivier), as the matrix builder does:
+    //   Colin is sibling of Olivier · Jérémie is parent of Olivier · Jacques is grandparent of Olivier
+    const people = ppl('olivier', 'colin', 'jeremie', 'jacques')
+    const links = [
+      link('colin', 'olivier', 'sibling'),
+      link('jeremie', 'olivier', 'parent'),
+      link('jacques', 'olivier', 'grandparent'),
+    ]
+    const colin = relsOf(closedLinks(people, links), 'colin')
+    expect(colin.has('sibling:olivier')).toBe(true)
+    expect(colin.has('child:jeremie')).toBe(true) // Jérémie propagated as Colin's parent
+    expect(colin.has('grandchild:jacques')).toBe(true) // Jacques propagated as Colin's grandparent
+  })
+
+  it('derives grandparent from a parent-of-parent chain', () => {
+    const people = ppl('gp', 'p', 'c')
+    const closed = closedLinks(people, [link('gp', 'p', 'parent'), link('p', 'c', 'parent')])
+    expect(relsOf(closed, 'c').has('grandchild:gp')).toBe(true)
+    expect(relsOf(closed, 'gp').has('grandparent:c')).toBe(true)
+  })
+
+  it('derives aunt/uncle and cousin from a sibling-with-children', () => {
+    // p1 & p2 are siblings; each has a child → p2 is c1's aunt/uncle, c1 & c2 are cousins.
+    const people = ppl('p1', 'p2', 'c1', 'c2')
+    const closed = closedLinks(people, [link('p1', 'p2', 'sibling'), link('p1', 'c1', 'parent'), link('p2', 'c2', 'parent')])
+    expect(relsOf(closed, 'c1').has('niece_nephew:p2')).toBe(true)
+    expect(relsOf(closed, 'c1').has('cousin:c2')).toBe(true)
+  })
+
+  it('closes siblings transitively (a~b, b~c ⟹ a~c)', () => {
+    const people = ppl('a', 'b', 'c')
+    const closed = closedLinks(people, [link('a', 'b', 'sibling'), link('b', 'c', 'sibling')])
+    expect(relsOf(closed, 'a').has('sibling:c')).toBe(true)
+  })
+
+  it('NEVER derives spouse from co-parents (stays an opt-in suggestion)', () => {
+    const people = ppl('a', 'b', 'c')
+    const closed = closedLinks(people, [link('a', 'c', 'parent'), link('b', 'c', 'parent')])
+    expect(relsOf(closed, 'a').has('spouse:b')).toBe(false)
+    expect(relsOf(closed, 'a').has('partner:b')).toBe(false)
+  })
+
+  it('passes social/affinity ties through untouched and keeps stored ids', () => {
+    const people = ppl('a', 'b')
+    const closed = closedLinks(people, [link('a', 'b', 'friend')])
+    expect(relsOf(closed, 'a').has('friend:b')).toBe(true)
+    expect(closed.find((l) => l.type === 'friend')?.id).toBe('a-b') // the real stored id, not a derived one
+  })
+
+  it('marks purely derived ties with a derived: id', () => {
+    const people = ppl('a', 'b', 'c')
+    const closed = closedLinks(people, [link('a', 'b', 'sibling'), link('b', 'c', 'sibling')])
+    const ac = closed.find(
+      (l) =>
+        (l.personAId === 'a' && l.personBId === 'c') || (l.personAId === 'c' && l.personBId === 'a'),
+    )
+    expect(ac?.id.startsWith('derived:')).toBe(true)
   })
 })

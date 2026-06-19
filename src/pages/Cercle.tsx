@@ -36,6 +36,8 @@ import {
   unifyCircle,
   personKey,
   detectFamilyGroups,
+  closedLinks,
+  relPriority,
   daysUntilBirthday,
   formatBirthday,
   genderedRelLabel,
@@ -80,6 +82,9 @@ function relationsOf(key: string, links: ContactLink[], byKey: Map<string, Perso
       return null
     })
     .filter((x): x is { rel: ContactLink['type']; other: string } => !!x)
+    // Most salient tie first (immediate family → extended → social), so a one-line
+    // row surfaces "Enfant · Jérémie" over a derived cousin.
+    .sort((a, b) => relPriority(a.rel) - relPriority(b.rel))
     .map((r) => `${genderedRelLabel(r.rel, subjectGender, lang)} · ${byKey.get(r.other)?.name ?? '—'}`)
 }
 
@@ -112,7 +117,11 @@ function CercleParent() {
     [contacts, members, rawLinks, rawGroups],
   )
   const people = unified.people
-  const links = unified.links
+  // Relationship CLOSURE: derive implied family ties (siblings share parents +
+  // grandparents, parent-of-parent = grandparent, aunt/uncle, cousins) so a tie
+  // added at one point propagates to the whole family. Display + tree + ego read
+  // this richer set; grouping keeps raw links (the closure doesn't change connectivity).
+  const links = useMemo(() => closedLinks(unified.people, unified.links), [unified])
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
   const contactsById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
 
@@ -139,10 +148,18 @@ function CercleParent() {
     [allNamedGroups, householdKeys],
   )
 
-  // Auto-detected family groups (Union-Find over family edges), over NON-household
-  // people only — household members already live in the Maisonnée card, so they
-  // can't seed a second "Famille X" clone of the same faces.
-  const familyPeople = useMemo(() => people.filter((p) => !householdKeys.has(p.key)), [people, householdKeys])
+  // Auto-detected family groups (Union-Find over family edges), over people NOT
+  // already shown in a card: not the Maisonnée, and not a named FAMILY group you
+  // built by hand — otherwise the one big transitive "Famille X" clone duplicates
+  // every face you've already organised into a group.
+  const namedFamilyKeys = useMemo(
+    () => new Set(namedGroups.filter((g) => g.kind === 'family').flatMap((g) => [...g.memberKeys])),
+    [namedGroups],
+  )
+  const familyPeople = useMemo(
+    () => people.filter((p) => !householdKeys.has(p.key) && !namedFamilyKeys.has(p.key)),
+    [people, householdKeys, namedFamilyKeys],
+  )
   const familyGroups = useMemo(
     () => detectFamilyGroups(familyPeople, links, (name) => (name ? t.cercle.familyOf(name) : t.cercle.familyGeneric)),
     [familyPeople, links, t],
@@ -475,7 +492,9 @@ function CircleKidView() {
   // Same dedup as the parent view: a member + its linked contact are one face.
   const unified = useMemo(() => unifyCircle(contacts, members, rawLinks, []), [contacts, members, rawLinks])
   const people = unified.people
-  const links = unified.links
+  // Same relationship closure as the parent view, so a toddler tapping a face sees
+  // ALL their family (a grandparent linked once shows for every grandchild).
+  const links = useMemo(() => closedLinks(unified.people, unified.links), [unified])
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
 
   function tap(p: Person) {
