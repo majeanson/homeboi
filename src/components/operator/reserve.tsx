@@ -12,6 +12,7 @@ import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
+import { StatusMessage } from '../StatusMessage'
 import { OperatorSection } from './OperatorSection'
 
 // Réglages ▸ Réserve. The household-level storage spots that group La réserve
@@ -149,8 +150,8 @@ export function ReserveLocationsSection({ help }: { help?: HelpMode }) {
           ariaLabel={t.operator.reserveAddLocation}
         />
       )}
-      {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
-      {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
+      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
     </OperatorSection>
   )
 }

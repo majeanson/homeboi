@@ -3,6 +3,7 @@ import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
+import { StatusMessage } from '../StatusMessage'
 import { recurOf } from '../../lib/recurLabel'
 
 // The complete event (rendez-vous) form — title, date, optional time (no time =
@@ -112,7 +113,7 @@ export function EventForm({
       </div>
       <RecurPicker value={recur} onChange={setRecur} />
       <LeadPicker value={lead} onChange={setLead} />
-      {err && <p className="error mono">{t.common.saveFailed}</p>}
+      {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <button type="submit" className="btn" disabled={!title.trim() || !date || busy}>
         {value ? t.common.save : t.operator.addEvent}
       </button>

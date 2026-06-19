@@ -8,6 +8,7 @@ import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod, type RoutineTod } from 
 import { alignSide } from '../../lib/parallelArray'
 import { InlineIcon } from '../Icon'
 import { EmptyState } from '../EmptyState'
+import { StatusMessage } from '../StatusMessage'
 
 // The complete kid-routine form — who it's for (one or several toddlers, each
 // gets their own copy), a name, a template starting point, and the picture-card
@@ -244,7 +245,7 @@ export function RoutineForm({
         onPhotoChange={setCardsPhoto}
       />
 
-      {err && <p className="error mono">{t.common.saveFailed}</p>}
+      {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <button
         type="submit"
         className="btn btn--primary"

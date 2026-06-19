@@ -5,6 +5,7 @@ import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
 import { isGuest } from '../../lib/device'
 import { InlineIcon } from '../Icon'
+import { StatusMessage } from '../StatusMessage'
 
 // Babysitter / guest access. The operator picks how long the access lasts and
 // generates a time-boxed, READ-ONLY token. We hand back a share link
@@ -87,7 +88,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
         <InlineIcon name="key-bold" /> {busy ? t.guest.generating : t.guest.generate}
       </button>
 
-      {err && <p className="error mono">{err}</p>}
+      {err && <StatusMessage tone="error">{err}</StatusMessage>}
 
       {link && (
         <div className="operator__guest-link">

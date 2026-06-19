@@ -7,6 +7,7 @@ import { useMealPrefs } from '../../lib/mealPrefs'
 import { useMemo } from 'react'
 import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
+import { StatusMessage } from '../StatusMessage'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { MealRows } from './MealRows'
 import { mealPickOptions, type MealPick } from './comboOptions'
@@ -150,11 +151,7 @@ export function DayEditor({
 
   return (
     <>
-      {mealErr && (
-        <p className="error mono" role="alert">
-          {t.common.saveFailed}
-        </p>
-      )}
+      {mealErr && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
 
       {/* ── The lighter slots, in time order: déjeuner / dîner / collation.
           The hero souper follows them so the day reads chronologically. ── */}

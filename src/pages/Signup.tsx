@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { TopBar } from '../components/TopBar'
+import { StatusMessage } from '../components/StatusMessage'
 import { InlineIcon } from '../components/Icon'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
@@ -129,7 +130,7 @@ export function Signup() {
             </label>
           )}
           {error && (
-            <p className="error mono">
+            <StatusMessage tone="error">
               {t.signup[error]}
               {error === 'exists' && (
                 <>
@@ -137,7 +138,7 @@ export function Signup() {
                   <Link to="/login">{t.signup.gotoLogin}</Link>
                 </>
               )}
-            </p>
+            </StatusMessage>
           )}
           <button type="submit" className="btn btn--primary" disabled={busy || !ready}>
             {t.signup.submit}

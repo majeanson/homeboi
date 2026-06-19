@@ -4,6 +4,7 @@ import { useLang, useT } from '../../i18n'
 import { ColorPicker } from '../ColorPicker'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
+import { StatusMessage } from '../StatusMessage'
 import { anchorSecToDate, dateToAnchorSec, recurOf, todayAnchorDate } from '../../lib/recurLabel'
 import { choreTemplates } from '../../lib/routineTemplates'
 
@@ -150,7 +151,7 @@ export function ChoreForm({
           <LeadPicker value={lead} onChange={setLead} />
         </>
       )}
-      {err && <p className="error mono">{t.common.saveFailed}</p>}
+      {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <button type="submit" className="btn" disabled={!title.trim() || busy}>
         {value ? t.common.save : t.operator.addChore}
       </button>

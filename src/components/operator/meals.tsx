@@ -9,6 +9,7 @@ import { wash } from '../../lib/colors'
 import { isGuest } from '../../lib/device'
 import { ColorPicker } from '../ColorPicker'
 import { Icon } from '../Icon'
+import { StatusMessage } from '../StatusMessage'
 import { OperatorSection } from './OperatorSection'
 import type { HouseholdSettings } from '../../lib/mealPrefs'
 
@@ -124,8 +125,8 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
           )
         })}
       </ul>
-      {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
-      {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
+      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
     </OperatorSection>
   )
 }

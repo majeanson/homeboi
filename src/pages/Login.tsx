@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
+import { StatusMessage } from '../components/StatusMessage'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -62,7 +63,7 @@ export function Login() {
               autoComplete="current-password"
             />
           </label>
-          {error && <p className="error mono">{t.login.error}</p>}
+          {error && <StatusMessage tone="error">{t.login.error}</StatusMessage>}
           <button type="submit" className="btn btn--primary" disabled={busy || !email.trim()}>
             {t.login.submit}
           </button>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
+import { StatusMessage } from '../components/StatusMessage'
 import { Icon } from '../components/Icon'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
@@ -99,7 +100,7 @@ export function Pair() {
 
         {phase === 'expired' && (
           <div>
-            <p className="error mono">{t.pair.expired}</p>
+            <StatusMessage tone="error">{t.pair.expired}</StatusMessage>
             <button type="button" className="btn" onClick={getCode}>
               {t.pair.getCode}
             </button>

@@ -11,6 +11,7 @@ import { isGuest } from '../../lib/device'
 import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { EmptyState } from '../EmptyState'
+import { StatusMessage } from '../StatusMessage'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
 // price-match proof on the list knows where to search. Set once, used every trip.
@@ -56,8 +57,8 @@ export function ShopSection({ help }: { help?: HelpMode }) {
           maxLength={7}
         />
       )}
-      {status === 'saved' && <p className="capture__routed mono">{t.operator.postalSaved}</p>}
-      {status === 'bad' && <p className="error mono">{t.operator.postalBad}</p>}
+      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
     </OperatorSection>
   )
 }

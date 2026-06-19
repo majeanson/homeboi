@@ -8,6 +8,7 @@ import { InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
+import { StatusMessage } from '../StatusMessage'
 import { OperatorSection } from './OperatorSection'
 import { type Device } from './types'
 
@@ -64,8 +65,8 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
           {t.pair.claimSubmit}
         </button>
       </form>
-      {ok && <p className="capture__routed mono">{t.pair.claimOk}</p>}
-      {err && <p className="error mono">{err}</p>}
+      {ok && <StatusMessage tone="success">{t.pair.claimOk}</StatusMessage>}
+      {err && <StatusMessage tone="error">{err}</StatusMessage>}
     </OperatorSection>
   )
 }
