@@ -1986,8 +1986,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Récurrent ([[icon:repeat-bold]])', en: 'Recurring ([[icon:repeat-bold]])' },
         detail: {
-          fr: 'Un événement qui revient (chaque jour/semaine/mois) porte le [[icon:repeat-bold]] dans la liste.',
-          en: 'An event that repeats (daily/weekly/monthly) carries the [[icon:repeat-bold]] in the list.',
+          fr: 'Un événement qui revient (chaque jour/semaine/mois/année) porte le [[icon:repeat-bold]] dans la liste.',
+          en: 'An event that repeats (daily/weekly/monthly/yearly) carries the [[icon:repeat-bold]] in the list.',
         },
         why: {
           fr: 'Pour entrer une seule fois ce qui se répète (le cours de natation du mardi) au lieu de le retaper chaque semaine.',
@@ -2021,8 +2021,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Donner un horaire', en: 'Give it a schedule' },
         detail: {
-          fr: 'Le bouton « Céduler » ouvre la récurrence — tous les N jours/semaines/mois, et pour « semaine » le choix des jours (D L M M J V S) — plus une date de départ.',
-          en: 'The “Schedule” button opens the recurrence — every N days/weeks/months, and for “weekly” a choice of days (S M T W T F S) — plus a start date.',
+          fr: 'Le bouton « Céduler » ouvre la récurrence — tous les N jours/semaines/mois/années, et pour « semaine » le choix des jours (D L M M J V S) — plus une date de départ.',
+          en: 'The “Schedule” button opens the recurrence — every N days/weeks/months/years, and for “weekly” a choice of days (S M T W T F S) — plus a start date.',
         },
         why: {
           fr: 'Pour que la corvée revienne et tourne toute seule, sans la recréer chaque fois.',
