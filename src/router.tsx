@@ -33,6 +33,7 @@ const PriceMatchPage = lazy(() => import('./pages/PriceMatchPage').then((m) => (
 const ListEditPage = lazy(() => import('./pages/ListEditPage').then((m) => ({ default: m.ListEditPage })))
 const QuickAddPage = lazy(() => import('./pages/QuickAddPage').then((m) => ({ default: m.QuickAddPage })))
 const DayPlanPage = lazy(() => import('./pages/DayPlanPage').then((m) => ({ default: m.DayPlanPage })))
+const DrawingGalleryPage = lazy(() => import('./pages/DrawingGalleryPage').then((m) => ({ default: m.DrawingGalleryPage })))
 const RecipeViewPage = lazy(() => import('./pages/RecipeViewPage').then((m) => ({ default: m.RecipeViewPage })))
 const RecipeFormPage = lazy(() => import('./pages/RecipeFormPage').then((m) => ({ default: m.RecipeFormPage })))
 const CookPage = lazy(() => import('./pages/CookPage').then((m) => ({ default: m.CookPage })))
@@ -105,6 +106,8 @@ export function AppRoutes() {
         <Route path="/chore/new" element={<ChoreFormPage />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />
         <Route path="/routine/:id" element={<RoutineFormPage />} />
+        {/* The drawing collection / gallery — "Mes dessins" (#14). */}
+        <Route path="/drawings" element={<DrawingGalleryPage />} />
         <Route path="/share" element={<SharePage />} />
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />

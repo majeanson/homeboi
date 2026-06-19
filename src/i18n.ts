@@ -199,6 +199,11 @@ export const FR = {
     },
     share: 'Partager',
     routine: 'En routine',
+    keep: 'Garder',
+    galleryTitle: 'Mes dessins',
+    galleryEmpty: 'Aucun dessin gardé pour l’instant. Touche ＋ pour en faire un!',
+    galleryDelete: 'Supprimer ce dessin pour de bon?',
+    galleryLink: 'La galerie',
   },
   loves: {
     love: 'J’aime',
@@ -1402,6 +1407,11 @@ export const EN: typeof FR = {
     },
     share: 'Share',
     routine: 'To routine',
+    keep: 'Keep',
+    galleryTitle: 'My drawings',
+    galleryEmpty: 'No saved drawings yet. Tap ＋ to make one!',
+    galleryDelete: 'Delete this drawing for good?',
+    galleryLink: 'The gallery',
   },
   loves: {
     love: 'Love it',

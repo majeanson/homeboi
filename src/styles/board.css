@@ -1053,6 +1053,69 @@
   flex: none;
 }
 
+/* ---- Drawing gallery (/drawings): the lasting "Mes dessins" collection -------- */
+.drawgallery__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.drawgallery__add {
+  align-self: flex-start;
+}
+.drawgallery__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.8rem;
+}
+/* Toddler: fewer, bigger tiles — easy to admire + tap. */
+.drawgallery__grid--kid {
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 1rem;
+}
+.drawgallery__item {
+  position: relative;
+}
+.drawgallery__open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.drawgallery__open img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #fffdf7;
+  border-radius: 0.7rem;
+  box-shadow: var(--shadow-sm);
+}
+.drawgallery__open:active {
+  transform: scale(0.98);
+}
+.drawgallery__del {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: inline-flex;
+  padding: 0.3rem;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  color: var(--ink-soft);
+  cursor: pointer;
+  line-height: 0;
+  box-shadow: var(--shadow-sm);
+}
+/* Parent "La galerie" door under the Grille drawings strip. */
+.board-gallery-link {
+  display: flex;
+  justify-content: center;
+  margin: 0.3rem 0 0.2rem;
+}
+
 /* ---- Month view: a calm six-week calendar of everything dated -------------
    The fourth board take (after bento · next · lanes): zoom out from the day to
    the whole month. Cells carry colour-coded dots (event = member/sky, meal =

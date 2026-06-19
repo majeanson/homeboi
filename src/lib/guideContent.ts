@@ -808,8 +808,8 @@ export const GUIDE: GuideEntry[] = [
           en: 'Instead of typing, leave a voice memo or draw a little note for the household. Drawing has a pen, sticker packs (animals, seasons, letters…), a pixel mode and word stamps, a fun mirror, undo/redo and lots of colours. And it’s educational: a template can sit underneath — handwriting lines, a letter or number to trace, dot paper, or a colour-in picture. Drawings pin to the board’s Grille view; tap one to keep drawing on it (kids too), share it, or turn it into a routine card.',
         },
         why: {
-          fr: 'Un mot doux, un dessin d’enfant ou un rappel parlé — plus chaleureux qu’un texte. Et comme tout le monde peut continuer un dessin, ça devient un petit babillard à dessiner en famille.',
-          en: 'A sweet word, a kid’s drawing or a spoken reminder — warmer than text. And since anyone can add to a drawing, it becomes a little family doodle board.',
+          fr: 'Un mot doux, un dessin d’enfant ou un rappel parlé — plus chaleureux qu’un texte. Et comme tout le monde peut continuer un dessin, ça devient un petit babillard à dessiner en famille. Les dessins gardés vivent dans « Mes dessins » (la galerie) — ouvre-la depuis la tuile du mode enfant ou le lien sous la vue Grille; un dessin gardé n’est pas effacé avec les notes.',
+          en: 'A sweet word, a kid’s drawing or a spoken reminder — warmer than text. And since anyone can add to a drawing, it becomes a little family doodle board. Kept drawings live in “My drawings” (the gallery) — open it from the kid-board tile or the link under the Grille view; a kept drawing isn’t cleared away with the notes.',
         },
       },
     ],

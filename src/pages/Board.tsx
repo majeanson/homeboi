@@ -30,8 +30,6 @@ import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } f
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { Notes } from '../components/board/Notes'
-import { DrawPad } from '../components/DrawPad'
-import { useSaveDrawingNote } from '../lib/drawingNote'
 import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { NowNext, Lanes } from '../components/board/views'
@@ -107,10 +105,6 @@ export function Board() {
   // out of the rendered reminder at once so the live poll can't resurrect them
   // before the delete commits (same guard as pendingDone).
   const [pendingLeftover, setPendingLeftover] = useState<Set<string>>(new Set())
-  // Toddler "Dessiner" tile → a fresh drawing pinned to the fridge (#14). Kids draw
-  // without needing the parent ＋ capture sheet.
-  const [kidDraw, setKidDraw] = useState(false)
-  const saveDrawingNote = useSaveDrawingNote()
   function changeView(v: BoardView) {
     setView(v)
     saveBoardView(v)
@@ -322,14 +316,13 @@ export function Board() {
               {weatherHero}
             </div>
             <Notes notes={data.notes ?? []} members={data.members} toddler />
-            {/* A big, friendly "Dessiner" door — a kid starts a drawing (handwriting
-                lines, tracing, colour-in, stickers…) and it pins to the fridge. */}
-            {!ro && (
-              <button type="button" className="today-kid__draw" onClick={() => setKidDraw(true)}>
-                <span className="today-kid__draw-icn" aria-hidden="true">🎨</span>
-                <span>{t.memo.draw}</span>
-              </button>
-            )}
+            {/* A big, friendly door into "Mes dessins" — the kid's own drawing
+                collection (draw new ones with handwriting lines / tracing / colour-in
+                / stickers, and see everything they've kept). */}
+            <Link to="/drawings" className="today-kid__draw">
+              <span className="today-kid__draw-icn" aria-hidden="true">🎨</span>
+              <span>{t.memo.galleryTitle}</span>
+            </Link>
             {data.dayNote && <DayNote note={data.dayNote} members={data.members} toddler />}
             {/* Every meal planned for today, read-aloud — supper rides up in the
                 heroes, so this lists the rest of the day's table. */}
@@ -413,17 +406,6 @@ export function Board() {
             )}
             <PhotoFrame />
           </>
-        )}
-        {kidDraw && (
-          <DrawPad
-            open
-            toddler
-            onCancel={() => setKidDraw(false)}
-            onSave={(png, scene) => {
-              setKidDraw(false)
-              void saveDrawingNote(png, scene)
-            }}
-          />
         )}
       </main>
     )
@@ -714,6 +696,10 @@ export function Board() {
           {/* Family drawings (#14) live only here in the Grille view — tap one to
               add to it. Kept off the compact Next/Lanes/Month layouts. */}
           <Notes notes={data.notes ?? []} members={data.members} variant="drawings" />
+          {/* Door to the lasting drawing collection ("Mes dessins"). */}
+          <div className="board-gallery-link">
+            <Link to="/drawings" className="chip"><InlineIcon name="paint-brush-bold" /> {t.memo.galleryLink}</Link>
+          </div>
           {/* The "today" zone: tonight's supper and today's weather as equal hero
               cards (mirrors the toddler heroes row), so weather has a real bubble
               instead of hiding in the timestamp line. The dressing tip rides under

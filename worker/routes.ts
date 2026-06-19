@@ -21,6 +21,7 @@ import * as chores from '../functions/api/chores'
 import * as choresLedger from '../functions/api/chores-ledger'
 import * as dayNotes from '../functions/api/day-notes'
 import * as deals from '../functions/api/deals'
+import * as drawings from '../functions/api/drawings'
 import * as events from '../functions/api/events'
 import * as flyer from '../functions/api/flyer'
 import * as flyerImg from '../functions/api/flyer-img'
@@ -97,6 +98,7 @@ const TABLE: Record<string, RouteMod> = {
   'chores-ledger': choresLedger,
   'day-notes': dayNotes,
   deals,
+  drawings,
   events,
   flyer,
   'flyer-img': flyerImg,
