@@ -19,6 +19,7 @@ const Kitchen = lazy(() => import('./pages/Kitchen').then((m) => ({ default: m.K
 const Routines = lazy(() => import('./pages/Routines').then((m) => ({ default: m.Routines })))
 const Cercle = lazy(() => import('./pages/Cercle').then((m) => ({ default: m.Cercle })))
 const CercleFormPage = lazy(() => import('./pages/CercleFormPage').then((m) => ({ default: m.CercleFormPage })))
+const CercleFamilyPage = lazy(() => import('./pages/CercleFamilyPage').then((m) => ({ default: m.CercleFamilyPage })))
 const Liste = lazy(() => import('./pages/Liste').then((m) => ({ default: m.Liste })))
 const Pair = lazy(() => import('./pages/Pair').then((m) => ({ default: m.Pair })))
 const Setup = lazy(() => import('./pages/Setup').then((m) => ({ default: m.Setup })))
@@ -94,6 +95,9 @@ export function AppRoutes() {
         <Route path="/kitchen/recipe/:id" element={<RecipeViewPage />} />
         <Route path="/kitchen/recipe/:id/edit" element={<RecipeFormPage />} />
         <Route path="/kitchen/recipe/:id/cook" element={<CookPage />} />
+        {/* Family builder — define a whole family's relationships at once. */}
+        <Route path="/cercle/family/new" element={<CercleFamilyPage />} />
+        <Route path="/cercle/family/:groupId" element={<CercleFamilyPage />} />
         {/* `new` before `:id` so it isn't captured as a contact id. */}
         <Route path="/cercle/person/new" element={<CercleFormPage />} />
         <Route path="/cercle/person/:id" element={<CercleFormPage />} />

@@ -39,7 +39,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | **ColorPicker** | `components/ColorPicker.tsx` | Row of palette dots; controlled. |
 | **RecurPicker** | `components/RecurPicker.tsx` | Recurrence rule (freq/interval/weekdays). |
 | **LeadPicker** | `components/LeadPicker.tsx` | Calm "Bientôt" reminder lead ("Afficher dès", 1h–1wk → `lead_seconds`); in EventForm + ChoreForm. |
-| **DrawPad** | `components/DrawPad.tsx` | Quick paint canvas for a drawn fridge note (#14): `signature_pad` strokes, calm colour palette + paper-colour eraser; saves a PNG. Full-screen overlay. |
+| **DrawPad** | `components/DrawPad.tsx` | Quick paint canvas for a drawn fridge note (#14). Three tools — freehand **pen** (`signature_pad`), tap-to-stamp **stickers**, chunky **pixel** grid — plus a family rainbow palette, 3 brush/cell sizes, **undo**, paper-colour eraser; saves a PNG. Pass `initial` (an image URL) to re-open a drawing and **add to it** (shared family doodle; Notes ✏️ → `PATCH /api/notes`). Full-screen overlay; `useModal` + `touch-action:none` lock the page so a stroke can't swipe the board. |
 | **HeartButton** | `components/HeartButton.tsx` | Family "favorites" ❤ on a recipe (#21, `useLoves`): shows the loved-by faces (never a count); toggle only when a face is picked (read-only as Maisonnée). On recipe cards + planned meals. |
 
 ### Actions & rows
@@ -129,6 +129,20 @@ Arbre` view switch on `/cercle` (`useTabParam`): `CercleEgo` (tap-to-focus ego v
 (generation-banded family tree) — both **hand-rolled SVG, zero deps** (research: a force-directed
 graph is the wrong tool at this scale). Domain helpers `detectFamilyGroups`/`generationOf` operate on
 composite keys; deleting a member cascades its cercle links.
+
+Phase 4 added **`unifyCircle`** (a member + its hard-linked contact collapse to ONE
+person; links/groups remapped onto the member) — used everywhere the people set is
+shown — and a **family builder**: `FamilyBuilder` (`components/cercle/FamilyBuilder.tsx`)
+on the `/cercle/family/new|:groupId` scene (`CercleFamilyPage`). Two interchangeable
+modes over ONE pure engine in `lib/cercle.ts` — `familyLinksFromBands` (drag faces into
+Grandparents/Parents/Children via `usePointerDnd`; infers parent↔child, siblings, the
+two-parent spouse, grandparent↔grandchild — never the ambiguous grandparent↔parent side)
+and `familyLinksFromMatrix` ("everyone is [lien] of one anchor") — plus `dedupeNewLinks`
+and `parsePersonKey`. Relationship labels are gendered by the **subject** (`genderedRelLabel`,
+table pinned by a test); the toddler view shows the OTHER person's role. The Maisonnée
+itself is renamable in Réglages ▸ La maisonnée (`HouseholdNameField` → `/api/household`
+`name`). A linked member's avatar comes FROM the Maisonnée (read-only in the contact form
++ a leading gallery tile).
 
 `CookMode` now offers the PARENT lens three layouts via a bar switcher — **Recette**
 (full scroll page), **Côte à côte** (`split`: ingredients pinned beside the steps,

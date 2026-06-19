@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { useOpenPersonSheet } from '../../lib/personSheet'
+import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { isGuest } from '../../lib/device'
 import { PALETTE } from '../../lib/colors'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
@@ -65,6 +67,10 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   return (
     <section className="surface operator__section">
       <h2>{t.operator.members}</h2>
+
+      {/* The household's own name (set at signup) — renamable here. Operator-only. */}
+      {!isGuest() && <HouseholdNameField />}
+
       {/* A brand-new household (fresh signup) lands here with nobody in it yet —
           three calm steps instead of a bare empty list. Disappears with the
           first member; never comes back. */}
@@ -113,6 +119,55 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
         </form>
       )}
     </section>
+  )
+}
+
+// Rename the household ("Famille Jeanson", "La maisonnée"…) — the name set at
+// signup, editable here and persisted on /api/household. Saves on blur / Enter when
+// it actually changed; a blank is ignored server-side (the column is NOT NULL).
+function HouseholdNameField() {
+  const t = useT()
+  const qc = useQueryClient()
+  const write = useWrite()
+  const { data } = useQuery({ queryKey: HOUSEHOLD_KEY, queryFn: () => api<{ name: string }>('household') })
+  const [name, setName] = useState('')
+  const [saved, setSaved] = useState('')
+  // Seed once the GET lands; keep tracking the server value so it isn't clobbered.
+  useEffect(() => {
+    if (data?.name != null) {
+      setName(data.name)
+      setSaved(data.name)
+    }
+  }, [data?.name])
+
+  async function save() {
+    const v = name.trim()
+    if (!v || v === saved) return
+    setSaved(v)
+    await write('household', { method: 'PATCH', body: { name: v }, affectedKeys: [HOUSEHOLD_KEY] }).catch(() => {})
+    qc.invalidateQueries({ queryKey: HOUSEHOLD_KEY })
+  }
+
+  return (
+    <label className="operator__field operator__household-name">
+      <span className="operator__field-label">{t.operator.householdName}</span>
+      <input
+        className="input"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            ;(e.target as HTMLInputElement).blur()
+          }
+        }}
+        maxLength={60}
+        placeholder={t.operator.householdName}
+        aria-label={t.operator.householdName}
+      />
+      <span className="operator__field-hint mono">{t.operator.householdNameHint}</span>
+    </label>
   )
 }
 

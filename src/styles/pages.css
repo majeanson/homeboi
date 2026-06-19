@@ -1308,6 +1308,25 @@
   font-size: 1rem;
   margin: 0 0 0.75rem;
 }
+/* A single labelled settings field (the household-name rename). */
+.operator__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+.operator__field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.operator__field-hint {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+.operator__household-name .input {
+  max-width: 22rem;
+}
 /* The how-it-works card carried inline at the top of each Réglages tab — a quiet
    reference above the actual controls, set a touch apart from the section below. */
 .section-guide {

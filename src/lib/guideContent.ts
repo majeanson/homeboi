@@ -504,6 +504,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Bâtir une famille d’un coup', en: 'Build a family at once' },
+        detail: {
+          fr: 'Sous la liste, « Bâtir une famille » ouvre un bâtisseur : nomme la famille, ajoute les personnes, puis choisis un mode. En Cases, glisse chaque visage dans une rangée (Grands-parents, Parents, Enfants) et les liens se créent tout seuls : parents ↔ enfants, frères et sœurs, conjoint·e·s, grands-parents. En Liste, dis simplement « chacun est [lien] de » une personne pivot. Rouvre une famille (l’icône arbre) pour l’agrandir plus tard.',
+          en: 'Under the list, “Build a family” opens a builder: name the family, add the people, then pick a mode. In Boxes, drag each face into a row (Grandparents, Parents, Children) and the links build themselves: parents ↔ children, siblings, partners, grandparents. In List, just say “everyone is [relation] of” one anchor person. Reopen a family (the tree icon) to extend it later.',
+        },
+        why: {
+          fr: 'Définir une famille entière d’un coup, au lieu d’un lien à la fois.',
+          en: 'Define a whole family in one pass instead of one link at a time.',
+        },
+      },
+      {
         label: { fr: 'Trois vues : Liste, Liens, Arbre', en: 'Three views: List, Links, Tree' },
         detail: {
           fr: 'Bascule en haut du cercle : Liste (le répertoire, regroupé par famille), Liens (touche un visage, ses liens s’affichent autour — touche un autre pour recentrer) et Arbre (les générations, les couples côte à côte).',
@@ -782,12 +793,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Mémo vocal ou dessin', en: 'Voice memo or drawing' },
         detail: {
-          fr: 'Au lieu d’écrire, laisse un mémo vocal ou dessine une petite note pour la maisonnée. Elle s’épingle sur le babillard ; touche ▶ pour l’écouter, ou efface-la d’un geste.',
-          en: 'Instead of typing, leave a voice memo or draw a little note for the household. It pins to the board; tap ▶ to hear it, or clear it with a tap.',
+          fr: 'Au lieu d’écrire, laisse un mémo vocal ou dessine une petite note pour la maisonnée. Le dessin offre un crayon, des collants à tamponner et un mode pixels, plein de couleurs, trois grosseurs et un « défaire ». Elle s’épingle sur le babillard ; touche ▶ pour l’écouter, ✏️ pour continuer un dessin existant, ou efface-la d’un geste.',
+          en: 'Instead of typing, leave a voice memo or draw a little note for the household. Drawing gives you a pen, tap-on stickers and a pixel mode, lots of colours, three sizes and an undo. It pins to the board; tap ▶ to hear it, ✏️ to add to an existing drawing, or clear it with a tap.',
         },
         why: {
-          fr: 'Un mot doux, un dessin d’enfant ou un rappel parlé — plus chaleureux qu’un texte, et tout le monde le voit.',
-          en: 'A sweet word, a kid’s drawing or a spoken reminder — warmer than text, and everyone sees it.',
+          fr: 'Un mot doux, un dessin d’enfant ou un rappel parlé — plus chaleureux qu’un texte. Et comme tout le monde peut continuer un dessin, ça devient un petit babillard à dessiner en famille.',
+          en: 'A sweet word, a kid’s drawing or a spoken reminder — warmer than text. And since anyone can add to a drawing, it becomes a little family doodle board.',
         },
       },
     ],

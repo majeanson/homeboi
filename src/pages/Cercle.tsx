@@ -268,6 +268,16 @@ function CercleParent() {
                         <span className="cercle-group__dot" style={{ background: g.colour ?? ACCENT }} />
                         {g.name}
                         <span className="mono cercle-group__kind">{t.cercle.groupKinds[g.kind]}</span>
+                        {g.kind === 'family' && (
+                          <button
+                            type="button"
+                            className="row-actions__btn"
+                            aria-label={t.cercle.familyEditBuilder}
+                            onClick={() => nav(`/cercle/family/${g.id}`)}
+                          >
+                            <InlineIcon name="tree-bold" size={12} />
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="row-actions__btn cercle-group__delete"
@@ -311,6 +321,11 @@ function CercleParent() {
                       {others.map((p) => <Row key={p.key} p={p} />)}
                     </section>
                   )}
+
+                  {/* Build a whole family's relationships at once */}
+                  <button type="button" className="btn cercle-build-family" onClick={() => nav('/cercle/family/new')}>
+                    <InlineIcon name="tree-bold" size={15} /> {t.cercle.familyBuild}
+                  </button>
 
                   {/* Create new named group */}
                   <div className="cercle-add-group">

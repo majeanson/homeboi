@@ -7,6 +7,10 @@ import {
   buildPeople,
   unifyCircle,
   genderedRelLabel,
+  familyLinksFromBands,
+  familyLinksFromMatrix,
+  dedupeNewLinks,
+  parsePersonKey,
   personKey,
   daysUntilBirthday,
   ageOnNextBirthday,
@@ -209,6 +213,62 @@ describe('genderedRelLabel (the label describes the SUBJECT, gendered by THEIR s
   it('genders in EN too', () => {
     expect(genderedRelLabel('parent', 'f', 'en')).toBe('Mother')
     expect(genderedRelLabel('sibling', 'm', 'en')).toBe('Brother')
+  })
+})
+
+describe('family builder engine', () => {
+  const k = (id: string) => personKey('contact', id)
+  // A tie between two keys, ignoring direction, as "type" or undefined if absent.
+  const tieOf = (links: { aKey: string; bKey: string; type: string }[], a: string, b: string) =>
+    links.find((l) => (l.aKey === a && l.bKey === b) || (l.aKey === b && l.bKey === a))?.type
+
+  it('parsePersonKey round-trips personKey', () => {
+    expect(parsePersonKey(personKey('member', 'm1'))).toEqual({ kind: 'member', id: 'm1' })
+    expect(parsePersonKey(personKey('contact', 'c1'))).toEqual({ kind: 'contact', id: 'c1' })
+  })
+
+  it('bands: parents→children parent, children siblings, two parents spouse', () => {
+    const links = familyLinksFromBands({ grandparents: [], parents: [k('pa'), k('ma')], children: [k('x'), k('y')] })
+    expect(tieOf(links, k('pa'), k('x'))).toBe('parent')
+    expect(tieOf(links, k('ma'), k('y'))).toBe('parent')
+    expect(tieOf(links, k('x'), k('y'))).toBe('sibling')
+    expect(tieOf(links, k('pa'), k('ma'))).toBe('spouse')
+  })
+
+  it('bands: grandparents link to children as grandparent, not to parents', () => {
+    const links = familyLinksFromBands({ grandparents: [k('gp')], parents: [k('pa')], children: [k('kid')] })
+    expect(tieOf(links, k('gp'), k('kid'))).toBe('grandparent')
+    expect(tieOf(links, k('gp'), k('pa'))).toBeUndefined() // side is ambiguous — never guessed
+  })
+
+  it('bands: a lone parent gets NO spouse edge (ambiguous)', () => {
+    const links = familyLinksFromBands({ grandparents: [], parents: [k('solo')], children: [k('kid')] })
+    expect(links.some((l) => l.type === 'spouse')).toBe(false)
+    expect(tieOf(links, k('solo'), k('kid'))).toBe('parent')
+  })
+
+  it('matrix: each person is [type] of the anchor; skipped picks dropped', () => {
+    const links = familyLinksFromMatrix(k('me'), [
+      { key: k('mum'), type: 'parent' },
+      { key: k('bro'), type: 'sibling' },
+      { key: k('nobody'), type: null },
+      { key: k('me'), type: 'parent' }, // self — ignored
+    ])
+    expect(links).toHaveLength(2)
+    expect(links).toContainEqual({ aKey: k('mum'), bKey: k('me'), type: 'parent' })
+    expect(links).toContainEqual({ aKey: k('bro'), bKey: k('me'), type: 'sibling' })
+  })
+
+  it('dedupeNewLinks skips pairs already linked (either direction)', () => {
+    const existing = [link('a', 'b', 'parent')] // contact a ↔ b
+    const fresh = dedupeNewLinks(
+      [
+        { aKey: k('b'), bKey: k('a'), type: 'sibling' }, // same pair, reversed → skip
+        { aKey: k('a'), bKey: k('c'), type: 'parent' }, // new → keep
+      ],
+      existing,
+    )
+    expect(fresh).toEqual([{ aKey: k('a'), bKey: k('c'), type: 'parent' }])
   })
 })
 

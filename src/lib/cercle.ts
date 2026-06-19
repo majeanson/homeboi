@@ -97,6 +97,12 @@ const CONTACT_ACCENT = '#C45E86' // the cercle rose, for photoless contacts
 
 export const personKey = (kind: PersonKind, id: string): string => `${kind}:${id}`
 
+// Split a composite `${kind}:${id}` back into its parts (ids never contain ':').
+export function parsePersonKey(key: string): { kind: PersonKind; id: string } {
+  const i = key.indexOf(':')
+  return { kind: key.slice(0, i) as PersonKind, id: key.slice(i + 1) }
+}
+
 // Merge contacts + members into one people set. Contacts render their photo (or a
 // rose initials tile); members render their member avatar/colour (their board face).
 export function buildPeople(contacts: Contact[], members: Member[]): Person[] {
@@ -523,6 +529,95 @@ export function generationOf(people: Person[], links: ContactLink[]): Map<string
     }
   }
   return gen
+}
+
+// ---- Family builder ---------------------------------------------------------
+// Define a whole family's relationships at once instead of one link at a time, two
+// ways that share this one pure engine: drop people into generation BANDS, or set
+// each person's relation to a single ANCHOR. Both yield directed GeneratedLink edges
+// ("aKey is `type` of bKey"); the caller splits the keys (parsePersonKey) and POSTs
+// to /api/cercle-links, which derives the inverse + rejects server-side duplicates.
+
+export type FamilyBand = 'grandparents' | 'parents' | 'children'
+export const FAMILY_BANDS: FamilyBand[] = ['grandparents', 'parents', 'children']
+
+export interface GeneratedLink {
+  aKey: string
+  bKey: string
+  type: RelationshipType
+}
+
+// Unordered pair key — there's at most ONE family tie per pair, so we de-dupe on the
+// pair alone (ignoring direction/type), which also matches the server's dup rule.
+const pairId = (a: string, b: string) => (a < b ? `${a} ${b}` : `${b} ${a}`)
+
+// Links implied by placing people into generation bands. Only UNAMBIGUOUS rules — a
+// flat band model can't know which grandparent belongs to which parent, so we never
+// invent that edge:
+//   • two children in the same band  → siblings
+//   • each parent → each child       → parent
+//   • each grandparent → each child  → grandparent (true whichever side they're on)
+//   • EXACTLY two parents            → spouses (the common nuclear case; 1 or 3+ is
+//     ambiguous, so we leave it for the per-person editor)
+// Self-pairs are impossible here (distinct people per slot) but within-set dups are
+// collapsed. Order within a result is deterministic.
+export function familyLinksFromBands(bands: {
+  grandparents: string[]
+  parents: string[]
+  children: string[]
+}): GeneratedLink[] {
+  const out: GeneratedLink[] = []
+  const seen = new Set<string>()
+  const push = (aKey: string, bKey: string, type: RelationshipType) => {
+    if (aKey === bKey) return
+    const pk = pairId(aKey, bKey)
+    if (seen.has(pk)) return
+    seen.add(pk)
+    out.push({ aKey, bKey, type })
+  }
+  const { grandparents, parents, children } = bands
+  // children ↔ children: siblings
+  for (let i = 0; i < children.length; i++)
+    for (let j = i + 1; j < children.length; j++) push(children[i], children[j], 'sibling')
+  // parents → children: parent
+  for (const p of parents) for (const c of children) push(p, c, 'parent')
+  // grandparents → children: grandparent
+  for (const g of grandparents) for (const c of children) push(g, c, 'grandparent')
+  // exactly two parents → spouses
+  if (parents.length === 2) push(parents[0], parents[1], 'spouse')
+  return out
+}
+
+// Links from the "everyone's relation to one anchor" form: each pick reads
+// "{person} is {type} of {anchor}". Picks without a type (skipped) are dropped.
+export function familyLinksFromMatrix(
+  anchorKey: string,
+  picks: { key: string; type: RelationshipType | null }[],
+): GeneratedLink[] {
+  const out: GeneratedLink[] = []
+  const seen = new Set<string>()
+  for (const p of picks) {
+    if (!p.type || p.key === anchorKey) continue
+    const pk = pairId(p.key, anchorKey)
+    if (seen.has(pk)) continue
+    seen.add(pk)
+    out.push({ aKey: p.key, bKey: anchorKey, type: p.type })
+  }
+  return out
+}
+
+// Drop generated links whose pair already has a tie (in either direction) — so
+// re-running the builder over an existing family only adds what's missing.
+export function dedupeNewLinks(generated: GeneratedLink[], existing: ContactLink[]): GeneratedLink[] {
+  const have = new Set(existing.map((l) => pairId(personKey(l.personAKind, l.personAId), personKey(l.personBKind, l.personBId))))
+  const out: GeneratedLink[] = []
+  for (const g of generated) {
+    const pk = pairId(g.aKey, g.bKey)
+    if (have.has(pk)) continue
+    have.add(pk)
+    out.push(g)
+  }
+  return out
 }
 
 // ---- Birthday math ----------------------------------------------------------

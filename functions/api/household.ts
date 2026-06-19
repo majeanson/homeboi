@@ -18,13 +18,23 @@ import { nowSec } from '../_lib/ids'
 // (postal, store filter, meal colours, reserve spots); only member admin + device
 // pairing stay operator-only.
 
+// The household's display name ("Famille Jeanson", "La maisonnée") — set at signup,
+// renamable in Réglages. NOT NULL in the schema, so a blank rename is rejected (not
+// stored); capped at 60 like signup.
+async function householdName(env: { DB: D1Database }, householdId: string): Promise<string> {
+  const row = await env.DB.prepare('SELECT name FROM households WHERE id = ?').bind(householdId).first<{ name: string }>()
+  return row?.name ?? ''
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
+  const name = await householdName(ctx.env, actor.householdId)
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
   const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
   return ok({
+    name,
     postal,
     includedStores,
     mealColors: meals.colors,
@@ -36,6 +46,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
 export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<{
+    name?: string
     postal?: string | null
     includedStores?: string[]
     mealColors?: Record<string, string>
@@ -43,6 +54,16 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     measureColors?: Record<string, string>
     reserveLocations?: unknown
   }>(ctx.request)
+
+  // Household name: trimmed + capped at 60 (like signup). Blank is ignored — the
+  // column is NOT NULL and a household always keeps a name.
+  if (body && 'name' in body) {
+    const name = body.name?.trim().slice(0, 60)
+    if (!name) return badRequest('Nom de la maisonnée requis.')
+    await ctx.env.DB.prepare('UPDATE households SET name = ?, updated_at = ? WHERE id = ?')
+      .bind(name, nowSec(), actor.householdId)
+      .run()
+  }
 
   // Each field is only touched when its key is present, so the postal form and
   // the store-filter form can PATCH independently without clobbering each other.
@@ -110,12 +131,14 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
   }
 
+  const name = await householdName(ctx.env, actor.householdId)
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
   const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
   return ok({
+    name,
     postal,
     includedStores,
     mealColors: meals.colors,
