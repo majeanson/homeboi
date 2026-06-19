@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
-import { useModal } from '../../lib/useModal'
-import { useSwipeToDismiss } from '../../lib/useSwipeToDismiss'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { Icon } from '../Icon'
+import { Sheet } from '../Sheet'
 import { Avatar } from '../Avatar'
 import { ZoomableImg } from '../ZoomableImg'
 import { HeartButton } from '../HeartButton'
@@ -21,10 +20,7 @@ import type { DetailAction, DetailBlock, DetailModel } from '../../lib/detail'
 export function EntityDetailSheet({ model, onClose }: { model: DetailModel | null; onClose: () => void }) {
   const t = useT()
   const nav = useNavigate()
-  const ref = useRef<HTMLDivElement>(null)
   const open = !!model
-  useModal(ref, onClose, { open })
-  useSwipeToDismiss(ref, onClose, { open })
 
   // Keep showing the last model through the slide-out (model goes null on close).
   const [shown, setShown] = useState<DetailModel | null>(model)
@@ -41,22 +37,9 @@ export function EntityDetailSheet({ model, onClose }: { model: DetailModel | nul
   }
 
   return (
-    <>
-      <div className={'scrim' + (open ? ' show' : '')} onClick={onClose} aria-hidden="true" />
-      <div
-        ref={ref}
-        className={'sheet detail-sheet' + (open ? ' show' : '')}
-        role="dialog"
-        aria-modal="true"
-        aria-label={m?.title ?? t.detail.aria}
-      >
-        <button type="button" className="sheet__close" onClick={onClose} aria-label={t.common.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
-        <div className="grab" aria-hidden="true" />
-        {m && <DetailBody model={m} onAction={runAction} />}
-      </div>
-    </>
+    <Sheet open={open} onClose={onClose} ariaLabel={m?.title ?? t.detail.aria} className="detail-sheet">
+      {m && <DetailBody model={m} onAction={runAction} />}
+    </Sheet>
   )
 }
 

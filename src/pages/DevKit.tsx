@@ -36,6 +36,7 @@ import { HubHead } from '../components/HubHead'
 import { SceneHead } from '../components/SceneHead'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
+import { Sheet } from '../components/Sheet'
 import { RecipeListPicker } from '../components/RecipeListPicker'
 import { OperatorSection } from '../components/operator/OperatorSection'
 import { DealCard } from '../components/DealCard'
@@ -180,6 +181,7 @@ export function DevKit() {
   const [chipOn, setChipOn] = useState<string[]>(['préféré'])
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const [listPickOpen, setListPickOpen] = useState(false)
   const voice = useVoiceInput(setText3, { continuous: true, split: true })
   const icons = Object.keys(PIP_ICONS) as IconName[]
@@ -933,6 +935,28 @@ export function DevKit() {
                 Compris
               </button>
             </Modal>
+          </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'Sheet',
+      file: 'components/Sheet.tsx',
+      kw: 'sheet bottom drawer swipe grab tiroir',
+      render: () => (
+        <Demo label="bottom sheet (scrim / swipe-down / ✕)">
+          <div>
+            <button className="btn" onClick={() => setSheetOpen(true)}>
+              Ouvrir la feuille
+            </button>
+            <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} ariaLabel="Démo de feuille">
+              <h3>Une feuille partagée</h3>
+              <p>Glisse la poignée vers le bas, tape le fond, Esc ou le ✕ ferment. Scroll-lock + focus-trap + swipe via useModal/useSwipeToDismiss.</p>
+              <button className="btn btn--primary" onClick={() => setSheetOpen(false)}>
+                Compris
+              </button>
+            </Sheet>
           </div>
         </Demo>
       ),
