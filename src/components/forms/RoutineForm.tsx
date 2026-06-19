@@ -38,11 +38,16 @@ export interface RoutineInit {
 export function RoutineForm({
   members,
   value,
+  seed,
   onSaved,
   onCancel,
 }: {
   members: FormMember[]
   value?: RoutineInit | null
+  // Pre-fill a NEW routine's deck (create mode only) — e.g. a fridge drawing turned
+  // into the first card's photo (#14 → #17 C, see lib/drawingToRoutine). Ignored
+  // when `value` is set (that's edit/PATCH mode).
+  seed?: { cards: DeckCard[]; cardsPhoto: string[] } | null
   onSaved: () => void
   onCancel?: () => void
 }) {
@@ -54,7 +59,7 @@ export function RoutineForm({
   const [memberIds, setMemberIds] = useState<string[]>([])
   const [name, setName] = useState(value?.name ?? '')
   const [cards, setCards] = useState<DeckCard[]>(
-    value?.cards?.map((c) => ({ icon: c.icon, label: c.label })) ?? [],
+    value?.cards?.map((c) => ({ icon: c.icon, label: c.label })) ?? seed?.cards ?? [],
   )
   // Parallel parent-voice clip keys (feature #17 A), kept rigorously the SAME
   // length as `cards` — CardDeckEditor mutates both arrays together on every
@@ -67,7 +72,7 @@ export function RoutineForm({
   // CardDeckEditor mutates this array alongside cards + clips on every
   // add/remove/reorder. Seeded (and padded) from the loaded routine on edit.
   const [cardsPhoto, setCardsPhoto] = useState<string[]>(() =>
-    alignSide(value?.cardsPhoto, value?.cards?.length ?? 0),
+    value ? alignSide(value.cardsPhoto, value.cards?.length ?? 0) : alignSide(seed?.cardsPhoto, seed?.cards?.length ?? 0),
   )
   // The moment-of-day cue (null = anytime). Orders the kid view; never a gate.
   const initTod = isRoutineTod(value?.timeOfDay) ? value?.timeOfDay : null

@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useLocation, useParams } from 'react-router-dom'
 import { FormScene } from '../components/FormScene'
 import { RoutineForm, type RoutineInit } from '../components/forms/RoutineForm'
+import type { RoutineSeed } from '../lib/drawingToRoutine'
 import { Loading } from '../components/Fallback'
 import { api } from '../lib/api'
 import { ROUTINES_KEY } from '../lib/queryKeys'
@@ -17,7 +18,10 @@ export function RoutineFormPage() {
   const t = useT()
   const qc = useQueryClient()
   const { id } = useParams()
+  const location = useLocation()
   const editing = !!id
+  // A drawing handed off from DrawPad seeds the first card's photo (#14 → #17 C).
+  const seed = (location.state as { routineSeed?: RoutineSeed } | null)?.routineSeed ?? null
 
   // Edit: prefill from the routine. The list is normally already cached from the
   // Routines tab; a cold deep-link fetches it. Create: no fetch.
@@ -42,6 +46,7 @@ export function RoutineFormPage() {
           <RoutineForm
             members={members}
             value={routine}
+            seed={editing ? null : seed}
             onSaved={() => {
               qc.invalidateQueries({ queryKey: ROUTINES_KEY })
               qc.invalidateQueries({ queryKey: ['board'] })

@@ -158,6 +158,8 @@ export const FR = {
     drawPen: 'Crayon',
     drawSticker: 'Collants',
     drawPixel: 'Pixels',
+    share: 'Partager',
+    routine: 'En routine',
   },
   loves: {
     love: 'J’aime',
@@ -1319,6 +1321,8 @@ export const EN: typeof FR = {
     drawPen: 'Pen',
     drawSticker: 'Stickers',
     drawPixel: 'Pixels',
+    share: 'Share',
+    routine: 'To routine',
   },
   loves: {
     love: 'Love it',

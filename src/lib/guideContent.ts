@@ -793,8 +793,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Mémo vocal ou dessin', en: 'Voice memo or drawing' },
         detail: {
-          fr: 'Au lieu d’écrire, laisse un mémo vocal ou dessine une petite note pour la maisonnée. Le dessin offre un crayon, des collants à tamponner et un mode pixels, plein de couleurs, trois grosseurs et un « défaire ». Elle s’épingle sur le babillard ; touche ▶ pour l’écouter, ✏️ pour continuer un dessin existant, ou efface-la d’un geste.',
-          en: 'Instead of typing, leave a voice memo or draw a little note for the household. Drawing gives you a pen, tap-on stickers and a pixel mode, lots of colours, three sizes and an undo. It pins to the board; tap ▶ to hear it, ✏️ to add to an existing drawing, or clear it with a tap.',
+          fr: 'Au lieu d’écrire, laisse un mémo vocal ou dessine une petite note pour la maisonnée. Le dessin offre un crayon, des collants à tamponner et un mode pixels (avec sa grille), plein de couleurs, trois grosseurs et un « défaire ». Elle s’épingle sur le babillard ; touche ▶ pour l’écouter, ✏️ pour continuer un dessin existant, ou efface-la d’un geste. Tu peux aussi partager un dessin ou en faire une carte de routine.',
+          en: 'Instead of typing, leave a voice memo or draw a little note for the household. Drawing gives you a pen, tap-on stickers and a pixel mode (with a grid), lots of colours, three sizes and an undo. It pins to the board; tap ▶ to hear it, ✏️ to add to an existing drawing, or clear it with a tap. You can also share a drawing or turn it into a routine card.',
         },
         why: {
           fr: 'Un mot doux, un dessin d’enfant ou un rappel parlé — plus chaleureux qu’un texte. Et comme tout le monde peut continuer un dessin, ça devient un petit babillard à dessiner en famille.',

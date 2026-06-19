@@ -7,6 +7,7 @@ import { BOARD_KEY } from '../../lib/queryKeys'
 import { useSpeak } from '../../lib/speak'
 import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
+import { useDrawingToRoutine } from '../../lib/drawingToRoutine'
 import { Icon, InlineIcon } from '../Icon'
 import { DrawPad } from '../DrawPad'
 import { colorOf as memberColorOf, type BoardData, type Member, type NoteRow } from './types'
@@ -29,6 +30,7 @@ export function Notes({
   const write = useWrite()
   const qc = useQueryClient()
   const speak = useSpeak()
+  const toRoutine = useDrawingToRoutine()
   // One shared <audio> so playing a voice memo (#38) stops any previous one.
   const audioRef = useRef<HTMLAudioElement | null>(null)
   // A drawing being re-opened in DrawPad to add to it (#14, the shared family doodle).
@@ -190,6 +192,7 @@ export function Notes({
           initial={editing.media_key ? imgUrl(editing.media_key) : undefined}
           onCancel={() => setEditing(null)}
           onSave={(png) => void saveDrawing(png)}
+          onMakeRoutine={(png) => void toRoutine(png)}
         />
       )}
     </section>

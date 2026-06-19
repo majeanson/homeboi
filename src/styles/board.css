@@ -683,6 +683,10 @@
   touch-action: none;
   overscroll-behavior: none;
   overflow: hidden;
+  /* A stroke must never select text or pop the iOS text/callout menu. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .drawpad__bar {
   display: flex;
@@ -792,12 +796,40 @@
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent);
 }
-.drawpad__canvas {
+/* Stage = the draw area: the canvas + (in pixel mode) a guide-grid overlay,
+   stacked. flex:1 so it fills under the toolbar. */
+.drawpad__stage {
+  position: relative;
   flex: 1;
   min-height: 0;
+}
+.drawpad__canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
   background: #fffdf7;
   touch-action: none; /* a finger draws, never scrolls/zooms the page */
+}
+/* Pixel-mode snap grid — purely visual (pointer-events:none), aligned to the
+   canvas's 0,0 at the current cell size, never part of the saved PNG. */
+.drawpad__grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: var(--cell, 24px) var(--cell, 24px);
+}
+/* Action bar: Cancel on the left, the Share / To-routine / Save group on the right. */
+.drawpad__actions-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .drawpad__actions {
   display: flex;

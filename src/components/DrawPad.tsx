@@ -63,11 +63,15 @@ export function DrawPad({
   open,
   onCancel,
   onSave,
+  onMakeRoutine,
   initial,
 }: {
   open: boolean
   onCancel: () => void
   onSave: (png: Blob) => void
+  // Optional: turn the current drawing into a kid-routine card (caller uploads +
+  // navigates to the routine builder, see lib/drawingToRoutine). Hidden if absent.
+  onMakeRoutine?: (png: Blob) => void
   // An existing drawing to load and draw on top of (edit / add-to). Same-origin
   // (/api/img/…) so the canvas stays untainted and `toBlob` works.
   initial?: string
@@ -320,19 +324,70 @@ export function DrawPad({
     render([])
   }
 
-  const save = () => {
+  const isEmpty = () => {
     const pad = padRef.current
-    const empty =
-      (!pad || pad.isEmpty()) && !stampsRef.current.length && !pixelsRef.current.size && !baseImgRef.current
-    if (empty) {
+    return (!pad || pad.isEmpty()) && !stampsRef.current.length && !pixelsRef.current.size && !baseImgRef.current
+  }
+
+  // Export the drawing, DOWNSCALED to a sane max edge. The live canvas is sized at
+  // CSS-px × devicePixelRatio (often 2400px+ on a tablet) — exporting that raw made
+  // multi-MB PNGs that janked the board when shown inside a rotated card. Capping
+  // here keeps the stored blob small (and R2 lean) without touching the draw surface.
+  const MAX_EDGE = 1280
+  function exportBlob(cb: (blob: Blob | null) => void) {
+    const canvas = canvasRef.current
+    if (!canvas) return cb(null)
+    const scale = Math.min(1, MAX_EDGE / Math.max(canvas.width, canvas.height))
+    if (scale >= 1) return canvas.toBlob(cb, 'image/png')
+    const off = document.createElement('canvas')
+    off.width = Math.max(1, Math.round(canvas.width * scale))
+    off.height = Math.max(1, Math.round(canvas.height * scale))
+    const ctx = off.getContext('2d')
+    if (!ctx) return canvas.toBlob(cb, 'image/png')
+    ctx.drawImage(canvas, 0, 0, off.width, off.height)
+    off.toBlob(cb, 'image/png')
+  }
+
+  const save = () => {
+    if (isEmpty()) {
       onCancel()
       return
     }
     setBusy(true)
-    canvasRef.current?.toBlob((blob) => {
+    exportBlob((blob) => {
       setBusy(false)
       if (blob) onSave(blob)
-    }, 'image/png')
+    })
+  }
+
+  // Share the drawing via the OS share sheet (text/photo/social) with a download
+  // fallback where the Web Share API can't take files (most desktops). No server.
+  const share = () => {
+    if (isEmpty() || busy) return
+    exportBlob((blob) => {
+      if (!blob) return
+      const file = new File([blob], 'babillard-dessin.png', { type: 'image/png' })
+      const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
+      if (nav.canShare?.({ files: [file] })) {
+        void nav.share({ files: [file] }).catch(() => {}) // user cancelled — fine
+        return
+      }
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file.name
+      a.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 5000)
+    })
+  }
+
+  // Hand the current drawing up to become a kid-routine card (caller uploads it +
+  // opens the routine builder pre-seeded). Closes nothing here — navigation does.
+  const makeRoutine = () => {
+    if (!onMakeRoutine || isEmpty() || busy) return
+    exportBlob((blob) => {
+      if (blob) onMakeRoutine(blob)
+    })
   }
 
   const MODES: Array<{ key: Mode; icon: Parameters<typeof Icon>[0]['name']; label: string }> = [
@@ -420,14 +475,36 @@ export function DrawPad({
           </button>
         </div>
       </div>
-      <canvas ref={canvasRef} className="drawpad__canvas" />
+      <div className="drawpad__stage">
+        <canvas ref={canvasRef} className="drawpad__canvas" />
+        {/* Pixel mode: a faint snap grid over the canvas at the current cell size.
+            Pure DOM (pointer-events:none) so it guides the eye but is NEVER baked
+            into the exported PNG. */}
+        {mode === 'pixel' && (
+          <div
+            className="drawpad__grid"
+            aria-hidden="true"
+            style={{ '--cell': `${SIZES[size].cell}px` } as React.CSSProperties}
+          />
+        )}
+      </div>
       <div className="drawpad__actions">
         <button type="button" className="btn btn--ghost" onClick={onCancel}>
           {t.memo.cancel}
         </button>
-        <button type="button" className="btn btn--primary" onClick={save} disabled={busy}>
-          <Icon name="check-bold" size={18} /> {t.memo.save}
-        </button>
+        <div className="drawpad__actions-end">
+          <button type="button" className="btn btn--ghost" onClick={share} disabled={busy}>
+            {t.memo.share}
+          </button>
+          {onMakeRoutine && (
+            <button type="button" className="btn btn--ghost" onClick={makeRoutine} disabled={busy}>
+              <Icon name="baby-bold" size={18} /> {t.memo.routine}
+            </button>
+          )}
+          <button type="button" className="btn btn--primary" onClick={save} disabled={busy}>
+            <Icon name="check-bold" size={18} /> {t.memo.save}
+          </button>
+        </div>
       </div>
     </div>
   )
