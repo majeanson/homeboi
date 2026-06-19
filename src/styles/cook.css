@@ -614,16 +614,18 @@
 .kitchen__day-recipe-link:active {
   transform: translateY(1px);
 }
+/* The filter/sort PILLS sit on ONE agglomerated line that scrolls sideways when
+   they overflow — same pattern as the tag-chips row below, so the two read as a
+   pair. (flex-wrap stacked the wide FR pills one-per-line on a narrow phone.) */
 .kitchen__recipe-tools {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.6rem;
   margin-bottom: 0.8rem;
-}
-.kitchen__recipe-tools .kitchen__recipe-search {
-  flex: 1 1 12rem;
-  margin-bottom: 0;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+  -webkit-overflow-scrolling: touch;
 }
 /* Search on its own line (full width), with the Aa/Collections toggle beside it. */
 .kitchen__recipe-searchbar {
