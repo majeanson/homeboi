@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
 import { isGuest } from '../lib/device'
 import { Icon } from './Icon'
+import { EditField } from './EditField'
 import { RowActions } from './RowActions'
 
 // The ONE calm check-list row. Layout: [check button] · [inert title (+note)] ·
@@ -64,36 +65,22 @@ export function CheckRow({
       return <li className="kitchen__pantry-row">{renderEdit(() => setEditing(false))}</li>
     return (
       <li className="kitchen__pantry-row">
-        <form
-          className="operator__inline-form"
-          style={{ flex: '1 1 auto' }}
-          onSubmit={(e) => {
-            e.preventDefault()
-            onRename?.(text)
+        <EditField
+          value={text}
+          onChange={setText}
+          onSubmit={(v) => {
+            onRename?.(v)
             setEditing(false)
           }}
-        >
-          <input
-            className="input"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            aria-label={t.common.edit}
-            autoFocus
-          />
-          <button type="submit" className="btn" disabled={!text.trim()}>
-            {t.common.save}
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={() => {
-              setText(item)
-              setEditing(false)
-            }}
-          >
-            {t.common.cancel}
-          </button>
-        </form>
+          onCancel={() => {
+            setText(item)
+            setEditing(false)
+          }}
+          submitIcon="check-bold"
+          ariaLabel={t.common.edit}
+          autoFocus
+          className="checkrow__edit"
+        />
       </li>
     )
   }

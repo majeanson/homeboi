@@ -830,6 +830,10 @@
   align-items: center;
   gap: 0.3rem;
 }
+/* CheckRow's inline rename is now a full-width EditField (was operator__inline-form). */
+.checkrow__edit {
+  flex: 1 1 auto;
+}
 /* The check is its own ≥40px button (square glyph), not the whole row. */
 .checkrow__check {
   flex: none;

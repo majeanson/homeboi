@@ -10,6 +10,7 @@ import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost } from '../../lib/dnd'
 import { Icon, InlineIcon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
+import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 
 // A chip tinted by its tag colour (readable on cream AND dark via the theme-aware
@@ -69,8 +70,8 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   // Editing the pill list always writes the FULL effective list, so the first
   // touch turns the built-in starters into the household's own saved set.
   const savePills = (next: string[]) => patch.mutate({ presets: next })
-  function addPill() {
-    const s = pillInput.trim()
+  function addPill(value: string) {
+    const s = value.trim()
     if (s && !effective.some((tg) => tg.toLowerCase() === s.toLowerCase())) savePills([...effective, s])
     setPillInput('')
   }
@@ -182,25 +183,15 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
           return tg ? colorEditor(tg) : null
         })()}
       {!ro && (
-        <form
-          className="operator__inline-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            addPill()
-          }}
-        >
-          <input
-            className="input"
-            value={pillInput}
-            onChange={(e) => setPillInput(e.target.value)}
-            placeholder={t.operator.tagAddPill}
-            aria-label={t.operator.tagAddPill}
-            maxLength={24}
-          />
-          <button type="submit" className="btn" disabled={!pillInput.trim()} aria-label={t.operator.tagAddPill}>
-            <Icon name="plus-bold" size={18} />
-          </button>
-        </form>
+        <EditField
+          value={pillInput}
+          onChange={setPillInput}
+          onSubmit={(v) => addPill(v)}
+          placeholder={t.operator.tagAddPill}
+          ariaLabel={t.operator.tagAddPill}
+          maxLength={24}
+          submitIcon="plus-bold"
+        />
       )}
 
       <HelpTitle as="h3" className="operator__sub" help={help} k="tagUsed">{t.operator.tagUsed}</HelpTitle>
@@ -216,28 +207,17 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
               <li key={tag.toLowerCase()} className="tag-admin__row-wrap">
                 <div className="tag-admin__row">
                   {!ro && renaming === tag ? (
-                    <form
+                    <EditField
+                      value={renameTo}
+                      onChange={setRenameTo}
+                      onSubmit={() => commitRename(tag)}
+                      onCancel={() => setRenaming(null)}
+                      maxLength={24}
+                      autoFocus
+                      submitIcon="check-bold"
+                      ariaLabel={`${t.operator.tagRename} — ${tag}`}
                       className="tag-admin__rename"
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        commitRename(tag)
-                      }}
-                    >
-                      <input
-                        className="input"
-                        value={renameTo}
-                        onChange={(e) => setRenameTo(e.target.value)}
-                        maxLength={24}
-                        autoFocus
-                        aria-label={`${t.operator.tagRename} — ${tag}`}
-                      />
-                      <button type="submit" className="btn" disabled={!renameTo.trim()} aria-label={t.operator.tagRename}>
-                        <Icon name="check-bold" size={16} />
-                      </button>
-                      <button type="button" className="btn btn--ghost mono" onClick={() => setRenaming(null)}>
-                        <Icon name="x-bold" size={15} />
-                      </button>
-                    </form>
+                    />
                   ) : (
                     <>
                       <span className="chip tag-admin__name" style={chipTint(tagColor(colors, tag))}>

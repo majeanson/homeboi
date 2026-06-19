@@ -205,12 +205,12 @@ What's still duplicated at the call sites. The primitive now exists for rows 1�
 
 ### EditField rollout
 Done: Liste add, kitchen meal/supper/note + meal rename, routine deck rows, device
-rename, postal, réserve add. **Still hand-rolled (migrate next):**
-- `components/kitchen/PantryTab.tsx` — low/running-out add (voice).
-- `components/operator/recipesTags.tsx` — tag pill add + rename.
-- `components/CheckRow.tsx` (lines ~46–78) — its built-in inline rename still uses a
-  raw `operator__inline-form`; swap to EditField.
-- The `forms/ChoreForm` / `EventForm` / `RoutineForm` title inputs.
+rename, postal, réserve add, **PantryTab low + use-soon add (voice)**, **recipesTags
+tag-pill add + rename**, **CheckRow inline rename** (`.checkrow__edit`).
+**Deliberately NOT migrated:** `forms/ChoreForm` / `EventForm` / `RoutineForm` title
+inputs — these are sub-fields inside a larger composite `<form>` with one submit at
+the bottom; `EditField` renders its own `<form>`, and nesting forms is invalid HTML.
+They stay plain `.input` unless EditField grows a non-form (`as="div"`) mode.
 
 ---
 
