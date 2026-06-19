@@ -18,10 +18,15 @@ export interface RoutineSeed {
 export function useDrawingToRoutine() {
   const nav = useNavigate()
   return async (png: Blob) => {
-    const file = new File([png], 'dessin.png', { type: 'image/png' })
-    const small = await resizeImage(file, PHOTO_MAX)
-    const { key } = await api<{ key: string }>('routine-card-photo', { method: 'POST', body: small })
-    const seed: RoutineSeed = { cards: [{ icon: '🎨', label: '' }], cardsPhoto: [key] }
-    nav('/routine/new', { state: { routineSeed: seed } })
+    try {
+      const file = new File([png], 'dessin.png', { type: 'image/png' })
+      const small = await resizeImage(file, PHOTO_MAX)
+      const { key } = await api<{ key: string }>('routine-card-photo', { method: 'POST', body: small })
+      const seed: RoutineSeed = { cards: [{ icon: '🎨', label: '' }], cardsPhoto: [key] }
+      nav('/routine/new', { state: { routineSeed: seed } })
+    } catch {
+      // R2 unset / offline (503) — the photo can't be stored, so don't navigate to
+      // a builder with a broken card. Silent: the drawing is still safe to pin/share.
+    }
   }
 }
