@@ -8,6 +8,7 @@ import { BigTiles, Sayable, type Tile } from '../BigTiles'
 import { InlineIcon } from '../Icon'
 import { buildCollections } from './CollectionPicker'
 import { KidCollections } from './KidCollections'
+import { ToddlerCookBook } from './ToddlerCookBook'
 import { type MealRow, type WeekDay } from './types'
 
 // Toddler lens on the kitchen: just "what's for supper" this week, big and
@@ -42,6 +43,9 @@ export function KidKitchen({
   // INTO the same pick-a-recipe-onto-a-day act, surfaced as one extra big tile so
   // the existing abilities (hear the week, pick any recipe) are never displaced.
   const [browsing, setBrowsing] = useState(false)
+  // The on-screen toddler cookbook (a swipeable picture book of the recipes,
+  // read aloud) — a door tile opens it; it takes over the kid surface like collections.
+  const [bookOpen, setBookOpen] = useState(false)
 
   // Collections exist when at least one tag groups one or more recipes — only then
   // is the "Les collections" door worth showing (NFR-CALM: no empty affordances).
@@ -86,18 +90,23 @@ export function KidKitchen({
     label: r.title,
     onTap: () => setKidRecipe(r),
   }))
-  const recipeTiles: Tile[] = hasCollections
-    ? [
-        {
-          key: '__collections__',
-          icon: '📚',
-          label: t.kid.collections,
-          onTap: () => setBrowsing(true),
-          confirmHint: t.recipes.collectionTapToOpen,
-        },
-        ...recipeShelf,
-      ]
-    : recipeShelf
+  // The recipe shelf, led by a "Mon livre" door (the picture cookbook) and, when
+  // there are tags, the "Les collections" door — both calm hear-then-open tiles.
+  const bookDoor: Tile = {
+    key: '__book__',
+    icon: '📖',
+    label: t.kid.book,
+    onTap: () => setBookOpen(true),
+    confirmHint: t.recipes.collectionTapToOpen,
+  }
+  const collectionsDoor: Tile = {
+    key: '__collections__',
+    icon: '📚',
+    label: t.kid.collections,
+    onTap: () => setBrowsing(true),
+    confirmHint: t.recipes.collectionTapToOpen,
+  }
+  const recipeTiles: Tile[] = [bookDoor, ...(hasCollections ? [collectionsDoor] : []), ...recipeShelf]
   const dayTiles: Tile[] = kidRecipe
     ? days7.map(({ date, meal }) => ({
         key: String(date),
@@ -118,6 +127,16 @@ export function KidKitchen({
             },
       }))
     : []
+
+  // The picture cookbook takes over the whole kid surface — a calm, one-page-at-a-
+  // time read; cooking a page hands off to the toddler cook stepper (onStartRecipe).
+  if (bookOpen) {
+    return (
+      <main className="kid__main kid__main--feed">
+        <ToddlerCookBook recipes={recipes} onCook={onStartRecipe} onBack={() => setBookOpen(false)} />
+      </main>
+    )
+  }
 
   // The collections door takes over the whole kid surface while open — a focused,
   // one-thing-at-a-time stage for a pre-reader (the supper week is one ← tap away).

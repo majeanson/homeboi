@@ -518,3 +518,171 @@
   gap: 10px;
   margin-top: 18px;
 }
+
+/* ---- #45 (reframed) Toddler on-screen cookbook (ToddlerCookBook) ------------- */
+.tbook {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem 1rem;
+  touch-action: pan-y;
+  user-select: none;
+}
+.tbook__close {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 50%;
+  border: 0;
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  color: var(--ink-soft);
+  cursor: pointer;
+  z-index: 2;
+}
+.tbook__page {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  animation: tbook-in 0.25s ease;
+}
+@keyframes tbook-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tbook__page { animation: none; }
+}
+.tbook__art {
+  width: min(72vw, 52vh);
+  height: min(72vw, 52vh);
+  border: 0;
+  padding: 0;
+  border-radius: 28px;
+  overflow: hidden;
+  background: var(--card);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tbook__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tbook__picto {
+  font-size: min(36vw, 26vh);
+  line-height: 1;
+}
+.tbook__title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 6vw, 2.6rem);
+  text-align: center;
+  line-height: 1.1;
+}
+.tbook__cook {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.9rem 2rem;
+  font-family: var(--display);
+  font-size: clamp(1.2rem, 4.5vw, 1.7rem);
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+}
+.tbook__cook:active {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.14);
+}
+.tbook__cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.tbook__cover-art {
+  font-size: clamp(2.5rem, 12vw, 5rem);
+  letter-spacing: 0.15em;
+}
+.tbook__cover-title {
+  font-family: var(--display);
+  font-size: clamp(2rem, 8vw, 3.4rem);
+  text-align: center;
+  line-height: 1.05;
+}
+.tbook__cover-sub {
+  color: var(--ink-soft);
+}
+.tbook__nav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  width: 100%;
+}
+.tbook__turn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  border: 0;
+  background: var(--card);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12), inset 0 0 0 2px var(--line);
+  color: var(--ink);
+  cursor: pointer;
+}
+.tbook__turn:active {
+  transform: translateY(2px);
+}
+.tbook__turn:disabled {
+  opacity: 0.35;
+  box-shadow: inset 0 0 0 2px var(--line);
+  cursor: default;
+}
+.tbook__dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  max-width: 50vw;
+}
+.tbook__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--line-strong, var(--line));
+  opacity: 0.5;
+}
+.tbook__dot.is-on {
+  background: var(--accent);
+  opacity: 1;
+  transform: scale(1.25);
+}
+.tbook__back {
+  flex: none;
+}

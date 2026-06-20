@@ -29,6 +29,9 @@ export type AddSheetMode =
   // behind the ＋ so the list page itself stays just the list.
   | 'share'
   | 'recipe'
+  // Prepare the printable toddler recipe/activity book (#45) — navigate-only to
+  // /kitchen/book. A ＋ action, NOT an on-page button in the recipe view.
+  | 'book'
   | 'meal'
   | 'leftovers'
   | 'pantry'
@@ -59,7 +62,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`
   // adds to La réserve (freezer/back-of-pantry stash), the third Garde-manger list.
-  kitchen: ['cook', 'recipe', 'meal', 'leftovers', 'pantry', 'reserve'],
+  kitchen: ['cook', 'recipe', 'book', 'meal', 'leftovers', 'pantry', 'reserve'],
   // The Routines tab's ＋ is the manage picker (create new + edit existing),
   // resolved in-sheet — see the `routine-pick` panel in AddSheet.
   routines: ['routine-pick'],

@@ -601,6 +601,8 @@ export const FR = {
     cook: 'On cuisine !',
     // #11 toddler hear-first collections (browse recipes by tag/collection).
     collections: 'Les collections',
+    // The on-screen toddler cookbook door (ToddlerCookBook).
+    book: 'Mon livre',
     whichCollection: 'Choisis une collection',
     collectionPick: 'Choisis une recette',
     backCollections: 'Les collections',
@@ -1896,6 +1898,8 @@ export const EN: typeof FR = {
     cook: "Let's cook!",
     // #11 toddler hear-first collections (browse recipes by tag/collection).
     collections: 'Collections',
+    // The on-screen toddler cookbook door (ToddlerCookBook).
+    book: 'My book',
     whichCollection: 'Pick a collection',
     collectionPick: 'Pick a recipe',
     backCollections: 'Collections',

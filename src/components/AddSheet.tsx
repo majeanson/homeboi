@@ -82,6 +82,9 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   'plan-tomorrow': { cat: 'event', icon: 'sun-horizon-bold' },
   cook: { cat: 'meal', icon: 'cooking-pot-bold' },
   recipe: { cat: 'meal', icon: 'book-open-bold' },
+  // The printable recipe book (#45) — a document glyph so it reads distinct from
+  // the "add a recipe" tile (which shares the open-book glyph).
+  book: { cat: 'meal', icon: 'file-text-bold' },
   meal: { cat: 'list', icon: 'calendar-blank-bold' },
   leftovers: { cat: 'meal', icon: 'arrow-counter-clockwise-bold' },
   pantry: { cat: 'chore', icon: 'carrot-bold' },
@@ -106,6 +109,7 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
 // They never become the sheet's default (defMode skips them).
 const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   recipe: '/kitchen/recipe/new',
+  book: '/kitchen/book',
   'quick-add': '/liste/quick',
   flyer: '/liste/circulaires',
   // Le cercle: person + family are scene routes; connect + group open on /cercle
@@ -495,6 +499,7 @@ export function AddSheet({
       cook: t.kitchen.cook,
       routine: t.nav.routines,
       recipe: t.recipes.add,
+      book: t.recipes.bookMake,
       meal: t.kitchen.planMeal,
       leftovers: t.kitchen.leftovers,
       pantry: t.kitchen.lowAdd,
