@@ -111,7 +111,13 @@ test.describe('navigation', () => {
     await APP('/settings')(page)
     await settle(page, '.operator__tabs')
     await page.getByRole('tab', { name: 'Affichage' }).click()
-    await page.locator('.audience-switch__opt').nth(1).click()
+    // The Affichage tab now has several .audience-switch groups (contrast,
+    // text-scale, view, tutorial); scope to the parent/kid/guest "view" group and
+    // click its "Enfant" option rather than a global .nth(1).
+    await page
+      .getByRole('group', { name: /Parent.*Enfant.*Invité/ })
+      .getByRole('button', { name: 'Enfant' })
+      .click()
     // The toddler lens comes up (bounced to /board) and Réglages leaves the nav.
     await expect(page).toHaveURL(/\/board$/)
     await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'toddler')
@@ -223,7 +229,12 @@ test.describe('toggles', () => {
 
   test('audience switch flips the hub into the toddler layer', async ({ page }) => {
     await openDisplay(page)
-    await page.locator('.audience-switch__opt').nth(1).click()
+    // Scope to the parent/kid/guest "view" group (the Affichage tab has several
+    // .audience-switch groups now) and click its "Enfant" option.
+    await page
+      .getByRole('group', { name: /Parent.*Enfant.*Invité/ })
+      .getByRole('button', { name: 'Enfant' })
+      .click()
     // Flipping to the kid lens in Réglages bounces out of settings (the one-way
     // door): the hub comes up in the toddler layer on the board.
     await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'toddler')
@@ -428,13 +439,13 @@ test.describe('add sheet', () => {
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    // The section chooser (direct child of .sheet) now has SIX tiles:
+    // The section chooser (direct child of .sheet) now has SEVEN tiles:
     // Cuisiner, Ajouter une recette, Planifier un repas, Restants, Ajouter un
-    // aliment, La réserve. (The kitchen-week actions below sit in a separate
-    // .sheet__group.)
+    // aliment, La réserve, Le livre illustré (the new toddler picture-game door).
+    // (The kitchen-week actions below sit in a separate .sheet__group.)
     const sectionTiles = page.locator('.sheet > .cat-grid > .cat-pick')
-    await expect(sectionTiles).toHaveCount(6)
-    await expect(sectionTiles, 'no quick-capture in the kitchen sheet').toHaveCount(6)
+    await expect(sectionTiles).toHaveCount(7)
+    await expect(sectionTiles, 'no quick-capture in the kitchen sheet').toHaveCount(7)
     await expect(page.locator('.cat-pick', { hasText: 'Note rapide' })).toHaveCount(0)
     // The sheet is a blank-slate chooser now: pick "Planifier un repas" to reveal
     // its DAY PICKER (chips that navigate to the day's editor scene /kitchen/day/…),
@@ -1000,10 +1011,17 @@ test.describe('recurring chores on the board', () => {
     await APP('/settings?tab=chores')(page)
     await settle(page, '.operator__tabs')
     await page.getByRole('tab', { name: 'Corvées' }).click()
-    // The "Céduler"-only expander is gone — editing a chore row opens the full
-    // ChoreForm (one editor) with the RecurPicker. Set the frequency to weekly,
-    // then save → PATCH the chore with its new recurrence.
-    await page.locator('.operator__chore-row').first().getByRole('button', { name: 'Modifier la corvée' }).click()
+    // The "Céduler"-only expander is gone — a chore row is now a ListRow whose
+    // RowActions ✏️ ("Modifier la corvée") expands the SAME full ChoreForm (one
+    // editor) with the RecurPicker. The .operator__chore-row class only appears on
+    // the row while it's editing, so target the edit button via the chores list.
+    await page
+      .locator('.operator__list')
+      .first()
+      .locator('li')
+      .first()
+      .getByRole('button', { name: 'Modifier la corvée' })
+      .click()
     const form = page.locator('.operator__chore-row--editing .operator__chore-form')
     await form.locator('.recur select').selectOption('weekly')
     await expectApi(page, 'PATCH', 'chores', () =>

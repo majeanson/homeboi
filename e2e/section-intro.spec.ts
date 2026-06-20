@@ -45,7 +45,7 @@ test('dismissing the card hides it for good', async ({ page }) => {
   await boot(page, '/kitchen')
   const intro = page.locator('.section-intro')
   await expect(intro).toBeVisible()
-  await intro.getByRole('button').click()
+  await intro.locator('.section-intro__dismiss').click()
   await expect(intro).toHaveCount(0)
 
   // The dismissal sticks across a reload (persisted in localStorage).
