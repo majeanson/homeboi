@@ -37,6 +37,8 @@ const DrawingGalleryPage = lazy(() => import('./pages/DrawingGalleryPage').then(
 const RecipeViewPage = lazy(() => import('./pages/RecipeViewPage').then((m) => ({ default: m.RecipeViewPage })))
 const RecipeFormPage = lazy(() => import('./pages/RecipeFormPage').then((m) => ({ default: m.RecipeFormPage })))
 const CookPage = lazy(() => import('./pages/CookPage').then((m) => ({ default: m.CookPage })))
+// #43 — cook several of today's dishes at once with a shared timer rail.
+const MultiCookPage = lazy(() => import('./pages/MultiCookPage').then((m) => ({ default: m.MultiCookPage })))
 // #45 — the printable toddler recipe/activity book.
 const RecipeBookPage = lazy(() => import('./pages/RecipeBookPage').then((m) => ({ default: m.RecipeBookPage })))
 // Operator add-forms — full-screen scenes (were tall sheet forms that stranded
@@ -93,6 +95,8 @@ export function AppRoutes() {
         {/* One day's full meal-planning editor — a scene (was the DayManageSheet
             bottom sheet, whose lower inputs stranded under the mobile keyboard). */}
         <Route path="/kitchen/day/:date" element={<DayPlanPage />} />
+        {/* #43 — cook several of today's dishes at once (shared timers). */}
+        <Route path="/kitchen/cook/multi" element={<MultiCookPage />} />
         {/* #45 — the printable toddler recipe/activity book. */}
         <Route path="/kitchen/book" element={<RecipeBookPage />} />
         {/* `new` before `:id` so it isn't captured as a recipe id. */}

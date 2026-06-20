@@ -334,6 +334,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Cuisiner plusieurs plats ensemble', en: 'Cook several dishes together' },
+        detail: {
+          fr: 'Quand au moins deux repas prévus aujourd’hui sont des recettes, un bouton « Cuisiner ensemble » apparaît au-dessus de la semaine. Il ouvre tous les plats côte à côte, chacun avec ses étapes que tu avances à ton rythme, et UNE barre de minuteries partagée en haut : touche une durée dans n’importe quelle étape (« 10 min ») et la minuterie s’y ajoute, nommée d’après son plat — tu vois d’un coup d’œil ce qui finit en premier. Une clochette sonne (et la voix le dit) quand une minuterie se termine.',
+          en: 'When at least two of today’s planned meals are recipes, a “Cook together” button appears above the week. It opens every dish side by side — each its own steps you advance at your pace — under ONE shared timer rail at the top: tap a duration in any step (“10 min”) and a countdown joins the rail, named after its dish, so a glance shows what finishes first. A chime rings (and a voice says which) when a timer ends.',
+        },
+        why: {
+          fr: 'Faire souper et accompagnement en même temps sans jongler trois minuteurs de four : ils vivent tous au même endroit.',
+          en: 'Get the main and the sides done at once without juggling three separate kitchen timers — they all live in one place.',
+        },
+      },
+      {
         label: { fr: 'Faire un livre de cuisine', en: 'Make a cooking book' },
         detail: {
           fr: 'Depuis le carnet de recettes, touche « Faire un livre » : un petit livre tout en images à imprimer, une recette par page, avec de grosses photos d’étapes, des numéros en couleur et des cases à cocher. Choisis une collection (ou tout le livre) et imprime — coche « Photos » pour les garder ou les retirer (encre). Une page couverture avec un trait pour écrire le nom de l’enfant.',

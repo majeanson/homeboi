@@ -37,6 +37,7 @@ import { SceneHead } from '../components/SceneHead'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
 import { RecentsPanel } from '../components/RecentsPanel'
+import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
 import { RecipeListPicker } from '../components/RecipeListPicker'
 import { OperatorSection } from '../components/operator/OperatorSection'
@@ -913,6 +914,25 @@ export function DevKit() {
             </div>
           </Demo>
         </>
+      ),
+    },
+    {
+      cat: 'Feedback',
+      name: 'TimerRail',
+      file: 'components/cook/TimerRail.tsx',
+      kw: 'timer minuterie countdown cook rail clock cuisine',
+      render: () => (
+        <Demo label="cook timers — running · paused · done (tap a clock to pause/restart, ✕ to dismiss)">
+          <TimerRail
+            timers={[
+              { id: 1, label: 'Pâtes · 10 min', total: 600, remaining: 372, running: true },
+              { id: 2, label: 'Sauce · 5 min', total: 300, remaining: 145, running: false },
+              { id: 3, label: 'Œufs · 8 min', total: 480, remaining: 0, running: false },
+            ]}
+            onToggle={() => {}}
+            onRemove={() => {}}
+          />
+        </Demo>
       ),
     },
     {
