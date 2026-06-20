@@ -201,6 +201,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Avant de partir', en: 'Before you go' },
+        detail: {
+          fr: 'Touche le ＋ ▸ « Avant de partir » : un seul écran de départ qui réunit une de tes listes (« Avant de partir », « Chez grand-papa »…), les rendez-vous du jour et la météo avec le bon conseil (« Mets un manteau »). Coche les choses en attrapant tes clés et ton sac — les coches sont temporaires, elles repartent à zéro la prochaine fois (rien n’est ajouté à « À compléter »). Monte tes listes dans Réglages ▸ À compléter.',
+          en: 'Tap ＋ ▸ “Before you go”: one leaving screen that gathers one of your lists (“Before you go”, “At grandpa’s”…), today’s events and the weather with the right tip (“Wear a coat”). Tick things off as you grab your keys and bag — the ticks are temporary and reset next time (nothing is added to your To-do lists). Build your lists in Settings ▸ To-do lists.',
+        },
+        why: {
+          fr: 'Sortir sans rien oublier — la liste, l’horaire et la météo en un coup d’œil, à côté de la porte.',
+          en: 'Leave without forgetting anything — the list, the schedule and the weather at a glance, by the door.',
+        },
+      },
+      {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
           fr: 'Grille (toute la semaine), « Maintenant » (la prochaine affaire), par personne (la journée d’un seul) ou le mois (la vue d’ensemble).',

@@ -21,6 +21,9 @@ export type AddSheetMode =
   | 'routine-pick'
   | 'plan-today'
   | 'plan-tomorrow'
+  // #17 departure mode — navigate-only to /board/departure (a leaving-the-house
+  // screen: a chosen checklist template + today's events + weather). Not a form.
+  | 'departure'
   | 'list-item'
   | 'quick-add'
   | 'flyer'
@@ -57,7 +60,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // (/kitchen/day/<date>): one place to set a day's meals + events + chores + note.
   // Their dates are dynamic, so AddSheet resolves the target at click time (like
   // cook/auto-pick) rather than through the static NAV_TARGET table.
-  board: ['capture', 'event', 'chore', 'todo', 'routine', 'plan-today', 'plan-tomorrow'],
+  board: ['capture', 'event', 'chore', 'todo', 'routine', 'plan-today', 'plan-tomorrow', 'departure'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`

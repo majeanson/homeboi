@@ -80,6 +80,8 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   // board heroes use, so the ＋ reads the same as the day it plans.
   'plan-today': { cat: 'event', icon: 'sun-bold' },
   'plan-tomorrow': { cat: 'event', icon: 'sun-horizon-bold' },
+  // #17 departure mode — a key glyph for "before you leave".
+  departure: { cat: 'chore', icon: 'key-bold' },
   cook: { cat: 'meal', icon: 'cooking-pot-bold' },
   recipe: { cat: 'meal', icon: 'book-open-bold' },
   // The printable recipe book (#45) — a document glyph so it reads distinct from
@@ -110,6 +112,7 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
 const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   recipe: '/kitchen/recipe/new',
   book: '/kitchen/book',
+  departure: '/board/departure',
   'quick-add': '/liste/quick',
   flyer: '/liste/circulaires',
   // Le cercle: person + family are scene routes; connect + group open on /cercle
@@ -496,6 +499,7 @@ export function AddSheet({
       'routine-pick': t.nav.routines,
       'plan-today': t.board.planToday,
       'plan-tomorrow': t.board.planTomorrow,
+      departure: t.departure.title,
       cook: t.kitchen.cook,
       routine: t.nav.routines,
       recipe: t.recipes.add,

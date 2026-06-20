@@ -43,6 +43,8 @@ const MultiCookPage = lazy(() => import('./pages/MultiCookPage').then((m) => ({ 
 const RecipeBookPage = lazy(() => import('./pages/RecipeBookPage').then((m) => ({ default: m.RecipeBookPage })))
 // #30 — global search across recipes / people / events / the list.
 const SearchPage = lazy(() => import('./pages/SearchPage').then((m) => ({ default: m.SearchPage })))
+// #17 — departure mode: a leaving-the-house checklist + today's events + weather.
+const DeparturePage = lazy(() => import('./pages/DeparturePage').then((m) => ({ default: m.DeparturePage })))
 // Operator add-forms — full-screen scenes (were tall sheet forms that stranded
 // inputs under the mobile keyboard). Edit still happens inline in Réglages.
 const EventFormPage = lazy(() => import('./pages/EventFormPage').then((m) => ({ default: m.EventFormPage })))
@@ -120,6 +122,8 @@ export function AppRoutes() {
         <Route path="/drawings" element={<DrawingGalleryPage />} />
         {/* #30 — global search, reachable from every hub tab's header. */}
         <Route path="/search" element={<SearchPage />} />
+        {/* #17 — departure mode (board ＋ ▸ Avant de partir). */}
+        <Route path="/board/departure" element={<DeparturePage />} />
         <Route path="/share" element={<SharePage />} />
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />

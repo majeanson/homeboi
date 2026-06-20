@@ -21,6 +21,16 @@ export const FR = {
     events: 'Événements',
     listItems: 'La liste',
   },
+  // #17 — departure mode (a leaving-the-house screen).
+  departure: {
+    title: 'Avant de partir',
+    checklist: 'Liste de départ',
+    today: 'Aujourd’hui',
+    allDay: 'Toute la journée',
+    noTemplate: 'Crée une liste « Avant de partir » dans Réglages ▸ À compléter pour la cocher ici.',
+    emptyList: 'Cette liste est vide.',
+    noEvents: 'Rien de prévu aujourd’hui.',
+  },
   offline: { banner: 'Hors ligne', since: 'Données du', live: 'De nouveau en ligne', pending: 'en attente', unavailable: 'Indisponible hors-ligne' },
   audience: {
     parent: 'Parent',
@@ -1324,6 +1334,16 @@ export const EN: typeof FR = {
     people: 'People',
     events: 'Events',
     listItems: 'The list',
+  },
+  // #17 — departure mode (a leaving-the-house screen).
+  departure: {
+    title: 'Before you go',
+    checklist: 'Leaving checklist',
+    today: 'Today',
+    allDay: 'All day',
+    noTemplate: 'Make a “Before you go” list in Settings ▸ To-do lists to tick it off here.',
+    emptyList: 'This list is empty.',
+    noEvents: 'Nothing planned today.',
   },
   offline: { banner: 'Offline', since: 'Data from', live: 'Back online', pending: 'pending', unavailable: 'Unavailable offline' },
   audience: {
