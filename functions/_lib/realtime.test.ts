@@ -25,8 +25,8 @@ describe('keysForPath', () => {
     expect(keysForPath('meal-leftovers')).toEqual([['leftovers'], ['board']])
   })
 
-  it('maps household settings to household + board (meal-slot re-tint)', () => {
-    expect(keysForPath('household')).toEqual([['household'], ['board']])
+  it('maps household settings to household + board + health (meal-slot re-tint, AI toggle)', () => {
+    expect(keysForPath('household')).toEqual([['household'], ['board'], ['health']])
   })
 
   it('maps routines to routines + board', () => {

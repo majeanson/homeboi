@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
+import { useAi } from '../lib/ai'
 import { fold } from '../lib/normalize'
 import { CATS } from '../lib/cats'
 import { CERCLE_KEY } from '../lib/queryKeys'
@@ -74,6 +75,10 @@ function relatedFor(kind: AnswerKind, t: ReturnType<typeof useT>): { to: string;
 export function SearchPage() {
   const t = useT()
   const { lang } = useLang()
+  // #12 — the "Ask the AI" affordance only shows when AI is on (binding present AND
+  // the household hasn't switched it off). The local fuzzy search below stays — it's
+  // not AI. `aiOff` is the reactive fallback if a call still comes back degraded.
+  const { enabled: aiEnabled } = useAi()
   const close = useSceneClose('/board')
   useEscapeKey(close)
   const [q, setQ] = useState('')
@@ -143,7 +148,7 @@ export function SearchPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') void ask()
+            if (e.key === 'Enter' && aiEnabled) void ask()
           }}
           placeholder={t.search.placeholder}
           aria-label={t.search.placeholder}
@@ -151,8 +156,9 @@ export function SearchPage() {
           enterKeyHint="search"
         />
 
-        {/* #12 — ask the AI the typed question (Enter does the same). */}
-        {q.trim() && !aiOff && (
+        {/* #12 — ask the AI the typed question (Enter does the same). Hidden when
+            AI is off (binding absent or household-disabled). */}
+        {q.trim() && aiEnabled && !aiOff && (
           <button type="button" className="btn btn--sm search__ask" onClick={ask} disabled={asking}>
             <Icon name="sparkle-bold" size={16} /> {t.search.ask}
           </button>

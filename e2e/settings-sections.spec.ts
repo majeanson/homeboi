@@ -8,7 +8,7 @@ import { mockApi, seedState } from './mocks'
 const PHONE = { width: 390, height: 844 }
 const SECTIONS = [
   'household', 'agenda', 'chores', 'routines', 'shopping',
-  'recipes', 'ghost', 'devices', 'photos', 'recap', 'display', 'calm',
+  'recipes', 'ghost', 'devices', 'photos', 'recap', 'display', 'calm', 'ai',
 ]
 
 // Deep-link straight to each section via ?tab=<id> (these ids match the section

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { api, ApiError } from '../lib/api'
+import { useAi } from '../lib/ai'
 import { useWrite } from '../lib/write'
 import { useAuth } from '../lib/auth'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
@@ -142,6 +143,9 @@ export function AddSheet({
   const write = useWrite()
   const nav = useNavigate()
   const { signedIn } = useAuth()
+  // AI on/off (binding present AND household hasn't switched it off). When off, the
+  // "AI ideas" tile is hidden outright — capture still works (it degrades to a note).
+  const { enabled: aiEnabled } = useAi()
   // The kitchen week's three actions (shop the week / AI ideas / ideas from the
   // book), registered by the Kitchen page. They show as icon tiles here only on
   // the kitchen Repas tab; tapping one closes the sheet and runs the flow, whose
@@ -631,18 +635,22 @@ export function AddSheet({
                   <span>{t.kitchen.shopWeek}</span>
                 </button>
               )}
-              <button
-                type="button"
-                className="cat-pick"
-                disabled={!help.active && (!kitchenActions.flags.canAiSuggest || kitchenActions.flags.aiBusy)}
-                title={kitchenActions.flags.canAiSuggest ? undefined : t.kitchen.suggestAiOff}
-                onClick={help.pick('ai', () => { kitchenActions.run('ai'); close() })}
-              >
-                <span className="ct" style={{ background: 'var(--marigold-wash)' }}>
-                  <Icon name="sparkle-bold" size={22} color="#D9842A" />
-                </span>
-                <span>{t.kitchen.aiIdeas}</span>
-              </button>
+              {/* AI ideas — hidden entirely when AI is off (help mode still shows it
+                  so the tile can be explained). Runtime 503 keeps the disabled state. */}
+              {(aiEnabled || help.active) && (
+                <button
+                  type="button"
+                  className="cat-pick"
+                  disabled={!help.active && (!kitchenActions.flags.canAiSuggest || kitchenActions.flags.aiBusy)}
+                  title={kitchenActions.flags.canAiSuggest ? undefined : t.kitchen.suggestAiOff}
+                  onClick={help.pick('ai', () => { kitchenActions.run('ai'); close() })}
+                >
+                  <span className="ct" style={{ background: 'var(--marigold-wash)' }}>
+                    <Icon name="sparkle-bold" size={22} color="#D9842A" />
+                  </span>
+                  <span>{t.kitchen.aiIdeas}</span>
+                </button>
+              )}
               {kitchenActions.flags.hasRecipes && (
                 <button
                   type="button"

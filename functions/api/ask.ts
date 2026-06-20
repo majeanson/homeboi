@@ -1,6 +1,7 @@
 import { badRequest, ok, readJson, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { answerQuestion, resolveLang, type AiReport, type Lang } from '../_lib/ai'
+import { aiUsable } from '../_lib/aiPref'
 import { localDayStart } from '../_lib/ids'
 
 // #12 — natural-language Q&A over the household's OWN data. The search box can ask
@@ -44,6 +45,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ question?: string }>(ctx.request)
   const question = (body?.question ?? '').trim()
   if (!question) return badRequest('question required')
+
+  // AI off (binding unset OR household switched it off) → tell the client up front
+  // so the search box hides "Ask", skipping the snapshot gathering below entirely.
+  if (!(await aiUsable(ctx.env, actor))) return ok({ answer: null, kind: 'none', degraded: true })
 
   const lang = resolveLang(ctx.env, ctx.request)
   const hh = actor.householdId

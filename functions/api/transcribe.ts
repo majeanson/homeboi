@@ -1,4 +1,4 @@
-import { badRequest, ok, serviceUnavailable, withAiError } from '../_lib/json'
+import { badRequest, ok, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { resolveLang } from '../_lib/ai'
 import { cleanTranscript } from '../_lib/transcript'
@@ -11,10 +11,10 @@ import { cleanTranscript } from '../_lib/transcript'
 // Whisper, feeding the text back into the SAME capture spine as typed input.
 //
 // Any actor — a parent-mode kiosk captures too (only member admin + pairing are
-// operator-gated). AI unset → 503 so the client keeps the manual type-picker
-// (same graceful-degrade contract as /api/capture). The "turbo" model takes a
-// `language` hint, which materially helps short FR-CA grocery clips that the base
-// model otherwise mis-detects as English.
+// operator-gated). `requiresAi` 503s when AI is off (binding unset OR household
+// switched it off) so the client keeps the manual type-picker (same graceful-degrade
+// contract as /api/capture). The "turbo" model takes a `language` hint, which
+// materially helps short FR-CA grocery clips that the base model mis-detects as EN.
 
 // Short household captures are tiny (a few seconds); this cap just stops an
 // oversized upload reaching the model. Mirrors recipe-vision's byte guard.
@@ -46,7 +46,6 @@ function toBase64(bytes: Uint8Array): string {
 }
 
 export const onRequestPost = authed(async (ctx) => {
-  if (!ctx.env.AI) return serviceUnavailable('Transcription vocale indisponible ici.')
   const type = ctx.request.headers.get('content-type') ?? ''
   // MediaRecorder sends e.g. "audio/mp4;codecs=..." (iOS) or "audio/webm" — the
   // prefix check accepts both while rejecting a stray JSON/blob upload.
@@ -61,7 +60,9 @@ export const onRequestPost = authed(async (ctx) => {
     // The turbo model returns the transcript at top-level `text`; some builds nest
     // it under `transcription_info.text` — accept either so a shape change doesn't
     // silently yield "". (See the 70B `response`-shape gotcha in _lib/ai.ts.)
-    const res = (await ctx.env.AI.run('@cf/openai/whisper-large-v3-turbo', {
+    // AI is guaranteed present here by authed({ requiresAi: true }); assert it so
+    // TS narrows (the inline `if (!ctx.env.AI)` that used to narrow now lives in the gate).
+    const res = (await ctx.env.AI!.run('@cf/openai/whisper-large-v3-turbo', {
       audio: toBase64(new Uint8Array(buf)),
       task: 'transcribe',
       language: lang,
@@ -82,4 +83,4 @@ export const onRequestPost = authed(async (ctx) => {
     report.error = err instanceof Error ? err.message : 'whisper failed'
   }
   return withAiError(ok({ text }), report)
-})
+}, undefined, { requiresAi: true })

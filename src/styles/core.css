@@ -475,6 +475,17 @@ textarea.input {
   color: var(--warn);
   border-color: var(--warn);
 }
+/* A tag that's also the on/off control (the IA switch in the Réglages header):
+   inherits the pill look but behaves as a tappable button. */
+.tag--btn {
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.tag--btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 .eyebrow {
   color: var(--ink-soft);
   text-transform: uppercase;

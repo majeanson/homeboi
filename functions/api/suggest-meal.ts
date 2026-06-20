@@ -5,10 +5,9 @@ import { localDayStart } from '../_lib/ids'
 
 // "Qu'est-ce qu'on mange?" — one on-demand AI call returns a BATCH of 10 ideas.
 // The client shows them one per click and only asks again once exhausted, so 10
-// suggestions cost a single inference (NFR-COST). Degrades to 503 when AI unset.
+// suggestions cost a single inference (NFR-COST). `requiresAi` 503s when AI is off
+// (binding unset OR household switched it off); the UI then hides the button.
 export const onRequestPost = authed(async (ctx, actor) => {
-  if (!ctx.env.AI) return serviceUnavailable('Suggestion IA indisponible ici.')
-
   // The batch the client just showed — so re-asking yields fresh dishes, not the
   // same ten. Optional (older clients send no body).
   const body = await readJson<{ avoid?: string[] }>(ctx.request).catch(() => null)
@@ -81,4 +80,4 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // carries the reason, while a genuinely empty result stays a quiet 503.
   if (!suggestions.length) return withAiError(serviceUnavailable('Pas de suggestion pour le moment.'), report)
   return ok({ suggestions })
-})
+}, undefined, { requiresAi: true })

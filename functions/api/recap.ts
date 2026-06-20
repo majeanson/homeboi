@@ -1,14 +1,13 @@
-import { ok, serviceUnavailable, withAiError } from '../_lib/json'
+import { ok, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { weeklyRecap, resolveLang } from '../_lib/ai'
 import { dayStart, nowSec } from '../_lib/ids'
 
 // On-demand weekly recap. Reads the last 7 days of events / suppers / chores
 // done and asks for a gentle 2-sentence reflection (NFR-CALM: no stats). One
-// call, never looped/scheduled here (NFR-COST). Degrades to 503 when AI is unset
-// so the UI hides the recap section entirely.
+// call, never looped/scheduled here (NFR-COST). `requiresAi` 503s when AI is off
+// (binding unset OR household switched it off) so the UI hides the recap section.
 export const onRequestGet = authed(async (ctx, actor) => {
-  if (!ctx.env.AI) return serviceUnavailable('Bilan IA indisponible ici.')
   const hh = actor.householdId
   const now = nowSec()
   const since = dayStart(new Date(Date.now())) - 86400 * 7
@@ -40,4 +39,4 @@ export const onRequestGet = authed(async (ctx, actor) => {
     report,
   )
   return withAiError(ok({ recap }), report)
-})
+}, undefined, { requiresAi: true })

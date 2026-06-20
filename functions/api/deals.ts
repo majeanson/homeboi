@@ -5,6 +5,7 @@ import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { householdIncludedStores, storeKey } from '../_lib/stores'
 import { computeUnitPrice, stripProductCode, type UnitKind } from '../_lib/unitprice'
 import { extractSizes, resolveLang } from '../_lib/ai'
+import { aiUsable } from '../_lib/aiPref'
 import { ingredientName } from '../_lib/ingredient'
 
 // PROOF OF CONCEPT — flyer-deal lookup (the "Reebee replacement" half).
@@ -175,7 +176,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
     })
     .filter((d) => d.name && d.price !== null && (included.size === 0 || included.has(storeKey(d.merchant))))
 
-  await sniperFill(ctx.env, deals, lang)
+  // The AI size-sniper only runs when AI is on (binding present AND the household
+  // hasn't switched it off) — otherwise deals just show without the ≈ unit price.
+  if (await aiUsable(ctx.env, actor)) await sniperFill(ctx.env, deals, lang)
   sortBestFirst(deals)
   return ok({ query: q, postal, count: deals.length, deals })
 })

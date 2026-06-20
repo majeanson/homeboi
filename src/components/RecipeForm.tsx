@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
+import { useAi } from '../lib/ai'
 import { resizeImage, imgUrl, PHOTO_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
@@ -49,6 +50,10 @@ export function RecipeForm({
 }) {
   const t = useT()
   const qc = useQueryClient()
+  // "Read a photo" is pure vision AI — hide it when AI is off. Import stays: it
+  // works without AI (JSON-LD / microdata / the paste heuristic), only free-form
+  // text falls back, so it's not an AI-only feature.
+  const { enabled: aiEnabled } = useAi()
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onCancel)
   const [title, setTitle] = useState(value?.title ?? '')
@@ -668,20 +673,22 @@ export function RecipeForm({
               recipe (scan a card / import a link) into the fields. */}
           <span className="recipe-fill-label mono">{t.recipes.fillFrom}</span>
           <div className="recipe-helpers">
-            <label className={'btn btn--ghost mono' + (reading ? ' is-busy' : '')}>
-              <InlineIcon name="camera-bold" /> {reading ? t.recipes.reading : t.recipes.readPhoto}
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                disabled={reading}
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  if (f) readPhoto(f)
-                  e.target.value = ''
-                }}
-              />
-            </label>
+            {aiEnabled && (
+              <label className={'btn btn--ghost mono' + (reading ? ' is-busy' : '')}>
+                <InlineIcon name="camera-bold" /> {reading ? t.recipes.reading : t.recipes.readPhoto}
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  disabled={reading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) readPhoto(f)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            )}
             <button
               type="button"
               className="btn btn--ghost mono"

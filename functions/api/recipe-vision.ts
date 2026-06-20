@@ -1,4 +1,4 @@
-import { badRequest, ok, serviceUnavailable, withAiError } from '../_lib/json'
+import { badRequest, ok, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { recipeFromImage, resolveLang } from '../_lib/ai'
 import { refineSteps } from '../_lib/recipeImport'
@@ -8,13 +8,13 @@ import { detectLang } from '../_lib/langDetect'
 // as recipe-image); the vision model OCRs + structures them into a DRAFT the
 // cook reviews before saving — nothing is stored here. Any actor — a parent-mode
 // kiosk builds recipes too (recipes CRUD was never operator-gated); only member
-// admin + device pairing stay operator-only. AI unset → 503 so the UI says "fill it
-// in by hand". This is the "read a photo" fast-fill, distinct from recipe-image
-// which STORES the dish's display picture.
+// admin + device pairing stay operator-only. `requiresAi` 503s when AI is off
+// (binding unset OR household switched it off) so the UI says "fill it in by hand".
+// This is the "read a photo" fast-fill, distinct from recipe-image which STORES the
+// dish's display picture.
 const MAX_BYTES = 6 * 1024 * 1024
 
 export const onRequestPost = authed(async (ctx) => {
-  if (!ctx.env.AI) return serviceUnavailable('Lecture IA indisponible ici.')
   const type = ctx.request.headers.get('content-type') ?? ''
   if (!type.startsWith('image/')) return badRequest('Image requise.')
   const buf = await ctx.request.arrayBuffer()
@@ -40,4 +40,4 @@ export const onRequestPost = authed(async (ctx) => {
     }),
     report,
   )
-})
+}, undefined, { requiresAi: true })

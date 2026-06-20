@@ -10,6 +10,7 @@ import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
 import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
+import { useAi } from '../lib/ai'
 import { withoutHeadings } from '../lib/recipeSections'
 import { live } from '../lib/query'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
@@ -230,6 +231,10 @@ export function Kitchen() {
   // taps a recipe then an empty day — a suggestion, not a decision).
   const ai = useAiWake()
   const { aiWaking } = ai
+  // Global AI on/off (binding present AND household hasn't switched it off). Folds
+  // into canAiSuggest so the AI-ideas tile / re-ask is hidden when AI is off — the
+  // reactive aiOff (a runtime 503) still disables it the same way.
+  const { enabled: aiEnabled } = useAi()
   const { kidSuggest } = useMealPlanning(ai, profileId)
   const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, toggleAllShop, confirmShop, shoppableCount } =
     useRecipeShop(days, recipeForMeal, listItems)
@@ -295,7 +300,7 @@ export function Kitchen() {
         ? {
             active: true,
             canShop: shoppableCount > 0,
-            canAiSuggest: !suggest.aiOff,
+            canAiSuggest: aiEnabled && !suggest.aiOff,
             aiBusy: suggest.aiBusy,
             hasRecipes: suggest.hasRecipes,
             canUseUp: suggest.hasUseUp,
@@ -305,6 +310,7 @@ export function Kitchen() {
   }, [
     kitchenActionsActive,
     shoppableCount,
+    aiEnabled,
     suggest.aiOff,
     suggest.aiBusy,
     suggest.hasRecipes,

@@ -4,6 +4,11 @@
 // components/kitchen/types.ts beside the code that owns them.
 export const BOARD_KEY = ['board']
 export const ROUTINES_KEY = ['routines']
+// Deployment + household capabilities from /api/health (binding presence + the
+// effective AI on/off state). Read in Réglages, on Signup, AND by the shared
+// useAi() hook that hides every AI affordance — shared so the AI toggle's PATCH
+// can invalidate it and the whole UI flips at once.
+export const HEALTH_KEY = ['health']
 // Household-level settings (postal, store filter, per-slot meal colours +
 // hide-list). Read on the board/kitchen (meal colours) AND in Réglages, so the
 // key is shared: a settings PATCH invalidates it and every meal surface re-tints.

@@ -13,7 +13,8 @@
 
 import type { Env, Ctx } from './env'
 import { type Actor, requireActor } from './household'
-import { forbidden, serverError } from './json'
+import { aiUsable } from './aiPref'
+import { forbidden, serverError, serviceUnavailable } from './json'
 import { withIdempotency } from './idempotency'
 import { broadcastInvalidate, keysForPath } from './realtime'
 
@@ -34,7 +35,20 @@ const SAFE_METHODS = new Set(['GET', 'HEAD'])
 // per-handler change, and a new handler can't forget the guard. requireActor's
 // `'operator'` scope already excludes guests; this catches the unscoped reads'
 // sibling writes (a module exports GET + POST from one file).
-export function authed(handler: ActorHandler, scope?: 'operator'): PagesFunction<Env> {
+//
+// AI RULE (Réglages ▸ IA off switch): pass `{ requiresAi: true }` for an endpoint
+// that can't do anything useful without Workers AI (transcribe, recipe-vision,
+// recap, …). It 503s — the same status these handlers already returned for an
+// unset binding, so the SPA's existing degrade paths handle it — when either the
+// binding is absent OR the household switched AI off (aiUsable folds both). The
+// gate is structural, like the auth guard: an AI endpoint can't forget the off
+// switch. Soft-degrade endpoints (capture/ask/recipe-import/deals) DON'T set this —
+// they call aiUsable() inline and fall back instead of erroring.
+export function authed(
+  handler: ActorHandler,
+  scope?: 'operator',
+  opts?: { requiresAi?: boolean },
+): PagesFunction<Env> {
   return async (ctx) => {
     try {
       const actor = await requireActor(ctx.env, ctx.request, scope)
@@ -44,6 +58,10 @@ export function authed(handler: ActorHandler, scope?: 'operator'): PagesFunction
       // the handler, so no write path is exposed to a babysitter credential.
       if (actor.scope === 'guest' && !SAFE_METHODS.has(method)) {
         return forbidden('Guest access is read-only.')
+      }
+      // AI off (binding unset or household-disabled) → 503 before the handler runs.
+      if (opts?.requiresAi && !(await aiUsable(ctx.env, actor))) {
+        return serviceUnavailable('IA indisponible.')
       }
       // Offline-queue dedup: a replayed write carries an Idempotency-Key, so the
       // same queued action never double-applies. Online writes send no key and

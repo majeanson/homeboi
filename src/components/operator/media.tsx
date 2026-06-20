@@ -4,6 +4,7 @@ import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
+import { useAi } from '../../lib/ai'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
@@ -15,6 +16,9 @@ import { EmptyState } from '../EmptyState'
 // loop). Hides itself when AI is unavailable (503) so it never shows a dead button.
 export function RecapSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  // The recap is an AI feature — hide it eagerly when AI is off (binding absent or
+  // household-disabled), not just after a 503 (`unavailable`).
+  const { enabled: aiEnabled } = useAi()
   const [recap, setRecap] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [unavailable, setUnavailable] = useState(false)
@@ -31,7 +35,7 @@ export function RecapSection({ help }: { help?: HelpMode }) {
     }
   }
 
-  if (unavailable) return null
+  if (unavailable || !aiEnabled) return null
   return (
     <OperatorSection title={t.operator.recapTitle} help={help} helpKey="recap" hint={recap || undefined}>
       {!isGuest() && (

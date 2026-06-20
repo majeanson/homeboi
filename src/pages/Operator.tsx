@@ -1,9 +1,10 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { useAi, useAiToggle } from '../lib/ai'
 import { isPaired } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection } from '../components/operator/display'
@@ -23,6 +24,7 @@ import { ReserveLocationsSection } from '../components/operator/reserve'
 import { TodoTemplatesSection } from '../components/operator/todos'
 import { CercleGroupsSection } from '../components/operator/cercle'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
+import { AiSection } from '../components/operator/ai'
 import { IdleDebugSection } from '../components/operator/idleDebug'
 import { MicSelfTest } from '../components/operator/micTest'
 import { GuideSection } from '../components/operator/guide'
@@ -56,6 +58,7 @@ const SECTIONS = [
   { id: 'recap', key: 'recapTitle' as const },
   { id: 'display', key: 'display' as const },
   { id: 'calm', key: 'calmTitle' as const },
+  { id: 'ai', key: 'aiTab' as const },
   { id: 'ai-log', key: 'aiLog' as const },
 ]
 // Operator hub. Reached two ways: the signed-in operator (phone/laptop, full
@@ -85,14 +88,18 @@ export function Operator() {
   const choresQ = useQuery({ queryKey: ['chores'], queryFn: () => api<{ chores: Chore[] }>('chores'), enabled: canEnter })
   const routinesQ = useQuery({ queryKey: ['routines'], queryFn: () => api<{ routines: Routine[] }>('routines'), enabled: canEnter })
   const eventsQ = useQuery({ queryKey: ['events'], queryFn: () => api<{ events: EventRow[] }>('events'), enabled: canEnter })
-  const healthQ = useQuery({ queryKey: ['health'], queryFn: () => api<{ ai: boolean }>('health'), enabled: canEnter })
 
   const members = membersQ.data?.members ?? []
   const devices = devicesQ.data?.devices ?? []
   const chores = choresQ.data?.chores ?? []
   const routines = routinesQ.data?.routines ?? []
   const events = eventsQ.data?.events ?? []
-  const ai = healthQ.data?.ai ?? null
+  // The household AI on/off switch, surfaced as the header tag (now a toggle) and a
+  // dedicated tab. `available` = the binding exists (can enable); `enabled` = the
+  // effective on/off the whole UI gates on. See lib/ai.ts.
+  const { enabled: aiEnabled, available: aiAvailable } = useAi()
+  const aiToggle = useAiToggle()
+  const [aiBusy, setAiBusy] = useState(false)
 
   // Child sections call this after a write. Invalidate the settings reads plus
   // ['board'] so member/chore/routine/event edits surface on the wall at once
@@ -148,6 +155,7 @@ export function Operator() {
       micTest: t.operator.micTestTitle,
       aiTest: t.operator.aiTestTitle,
       aiLog: t.operator.aiLogTitle,
+      ai: t.operator.aiTitle,
       idleDebug: t.operator.debugIdleTitle,
       guest: t.guest.title,
       choreLedger: t.operator.ledgerTitle,
@@ -167,7 +175,31 @@ export function Operator() {
         </div>
         <div className="operator__meta mono">
           <span>{household?.name}</span>
-          <span className={`tag ${ai ? 'tag--on' : 'tag--off'}`}>{ai ? t.operator.aiOn : t.operator.aiOff}</span>
+          {/* The "IA : active" status tag is now the quick on/off switch (the fuller
+              control + explanation lives in the IA tab). Binding absent → a plain
+              "unavailable" tag, nothing to toggle. */}
+          {aiAvailable ? (
+            <button
+              type="button"
+              className={`tag tag--btn ${aiEnabled ? 'tag--on' : 'tag--off'}`}
+              onClick={async () => {
+                if (aiBusy) return
+                setAiBusy(true)
+                try {
+                  await aiToggle(!aiEnabled)
+                } finally {
+                  setAiBusy(false)
+                }
+              }}
+              disabled={aiBusy}
+              aria-pressed={aiEnabled}
+              title={t.operator.aiToggleTitle}
+            >
+              {aiEnabled ? t.operator.aiOn : t.operator.aiDisabled}
+            </button>
+          ) : (
+            <span className="tag tag--off">{t.operator.aiOff}</span>
+          )}
           {signedIn ? (
             <button
               type="button"
@@ -259,11 +291,14 @@ export function Operator() {
           </>
         )}
         {tab === 'calm' && <CalmSection help={operatorHelp} />}
+        {tab === 'ai' && <AiSection help={operatorHelp} />}
         {tab === 'ai-log' && (
           <>
             <IdleDebugSection help={operatorHelp} />
             <MicSelfTest help={operatorHelp} />
-            <AiErrorLogSection help={operatorHelp} />
+            {/* The AI error log is an AI feature — hide it when AI is switched off
+                (the mic test + idle debug above aren't AI, so they stay). */}
+            {aiEnabled && <AiErrorLogSection help={operatorHelp} />}
           </>
         )}
         {tab === 'guide' && <GuideSection />}

@@ -5,6 +5,7 @@ import { householdIncludedStores, storeKey } from '../_lib/stores'
 import { householdMealSlotPrefs, cleanColors, cleanHidden } from '../_lib/mealSlots'
 import { householdMeasureColors, cleanMeasureColors } from '../_lib/measureColors'
 import { householdReserveLocations, cleanReserveLocations } from '../_lib/reserveLocations'
+import { householdAiEnabled } from '../_lib/aiPref'
 import { nowSec } from '../_lib/ids'
 
 // Household-level settings that aren't members/devices/chores: the postal code
@@ -33,6 +34,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
   const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
+  const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   return ok({
     name,
     postal,
@@ -41,6 +43,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     mealHidden: meals.hidden,
     measureColors,
     reserveLocations,
+    aiEnabled,
   })
 })
 
@@ -53,6 +56,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     mealHidden?: string[]
     measureColors?: Record<string, string>
     reserveLocations?: unknown
+    aiEnabled?: boolean
   }>(ctx.request)
 
   // Household name: trimmed + capped at 60 (like signup). Blank is ignored — the
@@ -131,12 +135,22 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
   }
 
+  // The household AI on/off switch (Réglages ▸ IA, migration 0061). Stored as
+  // 1 = on / 0 = off; NULL never written from here (only legacy rows are NULL,
+  // which read as on). Folded into /api/health's effective `ai` flag.
+  if (body && 'aiEnabled' in body) {
+    await ctx.env.DB.prepare('UPDATE households SET ai_enabled = ?, updated_at = ? WHERE id = ?')
+      .bind(body.aiEnabled ? 1 : 0, nowSec(), actor.householdId)
+      .run()
+  }
+
   const name = await householdName(ctx.env, actor.householdId)
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
   const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
+  const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   return ok({
     name,
     postal,
@@ -145,5 +159,6 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     mealHidden: meals.hidden,
     measureColors,
     reserveLocations,
+    aiEnabled,
   })
 })

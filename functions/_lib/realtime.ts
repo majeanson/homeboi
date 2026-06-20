@@ -92,8 +92,11 @@ const PATH_KEYS: Record<string, string[][]> = {
   'use-soon': [['use-soon']],
   reserve: [['reserve']],
   // Household settings (postal, store filter, meal-slot colours, reserve locns)
-  // re-tint every meal surface and the board.
-  household: [['household'], ['board']],
+  // re-tint every meal surface and the board. The AI on/off switch also rides this
+  // path, so include ['health'] — that's the cache useAi() reads, so flipping AI off
+  // on one device nudges every other device (the wall kiosk) to hide AI affordances
+  // at once instead of waiting for its next health poll.
+  household: [['household'], ['board'], ['health']],
   // Members appear on the board (faces), in Réglages, and as people in Le cercle
   // (their relationship edits re-derive the circle's families).
   members: [['members'], ['board'], ['cercle']],

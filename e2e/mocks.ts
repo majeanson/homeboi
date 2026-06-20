@@ -351,8 +351,8 @@ const ROUTES: Record<string, unknown> = {
   'pair/devices': DEVICES,
   chores: CHORES,
   events: EVENTS,
-  health: { ai: true },
-  household: { postal: 'H2X 1Y4', includedStores: [] },
+  health: { ai: true, aiAvailable: true },
+  household: { postal: 'H2X 1Y4', includedStores: [], aiEnabled: true },
   deals: {
     deals: [
       { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: null, premium: true, image: null, validFrom: null, validTo: BASE + 5 * DAY },

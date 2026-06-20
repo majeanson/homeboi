@@ -3,6 +3,7 @@ import { badRequest, ok, readJson, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { type Actor } from '../_lib/household'
 import { classifyCapture, resolveLang, type Intent } from '../_lib/ai'
+import { aiUsable } from '../_lib/aiPref'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { parseWhen } from '../_lib/whenparse'
 import { profileMemberId } from '../_lib/profile'
@@ -39,9 +40,15 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // a note), report.error gets the message and we tag the response so the client
   // can pop the acknowledge-into-log notice.
   const report = { error: null as string | null }
+  // AI off (binding unset OR household switched it off in Réglages ▸ IA) → skip the
+  // router entirely and degrade to a note, exactly like an AI failure. The capture
+  // is still logged raw + the human can re-route it, so nothing is lost.
+  const aiOn = await aiUsable(ctx.env, actor)
   const intent: Intent = body?.forceType
     ? { type: body.forceType, payload: { text, title: text, item: text } }
-    : await classifyCapture(ctx.env, text, resolveLang(ctx.env, ctx.request), report)
+    : aiOn
+      ? await classifyCapture(ctx.env, text, resolveLang(ctx.env, ctx.request), report)
+      : { type: 'note', payload: { text, title: text, item: text }, degraded: true }
 
   const ts = nowSec()
   await ctx.env.DB.prepare(

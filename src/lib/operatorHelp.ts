@@ -6,6 +6,13 @@ import { type HelpEntry } from './helpMode'
 // at the matching GUIDE card/point so "→ Voir le guide" lands on the right line.
 // Resets when the active tab changes (tab is passed as resetKey to useHelpMode).
 export const OPERATOR_HELP: Record<string, HelpEntry> = {
+  ai: {
+    card: 'ai',
+    body: {
+      fr: `Le commutateur marche/arrêt de l'IA pour toute la maisonnée. Coupé, l'IA ne tourne plus nulle part et toutes les fonctions IA se cachent — tout le reste continue de marcher.`,
+      en: `The household-wide AI on/off switch. Off, AI stops running everywhere and every AI feature hides — everything else keeps working.`,
+    },
+  },
   reserveLocations: {
     card: 'reserve',
     point: 0,

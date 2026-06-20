@@ -13,6 +13,7 @@ export interface HouseholdSettings {
   mealHidden?: string[] // slots hidden from glance/plan; empty = show all
   measureColors?: Record<string, string> // measuring-tool swatchId → "#rrggbb" (only set tools)
   reserveLocations?: ReserveLocation[] | null // La réserve storage spots; null = seeded defaults
+  aiEnabled?: boolean // household AI on/off switch (Réglages ▸ IA); the SPA gates AI on /api/health instead
 }
 
 // The per-slot meal colour + visibility, resolved from the household settings.

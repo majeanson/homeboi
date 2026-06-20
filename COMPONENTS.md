@@ -108,7 +108,15 @@ window to seconds or force the screensaver/warn/drift, via `lib/idleDebug.ts`; a
 drag-reorder + show/hide the built-in filter pills and build CUSTOM pills (label +
 colour + attribute rules over time / ingredients / servings / tag / favourite, see
 `lib/recipePills.ts`, migration 0045), consumed by `RecipesTab`).
-`AmbientScreen` (the full-screen idle screensaver — clock/date/photo-frame, backlog #3)
+`operator/ai.tsx` — the Réglages ▸ IA section: the household AI on/off switch
+(`AiSection`). The same on/off is mirrored on the Réglages header tag (the old
+"IA : active" status is now the toggle). Both read `useAi()` / write `useAiToggle()`
+(`lib/ai.ts`): the switch PATCHes `households.ai_enabled` (migration 0061) and
+`/api/health` folds it into one effective `ai` flag the whole UI gates on, so turning
+it off hides every AI affordance (capture sparkle, recipe-read, recap, suggestions,
+search "Ask") AND each AI endpoint falls back server-side (capture→note, import→
+parsers-only, the rest 503 via `authed({ requiresAi })`). `AmbientScreen` (the
+full-screen idle screensaver — clock/date/photo-frame, backlog #3)
 mounts in `HubLayout` and is driven by its idle timer.
 
 **Le cercle** (the people directory tab, `/cercle`) — adapted from the standalone

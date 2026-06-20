@@ -1,6 +1,7 @@
 import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { resolveLang, structureRecipe } from '../_lib/ai'
+import { aiUsable } from '../_lib/aiPref'
 import { detectLang } from '../_lib/langDetect'
 import {
   NO_TIMES,
@@ -87,7 +88,10 @@ function publicHttpUrl(raw: string): URL | null {
 }
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  void actor
+  // AI off = binding unset OR the household switched it off (Réglages ▸ IA). When
+  // off, every path below falls back to the no-AI parsers (JSON-LD / microdata /
+  // paste heuristic) and only 503s if those find nothing — never reaching the model.
+  const aiOn = await aiUsable(ctx.env, actor)
   const lang = resolveLang(ctx.env, ctx.request)
   const body = await readJson<{ url?: string; text?: string }>(ctx.request)
 
@@ -111,7 +115,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     }
     // Free-form text → AI structuring; its steps still go through the shared
     // refinement (models love returning one packed paragraph).
-    if (ctx.env.AI) {
+    if (aiOn) {
       const r = await structureRecipe(ctx.env, text, lang)
       if (r.ingredients.length || r.steps.length) {
         return ok(
@@ -139,7 +143,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
         }),
       )
     }
-    if (!ctx.env.AI) return serviceUnavailable('Structuration IA indisponible ici.')
+    if (!aiOn) return serviceUnavailable('Structuration IA indisponible ici.')
     return ok(draft({ title: heuristic.title, empty: true }))
   }
 
@@ -176,7 +180,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   }
 
   // No structured Recipe — try AI over the page text (best-effort).
-  if (ctx.env.AI) {
+  if (aiOn) {
     const r = await structureRecipe(ctx.env, htmlToText(html), lang)
     if (r.ingredients.length || r.steps.length) {
       return ok(
