@@ -22,6 +22,7 @@ import {
   fullName,
   personKey,
 } from '../../lib/cercle'
+import { parseVCard, type ParsedContact } from '../../lib/vcard'
 import { ContactPhotos } from './ContactPhotos'
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon } from '../Icon'
@@ -54,6 +55,7 @@ export function ContactForm({
   const confirm = useConfirm()
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
+  const vcfRef = useRef<HTMLInputElement>(null)
 
   // The unified people set (contacts + members, deduped) for the relationship
   // composer, plus this contact as a Person (the link subject) once it exists. A
@@ -110,6 +112,73 @@ export function ContactForm({
       if (c.email?.[0] && !email) setEmail(c.email[0])
     } catch {
       // cancelled or permission denied
+    }
+  }
+
+  // #44: import from a .vcf file — the universal export every Contacts app produces.
+  // A single card PREFILLS this form (like the Contact Picker but full fields); a
+  // file with MANY cards (a phone's "export all") bulk-creates them after a confirm,
+  // then lands back on the directory. Mirrors lib/vcard's export exactly.
+  function prefillFrom(p: ParsedContact) {
+    setFirstName(p.firstName)
+    setLastName(p.lastName)
+    if (p.nickname) setNickname(p.nickname)
+    if (p.birthday) setBirthday(p.birthday)
+    if (p.phone && !phone) setPhone(p.phone)
+    if (p.email && !email) setEmail(p.email)
+    if (p.notes) setNotes((n) => n || p.notes || '')
+    if (p.tags.length) setTags((cur) => [...new Set([...cur, ...p.tags])])
+    if (p.address) {
+      if (p.address.street) setStreet(p.address.street)
+      if (p.address.city) setCity(p.address.city)
+      if (p.address.state) setProvince(p.address.state)
+      if (p.address.postalCode) setPostal(p.address.postalCode)
+    }
+  }
+
+  async function importVCard(file: File | undefined) {
+    if (vcfRef.current) vcfRef.current.value = ''
+    if (!file) return
+    let parsed: ParsedContact[] = []
+    try {
+      parsed = parseVCard(await file.text())
+    } catch {
+      parsed = []
+    }
+    if (parsed.length === 0) return
+    if (parsed.length === 1) {
+      prefillFrom(parsed[0])
+      return
+    }
+    // Bulk: confirm, then create each (offline-safe via the outbox), then close.
+    const okay = await confirm({
+      message: t.cercle.importVcfConfirm(parsed.length),
+      confirmLabel: t.cercle.importVcfDo(parsed.length),
+    })
+    if (!okay) return
+    setSaving(true)
+    try {
+      for (const p of parsed) {
+        await write('cercle', {
+          method: 'POST',
+          body: {
+            firstName: p.firstName,
+            lastName: p.lastName,
+            nickname: p.nickname,
+            birthday: p.birthday,
+            email: p.email,
+            phone: p.phone,
+            address: p.address,
+            notes: p.notes,
+            tags: p.tags,
+          },
+          affectedKeys: [CERCLE_KEY, BOARD_KEY],
+        }).catch(() => {})
+      }
+    } finally {
+      setSaving(false)
+      qc.invalidateQueries({ queryKey: CERCLE_KEY })
+      nav('/cercle', { replace: true })
     }
   }
 
@@ -316,6 +385,20 @@ export function ContactForm({
                 <button type="button" className="btn btn--sm btn--ghost" onClick={importFromContacts}>
                   <Icon name="book-open-bold" size={15} /> {t.cercle.importContact}
                 </button>
+              )}
+              {!value && (
+                <>
+                  <input
+                    ref={vcfRef}
+                    type="file"
+                    accept=".vcf,text/vcard,text/x-vcard"
+                    hidden
+                    onChange={(e) => importVCard(e.target.files?.[0])}
+                  />
+                  <button type="button" className="btn btn--sm btn--ghost" onClick={() => vcfRef.current?.click()}>
+                    <Icon name="envelope-bold" size={15} /> {t.cercle.importVcf}
+                  </button>
+                </>
               )}
             </div>
           </>

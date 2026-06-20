@@ -663,6 +663,9 @@ export const FR = {
     photoOnline: 'Hors ligne — branche-toi pour ajouter une photo',
     removePhotoFromGallery: 'Retirer la photo',
     importContact: 'Importer un contact',
+    importVcf: 'Importer un .vcf',
+    importVcfConfirm: (n: number) => `Ce fichier contient ${n} contacts. Les ajouter tous au cercle ?`,
+    importVcfDo: (n: number) => `Importer ${n} contacts`,
     photoFromMaisonnee: 'Photo gérée dans la Maisonnée',
     photoFromMaisonneeTile: 'Maisonnée',
     // Family builder — define a whole family's relationships at once.
@@ -1905,6 +1908,9 @@ export const EN: typeof FR = {
     photoOnline: 'Offline — connect to add a photo',
     removePhotoFromGallery: 'Remove photo',
     importContact: 'Import from contacts',
+    importVcf: 'Import a .vcf',
+    importVcfConfirm: (n: number) => `This file holds ${n} contacts. Add them all to the circle?`,
+    importVcfDo: (n: number) => `Import ${n} contacts`,
     photoFromMaisonnee: 'Photo managed in the household',
     photoFromMaisonneeTile: 'Household',
     // Family builder — define a whole family's relationships at once.
