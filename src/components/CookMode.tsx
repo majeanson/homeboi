@@ -22,10 +22,8 @@ import {
 import { IngredientLine } from './IngredientLine'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { useModal } from '../lib/useModal'
-
-// A live countdown for a duration found in a step. Several can run at once now
-// (start the pasta, then the sauce), so each carries a label + its own id.
-type CookTimer = { id: number; label: string; total: number; remaining: number; running: boolean }
+import { useCookTimers } from '../lib/cookTimers'
+import { TimerRail } from './cook/TimerRail'
 
 // Whether a step reads itself aloud on arrival. Default ON; an explicit opt-out
 // persists per device (same shape as the calm/lang prefs). OFF = narration only
@@ -49,8 +47,6 @@ function loadAutoRead(): boolean {
 const VIEW_ICON: Record<CookView, IconName> = { full: 'scroll-bold', split: 'book-open-bold', step: 'square-bold' }
 const VIEW_ORDER: CookView[] = ['full', 'split', 'step']
 const DENSITY_ORDER: CookDensity[] = ['compact', 'normal', 'large']
-
-const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padStart(2, '0')}`
 
 // Full-screen cooking view for the kitchen tablet. The TODDLER lens gets the calm
 // stepper (one thing at a time — ingredients as a gather checklist, then each prep
@@ -97,26 +93,14 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const [splitTab, setSplitTab] = useState<'ings' | 'steps'>('ings')
   const lockRef = useRef<{ release: () => Promise<void> } | null>(null)
   // Several one-tap timers can run at once (start the pasta, then come back and
-  // start the sauce). Each is named by the step it came from and OUTLIVES step
-  // navigation — that's the point, you set it then move on. `total` is what it
-  // started from (so a finished timer can restart), `remaining` ticks while running.
-  const [timers, setTimers] = useState<CookTimer[]>([])
-  const timerSeq = useRef(0)
-  // Start a new countdown for a duration, labelled by its step so a rail of them
-  // stays legible. The rail shows it immediately; it survives moving steps.
-  function addTimer(seconds: number, durLabel: string, stepN?: number) {
-    const id = ++timerSeq.current
-    const label = stepN ? `${t.recipes.stepLabel} ${stepN} · ${durLabel}` : durLabel
-    setTimers((ts) => [...ts, { id, label, total: seconds, remaining: seconds, running: true }])
-  }
-  // Tap a clock: restart it if it's finished, else pause/resume. ✕ removes it.
-  const toggleTimer = (id: number) =>
-    setTimers((ts) =>
-      ts.map((tm) =>
-        tm.id !== id ? tm : tm.remaining === 0 ? { ...tm, remaining: tm.total, running: true } : { ...tm, running: !tm.running },
-      ),
-    )
-  const removeTimer = (id: number) => setTimers((ts) => ts.filter((tm) => tm.id !== id))
+  // start the sauce). Each OUTLIVES step navigation — you set it then move on. The
+  // countdown engine + chime/vibrate-on-finish + rail are the shared useCookTimers
+  // primitive (lib/cookTimers), so the multi-recipe cook (#43) runs the same timers.
+  const { timers, addTimer, toggleTimer, removeTimer } = useCookTimers()
+  // Start a countdown for a duration, labelled by its step so a rail of them stays
+  // legible (the engine takes a ready-made label; here we prefix the step number).
+  const addStepTimer = (seconds: number, durLabel: string, stepN?: number) =>
+    addTimer(seconds, stepN ? `${t.recipes.stepLabel} ${stepN} · ${durLabel}` : durLabel)
 
   // "## Section" markers group the flat lines (a recipe without markers is one
   // untitled group). A marker is never its own page — each step page carries
@@ -213,36 +197,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
       return n
     })
 
-  // One ticker for ALL running timers: decrement each per second; any that hit
-  // zero stop and buzz once (where supported). The screen wake-lock above keeps
-  // the tablet awake for it. Re-armed only when the "is anything running" flag
-  // flips, so adding/removing a paused timer doesn't churn the interval.
-  const anyRunning = timers.some((tm) => tm.running)
-  useEffect(() => {
-    if (!anyRunning) return
-    const id = setInterval(() => {
-      setTimers((ts) => {
-        let buzzed = false
-        const next = ts.map((tm) => {
-          if (!tm.running) return tm
-          if (tm.remaining <= 1) {
-            buzzed = true
-            return { ...tm, remaining: 0, running: false }
-          }
-          return { ...tm, remaining: tm.remaining - 1 }
-        })
-        if (buzzed) {
-          try {
-            navigator.vibrate?.([200, 100, 200])
-          } catch {
-            /* no vibration API — the visual "done" state is enough */
-          }
-        }
-        return next
-      })
-    }, 1000)
-    return () => clearInterval(id)
-  }, [anyRunning])
+  // (The per-second ticker + chime/vibrate-on-finish now lives in useCookTimers.)
 
   // — Hands-free stepper (step mode only) —
   // A continuous on-device mic that maps a spoken phrase to a stepper command, so
@@ -267,7 +222,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
     } else if (cmd === 'timer') {
       const d = durationsRef.current[0]
       const c = curRef.current
-      if (d) addTimer(d.seconds, d.label, c?.kind === 'step' ? c.n : undefined)
+      if (d) addStepTimer(d.seconds, d.label, c?.kind === 'step' ? c.n : undefined)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -352,7 +307,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                           className="cook__timer-chip mono"
                           onClick={(e) => {
                             e.stopPropagation()
-                            addTimer(d.seconds, d.label, sN)
+                            addStepTimer(d.seconds, d.label, sN)
                           }}
                         >
                           ⏱ {d.label}
@@ -541,43 +496,8 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
       )}
 
       {/* Running timers live ABOVE the step so they stay visible as you move on —
-          start one on step 2, watch it while you read step 5. Tap a clock to
-          pause/resume (or restart a finished one); ✕ dismisses it. */}
-      {timers.length > 0 && (
-        <div className="cook__timer-rail" aria-label={t.recipes.timer}>
-          {timers.map((tm) => (
-            <div key={tm.id} className={'cook__timer-item' + (tm.remaining === 0 ? ' is-done' : '')}>
-              <span className="cook__timer-label mono">{tm.label}</span>
-              <div className={'cook__timer' + (tm.remaining === 0 ? ' is-done' : '')}>
-                <button
-                  type="button"
-                  className="cook__timer-clock mono"
-                  onClick={() => toggleTimer(tm.id)}
-                  aria-label={t.recipes.timer}
-                >
-                  {tm.remaining === 0 ? (
-                    <>
-                      <InlineIcon name="timer-bold" /> {t.recipes.timerDone}
-                    </>
-                  ) : (
-                    <>
-                      <InlineIcon name={tm.running ? 'timer-bold' : 'play-bold'} /> {clock(tm.remaining)}
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className="cook__timer-x"
-                  onClick={() => removeTimer(tm.id)}
-                  aria-label={t.common.cancel}
-                >
-                  <Icon name="x-bold" size={16} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+          start one on step 2, watch it while you read step 5. The shared rail. */}
+      <TimerRail timers={timers} onToggle={toggleTimer} onRemove={removeTimer} />
 
       <div
         className={
@@ -737,7 +657,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                     key={d.seconds}
                     type="button"
                     className="cook__timer-chip mono"
-                    onClick={() => addTimer(d.seconds, d.label, cur?.kind === 'step' ? cur.n : undefined)}
+                    onClick={() => addStepTimer(d.seconds, d.label, cur?.kind === 'step' ? cur.n : undefined)}
                   >
                     ⏱ {d.label}
                   </button>
