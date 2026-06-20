@@ -17,6 +17,7 @@ import {
 import { wash, tintInk, edge } from '../lib/colors'
 import { SECTION_PREFIX, dropDanglingHeadings, isSectionHeading } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
+import { Chip } from './Chip'
 import { EntityCombobox, type ComboOption } from './EntityCombobox'
 import { ZoomableImg } from './ZoomableImg'
 import { useModal } from '../lib/useModal'
@@ -75,6 +76,10 @@ export function RecipeForm({
   const [cookMin, setCookMin] = useState(value?.cookMin ? String(value.cookMin) : '')
   const [totalMin, setTotalMin] = useState(value?.totalMin ? String(value.totalMin) : '')
   const [notes, setNotes] = useState(value?.notes ?? '')
+  // Reading language for read-aloud (#TTS): null = follow the app's language (the
+  // default), 'fr'/'en' = always narrate this recipe with that voice (an English
+  // recipe in a French app). Not a translation — just which mouth reads the words.
+  const [readLang, setReadLang] = useState<'fr' | 'en' | null>(value?.lang ?? null)
   const [tags, setTags] = useState<string[]>(value?.tags ?? [])
   const [tagInput, setTagInput] = useState('')
   const [source, setSource] = useState<string | null>(value?.source ?? null)
@@ -401,6 +406,7 @@ export function RecipeForm({
       image,
       tags,
       original,
+      lang: readLang,
     }
     await api('recipes', {
       method: value ? 'PATCH' : 'POST',
@@ -765,6 +771,22 @@ export function RecipeForm({
                 </span>
               </label>
             ))}
+          </div>
+          {/* #TTS — which voice reads this recipe aloud (cook mode, toddler tiles).
+              Auto follows the app language; pick a language for, say, an English
+              recipe kept in a French household so its steps aren't read with a
+              French accent. */}
+          <div className="picker-chips mono recipe-readlang">
+            <span className="picker-chips__label">{t.recipes.readLangLabel}</span>
+            <Chip selected={readLang === null} onClick={() => setReadLang(null)}>
+              {t.recipes.readLangAuto}
+            </Chip>
+            <Chip selected={readLang === 'fr'} onClick={() => setReadLang('fr')}>
+              {t.recipes.readLangFr}
+            </Chip>
+            <Chip selected={readLang === 'en'} onClick={() => setReadLang('en')}>
+              {t.recipes.readLangEn}
+            </Chip>
           </div>
           <textarea
             className="input"

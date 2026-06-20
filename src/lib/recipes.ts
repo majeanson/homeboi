@@ -37,6 +37,10 @@ export interface Recipe {
   // payloads/fixtures predate it. Resolve a non-empty key via imgUrl() (it's
   // always an upload, never a remote URL). Heading rows carry an empty slot.
   stepImages?: string[]
+  // The recipe's own reading language for read-aloud ('fr' | 'en'), null/undefined
+  // = follow the UI language (the default). An English recipe in a French app reads
+  // its steps with an English voice when one is installed. Not a translation.
+  lang?: 'fr' | 'en' | null
   updatedAt: number
 }
 

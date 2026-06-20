@@ -27,6 +27,7 @@ interface RecipeRow {
   tags_json: string
   original_json: string | null
   steps_images_json: string | null
+  lang: string | null
   updated_at: number
 }
 
@@ -47,6 +48,8 @@ interface RecipeBody {
   original?: RecipeOriginal | null
   // Parallel per-step photo keys (feature #17 B) — same length as steps.
   stepImages?: unknown
+  // The recipe's reading language for read-aloud ('fr' | 'en', null = follow UI).
+  lang?: string | null
 }
 
 // The as-imported snapshot (migration 0020): what the import (URL / paste /
@@ -80,6 +83,9 @@ const cleanMin = (v: unknown): number | null =>
   typeof v === 'number' && isFinite(v) && v > 0 && v <= 48 * 60 ? Math.round(v) : null
 // The yield's unit word ("biscuits"); short free text, null when blank.
 const cleanUnit = (v: unknown): string | null => (isStr(v) ? v.trim().slice(0, 24) || null : null)
+// Reading language for read-aloud — only the two the app supports; anything else
+// (or unset) stores null = "follow the UI language" (the long-standing default).
+const cleanLang = (v: unknown): string | null => (v === 'fr' || v === 'en' ? v : null)
 
 // Trim, drop blanks, cap length + count so a runaway paste can't bloat a row.
 // Ingredients fit in 200 chars; STEPS need more (a real instruction sentence
@@ -159,7 +165,7 @@ function cleanTags(v: unknown): string[] {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, ingredients_json, steps_json, servings, servings_unit, prep_min, cook_min, total_min, notes, source, image, tags_json, original_json, steps_images_json, updated_at FROM recipes WHERE household_id = ? ORDER BY title',
+    'SELECT id, title, ingredients_json, steps_json, servings, servings_unit, prep_min, cook_min, total_min, notes, source, image, tags_json, original_json, steps_images_json, lang, updated_at FROM recipes WHERE household_id = ? ORDER BY title',
   )
     .bind(actor.householdId)
     .all<RecipeRow>()
@@ -182,6 +188,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
       original: parseOriginal(r.original_json),
       // Parallel per-step photo keys, '' = none (feature #17 B).
       stepImages: normalizeStepImages(r.steps_images_json, steps.length),
+      // Reading language for read-aloud (#TTS): 'fr' | 'en' | null = follow UI.
+      lang: cleanLang(r.lang),
       updatedAt: r.updated_at,
     }
   })
@@ -197,7 +205,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const servings = typeof body?.servings === 'number' && body.servings > 0 ? Math.floor(body.servings) : null
   const steps = cleanSteps(body?.steps)
   await ctx.env.DB.prepare(
-    'INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, servings_unit, prep_min, cook_min, total_min, notes, source, image, tags_json, original_json, steps_images_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, servings_unit, prep_min, cook_min, total_min, notes, source, image, tags_json, original_json, steps_images_json, lang, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -217,6 +225,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       cleanOriginal(body?.original),
       // Step photos kept parallel + sliced to the cleaned steps length (feature #17 B).
       JSON.stringify(normalizeStepImages(body?.stepImages, steps.length)),
+      cleanLang(body?.lang),
       ts,
       ts,
     )
@@ -251,7 +260,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       ? normalizeStepImages(body.stepImages, steps.length)
       : normalizeStepImages(prev.steps_images_json, steps.length)
   await ctx.env.DB.prepare(
-    'UPDATE recipes SET title = ?, ingredients_json = ?, steps_json = ?, servings = ?, servings_unit = ?, prep_min = ?, cook_min = ?, total_min = ?, notes = ?, source = ?, image = ?, tags_json = ?, original_json = ?, steps_images_json = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+    'UPDATE recipes SET title = ?, ingredients_json = ?, steps_json = ?, servings = ?, servings_unit = ?, prep_min = ?, cook_min = ?, total_min = ?, notes = ?, source = ?, image = ?, tags_json = ?, original_json = ?, steps_images_json = ?, lang = ?, updated_at = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title.slice(0, 200),
@@ -268,6 +277,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       JSON.stringify(cleanTags(body.tags)),
       original,
       JSON.stringify(newStepImages),
+      cleanLang(body.lang),
       nowSec(),
       body.id,
       actor.householdId,

@@ -236,12 +236,16 @@ export function playNarration(
 
 export function useSpeak() {
   const { lang } = useLang()
+  // `langOverride` lets a caller read content in ITS OWN language regardless of the
+  // UI toggle — e.g. an English recipe narrated in a French app reads with an
+  // English voice (when one is installed), instead of English words in a French
+  // mouth. Omitted → the UI language, the long-standing default.
   return useCallback(
-    (raw: string | undefined) => {
+    (raw: string | undefined, langOverride?: Lang) => {
       if (!raw || !SUPPORTED) return
       const text = spokenOnly(raw)
       if (!text) return
-      const want = wantedTag(lang)
+      const want = wantedTag(langOverride ?? lang)
 
       const utter = () => {
         try {

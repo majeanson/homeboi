@@ -345,6 +345,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Lecture dans la bonne langue', en: 'Read aloud in the right language' },
+        detail: {
+          fr: 'Une recette gardée en anglais dans une maison en français ? Dans la fiche de la recette, règle « Lecture à voix haute » sur Anglais : le mode cuisine lira ses étapes avec une voix anglaise au lieu de les dire avec un accent français. « Auto » suit la langue de l’application. (Il faut qu’une voix anglaise soit installée sur l’appareil — la plupart en ont une.)',
+          en: 'A recipe kept in English inside a French household? In the recipe’s card, set “Read aloud” to English: cook mode will read its steps with an English voice instead of saying them with a French accent. “Auto” follows the app’s language. (The device needs an English voice installed — most have one.)',
+        },
+        why: {
+          fr: 'Pour qu’un tout-petit qui écoute la recette entende les mots bien prononcés, peu importe la langue où elle a été notée.',
+          en: 'So a little one listening to the recipe hears the words pronounced properly, whatever language it was written in.',
+        },
+      },
+      {
         label: { fr: 'Les quatre repas', en: 'All four meals' },
         detail: {
           fr: 'Pas juste le souper : déjeuner, dîner, souper et collation ont chacun leur case.',

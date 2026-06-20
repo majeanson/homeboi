@@ -503,6 +503,11 @@ export const FR = {
     bookBravo: 'Bravo, petit chef !',
     bookCount: (n: number) => `${n} recette${n > 1 ? 's' : ''} dans le livre`,
     bookHint: 'Choisis une collection, puis imprime — un livre tout en images à cuisiner avec les petits.',
+    // #TTS — per-recipe read-aloud language.
+    readLangLabel: 'Lecture à voix haute',
+    readLangAuto: 'Auto',
+    readLangFr: 'Français',
+    readLangEn: 'Anglais',
     // #12 "Haven't had in a while" — gentle, no-shame re-surfacing.
     neglected: 'Oubliées',
     neverSeen: 'jamais encore',
@@ -1769,6 +1774,11 @@ export const EN: typeof FR = {
     bookBravo: 'Well done, little chef!',
     bookCount: (n: number) => `${n} recipe${n > 1 ? 's' : ''} in the book`,
     bookHint: 'Pick a collection, then print — an all-pictures book to cook with little ones.',
+    // #TTS — per-recipe read-aloud language.
+    readLangLabel: 'Read aloud',
+    readLangAuto: 'Auto',
+    readLangFr: 'French',
+    readLangEn: 'English',
     // #12 "Haven't had in a while" — gentle, no-shame re-surfacing.
     neglected: 'Not had lately',
     neverSeen: 'not yet',

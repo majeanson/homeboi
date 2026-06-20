@@ -68,6 +68,10 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
+  // Read this recipe's text in ITS OWN language when set (an English recipe in a
+  // French app reads its steps/ingredients with an English voice), else the UI
+  // language. #TTS explicit-hint — see lib/speak useSpeak(text, langOverride).
+  const say = (txt: string | undefined) => speak(txt, recipe.lang ?? undefined)
   // Esc-to-exit + scroll-lock + focus-trap for the full-screen cooking view.
   const cookRef = useRef<HTMLDivElement>(null)
   useModal(cookRef, onClose)
@@ -135,8 +139,8 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   // Only the stepper auto-narrates on arrival; the full / split pages are tap-to-hear.
   const stepText = mode === 'step' && cur?.kind === 'step' ? cur.text : null
   useEffect(() => {
-    if (autoReadRef.current && stepText) speak(stepText)
-  }, [stepText, speak])
+    if (autoReadRef.current && stepText) speak(stepText, recipe.lang ?? undefined)
+  }, [stepText, speak, recipe.lang])
 
   function toggleAutoRead() {
     setAutoRead((on) => {
@@ -287,11 +291,11 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                   role="button"
                   tabIndex={0}
                   aria-label={t.recipes.readStep}
-                  onClick={() => speak(s)}
+                  onClick={() => say(s)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
-                      speak(s)
+                      say(s)
                     }
                   }}
                 >
@@ -351,11 +355,11 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                 role="button"
                 tabIndex={0}
                 aria-label={t.recipes.hearLine}
-                onClick={() => speak(spokenIngredient(ing, lang))}
+                onClick={() => say(spokenIngredient(ing, recipe.lang ?? lang))}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()
-                    speak(spokenIngredient(ing, lang))
+                    say(spokenIngredient(ing, recipe.lang ?? lang))
                   }
                 }}
               >
@@ -524,11 +528,11 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
                             role="button"
                             tabIndex={0}
                             aria-label={t.recipes.hearLine}
-                            onClick={() => speak(spokenIngredient(ing, lang))}
+                            onClick={() => say(spokenIngredient(ing, recipe.lang ?? lang))}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault()
-                                speak(spokenIngredient(ing, lang))
+                                say(spokenIngredient(ing, recipe.lang ?? lang))
                               }
                             }}
                           >
@@ -620,11 +624,11 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
               role="button"
               tabIndex={0}
               aria-label={t.recipes.readStep}
-              onClick={() => cur?.kind === 'step' && speak(cur.text)}
+              onClick={() => cur?.kind === 'step' && say(cur.text)}
               onKeyDown={(e) => {
                 if ((e.key === 'Enter' || e.key === ' ') && cur?.kind === 'step') {
                   e.preventDefault()
-                  speak(cur.text)
+                  say(cur.text)
                 }
               }}
             >
