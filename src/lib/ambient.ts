@@ -17,7 +17,7 @@ export interface AmbientSettings {
   showClock: boolean
   showDate: boolean
   showPhotos: boolean // the slow PhotoFrame slideshow as the backdrop
-  showNext: boolean // a quiet "next up" line (today's next event)
+  showNext: boolean // a quiet "next up" line (tonight's supper + today's next event)
   returnHome: boolean // drift the picked face back to Maisonnée when idle
   returnHomeMin: number // minutes idle before that drift
 }

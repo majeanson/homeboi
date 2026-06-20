@@ -20,6 +20,10 @@ interface BoardEvent {
   start_at: number
   all_day: number
 }
+interface BoardMeal {
+  id: string
+  title: string
+}
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
@@ -42,7 +46,7 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
   // load on a fresh kiosk — the board polls this anyway).
   const { data } = useQuery({
     queryKey: BOARD_KEY,
-    queryFn: () => api<{ today: BoardEvent[] }>('board'),
+    queryFn: () => api<{ today: BoardEvent[]; tonight: BoardMeal | null }>('board'),
     enabled: show && a.showNext,
   })
   const nowSec = Math.floor(now / 1000)
@@ -52,6 +56,9 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
           .filter((e) => e.all_day === 1 || e.start_at >= nowSec)
           .sort((x, y) => x.start_at - y.start_at)[0]
       : undefined
+  // Tonight's supper rides on the same board frame — the most glanceable "what's
+  // next" on a wall at rest, alongside the next event. (#4: next up = meal + event.)
+  const meal = a.showNext ? data?.tonight ?? undefined : undefined
 
   if (!show) return null
   return (
@@ -72,6 +79,11 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
       <div className="ambient__center">
         {a.showClock && <div className="ambient__clock">{formatTime(nowSec, lang)}</div>}
         {a.showDate && <div className="ambient__date">{cap(formatDayLong(nowSec, lang))}</div>}
+        {meal && (
+          <div className="ambient__next mono">
+            <InlineIcon name="fork-knife-bold" /> {meal.title}
+          </div>
+        )}
         {next && (
           <div className="ambient__next mono">
             <InlineIcon name="calendar-blank-bold" />{' '}
