@@ -128,7 +128,14 @@ function quality(v: { name: string; voiceURI: string }): number {
   const id = `${v.name} ${v.voiceURI}`.toLowerCase()
   if (id.includes('premium')) return 4
   if (id.includes('enhanced') || id.includes('amélior') || id.includes('amelior')) return 3
-  if (id.includes('eloquence')) return 0
+  // Legacy / novelty iOS voices (Albert, Zarvox, Fred, the eloquence set…) — robotic
+  // and BELOW even the standard "compact" voices. They live on the OLD
+  // `com.apple.speech.synthesis.voice.<name>` URI path; modern real voices use
+  // `com.apple.voice.*` / `com.apple.ttsbundle.*`. Without demoting them they fall to
+  // the default tier (2) and wrongly OUTRANK a real compact voice (1) — the "I only
+  // get Albert in English" bug (French ships no such legacy voices, so it picked
+  // right). Rank them lowest so any real voice wins.
+  if (id.includes('eloquence') || id.includes('speech.synthesis.voice')) return 0
   if (id.includes('compact')) return 1
   return 2
 }

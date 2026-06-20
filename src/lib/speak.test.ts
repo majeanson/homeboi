@@ -13,6 +13,8 @@ const ENHANCED_FRFR = v('Thomas (Enhanced)', 'fr-FR', 'com.apple.voice.enhanced.
 const COMPACT_FRFR = v('Thomas', 'fr-FR', 'com.apple.voice.compact.fr-FR.Thomas')
 const ELOQUENCE_FR = v('Eddy (français (Canada))', 'fr-CA', 'com.apple.eloquence.fr-CA.Eddy')
 const COMPACT_EN = v('Samantha', 'en-US', 'com.apple.voice.compact.en-US.Samantha')
+// A legacy iOS NOVELTY voice — old `speech.synthesis.voice` URI path, robotic.
+const ALBERT_EN = v('Albert', 'en-US', 'com.apple.speech.synthesis.voice.Albert')
 
 describe('pickBestVoice', () => {
   it('picks the user-installed enhanced voice over the compact one iOS lists first', () => {
@@ -38,6 +40,16 @@ describe('pickBestVoice', () => {
 
   it('falls back to eloquence only when it is the whole family', () => {
     expect(pickBestVoice([ELOQUENCE_FR, COMPACT_EN], 'fr-CA')).toBe(ELOQUENCE_FR)
+  })
+
+  it('never picks a legacy novelty voice (Albert) over a real compact voice', () => {
+    // The "I only get Albert in English" bug: Albert's legacy URI matched no
+    // quality keyword and fell to the default tier, outranking real voices.
+    expect(pickBestVoice([ALBERT_EN, COMPACT_EN], 'en-CA')).toBe(COMPACT_EN)
+  })
+
+  it('falls back to the novelty voice only when it is the whole family', () => {
+    expect(pickBestVoice([ALBERT_EN], 'en-CA')).toBe(ALBERT_EN)
   })
 
   it('never crosses the language family', () => {
