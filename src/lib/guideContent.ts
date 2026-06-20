@@ -367,14 +367,14 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Un livre de cuisine pour les petits', en: 'A cooking book for little ones' },
+        label: { fr: 'Le livre illustré des petits', en: 'The kids’ picture book' },
         detail: {
-          fr: 'Deux façons d’avoir le livre. Pour le LIRE à l’écran : en mode bambin, dans la cuisine, touche « 📖 Mon livre » — un livre tout en images qu’on feuillette du doigt, chaque recette lue à voix haute, avec un gros « On cuisine ! » qui lance la recette. Pour l’IMPRIMER : touche le ＋ de la cuisine ▸ « Faire un livre » — une recette par page, grosses photos d’étapes, numéros en couleur et cases à cocher; choisis une collection (ou tout le livre), avec ou sans photos (encre).',
-          en: 'Two ways to have the book. To READ it on screen: in toddler mode, in the kitchen, tap “📖 My book” — an all-pictures book you flip through, each recipe read aloud, with a big “Let’s cook!” that starts the recipe. To PRINT it: tap the kitchen ＋ ▸ “Make a book” — one recipe per page, big step photos, colourful numbers and tick-boxes; pick a collection (or the whole book), with or without photos (ink).',
+          fr: 'Un livre de cuisine tout en images, à LIRE à l’écran (jamais à imprimer). En mode bambin, dans la cuisine, touche « 📖 Mon livre »; tu peux aussi l’ouvrir avec le ＋ de la cuisine ▸ « Le livre illustré ». On le feuillette du doigt (glisse ou flèches), une grande page par recette : la photo, le nom lu à voix haute, et un gros « On cuisine ! » qui lance la recette. Un pré-lecteur s’en sert seul.',
+          en: 'An all-pictures cookbook to READ on screen (never to print). In toddler mode, in the kitchen, tap “📖 My book”; you can also open it from the kitchen ＋ ▸ “The picture book”. Flip it with a finger (swipe or arrows), one big page per recipe: the photo, the name read aloud, and a big “Let’s cook!” that starts the recipe. A pre-reader uses it on their own.',
         },
         why: {
-          fr: 'Un tout-petit feuillette et « lit » ses recettes par l’image et le son, à l’écran ou sur papier — puis cuisine avec un grand. Rien de neuf à monter : ce sont tes recettes, mises en livre.',
-          en: 'A little one flips through and “reads” their recipes by picture and sound, on screen or on paper — then cooks with a grown-up. Nothing new to build: it’s your recipes, bound into a book.',
+          fr: 'Un tout-petit « lit » et choisit ses recettes par l’image et le son, puis cuisine avec un grand — un jeu, pas une feuille à imprimer.',
+          en: 'A little one “reads” and picks their recipes by picture and sound, then cooks with a grown-up — a game, not a printout.',
         },
       },
       {

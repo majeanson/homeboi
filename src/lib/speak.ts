@@ -15,7 +15,7 @@
 //      French voice installed), there's nothing to match — we fall back to the
 //      same language family, then to best-effort default. That's an OS gap, not
 //      a bug; install a Français (Canada) voice to hear it narrated properly.
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { useLang, type Lang } from '../i18n'
 
 const SUPPORTED = typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -57,6 +57,43 @@ export function setRate(rate: number): void {
   } catch {
     /* noop */
   }
+}
+
+// A GLOBAL read-aloud language (Réglages ▸ Affichage) — 'auto' follows the app
+// language (the long-standing default), 'fr'/'en' makes EVERY narration use that
+// voice, app-wide. A per-call override (e.g. a recipe's own language) still wins;
+// this is the fallback below that. Read live at speak time + by a tiny store so the
+// settings control reflects it without prop-drilling.
+const READ_LANG_KEY = 'babillard-read-lang'
+export type ReadLang = 'auto' | Lang
+const readLangListeners = new Set<() => void>()
+export function getReadLang(): ReadLang {
+  try {
+    const v = localStorage.getItem(READ_LANG_KEY)
+    return v === 'fr' || v === 'en' ? v : 'auto'
+  } catch {
+    return 'auto'
+  }
+}
+export function setReadLang(v: ReadLang): void {
+  try {
+    if (v === 'auto') localStorage.removeItem(READ_LANG_KEY)
+    else localStorage.setItem(READ_LANG_KEY, v)
+  } catch {
+    /* private mode — the change still holds for this session via listeners */
+  }
+  readLangListeners.forEach((l) => l())
+}
+// Live hook for the settings control (re-renders when the global pref changes).
+export function useReadLang(): ReadLang {
+  return useSyncExternalStore(
+    (cb) => {
+      readLangListeners.add(cb)
+      return () => readLangListeners.delete(cb)
+    },
+    getReadLang,
+    () => 'auto',
+  )
 }
 
 // The latest voice list. Populated lazily and kept current via `voiceschanged`.
@@ -245,7 +282,10 @@ export function useSpeak() {
       if (!raw || !SUPPORTED) return
       const text = spokenOnly(raw)
       if (!text) return
-      const want = wantedTag(langOverride ?? lang)
+      // A per-call override wins (a recipe's own language); else the household's
+      // GLOBAL read-aloud language (Réglages ▸ Affichage); else the UI language.
+      const pref = getReadLang()
+      const want = wantedTag(langOverride ?? (pref === 'auto' ? lang : pref))
 
       const utter = () => {
         try {

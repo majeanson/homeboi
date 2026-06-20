@@ -84,9 +84,9 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   departure: { cat: 'chore', icon: 'key-bold' },
   cook: { cat: 'meal', icon: 'cooking-pot-bold' },
   recipe: { cat: 'meal', icon: 'book-open-bold' },
-  // The printable recipe book (#45) — a document glyph so it reads distinct from
-  // the "add a recipe" tile (which shares the open-book glyph).
-  book: { cat: 'meal', icon: 'file-text-bold' },
+  // The toddler picture cookbook (#45) — a baby glyph: it's the kids' read-aloud
+  // book, distinct from the "add a recipe" open-book tile.
+  book: { cat: 'meal', icon: 'baby-bold' },
   meal: { cat: 'list', icon: 'calendar-blank-bold' },
   leftovers: { cat: 'meal', icon: 'arrow-counter-clockwise-bold' },
   pantry: { cat: 'chore', icon: 'carrot-bold' },

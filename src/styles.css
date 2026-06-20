@@ -32,8 +32,5 @@
 /* Le cercle (people directory) — uniquely-named .cercle-/.cf- classes, position
    immaterial; kept with the late additions. */
 @import './styles/cercle.css';
-/* #45 printable recipe/activity book — uniquely-named .book-* classes, position
-   immaterial; appended with the late additions. Carries its own @media print. */
-@import './styles/book.css';
 /* Dev-only component gallery (/dev/kit) — last so it never affects app cascade. */
 @import './styles/devkit.css';

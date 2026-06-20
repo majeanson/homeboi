@@ -37,9 +37,12 @@ import {
   hasVoiceFor,
   setRate,
   setVoicePref,
+  setReadLang,
+  useReadLang,
   useSpeak,
   useVoiceList,
 } from '../../lib/speak'
+import { Chip } from '../Chip'
 
 // Display: theme, language, and the Parent/Toddler view — the chrome that used
 // to live in the top header. Moved here so the hub pages stay calm and headerless.
@@ -268,6 +271,8 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
+  // The GLOBAL read-aloud language — applies to ALL narration everywhere (#TTS).
+  const readLang = useReadLang()
   const voicesForLang = useVoiceList(lang)
   const [voice, setVoice] = useState<string>(() => getVoicePref(lang))
   const [rate, setRateState] = useState<number>(() => getRate())
@@ -289,6 +294,18 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
         <p className="operator__hint mono">{t.operator.voiceNone}</p>
       ) : (
         <div className="operator__voice">
+          {/* #TTS — the GLOBAL read-aloud language, used everywhere narration plays
+              (cook mode, routines, toddler tiles…). Auto follows the app language; a
+              recipe's own language still wins for that recipe. */}
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.readLangLabel}</span>
+            <div className="picker-chips mono">
+              <Chip selected={readLang === 'auto'} onClick={() => setReadLang('auto')}>{t.recipes.readLangAuto}</Chip>
+              <Chip selected={readLang === 'fr'} onClick={() => setReadLang('fr')}>{t.recipes.readLangFr}</Chip>
+              <Chip selected={readLang === 'en'} onClick={() => setReadLang('en')}>{t.recipes.readLangEn}</Chip>
+            </div>
+          </div>
+
           <label className="operator__seg">
             <span className="operator__seg-label mono">{t.operator.voiceLabel}</span>
             <select

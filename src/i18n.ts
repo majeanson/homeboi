@@ -524,7 +524,7 @@ export const FR = {
     collectionCount: (n: number) => `${n} recette${n > 1 ? 's' : ''}`,
     collectionTapToOpen: 'Tape encore pour ouvrir',
     // #45 — the printable toddler recipe/activity book.
-    bookMake: 'Faire un livre',
+    bookMake: 'Le livre illustré',
     bookTitle: 'Mon livre de cuisine',
     bookSubtitle: 'Des recettes à cuisiner ensemble',
     bookOwner: 'Ce livre est à :',
@@ -926,6 +926,7 @@ export const FR = {
     voiceTitle: 'Voix de lecture',
     voiceHint: 'La voix qui lit les routines et les cartes à voix haute. Tout reste sur l’appareil; rien n’est envoyé en ligne.',
     voiceLabel: 'Voix',
+    readLangLabel: 'Langue de lecture',
     voiceAuto: 'Automatique (meilleure voix)',
     voiceTest: 'Tester la voix',
     voiceSpeedLabel: 'Vitesse',
@@ -1833,7 +1834,7 @@ export const EN: typeof FR = {
     collectionCount: (n: number) => `${n} recipe${n > 1 ? 's' : ''}`,
     collectionTapToOpen: 'Tap again to open',
     // #45 — the printable toddler recipe/activity book.
-    bookMake: 'Make a book',
+    bookMake: 'The picture book',
     bookTitle: 'My cooking book',
     bookSubtitle: 'Recipes to cook together',
     bookOwner: 'This book belongs to:',
@@ -2232,6 +2233,7 @@ export const EN: typeof FR = {
     voiceTitle: 'Read-aloud voice',
     voiceHint: 'The voice that reads routines and cards aloud. It all stays on the device; nothing is sent online.',
     voiceLabel: 'Voice',
+    readLangLabel: 'Reading language',
     voiceAuto: 'Automatic (best voice)',
     voiceTest: 'Test the voice',
     voiceSpeedLabel: 'Speed',
