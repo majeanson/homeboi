@@ -15,6 +15,8 @@ export function useUndoableRemove() {
     listProp: string
     id: string
     label: string
+    /** Override the default "« label » retiré" toast copy (e.g. a photo has no name). */
+    message?: string
     commit: () => Promise<unknown>
     after: () => void
   }) => {
@@ -30,7 +32,7 @@ export function useUndoableRemove() {
       d ? { ...d, [opts.listProp]: d[opts.listProp].filter((x) => x.id !== opts.id) } : d,
     )
     undo({
-      message: t.undo.cleared(opts.label),
+      message: opts.message ?? t.undo.cleared(opts.label),
       onUndo: () => {
         // Re-insert just this row at (about) its old spot into whatever the list
         // is now — leaves other deletes/edits in the same window untouched.

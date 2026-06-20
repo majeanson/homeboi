@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
@@ -99,7 +99,6 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
 
 export function RoutinesSection({ routines, onChange }: { routines: Routine[]; onChange: () => void }) {
   const t = useT()
-  const qc = useQueryClient()
   const { open } = useAddSheet()
   const undoableRemove = useUndoableRemove()
   const recordUndo = useRecordUndo()
@@ -124,27 +123,25 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
     const prev = r.timeOfDay
     const cur = isRoutineTod(r.timeOfDay) ? ROUTINE_TODS.indexOf(r.timeOfDay) : -1
     const next = cur + 1 >= ROUTINE_TODS.length ? null : ROUTINE_TODS[cur + 1]
-    const setTod = (tod: string | null) =>
-      qc.setQueryData<{ routines: Routine[] }>(['routines'], (d) =>
-        d ? { routines: d.routines.map((x) => (x.id === r.id ? { ...x, timeOfDay: tod } : x)) } : d,
-      )
-    setTod(next)
-    await write('routines', {
-      method: 'PATCH',
-      body: { routineId: r.id, timeOfDay: next },
-      affectedKeys: [['routines']],
-    }).catch(() => {})
+    // One write per cue, with the chip flip carried as useWrite's optimistic (so it
+    // reverts on a server reject and queues offline instead of being lost).
+    const setTodWrite = (tod: string | null) =>
+      write('routines', {
+        method: 'PATCH',
+        body: { routineId: r.id, timeOfDay: tod },
+        affectedKeys: [['routines']],
+        optimistic: (qc: QueryClient) =>
+          qc.setQueryData<{ routines: Routine[] }>(['routines'], (d) =>
+            d ? { routines: d.routines.map((x) => (x.id === r.id ? { ...x, timeOfDay: tod } : x)) } : d,
+          ),
+      }).catch(() => {})
+    await setTodWrite(next)
     onChange()
     // Compensating undo: put the previous cue back (chip + server).
     recordUndo({
       message: t.undo.routineTime(r.name),
       onUndo: async () => {
-        setTod(prev)
-        await write('routines', {
-          method: 'PATCH',
-          body: { routineId: r.id, timeOfDay: prev },
-          affectedKeys: [['routines']],
-        }).catch(() => {})
+        await setTodWrite(prev)
         onChange()
       },
     })

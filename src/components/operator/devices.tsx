@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { isGuest } from '../../lib/device'
 import { InlineIcon } from '../Icon'
@@ -109,7 +109,7 @@ export function DevicesSection({ devices, onChange }: { devices: Device[]; onCha
 // only mutable field, so a full form would be overkill.
 function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: () => void; onRevoke: () => void }) {
   const t = useT()
-  const qc = useQueryClient()
+  const write = useWrite()
   const [editing, setEditing] = useState(false)
   const [label, setLabel] = useState(device.label)
   const [busy, setBusy] = useState(false)
@@ -118,12 +118,19 @@ function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: (
     const next = label.trim()
     if (!next || busy) return
     setBusy(true)
-    // Optimistic: show the new name at once, then persist.
-    qc.setQueryData<{ devices: Device[] }>(['devices'], (data) =>
-      data ? { devices: data.devices.map((x) => (x.id === device.id ? { ...x, label: next } : x)) } : data,
-    )
     setEditing(false)
-    await api('pair/devices', { method: 'PATCH', body: { id: device.id, label: next } }).catch(() => {})
+    // Through useWrite: optimistic rename now (guest-safe, auto-revert on a server
+    // reject), offline-queued instead of lost when offline, then the invalidate
+    // reconciles. (The old path called api() directly, skipping the outbox.)
+    await write('pair/devices', {
+      method: 'PATCH',
+      body: { id: device.id, label: next },
+      affectedKeys: [['devices']],
+      optimistic: (qc) =>
+        qc.setQueryData<{ devices: Device[] }>(['devices'], (data) =>
+          data ? { devices: data.devices.map((x) => (x.id === device.id ? { ...x, label: next } : x)) } : data,
+        ),
+    }).catch(() => {})
     onChange()
     setBusy(false)
   }

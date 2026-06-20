@@ -4,7 +4,7 @@ import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
-import { useUndoToast } from '../../lib/toast'
+import { useUndoableRemove } from '../../lib/undoRemove'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { isGuest } from '../../lib/device'
@@ -54,7 +54,7 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
     queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
   })
   const photos = data?.photos ?? []
-  const undo = useUndoToast()
+  const undoableRemove = useUndoableRemove()
   // Read-only guest: photos are viewable, but no delete-per-tile and no upload.
   const ro = isGuest()
   const [busy, setBusy] = useState(false)
@@ -85,24 +85,19 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
       setProgress(null)
     }
   }
-  // Deferred delete: drop the tile now but HOLD the DELETE behind the undo toast,
-  // so the R2 object isn't actually removed until the window passes — a mis-tap
-  // costs nothing and needs no re-upload. (Photos aren't live-polled, so the
-  // optimistic removal won't be resurrected mid-window.)
+  // Deferred delete via the shared hook: drop the tile now but HOLD the DELETE
+  // behind the undo toast, so the R2 object isn't removed until the window passes —
+  // a mis-tap costs nothing and needs no re-upload. (The hook snapshots just this
+  // row, so two quick deletes stacking in one window can't resurrect each other.)
   function remove(id: string) {
-    const prev = qc.getQueryData<{ photos: { id: string; key: string }[] }>(['photos'])
-    qc.setQueryData<{ photos: { id: string; key: string }[] }>(['photos'], (d) =>
-      d ? { photos: d.photos.filter((p) => p.id !== id) } : d,
-    )
-    undo({
+    undoableRemove({
+      queryKey: ['photos'],
+      listProp: 'photos',
+      id,
+      label: '', // a photo has no name — use the dedicated copy instead
       message: t.undo.photoRemoved,
-      onUndo: () => {
-        if (prev) qc.setQueryData(['photos'], prev)
-      },
-      onCommit: async () => {
-        await api('photos', { method: 'DELETE', body: { id } }).catch(() => {})
-        qc.invalidateQueries({ queryKey: ['photos'] })
-      },
+      commit: () => api('photos', { method: 'DELETE', body: { id } }),
+      after: () => qc.invalidateQueries({ queryKey: ['photos'] }),
     })
   }
 

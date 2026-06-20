@@ -250,27 +250,16 @@ export function HistorySection({ help }: { help?: HelpMode }) {
           {items.map((it) =>
             !ro && editing === it.key ? (
               <li key={it.key} className="ghost-admin__row">
-                <form
-                  className="operator__inline-form"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    rename(it)
-                  }}
-                >
-                  <input
-                    className="input"
-                    autoFocus
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    aria-label={t.operator.historyRename}
-                  />
-                  <button type="submit" className="btn btn--primary mono">
-                    {t.common.save}
-                  </button>
-                  <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(null)}>
-                    {t.common.cancel}
-                  </button>
-                </form>
+                <EditField
+                  value={draft}
+                  onChange={setDraft}
+                  onSubmit={() => rename(it)}
+                  onCancel={() => setEditing(null)}
+                  submitLabel={t.common.save}
+                  submitVariant="primary"
+                  autoFocus
+                  ariaLabel={t.operator.historyRename}
+                />
               </li>
             ) : (
               <li key={it.key} className="ghost-admin__row">
