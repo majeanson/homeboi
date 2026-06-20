@@ -63,6 +63,7 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
             <Toggle on={a.showClock} icon="clock-bold" label={t.operator.ambientClock} onClick={() => set({ showClock: !a.showClock })} />
             <Toggle on={a.showDate} icon="calendar-blank-bold" label={t.operator.ambientDate} onClick={() => set({ showDate: !a.showDate })} />
             <Toggle on={a.showPhotos} icon="image-square-bold" label={t.operator.ambientPhotos} onClick={() => set({ showPhotos: !a.showPhotos })} />
+            <Toggle on={a.showDrawings} icon="paint-brush-bold" label={t.operator.ambientDrawings} onClick={() => set({ showDrawings: !a.showDrawings })} />
             <Toggle on={a.showNext} icon="calendar-dots-bold" label={t.operator.ambientNext} onClick={() => set({ showNext: !a.showNext })} />
           </div>
 

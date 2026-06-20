@@ -97,7 +97,7 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
       onKeyDown={onWake}
       tabIndex={-1}
     >
-      {a.showPhotos && (
+      {(a.showPhotos || a.showDrawings) && (
         <div className="ambient__bg" aria-hidden="true">
           <PhotoMosaic />
         </div>

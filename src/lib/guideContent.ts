@@ -1032,12 +1032,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'À ton goût', en: 'Your way' },
         detail: {
-          fr: 'Dans Réglages ▸ Affichage ▸ Mode veille, choisis le délai et ce qui s’affiche (horloge, date, photos, à venir).',
-          en: 'In Settings ▸ Display ▸ Idle mode, pick the delay and what shows (clock, date, photos, next up).',
+          fr: 'Dans Réglages ▸ Affichage ▸ Mode veille, choisis le délai et ce qui s’affiche (horloge, date, photos, dessins, à venir).',
+          en: 'In Settings ▸ Display ▸ Idle mode, pick the delay and what shows (clock, date, photos, drawings, next up).',
         },
         why: {
           fr: 'Le mur de la cuisine reste calme et vivant, sans rien faire.',
           en: 'The kitchen wall stays calm and alive, with nothing to do.',
+        },
+      },
+      {
+        label: { fr: 'Mur de souvenirs', en: 'Memory wall' },
+        detail: {
+          fr: 'Le fond de l’écran de veille mêle tes photos de famille ET les dessins gardés des enfants, qui se fondent doucement l’un dans l’autre. Le mélange suit l’heure du jour : les dessins ressortent le jour, les photos plus calmes le soir. Active ou coupe chacun (Photos / Dessins) dans Mode veille.',
+          en: 'The screensaver background blends your family photos AND the kids’ kept drawings, gently cross-fading between them. The mix follows the time of day: drawings lead through the day, calmer photos in the evening. Turn each on or off (Photos / Drawings) in Idle mode.',
+        },
+        why: {
+          fr: 'La tablette au repos devient un cadre vivant des souvenirs de la maisonnée — les vraies photos et l’art des petits, ensemble.',
+          en: 'The resting tablet becomes a living frame of the household’s memories — real photos and the little ones’ art, together.',
         },
       },
       {

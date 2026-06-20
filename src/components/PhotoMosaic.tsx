@@ -3,23 +3,41 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { imgUrl } from '../lib/image'
+import { useAmbient } from '../lib/ambient'
+import { useGallery } from '../lib/drawingGallery'
+import { computeDayPart, type DayPart } from '../lib/timeofday'
 
-// Full-screen family-photo mosaic for the idle screensaver: tiles the whole
-// surface with photos and, every few seconds, cross-fades ONE random tile to a
-// different photo. Calm by design (NFR-CALM) — opacity-only, a single tile at a
-// time, never a churning wall of motion. Silent no-op with no photos (or R2 off).
-// Used by AmbientScreen; the board wall keeps the single-photo PhotoFrame.
+// Full-screen family-memory mosaic for the idle screensaver: tiles the whole
+// surface with family PHOTOS and saved kids' DRAWINGS (#49), and every few seconds
+// cross-fades ONE random tile to a different image. Calm by design (NFR-CALM) —
+// opacity-only, a single tile at a time, never a churning wall of motion. Silent
+// no-op with nothing to show (or R2 off). Used by AmbientScreen; the board wall
+// keeps the single-photo PhotoFrame.
+//
+// Which sources appear is the household's Mode veille choice (showPhotos /
+// showDrawings). When BOTH are on, swaps are gently biased by daypart — kids' art
+// leads through the day, calm photos lead at dusk/night (#49 "by daypart").
 
 const TILE_PX = 260 // target tile edge at full density; the dense cap is set by this
-const SWAP_MS = 4500 // how often one tile gently changes photo
+const SWAP_MS = 4500 // how often one tile gently changes image
 
 type Tile = { photo: number; nonce: number }
+type Img = { id: string; key: string; draw: boolean }
 
-// Choose the grid shape from the container size AND the photo count. The photo
-// count drives density: below the dense cap we use exactly as many tiles as there
-// are photos (so every tile is a distinct photo — few photos → fewer, bigger
-// tiles, one photo → full-screen), and once there are enough photos it locks to
-// the fixed dense grid (TILE_PX tiles). Tiles are shaped to the container aspect.
+// Probability a swap lands on a DRAWING rather than a photo, by daypart. Only
+// matters when BOTH sources are present; otherwise the available one always wins.
+const DRAW_WEIGHT: Record<DayPart, number> = {
+  dawn: 0.4,
+  morning: 0.6,
+  afternoon: 0.6,
+  dusk: 0.3,
+  night: 0.25,
+}
+
+// Choose the grid shape from the container size AND the image count. The count
+// drives density: below the dense cap we use exactly as many tiles as there are
+// images (so every tile is distinct — few images → fewer, bigger tiles, one image
+// → full-screen), and once there are enough it locks to the fixed dense grid.
 function gridFor(w: number, h: number, photoCount: number): { cols: number; rows: number } {
   if (w <= 0 || h <= 0 || photoCount < 1) return { cols: 1, rows: 1 }
   const maxCols = Math.max(1, Math.round(w / TILE_PX))
@@ -41,30 +59,45 @@ function shuffle(arr: number[]): number[] {
   return arr
 }
 
-// Seed distinct photos where possible; cycle a shuffled order when tiles > photos.
+// Seed distinct images where possible; cycle a shuffled order when tiles > images.
 function seedTiles(count: number, n: number): Tile[] {
   const order = shuffle([...Array(n).keys()])
   return Array.from({ length: count }, (_, i) => ({ photo: order[i % n], nonce: 0 }))
 }
 
-// Pick a photo not already on screen (and not this tile's current) when we can.
-function pickPhoto(n: number, used: Set<number>, current: number): number {
-  if (n === 1) return 0
-  const free: number[] = []
-  for (let i = 0; i < n; i++) if (i !== current && !used.has(i)) free.push(i)
-  const pool = free.length
-    ? free
-    : Array.from({ length: n }, (_, i) => i).filter((i) => i !== current)
-  return pool[Math.floor(Math.random() * pool.length)]
+// Pick the next image index for a tile: choose the source group (drawings vs
+// photos) by the daypart weight when both exist, then a not-already-on-screen
+// index within that group (falling back outward so a pick is always returned).
+function pickBiased(images: Img[], used: Set<number>, current: number, drawWeight: number): number {
+  if (images.length <= 1) return 0
+  const draws: number[] = []
+  const photos: number[] = []
+  images.forEach((im, i) => (im.draw ? draws : photos).push(i))
+  const group = draws.length && photos.length ? (Math.random() < drawWeight ? draws : photos) : draws.length ? draws : photos
+  const free = group.filter((i) => i !== current && !used.has(i))
+  const pool = free.length ? free : group.filter((i) => i !== current)
+  const any = pool.length ? pool : images.map((_, i) => i).filter((i) => i !== current)
+  return any[Math.floor(Math.random() * any.length)]
 }
 
 export function PhotoMosaic() {
-  const { data } = useQuery({
+  const a = useAmbient()
+  const photosQ = useQuery({
     queryKey: ['photos'],
     queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
     ...live,
   })
-  const photos = data?.photos ?? []
+  const drawingsQ = useGallery()
+
+  // The blended pool, honouring the Mode veille toggles. Drawings are served by the
+  // SAME /api/img/<key> route as photos, so a tile renders either identically.
+  const images = useMemo<Img[]>(() => {
+    const out: Img[] = []
+    if (a.showPhotos) for (const p of photosQ.data?.photos ?? []) out.push({ id: p.id, key: p.key, draw: false })
+    if (a.showDrawings) for (const d of drawingsQ.data?.drawings ?? []) out.push({ id: `d_${d.media_key}`, key: d.media_key, draw: true })
+    return out
+  }, [a.showPhotos, a.showDrawings, photosQ.data, drawingsQ.data])
+  const n = images.length
 
   // Track the live container size, so the grid fills any wall or phone.
   const ref = useRef<HTMLDivElement>(null)
@@ -83,38 +116,40 @@ export function PhotoMosaic() {
     return () => ro.disconnect()
   }, [])
 
-  // Density scales with the photo count (see gridFor).
-  const grid = useMemo(() => gridFor(size.w, size.h, photos.length), [size.w, size.h, photos.length])
+  // Density scales with the image count (see gridFor).
+  const grid = useMemo(() => gridFor(size.w, size.h, n), [size.w, size.h, n])
   const count = grid.cols * grid.rows
 
-  // Per-tile photo index + a nonce that bumps to retrigger the fade on a swap.
+  // Per-tile image index + a nonce that bumps to retrigger the fade on a swap.
   const [tiles, setTiles] = useState<Tile[]>([])
   useEffect(() => {
-    if (!photos.length || !count) {
+    if (!n || !count) {
       setTiles([])
       return
     }
-    setTiles(seedTiles(count, photos.length))
-  }, [count, photos.length])
+    setTiles(seedTiles(count, n))
+  }, [count, n])
 
-  // Gently swap one random tile on an interval.
+  // Gently swap one random tile on an interval, biased by daypart when both
+  // sources are present.
   useEffect(() => {
-    if (photos.length < 2 || count < 1) return
+    if (n < 2 || count < 1) return
     const id = setInterval(() => {
+      const weight = DRAW_WEIGHT[computeDayPart(Date.now())]
       setTiles((prev) => {
         if (!prev.length) return prev
         const t = Math.floor(Math.random() * prev.length)
         const used = new Set(prev.map((x) => x.photo))
-        const next = pickPhoto(photos.length, used, prev[t].photo)
+        const next = pickBiased(images, used, prev[t].photo, weight)
         const copy = prev.slice()
         copy[t] = { photo: next, nonce: prev[t].nonce + 1 }
         return copy
       })
     }, SWAP_MS)
     return () => clearInterval(id)
-  }, [photos.length, count])
+  }, [n, count, images])
 
-  if (!photos.length) return null
+  if (!n) return null
   return (
     <div
       ref={ref}
@@ -123,7 +158,7 @@ export function PhotoMosaic() {
       aria-hidden="true"
     >
       {tiles.map((tile, i) => {
-        const p = photos[tile.photo % photos.length]
+        const p = images[tile.photo % n]
         return (
           <div className="ambient-mosaic__tile" key={i}>
             {/* key bumps with the nonce so React remounts the <img>, replaying the fade. */}

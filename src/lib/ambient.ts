@@ -17,6 +17,7 @@ export interface AmbientSettings {
   showClock: boolean
   showDate: boolean
   showPhotos: boolean // the slow PhotoFrame slideshow as the backdrop
+  showDrawings: boolean // #49: fold saved kids' drawings into the photo mosaic
   showNext: boolean // a quiet "next up" line (tonight's supper + today's next event)
   returnHome: boolean // drift the picked face back to Maisonnée when idle
   returnHomeMin: number // minutes idle before that drift
@@ -28,6 +29,7 @@ const AMBIENT_DEFAULTS: AmbientSettings = {
   showClock: true,
   showDate: true,
   showPhotos: true,
+  showDrawings: true,
   showNext: true,
   returnHome: true,
   returnHomeMin: 3,
