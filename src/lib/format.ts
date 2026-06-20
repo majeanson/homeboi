@@ -7,6 +7,22 @@ export function formatTime(unixSec: number, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { hour: 'numeric', minute: '2-digit' }).format(unixSec * 1000)
 }
 
+// Calm relative time for the "Récents" session log (#38) — "à l'instant",
+// "il y a 4 s", "il y a 2 min", "il y a 1 h". Coarse on purpose: a household
+// glance, never a precise audit clock. `at` and `now` are in milliseconds; `now`
+// is injectable so it stays pure/testable (Date.now is fine in app code).
+export function formatAgo(at: number, lang: Lang, now: number = Date.now()): string {
+  const s = Math.max(0, Math.round((now - at) / 1000))
+  if (s < 10) return lang === 'fr' ? 'à l’instant' : 'just now'
+  if (s < 60) return lang === 'fr' ? `il y a ${s} s` : `${s}s ago`
+  const m = Math.floor(s / 60)
+  if (m < 60) return lang === 'fr' ? `il y a ${m} min` : `${m} min ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return lang === 'fr' ? `il y a ${h} h` : `${h} h ago`
+  const d = Math.floor(h / 24)
+  return lang === 'fr' ? `il y a ${d} j` : `${d} d ago`
+}
+
 export function formatDay(unixSec: number, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short' }).format(
     unixSec * 1000,

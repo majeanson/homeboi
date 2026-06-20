@@ -2477,6 +2477,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Récents', en: 'Recent' },
+        detail: {
+          fr: '« Voir les récents » [[icon:clock-bold]] ouvre un retour calme sur tes dernières actions de la session — quoi, et il y a combien de temps. Celles encore récentes gardent un « Annuler ».',
+          en: '“View recent” [[icon:clock-bold]] opens a calm look back at your latest actions this session — what, and how long ago. The ones still recent keep an “Undo”.',
+        },
+        why: {
+          fr: 'Le bandeau « Annuler » disparaît vite; ceci te laisse rattraper une action manquée. Rien n’est gardé après le rechargement — un aide-mémoire, pas un journal.',
+          en: 'The “Undo” toast fades fast; this lets you catch one you missed. Nothing is kept after a reload — a memory aid, not an audit log.',
+        },
+      },
+      {
         label: { fr: 'Accessibilité', en: 'Accessibility' },
         detail: {
           fr: 'Renforce le [[icon:sparkle-bold]] contraste et grossis le [[icon:magnifying-glass-bold]] texte pour mieux voir — de loin du mur ou de plus près.',

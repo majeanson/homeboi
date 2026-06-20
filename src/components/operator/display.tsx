@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
+import { RecentsPanel } from '../RecentsPanel'
 import { useAudience } from '../../lib/audience'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
@@ -240,6 +241,12 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             </div>
           </div>
         )}
+        {/* The calm "Récents" session log (#38) — a quiet look back at what just
+            happened, with a late Annuler. Reachable here even after the toast fades. */}
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.recents.title}</span>
+          <RecentsPanel />
+        </div>
       </div>
       {/* Dev-only: the live component catalogue. Searchable, collapsed — handy to
           keep open alongside while building. Settings is operator-only already. */}

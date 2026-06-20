@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { useT } from '../i18n'
+import { useLang, useT } from '../i18n'
 import { useSurface } from './surface'
+import { formatAgo } from './format'
 import { Icon } from '../components/Icon'
 import { findEntry, pushEntry, removeEntry, type UndoEntry } from './undoStack'
 
@@ -30,14 +31,38 @@ interface RecordRequest {
   message: string
   onUndo: () => void
 }
+// One line in the calm "Récents" session log (#38): what happened + when. Mirrors
+// the undo stack but OUTLIVES it — the stack drops an entry once its write commits
+// (≤7s), while the log keeps the last few so you can glance back at "what just
+// happened" for the session (reachable from the toast and Réglages). Session-only,
+// in-memory: it clears on reload (no server audit log — calm tenet, no history DB).
+export interface RecentItem {
+  id: number
+  message: string
+  at: number // ms timestamp (Date.now at the moment it was queued)
+}
+const MAX_RECENTS = 15
+
 interface ToastApi {
   schedule: (req: UndoRequest) => void
   record: (req: RecordRequest) => void
+  // The session log + its late-undo: history is newest-LAST; undo cancels/reverses
+  // an entry still in its hold window; isLive says whether that's still possible.
+  history: RecentItem[]
+  undo: (id: number) => void
+  isLive: (id: number) => boolean
 }
-const ToastContext = createContext<ToastApi>({ schedule: () => {}, record: () => {} })
+const ToastContext = createContext<ToastApi>({
+  schedule: () => {},
+  record: () => {},
+  history: [],
+  undo: () => {},
+  isLive: () => false,
+})
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const t = useT()
+  const { lang } = useLang()
   // The mobile shell has a fixed bottom tab bar; the toast must ride ABOVE it (CSS
   // lifts it by surface) or it covers the centre tabs and eats their taps.
   const { surface } = useSurface()
@@ -46,6 +71,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   // by living outside render, sidesteps StrictMode's double-invoked updaters.
   const entriesRef = useRef<UndoEntry[]>([])
   const [entries, setEntries] = useState<UndoEntry[]>([])
+  // The session log (#38): newest-last, capped. Separate from the live undo stack —
+  // it keeps committed actions too, so the "Récents" review can show "what happened"
+  // after the held write has already landed.
+  const [history, setHistory] = useState<RecentItem[]>([])
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
   const idRef = useRef(0)
   const [expanded, setExpanded] = useState(false)
@@ -89,6 +118,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       })
       entriesRef.current = next
       setEntries(next)
+      // Mirror into the session log (keeps committed ones the live stack drops).
+      setHistory((h) => [...h, { id: entry.id, message: entry.message, at: Date.now() }].slice(-MAX_RECENTS))
     },
     [clearTimer],
   )
@@ -131,9 +162,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       clearTimer(id)
       apply((cur) => removeEntry(cur, id))
       e.onUndo()
+      // It was reversed → drop it from the session log (it didn't ultimately happen).
+      setHistory((h) => h.filter((r) => r.id !== id))
     },
     [apply, clearTimer],
   )
+
+  // Whether an action can still be taken back (its entry is still in the live stack).
+  const isLive = useCallback((id: number) => entriesRef.current.some((e) => e.id === id), [])
 
   // Nothing left to expand once we're down to a single pill.
   useEffect(() => {
@@ -154,22 +190,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const newest = entries[entries.length - 1]
 
   return (
-    <ToastContext.Provider value={{ schedule, record }}>
+    <ToastContext.Provider value={{ schedule, record, history, undo, isLive }}>
       {children}
       {newest && (
         <div className={`undo-toast${expanded ? ' undo-toast--stack' : ''}`} data-surface={surface} role="status">
           {expanded ? (
             <>
+              {/* The session log (#38): newest first, with a calm relative time.
+                  Still-undoable rows keep "Annuler"; committed ones are a quiet
+                  record of what happened. */}
               <ul className="undo-toast__list">
-                {entries
+                {history
                   .slice()
                   .reverse()
                   .map((e) => (
                     <li key={e.id} className="undo-toast__row">
                       <span className="undo-toast__msg">{e.message}</span>
-                      <button type="button" className="undo-toast__btn" onClick={() => undo(e.id)}>
-                        {t.undo.action}
-                      </button>
+                      <span className="undo-toast__ago mono">{formatAgo(e.at, lang)}</span>
+                      {isLive(e.id) && (
+                        <button type="button" className="undo-toast__btn" onClick={() => undo(e.id)}>
+                          {t.undo.action}
+                        </button>
+                      )}
                     </li>
                   ))}
               </ul>
@@ -185,7 +227,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             </>
           ) : (
             <>
-              {entries.length > 1 && (
+              {history.length > 1 && (
                 <button
                   type="button"
                   className="undo-toast__more"
@@ -193,7 +235,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   onClick={() => setExpanded(true)}
                 >
                   <Icon name="caret-up-bold" size={16} />
-                  {t.undo.more(entries.length)}
+                  {t.undo.more(history.length)}
                 </button>
               )}
               <span className="undo-toast__msg">{newest.message}</span>
@@ -215,3 +257,11 @@ export const useUndoToast = () => useContext(ToastContext).schedule
 // Record a COMPENSATING undoable action (write already applied; onUndo is the
 // guarded inverse). For changes that must appear instantly, like adding to the list.
 export const useRecordUndo = () => useContext(ToastContext).record
+
+// The calm "Récents" session log (#38): the last few actions this session, with a
+// late-undo for any still in their hold window. Read by the toast's expanded view
+// and the Réglages "Récents" review (RecentsPanel). Session-only, no server log.
+export const useRecents = () => {
+  const { history, undo, isLive } = useContext(ToastContext)
+  return { history, undo, isLive }
+}

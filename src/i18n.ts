@@ -1212,6 +1212,13 @@ export const FR = {
     historyRemoved: (s: string) => `« ${s} » retiré de l’historique`,
     routineTime: (s: string) => `Moment de « ${s} » changé`,
   },
+  // The calm "Récents" session log (#38): a quiet look back at recent actions.
+  recents: {
+    title: 'Récents',
+    open: 'Voir les récents',
+    empty: 'Rien de récent. Tes dernières actions s’afficheront ici, le temps de la session.',
+    note: 'Garde tes dernières actions de la session — annule celles encore récentes. Rien n’est conservé après le rechargement.',
+  },
   // The entity-detail peek (lib/detail + components/detail): tap any board/kitchen
   // item to see a picture, a date, the relevant text + a couple of smart actions.
   detail: {
@@ -2435,6 +2442,12 @@ export const EN: typeof FR = {
     avatarCleared: (s: string) => `${s}'s photo removed`,
     historyRemoved: (s: string) => `"${s}" removed from history`,
     routineTime: (s: string) => `"${s}" time of day changed`,
+  },
+  recents: {
+    title: 'Recent',
+    open: 'View recent',
+    empty: 'Nothing recent. Your latest actions will show here, for this session.',
+    note: 'Keeps your latest actions for the session — undo the ones still recent. Nothing is kept after a reload.',
   },
   detail: {
     aria: 'Details',

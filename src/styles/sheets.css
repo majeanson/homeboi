@@ -105,6 +105,14 @@
 .undo-toast__row .undo-toast__msg {
   flex: 1 1 auto;
 }
+/* Relative time in the expanded session log (#38) — a quiet muted stamp, never
+   competing with the message or the Undo button. */
+.undo-toast__ago {
+  flex: 0 0 auto;
+  font-size: 0.74rem;
+  opacity: 0.6;
+  white-space: nowrap;
+}
 .undo-toast__btn {
   flex: 0 0 auto;
   border: none;
@@ -160,6 +168,63 @@
       transform: translate(-50%, 0);
     }
   }
+}
+
+/* The calm "Récents" review panel (#38, components/RecentsPanel) — a plain list
+   inside the shared Modal: what happened, when, and a late "Annuler" for anything
+   still in its hold window. On-paper styling (not the dark toast), no counts/ranks
+   — just a quiet record. */
+.recents__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recents__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px;
+  min-height: 44px;
+}
+.recents__row + .recents__row {
+  border-top: 1px solid var(--line);
+}
+.recents__msg {
+  flex: 1 1 auto;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.recents__ago {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.recents__undo {
+  flex: 0 0 auto;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.82rem;
+  min-height: 36px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.recents__undo:active {
+  transform: scale(0.97);
+}
+.recents__note {
+  margin: 14px 2px 0;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 /* AI-failure notice (lib/aiErrorToast). Unlike the undo pill this does NOT

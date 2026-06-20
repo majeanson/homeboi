@@ -36,6 +36,7 @@ import { HubHead } from '../components/HubHead'
 import { SceneHead } from '../components/SceneHead'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
+import { RecentsPanel } from '../components/RecentsPanel'
 import { Sheet } from '../components/Sheet'
 import { RecipeListPicker } from '../components/RecipeListPicker'
 import { OperatorSection } from '../components/operator/OperatorSection'
@@ -930,6 +931,17 @@ export function DevKit() {
     },
 
     // ── Overlays / chrome ──────────────────────────────────────────────
+    {
+      cat: 'Overlays & chrome',
+      name: 'RecentsPanel',
+      file: 'components/RecentsPanel.tsx',
+      kw: 'récents undo historique session log annuler',
+      render: () => (
+        <Demo label="session log (#38) — what just happened, with a late undo">
+          <RecentsPanel />
+        </Demo>
+      ),
+    },
     {
       cat: 'Overlays & chrome',
       name: 'Modal',
