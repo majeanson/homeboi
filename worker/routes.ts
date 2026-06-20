@@ -12,6 +12,7 @@ import * as authSignup from '../functions/api/auth/signup'
 import * as aiErrors from '../functions/api/ai-errors'
 import * as aiTest from '../functions/api/ai-test'
 import * as board from '../functions/api/board'
+import * as ask from '../functions/api/ask'
 import * as capture from '../functions/api/capture'
 import * as cercle from '../functions/api/cercle'
 import * as cercleGroups from '../functions/api/cercle-groups'
@@ -88,6 +89,7 @@ const TABLE: Record<string, RouteMod> = {
   'auth/signup': authSignup,
   'ai-errors': aiErrors,
   'ai-test': aiTest,
+  ask,
   board,
   capture,
   cercle,

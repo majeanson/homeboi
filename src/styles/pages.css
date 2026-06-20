@@ -2814,6 +2814,84 @@
   color: var(--ink-soft);
 }
 
+/* #12 — ask-the-AI: a quiet CTA under the box, then a calm answer card whose icon
+   disc reuses lib/cats washes/inks so the answer reads in the colour of the thing
+   it's about; a "not what you wanted?" chip row links into the related sections. */
+.search__ask {
+  align-self: flex-start;
+  margin-bottom: 0.2rem;
+}
+.search__answer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.4rem;
+}
+.search__asking {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.search__answer-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.search__answer-icon {
+  flex: none;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+}
+.search__answer-kind {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.search__answer-text {
+  margin: 0;
+  line-height: 1.5;
+}
+.search__related {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+.search__related-head {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+.search__related-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.search__related-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.search__related-chip:active {
+  transform: scale(0.98);
+}
+
 /* ---- #17 Departure mode (pages/DeparturePage) ------------------------------- */
 .departure__body {
   display: flex;

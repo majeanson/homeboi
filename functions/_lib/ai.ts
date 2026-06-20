@@ -699,3 +699,62 @@ Réponds seulement avec le texte du bilan.`
     return null
   }
 }
+
+// Natural-language Q&A over the household's OWN data (#12). The /api/ask handler
+// gathers a compact, DATED snapshot (suppers, events, the list, chores, notes) into
+// `context`; this answers the question from THAT text only — calm, concise, honest
+// about gaps — and tags the answer with the DOMAIN it reasoned over so the UI can
+// show the matching category icon (reusing lib/cats). Returns null on no-AI / any
+// failure so the search surface can say it couldn't answer.
+export type AnswerKind = 'meal' | 'event' | 'list' | 'chore' | 'recipe' | 'cercle' | 'note' | 'none'
+const ANSWER_KINDS: ReadonlySet<AnswerKind> = new Set([
+  'meal',
+  'event',
+  'list',
+  'chore',
+  'recipe',
+  'cercle',
+  'note',
+  'none',
+])
+
+export async function answerQuestion(
+  env: Env,
+  question: string,
+  context: string,
+  lang: Lang = 'fr',
+  report?: AiReport,
+): Promise<{ answer: string; kind: AnswerKind } | null> {
+  if (!env.AI) return null
+  const system =
+    lang === 'en'
+      ? `You answer a family member's question using ONLY the household data below. Be warm and concise — one or two sentences, no lists unless asked. If the answer isn't in the data, say plainly that you don't see it (never invent). The data is dated; use the weekdays/dates to resolve "Friday", "tomorrow", etc.
+Reply with ONLY valid JSON: {"answer": <your reply, in English>, "kind": <which kind of thing the question is about>}.
+"kind" is one of: "meal" (suppers / what's for supper), "event" (appointments, activities, birthdays), "list" (the grocery/shopping list), "chore" (chores, tasks), "recipe" (a saved recipe), "cercle" (a person / family), "note" (a fridge note), or "none" (anything else / you don't know).
+
+DATA:
+${context}`
+      : `Tu réponds à la question d'un membre de la famille en utilisant UNIQUEMENT les données ci-dessous. Sois chaleureux et concis — une ou deux phrases, pas de liste sauf si on le demande. Si la réponse n'est pas dans les données, dis simplement que tu ne la vois pas (n'invente jamais). Les données sont datées ; sers-toi des jours/dates pour comprendre « vendredi », « demain », etc.
+Réponds UNIQUEMENT avec du JSON valide : {"answer": <ta réponse, en français québécois>, "kind": <le genre de chose dont parle la question>}.
+"kind" est un de : "meal" (soupers / qu'est-ce qu'on mange), "event" (rendez-vous, activités, anniversaires), "list" (la liste d'épicerie), "chore" (corvées, tâches), "recipe" (une recette enregistrée), "cercle" (une personne / la famille), "note" (un pense-bête sur le frigo), ou "none" (autre chose / tu ne sais pas).
+
+DONNÉES :
+${context}`
+  try {
+    const res = (await env.AI.run(MODEL, {
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: question.trim() },
+      ],
+      max_tokens: 260,
+    })) as { response?: unknown }
+    const parsed = extractJson(res.response) as { answer?: unknown; kind?: unknown } | null
+    const answer = typeof parsed?.answer === 'string' ? parsed.answer.trim() : ''
+    if (!answer) return null
+    const kind = ANSWER_KINDS.has(parsed?.kind as AnswerKind) ? (parsed!.kind as AnswerKind) : 'none'
+    return { answer, kind }
+  } catch (err) {
+    if (report) report.error = logAi('answerQuestion', err)
+    return null
+  }
+}
