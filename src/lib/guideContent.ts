@@ -2446,12 +2446,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Thème jour / nuit', en: 'Day / night theme' },
         detail: {
-          fr: 'Bascule entre [[icon:sun-bold]] jour et [[icon:moon-stars-bold]] nuit.',
-          en: 'Toggle between [[icon:sun-bold]] day and [[icon:moon-stars-bold]] night.',
+          fr: 'Bascule entre [[icon:sun-bold]] jour et [[icon:moon-stars-bold]] nuit. Avec « Ambiance du jour » activée, le thème suit l’heure tout seul et passe au mode nuit le soir.',
+          en: 'Toggle between [[icon:sun-bold]] day and [[icon:moon-stars-bold]] night. With “Ambient theming” on, the theme follows the time on its own and switches to night in the evening.',
         },
         why: {
-          fr: 'Pour la lisibilité selon l’heure — doux le soir, net en plein jour.',
-          en: 'For readability by time of day — gentle at night, crisp in daylight.',
+          fr: 'Pour la lisibilité selon l’heure — doux le soir, net en plein jour. Sur un mur allumé tout le jour, l’ambiance s’en occupe sans que personne y touche.',
+          en: 'For readability by time of day — gentle at night, crisp in daylight. On a wall lit all day, ambient theming handles it with nobody touching a thing.',
         },
       },
       {

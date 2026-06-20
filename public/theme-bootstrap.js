@@ -34,6 +34,11 @@
                 ? 'dusk' // 17:00–20:30
                 : 'night' // else
       document.documentElement.setAttribute('data-daypart', part)
+      // Auto day/night: while the drift is on, the binary theme follows the part
+      // too — night actually goes dark, not a dim cream. Overrides the manual
+      // theme set above (restored when ambient is switched off). Kept in sync with
+      // themeForPart() in src/lib/theme.ts.
+      document.documentElement.setAttribute('data-theme', part === 'night' ? 'night' : 'day')
     }
   } catch (e) {
     /* no daypart — base palette shows */

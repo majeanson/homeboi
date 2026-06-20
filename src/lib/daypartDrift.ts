@@ -9,7 +9,7 @@
 // (the operator's manual day/night palette stays put). Date.now() is fine in app
 // code (only forbidden inside Workflow scripts).
 import { computeDayPart } from './timeofday'
-import { isDaypartAuto, setDayPart } from './theme'
+import { isDaypartAuto, setDayPart, themeForPart, applyThemeAttr } from './theme'
 
 const TEN_MIN = 10 * 60 * 1000
 
@@ -21,7 +21,12 @@ export function startDaypartDrift(): () => void {
     // Re-check each tick: the operator can flip the toggle off mid-session, and
     // setDaypartAuto('off') already pinned the 'manual' sentinel — don't fight it.
     if (!isDaypartAuto()) return
-    setDayPart(computeDayPart(Date.now()))
+    const part = computeDayPart(Date.now())
+    setDayPart(part)
+    // Auto day/night: the drift also flips the binary theme so the wall actually
+    // goes dark at night, not just a dim cream (attribute-only — manual choice
+    // preserved for when ambient is off).
+    applyThemeAttr(themeForPart(part))
   }
 
   tick()

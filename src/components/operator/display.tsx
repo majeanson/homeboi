@@ -7,7 +7,17 @@ import { useAudience } from '../../lib/audience'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
 import { isGuest } from '../../lib/device'
-import { getTheme, toggleTheme, type Theme, isDaypartAuto, setDaypartAuto, setDayPart } from '../../lib/theme'
+import {
+  getTheme,
+  toggleTheme,
+  type Theme,
+  isDaypartAuto,
+  setDaypartAuto,
+  setDayPart,
+  themeForPart,
+  applyThemeAttr,
+  getStoredTheme,
+} from '../../lib/theme'
 import {
   getContrast,
   setContrast,
@@ -47,7 +57,20 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
     const next = !ambient
     setAmbientState(next)
     setDaypartAuto(next) // persists the flag; pins 'manual' when turning OFF
-    if (next) setDayPart(computeDayPart(Date.now())) // resume drift immediately
+    if (next) {
+      // Resume the drift now AND engage auto day/night for the current part, so
+      // flipping it on at night goes dark immediately.
+      const part = computeDayPart(Date.now())
+      setDayPart(part)
+      const autoTheme = themeForPart(part)
+      applyThemeAttr(autoTheme)
+      setThemeState(autoTheme)
+    } else {
+      // Back to fixed colours: restore the operator's manual day/night choice.
+      const manual = getStoredTheme()
+      applyThemeAttr(manual)
+      setThemeState(manual)
+    }
   }
   // Accessibility profile (#36): high-contrast + larger text. CSS-driven on
   // <html> (lib/accessibility); local mirrors re-render the active pip. Shown to
@@ -70,7 +93,16 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
         {!ro && (
           <div className="operator__seg">
             <span className="operator__seg-label mono">{t.operator.themeLabel}</span>
-            <button type="button" className="btn" onClick={() => setThemeState(toggleTheme())}>
+            {/* While ambient is on, day/night follows the time (auto day/night) —
+                the manual toggle is governed by it, so show it disabled with a
+                hint rather than letting a tap be silently re-asserted next tick. */}
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setThemeState(toggleTheme())}
+              disabled={ambient}
+              aria-disabled={ambient}
+            >
               <InlineIcon
                 name={theme === 'night' ? 'moon-stars-bold' : 'sun-bold'}
                 size={16}
@@ -78,6 +110,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               />{' '}
               {theme === 'night' ? t.operator.themeNight : t.operator.themeDay}
             </button>
+            {ambient && <p className="operator__seg-hint mono">{t.operator.themeFollowsTime}</p>}
           </div>
         )}
         {!ro && (

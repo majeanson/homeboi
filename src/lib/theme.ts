@@ -8,12 +8,35 @@ export function getTheme(): Theme {
 }
 
 export function setTheme(theme: Theme): void {
-  document.documentElement.setAttribute('data-theme', theme)
+  applyThemeAttr(theme)
   try {
     localStorage.setItem('babillard-theme', theme)
   } catch {
     /* noop */
   }
+}
+
+// The operator's last MANUAL day/night choice (or the OS preference if none),
+// kept in localStorage. Auto day/night (below) never writes this, so turning the
+// ambient drift off restores exactly the theme the operator had picked by hand.
+export function getStoredTheme(): Theme {
+  try {
+    const saved = localStorage.getItem('babillard-theme')
+    if (saved === 'day' || saved === 'night') return saved
+  } catch {
+    /* noop */
+  }
+  return typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'night'
+    : 'day'
+}
+
+// Apply day/night to <html> WITHOUT persisting — used by auto day/night so the
+// stored manual choice survives untouched (see getStoredTheme).
+export function applyThemeAttr(theme: Theme): void {
+  document.documentElement.setAttribute('data-theme', theme)
 }
 
 export function toggleTheme(): Theme {
@@ -42,6 +65,16 @@ export function isDaypartAuto(): boolean {
 
 export function setDayPart(part: DayPart | 'manual'): void {
   document.documentElement.setAttribute('data-daypart', part)
+}
+
+// Auto day/night: when the ambient drift is on it ALSO drives the binary
+// day/night theme so the wall actually dims at night (not just a tinted cream).
+// The night part → the dark palette; every other part → day. Applied as an
+// ATTRIBUTE ONLY (applyThemeAttr) so the manual choice is preserved and restored
+// when ambient is switched off. Marc's ask 2026-06-20: the time drift must reach
+// night mode and flip it too.
+export function themeForPart(part: DayPart): Theme {
+  return part === 'night' ? 'night' : 'day'
 }
 
 // Operator opt-out toggle (Réglages ▸ Affichage). Persists the flag and either
