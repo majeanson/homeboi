@@ -14,6 +14,8 @@ import { SectionIntro } from '../components/SectionIntro'
 import { imgUrl } from '../lib/image'
 import { CATS } from '../lib/cats'
 import { dayOrder, isRoutineTod, TOD_ICON, TOD_TINT } from '../lib/routineTod'
+import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
+import { ROUTINES_HELP } from '../lib/routinesHelp'
 import { KidView } from './KidView'
 
 // The Routines tab, two lenses on the same data:
@@ -47,6 +49,10 @@ function RoutinesParent() {
   // Tap a routine to peek it (child, steps) with "Ouvrir la routine" to edit —
   // the same shared entity-detail sheet the board uses.
   const detail = useEntityDetail()
+  // Contextual "?" help mode (shared hook): arm it in the header, then tap a
+  // routine to learn what tapping does + the moment badge, in place. The overview
+  // is one flat grid, so its single help target is the card itself.
+  const help = useHelpMode(ROUTINES_HELP, () => t.nav.routines)
   const { data, error } = useQuery({
     queryKey: ROUTINES_KEY,
     queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
@@ -62,7 +68,7 @@ function RoutinesParent() {
   )
 
   return (
-    <main className="today-feed routines-parent">
+    <main className={'today-feed routines-parent' + (help.active ? ' help-armed' : '')}>
       <HubHead
         title={t.nav.routines}
         icon={CATS.routine.icon}
@@ -72,6 +78,16 @@ function RoutinesParent() {
       />
 
       <SectionIntro card="routines" />
+
+      {/* The overview is a flat grid with no control group to sit the "?" beside,
+          so the toggle gets its own quiet right-aligned row (same as La liste). */}
+      {help.available && routines.length > 0 && (
+        <div className="hub-helprow">
+          <HelpToggle active={help.active} onToggle={help.toggle} />
+        </div>
+      )}
+      {help.hint && routines.length > 0 && <HelpHint />}
+      {help.bubble}
 
       {routines.length === 0 ? (
         <EmptyState guide={{ card: 'routines' }}>{t.kid.none}</EmptyState>
@@ -90,6 +106,9 @@ function RoutinesParent() {
             // the same rule this grid follows just above (feature #17 C).
             const stepPictos = r.cards.map((c, i) => ({ emoji: c.icon, photoKey: r.cardsPhoto?.[i] }))
             const openR = () => detail.open(buildRoutine(r, { t, lang, members: [] }, { todLabel, steps: stepPictos }))
+            // In help mode, a tap EXPLAINS the card (one shared 'card' target) via
+            // the bubble at the top, instead of opening the peek.
+            const onCard = help.pick('card', openR)
             return (
               <div
                 key={r.id}
@@ -97,11 +116,11 @@ function RoutinesParent() {
                 style={{ '--tint': tint } as React.CSSProperties}
                 role="button"
                 tabIndex={0}
-                onClick={openR}
+                onClick={onCard}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()
-                    openR()
+                    onCard()
                   }
                 }}
               >
