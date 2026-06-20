@@ -190,6 +190,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Tout chercher', en: 'Search everything' },
+        detail: {
+          fr: 'La loupe 🔍 en haut de chaque onglet ouvre une recherche unique : tape un mot et tu vois d’un coup tes recettes, les gens de ton cercle, tes événements et les articles de ta liste qui correspondent. Touche un résultat pour y aller directement. Les accents sont ignorés (« cafe » trouve « café »).',
+          en: 'The magnifier 🔍 at the top of every tab opens one search: type a word and see, at once, the matching recipes, people from your circle, events and items on your list. Tap a result to jump straight there. Accents are ignored (“cafe” finds “café”).',
+        },
+        why: {
+          fr: 'Retrouver une chose sans te rappeler dans quel onglet elle vit.',
+          en: 'Find something without remembering which tab it lives in.',
+        },
+      },
+      {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
           fr: 'Grille (toute la semaine), « Maintenant » (la prochaine affaire), par personne (la journée d’un seul) ou le mois (la vue d’ensemble).',

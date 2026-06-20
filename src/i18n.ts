@@ -9,6 +9,18 @@ export const FR = {
   appName: 'Babillard',
   tagline: 'Le planificateur familial calme.',
   nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion', today: 'Aujourd’hui', routines: 'Routines', list: 'La liste', cercle: 'Le cercle', hideMenu: 'Cacher le menu', showMenu: 'Afficher le menu' },
+  // #30 — global search across recipes / people / events / the list.
+  search: {
+    title: 'Chercher partout',
+    open: 'Chercher',
+    placeholder: 'Recette, personne, événement, article…',
+    hint: 'Cherche dans tes recettes, ton cercle, tes événements et ta liste — d’un seul endroit.',
+    noResults: 'Rien trouvé.',
+    recipes: 'Recettes',
+    people: 'Le cercle',
+    events: 'Événements',
+    listItems: 'La liste',
+  },
   offline: { banner: 'Hors ligne', since: 'Données du', live: 'De nouveau en ligne', pending: 'en attente', unavailable: 'Indisponible hors-ligne' },
   audience: {
     parent: 'Parent',
@@ -1298,6 +1310,18 @@ export const EN: typeof FR = {
   appName: 'Babillard',
   tagline: 'The calm family planner.',
   nav: { board: 'The board', kitchen: 'Kitchen', kid: 'Kid mode', operator: 'Settings', login: 'Sign in', logout: 'Sign out', today: 'Today', routines: 'Routines', list: 'The list', cercle: 'The circle', hideMenu: 'Hide menu', showMenu: 'Show menu' },
+  // #30 — global search across recipes / people / events / the list.
+  search: {
+    title: 'Search everything',
+    open: 'Search',
+    placeholder: 'Recipe, person, event, item…',
+    hint: 'Search your recipes, your circle, your events and your list — all from one place.',
+    noResults: 'Nothing found.',
+    recipes: 'Recipes',
+    people: 'People',
+    events: 'Events',
+    listItems: 'The list',
+  },
   offline: { banner: 'Offline', since: 'Data from', live: 'Back online', pending: 'pending', unavailable: 'Unavailable offline' },
   audience: {
     parent: 'Parent',

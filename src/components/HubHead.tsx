@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { useT } from '../i18n'
+import { useAudience } from '../lib/audience'
 import { SectionAvatar } from './SectionAvatar'
-import type { IconName } from './Icon'
+import { Icon, type IconName } from './Icon'
 
 // The shared header for the four themed hub tabs (Board/Kitchen/Routines/Liste):
 // a big title on the left, the section's identity disc top-right. The disc is
@@ -24,6 +27,8 @@ export function HubHead({
   // A GUIDE entry id (lib/guideContent.ts) — the card the disc links to.
   card: string
 }) {
+  const t = useT()
+  const { audience } = useAudience()
   return (
     <div className="app-head">
       <div>
@@ -32,7 +37,16 @@ export function HubHead({
         </div>
         {subtitle != null && <span className="app-head__date mono">{subtitle}</span>}
       </div>
-      <SectionAvatar icon={icon} iconColor={iconColor} background={background} card={card} />
+      <div className="app-head__actions">
+        {/* #30 — global search, reachable from every hub tab. Parent-only (a toddler
+            has nothing to search for). */}
+        {audience === 'parent' && (
+          <Link to="/search" className="app-head__search" aria-label={t.search.title} title={t.search.title}>
+            <Icon name="magnifying-glass-bold" size={20} />
+          </Link>
+        )}
+        <SectionAvatar icon={icon} iconColor={iconColor} background={background} card={card} />
+      </div>
     </div>
   )
 }
