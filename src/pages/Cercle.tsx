@@ -406,7 +406,7 @@ function CercleParent() {
 
               {filtered ? (
                 <section className="cercle-group">
-                  {filtered.length === 0 ? <EmptyState>{t.cercle.empty}</EmptyState> : filtered.map((p) => <Row key={p.key} p={p} />)}
+                  {filtered.length === 0 ? <EmptyState guide={{ card: 'cercle' }}>{t.cercle.empty}</EmptyState> : filtered.map((p) => <Row key={p.key} p={p} />)}
                 </section>
               ) : (
                 <>

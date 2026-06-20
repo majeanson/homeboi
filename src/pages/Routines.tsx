@@ -74,7 +74,7 @@ function RoutinesParent() {
       <SectionIntro card="routines" />
 
       {routines.length === 0 ? (
-        <EmptyState>{t.kid.none}</EmptyState>
+        <EmptyState guide={{ card: 'routines' }}>{t.kid.none}</EmptyState>
       ) : (
         <div className="routines-grid">
           {routines.map((r) => {

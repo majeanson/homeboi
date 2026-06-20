@@ -17,6 +17,21 @@
   padding: 0.4rem 0.25rem 0.7rem;
   text-wrap: balance;
 }
+/* Opt-in "→ Voir le guide" deep-link under an empty line (#8). Block so it sits on
+   its own line under the message; quiet accent that invites without shouting. */
+.empty-state__guide {
+  display: block;
+  width: fit-content;
+  margin-top: 0.45rem;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.empty-state__guide svg {
+  display: inline-block;
+  vertical-align: -0.1em;
+}
 
 /* ── StatusMessage ──────────────────────────────────────────────────────── */
 .status-msg {

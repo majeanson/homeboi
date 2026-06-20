@@ -882,6 +882,9 @@ export function DevKit() {
           <Demo label="calm">
             <EmptyState tone="calm">Rien de prévu ce soir — et c’est correct.</EmptyState>
           </Demo>
+          <Demo label="guide">
+            <EmptyState guide={{ card: 'routines' }}>Aucune routine pour l’instant.</EmptyState>
+          </Demo>
         </>
       ),
     },

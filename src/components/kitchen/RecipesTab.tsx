@@ -397,7 +397,7 @@ export function RecipesTab({
         </div>
       )}
       {recipes.length === 0 ? (
-        <EmptyState>{t.recipes.empty}</EmptyState>
+        <EmptyState guide={{ card: 'recipes' }}>{t.recipes.empty}</EmptyState>
       ) : (
         <>
           {/* #11 "Aa vs Collections" view toggle now lives up beside the search;
