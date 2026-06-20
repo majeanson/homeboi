@@ -1250,6 +1250,7 @@ export const FR = {
     removeFromPlan: 'Retirer du plan',
     planTonight: 'Planifier ce soir',
     shopRecipe: 'Ajouter à la liste',
+    makeRoutine: 'En routine pour enfant',
   },
   combo: {
     show: 'Voir les choix',
@@ -2490,6 +2491,7 @@ export const EN: typeof FR = {
     removeFromPlan: 'Remove from plan',
     planTonight: 'Plan for tonight',
     shopRecipe: 'Add to list',
+    makeRoutine: 'Make a kid routine',
   },
   combo: {
     show: 'Show choices',

@@ -13,6 +13,10 @@ import type { DeckCard } from './routineTemplates'
 export interface RoutineSeed {
   cards: DeckCard[]
   cardsPhoto: string[]
+  // Optional pre-fill for the routine's name (create mode only). A drawing leaves
+  // it blank; a recipe→routine seed (#19, lib/recipeToRoutine) prefills the recipe
+  // title so the parent doesn't retype it.
+  name?: string
 }
 
 export function useDrawingToRoutine() {

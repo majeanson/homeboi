@@ -423,6 +423,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'D’une recette à une routine', en: 'From a recipe to a routine' },
+        detail: {
+          fr: 'Touche une recette dans la cuisine pour ouvrir sa fiche, puis « En routine pour enfant » : chaque étape devient une carte-image (avec sa photo d’étape si elle en a une), et l’enfant « cuisine » la recette comme une routine lue à voix haute. On te demande encore pour qui — tu peux retoucher les cartes avant de garder.',
+          en: 'Tap a recipe in the kitchen to open its card, then “Make a kid routine”: each step becomes a picture card (with its step photo when it has one), and the child “cooks” the recipe as a read-aloud routine. You’re still asked who it’s for — and you can tweak the cards before saving.',
+        },
+        why: {
+          fr: 'Cuisiner avec un tout-petit, étape par étape en images, sans qu’il ait à lire — et sans remonter la recette à la main.',
+          en: 'Cook with a small child, step by step in pictures, without them needing to read — and without rebuilding the recipe by hand.',
+        },
+      },
+      {
         label: { fr: 'Pas de récompenses', en: 'No rewards' },
         detail: {
           fr: 'Aucun point, aucune étoile, aucune séquence à entretenir. Elle se termine, et c’est tout.',

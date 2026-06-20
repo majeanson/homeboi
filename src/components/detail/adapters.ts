@@ -236,7 +236,7 @@ export function buildDay(
 // — A recipe from the book.
 // `onShop` adds "Ajouter à la liste" — opens the "which ingredients?" picker so you
 // add just the ones you're missing (not the whole list). —
-export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => void }): DetailModel {
+export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => void; onMakeRoutine?: () => void }): DetailModel {
   const { t } = ctx
   const total = recipeTotalMin(r)
   const blocks: DetailBlock[] = []
@@ -249,6 +249,10 @@ export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => v
   ]
   if (opts?.onShop)
     actions.push({ key: 'shop', label: t.detail.shopRecipe, icon: 'shopping-bag-bold', run: opts.onShop })
+  // Parent-only: turn this recipe into a toddler picture routine (#19). The Kitchen
+  // gates it on the parent audience, so it never appears in the toddler recipe book.
+  if (opts?.onMakeRoutine)
+    actions.push({ key: 'routine', label: t.detail.makeRoutine, icon: 'baby-bold', run: opts.onMakeRoutine })
   return {
     kind: 'recipe',
     title: r.title,

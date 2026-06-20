@@ -50,7 +50,7 @@ export function RoutineForm({
   // Pre-fill a NEW routine's deck (create mode only) — e.g. a fridge drawing turned
   // into the first card's photo (#14 → #17 C, see lib/drawingToRoutine). Ignored
   // when `value` is set (that's edit/PATCH mode).
-  seed?: { cards: DeckCard[]; cardsPhoto: string[] } | null
+  seed?: { cards: DeckCard[]; cardsPhoto: string[]; name?: string } | null
   onSaved: () => void
   onCancel?: () => void
 }) {
@@ -60,7 +60,7 @@ export function RoutineForm({
   const children = members.filter((m) => m.is_child)
   const templates = routineTemplates(lang)
   const [memberIds, setMemberIds] = useState<string[]>([])
-  const [name, setName] = useState(value?.name ?? '')
+  const [name, setName] = useState(value?.name ?? seed?.name ?? '')
   const [cards, setCards] = useState<DeckCard[]>(
     value?.cards?.map((c) => ({ icon: c.icon, label: c.label })) ?? seed?.cards ?? [],
   )

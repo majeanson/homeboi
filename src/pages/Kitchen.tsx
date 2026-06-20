@@ -17,6 +17,7 @@ import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays, todayLocalDay } from '../lib/localDay'
 import { type Recipe } from '../lib/recipes'
+import { useRecipeToRoutine } from '../lib/recipeToRoutine'
 import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers, useTagColors } from '../lib/queryHooks'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
@@ -79,6 +80,9 @@ export function Kitchen() {
     if (!withoutHeadings(r.ingredients ?? []).length) return
     setShopFor(r)
   }
+  // Recipe → toddler picture routine (#19): each step becomes a read-aloud card,
+  // step photos copied to independent card photos. Parent-only (gated at onView).
+  const makeRoutine = useRecipeToRoutine()
   // The full per-day editor (add/remove/reorder meals, the staples step, the day
   // note, clear the day) lives on its own full-screen scene now — /kitchen/day/:date
   // (DayPlanPage). This page is the calm read-only week glance: a row's pencil and
@@ -677,7 +681,19 @@ export function Kitchen() {
             soonItems={soonItems}
             listItems={listItems}
             lastServed={lastServedById}
-            onView={(r) => detail.open(buildRecipe(r, { t, lang, members: [], tagColors }, { onShop: () => shopRecipe(r) }))}
+            onView={(r) =>
+              detail.open(
+                buildRecipe(
+                  r,
+                  { t, lang, members: [], tagColors },
+                  {
+                    onShop: () => shopRecipe(r),
+                    // Parent-only: a recipe can become a toddler picture routine (#19).
+                    onMakeRoutine: audience === 'parent' ? () => makeRoutine(r) : undefined,
+                  },
+                ),
+              )
+            }
             help={tabHelp}
           />
         )}
