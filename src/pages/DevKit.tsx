@@ -522,9 +522,18 @@ export function DevKit() {
       file: 'components/CheckRow.tsx',
       kw: 'check liste cocher pantry réserve',
       render: () => (
-        <Demo label="check · rename · delete">
+        <Demo label="check · rename · delete · extra action (→ liste)">
           <ul className="kitchen__pantry" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             <CheckRow item="Lait" note="bientôt fini" onCheck={() => {}} checkLabel="Cocher" onRename={() => {}} onDelete={() => {}} />
+            <CheckRow
+              item="Sauce tomate (congélo)"
+              onCheck={() => {}}
+              checkLabel="Utilisé"
+              onRename={() => {}}
+              onExtra={() => {}}
+              extraIcon="shopping-bag-bold"
+              extraLabel="Ajouter à la liste"
+            />
           </ul>
         </Demo>
       ),

@@ -3,20 +3,25 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
+import { useUndoToast } from '../../lib/toast'
 import { isGuest } from '../../lib/device'
 import { wash } from '../../lib/colors'
 import { useReserveLocations } from '../../lib/reservePrefs'
 import { CheckRow } from '../CheckRow'
 import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { BOARD_KEY } from '../../lib/queryKeys'
 import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 
 // La réserve: a reminder of items stashed in the freezer / back of the pantry so
 // the "behind everything" stuff stops getting forgotten. Items are GROUPED by a
-// storage location (the spots are custom & editable in Réglages ▸ Réserve). Like
-// use-soon, marking/clearing never touches the shopping list — clearing just
-// means "used it / tossed it". Lives as a third section inside the Garde-manger
-// tab. The Kitchen page keeps the query (the unauth gate); this owns the writes.
+// storage location (the spots are custom & editable in Réglages ▸ Réserve).
+// Clearing still never touches the shopping list on its own — it just means "used
+// it / tossed it". But each row also offers an explicit, opt-in "→ add to the
+// list" (#41 two-way restock): pulling from the stash is the moment you notice
+// you're running low, so a tap restocks it without leaving the réserve. Lives as a
+// third section inside the Garde-manger tab. The Kitchen page keeps the query (the
+// unauth gate); this owns the writes.
 // `help` is the kitchen's page-level help mode — makes the "La réserve" heading
 // explainable in place while armed.
 export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?: HelpMode }) {
@@ -27,6 +32,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
   // hide + filter the cleared row and await a refetch before un-hiding, so a poll
   // can't flash it back during the undo window.
   const removal = useDeferredRemoval(RESERVE_KEY)
+  const undoToast = useUndoToast()
   const { locations, name: locName } = useReserveLocations()
   // Read-only guest: hide the add form (custom, not EditField). CheckRow inside the
   // rows already hides its own clear/edit for a guest.
@@ -57,6 +63,21 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
     removal.remove([r.id], t.undo.cleared(r.item), () =>
       write('reserve', { method: 'DELETE', body: { id: r.id }, affectedKeys: [RESERVE_KEY] }).catch(() => {}),
     )
+  }
+
+  // #41 two-way restock: pulling from the stash also means "I'm running low —
+  // restock it". This adds the item to the shared shopping list WITHOUT removing it
+  // from the réserve (you might still have one; you just need more). The same held
+  // list-add the Garde-manger "running low" check uses (deferred behind the undo
+  // toast, conflict-free — the write only fires if you don't undo). Opt-in by a tap,
+  // never automatic, so clearing still never touches the list on its own.
+  function addToList(r: ReserveRow) {
+    undoToast({
+      message: t.undo.addedToList(r.item),
+      onUndo: () => {},
+      onCommit: () =>
+        void write('list', { method: 'POST', body: { text: r.item }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+    })
   }
 
   // Rename and/or move an item to another location (the ✏️). Optimistic, then
@@ -134,6 +155,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
                   locName={locName}
                   onClear={() => clearItem(r)}
                   onSave={(item, locationId) => saveItem(r, item, locationId)}
+                  onAddToList={() => addToList(r)}
                 />
               ))}
             </ul>
@@ -153,11 +175,13 @@ function ReserveItemRow({
   locName,
   onClear,
   onSave,
+  onAddToList,
 }: {
   row: ReserveRow
   locName: (id: string | null | undefined) => string
   onClear: () => void
   onSave: (item: string, locationId: string | null) => void
+  onAddToList: () => void
 }) {
   const t = useT()
   return (
@@ -167,6 +191,9 @@ function ReserveItemRow({
       checkLabel={t.kitchen.reserveCheck}
       editLabel={`${t.common.edit} — ${locName(row.location_id)}`}
       renderEdit={(close) => <ReserveEditForm row={row} onSave={onSave} onClose={close} />}
+      onExtra={onAddToList}
+      extraIcon="shopping-bag-bold"
+      extraLabel={t.kitchen.addToList}
     />
   )
 }

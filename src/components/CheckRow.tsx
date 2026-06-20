@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
 import { isGuest } from '../lib/device'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 import { EditField } from './EditField'
 import { RowActions } from './RowActions'
 
@@ -26,6 +26,9 @@ export function CheckRow({
   onDelete,
   editLabel,
   deleteLabel,
+  onExtra,
+  extraIcon,
+  extraLabel,
   readOnly,
 }: {
   item: string
@@ -37,6 +40,11 @@ export function CheckRow({
   onDelete?: () => void
   editLabel?: string
   deleteLabel?: string
+  /** Optional secondary action shown as a compact icon button before ✏️/🗑️ — e.g.
+   *  La réserve's "→ add to the shopping list" (#41). Omit it and nothing renders. */
+  onExtra?: () => void
+  extraIcon?: IconName
+  extraLabel?: string
   /** Drop the check + edit/delete affordances, leaving an inert read-only row.
    *  Defaults to the read-only guest session. */
   readOnly?: boolean
@@ -96,6 +104,19 @@ export function CheckRow({
         <span className="checkrow__title">{item}</span>
         {note && <span className="kitchen__low-note mono">{note}</span>}
       </span>
+      {onExtra && extraIcon && (
+        <span className="row-actions">
+          <button
+            type="button"
+            className="row-actions__btn"
+            onClick={onExtra}
+            aria-label={extraLabel}
+            title={extraLabel}
+          >
+            <Icon name={extraIcon} size={18} />
+          </button>
+        </span>
+      )}
       {(canEdit || onDelete) && (
         <RowActions
           onEdit={

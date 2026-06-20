@@ -1619,8 +1619,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Sors-le quand tu l’utilises', en: 'Pull it when you use it' },
         detail: {
-          fr: 'Quand tu sors un article de la réserve, retire-le; s’il achève, donne-lui plutôt le drapeau « il en manque » pour qu’il saute sur la liste.',
-          en: 'When you take an item out of the stash, clear it; if it’s running low, flag it “running low” instead so it jumps onto the list.',
+          fr: 'Quand tu sors un article de la réserve, retire-le. S’il achève, touche le [[icon:shopping-bag-bold]] sur la rangée pour l’ajouter direct à la liste — sans quitter la réserve (un « Annuler » te couvre).',
+          en: 'When you take an item out of the stash, clear it. If it’s running low, tap the [[icon:shopping-bag-bold]] on the row to send it straight to the list — without leaving the stash (an “Undo” has your back).',
         },
         why: {
           fr: 'La réserve dit ce que tu as déjà; « il en manque » dit ce qu’il faut racheter — les deux se complètent sans se mélanger.',
