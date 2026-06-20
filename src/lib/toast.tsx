@@ -8,7 +8,10 @@ import { findEntry, pushEntry, removeEntry, type UndoEntry } from './undoStack'
 // The app's undo surface: a small BOUNDED stack of recent undoable actions —
 // newest shown as a pill, the rest reachable behind a "Récents (N)" toggle — so a
 // mis-tap is recoverable more than once without an attention-pulling history
-// panel (calm by design). Two kinds of action live in the one stack:
+// panel (calm by design). Once the live writes have all committed the pill stays
+// only as a quiet "Récents (N)" opener (the `--log` state) so the session history
+// — the same quick list Réglages shows — is always one tap away from here too.
+// Two kinds of action live in the one stack:
 //
 //   • DEFERRED (schedule) — the calm delete: a caller hides the thing at once and
 //     hands us the real write; we hold it for a few seconds. Tap Undo and the
@@ -171,10 +174,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   // Whether an action can still be taken back (its entry is still in the live stack).
   const isLive = useCallback((id: number) => entriesRef.current.some((e) => e.id === id), [])
 
-  // Nothing left to expand once we're down to a single pill.
+  // Collapse the expanded panel only when the session log itself is empty — there's
+  // nothing left to show. (It used to collapse as soon as the live stack dropped to
+  // one entry, but the expanded view shows the full session LOG now, which outlives
+  // the live writes, so it stays openable until the log clears on reload.)
   useEffect(() => {
-    if (entries.length <= 1 && expanded) setExpanded(false)
-  }, [entries.length, expanded])
+    if (history.length === 0 && expanded) setExpanded(false)
+  }, [history.length, expanded])
 
   // Safety net: if the app tears down with writes still held, commit them rather
   // than silently dropping them.
@@ -192,8 +198,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ schedule, record, history, undo, isLive }}>
       {children}
-      {newest && (
-        <div className={`undo-toast${expanded ? ' undo-toast--stack' : ''}`} data-surface={surface} role="status">
+      {/* The toast stays mounted while ANYTHING is in the session log — not only
+          while a write is still held — so the "Récents" history is reachable right
+          here (the same quick list as Réglages), not only from settings after the
+          pill would have faded. */}
+      {(newest || history.length > 0) && (
+        <div
+          className={`undo-toast${expanded ? ' undo-toast--stack' : ''}${!newest && !expanded ? ' undo-toast--log' : ''}`}
+          data-surface={surface}
+          role="status"
+        >
           {expanded ? (
             <>
               {/* The session log (#38): newest first, with a calm relative time.
@@ -225,7 +239,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 {t.undo.hide}
               </button>
             </>
-          ) : (
+          ) : newest ? (
             <>
               {history.length > 1 && (
                 <button
@@ -243,6 +257,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 {t.undo.action}
               </button>
             </>
+          ) : (
+            // No write is pending, but the session log isn't empty — keep a quiet
+            // opener so the history (and any late-undo) is one tap away from here.
+            <button
+              type="button"
+              className="undo-toast__more"
+              aria-expanded={false}
+              onClick={() => setExpanded(true)}
+            >
+              <Icon name="clock-bold" size={16} />
+              {t.undo.more(history.length)}
+            </button>
           )}
         </div>
       )}

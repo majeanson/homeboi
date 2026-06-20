@@ -421,6 +421,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'To flag the whole household about an out-of-the-ordinary day, at the right time.',
         },
       },
+      {
+        label: { fr: 'À utiliser bientôt', en: 'Use it soon' },
+        detail: {
+          fr: 'Marque un aliment frais « à utiliser bientôt » avant qu’il se perde. Ça n’achète rien et ça ne va pas sur la liste (contrairement à « il en manque ») : ça nourrit plutôt la suggestion « finis ce que tu as » — « Qu’est-ce qu’on mange ? » te propose une recette qui passe au travers.',
+          en: 'Flag a fresh food “use soon” before it spoils. It buys nothing and never hits the list (unlike “running low”): instead it feeds the “use what you have” suggestion — “What’s for supper?” proposes a recipe that gets through it.',
+        },
+        why: {
+          fr: 'Pour gaspiller moins — sortir ce qui achève par une recette, sans en faire un inventaire à compter.',
+          en: 'To waste less — cook down what’s about to turn, without turning it into an inventory to count.',
+        },
+      },
     ],
   },
   {
@@ -612,8 +623,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Groupes, adresse et photos', en: 'Groups, address and photos' },
         detail: {
-          fr: 'Crée un groupe nommé (Famille Tremblay, Collègues…) avec son type et sa couleur, puis touche le crayon sur l’en-tête d’un groupe pour le renommer ou le recolorer. Range quelqu’un dedans en touchant sa fiche : les pastilles de groupes sont des boutons — touche pour l’ajouter, retouche pour le retirer. Sur une fiche tu ajoutes aussi son adresse (un bouton « Itinéraire » ouvre la carte) et des photos avec légende, et « Exporter (vCard) » télécharge la personne pour l’ajouter à n’importe quel téléphone. À l’inverse, sur une NOUVELLE fiche, « Importer un .vcf » lit un fichier de contacts exporté d’un téléphone : un seul contact pré-remplit la fiche, et un fichier qui en contient plusieurs les ajoute tous d’un coup. Dans la liste, les icônes 📞 et ✉ appellent ou écrivent directement, sans ouvrir la fiche. Cherche quelqu’un par prénom OU nom de famille.',
-          en: 'Create a named group (Tremblay family, Coworkers…) with its kind and colour, then tap the pencil on a group’s header to rename or recolour it. Drop someone in by tapping their card: the group chips are buttons — tap to add, tap again to remove. On a card you can also add their address (a “Directions” button opens the map) and photos with a caption, and “Export (vCard)” downloads the person to drop into any phone. The other way round, on a NEW card, “Import a .vcf” reads a contacts file exported from a phone: a single contact prefills the card, and a file holding many adds them all at once. In the list, the 📞 and ✉ icons call or write directly, without opening the card. Search someone by first name OR last name.',
+          fr: 'Crée un groupe nommé (Famille Tremblay, Collègues…) avec son type et sa couleur, puis touche le crayon sur l’en-tête d’un groupe pour le renommer ou le recolorer. Range quelqu’un dedans en touchant sa fiche : les pastilles de groupes sont des boutons — touche pour l’ajouter, retouche pour le retirer. Pour supprimer n’importe quel groupe — même un vide ou un qui n’apparaît pas dans le répertoire — va dans Réglages ▸ Le cercle : ils y sont tous, avec un bouton supprimer; les personnes restent dans le cercle. Sur une fiche tu ajoutes aussi son adresse (un bouton « Itinéraire » ouvre la carte) et des photos avec légende, et « Exporter (vCard) » télécharge la personne pour l’ajouter à n’importe quel téléphone. À l’inverse, sur une NOUVELLE fiche, « Importer un .vcf » lit un fichier de contacts exporté d’un téléphone : un seul contact pré-remplit la fiche, et un fichier qui en contient plusieurs les ajoute tous d’un coup. Dans la liste, les icônes 📞 et ✉ appellent ou écrivent directement, sans ouvrir la fiche. Cherche quelqu’un par prénom OU nom de famille.',
+          en: 'Create a named group (Tremblay family, Coworkers…) with its kind and colour, then tap the pencil on a group’s header to rename or recolour it. Drop someone in by tapping their card: the group chips are buttons — tap to add, tap again to remove. To delete any group — even an empty one or one that doesn’t show in the directory — go to Settings ▸ The circle: they’re all listed there with a delete button; the people stay in the circle. On a card you can also add their address (a “Directions” button opens the map) and photos with a caption, and “Export (vCard)” downloads the person to drop into any phone. The other way round, on a NEW card, “Import a .vcf” reads a contacts file exported from a phone: a single contact prefills the card, and a file holding many adds them all at once. In the list, the 📞 and ✉ icons call or write directly, without opening the card. Search someone by first name OR last name.',
         },
         why: {
           fr: 'Tout ce qu’on garde sur un proche au même endroit, sans appli de contacts en plus.',
@@ -1569,6 +1580,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'No drag-and-drop — surer with a finger on a tablet.',
         },
       },
+      {
+        label: { fr: 'Trouver une recette', en: 'Find a recipe' },
+        detail: {
+          fr: 'En haut du livre : une boîte de recherche, des pastilles de filtre (Quoi cuisiner ?, Favoris…) et un bouton « Aa / Collections » qui passe de la liste alphabétique au rangement par étiquette. Touche une recette pour l’ouvrir, ou planifie-la direct comme repas.',
+          en: 'At the top of the book: a search box, filter pills (What can I cook?, Favorites…) and an “Aa / Collections” toggle that flips between the alphabetical list and the tag-grouped shelves. Tap a recipe to open it, or plan it straight as a meal.',
+        },
+        why: {
+          fr: 'Pour retomber sur la bonne recette quand le livre grossit, sans la faire défiler en entier.',
+          en: 'So you land on the right recipe as the book grows, without scrolling the whole thing.',
+        },
+      },
     ],
   },
   {
@@ -1933,14 +1955,14 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Un à la fois', en: 'One at a time' },
+        label: { fr: 'Plusieurs gestes, et un journal « Récents »', en: 'Several actions, and a “Recents” log' },
         detail: {
-          fr: 'Lancer une nouvelle annulation valide la précédente.',
-          en: 'Starting a new undo commits the previous one.',
+          fr: 'Plusieurs annulations peuvent attendre en même temps : le bandeau montre la plus récente et un « Récents (N) » dessus ouvre la liste des derniers gestes — touche « Annuler » sur n’importe lequel encore dans sa fenêtre. Le bandeau reste ensuite comme petit bouton « Récents », même une fois les gestes validés, et la même liste vit dans Réglages ▸ Affichage. Rien n’est gardé après un rechargement.',
+          en: 'Several undos can wait at once: the toast shows the most recent and a “Recents (N)” on it opens the list of the latest actions — tap “Undo” on any still in its window. The toast then lingers as a small “Recents” button, even after the actions commit, and the same list lives in Settings ▸ Display. Nothing is kept after a reload.',
         },
         why: {
-          fr: 'Pas de pile d’annulations à gérer — tu sais toujours ce que « Annuler » va défaire.',
-          en: 'No stack of undos to manage — you always know what “Undo” will reverse.',
+          fr: 'Un filet calme et réversible, accessible d’un coup d’œil — sans journal permanent ni compteurs.',
+          en: 'A calm, reversible net you can glance at — with no permanent log or counters.',
         },
       },
     ],
@@ -2137,6 +2159,17 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Pour une corvée qui n’arrive qu’une fois — elle quitte le babillard une fois faite.',
           en: 'For a chore that happens only once — it leaves the board once it’s done.',
+        },
+      },
+      {
+        label: { fr: 'Le journal des corvées', en: 'The chore ledger' },
+        detail: {
+          fr: 'Sous les corvées, un coup d’œil « qui a fait quoi cette semaine » : les noms et les visages, le jour où c’est arrivé. C’est tout — aucun nombre, aucun classement, aucun « meilleur ».',
+          en: 'Below the chores, a “who did what this week” glance: the names and faces, the day it happened. That’s all — no counts, no ranking, no “top helper”.',
+        },
+        why: {
+          fr: 'Pour voir que la maison a roulé sans en faire un concours — fidèle au calme, jamais un tableau de pointage.',
+          en: 'To see the house got run without turning it into a contest — true to calm, never a scoreboard.',
         },
       },
     ],

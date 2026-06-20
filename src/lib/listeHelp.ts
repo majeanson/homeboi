@@ -9,7 +9,8 @@ import { type HelpEntry } from './helpMode'
 // list — so the help targets here are its buttons, not titles.)
 export const LISTE_HELP: Record<string, HelpEntry> = {
   flyer: {
-    card: 'flyers',
+    card: 'liste',
+    point: 3,
     body: {
       fr: 'La loupe ouvre les circulaires de la semaine pour chercher un article en aubaine et l’envoyer sur ta liste.',
       en: 'The magnifier opens this week’s flyers to search an item on sale and send it to your list.',
@@ -25,6 +26,7 @@ export const LISTE_HELP: Record<string, HelpEntry> = {
   },
   cashier: {
     card: 'cashier',
+    point: 0,
     body: {
       fr: 'Passe en mode caisse : tes articles avec une aubaine choisie, prêts à montrer et à pointer à l’épicerie.',
       en: 'Switch to cashier mode: your items with a picked deal, ready to show and check off at the store.',

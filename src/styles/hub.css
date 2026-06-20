@@ -556,6 +556,24 @@
   display: block;
 }
 
+/* The per-card media GROUP (#17 A/C + draw): the voice clip, the photo and the
+   "Dessiner" buttons all live in one indented, wrapping row under the card so
+   they read as one set of card extras instead of two disconnected strips. The
+   inner control wrappers collapse (display:contents) so every pill — record /
+   play / add-photo / change / draw / remove — flows directly into this row and
+   wraps together. The note spans (offline / error) ride along at the end. */
+.deck__media {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 4px 56px; /* one shared indent under the emoji tile */
+}
+.deck__media .deck__clip,
+.deck__media .deck__photo {
+  display: contents;
+}
+
 /* ---- Colour picker (per-person, per-task) -------------------------------- */
 .colorpick {
   display: flex;

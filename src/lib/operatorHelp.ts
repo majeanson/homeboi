@@ -8,6 +8,7 @@ import { type HelpEntry } from './helpMode'
 export const OPERATOR_HELP: Record<string, HelpEntry> = {
   reserveLocations: {
     card: 'reserve',
+    point: 0,
     body: {
       fr: `Les endroits de ta réserve (congélateur, garde-manger…) où les articles sont regroupés. Renomme-les, change leur couleur ou ajoute tes propres lieux.`,
       en: `Your stash spots (freezer, pantry…) where items are grouped. Rename them, change their colour, or add your own.`,
@@ -15,7 +16,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   ambient: {
     card: 'set-display',
-    point: 3,
+    point: 5,
     body: {
       fr: `L'économiseur d'écran et le retour automatique à « Maisonnée » après quelques minutes d'inactivité sur le kiosque.`,
       en: `The screensaver and the automatic return to "Household" after a few idle minutes on the kiosk.`,
@@ -29,8 +30,8 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
     },
   },
   voice: {
-    card: 'offline',
-    point: 4,
+    card: 'kitchen',
+    point: 7,
     body: {
       fr: `La voix de lecture à haute voix dans les recettes et les routines — choisis la voix et la vitesse, et entends un extrait.`,
       en: `The read-aloud voice for recipes and routines — pick the voice and speed, and hear a sample.`,
@@ -38,6 +39,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   measureColors: {
     card: 'recipes',
+    point: 6,
     body: {
       fr: `Donne à chaque cuillère et tasse la couleur de tes vrais ustensiles. Toutes les pastilles et les ronds de recettes suivent, partout.`,
       en: `Give each spoon and cup the colour of your real tools. Every recipe pill and scoop circle follows, everywhere.`,
@@ -45,6 +47,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   calm: {
     card: 'set-calm',
+    point: 0,
     body: {
       fr: `Adoucit le « refaire » de la routine d'enfant. Les garanties calme (pas de points, pas de notifications) restent verrouillées quoi qu'il arrive.`,
       en: `Softens the kid routine's redo prompt. The calm guarantees (no points, no notifications) stay locked regardless.`,
@@ -52,6 +55,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   mealSlots: {
     card: 'set-meals',
+    point: 0,
     body: {
       fr: `La couleur de chaque repas de la journée et lesquels tu veux voir sur le babillard et dans La cuisine.`,
       en: `Each meal's colour and which ones you want to show on the board and in the kitchen.`,
@@ -59,6 +63,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   todoTemplates: {
     card: 'todos',
+    point: 1,
     body: {
       fr: `Des listes de départ prêtes à cocher — « Avant de partir », « Chez grand-papa ». Chaque titre et chaque étape sont éditables en place.`,
       en: `Starter checklists ready to tick — "Before leaving", "At grandpa's". Every title and step is editable in place.`,
@@ -66,6 +71,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   recipeTags: {
     card: 'set-recipes',
+    point: 1,
     body: {
       fr: `Les étiquettes de tes recettes : renomme-les partout d'un coup ou retire-les de toutes les recettes en même temps.`,
       en: `Your recipe tags: rename them everywhere at once, or remove them from every recipe at once.`,
@@ -113,6 +119,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   ghost: {
     card: 'set-ghost',
+    point: 0,
     body: {
       fr: `Configure le suivi opt-in : choisis quoi suivre, à quelle fréquence, et mets des articles en sourdine ou retire-les.`,
       en: `Configure opt-in tracking: choose what to track, how often, and mute or remove items.`,
@@ -128,6 +135,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   recap: {
     card: 'set-recap',
+    point: 0,
     body: {
       fr: `Un bilan calme de la semaine écrit par l'IA sur demande. Un bouton, jamais un fil automatique. Se cache si l'IA n'est pas branchée.`,
       en: `A calm weekly reflection written by AI on demand. A button, never an automatic feed. Hides itself if AI is offline.`,
@@ -135,6 +143,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   photos: {
     card: 'set-photos',
+    point: 0,
     body: {
       fr: `Les photos de famille qui dérivent doucement sur le babillard en mode veille. Redimensionnées à l'envoi, plafonnées côté serveur.`,
       en: `The family photos that gently drift across the board during idle mode. Resized on upload, capped server-side.`,
@@ -150,7 +159,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   aiTest: {
     card: 'set-ailog',
-    point: 0,
+    point: 1,
     body: {
       fr: `Vérifie en direct si les modèles IA (texte et vision) répondent — utile avant de signaler un problème de capture ou de suggestions.`,
       en: `Live-checks whether the AI models (text and vision) respond — useful before reporting a capture or suggestion issue.`,
@@ -174,6 +183,7 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   guest: {
     card: 'set-guest',
+    point: 0,
     body: {
       fr: `Un lien temporaire en lecture seule pour la gardienne. Elle voit le babillard et les routines sans rien pouvoir changer. Le lien expire tout seul.`,
       en: `A temporary read-only link for the babysitter. She sees the board and routines without changing anything. The link expires on its own.`,
@@ -181,9 +191,18 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
   },
   choreLedger: {
     card: 'set-chores',
+    point: 3,
     body: {
       fr: `Ce que la maisonnée a fait cette semaine — qui a fait quoi, quel jour. Pas de scores ni de classements, juste les noms et les visages.`,
       en: `What the household did this week — who did what, which day. No scores or rankings, just names and faces.`,
+    },
+  },
+  cercleGroups: {
+    card: 'cercle',
+    point: 6,
+    body: {
+      fr: `Tous tes groupes du cercle, même ceux que le répertoire cache (un groupe « famille » entièrement composé de la maisonnée). Supprime ici n'importe quel groupe — les personnes restent dans le cercle.`,
+      en: `All your circle groups, even the ones the directory hides (a "family" group made up entirely of the household). Delete any group here — the people stay in the circle.`,
     },
   },
 }

@@ -21,6 +21,7 @@ import { RecipePillsSection } from '../components/operator/recipePills'
 import { MealSlotsSection } from '../components/operator/meals'
 import { ReserveLocationsSection } from '../components/operator/reserve'
 import { TodoTemplatesSection } from '../components/operator/todos'
+import { CercleGroupsSection } from '../components/operator/cercle'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
 import { IdleDebugSection } from '../components/operator/idleDebug'
 import { MicSelfTest } from '../components/operator/micTest'
@@ -39,6 +40,7 @@ import type { Member, Device, Chore, Routine, EventRow } from '../components/ope
 const SECTIONS = [
   { id: 'guide', key: 'guide' as const },
   { id: 'household', key: 'members' as const },
+  { id: 'cercle', key: 'cercleTab' as const },
   { id: 'agenda', key: 'events' as const },
   { id: 'chores', key: 'chores' as const },
   { id: 'routines', key: 'routines' as const },
@@ -149,6 +151,7 @@ export function Operator() {
       idleDebug: t.operator.debugIdleTitle,
       guest: t.guest.title,
       choreLedger: t.operator.ledgerTitle,
+      cercleGroups: t.operator.cercleGroupsTitle,
     }
     return labels[k] ?? k
   }, tab)
@@ -212,6 +215,7 @@ export function Operator() {
             used to live only under Guide). The Guide tab documents itself. */}
         {tab !== 'guide' && <SectionGuide tab={tab} />}
         {tab === 'household' && <MembersSection members={members} onChange={load} />}
+        {tab === 'cercle' && <CercleGroupsSection help={operatorHelp} />}
         {tab === 'agenda' && <EventsSection events={events} members={members} onChange={load} />}
         {tab === 'chores' && (
           <>

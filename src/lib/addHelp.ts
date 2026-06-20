@@ -20,11 +20,13 @@ export const ADD_HELP: Record<string, AddHelp> = {
     },
   },
   event: {
-    card: 'board',
+    card: 'set-agenda',
+    point: 0,
     body: { fr: 'Ajoute un rendez-vous à l’agenda partagé.', en: 'Add an event to the shared agenda.' },
   },
   chore: {
-    card: 'board',
+    card: 'set-chores',
+    point: 0,
     body: {
       fr: 'Ajoute une corvée, ponctuelle ou récurrente, avec qui s’en occupe.',
       en: 'Add a chore, one-off or recurring, with who handles it.',
@@ -32,13 +34,15 @@ export const ADD_HELP: Record<string, AddHelp> = {
   },
   todo: {
     card: 'todos',
+    point: 0,
     body: {
       fr: 'Ajoute une chose « à compléter » : en tout temps, ou juste pour aujourd’hui. Coche-la quand c’est fait.',
       en: 'Add something “to complete”: anytime, or just for today. Check it off when done.',
     },
   },
   routine: {
-    card: 'routines',
+    card: 'set-routines',
+    point: 0,
     body: { fr: 'Crée une routine d’images pour un enfant (matin, dodo…).', en: 'Build a picture routine for a child (morning, bedtime…).' },
   },
   'plan-today': {
@@ -56,10 +60,12 @@ export const ADD_HELP: Record<string, AddHelp> = {
   },
   cook: {
     card: 'cookmode',
+    point: 0,
     body: { fr: 'Passe en mode cuisson plein écran pour un repas prévu aujourd’hui.', en: 'Jump into full-screen cook mode for a meal planned today.' },
   },
   recipe: {
     card: 'recipes',
+    point: 0,
     body: { fr: 'Ajoute une recette à ton livre (à la main, par photo ou collée).', en: 'Add a recipe to your book (by hand, photo or paste).' },
   },
   meal: {
@@ -69,6 +75,7 @@ export const ADD_HELP: Record<string, AddHelp> = {
   },
   leftovers: {
     card: 'leftovers',
+    point: 0,
     body: { fr: 'Signale qu’un plat a des restes à finir bientôt.', en: 'Flag that a dish has leftovers to finish soon.' },
   },
   pantry: {
@@ -78,26 +85,33 @@ export const ADD_HELP: Record<string, AddHelp> = {
   },
   reserve: {
     card: 'reserve',
+    point: 0,
     body: { fr: 'Ajoute un article à La réserve (congélateur, fond de garde-manger).', en: 'Add an item to The stash (freezer, back of the pantry).' },
   },
   'list-item': {
+    // The list has no dedicated "add a line" point — opening the liste card top
+    // (its one-line "what" covers adding) beats highlighting an unrelated point.
     card: 'liste',
     body: { fr: 'Ajoute une ligne à la liste d’épicerie.', en: 'Add a line to the grocery list.' },
   },
   'quick-add': {
     card: 'liste',
+    point: 2,
     body: { fr: 'Re-ajoute vite des articles déjà achetés.', en: 'Quickly re-add items you’ve bought before.' },
   },
   flyer: {
     card: 'flyers',
+    point: 0,
     body: { fr: 'Feuillette les circulaires et envoie des aubaines sur ta liste.', en: 'Browse the flyers and send deals to your list.' },
   },
   'auto-pick': {
-    card: 'deals',
+    card: 'liste',
+    point: 8,
     body: { fr: 'Trouve la meilleure aubaine pour chaque ligne, puis va à la caisse.', en: 'Find the best deal for each line, then head to the cashier.' },
   },
   shop: {
     card: 'kitchen',
+    point: 0,
     body: {
       fr: 'Compare le plan de la semaine au garde-manger et ajoute ce qui manque à la liste, d’un coup.',
       en: 'Compare the week’s plan to the pantry and add what’s missing to the list, in one go.',
@@ -109,11 +123,13 @@ export const ADD_HELP: Record<string, AddHelp> = {
     body: { fr: 'Demande à l’IA une volée d’idées de soupers.', en: 'Ask the AI for a batch of supper ideas.' },
   },
   book: {
-    card: 'recipes',
+    card: 'kitchen',
+    point: 3,
     body: { fr: 'Pige des idées de repas dans ton propre livre de recettes.', en: 'Pull meal ideas from your own recipe book.' },
   },
   useup: {
     card: 'kitchen',
+    point: 11,
     body: { fr: 'Propose une recette qui finit ce que tu as marqué « à utiliser bientôt ».', en: 'Suggest a recipe that uses up what you flagged “use soon”.' },
   },
   // « Le cercle » ＋ chooser tiles.

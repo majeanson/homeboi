@@ -372,12 +372,10 @@ export function HubLayout() {
           className="add-fab"
           data-tour="add-fab"
           onClick={() => {
-            // Recettes tab: the recipe builder is a full-screen route, so skip the
-            // sheet and go straight there (its "add" is navigate-only anyway).
-            if (kitchenTab === 'recipes') {
-              nav('/kitchen/recipe/new')
-              return
-            }
+            // Every kitchen sub-tab (Recettes included) opens the same blank-slate
+            // ＋ chooser — no tab jumps you straight into a blank new recipe (that
+            // read as "auto-creating" one). Creating a recipe is now an explicit
+            // tap on the "Ajouter une recette" tile (navigate-only → the builder).
             // Le cercle: the ＋ opens the section chooser (person / family / connect /
             // group) like the other tabs — all navigate-only tiles (SECTION_MODES.cercle).
             // Routines: the ＋ opens the manage picker (new routine + edit an
@@ -393,11 +391,9 @@ export function HubLayout() {
           }}
           aria-label={
             section === 'kitchen'
-              ? kitchenTab === 'recipes'
-                ? t.recipes.add
-                : kitchenTab === 'pantry'
-                  ? t.kitchen.lowAdd
-                  : t.kitchen.addTitle
+              ? kitchenTab === 'pantry'
+                ? t.kitchen.lowAdd
+                : t.kitchen.addTitle
               : section === 'routines'
                 ? t.routines.add
                 : section === 'cercle'

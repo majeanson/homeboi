@@ -177,8 +177,13 @@ export function TodoSection({
 
   // One check-off row. Extracted so it renders identically whether it sits loose or
   // inside a collapsed section Disclosure.
-  const renderRow = (todo: Todo) =>
-    editId === todo.id ? (
+  const renderRow = (todo: Todo) => {
+    // The row's colour = the assigned member's face colour (falls back to the chore
+    // tint). It already tints the spine + the "by" avatar; when the row is checked we
+    // also colour the checkmark with it, so a done todo reads as "who did it" instead
+    // of a generic green that clashes with the spine.
+    const rowColour = faceOf(todo.member_id)?.colour ?? CATS.chore.color
+    return editId === todo.id ? (
       <EditField
         key={todo.id}
         value={editText}
@@ -190,7 +195,7 @@ export function TodoSection({
       />
     ) : (
       <div key={todo.id} className={'act todo-row' + (isChecked(todo) ? ' done' : '')}>
-        <span className="spine" style={{ background: faceOf(todo.member_id)?.colour ?? CATS.chore.color }} aria-hidden="true" />
+        <span className="spine" style={{ background: rowColour }} aria-hidden="true" />
         {!ro ? (
           <button
             type="button"
@@ -198,12 +203,13 @@ export function TodoSection({
             onClick={() => toggle(todo)}
             aria-pressed={isChecked(todo)}
             aria-label={isChecked(todo) ? t.todos.uncheck : t.todos.check}
+            style={isChecked(todo) ? { color: rowColour } : undefined}
           >
             <Icon name="check-bold" size={18} />
           </button>
         ) : (
           // Read-only guest: a static state marker (check only when done).
-          <span className="todo-row__check" aria-hidden="true">
+          <span className="todo-row__check" aria-hidden="true" style={isChecked(todo) ? { color: rowColour } : undefined}>
             {isChecked(todo) ? <Icon name="check-bold" size={16} /> : null}
           </span>
         )}
@@ -217,14 +223,14 @@ export function TodoSection({
           disabled={ro}
           aria-label={ro ? undefined : t.todos.edit}
         >
-          <span className="title" style={isChecked(todo) ? undefined : { color: tintInk(faceOf(todo.member_id)?.colour ?? CATS.chore.color) }}>
+          <span className="title" style={isChecked(todo) ? undefined : { color: tintInk(rowColour) }}>
             {todo.title}
           </span>
         </button>
         {faceOf(todo.member_id) && (
           <span
             className="todo-row__by"
-            style={{ background: faceOf(todo.member_id)!.colour ?? 'var(--ink-faint)' }}
+            style={{ background: rowColour }}
             title={faceOf(todo.member_id)!.display_name}
             aria-label={faceOf(todo.member_id)!.display_name}
           >
@@ -234,6 +240,7 @@ export function TodoSection({
         <RowActions onDelete={() => remove(todo)} deleteLabel={`${t.common.delete} — ${todo.title}`} />
       </div>
     )
+  }
 
   return (
     <section className={'todo-sec' + (bento ? ' bento' : '')}>

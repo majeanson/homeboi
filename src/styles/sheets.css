@@ -66,6 +66,18 @@
 .undo-toast[data-surface='mobile'] {
   bottom: calc(86px + env(safe-area-inset-bottom, 0px));
 }
+/* No write pending — the toast lingers ONLY as a quiet opener for the session
+   "Récents" log, so the history stays reachable from here (not just Réglages).
+   Smaller + dimmer than a live toast so it never pulls the eye (calm by design);
+   brightens on hover/focus. */
+.undo-toast--log {
+  padding: 4px 8px;
+  opacity: 0.6;
+}
+.undo-toast--log:hover,
+.undo-toast--log:focus-within {
+  opacity: 1;
+}
 /* Expanded: a rounded card holding the stack of rows + a collapse control. */
 .undo-toast--stack {
   flex-direction: column;

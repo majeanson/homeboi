@@ -7,6 +7,7 @@ import { api, isStatus } from '../lib/api'
 import { sideInsert, sideRemove, sideMove, sideSet, alignSide } from '../lib/parallelArray'
 import { resizeImage, imgUrl, PHOTO_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { EditField } from './EditField'
+import { DrawPad } from './DrawPad'
 import { Icon, InlineIcon } from './Icon'
 
 // Edit a routine's deck of picture cards: each card is an emoji + a word. Tap
@@ -160,27 +161,33 @@ export function CardDeckEditor({
               deleteLabel={t.operator.removeCard}
             />
           </div>
-          {/* The 🎙️ clip control sits UNDER its card (full-width on a phone), so the
-              card row stays glanceable and the record/play affordance is obvious. */}
-          {clips && !audioOff && (
-            <ClipControl
-              clipKey={clips[i]}
-              cardLabel={card.label || card.icon}
-              onUploaded={(key) => setClip(i, key)}
-              onClear={() => setClip(i, '')}
-              onAudioOff={() => setAudioOff(true)}
-            />
-          )}
-          {/* The 📷 photo control sits under the card too (feature #17 C). A photo,
-              when set, replaces the emoji on the kid surface — a pre-reader spots
-              the real toothbrush, not a generic glyph. */}
-          {photos && !photoOff && (
-            <PhotoControl
-              photoKey={photos[i]}
-              onUploaded={(key) => setPhoto(i, key)}
-              onClear={() => setPhoto(i, '')}
-              onPhotoOff={() => setPhotoOff(true)}
-            />
+          {/* Per-card media — the parent-voice clip (#17 A), the photo (#17 C) and
+              "draw a step" all live in ONE indented row under the card so the
+              record / photo / draw affordances read as a single group and wrap
+              together instead of as separate stacked strips. */}
+          {((clips && !audioOff) || (photos && !photoOff)) && (
+            <div className="deck__media">
+              {clips && !audioOff && (
+                <ClipControl
+                  clipKey={clips[i]}
+                  cardLabel={card.label || card.icon}
+                  onUploaded={(key) => setClip(i, key)}
+                  onClear={() => setClip(i, '')}
+                  onAudioOff={() => setAudioOff(true)}
+                />
+              )}
+              {/* A photo (or a drawing — a drawn step IS the card photo) replaces the
+                  emoji on the kid surface, so a pre-reader spots the real toothbrush
+                  / their own drawing, not a generic glyph. */}
+              {photos && !photoOff && (
+                <PhotoControl
+                  photoKey={photos[i]}
+                  onUploaded={(key) => setPhoto(i, key)}
+                  onClear={() => setPhoto(i, '')}
+                  onPhotoOff={() => setPhotoOff(true)}
+                />
+              )}
+            </div>
           )}
           {paletteFor === i && (
             <div className="deck__palette">
@@ -405,11 +412,20 @@ function PhotoControl({
   const online = useOnline()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
+  // The in-place draw pad (#14 → #17 C). A drawn step is just a card photo: the
+  // same DrawPad the fridge note uses, but its PNG uploads to the card-photo slot
+  // instead of seeding a brand-new routine. Editing a routine no longer means the
+  // ONLY way in for a drawing is "fridge note → make a routine".
+  const [drawing, setDrawing] = useState(false)
 
-  async function pick(file: File) {
+  // Upload an image (a picked file OR a drawing's PNG) to the card-photo slot.
+  // Resized small client-side like every other photo; a 503 means R2 is unbound,
+  // so we tell the deck to hide the whole photo/draw control (it can't store).
+  async function upload(input: Blob) {
     setBusy(true)
     setErr(false)
     try {
+      const file = input instanceof File ? input : new File([input], 'dessin.png', { type: input.type || 'image/png' })
       const blob = await resizeImage(file, PHOTO_MAX)
       if (blob.size > MAX_UPLOAD_BYTES) {
         setErr(true)
@@ -425,6 +441,19 @@ function PhotoControl({
     }
   }
 
+  // "Dessiner" — drawing offline can't upload (the card-photo POST needs the
+  // server), so it follows the same online gate as the photo picker.
+  const drawBtn = (
+    <button
+      type="button"
+      className={'deck__clip-btn' + (busy || !online ? ' is-disabled' : '')}
+      disabled={busy || !online}
+      onClick={() => setDrawing(true)}
+    >
+      <InlineIcon name="paint-brush-bold" size={15} /> {photoKey ? t.routines.cardDrawRedo : t.routines.cardDraw}
+    </button>
+  )
+
   return (
     <div className="deck__photo">
       {photoKey ? (
@@ -439,11 +468,12 @@ function PhotoControl({
               disabled={busy || !online}
               onChange={(e) => {
                 const f = e.target.files?.[0]
-                if (f) void pick(f)
+                if (f) void upload(f)
                 e.target.value = ''
               }}
             />
           </label>
+          {drawBtn}
           <button
             type="button"
             className="deck__clip-btn deck__clip-del"
@@ -454,23 +484,36 @@ function PhotoControl({
           </button>
         </>
       ) : (
-        <label className={'deck__clip-btn' + (busy || !online ? ' is-disabled' : '')}>
-          <InlineIcon name="image-square-bold" size={15} /> {busy ? '…' : t.routines.cardPhotoAdd}
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            disabled={busy || !online}
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) void pick(f)
-              e.target.value = ''
-            }}
-          />
-        </label>
+        <>
+          <label className={'deck__clip-btn' + (busy || !online ? ' is-disabled' : '')}>
+            <InlineIcon name="image-square-bold" size={15} /> {busy ? '…' : t.routines.cardPhotoAdd}
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              disabled={busy || !online}
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) void upload(f)
+                e.target.value = ''
+              }}
+            />
+          </label>
+          {drawBtn}
+        </>
       )}
       {!online && !photoKey && <span className="deck__clip-note">{t.routines.clipOnline}</span>}
       {err && <span className="deck__clip-note deck__clip-note--err">{t.routines.clipFail}</span>}
+      {/* The draw pad is a full-screen overlay; on save its PNG becomes this card's
+          photo. Scene JSON is ignored — a card photo stores only the R2 image key. */}
+      <DrawPad
+        open={drawing}
+        onCancel={() => setDrawing(false)}
+        onSave={(png) => {
+          setDrawing(false)
+          void upload(png)
+        }}
+      />
     </div>
   )
 }

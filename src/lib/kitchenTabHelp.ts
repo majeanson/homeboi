@@ -28,7 +28,8 @@ export const KITCHEN_TAB_HELP: Record<string, HelpEntry> = {
     },
   },
   recipes: {
-    card: 'recipes',
+    card: 'kitchen',
+    point: 3,
     body: {
       fr: 'Ton livre de recettes : ajoute, importe et feuillette tes recettes.',
       en: 'Your recipe book: add, import and browse your recipes.',
@@ -37,7 +38,7 @@ export const KITCHEN_TAB_HELP: Record<string, HelpEntry> = {
   // ── headings on the Repas tab ──
   ideas: {
     card: 'kitchen',
-    point: 6,
+    point: 9,
     body: {
       fr: 'Une réserve d’idées de repas (texte libre ou recette) ; touches-en une pour la déposer sur un jour. Elle reste dans la réserve, prête à replanifier.',
       en: 'A pool of meal ideas (free text or a recipe); tap one to drop it on a day. It stays in the pool, ready to re-plan.',
@@ -45,6 +46,7 @@ export const KITCHEN_TAB_HELP: Record<string, HelpEntry> = {
   },
   leftovers: {
     card: 'leftovers',
+    point: 0,
     body: {
       fr: 'Les restes à finir bientôt : un plat cuisiné dont il reste, pas encore fixé à un jour. Touches-en un pour le planifier ; jamais sur la liste d’épicerie.',
       en: 'Leftovers to finish soon: a cooked dish with extra, not pinned to a day yet. Tap one to plan it; never on the grocery list.',
@@ -61,7 +63,7 @@ export const KITCHEN_TAB_HELP: Record<string, HelpEntry> = {
   },
   useSoon: {
     card: 'kitchen',
-    point: 1,
+    point: 11,
     body: {
       fr: 'Ce qui est à utiliser bientôt avant que ça se perde. Ça n’achète rien — ça nourrit plutôt l’idée « finis ce que tu as » de « Qu’est-ce qu’on mange ? ».',
       en: 'What to use up soon before it spoils. It buys nothing — it feeds the “use what you have” idea in “What’s for supper?” instead.',
@@ -69,6 +71,7 @@ export const KITCHEN_TAB_HELP: Record<string, HelpEntry> = {
   },
   reserve: {
     card: 'reserve',
+    point: 0,
     body: {
       fr: 'La réserve : ce qui dort au congélateur ou au fond du garde-manger, rangé par endroit, pour que ça arrête d’être oublié. Cocher = utilisé / jeté.',
       en: 'The stash: what sleeps in the freezer or back of the pantry, grouped by spot, so it stops getting forgotten. Check = used / tossed.',
@@ -77,6 +80,7 @@ export const KITCHEN_TAB_HELP: Record<string, HelpEntry> = {
   // ── headings on the Recettes tab ──
   recipesBook: {
     card: 'recipes',
+    point: 12,
     body: {
       fr: 'Ton livre de recettes : cherche, filtre (Quoi cuisiner ?, Favoris…), et touche une recette pour l’ouvrir ou la planifier comme repas.',
       en: 'Your recipe book: search, filter (What can I cook?, Favorites…), and tap a recipe to open it or plan it as a meal.',

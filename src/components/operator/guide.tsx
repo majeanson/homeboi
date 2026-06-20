@@ -227,12 +227,16 @@ export function GuideSection() {
         </div>
       )}
 
-      {/* The two real groups — five sections, then the cross-cutting concepts.
-          Titles only (no blurb): each card's own one-line "what" carries the
-          explanation, so the landing stays card-focused, not prose-heavy. The
-          per-tab "settings" cards live INLINE in each Réglages tab instead (see
-          SectionGuide). */}
-      {GUIDE_GROUPS.filter((g) => g.id !== 'settings' && g.id !== 'start').map((group) => {
+      {/* The real groups — five sections, the cross-cutting concepts, then the
+          per-tab "settings" cards. Titles only (no blurb): each card's own
+          one-line "what" carries the explanation, so the landing stays
+          card-focused, not prose-heavy. The settings cards ALSO live inline in
+          their own Réglages tab (see SectionGuide) — but they're listed here too
+          so the Guide is the whole manual in one place AND so a contextual "?"
+          deep-link into a settings card (?card=set-display&point=…) actually
+          resolves, opens and highlights here, instead of falling through to the
+          top of the Guide. Each settings card keeps its "go there" link. */}
+      {GUIDE_GROUPS.filter((g) => g.id !== 'start').map((group) => {
         const entries = matches.filter((e) => e.group === group.id)
         if (entries.length === 0) return null
         // Concepts are shown clustered by theme (see CONCEPT_ORDER); other groups

@@ -773,6 +773,8 @@ export const FR = {
     cardPhotoAdd: 'Ajouter une photo',
     cardPhotoChange: 'Changer la photo',
     cardPhotoRemove: 'Retirer la photo',
+    cardDraw: 'Dessiner',
+    cardDrawRedo: 'Redessiner',
   },
   login: {
     title: 'Connexion',
@@ -973,6 +975,13 @@ export const FR = {
     reserveLocationName: 'Nom de l’emplacement',
     reserveAddLocation: 'Ajouter un emplacement…',
     reserveEmpty: 'Aucun emplacement. La réserve regroupe tout sous « Autres ».',
+    cercleTab: 'Le cercle',
+    cercleGroupsTitle: 'Groupes du cercle',
+    cercleGroupsHint:
+      'Tous tes groupes — même les vides et ceux masqués du répertoire (un groupe « famille » composé uniquement de la maisonnée y est caché). Supprime ici n’importe quel groupe; les personnes restent dans le cercle.',
+    cercleGroupsEmpty: 'Aucun groupe pour l’instant.',
+    cercleGroupMembers: (n: number) => `${n} ${n === 1 ? 'personne' : 'personnes'}`,
+    cercleGroupHidden: 'Masqué du répertoire',
     recipesTab: 'Recettes',
     // Recipe-tab pills config (migration 0045) — Réglages ▸ Recettes.
     pillsTitle: 'Pastilles de recettes',
@@ -2071,6 +2080,8 @@ export const EN: typeof FR = {
     cardPhotoAdd: 'Add a photo',
     cardPhotoChange: 'Change photo',
     cardPhotoRemove: 'Remove photo',
+    cardDraw: 'Draw',
+    cardDrawRedo: 'Redraw',
   },
   login: {
     title: 'Sign in',
@@ -2270,6 +2281,13 @@ export const EN: typeof FR = {
     reserveLocationName: 'Location name',
     reserveAddLocation: 'Add a location…',
     reserveEmpty: 'No locations. The reserve groups everything under “Other”.',
+    cercleTab: 'The circle',
+    cercleGroupsTitle: 'Circle groups',
+    cercleGroupsHint:
+      'All your groups — including empty ones and ones hidden from the directory (a “family” group made up only of the household is hidden there). Delete any group here; the people stay in the circle.',
+    cercleGroupsEmpty: 'No groups yet.',
+    cercleGroupMembers: (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`,
+    cercleGroupHidden: 'Hidden from the directory',
     recipesTab: 'Recipes',
     // Recipe-tab pills config (migration 0045) — Réglages ▸ Recettes.
     pillsTitle: 'Recipe pills',
