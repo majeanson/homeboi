@@ -12,6 +12,7 @@ import { PALETTE } from '../../lib/colors'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
 import { Avatar } from '../Avatar'
 import { ColorPicker } from '../ColorPicker'
+import { EditField } from '../EditField'
 import { Icon } from '../Icon'
 import { RowActions } from '../RowActions'
 import { OperatorSection } from './OperatorSection'
@@ -28,8 +29,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   const [color, setColor] = useState(PALETTE[members.length % PALETTE.length])
   const write = useWrite()
 
-  async function add(e: React.FormEvent) {
-    e.preventDefault()
+  async function add() {
     if (!name.trim() || busy) return
     setBusy(true)
     try {
@@ -98,25 +98,25 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
           <MemberCard key={m.id} member={m} onChange={onChange} onRemove={() => remove(m)} />
         ))}
       </ul>
-      {/* Adding a member is operator-only — hidden for a read-only guest. */}
-      {!isGuest() && (
-        <form className="operator__inline-form" onSubmit={add}>
-          <input
-            className="input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={t.operator.name}
-          />
-          <label className="operator__check mono">
-            <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
-            {t.operator.isChild}
-          </label>
-          <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
-          <button type="submit" className="btn" disabled={!name.trim() || busy}>
-            {t.operator.addMember}
-          </button>
-        </form>
-      )}
+      {/* Adding a member is operator-only — EditField hides itself for a guest. */}
+      <EditField
+        value={name}
+        onChange={setName}
+        onSubmit={() => add()}
+        submitLabel={t.operator.addMember}
+        busy={busy}
+        placeholder={t.operator.name}
+        ariaLabel={t.operator.name}
+        secondaryActions={
+          <>
+            <label className="operator__check mono">
+              <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
+              {t.operator.isChild}
+            </label>
+            <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+          </>
+        }
+      />
     </OperatorSection>
   )
 }
@@ -206,8 +206,7 @@ function MemberCard({
     }).catch(() => {})
     onChange()
   }
-  async function save(e: React.FormEvent) {
-    e.preventDefault()
+  async function save() {
     if (!name.trim() || busy) return
     setBusy(true)
     await write('members', {
@@ -223,53 +222,56 @@ function MemberCard({
   if (editing)
     return (
       <li className="member-card member-card--editing surface">
-        <form className="operator__inline-form" onSubmit={save}>
-          {/* The photo lives WITH the other member fields now — set/replace + remove
-              here, so the card itself keeps just the uniform ✏️/🗑️ pair. */}
-          <div className="member-edit__photo">
-            <Avatar kind={member.avatar_kind} photo={member.avatar_ref} colour={color} name={name || member.display_name} size={48} />
-            <label className="row-actions__btn operator__photo" title={t.operator.photo}>
-              <Icon name="camera-bold" size={18} />
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                aria-label={t.operator.photo}
-                onChange={(e) => {
-                  const f = e.target.files?.[0]
-                  if (f) setPhoto(f)
-                  e.target.value = ''
-                }}
-              />
-            </label>
-            {member.avatar_kind === 'photo' && (
-              <button type="button" className="row-actions__btn" onClick={clearPhoto} aria-label={t.operator.removePhoto}>
-                <Icon name="x-bold" size={18} />
-              </button>
-            )}
-          </div>
-          <input className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label={t.operator.name} autoFocus />
-          <label className="operator__check mono">
-            <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
-            {t.operator.isChild}
-          </label>
-          <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
-          <button type="submit" className="btn" disabled={!name.trim() || busy}>
-            {t.common.save}
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={() => {
-              setName(member.display_name)
-              setIsChild(!!member.is_child)
-              setColor(member.colour)
-              setEditing(false)
-            }}
-          >
-            {t.common.cancel}
-          </button>
-        </form>
+        <EditField
+          value={name}
+          onChange={setName}
+          onSubmit={() => save()}
+          submitLabel={t.common.save}
+          busy={busy}
+          ariaLabel={t.operator.name}
+          autoFocus
+          onCancel={() => {
+            setName(member.display_name)
+            setIsChild(!!member.is_child)
+            setColor(member.colour)
+            setEditing(false)
+          }}
+          leading={
+            /* The photo lives WITH the other member fields now — set/replace +
+               remove here, so the card itself keeps just the uniform ✏️/🗑️ pair. */
+            <div className="member-edit__photo">
+              <Avatar kind={member.avatar_kind} photo={member.avatar_ref} colour={color} name={name || member.display_name} size={48} />
+              <label className="row-actions__btn operator__photo" title={t.operator.photo}>
+                <Icon name="camera-bold" size={18} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  aria-label={t.operator.photo}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) setPhoto(f)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+              {member.avatar_kind === 'photo' && (
+                <button type="button" className="row-actions__btn" onClick={clearPhoto} aria-label={t.operator.removePhoto}>
+                  <Icon name="x-bold" size={18} />
+                </button>
+              )}
+            </div>
+          }
+          secondaryActions={
+            <>
+              <label className="operator__check mono">
+                <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
+                {t.operator.isChild}
+              </label>
+              <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+            </>
+          }
+        />
         {/* Everything else about this person — coordonnées, anniversaire, genre,
             notes, liens familiaux — lives in « Le cercle ». One tap finds (or, the
             first time, creates) their linked contact sheet and opens it. */}

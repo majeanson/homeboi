@@ -4,10 +4,10 @@ import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useUndoToast } from '../../lib/toast'
-import { isGuest } from '../../lib/device'
 import { wash } from '../../lib/colors'
 import { useReserveLocations } from '../../lib/reservePrefs'
 import { CheckRow } from '../CheckRow'
+import { EditField } from '../EditField'
 import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { BOARD_KEY } from '../../lib/queryKeys'
@@ -34,9 +34,8 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
   const removal = useDeferredRemoval(RESERVE_KEY)
   const undoToast = useUndoToast()
   const { locations, name: locName } = useReserveLocations()
-  // Read-only guest: hide the add form (custom, not EditField). CheckRow inside the
-  // rows already hides its own clear/edit for a guest.
-  const ro = isGuest()
+  // EditField hides its own add/edit box for a read-only guest; CheckRow inside the
+  // rows likewise hides its clear/edit.
   const [newItem, setNewItem] = useState('')
   const [newLoc, setNewLoc] = useState<string>('')
   // The picked location, guarded against a stale choice — if the household removed
@@ -44,8 +43,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
   // first one rather than silently filing the next item under "Autres".
   const selectedLoc = locations.some((l) => l.id === newLoc) ? newLoc : (locations[0]?.id ?? '')
 
-  async function addItem(e: React.FormEvent) {
-    e.preventDefault()
+  async function addItem() {
     const v = newItem.trim()
     if (!v) return
     setNewItem('')
@@ -111,33 +109,30 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
     <section>
       <HelpTitle help={help} k="reserve">{t.kitchen.reserve}</HelpTitle>
       {help?.bubbleFor('reserve')}
-      {!ro && (
-      <form className="kitchen__reserve-add" onSubmit={addItem}>
-        <input
-          className="input"
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
-          placeholder={t.kitchen.reserveAdd}
-        />
-        {locations.length > 0 && (
-          <select
-            className="input kitchen__reserve-loc"
-            value={selectedLoc}
-            onChange={(e) => setNewLoc(e.target.value)}
-            aria-label={t.kitchen.reserveWhere}
-          >
-            {locations.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-        )}
-        <button type="submit" className="btn" disabled={!newItem.trim()}>
-          {t.capture.add}
-        </button>
-      </form>
-      )}
+      <EditField
+        value={newItem}
+        onChange={setNewItem}
+        onSubmit={() => addItem()}
+        submitLabel={t.capture.add}
+        placeholder={t.kitchen.reserveAdd}
+        ariaLabel={t.kitchen.reserveAdd}
+        trailing={
+          locations.length > 0 ? (
+            <select
+              className="input kitchen__reserve-loc"
+              value={selectedLoc}
+              onChange={(e) => setNewLoc(e.target.value)}
+              aria-label={t.kitchen.reserveWhere}
+            >
+              {locations.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          ) : undefined
+        }
+      />
       {rows.length === 0 ? (
         <EmptyState>{t.kitchen.reserveEmpty}</EmptyState>
       ) : (
@@ -215,31 +210,28 @@ function ReserveEditForm({
   const [text, setText] = useState(row.item)
   const [loc, setLoc] = useState<string>(row.location_id ?? '')
   return (
-    <form
-      className="operator__inline-form"
-      style={{ flex: '1 1 auto' }}
-      onSubmit={(e) => {
-        e.preventDefault()
+    <EditField
+      value={text}
+      onChange={setText}
+      onSubmit={() => {
         onSave(text, loc || null)
         onClose()
       }}
-    >
-      <input className="input" value={text} onChange={(e) => setText(e.target.value)} aria-label={t.common.edit} autoFocus />
-      {locations.length > 0 && (
-        <select className="input kitchen__reserve-loc" value={loc} onChange={(e) => setLoc(e.target.value)} aria-label={t.kitchen.reserveWhere}>
-          {locations.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
-      )}
-      <button type="submit" className="btn" disabled={!text.trim()}>
-        {t.common.save}
-      </button>
-      <button type="button" className="btn btn--ghost mono" onClick={onClose}>
-        {t.common.cancel}
-      </button>
-    </form>
+      submitLabel={t.common.save}
+      ariaLabel={t.common.edit}
+      autoFocus
+      onCancel={onClose}
+      trailing={
+        locations.length > 0 ? (
+          <select className="input kitchen__reserve-loc" value={loc} onChange={(e) => setLoc(e.target.value)} aria-label={t.kitchen.reserveWhere}>
+            {locations.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        ) : undefined
+      }
+    />
   )
 }
