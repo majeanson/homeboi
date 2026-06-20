@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useProfile } from '../lib/profile'
 import { useLoves } from '../lib/loves'
 import { imgUrl } from '../lib/image'
+import { type Member } from '../lib/members'
 import { Icon } from './Icon'
 
 // The ❤ on a recipe (or a planned meal linked to one) — family "favorites" (#21).
@@ -11,14 +12,6 @@ import { Icon } from './Icon'
 // only appears when a real face is picked: as "Maisonnée" there's no "you" to
 // attribute, so hearts are shown read-only (Marc's rule). A loved-by-nobody recipe
 // shows nothing in Maisonnée, and an empty outline heart when a face is active.
-interface Member {
-  id: string
-  display_name: string
-  avatar_kind: string
-  avatar_ref: string
-  colour: string
-}
-
 const TERRA = '#c2563a'
 
 export function HeartButton({ recipeId }: { recipeId: string }) {

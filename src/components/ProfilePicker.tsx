@@ -3,6 +3,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useProfile } from '../lib/profile'
 import { imgUrl } from '../lib/image'
+import { type Member } from '../lib/members'
 import { Icon } from './Icon'
 import { Sheet } from './Sheet'
 
@@ -10,13 +11,6 @@ import { Sheet } from './Sheet'
 // same faces as the toddler routine picker), so a phone knows who's holding it.
 // Reuses the shared .sheet/.scrim chrome (see AddSheet). Selecting sets the
 // device profile (lib/profile); "tout le monde" clears it.
-interface Member {
-  id: string
-  display_name: string
-  avatar_kind: string
-  avatar_ref: string
-  colour: string
-}
 
 export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useT()

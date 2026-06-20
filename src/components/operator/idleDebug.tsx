@@ -6,6 +6,7 @@ import { api } from '../../lib/api'
 import { useSurface } from '../../lib/surface'
 import { useProfile } from '../../lib/profile'
 import { imgUrl } from '../../lib/image'
+import { type Member } from '../../lib/members'
 import { Icon, InlineIcon } from '../Icon'
 import { OperatorSection } from './OperatorSection'
 import { currentIdleSpeed, setIdleSpeed, forceIdle, IDLE_SPEED_MS, type IdleSpeed } from '../../lib/idleDebug'
@@ -18,14 +19,6 @@ import { currentIdleSpeed, setIdleSpeed, forceIdle, IDLE_SPEED_MS, type IdleSpee
 // "current profile" readout below flip back to Maisonnée when the drift fires.
 // Dev tooling, not a family feature; lives under Réglages ▸ Debug.
 const SPEEDS: IdleSpeed[] = ['normal', '30s', '10s', '5s']
-
-interface Member {
-  id: string
-  display_name: string
-  avatar_kind: string
-  avatar_ref: string
-  colour: string
-}
 
 export function IdleDebugSection({ help }: { help?: HelpMode }) {
   const t = useT()

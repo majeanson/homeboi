@@ -1,16 +1,11 @@
 import { FR } from '../../i18n'
+import type { Member } from '../../lib/members'
 
 // The one-shot /board payload, shared by the Board page and its extracted
 // pieces (views, chrome). The list/members slices are also read by Liste and
-// Kitchen through the same ['board'] cache.
-export interface Member {
-  id: string
-  display_name: string
-  colour: string
-  is_child: number
-  avatar_kind?: string
-  avatar_ref?: string
-}
+// Kitchen through the same ['board'] cache. The member shape is the canonical
+// snake_case row (lib/members) — the lighter board projection is exactly its base.
+export type { Member }
 export interface EventRow {
   id: string
   title: string

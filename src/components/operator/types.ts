@@ -1,18 +1,10 @@
 // Row shapes shared by the Réglages shell (src/pages/Operator.tsx, which owns
 // the queries) and the section components in this folder.
-export interface Member {
-  id: string
-  display_name: string
-  is_child: number
-  avatar_ref: string
-  avatar_kind: string
-  colour: string
-  email: string | null
-  phone: string | null
-  birthday: string | null
-  notes: string | null
-  gender: string | null
-}
+
+// The full member row is the canonical OperatorMember (lib/members) — the
+// Réglages sections keep importing it as `Member` for continuity.
+import type { OperatorMember } from '../../lib/members'
+export type Member = OperatorMember
 export interface Device {
   id: string
   label: string
