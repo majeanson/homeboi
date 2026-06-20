@@ -225,7 +225,10 @@ export function Notes({
           initialSceneUrl={editing.scene_key ? imgUrl(editing.scene_key) : undefined}
           onCancel={() => setEditing(null)}
           onSave={(png, scene) => void saveDrawing(png, scene)}
-          onKeep={toddler ? undefined : (png, scene) => void keepInGallery(png, scene).catch(() => {})}
+          // Keep a permanent copy in « Mes dessins » — available to toddlers too, so
+          // a child can save their own art (not just pin the fridge note).
+          onKeep={(png, scene) => void keepInGallery(png, scene).catch(() => {})}
+          // Make-routine stays parent-only: it leaves into the parent routine builder.
           onMakeRoutine={toddler ? undefined : (png) => void toRoutine(png)}
         />
       )}

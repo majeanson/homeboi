@@ -868,12 +868,12 @@ export function DrawPad({
               {recent.map((c) => (
                 <button key={c} type="button" className={'drawpad__swatch' + (color === c ? ' is-on' : '')} style={{ background: c }} onClick={() => pickColor(c)} aria-label={t.memo.recent} aria-pressed={color === c} />
               ))}
-              {!toddler && (
-                <label className="drawpad__swatch drawpad__custom" aria-label={t.memo.customColor} style={{ background: color }}>
-                  <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : '#000000'} onChange={(e) => pickColor(e.target.value)} />
-                  <span aria-hidden="true">+</span>
-                </label>
-              )}
+              {/* Custom colour wheel — available to toddlers too (picking a fun
+                  colour is a drawing feature, harmless on the kid surface). */}
+              <label className="drawpad__swatch drawpad__custom" aria-label={t.memo.customColor} style={{ background: color }}>
+                <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : '#000000'} onChange={(e) => pickColor(e.target.value)} />
+                <span aria-hidden="true">+</span>
+              </label>
             </div>
           </>
         )}
@@ -925,7 +925,10 @@ export function DrawPad({
       <div className="drawpad__actions">
         <button type="button" className="btn btn--ghost" onClick={onCancel}>{t.memo.cancel}</button>
         <div className="drawpad__actions-end">
-          {!toddler && onKeep && (
+          {/* Keep (save to « Mes dessins ») — available to toddlers too, so a child
+              can keep their own art. Share + Make-routine stay parent-only (an
+              external share / the parent routine builder aren't toddler actions). */}
+          {onKeep && (
             <button type="button" className="btn btn--ghost" onClick={keep} disabled={busy}><Icon name="push-pin-bold" size={18} /> {t.memo.keep}</button>
           )}
           {!toddler && <button type="button" className="btn btn--ghost" onClick={share} disabled={busy}>{t.memo.share}</button>}
