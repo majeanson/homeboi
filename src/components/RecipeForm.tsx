@@ -219,9 +219,14 @@ export function RecipeForm({
     servingsUnit?: string | null
     times?: { prep: number | null; cook: number | null; total: number | null }
     source?: string | null
+    // Auto-detected reading language from the import ('fr'|'en'|null = undetected).
+    lang?: 'fr' | 'en' | null
   }
   function applyDraft(d: Draft) {
     if (d.title && !title.trim()) setTitle(d.title)
+    // An import that could tell its own language pre-fills the read-aloud chip,
+    // unless the cook already picked one (never clobber, like the fields below).
+    if (d.lang && readLang === null) setReadLang(d.lang)
     if (d.ingredients?.length && ingredients.every((x) => !x.trim())) setIngredients(d.ingredients)
     if (d.steps?.length && steps.every((x) => !x.trim())) {
       setSteps(d.steps)
@@ -275,6 +280,7 @@ export function RecipeForm({
         servings: number | null
         servingsUnit: string | null
         times: { prep: number | null; cook: number | null; total: number | null }
+        lang: 'fr' | 'en' | null
       }>('recipe-vision', {
         method: 'POST',
         body: blob,
@@ -306,6 +312,7 @@ export function RecipeForm({
         times: { prep: number | null; cook: number | null; total: number | null }
         image: string | null
         source: string | null
+        lang: 'fr' | 'en' | null
         empty?: boolean
       }>('recipe-import', { method: 'POST', body: text ? { text } : { url } })
       if (r.empty || (!r.ingredients.length && !r.steps.length && !r.title)) {

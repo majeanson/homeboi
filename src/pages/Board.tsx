@@ -24,7 +24,7 @@ import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { formatDay, formatTime } from '../lib/format'
-import { todayLocalDay, addLocalDays } from '../lib/localDay'
+import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
@@ -438,6 +438,13 @@ export function Board() {
   const isSlotPast = (slot: string) => nowMinOfDay > (SLOT_PAST_MIN[slot] ?? Infinity)
   const eventWhen = (e: EventRow) =>
     e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.start_at, lang)
+  // À venir hint: append "· dans X jours" (demain / aujourd'hui) when an upcoming
+  // item is within 3 days, so a glance sees how close it is, not just the date.
+  // Beyond 3 days the date alone is calm enough; past/today items get nothing here.
+  const withRel = (when: string, at: number): string => {
+    const d = daysUntilLocal(at)
+    return d >= 0 && d < 3 ? `${when} · ${t.cercle.inDaysN(d)}` : when
+  }
   const eventAct = (e: EventRow) => (
     <Act
       key={e.id}
@@ -559,7 +566,7 @@ export function Board() {
       key={c.id}
       cat="chore"
       title={c.title}
-      when={withDay ? formatDay(c.at, lang) : undefined}
+      when={withDay ? withRel(formatDay(c.at, lang), c.at) : undefined}
       who={c.who ?? undefined}
       color={c.color ?? undefined}
       mine={!!profileId && c.who_id === profileId}
@@ -922,7 +929,7 @@ export function Board() {
                   key={e.id}
                   cat={e.birthday ? 'birthday' : 'event'}
                   title={e.title}
-                  when={eventWhen(e)}
+                  when={withRel(eventWhen(e), e.start_at)}
                   soon={e.soon}
                   onOpen={() => detail.open(buildEvent(e, detailCtx))}
                 />

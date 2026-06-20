@@ -1,6 +1,7 @@
 import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { resolveLang, structureRecipe } from '../_lib/ai'
+import { detectLang } from '../_lib/langDetect'
 import {
   NO_TIMES,
   type RecipeTimes,
@@ -33,20 +34,31 @@ interface DraftOut {
   times: RecipeTimes
   image: string | null
   source: string | null
+  // Auto-detected reading language ('fr' | 'en' | null = couldn't tell → the form
+  // leaves its language on "Auto"). Set here so every import path fills it.
+  lang: 'fr' | 'en' | null
   empty?: boolean
 }
 
-const draft = (d: Partial<DraftOut>): DraftOut => ({
-  title: null,
-  ingredients: [],
-  steps: [],
-  servings: null,
-  servingsUnit: null,
-  times: NO_TIMES,
-  image: null,
-  source: null,
-  ...d,
-})
+const draft = (d: Partial<DraftOut>): DraftOut => {
+  const merged: DraftOut = {
+    title: null,
+    ingredients: [],
+    steps: [],
+    servings: null,
+    servingsUnit: null,
+    times: NO_TIMES,
+    image: null,
+    source: null,
+    lang: null,
+    ...d,
+  }
+  // Detect the recipe's language from its own words (title + the lines), unless a
+  // caller already supplied one. Runs on every path — incl. the no-AI JSON-LD /
+  // paste ones — so the read-aloud voice matches the recipe wherever it came from.
+  merged.lang = merged.lang ?? detectLang([merged.title, ...merged.ingredients, ...merged.steps].join('\n'))
+  return merged
+}
 
 // Light SSRF guard: only public http(s), and block obvious internal targets. This
 // is a private family tool, but there's no reason to let it hit localhost/metadata.

@@ -283,7 +283,10 @@
 }
 .cercle-tree__svg {
   width: 100%;
-  min-width: 600px;
+  /* Keep a comfortable 600px floor on tablet/desktop, but never wider than the
+     viewport on a phone — the viewBox scales the whole tree to fit instead of
+     forcing a sideways scroll. */
+  min-width: min(600px, 100%);
   height: auto;
 }
 .cercle-tree__empty {

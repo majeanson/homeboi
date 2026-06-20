@@ -21,7 +21,7 @@ import {
   checkedIds,
 } from '../../lib/todos'
 import { CATS } from '../../lib/cats'
-import { tintInk } from '../../lib/colors'
+import { tintInk, readableInk } from '../../lib/colors'
 import { Icon } from '../Icon'
 import { EditField } from '../EditField'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
@@ -180,9 +180,11 @@ export function TodoSection({
   const renderRow = (todo: Todo) => {
     // The row's colour = the assigned member's face colour (falls back to the chore
     // tint). It already tints the spine + the "by" avatar; when the row is checked we
-    // also colour the checkmark with it, so a done todo reads as "who did it" instead
-    // of a generic green that clashes with the spine.
+    // FILL the check disc with it (so a done todo reads as "who did it" instead of a
+    // generic green that clashes with the spine) and draw the tick in white or black —
+    // whichever contrasts — so it never blends into its own fill.
     const rowColour = faceOf(todo.member_id)?.colour ?? CATS.chore.color
+    const checkedStyle = { background: rowColour, borderColor: rowColour, color: readableInk(rowColour) }
     return editId === todo.id ? (
       <EditField
         key={todo.id}
@@ -203,7 +205,7 @@ export function TodoSection({
             onClick={() => toggle(todo)}
             aria-pressed={isChecked(todo)}
             aria-label={isChecked(todo) ? t.todos.uncheck : t.todos.check}
-            style={isChecked(todo) ? { color: rowColour } : undefined}
+            style={isChecked(todo) ? checkedStyle : undefined}
           >
             <Icon name="check-bold" size={18} />
           </button>

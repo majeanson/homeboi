@@ -1,4 +1,5 @@
 import { type ReactNode, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -12,7 +13,7 @@ import { withoutHeadings } from '../../lib/recipeSections'
 import { formatDuration } from '../../lib/duration'
 import { pictoFor } from '../../lib/picto'
 import { todayLocalDay } from '../../lib/localDay'
-import { InlineIcon } from '../Icon'
+import { Icon, InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
@@ -54,6 +55,7 @@ export function RecipesTab({
   help?: HelpMode
 }) {
   const t = useT()
+  const nav = useNavigate()
   const [recipeQuery, setRecipeQuery] = useState('')
   // #11 "Collections": flat alphabetical list ("Aa") vs grouped-by-collection.
   // A presentation toggle only — it never filters the set.
@@ -320,28 +322,42 @@ export function RecipesTab({
               aria-label={t.recipes.search}
             />
           )}
-          {recipes.length > 0 && tags.length > 0 && (
+          {recipes.length > 0 && (
             <div className="recipe-view-toggle">
-              <div className="subtabs subtabs--mini" role="tablist" aria-label={t.recipes.arrange}>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={!groupView}
-                  className={'subtabs__opt' + (!groupView ? ' is-on' : '')}
-                  onClick={help ? help.pick('collections', () => setGroupView(false)) : () => setGroupView(false)}
-                >
-                  Aa
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={groupView}
-                  className={'subtabs__opt' + (groupView ? ' is-on' : '')}
-                  onClick={help ? help.pick('collections', () => setGroupView(true)) : () => setGroupView(true)}
-                >
-                  {t.recipes.collectionsTitle}
-                </button>
-              </div>
+              {tags.length > 0 && (
+                <div className="subtabs subtabs--mini" role="tablist" aria-label={t.recipes.arrange}>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={!groupView}
+                    className={'subtabs__opt' + (!groupView ? ' is-on' : '')}
+                    onClick={help ? help.pick('collections', () => setGroupView(false)) : () => setGroupView(false)}
+                  >
+                    Aa
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={groupView}
+                    className={'subtabs__opt' + (groupView ? ' is-on' : '')}
+                    onClick={help ? help.pick('collections', () => setGroupView(true)) : () => setGroupView(true)}
+                  >
+                    {t.recipes.collectionsTitle}
+                  </button>
+                </div>
+              )}
+              {/* Straight to the toddler picture cookbook (#45) — the same read-aloud,
+                  swipeable book the kid kitchen opens, here as a one-tap shortcut beside
+                  the Aa/Collections view toggle (full-screen scene at /kitchen/book). */}
+              <button
+                type="button"
+                className="recipe-view-toggle__book"
+                onClick={() => nav('/kitchen/book')}
+                aria-label={t.recipes.bookTitle}
+                title={t.recipes.bookTitle}
+              >
+                <Icon name="book-open-bold" size={20} />
+              </button>
             </div>
           )}
         </div>

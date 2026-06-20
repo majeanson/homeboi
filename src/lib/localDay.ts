@@ -66,3 +66,11 @@ export function localYMD(daySec: number, tz = HOUSEHOLD_TZ): { year: number; mon
 
 // Unix-seconds of TODAY's local midnight — the meal-week / month-view anchor.
 export const todayLocalDay = (tz = HOUSEHOLD_TZ): number => localDayStart(new Date(Date.now()), tz)
+
+// Whole LOCAL calendar days from today to the day containing `unixSec` (0 = today,
+// 1 = tomorrow, negative = past). Counts wall days, DST-correct — feeds the calm
+// "dans X jours" hint on À venir items (pair with t.cercle.inDaysN). `now` is
+// injectable so callers/tests stay pure.
+export function daysUntilLocal(unixSec: number, now: number = Date.now(), tz = HOUSEHOLD_TZ): number {
+  return Math.round((localDayStart(new Date(unixSec * 1000), tz) - localDayStart(new Date(now), tz)) / 86400)
+}

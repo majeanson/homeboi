@@ -391,8 +391,8 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
   // A sample line that exercises every colour family + the scoop circles.
   const sample =
     lang === 'fr'
-      ? '2 c. à soupe de beurre · 1 ½ tasse de farine · ¼ c. à thé de sel'
-      : '2 tbsp butter · 1 ½ cup flour · ¼ tsp salt'
+      ? '2 c. à soupe de beurre · ½ tasse de farine · ¼ c. à thé de sel'
+      : '2 tbsp butter · ½ cup flour · ¼ tsp salt'
   return (
     <OperatorSection title={t.operator.measureColorsTitle} help={help} helpKey="measureColors">
       <div className="measure-colors">

@@ -10,11 +10,13 @@
 // │           "1" "2" … or a mixed "1 1/2"  (see qtyKey() in measure.ts)       │
 // │    unit = "tsp" (c. à thé) | "tbsp" (c. à soupe) | "cup" (tasse)           │
 // │                                                                           │
-// │  These six are the physical spoons in the set (the label print + a calm,   │
-// │  lighting-corrected version of each band colour). A tool NOT in the set    │
-// │  (any cup, or an odd spoon size) falls back to a muted per-unit tint — it  │
-// │  still gets a tappable read-aloud pill, just not a vivid tool colour. Add  │
-// │  more keys here if the kitchen gains colour-coded cups.                    │
+// │  Six physical spoons + a measuring-cup set, each a distinct colour so a     │
+// │  child can grab the right tool (the label print + a calm, lighting-         │
+// │  corrected band colour for the spoons; a cool-toned default palette for the │
+// │  cups, which a household recolours to match its own cups in Réglages). A    │
+// │  size NOT in either set (an odd amount like 2 cups / 1½ tbsp) falls back to │
+// │  a muted per-unit tint — it still gets a tappable read-aloud pill, just not │
+// │  a vivid tool colour.                                                       │
 // └─────────────────────────────────────────────────────────────────────────┘
 import type { Measure, MeasureUnit } from './measure'
 
@@ -30,6 +32,17 @@ export const DEFAULT_MEASURE_COLORS: Record<string, string> = {
   '1/2|tsp': '#5F7A33', // forest green (label "1/2 tsp")
   '1/4|tsp': '#2BA39A', // teal         (label "1/4 tsp")
   '1/8|tsp': '#E8762A', // orange       (label "1/8 tsp")
+  // — cup (tasse) — a measuring-cup set: the common nested sizes, each its own
+  // colour like the spoons so "¼ tasse" reads the same way as "¼ c. à soupe".
+  // Cool-toned defaults (the household has no specific coded cups yet — recolour
+  // to match real cups in Réglages ▸ Affichage). Other amounts (2 cups, 1½ cup)
+  // still fall back to the muted per-unit "cup" tint below.
+  '1|cup': '#2F6DB3', // blue
+  '3/4|cup': '#6457B0', // indigo
+  '2/3|cup': '#8E54A3', // purple
+  '1/2|cup': '#B85288', // rose
+  '1/3|cup': '#C8743A', // terracotta
+  '1/4|cup': '#4F9E63', // green
 }
 
 // No colour-coded tool for this amount — a soft, greyed tint per unit so the pill
@@ -38,7 +51,7 @@ export const DEFAULT_MEASURE_COLORS: Record<string, string> = {
 export const DEFAULT_UNIT_FALLBACK: Record<MeasureUnit, string> = {
   tsp: '#B6A0AE', // soft mauve-grey
   tbsp: '#A9B49A', // soft sage-grey
-  cup: '#9DB9C4', // soft blue-grey (the set has no cups)
+  cup: '#9DB9C4', // soft blue-grey (any cup amount not in the set above)
 }
 
 // A household's colour overrides: tool keys ("1|tbsp") and per-unit fallbacks keyed

@@ -342,22 +342,6 @@ export function Liste() {
         submitVariant="primary"
         busy={adding}
         voice={voice}
-        // A small magnifier beside Ajouter — searching the week's flyers for an
-        // item is a frequent move, so it earns a one-tap shortcut here instead of
-        // living only behind the ＋ Add sheet → Circulaires.
-        trailing={
-          // Sharing the list moved to the ＋ Add sheet (→ "Partager"), so the page
-          // stays just the list + the one frequent flyer-search shortcut.
-          <button
-            type="button"
-            className="edit-field__icon-btn help-pick"
-            onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
-            aria-label={t.shop.browse}
-            title={t.shop.browse}
-          >
-            <Icon name="magnifying-glass-bold" size={17} />
-          </button>
-        }
         placeholder={
           voice.listening
             ? t.capture.listening
@@ -367,6 +351,20 @@ export function Liste() {
         }
         ariaLabel={t.list.addPlaceholder}
       />
+      </div>
+
+      {/* Searching the week's flyers for an item is a frequent move, so it earns
+          a real, prominent one-tap shortcut here — a full marigold "pop" button,
+          not a tucked-away magnifier — instead of living only behind the ＋ Add
+          sheet → Circulaires. */}
+      <div className="list-actions">
+        <button
+          type="button"
+          className="btn btn--primary help-pick"
+          onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
+        >
+          <InlineIcon name="magnifying-glass-bold" /> {t.shop.browse}
+        </button>
       </div>
       {help.bubbleFor('flyer')}
 

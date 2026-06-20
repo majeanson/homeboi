@@ -588,7 +588,9 @@
   box-shadow:
     var(--shadow-sm),
     inset 0 0 0 1px rgba(0, 0, 0, 0.05);
-  object-fit: cover;
+  /* contain (not cover) so a drawing made at any aspect ratio — whoever's device
+     drew it — shows whole, never cropped. The full-width rule below keeps this. */
+  object-fit: contain;
 }
 /* A drawing or shared photo deserves to be seen — span the full notes row and
    show it at a readable size. object-fit: contain preserves the full canvas. */

@@ -26,10 +26,11 @@ export interface MeasureSwatch {
   def: string // the default colour (the stock spoon set / unit tint)
 }
 
-// The nine editable swatches: the six physical spoons (exact amount + unit), then
-// the three per-unit fallbacks used for any OTHER amount of that unit (e.g. a cup,
-// or an odd spoon size not in the set). Order = how they read in the settings grid.
-// Keep these ids in sync with functions/_lib/measureColors.ts (the PATCH validator).
+// The editable swatches: the six physical spoons, then the six measuring-cup sizes
+// (both keyed by exact amount + unit), then the three per-unit fallbacks used for
+// any OTHER amount of that unit (e.g. 2 cups, or an odd spoon size not in a set).
+// Order = how they read in the settings grid. Keep these ids in sync with
+// functions/_lib/measureColors.ts (the PATCH validator).
 export const MEASURE_SWATCHES: MeasureSwatch[] = [
   { id: '1|tbsp', kind: 'tool', unit: 'tbsp', def: DEFAULT_MEASURE_COLORS['1|tbsp'], label: { fr: '1 c. à soupe', en: '1 tbsp' } },
   { id: '1/2|tbsp', kind: 'tool', unit: 'tbsp', def: DEFAULT_MEASURE_COLORS['1/2|tbsp'], label: { fr: '½ c. à soupe', en: '½ tbsp' } },
@@ -37,9 +38,15 @@ export const MEASURE_SWATCHES: MeasureSwatch[] = [
   { id: '1/2|tsp', kind: 'tool', unit: 'tsp', def: DEFAULT_MEASURE_COLORS['1/2|tsp'], label: { fr: '½ c. à thé', en: '½ tsp' } },
   { id: '1/4|tsp', kind: 'tool', unit: 'tsp', def: DEFAULT_MEASURE_COLORS['1/4|tsp'], label: { fr: '¼ c. à thé', en: '¼ tsp' } },
   { id: '1/8|tsp', kind: 'tool', unit: 'tsp', def: DEFAULT_MEASURE_COLORS['1/8|tsp'], label: { fr: '⅛ c. à thé', en: '⅛ tsp' } },
+  { id: '1|cup', kind: 'tool', unit: 'cup', def: DEFAULT_MEASURE_COLORS['1|cup'], label: { fr: '1 tasse', en: '1 cup' } },
+  { id: '3/4|cup', kind: 'tool', unit: 'cup', def: DEFAULT_MEASURE_COLORS['3/4|cup'], label: { fr: '¾ tasse', en: '¾ cup' } },
+  { id: '2/3|cup', kind: 'tool', unit: 'cup', def: DEFAULT_MEASURE_COLORS['2/3|cup'], label: { fr: '⅔ tasse', en: '⅔ cup' } },
+  { id: '1/2|cup', kind: 'tool', unit: 'cup', def: DEFAULT_MEASURE_COLORS['1/2|cup'], label: { fr: '½ tasse', en: '½ cup' } },
+  { id: '1/3|cup', kind: 'tool', unit: 'cup', def: DEFAULT_MEASURE_COLORS['1/3|cup'], label: { fr: '⅓ tasse', en: '⅓ cup' } },
+  { id: '1/4|cup', kind: 'tool', unit: 'cup', def: DEFAULT_MEASURE_COLORS['1/4|cup'], label: { fr: '¼ tasse', en: '¼ cup' } },
   { id: 'unit:tbsp', kind: 'unit', unit: 'tbsp', def: DEFAULT_UNIT_FALLBACK.tbsp, label: { fr: 'c. à soupe (autre quantité)', en: 'tablespoon (other amount)' } },
   { id: 'unit:tsp', kind: 'unit', unit: 'tsp', def: DEFAULT_UNIT_FALLBACK.tsp, label: { fr: 'c. à thé (autre quantité)', en: 'teaspoon (other amount)' } },
-  { id: 'unit:cup', kind: 'unit', unit: 'cup', def: DEFAULT_UNIT_FALLBACK.cup, label: { fr: 'Tasse', en: 'Cup' } },
+  { id: 'unit:cup', kind: 'unit', unit: 'cup', def: DEFAULT_UNIT_FALLBACK.cup, label: { fr: 'Tasse (autre quantité)', en: 'Cup (other amount)' } },
 ]
 
 const EMPTY: MeasureOverrides = {}
