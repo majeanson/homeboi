@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useLang, useT } from '../../i18n'
+import { useLang, useT, type Lang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { RecentsPanel } from '../RecentsPanel'
@@ -273,17 +273,25 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
   const speak = useSpeak()
   // The GLOBAL read-aloud language — applies to ALL narration everywhere (#TTS).
   const readLang = useReadLang()
-  const voicesForLang = useVoiceList(lang)
-  const [voice, setVoice] = useState<string>(() => getVoicePref(lang))
+  // Which language's VOICE we're configuring. A French app can read recipes in
+  // English (read-aloud language / a recipe's own language), so you must be able to
+  // pick a voice for EITHER language — not just the UI one. Defaults to the
+  // read-aloud language when forced, else the UI language; the FR/EN toggle below
+  // switches it. The pref is stored per language and the engine reads the matching
+  // voice whenever it speaks that language (#TTS).
+  const [voiceLang, setVoiceLang] = useState<Lang>(() => (readLang === 'auto' ? lang : readLang))
+  const voicesForLang = useVoiceList(voiceLang)
+  const [voice, setVoice] = useState<string>(() => getVoicePref(voiceLang))
   const [rate, setRateState] = useState<number>(() => getRate())
 
-  // The override is stored per language; when the UI language flips, show that
-  // language's saved pick (and its installed voices) instead of the stale one.
+  // Show the saved pick (and installed voices) for whichever language is selected.
   useEffect(() => {
-    setVoice(getVoicePref(lang))
-  }, [lang])
+    setVoice(getVoicePref(voiceLang))
+  }, [voiceLang])
 
-  const available = hasVoiceFor(lang) || voicesForLang.length > 0
+  // The section is useful whenever the device can speak EITHER language; the
+  // per-language "no voice installed" hint below guides installing the missing one.
+  const available = hasVoiceFor('fr') || hasVoiceFor('en')
   // Read-only guest: voice prefs are write-ish device controls — hide the whole
   // section (the test button + select + slider all mutate the saved pref).
   const ro = isGuest()
@@ -306,14 +314,25 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
             </div>
           </div>
 
-          <label className="operator__seg">
+          {/* Pick the voice for EACH language independently — a French app can still
+              choose a good English voice for recipes read in English. */}
+          <div className="operator__seg">
             <span className="operator__seg-label mono">{t.operator.voiceLabel}</span>
+            <div className="picker-chips mono">
+              <Chip selected={voiceLang === 'fr'} onClick={() => setVoiceLang('fr')}>{t.recipes.readLangFr}</Chip>
+              <Chip selected={voiceLang === 'en'} onClick={() => setVoiceLang('en')}>{t.recipes.readLangEn}</Chip>
+            </div>
+          </div>
+          {voicesForLang.length === 0 ? (
+            <p className="operator__hint mono">{t.operator.voiceNoneLang}</p>
+          ) : (
             <select
               className="input"
+              aria-label={t.operator.voiceLabel}
               value={voice}
               onChange={(e) => {
                 setVoice(e.target.value)
-                setVoicePref(lang, e.target.value)
+                setVoicePref(voiceLang, e.target.value)
               }}
             >
               <option value="">{t.operator.voiceAuto}</option>
@@ -323,7 +342,7 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
                 </option>
               ))}
             </select>
-          </label>
+          )}
 
           <label className="operator__seg">
             <span className="operator__seg-label mono">
@@ -343,7 +362,13 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
             />
           </label>
 
-          <button type="button" className="btn" onClick={() => speak(t.operator.voiceSample)}>
+          {/* Test in the SELECTED voice language, with a phrase in that language —
+              so a French app testing the English voice hears English (the point). */}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => speak(voiceLang === 'fr' ? 'Allô ! Voici la voix de lecture.' : 'Hello! This is the reading voice.', voiceLang)}
+          >
             <InlineIcon name="speaker-high-bold" /> {t.operator.voiceTest}
           </button>
         </div>

@@ -378,14 +378,14 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Lecture dans la bonne langue', en: 'Read aloud in the right language' },
+        label: { fr: 'Lecture à voix haute dans la bonne langue', en: 'Read aloud in the right language' },
         detail: {
-          fr: 'Une recette gardée en anglais dans une maison en français ? Dans la fiche de la recette, règle « Lecture à voix haute » sur Anglais : le mode cuisine lira ses étapes avec une voix anglaise au lieu de les dire avec un accent français. « Auto » suit la langue de l’application. (Il faut qu’une voix anglaise soit installée sur l’appareil — la plupart en ont une.)',
-          en: 'A recipe kept in English inside a French household? In the recipe’s card, set “Read aloud” to English: cook mode will read its steps with an English voice instead of saying them with a French accent. “Auto” follows the app’s language. (The device needs an English voice installed — most have one.)',
+          fr: 'Trois réglages, du plus large au plus précis. (1) Réglages ▸ Affichage ▸ Voix ▸ « Langue de lecture » : Auto suit l’application, ou force tout en Français/Anglais. (2) Une recette gardée dans l’autre langue ? Sa fiche a son propre « Lecture à voix haute » qui la lit toujours dans SA langue — même dans une maison en français, ses étapes et son nom (jusque sur la grille bambin) sont dits avec une voix anglaise. (3) Sous « Voix », choisis la voix précise pour CHAQUE langue (Français / Anglais) et teste-la. Il faut qu’une voix de cette langue soit installée sur l’appareil; sinon, un message t’indique où l’ajouter. Note iPad/iPhone : le navigateur n’a souvent accès qu’aux voix « par défaut » — une voix « Améliorée » du système peut ne pas être disponible ici.',
+          en: 'Three controls, broad to precise. (1) Settings ▸ Display ▸ Voice ▸ “Reading language”: Auto follows the app, or force everything to French/English. (2) A recipe kept in the other language? Its card has its own “Read aloud” that always reads it in ITS language — even in a French household, its steps and name (right down to the toddler grid) are said with an English voice. (3) Under “Voice”, pick the exact voice for EACH language (French / English) and test it. The device needs a voice for that language installed; if not, a message points you where to add one. iPad/iPhone note: the browser often only has the “default” voices — a system “Enhanced” voice may not be available here.',
         },
         why: {
-          fr: 'Pour qu’un tout-petit qui écoute la recette entende les mots bien prononcés, peu importe la langue où elle a été notée.',
-          en: 'So a little one listening to the recipe hears the words pronounced properly, whatever language it was written in.',
+          fr: 'Pour qu’un tout-petit qui écoute entende les mots bien prononcés, peu importe la langue — et que tu puisses choisir la meilleure voix disponible pour chacune.',
+          en: 'So a little one listening hears the words pronounced properly, whatever the language — and you can pick the best available voice for each.',
         },
       },
       {
