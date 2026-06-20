@@ -712,11 +712,6 @@ export function Board() {
         <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
       ) : (
         <>
-          {/* Family drawings (#14) live only here in the Grille view — tap one to
-              add to it. Kept off the compact Next/Lanes/Month layouts. The door to
-              the lasting collection ("Mes dessins") rides as a trailing chip inside
-              the strip rather than on its own row. */}
-          <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
           {/* The "today" zone: tonight's supper and today's weather as equal hero
               cards (mirrors the toddler heroes row), so weather has a real bubble
               instead of hiding in the timestamp line. The dressing tip rides under
@@ -938,6 +933,13 @@ export function Board() {
               {upcomingChores.map((c) => choreAct(c, true))}
             </Section>
           )}
+
+            {/* Family drawings (#14) live only here in the Grille view, just above
+                the photos — tap one to add to it. Kept off the compact
+                Next/Lanes/Month layouts. The door to the lasting collection
+                ("Mes dessins") rides as a trailing chip inside the strip rather
+                than on its own row. */}
+            <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
 
             <PhotoFrame />
           </div>

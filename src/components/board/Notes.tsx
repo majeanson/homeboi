@@ -2,7 +2,7 @@ import { useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
-import { api, ApiError } from '../../lib/api'
+import { api, ApiError, isStatus } from '../../lib/api'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { useSpeak } from '../../lib/speak'
 import { isGuest } from '../../lib/device'
@@ -47,6 +47,11 @@ export function Notes({
   const audioRef = useRef<HTMLAudioElement | null>(null)
   // A drawing being re-opened in DrawPad to add to it (#14, the shared family doodle).
   const [editing, setEditing] = useState<NoteRow | null>(null)
+  // A brand-new drawing being created from this strip's quick-add (parallel to the
+  // ＋ "Note rapide" sheet's MemoControls) — opens a blank DrawPad and POSTs a note.
+  const [creating, setCreating] = useState(false)
+  // R2 unbound (503 on save) → hide the quick-add draw button, like MemoControls.
+  const [drawHidden, setDrawHidden] = useState(false)
   // Read-only guest: clearing a note is a write. In the parent lens the card becomes
   // inert display text (no ✕, no tap). The toddler read-aloud stays (it's a read).
   const ro = isGuest()
@@ -55,14 +60,14 @@ export function Notes({
   const shown = notes.filter((n) => (variant === 'drawings' ? isDrawing(n) : variant === 'notes' ? !isDrawing(n) : true))
   const title = variant === 'drawings' ? t.notes.drawings : t.notes.title
 
-  // Save the added-to drawing: upload the new PNG + editable scene (#1), then PATCH
-  // the note in place (re-tints to whoever drew, resurfaces it). Media uploads can't
-  // be queued offline (the R2 blob must land), so this uses api() directly like
-  // MemoControls; the board poll/realtime reconciles the card.
-  async function saveDrawing(png: Blob, scene: string) {
-    const note = editing
+  // Persist a drawing: upload the PNG + editable scene (#1), then either PATCH an
+  // existing note in place (adding to it — re-tints to whoever drew, resurfaces it)
+  // or POST a brand-new fridge note (the quick-add path, mirroring MemoControls).
+  // Media uploads can't be queued offline (the R2 blob must land), so this uses
+  // api() directly; the board poll/realtime reconciles the card.
+  async function saveDrawing(png: Blob, scene: string, note: NoteRow | null) {
     setEditing(null)
-    if (!note) return
+    setCreating(false)
     try {
       const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: png })
       let sceneKey: string | undefined
@@ -74,9 +79,11 @@ export function Notes({
           /* scene optional — keep the PNG even if the scene upload fails */
         }
       }
-      await api('notes', { method: 'PATCH', body: { id: note.id, media_key: key, scene_key: sceneKey } })
+      if (note) await api('notes', { method: 'PATCH', body: { id: note.id, media_key: key, scene_key: sceneKey } })
+      else await api('notes', { method: 'POST', body: { media_kind: 'drawing', media_key: key, scene_key: sceneKey, text: '' } })
     } catch (e) {
-      if (!(e instanceof ApiError)) throw e // server said no → let the refetch correct it
+      if (isStatus(e, 503)) setDrawHidden(true) // R2 unbound → hide the quick-add
+      else if (!(e instanceof ApiError)) throw e // server said no → let the refetch correct it
     } finally {
       qc.invalidateQueries({ queryKey: BOARD_KEY })
     }
@@ -108,7 +115,12 @@ export function Notes({
   // Nothing to show and nothing being edited — render nothing. The trailing
   // `action` (the gallery door) keeps the section alive even with zero current
   // drawings, since saved drawings live on in the gallery regardless.
-  if (!shown.length && !editing && !action) return null
+  if (!shown.length && !editing && !creating && !action) return null
+
+  // The strip's own quick-add: parent lens (drawings variant is never toddler) can
+  // start a NEW drawing right here, not only from the ＋ "Note rapide" sheet. Hidden
+  // for a read-only guest and when R2 is unbound (503 surfaced on a prior save).
+  const canDraw = variant === 'drawings' && !ro && !drawHidden
 
   return (
     <section className={'notes' + (toddler ? ' notes--kid' : '') + (variant === 'drawings' ? ' notes--drawings' : '')} aria-label={title}>
@@ -213,6 +225,15 @@ export function Notes({
             </button>
           )
         })}
+        {/* Quick-add: start a new drawing straight from the strip (same DrawPad +
+            POST as the ＋ sheet). Sits beside the gallery door as a trailing chip. */}
+        {canDraw && (
+          <div className="notes__action">
+            <button type="button" className="chip" onClick={() => setCreating(true)}>
+              <InlineIcon name="pencil-simple-bold" /> {t.memo.draw}
+            </button>
+          </div>
+        )}
         {/* Trailing door (e.g. "La galerie") — a flex item beside the cards on a
             wide tablet, wrapping under them on a phone. */}
         {action && <div className="notes__action">{action}</div>}
@@ -224,12 +245,21 @@ export function Notes({
           initial={editing.media_key ? imgUrl(editing.media_key) : undefined}
           initialSceneUrl={editing.scene_key ? imgUrl(editing.scene_key) : undefined}
           onCancel={() => setEditing(null)}
-          onSave={(png, scene) => void saveDrawing(png, scene)}
+          onSave={(png, scene) => void saveDrawing(png, scene, editing)}
           // Keep a permanent copy in « Mes dessins » — available to toddlers too, so
           // a child can save their own art (not just pin the fridge note).
           onKeep={(png, scene) => void keepInGallery(png, scene).catch(() => {})}
           // Make-routine stays parent-only: it leaves into the parent routine builder.
           onMakeRoutine={toddler ? undefined : (png) => void toRoutine(png)}
+        />
+      )}
+      {creating && (
+        <DrawPad
+          open
+          onCancel={() => setCreating(false)}
+          onSave={(png, scene) => void saveDrawing(png, scene, null)}
+          onKeep={(png, scene) => void keepInGallery(png, scene).catch(() => {})}
+          onMakeRoutine={(png) => void toRoutine(png)}
         />
       )}
     </section>

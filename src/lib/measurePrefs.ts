@@ -26,7 +26,7 @@ export interface MeasureSwatch {
   def: string // the default colour (the stock spoon set / unit tint)
 }
 
-// The editable swatches: the six physical spoons, then the six measuring-cup sizes
+// The editable swatches: the six physical spoons, then the seven measuring-cup sizes
 // (both keyed by exact amount + unit), then the three per-unit fallbacks used for
 // any OTHER amount of that unit (e.g. 2 cups, or an odd spoon size not in a set).
 // Order = how they read in the settings grid. Keep these ids in sync with
@@ -44,6 +44,7 @@ export const MEASURE_SWATCHES: MeasureSwatch[] = [
   { id: '1/2|cup', kind: 'tool', unit: 'cup', def: DEFAULT_MEASURE_COLORS['1/2|cup'], label: { fr: '½ tasse', en: '½ cup' } },
   { id: '1/3|cup', kind: 'tool', unit: 'cup', def: DEFAULT_MEASURE_COLORS['1/3|cup'], label: { fr: '⅓ tasse', en: '⅓ cup' } },
   { id: '1/4|cup', kind: 'tool', unit: 'cup', def: DEFAULT_MEASURE_COLORS['1/4|cup'], label: { fr: '¼ tasse', en: '¼ cup' } },
+  { id: '1/8|cup', kind: 'tool', unit: 'cup', def: DEFAULT_MEASURE_COLORS['1/8|cup'], label: { fr: '⅛ tasse', en: '⅛ cup' } },
   { id: 'unit:tbsp', kind: 'unit', unit: 'tbsp', def: DEFAULT_UNIT_FALLBACK.tbsp, label: { fr: 'c. à soupe (autre quantité)', en: 'tablespoon (other amount)' } },
   { id: 'unit:tsp', kind: 'unit', unit: 'tsp', def: DEFAULT_UNIT_FALLBACK.tsp, label: { fr: 'c. à thé (autre quantité)', en: 'teaspoon (other amount)' } },
   { id: 'unit:cup', kind: 'unit', unit: 'cup', def: DEFAULT_UNIT_FALLBACK.cup, label: { fr: 'Tasse (autre quantité)', en: 'Cup (other amount)' } },

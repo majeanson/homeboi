@@ -22,6 +22,7 @@ export function MemoControls({ onDone }: { onDone: () => void }) {
   const [recording, setRecording] = useState(false)
   const [busy, setBusy] = useState(false)
   const [draw, setDraw] = useState(false)
+  const [drawPhoto, setDrawPhoto] = useState(false) // opened straight into the photo flow (#14b)
   const [hidden, setHidden] = useState(false) // R2 unbound (503) → no media notes here
   const toRoutine = useDrawingToRoutine()
   const keepInGallery = useSaveToGallery()
@@ -114,20 +115,27 @@ export function MemoControls({ onDone }: { onDone: () => void }) {
         <button type="button" className="btn" onClick={() => setDraw(true)} disabled={busy || recording}>
           <Icon name="pencil-simple-bold" size={18} /> {t.memo.draw}
         </button>
+        <button type="button" className="btn" onClick={() => setDrawPhoto(true)} disabled={busy || recording}>
+          <Icon name="image-square-bold" size={18} /> {t.memo.drawPhoto}
+        </button>
       </div>
       <DrawPad
-        open={draw}
-        onCancel={() => setDraw(false)}
+        open={draw || drawPhoto}
+        pickPhotoOnOpen={drawPhoto}
+        onCancel={() => { setDraw(false); setDrawPhoto(false) }}
         onSave={(png, scene) => {
           setDraw(false)
+          setDrawPhoto(false)
           void postMemo('drawing', png, scene)
         }}
         onKeep={(png, scene) => {
           setDraw(false)
+          setDrawPhoto(false)
           void keepInGallery(png, scene).catch(() => {})
         }}
         onMakeRoutine={(png) => {
           setDraw(false)
+          setDrawPhoto(false)
           void toRoutine(png)
         }}
       />

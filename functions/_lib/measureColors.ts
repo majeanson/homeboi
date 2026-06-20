@@ -1,7 +1,7 @@
 import type { Env } from './env'
 
 // Household measuring-tool colours (migration 0048). The editable swatches — six
-// physical spoons + six measuring-cup sizes (qty|unit) + three per-unit fallbacks —
+// physical spoons + seven measuring-cup sizes (qty|unit) + three per-unit fallbacks —
 // set in Réglages ▸ Affichage and read back by every recipe surface so the measure
 // pills + Cook-mode scoop circles match the household's own tools everywhere.
 // Validation lives here so the read path and the PATCH share one definition of "a
@@ -10,7 +10,7 @@ import type { Env } from './env'
 
 const TOOL_KEYS = [
   '1|tbsp', '1/2|tbsp', '1|tsp', '1/2|tsp', '1/4|tsp', '1/8|tsp',
-  '1|cup', '3/4|cup', '2/3|cup', '1/2|cup', '1/3|cup', '1/4|cup',
+  '1|cup', '3/4|cup', '2/3|cup', '1/2|cup', '1/3|cup', '1/4|cup', '1/8|cup',
 ] as const
 const UNIT_KEYS = ['unit:tbsp', 'unit:tsp', 'unit:cup'] as const
 const VALID = new Set<string>([...TOOL_KEYS, ...UNIT_KEYS])

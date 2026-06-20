@@ -32,17 +32,18 @@ export const DEFAULT_MEASURE_COLORS: Record<string, string> = {
   '1/2|tsp': '#5F7A33', // forest green (label "1/2 tsp")
   '1/4|tsp': '#2BA39A', // teal         (label "1/4 tsp")
   '1/8|tsp': '#E8762A', // orange       (label "1/8 tsp")
-  // — cup (tasse) — a measuring-cup set: the common nested sizes, each its own
-  // colour like the spoons so "¼ tasse" reads the same way as "¼ c. à soupe".
-  // Cool-toned defaults (the household has no specific coded cups yet — recolour
-  // to match real cups in Réglages ▸ Affichage). Other amounts (2 cups, 1½ cup)
+  // — cup (tasse) — the household's real colour-coded measuring-cup set, a fan of
+  // seven nested cups, each its own colour like the spoons so "¼ tasse" reads the
+  // same way as "¼ c. à soupe". Colours matched to the physical cups (teal → sage →
+  // lavender → steel-blue → terracotta → gold → pink). Other amounts (2 cups, 1½ cup)
   // still fall back to the muted per-unit "cup" tint below.
-  '1|cup': '#2F6DB3', // blue
-  '3/4|cup': '#6457B0', // indigo
-  '2/3|cup': '#8E54A3', // purple
-  '1/2|cup': '#B85288', // rose
-  '1/3|cup': '#C8743A', // terracotta
-  '1/4|cup': '#4F9E63', // green
+  '1|cup': '#86C7BE', // teal      (largest)
+  '3/4|cup': '#A9BD8C', // sage green
+  '2/3|cup': '#B3A6D6', // lavender
+  '1/2|cup': '#6F93AC', // steel blue
+  '1/3|cup': '#B36545', // terracotta
+  '1/4|cup': '#E2A82C', // golden yellow
+  '1/8|cup': '#EA9DAE', // pink      (smallest)
 }
 
 // No colour-coded tool for this amount — a soft, greyed tint per unit so the pill

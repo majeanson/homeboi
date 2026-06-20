@@ -230,6 +230,7 @@ export function DrawPad({
   onMakeRoutine,
   initial,
   initialSceneUrl,
+  pickPhotoOnOpen,
   toddler,
 }: {
   open: boolean
@@ -245,6 +246,9 @@ export function DrawPad({
   initial?: string
   // Preferred: a URL to the editable scene JSON; rebuilt into editable layers.
   initialSceneUrl?: string
+  // #14b — open straight into the "draw over a photo" flow: prompts for a photo and
+  // shows a one-tap "Choisir une photo" target over the empty stage until one is set.
+  pickPhotoOnOpen?: boolean
   toddler?: boolean
 }) {
   const t = useT()
@@ -276,6 +280,12 @@ export function DrawPad({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const padRef = useRef<SignaturePad | null>(null)
   const baseImgRef = useRef<HTMLImageElement | null>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  // #14b — alpha for the base image. 1 for an old PNG-only drawing (drawn opaque,
+  // unchanged); a user-picked watermark photo starts faint so the drawing reads on
+  // top. WYSIWYG: whatever fade is shown is what bakes into the saved PNG, so 0%
+  // erases the photo (a clean trace) and 100% keeps it (annotating the photo).
+  const photoAlphaRef = useRef(1)
   const pixelsRef = useRef<Map<string, string>>(new Map())
   const stampsRef = useRef<Stamp[]>([])
   const shapesRef = useRef<Shape[]>([])
@@ -321,6 +331,8 @@ export function DrawPad({
   const [tplOpen, setTplOpen] = useState(false)
   const [traceCh, setTraceCh] = useState('Aa')
   const [shape, setShape] = useState<ColoringShape>('star')
+  const [hasPhoto, setHasPhoto] = useState(false) // a user watermark photo is loaded
+  const [photoAlpha, setPhotoAlpha] = useState(0.4)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => void (modeRef.current = mode), [mode])
@@ -336,6 +348,12 @@ export function DrawPad({
     render(padRef.current?.toData() ?? [])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tpl, traceCh, shape])
+  // #14b — the watermark fade slider repaints the base photo at the new alpha.
+  useEffect(() => {
+    photoAlphaRef.current = photoAlpha
+    if (hasPhoto) render(padRef.current?.toData() ?? [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoAlpha])
 
   useModal(rootRef, onCancel, { open })
 
@@ -370,7 +388,11 @@ export function DrawPad({
     const img = baseImgRef.current
     if (img && img.width && img.height) {
       const s = Math.min(w / img.width, h / img.height)
+      // #14b — a user watermark photo draws at the chosen fade; an old flat base PNG
+      // (photoAlphaRef stays 1) is unaffected. globalAlpha is restored by ctx.restore().
+      ctx.globalAlpha = photoAlphaRef.current
       ctx.drawImage(img, (w - img.width * s) / 2, (h - img.height * s) / 2, img.width * s, img.height * s)
+      ctx.globalAlpha = 1
     }
     for (const [key, col] of pixelsRef.current) {
       const [coords, cellStr] = key.split(':')
@@ -613,6 +635,8 @@ export function DrawPad({
       pad.off()
       padRef.current = null
       baseImgRef.current = null
+      photoAlphaRef.current = 1
+      setHasPhoto(false)
       pixelsRef.current = new Map()
       stampsRef.current = []
       shapesRef.current = []
@@ -674,6 +698,42 @@ export function DrawPad({
     const s = SIZES[size]
     pad.minWidth = s.min; pad.maxWidth = s.max; pad.dotSize = s.dot
   }, [size])
+
+  // #14b — load a chosen photo as the watermark base layer (drawn under every other
+  // layer, like `initial` but with an adjustable fade). The bytes stay client-side —
+  // only the flattened PNG is ever uploaded — so this needs no R2/endpoint change.
+  function loadPhotoUrl(url: string, revoke: boolean) {
+    const img = new Image()
+    img.onload = () => {
+      baseImgRef.current = img
+      setHasPhoto(true)
+      photoAlphaRef.current = 0.4
+      setPhotoAlpha(0.4)
+      render(padRef.current?.toData() ?? [])
+      if (revoke) URL.revokeObjectURL(url)
+    }
+    img.onerror = () => { if (revoke) URL.revokeObjectURL(url) }
+    img.src = url
+  }
+  function onPhotoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.currentTarget.files?.[0]
+    e.currentTarget.value = '' // allow re-picking the same file
+    if (file) loadPhotoUrl(URL.createObjectURL(file), true)
+  }
+  function removePhoto() {
+    baseImgRef.current = null
+    photoAlphaRef.current = 1
+    setHasPhoto(false)
+    render(padRef.current?.toData() ?? [])
+  }
+  // Opened via "Sur une photo": try to surface the file picker immediately (the
+  // tap that opened the pad is usually still a live user gesture). If a browser
+  // blocks the programmatic click, the centred "Choisir une photo" prompt over the
+  // empty stage is the one-tap fallback.
+  useEffect(() => {
+    if (open && pickPhotoOnOpen && !hasPhoto) photoInputRef.current?.click()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, pickPhotoOnOpen])
 
   function pickColor(c: string) {
     setColor(c)
@@ -824,6 +884,7 @@ export function DrawPad({
           ))}
         </div>
         <div className="drawpad__tools">
+          <button type="button" className={'drawpad__tool' + (hasPhoto ? ' is-on' : '')} onClick={() => photoInputRef.current?.click()} aria-label={hasPhoto ? t.memo.photoChange : t.memo.photoAdd}><Icon name="image-square-bold" size={18} /></button>
           <button type="button" className={'drawpad__tool' + (tplOpen ? ' is-on' : '')} onClick={() => setTplOpen((v) => !v)} aria-label={t.memo.template} aria-pressed={tplOpen}><Icon name="book-open-bold" size={18} /></button>
           <button type="button" className="drawpad__tool" onClick={undo} aria-label={t.memo.undo}><Icon name="arrow-counter-clockwise-bold" size={18} /></button>
           <button type="button" className="drawpad__tool" onClick={redo} aria-label={t.memo.redo}><Icon name="repeat-bold" size={18} /></button>
@@ -917,10 +978,42 @@ export function DrawPad({
         </div>
       )}
 
+      {/* #14b — photo fade bar: a slider + quick presets to dial the watermark, so a
+          child can crank it bright to follow a tracing or fade it out for a clean
+          line drawing. Only shown once a photo is loaded. */}
+      {hasPhoto && (
+        <div className="drawpad__photobar">
+          <span className="drawpad__tpllabel mono" aria-hidden="true"><Icon name="image-square-bold" size={15} /> {t.memo.photoOpacity}</span>
+          <input
+            type="range"
+            className="drawpad__photorange"
+            min={0}
+            max={100}
+            step={5}
+            value={Math.round(photoAlpha * 100)}
+            onChange={(e) => setPhotoAlpha(Number(e.currentTarget.value) / 100)}
+            aria-label={t.memo.photoOpacity}
+          />
+          {([['photoFaint', 0.2], ['photoSoft', 0.4], ['photoStrong', 0.7], ['photoFull', 1]] as const).map(([label, v]) => (
+            <button key={label} type="button" className={'chip' + (Math.abs(photoAlpha - v) < 0.03 ? ' is-on' : '')} onClick={() => setPhotoAlpha(v)} aria-pressed={Math.abs(photoAlpha - v) < 0.03}>{t.memo[label]}</button>
+          ))}
+          <button type="button" className="chip drawpad__photoremove" onClick={removePhoto}><Icon name="trash-bold" size={14} /> {t.memo.photoRemove}</button>
+        </div>
+      )}
+
       <div className="drawpad__stage">
         <canvas ref={canvasRef} className="drawpad__canvas" />
         {mode === 'pixel' && <div className="drawpad__grid" aria-hidden="true" style={{ '--cell': `${SIZES[size].cell}px` } as React.CSSProperties} />}
+        {/* One-tap prompt for the "Sur une photo" entry when no photo is set yet. */}
+        {pickPhotoOnOpen && !hasPhoto && (
+          <button type="button" className="drawpad__photoprompt" onClick={() => photoInputRef.current?.click()}>
+            <Icon name="image-square-bold" size={28} />
+            <span>{t.memo.photoChoose}</span>
+          </button>
+        )}
       </div>
+      <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={onPhotoFile} aria-hidden="true" tabIndex={-1} />
+      {pickPhotoOnOpen && hasPhoto && <p className="drawpad__photohint mono" aria-hidden="true">{t.memo.photoHint}</p>}
 
       <div className="drawpad__actions">
         <button type="button" className="btn btn--ghost" onClick={onCancel}>{t.memo.cancel}</button>
