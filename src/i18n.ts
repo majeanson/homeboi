@@ -183,6 +183,7 @@ export const FR = {
     tplTrace: 'Lettre',
     tplDots: 'Quadrillé',
     tplColoring: 'Colorier',
+    traceWords: 'Mots à tracer',
     packs: {
       faces: 'Frimousses',
       animals: 'Animaux',
@@ -1469,6 +1470,7 @@ export const EN: typeof FR = {
     tplTrace: 'Tracing',
     tplDots: 'Dots',
     tplColoring: 'Colour-in',
+    traceWords: 'Words to trace',
     packs: {
       faces: 'Faces',
       animals: 'Animals',

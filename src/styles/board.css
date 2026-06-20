@@ -946,6 +946,18 @@
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent);
 }
+/* #37 — word-tracing chips + their inline label in the scroll row keep their size. */
+.drawpad__tracepick .chip {
+  flex: none;
+}
+.drawpad__traceword-label {
+  flex: none;
+  align-self: center;
+  padding: 0 0.25rem 0 0.6rem;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
 /* Toddler lens: bigger, friendlier targets across the whole pad. */
 .drawpad--kid .drawpad__mode,
 .drawpad--kid .drawpad__size,

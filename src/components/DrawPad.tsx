@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import SignaturePad from 'signature_pad'
 import type { PointGroup } from 'signature_pad'
 import { useT } from '../i18n'
+import { api } from '../lib/api'
+import { CERCLE_KEY } from '../lib/queryKeys'
+import { useRecipes } from '../lib/queryHooks'
+import { drawTraceLine, measureTrace, wrapTrace } from '../lib/traceFont'
 import { useModal } from '../lib/useModal'
 import { Icon } from './Icon'
 
@@ -43,7 +48,18 @@ const PACKS: { key: string; icon: string; items: string[] }[] = [
   { key: 'things', icon: '🚗', items: ['🚗', '⚽', '🏠', '🎈', '🍎', '🍦', '🎨', '📚', '🚀', '🎵'] },
   { key: 'abc', icon: '🔤', items: ['A', 'B', 'C', '1', '2', '3', '❤', '★', '✓', '?'] },
 ]
-const TRACE_CHARS = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz' + '0123456789').split('')
+// #37 letter tracing — capital + lowercase shown together (Aa Bb…), plus digits,
+// plus whole WORDS to trace (a name from Le cercle / the household, or a recipe).
+const TRACE_PAIRS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c) => c + c.toLowerCase())
+const TRACE_DIGITS = '0123456789'.split('')
+// Make a word safe for the single-stroke font (A–Z a–z 0–9 space - '): fold accents
+// to base letters (the font has no « é »), drop other punctuation, keep ≤2 words so
+// it fits a tracing row. "Léa" → "Lea", "Macaroni chinois" → "Macaroni chinois".
+function cleanTraceWord(raw: string | undefined | null): string {
+  const folded = (raw ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '')
+  const words = folded.replace(/[^A-Za-z0-9 '-]/g, ' ').split(/\s+/).filter(Boolean)
+  return words.slice(0, 2).join(' ').slice(0, 18)
+}
 type TemplateKind = 'none' | 'lines' | 'trace' | 'dots' | 'coloring'
 // #37 — the coloring-page library a toddler picks a faint outline from, then
 // traces/colours over. The first six draw via shapePath (also the user shape
@@ -89,17 +105,29 @@ function tplDots(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const g = 32
   for (let y = g; y < h; y += g) for (let x = g; x < w; x += g) { ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI * 2); ctx.fill() }
 }
-function tplTrace(ctx: CanvasRenderingContext2D, w: number, h: number, ch: string) {
+function tplTrace(ctx: CanvasRenderingContext2D, w: number, h: number, text: string) {
   tplLines(ctx, w, h)
+  // SINGLE-LINE (monoline) glyphs from lib/traceFont — one thin dashed centreline
+  // per pen-stroke, not the bold double-walled outline of a serif font. Each row
+  // sits on a ruled line; a long name/word wraps to the next line. Letters big but
+  // sized so a row fits the width.
+  const band = Math.max(64, h / 8)
+  const cap = band * 0.62
+  const margin = band * 0.3
+  const maxW = (w - 2 * margin) / cap // available width in cap-height units
+  const rows = text.trim() ? wrapTrace(text, maxW) : []
+  const maxRows = Math.max(1, Math.floor((h - band * 0.15) / band))
   ctx.save()
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-  // A THIN, non-bold DASHED OUTLINE of the letter — a path to trace along, not a
-  // solid shape to colour in. (No fill: the kid practises the strokes.)
-  ctx.font = `${Math.min(w, h) * 0.7}px Georgia, "Times New Roman", serif`
-  ctx.lineWidth = Math.max(1.5, Math.min(w, h) * 0.006)
-  ctx.strokeStyle = 'rgba(40,40,40,0.32)'
-  ctx.setLineDash([5, 8])
-  ctx.strokeText(ch, w / 2, h / 2)
+  ctx.lineWidth = Math.max(2, Math.min(w, h) * 0.005)
+  ctx.strokeStyle = 'rgba(40,40,40,0.34)'
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round'
+  ctx.setLineDash([6, 7])
+  rows.slice(0, maxRows).forEach((row, i) => {
+    const baseline = band * (i + 1)
+    const rowW = measureTrace(row) * cap
+    const startX = Math.max(margin, (w - rowW) / 2)
+    drawTraceLine(ctx, row, startX, baseline, cap)
+  })
   ctx.setLineDash([])
   ctx.restore()
 }
@@ -220,6 +248,30 @@ export function DrawPad({
   toddler?: boolean
 }) {
   const t = useT()
+  // #37 word tracing — names + recipe titles a child can trace ("trace your name").
+  // Household members + Le cercle for names, the recipe book for words; folded to
+  // the font's A–Z a–z 0–9 alphabet, deduped, capped. Shared caches (cheap).
+  const membersQ = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: { display_name: string }[] }>('members'), enabled: open })
+  const cercleQ = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<{ contacts: { firstName?: string; name?: string }[] }>('cercle'), enabled: open })
+  const recipesQ = useRecipes()
+  const traceWords = useMemo(() => {
+    const raw = [
+      ...(membersQ.data?.members ?? []).map((m) => m.display_name),
+      ...(cercleQ.data?.contacts ?? []).map((c) => c.firstName || c.name || ''),
+      ...(recipesQ.data?.recipes ?? []).map((r) => r.title),
+    ]
+    const out: string[] = []
+    const seen = new Set<string>()
+    for (const r of raw) {
+      const word = cleanTraceWord(r)
+      const key = word.toLowerCase()
+      if (!word || word.length < 2 || seen.has(key)) continue
+      seen.add(key)
+      out.push(word)
+      if (out.length >= 16) break
+    }
+    return out
+  }, [membersQ.data, cercleQ.data, recipesQ.data])
   const rootRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const padRef = useRef<SignaturePad | null>(null)
@@ -245,7 +297,7 @@ export function DrawPad({
   const symmetryRef = useRef<boolean>(false)
   const fillRef = useRef<boolean>(false)
   const shapeTypeRef = useRef<ShapeType>('rect')
-  const tplRef = useRef<{ kind: TemplateKind; ch: string; shape: ColoringShape }>({ kind: 'none', ch: 'A', shape: 'star' })
+  const tplRef = useRef<{ kind: TemplateKind; ch: string; shape: ColoringShape }>({ kind: 'none', ch: 'Aa', shape: 'star' })
   const dragRef = useRef<{ active: boolean; changes: PixelChange[]; last: string | null }>({ active: false, changes: [], last: null })
   const shapeDragRef = useRef<{ active: boolean; x0: number; y0: number } | null>(null)
   // The one pointer that owns the in-progress gesture — a second finger on a
@@ -267,7 +319,7 @@ export function DrawPad({
   const [shapeType, setShapeType] = useState<ShapeType>('rect')
   const [tpl, setTpl] = useState<TemplateKind>('none')
   const [tplOpen, setTplOpen] = useState(false)
-  const [traceCh, setTraceCh] = useState('A')
+  const [traceCh, setTraceCh] = useState('Aa')
   const [shape, setShape] = useState<ColoringShape>('star')
   const [busy, setBusy] = useState(false)
 
@@ -598,7 +650,7 @@ export function DrawPad({
           stampsRef.current = Array.isArray(s.stamps) ? s.stamps : []
           shapesRef.current = Array.isArray(s.shapes) ? s.shapes : []
           pixelsRef.current = new Map(Array.isArray(s.pixels) ? s.pixels : [])
-          if (s.template?.kind) { setTpl(s.template.kind); setTraceCh(s.template.ch || 'A'); setShape(s.template.shape || 'star'); tplRef.current = s.template }
+          if (s.template?.kind) { setTpl(s.template.kind); setTraceCh(s.template.ch || 'Aa'); setShape(s.template.shape || 'star'); tplRef.current = s.template }
           render(Array.isArray(s.strokes) ? s.strokes : [])
         })
         .catch(() => { if (!cancelled) loadBase() }) // unreadable scene → flat base image
@@ -836,9 +888,23 @@ export function DrawPad({
           ))}
           {tpl === 'trace' && (
             <div className="drawpad__tracepick" role="group" aria-label={t.memo.tplTrace}>
-              {TRACE_CHARS.map((c) => (
-                <button key={c} type="button" className={'drawpad__trace' + (traceCh === c ? ' is-on' : '')} onClick={() => setTraceCh(c)} aria-label={c} aria-pressed={traceCh === c}>{c}</button>
+              {/* Capital + lowercase shown together (Aa Bb…) — one tap traces the pair. */}
+              {TRACE_PAIRS.map((pair) => (
+                <button key={pair} type="button" className={'drawpad__trace' + (traceCh === pair ? ' is-on' : '')} onClick={() => setTraceCh(pair)} aria-label={pair} aria-pressed={traceCh === pair}>{pair}</button>
               ))}
+              {TRACE_DIGITS.map((d) => (
+                <button key={d} type="button" className={'drawpad__trace' + (traceCh === d ? ' is-on' : '')} onClick={() => setTraceCh(d)} aria-label={d} aria-pressed={traceCh === d}>{d}</button>
+              ))}
+              {/* Whole words to trace — a child's name (household / Le cercle) or a
+                  recipe. "Trace your name." */}
+              {traceWords.length > 0 && (
+                <>
+                  <span className="drawpad__traceword-label mono" aria-hidden="true">{t.memo.traceWords}</span>
+                  {traceWords.map((word) => (
+                    <button key={word} type="button" className={'chip' + (traceCh === word ? ' is-on' : '')} onClick={() => setTraceCh(word)} aria-pressed={traceCh === word}>{word}</button>
+                  ))}
+                </>
+              )}
             </div>
           )}
           {tpl === 'coloring' && (
