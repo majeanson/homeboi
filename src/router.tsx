@@ -37,6 +37,8 @@ const DrawingGalleryPage = lazy(() => import('./pages/DrawingGalleryPage').then(
 const RecipeViewPage = lazy(() => import('./pages/RecipeViewPage').then((m) => ({ default: m.RecipeViewPage })))
 const RecipeFormPage = lazy(() => import('./pages/RecipeFormPage').then((m) => ({ default: m.RecipeFormPage })))
 const CookPage = lazy(() => import('./pages/CookPage').then((m) => ({ default: m.CookPage })))
+// #45 — the printable toddler recipe/activity book.
+const RecipeBookPage = lazy(() => import('./pages/RecipeBookPage').then((m) => ({ default: m.RecipeBookPage })))
 // Operator add-forms — full-screen scenes (were tall sheet forms that stranded
 // inputs under the mobile keyboard). Edit still happens inline in Réglages.
 const EventFormPage = lazy(() => import('./pages/EventFormPage').then((m) => ({ default: m.EventFormPage })))
@@ -91,6 +93,8 @@ export function AppRoutes() {
         {/* One day's full meal-planning editor — a scene (was the DayManageSheet
             bottom sheet, whose lower inputs stranded under the mobile keyboard). */}
         <Route path="/kitchen/day/:date" element={<DayPlanPage />} />
+        {/* #45 — the printable toddler recipe/activity book. */}
+        <Route path="/kitchen/book" element={<RecipeBookPage />} />
         {/* `new` before `:id` so it isn't captured as a recipe id. */}
         <Route path="/kitchen/recipe/new" element={<RecipeFormPage />} />
         <Route path="/kitchen/recipe/:id" element={<RecipeViewPage />} />

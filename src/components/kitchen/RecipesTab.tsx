@@ -1,4 +1,5 @@
 import { type ReactNode, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -302,6 +303,13 @@ export function RecipesTab({
     <section>
       <div className="kitchen__head">
         <HelpTitle help={help} k="recipesBook">{t.recipes.title}</HelpTitle>
+        {/* #45 — make a printable, picture-first book of these recipes for the
+            little ones. A quiet link beside the title; only once there's a recipe. */}
+        {recipes.length > 0 && (
+          <Link to="/kitchen/book" className="btn btn--ghost btn--sm mono kitchen__book-link">
+            <InlineIcon name="book-open-bold" size={15} /> {t.recipes.bookMake}
+          </Link>
+        )}
       </div>
       {help?.bubbleFor('recipesBook')}
       {/* Search on its own line, good width, with the #11 "Aa vs Collections"

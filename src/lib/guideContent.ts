@@ -334,6 +334,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Faire un livre de cuisine', en: 'Make a cooking book' },
+        detail: {
+          fr: 'Depuis le carnet de recettes, touche « Faire un livre » : un petit livre tout en images à imprimer, une recette par page, avec de grosses photos d’étapes, des numéros en couleur et des cases à cocher. Choisis une collection (ou tout le livre) et imprime — coche « Photos » pour les garder ou les retirer (encre). Une page couverture avec un trait pour écrire le nom de l’enfant.',
+          en: 'From the recipe book, tap “Make a book”: a little all-pictures booklet to print, one recipe per page, with big step photos, colourful numbers and tick-boxes. Pick a collection (or the whole book) and print — toggle “Photos” to keep or drop them (ink). A cover page with a line to write the child’s name.',
+        },
+        why: {
+          fr: 'Cuisiner avec un tout-petit loin de l’écran : il suit les images sur papier, coche ce qui est fait, et garde son livre. Rien de neuf à monter — ce sont tes recettes, mises en livre.',
+          en: 'Cook with a little one away from the screen: they follow the pictures on paper, tick off what’s done, and keep their book. Nothing new to build — it’s your recipes, bound into a book.',
+        },
+      },
+      {
         label: { fr: 'Les quatre repas', en: 'All four meals' },
         detail: {
           fr: 'Pas juste le souper : déjeuner, dîner, souper et collation ont chacun leur case.',
