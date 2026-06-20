@@ -474,16 +474,18 @@
 /* The "?" contextual-help toggle, beside the sheet's ✕ (floats to its left). Armed
    → tapping any tile explains it in place instead of running it. */
 .sheet__help {
-  position: sticky;
-  top: 0;
-  float: right;
-  z-index: 2;
-  display: inline-flex;
+  /* Its OWN line, right-aligned (margin-left:auto), NOT floated: a float reserves
+     space that the .cat-grid below — a grid is its own formatting context — clears
+     by shortening its top-right, which squished the right quick-add tile in row 1.
+     Block-level flex keeps it on a dedicated line so the tile grid stays full-width
+     underneath, while still centering the "?" glyph. */
+  display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
   width: 40px;
   height: 40px;
-  margin: -2px 4px 0 0;
+  margin: -2px 0 4px auto;
   padding: 0;
   border: 0;
   border-radius: 50%;
