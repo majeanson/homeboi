@@ -45,8 +45,15 @@ const PACKS: { key: string; icon: string; items: string[] }[] = [
 ]
 const TRACE_CHARS = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz' + '0123456789').split('')
 type TemplateKind = 'none' | 'lines' | 'trace' | 'dots' | 'coloring'
-const COLORING = ['star', 'heart', 'flower', 'house', 'fish', 'sun'] as const
+// #37 — the coloring-page library a toddler picks a faint outline from, then
+// traces/colours over. The first six draw via shapePath (also the user shape
+// tool); the rest are coloring-only pictures drawn by drawColoring (independent
+// strokes, so no shape ever connects to another).
+const COLORING = ['star', 'heart', 'flower', 'house', 'fish', 'sun', 'cloud', 'tree', 'balloon', 'car', 'cat', 'butterfly', 'boat'] as const
 type ColoringShape = (typeof COLORING)[number]
+// The six that shapePath knows (shared with the user shape tool); the others are
+// coloring-only and handled in drawColoring.
+const SHAPEPATH_COLORING: readonly string[] = ['star', 'heart', 'flower', 'house', 'fish', 'sun']
 const SHAPE_TYPES = ['line', 'rect', 'oval', 'tri', 'star', 'heart'] as const
 type ShapeType = (typeof SHAPE_TYPES)[number]
 const SHAPE_GLYPH: Record<ShapeType, string> = { line: '╱', rect: '▭', oval: '◯', tri: '△', star: '★', heart: '♥' }
@@ -128,9 +135,50 @@ function shapePath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
   }
   ctx.stroke()
 }
+// Draw one coloring outline centred at (cx,cy), radius r. The six shapePath shapes
+// route through it; the toddler picture set (cloud…boat) is drawn here with one
+// stroke PER sub-part, so a multi-part picture never draws a stray connecting line.
+function drawColoring(ctx: CanvasRenderingContext2D, shape: ColoringShape, cx: number, cy: number, r: number) {
+  if (SHAPEPATH_COLORING.includes(shape)) { shapePath(ctx, cx, cy, r, shape); return }
+  const circle = (x: number, y: number, rr: number) => { ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.stroke() }
+  const line = (x0: number, y0: number, x1: number, y1: number) => { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke() }
+  const ell = (x: number, y: number, rx: number, ry: number, rot: number) => { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); ctx.stroke() }
+  const poly = (pts: [number, number][], close = true) => {
+    ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); if (close) ctx.closePath(); ctx.stroke()
+  }
+  if (shape === 'cloud') {
+    circle(cx - r * 0.5, cy + r * 0.12, r * 0.42); circle(cx, cy - r * 0.15, r * 0.52); circle(cx + r * 0.5, cy + r * 0.12, r * 0.42)
+  } else if (shape === 'tree') {
+    poly([[cx, cy - r], [cx + r * 0.7, cy + r * 0.35], [cx - r * 0.7, cy + r * 0.35]])
+    poly([[cx - r * 0.13, cy + r * 0.35], [cx - r * 0.13, cy + r * 0.85], [cx + r * 0.13, cy + r * 0.85], [cx + r * 0.13, cy + r * 0.35]], false)
+  } else if (shape === 'balloon') {
+    ell(cx, cy - r * 0.2, r * 0.6, r * 0.75, 0)
+    poly([[cx - r * 0.1, cy + r * 0.5], [cx + r * 0.1, cy + r * 0.5], [cx, cy + r * 0.62]])
+    line(cx, cy + r * 0.62, cx, cy + r)
+  } else if (shape === 'car') {
+    poly([
+      [cx - r, cy + r * 0.15], [cx - r, cy - r * 0.1], [cx - r * 0.5, cy - r * 0.1], [cx - r * 0.35, cy - r * 0.5],
+      [cx + r * 0.4, cy - r * 0.5], [cx + r * 0.55, cy - r * 0.1], [cx + r, cy - r * 0.1], [cx + r, cy + r * 0.15],
+    ])
+    circle(cx - r * 0.5, cy + r * 0.22, r * 0.22); circle(cx + r * 0.5, cy + r * 0.22, r * 0.22)
+  } else if (shape === 'cat') {
+    circle(cx, cy + r * 0.15, r * 0.55)
+    poly([[cx - r * 0.5, cy - r * 0.15], [cx - r * 0.6, cy - r * 0.65], [cx - r * 0.15, cy - r * 0.35]])
+    poly([[cx + r * 0.5, cy - r * 0.15], [cx + r * 0.6, cy - r * 0.65], [cx + r * 0.15, cy - r * 0.35]])
+  } else if (shape === 'butterfly') {
+    line(cx, cy - r * 0.55, cx, cy + r * 0.55)
+    ell(cx - r * 0.42, cy - r * 0.2, r * 0.4, r * 0.3, -0.4); ell(cx + r * 0.42, cy - r * 0.2, r * 0.4, r * 0.3, 0.4)
+    ell(cx - r * 0.34, cy + r * 0.3, r * 0.3, r * 0.24, 0.5); ell(cx + r * 0.34, cy + r * 0.3, r * 0.3, r * 0.24, -0.5)
+  } else {
+    // boat — hull, mast, sail
+    poly([[cx - r * 0.7, cy + r * 0.3], [cx + r * 0.7, cy + r * 0.3], [cx + r * 0.45, cy + r * 0.7], [cx - r * 0.45, cy + r * 0.7]])
+    line(cx, cy + r * 0.3, cx, cy - r * 0.7)
+    poly([[cx, cy - r * 0.65], [cx, cy + r * 0.2], [cx + r * 0.55, cy + r * 0.2]])
+  }
+}
 function tplColoring(ctx: CanvasRenderingContext2D, w: number, h: number, shape: ColoringShape) {
-  ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(40,40,40,0.30)'
-  shapePath(ctx, w / 2, h / 2, Math.min(w, h) * 0.34, shape); ctx.restore()
+  ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(40,40,40,0.30)'; ctx.lineJoin = 'round'; ctx.lineCap = 'round'
+  drawColoring(ctx, shape, w / 2, h / 2, Math.min(w, h) * 0.34); ctx.restore()
 }
 function drawShape(ctx: CanvasRenderingContext2D, s: Shape) {
   ctx.save()
