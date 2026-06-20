@@ -34,6 +34,7 @@ interface ContactRow {
   member_id: string | null
   custom_fields: string | null
   gender: string | null
+  gift_ideas: string | null
 }
 
 interface LinkRow {
@@ -98,7 +99,7 @@ function parseJson<T>(s: string | null, fallback: T): T {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const contacts = await ctx.env.DB.prepare(
-    `SELECT id, first_name, last_name, nickname, photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, gender
+    `SELECT id, first_name, last_name, nickname, photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, gender, gift_ideas
        FROM contacts WHERE household_id = ? ORDER BY last_name, first_name`,
   )
     .bind(actor.householdId)
@@ -173,6 +174,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       memberId: c.member_id,
       customFields: parseJson<unknown[]>(c.custom_fields, []),
       gender: c.gender ?? null,
+      giftIdeas: c.gift_ideas ?? null,
     })),
     links: links.results.map((l) => ({
       id: l.id,
@@ -227,6 +229,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     memberId?: string
     customFields?: unknown
     gender?: string
+    giftIdeas?: string
   }>(ctx.request)
   const firstName = str(body?.firstName)
   if (!firstName) return badRequest('Prénom requis.')
@@ -235,8 +238,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   await ctx.env.DB.prepare(
     `INSERT INTO contacts
-       (id, household_id, first_name, last_name, nickname, photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, gender, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, household_id, first_name, last_name, nickname, photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, gender, gift_ideas, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       id,
@@ -254,6 +257,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       str(body?.memberId),
       jsonArray(body?.customFields),
       genderOrNull(body?.gender),
+      str(body?.giftIdeas),
       ts,
       ts,
     )
@@ -277,6 +281,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     memberId?: string | null
     customFields?: unknown
     gender?: string | null
+    giftIdeas?: string | null
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
@@ -310,6 +315,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   setIf('memberId' in body, 'member_id', str(body.memberId))
   setIf(body.customFields !== undefined, 'custom_fields', jsonArray(body.customFields))
   setIf('gender' in body, 'gender', genderOrNull(body.gender))
+  setIf('giftIdeas' in body, 'gift_ideas', str(body.giftIdeas))
 
   if (sets.length) {
     sets.push('updated_at = ?')

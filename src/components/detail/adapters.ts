@@ -58,6 +58,9 @@ export function buildEvent(e: EventRow, ctx: DetailCtx): DetailModel {
   // in Le cercle rather than an event editor (it can't be edited here — the date
   // lives on the person). Age shown when known.
   if (e.birthday) {
+    // #20: their gift ideas surface right here as the birthday nears — a quiet
+    // reminder of what you'd thought of, exactly when it's useful.
+    const gifts = e.gift_ideas?.trim()
     return {
       kind: 'contact',
       title: e.title,
@@ -66,6 +69,7 @@ export function buildEvent(e: EventRow, ctx: DetailCtx): DetailModel {
       when: `${formatDay(e.start_at, lang)} · ${t.board.birthday}`,
       whoLabel: e.age != null ? t.cercle.turnsN(e.age) : undefined,
       who: whoOf(members, e.member_id),
+      blocks: gifts ? [{ kind: 'text', text: `🎁 ${t.cercle.giftIdeas} : ${gifts}` }] : undefined,
       actions: [{ key: 'cercle', label: t.nav.cercle, icon: 'users-three-bold', primary: true, href: '/cercle' }],
     }
   }

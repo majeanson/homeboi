@@ -79,6 +79,7 @@ export function ContactForm({
   const [email, setEmail] = useState(value?.email ?? '')
   const [phone, setPhone] = useState(value?.phone ?? '')
   const [notes, setNotes] = useState(value?.notes ?? '')
+  const [giftIdeas, setGiftIdeas] = useState(value?.giftIdeas ?? '')
   const [tags, setTags] = useState<string[]>(value?.tags ?? [])
   const [tagDraft, setTagDraft] = useState('')
   const [memberId, setMemberId] = useState(value?.memberId ?? '')
@@ -285,6 +286,7 @@ export function ContactForm({
       phone: phone.trim() || null,
       address,
       notes: notes.trim() || null,
+      giftIdeas: giftIdeas.trim() || null,
       tags,
       memberId: memberId || null,
       photoKey,
@@ -317,6 +319,7 @@ export function ContactForm({
             tags,
             memberId: body.memberId,
             customFields: [],
+            giftIdeas: body.giftIdeas,
           }
           return old ? { contacts: [...old.contacts, fresh], links: old.links } : { contacts: [fresh], links: [] }
         })
@@ -507,6 +510,21 @@ export function ContactForm({
       <label className="cf__field">
         <span className="cf__label">{t.cercle.notes}</span>
         <textarea className="cf__input cf__textarea" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+      </label>
+
+      {/* #20: gift ideas — jot what to get them; it quietly surfaces next to their
+          birthday on the board as the day nears, so a March idea isn't lost by then. */}
+      <label className="cf__field">
+        <span className="cf__label">
+          <Icon name="cake-bold" size={14} /> {t.cercle.giftIdeas}
+        </span>
+        <textarea
+          className="cf__input cf__textarea"
+          value={giftIdeas}
+          onChange={(e) => setGiftIdeas(e.target.value)}
+          rows={2}
+          placeholder={t.cercle.giftIdeasHint}
+        />
       </label>
 
       {/* Tags */}

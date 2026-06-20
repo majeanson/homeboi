@@ -22,6 +22,7 @@ export interface EventRow {
   soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
   birthday?: boolean // a DERIVED birthday occurrence (from a person's birthday), not a stored event
   age?: number | null // the age turned, when the birth year is known
+  gift_ideas?: string | null // #20: gift notes shown in the birthday's detail peek
 }
 interface ListRow {
   id: string

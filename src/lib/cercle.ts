@@ -40,6 +40,7 @@ export interface Contact {
   memberId: string | null
   customFields: ContactCustomField[]
   gender: 'm' | 'f' | null
+  giftIdeas?: string | null // #20: freeform birthday gift/idea notes, surfaced near the date
 }
 
 // A household member, as the cercle GET returns it (phase 2 — members are people

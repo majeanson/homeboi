@@ -16,6 +16,7 @@ interface Ev {
   soon: boolean // within its calm "Bientôt" lead window right now (see isSoon)
   birthday?: boolean // a derived birthday occurrence (cake icon, read-only → person)
   age?: number | null // the age turned, when the birth year is known
+  gift_ideas?: string | null // #20: gift notes carried on a birthday occurrence
 }
 const sortEvents = (xs: Ev[]) => xs.sort((p, q) => q.all_day - p.all_day || p.start_at - q.start_at)
 // One-off event rows as they come from SQL (lead_seconds joins the client-facing Ev
@@ -208,6 +209,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     soon: false,
     birthday: true,
     age: o.age,
+    gift_ideas: o.giftIdeas, // #20: surfaced near the date in the birthday peek
   }))
   const bdayIn = (from: number, to: number) => bdayOccs.filter((e) => e.start_at >= from && e.start_at < to)
   // One-off rows carry lead_seconds from SQL; derive each row's `soon` here.

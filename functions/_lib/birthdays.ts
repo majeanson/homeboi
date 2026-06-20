@@ -16,6 +16,7 @@ export interface BirthdayPerson {
   name: string
   birthday: string // 'YYYY-MM-DD' or '0000-MM-DD'
   memberId: string | null // a member id for face/colour attribution (null = standalone contact)
+  giftIdeas?: string | null // #20: freeform gift notes, surfaced near the date
 }
 
 export interface BirthdayOccurrence {
@@ -25,6 +26,7 @@ export interface BirthdayOccurrence {
   at: number // unix seconds, LOCAL midnight of the birthday day
   age: number | null // the age they turn, when the birth year is known
   memberId: string | null
+  giftIdeas: string | null // #20
 }
 
 function parseBirthday(s: string): { year: number; month: number; day: number; yearKnown: boolean } | null {
@@ -62,6 +64,7 @@ export function birthdayOccurrences(people: BirthdayPerson[], rangeStart: number
           at,
           age: b.yearKnown ? y - b.year : null,
           memberId: p.memberId,
+          giftIdeas: p.giftIdeas ?? null,
         })
       }
     }
@@ -75,6 +78,7 @@ interface PersonRow {
   name: string | null
   birthday: string | null
   is_member: number
+  gift_ideas: string | null
 }
 
 // The people who can have a birthday in the calendar: every member (its birthday
@@ -84,13 +88,13 @@ interface PersonRow {
 export async function fetchBirthdayPeople(db: D1Database, householdId: string): Promise<BirthdayPerson[]> {
   const res = await db
     .prepare(
-      `SELECT m.id AS id, m.display_name AS name, COALESCE(m.birthday, MAX(c.birthday)) AS birthday, 1 AS is_member
+      `SELECT m.id AS id, m.display_name AS name, COALESCE(m.birthday, MAX(c.birthday)) AS birthday, 1 AS is_member, MAX(c.gift_ideas) AS gift_ideas
          FROM members m
          LEFT JOIN contacts c ON c.member_id = m.id AND c.household_id = m.household_id
         WHERE m.household_id = ?
         GROUP BY m.id
        UNION ALL
-       SELECT id, COALESCE(NULLIF(TRIM(nickname), ''), TRIM(first_name || ' ' || last_name)) AS name, birthday, 0 AS is_member
+       SELECT id, COALESCE(NULLIF(TRIM(nickname), ''), TRIM(first_name || ' ' || last_name)) AS name, birthday, 0 AS is_member, gift_ideas
          FROM contacts
         WHERE household_id = ? AND member_id IS NULL`,
     )
@@ -103,5 +107,6 @@ export async function fetchBirthdayPeople(db: D1Database, householdId: string): 
       name: r.name?.trim() || '—',
       birthday: r.birthday,
       memberId: r.is_member ? r.id : null,
+      giftIdeas: r.gift_ideas ?? null,
     }))
 }
