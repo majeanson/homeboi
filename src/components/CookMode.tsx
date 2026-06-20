@@ -23,6 +23,7 @@ import { IngredientLine } from './IngredientLine'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { useModal } from '../lib/useModal'
 import { useCookTimers } from '../lib/cookTimers'
+import { useWakeLock } from '../lib/useWakeLock'
 import { TimerRail } from './cook/TimerRail'
 
 // Whether a step reads itself aloud on arrival. Default ON; an explicit opt-out
@@ -95,7 +96,6 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   // Split view: on a narrow phone the two panes collapse to a tab pair (ingredients
   // OR steps); on a tablet both show side by side and this is ignored (CSS).
   const [splitTab, setSplitTab] = useState<'ings' | 'steps'>('ings')
-  const lockRef = useRef<{ release: () => Promise<void> } | null>(null)
   // Several one-tap timers can run at once (start the pasta, then come back and
   // start the sauce). Each OUTLIVES step navigation — you set it then move on. The
   // countdown engine + chime/vibrate-on-finish + rail are the shared useCookTimers
@@ -237,37 +237,8 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode])
 
-  // Keep the screen awake while cooking; re-acquire on visibility regain.
-  useEffect(() => {
-    const nav = navigator as Navigator & {
-      wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> }
-    }
-    let cancelled = false
-    async function acquire() {
-      try {
-        if (!nav.wakeLock) return
-        const lock = await nav.wakeLock.request('screen')
-        if (cancelled) {
-          lock.release().catch(() => {})
-          return
-        }
-        lockRef.current = lock
-      } catch {
-        /* denied / unsupported — fine, behave like a normal screen */
-      }
-    }
-    acquire()
-    const onVis = () => {
-      if (document.visibilityState === 'visible' && !lockRef.current) acquire()
-    }
-    document.addEventListener('visibilitychange', onVis)
-    return () => {
-      cancelled = true
-      document.removeEventListener('visibilitychange', onVis)
-      lockRef.current?.release().catch(() => {})
-      lockRef.current = null
-    }
-  }, [])
+  // Keep the screen awake while cooking (shared with the multi-recipe cook).
+  useWakeLock()
 
   // — Shared renderers (so the full + split views don't duplicate markup) —
 

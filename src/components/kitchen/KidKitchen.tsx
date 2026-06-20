@@ -88,6 +88,7 @@ export function KidKitchen({
     image: recipeImg(r.image),
     icon: pictoFor(r.title, '🍽'),
     label: r.title,
+    lang: r.lang ?? undefined, // read an English recipe's name in English (#TTS)
     onTap: () => setKidRecipe(r),
   }))
   // The recipe shelf, led by a "Mon livre" door (the picture cookbook) and, when

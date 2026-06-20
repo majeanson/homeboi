@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { useT } from '../i18n'
+import { useT, type Lang } from '../i18n'
 import { useSpeak, playNarration } from '../lib/speak'
 import { Icon } from './Icon'
 
@@ -26,6 +26,9 @@ export interface Tile {
   // the clip and FALLS BACK to TTS (narration ?? label) on any error. Empty/unset
   // → straight TTS (the original contract, and the no-R2 path).
   audioKey?: string | null
+  // Read this tile's text in ITS OWN language (a recipe's `lang`), not the UI /
+  // global voice — so an English recipe on a French kid grid is said in English.
+  lang?: Lang
   done?: boolean
   color?: string // member colour (avatar_ref) — whose thing this is
   onTap?: () => void
@@ -59,20 +62,23 @@ export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
     const said = tile.narration ?? tile.label
     if (!tile.onTap) {
       // Nothing to commit — just read it (the original contract). Prefer the
-      // parent-voice clip when there is one; TTS otherwise / on any failure.
-      playNarration(tile.audioKey, said, speak)
+      // parent-voice clip when there is one; TTS otherwise / on any failure. The
+      // TTS fallback reads in the tile's own language when set (e.g. a recipe).
+      playNarration(tile.audioKey, said, (raw) => speak(raw, tile.lang))
       return
     }
     if (armedKey === tile.key) {
-      // The confirming tap: commit, same gentle word every time (NFR-CALM-2).
+      // The confirming tap: commit, same gentle word every time (NFR-CALM-2). This
+      // word is UI copy, so it stays in the UI/global voice (no tile.lang).
       if (armTimer.current) clearTimeout(armTimer.current)
       setArmedKey(null)
       speak(t.kid.okDone)
       tile.onTap?.()
       return
     }
-    // First tap: say what this IS and what tapping again will do, then wait.
-    speak(`${said}. ${tile.confirmHint ?? t.kid.tapAgain}`)
+    // First tap: say what this IS and what tapping again will do, then wait. The
+    // content (the recipe name) leads, so read it in the tile's language.
+    speak(`${said}. ${tile.confirmHint ?? t.kid.tapAgain}`, tile.lang)
     setArmedKey(tile.key)
     if (armTimer.current) clearTimeout(armTimer.current)
     armTimer.current = setTimeout(() => setArmedKey(null), ARM_MS)

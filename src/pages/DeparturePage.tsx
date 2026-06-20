@@ -44,6 +44,7 @@ export function DeparturePage() {
   const activeId = templates.find((tp) => tp.id === pick)?.id ?? templates[0]?.id ?? null
   const choose = (id: string) => {
     setPick(id)
+    setDone(new Set()) // checks are index-keyed — start the new list fresh
     try {
       localStorage.setItem(LAST_KEY, id)
     } catch {

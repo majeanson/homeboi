@@ -89,10 +89,13 @@ function RoutinesParent() {
       {help.hint && routines.length > 0 && <HelpHint />}
       {help.bubble}
 
+      {/* The tour anchor wraps BOTH branches so the routines spotlight resolves
+          even for a brand-new household with no routines yet (#32). */}
+      <div data-tour="routines-grid">
       {routines.length === 0 ? (
         <EmptyState guide={{ card: 'routines' }}>{t.kid.none}</EmptyState>
       ) : (
-        <div className="routines-grid" data-tour="routines-grid">
+        <div className="routines-grid">
           {routines.map((r) => {
             const tint = r.color ?? '#B06A93'
             // The same step pictures the toddler sees — so a parent recognizes the
@@ -175,6 +178,7 @@ function RoutinesParent() {
           })}
         </div>
       )}
+      </div>
 
       {/* Creating AND editing both live on the ＋ FAB now: it opens the manage
           picker (new routine + this list of existing ones, each tappable to edit),

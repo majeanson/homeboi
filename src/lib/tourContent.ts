@@ -145,8 +145,8 @@ export const TOURS: Tour[] = [
         icon: 'plus-bold',
         title: { fr: 'Ajoute ici', en: 'Add here' },
         body: {
-          fr: 'Le ＋ : cuisiner, planifier un repas, ajouter une recette — ou « Faire un livre » à imprimer.',
-          en: 'The ＋: cook, plan a meal, add a recipe — or “Make a book” to print.',
+          fr: 'Le ＋ : cuisiner, planifier un repas, ajouter une recette — ou « Le livre illustré » à feuilleter avec les petits.',
+          en: 'The ＋: cook, plan a meal, add a recipe — or “The picture book” to flip through with the little ones.',
         },
       },
     ],

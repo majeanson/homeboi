@@ -8,6 +8,7 @@ import { imgUrl } from '../lib/image'
 import { useSpeak } from '../lib/speak'
 import { useCookDensity } from '../lib/cookPrefs'
 import { useCookTimers } from '../lib/cookTimers'
+import { useWakeLock } from '../lib/useWakeLock'
 import { useModal } from '../lib/useModal'
 import { TimerRail } from './cook/TimerRail'
 import { Icon, InlineIcon } from './Icon'
@@ -47,6 +48,7 @@ export function MultiCookMode({ recipes, onClose }: { recipes: Recipe[]; onClose
   const density = useCookDensity()
   const ref = useRef<HTMLDivElement>(null)
   useModal(ref, onClose) // Esc + scroll-lock + focus-trap, like CookMode
+  useWakeLock() // keep the wall tablet awake while cooking several dishes
   // The shared rail. On finish, announce WHICH dish is ready (the label already
   // carries the recipe name) on top of the chime + vibration from the engine.
   const { timers, addTimer, toggleTimer, removeTimer } = useCookTimers((labels) =>
