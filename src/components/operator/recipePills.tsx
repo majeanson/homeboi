@@ -23,6 +23,7 @@ import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost } from '../../lib/dnd'
 import { Icon, InlineIcon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
+import { DragPill } from '../DragPill'
 import { RowActions } from '../RowActions'
 import { OperatorSection } from './OperatorSection'
 
@@ -132,28 +133,16 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
           const hex = custom ? p.color : undefined
           const chipStyle = hex ? { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) } : undefined
           return (
-            <li
+            <DragPill
               key={pillKey(p)}
-              data-dnd-zone={String(i)}
-              className={
-                'pill-admin__row' +
-                (hidden ? ' is-hidden' : '') +
-                (dnd.activeId === String(i) ? ' is-dragging' : '') +
-                (dnd.over === String(i) ? ' dnd-over' : '')
-              }
+              as="li"
+              dnd={dnd}
+              index={i}
+              label={pillLabel(p)}
+              className={'pill-admin__row' + (hidden ? ' is-hidden' : '')}
+              gripClassName="pill-admin__grip"
+              showGrip={!ro}
             >
-              {!ro && (
-                <span
-                  className="pill-admin__grip dnd-grip"
-                  data-dnd-grip=""
-                  role="button"
-                  aria-label={t.operator.dragHint}
-                  title={t.operator.dragHint}
-                  onPointerDown={(e) => dnd.start(String(i), pillLabel(p), e)}
-                >
-                  ⠿
-                </span>
-              )}
               <span className="chip pill-admin__chip" style={chipStyle}>
                 {pillLabel(p)}
               </span>
@@ -181,7 +170,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
                   }}
                 />
               )}
-            </li>
+            </DragPill>
           )
         })}
       </ul>

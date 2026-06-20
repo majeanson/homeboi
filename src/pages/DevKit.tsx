@@ -10,6 +10,8 @@ import { Icon, InlineIcon } from '../components/Icon'
 import { EditField } from '../components/EditField'
 import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
 import { RowActions } from '../components/RowActions'
+import { DragPill } from '../components/DragPill'
+import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
 import { GroupForm } from '../components/cercle/GroupForm'
@@ -187,6 +189,17 @@ export function DevKit() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [listPickOpen, setListPickOpen] = useState(false)
   const voice = useVoiceInput(setText3, { continuous: true, split: true })
+  const [dragPills, setDragPills] = useState(['Rapide', 'Végé', 'Souper', 'Dessert'])
+  const dragPillDnd = usePointerDnd({
+    onDrop: (from, to) =>
+      setDragPills((ps) => {
+        const next = [...ps]
+        const [moved] = next.splice(Number(from), 1)
+        next.splice(Number(to), 0, moved)
+        return next
+      }),
+    canDrop: (from, to) => from !== to,
+  })
   const icons = Object.keys(PIP_ICONS) as IconName[]
 
   const toggleChip = (k: string) => setChipOn((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k]))
@@ -516,6 +529,32 @@ export function DevKit() {
             <span>Yogourt grec</span>
             <RowActions onEdit={() => {}} onDelete={() => {}} />
           </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'DragPill',
+      file: 'components/DragPill.tsx',
+      kw: 'drag reorder grip ⠿ glisser réordonner pill tag pointer dnd',
+      render: () => (
+        <Demo label="drag the ⠿ grip to reorder (span chips here; also renders as <li> rows via as='li')">
+          <div className="tag-admin__pills">
+            {dragPills.map((p, i) => (
+              <DragPill
+                key={p}
+                as="span"
+                dnd={dragPillDnd}
+                index={i}
+                label={p}
+                className="chip tag-admin__pill"
+                gripClassName="tag-admin__pill-grip"
+              >
+                <span className="tag-admin__pill-name">{p}</span>
+              </DragPill>
+            ))}
+          </div>
+          <DragGhost ghost={dragPillDnd.ghost} />
         </Demo>
       ),
     },

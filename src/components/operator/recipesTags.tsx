@@ -10,6 +10,7 @@ import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost } from '../../lib/dnd'
 import { Icon, InlineIcon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
+import { DragPill } from '../DragPill'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
@@ -131,27 +132,16 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
             )
           }
           return (
-            <span
+            <DragPill
               key={tg}
-              data-dnd-zone={String(i)}
-              className={
-                'chip tag-admin__pill' +
-                (open ? ' is-editing' : '') +
-                (dnd.activeId === String(i) ? ' is-dragging' : '') +
-                (dnd.over === String(i) ? ' dnd-over' : '')
-              }
+              as="span"
+              dnd={dnd}
+              index={i}
+              label={tg}
+              className={'chip tag-admin__pill' + (open ? ' is-editing' : '')}
+              gripClassName="tag-admin__pill-grip"
               style={chipTint(tagColor(colors, tg))}
             >
-              <span
-                className="tag-admin__pill-grip dnd-grip"
-                data-dnd-grip=""
-                role="button"
-                aria-label={t.operator.dragHint}
-                title={t.operator.dragHint}
-                onPointerDown={(e) => dnd.start(String(i), tg, e)}
-              >
-                ⠿
-              </span>
               <button
                 type="button"
                 className="tag-admin__pill-name"
@@ -171,7 +161,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                   <InlineIcon name="x-bold" size={12} />
                 </button>
               )}
-            </span>
+            </DragPill>
           )
         })}
       </div>
