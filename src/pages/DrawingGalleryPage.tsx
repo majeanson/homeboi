@@ -11,6 +11,7 @@ import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
 import { DrawPad } from '../components/DrawPad'
+import { ZoomableImg } from '../components/ZoomableImg'
 
 // /drawings — the drawing COLLECTION / gallery (#14). "Mes dessins": a lasting wall
 // of kept drawings, especially a toddler's growing collection (big tap targets,
@@ -59,14 +60,22 @@ export function DrawingGalleryPage() {
           <div className={'drawgallery__grid' + (toddler ? ' drawgallery__grid--kid' : '')}>
             {drawings.map((d) => (
               <div key={d.id} className="drawgallery__item">
-                <button
-                  type="button"
-                  className="drawgallery__open"
-                  onClick={() => setPad({ open: true, id: d.id, initial: imgUrl(d.media_key), sceneUrl: d.scene_key ? imgUrl(d.scene_key) : undefined })}
-                  aria-label={ro ? t.notes.drawing : t.memo.editTitle}
-                >
-                  <img src={imgUrl(d.media_key)} alt={t.notes.drawing} loading="lazy" />
-                </button>
+                {ro ? (
+                  // Read-only guest: can't open the pad, so the thumbnail IS the
+                  // viewer — tap to inspect full-screen (pinch-zoom + drag to pan).
+                  <ZoomableImg className="drawgallery__img" src={imgUrl(d.media_key)} alt={t.notes.drawing} />
+                ) : (
+                  // Parent / toddler: tap opens the pad to keep drawing on it; zoom
+                  // (pinch + pan) is available there too once it's open.
+                  <button
+                    type="button"
+                    className="drawgallery__open"
+                    onClick={() => setPad({ open: true, id: d.id, initial: imgUrl(d.media_key), sceneUrl: d.scene_key ? imgUrl(d.scene_key) : undefined })}
+                    aria-label={t.memo.editTitle}
+                  >
+                    <img src={imgUrl(d.media_key)} alt={t.notes.drawing} loading="lazy" />
+                  </button>
+                )}
                 {!ro && !toddler && (
                   <button type="button" className="drawgallery__del" onClick={() => void onDelete(d.id)} aria-label={t.common.delete}>
                     <Icon name="trash-bold" size={14} />

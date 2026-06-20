@@ -8,6 +8,14 @@ import { CERCLE_KEY } from '../lib/queryKeys'
 import { useRecipes } from '../lib/queryHooks'
 import { drawTraceLine, measureTrace, wrapTrace } from '../lib/traceFont'
 import { useModal } from '../lib/useModal'
+import {
+  type Viewport,
+  IDENTITY,
+  toContent,
+  settle,
+  pinch as pinchView,
+  zoomAt,
+} from '../lib/drawViewport'
 import { Icon } from './Icon'
 
 // The family draw pad for a fridge note (#14) — useful + educational, ~80% for the
@@ -316,6 +324,21 @@ export function DrawPad({
   // Canvas rect cached at gesture start; reused for the move/up of that gesture so
   // a fast drag doesn't call getBoundingClientRect() on every pointer event.
   const rectRef = useRef<DOMRect | null>(null)
+  // Zoom/pan viewport (#14): two-finger pinch zooms + pans, one finger draws, the
+  // wheel / ± buttons zoom on desktop. content↔screen mapping lives in lib/drawViewport;
+  // EVERY pointer is inverse-mapped to content coords so a stroke lands where the
+  // finger is even at 4×. signature_pad is the renderer only (fromData) — it can't map
+  // a zoomed coordinate itself, so the pen is driven through these handlers too.
+  const viewRef = useRef<Viewport>({ ...IDENTITY })
+  // All active pointers (canvas-relative CSS px), so a 2nd finger switches a draw into
+  // a pinch and the gesture state machine knows how many fingers are down.
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const gestureRef = useRef<'idle' | 'draw' | 'pinch'>('idle')
+  const pinchRef = useRef<{ startView: Viewport; startMid: { x: number; y: number }; startDist: number } | null>(null)
+  // In-progress freehand pen stroke (content coords). signature_pad's own input is
+  // detached; we collect points here and commit a PointGroup so the COMMITTED stroke
+  // still renders with signature_pad's native variable width via fromData.
+  const penDragRef = useRef<{ points: { x: number; y: number; pressure: number; time: number }[] } | null>(null)
 
   const [mode, setMode] = useState<Mode>('pen')
   const [color, setColor] = useState<string>(COLORS[0])
@@ -334,6 +357,9 @@ export function DrawPad({
   const [hasPhoto, setHasPhoto] = useState(false) // a user watermark photo is loaded
   const [photoAlpha, setPhotoAlpha] = useState(0.4)
   const [busy, setBusy] = useState(false)
+  // Mirror of viewRef.z (×100) purely for the UI badge / reset button. The drawing
+  // itself reads viewRef directly so a pinch never waits on React.
+  const [zoomPct, setZoomPct] = useState(100)
 
   useEffect(() => void (modeRef.current = mode), [mode])
   useEffect(() => void (colorRef.current = color), [color])
@@ -361,6 +387,14 @@ export function DrawPad({
   const cssW = () => (canvasRef.current ? canvasRef.current.width / ratio() : 0)
   const cssH = () => (canvasRef.current ? canvasRef.current.height / ratio() : 0)
 
+  // Set the canvas transform to the current viewport: content (CSS px) → device px,
+  // device = ratio · (z · content + offset). Used by render() and the live previews.
+  function applyViewport(ctx: CanvasRenderingContext2D) {
+    const v = viewRef.current
+    const r = ratio()
+    ctx.setTransform(r * v.z, 0, 0, r * v.z, r * v.ox, r * v.oy)
+  }
+
   function render(strokes: PointGroup[]) {
     const pad = padRef.current
     const canvas = canvasRef.current
@@ -374,12 +408,17 @@ export function DrawPad({
     // anti-aliasing). clear() resets _data (and the canvas) first; we repaint our
     // own layers below and re-add `strokes` exactly once via fromData. `strokes`
     // is captured by the caller before this clear, so it still holds the data.
+    //
+    // clear() runs at IDENTITY so it paints PAPER over the whole device canvas (it
+    // uses fillRect(0,0,canvas.width,canvas.height)); then the viewport transform is
+    // applied so every layer — including signature_pad's fromData strokes — is drawn
+    // magnified by the same zoom/pan, in stable content coords.
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     pad.clear()
+    applyViewport(ctx)
     const w = canvas.width / ratio()
     const h = canvas.height / ratio()
     ctx.save()
-    ctx.fillStyle = PAPER
-    ctx.fillRect(0, 0, w, h)
     const tp = tplRef.current
     if (tp.kind === 'lines') tplLines(ctx, w, h)
     else if (tp.kind === 'dots') tplDots(ctx, w, h)
@@ -436,7 +475,7 @@ export function DrawPad({
     ctx.setTransform(1, 0, 0, 1, 0, 0) // snapshot is device-pixel; draw 1:1
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.drawImage(snap, 0, 0)
-    ctx.restore() // back to the ratio()-scaled transform → preview uses CSS coords
+    ctx.restore() // back to the viewport transform → preview uses content coords
     const p = previewRef.current
     drawShape(ctx, p)
     if (symmetryRef.current) { const w = cssW(); drawShape(ctx, { ...p, x0: w - p.x0, x1: w - p.x1 }) } // mirror, matching commitShape
@@ -447,9 +486,96 @@ export function DrawPad({
     rafRef.current = requestAnimationFrame(() => { rafRef.current = null; renderShapePreview() })
   }
 
+  // Live freehand pen: blit the frozen snapshot + draw the in-progress polyline on
+  // top (O(1) per frame, like the shape preview). The committed stroke re-renders via
+  // signature_pad on pointer-up, so the final line keeps its native variable width.
+  function drawPenStroke(ctx: CanvasRenderingContext2D, pts: { x: number; y: number }[], color: string) {
+    if (!pts.length) return
+    const s = SIZES[sizeRef.current]
+    ctx.save()
+    ctx.strokeStyle = color
+    ctx.fillStyle = color
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+    ctx.lineWidth = Math.max(2, s.max * 0.85)
+    if (pts.length === 1) {
+      ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, s.dot, 0, Math.PI * 2); ctx.fill()
+    } else {
+      ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y)
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y)
+      ctx.stroke()
+    }
+    ctx.restore()
+  }
+  function renderPenPreview() {
+    const canvas = canvasRef.current
+    const snap = snapshotRef.current
+    const ctx = canvas?.getContext('2d')
+    if (!canvas || !snap || !ctx || !penDragRef.current) return
+    ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(snap, 0, 0)
+    ctx.restore() // back to the viewport transform
+    const pts = penDragRef.current.points
+    drawPenStroke(ctx, pts, colorRef.current)
+    if (symmetryRef.current) { const w = cssW(); drawPenStroke(ctx, pts.map((p) => ({ x: w - p.x, y: p.y })), colorRef.current) }
+  }
+  function schedulePenPreview() {
+    if (rafRef.current != null) return
+    rafRef.current = requestAnimationFrame(() => { rafRef.current = null; renderPenPreview() })
+  }
+  // Build a signature_pad PointGroup from collected content-space points, so the
+  // committed pen stroke renders with the pad's native velocity-variable width.
+  function makePenGroup(pts: { x: number; y: number; pressure: number; time: number }[]): PointGroup {
+    const s = SIZES[sizeRef.current]
+    return {
+      points: pts.map((p) => ({ x: p.x, y: p.y, pressure: p.pressure, time: p.time })),
+      penColor: colorRef.current,
+      dotSize: s.dot,
+      minWidth: s.min,
+      maxWidth: s.max,
+      velocityFilterWeight: 0.7,
+      compositeOperation: 'source-over',
+    } as PointGroup
+  }
+
   function pointAt(e: PointerEvent) {
     const rect = rectRef.current ?? canvasRef.current!.getBoundingClientRect()
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+  }
+  // Screen → content: every tool reads this so a tap lands on the right pixel at any
+  // zoom/pan (pointAt stays the raw CSS-px, used for pinch midpoints + the wheel anchor).
+  function contentAt(e: PointerEvent) {
+    const p = pointAt(e)
+    return toContent(viewRef.current, p.x, p.y)
+  }
+  // Commit the freehand stroke being previewed (one or both, with symmetry) into the
+  // pad's data + history, then a single native re-render. Called on pointer-up; a 2nd
+  // finger landing mid-stroke instead DROPS it (cancelDrawForPinch) — you meant to pinch.
+  function commitPenStroke() {
+    const drag = penDragRef.current
+    penDragRef.current = null
+    const pad = padRef.current
+    if (!pad) return
+    if (!drag || !drag.points.length) { render(pad.toData()); return }
+    const data = pad.toData()
+    data.push(makePenGroup(drag.points))
+    let n = 1
+    if (symmetryRef.current) {
+      const w = cssW()
+      data.push(makePenGroup(drag.points.map((p) => ({ ...p, x: w - p.x }))))
+      n = 2
+    }
+    historyRef.current.push({ kind: 'stroke', n })
+    redoRef.current = []
+    render(data)
+  }
+  // Push the current viewport to the UI badge + repaint. Called after any pinch/wheel.
+  function applyView(next: Viewport) {
+    viewRef.current = next
+    setZoomPct(Math.round(next.z * 100))
+    render(padRef.current?.toData() ?? [])
   }
   function pushStamps(items: Stamp[]) {
     stampsRef.current.push(...items)
@@ -533,68 +659,143 @@ export function DrawPad({
     const s = SIZES[sizeRef.current]
     const pad = new SignaturePad(canvas, { backgroundColor: PAPER, penColor: colorRef.current, minWidth: s.min, maxWidth: s.max, dotSize: s.dot })
     padRef.current = pad
-    const onEnd = () => {
-      const data = pad.toData()
-      let n = 1
-      if (symmetryRef.current) {
-        const last = data[data.length - 1]
-        if (last) { const w = cssW(); data.push({ ...last, points: last.points.map((p) => ({ ...p, x: w - p.x })) }); n = 2 }
-      }
-      historyRef.current.push({ kind: 'stroke', n })
-      redoRef.current = []
-      render(data)
-    }
-    pad.addEventListener('endStroke', onEnd)
+    // signature_pad is the RENDERER only (fromData). Detach its own pointer input —
+    // it stores screen-space coords with no scale, so it can't draw at a zoom; we
+    // drive EVERY tool (pen included) through the handlers below in content coords.
+    pad.off()
 
-    const onDown = (e: PointerEvent) => {
+    // ── one finger draws, two fingers pinch-zoom + pan ──────────────────────────
+    const beginDraw = (e: PointerEvent) => {
       const m = modeRef.current
-      if (m === 'pen') return
-      if (activePointerRef.current != null) return // a gesture is already in flight — ignore the 2nd finger
-      rectRef.current = canvas.getBoundingClientRect()
-      canvas.setPointerCapture?.(e.pointerId)
-      const { x, y } = pointAt(e)
-      if (m === 'sticker') { stampAt(x, y, stickerRef.current); rectRef.current = null; return }
-      if (m === 'text') { stampAt(x, y, textRef.current.trim()); rectRef.current = null; return }
-      activePointerRef.current = e.pointerId
-      if (m === 'shape') { captureSnapshot(); shapeDragRef.current = { active: true, x0: x, y0: y }; return }
-      // pixel
-      if (fillRef.current) { floodFill(x, y); activePointerRef.current = null; rectRef.current = null; return }
-      dragRef.current = { active: true, changes: [], last: null }
-      paintPixel(x, y)
+      const c = contentAt(e)
+      if (m === 'sticker') { stampAt(c.x, c.y, stickerRef.current); return }
+      if (m === 'text') { stampAt(c.x, c.y, textRef.current.trim()); return }
+      if (m === 'shape') { captureSnapshot(); shapeDragRef.current = { active: true, x0: c.x, y0: c.y }; return }
+      if (m === 'pixel') {
+        if (fillRef.current) { floodFill(c.x, c.y); return }
+        dragRef.current = { active: true, changes: [], last: null }
+        paintPixel(c.x, c.y)
+        return
+      }
+      // pen — collect content-space points; the snapshot makes the live preview O(1).
+      captureSnapshot()
+      penDragRef.current = { points: [{ x: c.x, y: c.y, pressure: e.pressure || 0.5, time: Date.now() }] }
+      schedulePenPreview()
     }
-    const onMove = (e: PointerEvent) => {
-      if (e.pointerId !== activePointerRef.current) return
+    const continueDraw = (e: PointerEvent) => {
       const m = modeRef.current
-      if (m === 'pixel' && dragRef.current.active && !fillRef.current) { const { x, y } = pointAt(e); paintPixel(x, y); return }
+      const c = contentAt(e)
+      if (m === 'pixel' && dragRef.current.active && !fillRef.current) { paintPixel(c.x, c.y); return }
       if (m === 'shape' && shapeDragRef.current?.active) {
-        const { x, y } = pointAt(e)
         const d = shapeDragRef.current
-        previewRef.current = { type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: x, y1: y, color: colorRef.current, size: SIZES[sizeRef.current].max }
+        previewRef.current = { type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: c.x, y1: c.y, color: colorRef.current, size: SIZES[sizeRef.current].max }
         schedulePreview()
+        return
+      }
+      if (m === 'pen' && penDragRef.current) {
+        penDragRef.current.points.push({ x: c.x, y: c.y, pressure: e.pressure || 0.5, time: Date.now() })
+        schedulePenPreview()
       }
     }
-    const onUp = (e: PointerEvent) => {
-      if (e.pointerId !== activePointerRef.current) return
+    const endDraw = (e: PointerEvent) => {
+      const m = modeRef.current
+      if (m === 'pixel' && dragRef.current.active) {
+        const { changes } = dragRef.current
+        dragRef.current = { active: false, changes: [], last: null }
+        if (changes.length) { historyRef.current.push({ kind: 'pixel', changes }); redoRef.current = [] }
+      } else if (m === 'shape' && shapeDragRef.current?.active) {
+        const d = shapeDragRef.current
+        const c = contentAt(e)
+        shapeDragRef.current = null
+        previewRef.current = null
+        if (Math.abs(c.x - d.x0) > 3 || Math.abs(c.y - d.y0) > 3)
+          commitShape({ type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: c.x, y1: c.y, color: colorRef.current, size: SIZES[sizeRef.current].max })
+        else render(pad.toData())
+      } else if (m === 'pen') {
+        commitPenStroke()
+      }
+    }
+    // A 2nd finger landed mid-draw: keep what's already committed (pixel cells are
+    // discrete), drop the pen/shape preview, and hand off to the pinch.
+    const cancelDrawForPinch = () => {
       if (modeRef.current === 'pixel' && dragRef.current.active) {
         const { changes } = dragRef.current
         dragRef.current = { active: false, changes: [], last: null }
         if (changes.length) { historyRef.current.push({ kind: 'pixel', changes }); redoRef.current = [] }
-      } else if (modeRef.current === 'shape' && shapeDragRef.current?.active) {
-        const d = shapeDragRef.current
-        const { x, y } = pointAt(e)
-        shapeDragRef.current = null
-        previewRef.current = null
-        if (Math.abs(x - d.x0) > 3 || Math.abs(y - d.y0) > 3)
-          commitShape({ type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: x, y1: y, color: colorRef.current, size: SIZES[sizeRef.current].max })
-        else render(pad.toData())
       }
-      activePointerRef.current = null
-      rectRef.current = null
+      shapeDragRef.current = null
+      penDragRef.current = null
+      previewRef.current = null
+      render(pad.toData())
+    }
+    const startPinch = () => {
+      const [a, b] = [...pointersRef.current.values()]
+      pinchRef.current = {
+        startView: { ...viewRef.current },
+        startMid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+        startDist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+      }
+    }
+    const doPinch = () => {
+      const pr = pinchRef.current
+      if (!pr) return
+      const [a, b] = [...pointersRef.current.values()]
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+      const dist = Math.hypot(a.x - b.x, a.y - b.y)
+      applyView(pinchView(pr.startView, pr.startMid, pr.startDist, mid, dist, cssW(), cssH()))
+    }
+
+    const onDown = (e: PointerEvent) => {
+      rectRef.current = rectRef.current ?? canvas.getBoundingClientRect()
+      const rect = rectRef.current
+      pointersRef.current.set(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top })
+      canvas.setPointerCapture?.(e.pointerId)
+      if (pointersRef.current.size >= 2) {
+        if (gestureRef.current === 'draw') cancelDrawForPinch()
+        gestureRef.current = 'pinch'
+        activePointerRef.current = null
+        startPinch()
+        return
+      }
+      gestureRef.current = 'draw'
+      activePointerRef.current = e.pointerId
+      beginDraw(e)
+    }
+    const onMove = (e: PointerEvent) => {
+      if (!pointersRef.current.has(e.pointerId)) return
+      const rect = rectRef.current ?? canvas.getBoundingClientRect()
+      pointersRef.current.set(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top })
+      if (gestureRef.current === 'pinch') { if (pointersRef.current.size >= 2) doPinch(); return }
+      if (gestureRef.current === 'draw' && e.pointerId === activePointerRef.current) continueDraw(e)
+    }
+    const onUp = (e: PointerEvent) => {
+      const wasActive = e.pointerId === activePointerRef.current
+      pointersRef.current.delete(e.pointerId)
+      if (gestureRef.current === 'draw' && wasActive) {
+        endDraw(e)
+        activePointerRef.current = null
+        gestureRef.current = 'idle'
+      } else if (gestureRef.current === 'pinch' && pointersRef.current.size < 2) {
+        pinchRef.current = null
+        applyView(settle(viewRef.current, cssW(), cssH()))
+        // Stay 'pinch'-locked while one finger remains, so it can't start a stray
+        // stroke; only fall back to 'idle' once every finger is up.
+        if (pointersRef.current.size === 0) gestureRef.current = 'idle'
+      }
+      if (pointersRef.current.size === 0) rectRef.current = null
+    }
+    // Desktop: wheel zooms toward the cursor (no pinch on a trackpad/mouse).
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const rect = rectRef.current ?? canvas.getBoundingClientRect()
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1
+      applyView(zoomAt(viewRef.current, factor, e.clientX - rect.left, e.clientY - rect.top, cssW(), cssH()))
     }
     canvas.addEventListener('pointerdown', onDown)
     canvas.addEventListener('pointermove', onMove)
     canvas.addEventListener('pointerup', onUp)
     canvas.addEventListener('pointercancel', onUp)
+    canvas.addEventListener('wheel', onWheel, { passive: false })
 
     // The stage is flex:1 under a toolbar whose height changes as tools open
     // (sticker packs, the template bar, the text field…). Those reflows resize the
@@ -610,12 +811,16 @@ export function DrawPad({
       const w = Math.max(1, Math.round(rect.width * r))
       const h = Math.max(1, Math.round(rect.height * r))
       if (w === lastW && h === lastH) return
-      if (activePointerRef.current != null) return
+      if (gestureRef.current !== 'idle') return // never resize mid draw/pinch
       lastW = w; lastH = h
       const data = pad.toData()
       canvas.width = w
       canvas.height = h
       canvas.getContext('2d')?.scale(r, r)
+      // Re-clamp the viewport to the new size (a toolbar opening shrinks the stage);
+      // render() reads viewRef so the pan stays within the magnified content.
+      viewRef.current = settle(viewRef.current, w / r, h / r)
+      setZoomPct(Math.round(viewRef.current.z * 100))
       render(data)
     }
     resize()
@@ -631,7 +836,7 @@ export function DrawPad({
       canvas.removeEventListener('pointermove', onMove)
       canvas.removeEventListener('pointerup', onUp)
       canvas.removeEventListener('pointercancel', onUp)
-      pad.removeEventListener('endStroke', onEnd)
+      canvas.removeEventListener('wheel', onWheel)
       pad.off()
       padRef.current = null
       baseImgRef.current = null
@@ -647,6 +852,13 @@ export function DrawPad({
       rectRef.current = null
       historyRef.current = []
       redoRef.current = []
+      // Reset the viewport so re-opening the pad starts fitted at 1×.
+      viewRef.current = { ...IDENTITY }
+      pointersRef.current.clear()
+      gestureRef.current = 'idle'
+      pinchRef.current = null
+      penDragRef.current = null
+      setZoomPct(100)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -685,12 +897,9 @@ export function DrawPad({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial, initialSceneUrl])
 
-  useEffect(() => {
-    const pad = padRef.current
-    if (!pad) return
-    pad.off()
-    if (mode === 'pen') pad.on()
-  }, [mode])
+  // signature_pad NEVER handles input itself (it can't map a zoomed coordinate); the
+  // pad's pointer handlers drive every tool, including the pen. Keep it detached.
+  useEffect(() => { padRef.current?.off() }, [mode])
   useEffect(() => { if (padRef.current) padRef.current.penColor = color }, [color])
   useEffect(() => {
     const pad = padRef.current
@@ -788,6 +997,9 @@ export function DrawPad({
   }
   const clear = () => {
     pixelsRef.current.clear(); stampsRef.current = []; shapesRef.current = []; historyRef.current = []; redoRef.current = []
+    // Snap back to a fitted, un-zoomed blank page.
+    viewRef.current = { ...IDENTITY }
+    setZoomPct(100)
     render([])
   }
 
@@ -809,6 +1021,15 @@ export function DrawPad({
   function exportBlob(cb: (blob: Blob | null) => void) {
     const canvas = canvasRef.current
     if (!canvas) return cb(null)
+    // Always export the FULL drawing at 1×: if the user saved while zoomed in, reset
+    // the viewport and re-render first so the PNG isn't cropped to the visible region.
+    // The scene JSON is unaffected (it stores zoom-independent content coords).
+    const v = viewRef.current
+    if (v.z !== 1 || v.ox !== 0 || v.oy !== 0) {
+      viewRef.current = { ...IDENTITY }
+      setZoomPct(100)
+      render(padRef.current?.toData() ?? [])
+    }
     const scale = Math.min(1, MAX_EDGE / Math.max(canvas.width, canvas.height))
     if (scale >= 1) return canvas.toBlob(cb, 'image/png')
     const off = document.createElement('canvas')
@@ -1003,7 +1224,16 @@ export function DrawPad({
 
       <div className="drawpad__stage">
         <canvas ref={canvasRef} className="drawpad__canvas" />
-        {mode === 'pixel' && <div className="drawpad__grid" aria-hidden="true" style={{ '--cell': `${SIZES[size].cell}px` } as React.CSSProperties} />}
+        {/* The pixel grid is a CSS overlay at base scale, so hide it while zoomed (it
+            wouldn't line up with the magnified cells). */}
+        {mode === 'pixel' && zoomPct === 100 && <div className="drawpad__grid" aria-hidden="true" style={{ '--cell': `${SIZES[size].cell}px` } as React.CSSProperties} />}
+        {/* Zoom badge — tap to snap back to fit. Pinch (two fingers) or the wheel
+            zooms; one finger keeps drawing. Only shown once zoomed in. */}
+        {zoomPct > 100 && (
+          <button type="button" className="drawpad__zoom mono" onClick={() => applyView({ ...IDENTITY })} aria-label={t.memo.zoomReset}>
+            <Icon name="magnifying-glass-bold" size={14} /> {zoomPct}%
+          </button>
+        )}
         {/* One-tap prompt for the "Sur une photo" entry when no photo is set yet. */}
         {pickPhotoOnOpen && !hasPhoto && (
           <button type="button" className="drawpad__photoprompt" onClick={() => photoInputRef.current?.click()}>

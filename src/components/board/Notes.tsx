@@ -11,6 +11,7 @@ import { useDrawingToRoutine } from '../../lib/drawingToRoutine'
 import { useSaveToGallery } from '../../lib/drawingGallery'
 import { Icon, InlineIcon } from '../Icon'
 import { DrawPad } from '../DrawPad'
+import { ZoomableImg } from '../ZoomableImg'
 import { colorOf as memberColorOf, type BoardData, type Member, type NoteRow } from './types'
 
 // Fridge notes on the Aujourd'hui board: little hand-written cards a parent can
@@ -138,7 +139,10 @@ export function Notes({
           const body =
             media === 'drawing' || media === 'image' ? (
               <span className="note-card__media">
-                <img
+                {/* Tap the image to inspect it full-screen (pinch-zoom + drag to pan +
+                    double-tap), like flyer/recipe photos. For a drawing, editing moved
+                    to the ✏️ badge button below so a tap zooms instead of opening the pad. */}
+                <ZoomableImg
                   className="note-card__draw"
                   src={imgUrl(n.media_key!)}
                   alt={media === 'image' ? t.notes.photo : t.notes.drawing}
@@ -160,8 +164,8 @@ export function Notes({
           // dismisses it.
           if (media) {
             const play = media === 'audio' ? () => playClip(n.media_key!) : undefined
-            // A drawing is the family doodle: parent OR toddler (not a guest) can tap
-            // it to add to it. Clearing (✕) stays parent-only below.
+            // A drawing is the family doodle: parent OR toddler (not a guest) can open
+            // it to add to it — now via the ✏️ badge, since a tap on the image zooms it.
             const editable = !ro && media === 'drawing'
             const isVisual = media === 'drawing' || media === 'image'
             return (
@@ -170,16 +174,22 @@ export function Notes({
                   <button type="button" className="note-card__mediabtn" onClick={play} aria-label={t.notes.memo}>
                     {body}
                   </button>
-                ) : editable ? (
-                  // The whole drawing is the edit target; the corner ✏️ is the cue.
-                  <button type="button" className="note-card__mediabtn" onClick={() => setEditing(n)} aria-label={t.memo.edit}>
-                    {body}
-                    <span className="note-card__edit-badge" aria-hidden="true">
-                      <Icon name="pencil-simple-bold" size={14} />
-                    </span>
-                  </button>
                 ) : (
-                  body
+                  // Visual media: the image is its own zoom target (ZoomableImg). A
+                  // drawing also gets a ✏️ badge button to open the pad and add to it.
+                  <>
+                    {body}
+                    {editable && (
+                      <button
+                        type="button"
+                        className="note-card__edit-badge note-card__edit-badge--btn"
+                        onClick={() => setEditing(n)}
+                        aria-label={t.memo.edit}
+                      >
+                        <Icon name="pencil-simple-bold" size={14} />
+                      </button>
+                    )}
+                  </>
                 )}
                 {!ro && !toddler && (
                   <button

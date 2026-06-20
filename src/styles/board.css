@@ -634,10 +634,6 @@
 .note-card__mediabtn {
   position: relative;
 }
-.note-card--visual .note-card__mediabtn {
-  display: block;
-  width: 100%;
-}
 .note-card__edit-badge {
   position: absolute;
   top: 0.4rem;
@@ -650,6 +646,14 @@
   box-shadow: var(--shadow-sm);
   line-height: 0;
   pointer-events: none; /* the surrounding button owns the tap */
+}
+/* When the image is its own zoom target, the badge becomes the real "edit / add to
+   it" button — sits above the image and owns its own tap. */
+.note-card__edit-badge--btn {
+  border: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 1;
 }
 
 /* --- The Record / Draw row under the Note rapide text capture (AddSheet) ------ */
@@ -836,6 +840,27 @@
     linear-gradient(to right, var(--line) 1px, transparent 1px),
     linear-gradient(to bottom, var(--line) 1px, transparent 1px);
   background-size: var(--cell, 24px) var(--cell, 24px);
+}
+/* Zoom badge (#14): shows the current zoom while pinched in; tap to snap to fit.
+   Sits over the canvas, out of the way of the drawing. */
+.drawpad__zoom {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.drawpad__zoom:active {
+  transform: scale(0.96);
 }
 /* Action bar: Cancel on the left, the Share / To-routine / Save group on the right. */
 .drawpad__actions-end {
@@ -1155,6 +1180,17 @@
 }
 .drawgallery__open:active {
   transform: scale(0.98);
+}
+/* Guest view of a kept drawing: the same tile look, but the image is a zoom target
+   (ZoomableImg) rather than the open-the-pad button. */
+.drawgallery__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #fffdf7;
+  border-radius: 0.7rem;
+  box-shadow: var(--shadow-sm);
 }
 .drawgallery__del {
   position: absolute;
