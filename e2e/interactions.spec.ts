@@ -181,11 +181,11 @@ test.describe('settings tabs', () => {
     await settle(page, '.operator__tabs')
     const tabs = page.getByRole('tab')
     const n = await tabs.count()
-    // 19 sections: Guide (first/default), Maisonnée, Le cercle, Rendez-vous,
+    // 20 sections: Guide (first/default), Maisonnée, Le cercle, Rendez-vous,
     // Corvées, Routines, À compléter, Magasinage, Recettes, Repas, Réserve, Liste
-    // fantôme, Tablettes, Invité (Guest), Photos, Bilan, Affichage, Mode calme, and
-    // the AI/Debug journal tab (ai-log).
-    expect(n).toBe(19)
+    // fantôme, Tablettes, Invité (Guest), Photos, Bilan, Affichage, Mode calme, IA
+    // (the AI on/off switch), and the AI/Debug journal tab (ai-log).
+    expect(n).toBe(20)
     for (let i = 0; i < n; i++) {
       await tabs.nth(i).click()
       await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true')
