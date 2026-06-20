@@ -847,6 +847,87 @@ export const GUIDE: GuideEntry[] = [
 
   // ── Key concepts (cross-cutting) ──────────────────────────────────────────
   {
+    id: 'ai',
+    icon: 'sparkle-bold',
+    group: 'concepts',
+    title: { fr: 'L’intelligence (l’IA)', en: 'The AI' },
+    what: {
+      fr: 'L’IA donne un coup de main à quelques endroits — toujours sur demande, jamais en arrière-plan. Le picto [[icon:sparkle-bold]] est le signe qu’une fonction utilise l’IA. Tu peux la couper : tout continue de marcher sans elle.',
+      en: 'AI lends a hand in a few spots — always on demand, never in the background. The [[icon:sparkle-bold]] glyph marks a feature that uses AI. You can turn it off: everything keeps working without it.',
+    },
+    points: [
+      {
+        label: { fr: 'Où l’IA aide', en: 'Where AI helps' },
+        detail: {
+          fr: 'Cinq endroits, pas plus : la capture (le ＋ devine si ta note est un événement, une tâche, un article…), l’import d’une recette (depuis une photo ou un collé-copié), le bilan de la semaine, les suggestions de souper, et « Demander à l’IA » dans la recherche. Partout ailleurs, aucune IA.',
+          en: 'Five spots, no more: capture (the ＋ guesses whether your note is an event, a task, an item…), recipe import (from a photo or a paste), the weekly recap, supper suggestions, and “Ask the AI” in search. Everywhere else, no AI.',
+        },
+        why: {
+          fr: 'Savoir exactement quand l’IA entre en jeu — et quand elle n’y est pas du tout.',
+          en: 'To know exactly when AI is involved — and when it isn’t at all.',
+        },
+      },
+      {
+        label: { fr: 'Ce qu’elle envoie', en: 'What it sends' },
+        detail: {
+          fr: 'Seulement ce qu’il faut pour la tâche, et seulement quand TU touches le bouton : le texte que tu écris (capture, question), la photo d’une recette, ou un court résumé daté de tes propres données (soupers, événements, liste, corvées) pour répondre à une question. C’est traité par Cloudflare Workers AI, puis oublié — jamais en continu, jamais sans ton geste.',
+          en: 'Only what the task needs, and only when YOU tap the button: the text you type (capture, a question), a recipe photo, or a short dated summary of your own data (suppers, events, list, chores) to answer a question. It’s processed by Cloudflare Workers AI, then dropped — never continuously, never without your action.',
+        },
+        why: {
+          fr: 'Pour que rien de ta maisonnée ne quitte l’appareil sans que tu l’aies déclenché.',
+          en: 'So nothing about your household leaves the device unless you triggered it.',
+        },
+      },
+      {
+        label: { fr: 'Vie privée', en: 'Privacy' },
+        detail: {
+          fr: 'Le traitement reste dans le réseau de Cloudflare (conforme à la Loi 25 du Québec) et ne sert pas à entraîner des modèles ni à faire de la pub. Mais c’est quand même envoyé hors de l’appareil pour être traité — alors évite d’écrire un mot de passe ou un numéro sensible dans une note ou une question.',
+          en: 'Processing stays inside Cloudflare’s network (compliant with Québec’s Law 25) and is not used to train models or for ads. It is still sent off the device to be processed, though — so don’t type a password or a sensitive number into a note or a question.',
+        },
+        why: {
+          fr: 'Comprendre où vont tes mots avant de les écrire.',
+          en: 'Understand where your words go before you type them.',
+        },
+      },
+      {
+        label: { fr: 'Ça peut se tromper', en: 'It can be wrong' },
+        detail: {
+          fr: 'L’IA devine — elle peut mal classer une note, inventer une étape de recette, ou mal lire une date. Rien n’est jamais perdu : tu corriges en un geste (« non, plutôt… » sur une capture, modifier la recette, ignorer une suggestion). Vérifie une réponse importante plutôt que de t’y fier les yeux fermés.',
+          en: 'AI guesses — it can misfile a note, invent a recipe step, or misread a date. Nothing is ever lost: you fix it in one tap (“no, rather…” on a capture, edit the recipe, ignore a suggestion). Double-check an important answer instead of trusting it blindly.',
+        },
+        why: {
+          fr: 'L’IA est une aide, pas une autorité — tu gardes le dernier mot.',
+          en: 'AI is a helper, not an authority — you keep the last word.',
+        },
+      },
+      {
+        label: { fr: 'Jamais automatique', en: 'Never automatic' },
+        detail: {
+          fr: 'Une seule réponse par geste, jamais une boucle, jamais un fil sans fin, jamais une notification. L’IA ne tourne pas en arrière-plan et ne te relance pas — fidèle à l’esprit calme de l’app.',
+          en: 'One answer per tap, never a loop, never an endless feed, never a notification. AI doesn’t run in the background and never nags you — true to the app’s calm spirit.',
+        },
+      },
+      {
+        label: { fr: 'Tu peux l’éteindre', en: 'You can turn it off' },
+        detail: {
+          fr: 'Un interrupteur permet de couper l’IA, en entier ou par fonction. Coupée, l’app reste entière : la capture offre un choix manuel du type, l’import de recette se fait à la main, et le bilan et les suggestions se cachent simplement. Rien ne casse.',
+          en: 'A switch lets you turn AI off, whole or per feature. Off, the app stays complete: capture offers a manual type-picker, recipe import is done by hand, and the recap and suggestions simply hide. Nothing breaks.',
+        },
+        why: {
+          fr: 'L’IA est un plus optionnel, jamais une dépendance.',
+          en: 'AI is an optional plus, never a dependency.',
+        },
+      },
+      {
+        label: { fr: 'Quand une fonction IA bloque', en: 'When an AI feature is stuck' },
+        detail: {
+          fr: 'Réglages ▸ Débogage tient un petit journal d’entretien de l’IA : si une fonction cesse de répondre, tu y vois la vraie cause au lieu de deviner.',
+          en: 'Settings ▸ Debug keeps a small AI maintenance log: if a feature stops responding, you see the real cause there instead of guessing.',
+        },
+      },
+    ],
+  },
+  {
     id: 'capture',
     icon: 'plus-bold',
     group: 'concepts',
