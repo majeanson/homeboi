@@ -474,18 +474,34 @@ export function DrawPad({
     canvas.addEventListener('pointerup', onUp)
     canvas.addEventListener('pointercancel', onUp)
 
+    // The stage is flex:1 under a toolbar whose height changes as tools open
+    // (sticker packs, the template bar, the text field…). Those reflows resize the
+    // canvas WITHOUT firing a window 'resize', so the backing store kept its old
+    // size — signature_pad then mapped clientX/Y at the wrong scale and the ink
+    // drifted from the finger, more the further you drew. A ResizeObserver re-syncs
+    // on any layout change. Guards: skip no-op fires (RO double-fires same size) and
+    // never resize mid-gesture (setting canvas.width clears the live stroke).
+    let lastW = 0, lastH = 0
     const resize = () => {
-      const data = pad.toData()
       const r = ratio()
       const rect = canvas.getBoundingClientRect()
-      canvas.width = rect.width * r
-      canvas.height = rect.height * r
+      const w = Math.max(1, Math.round(rect.width * r))
+      const h = Math.max(1, Math.round(rect.height * r))
+      if (w === lastW && h === lastH) return
+      if (activePointerRef.current != null) return
+      lastW = w; lastH = h
+      const data = pad.toData()
+      canvas.width = w
+      canvas.height = h
       canvas.getContext('2d')?.scale(r, r)
       render(data)
     }
     resize()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null
+    ro?.observe(canvas)
     window.addEventListener('resize', resize)
     return () => {
+      ro?.disconnect()
       window.removeEventListener('resize', resize)
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
       rafRef.current = null
