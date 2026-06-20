@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { api } from '../lib/api'
-import { BOARD_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, ROUTINES_KEY } from '../lib/queryKeys'
 import { formatTime, formatDayLong } from '../lib/format'
 import { useAmbient } from '../lib/ambient'
+import { timeOfDay } from '../lib/timeofday'
+import { todRank, TOD_ICON, isRoutineTod } from '../lib/routineTod'
 import { PhotoMosaic } from './PhotoMosaic'
 import { InlineIcon } from './Icon'
 
 // The ambient screensaver (backlog #3): after N idle minutes the kiosk fades to a
-// big clock + date over the slow photo frame, with an optional "next up" line.
+// big clock + date over the slow photo frame, with an optional "next up" stack —
+// tonight's meal, the next event, and the routine of the moment (#4).
 // Tap/press anything to wake. What it shows is operator-tunable (lib/ambient,
 // Réglages ▸ Affichage). HubLayout owns the idle timer + the `show` flag and the
 // wake (any pointer/key reset hides it); this is just the calm full-screen face.
@@ -23,6 +26,12 @@ interface BoardEvent {
 interface BoardMeal {
   id: string
   title: string
+}
+interface RoutineRow {
+  id: string
+  name: string
+  timeOfDay: string | null
+  cards: { icon?: string }[]
 }
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
@@ -60,6 +69,24 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
   // next" on a wall at rest, alongside the next event. (#4: next up = meal + event.)
   const meal = a.showNext ? data?.tonight ?? undefined : undefined
 
+  // #4 (last leg): the routine that fits the moment — morning routines at morning,
+  // bedtime in the evening — so a kid glancing at the wall sees what's coming. Its
+  // own query (only while the screensaver is up, so the board poll stays lean), the
+  // same ROUTINES_KEY cache the Routines tab fills. todRank orders by the current
+  // time-of-day; we take the best-ranked routine that actually has cards. Calm: a
+  // cue, never a nag — it just surfaces, it doesn't blink or count.
+  const { data: rdata } = useQuery({
+    queryKey: ROUTINES_KEY,
+    queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
+    enabled: show && a.showNext,
+  })
+  const current = timeOfDay(now)
+  const routine = a.showNext
+    ? [...(rdata?.routines ?? [])]
+        .filter((r) => r.cards.length > 0)
+        .sort((x, y) => todRank(current, x.timeOfDay) - todRank(current, y.timeOfDay))[0]
+    : undefined
+
   if (!show) return null
   return (
     <div
@@ -88,6 +115,12 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
           <div className="ambient__next mono">
             <InlineIcon name="calendar-blank-bold" />{' '}
             {next.all_day === 1 ? next.title : `${formatTime(next.start_at, lang)} · ${next.title}`}
+          </div>
+        )}
+        {routine && (
+          <div className="ambient__next mono">
+            <InlineIcon name={isRoutineTod(routine.timeOfDay) ? TOD_ICON[routine.timeOfDay] : 'baby-bold'} />{' '}
+            {routine.name}
           </div>
         )}
       </div>

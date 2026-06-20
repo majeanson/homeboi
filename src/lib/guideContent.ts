@@ -2490,8 +2490,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Mode veille', en: 'Idle mode' },
         detail: {
-          fr: 'Au repos, le kiosque montre une horloge, la date et tes photos. Choisis le délai et ce qui s’affiche ; touche l’écran pour réveiller.',
-          en: 'At rest the kiosk shows a clock, the date and your photos. Pick the delay and what appears; touch the screen to wake.',
+          fr: 'Au repos, le kiosque montre une horloge, la date, tes photos et « à venir » : le prochain repas, événement et la routine du moment. Choisis le délai et ce qui s’affiche ; touche l’écran pour réveiller.',
+          en: 'At rest the kiosk shows a clock, the date, your photos and “up next”: the next meal, event and the routine of the moment. Pick the delay and what appears; touch the screen to wake.',
         },
         why: {
           fr: 'Un mur calme et joli quand personne ne s’en sert — et l’option de revenir à « Maisonnée » pour ne pas rester bloqué sur un visage.',
