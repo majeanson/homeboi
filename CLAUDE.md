@@ -70,6 +70,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Person photo/initial, mic, icon, image | **`Avatar`/`VoiceButton`/`Icon`/`ZoomableImg`** | `components/*` |
 | Confirm a destructive delete / undo a light one | **`useConfirm`** / the undo toast | `lib/confirm.tsx`, `lib/toast.tsx` (`lib/undoStack.ts`) |
 | Touch drag-and-drop / reorder | **`usePointerDnd`** | `lib/dnd.tsx` (never HTML5 `draggable`) |
+| Upload a photo / audio / drawing blob to R2 | **`uploadMedia()`** / **`useMediaUpload()`** | `lib/uploadMedia.ts` (resize→POST→`{key}`, 503→`MediaUnavailableError`) |
 
 ### Cross-cutting conventions a new feature MUST respect
 

@@ -3,9 +3,9 @@ import { DECK_EMOJIS, type DeckCard } from '../lib/routineTemplates'
 import { useT } from '../i18n'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { useOnline } from '../lib/online'
-import { api, isStatus } from '../lib/api'
 import { sideInsert, sideRemove, sideMove, sideSet, alignSide } from '../lib/parallelArray'
-import { resizeImage, imgUrl, PHOTO_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
+import { imgUrl, MAX_UPLOAD_BYTES } from '../lib/image'
+import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { EditField } from './EditField'
 import { DrawPad } from './DrawPad'
 import { Icon, InlineIcon } from './Icon'
@@ -305,12 +305,12 @@ function ClipControl({
     setBusy(true)
     setErr(false)
     try {
-      const { key } = await api<{ key: string }>('routine-audio', { method: 'POST', body: blob })
-      onUploaded(key)
+      // Audio rides as-is (no image resize); the returned R2 key is the clip.
+      onUploaded(await uploadMedia('routine-audio', blob, { resize: false }))
     } catch (e) {
       // R2 unbound → hide the whole feature (it can't store anything). Anything
       // else (offline, server hiccup) → a calm inline note; the card is unharmed.
-      if (isStatus(e, 503)) onAudioOff()
+      if (e instanceof MediaUnavailableError) onAudioOff()
       else setErr(true)
     } finally {
       setBusy(false)
@@ -425,16 +425,13 @@ function PhotoControl({
     setBusy(true)
     setErr(false)
     try {
-      const file = input instanceof File ? input : new File([input], 'dessin.png', { type: input.type || 'image/png' })
-      const blob = await resizeImage(file, PHOTO_MAX)
-      if (blob.size > MAX_UPLOAD_BYTES) {
-        setErr(true)
-        return // a format no decoder could shrink; skip rather than hard-reject
-      }
-      const { key } = await api<{ key: string }>('routine-card-photo', { method: 'POST', body: blob })
+      // A picked file OR a drawing's PNG; resized small + capped like every photo.
+      const key = await uploadMedia('routine-card-photo', input, { maxBytes: MAX_UPLOAD_BYTES, filename: 'dessin.png' })
       onUploaded(key)
     } catch (e) {
-      if (isStatus(e, 503)) onPhotoOff()
+      // R2 unbound → hide the whole control; an un-shrinkable too-large blob or any
+      // other failure → a calm inline note (setErr), the card unharmed.
+      if (e instanceof MediaUnavailableError) onPhotoOff()
       else setErr(true)
     } finally {
       setBusy(false)

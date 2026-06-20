@@ -5,7 +5,8 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useUndoToast } from '../../lib/toast'
-import { resizeImage, imgUrl, PHOTO_MAX } from '../../lib/image'
+import { imgUrl } from '../../lib/image'
+import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { isGuest } from '../../lib/device'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
@@ -70,13 +71,13 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
     setProgress({ done: 0, total: files.length })
     try {
       for (let i = 0; i < files.length; i++) {
-        const blob = await resizeImage(files[i], PHOTO_MAX)
-        await api('photos', { method: 'POST', body: blob })
+        // Sequential so the server-side prune can't race itself.
+        await uploadMedia('photos', files[i])
         setProgress({ done: i + 1, total: files.length })
       }
       qc.invalidateQueries({ queryKey: ['photos'] })
     } catch (e) {
-      if (isStatus(e, 503)) setUnavailable(true)
+      if (e instanceof MediaUnavailableError) setUnavailable(true)
       // A mid-batch failure still surfaces what DID upload.
       qc.invalidateQueries({ queryKey: ['photos'] })
     } finally {

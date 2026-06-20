@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { resizeImage, imgUrl, PHOTO_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
+import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
 import {
   type Recipe,
@@ -333,9 +334,7 @@ export function RecipeForm({
   async function uploadPhoto(file: File) {
     setUploading(true)
     try {
-      const blob = await resizeImage(file, PHOTO_MAX)
-      const { key } = await api<{ key: string }>('recipe-image', { method: 'POST', body: blob })
-      setImage(key)
+      setImage(await uploadMedia('recipe-image', file))
     } catch {
       /* storage off / failure — leave the picture unset, never block the form */
     } finally {
@@ -353,13 +352,12 @@ export function RecipeForm({
   async function uploadStepPhoto(i: number, file: File) {
     setStepUploading(i)
     try {
-      const blob = await resizeImage(file, PHOTO_MAX)
-      if (blob.size > MAX_UPLOAD_BYTES) return // a format no decoder could shrink; skip rather than hard-reject
-      const { key } = await api<{ key: string }>('recipe-step-image', { method: 'POST', body: blob })
+      const key = await uploadMedia('recipe-step-image', file, { maxBytes: MAX_UPLOAD_BYTES })
       setStepImages((imgs) => sideSet(alignSide(imgs, steps.length), i, key))
     } catch (e) {
-      if (isStatus(e, 503)) setStepPhotoOff(true)
-      /* other failure — leave the step photo unset, never block the form */
+      if (e instanceof MediaUnavailableError) setStepPhotoOff(true)
+      /* other failure (incl. an un-shrinkable too-large blob) — leave the step
+         photo unset, never block the form */
     } finally {
       setStepUploading(null)
     }

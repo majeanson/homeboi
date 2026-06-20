@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useConfirm } from '../../lib/confirm'
-import { imgUrl, resizeImage, PHOTO_MAX } from '../../lib/image'
+import { imgUrl } from '../../lib/image'
+import { useMediaUpload } from '../../lib/uploadMedia'
 import { useOnline } from '../../lib/online'
 import { ZoomableImg } from '../ZoomableImg'
 import { Icon } from '../Icon'
@@ -32,7 +33,9 @@ export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; m
   const confirm = useConfirm()
   const online = useOnline()
   const fileRef = useRef<HTMLInputElement>(null)
-  const [busy, setBusy] = useState(false)
+  // The gallery blob rides R2 through the shared /api/cercle image upload (same as
+  // the avatar); the returned key then links {key, caption} to this contact.
+  const { upload, busy } = useMediaUpload({ endpoint: 'cercle' })
 
   // Prefixed under 'cercle' so a realtime cercle nudge (or a CERCLE_KEY
   // invalidation) refreshes the gallery too.
@@ -46,18 +49,14 @@ export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; m
 
   async function addPhoto(file: File | undefined) {
     if (!file || busy) return
-    setBusy(true)
-    try {
-      const blob = await resizeImage(file, PHOTO_MAX)
-      const { key } = await api<{ key: string }>('cercle', { method: 'POST', body: blob })
-      await api('cercle-photos', { method: 'POST', body: { contactId, photoKey: key } })
+    const key = await upload(file)
+    if (key) {
+      // Link the stored blob to this contact (silent on failure — offline/R2 unset
+      // keeps the current gallery).
+      await api('cercle-photos', { method: 'POST', body: { contactId, photoKey: key } }).catch(() => {})
       refresh()
-    } catch {
-      /* upload failed (offline / R2 unset) — silently keep the current gallery */
-    } finally {
-      setBusy(false)
-      if (fileRef.current) fileRef.current.value = ''
     }
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   async function saveCaption(p: ContactPhoto, next: string) {
