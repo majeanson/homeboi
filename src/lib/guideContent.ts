@@ -1997,12 +1997,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Assigner à une personne', en: 'Assign to a person' },
         detail: {
-          fr: 'Relie l’événement à un membre; sa couleur apparaît à côté sur le babillard.',
-          en: 'Link the event to a member; their colour shows beside it on the board.',
+          fr: 'Relie l’événement à un membre (sa couleur apparaît à côté sur le babillard) OU à quelqu’un du cercle — « Mamie visite », « dîner chez les Roy ». Choisir un contact remplace le membre : un seul « qui » par événement.',
+          en: 'Link the event to a member (their colour shows beside it on the board) OR to someone from the circle — “Mamie visits”, “dinner at the Roys’”. Picking a contact replaces the member: one “who” per event.',
         },
         why: {
-          fr: 'Pour voir d’un coup à qui appartient chaque rendez-vous, sans lire les noms.',
-          en: 'So you can see at a glance whose appointment each one is, without reading names.',
+          fr: 'Pour voir d’un coup à qui appartient chaque rendez-vous, sans lire les noms — même quand ce n’est pas quelqu’un de la maisonnée.',
+          en: 'So you can see at a glance whose appointment each one is, without reading names — even when it isn’t someone in the household.',
         },
       },
       {

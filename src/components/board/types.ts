@@ -17,6 +17,8 @@ export interface EventRow {
   start_at: number
   all_day: number
   member_id: string | null
+  contact_id?: string | null // #21: assigned to a « Le cercle » contact instead of a member
+  contact_name?: string | null // the contact's first name, joined server-side, for the label
   soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
   birthday?: boolean // a DERIVED birthday occurrence (from a person's birthday), not a stored event
   age?: number | null // the age turned, when the birth year is known

@@ -17,7 +17,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // may be in the past, e.g. "garbage every Wednesday" set weeks ago).
   const today = dayStart(new Date(Date.now()))
   const { results } = await ctx.env.DB.prepare(
-    `SELECT id, title, start_at, all_day, member_id, recur_json, lead_seconds FROM events
+    `SELECT id, title, start_at, all_day, member_id, contact_id, recur_json, lead_seconds,
+            (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name
+       FROM events
       WHERE household_id = ? AND (recur_json IS NOT NULL OR start_at >= ?)
       ORDER BY start_at LIMIT 100`,
   )
@@ -32,6 +34,7 @@ interface EventBody {
   startAt?: number
   allDay?: boolean
   memberId?: string | null
+  contactId?: string | null // #21: a « Le cercle » contact instead of a member
   recur?: unknown // {freq,interval?,weekdays?} or null/absent for a one-off
   leadSeconds?: number | null // calm "Bientôt" lead window; null/absent = no reminder
 }
@@ -56,13 +59,18 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const title = body?.title?.trim()
   if (!title || typeof body?.startAt !== 'number') return badRequest('Titre + date requis.')
   const id = newId()
+  // An event is for a member OR a contact, never both — a picked contact clears the
+  // member assignment so the "who" stays unambiguous.
+  const contactId = body.contactId ?? null
+  const memberId = contactId ? null : body.memberId ?? null
   await ctx.env.DB.prepare(
-    'INSERT INTO events (id, household_id, member_id, title, start_at, all_day, recur_json, lead_seconds, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO events (id, household_id, member_id, contact_id, title, start_at, all_day, recur_json, lead_seconds, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
       actor.householdId,
-      body.memberId ?? null,
+      memberId,
+      contactId,
       title,
       Math.floor(body.startAt),
       body.allDay ? 1 : 0,
@@ -78,14 +86,17 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<EventBody>(ctx.request)
   const title = body?.title?.trim()
   if (!body?.id || !title || typeof body?.startAt !== 'number') return badRequest('id + titre + date requis.')
+  const contactId = body.contactId ?? null
+  const memberId = contactId ? null : body.memberId ?? null
   const res = await ctx.env.DB.prepare(
-    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, recur_json = ?, lead_seconds = ? WHERE id = ? AND household_id = ?',
+    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, contact_id = ?, recur_json = ?, lead_seconds = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title,
       Math.floor(body.startAt),
       body.allDay ? 1 : 0,
-      body.memberId ?? null,
+      memberId,
+      contactId,
       recurJson(body.recur),
       leadSeconds(body.leadSeconds),
       body.id,

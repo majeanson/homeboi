@@ -35,12 +35,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ?',
+      'SELECT id, title, start_at, all_day, member_id, contact_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ?',
     )
       .bind(hh, from, to)
-      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null }>(),
+      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; contact_id: string | null; contact_name: string | null }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, recur_json FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
+      'SELECT id, title, start_at, all_day, member_id, contact_id, recur_json, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
     )
       .bind(hh)
       .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json: string }>(),

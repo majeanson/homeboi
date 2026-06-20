@@ -11,6 +11,8 @@ interface Ev {
   start_at: number
   all_day: number
   member_id: string | null
+  contact_id?: string | null // #21: a « Le cercle » contact instead of a member
+  contact_name?: string | null // the contact's first name, for the board label
   soon: boolean // within its calm "Bientôt" lead window right now (see isSoon)
   birthday?: boolean // a derived birthday occurrence (cake icon, read-only → person)
   age?: number | null // the age turned, when the birth year is known
@@ -18,7 +20,16 @@ interface Ev {
 const sortEvents = (xs: Ev[]) => xs.sort((p, q) => q.all_day - p.all_day || p.start_at - q.start_at)
 // One-off event rows as they come from SQL (lead_seconds joins the client-facing Ev
 // only as the derived `soon` flag).
-type EvRow = { id: string; title: string; start_at: number; all_day: number; member_id: string | null; lead_seconds: number | null }
+type EvRow = {
+  id: string
+  title: string
+  start_at: number
+  all_day: number
+  member_id: string | null
+  contact_id: string | null
+  contact_name: string | null
+  lead_seconds: number | null
+}
 
 // The whole board in one read — the kiosk polls this. Deliberately one
 // round-trip so a wall tablet on flaky wifi gets a complete frame or none.
@@ -58,12 +69,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, lead_seconds FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
+      'SELECT id, title, start_at, all_day, member_id, contact_id, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
     )
       .bind(hh, today, tomorrow)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, lead_seconds FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
+      'SELECT id, title, start_at, all_day, member_id, contact_id, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
     )
       .bind(hh, tomorrow, dayAfter)
       .all(),
@@ -141,7 +152,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // "Up next" beyond tomorrow (rest of the week) — tomorrow has its own card, so
   // start the day after to avoid showing it twice.
   const upcoming = await ctx.env.DB.prepare(
-    'SELECT id, title, start_at, all_day, member_id, lead_seconds FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY start_at LIMIT 8',
+    'SELECT id, title, start_at, all_day, member_id, contact_id, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY start_at LIMIT 8',
   )
     .bind(hh, dayAfter, weekEnd)
     .all()
@@ -150,7 +161,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // (today → week end) into concrete occurrences, then bucket into the same
   // day ranges as the one-off events above. See _lib/recur.
   const recurring = await ctx.env.DB.prepare(
-    'SELECT id, title, start_at, all_day, member_id, recur_json, lead_seconds FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
+    'SELECT id, title, start_at, all_day, member_id, contact_id, recur_json, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
   )
     .bind(hh)
     .all<{
@@ -159,6 +170,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
       start_at: number
       all_day: number
       member_id: string | null
+      contact_id: string | null
+      contact_name: string | null
       recur_json: string
       lead_seconds: number | null
     }>()
@@ -175,6 +188,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
         start_at: at,
         all_day: e.all_day,
         member_id: e.member_id,
+        contact_id: e.contact_id,
+        contact_name: e.contact_name,
         soon: isSoon(at, e.lead_seconds),
       })
     }
@@ -203,6 +218,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
       start_at: r.start_at,
       all_day: r.all_day,
       member_id: r.member_id,
+      contact_id: r.contact_id,
+      contact_name: r.contact_name,
       soon: isSoon(r.start_at, r.lead_seconds),
     }))
 

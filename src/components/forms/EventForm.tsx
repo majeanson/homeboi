@@ -1,9 +1,15 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
+import { api } from '../../lib/api'
+import { live } from '../../lib/query'
+import { CERCLE_KEY } from '../../lib/queryKeys'
+import { fullName, type Contact, type ContactLink } from '../../lib/cercle'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
+import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { recurOf } from '../../lib/recurLabel'
 
 // The complete event (rendez-vous) form — title, date, optional time (no time =
@@ -21,6 +27,8 @@ export interface EventInit {
   start_at: number
   all_day: number
   member_id: string | null
+  contact_id?: string | null // #21
+  contact_name?: string | null // seed the contact picker's text when editing
   recur_json?: string | null
   lead_seconds?: number | null
 }
@@ -51,6 +59,18 @@ export function EventForm({
   )
   const [time, setTime] = useState(init && !value?.all_day ? `${pad(init.getHours())}:${pad(init.getMinutes())}` : '')
   const [memberId, setMemberId] = useState<string | null>(value?.member_id ?? null)
+  // #21: an event can name a « Le cercle » contact instead of a member ("Mamie
+  // visits"). Picking one clears the other — the "who" stays a single answer. The
+  // contacts come from the shared cercle cache (often already warm); a failed fetch
+  // just hides the picker rather than breaking the form.
+  const [contactId, setContactId] = useState<string | null>(value?.contact_id ?? null)
+  const [contactText, setContactText] = useState(value?.contact_name ?? '')
+  const { data: cercle } = useQuery({
+    queryKey: CERCLE_KEY,
+    queryFn: () => api<{ contacts: Contact[]; links: ContactLink[] }>('cercle'),
+    ...live,
+  })
+  const contacts = cercle?.contacts ?? []
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
   const [busy, setBusy] = useState(false)
@@ -65,7 +85,15 @@ export function EventForm({
     // Weekly with no weekday picked → the server defaults to the anchor's (UTC)
     // weekday. We don't compute it here: local getDay() could disagree with the
     // server's UTC expansion and recur on the wrong day.
-    const fields = { title: title.trim(), startAt, allDay: !time, memberId, recur, leadSeconds: lead }
+    const fields = {
+      title: title.trim(),
+      startAt,
+      allDay: !time,
+      memberId: contactId ? null : memberId,
+      contactId,
+      recur,
+      leadSeconds: lead,
+    }
     setBusy(true)
     setErr(false)
     try {
@@ -104,13 +132,36 @@ export function EventForm({
           <button
             key={m.id}
             type="button"
-            className={`btn btn--ghost${memberId === m.id ? ' is-active' : ''}`}
-            onClick={() => setMemberId(memberId === m.id ? null : m.id)}
+            className={`btn btn--ghost${memberId === m.id && !contactId ? ' is-active' : ''}`}
+            onClick={() => {
+              setContactId(null)
+              setContactText('')
+              setMemberId(memberId === m.id ? null : m.id)
+            }}
           >
             {m.display_name}
           </button>
         ))}
       </div>
+      {/* …or someone from Le cercle (#21). Picking a contact clears the member above. */}
+      {contacts.length > 0 && (
+        <EntityCombobox<Contact>
+          value={contactText}
+          onChange={(v) => {
+            setContactText(v)
+            if (!v.trim()) setContactId(null)
+          }}
+          options={contacts.map((c): ComboOption<Contact> => ({ id: c.id, label: fullName(c), data: c, icon: 'users-three-bold' }))}
+          onPick={(opt) => {
+            setContactId(opt.id)
+            setContactText(opt.label)
+            setMemberId(null)
+          }}
+          placeholder={t.operator.eventContact}
+          submitIcon={null}
+          typeaheadOnly
+        />
+      )}
       <RecurPicker value={recur} onChange={setRecur} />
       <LeadPicker value={lead} onChange={setLead} />
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
