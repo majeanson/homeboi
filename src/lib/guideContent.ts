@@ -2439,8 +2439,8 @@ export const GUIDE: GuideEntry[] = [
     tab: 'display',
     title: { fr: 'Affichage', en: 'Display' },
     what: {
-      fr: 'L’apparence de cet appareil : le thème jour/nuit, la langue, et la vue parent/enfant.',
-      en: 'How this device looks: the day/night theme, the language, and the parent/kid view.',
+      fr: 'L’apparence de cet appareil : le thème jour/nuit, la langue, la vue parent/enfant et l’accessibilité.',
+      en: 'How this device looks: the day/night theme, the language, the parent/kid view and accessibility.',
     },
     points: [
       {
@@ -2474,6 +2474,17 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'C’est le même interrupteur que le [[icon:baby-bold]] de la barre : il rebascule toutes les sections d’un coup pour ce seul appareil, sans toucher aux autres.',
           en: 'It’s the same switch as the [[icon:baby-bold]] in the bar: it flips every section at once for this one device, without touching the others.',
+        },
+      },
+      {
+        label: { fr: 'Accessibilité', en: 'Accessibility' },
+        detail: {
+          fr: 'Renforce le [[icon:sparkle-bold]] contraste et grossis le [[icon:magnifying-glass-bold]] texte pour mieux voir — de loin du mur ou de plus près.',
+          en: 'Boost the [[icon:sparkle-bold]] contrast and enlarge the [[icon:magnifying-glass-bold]] text to see better — from across the room or up close.',
+        },
+        why: {
+          fr: 'Au-delà de la vue enfant : pour une vision basse ou un mur regardé de loin, sans changer les données. Le réglage suit cet appareil.',
+          en: 'Beyond the kid view: for low vision or a wall read from afar, without changing the data. The setting follows this device.',
         },
       },
       {

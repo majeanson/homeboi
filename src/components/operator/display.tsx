@@ -8,6 +8,14 @@ import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
 import { isGuest } from '../../lib/device'
 import { getTheme, toggleTheme, type Theme, isDaypartAuto, setDaypartAuto, setDayPart } from '../../lib/theme'
+import {
+  getContrast,
+  setContrast,
+  getTextScale,
+  setTextScale,
+  type Contrast,
+  type TextScale,
+} from '../../lib/accessibility'
 import { computeDayPart } from '../../lib/timeofday'
 import { MEASURE_SWATCHES, swatchColor, useMeasureColorsEditor } from '../../lib/measurePrefs'
 import { IngredientLine } from '../IngredientLine'
@@ -40,6 +48,20 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
     setAmbientState(next)
     setDaypartAuto(next) // persists the flag; pins 'manual' when turning OFF
     if (next) setDayPart(computeDayPart(Date.now())) // resume drift immediately
+  }
+  // Accessibility profile (#36): high-contrast + larger text. CSS-driven on
+  // <html> (lib/accessibility); local mirrors re-render the active pip. Shown to
+  // everyone (incl. a guest) — it's a device-local presentation control, not a
+  // write to the household, so it isn't gated behind `ro`.
+  const [contrast, setContrastState] = useState<Contrast>(() => getContrast())
+  const [textScale, setTextScaleState] = useState<TextScale>(() => getTextScale())
+  function pickContrast(c: Contrast) {
+    setContrastState(c)
+    setContrast(c)
+  }
+  function pickTextScale(s: TextScale) {
+    setTextScaleState(s)
+    setTextScale(s)
   }
 
   return (
@@ -80,6 +102,48 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             </button>
           </div>
         )}
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.contrastLabel}</span>
+          <div className="audience-switch mono" role="group" aria-label={t.operator.contrastLabel}>
+            <button
+              type="button"
+              className={`audience-switch__opt${contrast === 'normal' ? ' is-active' : ''}`}
+              onClick={() => pickContrast('normal')}
+              aria-pressed={contrast === 'normal'}
+            >
+              <InlineIcon name="sparkle-bold" /> {t.operator.contrastNormal}
+            </button>
+            <button
+              type="button"
+              className={`audience-switch__opt${contrast === 'high' ? ' is-active' : ''}`}
+              onClick={() => pickContrast('high')}
+              aria-pressed={contrast === 'high'}
+            >
+              <InlineIcon name="sparkle-bold" /> {t.operator.contrastHigh}
+            </button>
+          </div>
+        </div>
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.textScaleLabel}</span>
+          <div className="audience-switch mono" role="group" aria-label={t.operator.textScaleLabel}>
+            <button
+              type="button"
+              className={`audience-switch__opt${textScale === 'normal' ? ' is-active' : ''}`}
+              onClick={() => pickTextScale('normal')}
+              aria-pressed={textScale === 'normal'}
+            >
+              <InlineIcon name="magnifying-glass-bold" /> {t.operator.textScaleNormal}
+            </button>
+            <button
+              type="button"
+              className={`audience-switch__opt${textScale === 'large' ? ' is-active' : ''}`}
+              onClick={() => pickTextScale('large')}
+              aria-pressed={textScale === 'large'}
+            >
+              <InlineIcon name="magnifying-glass-bold" /> {t.operator.textScaleLarge}
+            </button>
+          </div>
+        </div>
         <div className="operator__seg">
           <span className="operator__seg-label mono">{t.operator.viewLabel}</span>
           <div

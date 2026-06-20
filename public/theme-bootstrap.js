@@ -38,4 +38,18 @@
   } catch (e) {
     /* no daypart — base palette shows */
   }
+  // Accessibility profile (#36): high-contrast palette + larger text. Apply both
+  // before first paint so a low-vision kiosk reboots into its profile without a
+  // flash, mirroring the theme/daypart tricks above. Absence = default (kept in
+  // sync with src/lib/accessibility.ts).
+  try {
+    if (localStorage.getItem('babillard-contrast') === 'high') {
+      document.documentElement.setAttribute('data-contrast', 'high')
+    }
+    if (localStorage.getItem('babillard-text-scale') === 'large') {
+      document.documentElement.setAttribute('data-text-scale', 'large')
+    }
+  } catch (e) {
+    /* no a11y profile — base presentation shows */
+  }
 })()

@@ -198,6 +198,41 @@
   }
 }
 
+/* --- Accessibility profile (#36) ----------------------------------------- */
+/* A high-contrast palette + a larger base text size, opt-in from Réglages ▸
+   Affichage, orthogonal to theme/daypart/audience. DOM-attribute driven on
+   <html> like data-theme (see src/lib/accessibility.ts). Absence = the base
+   presentation; presence overrides a few tokens / the root size only — no new
+   surfaces, so every component inherits it for free.
+
+   High contrast: deepen the inks and firm up the hairlines so text + dividers
+   read from across the room (and for low vision). Kept on-palette — this is
+   "sharper Pip", not a stark black-on-white theme that would break the warm,
+   calm look. Day rides the light palette; night gets its own brighter inks. */
+:root[data-contrast='high']:not([data-theme='night']) {
+  --card: #fffdf7;
+  --ink: #16120c;
+  --ink-soft: #4a4339;
+  --ink-faint: #756b5d;
+  --line: #d2bd96;
+  --line-strong: #b59a6b;
+}
+:root[data-contrast='high'][data-theme='night'] {
+  --ink: #fdfaf0;
+  --ink-soft: #cfc6b2;
+  --ink-faint: #9b917e;
+  --line: #4f463a;
+  --line-strong: #6a5f4f;
+}
+
+/* Larger text: the root font-size is unset (browser default ~16px), so most of
+   the type — which is sized in rem — scales together from one knob. Px-sized
+   bits (~20% of declarations) stay put, which keeps tight chrome from
+   overflowing while the readable body/labels grow. */
+:root[data-text-scale='large'] {
+  font-size: 115%;
+}
+
 * {
   box-sizing: border-box;
 }
