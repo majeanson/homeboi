@@ -19,6 +19,7 @@ export interface QuickItem {
   count: number
   searchTerms: string[]
   status?: 'due' | 'soon'
+  always?: boolean // #27: a standing staple — shown first in a "Toujours" group
 }
 
 interface ListRow {
@@ -52,7 +53,8 @@ export function useQuickItems(): QuickItem[] {
   })
 
   const list = board?.list ?? []
-  const ghosts = ghostsData ?? []
+  const ghosts = ghostsData?.ghosts ?? []
+  const standing = ghostsData?.staples ?? []
   const openTexts = new Set(list.map((i) => fold(i.text)))
   const quickByLabel = new Map<string, QuickItem>()
   for (const h of history ?? []) {
@@ -68,8 +70,25 @@ export function useQuickItems(): QuickItem[] {
     if (ex) ex.status = status
     else quickByLabel.set(f, { key: f, label: g.label, count: g.count, searchTerms: [], status })
   }
+  // #27: standing staples take precedence — mark the "Toujours" group. If a staple
+  // also shows up via history/ghost, fold them into one (keep the learned synonyms),
+  // just flagged `always`; otherwise add it fresh. The server already drops staples
+  // already on the open list.
+  for (const s of standing) {
+    const f = fold(s.label)
+    if (!f || openTexts.has(f)) continue
+    const ex = quickByLabel.get(f)
+    if (ex) ex.always = true
+    else quickByLabel.set(f, { key: f, label: s.label, count: 0, searchTerms: [], always: true })
+  }
   const rankStatus = (s?: 'due' | 'soon') => (s === 'due' ? 0 : s === 'soon' ? 1 : 2)
+  // Standing staples first (alphabetical), then the usual status/frequency order.
   return [...quickByLabel.values()].sort(
-    (a, b) => rankStatus(a.status) - rankStatus(b.status) || b.count - a.count || a.label.localeCompare(b.label),
+    (a, b) =>
+      Number(!!b.always) - Number(!!a.always) ||
+      (a.always && b.always ? a.label.localeCompare(b.label) : 0) ||
+      rankStatus(a.status) - rankStatus(b.status) ||
+      b.count - a.count ||
+      a.label.localeCompare(b.label),
   )
 }

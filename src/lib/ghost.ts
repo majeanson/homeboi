@@ -24,8 +24,17 @@ export interface GhostManageItem {
   cadenceDays: number | null
   source: 'staple' | 'manual'
   muted: boolean
+  standing: boolean // #27: pinned as an always-on list staple
   count: number
   lastAt: number | null
+}
+
+// #27: a standing list staple — pinned as always wanted, surfaced in the
+// Quick-add "Toujours" group for a one-tap restock (deterministic, never
+// auto-added). Just the key + label; synonyms come from purchase history if any.
+export interface Staple {
+  key: string
+  label: string
 }
 
 // A frequent untracked buy, offered in Settings as a one-tap "track it?" —
@@ -42,9 +51,14 @@ export interface GhostPatch {
   label?: string
   cadenceDays?: number | null
   muted?: boolean
+  standing?: boolean // #27
 }
 
-export const fetchGhosts = () => api<{ ghosts: Ghost[] }>('ghost').then((r) => r.ghosts)
+// The list strip read now also carries the household's standing staples (#27) for
+// the Quick-add "Toujours" group. Default both to [] so a thin/failed response
+// never breaks the caller.
+export const fetchGhosts = () =>
+  api<{ ghosts: Ghost[]; staples?: Staple[] }>('ghost').then((r) => ({ ghosts: r.ghosts, staples: r.staples ?? [] }))
 
 export const fetchGhostManage = () =>
   api<{ items: GhostManageItem[]; candidates?: GhostCandidate[] }>('ghost?view=manage').then((r) => ({

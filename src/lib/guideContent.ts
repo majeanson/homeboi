@@ -613,12 +613,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Ajout rapide', en: 'Quick add' },
         detail: {
-          fr: 'Re-remplis une semaine en quelques touches à partir de ce que tu achètes souvent.',
-          en: 'Restock a week in a few taps from what you buy often.',
+          fr: 'Re-remplis une semaine en quelques touches à partir de ce que tu achètes souvent. En haut, le groupe [[icon:push-pin-bold]] « Toujours » garde tes essentiels permanents (lait, pain…) à un tap, peu importe la date.',
+          en: 'Restock a week in a few taps from what you buy often. At the top, the [[icon:push-pin-bold]] “Always” group keeps your permanent staples (milk, bread…) one tap away, whatever the date.',
         },
         why: {
-          fr: 'Pour ne pas retaper chaque semaine les mêmes essentiels.',
-          en: 'So you don’t retype the same staples every week.',
+          fr: 'Pour ne pas retaper chaque semaine les mêmes essentiels. « Toujours » ne s’ajoute jamais tout seul — la liste se vide et reste vide; c’est toi qui touches. Épingle un item depuis Réglages ▸ Courses.',
+          en: 'So you don’t retype the same staples every week. “Always” never adds on its own — the list empties and stays empty; you tap. Pin an item from Settings ▸ Shopping.',
         },
       },
       {
@@ -1535,6 +1535,17 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Pour ne plus oublier le lait ou le café juste parce que tu n’y as pas pensé en faisant la liste — sans qu’une app te harcèle pour autant.',
           en: 'So you stop forgetting the milk or the coffee just because it slipped your mind at list time — without an app nagging you for it.',
+        },
+      },
+      {
+        label: { fr: '« Toujours » (essentiels permanents)', en: '“Always” (permanent staples)' },
+        detail: {
+          fr: 'Différent du fantôme : épingle un item avec [[icon:push-pin-bold]] « Toujours » dans Réglages ▸ Courses et il reste en tête de l’Ajout rapide en permanence, sans deviner de date. Le fantôme prédit; « Toujours » ne devine pas.',
+          en: 'Different from the ghost: pin an item with [[icon:push-pin-bold]] “Always” in Settings ▸ Shopping and it stays at the top of Quick add permanently, no date guessing. The ghost predicts; “Always” doesn’t guess.',
+        },
+        why: {
+          fr: 'Pour les indispensables que tu rachètes sans faute — un tap à chaque épicerie, et jamais d’ajout automatique : la liste se vide et reste vide.',
+          en: 'For the must-haves you rebuy without fail — one tap each grocery run, and never auto-added: the list empties and stays empty.',
         },
       },
     ],

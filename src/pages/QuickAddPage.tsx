@@ -42,6 +42,11 @@ export function QuickAddPage() {
   // Default order is status/frequency (from useQuickItems); the Aa toggle re-sorts
   // the same set alphabetically so a long list is easy to scan by name.
   const shown = alpha ? [...filtered].sort((a, b) => a.label.localeCompare(b.label)) : filtered
+  // #27: standing staples ride at the top under a "Toujours" header — a
+  // deterministic always-on group for the household's never-forget items, distinct
+  // from the predicted/past ones below.
+  const alwaysItems = shown.filter((i) => i.always)
+  const restItems = shown.filter((i) => !i.always)
   // Offer a free-text add only when what's typed isn't already a known item.
   const canAddTyped = fq.length > 0 && !items.some((i) => fold(i.label) === fq)
 
@@ -67,6 +72,35 @@ export function QuickAddPage() {
     void postAdd(text, [])
     setAdded((s) => new Set(s).add(key))
     setQ('')
+  }
+
+  // One candidate chip — shared by the "Toujours" group and the rest, so the two
+  // groups draw identical rows (just a different header above them).
+  function renderChip(item: QuickItem) {
+    const isAdded = added.has(item.key)
+    return (
+      <button
+        key={item.key}
+        type="button"
+        className={`qa__chip${isAdded ? ' is-added' : ''}`}
+        onClick={() => add(item)}
+        disabled={isAdded}
+        aria-label={`${t.ghost.add} ${item.label}`}
+      >
+        <span className="qa__pic" aria-hidden="true">
+          {pictoFor(item.label, '🛒')}
+        </span>
+        <span className="qa__label">{item.label}</span>
+        {item.status && (
+          <span className={`qa__tag qa__tag--${item.status}`}>
+            {item.status === 'due' ? t.ghost.due : t.ghost.soon}
+          </span>
+        )}
+        <span className="qa__act" aria-hidden="true">
+          <Icon name={isAdded ? 'check-bold' : 'plus-bold'} size={16} />
+        </span>
+      </button>
+    )
   }
 
   if (ro) return <Navigate to="/liste" replace />
@@ -119,32 +153,18 @@ export function QuickAddPage() {
               <span className="qa__label">{t.list.addNew(q.trim())}</span>
             </button>
           )}
-          {shown.map((item) => {
-            const isAdded = added.has(item.key)
-            return (
-              <button
-                key={item.key}
-                type="button"
-                className={`qa__chip${isAdded ? ' is-added' : ''}`}
-                onClick={() => add(item)}
-                disabled={isAdded}
-                aria-label={`${t.ghost.add} ${item.label}`}
-              >
-                <span className="qa__pic" aria-hidden="true">
-                  {pictoFor(item.label, '🛒')}
-                </span>
-                <span className="qa__label">{item.label}</span>
-                {item.status && (
-                  <span className={`qa__tag qa__tag--${item.status}`}>
-                    {item.status === 'due' ? t.ghost.due : t.ghost.soon}
-                  </span>
-                )}
-                <span className="qa__act" aria-hidden="true">
-                  <Icon name={isAdded ? 'check-bold' : 'plus-bold'} size={16} />
-                </span>
-              </button>
-            )
-          })}
+          {alwaysItems.length > 0 && (
+            <>
+              <p className="qa__grouphead mono">
+                <InlineIcon name="push-pin-bold" size={13} /> {t.list.quickAlways}
+              </p>
+              {alwaysItems.map(renderChip)}
+            </>
+          )}
+          {alwaysItems.length > 0 && restItems.length > 0 && (
+            <p className="qa__grouphead mono">{t.list.quickOthers}</p>
+          )}
+          {restItems.map(renderChip)}
           {shown.length === 0 && !canAddTyped && <EmptyState>{t.list.quickEmpty}</EmptyState>}
         </div>
       </div>

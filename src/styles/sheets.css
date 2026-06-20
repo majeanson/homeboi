@@ -1706,6 +1706,21 @@
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+/* Group header in Quick-add (#27): a quiet divider — "Toujours" (standing staples)
+   then "Déjà acheté · suggéré". First one has no top margin. */
+.qa__grouphead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0.5rem 2px 0.1rem;
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.qa__grouphead:first-child {
+  margin-top: 0;
+}
 .qa__chip {
   display: flex;
   align-items: center;

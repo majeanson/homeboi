@@ -339,12 +339,17 @@ export function GhostSection({ help }: { help?: HelpMode }) {
     load()
   }
 
-  async function save(item: GhostManageItem, patch: { cadenceDays?: number; muted?: boolean }) {
+  async function save(
+    item: GhostManageItem,
+    patch: { cadenceDays?: number; muted?: boolean; standing?: boolean },
+  ) {
     await patchGhost({
       key: item.key,
       label: item.label,
       cadenceDays: patch.cadenceDays ?? item.cadenceDays ?? undefined,
       muted: patch.muted ?? item.muted,
+      // Always send the resolved standing so tuning cadence/mute never unpins it.
+      standing: patch.standing ?? item.standing,
     }).catch(() => {})
     load()
   }
@@ -430,7 +435,7 @@ function GhostRow({
   onRemove,
 }: {
   item: GhostManageItem
-  onSave: (item: GhostManageItem, patch: { cadenceDays?: number; muted?: boolean }) => void
+  onSave: (item: GhostManageItem, patch: { cadenceDays?: number; muted?: boolean; standing?: boolean }) => void
   onRemove: (item: GhostManageItem) => void
 }) {
   const t = useT()
@@ -446,10 +451,16 @@ function GhostRow({
   }
 
   return (
-    <li className={'ghost-admin__row' + (item.muted ? ' is-muted' : '')}>
-      <span className="ghost-admin__name">{item.label}</span>
+    <li className={'ghost-admin__row' + (item.muted ? ' is-muted' : '') + (item.standing ? ' is-standing' : '')}>
+      <span className="ghost-admin__name">
+        {item.standing && (
+          <InlineIcon name="push-pin-bold" size={13} color="var(--marigold-deep)" />
+        )}{' '}
+        {item.label}
+      </span>
       <span className="ghost-admin__meta mono">
         {sourceLabel}
+        {item.standing ? ` · ${t.ghost.standingTag}` : ''}
         {item.count > 0 ? ` · ${item.count}×` : ''}
       </span>
       <label className="ghost-admin__cadence mono">
@@ -471,6 +482,17 @@ function GhostRow({
         )}
         {t.ghost.days}
       </label>
+      {!ro && (
+        <button
+          type="button"
+          className={'btn btn--ghost mono' + (item.standing ? ' btn--primary' : '')}
+          onClick={() => onSave(item, { standing: !item.standing })}
+          aria-pressed={item.standing}
+          title={t.ghost.standingHint}
+        >
+          <InlineIcon name="push-pin-bold" size={13} /> {item.standing ? t.ghost.standingOn : t.ghost.standingOff}
+        </button>
+      )}
       {!ro && (
         <button type="button" className="btn btn--ghost mono" onClick={() => onSave(item, { muted: !item.muted })}>
           {item.muted ? t.ghost.unmute : t.ghost.mute}

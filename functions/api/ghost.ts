@@ -24,6 +24,7 @@ interface OverrideDbRow {
   cadence_days: number | null
   muted: number
   source: string
+  standing: number
 }
 
 async function readState(env: Env, hh: string) {
@@ -31,7 +32,7 @@ async function readState(env: Env, hh: string) {
     env.DB.prepare('SELECT item_key, text, purchased_at FROM purchase_log WHERE household_id = ?')
       .bind(hh)
       .all<PurchaseRow>(),
-    env.DB.prepare('SELECT item_key, label, cadence_days, muted, source FROM ghost_items WHERE household_id = ?')
+    env.DB.prepare('SELECT item_key, label, cadence_days, muted, source, standing FROM ghost_items WHERE household_id = ?')
       .bind(hh)
       .all<OverrideDbRow>(),
     // Every current line — checked or not — is "on the list" (a checked item is
@@ -85,6 +86,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         cadenceDays,
         source: staple ? 'staple' : 'manual',
         muted: !!ov?.muted,
+        standing: !!ov?.standing, // #27: pinned as an always-on list staple
         count: a?.count ?? 0,
         lastAt: a?.lastAt ?? null,
       }
@@ -112,7 +114,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
     now: nowSec(),
     includeLater: true,
   })
-  return ok({ ghosts })
+  // #27: the household's standing staples — pinned items always offered for a
+  // one-tap restock in the Quick-add "Toujours" group, deterministic (NOT
+  // cadence-ranked) and never auto-added. Drop any already on the open list (you
+  // don't restock what's already there). Alphabetical, the calm stable order.
+  const standing = overrides
+    .filter((o) => o.standing && !openKeys.has(o.item_key))
+    .map((o) => ({ key: o.item_key, label: o.label }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+  return ok({ ghosts, staples: standing })
 })
 
 // Clamp a cadence to a sane whole-day range, or null to clear it (fall back to
@@ -125,7 +135,13 @@ function cadence(value: unknown): number | null {
 }
 
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ key?: string; label?: string; cadenceDays?: number | null; muted?: boolean }>(ctx.request)
+  const body = await readJson<{
+    key?: string
+    label?: string
+    cadenceDays?: number | null
+    muted?: boolean
+    standing?: boolean // #27: pin/unpin as an always-on list staple
+  }>(ctx.request)
   const label = body?.label?.trim()
   // Tuning an existing staple/learned item sends its key; adding a custom one
   // sends a label we normalize into a key.
@@ -135,16 +151,33 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const stapleKeys = new Set(staples('fr').map((s) => s.key))
   const source = stapleKeys.has(key) ? 'override' : 'manual'
   const ts = nowSec()
+  // `standing` is only written when the caller actually sends it; otherwise the
+  // existing value is preserved (COALESCE) so tuning cadence/mute can't silently
+  // unpin a staple. The settings save() sends the full state, so toggles are exact.
+  const standing = body?.standing == null ? null : body.standing ? 1 : 0
   await ctx.env.DB.prepare(
-    `INSERT INTO ghost_items (id, household_id, item_key, label, cadence_days, muted, source, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO ghost_items (id, household_id, item_key, label, cadence_days, muted, source, standing, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(household_id, item_key) DO UPDATE SET
        label = excluded.label,
        cadence_days = excluded.cadence_days,
        muted = excluded.muted,
+       standing = COALESCE(?, ghost_items.standing),
        updated_at = excluded.updated_at`,
   )
-    .bind(newId(), actor.householdId, key, label || key, cadence(body?.cadenceDays), body?.muted ? 1 : 0, source, ts, ts)
+    .bind(
+      newId(),
+      actor.householdId,
+      key,
+      label || key,
+      cadence(body?.cadenceDays),
+      body?.muted ? 1 : 0,
+      source,
+      standing ?? 0,
+      ts,
+      ts,
+      standing,
+    )
     .run()
   return ok({ ok: true, key })
 })
