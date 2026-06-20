@@ -4,6 +4,7 @@ import { useT, useLang } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useHelp } from '../lib/help'
 import { useTour } from '../lib/tour'
+import { TOURS } from '../lib/tourContent'
 import { GUIDE } from '../lib/guideContent'
 import { renderRich } from '../lib/richText'
 import { Icon } from './Icon'
@@ -53,8 +54,10 @@ export function SectionIntro({ card }: { card: string }) {
   const { lang } = useLang()
   const { tutorial } = useHelp()
   const { audience } = useAudience()
-  const { isActive } = useTour()
+  const { isActive, start } = useTour()
   const [seen, setSeen] = useState(() => hasIntroSeen(card))
+  // #32 — this section has its own short guided tour when a Tour shares its id.
+  const hasTour = TOURS.some((tr) => tr.id === card)
 
   if (!tutorial || audience === 'toddler' || isActive || seen) return null
   const entry = GUIDE.find((e) => e.id === card)
@@ -85,10 +88,27 @@ export function SectionIntro({ card }: { card: string }) {
           <li key={i}>{renderRich(p.label[lang])}</li>
         ))}
       </ul>
-      <Link className="section-intro__more" to={`/settings?tab=guide&card=${card}`}>
-        <span>{t.help.learnMore}</span>
-        <Icon name="arrow-right-bold" size={16} />
-      </Link>
+      <div className="section-intro__actions">
+        {/* #32 — start this section's short spotlight tour (dismisses the intro). */}
+        {hasTour && (
+          <button
+            type="button"
+            className="section-intro__tour"
+            onClick={() => {
+              markIntroSeen(card)
+              setSeen(true)
+              start(card)
+            }}
+          >
+            <Icon name="sparkle-bold" size={16} />
+            <span>{t.help.takeTour}</span>
+          </button>
+        )}
+        <Link className="section-intro__more" to={`/settings?tab=guide&card=${card}`}>
+          <span>{t.help.learnMore}</span>
+          <Icon name="arrow-right-bold" size={16} />
+        </Link>
+      </div>
     </aside>
   )
 }

@@ -92,7 +92,7 @@ function RoutinesParent() {
       {routines.length === 0 ? (
         <EmptyState guide={{ card: 'routines' }}>{t.kid.none}</EmptyState>
       ) : (
-        <div className="routines-grid">
+        <div className="routines-grid" data-tour="routines-grid">
           {routines.map((r) => {
             const tint = r.color ?? '#B06A93'
             // The same step pictures the toddler sees — so a parent recognizes the

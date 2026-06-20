@@ -48,7 +48,7 @@ export const FR = {
     exitCancel: 'Rester',
     exitWrong: 'Pas tout à fait. Réessaie.',
   },
-  help: { learnMore: 'Aide sur cette section', gotIt: 'Compris', goToGuide: 'Voir le guide', helpMode: 'Aide', tapForHelp: 'Touche un bouton pour savoir ce qu’il fait.' },
+  help: { learnMore: 'Aide sur cette section', gotIt: 'Compris', goToGuide: 'Voir le guide', helpMode: 'Aide', tapForHelp: 'Touche un bouton pour savoir ce qu’il fait.', takeTour: 'Faire le tour' },
   tour: { label: 'Visite guidée', stepOf: (n: number, total: number) => `Étape ${n} sur ${total}`, skip: 'Passer', back: 'Retour', next: 'Suivant', done: 'Terminé', learnMore: 'En savoir plus' },
   today: { morning: 'Bon matin', afternoon: 'Bon après-midi', evening: 'Bonne soirée' },
   home: {
@@ -1362,7 +1362,7 @@ export const EN: typeof FR = {
     exitCancel: 'Stay',
     exitWrong: 'Not quite. Try again.',
   },
-  help: { learnMore: 'Help for this section', gotIt: 'Got it', goToGuide: 'See the guide', helpMode: 'Help', tapForHelp: 'Tap a button to see what it does.' },
+  help: { learnMore: 'Help for this section', gotIt: 'Got it', goToGuide: 'See the guide', helpMode: 'Help', tapForHelp: 'Tap a button to see what it does.', takeTour: 'Take the tour' },
   tour: { label: 'Guided tour', stepOf: (n: number, total: number) => `Step ${n} of ${total}`, skip: 'Skip', back: 'Back', next: 'Next', done: 'Done', learnMore: 'Learn more' },
   today: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },
   home: {

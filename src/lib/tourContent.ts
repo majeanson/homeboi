@@ -96,4 +96,134 @@ export const TOURS: Tour[] = [
       },
     ],
   },
+
+  // #32 — a SHORT per-section tour, launched from that section's intro card
+  // ("Faire le tour"). Each: a centred "what this is" (the Guide one-liner), one
+  // spotlight on the section's main control, then the ＋ for "add here". The tour
+  // id MATCHES the section's Guide-card id, so SectionIntro starts it by its `card`.
+  {
+    id: 'board',
+    startRoute: '/board',
+    steps: [
+      { icon: 'sun-bold', card: 'board', title: { fr: 'Le babillard', en: 'The board' }, body: guideWhat('board') },
+      {
+        target: 'board-views',
+        icon: 'calendar-dots-bold',
+        title: { fr: 'Change la vue', en: 'Change the view' },
+        body: {
+          fr: 'Grille (la semaine), « Maintenant » (la prochaine affaire), par personne, ou le mois — le même babillard, vu autrement.',
+          en: 'Grid (the week), “Now” (the next thing), by person, or the month — the same board, seen differently.',
+        },
+      },
+      {
+        target: 'add-fab',
+        icon: 'plus-bold',
+        title: { fr: 'Ajoute ici', en: 'Add here' },
+        body: {
+          fr: 'Le ＋ ajoute au babillard : un rendez-vous, une corvée, une routine, un à-compléter — ou « Avant de partir ».',
+          en: 'The ＋ adds to the board: an event, a chore, a routine, a to-do — or “Before you go”.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'kitchen',
+    startRoute: '/kitchen',
+    steps: [
+      { icon: 'carrot-bold', card: 'kitchen', title: { fr: 'La cuisine', en: 'The kitchen' }, body: guideWhat('kitchen') },
+      {
+        target: 'kitchen-tabs',
+        icon: 'fork-knife-bold',
+        title: { fr: 'Repas, garde-manger, recettes', en: 'Meals, pantry, recipes' },
+        body: {
+          fr: 'Les sous-onglets : planifie les repas de la semaine, signale ce qui achève, et garde tes recettes.',
+          en: 'The sub-tabs: plan the week’s meals, flag what’s running low, and keep your recipes.',
+        },
+      },
+      {
+        target: 'add-fab',
+        icon: 'plus-bold',
+        title: { fr: 'Ajoute ici', en: 'Add here' },
+        body: {
+          fr: 'Le ＋ : cuisiner, planifier un repas, ajouter une recette — ou « Faire un livre » à imprimer.',
+          en: 'The ＋: cook, plan a meal, add a recipe — or “Make a book” to print.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'routines',
+    startRoute: '/routines',
+    steps: [
+      { icon: 'smiley-bold', card: 'routines', title: { fr: 'Routines', en: 'Routines' }, body: guideWhat('routines') },
+      {
+        target: 'routines-grid',
+        icon: 'smiley-bold',
+        title: { fr: 'Les routines des enfants', en: 'The kids’ routines' },
+        body: {
+          fr: 'Chaque routine en cartes-images, lue à voix haute. Touche-en une pour la voir ou la modifier.',
+          en: 'Each routine in picture cards, read aloud. Tap one to see or edit it.',
+        },
+      },
+      {
+        target: 'add-fab',
+        icon: 'plus-bold',
+        title: { fr: 'Monte une routine', en: 'Build a routine' },
+        body: {
+          fr: 'Le ＋ ouvre le gestionnaire : crée une nouvelle routine ou modifie une existante.',
+          en: 'The ＋ opens the manager: create a new routine or edit an existing one.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'cercle',
+    startRoute: '/cercle',
+    steps: [
+      { icon: 'users-three-bold', card: 'cercle', title: { fr: 'Le cercle', en: 'The circle' }, body: guideWhat('cercle') },
+      {
+        target: 'cercle-views',
+        icon: 'users-three-bold',
+        title: { fr: 'Trois façons de voir', en: 'Three ways to see' },
+        body: {
+          fr: 'La liste des gens, leurs liens, ou l’arbre des familles — bascule entre les trois ici.',
+          en: 'The people list, their links, or the family tree — switch between the three here.',
+        },
+      },
+      {
+        target: 'add-fab',
+        icon: 'plus-bold',
+        title: { fr: 'Ajoute du monde', en: 'Add people' },
+        body: {
+          fr: 'Le ＋ : une personne, une famille entière, relier deux personnes, ou un groupe.',
+          en: 'The ＋: a person, a whole family, connect two people, or a group.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'liste',
+    startRoute: '/liste',
+    steps: [
+      { icon: 'sparkle-bold', card: 'liste', title: { fr: 'La liste', en: 'The list' }, body: guideWhat('liste') },
+      {
+        target: 'liste-add',
+        icon: 'pencil-simple-bold',
+        title: { fr: 'Ajoute un article', en: 'Add an item' },
+        body: {
+          fr: 'Écris-le ou dis-le. Coche en magasin; « Vider les cochés » l’enlève de la liste.',
+          en: 'Type it or say it. Tick it off in the store; “Clear checked” removes it from the list.',
+        },
+      },
+      {
+        target: 'add-fab',
+        icon: 'plus-bold',
+        title: { fr: 'Plus d’options', en: 'More options' },
+        body: {
+          fr: 'Le ＋ : ajout rapide des habitués, les circulaires, ou partager la liste.',
+          en: 'The ＋: quick-add your regulars, the flyers, or share the list.',
+        },
+      },
+    ],
+  },
 ]

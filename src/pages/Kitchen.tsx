@@ -359,7 +359,7 @@ export function Kitchen() {
         <SectionIntro card="kitchen" />
 
         <div className={'subtabs-row' + (tabHelp.active ? ' help-armed' : '')}>
-          <div className="subtabs" role="tablist" aria-label={t.kitchen.title}>
+          <div className="subtabs" role="tablist" aria-label={t.kitchen.title} data-tour="kitchen-tabs">
             {([
               ['meals', t.kitchen.tabMeals],
               ['pantry', t.kitchen.tabPantry],

@@ -323,7 +323,7 @@ function CercleParent() {
   const viewSwitch = (
     <>
       <div className="cercle-viewswitch-row">
-        <div className="cercle-viewswitch" role="tablist" aria-label={t.nav.cercle}>
+        <div className="cercle-viewswitch" role="tablist" aria-label={t.nav.cercle} data-tour="cercle-views">
           {(['list', 'links', 'tree'] as View[]).map((v) => (
             <button
               key={v}

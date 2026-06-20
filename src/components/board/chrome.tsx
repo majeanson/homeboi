@@ -29,7 +29,7 @@ export function BoardViewToggle({
     { v: 'month', icon: 'calendar-dots-bold', label: t.boardView.month },
   ]
   return (
-    <div className={'boardview' + (armed ? ' help-armed' : '')} role="group" aria-label={t.boardView.label}>
+    <div className={'boardview' + (armed ? ' help-armed' : '')} role="group" aria-label={t.boardView.label} data-tour="board-views">
       {opts.map((o) => (
         <button
           key={o.v}

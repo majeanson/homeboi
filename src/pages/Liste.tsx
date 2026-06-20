@@ -332,6 +332,7 @@ export function Liste() {
 
       {/* Add a line right here — type it or speak it. The direct path; the ＋
           capture sheet still works for the AI-routed quick note. */}
+      <div data-tour="liste-add">
       <EditField
         value={addText}
         onChange={setAddText}
@@ -366,6 +367,7 @@ export function Liste() {
         }
         ariaLabel={t.list.addPlaceholder}
       />
+      </div>
       {help.bubbleFor('flyer')}
 
       {list.length === 0 ? (

@@ -179,6 +179,33 @@
 .section-intro__more:focus-visible {
   text-decoration: underline;
 }
+/* #32 — the section-tour launcher sits beside the "learn more" link. */
+.section-intro__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 10px;
+}
+.section-intro__actions .section-intro__more {
+  margin-top: 0;
+}
+.section-intro__tour {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--marigold-deep, var(--accent));
+  color: #fffcf5;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.section-intro__tour:active {
+  transform: scale(0.97);
+}
 .greet .accent {
   color: var(--marigold-deep);
 }
