@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
@@ -17,7 +16,6 @@ import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 // the kitchen's page-level help mode — makes the two headings explainable in place.
 export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; help?: HelpMode }) {
   const t = useT()
-  const qc = useQueryClient()
   const write = useWrite()
   // Bulletproof calm-delete for these two LIVE-POLLED lists: hide the row in local
   // state + filter it out of the render, hold the real write behind the undo toast,
@@ -73,14 +71,20 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
       write('pantry', { method: 'DELETE', body: { id: l.id }, affectedKeys: [PANTRY_KEY] }).catch(() => {}),
     )
   }
-  // Rename a low item in place (the ✏️). Optimistic, then persist.
+  // Rename a low item in place (the ✏️). Optimistic via useWrite (guest-safe, one
+  // invalidate path), then persist.
   async function renameLowItem(l: LowRow, item: string) {
     const v = item.trim()
     if (!v || v === l.item) return
-    qc.setQueryData<PantryData>(PANTRY_KEY, (d) =>
-      d ? { low: d.low.map((x) => (x.id === l.id ? { ...x, item: v } : x)) } : d,
-    )
-    await write('pantry', { method: 'PATCH', body: { id: l.id, item: v }, affectedKeys: [PANTRY_KEY] }).catch(() => {})
+    await write('pantry', {
+      method: 'PATCH',
+      body: { id: l.id, item: v },
+      affectedKeys: [PANTRY_KEY],
+      optimistic: (qc) =>
+        qc.setQueryData<PantryData>(PANTRY_KEY, (d) =>
+          d ? { low: d.low.map((x) => (x.id === l.id ? { ...x, item: v } : x)) } : d,
+        ),
+    }).catch(() => {})
   }
 
   async function postSoon(item: string, viaVoice = false) {
@@ -110,12 +114,15 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
   async function renameSoonItem(s: LowRow, item: string) {
     const v = item.trim()
     if (!v || v === s.item) return
-    qc.setQueryData<{ soon: LowRow[] }>(USE_SOON_KEY, (d) =>
-      d ? { soon: d.soon.map((x) => (x.id === s.id ? { ...x, item: v } : x)) } : d,
-    )
-    await write('use-soon', { method: 'PATCH', body: { id: s.id, item: v }, affectedKeys: [USE_SOON_KEY] }).catch(
-      () => {},
-    )
+    await write('use-soon', {
+      method: 'PATCH',
+      body: { id: s.id, item: v },
+      affectedKeys: [USE_SOON_KEY],
+      optimistic: (qc) =>
+        qc.setQueryData<{ soon: LowRow[] }>(USE_SOON_KEY, (d) =>
+          d ? { soon: d.soon.map((x) => (x.id === s.id ? { ...x, item: v } : x)) } : d,
+        ),
+    }).catch(() => {})
   }
 
   return (

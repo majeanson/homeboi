@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
@@ -26,7 +25,6 @@ import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 // explainable in place while armed.
 export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?: HelpMode }) {
   const t = useT()
-  const qc = useQueryClient()
   const write = useWrite()
   // Bulletproof calm-delete for this LIVE-POLLED list (see useDeferredRemoval):
   // hide + filter the cleared row and await a refetch before un-hiding, so a poll
@@ -78,19 +76,25 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
     })
   }
 
-  // Rename and/or move an item to another location (the ✏️). Optimistic, then
-  // persist only the fields that actually changed.
+  // Rename and/or move an item to another location (the ✏️). Optimistic via
+  // useWrite (guest-safe, one invalidate path), then persist only the fields that
+  // actually changed.
   async function saveItem(r: ReserveRow, item: string, locationId: string | null) {
     const v = item.trim()
     if (!v) return
     if (v === r.item && locationId === r.location_id) return
-    qc.setQueryData<ReserveData>(RESERVE_KEY, (d) =>
-      d ? { reserve: d.reserve.map((x) => (x.id === r.id ? { ...x, item: v, location_id: locationId } : x)) } : d,
-    )
     const body: { id: string; item?: string; location_id?: string | null } = { id: r.id }
     if (v !== r.item) body.item = v
     if (locationId !== r.location_id) body.location_id = locationId
-    await write('reserve', { method: 'PATCH', body, affectedKeys: [RESERVE_KEY] }).catch(() => {})
+    await write('reserve', {
+      method: 'PATCH',
+      body,
+      affectedKeys: [RESERVE_KEY],
+      optimistic: (qc) =>
+        qc.setQueryData<ReserveData>(RESERVE_KEY, (d) =>
+          d ? { reserve: d.reserve.map((x) => (x.id === r.id ? { ...x, item: v, location_id: locationId } : x)) } : d,
+        ),
+    }).catch(() => {})
   }
 
   // Group items under their location, in the configured order, then an "Autres"
