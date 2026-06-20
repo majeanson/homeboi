@@ -26,6 +26,7 @@ import { BigTiles, Sayable } from '../components/BigTiles'
 import { KidCollections } from '../components/kitchen/KidCollections'
 import { type WeekDay } from '../components/kitchen/types'
 import { type Recipe } from '../lib/recipes'
+import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { EmptyState } from '../components/EmptyState'
 import { StatusMessage } from '../components/StatusMessage'
 import { Chip, ChipGroup } from '../components/Chip'
@@ -802,8 +803,8 @@ export function DevKit() {
           mk('r2', 'Soupe tomate', ['Soupes']),
           mk('r3', 'Biscuits', ['Desserts']),
         ]
-        const now = Math.floor(Date.now() / 1000)
-        const week: WeekDay[] = Array.from({ length: 7 }, (_, i) => ({ date: now + i * 86400, meal: undefined }))
+        const now = todayLocalDay()
+        const week: WeekDay[] = Array.from({ length: 7 }, (_, i) => ({ date: addLocalDays(now, i), meal: undefined }))
         return (
           <Demo label="3-stage hear-first picker (flip Audience → Bambin; tap a tile twice to commit)">
             <KidCollections recipes={recipes} week={week} onSuggest={() => {}} onBack={() => {}} />

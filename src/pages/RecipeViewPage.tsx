@@ -3,6 +3,7 @@ import { RecipeSheet } from '../components/RecipeSheet'
 import { Loading } from '../components/Fallback'
 import { useLang } from '../i18n'
 import { formatWeekday } from '../lib/format'
+import { addLocalDays } from '../lib/localDay'
 import { useRecipes, useMeals } from '../lib/queryHooks'
 import { useSceneClose } from '../lib/sceneNav'
 
@@ -22,7 +23,7 @@ export function RecipeViewPage() {
   const windowDays = mealsQ.data?.windowDays ?? 10
   const week = weekStart
     ? Array.from({ length: windowDays }, (_, i) => {
-        const date = weekStart + i * 86400
+        const date = addLocalDays(weekStart, i)
         return { date, label: formatWeekday(date, lang) }
       })
     : []

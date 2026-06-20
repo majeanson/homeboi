@@ -238,7 +238,7 @@ export function AddSheet({
   // Same 10-day countdown window the Kitchen grid renders (shrinks 10 → 4 across
   // the week, re-anchored each Tuesday — see functions/api/meals.ts).
   const weekDays = weekStart
-    ? Array.from({ length: mealsData?.windowDays ?? 10 }, (_, i) => weekStart + i * 86400)
+    ? Array.from({ length: mealsData?.windowDays ?? 10 }, (_, i) => addLocalDays(weekStart, i))
     : []
   // Today's planned (non-leftover) meals → "we ate this, there's some left"
   // suggestions for the leftovers combobox; picking one carries its recipe link.
