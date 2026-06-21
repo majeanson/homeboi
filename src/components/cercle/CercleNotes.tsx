@@ -11,9 +11,11 @@ import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, type NoteScope, visibleNotes } from '../../lib/familyNotes'
 import type { Member } from '../../lib/cercle'
 import { isGuest } from '../../lib/device'
+import { useSurface } from '../../lib/surface'
 import { imgUrl } from '../../lib/image'
 import { Icon, InlineIcon } from '../Icon'
 import { MemberSwitcher } from '../MemberSwitcher'
+import { FaceSelect } from '../FaceSelect'
 import { EditField } from '../EditField'
 import { MemoControls } from '../MemoControls'
 import { ZoomableImg } from '../ZoomableImg'
@@ -44,6 +46,7 @@ export function CercleNotes({
   const write = useWrite()
   const qc = useQueryClient()
   const { memberId: profileId } = useProfile()
+  const { surface } = useSurface()
   const ro = isGuest()
 
   // The acting face for the section: whose notes to show, and the scope for a new note.
@@ -183,23 +186,28 @@ export function CercleNotes({
       </header>
       {help?.bubbleFor('notes')}
 
-      {/* Whose notes — Maisonnée + each member. The SAME subtle face row as the board's
-          "Aujourd'hui" header (the shared MemberSwitcher); seeded from the device
-          profile, but this picks LOCALLY (it doesn't move the device profile). This one
-          control also decides the new note's scope: a face → a personal note, Maisonnée
-          → family-wide (no separate Moi/Maisonnée toggle). */}
-      <MemberSwitcher
-        faces={members.map((m) => ({
+      {/* Whose notes — Maisonnée + each member. The SAME pick-a-face control as the
+          board's "Aujourd'hui" header, surface-for-surface: the always-in-view face ROW
+          on a kiosk wall, and the collapsed tap-to-open chip on mobile (FaceSelect),
+          where the row would crowd the page. Seeded from the device profile, but this
+          picks LOCALLY (it doesn't move the device profile). This one control also
+          decides the new note's scope: a face → a personal note, Maisonnée → family-wide
+          (no separate Moi/Maisonnée toggle). */}
+      {(() => {
+        const faces = members.map((m) => ({
           id: m.id,
           name: m.displayName,
           colour: m.colour,
           photoUrl: m.avatarKind === 'photo' && m.avatarRef ? imgUrl(m.avatarRef) : null,
-        }))}
-        value={face}
-        onChange={setFace}
-        allLabel={fn.scopeFamily}
-        ariaLabel={fn.title}
-      />
+        }))
+        return surface === 'kiosk' ? (
+          <MemberSwitcher faces={faces} value={face} onChange={setFace} allLabel={fn.scopeFamily} ariaLabel={fn.title} />
+        ) : (
+          <div className="cercle-notes__face">
+            <FaceSelect faces={faces} value={face} onChange={setFace} allLabel={fn.scopeFamily} ariaLabel={fn.title} />
+          </div>
+        )
+      })()}
 
       {/* Composer — text + media. The note's scope follows the picked face above, so
           there's no scope toggle here. Hidden for guests. */}

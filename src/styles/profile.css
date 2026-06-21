@@ -7,6 +7,24 @@
   cursor: pointer;
   padding: 0;
 }
+/* The labeled variant (FaceSelect): a collapsed pick-a-face chip that also shows the
+   current name + a caret, for surfaces with no greeting to name the face (Le cercle).
+   The board's header chip stays avatar-only (the greeting already says the name). */
+.profile-chip--labeled {
+  gap: 0.45rem;
+  padding: 0.25rem 0.6rem 0.25rem 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink-soft);
+}
+.profile-chip__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
 .profile-chip__av {
   width: 34px;
   height: 34px;

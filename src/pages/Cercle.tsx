@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
+import { useSurface } from '../lib/surface'
 import { useTabParam } from '../lib/tabParam'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildContact, buildMemberPerson } from '../components/detail/adapters'
@@ -32,6 +33,7 @@ import { CercleNotes } from '../components/cercle/CercleNotes'
 import { BusinessesTab } from '../components/cercle/BusinessesTab'
 import { SubTabs } from '../components/SubTabs'
 import { MemberSwitcher } from '../components/MemberSwitcher'
+import { FaceSelect } from '../components/FaceSelect'
 import { Modal } from '../components/Modal'
 import { imgUrl } from '../lib/image'
 import { useHelpMode, HelpToggle, HelpHint, HelpTitle } from '../lib/helpMode'
@@ -148,6 +150,7 @@ function CercleParent() {
   const confirm = useConfirm()
   const recordUndo = useRecordUndo()
   const openSheet = useOpenPersonSheet()
+  const { surface } = useSurface()
   // A guest is read-only: no drag-to-group affordance (every drop is a write).
   const ro = isGuest()
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
@@ -563,25 +566,28 @@ function CercleParent() {
           return (
           <>
           {/* Focus lens — pick a household member to read the cercle from their
-              perspective (reuses the board/Notes MemberSwitcher). Not on the tree, nor
+              perspective. The SAME pick-a-face control as the board's "Aujourd'hui"
+              header, surface-for-surface: the always-in-view face ROW on a kiosk wall,
+              the collapsed tap-to-open chip on mobile (FaceSelect). Not on the tree, nor
               on the Social web (no single centre to read from). */}
-          {view !== 'tree' && !showWeb && householdPeople.length > 0 && (
-            <div className="cercle-focus">
-              <MemberSwitcher
-                faces={householdPeople.map((p) => ({
-                  id: p.id,
-                  name: p.firstName,
-                  colour: p.colour,
-                  photoUrl: p.avatarKind === 'photo' && p.avatarRef ? imgUrl(p.avatarRef) : null,
-                }))}
-                value={focusId}
-                onChange={setFocusId}
-                allLabel={t.cercle.memberBadge}
-                ariaLabel={t.cercle.focusLabel}
-              />
-              {focusName && <p className="cercle-focus__hint mono">{t.cercle.focusBy(focusName)}</p>}
-            </div>
-          )}
+          {view !== 'tree' && !showWeb && householdPeople.length > 0 && (() => {
+            const faces = householdPeople.map((p) => ({
+              id: p.id,
+              name: p.firstName,
+              colour: p.colour,
+              photoUrl: p.avatarKind === 'photo' && p.avatarRef ? imgUrl(p.avatarRef) : null,
+            }))
+            return (
+              <div className="cercle-focus">
+                {surface === 'kiosk' ? (
+                  <MemberSwitcher faces={faces} value={focusId} onChange={setFocusId} allLabel={t.cercle.memberBadge} ariaLabel={t.cercle.focusLabel} />
+                ) : (
+                  <FaceSelect faces={faces} value={focusId} onChange={setFocusId} allLabel={t.cercle.memberBadge} ariaLabel={t.cercle.focusLabel} />
+                )}
+                {focusName && <p className="cercle-focus__hint mono">{t.cercle.focusBy(focusName)}</p>}
+              </div>
+            )
+          })()}
 
           {showWeb ? (
             <CercleWeb people={sectionPeople} links={links} onOpen={openPerson} grouping={grouping} mode={view === 'links' ? 'clusters' : 'blob'} />

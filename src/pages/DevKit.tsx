@@ -15,6 +15,7 @@ import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
 import { MemberSwitcher } from '../components/MemberSwitcher'
+import { FaceSelect } from '../components/FaceSelect'
 import { GroupForm } from '../components/cercle/GroupForm'
 import { BusinessForm } from '../components/cercle/BusinessForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
@@ -399,6 +400,26 @@ export function DevKit() {
         // picker. Map any member shape to {id,name,colour,photoUrl} at the call site.
         <Demo label="Maisonnée + member faces — re-tap the active face to clear">
           <MemberSwitcher
+            faces={DEMO_MEMBERS.map((m) => ({ id: m.id, name: m.displayName, colour: m.colour }))}
+            value={face}
+            onChange={setFace}
+            allLabel="Maisonnée"
+            ariaLabel="Choisir une personne"
+          />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'FaceSelect',
+      file: 'components/FaceSelect.tsx',
+      kw: 'membre face visage maisonnée household pick profile chip collapsed sheet tap aujourd’hui board cercle notes mobile',
+      render: () => (
+        // The COLLAPSED sibling of MemberSwitcher: a chip that opens a face-pick sheet
+        // on tap — the board's "Aujourd'hui" mobile pattern, controlled. Use the row on
+        // a kiosk, this chip on mobile (Le cercle does exactly that). Same value/onChange.
+        <Demo label="Collapsed pick-a-face chip — tap to open the faces sheet">
+          <FaceSelect
             faces={DEMO_MEMBERS.map((m) => ({ id: m.id, name: m.displayName, colour: m.colour }))}
             value={face}
             onChange={setFace}
