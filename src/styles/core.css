@@ -447,6 +447,16 @@ button {
   background: var(--accent);
   filter: brightness(0.96);
 }
+/* Icon-only square button — a compact, symbol-only action with no text label.
+   Always pair with aria-label + title (the symbol is the only cue). Keeps the
+   44px thumb target and never stretches. */
+.btn--icon {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  gap: 0;
+  flex: 0 0 auto;
+}
 .btn--ghost {
   border-color: var(--line);
   background: transparent;

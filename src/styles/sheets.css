@@ -1849,8 +1849,10 @@
   margin-top: 18px;
   flex-wrap: wrap;
 }
+/* The two "fill the list" shortcuts are now small symbol-only buttons (browse
+   flyers / quick-add) — sit them side by side at their natural width, not stretched. */
 .list-actions .btn {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
 }
 .deal__actions {
   display: flex;

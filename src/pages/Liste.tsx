@@ -360,17 +360,21 @@ export function Liste() {
       <div className="list-actions">
         <button
           type="button"
-          className="btn btn--primary help-pick"
+          className="btn btn--primary btn--icon help-pick"
+          aria-label={t.shop.browse}
+          title={t.shop.browse}
           onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
         >
-          <InlineIcon name="magnifying-glass-bold" /> {t.shop.browse}
+          <InlineIcon name="magnifying-glass-bold" />
         </button>
         <button
           type="button"
-          className="btn btn--primary help-pick"
+          className="btn btn--primary btn--icon help-pick"
+          aria-label={t.list.quickAdd}
+          title={t.list.quickAdd}
           onClick={help.pick('quick', () => nav('/liste/quick'))}
         >
-          <InlineIcon name="plus-bold" /> {t.list.quickAdd}
+          <InlineIcon name="plus-bold" />
         </button>
       </div>
       {help.bubbleFor('flyer')}
