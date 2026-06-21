@@ -116,6 +116,18 @@
 .cercle-row:hover {
   background: var(--surface);
 }
+/* The drag handle that picks a person up to drop into a named group. Quiet until
+   touched (inherits .dnd-grip), nudged in from the card edge. */
+.cercle-row__grip {
+  padding-left: 0.45rem;
+}
+/* A named group lit up as a live drop target (.dnd-over adds the dashed ring) gets a
+   little breathing room so the cue reads even when the group is empty. */
+.cercle-group--named.dnd-over {
+  border-radius: var(--radius-md);
+  padding: 0.4rem;
+  min-height: 3.2rem;
+}
 .cercle-row__open {
   display: flex;
   align-items: center;
