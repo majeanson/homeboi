@@ -176,6 +176,7 @@ export const FR = {
     voiceUnsupported: 'La reconnaissance vocale n’est pas dispo sur cet appareil.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
     quickAdd: 'Ajout rapide',
+    quickAddShort: 'Ajout',
     quickAddTitle: 'Déjà acheté',
     quickSearch: 'Chercher ou ajouter…',
     quickSortAlpha: 'Ordre alphabétique',
@@ -1331,6 +1332,7 @@ export const FR = {
     handBack: 'Tu peux reprendre l’appareil.',
     continueApp: 'Continuer',
     browse: 'Parcourir les circulaires',
+    browseShort: 'Circulaires',
     browseTitle: 'Les circulaires',
     browseHint: 'Cherche un article en aubaine cette semaine.',
     search: 'Chercher un article…',
@@ -1618,6 +1620,7 @@ export const EN: typeof FR = {
     voiceUnsupported: 'Voice recognition isn’t available on this device.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
     quickAdd: 'Quick add',
+    quickAddShort: 'Add',
     quickAddTitle: 'Bought before',
     quickSearch: 'Search or add…',
     quickSortAlpha: 'Alphabetical order',
@@ -2760,6 +2763,7 @@ export const EN: typeof FR = {
     handBack: 'You can take the device back.',
     continueApp: 'Continue',
     browse: 'Browse flyers',
+    browseShort: 'Flyers',
     browseTitle: 'Flyers',
     browseHint: 'Search an item on sale this week.',
     search: 'Search an item…',

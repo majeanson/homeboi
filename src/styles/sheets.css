@@ -1854,6 +1854,15 @@
 .list-actions .btn {
   flex: 0 0 auto;
 }
+/* …but the browse/quick-add pair splits the full width 50/50 (half a button, half
+   the other), each carrying a short label beside its glyph. */
+.list-actions--split {
+  flex-wrap: nowrap;
+}
+.list-actions--split .btn {
+  flex: 1 1 0;
+  min-width: 0; /* let the label ellipsis-truncate rather than overflow the half */
+}
 .deal__actions {
   display: flex;
   gap: 8px;

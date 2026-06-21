@@ -356,25 +356,26 @@ export function Liste() {
       {/* The two frequent "fill the list" moves earn real, prominent one-tap
           shortcuts here — not tucked away behind the ＋ Add sheet: searching the
           week's flyers for an aubaine ("Parcourir les circulaires") and reopening
-          past/predicted items to restock ("Ajout rapide"). */}
-      <div className="list-actions">
+          past/predicted items to restock ("Ajout rapide"). They split the row 50/50
+          (glyph + short label each); full text stays on the aria-label/title. */}
+      <div className="list-actions list-actions--split">
         <button
           type="button"
-          className="btn btn--primary btn--icon help-pick"
+          className="btn btn--primary help-pick"
           aria-label={t.shop.browse}
           title={t.shop.browse}
           onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
         >
-          <InlineIcon name="magnifying-glass-bold" />
+          <InlineIcon name="magnifying-glass-bold" /> {t.shop.browseShort}
         </button>
         <button
           type="button"
-          className="btn btn--primary btn--icon help-pick"
+          className="btn btn--primary help-pick"
           aria-label={t.list.quickAdd}
           title={t.list.quickAdd}
           onClick={help.pick('quick', () => nav('/liste/quick'))}
         >
-          <InlineIcon name="plus-bold" />
+          <InlineIcon name="plus-bold" /> {t.list.quickAddShort}
         </button>
       </div>
       {help.bubbleFor('flyer')}
