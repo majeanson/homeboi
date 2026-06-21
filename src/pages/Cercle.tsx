@@ -10,6 +10,9 @@ import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
+import { useRecordUndo } from '../lib/toast'
+import { usePointerDnd, DragGhost } from '../lib/dnd'
+import { isGuest } from '../lib/device'
 import { useOpenPersonSheet } from '../lib/personSheet'
 import { CERCLE_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
@@ -141,7 +144,10 @@ function CercleParent() {
   const detail = useEntityDetail()
   const write = useWrite()
   const confirm = useConfirm()
+  const recordUndo = useRecordUndo()
   const openSheet = useOpenPersonSheet()
+  // A guest is read-only: no drag-to-group affordance (every drop is a write).
+  const ro = isGuest()
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
   // Distinct URL key so it composes with `view` (?section=family&view=list). Famille
   // is the default — the Maisonnée is the heart of the cercle.
@@ -313,6 +319,32 @@ function CercleParent() {
   const focusKey = focusMember ? personKey('member', focusMember.id) : null
   const focusName = focusMember?.displayName ?? null
 
+  // Drag a person row (the ⠿ grip) onto a named-group section to add them to it.
+  // The drag id is the person key; the drop zone is `group:<id>`. On drop the row
+  // takes the group's colour automatically (see `groupColour` on Row), and an undo
+  // toast offers the inverse. canDrop greys out a group the person is already in.
+  const groupForZone = (zone: string) =>
+    zone.startsWith('group:') ? namedGroups.find((g) => g.id === zone.slice('group:'.length)) : undefined
+  const dnd = usePointerDnd({
+    onDrop: (pkey, zone) => {
+      const g = groupForZone(zone)
+      const p = byKey.get(pkey)
+      if (!g || !p || g.memberKeys.has(pkey)) return
+      const body = { groupId: g.id, personId: p.id, personKind: p.kind }
+      void write('cercle-groups', { method: 'POST', body, affectedKeys: [CERCLE_KEY] }).catch(() => {})
+      recordUndo({
+        message: t.cercle.droppedInGroup(p.firstName, g.name),
+        onUndo: () => {
+          void write('cercle-groups', { method: 'DELETE', body, affectedKeys: [CERCLE_KEY] }).catch(() => {})
+        },
+      })
+    },
+    canDrop: (pkey, zone) => {
+      const g = groupForZone(zone)
+      return !!g && !g.memberKeys.has(pkey)
+    },
+  })
+
   if (isUnauthorized(error)) return <PairPrompt />
   if (!data && !error) return <Loading />
 
@@ -387,7 +419,22 @@ function CercleParent() {
         : relationTo(p.key, focusKey, links, byKey, lang) ?? t.cercle.focusNone
       : rels[0] ?? bday ?? (groupNames || null)
     return (
-      <div className="cercle-row">
+      <div className={'cercle-row' + (dnd.activeId === p.key ? ' is-dragging' : '')}>
+        {/* Drag this person into a named group — the row then takes the group's
+            colour. Touch-friendly grip (touch-action:none) so a tap still opens the
+            peek; hidden for a read-only guest. */}
+        {!ro && (
+          <span
+            className="dnd-grip cercle-row__grip"
+            data-dnd-grip=""
+            role="button"
+            aria-label={t.cercle.dragToGroup}
+            title={t.cercle.dragToGroup}
+            onPointerDown={(e) => dnd.start(p.key, p.name, e)}
+          >
+            ⠿
+          </span>
+        )}
         <button type="button" className="cercle-row__open" onClick={() => openPerson(p)}>
           <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={groupColour ?? p.colour} name={p.firstName} size={48} />
           <span className="cercle-row__main">
@@ -587,7 +634,14 @@ function CercleParent() {
                   {namedGroups
                     .filter((g) => (section === 'family' ? g.kind === 'family' : g.kind !== 'family'))
                     .map((g) => (
-                    <section key={g.id} className="cercle-group cercle-group--named">
+                    <section
+                      key={g.id}
+                      data-dnd-zone={`group:${g.id}`}
+                      className={
+                        'cercle-group cercle-group--named' +
+                        (dnd.over === `group:${g.id}` ? ' dnd-over' : '')
+                      }
+                    >
                       {editingGroupId === g.id ? (
                         <GroupForm
                           initial={{ name: g.name, kind: g.kind, colour: g.colour ?? '' }}
@@ -705,6 +759,8 @@ function CercleParent() {
           )}
         </>
       )}
+      {/* One floating drag label for the page (person → group). */}
+      <DragGhost ghost={dnd.ghost} />
     </main>
   )
 }

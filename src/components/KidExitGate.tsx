@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useModal } from '../lib/useModal'
+import { Icon } from './Icon'
 
 // The adult escape hatch from the toddler lens, built as a PARENTAL GATE so the
 // one-way-door property still holds for the child (see audience.ts, and the
@@ -101,9 +102,10 @@ export function KidExitGate() {
         onPointerCancel={cancelHold}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <span className="hubnav__peek-pic" aria-hidden="true">
-          🚪
-        </span>
+        {/* A Phosphor door glyph, not a 🚪 emoji — control affordances use the shared
+            Icon set (the emoji rendered as a dark full-colour box that read as a
+            broken tab in the mobile bottom nav). Sized to match the section tabs. */}
+        <Icon name="door-bold" size={22} color="var(--ink-faint)" />
         <span className="kid-exit-switch__label">{t.audience.exitTitle}</span>
         <span className="kid-exit-switch__fill" aria-hidden="true" />
       </button>
