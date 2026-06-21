@@ -47,6 +47,10 @@ export interface EventRow {
   start_at: number
   all_day: number
   member_id: string | null
+  contact_id?: string | null // #21: a « Le cercle » contact instead of a member
+  contact_name?: string | null // joined server-side, for the "who" label
+  business_id?: string | null // a « Le cercle » Business (vet, plumber…) — a rendez-vous
+  business_name?: string | null // joined server-side, for the "who" label
   recur_json?: string | null
   lead_seconds?: number | null
 }

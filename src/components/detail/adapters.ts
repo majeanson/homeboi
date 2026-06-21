@@ -7,6 +7,7 @@
 import { CATS } from '../../lib/cats'
 import { imgUrl } from '../../lib/image'
 import { type Contact, type Person, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, fullName } from '../../lib/cercle'
+import { type Business } from '../../lib/businesses'
 import { formatDay, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { recipeImg, recipeTotalMin, tagColor, type Recipe } from '../../lib/recipes'
@@ -73,14 +74,63 @@ export function buildEvent(e: EventRow, ctx: DetailCtx): DetailModel {
       actions: [{ key: 'cercle', label: t.nav.cercle, icon: 'users-three-bold', primary: true, href: '/cercle' }],
     }
   }
+  // The "who" of a rendez-vous: a member face if assigned, else the linked « Le
+  // cercle » person OR Business name (joined server-side as contact_name /
+  // business_name) — so a vet/plumber/grand-maman appointment shows who it's with,
+  // not just a member face. A non-member "who" has no avatar; show the name on the
+  // accent disc.
+  const whoName = e.business_name ?? e.contact_name ?? null
+  const who: DetailWho | null = whoOf(members, e.member_id) ?? (whoName ? { name: whoName, colour: CATS.event.color } : null)
   return {
     kind: 'event',
     title: e.title,
     icon: CATS.event.icon,
     accent: colorOf(members, e.member_id) ?? CATS.event.color,
     when: e.all_day ? t.board.allDay : `${formatDay(e.start_at, lang)} · ${formatTime(e.start_at, lang)}`,
-    who: whoOf(members, e.member_id),
+    who,
     actions: [{ key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${day}` }],
+  }
+}
+
+// — A « Le cercle » Business (vet, plumber, hospital…) — a standalone service card.
+// NOT a person: no relationships/birthday/family. Just quick reach + notes + edit.
+export function buildBusiness(
+  b: Business,
+  ctx: DetailCtx,
+  opts?: { onEdit?: () => void; onDelete?: () => void },
+): DetailModel {
+  const { t } = ctx
+  const bz = t.cercle.business
+  const accent = '#2A8F85'
+  const mapsHref = b.address?.trim()
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address.trim())}`
+    : null
+
+  const blocks: DetailBlock[] = []
+  if (b.category?.trim()) blocks.push({ kind: 'chips', chips: [b.category.trim()] })
+  if (b.notes?.trim()) blocks.push({ kind: 'text', text: b.notes.trim() })
+  if (b.address?.trim()) blocks.push({ kind: 'text', text: b.address.trim() })
+  if (b.website?.trim()) blocks.push({ kind: 'text', text: b.website.trim() })
+
+  const actions: DetailAction[] = []
+  if (b.phone) actions.push({ key: 'call', label: t.cercle.call, icon: 'phone-bold', run: () => { window.location.href = `tel:${b.phone}` } })
+  if (b.email) actions.push({ key: 'mail', label: t.cercle.write, icon: 'envelope-bold', run: () => { window.location.href = `mailto:${b.email}` } })
+  if (mapsHref) actions.push({ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold', run: () => { window.open(mapsHref, '_blank', 'noopener') } })
+  if (b.website?.trim()) {
+    const url = /^https?:\/\//.test(b.website.trim()) ? b.website.trim() : `https://${b.website.trim()}`
+    actions.push({ key: 'web', label: bz.website, icon: 'arrow-up-right-bold', run: () => { window.open(url, '_blank', 'noopener') } })
+  }
+  if (opts?.onDelete) actions.push({ key: 'delete', label: bz.delete, icon: 'trash-bold', run: opts.onDelete })
+  if (opts?.onEdit) actions.push({ key: 'edit', label: bz.edit, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
+
+  return {
+    kind: 'contact',
+    title: b.name,
+    icon: 'storefront-bold',
+    accent,
+    photo: b.photoKey ? imgUrl(b.photoKey) : null,
+    blocks,
+    actions,
   }
 }
 
@@ -284,7 +334,7 @@ export function buildContact(
   opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onExport?: () => void; onConnect?: () => void; buildFamilyHref?: string },
 ): DetailModel {
   const { t, lang } = ctx
-  const accent = opts?.accent ?? '#C45E86'
+  const accent = opts?.accent ?? '#2A8F85'
   const days = daysUntilBirthday(c.birthday)
   const age = ageOnNextBirthday(c.birthday)
   const bday = formatBirthday(c.birthday, lang)
@@ -346,7 +396,7 @@ export function buildMemberPerson(
   opts?: { relations?: string[]; groupToggle?: GroupToggle; onDetail?: () => void; onConnect?: () => void; buildFamilyHref?: string },
 ): DetailModel {
   const { t } = ctx
-  const accent = p.colour ?? '#C45E86'
+  const accent = p.colour ?? '#2A8F85'
   const blocks: DetailBlock[] = []
   if (opts?.relations?.length) blocks.push({ kind: 'list', label: t.cercle.relationships, items: opts.relations })
   if (opts?.groupToggle?.options.length)

@@ -64,10 +64,13 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | "Tap an item → detail peek" | **`useEntityDetail()`** + adapters | `components/detail/*`, `lib/detail.ts` |
 | Empty / status / chip / section header | **`EmptyState`/`StatusMessage`/`Chip`+`ChipGroup`/`SectionHeader`** | same-named files in `components/` |
 | Collapse a secondary group (calm) | **`Disclosure`** / `useSingleOpen` | `components/Disclosure.tsx` |
+| In-page segmented sub-tabs ("one job at a time") | **`SubTabs`** (the `.subtabs` family) | `components/SubTabs.tsx` (help-mode aware; used by La cuisine + Le cercle) |
 | A dialog / bottom sheet | **`Modal`** + `useModal` / `useSwipeToDismiss` | `components/Modal.tsx`, `lib/useModal.ts` |
 | A Réglages section wrapper | **`OperatorSection`** | `components/operator/OperatorSection.tsx` |
 | Hub-tab / scene header | **`HubHead`** / **`SceneHead`** | `components/HubHead.tsx`, `components/SceneHead.tsx` |
-| Person photo/initial, mic, icon, image | **`Avatar`/`VoiceButton`/`Icon`/`ZoomableImg`** | `components/*` |
+| "Everything the app does" themed map / feature discovery | **`FeatureMap`** (the ONE taxonomy: `CONCEPT_THEMES`/`FEATURE_MAP_TILES` in `lib/guideContent`) | `components/FeatureMap.tsx` (reused by the Guide jump-grid, the Board `WelcomeCard`, DevKit — extend the taxonomy, don't fork a list) |
+| Person photo/initial, mic, icon, image | **`Avatar`/`VoiceButton`/`Icon`/`ZoomableImg`** | `components/*` (pass a family/group `colour` so a photo-less member's initials disc takes the group colour) |
+| Pick a household face (Maisonnée + members) | **`MemberSwitcher`** (the `.mswitch` "Aujourd'hui" row) | `components/MemberSwitcher.tsx` (controlled; board wraps it to `useProfile`, Le cercle picks locally) |
 | Confirm a destructive delete / undo a light one | **`useConfirm`** / the undo toast | `lib/confirm.tsx`, `lib/toast.tsx` (`lib/undoStack.ts`) |
 | Touch drag-and-drop / reorder | **`usePointerDnd`** | `lib/dnd.tsx` (never HTML5 `draggable`) |
 | Upload a photo / audio / drawing blob to R2 | **`uploadMedia()`** / **`useMediaUpload()`** | `lib/uploadMedia.ts` (resize→POST→`{key}`, 503→`MediaUnavailableError`) |

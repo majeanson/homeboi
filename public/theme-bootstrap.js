@@ -24,21 +24,40 @@
       var now = new Date()
       var mins = now.getHours() * 60 + now.getMinutes()
       var part =
-        mins >= 300 && mins < 420
-          ? 'dawn' // 05:00–07:00
-          : mins >= 420 && mins < 720
-            ? 'morning' // 07:00–12:00
-            : mins >= 720 && mins < 1020
-              ? 'afternoon' // 12:00–17:00
-              : mins >= 1020 && mins < 1230
-                ? 'dusk' // 17:00–20:30
-                : 'night' // else
+        mins >= 270 && mins < 315
+          ? 'deep-twilight' // 04:30–05:15
+          : mins >= 315 && mins < 360
+            ? 'twilight' // 05:15–06:00
+            : mins >= 360 && mins < 420
+              ? 'dawn' // 06:00–07:00
+              : mins >= 420 && mins < 660
+                ? 'morning' // 07:00–11:00
+                : mins >= 660 && mins < 840
+                  ? 'noon' // 11:00–14:00
+                  : mins >= 840 && mins < 1020
+                    ? 'afternoon' // 14:00–17:00
+                    : mins >= 1020 && mins < 1125
+                      ? 'dusk' // 17:00–18:45
+                      : mins >= 1125 && mins < 1170
+                        ? 'twilight' // 18:45–19:30
+                        : mins >= 1170 && mins < 1215
+                          ? 'deep-twilight' // 19:30–20:15
+                          : 'night' // else
       document.documentElement.setAttribute('data-daypart', part)
-      // Auto day/night: while the drift is on, the binary theme follows the part
-      // too — night actually goes dark, not a dim cream. Overrides the manual
-      // theme set above (restored when ambient is switched off). Kept in sync with
-      // themeForPart() in src/lib/theme.ts.
-      document.documentElement.setAttribute('data-theme', part === 'night' ? 'night' : 'day')
+      // Auto day/night: while the drift is on, the theme tier follows the part too
+      // — night actually goes dark, and the dawn/dusk ramps step through the dim
+      // twilight tiers (smoother than a single cream→black cut). Overrides the
+      // manual theme set above (restored when ambient is switched off). Kept in
+      // sync with themeForPart() in src/lib/theme.ts.
+      var themeAttr =
+        part === 'night'
+          ? 'night'
+          : part === 'deep-twilight'
+            ? 'deep-twilight'
+            : part === 'twilight'
+              ? 'twilight'
+              : 'day'
+      document.documentElement.setAttribute('data-theme', themeAttr)
     }
   } catch (e) {
     /* no daypart — base palette shows */

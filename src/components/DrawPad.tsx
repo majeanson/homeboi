@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import SignaturePad from 'signature_pad'
 import type { PointGroup } from 'signature_pad'
@@ -382,6 +383,28 @@ export function DrawPad({
   }, [photoAlpha])
 
   useModal(rootRef, onCancel, { open })
+
+  // While the pad is open, neutralize the browser's swipe-left / swipe-right
+  // history navigation (Android edge-swipe back, macOS/Chrome trackpad two-finger
+  // swipe). touch-action:none stops the canvas from scrolling, but back/forward is a
+  // NAVIGATION gesture the CSS can't reach — a stray horizontal drag mid-stroke could
+  // otherwise yank you off the board and lose the drawing. We hold one extra same-URL
+  // history entry: a back/forward gesture pops it, we immediately re-push and stay put
+  // (no route change — the sentinel sits on the page the pad opened from). The entry
+  // is dropped again on close so the history stack stays clean.
+  useEffect(() => {
+    if (!open) return
+    const SENTINEL = '__drawpad_nav_guard__'
+    history.pushState({ [SENTINEL]: true }, '')
+    const onPop = () => { history.pushState({ [SENTINEL]: true }, '') }
+    window.addEventListener('popstate', onPop)
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      // Drop our sentinel if it's still the current entry (closed via UI, not a back
+      // gesture); the listener is already off so this back step is silent.
+      if (history.state?.[SENTINEL]) history.back()
+    }
+  }, [open])
 
   const ratio = () => Math.min(Math.max(window.devicePixelRatio || 1, 1), 2) // cap 2× → bounded memory
   const cssW = () => (canvasRef.current ? canvasRef.current.width / ratio() : 0)
@@ -1084,7 +1107,12 @@ export function DrawPad({
     { key: 'coloring', label: t.memo.tplColoring },
   ]
 
-  return (
+  // Portal to <body>: the pad is `position: fixed; inset: 0`, but a launcher like the
+  // ＋ "Note rapide" sheet (`.sheet` has `transform: translateY(0)`) is a containing
+  // block for fixed descendants — rendered inline, the pad would be trapped inside
+  // that scrollable sheet (you could scroll up/down while drawing). Portalling escapes
+  // any transformed ancestor so it's always a true full-page scene.
+  return createPortal(
     <div ref={rootRef} className={'drawpad' + (toddler ? ' drawpad--kid' : '')} role="dialog" aria-modal="true" aria-label={initial || initialSceneUrl ? t.memo.editTitle : t.memo.drawTitle}>
       {/* Row 1 — compact tool row (scrolls sideways, never wraps tall). */}
       <div className="drawpad__bar drawpad__bar--tools">
@@ -1262,6 +1290,7 @@ export function DrawPad({
           <button type="button" className="btn btn--primary" onClick={save} disabled={busy}><Icon name="check-bold" size={18} /> {t.memo.save}</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

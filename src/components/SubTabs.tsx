@@ -1,0 +1,74 @@
+import { type ReactNode } from 'react'
+import { InlineIcon, type IconName } from './Icon'
+
+// SubTabs — the app-wide segmented "one job at a time" sub-tab control (the
+// `.subtabs` family in styles/core.css). It's the in-page section switch used by
+// La cuisine (Repas · Garde-manger · Recettes), Le cercle (Liste · Liens · Arbre),
+// the flyer/deal browsers, etc. — one calm pill row, the active tab filled with the
+// surface accent. Reuse this rather than re-hand-rolling the .subtabs markup.
+//
+// Help-mode aware: pass a `useHelpMode().pick` as `pick` and, while help is armed,
+// tapping a tab EXPLAINS it (a HelpBubble) instead of switching — the caller renders
+// the matching `help.bubbleFor(key)` wherever it wants the bubble to appear, and
+// passes `armed={help.active}` so the row gets La cuisine's armed look.
+
+interface SubTabOption<K extends string> {
+  key: K
+  label: ReactNode
+  // Optional leading glyph (Phosphor, via the shared <Icon> set — never an emoji).
+  icon?: IconName
+}
+
+export function SubTabs<K extends string>({
+  options,
+  value,
+  onSelect,
+  ariaLabel,
+  pick,
+  armed = false,
+  trailing,
+  tour,
+  size,
+  className,
+}: {
+  options: ReadonlyArray<SubTabOption<K>>
+  value: K
+  onSelect: (key: K) => void
+  ariaLabel: string
+  // Optional help-mode integration (useHelpMode().pick). When armed, a tap explains
+  // the tab instead of selecting it.
+  pick?: (k: string, run: () => void) => () => void
+  // Adds `.help-armed` to the row so armed tabs read as "tap to learn".
+  armed?: boolean
+  // A trailing control on the row, e.g. the help "?" <HelpToggle/>.
+  trailing?: ReactNode
+  // `data-tour` anchor id placed on the tablist (for the guided tour).
+  tour?: string
+  // 'mini' = the compact variant (`.subtabs--mini`), e.g. the recipe-book Aa/Collections toggle.
+  size?: 'mini'
+  // Extra class on the `.subtabs` group (e.g. `deal-tabs`, `flyer-tabs`).
+  className?: string
+}) {
+  const group =
+    'subtabs' + (size === 'mini' ? ' subtabs--mini' : '') + (className ? ' ' + className : '')
+  return (
+    <div className={'subtabs-row' + (armed ? ' help-armed' : '')}>
+      <div className={group} role="tablist" aria-label={ariaLabel} data-tour={tour}>
+        {options.map((o) => (
+          <button
+            key={o.key}
+            type="button"
+            role="tab"
+            aria-selected={value === o.key}
+            className={'subtabs__opt' + (value === o.key ? ' is-on' : '')}
+            onClick={pick ? pick(o.key, () => onSelect(o.key)) : () => onSelect(o.key)}
+          >
+            {o.icon && <InlineIcon name={o.icon} size={15} />}
+            {o.label}
+          </button>
+        ))}
+      </div>
+      {trailing}
+    </div>
+  )
+}

@@ -29,3 +29,7 @@ export const CERCLE_KEY = ['cercle']
 // Le cercle → Famille → "Notes & recommandations": durable per-member / family-wide
 // quick notes. Read on the cercle tab AND by the global search, so the key is shared.
 export const FAMILY_NOTES_KEY = ['family-notes']
+// Le cercle → Business: the services/vendors directory (vet, plumber…). Read on the
+// cercle Business tab AND by the EventForm "Avec" picker (a rendez-vous can link a
+// business), so the key is shared — adding a business there refreshes the picker.
+export const BUSINESSES_KEY = ['businesses']

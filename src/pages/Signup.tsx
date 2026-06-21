@@ -52,10 +52,11 @@ export function Signup() {
       // family started on the wall tablet (Pair's signup link), keep the kiosk
       // role they already chose instead of stamping the phone layout on a wall.
       if (!(chosen && surface === 'kiosk')) setSurface('mobile')
-      // Land in Réglages ▸ La maisonnée so the obvious next step (add your
-      // family) is right there. (?tab= selects the sub-tab — Guide is the
-      // default now; a bare /settings would land there instead. See tabParam.)
-      nav('/settings?tab=household')
+      // Land on the board, where the first-run WelcomeCard greets a brand-new
+      // household with the setup checklist (add the family → meals → pair) AND
+      // the feature map — a friendlier door than dropping straight into a
+      // settings tab. (The essentials tour also auto-runs here.)
+      nav('/board')
     } catch (err) {
       setError(isStatus(err, 409) ? 'exists' : isStatus(err, 403) ? 'badInvite' : 'error')
     } finally {

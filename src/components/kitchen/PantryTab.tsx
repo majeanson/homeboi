@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
@@ -14,7 +14,20 @@ import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 // and the "use soon" list. Owns its own adds + undo-deferred clears; the parent
 // page only passes the rows (it keeps the queries for the unauth gate). `help` is
 // the kitchen's page-level help mode — makes the two headings explainable in place.
-export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; help?: HelpMode }) {
+// `between` is slotted after "à utiliser bientôt" and before "ce qui s'achève"
+// (La réserve sits there) so the low list reads last — the calmest, least-urgent
+// thing at the bottom of the garde-manger.
+export function PantryTab({
+  low,
+  soon,
+  help,
+  between,
+}: {
+  low: LowRow[]
+  soon: LowRow[]
+  help?: HelpMode
+  between?: ReactNode
+}) {
   const t = useT()
   const write = useWrite()
   // Bulletproof calm-delete for these two LIVE-POLLED lists: hide the row in local
@@ -128,6 +141,40 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
   return (
     <>
       <section>
+        <HelpTitle help={help} k="useSoon">{t.kitchen.useSoon}</HelpTitle>
+        {help?.bubbleFor('useSoon')}
+        <EditField
+          value={newSoon}
+          onChange={setNewSoon}
+          onSubmit={(v) => {
+            setNewSoon('')
+            void postSoon(v)
+          }}
+          voice={soonVoice}
+          submitLabel={t.capture.add}
+          placeholder={soonVoice.listening ? t.capture.listening : t.kitchen.useSoonAdd}
+          ariaLabel={t.kitchen.useSoonAdd}
+        />
+        {soonRemoval.visible(soon).length === 0 ? (
+          <EmptyState>{t.kitchen.useSoonEmpty}</EmptyState>
+        ) : (
+          <ul className="kitchen__soon">
+            {soonRemoval.visible(soon).map((s) => (
+              <CheckRow
+                key={s.id}
+                item={s.item}
+                onCheck={() => clearSoonItem(s)}
+                checkLabel={t.kitchen.useSoonCheck}
+                onRename={(item) => renameSoonItem(s, item)}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {between}
+
+      <section>
         <HelpTitle help={help} k="low">{t.kitchen.low}</HelpTitle>
         {help?.bubbleFor('low')}
         <EditField
@@ -155,38 +202,6 @@ export function PantryTab({ low, soon, help }: { low: LowRow[]; soon: LowRow[]; 
                 checkLabel={t.kitchen.addToList}
                 onRename={(item) => renameLowItem(l, item)}
                 onDelete={() => removeLowItem(l)}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section>
-        <HelpTitle help={help} k="useSoon">{t.kitchen.useSoon}</HelpTitle>
-        {help?.bubbleFor('useSoon')}
-        <EditField
-          value={newSoon}
-          onChange={setNewSoon}
-          onSubmit={(v) => {
-            setNewSoon('')
-            void postSoon(v)
-          }}
-          voice={soonVoice}
-          submitLabel={t.capture.add}
-          placeholder={soonVoice.listening ? t.capture.listening : t.kitchen.useSoonAdd}
-          ariaLabel={t.kitchen.useSoonAdd}
-        />
-        {soonRemoval.visible(soon).length === 0 ? (
-          <EmptyState>{t.kitchen.useSoonEmpty}</EmptyState>
-        ) : (
-          <ul className="kitchen__soon">
-            {soonRemoval.visible(soon).map((s) => (
-              <CheckRow
-                key={s.id}
-                item={s.item}
-                onCheck={() => clearSoonItem(s)}
-                checkLabel={t.kitchen.useSoonCheck}
-                onRename={(item) => renameSoonItem(s, item)}
               />
             ))}
           </ul>

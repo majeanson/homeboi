@@ -22,7 +22,7 @@ import { Avatar } from '../Avatar'
 import { Icon, InlineIcon } from '../Icon'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 
-const ACCENT = '#C45E86'
+const ACCENT = '#2A8F85' // cercle turquoise
 type Mode = 'bands' | 'matrix'
 type Slot = FamilyBand | 'tray'
 

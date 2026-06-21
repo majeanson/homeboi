@@ -19,14 +19,17 @@ import { SectionIntro } from '../components/SectionIntro'
 import { Avatar } from '../components/Avatar'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { useSpeak } from '../lib/speak'
-import { fold } from '../lib/normalize'
 import { downloadVCard } from '../lib/vcard'
 import { CercleEgo } from '../components/cercle/CercleEgo'
 import { CercleTree } from '../components/cercle/CercleTree'
 import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
+import { BusinessesTab } from '../components/cercle/BusinessesTab'
+import { SubTabs } from '../components/SubTabs'
+import { MemberSwitcher } from '../components/MemberSwitcher'
 import { Modal } from '../components/Modal'
+import { imgUrl } from '../lib/image'
 import { useHelpMode, HelpToggle, HelpHint, HelpTitle } from '../lib/helpMode'
 import { CERCLE_HELP } from '../lib/cercleHelp'
 import {
@@ -48,7 +51,7 @@ import {
   genderedRelLabel,
 } from '../lib/cercle'
 
-const ACCENT = '#C45E86' // the cercle tab's rose
+const ACCENT = '#2A8F85' // the cercle tab's turquoise (matches CATS.cercle.deep + the nav)
 
 interface CercleData {
   contacts: Contact[]
@@ -59,11 +62,17 @@ interface CercleData {
 
 type View = 'list' | 'links' | 'tree'
 const VIEW_ICON: Record<View, IconName> = { list: 'user-bold', links: 'users-three-bold', tree: 'tree-bold' }
-// The primary split: Famille (Maisonnée + families + their notes) vs Social
-// (friends/work/other groups + ungrouped people). The list body partitions by it;
-// the relationship views (Liens/Arbre) span the whole circle regardless.
-type Section = 'social' | 'family'
-const SECTION_ICON: Record<Section, IconName> = { family: 'users-three-bold', social: 'user-bold' }
+// The primary split: Famille (Maisonnée + families) vs Social (friends/work/other
+// groups + ungrouped people) vs Notes (the durable quick-notes board, CercleNotes).
+// The list body partitions People by the first two; Notes owns its whole body; the
+// relationship views (Liens/Arbre) span the whole circle regardless.
+type Section = 'social' | 'family' | 'notes' | 'business'
+const SECTION_ICON: Record<Section, IconName> = {
+  family: 'users-three-bold',
+  social: 'user-bold',
+  notes: 'file-text-bold',
+  business: 'storefront-bold',
+}
 
 // « Le cercle » — the household people directory + relationship views. Parent:
 // Liste (calm grouped directory, the default + accessible), Liens (tap-to-focus ego
@@ -98,6 +107,31 @@ function relationsOf(key: string, links: ContactLink[], byKey: Map<string, Perso
     .map((r) => `${genderedRelLabel(r.rel, subjectGender, lang)} · ${byKey.get(r.other)?.name ?? '—'}`)
 }
 
+// `fromKey`'s role TOWARD `toKey`, as ONE gendered label ("Fille", "Cousin", …) —
+// i.e. how the row person (from) relates to the focused person (to), gendered by the
+// row person. Used by the focus lens: with Marc focused, Léa's row reads "Fille"
+// (Léa is Marc's daughter). Reads the same closed link set as relationsOf, so derived
+// ties (grandparent, cousin…) resolve too. The most salient tie wins if several.
+function relationTo(
+  fromKey: string,
+  toKey: string,
+  links: ContactLink[],
+  byKey: Map<string, Person>,
+  lang: 'fr' | 'en',
+): string | null {
+  const fromGender = byKey.get(fromKey)?.gender ?? null
+  let best: RelationshipType | null = null
+  for (const l of links) {
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    let rel: RelationshipType | null = null
+    if (aKey === fromKey && bKey === toKey) rel = l.type
+    else if (bKey === fromKey && aKey === toKey) rel = l.reverseType
+    if (rel && (best === null || relPriority(rel) < relPriority(best))) best = rel
+  }
+  return best ? genderedRelLabel(best, fromGender, lang) : null
+}
+
 function CercleParent() {
   const t = useT()
   const { lang } = useLang()
@@ -109,8 +143,12 @@ function CercleParent() {
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
   // Distinct URL key so it composes with `view` (?section=family&view=list). Famille
   // is the default — the Maisonnée is the heart of the cercle.
-  const [section, setSection] = useTabParam<Section>('section', 'family', ['social', 'family'])
-  const [query, setQuery] = useState('')
+  const [section, setSection] = useTabParam<Section>('section', 'family', ['social', 'family', 'notes', 'business'])
+  // The "focus lens": pick a household member (the same MemberSwitcher as the board /
+  // Notes) to re-read every relationship FROM their perspective — Léa's row becomes
+  // "Fille" when Marc is focused. null = Maisonnée (each person's own relations, the
+  // default). Drives both the Liste subtitles and the Liens (ego) centre.
+  const [focusId, setFocusId] = useState<string | null>(null)
   const [addingGroup, setAddingGroup] = useState(false)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   // The "Relier deux personnes" connector, opened (optionally seeded with one side)
@@ -124,6 +162,7 @@ function CercleParent() {
       social: t.cercle.section.social,
       family: t.cercle.section.family,
       notes: t.cercle.familyNotes.title,
+      business: t.cercle.business.title,
       list: t.cercle.view.list,
       links: t.cercle.view.links,
       tree: t.cercle.view.tree,
@@ -239,6 +278,12 @@ function CercleParent() {
     [people, householdKeys, namedGroupedKeys, familyGroupedKeys, lang],
   )
 
+  // The focus lens, resolved: the focused member's person key + display name. A
+  // member deleted while focused silently falls back to Maisonnée (no match).
+  const focusMember = focusId ? members.find((m) => m.id === focusId) ?? null : null
+  const focusKey = focusMember ? personKey('member', focusMember.id) : null
+  const focusName = focusMember?.displayName ?? null
+
   if (isUnauthorized(error)) return <PairPrompt />
   if (!data && !error) return <Loading />
 
@@ -294,16 +339,28 @@ function CercleParent() {
     await write('cercle-groups', { method: 'DELETE', body: { id: g.id }, affectedKeys: [CERCLE_KEY] })
   }
 
-  const Row = ({ p, hideBadge }: { p: Person; hideBadge?: boolean }) => {
+  // `groupColour` tints the initials-disc of any member WITHOUT a photo with the
+  // group's colour, so a coloured family reads as one block even before everyone
+  // has a face. A member's own photo always wins; their own colour falls back when
+  // the group has none.
+  const Row = ({ p, hideBadge, groupColour }: { p: Person; hideBadge?: boolean; groupColour?: string | null }) => {
     const rels = relationsOf(p.key, links, byKey, lang)
     const bday = p.birthday ? formatBirthday(p.birthday, lang) : null
     const myGroups = namedGroups.filter((g) => g.memberKeys.has(p.key))
     const groupNames = myGroups.map((g) => g.name).join(', ')
-    const sub = rels[0] ?? bday ?? (groupNames || null)
+    // Focus lens: when a member is picked, the subtitle reads this person's relation
+    // TO the focused member ("Fille", "Cousin"), gendered by this person — the focused
+    // member's own row says so, an unrelated person shows "no known link". Maisonnée
+    // (no focus) keeps the default (their own most-salient relation / birthday / group).
+    const sub = focusKey
+      ? p.key === focusKey
+        ? t.cercle.focusSelf
+        : relationTo(p.key, focusKey, links, byKey, lang) ?? t.cercle.focusNone
+      : rels[0] ?? bday ?? (groupNames || null)
     return (
       <div className="cercle-row">
         <button type="button" className="cercle-row__open" onClick={() => openPerson(p)}>
-          <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={48} />
+          <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={groupColour ?? p.colour} name={p.firstName} size={48} />
           <span className="cercle-row__main">
             <span className="cercle-row__name">{p.name}</span>
             {sub && <span className="cercle-row__sub mono">{sub}</span>}
@@ -325,32 +382,25 @@ function CercleParent() {
     )
   }
 
-  // Accent-insensitive search over name AND first/last name — so a contact saved
-  // under a nickname still surfaces by their real name (and "Lea" finds "Léa").
-  const needle = fold(query.trim())
-  const filtered = needle
-    ? people.filter((p) => fold(`${p.name} ${p.firstName} ${p.lastName}`).includes(needle))
-    : null
 
   const viewSwitch = (
     <>
-      <div className="cercle-viewswitch-row">
-        <div className="cercle-viewswitch" role="tablist" aria-label={t.nav.cercle} data-tour="cercle-views">
-          {(['list', 'links', 'tree'] as View[]).map((v) => (
-            <button
-              key={v}
-              type="button"
-              role="tab"
-              aria-selected={view === v}
-              className={'cercle-viewswitch__btn' + (view === v ? ' is-active' : '')}
-              onClick={help.pick(v, () => setView(v))}
-            >
-              <InlineIcon name={VIEW_ICON[v]} size={15} /> {t.cercle.view[v]}
-            </button>
-          ))}
-        </div>
-        {help.available && <HelpToggle active={help.active} onToggle={help.toggle} />}
-      </div>
+      {/* The Liste · Liens · Arbre sub-tabs reuse the app-wide segmented control
+          (SubTabs / .subtabs, same as La cuisine's Repas · Garde-manger · Recettes). */}
+      <SubTabs<View>
+        options={(['list', 'links', 'tree'] as View[]).map((v) => ({
+          key: v,
+          label: t.cercle.view[v],
+          icon: VIEW_ICON[v],
+        }))}
+        value={view}
+        onSelect={setView}
+        pick={help.pick}
+        armed={help.active}
+        ariaLabel={t.nav.cercle}
+        tour="cercle-views"
+        trailing={help.available && <HelpToggle active={help.active} onToggle={help.toggle} />}
+      />
       {help.hint && <HelpHint />}
       {help.bubbleFor('list')}
       {help.bubbleFor('links')}
@@ -358,11 +408,11 @@ function CercleParent() {
     </>
   )
 
-  // Primary Social / Famille split — the dominant control above the view switch.
+  // Primary Famille / Social / Notes split — the dominant control above the view switch.
   const sectionSwitch = (
     <>
       <div className="cercle-sectionswitch" role="tablist" aria-label={t.nav.cercle}>
-        {(['family', 'social'] as Section[]).map((s) => (
+        {(['family', 'social', 'notes', 'business'] as Section[]).map((s) => (
           <button
             key={s}
             type="button"
@@ -382,7 +432,7 @@ function CercleParent() {
 
   return (
     <main className={'today-feed cercle' + (help.active ? ' help-armed' : '')}>
-      <HubHead title={t.nav.cercle} icon="users-three-bold" iconColor={ACCENT} background="var(--berry-wash)" card="cercle" />
+      <HubHead title={t.nav.cercle} icon="users-three-bold" iconColor={ACCENT} background="var(--teal-wash)" card="cercle" />
 
       {/* The connector — a modal so it's prominent from any entry point (the ＋
           chooser, a person's peek, a family group header). */}
@@ -407,21 +457,48 @@ function CercleParent() {
       ) : (
         <>
           {sectionSwitch}
+
+          {section === 'notes' ? (
+            /* The notes board owns its whole tab body — no people list, no view
+               switch (Liens/Arbre are about people, not notes). */
+            <CercleNotes members={members} help={help} />
+          ) : section === 'business' ? (
+            /* Business — a standalone services/vendors directory, ISOLATED from the
+               people graph (no view switch, no focus lens, no relationships). */
+            <BusinessesTab help={help} />
+          ) : (
+          <>
           {viewSwitch}
 
+          {/* Focus lens — pick a household member to read the cercle from their
+              perspective (reuses the board/Notes MemberSwitcher). Not on the tree. */}
+          {view !== 'tree' && householdPeople.length > 0 && (
+            <div className="cercle-focus">
+              <MemberSwitcher
+                faces={householdPeople.map((p) => ({
+                  id: p.id,
+                  name: p.firstName,
+                  colour: p.colour,
+                  photoUrl: p.avatarKind === 'photo' && p.avatarRef ? imgUrl(p.avatarRef) : null,
+                }))}
+                value={focusId}
+                onChange={setFocusId}
+                allLabel={t.cercle.memberBadge}
+                ariaLabel={t.cercle.focusLabel}
+              />
+              {focusName && <p className="cercle-focus__hint mono">{t.cercle.focusBy(focusName)}</p>}
+            </div>
+          )}
+
           {view === 'links' ? (
-            <CercleEgo people={people} links={links} onOpen={openPerson} />
+            <CercleEgo people={people} links={links} onOpen={openPerson} focusKey={focusKey} />
           ) : view === 'tree' ? (
             <CercleTree people={people} links={links} onOpen={openPerson} />
           ) : (
             <>
               <SectionIntro card="cercle" />
-              <label className="cercle-search">
-                <InlineIcon name="magnifying-glass-bold" size={16} />
-                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.cercle.search} aria-label={t.cercle.search} />
-              </label>
 
-              {!needle && section === 'family' && birthdays.length > 0 && (
+              {section === 'family' && birthdays.length > 0 && (
                 <section className="cercle-bdays">
                   <HelpTitle help={help} k="birthdays" className="cercle-section__label">
                     <InlineIcon name="cake-bold" size={16} color={ACCENT} /> {t.cercle.birthdaysSoon}
@@ -439,12 +516,7 @@ function CercleParent() {
                 </section>
               )}
 
-              {filtered ? (
-                <section className="cercle-group">
-                  {filtered.length === 0 ? <EmptyState guide={{ card: 'cercle' }}>{t.cercle.empty}</EmptyState> : filtered.map((p) => <Row key={p.key} p={p} />)}
-                </section>
-              ) : (
-                <>
+              <>
                   {/* The Maisonnée — your one family, titled from Réglages. Always at
                       the top of Famille; badge is dropped per-row since the card IS it. */}
                   {section === 'family' && householdPeople.length > 0 && (
@@ -553,7 +625,7 @@ function CercleParent() {
                         .map((k) => byKey.get(k))
                         .filter((p): p is Person => !!p)
                         .sort((a, b) => a.name.localeCompare(b.name, lang))
-                        .map((p) => <Row key={p.key} p={p} />)}
+                        .map((p) => <Row key={p.key} p={p} groupColour={g.colour} />)}
                       {g.memberKeys.size === 0 && (
                         <EmptyState className="cercle-group__empty">{t.cercle.groupEmpty}</EmptyState>
                       )}
@@ -575,10 +647,6 @@ function CercleParent() {
                           .map((p) => <Row key={p.key} p={p} />)}
                       </section>
                     ))}
-
-                  {/* Famille → "Notes & recommandations" — durable per-member /
-                      family-wide quick notes. Hidden while searching (like Birthdays). */}
-                  {section === 'family' && <CercleNotes members={members} help={help} />}
 
                   {/* People in no group (Social) */}
                   {section === 'social' && others.length > 0 && (
@@ -602,8 +670,9 @@ function CercleParent() {
                   {/* Creation actions (add person / family / connect / new group) all
                       live on the ＋ chooser now — no in-page add buttons here. */}
                 </>
-              )}
             </>
+          )}
+          </>
           )}
         </>
       )}

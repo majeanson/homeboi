@@ -35,15 +35,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, contact_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ?',
+      'SELECT id, title, start_at, all_day, member_id, contact_id, business_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ?',
     )
       .bind(hh, from, to)
-      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; contact_id: string | null; contact_name: string | null }>(),
+      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; contact_id: string | null; contact_name: string | null; business_id: string | null; business_name: string | null }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, contact_id, recur_json, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
+      'SELECT id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
     )
       .bind(hh)
-      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json: string }>(),
+      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; contact_id: string | null; contact_name: string | null; business_id: string | null; business_name: string | null; recur_json: string }>(),
     // Meals & day-notes are stored at LOCAL midnight; widen the SQL window a day
     // each side so an entry near the window edge still lands, then re-bucket by
     // local day below and clip back to [from, to).
@@ -87,16 +87,52 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const inRange = (day: number) => day >= from && day < to
 
-  const events: { id: string; title: string; at: number; all_day: number; member_id: string | null; day: number; birthday?: boolean; age?: number | null }[] = []
+  const events: {
+    id: string
+    title: string
+    at: number
+    all_day: number
+    member_id: string | null
+    contact_id?: string | null
+    contact_name?: string | null
+    business_id?: string | null
+    business_name?: string | null
+    day: number
+    birthday?: boolean
+    age?: number | null
+  }[] = []
   for (const e of oneOff.results) {
     const day = dayOf(e.start_at)
-    if (inRange(day)) events.push({ id: e.id, title: e.title, at: e.start_at, all_day: e.all_day, member_id: e.member_id, day })
+    if (inRange(day))
+      events.push({
+        id: e.id,
+        title: e.title,
+        at: e.start_at,
+        all_day: e.all_day,
+        member_id: e.member_id,
+        contact_id: e.contact_id,
+        contact_name: e.contact_name,
+        business_id: e.business_id,
+        business_name: e.business_name,
+        day,
+      })
   }
   for (const e of recurring.results) {
     const rule = parseRecur(e.recur_json)
     if (!rule) continue
     for (const at of expandRange(e.start_at, rule, from, to)) {
-      events.push({ id: `${e.id}#${at}`, title: e.title, at, all_day: e.all_day, member_id: e.member_id, day: dayOf(at) })
+      events.push({
+        id: `${e.id}#${at}`,
+        title: e.title,
+        at,
+        all_day: e.all_day,
+        member_id: e.member_id,
+        contact_id: e.contact_id,
+        contact_name: e.contact_name,
+        business_id: e.business_id,
+        business_name: e.business_name,
+        day: dayOf(at),
+      })
     }
   }
   // Derived birthdays — all-day, read-only (the client renders a cake + routes the

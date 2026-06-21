@@ -49,8 +49,24 @@
   align-items: center;
   gap: 0.5rem;
 }
+/* The label keeps its natural width; the field flexes and is ALLOWED to shrink so
+   a long option ("1 semaine avant", "Au moment même") truncates instead of pushing
+   the row past the form edge. This overrides `.operator__inline-form .input`
+   (pages.css), which floors nested fields at 8rem — and at 100% on narrow phones —
+   and was blowing these label+select rows out of the form. misc.css loads after
+   pages.css, so the override holds. Keeps RecurPicker / LeadPicker / chore-start
+   date rows identical at every width. */
+.recur__row > span {
+  flex: 0 0 auto;
+}
+.recur__row .input {
+  flex: 1 1 0;
+  min-width: 0;
+}
 .recur__interval {
+  flex: 0 0 4.5rem;
   width: 4.5rem;
+  min-width: 0;
   text-align: center;
 }
 .recur__days {

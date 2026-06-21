@@ -32,6 +32,8 @@
   --sky-deep: #5891ac;
   --berry: #b06a93;
   --berry-deep: #95527a;
+  --teal: #34b3a6; /* turquoise — Le cercle's accent */
+  --teal-deep: #2a8f85;
   --butter: #fbd66b;
 
   --marigold-wash: #fbe6c8;
@@ -39,6 +41,7 @@
   --sage-wash: #e2ead6;
   --sky-wash: #d8eaf1;
   --berry-wash: #efdce8;
+  --teal-wash: #d4ece9;
 
   /* ---- Babillard-compat semantic aliases (map onto Pip) ---- */
   --paper-2: var(--paper-deep);
@@ -105,38 +108,87 @@
   --sage-wash: #28301f;
   --sky-wash: #1f2c33;
   --berry-wash: #321f2c;
+  --teal-wash: #1d2e2c;
 
   --accent-ink: #1b1712;
   --on-primary: #1b1712;
 }
 
+/* Intermediate dim tiers — the SMOOTHING rungs between cream day and dark night
+   (Marc's ask 2026-06-20). The ambient drift parks here ~45 min on the dawn/dusk
+   ramps so nightfall steps day → twilight → deep-twilight → night instead of
+   cutting cream→black in one jump. "Not black, not cream, really dawny": a warm
+   dusk-violet at twilight, deepening toward the night brown. Driven by `data-theme`
+   (set by themeForPart), so they're genuine palette tiers, not light-side tints —
+   the text colour and grounds shift together. Tune the hexes to taste. */
+:root[data-theme='twilight'] {
+  --paper: #5d505c; /* warm dusk-violet, lamps just on */
+  --paper-deep: #524655;
+  --card: #6a5c69;
+  --ink: #f4eee2;
+  --ink-soft: #d6cabf;
+  --ink-faint: #a99e95;
+  --line: #716470;
+  --line-strong: #847585;
+
+  --marigold-wash: #5b4a33;
+  --terracotta-wash: #5b4034;
+  --sage-wash: #424d33;
+  --sky-wash: #364a55;
+  --berry-wash: #4d3346;
+  --teal-wash: #31504b;
+}
+
+:root[data-theme='deep-twilight'] {
+  --paper: #322a35; /* deep dusk, settling toward night */
+  --paper-deep: #2a232c;
+  --card: #3a3140;
+  --ink: #ece6d8;
+  --ink-soft: #b6aca0;
+  --ink-faint: #847b70;
+  --line: #473d49;
+  --line-strong: #574b58;
+
+  --marigold-wash: #463821;
+  --terracotta-wash: #452e23;
+  --sage-wash: #323a24;
+  --sky-wash: #28363f;
+  --berry-wash: #392636;
+  --teal-wash: #243a37;
+
+  --accent-ink: #221c12;
+  --on-primary: #221c12;
+}
+
 /* --- Ambient day-part drift (feature #1) ---------------------------------- */
 /* A SECOND, orthogonal axis layered on top of day/night: the palette gently
-   drifts dawn→morning→afternoon→dusk→night across the day. Calm furniture —
-   we only nudge a few existing tokens (--paper, --paper-deep, --accent/--marigold,
-   --sky) by a hair, warm, never flashing. `data-daypart='morning'` and
-   `data-daypart='manual'` (the opt-out sentinel) deliberately rebind nothing, so
-   the base palette shows through. Night theme has its own dim palette; the dawn/
-   dusk/night drifts here ride the day palette (the operator who runs auto day/
-   night in tandem gets the binary dim after dark either way).
+   drifts dawn→morning→noon→afternoon→dusk→twilight→deep-twilight→night across the
+   day. On the LIGHT side (dawn…dusk) we only nudge a few existing tokens (--paper,
+   --paper-deep, --accent/--marigold, --sky) by a hair, warm, never flashing; the
+   darkening into night happens on the `data-theme` axis instead, through the
+   intermediate twilight tiers above (so the fall is gradual — Marc's smoother
+   transition ask). `data-daypart='morning'` and `'manual'` (the opt-out sentinel)
+   deliberately rebind nothing, so the base palette shows through.
 
    The drift transitions slowly so the change is felt, not seen. We transition the
    whole element's colour-bearing properties at the root; tokens are custom props,
    which don't animate, so the visible easing comes from elements that read these
-   vars inheriting this transition. Subtle by design. */
-:root[data-daypart='dawn'],
-:root[data-daypart='afternoon'],
-:root[data-daypart='dusk'],
-:root[data-daypart='night'] {
+   vars inheriting this transition. We key the transition off the PRESENCE of an
+   ambient daypart (any value but the 'manual' opt-out), so every tier change —
+   including the day↔twilight↔night theme steps — eases, while a hand toggle (no
+   daypart, or 'manual') still snaps. A touch longer than --dur-slow: the steps are
+   ~45 min apart, so a softer ease reads as a slow fade, not a flicker. */
+:root[data-daypart]:not([data-daypart='manual']) {
   transition:
-    background-color var(--dur-slow) var(--ease-out),
-    color var(--dur-slow) var(--ease-out);
+    background-color 1200ms var(--ease-out),
+    color 1200ms var(--ease-out);
 }
 
 /* Dawn — a faint cool-warm wakeup: the cream lifts a touch peachy, accent warms.
-   Scoped :not([data-theme='night']) so the drift only ever rides the LIGHT palette
-   — under manual Night these blocks must not clobber the dark grounds. */
-:root:not([data-theme='night'])[data-daypart='dawn'] {
+   Scoped to the LIGHT theme tier so the drift only ever rides the day palette —
+   under any dark tier (twilight/deep-twilight/night) these must not clobber the
+   dim grounds. */
+:root[data-theme='day'][data-daypart='dawn'] {
   --paper: #fcf1e0;
   --paper-deep: #f4e6cf;
   --accent: #f0a657;
@@ -144,17 +196,25 @@
   --sky: #84b6cd;
 }
 
-/* Afternoon — the brightest, most neutral cream (the "plain day" anchor), a
-   hair cooler/cleaner than the warm morning base. */
-:root:not([data-theme='night'])[data-daypart='afternoon'] {
+/* Noon — the brightest, cleanest cream: the midday peak, a hair cooler than the
+   warm morning base. */
+:root[data-theme='day'][data-daypart='noon'] {
+  --paper: #fdf6ec;
+  --paper-deep: #f6ebda;
+  --sky: #6fa8c4;
+}
+
+/* Afternoon — eases back off the noon peak toward the warm dusk that follows. */
+:root[data-theme='day'][data-daypart='afternoon'] {
   --paper: #fcf4e8;
   --paper-deep: #f5e9d6;
   --sky: #74acc6;
 }
 
 /* Dusk — the warmest, golden-hour drift: paper deepens amber, accent goes
-   terracotta-warm, sky cools to balance. */
-:root:not([data-theme='night'])[data-daypart='dusk'] {
+   terracotta-warm, sky cools to balance. The last LIGHT tier before the twilight
+   theme tiers take over the darkening. */
+:root[data-theme='day'][data-daypart='dusk'] {
   --paper: #faecd6;
   --paper-deep: #f1dec2;
   --accent: #e88f4a;
@@ -162,38 +222,17 @@
   --sky: #6fa3bd;
 }
 
-/* Night drift (when running the day palette without auto day/night) — settle the
-   cream toward a calm, dim warm-stone so a lit room at night isn't a bright slab.
-   Kept gentle; the real dark mode is the separate data-theme='night' palette, which
-   now always wins (these drifts are scoped out of Night). */
-:root:not([data-theme='night'])[data-daypart='night'] {
-  --paper: #f3e7d2;
-  --paper-deep: #ebdcc0;
-  --accent: #e5944a;
-  --marigold: #e5944a;
-  --sky: #6b9fb9;
-}
-
 /* Body itself reads --paper; ease its background drift to match the tokens above. */
-:root[data-daypart='dawn'] body,
-:root[data-daypart='afternoon'] body,
-:root[data-daypart='dusk'] body,
-:root[data-daypart='night'] body {
-  transition: background-color var(--dur-slow) var(--ease-out);
+:root[data-daypart]:not([data-daypart='manual']) body {
+  transition: background-color 1200ms var(--ease-out);
 }
 
 /* Calm + accessibility: a slow drift is fine, but never animate it for someone who
    asked for reduced motion — the tint still changes, it just snaps instead of
    easing (NFR-CALM, prefers-reduced-motion). */
 @media (prefers-reduced-motion: reduce) {
-  :root[data-daypart='dawn'],
-  :root[data-daypart='afternoon'],
-  :root[data-daypart='dusk'],
-  :root[data-daypart='night'],
-  :root[data-daypart='dawn'] body,
-  :root[data-daypart='afternoon'] body,
-  :root[data-daypart='dusk'] body,
-  :root[data-daypart='night'] body {
+  :root[data-daypart]:not([data-daypart='manual']),
+  :root[data-daypart]:not([data-daypart='manual']) body {
     transition: none;
   }
 }
@@ -266,6 +305,24 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Kiosk/PWA feel: no accidental text selection or the iOS long-press
+     callout when tapping/dragging the UI. Real editable fields opt back in
+     below so typing, caret placement, and copy still work where it matters. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* Re-enable selection where a human is actually editing or reading text they'd
+   want to copy. Keep this list in sync with any new text-entry primitive. */
+input,
+textarea,
+select,
+[contenteditable='true'],
+[contenteditable=''],
+.allow-select {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 /* Paper grain: a fixed, static fractal-noise wash so surfaces read as printed
    riso stock rather than flat #fff (Pip). multiply at low opacity keeps it a
@@ -656,6 +713,73 @@ textarea.input {
   line-height: 1.4;
   color: var(--ink);
 }
+/* "Everything it does" — themed feature cards (icon + title + concrete line). */
+.home__features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+.home__feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+.home__feature-ic {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home__feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.home__feature-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.home__feature-body {
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--ink-soft, var(--ink-faint));
+}
+/* The calm promise list — short ✓ lines, then the privacy one-liner. */
+.home__promises {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-width: 52ch;
+}
+.home__promise-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.home__privacy {
+  margin: 1rem 0 0;
+  font-size: 0.88rem;
+  color: var(--ink-faint);
+  max-width: 52ch;
+}
 .home__foot {
   margin: 3rem 0 0;
   display: flex;
@@ -983,6 +1107,10 @@ textarea.input {
 }
 .subtabs__opt {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   min-height: 2.75rem;
   border: 0;
   border-radius: var(--radius-pill);

@@ -4,8 +4,9 @@ import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
-import { CERCLE_KEY } from '../../lib/queryKeys'
+import { CERCLE_KEY, BUSINESSES_KEY } from '../../lib/queryKeys'
 import { fullName, type Contact, type ContactLink } from '../../lib/cercle'
+import { type Business } from '../../lib/businesses'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
@@ -28,10 +29,16 @@ export interface EventInit {
   all_day: number
   member_id: string | null
   contact_id?: string | null // #21
-  contact_name?: string | null // seed the contact picker's text when editing
+  contact_name?: string | null // seed the "with" picker's text when editing
+  business_id?: string | null // a « Le cercle » Business (vet, plumber…) — a rendez-vous
+  business_name?: string | null // seed the "with" picker's text when editing
   recur_json?: string | null
   lead_seconds?: number | null
 }
+
+// The "with" combobox lists BOTH cercle people and businesses; the picked option
+// carries which kind it is so we set the right id.
+type WhoPick = { kind: 'contact' | 'business' }
 
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -59,18 +66,31 @@ export function EventForm({
   )
   const [time, setTime] = useState(init && !value?.all_day ? `${pad(init.getHours())}:${pad(init.getMinutes())}` : '')
   const [memberId, setMemberId] = useState<string | null>(value?.member_id ?? null)
-  // #21: an event can name a « Le cercle » contact instead of a member ("Mamie
-  // visits"). Picking one clears the other — the "who" stays a single answer. The
-  // contacts come from the shared cercle cache (often already warm); a failed fetch
-  // just hides the picker rather than breaking the form.
+  // The "who" of a rendez-vous is exactly one of: a member, a « Le cercle » person
+  // ("Mamie visite"), or a Business ("vet", "plombier"). Picking any one clears the
+  // others. People come from the shared cercle cache + businesses from theirs (both
+  // often already warm); a failed fetch just hides that option rather than breaking
+  // the form.
   const [contactId, setContactId] = useState<string | null>(value?.contact_id ?? null)
-  const [contactText, setContactText] = useState(value?.contact_name ?? '')
+  const [businessId, setBusinessId] = useState<string | null>(value?.business_id ?? null)
+  const [pickText, setPickText] = useState(value?.contact_name ?? value?.business_name ?? '')
   const { data: cercle } = useQuery({
     queryKey: CERCLE_KEY,
     queryFn: () => api<{ contacts: Contact[]; links: ContactLink[] }>('cercle'),
     ...live,
   })
+  const { data: bizData } = useQuery({
+    queryKey: BUSINESSES_KEY,
+    queryFn: () => api<{ businesses: Business[] }>('businesses'),
+    ...live,
+  })
   const contacts = cercle?.contacts ?? []
+  const businesses = bizData?.businesses ?? []
+  const clearWho = () => {
+    setContactId(null)
+    setBusinessId(null)
+    setPickText('')
+  }
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
   const [busy, setBusy] = useState(false)
@@ -89,8 +109,10 @@ export function EventForm({
       title: title.trim(),
       startAt,
       allDay: !time,
-      memberId: contactId ? null : memberId,
-      contactId,
+      // The server enforces the same precedence (business → contact → member).
+      memberId: contactId || businessId ? null : memberId,
+      contactId: businessId ? null : contactId,
+      businessId,
       recur,
       leadSeconds: lead,
     }
@@ -132,10 +154,9 @@ export function EventForm({
           <button
             key={m.id}
             type="button"
-            className={`btn btn--ghost${memberId === m.id && !contactId ? ' is-active' : ''}`}
+            className={`btn btn--ghost${memberId === m.id && !contactId && !businessId ? ' is-active' : ''}`}
             onClick={() => {
-              setContactId(null)
-              setContactText('')
+              clearWho()
               setMemberId(memberId === m.id ? null : m.id)
             }}
           >
@@ -143,21 +164,34 @@ export function EventForm({
           </button>
         ))}
       </div>
-      {/* …or someone from Le cercle (#21). Picking a contact clears the member above. */}
-      {contacts.length > 0 && (
-        <EntityCombobox<Contact>
-          value={contactText}
+      {/* …or someone from Le cercle, OR a Business (vet, plombier…) — a rendez-vous.
+          Picking any "with" clears the member above; the server keeps it one answer. */}
+      {(contacts.length > 0 || businesses.length > 0) && (
+        <EntityCombobox<WhoPick>
+          value={pickText}
           onChange={(v) => {
-            setContactText(v)
-            if (!v.trim()) setContactId(null)
+            setPickText(v)
+            if (!v.trim()) {
+              setContactId(null)
+              setBusinessId(null)
+            }
           }}
-          options={contacts.map((c): ComboOption<Contact> => ({ id: c.id, label: fullName(c), data: c, icon: 'users-three-bold' }))}
+          options={[
+            ...contacts.map((c): ComboOption<WhoPick> => ({ id: c.id, label: fullName(c), data: { kind: 'contact' }, icon: 'users-three-bold' })),
+            ...businesses.map((b): ComboOption<WhoPick> => ({ id: b.id, label: b.name, data: { kind: 'business' }, icon: 'storefront-bold' })),
+          ]}
           onPick={(opt) => {
-            setContactId(opt.id)
-            setContactText(opt.label)
             setMemberId(null)
+            if (opt.data?.kind === 'business') {
+              setBusinessId(opt.id)
+              setContactId(null)
+            } else {
+              setContactId(opt.id)
+              setBusinessId(null)
+            }
+            setPickText(opt.label)
           }}
-          placeholder={t.operator.eventContact}
+          placeholder={t.operator.eventWith}
           submitIcon={null}
           typeaheadOnly
         />

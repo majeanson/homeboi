@@ -17,8 +17,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // may be in the past, e.g. "garbage every Wednesday" set weeks ago).
   const today = dayStart(new Date(Date.now()))
   const { results } = await ctx.env.DB.prepare(
-    `SELECT id, title, start_at, all_day, member_id, contact_id, recur_json, lead_seconds,
-            (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name
+    `SELECT id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, lead_seconds,
+            (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name,
+            (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name
        FROM events
       WHERE household_id = ? AND (recur_json IS NOT NULL OR start_at >= ?)
       ORDER BY start_at LIMIT 100`,
@@ -35,6 +36,7 @@ interface EventBody {
   allDay?: boolean
   memberId?: string | null
   contactId?: string | null // #21: a « Le cercle » contact instead of a member
+  businessId?: string | null // a « Le cercle » Business (vet, plumber…) — a rendez-vous
   recur?: unknown // {freq,interval?,weekdays?} or null/absent for a one-off
   leadSeconds?: number | null // calm "Bientôt" lead window; null/absent = no reminder
 }
@@ -42,6 +44,16 @@ interface EventBody {
 const recurJson = (recur: unknown): string | null => {
   const r = normalizeRecur(recur)
   return r ? JSON.stringify(r) : null
+}
+
+// An event's "who" is exactly one of business / contact / member. Precedence
+// (business → contact → member) so a picked business wins and the others null out —
+// the rendez-vous keeps a single, unambiguous answer.
+function pickWho(body: EventBody): { businessId: string | null; contactId: string | null; memberId: string | null } {
+  const businessId = body.businessId ?? null
+  const contactId = businessId ? null : body.contactId ?? null
+  const memberId = businessId || contactId ? null : body.memberId ?? null
+  return { businessId, contactId, memberId }
 }
 
 // How far before the event the board flags it "Bientôt" (calm emphasis, never a
@@ -59,18 +71,18 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const title = body?.title?.trim()
   if (!title || typeof body?.startAt !== 'number') return badRequest('Titre + date requis.')
   const id = newId()
-  // An event is for a member OR a contact, never both — a picked contact clears the
-  // member assignment so the "who" stays unambiguous.
-  const contactId = body.contactId ?? null
-  const memberId = contactId ? null : body.memberId ?? null
+  // An event's "who" is exactly one of business / contact / member — picking one
+  // clears the others so the rendez-vous stays a single, unambiguous answer.
+  const { businessId, contactId, memberId } = pickWho(body)
   await ctx.env.DB.prepare(
-    'INSERT INTO events (id, household_id, member_id, contact_id, title, start_at, all_day, recur_json, lead_seconds, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO events (id, household_id, member_id, contact_id, business_id, title, start_at, all_day, recur_json, lead_seconds, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
       actor.householdId,
       memberId,
       contactId,
+      businessId,
       title,
       Math.floor(body.startAt),
       body.allDay ? 1 : 0,
@@ -86,10 +98,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<EventBody>(ctx.request)
   const title = body?.title?.trim()
   if (!body?.id || !title || typeof body?.startAt !== 'number') return badRequest('id + titre + date requis.')
-  const contactId = body.contactId ?? null
-  const memberId = contactId ? null : body.memberId ?? null
+  const { businessId, contactId, memberId } = pickWho(body)
   const res = await ctx.env.DB.prepare(
-    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, contact_id = ?, recur_json = ?, lead_seconds = ? WHERE id = ? AND household_id = ?',
+    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, contact_id = ?, business_id = ?, recur_json = ?, lead_seconds = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title,
@@ -97,6 +108,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       body.allDay ? 1 : 0,
       memberId,
       contactId,
+      businessId,
       recurJson(body.recur),
       leadSeconds(body.leadSeconds),
       body.id,

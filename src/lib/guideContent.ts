@@ -10,6 +10,15 @@
 // detail (the "how it works / what you can do"). No screenshots, no jargon left
 // unexplained — if a term is house-specific (kiosk, capture, ghost), say what it
 // means in the detail.
+//
+// CROSS-REFERENCE related features so the manual reads as a graph, not islands:
+// in any prose string, write [[card:<id>|label]] (e.g. [[card:cashier|mode
+// caissier]]) to turn a feature mention into a tappable link that opens that
+// card. `id` must be a GuideEntry id below; `label` is the visible text (write it
+// in each language). Icons use [[icon:name]]. Both are rendered by lib/richText
+// (shared with the guided tour) and stripped for search. Prefer links in a
+// point's `detail`/`why`; avoid them in `what` (it renders inside the card's
+// clickable summary). New themed bucket → CONCEPT_THEMES / FEATURE_MAP_TILES.
 
 import type { IconName } from '../components/Icon'
 
@@ -77,6 +86,50 @@ export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] =
       en: 'Every Settings tab, and exactly what you can do in it. The parent’s control panel.',
     },
   },
+]
+
+// ── The feature map: ONE themed taxonomy of "everything Babillard does" ──────
+// The concepts group is large (~24 cards); shown flat it reads as a wall. These
+// themes cluster it into a handful of named buckets. This is the SINGLE source of
+// truth for the themed map — reused by the in-app Guide (sub-clustering + jump
+// grid), the Board first-run WelcomeCard, and the DevKit gallery (FeatureMap).
+// Keep it here (next to GUIDE) so the map and the cards never drift apart.
+export type ConceptTheme = { key: string; icon: IconName; label: Bi; ids: string[] }
+export const CONCEPT_THEMES: ConceptTheme[] = [
+  {
+    key: 'everyday',
+    icon: 'plus-bold',
+    label: { fr: 'Au quotidien', en: 'Everyday' },
+    ids: ['capture', 'type-or-choose', 'favorites', 'todos', 'reminders', 'undo'],
+  },
+  {
+    key: 'kitchen-shop',
+    icon: 'carrot-bold',
+    label: { fr: 'Cuisine & épicerie', en: 'Kitchen & groceries' },
+    ids: ['recipes', 'cookmode', 'leftovers', 'reserve', 'deals', 'flyers', 'cashier', 'ghost'],
+  },
+  {
+    key: 'devices',
+    icon: 'device-tablet-bold',
+    label: { fr: 'Appareils & affichage', en: 'Devices & display' },
+    ids: ['surface', 'audience', 'pairing', 'screensaver', 'share', 'offline', 'account'],
+  },
+  {
+    key: 'ai-calm',
+    icon: 'sparkle-bold',
+    label: { fr: 'Intelligence & calme', en: 'AI & calm' },
+    ids: ['ai', 'calm'],
+  },
+]
+
+// The jump-grid tiles: the five sections + each concept theme + settings, in the
+// order they appear in the Guide. Each `key` matches a scroll anchor the Guide
+// renders (guide-th-<key>: 'sections' | <theme.key> | 'settings').
+export type FeatureMapTile = { key: string; icon: IconName; label: Bi }
+export const FEATURE_MAP_TILES: FeatureMapTile[] = [
+  { key: 'sections', icon: 'sun-bold', label: { fr: 'Les cinq sections', en: 'The five sections' } },
+  ...CONCEPT_THEMES.map((th) => ({ key: th.key, icon: th.icon, label: th.label })),
+  { key: 'settings', icon: 'gear-six-bold', label: { fr: 'Réglages', en: 'Settings' } },
 ]
 
 export const GUIDE: GuideEntry[] = [
@@ -170,8 +223,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Ce soir', en: 'Tonight' },
         detail: {
-          fr: 'Le souper prévu pour aujourd’hui, et qui cuisine. Vide tant que rien n’est planifié dans La cuisine.',
-          en: 'Today’s planned supper, and who’s cooking. Empty until something is planned in the Kitchen.',
+          fr: 'Le souper prévu pour aujourd’hui, et qui cuisine. Vide tant que rien n’est planifié dans [[card:kitchen|La cuisine]].',
+          en: 'Today’s planned supper, and who’s cooking. Empty until something is planned in [[card:kitchen|the Kitchen]].',
         },
         why: {
           fr: 'La réponse à « qu’est-ce qu’on mange ? » sans que personne ait à demander.',
@@ -214,8 +267,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Avant de partir', en: 'Before you go' },
         detail: {
-          fr: 'Touche le ＋ ▸ « Avant de partir » : un seul écran de départ qui réunit une de tes listes (« Avant de partir », « Chez grand-papa »…), les rendez-vous du jour et la météo avec le bon conseil (« Mets un manteau »). Coche les choses en attrapant tes clés et ton sac — les coches sont temporaires, elles repartent à zéro la prochaine fois (rien n’est ajouté à « À compléter »). Monte tes listes dans Réglages ▸ À compléter.',
-          en: 'Tap ＋ ▸ “Before you go”: one leaving screen that gathers one of your lists (“Before you go”, “At grandpa’s”…), today’s events and the weather with the right tip (“Wear a coat”). Tick things off as you grab your keys and bag — the ticks are temporary and reset next time (nothing is added to your To-do lists). Build your lists in Settings ▸ To-do lists.',
+          fr: 'Touche le ＋ ▸ « Avant de partir » : un seul écran de départ qui réunit une de tes listes (« Avant de partir », « Chez grand-papa »…), les rendez-vous du jour et la météo avec le bon conseil (« Mets un manteau »). Coche les choses en attrapant tes clés et ton sac — les coches sont temporaires, elles repartent à zéro la prochaine fois (rien n’est ajouté à « À compléter »). Monte tes listes dans Réglages ▸ [[card:todos|À compléter]].',
+          en: 'Tap ＋ ▸ “Before you go”: one leaving screen that gathers one of your lists (“Before you go”, “At grandpa’s”…), today’s events and the weather with the right tip (“Wear a coat”). Tick things off as you grab your keys and bag — the ticks are temporary and reset next time (nothing is added to your To-do lists). Build your lists in Settings ▸ [[card:todos|To complete]].',
         },
         why: {
           fr: 'Sortir sans rien oublier — la liste, l’horaire et la météo en un coup d’œil, à côté de la porte.',
@@ -502,8 +555,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'D’une recette à une routine', en: 'From a recipe to a routine' },
         detail: {
-          fr: 'Touche une recette dans la cuisine pour ouvrir sa fiche, puis « En routine pour enfant » : chaque étape devient une carte-image (avec sa photo d’étape si elle en a une), et l’enfant « cuisine » la recette comme une routine lue à voix haute. On te demande encore pour qui — tu peux retoucher les cartes avant de garder.',
-          en: 'Tap a recipe in the kitchen to open its card, then “Make a kid routine”: each step becomes a picture card (with its step photo when it has one), and the child “cooks” the recipe as a read-aloud routine. You’re still asked who it’s for — and you can tweak the cards before saving.',
+          fr: 'Touche une [[card:recipes|recette]] dans la cuisine pour ouvrir sa fiche, puis « En routine pour enfant » : chaque étape devient une carte-image (avec sa photo d’étape si elle en a une), et l’enfant « cuisine » la recette comme une routine lue à voix haute. On te demande encore pour qui — tu peux retoucher les cartes avant de garder.',
+          en: 'Tap a [[card:recipes|recipe]] in the kitchen to open its card, then “Make a kid routine”: each step becomes a picture card (with its step photo when it has one), and the child “cooks” the recipe as a read-aloud routine. You’re still asked who it’s for — and you can tweak the cards before saving.',
         },
         why: {
           fr: 'Cuisiner avec un tout-petit, étape par étape en images, sans qu’il ait à lire — et sans remonter la recette à la main.',
@@ -594,8 +647,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Des liens entre les gens', en: 'Links between people' },
         detail: {
-          fr: 'Dis « X est le parent de Y » dans une phrase à compléter : le lien inverse s’ajoute tout seul (Y devient l’enfant de X), et les familles se regroupent d’elles-mêmes. Mieux : les liens se propagent. Marque deux personnes comme frère et sœur, puis relie un seul grand-parent (ou un parent) à l’une d’elles — l’autre l’obtient aussi. Les grands-parents, oncles/tantes et cousins se déduisent tout seuls. Pas besoin de relier chaque paire ni de tout accrocher à une seule personne. Tes propres membres de la maisonnée comptent comme des personnes — relie-les depuis Réglages ▸ Membres.',
-          en: 'Say “X is Y’s parent” in a fill-in sentence: the reverse link is added for you (Y becomes X’s child), and families group themselves. Better: links propagate. Mark two people as siblings, then link a single grandparent (or a parent) to just one of them — the other gets it too. Grandparents, aunts/uncles and cousins are inferred for you. No need to link every pair, or to hang everything off one person. Your own household members count as people too — link them from Settings ▸ Members.',
+          fr: 'Dis « X est le parent de Y » dans une phrase à compléter : le lien inverse s’ajoute tout seul (Y devient l’enfant de X), et les familles se regroupent d’elles-mêmes. Mieux : les liens se propagent. Marque deux personnes comme frère et sœur, puis relie un seul grand-parent (ou un parent) à l’une d’elles — l’autre l’obtient aussi. Les grands-parents, oncles/tantes et cousins se déduisent tout seuls. Pas besoin de relier chaque paire ni de tout accrocher à une seule personne. Tes propres membres de la maisonnée comptent comme des personnes — relie-les depuis Réglages ▸ Membres. Les amis aussi : « Meilleur·e ami·e » marque la personne principale d’un membre — ton ami d’enfance relié à toi en « meilleur ami » peut aussi être relié à ta blonde en « ami », et chaque point de vue (la loupe « vu par ») le lit comme il faut.',
+          en: 'Say “X is Y’s parent” in a fill-in sentence: the reverse link is added for you (Y becomes X’s child), and families group themselves. Better: links propagate. Mark two people as siblings, then link a single grandparent (or a parent) to just one of them — the other gets it too. Grandparents, aunts/uncles and cousins are inferred for you. No need to link every pair, or to hang everything off one person. Your own household members count as people too — link them from Settings ▸ Members. Friends too: “Best friend” marks a member’s principal one — your childhood friend linked to you as “best friend” can also be linked to your partner as “friend”, and each perspective (the “seen from” lens) reads it right.',
         },
         why: {
           fr: 'Relie le minimum ; l’appli déduit le reste de la famille — un lien ajouté à un endroit profite à toute la fratrie.',
@@ -627,8 +680,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Trois vues : Liste, Liens, Arbre', en: 'Three views: List, Links, Tree' },
         detail: {
-          fr: 'Bascule en haut du cercle : Liste (le répertoire, regroupé par famille), Liens (touche un visage, ses liens s’affichent autour — touche un autre pour recentrer) et Arbre (les générations, les couples côte à côte).',
-          en: 'Switch at the top of the circle: List (the directory, grouped by family), Links (tap a face, their ties fan out — tap another to re-center) and Tree (generations, couples side by side).',
+          fr: 'Bascule en haut du cercle : Liste (le répertoire, regroupé par famille), Liens (touche un visage, ses liens s’affichent autour — touche un autre pour recentrer) et Arbre (les générations, les couples côte à côte). Sous la bascule, la rangée de visages te laisse choisir une personne : tout se relit alors de SON point de vue (la fiche de chacun affiche son lien avec elle — « Fille », « Cousin »…), et la vue Liens se centre sur elle. Reviens à « Maisonnée » pour la vue normale.',
+          en: 'Switch at the top of the circle: List (the directory, grouped by family), Links (tap a face, their ties fan out — tap another to re-center) and Tree (generations, couples side by side). Under the switch, the face row lets you pick a person: everything is then read from THEIR perspective (each card shows its tie to them — “Daughter”, “Cousin”…), and the Links view centers on them. Back to “Household” for the normal view.',
         },
       },
       {
@@ -673,6 +726,17 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Un carnet calme par personne et pour la famille, au même endroit que les proches.',
           en: 'A calm notebook per person and for the family, right where the people live.',
+        },
+      },
+      {
+        label: { fr: 'Business : tes services & rendez-vous', en: 'Business: your services & rendez-vous' },
+        detail: {
+          fr: 'Un 4e onglet, « Business » : ton carnet de commerces et services — vétérinaire, hôpital, dentiste, plombier, garderie, le gars qui répare la maison… Ajoute-le avec sa catégorie, son téléphone, son courriel, son adresse, des notes et même la photo de sa carte d’affaires. Touche-le pour l’appeler, lui écrire ou ouvrir l’itinéraire d’un coup. C’est volontairement à part de la famille et des amis : un business n’entre jamais dans tes liens, tes familles ni l’arbre. Et quand tu crées un rendez-vous, tu peux le relier à un business (ou à une personne) — « rendez-vous chez le vét » montre alors avec qui, sur le babillard et dans la journée.',
+          en: 'A 4th tab, “Business”: your directory of businesses and services — vet, hospital, dentist, plumber, daycare, the person who fixes the house… Add it with its category, phone, email, address, notes and even a photo of its business card. Tap it to call, write or open directions in one go. It’s deliberately separate from family and friends: a business never enters your links, families or the tree. And when you create a rendez-vous, you can link it to a business (or a person) — “vet appointment” then shows who it’s with, on the board and in the day.',
+        },
+        why: {
+          fr: 'Les numéros utiles et les rendez-vous au même endroit que le reste de la maison — sans mêler ça à la famille.',
+          en: 'The useful numbers and appointments in the same place as the rest of the home — without mixing it into family.',
         },
       },
     ],
@@ -723,8 +787,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Chercher dans la circulaire', en: 'Search the flyer' },
         detail: {
-          fr: 'La petite loupe [[icon:magnifying-glass-bold]] à côté d’« Ajouter » ouvre les circulaires de la semaine pour chercher un article en aubaine.',
-          en: 'The small magnifier [[icon:magnifying-glass-bold]] beside “Add” opens this week’s flyers to search an item on sale.',
+          fr: 'La petite loupe [[icon:magnifying-glass-bold]] à côté d’« Ajouter » ouvre les [[card:flyers|circulaires]] de la semaine pour chercher un article en aubaine.',
+          en: 'The small magnifier [[icon:magnifying-glass-bold]] beside “Add” opens this week’s [[card:flyers|flyers]] to search an item on sale.',
         },
         why: {
           fr: 'Un raccourci d’un geste vers une action fréquente, sans passer par le bouton ＋.',
@@ -771,15 +835,15 @@ export const GUIDE: GuideEntry[] = [
           en: 'Edit an item to add synonyms (e.g. egg, eggs, œuf). They survive a re-add.',
         },
         why: {
-          fr: 'Les rabais se trouvent mieux quand le nom de l’article colle à celui de la circulaire.',
-          en: 'Deals match better when the item’s name lines up with the flyer’s wording.',
+          fr: 'Les [[card:deals|rabais]] se trouvent mieux quand le nom de l’article colle à celui de la circulaire.',
+          en: '[[card:deals|Deals]] match better when the item’s name lines up with the flyer’s wording.',
         },
       },
       {
         label: { fr: 'Choisir les meilleurs prix', en: 'Pick the best prices' },
         detail: {
-          fr: 'Un bouton [[icon:sparkle-bold]] trouve le meilleur rabais (au prix unitaire) pour chaque article non coché et t’amène au mode caissier.',
-          en: 'A [[icon:sparkle-bold]] button finds the best deal (by unit price) for every unchecked item and takes you to cashier mode.',
+          fr: 'Un bouton [[icon:sparkle-bold]] trouve le meilleur rabais (au prix unitaire) pour chaque article non coché et t’amène au [[card:cashier|mode caissier]].',
+          en: 'A [[icon:sparkle-bold]] button finds the best deal (by unit price) for every unchecked item and takes you to [[card:cashier|cashier mode]].',
         },
         why: {
           fr: 'Pour comparer à ta place — le vrai meilleur prix par unité, pas juste le plus gros chiffre barré.',
@@ -793,8 +857,8 @@ export const GUIDE: GuideEntry[] = [
           en: '“Clear checked” waits ~5 s behind an “Undo” toast.',
         },
         why: {
-          fr: 'Un faux pas ne coûte rien.',
-          en: 'A mis-tap costs nothing.',
+          fr: 'Un faux pas ne coûte rien (voir [[card:undo|Annuler]]).',
+          en: 'A mis-tap costs nothing (see [[card:undo|Undo]]).',
         },
       },
     ],
@@ -870,8 +934,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Où l’IA aide', en: 'Where AI helps' },
         detail: {
-          fr: 'Cinq endroits, pas plus : la capture (le ＋ devine si ta note est un événement, une tâche, un article…), l’import d’une recette (depuis une photo ou un collé-copié), le bilan de la semaine, les suggestions de souper, et « Demander à l’IA » dans la recherche. Partout ailleurs, aucune IA.',
-          en: 'Five spots, no more: capture (the ＋ guesses whether your note is an event, a task, an item…), recipe import (from a photo or a paste), the weekly recap, supper suggestions, and “Ask the AI” in search. Everywhere else, no AI.',
+          fr: 'Cinq endroits, pas plus : la [[card:capture|capture]] (le ＋ devine si ta note est un événement, une tâche, un article…), l’import d’une [[card:recipes|recette]] (depuis une photo ou un collé-copié), le bilan de la semaine, les suggestions de souper, et « Demander à l’IA » dans la recherche. Partout ailleurs, aucune IA.',
+          en: 'Five spots, no more: [[card:capture|capture]] (the ＋ guesses whether your note is an event, a task, an item…), [[card:recipes|recipe]] import (from a photo or a paste), the weekly recap, supper suggestions, and “Ask the AI” in search. Everywhere else, no AI.',
         },
         why: {
           fr: 'Savoir exactement quand l’IA entre en jeu — et quand elle n’y est pas du tout.',
@@ -988,8 +1052,8 @@ export const GUIDE: GuideEntry[] = [
           en: 'You pick the type yourself from a small list.',
         },
         why: {
-          fr: 'Rien n’est perdu — la capture fonctionne même quand l’IA est absente.',
-          en: 'Nothing is lost — capture works even when AI is down.',
+          fr: 'Rien n’est perdu — la capture fonctionne même quand [[card:ai|l’IA]] est absente.',
+          en: 'Nothing is lost — capture works even when [[card:ai|AI]] is down.',
         },
       },
       {
@@ -1119,8 +1183,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Listes de départ', en: 'Departure lists' },
         detail: {
-          fr: 'Prépare des modèles réutilisables dans Réglages ▸ À compléter (ex. « Avant de partir », « Chez grand-papa »). D’un geste, tout le modèle s’ajoute en cochables — un départ pressé devient moins stressant.',
-          en: 'Prep reusable templates in Settings ▸ To complete (e.g. “Before leaving”, “At grandpa’s”). One tap drops the whole list in as check-offs — a hectic departure gets less stressful.',
+          fr: 'Prépare des modèles réutilisables dans Réglages ▸ À compléter (ex. « Avant de partir », « Chez grand-papa »). D’un geste, tout le modèle s’ajoute en cochables — un départ pressé devient moins stressant. Sur le babillard, l’écran « [[card:board|Avant de partir]] » en charge une.',
+          en: 'Prep reusable templates in Settings ▸ To complete (e.g. “Before leaving”, “At grandpa’s”). One tap drops the whole list in as check-offs — a hectic departure gets less stressful. On the board, the “[[card:board|Before you go]]” screen loads one.',
         },
         why: { fr: 'On y pense une fois, pas chaque fois qu’on court.', en: 'You think it through once, not every time you’re rushing out.' },
       },
@@ -1461,8 +1525,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Attaché à un article', en: 'Attached to an item' },
         detail: {
-          fr: 'Le rabais voyage avec l’article de liste et s’affiche sur tous tes appareils. Il reste générique (jamais renommé).',
-          en: 'The deal rides on the list item and shows on all your devices. It stays generic (never renamed).',
+          fr: 'Le rabais voyage avec l’article de liste et s’affiche sur tous tes appareils. Il reste générique (jamais renommé). À la caisse, présente-le en [[card:cashier|mode caissier]].',
+          en: 'The deal rides on the list item and shows on all your devices. It stays generic (never renamed). At the till, present it in [[card:cashier|cashier mode]].',
         },
         why: {
           fr: 'Pour qu’un même article (« fromage ») puisse porter un rabais différent d’une semaine à l’autre, sans se dédoubler.',
@@ -1483,8 +1547,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'La vraie circulaire', en: 'The real flyer' },
         detail: {
-          fr: 'L’app reconstruit les rabais; pour la circulaire complète, elle te renvoie vers le site du marchand.',
-          en: 'The app reconstructs the deals; for the full flyer it links you out to the merchant’s site.',
+          fr: 'L’app reconstruit les rabais; pour la circulaire complète, elle te renvoie vers le site du marchand. Pour les feuilleter en détail, vois [[card:flyers|Naviguer les circulaires]].',
+          en: 'The app reconstructs the deals; for the full flyer it links you out to the merchant’s site. To leaf through them in detail, see [[card:flyers|Browsing the flyers]].',
         },
         why: {
           fr: 'Pour chercher vite dans l’app, tout en gardant accès à la page officielle complète quand tu la veux.',
@@ -1517,8 +1581,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Preuve de prix', en: 'Price proof' },
         detail: {
-          fr: 'Montre le rabais accroché à l’article : image de circulaire, magasin, prix, dates de validité.',
-          en: 'Shows the deal attached to the item: flyer image, store, price, valid dates.',
+          fr: 'Montre le [[card:deals|rabais]] accroché à l’article : image de circulaire, magasin, prix, dates de validité.',
+          en: 'Shows the [[card:deals|deal]] attached to the item: flyer image, store, price, valid dates.',
         },
         why: {
           fr: 'De quoi réclamer l’ajustement « Imbattable » à la caisse, preuve à l’appui.',
@@ -1573,12 +1637,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Mode cuisson', en: 'Cook mode' },
         detail: {
-          fr: 'Plein écran, gros texte, les mains à la pâte. Il garde l’écran allumé, lit l’étape à voix haute et se ferme par un petit [[icon:x-bold]].',
-          en: 'Full screen, big text, hands in the dough. It keeps the screen awake, reads the step aloud, and closes with a small [[icon:x-bold]].',
+          fr: 'Plein écran, gros texte, les mains à la pâte. Il garde l’écran allumé, lit l’étape à voix haute et se ferme par un petit [[icon:x-bold]]. Tout son détail (minuteries, photos d’étape) est dans [[card:cookmode|Le mode cuisson en détail]].',
+          en: 'Full screen, big text, hands in the dough. It keeps the screen awake, reads the step aloud, and closes with a small [[icon:x-bold]]. All its detail (timers, step photos) is in [[card:cookmode|Cook mode in detail]].',
         },
         why: {
-          fr: 'Pour suivre la recette les mains à la pâte, sans rien toucher de fin.',
-          en: 'To follow the recipe hands-in-the-dough, with nothing fiddly to tap.',
+          fr: 'Pour suivre la recette les mains à la pâte, sans rien toucher de fin. Tu peux aussi en faire une [[card:routines|routine pour enfant]].',
+          en: 'To follow the recipe hands-in-the-dough, with nothing fiddly to tap. You can also turn it into a [[card:routines|kid routine]].',
         },
       },
       {
@@ -1602,8 +1666,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Envoyer les ingrédients à La liste', en: 'Send ingredients to La liste' },
         detail: {
-          fr: 'Un bouton « Ajouter les ingrédients » verse toute la recette sur la liste d’épicerie en un coup : chaque ligne est ramenée à son nom achetable (« 15 ml de beurre » → « Beurre ») et les doublons sont fusionnés.',
-          en: 'An “Add ingredients” button pours the whole recipe onto the grocery list at once: each line is reduced to its buyable name (“15 ml butter” → “Butter”) and duplicates are merged.',
+          fr: 'Un bouton « Ajouter les ingrédients » verse toute la recette sur [[card:liste|la liste d’épicerie]] en un coup : chaque ligne est ramenée à son nom achetable (« 15 ml de beurre » → « Beurre ») et les doublons sont fusionnés.',
+          en: 'An “Add ingredients” button pours the whole recipe onto [[card:liste|the grocery list]] at once: each line is reduced to its buyable name (“15 ml butter” → “Butter”) and duplicates are merged.',
         },
         why: {
           fr: 'C’est le lien recette → épicerie : tu choisis quoi cuisiner et la liste se remplit toute seule, sans recopier ligne par ligne ni emporter les « 2 c. à thé » au magasin.',
@@ -1646,8 +1710,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Doubler ou couper', en: 'Scale up or down' },
         detail: {
-          fr: 'Des boutons ×½ / ×1 / ×2 / ×3 (ou ± sur les portions) ajustent les quantités; le mode cuisson suit.',
-          en: 'Buttons ×½ / ×1 / ×2 / ×3 (or ± on servings) adjust the amounts; cook mode follows.',
+          fr: 'Des boutons ×½ / ×1 / ×2 / ×3 (ou ± sur les portions) ajustent les quantités; les pastilles de mesure colorées et leurs ronds suivent, et le mode cuisson aussi.',
+          en: 'Buttons ×½ / ×1 / ×2 / ×3 (or ± on servings) adjust the amounts; the colour-coded measure pills and their circles follow, and so does cook mode.',
         },
         why: {
           fr: 'Pour cuisiner pour 2 ou pour 12 sans calcul mental.',
@@ -1713,8 +1777,8 @@ export const GUIDE: GuideEntry[] = [
           en: 'Buying never enrolls an item by itself; you add it to tracking by hand (see Settings ▸ Tracking).',
         },
         why: {
-          fr: 'Rien ne s’active sans que tu le demandes — pas de « l’app a deviné » dans ton dos.',
-          en: 'Nothing turns on unless you ask — no “the app guessed” behind your back.',
+          fr: 'Rien ne s’active sans que tu le demandes — pas de « l’app a deviné » dans ton dos. (« [[card:kitchen|Il en manque]] » est un drapeau manuel ; le fantôme, lui, prédit la date de rachat.)',
+          en: 'Nothing turns on unless you ask — no “the app guessed” behind your back. (“[[card:kitchen|Running low]]” is a manual flag; the ghost predicts the renewal date.)',
         },
       },
       {
@@ -1836,8 +1900,8 @@ export const GUIDE: GuideEntry[] = [
           en: 'When you take an item out of the stash, clear it. If it’s running low, tap the [[icon:shopping-bag-bold]] on the row to send it straight to the list — without leaving the stash (an “Undo” has your back).',
         },
         why: {
-          fr: 'La réserve dit ce que tu as déjà; « il en manque » dit ce qu’il faut racheter — les deux se complètent sans se mélanger.',
-          en: 'The stash says what you already have; “running low” says what to rebuy — the two complement each other without blurring.',
+          fr: 'La réserve dit ce que tu as déjà; « [[card:kitchen|il en manque]] » dit ce qu’il faut racheter — les deux se complètent sans se mélanger.',
+          en: 'The stash says what you already have; “[[card:kitchen|running low]]” says what to rebuy — the two complement each other without blurring.',
         },
       },
     ],
@@ -1970,8 +2034,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Une photo par étape', en: 'A photo per step' },
         detail: {
-          fr: 'En modifiant une recette, touche 📷 sous une étape pour y joindre une photo (la pâte au bon stade, le pliage…). Elle s’affiche en grand dans le mode cuisson; les étapes sans photo n’en montrent pas.',
-          en: 'When editing a recipe, tap 📷 under a step to attach a photo (the dough at the right stage, the fold…). It shows large in cook mode; steps with no photo simply show none.',
+          fr: 'En modifiant une [[card:recipes|recette]], touche 📷 sous une étape pour y joindre une photo (la pâte au bon stade, le pliage…). Elle s’affiche en grand dans le mode cuisson; les étapes sans photo n’en montrent pas.',
+          en: 'When editing a [[card:recipes|recipe]], tap 📷 under a step to attach a photo (the dough at the right stage, the fold…). It shows large in cook mode; steps with no photo simply show none.',
         },
         why: {
           fr: 'Une image vaut mille mots pour un geste délicat — et c’est optionnel, étape par étape.',
@@ -1997,8 +2061,8 @@ export const GUIDE: GuideEntry[] = [
           en: 'Search a food, or browse the stores.',
         },
         why: {
-          fr: 'Des suggestions (lait, pain, œufs) évitent de taper.',
-          en: 'Suggestions (milk, bread, eggs) save typing.',
+          fr: 'Des suggestions (lait, pain, œufs) évitent de taper. Accroche un rabais à un article depuis [[card:deals|Rabais & circulaires]].',
+          en: 'Suggestions (milk, bread, eggs) save typing. Attach a deal to an item from [[card:deals|Deals & flyers]].',
         },
       },
       {
@@ -2076,15 +2140,15 @@ export const GUIDE: GuideEntry[] = [
     group: 'concepts',
     title: { fr: 'Compte & connexion', en: 'Account & sign-in' },
     what: {
-      fr: 'L’opérateur (le parent) crée une maisonnée et s’y connecte — c’est ce compte qui débloque les membres, le jumelage des tablettes et la synchro entre appareils. La tablette, elle, n’a pas de compte : elle se jumelle (voir Jumelage).',
-      en: 'The operator (the parent) creates a household and signs in — this account is what unlocks members, tablet pairing and sync across devices. The tablet has no account: it pairs instead (see Pairing).',
+      fr: 'L’opérateur (le parent) crée une maisonnée et s’y connecte — c’est ce compte qui débloque les membres, le jumelage des tablettes et la synchro entre appareils. La tablette, elle, n’a pas de compte : elle se jumelle (voir [[card:pairing|Jumeler une tablette]]).',
+      en: 'The operator (the parent) creates a household and signs in — this account is what unlocks members, tablet pairing and sync across devices. The tablet has no account: it pairs instead (see [[card:pairing|Pairing a tablet]]).',
     },
     points: [
       {
         label: { fr: 'Créer ta maisonnée', en: 'Create your household' },
         detail: {
-          fr: 'L’inscription crée la maisonnée et t’amène direct à « La maisonnée » pour ajouter les personnes. Une maisonnée par courriel.',
-          en: 'Signup creates the household and lands you in “Household” to add people. One household per email.',
+          fr: 'L’inscription crée la maisonnée et t’amène au babillard, où une courte liste de départ te guide (ajouter la famille, planifier les repas, jumeler une tablette). Une maisonnée par courriel.',
+          en: 'Signup creates the household and lands you on the board, where a short starter checklist guides you (add the family, plan the meals, pair a tablet). One household per email.',
         },
         why: {
           fr: 'C’est le point de départ : sans maisonnée, rien à peupler, rien à jumeler, rien à synchroniser.',

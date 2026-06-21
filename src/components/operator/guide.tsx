@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type Ref } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
-import { GUIDE, GUIDE_GROUPS, type GuideEntry } from '../../lib/guideContent'
+import { GUIDE, GUIDE_GROUPS, type GuideEntry, CONCEPT_THEMES } from '../../lib/guideContent'
 import { renderRich, stripTokens } from '../../lib/richText'
 import { useTour } from '../../lib/tour'
 import { OperatorSection } from './OperatorSection'
+import { FeatureMap } from '../FeatureMap'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
 
@@ -136,6 +137,15 @@ const conceptRank = (id: string) => {
   return i === -1 ? CONCEPT_ORDER.length : i
 }
 
+// The concepts group is the biggest (~24 cards) — rendered as themed sub-clusters
+// (CONCEPT_THEMES, the shared taxonomy in guideContent) instead of a flat wall.
+const conceptThemeOf = (id: string) => CONCEPT_THEMES.find((th) => th.ids.includes(id))?.key
+// The order a concept sits at *within* its theme bucket.
+const themeInnerRank = (id: string) => {
+  const th = CONCEPT_THEMES.find((t) => t.ids.includes(id))
+  return th ? th.ids.indexOf(id) : 0
+}
+
 // Réglages ▸ Guide — the whole how-it-works manual in one place. Each concept is
 // a collapsible card (native <details>, so it stays accessible and calm), and
 // inside it every point is *itself* a collapsible: a clickable title that opens
@@ -179,6 +189,16 @@ export function GuideSection() {
   useEffect(() => {
     if (openId && targetRef.current) targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [openId])
+  // A feature-map tile elsewhere (the Board WelcomeCard) deep-links to a whole
+  // THEME via ?theme=<key>; scroll to that block and consume the param.
+  useEffect(() => {
+    const theme = params.get('theme')
+    if (!theme) return
+    document.getElementById(`guide-th-${theme}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const next = new URLSearchParams(params)
+    next.delete('theme')
+    setParams(next, { replace: true })
+  }, [params, setParams])
 
   const q = query.trim().toLowerCase()
   const matches = useMemo(() => {
@@ -195,6 +215,25 @@ export function GuideSection() {
   // blurb wrapped around it.
   const startEntries = matches.filter((e) => e.group === 'start')
 
+  // One card renderer reused everywhere (lead, groups, concept sub-themes) so the
+  // open/target/deep-link wiring stays identical no matter where the card sits.
+  const renderCard = (e: GuideEntry) => (
+    <GuideCard
+      key={e.id}
+      entry={e}
+      cardRef={e.id === openId ? targetRef : undefined}
+      isTarget={e.id === openId}
+      targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
+      open={q.length > 0 || e.id === openId}
+      pointsOpen={q.length > 0}
+      onReplayTour={() => start('essentials')}
+    />
+  )
+  // Scroll a feature-map tile's target block into view (anchored by id below).
+  const jumpTo = (key: string) => {
+    document.getElementById(`guide-th-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     <OperatorSection title={t.operator.guideTitle} className="guide">
       <input
@@ -205,6 +244,16 @@ export function GuideSection() {
         onChange={(e) => setQuery(e.target.value)}
         aria-label={t.operator.guideSearch}
       />
+
+      {/* The feature map: every theme the app covers, at a glance. Hidden while
+          searching (the results below are the answer then). Jump-scrolls to a
+          theme block. Same shared taxonomy the Board WelcomeCard + DevKit use. */}
+      {!q && (
+        <>
+          <h3 className="guide__group-title">{t.operator.guideMap}</h3>
+          <FeatureMap onSelect={jumpTo} label={t.operator.guideMap} />
+        </>
+      )}
 
       {matches.length === 0 && <EmptyState>{t.operator.guideNone}</EmptyState>}
 
@@ -239,29 +288,44 @@ export function GuideSection() {
       {GUIDE_GROUPS.filter((g) => g.id !== 'start').map((group) => {
         const entries = matches.filter((e) => e.group === group.id)
         if (entries.length === 0) return null
-        // Concepts are shown clustered by theme (see CONCEPT_ORDER); other groups
-        // keep their file order. Array.sort is stable, so unlisted ids hold their
-        // relative file order at the end.
-        if (group.id === 'concepts') entries.sort((a, b) => conceptRank(a.id) - conceptRank(b.id))
-        return (
-          <div key={group.id} className="guide__group">
-            <h3 className="guide__group-title">{group.label[lang]}</h3>
-            <div className="guide__cards">
-              {entries.map((e) => (
-                // Open the matching cards while searching, so a hit is visible at once;
-                // also open (and scroll to) a card a contextual "?" deep-linked us to.
-                <GuideCard
-                  key={e.id}
-                  entry={e}
-                  cardRef={e.id === openId ? targetRef : undefined}
-                  isTarget={e.id === openId}
-                  targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
-                  open={q.length > 0 || e.id === openId}
-                  pointsOpen={q.length > 0}
-                  onReplayTour={() => start('essentials')}
-                />
+
+        // The concepts group is big — render it as themed sub-sections (one block
+        // per CONCEPT_THEME) instead of a flat wall, so the manual reads as a map.
+        // Each block is a feature-map jump target (guide-th-<theme.key>).
+        if (group.id === 'concepts') {
+          const themed = CONCEPT_THEMES.map((th) => ({
+            th,
+            cards: entries
+              .filter((e) => conceptThemeOf(e.id) === th.key)
+              .sort((a, b) => themeInnerRank(a.id) - themeInnerRank(b.id)),
+          })).filter((b) => b.cards.length > 0)
+          // Concepts not assigned to any theme — keep them visible at the end.
+          const rest = entries
+            .filter((e) => !conceptThemeOf(e.id))
+            .sort((a, b) => conceptRank(a.id) - conceptRank(b.id))
+          return (
+            <div key={group.id} className="guide__group">
+              <h3 className="guide__group-title">{group.label[lang]}</h3>
+              {themed.map(({ th, cards }) => (
+                <div key={th.key} id={`guide-th-${th.key}`} className="guide__theme">
+                  <h4 className="guide__theme-title">
+                    <Icon name={th.icon} size={18} />
+                    {th.label[lang]}
+                  </h4>
+                  <div className="guide__cards">{cards.map(renderCard)}</div>
+                </div>
               ))}
+              {rest.length > 0 && <div className="guide__cards">{rest.map(renderCard)}</div>}
             </div>
+          )
+        }
+
+        // sections / settings keep their file order; both are feature-map jump
+        // targets (guide-th-sections / guide-th-settings).
+        return (
+          <div key={group.id} id={`guide-th-${group.id}`} className="guide__group">
+            <h3 className="guide__group-title">{group.label[lang]}</h3>
+            <div className="guide__cards">{entries.map(renderCard)}</div>
           </div>
         )
       })}

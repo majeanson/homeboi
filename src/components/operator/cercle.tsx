@@ -58,7 +58,7 @@ export function CercleGroupsSection({ help }: { help?: HelpMode }) {
         <ul className="operator__list">
           {groups.map((g) => (
             <li key={g.id}>
-              <span className="cercle-group__dot" style={{ background: g.colour ?? '#C45E86' }} aria-hidden="true" />
+              <span className="cercle-group__dot" style={{ background: g.colour ?? '#2A8F85' }} aria-hidden="true" />
               {/* The unclassed name span takes the row's slack (see .operator__list
                   li > span:not([class])), pushing the meta + delete to the right. */}
               <span>{g.name}</span>

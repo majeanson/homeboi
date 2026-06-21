@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { HubHead } from '../components/HubHead'
+import { SubTabs } from '../components/SubTabs'
 import { Chip } from '../components/Chip'
 import { SectionIntro } from '../components/SectionIntro'
 import { useLang, useT } from '../i18n'
@@ -364,27 +365,20 @@ export function Kitchen() {
 
         <SectionIntro card="kitchen" />
 
-        <div className={'subtabs-row' + (tabHelp.active ? ' help-armed' : '')}>
-          <div className="subtabs" role="tablist" aria-label={t.kitchen.title} data-tour="kitchen-tabs">
-            {([
-              ['meals', t.kitchen.tabMeals],
-              ['pantry', t.kitchen.tabPantry],
-              ['recipes', t.kitchen.tabRecipes],
-            ] as const).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={kitTab === key}
-                className={'subtabs__opt' + (kitTab === key ? ' is-on' : '')}
-                onClick={tabHelp.pick(key, () => setKitTab(key))}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {tabHelp.available && <HelpToggle active={tabHelp.active} onToggle={tabHelp.toggle} />}
-        </div>
+        <SubTabs
+          options={[
+            { key: 'meals', label: t.kitchen.tabMeals },
+            { key: 'pantry', label: t.kitchen.tabPantry },
+            { key: 'recipes', label: t.kitchen.tabRecipes },
+          ]}
+          value={kitTab}
+          onSelect={setKitTab}
+          pick={tabHelp.pick}
+          armed={tabHelp.active}
+          ariaLabel={t.kitchen.title}
+          tour="kitchen-tabs"
+          trailing={tabHelp.available && <HelpToggle active={tabHelp.active} onToggle={tabHelp.toggle} />}
+        />
         {tabHelp.hint && <HelpHint />}
         {/* The sub-tab bubbles render HERE (next to the nav). Heading bubbles render
             next to their own heading via bubbleFor, so a concept explained deep in
@@ -683,10 +677,14 @@ export function Kitchen() {
         )}
 
         {kitTab === 'pantry' && (
-          <>
-            <PantryTab low={low} soon={soon} help={tabHelp} />
-            <ReserveSection reserve={reserveQ.data?.reserve ?? []} help={tabHelp} />
-          </>
+          // La réserve sits between "à utiliser bientôt" and "ce qui s'achève", so
+          // the running-low list reads LAST in the garde-manger.
+          <PantryTab
+            low={low}
+            soon={soon}
+            help={tabHelp}
+            between={<ReserveSection reserve={reserveQ.data?.reserve ?? []} help={tabHelp} />}
+          />
         )}
 
         {kitTab === 'recipes' && (

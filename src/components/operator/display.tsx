@@ -68,7 +68,8 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
       setDayPart(part)
       const autoTheme = themeForPart(part)
       applyThemeAttr(autoTheme)
-      setThemeState(autoTheme)
+      // The day/night pip is binary; the intermediate twilight tiers read as day.
+      setThemeState(autoTheme === 'night' ? 'night' : 'day')
     } else {
       // Back to fixed colours: restore the operator's manual day/night choice.
       const manual = getStoredTheme()

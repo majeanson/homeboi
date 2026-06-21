@@ -10,7 +10,7 @@ import { Avatar } from '../Avatar'
 import { InlineIcon } from '../Icon'
 import { type Contact, type ContactLink, daysUntilBirthday } from '../../lib/cercle'
 
-const ACCENT = '#C45E86'
+const ACCENT = '#2A8F85' // cercle turquoise
 const WINDOW_DAYS = 14 // a near-term, calm heads-up — the cercle tab shows the fuller month
 
 // Upcoming birthdays from « Le cercle », surfaced on the board as a calm strip —

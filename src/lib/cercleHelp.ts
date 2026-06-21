@@ -11,6 +11,8 @@ export const CERCLE_HELP: Record<string, HelpEntry> = {
   social: { card: 'cercle', point: 9, body: { fr: 'Tes amis, collègues et autres groupes — et les personnes sans groupe.', en: 'Your friends, coworkers and other groups — and people in no group.' } },
   // Famille → "Notes & recommandations".
   notes: { card: 'cercle', point: 9, body: { fr: 'Des notes rapides — pour toi ou pour toute la Maisonnée — avec photo, dessin ou mémo vocal.', en: 'Quick notes — for you or the whole Household — with photo, drawing or voice memo.' } },
+  // Business tab — services / vendors (isolated from the people graph).
+  business: { card: 'cercle', point: 10, body: { fr: 'Tes commerces et services (vét, hôpital, plombier…) : joins-les vite, garde des notes, et prends-y rendez-vous. Pas lié à la famille.', en: 'Your businesses and services (vet, hospital, plumber…): reach them fast, keep notes, and book a rendez-vous there. Not tied to family.' } },
   // View switch (Liste / Liens / Arbre) — guide point 5 ("Trois vues").
   list: { card: 'cercle', point: 5, body: { fr: 'Le répertoire, regroupé par famille.', en: 'The directory, grouped by family.' } },
   links: { card: 'cercle', point: 5, body: { fr: 'Touche un visage : ses liens s’affichent autour, touche-en un autre pour recentrer.', en: 'Tap a face: their ties fan out; tap another to re-center.' } },

@@ -2511,12 +2511,76 @@
   background: var(--paper);
   color: var(--ink);
 }
+/* The feature map: a calm grid of theme tiles — "everything Babillard does" at a
+   glance. Shared (components/FeatureMap): the Guide, the Board WelcomeCard, and
+   DevKit all render it. Jumps/links to a theme depending on the caller. */
+.feature-map {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+  margin: 0 0 1.75rem;
+}
+.feature-map__tile {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.feature-map__tile:hover {
+  border-color: var(--line-strong);
+}
+.feature-map__ic {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--marigold-deep);
+}
+.feature-map__label {
+  line-height: 1.2;
+}
+/* An in-text cross-reference to another Guide card ([[card:id|label]]). Calm:
+   reads as a link (accent + dotted underline) without shouting. */
+.guide-link {
+  color: var(--marigold-deep, var(--accent));
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+.guide-link:hover,
+.guide-link:focus-visible {
+  text-decoration-style: solid;
+}
 .guide__group {
   margin-bottom: 1.75rem;
+  scroll-margin-top: 0.75rem;
 }
 .guide__group-title {
   font-size: 1.05rem;
   margin: 0 0 0.6rem;
+}
+/* A themed sub-cluster inside the (large) concepts group, so it reads as a map
+   rather than a flat wall. */
+.guide__theme {
+  margin: 0 0 1.25rem;
+  scroll-margin-top: 0.75rem;
+}
+.guide__theme-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-soft, var(--ink));
+  margin: 0 0 0.5rem;
 }
 .guide__cards {
   display: flex;

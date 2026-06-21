@@ -369,7 +369,7 @@ export function Liste() {
       {help.bubbleFor('flyer')}
 
       {list.length === 0 ? (
-        <EmptyState>{t.board.listEmpty}</EmptyState>
+        <EmptyState guide={{ card: 'liste' }}>{t.board.listEmpty}</EmptyState>
       ) : (
         <div className="list-rows">
           {list.map((item) => {

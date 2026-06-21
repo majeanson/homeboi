@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { Avatar } from '../Avatar'
 import { EmptyState } from '../EmptyState'
@@ -16,15 +16,31 @@ const CX = VW / 2
 const CY = VH / 2 + 10
 const RING = 195
 
-export function CercleEgo({ people, links, onOpen }: { people: Person[]; links: ContactLink[]; onOpen: (p: Person) => void }) {
+export function CercleEgo({
+  people,
+  links,
+  onOpen,
+  focusKey: focusKeyProp,
+}: {
+  people: Person[]
+  links: ContactLink[]
+  onOpen: (p: Person) => void
+  // Optional external focus (the page's member "focus lens"): seeds + drives the
+  // centre. Tapping a neighbour still re-centres locally on top of it.
+  focusKey?: string | null
+}) {
   const t = useT()
   const { lang } = useLang()
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
 
-  // Default focus: the first household member (the family's own anchor), else the
-  // first person. Kept in state so tapping a neighbour re-centres.
+  // Default focus: the page's focus lens if set, else the first household member (the
+  // family's own anchor), else the first person. Kept in state so tapping a neighbour
+  // re-centres; the lens (focusKeyProp) updates it when the picked member changes.
   const initial = useMemo(() => people.find((p) => p.kind === 'member')?.key ?? people[0]?.key ?? null, [people])
-  const [focusKey, setFocusKey] = useState<string | null>(initial)
+  const [focusKey, setFocusKey] = useState<string | null>(focusKeyProp ?? initial)
+  useEffect(() => {
+    if (focusKeyProp) setFocusKey(focusKeyProp)
+  }, [focusKeyProp])
   const focus = (focusKey && byKey.get(focusKey)) || (initial && byKey.get(initial)) || people[0]
 
   // Direct neighbours of the focus, with the relation read from the focus's side.

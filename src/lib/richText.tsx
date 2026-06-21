@@ -1,15 +1,23 @@
 import { Fragment, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { InlineIcon, type IconName } from '../components/Icon'
 
-// An inline `[[icon:name]]` token in long-form prose renders as the app's own
-// Phosphor glyph, so a sentence that points at a button shows the *same* icon the
-// button shows (e.g. "tap [[icon:baby-bold]]"). Keeps the manual AND the guided
-// tour on one icon set with the live UI instead of emoji. Shared by the Guide
-// (components/operator/guide.tsx) and the tour (components/tour/TourOverlay.tsx).
-// `stripTokens` removes them for search/length math.
-const TOKEN = /\[\[icon:([a-z-]+)\]\]/g
+// Inline tokens in long-form prose (the Guide + the guided tour share this):
+//   [[icon:name]]     → the app's own Phosphor glyph, so a sentence that points
+//                       at a button shows the *same* icon the button shows.
+//   [[card:id|label]] → a calm in-text link that opens another Guide card. It
+//                       deep-links to /settings?tab=guide&card=<id>; inside the
+//                       Guide the ?card effect opens + scrolls to that card. This
+//                       turns the manual into a browsable graph — features can
+//                       cross-reference each other instead of sitting as islands.
+//                       The id must match a GuideEntry id in guideContent.ts.
+// `stripTokens` (used for search + length math) drops icon tokens entirely and
+// keeps a card token's visible LABEL, so a search still matches the words a reader
+// actually sees.
+const TOKEN = /\[\[(icon|card):([^\]]+)\]\]/g
 
-export const stripTokens = (s: string) => s.replace(TOKEN, '')
+export const stripTokens = (s: string) =>
+  s.replace(TOKEN, (_m, kind: string, body: string) => (kind === 'card' ? (body.split('|')[1] ?? body) : ''))
 
 export function renderRich(text: string): ReactNode {
   const out: ReactNode[] = []
@@ -18,7 +26,27 @@ export function renderRich(text: string): ReactNode {
   TOKEN.lastIndex = 0
   while ((m = TOKEN.exec(text))) {
     if (m.index > last) out.push(<Fragment key={last}>{text.slice(last, m.index)}</Fragment>)
-    out.push(<InlineIcon key={m.index} name={m[1] as IconName} />)
+    const kind = m[1]
+    const body = m[2]
+    if (kind === 'icon') {
+      out.push(<InlineIcon key={m.index} name={body as IconName} />)
+    } else {
+      const bar = body.indexOf('|')
+      const id = bar === -1 ? body : body.slice(0, bar)
+      const label = bar === -1 ? body : body.slice(bar + 1)
+      out.push(
+        // stopPropagation so a card-link placed inside a card's clickable
+        // <summary> (the `what` line) navigates without also toggling the card.
+        <Link
+          key={m.index}
+          className="guide-link"
+          to={`/settings?tab=guide&card=${id}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {label}
+        </Link>,
+      )
+    }
     last = m.index + m[0].length
   }
   if (last < text.length) out.push(<Fragment key={last}>{text.slice(last)}</Fragment>)

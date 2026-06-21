@@ -255,6 +255,7 @@ export type RelationshipType =
   | 'cousin'
   | 'in_law'
   | 'step_family'
+  | 'best_friend'
   | 'friend'
   | 'colleague'
   | 'neighbor'
@@ -291,9 +292,10 @@ export const RELATIONSHIP_CONFIG: Record<RelationshipType, RelationshipConfig> =
   cousin: { label: { fr: 'Cousin·e', en: 'Cousin' }, group: 'extended', groupOrder: 4, color: '#7E6BB0' },
   in_law: { label: { fr: 'Belle-famille', en: 'In-law' }, group: 'extended', groupOrder: 5, color: '#5E8C8C' },
   step_family: { label: { fr: 'Famille recomposée', en: 'Step-family' }, group: 'extended', groupOrder: 6, color: '#5AA08C' },
-  friend: { label: { fr: 'Ami·e', en: 'Friend' }, group: 'social', groupOrder: 0, color: '#6B8A52' },
-  colleague: { label: { fr: 'Collègue', en: 'Colleague' }, group: 'social', groupOrder: 1, color: '#D9842A' },
-  neighbor: { label: { fr: 'Voisin·e', en: 'Neighbour' }, group: 'social', groupOrder: 2, color: '#C2563A' },
+  best_friend: { label: { fr: 'Meilleur·e ami·e', en: 'Best friend' }, group: 'social', groupOrder: 0, color: '#4F8A4A' },
+  friend: { label: { fr: 'Ami·e', en: 'Friend' }, group: 'social', groupOrder: 1, color: '#6B8A52' },
+  colleague: { label: { fr: 'Collègue', en: 'Colleague' }, group: 'social', groupOrder: 2, color: '#D9842A' },
+  neighbor: { label: { fr: 'Voisin·e', en: 'Neighbour' }, group: 'social', groupOrder: 3, color: '#C2563A' },
   other: { label: { fr: 'Autre', en: 'Other' }, group: 'other', groupOrder: 0, color: '#8A8780' },
 }
 
@@ -314,6 +316,7 @@ export const RELATIONSHIP_INVERSES: Record<RelationshipType, RelationshipType> =
   cousin: 'cousin',
   in_law: 'in_law',
   step_family: 'step_family',
+  best_friend: 'best_friend',
   friend: 'friend',
   colleague: 'colleague',
   neighbor: 'neighbor',
@@ -334,14 +337,14 @@ export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | nul
       parent: 'Mère', child: 'Fille', sibling: 'Sœur', spouse: 'Conjointe',
       partner: 'Partenaire', grandparent: 'Grand-mère', grandchild: 'Petite-fille',
       aunt_uncle: 'Tante', niece_nephew: 'Nièce', in_law: 'Belle-famille',
-      step_family: 'Famille recomposée', friend: 'Amie', colleague: 'Collègue',
-      neighbor: 'Voisine', cousin: 'Cousine',
+      step_family: 'Famille recomposée', best_friend: 'Meilleure amie', friend: 'Amie',
+      colleague: 'Collègue', neighbor: 'Voisine', cousin: 'Cousine',
     }
     const FEM_EN: Partial<Record<RelationshipType, string>> = {
       parent: 'Mother', child: 'Daughter', sibling: 'Sister', spouse: 'Wife',
       partner: 'Partner', grandparent: 'Grandmother', grandchild: 'Granddaughter',
       aunt_uncle: 'Aunt', niece_nephew: 'Niece',
-      friend: 'Friend', colleague: 'Colleague', neighbor: 'Neighbour', cousin: 'Cousin',
+      best_friend: 'Best friend', friend: 'Friend', colleague: 'Colleague', neighbor: 'Neighbour', cousin: 'Cousin',
     }
     const map = lang === 'fr' ? FEM_FR : FEM_EN
     return map[type] ?? relLabel(type, lang)
@@ -351,14 +354,14 @@ export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | nul
       parent: 'Père', child: 'Fils', sibling: 'Frère', spouse: 'Conjoint',
       partner: 'Partenaire', grandparent: 'Grand-père', grandchild: 'Petit-fils',
       aunt_uncle: 'Oncle', niece_nephew: 'Neveu', in_law: 'Belle-famille',
-      step_family: 'Famille recomposée', friend: 'Ami', colleague: 'Collègue',
-      neighbor: 'Voisin', cousin: 'Cousin',
+      step_family: 'Famille recomposée', best_friend: 'Meilleur ami', friend: 'Ami',
+      colleague: 'Collègue', neighbor: 'Voisin', cousin: 'Cousin',
     }
     const MASC_EN: Partial<Record<RelationshipType, string>> = {
       parent: 'Father', child: 'Son', sibling: 'Brother', spouse: 'Husband',
       partner: 'Partner', grandparent: 'Grandfather', grandchild: 'Grandson',
       aunt_uncle: 'Uncle', niece_nephew: 'Nephew',
-      friend: 'Friend', colleague: 'Colleague', neighbor: 'Neighbour', cousin: 'Cousin',
+      best_friend: 'Best friend', friend: 'Friend', colleague: 'Colleague', neighbor: 'Neighbour', cousin: 'Cousin',
     }
     const map = lang === 'fr' ? MASC_FR : MASC_EN
     return map[type] ?? relLabel(type, lang)
@@ -852,10 +855,11 @@ const REL_PRIORITY: Record<RelationshipType, number> = {
   cousin: 5,
   in_law: 6,
   step_family: 6,
-  friend: 7,
-  colleague: 7,
-  neighbor: 7,
-  other: 8,
+  best_friend: 7,
+  friend: 8,
+  colleague: 8,
+  neighbor: 8,
+  other: 9,
 }
 export const relPriority = (t: RelationshipType): number => REL_PRIORITY[t]
 

@@ -58,13 +58,15 @@ test.describe('first-run welcome', () => {
     await expect(page.locator('.welcome-steps')).toBeVisible()
   })
 
-  test('the empty board points at adding the family, and the link lands on the household tab', async ({ page }) => {
+  test('the empty board shows the welcome checklist, and the add-family step lands on the household tab', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await mockApi(page, { fresh: true })
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
     await page.goto('/board')
-    await settle(page, '.board-welcome')
-    await page.locator('.board-welcome a').click()
+    // The first-run WelcomeCard: its first step ("Ajouter la famille") is the
+    // next action for a brand-new household and links to Réglages ▸ La maisonnée.
+    await settle(page, '.welcome-card')
+    await page.locator('.welcome-card__step a').first().click()
     await expect(page).toHaveURL(/\/settings\?tab=household$/)
     await settle(page, '.welcome-steps')
   })

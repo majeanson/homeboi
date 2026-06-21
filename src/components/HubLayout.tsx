@@ -40,7 +40,7 @@ const TABS: {
   { to: '/board', key: 'today', icon: 'sun-bold', color: '#D9842A' }, // marigold
   { to: '/kitchen', key: 'kitchen', icon: 'carrot-bold', color: '#C2563A' }, // terracotta
   { to: '/routines', key: 'routines', icon: 'smiley-bold', color: '#95527A' }, // berry
-  { to: '/cercle', key: 'cercle', icon: 'users-three-bold', color: '#C45E86' }, // rose
+  { to: '/cercle', key: 'cercle', icon: 'users-three-bold', color: '#2A8F85' }, // turquoise (matches CATS.cercle.deep + the page header)
   { to: '/liste', key: 'list', icon: 'sparkle-bold', color: '#5891AC' }, // sky
   { to: '/settings', key: 'operator', icon: 'gear-six-bold', color: '#6B8A52' }, // sage
 ]

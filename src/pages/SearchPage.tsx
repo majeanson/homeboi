@@ -239,7 +239,7 @@ export function SearchPage() {
                 {res!.people.map((c) => (
                   <Link key={c.id} to={`/cercle/person/${c.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">
-                      <Avatar kind={c.photoKey ? 'photo' : null} photo={c.photoKey} colour="#C45E86" name={c.firstName} size={34} />
+                      <Avatar kind={c.photoKey ? 'photo' : null} photo={c.photoKey} colour={CATS.cercle.deep} name={c.firstName} size={34} />
                     </span>
                     <span className="search__main">
                       <span className="search__title">{[c.firstName, c.lastName].filter(Boolean).join(' ') || c.nickname}</span>

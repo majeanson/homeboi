@@ -29,8 +29,11 @@ type Img = { id: string; key: string; draw: boolean }
 const DRAW_WEIGHT: Record<DayPart, number> = {
   dawn: 0.4,
   morning: 0.6,
+  noon: 0.65,
   afternoon: 0.6,
   dusk: 0.3,
+  twilight: 0.28,
+  'deep-twilight': 0.25,
   night: 0.25,
 }
 

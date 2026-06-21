@@ -10,14 +10,25 @@ import { useT } from '../i18n'
 // honest promise. Pip design throughout (Phosphor icons, paper tones). No
 // floating CTA, no shadow lifts, no hype — the app's calm tenet starts here.
 
-// "What it's for", in concrete household terms, each with its pip glyph + accent.
-const SECTIONS: { icon: IconName; key: 'forSupper' | 'forList' | 'forRoutines' | 'forChores' | 'forAgenda'; tint: string; wash: string }[] = [
-  { icon: 'fork-knife-bold', key: 'forSupper', tint: 'var(--terracotta-deep)', wash: 'var(--terracotta-wash)' },
-  { icon: 'sparkle-bold', key: 'forList', tint: 'var(--sky-deep)', wash: 'var(--sky-wash)' },
-  { icon: 'smiley-bold', key: 'forRoutines', tint: 'var(--berry-deep)', wash: 'var(--berry-wash)' },
-  { icon: 'broom-bold', key: 'forChores', tint: 'var(--sage-deep)', wash: 'var(--sage-wash)' },
-  { icon: 'calendar-dots-bold', key: 'forAgenda', tint: 'var(--marigold-deep)', wash: 'var(--marigold-wash)' },
+// "Everything it does", grouped by theme — the SAME taxonomy as the in-app Guide
+// (Réglages ▸ Comment ça marche), so the marketing front door and the manual tell
+// one story, not two. Each card: a pip glyph + accent, a title, a concrete line.
+const FEATURES: {
+  icon: IconName
+  title: 'featSupper' | 'featAgenda' | 'featRoutines' | 'featCercle' | 'featTablet'
+  body: 'featSupperBody' | 'featAgendaBody' | 'featRoutinesBody' | 'featCercleBody' | 'featTabletBody'
+  tint: string
+  wash: string
+}[] = [
+  { icon: 'fork-knife-bold', title: 'featSupper', body: 'featSupperBody', tint: 'var(--terracotta-deep)', wash: 'var(--terracotta-wash)' },
+  { icon: 'calendar-dots-bold', title: 'featAgenda', body: 'featAgendaBody', tint: 'var(--marigold-deep)', wash: 'var(--marigold-wash)' },
+  { icon: 'smiley-bold', title: 'featRoutines', body: 'featRoutinesBody', tint: 'var(--berry-deep)', wash: 'var(--berry-wash)' },
+  { icon: 'users-three-bold', title: 'featCercle', body: 'featCercleBody', tint: 'var(--sky-deep)', wash: 'var(--sky-wash)' },
+  { icon: 'device-tablet-bold', title: 'featTablet', body: 'featTabletBody', tint: 'var(--sage-deep)', wash: 'var(--sage-wash)' },
 ]
+
+// The calm promise, in four short lines — the honest "what it won't do".
+const PROMISES = ['promise1', 'promise2', 'promise3', 'promise4'] as const
 
 export function Home() {
   const t = useT()
@@ -44,19 +55,37 @@ export function Home() {
           </div>
         </section>
 
-        {/* What it's for — five plain household things, as calm placeholder tiles. */}
+        {/* Everything it does — themed feature cards (same taxonomy as the Guide),
+            so a first visitor sees the app's real range, not five bare labels. */}
         <section className="home__block">
-          <h2 className="home__h mono">{t.home.whatHeading}</h2>
-          <ul className="home__sections">
-            {SECTIONS.map((s) => (
-              <li key={s.key} className="home__section">
-                <span className="home__section-ic" style={{ background: s.wash, color: s.tint }}>
-                  <Icon name={s.icon} size={24} />
+          <h2 className="home__h mono">{t.home.featHeading}</h2>
+          <ul className="home__features">
+            {FEATURES.map((f) => (
+              <li key={f.title} className="home__feature">
+                <span className="home__feature-ic" style={{ background: f.wash, color: f.tint }}>
+                  <Icon name={f.icon} size={24} />
                 </span>
-                <span className="home__section-label">{t.home[s.key]}</span>
+                <span className="home__feature-text">
+                  <span className="home__feature-title">{t.home[f.title]}</span>
+                  <span className="home__feature-body">{t.home[f.body]}</span>
+                </span>
               </li>
             ))}
           </ul>
+        </section>
+
+        {/* The calm promise — the honest "what it won't do", then privacy. */}
+        <section className="home__block">
+          <h2 className="home__h mono">{t.home.promiseHeading}</h2>
+          <ul className="home__promises">
+            {PROMISES.map((p) => (
+              <li key={p} className="home__promise-row">
+                <Icon name="check-bold" size={18} color="var(--sage-deep)" />
+                <span>{t.home[p]}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="home__privacy">{t.home.privacyLine}</p>
         </section>
       </main>
     </div>

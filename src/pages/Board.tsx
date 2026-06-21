@@ -6,6 +6,7 @@ import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
+import { WelcomeCard } from '../components/WelcomeCard'
 import { CercleBirthdays } from '../components/cercle/CercleBirthdays'
 import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
@@ -680,14 +681,10 @@ export function Board() {
           already shows whose view this is (the selected face), so the label was
           redundant. Picking the face again (or Maisonnée) clears the filter. */}
 
-      {/* A fresh household (nobody added yet): one gentle pointer to the next
-          step instead of a wall of empty "—" sections. */}
-      {data && data.members.length === 0 && (
-        <p className="board-welcome mono">
-          {t.board.welcomeHint}{' '}
-          <Link to="/settings?tab=household">{t.board.welcomeCta}</Link>
-        </p>
-      )}
+      {/* A fresh household: the first-run setup checklist + the feature map, so a
+          newcomer has a clear next step AND can see everything the app does. It
+          auto-hides once the steps are done (or dismissed). */}
+      {data && <WelcomeCard members={data.members} />}
 
       {/* Fridge notes (text / voice / photo) ride above the day in every parent
           view. DRAWINGS are split out to the Grille/bento view only (below) — they

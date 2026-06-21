@@ -81,7 +81,10 @@ export function EventsSection({
                   <>
                     {formatDay(ev.start_at, lang)}
                     {ev.all_day ? '' : ` ${formatTime(ev.start_at, lang)}`}
-                    {memberName(ev.member_id) ? ` · ${memberName(ev.member_id)}` : ''}
+                    {(() => {
+                      const who = ev.business_name ?? ev.contact_name ?? memberName(ev.member_id)
+                      return who ? ` · ${who}` : ''
+                    })()}
                   </>
                 }
                 actions={

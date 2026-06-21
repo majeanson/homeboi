@@ -24,6 +24,7 @@ import {
 } from '../../lib/cercle'
 import { parseVCard, type ParsedContact } from '../../lib/vcard'
 import { ContactPhotos } from './ContactPhotos'
+import { Modal } from '../Modal'
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
@@ -87,6 +88,11 @@ export function ContactForm({
   const [photoKey, setPhotoKey] = useState<string | null>(value?.photoKey ?? null)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  // #44 — the multi-card .vcf picker: the parsed cards to choose from (null = closed)
+  // and which indices are checked (all preselected). A mid-step before bulk import so
+  // a phone's "export all" doesn't dump every contact in.
+  const [vcfPick, setVcfPick] = useState<ParsedContact[] | null>(null)
+  const [picked, setPicked] = useState<Set<number>>(new Set())
 
   // If this person is a Maisonnée member (hard-linked), their face is the member's
   // board avatar — the ONE photo, managed in Réglages ▸ Membres — not a separate
@@ -151,15 +157,20 @@ export function ContactForm({
       prefillFrom(parsed[0])
       return
     }
-    // Bulk: confirm, then create each (offline-safe via the outbox), then close.
-    const okay = await confirm({
-      message: t.cercle.importVcfConfirm(parsed.length),
-      confirmLabel: t.cercle.importVcfDo(parsed.length),
-    })
-    if (!okay) return
+    // Many cards: open the picker (all preselected) so you choose WHO to import — the
+    // mid-step. "Importer tout" in the picker skips the choosing.
+    setVcfPick(parsed)
+    setPicked(new Set(parsed.map((_, i) => i)))
+  }
+
+  // Bulk-create a chosen subset of parsed cards (offline-safe via the outbox), then
+  // land back on the directory. Shared by "Importer tout" and "Importer la sélection".
+  async function importList(list: ParsedContact[]) {
+    setVcfPick(null)
+    if (list.length === 0) return
     setSaving(true)
     try {
-      for (const p of parsed) {
+      for (const p of list) {
         await write('cercle', {
           method: 'POST',
           body: {
@@ -354,6 +365,58 @@ export function ContactForm({
 
   return (
     <div className="cf">
+      {/* #44 — the multi-card .vcf picker (mid-step): tick who to import (all
+          preselected), with select-all / unselect-all. "Importer tout" skips it. */}
+      <Modal open={!!vcfPick} onClose={() => setVcfPick(null)} title={t.cercle.importVcfPick}>
+        {vcfPick && (
+          <div className="cf-vcf">
+            <button
+              type="button"
+              className="btn btn--sm btn--ghost cf-vcf__all"
+              onClick={() => setPicked(picked.size === vcfPick.length ? new Set() : new Set(vcfPick.map((_, i) => i)))}
+            >
+              <Icon name={picked.size === vcfPick.length ? 'square-bold' : 'check-square-bold'} size={16} />
+              {picked.size === vcfPick.length ? t.cercle.unselectAll : t.cercle.selectAll}
+            </button>
+            <ul className="cf-vcf__list">
+              {vcfPick.map((p, i) => (
+                <li key={i}>
+                  <label className="cf-vcf__row">
+                    <input
+                      type="checkbox"
+                      checked={picked.has(i)}
+                      onChange={() =>
+                        setPicked((s) => {
+                          const n = new Set(s)
+                          if (n.has(i)) n.delete(i)
+                          else n.add(i)
+                          return n
+                        })
+                      }
+                    />
+                    <span className="cf-vcf__name">{fullName(p) || t.cercle.importVcfUnnamed}</span>
+                    {(p.email || p.phone) && <span className="cf-vcf__sub mono">{p.email || p.phone}</span>}
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <div className="cf-vcf__actions">
+              <button type="button" className="btn btn--sm btn--ghost" onClick={() => void importList(vcfPick)}>
+                {t.cercle.importVcfDo(vcfPick.length)}
+              </button>
+              <button
+                type="button"
+                className="btn btn--sm btn--primary"
+                disabled={picked.size === 0}
+                onClick={() => void importList(vcfPick.filter((_, i) => picked.has(i)))}
+              >
+                {t.cercle.importVcfSelected(picked.size)}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Photo. A member's face comes from the Maisonnée (their board avatar) and is
           edited there, so for a linked member we SHOW that face read-only; otherwise
           this is the contact's own editable photo. */}
@@ -367,7 +430,7 @@ export function ContactForm({
           </>
         ) : (
           <>
-            <Avatar kind={photoKey ? 'photo' : null} photo={photoKey} colour="#C45E86" name={firstName} size={84} />
+            <Avatar kind={photoKey ? 'photo' : null} photo={photoKey} colour="#2A8F85" name={firstName} size={84} />
             <div className="cf__photo-actions">
               <input
                 ref={fileRef}
@@ -574,7 +637,7 @@ export function ContactForm({
           <div className="cf__groups-chips">
             {groupList.map((g) => (
               <Chip key={g.id} selected={memberOf.has(g.id)} onClick={() => toggleGroup(g)}>
-                <span className="cercle-group__dot" style={{ background: g.colour ?? '#C45E86' }} />
+                <span className="cercle-group__dot" style={{ background: g.colour ?? '#2A8F85' }} />
                 {g.name}
               </Chip>
             ))}

@@ -11,8 +11,8 @@ import { type FamilyNote, type NoteScope, visibleNotes } from '../../lib/familyN
 import type { Member } from '../../lib/cercle'
 import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
-import { Avatar } from '../Avatar'
 import { Icon, InlineIcon } from '../Icon'
+import { MemberSwitcher } from '../MemberSwitcher'
 import { EditField } from '../EditField'
 import { MemoControls } from '../MemoControls'
 import { ZoomableImg } from '../ZoomableImg'
@@ -140,46 +140,37 @@ export function CercleNotes({
 
   return (
     <section className="cercle-group cercle-notes">
-      <HelpTitle help={help} k="notes" className="cercle-section__label">
-        <InlineIcon name="file-text-bold" size={16} /> {fn.title}
-      </HelpTitle>
+      <header className="cercle-notes__head">
+        <HelpTitle help={help} k="notes" className="cercle-notes__title">
+          <InlineIcon name="file-text-bold" size={18} /> {fn.title}
+        </HelpTitle>
+        <p className="cercle-notes__sub mono">{fn.addHint}</p>
+      </header>
       {help?.bubbleFor('notes')}
 
-      {/* Whose notes — Maisonnée + each member. Seeds from the device profile. */}
-      <div className="cercle-notes__faces" role="tablist" aria-label={fn.title}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={face === null}
-          className={'cercle-notes__face' + (face === null ? ' is-active' : '')}
-          onClick={() => {
-            setFace(null)
-            setScope('family')
-          }}
-        >
-          <InlineIcon name="users-three-bold" size={15} /> {fn.scopeFamily}
-        </button>
-        {members.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            role="tab"
-            aria-selected={face === m.id}
-            className={'cercle-notes__face' + (face === m.id ? ' is-active' : '')}
-            onClick={() => {
-              setFace(m.id)
-              setScope('self')
-            }}
-          >
-            <Avatar kind={m.avatarKind} photo={m.avatarRef} colour={m.colour} name={m.displayName} size={22} />
-            {m.displayName}
-          </button>
-        ))}
-      </div>
+      {/* Whose notes — Maisonnée + each member. The SAME face row as the board's
+          "Aujourd'hui" header (the shared MemberSwitcher); seeded from the device
+          profile, but this picks LOCALLY (it doesn't move the device profile), and
+          also sets the composer scope (a face → Moi, Maisonnée → famille). */}
+      <MemberSwitcher
+        faces={members.map((m) => ({
+          id: m.id,
+          name: m.displayName,
+          colour: m.colour,
+          photoUrl: m.avatarKind === 'photo' && m.avatarRef ? imgUrl(m.avatarRef) : null,
+        }))}
+        value={face}
+        onChange={(id) => {
+          setFace(id)
+          setScope(id ? 'self' : 'family')
+        }}
+        allLabel={fn.scopeFamily}
+        ariaLabel={fn.title}
+      />
 
       {/* Composer — text + scope toggle (Moi / Maisonnée) + media. Hidden for guests. */}
       {!ro && (
-        <div className="cercle-notes__composer">
+        <div className="cercle-notes__composer card">
           {face && (
             <div className="cercle-notes__scope" role="radiogroup" aria-label={fn.title}>
               {(['self', 'family'] as NoteScope[]).map((s) => (

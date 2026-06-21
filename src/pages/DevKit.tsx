@@ -14,7 +14,9 @@ import { DragPill } from '../components/DragPill'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
+import { MemberSwitcher } from '../components/MemberSwitcher'
 import { GroupForm } from '../components/cercle/GroupForm'
+import { BusinessForm } from '../components/cercle/BusinessForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import type { Member, Person } from '../lib/cercle'
@@ -34,6 +36,8 @@ import { EmptyState } from '../components/EmptyState'
 import { StatusMessage } from '../components/StatusMessage'
 import { Chip, ChipGroup } from '../components/Chip'
 import { Disclosure } from '../components/Disclosure'
+import { FeatureMap } from '../components/FeatureMap'
+import { SubTabs } from '../components/SubTabs'
 import { SectionHeader } from '../components/SectionHeader'
 import { SectionAvatar } from '../components/SectionAvatar'
 import { HubHead } from '../components/HubHead'
@@ -191,6 +195,9 @@ export function DevKit() {
   const [recur, setRecur] = useState<RecurValue | null>({ freq: 'weekly', interval: 1, weekdays: [3] })
   const [lead, setLead] = useState<number | null>(10800)
   const [chipOn, setChipOn] = useState<string[]>(['préféré'])
+  const [subtab, setSubtab] = useState<'meals' | 'pantry' | 'recipes'>('meals')
+  const [miniTab, setMiniTab] = useState<'aa' | 'coll'>('aa')
+  const [face, setFace] = useState<string | null>(null)
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -379,6 +386,26 @@ export function DevKit() {
     },
     {
       cat: 'Saisie',
+      name: 'MemberSwitcher',
+      file: 'components/MemberSwitcher.tsx',
+      kw: 'membre face visage maisonnée household pick profile switcher aujourd’hui board notes cercle',
+      render: () => (
+        // The shared "pick-a-face" row from the board's "Aujourd'hui" header, now
+        // controlled + identity-agnostic — also the « Le cercle » Notes "whose notes"
+        // picker. Map any member shape to {id,name,colour,photoUrl} at the call site.
+        <Demo label="Maisonnée + member faces — re-tap the active face to clear">
+          <MemberSwitcher
+            faces={DEMO_MEMBERS.map((m) => ({ id: m.id, name: m.displayName, colour: m.colour }))}
+            value={face}
+            onChange={setFace}
+            allLabel="Maisonnée"
+            ariaLabel="Choisir une personne"
+          />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
       name: 'GroupForm',
       file: 'components/cercle/GroupForm.tsx',
       kw: 'cercle groupe nom type couleur créer modifier group name kind colour',
@@ -387,6 +414,19 @@ export function DevKit() {
         // the create flow and the inline edit on a group header.
         <Demo label="name + kind + colour — create / edit a Cercle group">
           <GroupForm submitLabel={t.cercle.addGroup} onSubmit={() => {}} onCancel={() => {}} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'BusinessForm',
+      file: 'components/cercle/BusinessForm.tsx',
+      kw: 'cercle business commerce service vendeur vét plombier hôpital carte nom catégorie',
+      render: () => (
+        // « Le cercle » → Business: add / edit one service card (vet, plumber…) —
+        // a simpler ContactForm (no relations/vCard/member link). Isolated from people.
+        <Demo label="name + category + reach + notes + card photo — a Business card">
+          <BusinessForm onSaved={() => {}} onCancel={() => {}} />
         </Demo>
       ),
     },
@@ -519,6 +559,63 @@ export function DevKit() {
             </ChipGroup>
           </Disclosure>
         </Demo>
+      ),
+    },
+    {
+      cat: 'Fondations',
+      name: 'FeatureMap',
+      file: 'components/FeatureMap.tsx',
+      kw: 'feature map carte concepts thèmes guide découvrir overview tout ce que ça fait',
+      render: () => (
+        <Demo label="themed jump-grid — “everything the app does”, one shared taxonomy (Guide + Board + here)">
+          <FeatureMap onSelect={(k) => alert(`theme: ${k}`)} label="Tout ce que Babillard fait" />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Fondations',
+      name: 'SubTabs',
+      file: 'components/SubTabs.tsx',
+      kw: 'subtabs sous-onglets segmented control onglets section switch repas garde-manger recettes liste liens arbre',
+      render: () => (
+        <>
+          <Demo label="in-page section switch (La cuisine, Le cercle) — icon optional">
+            <SubTabs
+              options={[
+                { key: 'meals', label: 'Repas', icon: 'fork-knife-bold' },
+                { key: 'pantry', label: 'Garde-manger', icon: 'carrot-bold' },
+                { key: 'recipes', label: 'Recettes', icon: 'book-open-bold' },
+              ]}
+              value={subtab}
+              onSelect={setSubtab}
+              ariaLabel="Démo sous-onglets"
+            />
+          </Demo>
+          <Demo label="text-only">
+            <SubTabs
+              options={[
+                { key: 'meals', label: 'Repas' },
+                { key: 'pantry', label: 'Garde-manger' },
+                { key: 'recipes', label: 'Recettes' },
+              ]}
+              value={subtab}
+              onSelect={setSubtab}
+              ariaLabel="Démo sous-onglets texte"
+            />
+          </Demo>
+          <Demo label="mini variant (recipe book Aa · Collections)">
+            <SubTabs
+              size="mini"
+              options={[
+                { key: 'aa', label: 'Aa' },
+                { key: 'coll', label: 'Collections' },
+              ]}
+              value={miniTab}
+              onSelect={setMiniTab}
+              ariaLabel="Démo sous-onglets mini"
+            />
+          </Demo>
+        </>
       ),
     },
     {
@@ -804,15 +901,26 @@ export function DevKit() {
       cat: 'Affichage',
       name: 'Avatar',
       file: 'components/Avatar.tsx',
-      kw: 'avatar membre personne initiale photo',
+      kw: 'avatar membre personne initiale photo famille couleur groupe',
       render: () => (
-        <Demo label="coloured initial disc">
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <Avatar name="Camille" colour={PALETTE[2]} />
-            <Avatar name="Marc" colour={PALETTE[4]} />
-            <Avatar name="Léo" colour={PALETTE[0]} size={56} />
-          </div>
-        </Demo>
+        <>
+          <Demo label="coloured initial disc">
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <Avatar name="Camille" colour={PALETTE[2]} />
+              <Avatar name="Marc" colour={PALETTE[4]} />
+              <Avatar name="Léo" colour={PALETTE[0]} size={56} />
+            </div>
+          </Demo>
+          {/* Le cercle passes a family/group's colour as `colour` so photo-less
+              members read as one block (the family colour tints their initials). */}
+          <Demo label="family colour — photo-less members share the group's colour">
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <Avatar name="Aliss" colour="#2A8F85" />
+              <Avatar name="Félix" colour="#2A8F85" />
+              <Avatar name="Rose" colour="#2A8F85" />
+            </div>
+          </Demo>
+        </>
       ),
     },
     {

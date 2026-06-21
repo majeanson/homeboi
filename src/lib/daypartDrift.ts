@@ -1,9 +1,11 @@
 // Ambient day-part drift (feature #1). theme-bootstrap.js sets the FIRST
 // data-daypart before paint; this keeps it current while the app stays open:
 // recompute on mount and every ~10 min so a wall tablet that runs all day slides
-// dawn→morning→afternoon→dusk→night on its own. CALM by design — the palette
-// shift is slow (CSS handles the transition) and only a few tokens move; this
-// loop just flips the attribute, never re-renders React.
+// dawn→morning→noon→afternoon→dusk→twilight→deep-twilight→night on its own. The
+// two twilight rungs (set via themeForPart's data-theme tiers) make nightfall and
+// wake-up gradual instead of a single cream→black cut. CALM by design — the shift
+// is slow (CSS handles the transition) and only a few tokens move; this loop just
+// flips the attributes, never re-renders React.
 //
 // Opt-out: when 'babillard-daypart-auto' === '0' we don't touch the attribute
 // (the operator's manual day/night palette stays put). Date.now() is fine in app

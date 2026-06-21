@@ -139,7 +139,7 @@ export function DeparturePage() {
           ) : (
             <ul className="departure__agenda">
               {events.map((e) => {
-                const who = e.contact_name ?? nameOf(board?.members ?? [], e.member_id)
+                const who = e.business_name ?? e.contact_name ?? nameOf(board?.members ?? [], e.member_id)
                 return (
                   <li key={e.id} className="departure__ev">
                     <span className="departure__ev-time mono">{timeLabel(e.start_at, e.all_day)}</span>

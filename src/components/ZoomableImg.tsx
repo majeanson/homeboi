@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useModal } from '../lib/useModal'
 import { Icon } from './Icon'
 
@@ -111,7 +112,14 @@ function ZoomOverlay({ src, alt, onClose }: { src: string; alt: string; onClose:
     }
   }
 
-  return (
+  // Portal to <body>: the overlay is `position: fixed; inset: 0`, but it's rendered
+  // inline next to the thumbnail, and a launcher like a fridge-note card is
+  // `transform: rotate(...)` (the torn-paper look) — a transformed ancestor is a
+  // containing block for fixed descendants, so inline the overlay would be trapped
+  // inside the little rotated card instead of covering the screen (the ✕/backdrop
+  // then sit over the trigger image and a close-tap reopens it). Portalling escapes
+  // any transformed ancestor so it's always a true full-page viewer.
+  return createPortal(
     <div
       ref={overlayRef}
       className="zoom-overlay"
@@ -136,6 +144,7 @@ function ZoomOverlay({ src, alt, onClose }: { src: string; alt: string; onClose:
       <button type="button" className="zoom-overlay__close" aria-label="Fermer / Close" onClick={onClose}>
         <Icon name="x-bold" size={20} />
       </button>
-    </div>
+    </div>,
+    document.body,
   )
 }
