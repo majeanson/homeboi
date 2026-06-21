@@ -98,11 +98,12 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   flyer: { cat: 'meal', icon: 'magnifying-glass-bold' },
   'auto-pick': { cat: 'chore', icon: 'tag-bold' },
   share: { cat: 'list', icon: 'arrow-up-right-bold' },
-  // Le cercle's four creation tiles — all the rose 'cercle' family, distinct glyphs.
+  // Le cercle's creation tiles — all the rose 'cercle' family, distinct glyphs.
   person: { cat: 'cercle', icon: 'user-bold' },
   family: { cat: 'cercle', icon: 'tree-bold' },
   connect: { cat: 'cercle', icon: 'users-three-bold' },
   group: { cat: 'cercle', icon: 'tag-bold' },
+  business: { cat: 'cercle', icon: 'storefront-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -122,6 +123,7 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   family: '/cercle/family/new',
   connect: '/cercle?connect=1',
   group: '/cercle?add=group',
+  business: '/cercle?add=business',
   ...FORM_ROUTES,
 }
 
@@ -545,6 +547,7 @@ export function AddSheet({
       family: t.cercle.familyBuild,
       connect: t.cercle.connectTwo,
       group: t.cercle.addGroup,
+      business: t.cercle.business.add,
     }
     return labels[m]
   }

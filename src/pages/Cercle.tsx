@@ -31,6 +31,7 @@ import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { BusinessesTab } from '../components/cercle/BusinessesTab'
+import { BusinessForm } from '../components/cercle/BusinessForm'
 import { SubTabs } from '../components/SubTabs'
 import { MemberSwitcher } from '../components/MemberSwitcher'
 import { FaceSelect } from '../components/FaceSelect'
@@ -163,6 +164,9 @@ function CercleParent() {
   // default). Drives both the Liste subtitles and the Liens (ego) centre.
   const [focusId, setFocusId] = useState<string | null>(null)
   const [addingGroup, setAddingGroup] = useState(false)
+  // The ＋ "Nouveau commerce" tile opens the BusinessForm here (page-level, like the
+  // group/connect modals) so it works from ANY cercle subtab, not just Business.
+  const [addingBusiness, setAddingBusiness] = useState(false)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   // The "Relier deux personnes" connector, opened (optionally seeded with one side)
   // from the ＋ chooser, a person's peek, or a family group header.
@@ -199,6 +203,7 @@ function CercleParent() {
   useEffect(() => {
     if (params.get('connect') === '1') setConnect({})
     else if (params.get('add') === 'group') setAddingGroup(true)
+    else if (params.get('add') === 'business') setAddingBusiness(true)
     else return
     const next = new URLSearchParams(params)
     next.delete('connect')
@@ -529,6 +534,12 @@ function CercleParent() {
       {/* Create a named group — opened from the ＋ chooser (?add=group). */}
       <Modal open={addingGroup} onClose={() => setAddingGroup(false)} title={t.cercle.addGroup}>
         <GroupForm submitLabel={t.cercle.addGroup} onSubmit={createGroup} onCancel={() => setAddingGroup(false)} />
+      </Modal>
+
+      {/* Add a household service / vendor — opened from the ＋ chooser (?add=business),
+          so a new business is reachable from any cercle subtab, not just Business. */}
+      <Modal open={addingBusiness} onClose={() => setAddingBusiness(false)} title={t.cercle.business.add}>
+        <BusinessForm onSaved={() => setAddingBusiness(false)} onCancel={() => setAddingBusiness(false)} />
       </Modal>
 
 

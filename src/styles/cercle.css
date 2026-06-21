@@ -1017,10 +1017,6 @@
   color: var(--ink-soft);
   margin: 0.1rem 0 0.5rem;
 }
-.cercle-business__add {
-  align-self: flex-start;
-  margin-bottom: 0.4rem;
-}
 /* The row avatar — a card photo or the storefront glyph on a tinted disc. */
 .cercle-business__av {
   flex: 0 0 auto;

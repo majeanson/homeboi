@@ -153,4 +153,9 @@ export const ADD_HELP: Record<string, AddHelp> = {
     point: 6,
     body: { fr: 'Crée un groupe nommé (Famille Tremblay, Collègues…) avec sa couleur.', en: 'Create a named group (Tremblay family, Coworkers…) with its colour.' },
   },
+  business: {
+    card: 'cercle',
+    point: 10,
+    body: { fr: 'Ajoute un commerce ou service (vét, plombier, garderie) : catégorie, téléphone, adresse, carte d’affaires.', en: 'Add a business or service (vet, plumber, daycare): category, phone, address, business card.' },
+  },
 }

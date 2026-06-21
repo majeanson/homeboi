@@ -30,7 +30,9 @@ export function BusinessesTab({ help }: { help?: HelpMode }) {
   const ro = isGuest()
   const bz = t.cercle.business
 
-  const [adding, setAdding] = useState(false)
+  // Adding a business is the ＋ FAB's job now (the cercle chooser's "Nouveau commerce"
+  // tile → page-level modal), like person/family/group/connect — so the tab carries no
+  // add button of its own. Editing still lives here, reached from a business's peek.
   const [editing, setEditing] = useState<Business | null>(null)
 
   const { data } = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<{ businesses: Business[] }>('businesses'), ...live })
@@ -57,12 +59,6 @@ export function BusinessesTab({ help }: { help?: HelpMode }) {
       </HelpTitle>
       {help?.bubbleFor('business')}
       <p className="cercle-business__hint mono">{bz.addHint}</p>
-
-      {!ro && (
-        <button type="button" className="btn btn--ghost cercle-business__add" onClick={() => setAdding(true)}>
-          <InlineIcon name="plus-bold" size={16} /> {bz.add}
-        </button>
-      )}
 
       {shown.length === 0 ? (
         <EmptyState>{bz.empty}</EmptyState>
@@ -100,9 +96,6 @@ export function BusinessesTab({ help }: { help?: HelpMode }) {
         })
       )}
 
-      <Modal open={adding} onClose={() => setAdding(false)} title={bz.add}>
-        <BusinessForm onSaved={() => setAdding(false)} onCancel={() => setAdding(false)} />
-      </Modal>
       <Modal open={!!editing} onClose={() => setEditing(null)} title={bz.edit}>
         {editing && <BusinessForm value={editing} onSaved={() => setEditing(null)} onCancel={() => setEditing(null)} />}
       </Modal>

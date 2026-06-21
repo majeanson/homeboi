@@ -40,13 +40,17 @@ export type AddSheetMode =
   | 'pantry'
   | 'reserve'
   | 'cook'
-  // « Le cercle » ＋ chooser — all four are navigate-only (NAV_TARGET): a person
-  // form, the family builder, and the connect / new-group flows opened on /cercle
-  // via a ?param the page reads. No in-sheet form.
+  // « Le cercle » ＋ chooser — all navigate-only (NAV_TARGET): a person form, the
+  // family builder, the connect / new-group flows, and a new business — opened on
+  // /cercle via a ?param the page reads. No in-sheet form.
   | 'person'
   | 'family'
   | 'connect'
   | 'group'
+  // Add a household service / vendor (vet, plumber, business card) — opens the
+  // BusinessForm modal on /cercle via ?add=business. The Business tab no longer
+  // carries its own add button; the ＋ FAB is the single entry, like the others.
+  | 'business'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
 // action → the sheet skips the chooser and opens that form directly. Liste's ＋
@@ -70,9 +74,11 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // resolved in-sheet — see the `routine-pick` panel in AddSheet.
   routines: ['routine-pick'],
   liste: ['list-item', 'quick-add', 'flyer', 'auto-pick', 'share'],
-  // Le cercle: add a person, build a family, connect two people, or a new group —
-  // all navigate-only tiles (the page opens connect/group from a ?param).
-  cercle: ['person', 'family', 'connect', 'group'],
+  // Le cercle: add a person, build a family, connect two people, a new group, or a
+  // business — all navigate-only tiles (the page opens connect/group/business from a
+  // ?param). Every cercle subtab (Famille/Social/Notes/Business) offers the full set,
+  // so e.g. "create a business" is reachable from the ＋ on any of them.
+  cercle: ['person', 'family', 'connect', 'group', 'business'],
 }
 
 // The operator-grade forms a kiosk that isn't signed in never sees as ＋ tiles.
