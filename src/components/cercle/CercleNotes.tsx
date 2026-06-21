@@ -260,8 +260,11 @@ export function CercleNotes({
             const scopeChip = n.member_id === null ? fn.forFamily : (nameOf(n.member_id) ?? fn.scopeSelf)
             const when = formatDay(n.created_at, lang)
 
-            // Inline text edit — the row turns into the editor in place.
-            if (editingId === n.id && !media) {
+            // Inline text edit — the row turns into the editor in place. Text notes
+            // edit their body; audio/photo notes edit their NAME (the caption shown as
+            // the title), so a "Mémo vocal" can become "Liste d'épicerie de mémé". A
+            // drawing keeps the redraw flow instead, so it's excluded here.
+            if (editingId === n.id && media !== 'drawing') {
               return (
                 <li key={n.id} className="cnote cnote--editing" style={css}>
                   <EditField
@@ -269,11 +272,12 @@ export function CercleNotes({
                     onChange={setEditText}
                     onSubmit={(v) => saveEdit(n, v)}
                     onCancel={() => setEditingId(null)}
-                    multiline
+                    multiline={!media}
                     maxLength={2000}
                     autoFocus
+                    placeholder={media ? fn.rename : fn.placeholder}
                     submitIcon="check-bold"
-                    ariaLabel={fn.edit}
+                    ariaLabel={media ? fn.rename : fn.edit}
                   />
                 </li>
               )
@@ -331,6 +335,21 @@ export function CercleNotes({
                   <span className="cnote__actions">
                     {media === 'drawing' && (
                       <button type="button" className="cnote__act" onClick={() => setRedraw(n)} aria-label={fn.edit}>
+                        <Icon name="pencil-simple-bold" size={15} />
+                      </button>
+                    )}
+                    {/* Rename: audio + photo notes have no inline tap-to-edit (tapping
+                        plays / zooms), so a pencil opens the in-place name editor. */}
+                    {(media === 'audio' || media === 'image') && (
+                      <button
+                        type="button"
+                        className="cnote__act"
+                        onClick={() => {
+                          setEditingId(n.id)
+                          setEditText(n.text)
+                        }}
+                        aria-label={fn.rename}
+                      >
                         <Icon name="pencil-simple-bold" size={15} />
                       </button>
                     )}
