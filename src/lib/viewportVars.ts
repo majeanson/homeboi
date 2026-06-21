@@ -95,36 +95,18 @@ export function trackVisualViewport(): void {
     // in. We fire only on the transition, not every scroll frame, so a user's
     // manual scroll while typing isn't fought.
     if (open && !kbOpen) pinFocused()
-    // Falling edge — the keyboard just LEFT while a text field is still focused.
-    // The only way to get here is the iPad "Hide Keyboard" key (bottom-right of
-    // the OSK): it dismisses the keyboard WITHOUT blurring, so no `focusout`
-    // fires and iOS doesn't restore the scroll it pushed up to reveal the field.
-    // The page is left stranded scrolled-up with a blank band where the keyboard
-    // was — most visible in landscape, where the OSK had eaten most of the
-    // screen. Blur the still-focused field so iOS unwinds that scroll and we fall
-    // through the known-good `focusout` recompute (a normal tap-away already
-    // blurred first → activeElement isn't editable here → this is a no-op for it).
-    // A hardware keyboard never opens the OSK, so there's no falling edge and
-    // typing on it is untouched.
-    else if (!open && kbOpen) {
-      // …but a single-frame DIP in the computed inset reads as "closed" too. It
-      // happens when you focus a field at the BOTTOM of a page: the rubber-band /
-      // pin-scroll nudges vv.offsetTop (which this inset subtracts), or the
-      // address bar's show races vv.height — worst with a combobox dropdown that
-      // grows the layout on focus, creating the scroll room for it. Blurring on
-      // that transient nukes the focus the user just placed → the keyboard
-      // dismisses and the dropdown snaps shut before they can type. So CONFIRM the
-      // close held: re-read the inset a moment later and only blur if the keyboard
-      // is really still gone (the genuine "Hide Keyboard" case stays gone).
-      const el = document.activeElement
-      if (isEditable(el)) {
-        setTimeout(() => {
-          if (document.activeElement !== el) return
-          const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
-          if (inset <= KB_THRESHOLD) el.blur()
-        }, 250)
-      }
-    }
+    // NOTE — we deliberately NEVER programmatically blur the focused field here.
+    // An earlier version blurred it on the "falling edge" (keyboard gone, field
+    // still focused) to unwind the stranded scroll the iPad "Hide Keyboard" key
+    // leaves behind. But the computed keyboard inset is noisy on real devices and
+    // dips below the threshold for a frame or two whenever a combobox dropdown or a
+    // modal grows the layout on focus — so that blur could fire WHILE the user was
+    // typing. Dismissing the field, paired with a modal focus-trap or any re-focus,
+    // produced a rapid keyboard open/close loop that made inputs (login, the cercle
+    // "Relier" pickers) impossible to use. The vars above (--vvh/--kb/.kb-open)
+    // already reset on a genuine close — which is what full-screen scenes bind to —
+    // so the only thing lost is the rare cosmetic stranded-scroll, a far smaller
+    // cost than a flickering keyboard. The app now never dismisses a live keyboard.
     kbOpen = open
   }
   const schedule = () => {
