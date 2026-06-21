@@ -11,6 +11,7 @@ import {
   familyLinksFromMatrix,
   dedupeNewLinks,
   closedLinks,
+  friendLinksFromGroups,
   parsePersonKey,
   personKey,
   daysUntilBirthday,
@@ -376,4 +377,57 @@ describe('closedLinks (relationship closure / propagation)', () => {
     )
     expect(ac?.id.startsWith('derived:')).toBe(true)
   })
+})
+
+describe('friendLinksFromGroups (friends-kind group → friend ties)', () => {
+  const k = (id: string) => personKey('contact', id)
+  const friendGroup = (id: string, ...ids: string[]) => ({
+    id,
+    name: id,
+    kind: 'friends' as const,
+    colour: null,
+    memberKeys: new Set(ids.map(k)),
+  })
+
+  it('links every pair in a friends group as a friend, one undirected link per pair', () => {
+    const out = friendLinksFromGroups([friendGroup('g1', 'a', 'b', 'c')], [])
+    expect(out).toHaveLength(3) // a-b, a-c, b-c
+    expect(out.every((l) => l.type === 'friend' && l.reverseType === 'friend')).toBe(true)
+    expect(out.every((l) => l.id.startsWith('group-friend:'))).toBe(true)
+  })
+
+  it('only acts on friends-kind groups (family/work/other are ignored)', () => {
+    const groups = [
+      { id: 'fam', name: 'fam', kind: 'family' as const, colour: null, memberKeys: new Set([k('a'), k('b')]) },
+      { id: 'work', name: 'work', kind: 'work' as const, colour: null, memberKeys: new Set([k('c'), k('d')]) },
+    ]
+    expect(friendLinksFromGroups(groups, [])).toHaveLength(0)
+  })
+
+  it('skips a pair that already has a stored tie of any type (explicit wins)', () => {
+    const out = friendLinksFromGroups([friendGroup('g1', 'a', 'b', 'c')], [link('a', 'b', 'sibling')])
+    expect(out).toHaveLength(2) // a-b is already tied → only a-c and b-c
+    expect(out.some((l) => (l.personAId === 'a' && l.personBId === 'b') || (l.personAId === 'b' && l.personBId === 'a'))).toBe(false)
+  })
+
+  it('feeds through closedLinks as a passthrough friend tie', () => {
+    const people = ppl('a', 'b')
+    const groupFriends = friendLinksFromGroups([friendGroup('g1', 'a', 'b')], [])
+    const closed = closedLinks(people, [...groupFriends])
+    expect(relsOf(closed, 'a').has('friend:b')).toBe(true)
+  })
+
+  // relsOf + ppl are scoped to the closedLinks describe; mirror the tiny ones we need.
+  function relsOf(closed: ContactLink[], id: string): Set<string> {
+    const key = k(id)
+    const out = new Set<string>()
+    for (const l of closed) {
+      const a = personKey(l.personAKind, l.personAId)
+      const b = personKey(l.personBKind, l.personBId)
+      if (a === key) out.add(`${l.type}:${parsePersonKey(b).id}`)
+      else if (b === key) out.add(`${l.reverseType}:${parsePersonKey(a).id}`)
+    }
+    return out
+  }
+  const ppl = (...ids: string[]) => buildPeople(ids.map((id) => contact(id, id)), [])
 })

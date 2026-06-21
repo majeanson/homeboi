@@ -44,6 +44,7 @@ import {
   type ContactGroupRaw,
   type ContactGroup,
   buildGroups,
+  friendLinksFromGroups,
   buildFamilyGrouping,
   unifyCircle,
   personKey,
@@ -221,7 +222,12 @@ function CercleParent() {
   // grandparents, parent-of-parent = grandparent, aunt/uncle, cousins) so a tie
   // added at one point propagates to the whole family. Display + tree + ego read
   // this richer set; grouping keeps raw links (the closure doesn't change connectivity).
-  const links = useMemo(() => closedLinks(unified.people, unified.links), [unified])
+  // Co-membership in a « friends »-kind group also implies a friend tie, so people you
+  // grouped together surface as friends in Liens without drawing each edge by hand.
+  const links = useMemo(() => {
+    const groupFriends = friendLinksFromGroups(buildGroups(unified.groups), unified.links)
+    return closedLinks(unified.people, [...unified.links, ...groupFriends])
+  }, [unified])
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
   const contactsById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
 

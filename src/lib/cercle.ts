@@ -740,6 +740,49 @@ export function buildGroups(raw: ContactGroupRaw[]): ContactGroup[] {
   }))
 }
 
+// Putting people together in a « friends »-kind named group MEANS they know one
+// another, so surface that as a friend tie in the Liens view + each person's
+// relationship row — without making you draw every edge by hand. Emits ONE
+// undirected friend ContactLink per pair of members in each friends-kind group,
+// skipping any pair that already carries a stored tie of ANY type (an explicit
+// relationship — even « colleague » or a family link — always wins). Pure +
+// deterministic; the synthetic links carry a `group-friend:` id so consumers can
+// tell them from stored ones, mirroring closedLinks' `derived:` convention. Feed
+// the result alongside the stored links into closedLinks (friend is a social tie,
+// so it passes the closure through unchanged and never touches the family math).
+export function friendLinksFromGroups(groups: ContactGroup[], existing: ContactLink[]): ContactLink[] {
+  const pair = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`)
+  const have = new Set(
+    existing.map((l) => pair(personKey(l.personAKind, l.personAId), personKey(l.personBKind, l.personBId))),
+  )
+  const out: ContactLink[] = []
+  for (const g of groups) {
+    if (g.kind !== 'friends') continue
+    const keys = [...g.memberKeys].sort() // sorted → pairs already canonical (a < b)
+    for (let i = 0; i < keys.length; i++) {
+      for (let j = i + 1; j < keys.length; j++) {
+        const pk = pair(keys[i], keys[j])
+        if (have.has(pk)) continue
+        have.add(pk)
+        const a = parsePersonKey(keys[i])
+        const b = parsePersonKey(keys[j])
+        out.push({
+          id: `group-friend:${g.id}:${pk}`,
+          personAId: a.id,
+          personAKind: a.kind,
+          personBId: b.id,
+          personBKind: b.kind,
+          type: 'friend',
+          reverseType: 'friend',
+          label: null,
+          notes: null,
+        })
+      }
+    }
+  }
+  return out
+}
+
 // ---- Family grouping (shared by the relationship views) ---------------------
 
 // Per-person family grouping consumed by BOTH relationship views (Liens + Arbre):
