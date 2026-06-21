@@ -287,15 +287,14 @@
   color: var(--ink-soft);
   text-align: center;
 }
-/* Both relationship graphs (ego ring + family tree) carry an intrinsic
-   width/height. Fit the WHOLE graph within the available area — scale DOWN to the
-   column width (phone) or to the height left below the section/view controls (wall),
-   centred, never stretched up to the full wall width. Stretching to width made the
-   nodes balloon until the lower ring / lowest generation dropped below a kiosk's
-   fold (was width:100%). align-self:center opts out of the parent's align-items:
-   stretch (which would otherwise re-stretch an auto-width child back to full width). */
-.cercle-ego__svg,
-.cercle-tree__svg {
+/* The ego ring carries an intrinsic width/height. Fit the WHOLE graph within the
+   available area — scale DOWN to the column width (phone) or to the height left below
+   the section/view controls (wall), centred, never stretched up to the full wall
+   width. Stretching to width made the nodes balloon until the lower ring dropped
+   below a kiosk's fold (was width:100%). align-self:center opts out of the parent's
+   align-items:stretch (which would otherwise re-stretch an auto-width child back to
+   full width). */
+.cercle-ego__svg {
   display: block;
   align-self: center;
   width: auto;
@@ -303,8 +302,23 @@
   max-width: 100%;
   max-height: 60vh;
 }
-.cercle-tree {
-  overflow-x: auto; /* a very wide/deep tree still scrolls rather than squish */
+/* The Arbre lives inside a PanZoom (pinch / drag / +−). Give the zoom surface a
+   comfortable viewport height; the SVG fills it (viewBox + preserveAspectRatio meet),
+   so the whole stack of families fits at rest, then scales up on demand. */
+.cercle-tree__zoom {
+  height: 60vh;
+}
+.cercle-tree__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* A faint divider drawn in the gap between two stacked, disconnected family trees. */
+.tree-sep {
+  stroke: var(--line);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 8;
+  opacity: 0.7;
 }
 .cercle-tree__empty {
   padding: 2rem 1rem;

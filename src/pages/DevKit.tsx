@@ -54,6 +54,7 @@ import { IngredientLine } from '../components/IngredientLine'
 import { MeasureScoops } from '../components/MeasureScoops'
 import { findMeasures } from '../lib/measure'
 import { ZoomableImg } from '../components/ZoomableImg'
+import { PanZoom } from '../components/PanZoom'
 import { EntityDetailSheet } from '../components/detail/EntityDetailSheet'
 import { type DetailModel } from '../lib/detail'
 
@@ -1044,6 +1045,23 @@ export function DevKit() {
       render: () => (
         <Demo label="tap to lightbox (Esc / tap to close)">
           <ZoomableImg src={sampleImg} alt="exemple" className="recipe-thumb" />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'PanZoom',
+      file: 'components/PanZoom.tsx',
+      kw: 'pan zoom pinch drag graph svg arbre tree agrandir déplacer molette',
+      render: () => (
+        <Demo label="pinch / drag / wheel / +− to pan + zoom (fits at rest)">
+          <PanZoom className="devkit-panzoom" ariaLabel="exemple">
+            <svg viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', width: '100%', height: '100%' }}>
+              <rect x={1} y={1} width={318} height={198} fill="none" stroke="var(--line)" strokeWidth={2} rx={10} />
+              <circle cx={160} cy={100} r={56} fill="var(--berry-wash)" stroke="var(--berry)" strokeWidth={3} />
+              <text x={160} y={106} textAnchor="middle" fontSize={22} fill="var(--ink)">Zoom moi</text>
+            </svg>
+          </PanZoom>
         </Demo>
       ),
     },

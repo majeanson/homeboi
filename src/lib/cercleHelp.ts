@@ -16,7 +16,7 @@ export const CERCLE_HELP: Record<string, HelpEntry> = {
   // View switch (Liste / Liens / Arbre) — guide point 5 ("Trois vues").
   list: { card: 'cercle', point: 5, body: { fr: 'Le répertoire, regroupé par famille.', en: 'The directory, grouped by family.' } },
   links: { card: 'cercle', point: 5, body: { fr: 'Touche un visage : ses liens s’affichent autour, touche-en un autre pour recentrer.', en: 'Tap a face: their ties fan out; tap another to re-center.' } },
-  tree: { card: 'cercle', point: 5, body: { fr: 'L’arbre : les générations, les couples côte à côte.', en: 'The tree: generations, couples side by side.' } },
+  tree: { card: 'cercle', point: 5, body: { fr: 'L’arbre : les générations, les couples côte à côte. Pince ou glisse pour zoomer (ou les boutons +/−) ; les familles non reliées s’empilent chacune en son arbre.', en: 'The tree: generations, couples side by side. Pinch or drag to zoom (or the +/− buttons); unconnected families each stack as their own tree.' } },
   search: { card: 'cercle', point: 1, body: { fr: 'Cherche quelqu’un par son prénom OU son nom de famille.', en: 'Search someone by their first OR last name.' } },
   birthdays: { card: 'cercle', point: 7, body: { fr: 'Les anniversaires des 31 prochains jours, sans notification.', en: 'Birthdays in the next 31 days, no notification.' } },
   // Maisonnée card.

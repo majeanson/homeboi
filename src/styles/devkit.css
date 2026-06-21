@@ -244,3 +244,8 @@
 .devkit__link:hover {
   text-decoration: underline;
 }
+
+/* PanZoom specimen: give the surface a fixed demo height to pinch/drag within. */
+.devkit-panzoom {
+  height: 220px;
+}
