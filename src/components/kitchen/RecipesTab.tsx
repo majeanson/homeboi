@@ -347,8 +347,9 @@ export function RecipesTab({
                 </div>
               )}
               {/* Straight to the toddler picture cookbook (#45) — the same read-aloud,
-                  swipeable book the kid kitchen opens, here as a one-tap shortcut beside
-                  the Aa/Collections view toggle (full-screen scene at /kitchen/book). */}
+                  swipeable book the kid kitchen opens, here as a one-tap shortcut that
+                  sits as a third segment of the Aa/Collections toggle pill (full-screen
+                  scene at /kitchen/book). */}
               <button
                 type="button"
                 className="recipe-view-toggle__book"

@@ -673,32 +673,48 @@
 /* #11 collections — an "Aa vs Collections" view toggle inside the recipe book.
    A compact 2-segment control (reuses .subtabs): "Aa" = flat alphabetical list,
    "Collections" = the same list clustered into per-tag sections below. */
+/* The toggle is ONE pill: the wrapper draws the paper-deep frame, and the Aa /
+   Collections segments plus the book shortcut sit bare inside it so they read as a
+   single segmented control (rather than a detached square box beside the toggle). */
 .recipe-view-toggle {
-  display: flex;
+  display: inline-flex;
+  align-items: stretch;
   justify-content: flex-end;
-  align-items: center;
-  gap: 0.5rem;
+  gap: 2px;
   margin: 0 0 0.8rem;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
 }
-/* One-tap shortcut to the toddler picture cookbook, sized to match the mini
-   segmented control beside it (.subtabs--mini .subtabs__opt → 2.2rem tall). */
+/* Inside the shared frame the segment group goes frameless — the wrapper owns the
+   pill now, so Aa/Collections and the book sit flush as segments of one control. */
+.recipe-view-toggle .subtabs--mini {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+/* One-tap shortcut to the toddler picture cookbook (#45) — a third segment in the
+   same pill, sized + shaped like the Aa/Collections options beside it. */
 .recipe-view-toggle__book {
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
-  width: 2.2rem;
-  height: 2.2rem;
+  align-self: stretch;
+  width: 2.6rem;
+  min-height: 2.2rem;
   padding: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--card);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
   color: var(--ink-soft);
   cursor: pointer;
 }
 .recipe-view-toggle__book:hover,
 .recipe-view-toggle__book:focus-visible {
   color: var(--ink);
-  border-color: var(--line-strong, var(--line));
+  background: var(--paper);
 }
 .subtabs--mini {
   display: inline-flex;
