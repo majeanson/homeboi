@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
@@ -169,6 +169,28 @@ export function AddSheet({
   useEffect(() => {
     if (open) setMode(initialMode ?? defMode)
   }, [open, initialMode, defMode])
+
+  // When a tile is picked, its form renders BELOW the chooser grid — often below the
+  // fold on a phone, where it isn't obvious you have to scroll. So whenever the mode
+  // changes to an in-sheet form while a chooser is showing above it, bring that panel
+  // into view and move focus to it. We focus the panel WRAPPER (a tabindex'd div), not
+  // an input, on purpose: focusing an input would pop the mobile keyboard (see the
+  // modal conventions — never auto-open the keyboard).
+  const panelRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    // tiles.length is read on purpose without being a dep: a chooser of >1 tiles is
+    // what puts the form below the fold. We only want to (re)scroll when the picked
+    // mode changes, not when an async query nudges the tile count mid-form.
+    if (!open || !mode || tiles.length <= 1) return
+    const panel = panelRef.current
+    if (!panel) return
+    const id = requestAnimationFrame(() => {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      panel.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, open])
 
   const [busy, setBusy] = useState(false)
 
@@ -681,6 +703,11 @@ export function AddSheet({
           </div>
         )}
 
+        {/* The picked tile's form/panel. Wrapped so the mode-change effect can scroll
+            it into view + focus it (the chooser above can push it below the fold).
+            tabIndex -1 makes the wrapper programmatically focusable without being a
+            tab stop; outline is suppressed in CSS — the scroll-into-view is the cue. */}
+        <div ref={panelRef} tabIndex={-1} className="addsheet__panel">
         {mode === 'capture' && (
           <>
           <form onSubmit={submit}>
@@ -985,6 +1012,7 @@ export function AddSheet({
             )}
           </div>
         )}
+        </div>
     </Sheet>
   )
 }

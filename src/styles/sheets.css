@@ -782,6 +782,19 @@
   opacity: 0.45;
   cursor: default;
 }
+/* Wrapper around the picked tile's form/panel. When a tile is chosen its form
+   renders below the chooser grid; the mode-change effect scrolls this into view and
+   focuses it so it's obvious (it can otherwise sit below the fold on a phone). The
+   scroll-into-view IS the cue, so the programmatic focus draws no outline; a little
+   scroll-margin leaves breathing room above so it doesn't butt against the chooser. */
+.addsheet__panel {
+  scroll-margin-top: 12px;
+  scroll-margin-bottom: 12px;
+}
+.addsheet__panel:focus,
+.addsheet__panel:focus-visible {
+  outline: none;
+}
 /* "Planifier un repas" day picker — a wrap of day chips; tapping one opens that
    day's full Gérer sheet on the kitchen page. */
 .addsheet__days {

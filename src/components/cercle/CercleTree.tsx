@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useT } from '../../i18n'
 import { Avatar } from '../Avatar'
 import { EmptyState } from '../EmptyState'
-import { type Person, type ContactLink, generationOf, linkEndpoints, isFamilyRel } from '../../lib/cercle'
+import { type Person, type ContactLink, type FamilyGrouping, generationOf, linkEndpoints, isFamilyRel, discColour } from '../../lib/cercle'
 // (byKey lookups aren't needed here — the layout works off positions + placed[].)
 
 // « Le cercle » — Arbre (family tree). A generation-banded layout: people are
@@ -11,15 +11,10 @@ import { type Person, type ContactLink, generationOf, linkEndpoints, isFamilyRel
 // Blood relatives only (social ties live in Liste/Liens). Hand-rolled SVG, zero
 // deps — couples land on the same band; deep/blended trees stay readable because
 // the band model never forces a strict single-parent hierarchy.
-const ROW_H = 150
-const COL_W = 116
+const ROW_H = 168
+const COL_W = 128
 const MIN_W = 600
-const NODE = 60
-
-// Per-person family grouping (from the page): which cluster a person sits in, the
-// colour to tint their photoless disc (reusing Liste's family colours), and a stable
-// left→right order for the cluster. Keeps a family together within a generation band.
-export type TreeGrouping = Map<string, { group: string; colour: string | null; order: number }>
+const NODE = 64
 
 export function CercleTree({
   people,
@@ -30,7 +25,9 @@ export function CercleTree({
   people: Person[]
   links: ContactLink[]
   onOpen: (p: Person) => void
-  grouping?: TreeGrouping
+  // Per-person family grouping (shared with Liens) — tints discs with the directory's
+  // family colours and keeps a family clustered within a generation band.
+  grouping?: FamilyGrouping
 }) {
   const t = useT()
 
@@ -39,7 +36,10 @@ export function CercleTree({
     const placed = people.filter((p) => gen.has(p.key))
     if (placed.length === 0) return null
 
-    // Normalize generation → band index (0 = oldest at top).
+    // Bucket people by their TRUE generation (gen - minGen). The band number doubles
+    // as the vertical row, so an EMPTY generation leaves a real gap — a grandparent
+    // linked straight to a grandchild (no parent placed between) still lands two
+    // layers up, not adjacent. 0 = oldest at top.
     const minGen = Math.min(...placed.map((p) => gen.get(p.key)!))
     const bands = new Map<number, Person[]>()
     for (const p of placed) {
@@ -48,18 +48,21 @@ export function CercleTree({
       bands.get(band)!.push(p)
     }
     const bandIdx = [...bands.keys()].sort((a, b) => a - b)
+    const maxBand = bandIdx[bandIdx.length - 1]
     const maxCount = Math.max(...[...bands.values()].map((b) => b.length))
+    // Fill the available width: spread the widest band across the full canvas, with a
+    // comfortable floor so a small family isn't a lonely speck.
     const width = Math.max(MIN_W, maxCount * COL_W)
-    const height = bandIdx.length * ROW_H
+    const height = (maxBand + 1) * ROW_H
 
     // Order within a band: cluster by family group (same `order`, so a family sits
     // together across bands), then alphabetical. Ungrouped people sort last.
     const groupOrder = (p: Person) => grouping?.get(p.key)?.order ?? Number.MAX_SAFE_INTEGER
     const pos = new Map<string, { x: number; y: number }>()
-    bandIdx.forEach((band, row) => {
+    bandIdx.forEach((band) => {
       const row3 = [...bands.get(band)!].sort((a, b) => groupOrder(a) - groupOrder(b) || a.name.localeCompare(b.name))
       row3.forEach((p, i) => {
-        pos.set(p.key, { x: ((i + 0.5) / row3.length) * width, y: row * ROW_H + ROW_H / 2 })
+        pos.set(p.key, { x: ((i + 0.5) / row3.length) * width, y: band * ROW_H + ROW_H / 2 })
       })
     })
 
@@ -99,9 +102,10 @@ export function CercleTree({
             >
               <foreignObject x={xy.x - NODE / 2} y={xy.y - NODE / 2} width={NODE} height={NODE + 22}>
                 <div className="ego-node__inner">
-                  {/* Same family colour as Liste: a named group's colour tints a
-                      photoless disc; the person's own photo/colour wins otherwise. */}
-                  <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={grouping?.get(p.key)?.colour ?? p.colour} name={p.firstName} size={NODE} />
+                  {/* Same family colour as Liste/Liens (shared discColour): a named
+                      group's colour tints a photoless disc; the person's own
+                      photo/colour wins otherwise. */}
+                  <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={discColour(grouping, p)} name={p.firstName} size={NODE} />
                   <span className="ego-node__name">{p.firstName}</span>
                 </div>
               </foreignObject>

@@ -740,6 +740,41 @@ export function buildGroups(raw: ContactGroupRaw[]): ContactGroup[] {
   }))
 }
 
+// ---- Family grouping (shared by the relationship views) ---------------------
+
+// Per-person family grouping consumed by BOTH relationship views (Liens + Arbre):
+//   • `group`  — the cluster a person belongs to (so the Arbre can keep a family
+//                together within a generation band)
+//   • `colour` — the disc tint, REUSING the directory's family colours: a named
+//                group's colour wins; the Maisonnée + auto-detected families keep
+//                each member's own colour (matching Liste's rows)
+//   • `order`  — a stable left→right position for the cluster
+// One source of truth so Liste, Liens and Arbre never drift on how a family reads.
+export type FamilyGrouping = Map<string, { group: string; colour: string | null; order: number }>
+
+// Build the grouping from the same three buckets the directory partitions by. Named
+// groups take precedence (that's where Liste paints colour), then the Maisonnée,
+// then auto-detected families. Pure + deterministic.
+export function buildFamilyGrouping(
+  householdKeys: Set<string>,
+  namedGroups: ContactGroup[],
+  familyGroups: FamilyGroup[],
+): FamilyGrouping {
+  const m: FamilyGrouping = new Map()
+  let next = 0
+  const orderOf = new Map<string, number>()
+  const ord = (id: string) => orderOf.get(id) ?? (orderOf.set(id, next), next++)
+  for (const g of namedGroups) for (const k of g.memberKeys) if (!m.has(k)) m.set(k, { group: g.id, colour: g.colour, order: ord(g.id) })
+  for (const k of householdKeys) if (!m.has(k)) m.set(k, { group: 'household', colour: null, order: ord('household') })
+  for (const g of familyGroups) for (const k of g.memberKeys) if (!m.has(k)) m.set(k, { group: g.id, colour: null, order: ord(g.id) })
+  return m
+}
+
+// The disc colour for a person in the relationship views: the family group's colour
+// when set, else the person's own. The one resolver both views share.
+export const discColour = (grouping: FamilyGrouping | undefined, p: Person): string | null =>
+  grouping?.get(p.key)?.colour ?? p.colour
+
 // ---- Inference suggestions --------------------------------------------------
 
 export interface InferredLink {

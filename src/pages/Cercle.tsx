@@ -21,7 +21,7 @@ import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { useSpeak } from '../lib/speak'
 import { downloadVCard } from '../lib/vcard'
 import { CercleEgo } from '../components/cercle/CercleEgo'
-import { CercleTree, type TreeGrouping } from '../components/cercle/CercleTree'
+import { CercleTree } from '../components/cercle/CercleTree'
 import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
@@ -41,6 +41,7 @@ import {
   type ContactGroupRaw,
   type ContactGroup,
   buildGroups,
+  buildFamilyGrouping,
   unifyCircle,
   personKey,
   detectFamilyGroups,
@@ -298,21 +299,13 @@ function CercleParent() {
     [people, familyKeySet, section],
   )
 
-  // Per-person family grouping for the Arbre: the cluster a person belongs to (so the
-  // tree keeps a family together within a generation band) + the colour to tint their
-  // disc with, REUSING Liste's rule (a named group's colour wins; Maisonnée + auto
-  // families keep each member's own colour). `order` gives groups a stable left→right
-  // position. Named groups take precedence (that's where Liste paints colour).
-  const treeGrouping = useMemo<TreeGrouping>(() => {
-    const m: TreeGrouping = new Map()
-    let next = 0
-    const orderOf = new Map<string, number>()
-    const ord = (id: string) => orderOf.get(id) ?? (orderOf.set(id, next), next++)
-    for (const g of namedGroups) for (const k of g.memberKeys) if (!m.has(k)) m.set(k, { group: g.id, colour: g.colour, order: ord(g.id) })
-    for (const k of householdKeys) if (!m.has(k)) m.set(k, { group: 'household', colour: null, order: ord('household') })
-    for (const g of familyGroups) for (const k of g.memberKeys) if (!m.has(k)) m.set(k, { group: g.id, colour: null, order: ord(g.id) })
-    return m
-  }, [namedGroups, householdKeys, familyGroups])
+  // Per-person family grouping shared by BOTH relationship views (Liens + Arbre):
+  // the cluster a person sits in + the disc colour (reusing the directory's family
+  // colours). One helper so the two views never drift. See buildFamilyGrouping.
+  const grouping = useMemo(
+    () => buildFamilyGrouping(householdKeys, namedGroups, familyGroups),
+    [householdKeys, namedGroups, familyGroups],
+  )
 
   // The focus lens, resolved: the focused member's person key + display name. A
   // member deleted while focused silently falls back to Maisonnée (no match).
@@ -527,9 +520,9 @@ function CercleParent() {
           )}
 
           {view === 'links' ? (
-            <CercleEgo people={sectionPeople} links={links} onOpen={openPerson} focusKey={focusKey} />
+            <CercleEgo people={sectionPeople} links={links} onOpen={openPerson} focusKey={focusKey} grouping={grouping} />
           ) : view === 'tree' ? (
-            <CercleTree people={sectionPeople} links={links} onOpen={openPerson} grouping={treeGrouping} />
+            <CercleTree people={sectionPeople} links={links} onOpen={openPerson} grouping={grouping} />
           ) : (
             <>
               <SectionIntro card="cercle" />

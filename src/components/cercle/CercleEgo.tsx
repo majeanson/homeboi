@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { Avatar } from '../Avatar'
 import { EmptyState } from '../EmptyState'
-import { type Person, type ContactLink, personKey, genderedRelLabel } from '../../lib/cercle'
+import { type Person, type ContactLink, type FamilyGrouping, personKey, genderedRelLabel, discColour } from '../../lib/cercle'
 
 // « Le cercle » — Liens (ego view). The chosen person sits at the centre; everyone
 // DIRECTLY linked to them fans out on a ring, each connector LABELLED with the
@@ -21,6 +21,7 @@ export function CercleEgo({
   links,
   onOpen,
   focusKey: focusKeyProp,
+  grouping,
 }: {
   people: Person[]
   links: ContactLink[]
@@ -28,6 +29,9 @@ export function CercleEgo({
   // Optional external focus (the page's member "focus lens"): seeds + drives the
   // centre. Tapping a neighbour still re-centres locally on top of it.
   focusKey?: string | null
+  // Per-person family grouping (shared with the Arbre) — tints each disc with the
+  // directory's family colours via discColour, so a family reads as one block here too.
+  grouping?: FamilyGrouping
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -86,7 +90,8 @@ export function CercleEgo({
       <g className="ego-node" role="button" tabIndex={0} onClick={onClick} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onClick())}>
         <foreignObject x={x - half} y={y - half} width={size} height={size + 22}>
           <div className="ego-node__inner">
-            <Avatar kind={person.avatarKind} photo={person.avatarRef} colour={person.colour} name={person.firstName} size={size} />
+            {/* Same family colour as Liste/Arbre (shared discColour). */}
+            <Avatar kind={person.avatarKind} photo={person.avatarRef} colour={discColour(grouping, person)} name={person.firstName} size={size} />
             <span className="ego-node__name">{person.firstName}</span>
           </div>
         </foreignObject>
