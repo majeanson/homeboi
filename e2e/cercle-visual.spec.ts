@@ -20,6 +20,10 @@ const STATES = [
   { name: 'family-tree', q: 'section=family&view=tree', ready: '.cercle-tree__svg' },
   { name: 'family-links', q: 'section=family&view=links', ready: '.cercle-ego__svg' },
   { name: 'social-list', q: 'section=social&view=list', ready: '.cercle-group' },
+  // Social Liens/Arbre render the whole social WEB (CercleWeb): clusters of friends
+  // (Liens) and the loose blob (Arbre), both inside the PanZoom (.cercle-tree__svg).
+  { name: 'social-links', q: 'section=social&view=links', ready: '.cercle-web .cercle-tree__svg' },
+  { name: 'social-tree', q: 'section=social&view=tree', ready: '.cercle-web .cercle-tree__svg' },
 ]
 
 async function settle(page: Page, ready: string) {

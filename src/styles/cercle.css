@@ -324,6 +324,16 @@
   padding: 2rem 1rem;
   text-align: center;
 }
+/* « Le cercle » — Social web (CercleWeb). The faint halo behind a "circle of
+   friends" (a connected cluster) in the clusters layout, so each group reads as
+   its own ring. Reuses the tree's PanZoom surface + node/edge look. */
+.web-cluster {
+  fill: color-mix(in srgb, var(--teal-wash) 55%, transparent);
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 7;
+  opacity: 0.7;
+}
 
 /* SVG nodes (shared by ego + tree) */
 .ego-node {

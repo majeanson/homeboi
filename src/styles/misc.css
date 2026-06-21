@@ -71,23 +71,47 @@
   will-change: transform;
 }
 /* The +− / reset cluster floats over the surface's top-right corner — clear of the
-   ＋ quick-add FAB, which hovers over the bottom-right and would otherwise cover it. */
+   ＋ quick-add FAB, which hovers over the bottom-right and would otherwise cover it.
+   A frosted pill of three round, quiet icon buttons (the surface shows through), so
+   it reads as a calm overlay control rather than a heavy toolbar. */
 .panzoom__controls {
   position: absolute;
-  right: 0.5rem;
-  top: 0.5rem;
+  right: 0.6rem;
+  top: 0.6rem;
   display: flex;
-  gap: 0.3rem;
+  gap: 0.15rem;
   padding: 0.25rem;
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  backdrop-filter: blur(10px) saturate(1.15);
+  border: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
   border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 .panzoom__controls .btn--icon {
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.08s ease;
+}
+.panzoom__controls .btn--icon:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  color: var(--ink);
+}
+.panzoom__controls .btn--icon:active:not(:disabled) {
+  transform: scale(0.9);
+}
+.panzoom__controls .btn--icon:disabled {
+  opacity: 0.32;
+  background: transparent;
 }
 
 /* ---- Recurrence picker (event form) -------------------------------------- */

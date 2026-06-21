@@ -71,6 +71,9 @@
 .ambient__center {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   padding: 1.5rem;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
@@ -89,15 +92,29 @@
   opacity: 0.92;
   margin-top: 0.4rem;
 }
+/* The "next up" stack — meal, next event, routine of the moment. A faint glassy
+   pill was hard to read across a room, so these now reuse the app's meal/routine
+   card look: a solid card surface tinted by the item's colour (--tint), the same
+   recipe as .nownext__focus / .routine-card. Dark ink on the light card, no veil
+   text-shadow — it reads exactly like the cards in the app. */
 .ambient__next {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-top: 1.4rem;
-  padding: 0.5rem 0.9rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  font-size: clamp(0.9rem, 2.4vw, 1.2rem);
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-lg, 18px);
+  background: color-mix(in srgb, var(--tint, var(--sky)) 10%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--tint, var(--sky)) 32%, var(--card));
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  text-shadow: none;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1rem, 2.6vw, 1.4rem);
+}
+.ambient__next:first-of-type {
+  margin-top: 1.6rem;
 }
 .ambient__wake {
   position: absolute;

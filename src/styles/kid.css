@@ -482,7 +482,9 @@
 }
 .kid-exit-modal {
   width: min(360px, 100%);
-  background: var(--bg);
+  /* --bg is not a defined token (it resolved to nothing → a see-through modal).
+     Use the elevated card surface every other dialog uses, so the gate is solid. */
+  background: var(--card);
   color: var(--ink);
   border-radius: var(--radius-lg, 18px);
   box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.25));
@@ -503,7 +505,7 @@
   padding: 12px 14px;
   border: 2px solid color-mix(in srgb, var(--ink) 20%, transparent);
   border-radius: var(--radius, 12px);
-  background: var(--bg);
+  background: var(--card);
   color: var(--ink);
   width: 100%;
 }

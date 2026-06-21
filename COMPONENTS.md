@@ -74,7 +74,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | **IngredientLine** | `components/IngredientLine.tsx` | Recipe line with tappable measure pills; `scoops` adds the fill-circle drawing. Colours come from `lib/measurePrefs` (customizable in Réglages ▸ Affichage). |
 | **MeasureScoops** | `components/MeasureScoops.tsx` | A measure drawn as colour-coded fill circles — one solid per whole scoop, a part-filled circle for a fraction ("2 c. à soupe" = 2 circles; "1½ tasse" = 1 full + ½). Tap to hear. Used by `IngredientLine` (Cook-mode toddler + split/focus views). |
 | **ZoomableImg** | `components/ZoomableImg.tsx` | Tap-to-lightbox image. |
-| **PanZoom** | `components/PanZoom.tsx` | Inline pinch / drag / wheel / +−·reset pan-and-zoom surface for any fit-to-box child (an SVG graph, a diagram). The child fills the surface (`<svg width="100%" height="100%">` + `viewBox` + `preserveAspectRatio="xMidYMid meet"`) so it fits at scale 1; the transform (kept in a ref, written straight to the node — smooth, no re-render per move) grows it. Pan is clamped so the content can't drift out of view. Native pinch is locked app-wide, so the floating +−·reset cluster is the kiosk-safe path. Used by the cercle **Arbre** (`CercleTree`). |
+| **PanZoom** | `components/PanZoom.tsx` | Inline pinch / drag / wheel / +−·reset pan-and-zoom surface for any fit-to-box child (an SVG graph, a diagram). The child fills the surface (`<svg width="100%" height="100%">` + `viewBox` + `preserveAspectRatio="xMidYMid meet"`) so it fits at scale 1; the transform (kept in a ref, written straight to the node — smooth, no re-render per move) grows it. Pan is clamped so the content can't drift out of view. Native pinch is locked app-wide, so the floating +−·reset cluster is the kiosk-safe path (a frosted pill of round, quiet icon buttons). Used by the cercle **Arbre** (`CercleTree`) and the Social **web** (`CercleWeb`). |
 | **FeatureMap** | `components/FeatureMap.tsx` | THE "everything Babillard does" themed jump-grid — one calm tile per theme (Les cinq sections · Au quotidien · Cuisine & épicerie · Appareils & affichage · Intelligence & calme · Réglages). Backed by the SINGLE shared taxonomy `CONCEPT_THEMES` / `FEATURE_MAP_TILES` in `lib/guideContent` (same source the Guide's concept sub-clustering uses, so the map and the cards never drift). `onSelect(key)` lets the caller decide what a tile does: the **Guide** (`operator/guide.tsx`) scrolls to the matching `guide-th-<key>` block; the Board **WelcomeCard** navigates to `/settings?tab=guide&theme=<key>`. Add a new feature by extending the taxonomy — never fork a parallel list. |
 | **WelcomeCard** | `components/WelcomeCard.tsx` | The Board first-run card for a brand-new household: a 3-step setup checklist ("Ajouter la famille" → "Choisir les repas" → "Jumeler une tablette", links to the right Réglages tab) + the **FeatureMap** for discovery. "Add the family" auto-checks off the live member list; the rest check on tap-through. Calm: dismissible ("Plus tard"), auto-hides once every step is done, never in the toddler lens. Persists `{dismissed, done[]}` to `localStorage` (`babillard-welcome`, mirroring SectionIntro's shape). Signup now lands on `/board` so it greets the new household. |
 
@@ -156,7 +156,12 @@ kind `contact|member`; server `ownsPersons` validates each side). New pieces: `B
 the contact form AND Réglages ▸ Membres so a family links its OWN members), and a `Liste / Liens /
 Arbre` view switch on `/cercle` (`useTabParam`): `CercleEgo` (tap-to-focus ego view) + `CercleTree`
 (generation-banded family tree) — both **hand-rolled SVG, zero deps** (research: a force-directed
-graph is the wrong tool at this scale). Domain helpers `detectFamilyGroups`/`generationOf` operate on
+graph is the wrong tool at this scale). In the **Social** section those two are replaced by
+`CercleWeb` (`components/cercle/CercleWeb.tsx`): the WHOLE social graph at once (no single focus, no
+relationship-type filter) so you see ALL the circles of friends, not just one person's. Same
+`PanZoom` + node/edge look as the Arbre, two layouts off one graph — `mode='clusters'` (Liens: each
+connected component is a halo'd ring, loose people strip below) and `mode='blob'` (Arbre: one
+phyllotaxis cloud with every tie drawn). Domain helpers `detectFamilyGroups`/`generationOf` operate on
 composite keys; deleting a member cascades its cercle links.
 
 Phase 4 added **`unifyCircle`** (a member + its hard-linked contact collapse to ONE

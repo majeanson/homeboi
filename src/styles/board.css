@@ -97,9 +97,11 @@
   padding: 0.9rem 1rem 1.1rem;
   box-shadow: var(--shadow-sm);
 }
-/* The photo frame closes the board as a full-width band beneath the columns. */
+/* The photo frame closes the board as a full-width band beneath the columns —
+   give it a breath of top margin so it sits apart from the bento tiles above. */
 .board-grid > .photo-frame {
   column-span: all;
+  margin-top: 1.25rem;
 }
 @media (max-width: 680px) {
   .board-wall {

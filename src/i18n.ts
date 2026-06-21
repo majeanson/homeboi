@@ -353,6 +353,7 @@ export const FR = {
     tomorrowClear: 'Rien de prévu demain.',
     laneClear: 'Libre',
     kidAllClear: 'Rien de prévu. Belle journée !',
+    shufflePhoto: 'Une autre photo',
   },
   boardView: {
     label: 'Vue du babillard',
@@ -736,6 +737,8 @@ export const FR = {
     focusSelf: 'La personne au centre',
     focusNone: 'Aucun lien connu',
     egoHint: 'Touche un visage pour le mettre au centre',
+    webHint: 'Tous les cercles d’amis et leurs liens — touche un visage pour l’ouvrir',
+    blobHint: 'Tout le réseau social d’un coup — pince pour zoomer',
     treeEmpty: 'Ajoute des liens de parenté (parent, enfant…) pour dessiner l’arbre.',
     linksEmpty: 'Ajoute des liens pour explorer le cercle.',
     birthdaysSoon: 'Anniversaires à venir',
@@ -1821,6 +1824,7 @@ export const EN: typeof FR = {
     tomorrowClear: 'Nothing planned for tomorrow.',
     laneClear: 'Free',
     kidAllClear: 'Nothing planned. Have a nice day!',
+    shufflePhoto: 'Another photo',
   },
   boardView: {
     label: 'Board view',
@@ -2198,6 +2202,8 @@ export const EN: typeof FR = {
     focusSelf: 'The person in focus',
     focusNone: 'No known link',
     egoHint: 'Tap a face to center it',
+    webHint: 'Every circle of friends and their links — tap a face to open it',
+    blobHint: 'The whole social web at once — pinch to zoom',
     treeEmpty: 'Add family links (parent, child…) to draw the tree.',
     linksEmpty: 'Add links to explore the circle.',
     birthdaysSoon: 'Upcoming birthdays',

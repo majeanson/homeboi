@@ -25,6 +25,7 @@ import { useSpeak } from '../lib/speak'
 import { downloadVCard } from '../lib/vcard'
 import { CercleEgo } from '../components/cercle/CercleEgo'
 import { CercleTree } from '../components/cercle/CercleTree'
+import { CercleWeb } from '../components/cercle/CercleWeb'
 import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
@@ -552,9 +553,19 @@ function CercleParent() {
           <>
           {viewSwitch}
 
+          {/* The Social section shows the WHOLE web at once (clusters for Liens, a
+              blob for Arbre) — the single-focus ego view would only show one person's
+              circle, and the generational tree is meaningless for friends. Famille
+              keeps the focus-driven ego view + the real family tree. */}
+          {(() => {
+            const showWeb = section === 'social' && view !== 'list'
+
+          return (
+          <>
           {/* Focus lens — pick a household member to read the cercle from their
-              perspective (reuses the board/Notes MemberSwitcher). Not on the tree. */}
-          {view !== 'tree' && householdPeople.length > 0 && (
+              perspective (reuses the board/Notes MemberSwitcher). Not on the tree, nor
+              on the Social web (no single centre to read from). */}
+          {view !== 'tree' && !showWeb && householdPeople.length > 0 && (
             <div className="cercle-focus">
               <MemberSwitcher
                 faces={householdPeople.map((p) => ({
@@ -572,7 +583,9 @@ function CercleParent() {
             </div>
           )}
 
-          {view === 'links' ? (
+          {showWeb ? (
+            <CercleWeb people={sectionPeople} links={links} onOpen={openPerson} grouping={grouping} mode={view === 'links' ? 'clusters' : 'blob'} />
+          ) : view === 'links' ? (
             <CercleEgo people={sectionPeople} links={links} onOpen={openPerson} focusKey={focusKey} grouping={grouping} />
           ) : view === 'tree' ? (
             <CercleTree people={sectionPeople} links={links} onOpen={openPerson} grouping={grouping} />
@@ -761,6 +774,9 @@ function CercleParent() {
                 </>
             </>
           )}
+          </>
+          )
+          })()}
           </>
           )}
         </>

@@ -6,9 +6,12 @@ import { BOARD_KEY, ROUTINES_KEY } from '../lib/queryKeys'
 import { formatTime, formatDayLong } from '../lib/format'
 import { useAmbient } from '../lib/ambient'
 import { timeOfDay } from '../lib/timeofday'
-import { todRank, TOD_ICON, isRoutineTod } from '../lib/routineTod'
+import { todRank, TOD_ICON, TOD_TINT, isRoutineTod } from '../lib/routineTod'
+import { useMealPrefs } from '../lib/mealPrefs'
+import { CATS } from '../lib/cats'
 import { PhotoMosaic } from './PhotoMosaic'
 import { InlineIcon } from './Icon'
+import type { CSSProperties } from 'react'
 
 // The ambient screensaver (backlog #3): after N idle minutes the kiosk fades to a
 // big clock + date over the slow photo frame, with an optional "next up" stack —
@@ -31,6 +34,7 @@ interface RoutineRow {
   id: string
   name: string
   timeOfDay: string | null
+  color: string | null
   cards: { icon?: string }[]
 }
 
@@ -40,6 +44,7 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
   const a = useAmbient()
   const t = useT()
   const { lang } = useLang()
+  const mealPrefs = useMealPrefs()
 
   // A gentle minute clock — tick every 10 s so the displayed HH:MM is never stale
   // by more than a few seconds, without a per-second re-render on the wall.
@@ -107,18 +112,21 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
         {a.showClock && <div className="ambient__clock">{formatTime(nowSec, lang)}</div>}
         {a.showDate && <div className="ambient__date">{cap(formatDayLong(nowSec, lang))}</div>}
         {meal && (
-          <div className="ambient__next mono">
+          <div className="ambient__next" style={{ '--tint': mealPrefs.color('supper') } as CSSProperties}>
             <InlineIcon name="fork-knife-bold" /> {meal.title}
           </div>
         )}
         {next && (
-          <div className="ambient__next mono">
+          <div className="ambient__next" style={{ '--tint': CATS.event.color } as CSSProperties}>
             <InlineIcon name="calendar-blank-bold" />{' '}
             {next.all_day === 1 ? next.title : `${formatTime(next.start_at, lang)} · ${next.title}`}
           </div>
         )}
         {routine && (
-          <div className="ambient__next mono">
+          <div
+            className="ambient__next"
+            style={{ '--tint': routine.color ?? (isRoutineTod(routine.timeOfDay) ? TOD_TINT[routine.timeOfDay] : 'var(--berry-deep)') } as CSSProperties}
+          >
             <InlineIcon name={isRoutineTod(routine.timeOfDay) ? TOD_ICON[routine.timeOfDay] : 'baby-bold'} />{' '}
             {routine.name}
           </div>

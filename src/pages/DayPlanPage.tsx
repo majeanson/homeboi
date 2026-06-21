@@ -455,6 +455,45 @@ function DayPlanInner() {
             not just meals. Add + edit are inline (the shared EventForm/ChoreForm,
             date pre-filled). Editing a recurring row edits the whole series. */}
         <section className="day-plan__sections">
+          {/* À compléter for THIS day — per-day check-off todos (migration 0046),
+              with inline add/edit, check-in-place and one-tap departure templates. */}
+          <TodoSection day={date} title={t.todos.title} members={formMembers} bento={false} />
+
+          <div className="sec-label">
+            <b>{t.board.chores}</b>
+            <span className="ln" />
+          </div>
+          {dayChores.length === 0 && !choreForm ? (
+            <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
+          ) : (
+            dayChores.map((c) => (
+              <Act
+                key={c.id}
+                cat="chore"
+                title={c.title}
+                who={c.who || undefined}
+                color={c.color || undefined}
+                soon={choreSoon(c.id)}
+                onActivate={ro ? undefined : () => openChoreEdit(c.id)}
+              />
+            ))
+          )}
+          {!ro &&
+            (choreForm ? (
+              <ChoreForm
+                key={choreForm.value?.id ?? 'new-chore'}
+                members={formMembers}
+                value={choreForm.value}
+                initialStart={choreForm.value ? undefined : date}
+                onSaved={afterChoreSave}
+                onCancel={() => setChoreForm(null)}
+              />
+            ) : (
+              <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setChoreForm({})}>
+                <Icon name="plus-bold" size={16} /> {t.operator.addChore}
+              </button>
+            ))}
+
           <div className="sec-label">
             <b>{t.monthView.legendEvents}</b>
             <span className="ln" />
@@ -507,45 +546,6 @@ function DayPlanInner() {
                 <Icon name="plus-bold" size={16} /> {t.operator.addEvent}
               </button>
             ))}
-
-          <div className="sec-label">
-            <b>{t.board.chores}</b>
-            <span className="ln" />
-          </div>
-          {dayChores.length === 0 && !choreForm ? (
-            <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
-          ) : (
-            dayChores.map((c) => (
-              <Act
-                key={c.id}
-                cat="chore"
-                title={c.title}
-                who={c.who || undefined}
-                color={c.color || undefined}
-                soon={choreSoon(c.id)}
-                onActivate={ro ? undefined : () => openChoreEdit(c.id)}
-              />
-            ))
-          )}
-          {!ro &&
-            (choreForm ? (
-              <ChoreForm
-                key={choreForm.value?.id ?? 'new-chore'}
-                members={formMembers}
-                value={choreForm.value}
-                initialStart={choreForm.value ? undefined : date}
-                onSaved={afterChoreSave}
-                onCancel={() => setChoreForm(null)}
-              />
-            ) : (
-              <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setChoreForm({})}>
-                <Icon name="plus-bold" size={16} /> {t.operator.addChore}
-              </button>
-            ))}
-
-          {/* À compléter for THIS day — per-day check-off todos (migration 0046),
-              with inline add/edit, check-in-place and one-tap departure templates. */}
-          <TodoSection day={date} title={t.todos.title} members={formMembers} bento={false} />
         </section>
       </div>
     </div>
