@@ -849,6 +849,12 @@ export const FR = {
       uploading: 'Téléversement…',
       delete: 'Supprimer le business',
       deleted: 'Business supprimé',
+      importLabel: 'Coller un lien Google Maps',
+      importBtn: 'Importer',
+      importHint: 'Partage un lieu depuis l’app Maps et colle le lien — on remplit le nom et l’adresse.',
+      importing: 'Importation…',
+      importFailed: 'Lien introuvable — réessaie ou remplis à la main.',
+      importEmpty: 'Rien à importer de ce lien — remplis à la main.',
     },
     // Famille → "Notes & recommandations" (durable quick notes; CercleNotes).
     familyNotes: {
@@ -2283,6 +2289,12 @@ export const EN: typeof FR = {
       uploading: 'Uploading…',
       delete: 'Delete business',
       deleted: 'Business deleted',
+      importLabel: 'Paste a Google Maps link',
+      importBtn: 'Import',
+      importHint: 'Share a place from the Maps app and paste the link — we fill in the name and address.',
+      importing: 'Importing…',
+      importFailed: 'Link not found — try again or fill it in by hand.',
+      importEmpty: 'Nothing to import from that link — fill it in by hand.',
     },
     familyNotes: {
       title: 'Notes & recommendations',

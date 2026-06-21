@@ -45,6 +45,7 @@ import * as notes from '../functions/api/notes'
 import * as noteMedia from '../functions/api/note-media'
 import * as pantry from '../functions/api/pantry'
 import * as photos from '../functions/api/photos'
+import * as placeImport from '../functions/api/place-import'
 import * as recap from '../functions/api/recap'
 import * as recipeDraft from '../functions/api/recipe-draft'
 import * as recipeImage from '../functions/api/recipe-image'
@@ -125,6 +126,7 @@ const TABLE: Record<string, RouteMod> = {
   'note-media': noteMedia,
   pantry,
   photos,
+  'place-import': placeImport,
   recap,
   'recipe-draft': recipeDraft,
   'recipe-image': recipeImage,

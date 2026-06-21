@@ -1029,6 +1029,33 @@
   height: 100%;
   object-fit: cover;
 }
+/* Import-from-Google-Maps row at the top of a new BusinessForm. */
+.business-form__import {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.3rem;
+  border-bottom: 1px dashed var(--line);
+}
+.business-form__import-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.business-form__import-row .input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.business-form__import-row .btn {
+  flex: 0 0 auto;
+}
+.business-form__import-hint {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
 /* The card-photo picker inside BusinessForm. */
 .business-form__photo {
   display: inline-flex;
