@@ -26,9 +26,11 @@ import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 // scoped to ONE household member (the "Moi" list) or the whole Maisonnée (family-wide).
 // A picked face (defaulting to the device profile) sees THEIR personal notes PLUS the
 // Maisonnée notes always; "Maisonnée" sees only the family-wide notes (decision 3).
-// The composer's Moi/Maisonnée toggle (decision 2) chooses the scope a new note lands
-// in, and overrides the X-Profile header server-side. Media (audio/drawing/photo)
-// reuses MemoControls + /api/note-media — durable, never touches the board notes.
+// The scope is resolved PURELY from the picked face — the same subtle face row as the
+// board's "Aujourd'hui" header (the shared MemberSwitcher): a member → a personal note,
+// Maisonnée → a family-wide one. No separate Moi/Maisonnée toggle (one control, not two).
+// Media (audio/drawing/photo) reuses MemoControls + /api/note-media — durable, never
+// touches the board notes.
 export function CercleNotes({
   members,
   help,
@@ -44,14 +46,12 @@ export function CercleNotes({
   const { memberId: profileId } = useProfile()
   const ro = isGuest()
 
-  // The acting face for the section: whose notes to show, and the default scope for a
-  // new note. Seeded from the device profile (null = Maisonnée). A specific face also
-  // surfaces the Maisonnée notes beneath their own (visibleNotes).
+  // The acting face for the section: whose notes to show, and the scope for a new note.
+  // Seeded from the device profile (null = Maisonnée). A specific face also surfaces the
+  // Maisonnée notes beneath their own (visibleNotes). The note scope follows the face —
+  // a member → a personal ('self') note, Maisonnée → a family-wide one (no toggle).
   const [face, setFace] = useState<string | null>(profileId)
-  // The composer scope toggle. 'self' is only meaningful when a face is picked; at
-  // Maisonnée it's forced to 'family'.
-  const [scope, setScope] = useState<NoteScope>(profileId ? 'self' : 'family')
-  const effScope: NoteScope = face ? scope : 'family'
+  const effScope: NoteScope = face ? 'self' : 'family'
 
   const [text, setText] = useState('')
   // iOS-Notes-style live search across the visible list (text + author name).
@@ -183,10 +183,11 @@ export function CercleNotes({
       </header>
       {help?.bubbleFor('notes')}
 
-      {/* Whose notes — Maisonnée + each member. The SAME face row as the board's
+      {/* Whose notes — Maisonnée + each member. The SAME subtle face row as the board's
           "Aujourd'hui" header (the shared MemberSwitcher); seeded from the device
-          profile, but this picks LOCALLY (it doesn't move the device profile), and
-          also sets the composer scope (a face → Moi, Maisonnée → famille). */}
+          profile, but this picks LOCALLY (it doesn't move the device profile). This one
+          control also decides the new note's scope: a face → a personal note, Maisonnée
+          → family-wide (no separate Moi/Maisonnée toggle). */}
       <MemberSwitcher
         faces={members.map((m) => ({
           id: m.id,
@@ -195,33 +196,15 @@ export function CercleNotes({
           photoUrl: m.avatarKind === 'photo' && m.avatarRef ? imgUrl(m.avatarRef) : null,
         }))}
         value={face}
-        onChange={(id) => {
-          setFace(id)
-          setScope(id ? 'self' : 'family')
-        }}
+        onChange={setFace}
         allLabel={fn.scopeFamily}
         ariaLabel={fn.title}
       />
 
-      {/* Composer — text + scope toggle (Moi / Maisonnée) + media. Hidden for guests. */}
+      {/* Composer — text + media. The note's scope follows the picked face above, so
+          there's no scope toggle here. Hidden for guests. */}
       {!ro && (
         <div className="cercle-notes__composer card">
-          {face && (
-            <div className="cercle-notes__scope" role="radiogroup" aria-label={fn.title}>
-              {(['self', 'family'] as NoteScope[]).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  role="radio"
-                  aria-checked={scope === s}
-                  className={'cercle-notes__scopebtn' + (scope === s ? ' is-active' : '')}
-                  onClick={() => setScope(s)}
-                >
-                  {s === 'self' ? fn.scopeSelf : fn.scopeFamily}
-                </button>
-              ))}
-            </div>
-          )}
           <EditField
             value={text}
             onChange={setText}

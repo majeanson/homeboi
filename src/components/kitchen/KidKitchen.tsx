@@ -75,10 +75,11 @@ export function KidKitchen({
       }
     })
   // The picker: tap a recipe to hear it (BigTiles speaks on tap) and choose it,
-  // then tap a day to put it on the menu. The day tile's narration ("Lundi:
-  // Pizza") doubles as the spoken confirmation, and `planned` above redraws so
-  // the child watches their pick appear. Real photo when the recipe has one,
-  // the food picto as fallback (NFR-KID-2: pick by sight, never by reading).
+  // then tap a day to wish it for that day. A child's pick is an IDEA, not a plan —
+  // it drops into the parent's "Idées de repas" pool as "<recipe> (Mardi)" rather
+  // than scheduling the real supper (see kidSuggest). The day tile's narration
+  // ("Lundi: Pizza") doubles as the spoken confirmation. Real photo when the recipe
+  // has one, the food picto as fallback (NFR-KID-2: pick by sight, never reading).
   // The flat recipe shelf, with the "Les collections" door as its FIRST tile when
   // collections exist — a calm one-tap (hear "Les collections", tap again to open)
   // that leads into the by-collection browse, leaving every recipe still reachable

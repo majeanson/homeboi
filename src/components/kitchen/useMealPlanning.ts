@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useLang } from '../../i18n'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
+import { formatWeekday } from '../../lib/format'
 import { ingredientName } from '../../lib/ingredient'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
-import { MEALS_KEY } from './types'
+import { MEALS_KEY, MEAL_IDEAS_KEY } from './types'
 import { type AiWake } from './useAiWake'
 
 // The week-grid planning flow, extracted from the Kitchen page: type (or pick a
@@ -20,6 +22,7 @@ export interface StaplePrompt {
 
 export function useMealPlanning(ai: AiWake, profileId: string | null) {
   const write = useWrite()
+  const { lang } = useLang()
   const [editDate, setEditDate] = useState<number | null>(null)
   const [mealText, setMealText] = useState('')
   // The meal -> grocery staple step (B3): after a title is entered, we offer the
@@ -100,14 +103,19 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
     }
   }
 
-  // Toddler path: a child taps a recipe, then an empty day. This is a SUGGESTION,
-  // not a decision — the server only fills an empty slot (unique-day index) and
-  // records "suggested by" this device's child so a parent sees whose idea it was.
+  // Toddler path: a child taps a recipe, then a day. This is an IDEA, not a plan —
+  // a pre-reader shouldn't silently commit a real day's supper. So instead of
+  // scheduling it, we drop the pick into the "Idées de repas" pool with the chosen
+  // day noted in parentheses ("Muffin aux beignes (Mardi)"), keeping the recipe
+  // link, so a parent sees the wish and places it for real later. "suggested by"
+  // still records whose idea it was.
   async function kidSuggest(date: number, recipe: Recipe) {
-    await write('meals', {
+    const day = formatWeekday(date, lang)
+    const title = `${recipe.title} (${day.charAt(0).toUpperCase()}${day.slice(1)})`
+    await write('meal-ideas', {
       method: 'POST',
-      body: { date, title: recipe.title, suggest: true, suggestedBy: profileId },
-      affectedKeys: [MEALS_KEY],
+      body: { title, recipeId: recipe.id, suggestedBy: profileId },
+      affectedKeys: [MEAL_IDEAS_KEY],
     }).catch(() => {})
   }
 

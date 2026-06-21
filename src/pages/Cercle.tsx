@@ -816,7 +816,7 @@ function CircleKidView() {
   function speakRel(rel: RelationshipType, other: Person) {
     // Each card shows the OTHER person; the label is THEIR role toward the focused
     // child ("Papa" → Père), so it's gendered by that other person.
-    speak(t.cercle.kidRelSpeak(genderedRelLabel(rel, other.gender, lang), other.firstName))
+    speak(t.cercle.kidRelSpeak(genderedRelLabel(rel, other.gender, lang), other.firstName, other.gender))
   }
 
   const kidRels = useMemo(() => {

@@ -712,7 +712,7 @@ test.describe('recipes', () => {
 
 // ──────────────────────── kid meal suggestion ──────────────────────────
 
-test('a kid recipe pick suggests a supper into an empty day', async ({ page }) => {
+test('a kid recipe pick drops a dated idea into the meal-ideas pool', async ({ page }) => {
   await APP('/kitchen', 'toddler')(page)
   await settle(page, '.hub')
   // Hear-first: a toddler action tile speaks on the FIRST tap and arms; a SECOND
@@ -723,16 +723,18 @@ test('a kid recipe pick suggests a supper into an empty day', async ({ page }) =
   await expect(recipe).toHaveClass(/is-armed/)
   await recipe.click()
   await expect(page.locator('.kid-pick .bigtile', { hasText: 'Mardi' })).toBeVisible()
-  // Tapping an EMPTY day (Mardi) posts a SUGGESTION (suggest:true) — but only on
-  // the confirming second tap. First tap arms + speaks "Mardi : <recipe>".
+  // Tapping a day (Mardi) no longer schedules the supper — a pre-reader shouldn't
+  // silently commit a real day. It drops an IDEA into "Idées de repas" with the day
+  // in parentheses ("<recipe> (Mardi)"), keeping the recipe link, for a parent to
+  // place later. Still gated by the confirming second tap (first arms + speaks).
   const mardi = page.locator('.kid-pick .bigtile', { hasText: 'Mardi' })
   await mardi.click()
   await expect(mardi).toHaveClass(/is-armed/)
   const [req] = await Promise.all([
-    page.waitForRequest(isApi('POST', 'meals'), { timeout: 15_000 }),
+    page.waitForRequest(isApi('POST', 'meal-ideas'), { timeout: 15_000 }),
     mardi.click(),
   ])
-  expect(JSON.parse(req.postData() || '{}')).toMatchObject({ suggest: true })
+  expect(JSON.parse(req.postData() || '{}')).toMatchObject({ title: 'Spaghetti maison (Mardi)' })
 })
 
 test('routines surface the current moment first (morning vs evening)', async ({ page }) => {

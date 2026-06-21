@@ -750,7 +750,13 @@ export const FR = {
     tapForFamily: 'Touche une photo pour voir sa famille',
     kidRelBack: 'Retour',
     kidRelWith: (name: string) => `La famille de ${name}`,
-    kidRelSpeak: (rel: string, name: string) => `C'est ${rel} de ${name}`,
+    // "Alexis est mon frère" / "Marc-Antoine est mon père" — from the focused
+    // child's own voice. The possessive agrees with the gendered role noun (ma sœur
+    // vs mon frère), and falls to "mon" before a vowel (mon amie) and for unknown.
+    kidRelSpeak: (rel: string, name: string, gender: 'm' | 'f' | null) => {
+      const poss = gender === 'f' && !/^[aeiouâàäéèêëïîôöùûüh]/i.test(rel) ? 'ma' : 'mon'
+      return `${name} est ${poss} ${rel.toLocaleLowerCase('fr')}`
+    },
     groups: 'Groupes',
     addGroup: 'Nouveau groupe',
     editGroup: 'Modifier le groupe',
@@ -2215,7 +2221,9 @@ export const EN: typeof FR = {
     tapForFamily: 'Tap a photo to see their family',
     kidRelBack: 'Back',
     kidRelWith: (name: string) => `${name}’s family`,
-    kidRelSpeak: (rel: string, name: string) => `That's ${name}'s ${rel}`,
+    // "Alexis is my brother" — spoken from the focused child's own voice. gender is
+    // unused in EN (no possessive agreement) but kept for signature parity with FR.
+    kidRelSpeak: (rel: string, name: string, _gender: 'm' | 'f' | null) => `${name} is my ${rel.toLowerCase()}`,
     groups: 'Groups',
     addGroup: 'New group',
     editGroup: 'Edit group',
