@@ -32,6 +32,92 @@ export function googleMapsUrl(raw: string): URL | null {
 
 const COORDS = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/
 
+// ---- Open Graph enrichment --------------------------------------------------
+// Google serves a RICH link-preview (the same card the Maps share sheet shows) to
+// social crawlers: og:title = "Name · 4.8★(123) · Category", og:description = the
+// address, og:image = the place photo. None of that is in the plain `?q=` page, so
+// the handler fetches with a crawler UA and we parse the tags here. Phone + website
+// are NOT in this preview (Google loads them client-side) — they need the Places API.
+
+export interface PlaceOg {
+  name: string | null
+  address: string | null
+  category: string | null
+  photoUrl: string | null
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => safeCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => safeCodePoint(parseInt(d, 10)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&') // last — so "&amp;#39;" doesn't double-decode
+}
+
+const safeCodePoint = (n: number): string => {
+  try {
+    return Number.isFinite(n) && n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : ''
+  } catch {
+    return ''
+  }
+}
+
+// Read a <meta property|name|itemprop="<key>" content="…"> value (attribute order
+// independent, entity-decoded). null when the tag/content is absent.
+export function metaContent(html: string, key: string): string | null {
+  const tag = html.match(new RegExp(`<meta[^>]*(?:property|name|itemprop)=["']${key}["'][^>]*>`, 'i'))?.[0]
+  const c = tag?.match(/\scontent=["']([^"']*)["']/i)?.[1]
+  return c ? decodeEntities(c).trim() || null : null
+}
+
+// "Clinique Dentaire · 5.0★(20) · Dentist" → name = first segment; a rating segment
+// ("5.0★(20)", "(20)") or a price tier ("$$") is dropped; the remaining segment is
+// the category. Defensive against the segments arriving in any order.
+export function parseMapsTitle(title: string): { name: string | null; category: string | null } {
+  const parts = title
+    .split('·')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (parts.length === 0) return { name: null, category: null }
+  const isRating = (p: string) => /★|^\(\d[\d,. ]*\)$/.test(p) || /^\d+([.,]\d+)?\s*(stars?|étoiles?)?$/i.test(p)
+  const isPrice = (p: string) => /^\$+$/.test(p)
+  const name = parts[0]
+  const category = parts.slice(1).find((p) => !isRating(p) && !isPrice(p)) ?? null
+  return { name: name || null, category }
+}
+
+// Parse the place out of a crawler-fetched HTML page's OG tags. Returns all-null
+// when the page is the GENERIC "Google Maps" shell (no rich preview for this UA/link).
+export function parsePlaceOg(html: string): PlaceOg {
+  const title = metaContent(html, 'og:title')
+  if (!title || /^google maps$/i.test(title)) return { name: null, address: null, category: null, photoUrl: null }
+  const { name, category } = parseMapsTitle(title)
+  const desc = metaContent(html, 'og:description')
+  const image = metaContent(html, 'og:image')
+  // Drop the generic boilerplate description + the fallback static-map image.
+  const address = desc && !/find local businesses|trouvez des entreprises/i.test(desc) ? desc : null
+  const photoUrl = image && !/\/staticmap/i.test(image) ? image : null
+  return { name, address, category, photoUrl }
+}
+
+// Only Google's own image CDNs may be fetched for the place photo (SSRF guard).
+const GOOGLE_IMG_HOST = /(^|\.)(googleapis\.com|googleusercontent\.com|ggpht\.com|gstatic\.com)$/i
+export function googleImageUrl(raw: string | null | undefined): URL | null {
+  if (!raw) return null
+  let u: URL
+  try {
+    u = new URL(raw)
+  } catch {
+    return null
+  }
+  if (u.protocol !== 'https:') return null
+  return GOOGLE_IMG_HOST.test(u.hostname.toLowerCase()) ? u : null
+}
+
 // Split a "<Name>, <Address…>" string. The address normally starts at the first
 // comma-segment that begins with a street number, so a name that itself contains a
 // comma ("Joe's Bar, Grill, 123 Main St") stays whole; if nothing looks like a

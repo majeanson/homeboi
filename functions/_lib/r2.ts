@@ -51,7 +51,15 @@ export async function uploadR2Media(
   const buf = await request.arrayBuffer()
   if (buf.byteLength === 0 || buf.byteLength > opts.maxBytes)
     return { error: badRequest(opts.sizeError ?? 'Image vide ou trop grande.') }
-  const key = `${opts.prefix}_${newId()}`
-  await bucket.put(key, buf, { httpMetadata: { contentType } })
+  const key = await putR2Blob(bucket, buf, contentType, opts.prefix)
   return { key, contentType }
+}
+
+// Store bytes we ALREADY hold (not an incoming Request) under an opaque
+// `<prefix>_<id>` key — e.g. a place photo the server fetched from Google's CDN for
+// the « Le cercle » business import. Returns the new key.
+export async function putR2Blob(bucket: R2Bucket, buf: ArrayBuffer, contentType: string, prefix: string): Promise<string> {
+  const key = `${prefix}_${newId()}`
+  await bucket.put(key, buf, { httpMetadata: { contentType } })
+  return key
 }

@@ -52,16 +52,21 @@ export function BusinessForm({
     setImporting(true)
     setImportMsg(null)
     try {
-      const place = await api<{ name: string | null; address: string | null; empty?: boolean }>('place-import', {
-        method: 'POST',
-        body: { url },
-      })
+      const place = await api<{
+        name: string | null
+        address: string | null
+        category: string | null
+        photoKey: string | null
+        empty?: boolean
+      }>('place-import', { method: 'POST', body: { url } })
       if (place.empty || (!place.name && !place.address)) {
         setImportMsg(bz.importEmpty)
         return
       }
       if (place.name) setName(place.name)
       if (place.address) setAddress(place.address)
+      if (place.category && !category.trim()) setCategory(place.category)
+      if (place.photoKey) setPhotoKey(place.photoKey)
       setImportUrl('')
     } catch {
       setImportMsg(bz.importFailed)
