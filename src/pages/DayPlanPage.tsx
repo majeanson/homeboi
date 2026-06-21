@@ -10,7 +10,8 @@ import { live } from '../lib/query'
 import { useProfile } from '../lib/profile'
 import { useRecordUndo } from '../lib/toast'
 import { formatDayLong, formatTime } from '../lib/format'
-import { addLocalDays } from '../lib/localDay'
+import { addLocalDays, daysUntilLocal } from '../lib/localDay'
+import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
@@ -47,7 +48,7 @@ const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 // recurring) and recurring-chore occurrences. Meals/notes come from their own
 // caches via DayEditor, so they're ignored here.
 interface DayItemsData {
-  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; birthday?: boolean; age?: number | null }[]
+  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; birthday?: boolean; age?: number | null }[]
   chores: { id: string; title: string; color: string | null; who: string | null }[]
 }
 
@@ -114,6 +115,33 @@ function DayPlanInner() {
   const choresFullQ = useQuery({ queryKey: ['chores'], queryFn: () => api<{ chores: ChoreInit[] }>('chores'), ...live })
   const baseId = (id: string) => id.split('#')[0]
   const formMembers = boardQ.data?.members ?? []
+
+  // Weather as day-planning context — the same slow 15-min poll the board reads
+  // (shared cache key). The endpoint only knows today (current) and tomorrow
+  // (high/low outlook), so the strip shows only when this day IS today or
+  // tomorrow; any other planned day simply has no forecast to show.
+  const wxQ = useQuery({
+    queryKey: ['weather'],
+    queryFn: () => api<{ weather: Weather | null; tomorrow: DayOutlook | null }>('weather'),
+    staleTime: 15 * 60_000,
+  })
+  const dayOffset = daysUntilLocal(date) // 0 = today, 1 = tomorrow
+  const todayWx = dayOffset === 0 ? wxQ.data?.weather ?? null : null
+  const tomoWx = dayOffset === 1 ? wxQ.data?.tomorrow ?? null : null
+  const todayTip = todayWx ? weatherTip(todayWx) : null
+
+  // Calm "Bientôt" flag (migration 0038) — same predicate the board uses
+  // (functions/_lib/reminder.isSoon): NOW sits in [at − lead, at). The /api/month
+  // occurrences carry no lead, so resolve it off the full series we already load
+  // for the edit forms, then quiet-chip the imminent rows. Never hides anything.
+  const nowSec = Math.floor(Date.now() / 1000)
+  const isSoonAt = (at: number, lead: number | null | undefined) => lead != null && nowSec >= at - lead && nowSec < at
+  const eventSoon = (occId: string, at: number) =>
+    isSoonAt(at, eventsFullQ.data?.events.find((e) => e.id === baseId(occId))?.lead_seconds)
+  const choreSoon = (occId: string) => {
+    const at = Number(occId.split('#')[1]) // recurring chore occurrence id is `base#at`
+    return Number.isFinite(at) && isSoonAt(at, choresFullQ.data?.chores.find((c) => c.id === baseId(occId))?.lead_seconds)
+  }
 
   // Inline add (no value) / edit (value) for events + chores on this day. null = closed.
   const [eventForm, setEventForm] = useState<{ value?: EventInit } | null>(null)
@@ -368,6 +396,33 @@ function DayPlanInner() {
     <div className="scene" aria-label={title}>
       <SceneHead title={title} card="board" onClose={close} closeLabel={t.common.close} />
       <div className="scene__body">
+        {/* Day weather — only today/tomorrow have a forecast (see wxQ). A calm
+            glance of "what's it like out" while planning this day's meals/events. */}
+        {(todayWx || tomoWx) && (
+          <div className="day-plan__wx">
+            {todayWx && (
+              <span className="tomorrow-wx mono" aria-label={`${t.weather[todayWx.bucket]} ${todayWx.tempC}°`}>
+                <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                  <Icon name={weatherIcon(todayWx)} size={17} color={weatherTint(todayWx)} />
+                </span>{' '}
+                {todayWx.tempC}° · {t.weather[todayWx.bucket]}
+                {todayTip ? ` · ${t.weather.tip[todayTip]}` : ''}
+              </span>
+            )}
+            {tomoWx && (
+              <span className="tomorrow-wx mono" aria-label={`${t.weather[tomoWx.bucket]} ${tomoWx.highC}° / ${tomoWx.lowC}°`}>
+                <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                  <Icon
+                    name={weatherIcon({ bucket: tomoWx.bucket, isDay: true, tempC: tomoWx.highC })}
+                    size={17}
+                    color={weatherTint({ bucket: tomoWx.bucket, isDay: true, tempC: tomoWx.highC })}
+                  />
+                </span>{' '}
+                {tomoWx.highC}° / {tomoWx.lowC}°
+              </span>
+            )}
+          </div>
+        )}
         <DayEditor
           date={date}
           recipes={recipes}
@@ -412,7 +467,8 @@ function DayPlanInner() {
                   cat={e.birthday ? 'birthday' : 'event'}
                   title={e.title}
                   when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
-                  who={memberName(e.member_id) || undefined}
+                  who={e.business_name ?? e.contact_name ?? memberName(e.member_id) ?? undefined}
+                  soon={e.birthday ? undefined : eventSoon(e.id, e.at)}
                   onActivate={ro || e.birthday ? undefined : () => openEventEdit(e.id)}
                 />
                 {!!navigator.share && (
@@ -464,6 +520,7 @@ function DayPlanInner() {
                 title={c.title}
                 who={c.who || undefined}
                 color={c.color || undefined}
+                soon={choreSoon(c.id)}
                 onActivate={ro ? undefined : () => openChoreEdit(c.id)}
               />
             ))

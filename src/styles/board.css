@@ -1442,6 +1442,16 @@
   align-items: center;
   gap: 4px;
 }
+/* Day page: the weather glance strip above the meal planner (today/tomorrow only). */
+.day-plan__wx {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 4px;
+}
+.day-plan__wx .tomorrow-wx {
+  margin-bottom: 0;
+}
 /* Day page: the events/chores agenda sections below the meal planner. */
 .day-plan__sections {
   margin-top: 18px;

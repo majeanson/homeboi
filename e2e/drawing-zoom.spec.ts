@@ -57,7 +57,7 @@ test('a freehand stroke is detected and saved (pen takeover at 1×)', async ({ p
   // "empty", save() would cancel without a request.
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.url().includes('/api/drawings') && r.method() === 'POST', { timeout: 10_000 }),
-    page.getByRole('button', { name: 'Épingler' }).click(),
+    page.getByRole('button', { name: 'Épingler', exact: true }).click(),
   ])
   expect(req).toBeTruthy()
 })
@@ -78,7 +78,7 @@ test('a stroke drawn WHILE zoomed in still saves', async ({ page }) => {
   await drawStroke(page, box)
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.url().includes('/api/drawings') && r.method() === 'POST', { timeout: 10_000 }),
-    page.getByRole('button', { name: 'Épingler' }).click(),
+    page.getByRole('button', { name: 'Épingler', exact: true }).click(),
   ])
   expect(req).toBeTruthy()
 })

@@ -87,12 +87,11 @@ test.describe('navigation', () => {
     await page.locator('.auth__card input[type="password"]').fill('mot-de-passe-solide')
     const submit = page.locator('.auth__card button[type="submit"]')
     await expect(submit).toBeEnabled()
-    // The create POST fires, then the flow lands in Réglages ▸ La maisonnée
-    // (the obvious next step: add your family).
+    // The create POST fires, then the flow lands on the board — a fresh household's
+    // first-run WelcomeCard checklist guides adding the family from there.
     await expectApi(page, 'POST', 'auth/signup', () => submit.click())
-    await expect(page).toHaveURL(/\/settings\?tab=household$/)
-    await expect(page.locator('.operator__tabs')).toBeVisible()
-    await expect(page.getByRole('tab', { name: 'La maisonnée' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page).toHaveURL(/\/board$/)
+    await expect(page.locator('.hub')).toBeVisible()
   })
 
   test('hub nav switches every section and marks the active tab', async ({ page }) => {
@@ -282,7 +281,9 @@ test.describe('settings forms', () => {
 
   test('add a household member', async ({ page }) => {
     await page.getByRole('tab', { name: 'La maisonnée' }).click()
-    const form = page.locator('.operator__panel form.operator__inline-form')
+    // The member-add box is now the shared EditField (form.edit-field), no longer a
+    // hand-rolled operator__inline-form.
+    const form = page.locator('.operator__panel form.edit-field')
     await form.locator('input.input').first().fill('Mamie')
     await expectApi(page, 'POST', 'members', () => form.locator('button[type="submit"]').click())
   })
@@ -352,7 +353,8 @@ test.describe('settings forms', () => {
     // "Yogourt grec" is in the grocery history → rename it to the generic "Yogourt"
     // so quick-add folds it in and suggests the generic item.
     await page.locator('.ghost-admin__row', { hasText: 'Yogourt grec' }).getByRole('button', { name: 'Renommer' }).click()
-    const form = page.locator('.ghost-admin__row form.operator__inline-form')
+    // The inline rename editor is now the shared EditField (form.edit-field).
+    const form = page.locator('.ghost-admin__row form.edit-field')
     await form.locator('input.input').fill('Yogourt')
     const [req] = await Promise.all([
       page.waitForRequest(isApi('PATCH', 'list')),
