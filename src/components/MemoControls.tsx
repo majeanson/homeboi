@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, ApiError, isStatus } from '../lib/api'
@@ -46,6 +46,16 @@ export function MemoControls({
   const keepInGallery = useSaveToGallery()
   const recRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+
+  // While recording, flag the body so the shell can drop the ＋ FAB: it floats
+  // bottom-right OVER the Record/Stop + Draw/Photo row (esp. on a phone, where the
+  // memo controls sit in the FAB's band), and you can't quick-add mid-record anyway.
+  // Mirrors how `.kb-open` hides the FAB while typing. Cleared on stop + unmount.
+  useEffect(() => {
+    if (!recording) return
+    document.body.classList.add('is-recording')
+    return () => document.body.classList.remove('is-recording')
+  }, [recording])
 
   async function postMemo(kind: 'audio' | 'drawing', blob: Blob, scene = '') {
     setBusy(true)
