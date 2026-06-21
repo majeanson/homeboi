@@ -8,7 +8,8 @@ import { live } from '../../lib/query'
 import { isGuest } from '../../lib/device'
 import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
-import { TODOS_KEY, TODO_TEMPLATES_KEY } from '../../lib/queryKeys'
+import { TODOS_KEY, TODO_TEMPLATES_KEY, MONTH_KEY } from '../../lib/queryKeys'
+import { todayLocalDay } from '../../lib/localDay'
 import {
   type Todo,
   type TodoTemplate,
@@ -89,36 +90,54 @@ export function TodoSection({
   const openCount = all.filter((todo) => !isChecked(todo)).length
   const checked = checkedIds(all)
   const faceOf = (id: string | null) => (id ? members.find((m) => m.id === id) : undefined)
+  // The board glance (scope null) is the ONE place that mixes standing globals
+  // (day null) with today-pinned todos (day = today) — and they render identically,
+  // which reads as "the same todo in two places". When BOTH kinds are present, tag
+  // each row with its scope ("En tout temps" / "Aujourd'hui") so it's clear a
+  // today-pinned one (e.g. created from a day's meal plan) is its own ephemeral row,
+  // not a twin of a global. Homogeneous lists + day pages stay unmarked (no noise).
+  const showScope = scope === null && all.some((td) => td.day == null) && all.some((td) => td.day != null)
 
   // — add (board glance → global; day page → that day) —
+  // A today-pinned add (day page where date === today) is a row the board's
+  // Aujourd'hui glance (global ∪ today) ALSO shows, so write it into both that day's
+  // cache and the board cache up front — otherwise it only appears on the board after
+  // a refetch (and never, offline). A day≠today add belongs only in its day cache; a
+  // global add (scope null) already writes TODOS_KEY, since `key` === TODOS_KEY there.
   async function add(text: string) {
     const value = text.trim()
     if (!value) return
     setAddText('')
     const tmpId = `tmp-${Date.now()}-${Math.floor(Math.random() * 1e6).toString(36)}`
+    const tmpRow: Todo = { id: tmpId, title: value, day: scope, member_id: null, done_at: null, position: 0, section: null }
+    const insert = (d: TodosData | undefined): TodosData => (d ? { todos: [...d.todos, tmpRow] } : { todos: [tmpRow] })
     await createWithUndo({
       endpoint: 'todos',
       body: { title: value, day: scope },
-      affectedKeys: [TODOS_KEY],
-      optimistic: (qc) =>
-        qc.setQueryData<TodosData>(key, (d) =>
-          d
-            ? { todos: [...d.todos, { id: tmpId, title: value, day: scope, member_id: null, done_at: null, position: 0, section: null }] }
-            : { todos: [{ id: tmpId, title: value, day: scope, member_id: null, done_at: null, position: 0, section: null }] },
-        ),
+      affectedKeys: [TODOS_KEY, MONTH_KEY],
+      optimistic: (qc) => {
+        qc.setQueryData<TodosData>(key, insert)
+        if (scope != null && scope === todayLocalDay()) qc.setQueryData<TodosData>(TODOS_KEY, insert)
+      },
       message: t.todos.added(value),
     })
   }
 
   // — toggle done (a MARK in place; optimistic flip, then resync) —
+  // A today-pinned todo is the SAME row on the day page (cache ['todos', day]) AND
+  // the board's Aujourd'hui glance (cache ['todos'], which loads global + today). So
+  // flip the row in EVERY todo scope it appears in via setQueriesData — otherwise
+  // checking it on one surface leaves the other showing it unchecked until a refetch
+  // lands (and never, while offline, since the server change is only queued). The
+  // updater is a no-op on caches that don't hold this id, so cross-scope is safe.
   function toggle(todo: Todo) {
     const next = todo.done_at == null ? Math.floor(Date.now() / 1000) : null
     void write('todos', {
       method: 'PATCH',
       body: { id: todo.id, done: next != null },
-      affectedKeys: [TODOS_KEY],
+      affectedKeys: [TODOS_KEY, MONTH_KEY],
       optimistic: (qc) =>
-        qc.setQueryData<TodosData>(key, (d) =>
+        qc.setQueriesData<TodosData>({ queryKey: TODOS_KEY }, (d) =>
           d ? { todos: d.todos.map((x) => (x.id === todo.id ? { ...x, done_at: next } : x)) } : d,
         ),
     }).catch(() => {})
@@ -134,9 +153,11 @@ export function TodoSection({
     await write('todos', {
       method: 'PATCH',
       body: { id: todo.id, title: value },
-      affectedKeys: [TODOS_KEY],
+      affectedKeys: [TODOS_KEY, MONTH_KEY],
+      // Same cross-scope reasoning as toggle: rename the row in every todo cache it
+      // appears in (board glance + any open day cache) so both surfaces agree at once.
       optimistic: (qc) =>
-        qc.setQueryData<TodosData>(key, (d) =>
+        qc.setQueriesData<TodosData>({ queryKey: TODOS_KEY }, (d) =>
           d ? { todos: d.todos.map((x) => (x.id === todo.id ? { ...x, title: value } : x)) } : d,
         ),
     }).catch(() => {})
@@ -146,14 +167,14 @@ export function TodoSection({
   // — delete one (behind a deferred undo — a mis-tap costs nothing) —
   function remove(todo: Todo) {
     removal.remove([todo.id], t.todos.removed(todo.title), () =>
-      write('todos', { method: 'DELETE', body: { id: todo.id }, affectedKeys: [TODOS_KEY] }).catch(() => {}),
+      write('todos', { method: 'DELETE', body: { id: todo.id }, affectedKeys: [TODOS_KEY, MONTH_KEY] }).catch(() => {}),
     )
   }
 
   // — "Effacer cochées" — sweep the ticked rows (deferred; pass exact ids) —
   function clearChecked(ids: string[]) {
     removal.remove(ids, t.todos.clearedN(ids.length), () =>
-      write('todos', { method: 'PATCH', body: { clearChecked: true, ids }, affectedKeys: [TODOS_KEY] }).catch(() => {}),
+      write('todos', { method: 'PATCH', body: { clearChecked: true, ids }, affectedKeys: [TODOS_KEY, MONTH_KEY] }).catch(() => {}),
     )
   }
 
@@ -164,7 +185,7 @@ export function TodoSection({
     await write('todos', {
       method: 'POST',
       body: { templateId, day: scope },
-      affectedKeys: [TODOS_KEY],
+      affectedKeys: [TODOS_KEY, MONTH_KEY],
     }).catch(() => {})
   }
 
@@ -229,6 +250,11 @@ export function TodoSection({
             {todo.title}
           </span>
         </button>
+        {showScope && (
+          <span className={'tag todo-row__scope' + (todo.day != null ? ' todo-row__scope--today' : '')}>
+            {todo.day != null ? t.todos.scopeToday : t.todos.scopeGlobal}
+          </span>
+        )}
         {faceOf(todo.member_id) && (
           <span
             className="todo-row__by"

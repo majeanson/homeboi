@@ -3,8 +3,9 @@ import { useT } from '../i18n'
 import { Icon } from './Icon'
 
 // A calm inline pan + zoom surface. Wraps any fit-to-box child (an SVG graph, a
-// diagram) and lets a finger pinch / drag — or the +/− / reset buttons
-// (kiosk-friendly, since native pinch is locked app-wide via the viewport guard) —
+// diagram) and lets a finger pinch / drag — or the +/− / reset buttons (top-right,
+// kept clear of the ＋ quick-add FAB that hovers over the bottom-right corner;
+// kiosk-friendly, since native pinch is locked app-wide via the viewport guard) —
 // scale and pan within a clipped viewport. The child should fill the surface (e.g.
 // an <svg width="100%" height="100%"> with a viewBox + preserveAspectRatio) so it
 // fits at scale 1 and only the transform grows it. Transform lives in a ref and is

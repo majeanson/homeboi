@@ -22,7 +22,17 @@ import { findEntry, pushEntry, removeEntry, type UndoEntry } from './undoStack'
 //
 // The provider lives at the app root, so timers survive route changes (leaving a
 // page still commits its held writes), and a teardown commits anything pending.
-const DEFAULT_UNDO_MS = 7000
+//
+// The hold window is 15 s on purpose: long enough that several quick destructive
+// taps in a row all stay live AT ONCE, so you can take back more than the last one
+// (expand "Récents (N)" → each still-live row keeps its "Annuler"). Shorter and the
+// earlier deletes commit before you notice you wanted them back.
+const DEFAULT_UNDO_MS = 15000
+// How long the toast BAR itself stays on screen after the last action. Matches the
+// hold window so the toast is visible for exactly as long as anything it shows is
+// still undoable; once it fires the bar auto-clears (the session log lives on for
+// Réglages ▸ Récents — we just stop parking the bar over the UI / mobile nav).
+const TOAST_DISMISS_MS = 15000
 
 interface UndoRequest {
   message: string
@@ -36,7 +46,7 @@ interface RecordRequest {
 }
 // One line in the calm "Récents" session log (#38): what happened + when. Mirrors
 // the undo stack but OUTLIVES it — the stack drops an entry once its write commits
-// (≤7s), while the log keeps the last few so you can glance back at "what just
+// (≤15s), while the log keeps the last few so you can glance back at "what just
 // happened" for the session (reachable from the toast and Réglages). Session-only,
 // in-memory: it clears on reload (no server audit log — calm tenet, no history DB).
 export interface RecentItem {
@@ -81,6 +91,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
   const idRef = useRef(0)
   const [expanded, setExpanded] = useState(false)
+  // Whether the toast BAR is on screen. Each action shows it and (re)arms a single
+  // 15 s auto-dismiss; once that fires the bar hides itself even though the session
+  // log (history) lives on for Réglages ▸ Récents. It used to linger forever as a
+  // quiet "Récents" opener, parking over the UI — now it auto-clears.
+  const [visible, setVisible] = useState(false)
+  const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const apply = useCallback((producer: (cur: UndoEntry[]) => UndoEntry[]) => {
     const next = producer(entriesRef.current)
@@ -94,6 +110,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       clearTimeout(tm)
       timers.current.delete(id)
     }
+  }, [])
+
+  // Show the bar and (re)arm the single auto-dismiss so it clears 15 s after the
+  // LAST activity — a fresh action, an undo, or collapsing the expanded log. Hiding
+  // the bar never touches `history`: the session log stays for Réglages ▸ Récents.
+  const showBar = useCallback(() => {
+    setVisible(true)
+    if (dismissTimer.current) clearTimeout(dismissTimer.current)
+    dismissTimer.current = setTimeout(() => {
+      dismissTimer.current = null
+      setVisible(false)
+      setExpanded(false)
+    }, TOAST_DISMISS_MS)
+  }, [])
+
+  // Pin the bar open (no auto-dismiss) while the user is reading the expanded log.
+  const pinBar = useCallback(() => {
+    if (dismissTimer.current) {
+      clearTimeout(dismissTimer.current)
+      dismissTimer.current = null
+    }
+    setVisible(true)
   }, [])
 
   // Finalize an entry when its timer fires: drop it from the stack and, for a
@@ -123,8 +161,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setEntries(next)
       // Mirror into the session log (keeps committed ones the live stack drops).
       setHistory((h) => [...h, { id: entry.id, message: entry.message, at: Date.now() }].slice(-MAX_RECENTS))
+      // Show the bar and (re)start the 15 s auto-dismiss for this fresh action.
+      showBar()
     },
-    [clearTimer],
+    [clearTimer, showBar],
   )
 
   const schedule = useCallback(
@@ -167,8 +207,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       e.onUndo()
       // It was reversed → drop it from the session log (it didn't ultimately happen).
       setHistory((h) => h.filter((r) => r.id !== id))
+      // Keep the bar up so you can keep taking back more than one in a row.
+      showBar()
     },
-    [apply, clearTimer],
+    [apply, clearTimer, showBar],
   )
 
   // Whether an action can still be taken back (its entry is still in the live stack).
@@ -186,6 +228,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setEntries([])
     setHistory([])
     setExpanded(false)
+    if (dismissTimer.current) {
+      clearTimeout(dismissTimer.current)
+      dismissTimer.current = null
+    }
+    setVisible(false)
   }, [clearTimer])
 
   // Collapse the expanded panel only when the session log itself is empty — there's
@@ -203,6 +250,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       entriesRef.current.forEach((e) => {
         if (e.kind === 'deferred') e.onCommit?.()
       })
+      if (dismissTimer.current) clearTimeout(dismissTimer.current)
     },
     [],
   )
@@ -212,11 +260,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ schedule, record, history, undo, isLive }}>
       {children}
-      {/* The toast stays mounted while ANYTHING is in the session log — not only
-          while a write is still held — so the "Récents" history is reachable right
-          here (the same quick list as Réglages), not only from settings after the
-          pill would have faded. */}
-      {(newest || history.length > 0) && (
+      {/* The bar shows while `visible` — set on every action and (re)armed to clear
+          15 s after the last one (pinned open while you read the expanded log). Once
+          it auto-dismisses the session log still lives on in Réglages ▸ Récents; the
+          bar just stops parking over the UI / mobile nav. */}
+      {visible && (newest || history.length > 0) && (
         <div
           className={`undo-toast${expanded ? ' undo-toast--stack' : ''}${!newest && !expanded ? ' undo-toast--log' : ''}`}
           data-surface={surface}
@@ -248,7 +296,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   type="button"
                   className="undo-toast__more"
                   aria-expanded={true}
-                  onClick={() => setExpanded(false)}
+                  onClick={() => {
+                    setExpanded(false)
+                    showBar() // collapsed → restart the 15 s auto-dismiss
+                  }}
                 >
                   <Icon name="caret-down-bold" size={16} />
                   {t.undo.hide}
@@ -267,7 +318,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   type="button"
                   className="undo-toast__more"
                   aria-expanded={false}
-                  onClick={() => setExpanded(true)}
+                  onClick={() => {
+                    pinBar() // reading the log → don't auto-dismiss out from under them
+                    setExpanded(true)
+                  }}
                 >
                   <Icon name="caret-up-bold" size={16} />
                   {t.undo.more(history.length)}
@@ -285,7 +339,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               className="undo-toast__more"
               aria-expanded={false}
-              onClick={() => setExpanded(true)}
+              onClick={() => {
+                pinBar()
+                setExpanded(true)
+              }}
             >
               <Icon name="clock-bold" size={16} />
               {t.undo.more(history.length)}

@@ -198,7 +198,12 @@ export function CashierMode({
 
       <div className="cashier__stage">
         <div className="bigcard">
-          <span className="bigcard__store">{d.merchant}</span>
+          {/* Source flyer band: logo + store, so "where this deal is from" reads at
+              a glance before the cashier even taps "Voir la circulaire". */}
+          <span className="bigcard__store">
+            {d.logo && <img className="bigcard__logo" src={d.logo} alt="" loading="lazy" />}
+            {d.merchant}
+          </span>
           {d.image && <ZoomableImg className="bigcard__img" src={d.image} alt={d.name} />}
           <span className="bigcard__for mono">
             {t.shop.matchFor}: {cur.itemText}

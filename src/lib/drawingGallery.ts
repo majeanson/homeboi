@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
 import { imgUrl } from './image'
 import { BOARD_KEY } from './queryKeys'
+import { useT } from '../i18n'
+import { useRecordUndo } from './toast'
 
 // The drawing collection / gallery (#14): kept drawings (the lasting "Mes dessins",
 // especially a toddler's), distinct from transient fridge notes. Each entry owns
@@ -39,10 +41,12 @@ async function uploadDrawing(png: Blob, scene: string): Promise<{ media_key: str
 
 export function useSaveToGallery() {
   const qc = useQueryClient()
-  // Keep a NEW drawing (its own blobs → independent of any fridge note).
-  return async (png: Blob, scene = '') => {
-    await api('drawings', { method: 'POST', body: await uploadDrawing(png, scene) })
+  // Keep a NEW drawing (its own blobs → independent of any fridge note). Returns the
+  // new row id so the caller can offer an undoable "kept" toast (delete it back).
+  return async (png: Blob, scene = ''): Promise<string> => {
+    const { id } = await api<{ id: string }>('drawings', { method: 'POST', body: await uploadDrawing(png, scene) })
     qc.invalidateQueries({ queryKey: GALLERY_KEY })
+    return id
   }
 }
 
@@ -97,8 +101,49 @@ export function usePinToFridge() {
 // fresh INDEPENDENT copy, so clearing the note never frees the kept drawing.
 export function useKeepKeysInGallery() {
   const save = useSaveToGallery()
-  return async (media_key: string, scene_key?: string | null) => {
+  // Returns the new gallery row id (for an undoable "kept" toast).
+  return async (media_key: string, scene_key?: string | null): Promise<string> => {
     const { png, scene } = await fetchDrawingBlobs(media_key, scene_key)
-    await save(png, scene)
+    return save(png, scene)
+  }
+}
+
+// Keeping a drawing into « Mes dessins » used to give no clear feedback (just a quiet
+// badge swap). These wrap the keep in the calm, undoable toast so EVERY save-to-gallery
+// across the app (board paint badge, in-pad "Garder", the ＋ memo sheet) reads the same.
+// Best-effort: a failed keep (R2 unset / offline) resolves to null without throwing.
+// `onUndo` is an extra side-effect to run if the keep is taken back (e.g. revert a badge).
+
+// Keep a fresh drawing (png + scene) with a confirming, undoable toast.
+export function useKeepInGalleryToast() {
+  const save = useSaveToGallery()
+  const remove = useDeleteFromGallery()
+  const record = useRecordUndo()
+  const t = useT()
+  return async (png: Blob, scene = '', onUndo?: () => void): Promise<string | null> => {
+    try {
+      const id = await save(png, scene)
+      record({ message: t.memo.savedToGallery, onUndo: () => { onUndo?.(); void remove(id).catch(() => {}) } })
+      return id
+    } catch {
+      return null
+    }
+  }
+}
+
+// Keep an existing drawing (by its R2 keys → an independent copy) with the same toast.
+export function useKeepKeysInGalleryToast() {
+  const keep = useKeepKeysInGallery()
+  const remove = useDeleteFromGallery()
+  const record = useRecordUndo()
+  const t = useT()
+  return async (media_key: string, scene_key?: string | null, onUndo?: () => void): Promise<string | null> => {
+    try {
+      const id = await keep(media_key, scene_key)
+      record({ message: t.memo.savedToGallery, onUndo: () => { onUndo?.(); void remove(id).catch(() => {}) } })
+      return id
+    } catch {
+      return null
+    }
   }
 }

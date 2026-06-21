@@ -8,9 +8,11 @@ import { useSpeak } from '../../lib/speak'
 import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
 import { useDrawingToRoutine } from '../../lib/drawingToRoutine'
-import { useSaveToGallery, useKeepKeysInGallery } from '../../lib/drawingGallery'
+import { useKeepInGalleryToast, useKeepKeysInGalleryToast } from '../../lib/drawingGallery'
+import { useDrawEdit } from '../../lib/drawEdit'
 import { Icon, InlineIcon } from '../Icon'
 import { DrawPad } from '../DrawPad'
+import { DrawEditChoice } from '../DrawEditChoice'
 import { ZoomableImg } from '../ZoomableImg'
 import { colorOf as memberColorOf, type BoardData, type Member, type NoteRow } from './types'
 
@@ -43,15 +45,18 @@ export function Notes({
   const qc = useQueryClient()
   const speak = useSpeak()
   const toRoutine = useDrawingToRoutine()
-  const keepInGallery = useSaveToGallery()
+  // Keep a drawing into « Mes dessins » with a calm, undoable confirming toast (the
+  // paint badge / in-pad "Garder" gave no clear feedback before). Best-effort.
+  const keepInGallery = useKeepInGalleryToast()
   // Keep a board drawing into « Mes dessins » WITHOUT opening the pad — an independent
   // copy, so clearing the note later never frees the kept drawing (#14, never lose one).
-  const keepKeysInGallery = useKeepKeysInGallery()
+  const keepKeysInGallery = useKeepKeysInGalleryToast()
   const [kept, setKept] = useState<Set<string>>(new Set())
   // One shared <audio> so playing a voice memo (#38) stops any previous one.
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  // A drawing being re-opened in DrawPad to add to it (#14, the shared family doodle).
-  const [editing, setEditing] = useState<NoteRow | null>(null)
+  // Re-opening a drawing (#14): the shared chooser (modify / copy / calquer) + the pad
+  // load props it resolves to. `draw.isNew` says copy/trace (→ a new note) vs modify.
+  const draw = useDrawEdit<NoteRow>()
   // A brand-new drawing being created from this strip's quick-add (parallel to the
   // ＋ "Note rapide" sheet's MemoControls) — opens a blank DrawPad and POSTs a note.
   const [creating, setCreating] = useState(false)
@@ -71,8 +76,6 @@ export function Notes({
   // Media uploads can't be queued offline (the R2 blob must land), so this uses
   // api() directly; the board poll/realtime reconciles the card.
   async function saveDrawing(png: Blob, scene: string, note: NoteRow | null) {
-    setEditing(null)
-    setCreating(false)
     try {
       const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: png })
       let sceneKey: string | undefined
@@ -107,12 +110,11 @@ export function Notes({
 
   async function keepNote(n: NoteRow) {
     if (!n.media_key) return
-    try {
-      await keepKeysInGallery(n.media_key, n.scene_key)
-      setKept((s) => new Set(s).add(n.id))
-    } catch {
-      /* R2 unset / offline — the note stays put, nothing lost */
-    }
+    // Toast confirms + offers undo; on undo the badge reverts. Best-effort (null on fail).
+    const id = await keepKeysInGallery(n.media_key, n.scene_key, () =>
+      setKept((s) => { const x = new Set(s); x.delete(n.id); return x }),
+    )
+    if (id) setKept((s) => new Set(s).add(n.id))
   }
 
   function dismiss(n: NoteRow) {
@@ -130,7 +132,7 @@ export function Notes({
   // Nothing to show and nothing being edited — render nothing. The trailing
   // `action` (the gallery door) keeps the section alive even with zero current
   // drawings, since saved drawings live on in the gallery regardless.
-  if (!shown.length && !editing && !creating && !action) return null
+  if (!shown.length && !draw.editing && !creating && !action) return null
 
   // The strip's own quick-add: parent lens (drawings variant is never toddler) can
   // start a NEW drawing right here, not only from the ＋ "Note rapide" sheet. Hidden
@@ -197,7 +199,7 @@ export function Notes({
                       <button
                         type="button"
                         className="note-card__edit-badge note-card__edit-badge--btn"
-                        onClick={() => setEditing(n)}
+                        onClick={() => draw.begin(n)}
                         aria-label={t.memo.edit}
                       >
                         <Icon name="pencil-simple-bold" size={14} />
@@ -275,17 +277,24 @@ export function Notes({
             wide tablet, wrapping under them on a phone. */}
         {action && <div className="notes__action">{action}</div>}
       </div>
-      {editing && (
+      {/* Ask how to continue a kept drawing before opening the pad (#14). */}
+      <DrawEditChoice open={draw.chooserOpen} onCancel={draw.cancelChoice} onPick={draw.pick} />
+      {draw.editing && (
         <DrawPad
           open
           toddler={toddler}
-          initial={editing.media_key ? imgUrl(editing.media_key) : undefined}
-          initialSceneUrl={editing.scene_key ? imgUrl(editing.scene_key) : undefined}
-          onCancel={() => setEditing(null)}
-          onSave={(png, scene) => void saveDrawing(png, scene, editing)}
+          {...draw.padProps!}
+          onCancel={draw.close}
+          // Modify edits the note in place; copy/trace save a fresh, independent note
+          // so the original drawing stays exactly as it was.
+          onSave={(png, scene) => {
+            const note = draw.isNew ? null : draw.editing
+            draw.close()
+            void saveDrawing(png, scene, note)
+          }}
           // Keep a permanent copy in « Mes dessins » — available to toddlers too, so
           // a child can save their own art (not just pin the fridge note).
-          onKeep={(png, scene) => void keepInGallery(png, scene).catch(() => {})}
+          onKeep={(png, scene) => void keepInGallery(png, scene)}
           // Make-routine stays parent-only: it leaves into the parent routine builder.
           // toRoutine keeps an independent gallery copy first, so the drawing is never lost.
           onMakeRoutine={toddler ? undefined : (png, scene) => void toRoutine(png, scene)}
@@ -295,8 +304,11 @@ export function Notes({
         <DrawPad
           open
           onCancel={() => setCreating(false)}
-          onSave={(png, scene) => void saveDrawing(png, scene, null)}
-          onKeep={(png, scene) => void keepInGallery(png, scene).catch(() => {})}
+          onSave={(png, scene) => {
+            setCreating(false)
+            void saveDrawing(png, scene, null)
+          }}
+          onKeep={(png, scene) => void keepInGallery(png, scene)}
           onMakeRoutine={(png, scene) => void toRoutine(png, scene)}
         />
       )}

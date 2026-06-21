@@ -70,11 +70,12 @@
   transform-origin: 0 0;
   will-change: transform;
 }
-/* The +− / reset cluster floats over the surface's bottom-right corner. */
+/* The +− / reset cluster floats over the surface's top-right corner — clear of the
+   ＋ quick-add FAB, which hovers over the bottom-right and would otherwise cover it. */
 .panzoom__controls {
   position: absolute;
   right: 0.5rem;
-  bottom: 0.5rem;
+  top: 0.5rem;
   display: flex;
   gap: 0.3rem;
   padding: 0.25rem;
@@ -302,6 +303,11 @@
 }
 .store-filter__toggle {
   flex: 0 0 auto;
+}
+/* Secondary, quieter than the include toggle: this only tweaks the till view. */
+.store-filter__till {
+  flex: 0 0 auto;
+  font-size: 0.85em;
 }
 
 /* Réglages ▸ Repas — one row per meal slot: its label + coloured icon chip, the

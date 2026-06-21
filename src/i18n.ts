@@ -286,6 +286,17 @@ export const FR = {
     pinnedToFridge: 'Épinglé au babillard',
     saveToGallery: 'Garder dans Mes dessins',
     savedToGallery: 'Gardé dans Mes dessins',
+    // #14 — choix au moment de retoucher un dessin gardé : le modifier pour vrai,
+    // en faire une copie identique, ou le calquer en filigrane (les deux derniers
+    // gardent l’original intact).
+    editChoiceTitle: 'Continuer le dessin',
+    editChoiceSub: 'Que veux-tu faire avec ce dessin?',
+    editChoiceModify: 'Modifier l’original',
+    editChoiceModifyHint: 'Change ce dessin-ci.',
+    editChoiceCopy: 'En faire une copie',
+    editChoiceCopyHint: 'Une copie identique à retoucher — l’original reste.',
+    editChoiceTrace: 'Calquer',
+    editChoiceTraceHint: 'L’original en filigrane pour redessiner par-dessus — l’original reste.',
     // #14b — dessiner par-dessus une photo en filigrane (calque-photo).
     drawPhoto: 'Sur une photo',
     photo: 'Photo',
@@ -1092,6 +1103,11 @@ export const FR = {
     storeFilterEmpty: 'Aucun magasin trouvé près de chez toi.',
     storeIncluded: 'Inclus',
     storeExcluded: 'Exclu',
+    storeCashier: 'À la caisse',
+    storeCashierOn: 'Oui',
+    storeCashierOff: 'Non',
+    storeCashierHint:
+      'Cache les rabais de ce magasin dans « Montrer à la caisse » — pratique pour le magasin où tu fais ton épicerie.',
     history: 'Articles déjà achetés',
     historyHint:
       'Ce que l’« Ajout rapide » propose. Renomme un article spécifique vers son nom générique (ex. « Oeuf blanc sélection » → « Oeufs ») pour le regrouper, ou retire-le.',
@@ -1741,6 +1757,14 @@ export const EN: typeof FR = {
     pinnedToFridge: 'Pinned to the board',
     saveToGallery: 'Keep in My drawings',
     savedToGallery: 'Kept in My drawings',
+    editChoiceTitle: 'Continue drawing',
+    editChoiceSub: 'What do you want to do with this drawing?',
+    editChoiceModify: 'Edit the original',
+    editChoiceModifyHint: 'Changes this drawing.',
+    editChoiceCopy: 'Make a copy',
+    editChoiceCopyHint: 'An identical copy to edit — the original stays.',
+    editChoiceTrace: 'Trace over',
+    editChoiceTraceHint: 'The original faded as a guide to redraw over — the original stays.',
     // #14b — draw over a faint watermark photo (photo layer).
     drawPhoto: 'Over a photo',
     photo: 'Photo',
@@ -2536,6 +2560,11 @@ export const EN: typeof FR = {
     storeFilterEmpty: 'No stores found near you.',
     storeIncluded: 'Included',
     storeExcluded: 'Excluded',
+    storeCashier: 'At the till',
+    storeCashierOn: 'Yes',
+    storeCashierOff: 'No',
+    storeCashierHint:
+      'Hides this store’s deals in “Show the cashier” — handy for the store where you do your own shopping.',
     history: 'Items bought before',
     historyHint:
       'What “Quick add” suggests. Rename a specific item to its generic name (e.g. “White eggs selection” → “Eggs”) to fold it in, or remove it.',

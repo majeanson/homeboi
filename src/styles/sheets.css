@@ -2062,10 +2062,20 @@ body.is-recording .add-fab {
   gap: 6px;
 }
 .bigcard__store {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-family: var(--display);
   font-weight: 800;
   font-size: 22px;
   color: var(--ink);
+}
+.bigcard__logo {
+  width: 1.6em;
+  height: 1.6em;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
 }
 .bigcard__img {
   width: min(72vw, 320px);

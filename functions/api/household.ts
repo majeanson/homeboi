@@ -1,7 +1,7 @@
 import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
-import { householdIncludedStores, storeKey } from '../_lib/stores'
+import { householdIncludedStores, householdCashierExcludedStores, storeKey } from '../_lib/stores'
 import { householdMealSlotPrefs, cleanColors, cleanHidden } from '../_lib/mealSlots'
 import { householdMeasureColors, cleanMeasureColors } from '../_lib/measureColors'
 import { householdReserveLocations, cleanReserveLocations } from '../_lib/reserveLocations'
@@ -31,6 +31,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const name = await householdName(ctx.env, actor.householdId)
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
+  const cashierExcludedStores = await householdCashierExcludedStores(ctx.env, actor.householdId)
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
   const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
@@ -39,6 +40,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     name,
     postal,
     includedStores,
+    cashierExcludedStores,
     mealColors: meals.colors,
     mealHidden: meals.hidden,
     measureColors,
@@ -52,6 +54,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     name?: string
     postal?: string | null
     includedStores?: string[]
+    cashierExcludedStores?: string[]
     mealColors?: Record<string, string>
     mealHidden?: string[]
     measureColors?: Record<string, string>
@@ -93,6 +96,19 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       ...new Set(body.includedStores.filter((s): s is string => typeof s === 'string').map(storeKey).filter(Boolean)),
     ]
     await ctx.env.DB.prepare('UPDATE households SET included_stores = ?, updated_at = ? WHERE id = ?')
+      .bind(keys.length ? JSON.stringify(keys) : null, nowSec(), actor.householdId)
+      .run()
+  }
+
+  // Stores hidden in "Montrer à la caisse" only (migration 0066). Same normalized
+  // merchant keys; empty list clears the column (NULL = nothing hidden at the till).
+  if (body && Array.isArray(body.cashierExcludedStores)) {
+    const keys = [
+      ...new Set(
+        body.cashierExcludedStores.filter((s): s is string => typeof s === 'string').map(storeKey).filter(Boolean),
+      ),
+    ]
+    await ctx.env.DB.prepare('UPDATE households SET cashier_excluded_stores = ?, updated_at = ? WHERE id = ?')
       .bind(keys.length ? JSON.stringify(keys) : null, nowSec(), actor.householdId)
       .run()
   }
@@ -147,6 +163,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const name = await householdName(ctx.env, actor.householdId)
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
+  const cashierExcludedStores = await householdCashierExcludedStores(ctx.env, actor.householdId)
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
   const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
@@ -155,6 +172,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     name,
     postal,
     includedStores,
+    cashierExcludedStores,
     mealColors: meals.colors,
     mealHidden: meals.hidden,
     measureColors,

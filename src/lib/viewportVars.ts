@@ -107,8 +107,23 @@ export function trackVisualViewport(): void {
     // A hardware keyboard never opens the OSK, so there's no falling edge and
     // typing on it is untouched.
     else if (!open && kbOpen) {
+      // …but a single-frame DIP in the computed inset reads as "closed" too. It
+      // happens when you focus a field at the BOTTOM of a page: the rubber-band /
+      // pin-scroll nudges vv.offsetTop (which this inset subtracts), or the
+      // address bar's show races vv.height — worst with a combobox dropdown that
+      // grows the layout on focus, creating the scroll room for it. Blurring on
+      // that transient nukes the focus the user just placed → the keyboard
+      // dismisses and the dropdown snaps shut before they can type. So CONFIRM the
+      // close held: re-read the inset a moment later and only blur if the keyboard
+      // is really still gone (the genuine "Hide Keyboard" case stays gone).
       const el = document.activeElement
-      if (isEditable(el)) el.blur()
+      if (isEditable(el)) {
+        setTimeout(() => {
+          if (document.activeElement !== el) return
+          const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
+          if (inset <= KB_THRESHOLD) el.blur()
+        }, 250)
+      }
     }
     kbOpen = open
   }

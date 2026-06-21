@@ -69,7 +69,11 @@ export function ShopSection({ help }: { help?: HelpMode }) {
 // the ones they shop (an allowlist). A store left out is dropped server-side
 // (/api/deals and /api/flyers), so it never reaches the deal cards, the store
 // picker, or the price-match proof. With nothing narrowed, every store is kept.
-type ManageStore = { key: string; merchant: string; logo: string | null; included: boolean }
+// `included` = the store is considered in deal/flyer lookups (the allowlist).
+// `tillHidden` = its deals are dropped from "Montrer à la caisse" only — the store
+// you do your own shopping at, where holding up its own flyer to its own cashier is
+// pointless (migration 0066). The two flags are independent.
+type ManageStore = { key: string; merchant: string; logo: string | null; included: boolean; tillHidden: boolean }
 
 export function StoreFilterSection({ help }: { help?: HelpMode }) {
   const t = useT()
@@ -85,18 +89,30 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
       // household supplies the stored keys, so a store the operator kept that's no
       // longer in this week's feed still shows here and can be toggled.
       const [hh, fl] = await Promise.all([
-        api<{ includedStores: string[] }>('household'),
+        api<{ includedStores: string[]; cashierExcludedStores: string[] }>('household'),
         api<{ flyers: FlyerSummary[] }>('flyers?manage=1'),
       ])
       const included = new Set(hh.includedStores ?? [])
+      const tillHidden = new Set(hh.cashierExcludedStores ?? [])
       const noFilter = included.size === 0 // unconfigured = every store kept
       const byKey = new Map<string, ManageStore>()
       for (const f of fl.flyers) {
         const key = f.merchant.trim().toLowerCase()
-        byKey.set(key, { key, merchant: f.merchant, logo: f.logo, included: f.included ?? (noFilter || included.has(key)) })
+        byKey.set(key, {
+          key,
+          merchant: f.merchant,
+          logo: f.logo,
+          included: f.included ?? (noFilter || included.has(key)),
+          tillHidden: tillHidden.has(key),
+        })
       }
       for (const key of included) {
-        if (!byKey.has(key)) byKey.set(key, { key, merchant: key, logo: null, included: true })
+        if (!byKey.has(key)) byKey.set(key, { key, merchant: key, logo: null, included: true, tillHidden: tillHidden.has(key) })
+      }
+      // A store may be hidden-at-till yet have dropped out of this week's feed and the
+      // include list — keep it visible so its till flag stays toggleable.
+      for (const key of tillHidden) {
+        if (!byKey.has(key)) byKey.set(key, { key, merchant: key, logo: null, included: noFilter, tillHidden: true })
       }
       const list = [...byKey.values()].sort((a, b) => a.merchant.localeCompare(b.merchant))
       setStores(list)
@@ -120,6 +136,30 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
         method: 'PATCH',
         body: { includedStores: next.filter((x) => x.included).map((x) => x.key) },
         affectedKeys: [['flyers']],
+      })
+    } catch {
+      setStores(prev) // revert on failure
+    } finally {
+      setPending((p) => {
+        const n = new Set(p)
+        n.delete(s.key)
+        return n
+      })
+    }
+  }
+
+  // Toggle the "hide at the till" flag — independent of the include allowlist, so it
+  // PATCHes its own field and doesn't touch deal/flyer lookups (no affectedKeys).
+  async function toggleTill(s: ManageStore) {
+    if (!stores) return
+    const prev = stores
+    const next = stores.map((x) => (x.key === s.key ? { ...x, tillHidden: !x.tillHidden } : x))
+    setStores(next) // optimistic
+    setPending((p) => new Set(p).add(s.key))
+    try {
+      await write('household', {
+        method: 'PATCH',
+        body: { cashierExcludedStores: next.filter((x) => x.tillHidden).map((x) => x.key) },
       })
     } catch {
       setStores(prev) // revert on failure
@@ -165,6 +205,26 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
                   {s.included ? t.operator.storeIncluded : t.operator.storeExcluded}
                 </button>
               )}
+              {/* "À la caisse: Oui/Non" — only meaningful for an included store (an
+                  excluded one never reaches the till anyway). Oui = shown to the
+                  cashier; Non = hidden there (e.g. the store you shop at). */}
+              {s.included &&
+                (isGuest() ? (
+                  <span className="mono store-filter__till" title={t.operator.storeCashierHint}>
+                    {t.operator.storeCashier}: {s.tillHidden ? t.operator.storeCashierOff : t.operator.storeCashierOn}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className={'btn mono store-filter__till' + (s.tillHidden ? ' btn--ghost' : ' btn--primary')}
+                    onClick={() => toggleTill(s)}
+                    disabled={pending.has(s.key)}
+                    aria-pressed={!s.tillHidden}
+                    title={t.operator.storeCashierHint}
+                  >
+                    {t.operator.storeCashier}: {s.tillHidden ? t.operator.storeCashierOff : t.operator.storeCashierOn}
+                  </button>
+                ))}
             </li>
           ))}
         </ul>

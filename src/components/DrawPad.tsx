@@ -239,6 +239,7 @@ export function DrawPad({
   onMakeRoutine,
   initial,
   initialSceneUrl,
+  filigrane,
   pickPhotoOnOpen,
   toddler,
 }: {
@@ -255,6 +256,11 @@ export function DrawPad({
   initial?: string
   // Preferred: a URL to the editable scene JSON; rebuilt into editable layers.
   initialSceneUrl?: string
+  // #14 "Calquer": load `initial` as a FADED, removable tracing layer (a watermark
+  // photo) instead of editable strokes — you redraw over the original and the caller
+  // saves a NEW copy, leaving the source drawing untouched. The fade slider / remove
+  // controls (#14b) apply to it, so the guide can be dialled or cleared before saving.
+  filigrane?: boolean
   // #14b — open straight into the "draw over a photo" flow: prompts for a photo and
   // shows a one-tap "Choisir une photo" target over the empty stage until one is set.
   pickPhotoOnOpen?: boolean
@@ -892,13 +898,22 @@ export function DrawPad({
     baseImgRef.current = null
     if (!open) return
     let cancelled = false
-    const loadBase = () => {
+    // `asPhoto` loads the base as the #14b watermark layer (faded + removable) — used
+    // for "Calquer", where the original is only a tracing guide, not editable content.
+    const loadBase = (asPhoto = false) => {
       if (!initial) return
       const img = new Image()
       img.crossOrigin = 'anonymous'
-      img.onload = () => { if (!cancelled) { baseImgRef.current = img; render(padRef.current?.toData() ?? []) } }
+      img.onload = () => {
+        if (cancelled) return
+        baseImgRef.current = img
+        if (asPhoto) { photoAlphaRef.current = 0.4; setPhotoAlpha(0.4); setHasPhoto(true) }
+        render(padRef.current?.toData() ?? [])
+      }
       img.src = initial
     }
+    // Calquer: ignore the editable scene; the original rides as a faded tracing layer.
+    if (filigrane) { loadBase(true); return () => { cancelled = true } }
     if (initialSceneUrl) {
       fetch(initialSceneUrl)
         .then((r) => r.text())
@@ -918,7 +933,7 @@ export function DrawPad({
     }
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initial, initialSceneUrl])
+  }, [open, initial, initialSceneUrl, filigrane])
 
   // signature_pad NEVER handles input itself (it can't map a zoomed coordinate); the
   // pad's pointer handlers drive every tool, including the pen. Keep it detached.

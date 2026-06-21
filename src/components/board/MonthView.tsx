@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
-import { TODOS_KEY } from '../../lib/queryKeys'
+import { TODOS_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDayLong, weekdayShort } from '../../lib/format'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
@@ -119,7 +119,7 @@ export function MonthView({
   const to = grid.days[grid.days.length - 1] + DAY
 
   const { data, isLoading } = useQuery({
-    queryKey: ['month', from],
+    queryKey: [...MONTH_KEY, from],
     queryFn: () => api<MonthData>(`month?from=${from}&to=${to}`),
     staleTime: 30_000,
   })
@@ -167,12 +167,12 @@ export function MonthView({
           return n
         }),
       onCommit: async () => {
-        await write('todos', { method: 'PATCH', body: { id: td.id, done: true }, affectedKeys: [TODOS_KEY, ['month']] }).catch(
+        await write('todos', { method: 'PATCH', body: { id: td.id, done: true }, affectedKeys: [TODOS_KEY, MONTH_KEY] }).catch(
           () => {},
         )
         // Wait for the month read to reflect the change before un-hiding, else the
         // stale cached frame (still holding the todo) flashes it back for a frame.
-        await qc.refetchQueries({ queryKey: ['month'] }).catch(() => {})
+        await qc.refetchQueries({ queryKey: MONTH_KEY }).catch(() => {})
         setPendingTodo((s) => {
           const n = new Set(s)
           n.delete(td.id)

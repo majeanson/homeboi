@@ -19,7 +19,7 @@ import { recipeImg } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
-import { BOARD_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { type TodoTemplate, type TemplatesData } from '../lib/todos'
 import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
@@ -408,7 +408,9 @@ export function AddSheet({
 
   // Add an "À compléter" todo (board ＋). Standing (day null) unless "Aujourd'hui"
   // is picked → today's local-midnight day. Offline-safe write; the board glance +
-  // any open todo view refetch via TODOS_KEY (prefix-matches day-scoped reads).
+  // any open todo view refetch via TODOS_KEY (prefix-matches day-scoped reads), and
+  // MONTH_KEY so a today-pinned add shows on the calendar/day page. (Not BOARD_KEY:
+  // the board payload's `todos` slice is the loose-chore "À faire", not these.)
   async function submitTodo(text?: string) {
     const value = (text ?? todoText).trim()
     if (!value || busy) return
@@ -417,7 +419,7 @@ export function AddSheet({
       await write('todos', {
         method: 'POST',
         body: { title: value, day: todoToday ? todayLocalDay() : null },
-        affectedKeys: [TODOS_KEY, BOARD_KEY],
+        affectedKeys: [TODOS_KEY, MONTH_KEY],
       })
       setTodoText('')
       setTodoToday(false)
@@ -438,7 +440,7 @@ export function AddSheet({
       await write('todos', {
         method: 'POST',
         body: { templateId, day: todoToday ? todayLocalDay() : null },
-        affectedKeys: [TODOS_KEY, BOARD_KEY],
+        affectedKeys: [TODOS_KEY, MONTH_KEY],
       })
       setTodoToday(false)
       close()

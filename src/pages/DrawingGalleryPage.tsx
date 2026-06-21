@@ -6,12 +6,15 @@ import { imgUrl } from '../lib/image'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useGallery, useSaveToGallery, useUpdateInGallery, useDeleteFromGallery, usePinToFridge } from '../lib/drawingGallery'
 import { useDrawingToRoutine } from '../lib/drawingToRoutine'
+import { useDrawEdit } from '../lib/drawEdit'
 import { useConfirm } from '../lib/confirm'
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
 import { DrawPad } from '../components/DrawPad'
+import { DrawEditChoice } from '../components/DrawEditChoice'
 import { ZoomableImg } from '../components/ZoomableImg'
+import type { GalleryDrawing } from '../lib/drawingGallery'
 
 // /drawings — the drawing COLLECTION / gallery (#14). "Mes dessins": a lasting wall
 // of kept drawings, especially a toddler's growing collection (big tap targets,
@@ -32,8 +35,11 @@ export function DrawingGalleryPage() {
   const toRoutine = useDrawingToRoutine()
   const pinToFridge = usePinToFridge()
   const confirm = useConfirm()
-  // The pad: closed, or open as a fresh sheet / continuing an existing drawing (id).
-  const [pad, setPad] = useState<{ open: boolean; id?: string; initial?: string; sceneUrl?: string }>({ open: false })
+  // Re-opening a kept drawing (#14): the shared chooser (modify / copy / calquer) and
+  // the pad load props it resolves to. `draw.isNew` = copy/trace (→ a new gallery row).
+  const draw = useDrawEdit<GalleryDrawing>()
+  // The ＋ "new blank drawing" flow (no chooser — there's no original to continue).
+  const [adding, setAdding] = useState(false)
   // Ids freshly pinned to the fridge this session — a calm "✓ épinglé" acknowledgement
   // (the drawing stays in the gallery; pinning makes an independent board copy).
   const [pinned, setPinned] = useState<Set<string>>(new Set())
@@ -48,10 +54,8 @@ export function DrawingGalleryPage() {
     }
   }
 
-  async function onSaved(png: Blob, scene: string) {
-    const id = pad.id
-    setPad({ open: false })
-    // Continuing a kept drawing replaces it in place; the ＋ flow keeps a new one.
+  // Modify replaces a row in place; the ＋ flow and copy/trace keep a new one.
+  async function onSaved(png: Blob, scene: string, id?: string) {
     await (id ? update(id, png, scene) : save(png, scene)).catch(() => {})
   }
   async function onDelete(id: string) {
@@ -63,7 +67,7 @@ export function DrawingGalleryPage() {
       <SceneHead title={t.memo.galleryTitle} icon="paint-brush-bold" onClose={close} />
       <div className="scene__body drawgallery__body">
         {!ro && (
-          <button type="button" className="btn btn--primary drawgallery__add" onClick={() => setPad({ open: true })}>
+          <button type="button" className="btn btn--primary drawgallery__add" onClick={() => setAdding(true)}>
             <Icon name="plus-bold" size={18} /> {t.memo.draw}
           </button>
         )}
@@ -83,7 +87,7 @@ export function DrawingGalleryPage() {
                   <button
                     type="button"
                     className="drawgallery__open"
-                    onClick={() => setPad({ open: true, id: d.id, initial: imgUrl(d.media_key), sceneUrl: d.scene_key ? imgUrl(d.scene_key) : undefined })}
+                    onClick={() => draw.begin(d)}
                     aria-label={t.memo.editTitle}
                   >
                     <img src={imgUrl(d.media_key)} alt={t.notes.drawing} loading="lazy" />
@@ -110,17 +114,25 @@ export function DrawingGalleryPage() {
           </div>
         )}
       </div>
-      {pad.open && (
+      {/* Ask how to continue a kept drawing before opening the pad (#14): modify in
+          place, an independent copy, or a faded calque. */}
+      <DrawEditChoice open={draw.chooserOpen} onCancel={draw.cancelChoice} onPick={draw.pick} />
+      {(adding || draw.editing) && (
         <DrawPad
           open
           toddler={toddler}
-          initial={pad.initial}
-          initialSceneUrl={pad.sceneUrl}
-          onCancel={() => setPad({ open: false })}
-          onSave={(png, scene) => void onSaved(png, scene)}
-          // Continuing a kept item is already in the gallery (keep:false avoids a
-          // duplicate); the ＋ new flow keeps a copy so it's never lost.
-          onMakeRoutine={toddler ? undefined : (png, scene) => void toRoutine(png, scene, { keep: !pad.id })}
+          {...(draw.editing ? draw.padProps! : {})}
+          onCancel={() => { setAdding(false); draw.close() }}
+          onSave={(png, scene) => {
+            // Modify edits this row in place; ＋ new and copy/trace make a new entry.
+            const id = draw.editing && !draw.isNew ? draw.editing.id : undefined
+            setAdding(false)
+            draw.close()
+            void onSaved(png, scene, id)
+          }}
+          // Modifying an existing item is already in the gallery (keep:false avoids a
+          // duplicate); a new / copied / traced drawing keeps a copy so it's never lost.
+          onMakeRoutine={toddler ? undefined : (png, scene) => void toRoutine(png, scene, { keep: adding || draw.isNew })}
         />
       )}
     </div>

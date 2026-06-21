@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
 import { formatDay } from '../../lib/format'
 import { api, ApiError, isStatus } from '../../lib/api'
@@ -18,6 +18,8 @@ import { EditField } from '../EditField'
 import { MemoControls } from '../MemoControls'
 import { ZoomableImg } from '../ZoomableImg'
 import { DrawPad } from '../DrawPad'
+import { DrawEditChoice } from '../DrawEditChoice'
+import { useDrawEdit } from '../../lib/drawEdit'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
 // « Le cercle » → Famille → "Notes & recommandations". iOS-Notes-style quick notes
@@ -38,6 +40,7 @@ export function CercleNotes({
   const t = useT()
   const { lang } = useLang()
   const write = useWrite()
+  const qc = useQueryClient()
   const { memberId: profileId } = useProfile()
   const ro = isGuest()
 
@@ -55,7 +58,9 @@ export function CercleNotes({
   const [query, setQuery] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
-  const [redraw, setRedraw] = useState<FamilyNote | null>(null)
+  // Re-opening a drawing note (#14): the shared chooser (modify / copy / calquer) + the
+  // pad load props it resolves to. `draw.isNew` = copy/trace (→ a new note in this list).
+  const draw = useDrawEdit<FamilyNote>()
   const [drawHidden, setDrawHidden] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -119,10 +124,11 @@ export function CercleNotes({
     )
   }
 
-  // Re-draw a drawing note in place (mirror board Notes.saveDrawing): upload the PNG +
-  // editable scene, then PATCH the row. Media can't be queued offline, so api() direct.
-  async function saveDrawing(png: Blob, scene: string, note: FamilyNote) {
-    setRedraw(null)
+  // Re-draw a drawing note (mirror board Notes.saveDrawing): upload the PNG + editable
+  // scene, then either PATCH the row in place (modify) or POST a fresh note in the same
+  // scope (copy / calquer — the original stays). Media can't be queued offline → api()
+  // direct; invalidate so the new/edited note shows at once.
+  async function saveDrawing(png: Blob, scene: string, note: FamilyNote, isNew: boolean) {
     try {
       const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: png })
       let sceneKey: string | undefined
@@ -137,10 +143,20 @@ export function CercleNotes({
           /* scene optional */
         }
       }
-      await api('family-notes', { method: 'PATCH', body: { id: note.id, media_key: key, scene_key: sceneKey } })
+      if (isNew) {
+        // Keep the copy in the same list as the original (member_id NULL = Maisonnée).
+        await api('family-notes', {
+          method: 'POST',
+          body: { media_kind: 'drawing', media_key: key, scene_key: sceneKey, text: '', scope: note.member_id ? 'self' : 'family', member_id: note.member_id },
+        })
+      } else {
+        await api('family-notes', { method: 'PATCH', body: { id: note.id, media_key: key, scene_key: sceneKey } })
+      }
     } catch (e) {
       if (isStatus(e, 503)) setDrawHidden(true)
       else if (!(e instanceof ApiError)) throw e
+    } finally {
+      qc.invalidateQueries({ queryKey: FAMILY_NOTES_KEY })
     }
   }
 
@@ -334,7 +350,7 @@ export function CercleNotes({
                 {!ro && (
                   <span className="cnote__actions">
                     {media === 'drawing' && (
-                      <button type="button" className="cnote__act" onClick={() => setRedraw(n)} aria-label={fn.edit}>
+                      <button type="button" className="cnote__act" onClick={() => draw.begin(n)} aria-label={fn.edit}>
                         <Icon name="pencil-simple-bold" size={15} />
                       </button>
                     )}
@@ -364,13 +380,20 @@ export function CercleNotes({
         </ul>
       )}
 
-      {redraw && (
+      {/* Ask how to continue a drawing note before opening the pad (#14): modify in
+          place, an independent copy, or a faded calque. */}
+      <DrawEditChoice open={draw.chooserOpen} onCancel={draw.cancelChoice} onPick={draw.pick} />
+      {draw.editing && (
         <DrawPad
           open
-          initial={redraw.media_key ? imgUrl(redraw.media_key) : undefined}
-          initialSceneUrl={redraw.scene_key ? imgUrl(redraw.scene_key) : undefined}
-          onCancel={() => setRedraw(null)}
-          onSave={(png, scene) => void saveDrawing(png, scene, redraw)}
+          {...draw.padProps!}
+          onCancel={draw.close}
+          onSave={(png, scene) => {
+            const note = draw.editing!
+            const isNew = draw.isNew
+            draw.close()
+            void saveDrawing(png, scene, note, isNew)
+          }}
         />
       )}
     </section>

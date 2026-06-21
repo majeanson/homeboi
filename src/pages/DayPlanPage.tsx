@@ -39,6 +39,7 @@ import {
   DAY_NOTES_KEY,
   LEFTOVERS_KEY,
 } from '../components/kitchen/types'
+import { MONTH_KEY } from '../lib/queryKeys'
 
 // Intl lowercases the French weekday ("lundi 14 juin"); the scene title wants it
 // capitalized.
@@ -102,7 +103,7 @@ function DayPlanInner() {
   // it already expands recurrence in local time. Keyed by the day so a return from
   // the add scenes (which invalidate ['month']) refetches.
   const dayItemsQ = useQuery({
-    queryKey: ['month', date],
+    queryKey: [...MONTH_KEY, date],
     queryFn: () => api<DayItemsData>(`month?from=${date}&to=${addLocalDays(date, 1)}`),
     ...live,
   })
@@ -158,13 +159,13 @@ function DayPlanInner() {
     setEventForm(null)
     qc.invalidateQueries({ queryKey: ['board'] })
     qc.invalidateQueries({ queryKey: ['events'] })
-    qc.invalidateQueries({ queryKey: ['month'] })
+    qc.invalidateQueries({ queryKey: MONTH_KEY })
   }
   const afterChoreSave = () => {
     setChoreForm(null)
     qc.invalidateQueries({ queryKey: ['board'] })
     qc.invalidateQueries({ queryKey: ['chores'] })
-    qc.invalidateQueries({ queryKey: ['month'] })
+    qc.invalidateQueries({ queryKey: MONTH_KEY })
   }
 
   const recipes = recipesQ.data?.recipes ?? []

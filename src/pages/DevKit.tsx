@@ -44,6 +44,7 @@ import { HubHead } from '../components/HubHead'
 import { SceneHead } from '../components/SceneHead'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
+import { DrawEditChoice, type DrawEditMode } from '../components/DrawEditChoice'
 import { RecentsPanel } from '../components/RecentsPanel'
 import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
@@ -201,6 +202,8 @@ export function DevKit() {
   const [face, setFace] = useState<string | null>(null)
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
+  const [drawChoiceOpen, setDrawChoiceOpen] = useState(false)
+  const [drawChoiceMode, setDrawChoiceMode] = useState<DrawEditMode | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [listPickOpen, setListPickOpen] = useState(false)
   const voice = useVoiceInput(setText3, { continuous: true, split: true })
@@ -1166,6 +1169,30 @@ export function DevKit() {
                 Compris
               </button>
             </Modal>
+          </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'DrawEditChoice',
+      file: 'components/DrawEditChoice.tsx',
+      kw: 'drawing dessin calquer copie modifier choice filigrane',
+      render: () => (
+        <Demo label="how to continue a kept drawing (modify / copy / trace)">
+          <div>
+            <button className="btn" onClick={() => setDrawChoiceOpen(true)}>
+              Ouvrir le choix
+            </button>
+            {drawChoiceMode && <span className="mono" style={{ marginLeft: '0.6rem' }}>→ {drawChoiceMode}</span>}
+            <DrawEditChoice
+              open={drawChoiceOpen}
+              onCancel={() => setDrawChoiceOpen(false)}
+              onPick={(m) => {
+                setDrawChoiceMode(m)
+                setDrawChoiceOpen(false)
+              }}
+            />
           </div>
         </Demo>
       ),

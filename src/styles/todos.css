@@ -71,6 +71,22 @@
   text-decoration: line-through;
   color: var(--ink-faint);
 }
+/* Scope marker (board glance only, when the list mixes standing + today-pinned
+   todos): a small pill distinguishing "En tout temps" from "Aujourd'hui" so a
+   today-only row reads as its own item, not a twin of a global one. */
+.todo-row__scope {
+  flex: none;
+  font-size: 0.66rem;
+  padding: 0.1rem 0.45rem;
+  align-self: center;
+}
+.todo-row__scope--today {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.todo-row.done .todo-row__scope {
+  opacity: 0.6;
+}
 .todo-row__by {
   flex: none;
   width: 22px;

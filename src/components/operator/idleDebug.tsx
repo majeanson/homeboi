@@ -29,9 +29,9 @@ export function IdleDebugSection({ help }: { help?: HelpMode }) {
   const current = members.find((m) => m.id === memberId)
 
   const [speed, setSpeed] = useState<IdleSpeed>(currentIdleSpeed())
-  // The timer arms on a kiosk OR whenever a debug speed is set (HubLayout mirrors
-  // this), and only with a profile to clear — so say plainly when it's live.
-  const armed = (surface === 'kiosk' || speed !== 'normal') && !!memberId
+  // The drift timer now arms on EVERY surface (HubLayout no longer gates on
+  // kiosk) — it only needs a picked face to clear, so say plainly when it's live.
+  const armed = !!memberId
 
   const speedLabel = (s: IdleSpeed) =>
     s === 'normal' ? t.operator.debugSpeedNormal : t.operator.debugSpeedSeconds(Math.round((IDLE_SPEED_MS[s] ?? 0) / 1000))

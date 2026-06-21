@@ -4,7 +4,7 @@ import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
-import { CERCLE_KEY, BUSINESSES_KEY } from '../../lib/queryKeys'
+import { CERCLE_KEY, BUSINESSES_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { fullName, type Contact, type ContactLink } from '../../lib/cercle'
 import { type Business } from '../../lib/businesses'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
@@ -122,7 +122,7 @@ export function EventForm({
       await write('events', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...fields } : fields,
-        affectedKeys: [['events'], ['board'], ['month']],
+        affectedKeys: [['events'], ['board'], MONTH_KEY],
       })
       onSaved()
     } catch {

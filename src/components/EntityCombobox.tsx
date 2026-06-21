@@ -176,8 +176,16 @@ export function EntityCombobox<T>({
   // button or the submit, which live inside the same wrapper).
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
-    setOpen(false)
-    setActive(-1)
+    // iOS can fire a spurious blur (relatedTarget null) when focusing a field at
+    // the bottom of a page pops the keyboard and the page scroll-pins it. Defer
+    // and re-check: if focus is still (or already back) inside the control, that
+    // was the churn — keep the dropdown open instead of snapping it shut mid-tap.
+    const wrap = e.currentTarget
+    window.setTimeout(() => {
+      if (wrap.isConnected && wrap.contains(document.activeElement)) return
+      setOpen(false)
+      setActive(-1)
+    }, 0)
   }
 
   const showIconSubmit = !submitLabel && submitIcon != null && !!onSubmit

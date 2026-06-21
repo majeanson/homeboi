@@ -10,7 +10,7 @@ export const storeKey = (merchant: string): string => merchant.trim().toLowerCas
 
 // Parse + sanitize the stored JSON into a deduped list of merchant keys. Tolerant
 // of null, non-arrays, and non-string entries (anything invalid → empty list).
-function parseStoreKeys(raw: string | null | undefined): string[] {
+export function parseStoreKeys(raw: string | null | undefined): string[] {
   if (!raw) return []
   try {
     const v: unknown = JSON.parse(raw)
@@ -31,4 +31,15 @@ export async function householdIncludedStores(env: Env, householdId: string): Pr
     .bind(householdId)
     .first<{ included_stores: string | null }>()
   return parseStoreKeys(row?.included_stores)
+}
+
+// The household's "hide at the till" store keys, or [] (= nothing hidden). These
+// stores still surface in deal search / flyers / price-match — they're only dropped
+// from "Montrer à la caisse" (the cashier stepper), where holding up your own
+// grocery store's flyer to its own cashier makes no sense. See migration 0066.
+export async function householdCashierExcludedStores(env: Env, householdId: string): Promise<string[]> {
+  const row = await env.DB.prepare('SELECT cashier_excluded_stores FROM households WHERE id = ?')
+    .bind(householdId)
+    .first<{ cashier_excluded_stores: string | null }>()
+  return parseStoreKeys(row?.cashier_excluded_stores)
 }

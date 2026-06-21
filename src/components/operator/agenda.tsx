@@ -10,6 +10,7 @@ import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
 import { ListRow } from '../ListRow'
+import { MONTH_KEY } from '../../lib/queryKeys'
 import { OperatorSection } from './OperatorSection'
 import { type EventRow, type Member } from './types'
 
@@ -44,7 +45,7 @@ export function EventsSection({
       id: ev.id,
       label: ev.title,
       commit: () =>
-        write('events', { method: 'DELETE', body: { id: ev.id }, affectedKeys: [['events'], ['board'], ['month']] }),
+        write('events', { method: 'DELETE', body: { id: ev.id }, affectedKeys: [['events'], ['board'], MONTH_KEY] }),
       after: onChange,
     })
   }

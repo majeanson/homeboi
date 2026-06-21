@@ -3,6 +3,12 @@
 // so the cross-page ones live here. Kitchen-only keys stay in
 // components/kitchen/types.ts beside the code that owns them.
 export const BOARD_KEY = ['board']
+// The calendar/agenda window (/api/month): events + recurring-chore occurrences +
+// the day's OPEN À compléter todos. Read by MonthView (['month', from]) AND the day
+// page (['month', date]); written by the event/chore forms and any todo done/edit
+// (a todo's done state changes which rows /api/month returns). Shared so all those
+// sites agree on one key — invalidating MONTH_KEY prefix-matches every windowed read.
+export const MONTH_KEY = ['month']
 export const ROUTINES_KEY = ['routines']
 // Deployment + household capabilities from /api/health (binding presence + the
 // effective AI on/off state). Read in Réglages, on Signup, AND by the shared

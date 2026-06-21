@@ -6,7 +6,7 @@ import { BOARD_KEY } from '../lib/queryKeys'
 import { Icon } from './Icon'
 import { DrawPad } from './DrawPad'
 import { useDrawingToRoutine } from '../lib/drawingToRoutine'
-import { useSaveToGallery } from '../lib/drawingGallery'
+import { useKeepInGalleryToast } from '../lib/drawingGallery'
 
 // Audio-memo (#38) + drawn-note (#14) controls inside the ＋ "Note rapide" sheet.
 // Both create a fridge NOTE carrying an R2 media key (note-media → notes), so they
@@ -43,7 +43,8 @@ export function MemoControls({
   const [drawPhoto, setDrawPhoto] = useState(false) // opened straight into the photo flow (#14b)
   const [hidden, setHidden] = useState(false) // R2 unbound (503) → no media notes here
   const toRoutine = useDrawingToRoutine()
-  const keepInGallery = useSaveToGallery()
+  // Keep into « Mes dessins » with a calm, undoable confirming toast (best-effort).
+  const keepInGallery = useKeepInGalleryToast()
   const recRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
@@ -159,7 +160,7 @@ export function MemoControls({
         onKeep={(png, scene) => {
           setDraw(false)
           setDrawPhoto(false)
-          void keepInGallery(png, scene).catch(() => {})
+          void keepInGallery(png, scene)
         }}
         onMakeRoutine={(png, scene) => {
           setDraw(false)

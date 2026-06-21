@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { FormScene } from '../components/FormScene'
 import { ChoreForm } from '../components/forms/ChoreForm'
 import { useT } from '../i18n'
+import { MONTH_KEY } from '../lib/queryKeys'
 
 // /chore/new — add a corvée as a full-screen scene (was a sheet form; tall forms
 // strand under the mobile keyboard there). Editing a chore still happens inline
@@ -22,7 +23,7 @@ export function ChoreFormPage() {
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ['board'] })
             qc.invalidateQueries({ queryKey: ['chores'] })
-            qc.invalidateQueries({ queryKey: ['month'] }) // refresh the calendar + day page
+            qc.invalidateQueries({ queryKey: MONTH_KEY }) // refresh the calendar + day page
             close()
           }}
         />
