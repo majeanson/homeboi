@@ -42,11 +42,11 @@ import { LISTE_HELP } from '../lib/listeHelp'
 //   - "Clear checked" (a small "Vider" tucked to the side) removes every checked
 //     line in one go (→ logged as bought, which feeds the predictions) and leaves
 //     the un-ticked items for next time.
-//   - The page is deliberately just the list + its add bar. Secondary actions live
-//     behind the ＋ Add sheet, not as buttons on the page: "Ajout rapide" (restock
-//     past/predicted items, carrying their flyer synonyms) and "Circulaires"
-//     (browse flyers / stage deals). The only prominent shopping button is
-//     "Montrer à la caisse", and only once deals are staged.
+//   - Below the add bar sit the two "fill the list" shortcuts as prominent buttons:
+//     "Parcourir les circulaires" (browse flyers / stage deals) and "Ajout rapide"
+//     (restock past/predicted items, carrying their flyer synonyms). Both also stay
+//     reachable from the ＋ Add sheet. "Montrer à la caisse" appears once deals are
+//     staged.
 interface ListRow {
   id: string
   text: string
@@ -185,7 +185,7 @@ export function Liste() {
   // it does in place instead of running it. La liste is one flat list, so its help
   // targets are these buttons, not section headings.
   const helpLabel = (k: string) =>
-    ({ flyer: t.shop.browse, clear: t.list.clearChecked, cashier: t.shop.present })[k] ?? k
+    ({ flyer: t.shop.browse, quick: t.list.quickAdd, clear: t.list.clearChecked, cashier: t.shop.present })[k] ?? k
   const help = useHelpMode(LISTE_HELP, helpLabel)
   const [addText, setAddText] = useState('')
   const [adding, setAdding] = useState(false)
@@ -353,10 +353,10 @@ export function Liste() {
       />
       </div>
 
-      {/* Searching the week's flyers for an item is a frequent move, so it earns
-          a real, prominent one-tap shortcut here — a full marigold "pop" button,
-          not a tucked-away magnifier — instead of living only behind the ＋ Add
-          sheet → Circulaires. */}
+      {/* The two frequent "fill the list" moves earn real, prominent one-tap
+          shortcuts here — not tucked away behind the ＋ Add sheet: searching the
+          week's flyers for an aubaine ("Parcourir les circulaires") and reopening
+          past/predicted items to restock ("Ajout rapide"). */}
       <div className="list-actions">
         <button
           type="button"
@@ -365,8 +365,16 @@ export function Liste() {
         >
           <InlineIcon name="magnifying-glass-bold" /> {t.shop.browse}
         </button>
+        <button
+          type="button"
+          className="btn btn--primary help-pick"
+          onClick={help.pick('quick', () => nav('/liste/quick'))}
+        >
+          <InlineIcon name="plus-bold" /> {t.list.quickAdd}
+        </button>
       </div>
       {help.bubbleFor('flyer')}
+      {help.bubbleFor('quick')}
 
       {list.length === 0 ? (
         <EmptyState guide={{ card: 'liste' }}>{t.board.listEmpty}</EmptyState>

@@ -16,6 +16,14 @@ export const LISTE_HELP: Record<string, HelpEntry> = {
       en: 'The magnifier opens this week’s flyers to search an item on sale and send it to your list.',
     },
   },
+  quick: {
+    card: 'liste',
+    point: 0,
+    body: {
+      fr: 'Rouvre tes articles déjà achetés ou suggérés pour regarnir la liste en quelques taps, avec leurs synonymes d’aubaine.',
+      en: 'Reopen your past or suggested items to restock the list in a few taps, carrying their flyer synonyms.',
+    },
+  },
   clear: {
     card: 'liste',
     point: 1,
