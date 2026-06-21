@@ -16,7 +16,22 @@ const COL_W = 116
 const MIN_W = 600
 const NODE = 60
 
-export function CercleTree({ people, links, onOpen }: { people: Person[]; links: ContactLink[]; onOpen: (p: Person) => void }) {
+// Per-person family grouping (from the page): which cluster a person sits in, the
+// colour to tint their photoless disc (reusing Liste's family colours), and a stable
+// left→right order for the cluster. Keeps a family together within a generation band.
+export type TreeGrouping = Map<string, { group: string; colour: string | null; order: number }>
+
+export function CercleTree({
+  people,
+  links,
+  onOpen,
+  grouping,
+}: {
+  people: Person[]
+  links: ContactLink[]
+  onOpen: (p: Person) => void
+  grouping?: TreeGrouping
+}) {
   const t = useT()
 
   const layout = useMemo(() => {
@@ -37,9 +52,12 @@ export function CercleTree({ people, links, onOpen }: { people: Person[]; links:
     const width = Math.max(MIN_W, maxCount * COL_W)
     const height = bandIdx.length * ROW_H
 
+    // Order within a band: cluster by family group (same `order`, so a family sits
+    // together across bands), then alphabetical. Ungrouped people sort last.
+    const groupOrder = (p: Person) => grouping?.get(p.key)?.order ?? Number.MAX_SAFE_INTEGER
     const pos = new Map<string, { x: number; y: number }>()
     bandIdx.forEach((band, row) => {
-      const row3 = [...bands.get(band)!].sort((a, b) => a.name.localeCompare(b.name))
+      const row3 = [...bands.get(band)!].sort((a, b) => groupOrder(a) - groupOrder(b) || a.name.localeCompare(b.name))
       row3.forEach((p, i) => {
         pos.set(p.key, { x: ((i + 0.5) / row3.length) * width, y: row * ROW_H + ROW_H / 2 })
       })
@@ -57,7 +75,7 @@ export function CercleTree({ people, links, onOpen }: { people: Person[]; links:
       .filter((e): e is { a: { x: number; y: number }; b: { x: number; y: number }; key: string } => !!e)
 
     return { placed, pos, width, height, edges }
-  }, [people, links])
+  }, [people, links, grouping])
 
   if (!layout) return <EmptyState className="cercle-tree__empty">{t.cercle.treeEmpty}</EmptyState>
 
@@ -81,7 +99,9 @@ export function CercleTree({ people, links, onOpen }: { people: Person[]; links:
             >
               <foreignObject x={xy.x - NODE / 2} y={xy.y - NODE / 2} width={NODE} height={NODE + 22}>
                 <div className="ego-node__inner">
-                  <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={NODE} />
+                  {/* Same family colour as Liste: a named group's colour tints a
+                      photoless disc; the person's own photo/colour wins otherwise. */}
+                  <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={grouping?.get(p.key)?.colour ?? p.colour} name={p.firstName} size={NODE} />
                   <span className="ego-node__name">{p.firstName}</span>
                 </div>
               </foreignObject>

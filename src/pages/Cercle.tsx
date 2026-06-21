@@ -21,7 +21,7 @@ import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { useSpeak } from '../lib/speak'
 import { downloadVCard } from '../lib/vcard'
 import { CercleEgo } from '../components/cercle/CercleEgo'
-import { CercleTree } from '../components/cercle/CercleTree'
+import { CercleTree, type TreeGrouping } from '../components/cercle/CercleTree'
 import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
@@ -65,7 +65,8 @@ const VIEW_ICON: Record<View, IconName> = { list: 'user-bold', links: 'users-thr
 // The primary split: Famille (Maisonnée + families) vs Social (friends/work/other
 // groups + ungrouped people) vs Notes (the durable quick-notes board, CercleNotes).
 // The list body partitions People by the first two; Notes owns its whole body; the
-// relationship views (Liens/Arbre) span the whole circle regardless.
+// relationship views (Liens/Arbre) follow the same split — Famille shows the family
+// set, Social shows everyone outside it (see `sectionPeople`).
 type Section = 'social' | 'family' | 'notes' | 'business'
 const SECTION_ICON: Record<Section, IconName> = {
   family: 'users-three-bold',
@@ -277,6 +278,41 @@ function CercleParent() {
         .sort((a, b) => a.name.localeCompare(b.name, lang)),
     [people, householdKeys, namedGroupedKeys, familyGroupedKeys, lang],
   )
+
+  // The set of people that read as "family" in Liste — the Maisonnée, any named
+  // FAMILY group, and the auto-detected families. The relationship views honour the
+  // Famille / Social split off this: Famille shows these, Social shows everyone else
+  // (so the social graph isn't drowned out by the family).
+  const familyKeySet = useMemo(() => {
+    const s = new Set<string>(householdKeys)
+    for (const g of namedGroups) if (g.kind === 'family') for (const k of g.memberKeys) s.add(k)
+    for (const g of familyGroups) for (const k of g.memberKeys) s.add(k)
+    return s
+  }, [householdKeys, namedGroups, familyGroups])
+
+  // People for the active section's Liens/Arbre: Famille → the family set, Social →
+  // the rest. The views (CercleEgo/CercleTree) build their own byKey off this list,
+  // so any link to a filtered-out person is simply dropped — no separate link filter.
+  const sectionPeople = useMemo(
+    () => (section === 'family' ? people.filter((p) => familyKeySet.has(p.key)) : people.filter((p) => !familyKeySet.has(p.key))),
+    [people, familyKeySet, section],
+  )
+
+  // Per-person family grouping for the Arbre: the cluster a person belongs to (so the
+  // tree keeps a family together within a generation band) + the colour to tint their
+  // disc with, REUSING Liste's rule (a named group's colour wins; Maisonnée + auto
+  // families keep each member's own colour). `order` gives groups a stable left→right
+  // position. Named groups take precedence (that's where Liste paints colour).
+  const treeGrouping = useMemo<TreeGrouping>(() => {
+    const m: TreeGrouping = new Map()
+    let next = 0
+    const orderOf = new Map<string, number>()
+    const ord = (id: string) => orderOf.get(id) ?? (orderOf.set(id, next), next++)
+    for (const g of namedGroups) for (const k of g.memberKeys) if (!m.has(k)) m.set(k, { group: g.id, colour: g.colour, order: ord(g.id) })
+    for (const k of householdKeys) if (!m.has(k)) m.set(k, { group: 'household', colour: null, order: ord('household') })
+    for (const g of familyGroups) for (const k of g.memberKeys) if (!m.has(k)) m.set(k, { group: g.id, colour: null, order: ord(g.id) })
+    return m
+  }, [namedGroups, householdKeys, familyGroups])
 
   // The focus lens, resolved: the focused member's person key + display name. A
   // member deleted while focused silently falls back to Maisonnée (no match).
@@ -491,9 +527,9 @@ function CercleParent() {
           )}
 
           {view === 'links' ? (
-            <CercleEgo people={people} links={links} onOpen={openPerson} focusKey={focusKey} />
+            <CercleEgo people={sectionPeople} links={links} onOpen={openPerson} focusKey={focusKey} />
           ) : view === 'tree' ? (
-            <CercleTree people={people} links={links} onOpen={openPerson} />
+            <CercleTree people={sectionPeople} links={links} onOpen={openPerson} grouping={treeGrouping} />
           ) : (
             <>
               <SectionIntro card="cercle" />
