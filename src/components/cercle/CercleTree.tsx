@@ -85,7 +85,11 @@ export function CercleTree({
   const { placed, pos, width, height, edges } = layout
   return (
     <div className="cercle-tree">
-      <svg className="cercle-tree__svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={t.cercle.view.tree}>
+      {/* Intrinsic width/height (not just viewBox) so CSS can fit the whole tree
+          within the available area instead of stretching it to the wall's full
+          width — which scaled the nodes up until the lowest generation fell below
+          a kiosk's fold. max-width/max-height (cercle.css) scale it down to fit. */}
+      <svg className="cercle-tree__svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={t.cercle.view.tree}>
         {edges.map((e) => (
           <line key={e.key} x1={e.a.x} y1={e.a.y} x2={e.b.x} y2={e.b.y} className="tree-edge" />
         ))}

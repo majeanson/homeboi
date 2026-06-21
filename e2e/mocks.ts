@@ -308,6 +308,49 @@ const DEVICES = {
   ],
 }
 
+// « Le cercle » — a populated people graph so the directory, the family COLOURS, the
+// Liens (ego) graph and the generational Arbre all render with real content. Members
+// are the Maisonnée; contacts add an extended family + a few social ties. The named
+// groups carry the colours the tree/Liste paint families with (the new family-colour
+// + grouping pass — commit 0dd7b9a). Shapes mirror src/lib/cercle.ts wire types.
+const CERCLE_MEMBERS = [
+  { id: 'm1', displayName: 'Maman', avatarKind: 'color', avatarRef: '#B06A93', colour: '#B06A93', isChild: false, email: 'maman@exemple.ca', phone: '514-555-0101', birthday: '1988-04-12', notes: null, gender: 'f' },
+  { id: 'm2', displayName: 'Papa', avatarKind: 'color', avatarRef: '#5891AC', colour: '#5891AC', isChild: false, email: null, phone: '514-555-0102', birthday: '1986-09-03', notes: null, gender: 'm' },
+  { id: 'm3', displayName: 'Léa', avatarKind: 'color', avatarRef: '#88A36F', colour: '#88A36F', isChild: true, email: null, phone: null, birthday: '2017-06-25', notes: null, gender: 'f' },
+  { id: 'm4', displayName: 'Noah', avatarKind: 'color', avatarRef: '#F2A03D', colour: '#F2A03D', isChild: true, email: null, phone: null, birthday: '2019-11-30', notes: null, gender: 'm' },
+]
+const CERCLE_CONTACTS = [
+  { id: 'c1', firstName: 'Rose', lastName: 'Tremblay', nickname: 'Mamie', photoKey: null, birthday: '1958-03-19', email: null, phone: '450-555-0201', address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'f' },
+  { id: 'c2', firstName: 'Jean', lastName: 'Tremblay', nickname: 'Papi', photoKey: null, birthday: '1956-07-08', email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
+  { id: 'c3', firstName: 'Marc', lastName: 'Tremblay', nickname: null, photoKey: null, birthday: '1990-12-01', email: 'marc@exemple.ca', phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
+  { id: 'c4', firstName: 'Sophie', lastName: 'Gagnon', nickname: null, photoKey: null, birthday: '1989-05-22', email: null, phone: '514-555-0303', address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'f' },
+  { id: 'c5', firstName: 'Thomas', lastName: 'Roy', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
+  { id: 'c6', firstName: 'Luc', lastName: 'Bélanger', nickname: 'Voisin', photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
+]
+// Inverse-paired links: the relationship engine stores both type + reverseType.
+const L = (id: string, aK: string, aId: string, bK: string, bId: string, type: string, reverseType: string) => ({
+  id, personAKind: aK, personAId: aId, personBKind: bK, personBId: bId, type, reverseType, label: null, notes: null,
+})
+const CERCLE_LINKS = [
+  L('k1', 'member', 'm1', 'member', 'm3', 'parent', 'child'),
+  L('k2', 'member', 'm1', 'member', 'm4', 'parent', 'child'),
+  L('k3', 'member', 'm2', 'member', 'm3', 'parent', 'child'),
+  L('k4', 'member', 'm2', 'member', 'm4', 'parent', 'child'),
+  L('k5', 'member', 'm1', 'member', 'm2', 'spouse', 'spouse'),
+  L('k6', 'contact', 'c1', 'member', 'm1', 'parent', 'child'),
+  L('k7', 'contact', 'c2', 'member', 'm1', 'parent', 'child'),
+  L('k8', 'contact', 'c1', 'contact', 'c2', 'spouse', 'spouse'),
+  L('k9', 'contact', 'c3', 'member', 'm1', 'sibling', 'sibling'),
+  L('k10', 'contact', 'c4', 'member', 'm1', 'best_friend', 'best_friend'),
+  L('k11', 'contact', 'c5', 'member', 'm2', 'colleague', 'colleague'),
+]
+const CERCLE_GROUPS = [
+  { id: 'g1', name: 'Famille Tremblay', kind: 'family', colour: '#C2563A', memberKeys: [{ personId: 'c1', personKind: 'contact' }, { personId: 'c2', personKind: 'contact' }, { personId: 'c3', personKind: 'contact' }] },
+  { id: 'g2', name: 'Amis', kind: 'friends', colour: '#5891AC', memberKeys: [{ personId: 'c4', personKind: 'contact' }] },
+  { id: 'g3', name: 'Collègues', kind: 'work', colour: '#7BB0C9', memberKeys: [{ personId: 'c5', personKind: 'contact' }] },
+]
+const CERCLE = { members: CERCLE_MEMBERS, contacts: CERCLE_CONTACTS, links: CERCLE_LINKS, groups: CERCLE_GROUPS }
+
 const AUTH_ME = {
   signedIn: true,
   email: 'famille@exemple.ca',
@@ -352,7 +395,11 @@ const ROUTES: Record<string, unknown> = {
   chores: CHORES,
   events: EVENTS,
   health: { ai: true, aiAvailable: true },
-  household: { postal: 'H2X 1Y4', includedStores: [], aiEnabled: true },
+  household: { name: 'Maison Tremblay', postal: 'H2X 1Y4', includedStores: [], aiEnabled: true },
+  // « Le cercle » people graph (members + contacts + links + coloured groups).
+  cercle: CERCLE,
+  // Business sub-tab — isolated services directory. Empty is the calm default.
+  businesses: { businesses: [] },
   deals: {
     deals: [
       { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: null, premium: true, image: null, validFrom: null, validTo: BASE + 5 * DAY },
@@ -620,7 +667,7 @@ export async function seedState(page: Page, s: AppState) {
       // Pre-dismiss the per-section welcome cards unless a test opts in, so they
       // never sit on top of the content a screenshot/interaction spec is after.
       if (!state.intros) {
-        localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'routines', 'liste']))
+        localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'routines', 'liste', 'cercle']))
       }
       // Pre-mark the first-login guided tour seen unless a test opts in, so its
       // auto-started welcome card / spotlight never covers the elements a spec is

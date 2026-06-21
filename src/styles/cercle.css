@@ -275,22 +275,24 @@
   color: var(--ink-soft);
   text-align: center;
 }
-.cercle-ego__svg {
-  width: 100%;
+/* Both relationship graphs (ego ring + family tree) carry an intrinsic
+   width/height. Fit the WHOLE graph within the available area — scale DOWN to the
+   column width (phone) or to the height left below the section/view controls (wall),
+   centred, never stretched up to the full wall width. Stretching to width made the
+   nodes balloon until the lower ring / lowest generation dropped below a kiosk's
+   fold (was width:100%). align-self:center opts out of the parent's align-items:
+   stretch (which would otherwise re-stretch an auto-width child back to full width). */
+.cercle-ego__svg,
+.cercle-tree__svg {
+  display: block;
+  align-self: center;
+  width: auto;
   height: auto;
-  /* Use the available height too — the ring grows to fill a wall tablet. */
-  max-height: 82vh;
+  max-width: 100%;
+  max-height: 60vh;
 }
 .cercle-tree {
-  overflow-x: auto; /* wide trees scroll sideways rather than squish */
-}
-.cercle-tree__svg {
-  width: 100%;
-  /* Keep a comfortable 600px floor on tablet/desktop, but never wider than the
-     viewport on a phone — the viewBox scales the whole tree to fit instead of
-     forcing a sideways scroll. */
-  min-width: min(600px, 100%);
-  height: auto;
+  overflow-x: auto; /* a very wide/deep tree still scrolls rather than squish */
 }
 .cercle-tree__empty {
   padding: 2rem 1rem;
