@@ -189,6 +189,12 @@ export function SearchPage() {
     <div className="scene search" aria-label={t.search.title}>
       <SceneHead title={t.search.title} icon="magnifying-glass-bold" onClose={close} />
       <div className="scene__body search__body">
+        {/* No autoFocus — house rule: the keyboard only ever opens on an
+            explicit tap, never when a scene mounts. On a tablet, programmatic
+            focus never pops the soft keyboard, and because the field is then
+            already focused the user's own tap isn't a focus change, so the
+            keyboard never appears at all. Letting the tap do the focusing is
+            what summons it. */}
         <input
           className="input search__input"
           value={q}
@@ -198,7 +204,6 @@ export function SearchPage() {
           }}
           placeholder={t.search.placeholder}
           aria-label={t.search.placeholder}
-          autoFocus
           enterKeyHint="search"
         />
 

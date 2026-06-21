@@ -29,7 +29,7 @@ import { IdleDebugSection } from '../components/operator/idleDebug'
 import { MicSelfTest } from '../components/operator/micTest'
 import { GuideSection } from '../components/operator/guide'
 import { SectionGuide } from '../components/operator/sectionGuide'
-import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
+import { useHelpMode } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
@@ -171,7 +171,6 @@ export function Operator() {
       <div className="operator__head">
         <div>
           <h1>{t.operator.title}</h1>
-          {operatorHelp.available && <HelpToggle active={operatorHelp.active} onToggle={operatorHelp.toggle} />}
         </div>
         <div className="operator__meta mono">
           <span>{household?.name}</span>
@@ -240,7 +239,6 @@ export function Operator() {
           </button>
         ))}
       </nav>
-      {operatorHelp.hint && <HelpHint />}
 
       <div className="operator__panel" role="tabpanel">
         {/* Each tab carries its own how-it-works inline (the per-tab cards that
