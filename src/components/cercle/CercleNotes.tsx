@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useT } from '../../i18n'
+import { useT, useLang } from '../../i18n'
+import { formatDay } from '../../lib/format'
 import { api, ApiError, isStatus } from '../../lib/api'
 import { live } from '../../lib/query'
 import { useWrite } from '../../lib/write'
@@ -35,6 +36,7 @@ export function CercleNotes({
   help?: HelpMode
 }) {
   const t = useT()
+  const { lang } = useLang()
   const write = useWrite()
   const { memberId: profileId } = useProfile()
   const ro = isGuest()
@@ -49,6 +51,8 @@ export function CercleNotes({
   const effScope: NoteScope = face ? scope : 'family'
 
   const [text, setText] = useState('')
+  // iOS-Notes-style live search across the visible list (text + author name).
+  const [query, setQuery] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [redraw, setRedraw] = useState<FamilyNote | null>(null)
@@ -60,12 +64,27 @@ export function CercleNotes({
     queryFn: () => api<{ notes: FamilyNote[] }>('family-notes'),
     ...live,
   })
-  const all = data?.notes ?? []
+  const all = useMemo(() => data?.notes ?? [], [data])
   const removal = useDeferredRemoval(FAMILY_NOTES_KEY)
-  const shown = removal.visible(visibleNotes(all, face))
 
   const colorOf = (id: string | null) => members.find((m) => m.id === id)?.colour ?? null
   const nameOf = (id: string | null) => members.find((m) => m.id === id)?.displayName ?? null
+
+  // Newest first (iOS Notes orders by most-recent), then narrow by the search box.
+  // Search matches the note text OR its author's name so "find Léa's note" works.
+  const visible = useMemo(() => {
+    const base = visibleNotes(all, face)
+      .slice()
+      .sort((a, b) => (b.updated_at ?? b.created_at) - (a.updated_at ?? a.created_at))
+    const q = query.trim().toLowerCase()
+    if (!q) return base
+    return base.filter(
+      (n) =>
+        n.text.toLowerCase().includes(q) ||
+        (members.find((m) => m.id === n.author_member_id)?.displayName.toLowerCase().includes(q) ?? false),
+    )
+  }, [all, face, query, members])
+  const shown = removal.visible(visible)
 
   const scopeBody = useMemo(
     () => (s: NoteScope) => ({ scope: s, member_id: s === 'self' ? face : null }),
@@ -209,20 +228,42 @@ export function CercleNotes({
         </div>
       )}
 
+      {/* Search — iOS-Notes style: one always-there field so any note is a couple of
+          keystrokes away (text or author name). Shown whenever there's something to
+          search, and kept while a query is active so the clear button stays reachable. */}
+      {(shown.length > 0 || query.trim() !== '') && (
+        <div className="cnote-search">
+          <InlineIcon name="magnifying-glass-bold" size={16} />
+          <input
+            className="cnote-search__input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={fn.search}
+            aria-label={fn.search}
+          />
+          {query && (
+            <button type="button" className="cnote-search__clear" onClick={() => setQuery('')} aria-label={t.common.close}>
+              <Icon name="x-bold" size={14} />
+            </button>
+          )}
+        </div>
+      )}
+
       {shown.length === 0 ? (
-        <p className="cercle-notes__empty mono">{face ? fn.emptyMine : fn.empty}</p>
+        <p className="cercle-notes__empty mono">{query.trim() ? fn.noMatch : face ? fn.emptyMine : fn.empty}</p>
       ) : (
-        <div className="notes__grid cercle-notes__grid">
+        <ul className="cnote-list">
           {shown.map((n) => {
-            const tint = colorOf(n.author_member_id) ?? '#FBD66B'
+            const tint = colorOf(n.author_member_id) ?? 'var(--teal-deep, #2a8f85)'
             const css = { '--note-tint': tint } as React.CSSProperties
             const media = n.media_kind && n.media_key ? n.media_kind : null
             const scopeChip = n.member_id === null ? fn.forFamily : (nameOf(n.member_id) ?? fn.scopeSelf)
+            const when = formatDay(n.created_at, lang)
 
-            // Inline text edit.
+            // Inline text edit — the row turns into the editor in place.
             if (editingId === n.id && !media) {
               return (
-                <div key={n.id} className="note-card note-card--editing" style={css}>
+                <li key={n.id} className="cnote cnote--editing" style={css}>
                   <EditField
                     value={editText}
                     onChange={setEditText}
@@ -234,83 +275,74 @@ export function CercleNotes({
                     submitIcon="check-bold"
                     ariaLabel={fn.edit}
                   />
-                </div>
+                </li>
               )
             }
 
-            const body =
-              media === 'drawing' || media === 'image' ? (
-                <span className="note-card__media">
-                  <ZoomableImg className="note-card__draw" src={imgUrl(n.media_key!)} alt={fn.title} />
-                  {n.text && <span className="note-card__cap">{n.text}</span>}
-                </span>
-              ) : media === 'audio' ? (
-                <span className="note-card__memo">
-                  <Icon name="play-bold" size={16} /> {fn.memo}
-                  {n.text && <span className="note-card__cap">{n.text}</span>}
-                </span>
-              ) : (
-                <span className="note-card__text">{n.text}</span>
-              )
+            // iOS row anatomy: a bold first-line title, then a quieter "date · preview"
+            // line. Media notes title themselves (Dessin / Photo / Mémo vocal).
+            const firstLine = n.text.split('\n').find((l) => l.trim()) ?? ''
+            const rest = n.text.slice(firstLine.length).replace(/\n+/g, ' ').trim()
+            const mediaLabel = media === 'audio' ? fn.memo : media === 'image' ? fn.photo : media === 'drawing' ? fn.drawing : ''
+            const title = firstLine || mediaLabel || fn.title
+            const preview = firstLine ? rest || (media ? mediaLabel : '') : media ? '' : rest
 
             return (
-              <div
-                key={n.id}
-                className={`note-card note-card--media${media === 'drawing' || media === 'image' ? ' note-card--visual' : ''}`}
-                style={css}
-              >
+              <li key={n.id} className="cnote" style={css}>
+                {/* Visual notes show a tappable thumbnail; text/audio show a tint dot. */}
+                {media === 'drawing' || media === 'image' ? (
+                  <ZoomableImg className="cnote__thumb" src={imgUrl(n.media_key!)} alt={title} />
+                ) : (
+                  <span className="cnote__dot" aria-hidden="true">
+                    {media === 'audio' ? <InlineIcon name="play-bold" size={14} /> : null}
+                  </span>
+                )}
+
+                {/* The body: tapping a text note edits it; an audio note plays it; a
+                    visual note's body is inert (its thumbnail handles the zoom). */}
                 {media === 'audio' ? (
+                  <button type="button" className="cnote__main" onClick={() => playClip(n.media_key!)} aria-label={fn.memo}>
+                    <span className="cnote__title">{title}</span>
+                    <span className="cnote__meta mono">{when}{preview ? ` · ${preview}` : ''}</span>
+                  </button>
+                ) : !media && !ro ? (
                   <button
                     type="button"
-                    className="note-card__mediabtn"
-                    onClick={() => playClip(n.media_key!)}
-                    aria-label={fn.memo}
+                    className="cnote__main"
+                    onClick={() => {
+                      setEditingId(n.id)
+                      setEditText(n.text)
+                    }}
+                    aria-label={fn.edit}
                   >
-                    {body}
+                    <span className="cnote__title">{title}</span>
+                    <span className="cnote__meta mono">{when}{preview ? ` · ${preview}` : ''}</span>
                   </button>
                 ) : (
-                  <>
-                    {body}
-                    {!ro && media === 'drawing' && (
-                      <button
-                        type="button"
-                        className="note-card__edit-badge note-card__edit-badge--btn"
-                        onClick={() => setRedraw(n)}
-                        aria-label={fn.edit}
-                      >
-                        <Icon name="pencil-simple-bold" size={14} />
-                      </button>
-                    )}
-                    {!ro && !media && (
-                      <button
-                        type="button"
-                        className="note-card__edit-badge note-card__edit-badge--btn"
-                        onClick={() => {
-                          setEditingId(n.id)
-                          setEditText(n.text)
-                        }}
-                        aria-label={fn.edit}
-                      >
-                        <Icon name="pencil-simple-bold" size={14} />
-                      </button>
-                    )}
-                  </>
+                  <span className="cnote__main cnote__main--static">
+                    <span className="cnote__title">{title}</span>
+                    <span className="cnote__meta mono">{when}{preview ? ` · ${preview}` : ''}</span>
+                  </span>
                 )}
-                <span className="cercle-notes__chip mono">{scopeChip}</span>
+
+                <span className="cnote__chip mono">{scopeChip}</span>
+
                 {!ro && (
-                  <button
-                    type="button"
-                    className="note-card__clear note-card__clear--btn"
-                    onClick={() => remove(n)}
-                    aria-label={fn.delete}
-                  >
-                    <Icon name="x-bold" size={14} />
-                  </button>
+                  <span className="cnote__actions">
+                    {media === 'drawing' && (
+                      <button type="button" className="cnote__act" onClick={() => setRedraw(n)} aria-label={fn.edit}>
+                        <Icon name="pencil-simple-bold" size={15} />
+                      </button>
+                    )}
+                    <button type="button" className="cnote__act cnote__act--del" onClick={() => remove(n)} aria-label={fn.delete}>
+                      <Icon name="trash-bold" size={15} />
+                    </button>
+                  </span>
                 )}
-              </div>
+              </li>
             )
           })}
-        </div>
+        </ul>
       )}
 
       {redraw && (

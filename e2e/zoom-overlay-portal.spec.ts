@@ -20,15 +20,15 @@ test('cercle drawing zoom overlay portals to body and closes', async ({ page }) 
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })
 
   await page.goto('/cercle?section=notes')
-  await expect(page.locator('.cercle-notes .note-card--visual').first()).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.cercle-notes .cnote__thumb').first()).toBeVisible({ timeout: 15_000 })
 
-  // Open the zoom viewer by tapping the drawing image.
-  await page.locator('.cercle-notes .note-card__draw').first().tap()
+  // Open the zoom viewer by tapping the drawing thumbnail.
+  await page.locator('.cercle-notes .cnote__thumb').first().tap()
   await expect(page.locator('.zoom-overlay')).toBeVisible()
 
-  // PORTAL: the overlay is now a direct child of <body>, NOT trapped in the rotated card.
+  // PORTAL: the overlay is a direct child of <body>, NOT trapped inside the note row.
   expect(await page.locator('body > .zoom-overlay').count()).toBe(1)
-  expect(await page.locator('.note-card .zoom-overlay').count()).toBe(0)
+  expect(await page.locator('.cnote .zoom-overlay').count()).toBe(0)
 
   // The overlay covers the full viewport (proof it escaped the small card box).
   const box = (await page.locator('.zoom-overlay').boundingBox())!
@@ -41,7 +41,7 @@ test('cercle drawing zoom overlay portals to body and closes', async ({ page }) 
   await expect(page.locator('.zoom-overlay')).toHaveCount(0)
 
   // Reopen, close via backdrop, stays closed.
-  await page.locator('.cercle-notes .note-card__draw').first().tap()
+  await page.locator('.cercle-notes .cnote__thumb').first().tap()
   await expect(page.locator('.zoom-overlay')).toBeVisible()
   await page.locator('.zoom-overlay').tap({ position: { x: 20, y: 30 } })
   await page.waitForTimeout(400)
