@@ -7,7 +7,7 @@
 import { CATS } from '../../lib/cats'
 import { imgUrl } from '../../lib/image'
 import { type Contact, type Person, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, fullName } from '../../lib/cercle'
-import { type Business } from '../../lib/businesses'
+import { type Business, BUSINESS_COLOUR } from '../../lib/businesses'
 import { formatDay, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { recipeImg, recipeTotalMin, tagColor, type Recipe } from '../../lib/recipes'
@@ -80,12 +80,16 @@ export function buildEvent(e: EventRow, ctx: DetailCtx): DetailModel {
   // not just a member face. A non-member "who" has no avatar; show the name on the
   // accent disc.
   const whoName = e.business_name ?? e.contact_name ?? null
-  const who: DetailWho | null = whoOf(members, e.member_id) ?? (whoName ? { name: whoName, colour: CATS.event.color } : null)
+  // A business rendez-vous carries the business's own colour (joined server-side);
+  // it tints both the accent and the non-member "who" disc.
+  const bizColour = e.business_id ? e.business_colour ?? CATS.event.color : null
+  const who: DetailWho | null =
+    whoOf(members, e.member_id) ?? (whoName ? { name: whoName, colour: bizColour ?? CATS.event.color } : null)
   return {
     kind: 'event',
     title: e.title,
     icon: CATS.event.icon,
-    accent: colorOf(members, e.member_id) ?? CATS.event.color,
+    accent: bizColour ?? colorOf(members, e.member_id) ?? CATS.event.color,
     when: e.all_day ? t.board.allDay : `${formatDay(e.start_at, lang)} · ${formatTime(e.start_at, lang)}`,
     who,
     actions: [{ key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${day}` }],
@@ -101,7 +105,7 @@ export function buildBusiness(
 ): DetailModel {
   const { t } = ctx
   const bz = t.cercle.business
-  const accent = '#2A8F85'
+  const accent = b.colour ?? BUSINESS_COLOUR
   const mapsHref = b.address?.trim()
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address.trim())}`
     : null

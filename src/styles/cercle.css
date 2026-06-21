@@ -1056,6 +1056,13 @@
   margin: 0;
 }
 
+/* The colour picker row inside BusinessForm. */
+.business-form__colour {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 /* The card-photo picker inside BusinessForm. */
 .business-form__photo {
   display: inline-flex;
@@ -1167,29 +1174,167 @@
   color: var(--ink);
   box-shadow: var(--shadow-sm);
 }
-/* The scope chip on a card: which list a note belongs to (a face surfaces both). */
-.cercle-notes__chip {
-  position: absolute;
-  bottom: 0.3rem;
-  right: 0.5rem;
-  font-size: 0.62rem;
-  opacity: 0.7;
-  pointer-events: none;
+/* --- iOS-Notes-style list ----------------------------------------------------
+   The Notes subtab reads like the iOS Notes app, NOT the board's sticky-note wall:
+   a search field, then one rounded card of clean, scannable rows (bold first line +
+   a quiet "date · preview"), each easy to read, edit, and delete. */
+.cnote-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.7rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
 }
-/* The notes board grid — sticky-note cards sized to read well on a full tab. */
-.cercle-notes__grid {
+.cnote-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--ink);
+  outline: none;
+}
+.cnote-search__input::placeholder {
+  color: var(--ink-faint);
+}
+.cnote-search__clear {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--line);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+/* One rounded card, hairline dividers between rows — the iOS grouped-list look. */
+.cnote-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 14px);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.cnote {
+  position: relative;
+  display: flex;
+  align-items: center;
   gap: 0.7rem;
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--line);
 }
-.cercle-notes__grid .note-card {
-  flex: 1 1 11rem;
-  min-width: 9rem;
-  max-width: 18rem;
-  align-items: flex-start;
-  padding: 0.7rem 0.8rem;
-  min-height: 3.4rem;
+.cnote:last-child {
+  border-bottom: 0;
 }
-.cercle-notes__grid .note-card--visual {
-  flex-basis: 9rem;
+.cnote--editing {
+  padding: 0.6rem 0.7rem;
+}
+/* The author tint: a small leading dot (text/audio) or a framed thumbnail (visual). */
+.cnote__dot {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--note-tint) 30%, var(--card));
+  color: var(--note-tint);
+}
+.cnote__thumb {
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+/* The body — a stacked title + meta line; the whole block is the tap target. */
+.cnote__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.cnote__main--static {
+  cursor: default;
+}
+.cnote__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cnote__meta {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Which list the note belongs to — a quiet pill, tinted by the author colour. */
+.cnote__chip {
+  flex: none;
+  font-size: 0.66rem;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--note-tint) 16%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--note-tint) 30%, var(--line));
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.cnote__actions {
+  flex: none;
+  display: inline-flex;
+  gap: 0.15rem;
+}
+.cnote__act {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.cnote__act:hover,
+.cnote__act:focus-visible {
+  background: var(--surface);
+  color: var(--ink);
+}
+.cnote__act--del:hover,
+.cnote__act--del:focus-visible {
+  color: var(--terracotta-deep, #a8442b);
+}
+/* Phone: the scope chip would crowd the row — drop it (the face picker already says
+   whose list you're in) so the title + actions keep room. */
+@media (max-width: 30rem) {
+  .cnote__chip {
+    display: none;
+  }
 }
 .cercle-notes__empty {
   color: var(--ink-soft);

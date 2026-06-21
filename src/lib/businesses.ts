@@ -11,7 +11,12 @@ export interface Business {
   website: string | null
   notes: string | null
   photoKey: string | null
+  colour: string | null // own tint (like a member's) — colours the row, peek + rendez-vous
 }
+
+// The default Business tint when none is picked — the teal the storefront glyph + the
+// detail peek already use, so an un-coloured business looks exactly as before.
+export const BUSINESS_COLOUR = '#2A8F85'
 
 // Free-text category, but a small suggestion list seeds the picker (EntityCombobox,
 // typeaheadOnly). Labels are bilingual; the chosen string is stored verbatim.

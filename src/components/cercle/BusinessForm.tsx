@@ -4,8 +4,9 @@ import { api } from '../../lib/api'
 import { resizeImage, imgUrl } from '../../lib/image'
 import { useWrite } from '../../lib/write'
 import { BUSINESSES_KEY } from '../../lib/queryKeys'
-import { type Business, BUSINESS_CATEGORIES } from '../../lib/businesses'
+import { type Business, BUSINESS_CATEGORIES, BUSINESS_COLOUR } from '../../lib/businesses'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
+import { ColorPicker } from '../ColorPicker'
 import { StatusMessage } from '../StatusMessage'
 import { Icon } from '../Icon'
 
@@ -35,6 +36,7 @@ export function BusinessForm({
   const [address, setAddress] = useState(value?.address ?? '')
   const [website, setWebsite] = useState(value?.website ?? '')
   const [notes, setNotes] = useState(value?.notes ?? '')
+  const [colour, setColour] = useState(value?.colour ?? BUSINESS_COLOUR)
   const [photoKey, setPhotoKey] = useState<string | null>(value?.photoKey ?? null)
   const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -100,6 +102,7 @@ export function BusinessForm({
       address: address.trim() || null,
       website: website.trim() || null,
       notes: notes.trim() || null,
+      colour,
       photoKey,
     }
     setBusy(true)
@@ -168,6 +171,13 @@ export function BusinessForm({
       <input className="input" value={address} onChange={(e) => setAddress(e.target.value)} placeholder={bz.address} aria-label={bz.address} />
       <input className="input" type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder={bz.website} aria-label={bz.website} />
       <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={bz.notes} aria-label={bz.notes} rows={3} />
+
+      {/* A colour for this business — tints its row, its detail peek, and every
+          rendez-vous linked to it (board, calendar, day page, agenda). */}
+      <label className="business-form__colour">
+        <span className="cf__label">{bz.colour}</span>
+        <ColorPicker value={colour} onChange={setColour} label={bz.colour} />
+      </label>
 
       {/* Optional business-card photo (hidden gracefully if R2 is unset → upload fails). */}
       <label className="business-form__photo">

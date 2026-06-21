@@ -27,7 +27,7 @@ const DAY = 86400
 // The /api/month payload: every dated thing, already bucketed onto a UTC `day`
 // key by the server. Mirrors the families on the bento board so the calendar is a
 // faithful "is it all here?" inventory — events, meals, recurring chores, notes.
-interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; day: number; birthday?: boolean; age?: number | null }
+interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; day: number; birthday?: boolean; age?: number | null }
 interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number }
 interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 interface MNote { id: string; text: string; member_id: string | null; day: number }
@@ -62,7 +62,7 @@ function dotsFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs):
     out.push(
       e.birthday
         ? { color: CATS.birthday.color, kind: 'birthday' }
-        : { color: colorOf(members, e.member_id) ?? CATS.event.color, kind: 'event' },
+        : { color: e.business_colour ?? colorOf(members, e.member_id) ?? CATS.event.color, kind: 'event' },
     )
   // Each shown meal gets its slot colour + icon (Réglages ▸ Repas); hidden slots = no marker.
   for (const m of b.meals)
@@ -337,12 +337,12 @@ export function MonthView({
                 cat={e.birthday ? 'birthday' : 'event'}
                 title={e.title}
                 when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
-                who={nameOf(members, e.member_id) ?? undefined}
-                color={colorOf(members, e.member_id) ?? undefined}
+                who={e.business_name ?? e.contact_name ?? nameOf(members, e.member_id) ?? undefined}
+                color={e.business_colour ?? colorOf(members, e.member_id) ?? undefined}
                 onOpen={() =>
                   detail.open(
                     buildEvent(
-                      { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, birthday: e.birthday, age: e.age },
+                      { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, contact_name: e.contact_name, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, birthday: e.birthday, age: e.age },
                       detailCtx,
                     ),
                   )

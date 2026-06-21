@@ -63,7 +63,7 @@ export function EventsSection({
                 leading={
                   <span
                     className="operator__avatar"
-                    style={{ background: memberColor(ev.member_id) ?? 'var(--ink-faint)' }}
+                    style={{ background: ev.business_colour ?? memberColor(ev.member_id) ?? 'var(--ink-faint)' }}
                     aria-hidden="true"
                   />
                 }

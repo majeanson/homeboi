@@ -51,6 +51,7 @@ export interface EventRow {
   contact_name?: string | null // joined server-side, for the "who" label
   business_id?: string | null // a « Le cercle » Business (vet, plumber…) — a rendez-vous
   business_name?: string | null // joined server-side, for the "who" label
+  business_colour?: string | null // the business's own tint — colours the rendez-vous
   recur_json?: string | null
   lead_seconds?: number | null
 }

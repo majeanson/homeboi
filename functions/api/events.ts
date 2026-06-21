@@ -19,7 +19,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
     `SELECT id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, lead_seconds,
             (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name,
-            (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name
+            (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name,
+            (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour
        FROM events
       WHERE household_id = ? AND (recur_json IS NOT NULL OR start_at >= ?)
       ORDER BY start_at LIMIT 100`,

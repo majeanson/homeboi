@@ -436,6 +436,7 @@ export function Lanes({
               title={e.title}
               when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
               who={e.business_name ?? e.contact_name ?? undefined}
+              color={e.business_colour ?? undefined}
               soon={e.soon}
               onOpen={() => detail.open(buildEvent(e, detailCtx))}
             />
@@ -486,7 +487,7 @@ export function Lanes({
                     cat="event"
                     title={e.title}
                     when={e.all_day ? t.board.allDay : formatTime(e.start_at, lang)}
-                    color={m.colour}
+                    color={e.business_colour ?? m.colour}
                     soon={e.soon}
                     onOpen={() => detail.open(buildEvent(e, detailCtx))}
                   />

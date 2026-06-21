@@ -7,6 +7,7 @@ import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
+import { faint, tintInk } from '../../lib/colors'
 import { BUSINESSES_KEY } from '../../lib/queryKeys'
 import { type Business } from '../../lib/businesses'
 import { useEntityDetail } from '../detail/DetailProvider'
@@ -72,7 +73,11 @@ export function BusinessesTab({ help }: { help?: HelpMode }) {
           return (
             <div key={b.id} className="cercle-row">
               <button type="button" className="cercle-row__open" onClick={() => openPeek(b)}>
-                <span className="cercle-business__av" aria-hidden="true">
+                <span
+                  className="cercle-business__av"
+                  aria-hidden="true"
+                  style={b.colour && !photo ? { background: faint(b.colour), color: tintInk(b.colour) } : undefined}
+                >
                   {photo ? <img src={photo} alt="" /> : <Icon name="storefront-bold" size={22} />}
                 </span>
                 <span className="cercle-row__main">

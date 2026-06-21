@@ -30,6 +30,7 @@ interface BusinessRow {
   website: string | null
   notes: string | null
   photo_key: string | null
+  colour: string | null
   created_at: number
   updated_at: number
 }
@@ -40,7 +41,7 @@ const TEXT_CAP = 2000
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    `SELECT id, name, category, phone, email, address, website, notes, photo_key, created_at, updated_at
+    `SELECT id, name, category, phone, email, address, website, notes, photo_key, colour, created_at, updated_at
        FROM businesses WHERE household_id = ? AND deleted_at IS NULL ORDER BY name COLLATE NOCASE`,
   )
     .bind(actor.householdId)
@@ -56,6 +57,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       website: b.website,
       notes: b.notes,
       photoKey: b.photo_key,
+      colour: b.colour,
     })),
   })
 })
@@ -86,6 +88,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     website?: string
     notes?: string
     photoKey?: string
+    colour?: string
   }>(ctx.request)
   const name = str(body?.name)?.slice(0, NAME_CAP)
   if (!name) return badRequest('Nom requis.')
@@ -94,8 +97,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   await ctx.env.DB.prepare(
     `INSERT INTO businesses
-       (id, household_id, name, category, phone, email, address, website, notes, photo_key, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, household_id, name, category, phone, email, address, website, notes, photo_key, colour, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       id,
@@ -108,6 +111,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       str(body?.website),
       str(body?.notes)?.slice(0, TEXT_CAP) ?? null,
       str(body?.photoKey),
+      str(body?.colour),
       ts,
       ts,
     )
@@ -126,6 +130,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     website?: string | null
     notes?: string | null
     photoKey?: string | null
+    colour?: string | null
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
@@ -156,6 +161,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   setIf('website' in body, 'website', str(body.website))
   setIf('notes' in body, 'notes', str(body.notes)?.slice(0, TEXT_CAP) ?? null)
   setIf('photoKey' in body, 'photo_key', str(body.photoKey))
+  setIf('colour' in body, 'colour', str(body.colour))
 
   if (sets.length) {
     sets.push('updated_at = ?')
