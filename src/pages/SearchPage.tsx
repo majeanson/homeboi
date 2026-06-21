@@ -11,6 +11,8 @@ import { type Contact } from '../lib/cercle'
 import { type FamilyNote } from '../lib/familyNotes'
 import { useRecipes, useBoardData } from '../lib/queryHooks'
 import { recipeImg } from '../lib/recipes'
+import { GUIDE } from '../lib/guideContent'
+import { stripTokens } from '../lib/richText'
 import { pictoFor } from '../lib/picto'
 import { localDayStart } from '../lib/localDay'
 import { type EventRow } from '../components/board/types'
@@ -27,11 +29,22 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 // the recipe, the person, the day, the list. Capped per section so a broad term
 // stays glanceable.
 //
+// …and the Guide: the same box also searches the in-app help (lib/guideContent —
+// the ONE documentation taxonomy). A help hit deep-links into Réglages ▸ Guide,
+// to the exact card (?card=id) — or, when only a sub-point matched, straight to
+// that point (?card=id&point=i). So "where do I set X?" surfaces the doc, not
+// just the data. Card prose carries [[card:…]]/[[icon:…]] tokens; we strip them
+// to their visible words (richText.stripTokens) before matching.
+//
 // #12 — the same box also ASKS the AI (POST /api/ask): a calm answer over your own
 // data, tagged with the domain it reasoned over so the card shows the matching
 // category look (reusing lib/cats), plus "not what you wanted?" links into the
 // relevant sections + the Guide.
 const CAP = 8
+
+// A Guide / help hit: the card's own icon + title, a subtitle (the card's
+// one-liner, or the matched sub-point's label), and a deep-link into the Guide.
+type GuideHit = { id: string; icon: IconName; title: string; sub: string; to: string }
 
 // The AI answer's domain — mirrors AnswerKind in functions/_lib/ai.ts.
 type AnswerKind = 'meal' | 'event' | 'list' | 'chore' | 'recipe' | 'cercle' | 'note' | 'none'
@@ -139,10 +152,38 @@ export function SearchPage() {
     const events = allEvents.filter((e) => fold(e.title).includes(needle)).slice(0, CAP)
     const listItems = (board?.list ?? []).filter((li) => fold(li.text).includes(needle)).slice(0, CAP)
     const notes = familyNotes.filter((n) => n.text && fold(n.text).includes(needle)).slice(0, CAP)
-    return { recipes, people, events, listItems, notes }
-  }, [needle, recipesData, contacts, board, familyNotes])
+    // The Guide / in-app help. Match a card on its title + one-liner + every
+    // sub-point (label, detail, why) in the active language, tokens stripped to
+    // the words a reader sees. A title/summary hit links to the whole card; when
+    // ONLY a sub-point matched, deep-link to that point so the answer lands open.
+    const guide: GuideHit[] = []
+    for (const e of GUIDE) {
+      if (guide.length >= CAP) break
+      const titleStr = e.title[lang]
+      const whatStr = stripTokens(e.what[lang])
+      const cardHit = fold(`${titleStr} ${whatStr}`).includes(needle)
+      let pointIdx = -1
+      for (let i = 0; i < e.points.length; i++) {
+        const p = e.points[i]
+        if (fold(stripTokens(`${p.label[lang]} ${p.detail[lang]} ${p.why?.[lang] ?? ''}`)).includes(needle)) {
+          pointIdx = i
+          break
+        }
+      }
+      if (!cardHit && pointIdx < 0) continue
+      const usePoint = !cardHit && pointIdx >= 0
+      guide.push({
+        id: e.id,
+        icon: e.icon,
+        title: titleStr,
+        sub: usePoint ? stripTokens(e.points[pointIdx].label[lang]) : whatStr,
+        to: usePoint ? `/settings?tab=guide&card=${e.id}&point=${pointIdx}` : `/settings?tab=guide&card=${e.id}`,
+      })
+    }
+    return { recipes, people, events, listItems, notes, guide }
+  }, [needle, recipesData, contacts, board, familyNotes, lang])
 
-  const total = res ? res.recipes.length + res.people.length + res.events.length + res.listItems.length + res.notes.length : 0
+  const total = res ? res.recipes.length + res.people.length + res.events.length + res.listItems.length + res.notes.length + res.guide.length : 0
 
   return (
     <div className="scene search" aria-label={t.search.title}>
@@ -291,6 +332,23 @@ export function SearchPage() {
                     </span>
                     <span className="search__main">
                       <span className="search__title">{n.text}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.guide.length > 0 && (
+              <Section label={t.search.help}>
+                {res!.guide.map((g) => (
+                  <Link key={g.id} to={g.to} className="search__row">
+                    <span className="search__pic" aria-hidden="true">
+                      <InlineIcon name={g.icon} />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{g.title}</span>
+                      {g.sub && <span className="search__sub mono">{g.sub}</span>}
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>

@@ -245,8 +245,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Tout chercher', en: 'Search everything' },
         detail: {
-          fr: 'La loupe 🔍 en haut de chaque onglet ouvre une recherche unique : tape un mot et tu vois d’un coup tes recettes, les gens de ton cercle, tes événements et les articles de ta liste qui correspondent. Touche un résultat pour y aller directement. Les accents sont ignorés (« cafe » trouve « café »).',
-          en: 'The magnifier 🔍 at the top of every tab opens one search: type a word and see, at once, the matching recipes, people from your circle, events and items on your list. Tap a result to jump straight there. Accents are ignored (“cafe” finds “café”).',
+          fr: 'La loupe 🔍 en haut de chaque onglet ouvre une recherche unique : tape un mot et tu vois d’un coup tes recettes, les gens de ton cercle, tes événements et les articles de ta liste qui correspondent — et même ce guide d’aide, pour trouver comment faire quelque chose. Touche un résultat pour y aller directement (un résultat d’aide ouvre la bonne fiche du guide). Les accents sont ignorés (« cafe » trouve « café »).',
+          en: 'The magnifier 🔍 at the top of every tab opens one search: type a word and see, at once, the matching recipes, people from your circle, events and items on your list — and even this help guide, to find how to do something. Tap a result to jump straight there (a help result opens the right guide card). Accents are ignored (“cafe” finds “café”).',
         },
         why: {
           fr: 'Retrouver une chose sans te rappeler dans quel onglet elle vit.',
