@@ -21,6 +21,7 @@ import { RecipeTagsSection } from '../components/operator/recipesTags'
 import { RecipePillsSection } from '../components/operator/recipePills'
 import { MealSlotsSection } from '../components/operator/meals'
 import { ReserveLocationsSection } from '../components/operator/reserve'
+import { CarsSection } from '../components/operator/cars'
 import { TodoTemplatesSection } from '../components/operator/todos'
 import { CercleGroupsSection } from '../components/operator/cercle'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
@@ -44,6 +45,7 @@ const SECTIONS = [
   { id: 'household', key: 'members' as const },
   { id: 'cercle', key: 'cercleTab' as const },
   { id: 'agenda', key: 'events' as const },
+  { id: 'auto', key: 'autoTab' as const },
   { id: 'chores', key: 'chores' as const },
   { id: 'routines', key: 'routines' as const },
   { id: 'todos', key: 'todosTab' as const },
@@ -135,6 +137,7 @@ export function Operator() {
   const operatorHelp = useHelpMode(OPERATOR_HELP, (k: string) => {
     const labels: Record<string, string> = {
       reserveLocations: t.operator.reserveTitle,
+      cars: t.operator.carsTitle,
       ambient: t.operator.ambientTitle,
       display: t.operator.display,
       voice: t.operator.voiceTitle,
@@ -270,6 +273,7 @@ export function Operator() {
         )}
         {tab === 'meals' && <MealSlotsSection help={operatorHelp} />}
         {tab === 'reserve' && <ReserveLocationsSection help={operatorHelp} />}
+        {tab === 'auto' && <CarsSection help={operatorHelp} />}
         {tab === 'ghost' && <GhostSection help={operatorHelp} />}
         {tab === 'devices' && (
           <>

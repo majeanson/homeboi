@@ -1142,6 +1142,14 @@ export const FR = {
     reserveLocationName: 'Nom de l’emplacement',
     reserveAddLocation: 'Ajouter un emplacement…',
     reserveEmpty: 'Aucun emplacement. La réserve regroupe tout sous « Autres ».',
+    autoTab: 'L’auto',
+    carsTitle: 'Tes véhicules',
+    carsHint:
+      'L’auto que la maisonnée se partage. Donne-lui un nom et une couleur — elle sert à savoir qui l’a, quand elle est libre, et qui reconduit qui. Sans auto, les trajets se font en covoiturage.',
+    carDefaultName: 'L’auto',
+    carName: 'Nom du véhicule',
+    carAdd: 'Ajouter un véhicule…',
+    carsEmpty: 'Aucun véhicule — les trajets se font en covoiturage.',
     cercleTab: 'Le cercle',
     cercleGroupsTitle: 'Groupes du cercle',
     cercleGroupsHint:
@@ -2604,6 +2612,14 @@ export const EN: typeof FR = {
     reserveLocationName: 'Location name',
     reserveAddLocation: 'Add a location…',
     reserveEmpty: 'No locations. The reserve groups everything under “Other”.',
+    autoTab: 'The car',
+    carsTitle: 'Your vehicles',
+    carsHint:
+      'The car the household shares. Give it a name and a colour — it’s used to know who has it, when it’s free, and who drives whom. With no car, rides are carpooled.',
+    carDefaultName: 'The car',
+    carName: 'Vehicle name',
+    carAdd: 'Add a vehicle…',
+    carsEmpty: 'No vehicle — rides are carpooled.',
     cercleTab: 'The circle',
     cercleGroupsTitle: 'Circle groups',
     cercleGroupsHint:

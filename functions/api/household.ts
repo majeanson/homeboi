@@ -5,6 +5,7 @@ import { householdIncludedStores, householdCashierExcludedStores, storeKey } fro
 import { householdMealSlotPrefs, cleanColors, cleanHidden } from '../_lib/mealSlots'
 import { householdMeasureColors, cleanMeasureColors } from '../_lib/measureColors'
 import { householdReserveLocations, cleanReserveLocations } from '../_lib/reserveLocations'
+import { householdCars, cleanCars } from '../_lib/carPrefs'
 import { householdAiEnabled } from '../_lib/aiPref'
 import { nowSec } from '../_lib/ids'
 
@@ -35,6 +36,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
   const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
+  const cars = await householdCars(ctx.env, actor.householdId)
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   return ok({
     name,
@@ -45,6 +47,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     mealHidden: meals.hidden,
     measureColors,
     reserveLocations,
+    cars,
     aiEnabled,
   })
 })
@@ -59,6 +62,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     mealHidden?: string[]
     measureColors?: Record<string, string>
     reserveLocations?: unknown
+    cars?: unknown
     aiEnabled?: boolean
   }>(ctx.request)
 
@@ -151,6 +155,18 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
   }
 
+  // The household's vehicle(s) for « L'auto » (migration 0067). A {id, name, color?}
+  // list; only valid entries survive. Like reserveLocations, an explicit list (incl.
+  // an empty one = "we have no car") is stored verbatim — we never auto-clear back
+  // to NULL, so a carpool-only household's "no car" choice sticks instead of
+  // reverting to the seeded default.
+  if (body && 'cars' in body) {
+    const cars = cleanCars(body.cars)
+    await ctx.env.DB.prepare('UPDATE households SET cars = ?, updated_at = ? WHERE id = ?')
+      .bind(JSON.stringify(cars), nowSec(), actor.householdId)
+      .run()
+  }
+
   // The household AI on/off switch (Réglages ▸ IA, migration 0061). Stored as
   // 1 = on / 0 = off; NULL never written from here (only legacy rows are NULL,
   // which read as on). Folded into /api/health's effective `ai` flag.
@@ -167,6 +183,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const meals = await householdMealSlotPrefs(ctx.env, actor.householdId)
   const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
+  const cars = await householdCars(ctx.env, actor.householdId)
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   return ok({
     name,
@@ -177,6 +194,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     mealHidden: meals.hidden,
     measureColors,
     reserveLocations,
+    cars,
     aiEnabled,
   })
 })

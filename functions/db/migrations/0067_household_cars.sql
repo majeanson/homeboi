@@ -1,0 +1,15 @@
+-- The household's vehicle(s) — the scarce, shared resource « L'auto » coordinates
+-- around (one car in most homes, but the list allows two). A JSON array of
+-- {id, name, color?} set in Réglages ▸ L'auto and read back wherever a ride,
+-- the car-availability glance, or the /voiture week view needs to name/tint a car.
+-- Mirrors `reserve_locations` (migration 0036): validation lives in _lib/carPrefs.ts
+-- so the read path and the PATCH share one definition of "a valid car".
+--
+-- NULL = never configured → the client shows ONE localized seeded default
+-- (« L'auto »), so rides can pick a car out of the box. An explicit empty array
+-- ([] = "we have no car", a carpool-only household) is the household's own choice
+-- and sticks instead of reverting to the default.
+--
+-- Holds no quantities/counts — a name + colour only (NFR-CALM, calm-tenets test).
+-- Additive, forward-only, filename-locked.
+ALTER TABLE households ADD COLUMN cars TEXT;
