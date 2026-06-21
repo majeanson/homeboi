@@ -16,7 +16,8 @@ import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
 import { GroupForm } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
-import type { Person } from '../lib/cercle'
+import { CercleNotes } from '../components/cercle/CercleNotes'
+import type { Member, Person } from '../lib/cercle'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
@@ -83,6 +84,12 @@ type Entry = {
 const DEMO_PEOPLE: Person[] = [
   { kind: 'contact', id: 'a', key: 'contact:a', name: 'Aliss Descôteaux', firstName: 'Aliss', lastName: 'Descôteaux', avatarKind: null, avatarRef: null, colour: '#C45E86', birthday: null, isChild: false, email: null, phone: null, gender: 'f' },
   { kind: 'contact', id: 'b', key: 'contact:b', name: 'Félix Descôteaux', firstName: 'Félix', lastName: 'Descôteaux', avatarKind: null, avatarRef: null, colour: '#C45E86', birthday: null, isChild: false, email: null, phone: null, gender: 'm' },
+]
+
+// Stand-in household members for the CercleNotes specimen (the face row).
+const DEMO_MEMBERS: Member[] = [
+  { id: 'm1', displayName: 'Camille', avatarKind: 'color', avatarRef: '#C45E86', colour: '#C45E86', isChild: false, email: null, phone: null, birthday: null, notes: null, gender: 'f' },
+  { id: 'm2', displayName: 'Léa', avatarKind: 'color', avatarRef: '#6C8EBF', colour: '#6C8EBF', isChild: true, email: null, phone: null, birthday: null, notes: null, gender: 'f' },
 ]
 
 // One labelled specimen inside an entry.
@@ -393,6 +400,20 @@ export function DevKit() {
         // The relationship closure (lib/cercle closedLinks) propagates the rest.
         <Demo label='"X est [lien] de Y" — one link connects two families'>
           <ConnectPeople people={DEMO_PEOPLE} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'CercleNotes',
+      file: 'components/cercle/CercleNotes.tsx',
+      kw: 'cercle famille notes recommandations iOS quick note moi maisonnée self family scope media',
+      render: () => (
+        // « Le cercle » → Famille → "Notes & recommandations": iOS-Notes-style quick
+        // notes scoped to a member ("Moi") or the whole Maisonnée, with audio/drawing/
+        // photo. Reads the live family-notes query (empty here) + a face row to scope by.
+        <Demo label="Quick notes scoped to Moi / Maisonnée, with media">
+          <CercleNotes members={DEMO_MEMBERS} />
         </Demo>
       ),
     },

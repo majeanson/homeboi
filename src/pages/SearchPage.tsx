@@ -6,8 +6,9 @@ import { api } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { fold } from '../lib/normalize'
 import { CATS } from '../lib/cats'
-import { CERCLE_KEY } from '../lib/queryKeys'
+import { CERCLE_KEY, FAMILY_NOTES_KEY } from '../lib/queryKeys'
 import { type Contact } from '../lib/cercle'
+import { type FamilyNote } from '../lib/familyNotes'
 import { useRecipes, useBoardData } from '../lib/queryHooks'
 import { recipeImg } from '../lib/recipes'
 import { pictoFor } from '../lib/picto'
@@ -114,6 +115,9 @@ export function SearchPage() {
   const recipesData = useRecipes().data?.recipes ?? []
   const board = useBoardData().data
   const contacts = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<{ contacts: Contact[] }>('cercle') }).data?.contacts ?? []
+  // Le cercle → Famille → "Notes & recommandations" — searchable too (text only;
+  // media-only notes carry no text so they don't surface here).
+  const familyNotes = useQuery({ queryKey: FAMILY_NOTES_KEY, queryFn: () => api<{ notes: FamilyNote[] }>('family-notes') }).data?.notes ?? []
 
   const needle = fold(q.trim())
   const res = useMemo(() => {
@@ -134,10 +138,11 @@ export function SearchPage() {
     })
     const events = allEvents.filter((e) => fold(e.title).includes(needle)).slice(0, CAP)
     const listItems = (board?.list ?? []).filter((li) => fold(li.text).includes(needle)).slice(0, CAP)
-    return { recipes, people, events, listItems }
-  }, [needle, recipesData, contacts, board])
+    const notes = familyNotes.filter((n) => n.text && fold(n.text).includes(needle)).slice(0, CAP)
+    return { recipes, people, events, listItems, notes }
+  }, [needle, recipesData, contacts, board, familyNotes])
 
-  const total = res ? res.recipes.length + res.people.length + res.events.length + res.listItems.length : 0
+  const total = res ? res.recipes.length + res.people.length + res.events.length + res.listItems.length + res.notes.length : 0
 
   return (
     <div className="scene search" aria-label={t.search.title}>
@@ -270,6 +275,22 @@ export function SearchPage() {
                     <span className="search__pic" aria-hidden="true">{pictoFor(li.text, '🛒')}</span>
                     <span className="search__main">
                       <span className="search__title">{li.text}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.notes.length > 0 && (
+              <Section label={t.search.notes}>
+                {res!.notes.map((n) => (
+                  <Link key={n.id} to="/cercle?section=family&view=list" className="search__row">
+                    <span className="search__pic" aria-hidden="true">
+                      <InlineIcon name="file-text-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{n.text}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>

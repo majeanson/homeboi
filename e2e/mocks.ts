@@ -387,6 +387,9 @@ const ROUTES: Record<string, unknown> = {
     items: [{ id: 101, name: 'Lait 2% 4L', price: 4.99, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', validFrom: null, validTo: null, image: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 60 60%22%3E%3Crect width%3D%2260%22 height%3D%2260%22 fill%3D%22%23cfe8d6%22%2F%3E%3Ctext x%3D%2230%22 y%3D%2235%22 font-size%3D%2210%22 text-anchor%3D%22middle%22%3E🥛%3C%2Ftext%3E%3C%2Fsvg%3E', left: 10, top: -10, right: 40, bottom: -40 }],
   },
   ghost: GHOSTS,
+  // « Le cercle » → Famille → "Notes & recommandations" (CercleNotes + global search).
+  // Empty is the normal calm state; an absent `notes` must never crash the section.
+  'family-notes': { notes: [] },
   recap: { recap: 'Belle semaine : 3 soupers planifiés, 2 sorties, liste à jour.' },
   // The kept-drawing collection / gallery (#14). Two works so /drawings renders a
   // populated wall; the images resolve via /api/img/* (served a tiny SVG below).

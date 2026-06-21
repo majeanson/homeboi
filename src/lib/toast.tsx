@@ -174,6 +174,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   // Whether an action can still be taken back (its entry is still in the live stack).
   const isLive = useCallback((id: number) => entriesRef.current.some((e) => e.id === id), [])
 
+  // "Tout effacer" from the expanded log: empty the whole session history. Clearing
+  // is NOT an undo — any write still held commits (the action stands, like the timer
+  // or teardown would finalize it); we just stop showing it. Then collapse.
+  const clearAll = useCallback(() => {
+    entriesRef.current.forEach((e) => {
+      clearTimer(e.id)
+      if (e.kind === 'deferred') e.onCommit?.()
+    })
+    entriesRef.current = []
+    setEntries([])
+    setHistory([])
+    setExpanded(false)
+  }, [clearTimer])
+
   // Collapse the expanded panel only when the session log itself is empty — there's
   // nothing left to show. (It used to collapse as soon as the live stack dropped to
   // one entry, but the expanded view shows the full session LOG now, which outlives
@@ -229,15 +243,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     </li>
                   ))}
               </ul>
-              <button
-                type="button"
-                className="undo-toast__more"
-                aria-expanded={true}
-                onClick={() => setExpanded(false)}
-              >
-                <Icon name="caret-down-bold" size={16} />
-                {t.undo.hide}
-              </button>
+              <div className="undo-toast__foot">
+                <button
+                  type="button"
+                  className="undo-toast__more"
+                  aria-expanded={true}
+                  onClick={() => setExpanded(false)}
+                >
+                  <Icon name="caret-down-bold" size={16} />
+                  {t.undo.hide}
+                </button>
+                {/* Empty the whole session log — held writes commit (not undone). */}
+                <button type="button" className="undo-toast__clear" onClick={clearAll}>
+                  <Icon name="trash-bold" size={15} />
+                  {t.undo.clearAll}
+                </button>
+              </div>
             </>
           ) : newest ? (
             <>

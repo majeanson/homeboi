@@ -1,0 +1,336 @@
+import { useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useT } from '../../i18n'
+import { api, ApiError, isStatus } from '../../lib/api'
+import { live } from '../../lib/query'
+import { useWrite } from '../../lib/write'
+import { useProfile } from '../../lib/profile'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
+import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
+import { type FamilyNote, type NoteScope, visibleNotes } from '../../lib/familyNotes'
+import type { Member } from '../../lib/cercle'
+import { isGuest } from '../../lib/device'
+import { imgUrl } from '../../lib/image'
+import { Avatar } from '../Avatar'
+import { Icon, InlineIcon } from '../Icon'
+import { EditField } from '../EditField'
+import { MemoControls } from '../MemoControls'
+import { ZoomableImg } from '../ZoomableImg'
+import { DrawPad } from '../DrawPad'
+import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+
+// « Le cercle » → Famille → "Notes & recommandations". iOS-Notes-style quick notes
+// scoped to ONE household member (the "Moi" list) or the whole Maisonnée (family-wide).
+// A picked face (defaulting to the device profile) sees THEIR personal notes PLUS the
+// Maisonnée notes always; "Maisonnée" sees only the family-wide notes (decision 3).
+// The composer's Moi/Maisonnée toggle (decision 2) chooses the scope a new note lands
+// in, and overrides the X-Profile header server-side. Media (audio/drawing/photo)
+// reuses MemoControls + /api/note-media — durable, never touches the board notes.
+export function CercleNotes({
+  members,
+  help,
+}: {
+  members: Member[]
+  // Optional shared help mode (the Cercle page's) so the section header is explainable.
+  help?: HelpMode
+}) {
+  const t = useT()
+  const write = useWrite()
+  const { memberId: profileId } = useProfile()
+  const ro = isGuest()
+
+  // The acting face for the section: whose notes to show, and the default scope for a
+  // new note. Seeded from the device profile (null = Maisonnée). A specific face also
+  // surfaces the Maisonnée notes beneath their own (visibleNotes).
+  const [face, setFace] = useState<string | null>(profileId)
+  // The composer scope toggle. 'self' is only meaningful when a face is picked; at
+  // Maisonnée it's forced to 'family'.
+  const [scope, setScope] = useState<NoteScope>(profileId ? 'self' : 'family')
+  const effScope: NoteScope = face ? scope : 'family'
+
+  const [text, setText] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const [redraw, setRedraw] = useState<FamilyNote | null>(null)
+  const [drawHidden, setDrawHidden] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  const { data } = useQuery({
+    queryKey: FAMILY_NOTES_KEY,
+    queryFn: () => api<{ notes: FamilyNote[] }>('family-notes'),
+    ...live,
+  })
+  const all = data?.notes ?? []
+  const removal = useDeferredRemoval(FAMILY_NOTES_KEY)
+  const shown = removal.visible(visibleNotes(all, face))
+
+  const colorOf = (id: string | null) => members.find((m) => m.id === id)?.colour ?? null
+  const nameOf = (id: string | null) => members.find((m) => m.id === id)?.displayName ?? null
+
+  const scopeBody = useMemo(
+    () => (s: NoteScope) => ({ scope: s, member_id: s === 'self' ? face : null }),
+    [face],
+  )
+
+  function submitText(v: string) {
+    const body = { text: v.trim(), ...scopeBody(effScope) }
+    if (!body.text) return
+    setText('')
+    void write('family-notes', {
+      method: 'POST',
+      body,
+      affectedKeys: [FAMILY_NOTES_KEY],
+    }).catch(() => {})
+  }
+
+  function saveEdit(n: FamilyNote, v: string) {
+    setEditingId(null)
+    const next = v.trim()
+    if (next === n.text) return
+    void write('family-notes', {
+      method: 'PATCH',
+      body: { id: n.id, text: next },
+      affectedKeys: [FAMILY_NOTES_KEY],
+    }).catch(() => {})
+  }
+
+  function remove(n: FamilyNote) {
+    removal.remove([n.id], t.cercle.familyNotes.deleted, () =>
+      write('family-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [FAMILY_NOTES_KEY] }),
+    )
+  }
+
+  // Re-draw a drawing note in place (mirror board Notes.saveDrawing): upload the PNG +
+  // editable scene, then PATCH the row. Media can't be queued offline, so api() direct.
+  async function saveDrawing(png: Blob, scene: string, note: FamilyNote) {
+    setRedraw(null)
+    try {
+      const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: png })
+      let sceneKey: string | undefined
+      if (scene) {
+        try {
+          const r = await api<{ key: string }>('note-media', {
+            method: 'POST',
+            body: new Blob([scene], { type: 'application/json' }),
+          })
+          sceneKey = r.key
+        } catch {
+          /* scene optional */
+        }
+      }
+      await api('family-notes', { method: 'PATCH', body: { id: note.id, media_key: key, scene_key: sceneKey } })
+    } catch (e) {
+      if (isStatus(e, 503)) setDrawHidden(true)
+      else if (!(e instanceof ApiError)) throw e
+    }
+  }
+
+  function playClip(key: string) {
+    try {
+      audioRef.current?.pause()
+      const a = new Audio(imgUrl(key))
+      audioRef.current = a
+      void a.play()
+    } catch {
+      /* autoplay blocked — harmless */
+    }
+  }
+
+  const fn = t.cercle.familyNotes
+
+  return (
+    <section className="cercle-group cercle-notes">
+      <HelpTitle help={help} k="notes" className="cercle-section__label">
+        <InlineIcon name="file-text-bold" size={16} /> {fn.title}
+      </HelpTitle>
+      {help?.bubbleFor('notes')}
+
+      {/* Whose notes — Maisonnée + each member. Seeds from the device profile. */}
+      <div className="cercle-notes__faces" role="tablist" aria-label={fn.title}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={face === null}
+          className={'cercle-notes__face' + (face === null ? ' is-active' : '')}
+          onClick={() => {
+            setFace(null)
+            setScope('family')
+          }}
+        >
+          <InlineIcon name="users-three-bold" size={15} /> {fn.scopeFamily}
+        </button>
+        {members.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            role="tab"
+            aria-selected={face === m.id}
+            className={'cercle-notes__face' + (face === m.id ? ' is-active' : '')}
+            onClick={() => {
+              setFace(m.id)
+              setScope('self')
+            }}
+          >
+            <Avatar kind={m.avatarKind} photo={m.avatarRef} colour={m.colour} name={m.displayName} size={22} />
+            {m.displayName}
+          </button>
+        ))}
+      </div>
+
+      {/* Composer — text + scope toggle (Moi / Maisonnée) + media. Hidden for guests. */}
+      {!ro && (
+        <div className="cercle-notes__composer">
+          {face && (
+            <div className="cercle-notes__scope" role="radiogroup" aria-label={fn.title}>
+              {(['self', 'family'] as NoteScope[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  role="radio"
+                  aria-checked={scope === s}
+                  className={'cercle-notes__scopebtn' + (scope === s ? ' is-active' : '')}
+                  onClick={() => setScope(s)}
+                >
+                  {s === 'self' ? fn.scopeSelf : fn.scopeFamily}
+                </button>
+              ))}
+            </div>
+          )}
+          <EditField
+            value={text}
+            onChange={setText}
+            onSubmit={submitText}
+            multiline
+            maxLength={2000}
+            placeholder={fn.placeholder}
+            ariaLabel={fn.addHint}
+            submitLabel={fn.add}
+            submitLeadingIcon="plus-bold"
+          />
+          {!drawHidden && (
+            <MemoControls
+              onDone={() => {}}
+              endpoint="family-notes"
+              affectedKey={FAMILY_NOTES_KEY}
+              extraBody={scopeBody(effScope)}
+            />
+          )}
+        </div>
+      )}
+
+      {shown.length === 0 ? (
+        <p className="cercle-notes__empty mono">{face ? fn.emptyMine : fn.empty}</p>
+      ) : (
+        <div className="notes__grid cercle-notes__grid">
+          {shown.map((n) => {
+            const tint = colorOf(n.author_member_id) ?? '#FBD66B'
+            const css = { '--note-tint': tint } as React.CSSProperties
+            const media = n.media_kind && n.media_key ? n.media_kind : null
+            const scopeChip = n.member_id === null ? fn.forFamily : (nameOf(n.member_id) ?? fn.scopeSelf)
+
+            // Inline text edit.
+            if (editingId === n.id && !media) {
+              return (
+                <div key={n.id} className="note-card note-card--editing" style={css}>
+                  <EditField
+                    value={editText}
+                    onChange={setEditText}
+                    onSubmit={(v) => saveEdit(n, v)}
+                    onCancel={() => setEditingId(null)}
+                    multiline
+                    maxLength={2000}
+                    autoFocus
+                    submitIcon="check-bold"
+                    ariaLabel={fn.edit}
+                  />
+                </div>
+              )
+            }
+
+            const body =
+              media === 'drawing' || media === 'image' ? (
+                <span className="note-card__media">
+                  <ZoomableImg className="note-card__draw" src={imgUrl(n.media_key!)} alt={fn.title} />
+                  {n.text && <span className="note-card__cap">{n.text}</span>}
+                </span>
+              ) : media === 'audio' ? (
+                <span className="note-card__memo">
+                  <Icon name="play-bold" size={16} /> {fn.memo}
+                  {n.text && <span className="note-card__cap">{n.text}</span>}
+                </span>
+              ) : (
+                <span className="note-card__text">{n.text}</span>
+              )
+
+            return (
+              <div
+                key={n.id}
+                className={`note-card note-card--media${media === 'drawing' || media === 'image' ? ' note-card--visual' : ''}`}
+                style={css}
+              >
+                {media === 'audio' ? (
+                  <button
+                    type="button"
+                    className="note-card__mediabtn"
+                    onClick={() => playClip(n.media_key!)}
+                    aria-label={fn.memo}
+                  >
+                    {body}
+                  </button>
+                ) : (
+                  <>
+                    {body}
+                    {!ro && media === 'drawing' && (
+                      <button
+                        type="button"
+                        className="note-card__edit-badge note-card__edit-badge--btn"
+                        onClick={() => setRedraw(n)}
+                        aria-label={fn.edit}
+                      >
+                        <Icon name="pencil-simple-bold" size={14} />
+                      </button>
+                    )}
+                    {!ro && !media && (
+                      <button
+                        type="button"
+                        className="note-card__edit-badge note-card__edit-badge--btn"
+                        onClick={() => {
+                          setEditingId(n.id)
+                          setEditText(n.text)
+                        }}
+                        aria-label={fn.edit}
+                      >
+                        <Icon name="pencil-simple-bold" size={14} />
+                      </button>
+                    )}
+                  </>
+                )}
+                <span className="cercle-notes__chip mono">{scopeChip}</span>
+                {!ro && (
+                  <button
+                    type="button"
+                    className="note-card__clear note-card__clear--btn"
+                    onClick={() => remove(n)}
+                    aria-label={fn.delete}
+                  >
+                    <Icon name="x-bold" size={14} />
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {redraw && (
+        <DrawPad
+          open
+          initial={redraw.media_key ? imgUrl(redraw.media_key) : undefined}
+          initialSceneUrl={redraw.scene_key ? imgUrl(redraw.scene_key) : undefined}
+          onCancel={() => setRedraw(null)}
+          onSave={(png, scene) => void saveDrawing(png, scene, redraw)}
+        />
+      )}
+    </section>
+  )
+}

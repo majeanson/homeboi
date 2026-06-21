@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, ApiError, isStatus } from '../lib/api'
 import { BOARD_KEY } from '../lib/queryKeys'
@@ -14,9 +14,27 @@ import { useSaveToGallery } from '../lib/drawingGallery'
 // by the active face but seen by everyone. R2 unbound → 503 → the controls hide
 // (typing a note still works). Recording reuses the MediaRecorder pattern from the
 // routine voice clips (CardDeckEditor), capped at 30 s for calm.
+//
+// The same controls are REUSED by « Le cercle » → Famille → "Notes & recommandations"
+// (CercleNotes) by overriding `endpoint`/`affectedKey`/`extraBody`: a media memo then
+// POSTs to /api/family-notes with { scope, member_id } and invalidates that list —
+// the board behaviour is the default, so nothing there changes.
 const MAX_REC_MS = 30_000
 
-export function MemoControls({ onDone }: { onDone: () => void }) {
+export function MemoControls({
+  onDone,
+  endpoint = 'notes',
+  affectedKey = BOARD_KEY,
+  extraBody,
+}: {
+  onDone: () => void
+  /** Which endpoint a media memo POSTs to. Default the board `notes`. */
+  endpoint?: string
+  /** Query key to invalidate after a successful post. Default BOARD_KEY. */
+  affectedKey?: QueryKey
+  /** Extra fields merged into the POST body (e.g. { scope, member_id } for family notes). */
+  extraBody?: Record<string, unknown>
+}) {
   const t = useT()
   const qc = useQueryClient()
   const [recording, setRecording] = useState(false)
@@ -44,8 +62,8 @@ export function MemoControls({ onDone }: { onDone: () => void }) {
           /* scene optional */
         }
       }
-      await api('notes', { method: 'POST', body: { media_kind: kind, media_key: key, scene_key: sceneKey, text: '' } })
-      qc.invalidateQueries({ queryKey: BOARD_KEY })
+      await api(endpoint, { method: 'POST', body: { media_kind: kind, media_key: key, scene_key: sceneKey, text: '', ...extraBody } })
+      qc.invalidateQueries({ queryKey: affectedKey })
       onDone()
     } catch (e) {
       if (isStatus(e, 503)) setHidden(true)
@@ -133,10 +151,10 @@ export function MemoControls({ onDone }: { onDone: () => void }) {
           setDrawPhoto(false)
           void keepInGallery(png, scene).catch(() => {})
         }}
-        onMakeRoutine={(png) => {
+        onMakeRoutine={(png, scene) => {
           setDraw(false)
           setDrawPhoto(false)
-          void toRoutine(png)
+          void toRoutine(png, scene)
         }}
       />
     </>

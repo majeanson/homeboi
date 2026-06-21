@@ -6,6 +6,11 @@ import type { HelpEntry } from './helpMode'
 // to open). Keyed by control id; the title comes from the control's own label
 // (labelFn in Cercle.tsx). Same engine as Kitchen's KITCHEN_TAB_HELP. FR-CA first.
 export const CERCLE_HELP: Record<string, HelpEntry> = {
+  // Primary Social / Famille split (guide point 9).
+  family: { card: 'cercle', point: 9, body: { fr: 'Ta Maisonnée, tes familles et leurs notes partagées.', en: 'Your Household, your families and their shared notes.' } },
+  social: { card: 'cercle', point: 9, body: { fr: 'Tes amis, collègues et autres groupes — et les personnes sans groupe.', en: 'Your friends, coworkers and other groups — and people in no group.' } },
+  // Famille → "Notes & recommandations".
+  notes: { card: 'cercle', point: 9, body: { fr: 'Des notes rapides — pour toi ou pour toute la Maisonnée — avec photo, dessin ou mémo vocal.', en: 'Quick notes — for you or the whole Household — with photo, drawing or voice memo.' } },
   // View switch (Liste / Liens / Arbre) — guide point 5 ("Trois vues").
   list: { card: 'cercle', point: 5, body: { fr: 'Le répertoire, regroupé par famille.', en: 'The directory, grouped by family.' } },
   links: { card: 'cercle', point: 5, body: { fr: 'Touche un visage : ses liens s’affichent autour, touche-en un autre pour recentrer.', en: 'Tap a face: their ties fan out; tap another to re-center.' } },

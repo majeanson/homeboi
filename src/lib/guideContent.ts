@@ -664,6 +664,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'So a small child learns to recognise grandma, uncle, the babysitter.',
         },
       },
+      {
+        label: { fr: 'Social / Famille + les notes', en: 'Social / Family + the notes' },
+        detail: {
+          fr: 'En haut du cercle, deux onglets : Famille (ta Maisonnée, tes familles) et Social (amis, collègues, autres groupes et les personnes sans groupe). Sous Famille, « Notes & recommandations » : des notes rapides, façon iOS, pour toi ou pour toute la Maisonnée. Choisis un visage pour voir tes notes personnelles ET celles de la Maisonnée; choisis « Maisonnée » pour ne voir que celles de la famille. À l’écriture, la bascule Moi / Maisonnée décide où la note se range. Tu peux y mettre du texte, un mémo vocal, un dessin ou une photo — et tout se retrouve dans la recherche.',
+          en: 'At the top of the circle, two tabs: Family (your Household, your families) and Social (friends, coworkers, other groups and people in no group). Under Family, “Notes & recommendations”: quick, iOS-style notes for you or for the whole Household. Pick a face to see your personal notes AND the Household’s; pick “Household” to see only the family ones. When writing, the Me / Household toggle decides where the note lands. Add text, a voice memo, a drawing or a photo — and it all turns up in search.',
+        },
+        why: {
+          fr: 'Un carnet calme par personne et pour la famille, au même endroit que les proches.',
+          en: 'A calm notebook per person and for the family, right where the people live.',
+        },
+      },
     ],
   },
   {

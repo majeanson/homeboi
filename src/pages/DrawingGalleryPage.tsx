@@ -4,7 +4,7 @@ import { useAudience } from '../lib/audience'
 import { isGuest } from '../lib/device'
 import { imgUrl } from '../lib/image'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
-import { useGallery, useSaveToGallery, useUpdateInGallery, useDeleteFromGallery } from '../lib/drawingGallery'
+import { useGallery, useSaveToGallery, useUpdateInGallery, useDeleteFromGallery, usePinToFridge } from '../lib/drawingGallery'
 import { useDrawingToRoutine } from '../lib/drawingToRoutine'
 import { useConfirm } from '../lib/confirm'
 import { SceneHead } from '../components/SceneHead'
@@ -30,10 +30,23 @@ export function DrawingGalleryPage() {
   const update = useUpdateInGallery()
   const remove = useDeleteFromGallery()
   const toRoutine = useDrawingToRoutine()
+  const pinToFridge = usePinToFridge()
   const confirm = useConfirm()
   // The pad: closed, or open as a fresh sheet / continuing an existing drawing (id).
   const [pad, setPad] = useState<{ open: boolean; id?: string; initial?: string; sceneUrl?: string }>({ open: false })
+  // Ids freshly pinned to the fridge this session — a calm "✓ épinglé" acknowledgement
+  // (the drawing stays in the gallery; pinning makes an independent board copy).
+  const [pinned, setPinned] = useState<Set<string>>(new Set())
   const drawings = data?.drawings ?? []
+
+  async function onPin(d: { media_key: string; scene_key: string | null }, id: string) {
+    try {
+      await pinToFridge(d.media_key, d.scene_key)
+      setPinned((s) => new Set(s).add(id))
+    } catch {
+      /* R2 unset / offline — leave the gallery untouched */
+    }
+  }
 
   async function onSaved(png: Blob, scene: string) {
     const id = pad.id
@@ -76,6 +89,17 @@ export function DrawingGalleryPage() {
                     <img src={imgUrl(d.media_key)} alt={t.notes.drawing} loading="lazy" />
                   </button>
                 )}
+                {!ro && (
+                  <button
+                    type="button"
+                    className={'drawgallery__pin' + (pinned.has(d.id) ? ' is-done' : '')}
+                    onClick={() => void onPin(d, d.id)}
+                    aria-label={pinned.has(d.id) ? t.memo.pinnedToFridge : t.memo.pinToFridge}
+                    title={pinned.has(d.id) ? t.memo.pinnedToFridge : t.memo.pinToFridge}
+                  >
+                    <Icon name={pinned.has(d.id) ? 'check-bold' : 'push-pin-bold'} size={14} />
+                  </button>
+                )}
                 {!ro && !toddler && (
                   <button type="button" className="drawgallery__del" onClick={() => void onDelete(d.id)} aria-label={t.common.delete}>
                     <Icon name="trash-bold" size={14} />
@@ -94,7 +118,9 @@ export function DrawingGalleryPage() {
           initialSceneUrl={pad.sceneUrl}
           onCancel={() => setPad({ open: false })}
           onSave={(png, scene) => void onSaved(png, scene)}
-          onMakeRoutine={toddler ? undefined : (png) => void toRoutine(png)}
+          // Continuing a kept item is already in the gallery (keep:false avoids a
+          // duplicate); the ＋ new flow keeps a copy so it's never lost.
+          onMakeRoutine={toddler ? undefined : (png, scene) => void toRoutine(png, scene, { keep: !pad.id })}
         />
       )}
     </div>

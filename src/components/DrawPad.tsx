@@ -249,7 +249,7 @@ export function DrawPad({
   // Optional "Garder": keep a copy in the lasting gallery (separate from pinning to
   // the fridge). Shown as its own action when provided. Same (png, scene) payload.
   onKeep?: (png: Blob, scene: string) => void
-  onMakeRoutine?: (png: Blob) => void
+  onMakeRoutine?: (png: Blob, scene: string) => void
   // Fallback for old PNG-only drawings: drawn as a flat, non-editable base layer.
   initial?: string
   // Preferred: a URL to the editable scene JSON; rebuilt into editable layers.
@@ -1060,7 +1060,8 @@ export function DrawPad({
   }
   const makeRoutine = () => {
     if (!onMakeRoutine || isEmpty() || busy) return
-    exportBlob((blob) => { if (blob) onMakeRoutine(blob) })
+    const scene = sceneJson()
+    exportBlob((blob) => { if (blob) onMakeRoutine(blob, scene) })
   }
   const keep = () => {
     if (!onKeep || isEmpty() || busy) return

@@ -929,3 +929,105 @@
   opacity: 0.85;
   font-weight: 600;
 }
+
+/* --- Primary Social / Famille split (the dominant segmented control) --------- */
+.cercle-sectionswitch {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  background: var(--berry-wash);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  align-self: stretch;
+}
+.cercle-sectionswitch__btn {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.cercle-sectionswitch__btn.is-active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+/* --- Famille → "Notes & recommandations" (CercleNotes) ----------------------- */
+.cercle-notes__faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.2rem 0 0.6rem;
+}
+.cercle-notes__face {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem 0.3rem 0.35rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.cercle-notes__face.is-active {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--berry-deep, var(--accent, var(--ink-soft)));
+  box-shadow: var(--shadow-sm);
+}
+.cercle-notes__composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+.cercle-notes__scope {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  align-self: flex-start;
+}
+.cercle-notes__scopebtn {
+  padding: 0.3rem 0.85rem;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.cercle-notes__scopebtn.is-active {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+/* The scope chip on a card: which list a note belongs to (a face surfaces both). */
+.cercle-notes__chip {
+  position: absolute;
+  bottom: 0.3rem;
+  right: 0.5rem;
+  font-size: 0.62rem;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.cercle-notes__empty {
+  color: var(--ink-soft);
+  padding: 0.4rem 0.2rem;
+}

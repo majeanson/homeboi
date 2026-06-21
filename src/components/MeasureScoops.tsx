@@ -1,7 +1,7 @@
 import { useLang, useT } from '../i18n'
 import { useSpeak } from '../lib/speak'
 import { type Measure, spokenMeasure } from '../lib/measure'
-import { measureColor } from '../lib/measureColors'
+import { measureColor, isToolColor } from '../lib/measureColors'
 import { useMeasureColors } from '../lib/measurePrefs'
 
 // "Scoops" — a measure drawn as physical fills of its colour-coded tool: one
@@ -28,6 +28,11 @@ export function MeasureScoops({ measure, size = 'sm' }: { measure: Measure; size
   const hasPart = frac > 0.05
   const pct = Math.round(frac * 100)
   const overflow = whole > CIRCLE_MAX
+  // A pure fraction that IS its own colour-coded tool (¼ tasse, ½ c. à thé…) is one
+  // FULL scoop of that tool — you fill it completely — so draw a full circle, not a
+  // part-filled one. The colour already says which fraction it is. Only an odd amount
+  // with no dedicated tool (e.g. 1½ cup → fallback tint) keeps the part-fill.
+  const fracIsWholeTool = whole === 0 && hasPart && isToolColor(measure, ov)
 
   const dot = (key: string, part?: boolean) => (
     <span
@@ -50,10 +55,13 @@ export function MeasureScoops({ measure, size = 'sm' }: { measure: Measure; size
         ×{whole}
       </span>,
     )
+  } else if (fracIsWholeTool) {
+    // ¼ tasse, ½ c. à thé… — one full circle of that tool's colour.
+    circles.push(dot('tool'))
   } else {
     for (let i = 0; i < whole; i++) circles.push(dot(`w${i}`))
     if (hasPart) circles.push(dot('part', true))
-    // A bare fraction (e.g. ½ tsp) still needs at least one drawn circle.
+    // A bare fraction with no dedicated tool still needs at least one drawn circle.
     if (circles.length === 0) circles.push(dot('part', true))
   }
 

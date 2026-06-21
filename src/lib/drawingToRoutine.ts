@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { api } from './api'
 import { resizeImage, PHOTO_MAX } from './image'
+import { useSaveToGallery } from './drawingGallery'
 import type { DeckCard } from './routineTemplates'
 
 // Turn a drawing (a PNG Blob from DrawPad) into the seed of a NEW kid-routine
@@ -21,7 +22,22 @@ export interface RoutineSeed {
 
 export function useDrawingToRoutine() {
   const nav = useNavigate()
-  return async (png: Blob) => {
+  const keep = useSaveToGallery()
+  // `scene` carries the editable layers so the kept copy stays re-openable; pass
+  // `{ keep: false }` when the source is ALREADY in the gallery (continuing a kept
+  // item) so we don't duplicate it.
+  return async (png: Blob, scene = '', opts?: { keep?: boolean }) => {
+    // Never lose the drawing: keep an INDEPENDENT gallery copy before it becomes a
+    // routine card, so even if the routine is later deleted the art survives. The
+    // gallery owns its own blobs, so this can't be freed by clearing a note. Best-
+    // effort — a failed keep (R2 unset/offline) must not block making the routine.
+    if (opts?.keep !== false) {
+      try {
+        await keep(png, scene)
+      } catch {
+        /* gallery keep best-effort */
+      }
+    }
     try {
       const file = new File([png], 'dessin.png', { type: 'image/png' })
       const small = await resizeImage(file, PHOTO_MAX)

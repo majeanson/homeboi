@@ -25,6 +25,7 @@ import { CercleEgo } from '../components/cercle/CercleEgo'
 import { CercleTree } from '../components/cercle/CercleTree'
 import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
+import { CercleNotes } from '../components/cercle/CercleNotes'
 import { Modal } from '../components/Modal'
 import { useHelpMode, HelpToggle, HelpHint, HelpTitle } from '../lib/helpMode'
 import { CERCLE_HELP } from '../lib/cercleHelp'
@@ -58,6 +59,11 @@ interface CercleData {
 
 type View = 'list' | 'links' | 'tree'
 const VIEW_ICON: Record<View, IconName> = { list: 'user-bold', links: 'users-three-bold', tree: 'tree-bold' }
+// The primary split: Famille (Maisonnée + families + their notes) vs Social
+// (friends/work/other groups + ungrouped people). The list body partitions by it;
+// the relationship views (Liens/Arbre) span the whole circle regardless.
+type Section = 'social' | 'family'
+const SECTION_ICON: Record<Section, IconName> = { family: 'users-three-bold', social: 'user-bold' }
 
 // « Le cercle » — the household people directory + relationship views. Parent:
 // Liste (calm grouped directory, the default + accessible), Liens (tap-to-focus ego
@@ -101,6 +107,9 @@ function CercleParent() {
   const confirm = useConfirm()
   const openSheet = useOpenPersonSheet()
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
+  // Distinct URL key so it composes with `view` (?section=family&view=list). Famille
+  // is the default — the Maisonnée is the heart of the cercle.
+  const [section, setSection] = useTabParam<Section>('section', 'family', ['social', 'family'])
   const [query, setQuery] = useState('')
   const [addingGroup, setAddingGroup] = useState(false)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
@@ -112,6 +121,9 @@ function CercleParent() {
   // what it does in place, with a deep-link into the `cercle` guide card.
   const helpLabel = (k: string): string =>
     ({
+      social: t.cercle.section.social,
+      family: t.cercle.section.family,
+      notes: t.cercle.familyNotes.title,
       list: t.cercle.view.list,
       links: t.cercle.view.links,
       tree: t.cercle.view.tree,
@@ -346,6 +358,28 @@ function CercleParent() {
     </>
   )
 
+  // Primary Social / Famille split — the dominant control above the view switch.
+  const sectionSwitch = (
+    <>
+      <div className="cercle-sectionswitch" role="tablist" aria-label={t.nav.cercle}>
+        {(['family', 'social'] as Section[]).map((s) => (
+          <button
+            key={s}
+            type="button"
+            role="tab"
+            aria-selected={section === s}
+            className={'cercle-sectionswitch__btn' + (section === s ? ' is-active' : '')}
+            onClick={help.pick(s, () => setSection(s))}
+          >
+            <InlineIcon name={SECTION_ICON[s]} size={16} /> {t.cercle.section[s]}
+          </button>
+        ))}
+      </div>
+      {help.bubbleFor('social')}
+      {help.bubbleFor('family')}
+    </>
+  )
+
   return (
     <main className={'today-feed cercle' + (help.active ? ' help-armed' : '')}>
       <HubHead title={t.nav.cercle} icon="users-three-bold" iconColor={ACCENT} background="var(--berry-wash)" card="cercle" />
@@ -372,6 +406,7 @@ function CercleParent() {
         </>
       ) : (
         <>
+          {sectionSwitch}
           {viewSwitch}
 
           {view === 'links' ? (
@@ -386,7 +421,7 @@ function CercleParent() {
                 <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.cercle.search} aria-label={t.cercle.search} />
               </label>
 
-              {!needle && birthdays.length > 0 && (
+              {!needle && section === 'family' && birthdays.length > 0 && (
                 <section className="cercle-bdays">
                   <HelpTitle help={help} k="birthdays" className="cercle-section__label">
                     <InlineIcon name="cake-bold" size={16} color={ACCENT} /> {t.cercle.birthdaysSoon}
@@ -411,8 +446,8 @@ function CercleParent() {
               ) : (
                 <>
                   {/* The Maisonnée — your one family, titled from Réglages. Always at
-                      the top; badge is dropped per-row since the whole card IS it. */}
-                  {householdPeople.length > 0 && (
+                      the top of Famille; badge is dropped per-row since the card IS it. */}
+                  {section === 'family' && householdPeople.length > 0 && (
                     <section className="cercle-group cercle-group--named cercle-group--household">
                       <h2 className="cercle-section__label">
                         <span className="cercle-group__dot" style={{ background: ACCENT }} />
@@ -446,8 +481,11 @@ function CercleParent() {
                     </section>
                   )}
 
-                  {/* Named explicit groups */}
-                  {namedGroups.map((g) => (
+                  {/* Named explicit groups — family-kind under Famille, the rest (amis /
+                      travail / autre) under Social. */}
+                  {namedGroups
+                    .filter((g) => (section === 'family' ? g.kind === 'family' : g.kind !== 'family'))
+                    .map((g) => (
                     <section key={g.id} className="cercle-group cercle-group--named">
                       {editingGroupId === g.id ? (
                         <GroupForm
@@ -522,25 +560,30 @@ function CercleParent() {
                     </section>
                   ))}
 
-                  {/* Auto-detected family groups */}
-                  {familyGroups.map((g) => (
-                    <section key={g.id} className="cercle-group">
-                      <HelpTitle help={help} k="familyAuto" className="cercle-section__label">
-                        <InlineIcon name="users-three-bold" size={16} color={ACCENT} /> {g.name}
-                      </HelpTitle>
-                      {help.bubbleFor('familyAuto')}
-                      {[...g.memberKeys]
-                        .map((k) => byKey.get(k))
-                        .filter((p): p is Person => !!p)
-                        .sort((a, b) => a.name.localeCompare(b.name, lang))
-                        .map((p) => <Row key={p.key} p={p} />)}
-                    </section>
-                  ))}
+                  {/* Auto-detected family groups (Famille only) */}
+                  {section === 'family' &&
+                    familyGroups.map((g) => (
+                      <section key={g.id} className="cercle-group">
+                        <HelpTitle help={help} k="familyAuto" className="cercle-section__label">
+                          <InlineIcon name="users-three-bold" size={16} color={ACCENT} /> {g.name}
+                        </HelpTitle>
+                        {help.bubbleFor('familyAuto')}
+                        {[...g.memberKeys]
+                          .map((k) => byKey.get(k))
+                          .filter((p): p is Person => !!p)
+                          .sort((a, b) => a.name.localeCompare(b.name, lang))
+                          .map((p) => <Row key={p.key} p={p} />)}
+                      </section>
+                    ))}
 
-                  {/* People in no group */}
-                  {others.length > 0 && (
+                  {/* Famille → "Notes & recommandations" — durable per-member /
+                      family-wide quick notes. Hidden while searching (like Birthdays). */}
+                  {section === 'family' && <CercleNotes members={members} help={help} />}
+
+                  {/* People in no group (Social) */}
+                  {section === 'social' && others.length > 0 && (
                     <section className="cercle-group">
-                      {(householdPeople.length > 0 || namedGroups.length > 0 || familyGroups.length > 0) && (
+                      {namedGroups.some((g) => g.kind !== 'family') && (
                         <>
                           <HelpTitle help={help} k="others" className="cercle-section__label">
                             {t.cercle.others}
@@ -550,6 +593,11 @@ function CercleParent() {
                       )}
                       {others.map((p) => <Row key={p.key} p={p} />)}
                     </section>
+                  )}
+
+                  {/* Social with nothing in it yet — a calm pointer to the ＋ chooser. */}
+                  {section === 'social' && others.length === 0 && !namedGroups.some((g) => g.kind !== 'family') && (
+                    <EmptyState guide={{ card: 'cercle' }}>{t.cercle.empty}</EmptyState>
                   )}
                   {/* Creation actions (add person / family / connect / new group) all
                       live on the ＋ chooser now — no in-page add buttons here. */}

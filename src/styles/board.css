@@ -655,6 +655,27 @@
   pointer-events: auto;
   z-index: 1;
 }
+/* "Garder dans Mes dessins" — bottom-left, clear of the edit (top-left) + clear
+   (top-right) badges. The "vice versa" of pinning a gallery drawing to the fridge. */
+.note-card__keep-badge {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 0.4rem;
+  display: inline-flex;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-sm);
+  line-height: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.note-card__keep-badge.is-done {
+  color: var(--paper);
+  background: var(--berry-deep, var(--accent, #4a8a5a));
+}
 
 /* --- The Record / Draw row under the Note rapide text capture (AddSheet) ------ */
 .memo-row {
@@ -1205,6 +1226,25 @@
   cursor: pointer;
   line-height: 0;
   box-shadow: var(--shadow-sm);
+}
+/* "Épingler au babillard" — bottom-left, mirroring the delete corner. */
+.drawgallery__pin {
+  position: absolute;
+  bottom: 0.3rem;
+  left: 0.3rem;
+  display: inline-flex;
+  padding: 0.3rem;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  color: var(--ink-soft);
+  cursor: pointer;
+  line-height: 0;
+  box-shadow: var(--shadow-sm);
+}
+.drawgallery__pin.is-done {
+  color: var(--paper);
+  background: var(--berry-deep, var(--accent, #4a8a5a));
 }
 /* Parent "La galerie" door inside the Grille drawings strip: a small trailing
    chip that rides beside the photos/drawings on a wide tablet and wraps under

@@ -166,6 +166,34 @@
 .undo-toast__more:active {
   transform: scale(0.96);
 }
+/* Expanded-log footer: Masquer on the left, "Tout effacer" on the right. */
+.undo-toast__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.undo-toast__clear {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--paper);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.84rem;
+  opacity: 0.7;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.undo-toast__clear:active {
+  transform: scale(0.96);
+}
 @media (prefers-reduced-motion: no-preference) {
   .undo-toast {
     animation: undo-rise 0.22s var(--ease-out) both;

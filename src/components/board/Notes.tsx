@@ -8,7 +8,7 @@ import { useSpeak } from '../../lib/speak'
 import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
 import { useDrawingToRoutine } from '../../lib/drawingToRoutine'
-import { useSaveToGallery } from '../../lib/drawingGallery'
+import { useSaveToGallery, useKeepKeysInGallery } from '../../lib/drawingGallery'
 import { Icon, InlineIcon } from '../Icon'
 import { DrawPad } from '../DrawPad'
 import { ZoomableImg } from '../ZoomableImg'
@@ -44,6 +44,10 @@ export function Notes({
   const speak = useSpeak()
   const toRoutine = useDrawingToRoutine()
   const keepInGallery = useSaveToGallery()
+  // Keep a board drawing into « Mes dessins » WITHOUT opening the pad — an independent
+  // copy, so clearing the note later never frees the kept drawing (#14, never lose one).
+  const keepKeysInGallery = useKeepKeysInGallery()
+  const [kept, setKept] = useState<Set<string>>(new Set())
   // One shared <audio> so playing a voice memo (#38) stops any previous one.
   const audioRef = useRef<HTMLAudioElement | null>(null)
   // A drawing being re-opened in DrawPad to add to it (#14, the shared family doodle).
@@ -98,6 +102,16 @@ export function Notes({
       void a.play()
     } catch {
       /* autoplay blocked / unsupported — harmless, it's optional media */
+    }
+  }
+
+  async function keepNote(n: NoteRow) {
+    if (!n.media_key) return
+    try {
+      await keepKeysInGallery(n.media_key, n.scene_key)
+      setKept((s) => new Set(s).add(n.id))
+    } catch {
+      /* R2 unset / offline — the note stays put, nothing lost */
     }
   }
 
@@ -189,6 +203,19 @@ export function Notes({
                         <Icon name="pencil-simple-bold" size={14} />
                       </button>
                     )}
+                    {/* Keep this drawing into « Mes dessins » (independent copy) so it
+                        survives clearing the note — the "vice versa" of pinning. */}
+                    {!ro && !toddler && media === 'drawing' && (
+                      <button
+                        type="button"
+                        className={'note-card__keep-badge' + (kept.has(n.id) ? ' is-done' : '')}
+                        onClick={() => void keepNote(n)}
+                        aria-label={kept.has(n.id) ? t.memo.savedToGallery : t.memo.saveToGallery}
+                        title={kept.has(n.id) ? t.memo.savedToGallery : t.memo.saveToGallery}
+                      >
+                        <Icon name={kept.has(n.id) ? 'check-bold' : 'paint-brush-bold'} size={14} />
+                      </button>
+                    )}
                   </>
                 )}
                 {!ro && !toddler && (
@@ -260,7 +287,8 @@ export function Notes({
           // a child can save their own art (not just pin the fridge note).
           onKeep={(png, scene) => void keepInGallery(png, scene).catch(() => {})}
           // Make-routine stays parent-only: it leaves into the parent routine builder.
-          onMakeRoutine={toddler ? undefined : (png) => void toRoutine(png)}
+          // toRoutine keeps an independent gallery copy first, so the drawing is never lost.
+          onMakeRoutine={toddler ? undefined : (png, scene) => void toRoutine(png, scene)}
         />
       )}
       {creating && (
@@ -269,7 +297,7 @@ export function Notes({
           onCancel={() => setCreating(false)}
           onSave={(png, scene) => void saveDrawing(png, scene, null)}
           onKeep={(png, scene) => void keepInGallery(png, scene).catch(() => {})}
-          onMakeRoutine={(png) => void toRoutine(png)}
+          onMakeRoutine={(png, scene) => void toRoutine(png, scene)}
         />
       )}
     </section>

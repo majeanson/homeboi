@@ -1,5 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
+import { imgUrl } from './image'
+import { BOARD_KEY } from './queryKeys'
 
 // The drawing collection / gallery (#14): kept drawings (the lasting "Mes dessins",
 // especially a toddler's), distinct from transient fridge notes. Each entry owns
@@ -59,5 +61,44 @@ export function useDeleteFromGallery() {
   return async (id: string) => {
     await api('drawings', { method: 'DELETE', body: { id } })
     qc.invalidateQueries({ queryKey: GALLERY_KEY })
+  }
+}
+
+// Fetch a drawing's bytes back from its served R2 URLs, so it can be COPIED into an
+// independent drawing elsewhere. This is the basis of "never lose a drawing": every
+// conversion (gallery ↔ fridge note, → routine card) makes its OWN blobs, so
+// deleting one copy never frees another's. Scene is optional (re-editable layers).
+async function fetchDrawingBlobs(media_key: string, scene_key?: string | null): Promise<{ png: Blob; scene: string }> {
+  const png = await fetch(imgUrl(media_key)).then((r) => r.blob())
+  let scene = ''
+  if (scene_key) {
+    try {
+      scene = await fetch(imgUrl(scene_key)).then((r) => r.text())
+    } catch {
+      /* scene optional — the PNG stands on its own */
+    }
+  }
+  return { png, scene }
+}
+
+// Pin an existing drawing (by its keys) onto the fridge board as a NEW note — a
+// fresh INDEPENDENT copy, so later clearing the note never frees the source blobs.
+export function usePinToFridge() {
+  const qc = useQueryClient()
+  return async (media_key: string, scene_key?: string | null) => {
+    const { png, scene } = await fetchDrawingBlobs(media_key, scene_key)
+    const up = await uploadDrawing(png, scene)
+    await api('notes', { method: 'POST', body: { media_kind: 'drawing', media_key: up.media_key, scene_key: up.scene_key, text: '' } })
+    qc.invalidateQueries({ queryKey: BOARD_KEY })
+  }
+}
+
+// Keep a drawing that lives elsewhere (a fridge note) into the gallery — again a
+// fresh INDEPENDENT copy, so clearing the note never frees the kept drawing.
+export function useKeepKeysInGallery() {
+  const save = useSaveToGallery()
+  return async (media_key: string, scene_key?: string | null) => {
+    const { png, scene } = await fetchDrawingBlobs(media_key, scene_key)
+    await save(png, scene)
   }
 }

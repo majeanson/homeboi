@@ -67,3 +67,12 @@ export type MeasureOverrides = Record<string, string>
 export function measureColor(m: Measure, ov: MeasureOverrides = {}): string | null {
   return ov[m.key] ?? DEFAULT_MEASURE_COLORS[m.key] ?? ov[`unit:${m.unit}`] ?? DEFAULT_UNIT_FALLBACK[m.unit] ?? null
 }
+
+// Whether this EXACT amount has its own colour-coded tool — a real nested cup/spoon
+// (¼ tasse, ½ c. à thé…) you fill COMPLETELY — as opposed to an odd amount that only
+// gets a muted per-unit fallback. A dedicated tool is drawn as a FULL scoop circle
+// (you fill the ¼-cup once; you don't quarter-fill it), since its colour already
+// tells you which fraction it is.
+export function isToolColor(m: Measure, ov: MeasureOverrides = {}): boolean {
+  return (ov[m.key] ?? DEFAULT_MEASURE_COLORS[m.key]) != null
+}
