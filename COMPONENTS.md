@@ -244,7 +244,10 @@ below). The call-site sweeps remain — do them with visual QA, not blind:
 centred dialog), **`Sheet`** (`Sheet.tsx` — the bottom-sheet shell: `.scrim`+`.sheet`+
 `.grab`+optional `.sheet__close`, wires `useModal`+`useSwipeToDismiss`; AddSheet,
 ProfilePicker and the detail peek all use it), `OperatorSection`
-(`operator/OperatorSection.tsx`). Shared CSS in `styles/kit.css`.
+(`operator/OperatorSection.tsx`), **`QrCode`** (`QrCode.tsx`, class `.qrcode` — a
+dumb client-side QR tile for a minted share link: scan off the wall tablet or print
+by the door; used under the share-link input in `operator/guest.tsx`). Shared CSS in
+`styles/kit.css`.
 
 ## Uniformization backlog (call-site sweeps — prioritised)
 

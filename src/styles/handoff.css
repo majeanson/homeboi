@@ -163,6 +163,28 @@
   color: var(--ink-soft);
 }
 
+/* Operator preview bar (components/SharePreviewBar.tsx): sits above the scene head
+   when an operator opened the scene with ?preview=<kind>. A calm tinted strip with
+   a "what you're looking at" note + a way back to settings. Hidden in print. */
+.share-preview {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.8rem;
+  padding: 0.5rem 0.9rem;
+  background: color-mix(in srgb, var(--marigold, #d9842a) 12%, var(--card));
+  border-bottom: 1px solid var(--line);
+}
+.share-preview__note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-soft);
+  min-width: 0;
+}
+
 /* #36 grandparents' window — a little photo wall. Responsive square tiles. */
 .family-window__photos {
   display: grid;
@@ -176,4 +198,56 @@
   border-radius: var(--radius-md);
   box-shadow: inset 0 0 0 1.5px var(--line);
   background: var(--card);
+}
+
+/* ── Print (#35): a clean card to tape on the fridge / by the door ──────────
+   The FIRST @media print block in the app. A welcome/handoff scene prints to
+   black ink on white, with the app chrome (.no-print: buttons, preview bar,
+   bottom nav) dropped and the wifi + rules enlarged so the taped-up card is
+   legible across the kitchen. Uniquely-scoped to the share scenes so it can't
+   bleed into anything else printing. */
+@media print {
+  /* Utility: anything tagged no-print disappears on paper (print/preview-bar
+     buttons, the shell's bottom nav). */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Only the share scenes opt into print styling. */
+  .scene.handoff,
+  .scene.welcome,
+  .scene.family-window {
+    background: #fff;
+    color: #000;
+    box-shadow: none;
+  }
+  .scene.handoff *,
+  .scene.welcome *,
+  .scene.family-window * {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  /* Keep section cards readable with a thin ink border instead of a fill. */
+  .scene.handoff .handoff__row,
+  .scene.handoff .handoff__note,
+  .scene.handoff .handoff__ev,
+  .scene.handoff .handoff__routine,
+  .scene.handoff .handoff__rules,
+  .scene.handoff .handoff__card,
+  .scene.welcome .handoff__row,
+  .scene.welcome .handoff__rules {
+    border: 1px solid #000;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  /* Enlarge the things a visitor actually reads from across the room. */
+  .scene.welcome .handoff__line,
+  .scene.welcome .handoff__rules,
+  .scene.welcome .handoff__wifi {
+    font-size: 1.25rem;
+  }
+  .handoff__sec {
+    break-inside: avoid;
+  }
 }

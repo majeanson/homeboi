@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { slotLabel } from '../lib/mealSlots'
 import { EmptyState } from '../components/EmptyState'
 import { Icon, InlineIcon } from '../components/Icon'
+import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
 
 // #34 — the babysitter handoff. The terminal view a `sitter` share link lands on
 // (it can read nothing else — the server allowlist keeps it to /api/guest/window).
@@ -26,7 +27,12 @@ interface WindowData {
 export function HandoffPage() {
   const t = useT()
   const { lang } = useLang()
-  const { data, isLoading } = useQuery({ queryKey: ['guest-window'], queryFn: () => api<WindowData>('guest/window') })
+  // ?preview=sitter lets the operator see the sitter card from Réglages ▸ Partage.
+  const preview = useSharePreview()
+  const { data, isLoading } = useQuery({
+    queryKey: ['guest-window', preview ?? 'self'],
+    queryFn: () => api<WindowData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
+  })
 
   const time = (start_at: number, all_day: number) =>
     all_day
@@ -42,6 +48,7 @@ export function HandoffPage() {
 
   return (
     <div className="scene handoff" aria-label={t.shareMode.handoffTitle}>
+      {preview && <SharePreviewBar />}
       <header className="scene__head">
         <div className="scene__head-titles">
           <h2 className="pm-sheet__title">
@@ -49,6 +56,10 @@ export function HandoffPage() {
           </h2>
           {data?.householdName && <span className="scene__head-sub mono">{data.householdName}</span>}
         </div>
+        {/* A printed handoff on the fridge is genuinely useful (#34). */}
+        <button type="button" className="btn btn--sm no-print" onClick={() => window.print()}>
+          <InlineIcon name="printer-bold" /> {t.shareMode.print}
+        </button>
       </header>
 
       <div className="scene__body handoff__body">

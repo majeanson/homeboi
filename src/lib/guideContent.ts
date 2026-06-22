@@ -112,7 +112,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     key: 'devices',
     icon: 'device-tablet-bold',
     label: { fr: 'Appareils & affichage', en: 'Devices & display' },
-    ids: ['surface', 'audience', 'pairing', 'screensaver', 'share', 'offline', 'account'],
+    ids: ['surface', 'audience', 'pairing', 'screensaver', 'share', 'share-access', 'offline', 'account'],
   },
   {
     key: 'getting-around',
@@ -1322,6 +1322,65 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'C’est ce qui inscrit Babillard dans le menu Partager du téléphone.',
           en: 'That’s what puts Babillard in the phone’s Share menu.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'share-access',
+    icon: 'key-bold',
+    group: 'concepts',
+    title: { fr: 'Partager un accès', en: 'Share access' },
+    what: {
+      fr: 'Donne à quelqu’un un lien en lecture seule, sans lui ouvrir toute la maison : on choisit ce qu’il voit, et le lien s’éteint tout seul.',
+      en: 'Give someone a read-only link without opening the whole house: you pick what they see, and the link expires on its own.',
+    },
+    points: [
+      {
+        label: { fr: 'Quatre genres de liens', en: 'Four kinds of links' },
+        detail: {
+          fr: '« Démo » montre tout le babillard en lecture seule (tes vraies données, pour « regarde mon app »); « Gardienne » montre la journée + les routines + les infos à savoir + les urgences + le wifi; « Accueil » montre le wifi + le jour des poubelles + les règles de la maison; « Famille » est la fenêtre des grands-parents (dates des enfants + anniversaires + photos).',
+          en: '“Demo” shows the whole board read-only (your real data, for “look at my app”); “Sitter” shows today + the routines + things-to-know + emergencies + wifi; “Welcome” shows the wifi + bin day + house rules; “Family” is the grandparents’ window (kids’ dates + birthdays + photos).',
+        },
+        why: {
+          fr: 'Chaque visiteur a un besoin différent — un genre par besoin, jamais plus.',
+          en: 'Each visitor has a different need — one kind per need, never more.',
+        },
+      },
+      {
+        label: { fr: 'Lecture seule et minuté', en: 'Read-only and time-boxed' },
+        detail: {
+          fr: 'Un lien ne peut rien modifier, et il expire de lui-même (de 30 minutes à une semaine selon le genre). Pas de « retrait » avant la fin — on garde les durées courtes.',
+          en: 'A link can change nothing, and it expires on its own (30 minutes to a week depending on the kind). No revoke-before-expiry — keep the durations short.',
+        },
+        why: {
+          fr: 'Rien à révoquer ni à nettoyer : le temps fait le ménage.',
+          en: 'Nothing to revoke or clean up: time does the housekeeping.',
+        },
+      },
+      {
+        label: { fr: '« Infos à partager »', en: '“Info to share”' },
+        detail: {
+          fr: 'Un petit éditeur (wifi, règles de la maison, jour des poubelles) alimente les liens Gardienne et Accueil — tu le remplis une fois dans Réglages.',
+          en: 'A small editor (wifi, house rules, bin day) feeds the Sitter and Welcome links — you fill it once in Settings.',
+        },
+      },
+      {
+        label: { fr: 'Aperçu et impression', en: 'Preview and print' },
+        detail: {
+          fr: 'Le bouton « Aperçu » te montre exactement ce que le visiteur verra; la carte d’accueil s’imprime pour la coller sur le frigo ou près de la porte.',
+          en: 'The “Preview” button shows exactly what the visitor will see; the welcome card prints to tape on the fridge or by the door.',
+        },
+      },
+      {
+        label: { fr: 'La vie privée d’abord', en: 'Privacy first' },
+        detail: {
+          fr: 'Un lien ciblé ne voit que sa propre vue — jamais le reste de la maison, même s’il bricole l’adresse.',
+          en: 'A targeted link only sees its own view — never the rest of the house, even if it fiddles with the URL.',
+        },
+        why: {
+          fr: 'La barrière est côté serveur, pas juste dans l’affichage.',
+          en: 'The boundary is on the server, not just in the display.',
         },
       },
     ],
@@ -2623,42 +2682,56 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'set-guest',
-    icon: 'user-bold',
+    icon: 'key-bold',
     group: 'settings',
     tab: 'guest',
-    title: { fr: 'Invité', en: 'Guest' },
+    title: { fr: 'Partage', en: 'Sharing' },
     what: {
-      fr: 'Un accès temporaire en lecture seule — pour la gardienne : elle voit la journée et les routines, sans rien pouvoir changer ni atteindre les réglages.',
-      en: 'A temporary read-only access — for the babysitter: she sees the day and the routines, without changing anything or reaching settings.',
+      fr: 'Crée des liens temporaires en lecture seule — Démo, Gardienne, Accueil ou Famille — et règle les « Infos à partager » (wifi, règles, poubelles) qui les alimentent.',
+      en: 'Mint temporary read-only links — Demo, Sitter, Welcome or Family — and set the “Info to share” (wifi, rules, bin day) that feeds them.',
     },
     points: [
       {
-        label: { fr: 'En lecture seule', en: 'Read-only' },
+        label: { fr: 'Choisir le genre', en: 'Pick the kind' },
         detail: {
-          fr: 'L’invité voit le babillard et les routines, mais aucun bouton d’ajout, de modification ou de suppression.',
-          en: 'The guest sees the board and routines, but no add, edit or delete buttons.',
-        },
-        why: {
-          fr: 'On confie l’info utile sans confier les commandes.',
-          en: 'You hand over the useful info, not the controls.',
+          fr: 'Voir [[card:share-access|Partager un accès]] pour le détail des quatre genres.',
+          en: 'See [[card:share-access|Share access]] for the detail of the four kinds.',
         },
       },
       {
-        label: { fr: 'Limité dans le temps', en: 'Time-boxed' },
+        label: { fr: 'Chaque genre, sa vue', en: 'Each kind, its view' },
         detail: {
-          fr: 'Le lien expire tout seul après le délai choisi.',
-          en: 'The link expires on its own after the chosen window.',
+          fr: 'Démo (tout le babillard), Gardienne (journée + routines + à savoir + wifi), Accueil (wifi + poubelles + règles) ou Famille (dates des enfants + anniversaires + photos) — chacun avec sa durée.',
+          en: 'Demo (the whole board), Sitter (day + routines + things-to-know + wifi), Welcome (wifi + bin day + rules) or Family (kids’ dates + birthdays + photos) — each with its own duration.',
         },
         why: {
-          fr: 'Rien à révoquer à la main — ça se referme.',
-          en: 'Nothing to revoke by hand — it closes itself.',
+          fr: 'Un lien par besoin : le visiteur ne voit que ce qui le concerne.',
+          en: 'One link per need: the visitor only sees what concerns them.',
         },
       },
       {
-        label: { fr: 'Aperçu avant de partager', en: 'Preview before sharing' },
+        label: { fr: 'En lecture seule, minuté', en: 'Read-only, time-boxed' },
         detail: {
-          fr: 'Depuis Affichage, tu peux prévisualiser la vue invité pour voir exactement ce que la gardienne verra.',
-          en: 'From Display, you can preview the guest view to see exactly what the sitter will see.',
+          fr: 'Aucun bouton d’ajout/modif/suppression, et le lien expire tout seul après le délai choisi.',
+          en: 'No add/edit/delete buttons, and the link expires on its own after the chosen window.',
+        },
+        why: {
+          fr: 'On confie l’info utile sans confier les commandes — rien à révoquer à la main.',
+          en: 'You hand over the useful info, not the controls — nothing to revoke by hand.',
+        },
+      },
+      {
+        label: { fr: '« Infos à partager »', en: '“Info to share”' },
+        detail: {
+          fr: 'Remplis une fois le wifi, les règles de la maison et le jour des poubelles : les liens Gardienne et Accueil les affichent.',
+          en: 'Fill in the wifi, house rules and bin day once: the Sitter and Welcome links show them.',
+        },
+      },
+      {
+        label: { fr: 'Aperçu et QR', en: 'Preview and QR' },
+        detail: {
+          fr: 'Le bouton « Aperçu » montre exactement ce que le visiteur verra; un code QR accompagne chaque lien pour le scanner ou le coller près de la porte.',
+          en: 'The “Preview” button shows exactly what the visitor will see; a QR code rides along with each link to scan it or tape it by the door.',
         },
         why: {
           fr: 'Pour vérifier que tout l’utile est là, et rien de plus.',

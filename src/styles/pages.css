@@ -1590,6 +1590,22 @@
   }
 }
 
+/* QrCode (src/components/QrCode.tsx): a scannable tile under a minted share link.
+   Always on a white card so it scans regardless of theme; centred so it reads as
+   "here's the thing to point your phone at" — and prints clean by the door. */
+.qrcode {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+.qrcode__img {
+  display: block;
+  background: #fff;
+  padding: 0.5rem;
+  border-radius: var(--radius, 12px);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.15);
+}
+
 /* --- EditField: the ONE add/edit text box (src/components/EditField.tsx) ----
    The clear ✕ and the mic live INSIDE a bordered box that looks like an input,
    so a row reads as "field + at most one or two compact actions" instead of the

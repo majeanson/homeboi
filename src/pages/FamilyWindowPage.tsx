@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { imgUrl } from '../lib/image'
 import { EmptyState } from '../components/EmptyState'
 import { InlineIcon } from '../components/Icon'
+import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
 
 // #36 — the grandparents' window. The terminal view a `family` share link lands on:
 // the grandkids' upcoming dates, the family's birthdays, and the latest photos.
@@ -22,7 +23,12 @@ interface FamilyData {
 export function FamilyWindowPage() {
   const t = useT()
   const { lang } = useLang()
-  const { data, isLoading } = useQuery({ queryKey: ['guest-window'], queryFn: () => api<FamilyData>('guest/window') })
+  // ?preview=family lets the operator see the grandparents' window from Réglages.
+  const preview = useSharePreview()
+  const { data, isLoading } = useQuery({
+    queryKey: ['guest-window', preview ?? 'self'],
+    queryFn: () => api<FamilyData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
+  })
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
 
   const dayLabel = (at: number) =>
@@ -37,6 +43,7 @@ export function FamilyWindowPage() {
 
   return (
     <div className="scene family-window" aria-label={t.shareMode.familyTitle}>
+      {preview && <SharePreviewBar />}
       <header className="scene__head">
         <div className="scene__head-titles">
           <h2 className="pm-sheet__title">

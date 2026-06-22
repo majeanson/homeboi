@@ -3,6 +3,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { EmptyState } from '../components/EmptyState'
 import { Icon, InlineIcon } from '../components/Icon'
+import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
 import { WifiBlock } from './HandoffPage'
 
 // #35 — the guest welcome card. The terminal view a `welcome` share link lands on:
@@ -19,12 +20,20 @@ interface WelcomeData {
 
 export function WelcomePage() {
   const t = useT()
-  const { data, isLoading } = useQuery({ queryKey: ['guest-window'], queryFn: () => api<WelcomeData>('guest/window') })
+  // An operator can preview the curated view via ?preview=welcome (server accepts
+  // ?kind= for a non-guest). Keep the cache key preview-aware so it never collides
+  // with a real guest's window.
+  const preview = useSharePreview()
+  const { data, isLoading } = useQuery({
+    queryKey: ['guest-window', preview ?? 'self'],
+    queryFn: () => api<WelcomeData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
+  })
   const wifi = data?.wifi
   const has = !!(wifi?.ssid || data?.binDay || data?.houseRules)
 
   return (
     <div className="scene welcome" aria-label={t.shareMode.welcomeTitle}>
+      {preview && <SharePreviewBar />}
       <header className="scene__head">
         <div className="scene__head-titles">
           <h2 className="pm-sheet__title">
@@ -32,6 +41,11 @@ export function WelcomePage() {
           </h2>
           {data?.householdName && <span className="scene__head-sub mono">{data.householdName}</span>}
         </div>
+        {/* Print the visitor card to tape on the fridge / by the door (#35). The
+            @media print block (handoff.css) strips app chrome to a clean card. */}
+        <button type="button" className="btn btn--sm no-print" onClick={() => window.print()}>
+          <InlineIcon name="printer-bold" /> {t.shareMode.print}
+        </button>
       </header>
 
       <div className="scene__body welcome__body">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
@@ -6,6 +7,7 @@ import { api } from '../../lib/api'
 import { isGuest, type GuestKind } from '../../lib/device'
 import { InlineIcon } from '../Icon'
 import { StatusMessage } from '../StatusMessage'
+import { QrCode } from '../QrCode'
 
 // Typed read-only share links. The operator picks a KIND (what the link can see)
 // and a duration, and gets a time-boxed token (?guest=<token>). The link lands on
@@ -60,6 +62,7 @@ const DEFAULT_TTL: Record<GuestKind, number> = { showcase: 24 * H, sitter: 12 * 
 
 export function GuestSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const navigate = useNavigate()
   // Issuing a share link is operator-only — a read-only guest can't mint more, so
   // the whole section is hidden for them.
   const ro = isGuest()
@@ -144,9 +147,25 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           </select>
         </label>
 
-        <button type="button" className="btn btn--primary" onClick={generate} disabled={busy}>
-          <InlineIcon name="key-bold" /> {busy ? t.guest.generating : t.guest.generate}
-        </button>
+        <div className="operator__inline-form">
+          <button type="button" className="btn btn--primary" onClick={generate} disabled={busy}>
+            <InlineIcon name="key-bold" /> {busy ? t.guest.generating : t.guest.generate}
+          </button>
+          {/* Aperçu: see exactly what this kind shows before sharing. Curated kinds
+              open their scene with ?preview=<kind> (the server returns the curated
+              payload for an operator); showcase IS the real hub, so open /board. */}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              const k = KINDS.find((x) => x.kind === kind)!
+              navigate(kind === 'showcase' ? '/board' : `${k.path}?preview=${kind}`)
+            }}
+            disabled={busy}
+          >
+            <InlineIcon name="magnifying-glass-bold" /> {t.shareMode.preview}
+          </button>
+        </div>
 
         {err && <StatusMessage tone="error">{err}</StatusMessage>}
 
@@ -164,6 +183,9 @@ export function GuestSection({ help }: { help?: HelpMode }) {
                 </button>
               )}
             </div>
+            {/* A QR by the door (#35): scan the link off the wall tablet, or print
+                it to tape on the fridge. White tile so it scans on any theme. */}
+            <QrCode value={link} />
           </div>
         )}
       </OperatorSection>

@@ -1374,7 +1374,7 @@ export const FR = {
     guideGoTo: 'Aller à cet onglet',
     guideMap: 'Tout ce que Babillard fait',
     replayTour: 'Rejouer la visite guidée',
-    guestTab: 'Accès invité',
+    guestTab: 'Partage',
   },
   guest: {
     title: 'Partager un accès (lecture seule)',
@@ -1438,6 +1438,11 @@ export const FR = {
     allDay: 'Toute la journée',
     child: 'enfant',
     empty: 'Rien à afficher pour l’instant.',
+    // Operator preview of a curated view + print
+    preview: 'Aperçu',
+    previewNote: 'Aperçu — voici exactement ce que verra le visiteur.',
+    closePreview: 'Fermer l’aperçu',
+    print: 'Imprimer',
   },
   ghost: {
     title: 'Suggestions',
@@ -2972,7 +2977,7 @@ export const EN: typeof FR = {
     guideGoTo: 'Go to this tab',
     guideMap: 'Everything Babillard does',
     replayTour: 'Replay the guided tour',
-    guestTab: 'Guest access',
+    guestTab: 'Sharing',
   },
   guest: {
     title: 'Share access (read-only)',
@@ -3036,6 +3041,11 @@ export const EN: typeof FR = {
     allDay: 'All day',
     child: 'child',
     empty: 'Nothing to show yet.',
+    // Operator preview of a curated view + print
+    preview: 'Preview',
+    previewNote: 'Preview — exactly what the visitor will see.',
+    closePreview: 'Close preview',
+    print: 'Print',
   },
   ghost: {
     title: 'Suggestions',

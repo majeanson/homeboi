@@ -39,6 +39,7 @@ import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { EmptyState } from '../components/EmptyState'
 import { StatusMessage } from '../components/StatusMessage'
 import { Chip, ChipGroup } from '../components/Chip'
+import { QrCode } from '../components/QrCode'
 import { Disclosure } from '../components/Disclosure'
 import { FeatureMap } from '../components/FeatureMap'
 import { SubTabs } from '../components/SubTabs'
@@ -1202,6 +1203,17 @@ export function DevKit() {
             </div>
           </Demo>
         </>
+      ),
+    },
+    {
+      cat: 'Feedback',
+      name: 'QrCode',
+      file: 'components/QrCode.tsx',
+      kw: 'qr code scan link share guest partage lien porte door',
+      render: () => (
+        <Demo label="a scannable share link (white tile, scans on any theme)">
+          <QrCode value="https://babillard.example/welcome?guest=demo-token" />
+        </Demo>
       ),
     },
     {
