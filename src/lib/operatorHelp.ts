@@ -21,6 +21,22 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
       en: `Your stash spots (freezer, pantry…) where items are grouped. Rename them, change their colour, or add your own.`,
     },
   },
+  cars: {
+    card: 'auto',
+    point: 0,
+    body: {
+      fr: `L'auto que la maisonnée se partage. Donne-lui un nom et une couleur — elle sert à savoir qui l'a, quand elle est libre et qui reconduit qui.`,
+      en: `The car the household shares. Name and colour it — it's used to know who has it, when it's free, and who drives whom.`,
+    },
+  },
+  schedule: {
+    card: 'auto',
+    point: 1,
+    body: {
+      fr: `Les heures récurrentes de chacun. Coche « prend l'auto » pour celles qui mobilisent la voiture — c'est ce qui dit à L'auto quand elle est prise. Une semaine différente s'ajuste dans la vue L'auto.`,
+      en: `Everyone's recurring hours. Tick "takes the car" for the ones that tie up the vehicle — that's what tells The car when it's taken. An off week is adjusted in the car view.`,
+    },
+  },
   ambient: {
     card: 'set-display',
     point: 5,

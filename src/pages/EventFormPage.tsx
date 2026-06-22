@@ -14,11 +14,15 @@ export function EventFormPage() {
   const qc = useQueryClient()
   const [params] = useSearchParams()
   const dateSeed = Number(params.get('date'))
+  // ?ride=1 (the ＋ "Ajouter un trajet" tile / the /voiture add) opens the form as a
+  // ride: the Transport block expanded + the household car pre-picked.
+  const ride = params.get('ride') === '1'
   return (
-    <FormScene title={t.operator.addEvent} icon="calendar-blank-bold" fallback="/board">
+    <FormScene title={ride ? t.auto.addRide : t.operator.addEvent} icon="calendar-blank-bold" fallback="/board">
       {(members, close) => (
         <EventForm
           members={members}
+          defaultRide={ride}
           initialDate={Number.isFinite(dateSeed) && dateSeed > 0 ? dateSeed : undefined}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ['board'] })
