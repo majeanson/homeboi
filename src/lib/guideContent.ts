@@ -713,6 +713,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Notre monde : la vue d’ensemble', en: 'Our world: the big picture' },
+        detail: {
+          fr: 'Les trois vues zooment sur une personne ou une famille; « Notre monde » fait le contraire — il prend de la hauteur. Touche « Voir notre monde » : ta Maisonnée s’affiche au centre, et tout autour, chaque famille et chaque groupe forme une île de couleur avec ses visages dedans. Un trait relie deux îles dès qu’une personne les rattache — ton ami à sa propre famille, ta maisonnée à la parenté. Tout se touche et se dit à voix haute : touche une île pour entendre son nom et qui s’y trouve, un visage pour son prénom, un trait pour savoir qui relie quoi. Et « Raconte-moi » fait le tour tout seul, île par île puis les liens — une petite histoire de notre monde, parfaite pour un enfant. Pince ou + / − pour explorer; le ✕ ferme. C’est fait pour COMPRENDRE l’ensemble : pour modifier, retourne dans le cercle.',
+          en: 'The three views zoom IN on one person or family; “Our world” does the opposite — it pulls back. Tap “See our world”: your Household sits at the centre, and all around it each family and group is a coloured island with its faces inside. A line joins two islands wherever a person ties them together — your friend to his own family, your household to your kin. Everything taps and speaks: tap an island to hear its name and who’s in it, a face for their name, a line to hear who connects what. And “Tell me about us” takes the tour on its own, island by island then the bridges — a little story of our world, perfect for a child. Pinch or + / − to explore; ✕ closes. It’s built to UNDERSTAND the whole — to edit, go back into the circle.',
+        },
+        why: {
+          fr: 'Voir d’un coup comment toutes les familles et tous les groupes s’emboîtent — pas juste une personne à la fois.',
+          en: 'See at a glance how all the families and groups fit together — not just one person at a time.',
+        },
+      },
+      {
         label: { fr: 'Groupes, adresse et photos', en: 'Groups, address and photos' },
         detail: {
           fr: 'Crée un groupe nommé (Famille Tremblay, Collègues…) avec son type et sa couleur, puis touche le crayon sur l’en-tête d’un groupe pour le renommer ou le recolorer. Range quelqu’un dedans en touchant sa fiche : les pastilles de groupes sont des boutons — touche pour l’ajouter, retouche pour le retirer. Pour supprimer n’importe quel groupe — même un vide ou un qui n’apparaît pas dans le répertoire — va dans Réglages ▸ Le cercle : ils y sont tous, avec un bouton supprimer; les personnes restent dans le cercle. Sur une fiche tu ajoutes aussi son adresse (un bouton « Itinéraire » ouvre la carte) et des photos avec légende, et « Exporter (vCard) » télécharge la personne pour l’ajouter à n’importe quel téléphone. À l’inverse, sur une NOUVELLE fiche, « Importer un .vcf » lit un fichier de contacts exporté d’un téléphone : un seul contact pré-remplit la fiche, et un fichier qui en contient plusieurs les ajoute tous d’un coup. Dans la liste, les icônes 📞 et ✉ appellent ou écrivent directement, sans ouvrir la fiche. Cherche quelqu’un par prénom OU nom de famille.',

@@ -20,7 +20,8 @@ import { chime, clock } from '../lib/cookTimers'
 // ones ✓). Tapping the card (or the arrow) speaks it and settles it done — the
 // SAME gentle state every time (deterministic, no variable reward, NFR-CALM-2) —
 // then the story moves on. When the day is done it ends on a handwritten "sweet
-// dreams" and STOPS (no "do it again" hook); the day resets server-side.
+// dreams" and STOPS — no auto-advance, no nag — but offers a quiet, deliberate
+// "Recommencer" so a redo is a choice, not a streak hook; the day resets server-side.
 interface PlayerCard {
   icon: string
   label: string
@@ -82,6 +83,18 @@ export function RoutinePlayer({
     }),
   })
 
+  // "Recommencer" — wipe today's ✓ so the routine plays fresh again (the calm
+  // STOP is the absence of a nag, not a lock: a kid who wants to do it again, or a
+  // parent re-running it, can — deliberately, no streak/reward). Optimistic so the
+  // recap clears instantly; the backend deletes the day's run row.
+  const resetRun = useOptimisticMutation<RoutinesData, { routineId: string }>({
+    queryKey: ROUTINES_KEY,
+    mutationFn: (v) => api('routines', { method: 'PATCH', body: { ...v, reset: true } }),
+    apply: (old, v) => ({
+      routines: old.routines.map((r) => (r.id === v.routineId ? { ...r, doneIdx: [] } : r)),
+    }),
+  })
+
   // One continuous run, not a per-step start/stop: tap ▶ ONCE to begin (reads the
   // first step aloud), then → through each step, ✓ on the last. Each → laps the
   // step's time; the clock keeps running between steps. Count-up, no score; the end
@@ -133,6 +146,16 @@ export function RoutinePlayer({
     } else {
       readAloud(idx + 1)
     }
+  }
+
+  // Play it again: clear the day's ✓ and the session stopwatch so it starts at the
+  // first card, fresh. The kid taps ▶ to begin again (we don't auto-run — calm).
+  function restart() {
+    if (ro) return
+    resetRun.mutate({ routineId: routine.id })
+    setRunning(false)
+    setElapsed(0)
+    setTimes({})
   }
 
   const tint = routine.color ?? '#88A36F'
@@ -192,6 +215,13 @@ export function RoutinePlayer({
                 ))}
               </div>
               {totalSecs > 0 && <div className="tdl-total mono">⏱ {clock(totalSecs)}</div>}
+              {/* A gentle, deliberate "do it again" — not a streak hook, just the
+                  choice the calm STOP leaves open. A guest can't commit progress. */}
+              {!ro && (
+                <button type="button" className="tdl-again" onClick={restart} style={{ color: tintInk(tint) }}>
+                  <InlineIcon name="arrow-counter-clockwise-bold" /> {t.kid.again}
+                </button>
+              )}
             </>
           ) : (
             <>
@@ -275,6 +305,15 @@ export function RoutinePlayer({
                     <Icon name="play-bold" size={22} />
                   </button>
                 ))}
+
+              {/* Calm OFF never shows the recap, so the routine "ends" on its last
+                  card with every step ✓. Offer the same deliberate restart here so a
+                  redo doesn't dead-end on a re-tappable last step. */}
+              {!ro && allDone && (
+                <button type="button" className="tdl-again" onClick={restart} style={{ color: tintInk(tint) }}>
+                  <InlineIcon name="arrow-counter-clockwise-bold" /> {t.kid.again}
+                </button>
+              )}
             </>
           )}
         </div>

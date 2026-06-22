@@ -165,6 +165,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     // Parallel card photo keys (feature #17 C) — same length as cards.
     cardsPhoto?: unknown
     timeOfDay?: string | null
+    // Clear today's run (the "Recommencer" affordance) — wipes every ✓ so the
+    // routine can be played again the same day. Deliberate, not a streak hook.
+    reset?: boolean
   }>(ctx.request)
   if (!body?.routineId) return badRequest('routineId requis.')
 
@@ -243,6 +246,16 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       for (const k of prevPhotos) if (k && !kept.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
     }
     return ok({ ok: true })
+  }
+
+  // "Recommencer" — wipe today's progress so the routine plays fresh again. We
+  // clear the row rather than write an empty array (no row = empty doneIdx, the
+  // same state a brand-new day starts in; the next ✓ re-INSERTs it).
+  if (body.reset === true) {
+    await ctx.env.DB.prepare('DELETE FROM routine_runs WHERE routine_id = ? AND date = ?')
+      .bind(body.routineId, localDayStart(new Date(Date.now())))
+      .run()
+    return ok({ doneIdx: [] })
   }
 
   if (typeof body.cardIdx !== 'number') return badRequest('routineId + cardIdx requis.')

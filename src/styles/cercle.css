@@ -1525,3 +1525,188 @@
   gap: 0.5rem;
   flex-wrap: wrap;
 }
+
+/* ===== « Notre monde » — the big-picture overview map ====================== */
+
+/* Entry button in the cercle directory (parent) — a calm, full-width CTA above the
+   per-section views, with a one-line subtitle. */
+.cercle-world-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  width: 100%;
+  margin: 0 0 0.7rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--teal-wash, var(--surface));
+  color: var(--ink);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.cercle-world-cta__hint {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+/* Toddler entry — a big friendly tile on the « Qui est-ce ? » grid. */
+.cercle-kid__world {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 auto 1rem;
+  padding: 0.8rem 1.4rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg, 20px);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+/* The scene body holds nothing but the map — let it fill, no max-width / padding. */
+.scene__body--flush {
+  max-width: none;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The map fills the scene; a slim bar on top, the pan/zoom canvas takes the rest. */
+.cercle-world {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+.cercle-world__bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.cercle-world__tour {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.cercle-world__tour.is-on {
+  background: var(--accent, #2a8f85);
+  color: #fff;
+}
+.cercle-world__hint {
+  color: var(--ink-soft);
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+.cercle-world__zoom {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.cercle-world--kid .cercle-world__bar {
+  padding: 0.8rem 1.1rem;
+}
+.cercle-world--kid .cercle-world__tour {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.15rem;
+  padding: 0.55rem 1.1rem;
+}
+
+/* Islands — a soft coloured halo (its tint set inline via --isl), tappable name. */
+.world-island__halo {
+  fill: var(--isl, #2a8f85);
+  fill-opacity: 0.1;
+  stroke: var(--isl, #2a8f85);
+  stroke-opacity: 0.5;
+  stroke-width: 2;
+  transition: fill-opacity 0.25s ease, stroke-opacity 0.25s ease;
+}
+.world-island__label {
+  fill: var(--ink);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 17px;
+}
+.cercle-world--kid .world-island__label {
+  font-size: 22px;
+}
+.world-island__count {
+  fill: var(--ink-soft);
+  font-size: 12.5px;
+}
+.cercle-world--kid .world-island__count {
+  font-size: 15px;
+}
+.world-island [role='button'] {
+  cursor: pointer;
+}
+.world-face {
+  cursor: pointer;
+}
+
+/* The guided tour dims everything but the island/bridge being narrated. */
+.cercle-world.is-touring .world-island,
+.cercle-world.is-touring .world-bridge {
+  opacity: 0.32;
+  transition: opacity 0.3s ease;
+}
+.cercle-world.is-touring .world-island.is-active,
+.cercle-world.is-touring .world-bridge.is-active {
+  opacity: 1;
+}
+.world-island.is-active .world-island__halo {
+  fill-opacity: 0.22;
+  stroke-opacity: 0.95;
+}
+
+/* Bridges — a faint dashed connector; a fat invisible stroke is the tap target. */
+.world-bridge {
+  cursor: pointer;
+}
+.world-bridge__hit {
+  stroke: transparent;
+  stroke-width: 22;
+}
+.world-bridge__line {
+  stroke: var(--ink-soft);
+  stroke-opacity: 0.42;
+  stroke-width: 2;
+  stroke-dasharray: 4 6;
+  stroke-linecap: round;
+  pointer-events: none;
+  transition: stroke-opacity 0.25s ease, stroke-width 0.25s ease;
+}
+.world-bridge.is-active .world-bridge__line {
+  stroke: var(--accent, #2a8f85);
+  stroke-opacity: 1;
+  stroke-width: 3.5;
+  stroke-dasharray: none;
+}
+
+/* The spoken caption — what you last tapped, or what the tour is saying. */
+.cercle-world__caption {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.1rem calc(0.7rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+}
+.cercle-world--kid .cercle-world__caption {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.2rem;
+}

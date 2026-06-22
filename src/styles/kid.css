@@ -312,6 +312,27 @@
   font-weight: 700;
   color: var(--ink-soft);
 }
+/* "Recommencer" — a soft, deliberate replay on the end of a routine. A quiet
+   text+icon button (not a loud reward CTA): the calm STOP stays calm, this is
+   just the door left open for a kid who wants to do it again. */
+.tdl-again {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.tdl-again:active {
+  background: color-mix(in srgb, currentColor 20%, transparent);
+}
 /* A per-step tap-to-start countdown (e.g. 2 min to brush teeth). A calm donut ring
    drains as it counts down (`--p` = fraction elapsed, 0 full → 1 empty); the
    remaining time reads in the hole. Tap to start / pause; at zero it rings + shows

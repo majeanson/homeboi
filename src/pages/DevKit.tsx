@@ -22,8 +22,10 @@ import { PetForm } from '../components/cercle/PetForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
+import { CercleConstellation } from '../components/cercle/CercleConstellation'
+import { personKey } from '../lib/cercle'
 import { ReviewChecklist } from '../components/ReviewChecklist'
-import type { ContactGroup, Member, Person } from '../lib/cercle'
+import type { ContactGroup, Member, Person, PersonKind, World } from '../lib/cercle'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
@@ -128,6 +130,33 @@ function ReviewDemo() {
       />
     </>
   )
+}
+
+// A tiny stand-in "world" for the CercleConstellation specimen: a Maisonnée at the
+// centre, an extended family and a friends group orbiting, bridged by the people who
+// tie them together.
+const dwPerson = (kind: PersonKind, id: string, name: string, colour: string): Person => ({
+  kind, id, key: personKey(kind, id), name, firstName: name, lastName: '', avatarKind: null, avatarRef: null, colour, birthday: null, isChild: false, email: null, phone: null, gender: null,
+})
+const DEMO_WORLD_PEOPLE: Person[] = [
+  dwPerson('member', 'm1', 'Maman', '#2A8F85'),
+  dwPerson('member', 'm2', 'Léa', '#2A8F85'),
+  dwPerson('contact', 'a', 'Mamie', '#C45E86'),
+  dwPerson('contact', 'b', 'Papi', '#C45E86'),
+  dwPerson('contact', 'f', 'Fred', '#6B8A52'),
+  dwPerson('contact', 'n', 'Nora', '#6B8A52'),
+]
+const DEMO_WORLD_BYKEY = new Map(DEMO_WORLD_PEOPLE.map((p) => [p.key, p]))
+const DEMO_WORLD: World = {
+  islands: [
+    { id: 'household', name: 'Maisonnée', kind: 'household', groupKind: null, colour: '#2A8F85', memberKeys: [personKey('member', 'm1'), personKey('member', 'm2')] },
+    { id: 'auto:roy', name: 'Famille Roy', kind: 'family', groupKind: null, colour: null, memberKeys: [personKey('contact', 'a'), personKey('contact', 'b')] },
+    { id: 'group:amis', name: 'Amis', kind: 'group', groupKind: 'friends', colour: null, memberKeys: [personKey('contact', 'f'), personKey('contact', 'n')] },
+  ],
+  bridges: [
+    { aId: 'household', bId: 'auto:roy', viaKeys: [personKey('member', 'm1')] },
+    { aId: 'household', bId: 'group:amis', viaKeys: [personKey('member', 'm2')] },
+  ],
 }
 
 // Stand-in household members for the CercleNotes specimen (the face row).
@@ -557,6 +586,22 @@ export function DevKit() {
         // photo. Reads the live family-notes query (empty here) + a face row to scope by.
         <Demo label="Quick notes scoped to Moi / Maisonnée, with media">
           <CercleNotes members={DEMO_MEMBERS} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Cercle',
+      name: 'CercleConstellation',
+      file: 'components/cercle/CercleConstellation.tsx',
+      kw: 'cercle monde world overview islands families groups bridges narrated raconte map constellation vue ensemble big picture toddler',
+      render: () => (
+        // « Notre monde » — the big-picture overview map: each cluster a coloured
+        // island, faces inside, bridges between, all tappable + read aloud, with a
+        // « Raconte-moi » guided tour. Rendered here at a fixed height.
+        <Demo label="Overview map — islands, faces, bridges, narrated tour">
+          <div style={{ height: '60vh' }}>
+            <CercleConstellation world={DEMO_WORLD} byKey={DEMO_WORLD_BYKEY} />
+          </div>
         </Demo>
       ),
     },

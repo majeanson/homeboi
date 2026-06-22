@@ -979,6 +979,165 @@ export function buildFamilyGrouping(
 export const discColour = (grouping: FamilyGrouping | undefined, p: Person): string | null =>
   grouping?.get(p.key)?.colour ?? p.colour
 
+// ---- « Notre monde » — the big-picture overview (islands + bridges) ----------
+// A zoom-OUT of the whole circle: each cluster (the Maisonnée, your families, your
+// groups) becomes one ISLAND; every person shows ONCE, in their highest-priority
+// island; and a BRIDGE links two islands wherever a person bridges them — so you see
+// not one family or one person, but how the whole social world fits together.
+
+export interface WorldClusterInput {
+  id: string
+  name: string
+  kind: 'household' | 'family' | 'group'
+  groupKind?: GroupKind | null
+  colour: string | null
+  memberKeys: string[]
+}
+export interface WorldIsland {
+  id: string
+  name: string
+  kind: 'household' | 'family' | 'group' | 'others'
+  groupKind: GroupKind | null
+  colour: string | null
+  memberKeys: string[] // PRIMARY members — each present person lands in exactly one island
+}
+export interface WorldBridge {
+  aId: string
+  bId: string
+  viaKeys: string[] // the people who tie the two islands together (for narration)
+}
+export interface World {
+  islands: WorldIsland[]
+  bridges: WorldBridge[]
+}
+
+// Assemble the clusters that make up the world, in PRIORITY order (a person lands in
+// the first that holds them): the Maisonnée, your named family groups, the
+// auto-detected families, then your social groups (amis / travail / voisins / autre).
+// Pure — the caller (the world scene) passes the unified people, the closed links, and
+// the named groups; auto-families are detected here over the people not already in the
+// household or a named family.
+export function worldClustersFrom(
+  people: Person[],
+  links: ContactLink[],
+  namedGroups: ContactGroup[],
+  householdKeys: Set<string>,
+  householdName: string,
+  householdColour: string,
+  familyWord: (lastOrFirst: string) => string,
+): WorldClusterInput[] {
+  const present = new Set(people.map((p) => p.key))
+  const clusters: WorldClusterInput[] = []
+
+  const houseMembers = [...householdKeys].filter((k) => present.has(k))
+  if (houseMembers.length)
+    clusters.push({ id: 'household', name: householdName, kind: 'household', groupKind: null, colour: householdColour, memberKeys: houseMembers })
+
+  // Named family groups (your extended families you built by hand).
+  for (const g of namedGroups) {
+    if (g.kind !== 'family') continue
+    const keys = [...g.memberKeys].filter((k) => present.has(k))
+    if (keys.length) clusters.push({ id: `group:${g.id}`, name: g.name, kind: 'family', groupKind: 'family', colour: g.colour, memberKeys: keys })
+  }
+
+  // Auto-detected families over people not already in the household or a named family.
+  const namedFamilyKeys = new Set(namedGroups.filter((g) => g.kind === 'family').flatMap((g) => [...g.memberKeys]))
+  const autoPeople = people.filter((p) => !householdKeys.has(p.key) && !namedFamilyKeys.has(p.key))
+  for (const a of detectFamilyGroups(autoPeople, links, familyWord))
+    clusters.push({ id: `auto:${a.id}`, name: a.name, kind: 'family', groupKind: null, colour: null, memberKeys: [...a.memberKeys] })
+
+  // Social named groups last.
+  for (const g of namedGroups) {
+    if (g.kind === 'family') continue
+    const keys = [...g.memberKeys].filter((k) => present.has(k))
+    if (keys.length) clusters.push({ id: `group:${g.id}`, name: g.name, kind: 'group', groupKind: g.kind, colour: g.colour, memberKeys: keys })
+  }
+  return clusters
+}
+
+// Turn the priority-ordered clusters into the world: assign every present person to
+// their FIRST cluster (primary island); collect people in no cluster into an
+// « Autres » island; and draw a BRIDGE between two islands whenever a person belongs
+// to both (shared membership) or a link joins someone in one to someone in the other.
+// Each bridge carries the bridging person-keys for the spoken narration. Pure +
+// deterministic; empty islands (everyone claimed by a higher-priority cluster) drop.
+export function buildWorld(
+  people: Person[],
+  links: ContactLink[],
+  clusters: WorldClusterInput[],
+  othersName: string,
+): World {
+  const present = new Set(people.map((p) => p.key))
+  const raw = clusters.map((c) => ({ c, keys: c.memberKeys.filter((k) => present.has(k)) }))
+
+  // Primary island per person: first cluster (priority order) that contains them.
+  const OTHERS_ID = '__others__'
+  const primary = new Map<string, string>()
+  for (const { c, keys } of raw) for (const k of keys) if (!primary.has(k)) primary.set(k, c.id)
+  for (const p of people) if (!primary.has(p.key)) primary.set(p.key, OTHERS_ID)
+
+  const byIsland = new Map<string, string[]>()
+  for (const [k, id] of primary) {
+    if (!byIsland.has(id)) byIsland.set(id, [])
+    byIsland.get(id)!.push(k)
+  }
+
+  const islands: WorldIsland[] = []
+  for (const c of clusters) {
+    const m = byIsland.get(c.id)
+    if (m && m.length) islands.push({ id: c.id, name: c.name, kind: c.kind, groupKind: c.groupKind ?? null, colour: c.colour, memberKeys: m })
+  }
+  const othersM = byIsland.get(OTHERS_ID)
+  if (othersM && othersM.length) islands.push({ id: OTHERS_ID, name: othersName, kind: 'others', groupKind: null, colour: null, memberKeys: othersM })
+
+  const islandIds = new Set(islands.map((i) => i.id))
+  const islandOf = (k: string): string | null => {
+    const id = primary.get(k)
+    return id && islandIds.has(id) ? id : null
+  }
+
+  const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`)
+  const bridgeVia = new Map<string, Set<string>>()
+  const addVia = (a: string, b: string, via: string) => {
+    if (a === b || !islandIds.has(a) || !islandIds.has(b)) return
+    const pk = pairKey(a, b)
+    if (!bridgeVia.has(pk)) bridgeVia.set(pk, new Set())
+    bridgeVia.get(pk)!.add(via)
+  }
+
+  // Shared membership: a person who RAWLY belongs to several (surviving) islands.
+  const memberIslands = new Map<string, Set<string>>()
+  for (const { c, keys } of raw) {
+    if (!islandIds.has(c.id)) continue
+    for (const k of keys) {
+      if (!memberIslands.has(k)) memberIslands.set(k, new Set())
+      memberIslands.get(k)!.add(c.id)
+    }
+  }
+  for (const [k, ids] of memberIslands) {
+    const arr = [...ids]
+    for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) addVia(arr[i], arr[j], k)
+  }
+
+  // Cross-island links: a tie whose two endpoints have different primary islands.
+  for (const l of links) {
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    const ia = islandOf(aKey)
+    const ib = islandOf(bKey)
+    if (ia && ib && ia !== ib) {
+      addVia(ia, ib, aKey)
+      addVia(ia, ib, bKey)
+    }
+  }
+
+  const bridges: WorldBridge[] = [...bridgeVia.entries()].map(([pk, via]) => {
+    const [aId, bId] = pk.split('|')
+    return { aId, bId, viaKeys: [...via] }
+  })
+  return { islands, bridges }
+}
+
 // ---- Inference suggestions --------------------------------------------------
 
 export interface InferredLink {

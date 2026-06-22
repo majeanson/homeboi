@@ -19,6 +19,8 @@ import {
   petOwners,
   isHouseholdPet,
   familyReachableKeys,
+  worldClustersFrom,
+  buildWorld,
   daysUntilBirthday,
   ageOnNextBirthday,
   parseBirthday,
@@ -621,5 +623,68 @@ describe('familyReachableKeys (Famille = family-reachable from the household)', 
     expect(reach.has('contact:f1')).toBe(false)
     expect(reach.has('contact:f1k')).toBe(false)
     expect(reach.has('pet:fp')).toBe(false)
+  })
+})
+
+// ---- « Notre monde » — the big-picture overview (islands + bridges) ---------
+
+describe('buildWorld', () => {
+  const ppl = buildPeople([contact('c1', 'A'), contact('c2', 'B'), contact('c3', 'C')], [member('m1', 'M')])
+  const mk = personKey('member', 'm1')
+  const c1 = personKey('contact', 'c1')
+  const c2 = personKey('contact', 'c2')
+  const c3 = personKey('contact', 'c3')
+  // household {m1,c1}; friends group {c1,c2}; c3 is in nothing.
+  const clusters = [
+    { id: 'household', name: 'Maison', kind: 'household' as const, colour: '#000', memberKeys: [mk, c1] },
+    { id: 'group:amis', name: 'Amis', kind: 'group' as const, groupKind: 'friends' as const, colour: null, memberKeys: [c1, c2] },
+  ]
+  const links = [klink('c2', 'contact', 'c3', 'contact', 'friend')]
+  const world = buildWorld(ppl, links, clusters, 'Autres')
+  const island = (id: string) => world.islands.find((i) => i.id === id)
+  const pair = (a: string, b: string) => [a, b].sort().join('|')
+  const bridge = (a: string, b: string) => world.bridges.find((x) => pair(x.aId, x.bId) === pair(a, b))
+
+  it('assigns each person to their highest-priority island', () => {
+    expect([...island('household')!.memberKeys].sort()).toEqual([mk, c1].sort())
+    expect(island('group:amis')!.memberKeys).toEqual([c2]) // c1 was claimed by household
+  })
+  it('collects unaffiliated people into an « Autres » island', () => {
+    const others = world.islands.find((i) => i.kind === 'others')!
+    expect(others.memberKeys).toEqual([c3])
+    expect(others.name).toBe('Autres')
+  })
+  it('bridges two islands by a SHARED member (c1 in household + amis)', () => {
+    const b = bridge('household', 'group:amis')
+    expect(b).toBeTruthy()
+    expect(b!.viaKeys).toContain(c1)
+  })
+  it('bridges two islands by a CROSS-island link (c2 ↔ c3)', () => {
+    expect(bridge('group:amis', '__others__')).toBeTruthy()
+  })
+  it('drops an island whose members are all claimed by a higher priority', () => {
+    const c2only = [
+      { id: 'household', name: 'M', kind: 'household' as const, colour: null, memberKeys: [c1] },
+      { id: 'group:solo', name: 'Solo', kind: 'group' as const, colour: null, memberKeys: [c1] },
+    ]
+    expect(buildWorld(ppl, [], c2only, 'Autres').islands.find((i) => i.id === 'group:solo')).toBeUndefined()
+  })
+})
+
+describe('worldClustersFrom', () => {
+  it('orders clusters household → family → social, detecting auto-families', () => {
+    const members = [member('m1', 'Moi')]
+    const contacts = [contact('a', 'Ana'), contact('b', 'Bo'), contact('f', 'Fred')]
+    const people = buildPeople(contacts, members)
+    const links = closedLinks(people, [klink('a', 'contact', 'b', 'contact', 'sibling')]) // a,b auto-family
+    const groups = [{ id: 'amis', name: 'Amis', kind: 'friends' as const, colour: null, memberKeys: new Set([personKey('contact', 'f')]) }]
+    const householdKeys = new Set([personKey('member', 'm1')])
+    const clusters = worldClustersFrom(people, links, groups, householdKeys, 'Maison', '#000', (n) => (n ? `Famille ${n}` : 'Famille'))
+    expect(clusters[0].kind).toBe('household')
+    expect(clusters.some((c) => c.kind === 'family')).toBe(true) // the a/b auto-family
+    const social = clusters.find((c) => c.kind === 'group')
+    expect(social?.groupKind).toBe('friends')
+    // social comes after the family in priority order
+    expect(clusters.findIndex((c) => c.kind === 'group')).toBeGreaterThan(clusters.findIndex((c) => c.kind === 'family'))
   })
 })

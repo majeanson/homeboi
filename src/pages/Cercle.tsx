@@ -626,6 +626,16 @@ function CercleParent() {
         <>
           {sectionSwitch}
 
+          {/* « Notre monde » — the big-picture overview scene: all families, groups
+              and the bridges between them, tappable + read aloud. A calm entry that
+              sits above the per-section views (which zoom in on one circle). */}
+          {section !== 'notes' && section !== 'business' && (
+            <button type="button" className="cercle-world-cta" onClick={() => nav('/cercle/monde')}>
+              <InlineIcon name="sparkle-bold" size={16} /> {t.cercle.world.open}
+              <span className="cercle-world-cta__hint mono">{t.cercle.world.openHint}</span>
+            </button>
+          )}
+
           {section === 'notes' ? (
             /* The notes board owns its whole tab body — no people list, no view
                switch (Liens/Arbre are about people, not notes). */
@@ -901,6 +911,7 @@ function CircleKidView() {
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
+  const nav = useNavigate()
   const [focused, setFocused] = useState<Person | null>(null)
   const { data } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
 
@@ -983,6 +994,12 @@ function CircleKidView() {
       ) : (
         <>
           <p className="cercle-kid__hint mono">{t.cercle.tapForFamily}</p>
+          {/* « Notre monde » — a big friendly button into the narrated overview map,
+              so a toddler can see ALL the families and how they connect, read aloud. */}
+          <button type="button" className="cercle-kid__world" onClick={() => nav('/cercle/monde')}>
+            <Icon name="sparkle-bold" size={28} color={ACCENT} />
+            <span>{t.cercle.world.title}</span>
+          </button>
           <div className="cercle-kid__grid">
             {people.map((p) => (
               <button type="button" key={p.key} className="cercle-kid__card" onClick={() => tap(p)}>
