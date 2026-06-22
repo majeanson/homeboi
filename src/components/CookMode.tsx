@@ -454,33 +454,8 @@ export function CookMode({
               </button>
             </>
           )}
-          {!isToddler && !!navigator.share && (
-            <button
-              type="button"
-              className="btn btn--ghost mono"
-              onClick={() => {
-                let n = 0
-                const ingredients = recipe.ingredients
-                  .map((s) => (s.startsWith('## ') ? '\n' + s.slice(3) : `• ${s}`))
-                  .join('\n')
-                const steps = recipe.steps
-                  .map((s) => (s.startsWith('## ') ? '\n' + s.slice(3) : `${++n}. ${s}`))
-                  .join('\n')
-                const text = [
-                  t.recipes.ingredients + ':\n' + ingredients,
-                  t.recipes.steps + ':\n' + steps,
-                  recipe.notes ? t.recipes.notes + ':\n' + recipe.notes : '',
-                ]
-                  .filter(Boolean)
-                  .join('\n\n')
-                void navigator.share({ title: recipe.title, text })
-              }}
-              aria-label={t.recipes.shareRecipe}
-              title={t.recipes.shareRecipe}
-            >
-              <Icon name="arrow-up-right-bold" size={20} />
-            </button>
-          )}
+          {/* Sharing lives on the recipe view now (one home for it), not in the
+              cook bar — keeps the at-the-stove chrome to cook controls + exit. */}
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.back}>
             <Icon name="x-bold" size={20} />
           </button>

@@ -19,6 +19,7 @@ import { IngredientLine } from './IngredientLine'
 import { MealPlanPicker } from './kitchen/MealPlanPicker'
 import { useModal } from '../lib/useModal'
 import { useConfirm } from '../lib/confirm'
+import { shareRecipe } from '../lib/shareRecipe'
 
 // Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method,
 // then a row of gentle actions —
@@ -438,6 +439,24 @@ export function RecipeSheet({
           {canCook && (
             <button type="button" className="btn btn--primary" onClick={() => onCook(factor)}>
               <InlineIcon name="cooking-pot-bold" /> {t.recipes.cook}
+            </button>
+          )}
+          {/* Share the recipe as plain text via the platform sheet — a read action,
+              so it's available to guests too. The one home for sharing (moved off
+              the cook-mode bar). Hidden where Web Share is unavailable. */}
+          {typeof navigator !== 'undefined' && !!navigator.share && (
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              onClick={() =>
+                shareRecipe(recipe, {
+                  ingredients: t.recipes.ingredients,
+                  steps: t.recipes.steps,
+                  notes: t.recipes.notes,
+                })
+              }
+            >
+              <InlineIcon name="arrow-up-right-bold" /> {t.recipes.shareRecipe}
             </button>
           )}
           {!ro && recipe.ingredients.length > 0 && (
