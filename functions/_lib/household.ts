@@ -11,7 +11,7 @@
 // Guests are strictly narrower than a kiosk: route.ts blocks every non-GET.
 
 import type { Env } from './env'
-import { currentEmail, currentDevice, currentGuest } from './auth'
+import { currentEmail, currentDevice, currentGuest, type GuestKind } from './auth'
 import { forbidden, unauthorized } from './json'
 import { nowSec } from './ids'
 
@@ -21,6 +21,9 @@ export interface Actor {
   email?: string
   deviceId?: string
   guestId?: string
+  // Only set when scope === 'guest'. Selects the share-mode lens; the per-kind
+  // read allowlist lives in worker/index.ts (see auth.ts GuestKind).
+  guestKind?: GuestKind
 }
 
 // Exported so the realtime WS upgrade (worker/index.ts → /api/live) can resolve
@@ -64,7 +67,8 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
     const row = await env.DB.prepare('SELECT id FROM households WHERE id = ?')
       .bind(guest.householdId)
       .first<{ id: string }>()
-    if (row) return { householdId: guest.householdId, scope: 'guest', guestId: guest.guestId }
+    if (row)
+      return { householdId: guest.householdId, scope: 'guest', guestId: guest.guestId, guestKind: guest.kind }
   }
 
   return null

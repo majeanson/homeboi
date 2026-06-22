@@ -25,7 +25,7 @@ import { startDaypartDrift } from './lib/daypartDrift'
 import { restorePersistedCache, startPersistingCache, clearPersistedCache } from './lib/persist'
 import { startOutbox, clearOutbox } from './lib/outbox'
 import { onAuthLost } from './lib/authEvents'
-import { setGuestToken, clearGuestToken, isGuestPreview, setGuestPreview as persistGuestPreview } from './lib/device'
+import { setGuestToken, clearGuestToken, clearGuestKind, isGuestPreview, setGuestPreview as persistGuestPreview } from './lib/device'
 import { connectRealtime } from './lib/realtime'
 import './styles.css'
 
@@ -46,6 +46,9 @@ try {
   const guest = q.get('guest')
   if (guest) {
     setGuestToken(guest)
+    // A new link may be a different share-mode than the last one cached — drop the
+    // stale kind so useGuestKind re-asks whoami for THIS token.
+    clearGuestKind()
     q.delete('guest')
     const rest = q.toString()
     window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash)

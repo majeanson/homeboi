@@ -59,7 +59,8 @@ describe('verifyDeviceToken (shared header + WS-query-param verify)', () => {
     expect(await verifyGuestToken(env, device)).toBeNull()
     expect(await verifyDeviceToken(env, guest)).toBeNull()
     // Each resolves under its own verifier.
-    expect(await verifyGuestToken(env, guest)).toEqual({ guestId: 'g1', householdId: 'hh1' })
+    // A token minted with no explicit kind normalizes to the showcase share-mode.
+    expect(await verifyGuestToken(env, guest)).toEqual({ guestId: 'g1', householdId: 'hh1', kind: 'showcase' })
     expect(await verifyDeviceToken(env, device)).toEqual({ deviceId: 'dev1', householdId: 'hh1' })
   })
 })

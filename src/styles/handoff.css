@@ -1,0 +1,179 @@
+/* #34 / #35 — typed share-link scenes (pages/HandoffPage, pages/WelcomePage).
+   The babysitter handoff card and the visitor welcome card. Uniquely-named
+   .handoff__/.welcome__ classes, so cascade position is immaterial. Read-only,
+   calm, and built mobile/tablet-first (a sitter opens it on a phone). */
+
+.handoff__body,
+.welcome__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  max-width: 38rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.handoff__sec {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.handoff__h {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.handoff__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Emergency contact row — name left, a big tap-to-call button right. */
+.handoff__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.handoff__row-name {
+  font-weight: 600;
+}
+.handoff__row .btn {
+  flex: none;
+}
+
+/* "À savoir" note — a stacked name + free-text line, tinted to read as a heads-up. */
+.handoff__note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--marigold, #d9842a) 8%, var(--card));
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.handoff__note-text {
+  white-space: pre-wrap;
+}
+
+.handoff__agenda,
+.handoff__meals,
+.handoff__cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.handoff__ev {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.handoff__ev-time {
+  flex: none;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  min-width: 3.2rem;
+}
+.handoff__ev-title {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+.handoff__ev-who {
+  color: var(--ink-soft);
+}
+
+.handoff__meal {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+}
+.handoff__meal-slot {
+  flex: none;
+  color: var(--ink-soft);
+  min-width: 5rem;
+}
+
+.handoff__routine {
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.handoff__routine-name {
+  margin: 0 0 0.4rem;
+  font-weight: 700;
+}
+.handoff__cards {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.handoff__card {
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm, 0.5rem);
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  font-size: 1.05rem;
+}
+
+.handoff__wifi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: flex-start;
+}
+.handoff__line {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.handoff__rules {
+  margin: 0;
+  white-space: pre-wrap;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.handoff__empty {
+  color: var(--ink-soft);
+}
+
+/* #36 grandparents' window — a little photo wall. Responsive square tiles. */
+.family-window__photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.4rem;
+}
+.family-window__photo {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  background: var(--card);
+}

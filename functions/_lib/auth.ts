@@ -86,9 +86,14 @@ async function verifyToken<T>(env: Env, token: string | null): Promise<T | null>
   } catch {
     return null
   }
-  const expected = await hmac(secret, body)
-  if (!timingSafeEqual(b64urlDecode(sig), expected)) return null
+  // A malformed token (bad base64, non-JSON payload) must resolve to null, never
+  // throw — verifyGuestToken now runs on the Worker dispatch path for EVERY
+  // header-token request (worker/index.ts guest-scope guard), outside the handler
+  // error boundary, so a thrown decode here would surface as a 500 instead of a
+  // clean 401. Wrap the whole verify in one catch.
   try {
+    const expected = await hmac(secret, body)
+    if (!timingSafeEqual(b64urlDecode(sig), expected)) return null
     const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(body))) as { x?: number }
     if (typeof payload.x === 'number' && payload.x < nowSec()) return null
     return payload as T
@@ -172,20 +177,43 @@ export async function currentDevice(
   return verifyDeviceToken(env, request.headers.get(DEVICE_HEADER))
 }
 
-// ---- Guest token (babysitter / time-boxed read-mostly access) --------------
+// ---- Guest token (typed, time-boxed read-only share links) -----------------
 //
 // A stateless HMAC capability that mirrors the device token: same key, same
 // format, sent in the SAME `X-Device-Token` header. The payload tag distinguishes
-// it — { g: guestId, h: householdId, x: expSeconds }. There is NO DB row (so no
-// revoke-before-expiry; the short TTL is the bound). resolveActor() treats a
-// guest as strictly narrower than a kiosk: read-only (enforced in route.ts).
+// it — { g: guestId, h: householdId, k: kind, x: expSeconds }. There is NO DB row
+// (so no revoke-before-expiry; the short TTL is the bound). resolveActor() treats
+// a guest as strictly narrower than a kiosk: read-only (enforced in route.ts).
+//
+// `kind` (the share-mode axis) selects WHAT the link can read — enforced server-
+// side by a per-kind path allowlist in worker/index.ts:
+//   - 'showcase'  full hub, read-only (the legacy behaviour; a "Démo" link).
+//   - 'sitter'    a curated babysitter-handoff endpoint only.
+//   - 'welcome'   a near-public visitor card endpoint only.
+//   - 'family'    the "grandparents' window" — grandkids' upcoming dates, birthdays
+//                 and latest photos; cross-household warmth without the keys (#36).
+// The curated kinds (sitter / welcome / family) share the ONE guest/window endpoint
+// (it branches on kind), so the allowlist is identical for them. The kind is bound
+// into the SIGNED token, so a curated guest can't widen its scope by editing the
+// URL. A legacy token (no `k`) normalizes to 'showcase'.
+export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family'
+const CURATED_KINDS: GuestKind[] = ['sitter', 'welcome', 'family']
+
+// One place decides the legacy/unknown → 'showcase' fallback, so every reader
+// (verify, the allowlist, the SPA) agrees. Today's guests are read-only-
+// everything, which IS showcase — so old links keep working unchanged.
+export function normalizeGuestKind(k: unknown): GuestKind {
+  return CURATED_KINDS.includes(k as GuestKind) ? (k as GuestKind) : 'showcase'
+}
+
 export async function issueGuestToken(
   env: Env,
   guestId: string,
   householdId: string,
   ttlSeconds: number,
+  kind: GuestKind = 'showcase',
 ): Promise<string> {
-  return signToken(env, { g: guestId, h: householdId, x: nowSec() + ttlSeconds })
+  return signToken(env, { g: guestId, h: householdId, k: kind, x: nowSec() + ttlSeconds })
 }
 
 // Verify a RAW guest-token string (HMAC + expiry), independent of transport —
@@ -196,16 +224,18 @@ export async function issueGuestToken(
 export async function verifyGuestToken(
   env: Env,
   token: string | null,
-): Promise<{ guestId: string; householdId: string } | null> {
-  const payload = await verifyToken<{ g?: string; h: string }>(env, token)
-  return payload && typeof payload.g === 'string' ? { guestId: payload.g, householdId: payload.h } : null
+): Promise<{ guestId: string; householdId: string; kind: GuestKind } | null> {
+  const payload = await verifyToken<{ g?: string; h: string; k?: string }>(env, token)
+  return payload && typeof payload.g === 'string'
+    ? { guestId: payload.g, householdId: payload.h, kind: normalizeGuestKind(payload.k) }
+    : null
 }
 
 export async function currentGuest(
   env: Env,
   request: Request,
-): Promise<{ guestId: string; householdId: string } | null> {
+): Promise<{ guestId: string; householdId: string; kind: GuestKind } | null> {
   // Same header as the device token (see verifyGuestToken for how the two are
-  // told apart).
+  // told apart). HMAC-only, no DB read — cheap enough to run on the dispatch path.
   return verifyGuestToken(env, request.headers.get(DEVICE_HEADER))
 }

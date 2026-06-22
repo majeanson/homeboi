@@ -7,6 +7,7 @@ import { householdMeasureColors, cleanMeasureColors } from '../_lib/measureColor
 import { householdReserveLocations, cleanReserveLocations } from '../_lib/reserveLocations'
 import { householdCars, cleanCars } from '../_lib/carPrefs'
 import { householdAiEnabled } from '../_lib/aiPref'
+import { householdShareInfo, cleanShareField } from '../_lib/shareModes'
 import { nowSec } from '../_lib/ids'
 
 // Household-level settings that aren't members/devices/chores: the postal code
@@ -38,6 +39,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
   const cars = await householdCars(ctx.env, actor.householdId)
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
+  const shareInfo = await householdShareInfo(ctx.env, actor.householdId)
   return ok({
     name,
     postal,
@@ -49,6 +51,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     reserveLocations,
     cars,
     aiEnabled,
+    ...shareInfo,
   })
 })
 
@@ -64,6 +67,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     reserveLocations?: unknown
     cars?: unknown
     aiEnabled?: boolean
+    wifiSsid?: string | null
+    wifiPassword?: string | null
+    houseRules?: string | null
+    binDay?: string | null
   }>(ctx.request)
 
   // Household name: trimmed + capped at 60 (like signup). Blank is ignored — the
@@ -176,6 +183,22 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
   }
 
+  // Share-mode fields (migration 0072): wifi, house rules, bin day — each touched
+  // only when its key is present (independent of the other forms). Empty clears
+  // the column back to NULL (the field then hides on the share link).
+  for (const [key, col] of [
+    ['wifiSsid', 'wifi_ssid'],
+    ['wifiPassword', 'wifi_password'],
+    ['houseRules', 'house_rules'],
+    ['binDay', 'bin_day'],
+  ] as const) {
+    if (body && key in body) {
+      await ctx.env.DB.prepare(`UPDATE households SET ${col} = ?, updated_at = ? WHERE id = ?`)
+        .bind(cleanShareField(body[key]), nowSec(), actor.householdId)
+        .run()
+    }
+  }
+
   const name = await householdName(ctx.env, actor.householdId)
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
@@ -185,6 +208,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
   const cars = await householdCars(ctx.env, actor.householdId)
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
+  const shareInfo = await householdShareInfo(ctx.env, actor.householdId)
   return ok({
     name,
     postal,
@@ -196,5 +220,6 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     reserveLocations,
     cars,
     aiEnabled,
+    ...shareInfo,
   })
 })

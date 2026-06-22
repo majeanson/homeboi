@@ -13,10 +13,10 @@
 // / ctx.params, all of which the adapter provides.
 
 import type { Env } from '../functions/_lib/env'
-import { verifyCsrf } from '../functions/_lib/auth'
+import { verifyCsrf, currentGuest } from '../functions/_lib/auth'
 import { forbidden, serverError, notFound } from '../functions/_lib/json'
 import { resolveActor } from '../functions/_lib/household'
-import { matchRoute, type RouteMod } from './routes'
+import { matchRoute, guestKindAllows, type RouteMod } from './routes'
 
 // Re-export the Durable Object class so the Workers runtime can find it (a DO
 // must be exported from the entry module named in wrangler.toml). SCAFFOLD (#20).
@@ -135,6 +135,18 @@ export default {
       if (!exempt && !hasDeviceToken && !verifyCsrf(request)) {
         return forbidden('Bad or missing CSRF token.')
       }
+    }
+
+    // 1.5 Per-kind guest scope (the share-mode privacy boundary). A guest token
+    //     is verified HMAC-only here (no DB) just to read its `kind`; a curated
+    //     link (sitter / welcome) may reach ONLY its own endpoint — anything else
+    //     403s before the handler runs. A kiosk/operator carries no `g` payload so
+    //     currentGuest returns null and this is skipped (no extra DB cost on the
+    //     hot polling path). authed() still does the real auth + write-block inside
+    //     each handler. /api/live is handled above and only carries refresh nudges.
+    const guest = await currentGuest(env, request)
+    if (guest && !guestKindAllows(guest.kind, apiPath)) {
+      return forbidden('This share link can’t open that.')
     }
 
     const matched = matchRoute(apiPath)

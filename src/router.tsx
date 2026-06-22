@@ -45,6 +45,12 @@ const RecipeBookPage = lazy(() => import('./pages/RecipeBookPage').then((m) => (
 const SearchPage = lazy(() => import('./pages/SearchPage').then((m) => ({ default: m.SearchPage })))
 // #17 — departure mode: a leaving-the-house checklist + today's events + weather.
 const DeparturePage = lazy(() => import('./pages/DeparturePage').then((m) => ({ default: m.DeparturePage })))
+// #34 / #35 — typed read-only share links land here (standalone, no hub chrome):
+// a babysitter "handoff" card and a visitor "welcome" card. See lib/auth GuestKind.
+const HandoffPage = lazy(() => import('./pages/HandoffPage').then((m) => ({ default: m.HandoffPage })))
+const WelcomePage = lazy(() => import('./pages/WelcomePage').then((m) => ({ default: m.WelcomePage })))
+// #36 — the grandparents' window: kids' upcoming dates + birthdays + latest photos.
+const FamilyWindowPage = lazy(() => import('./pages/FamilyWindowPage').then((m) => ({ default: m.FamilyWindowPage })))
 // Operator add-forms — full-screen scenes (were tall sheet forms that stranded
 // inputs under the mobile keyboard). Edit still happens inline in Réglages.
 const EventFormPage = lazy(() => import('./pages/EventFormPage').then((m) => ({ default: m.EventFormPage })))
@@ -124,6 +130,10 @@ export function AppRoutes() {
         <Route path="/search" element={<SearchPage />} />
         {/* #17 — departure mode (board ＋ ▸ Avant de partir). */}
         <Route path="/board/departure" element={<DeparturePage />} />
+        {/* #34 / #35 / #36 — typed share-link landings (sitter / visitor / family). */}
+        <Route path="/handoff" element={<HandoffPage />} />
+        <Route path="/welcome" element={<WelcomePage />} />
+        <Route path="/family" element={<FamilyWindowPage />} />
         <Route path="/share" element={<SharePage />} />
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />

@@ -1,0 +1,226 @@
+import { ok, forbidden, parseJsonArray } from '../../_lib/json'
+import { authed } from '../../_lib/route'
+import { localDayStart, addLocalDays } from '../../_lib/ids'
+import { parseRecur, expandRange } from '../../_lib/recur'
+import { householdShareInfo } from '../../_lib/shareModes'
+import { fetchBirthdayPeople, birthdayOccurrences } from '../../_lib/birthdays'
+import type { GuestKind } from '../../_lib/auth'
+import type { Env } from '../../_lib/env'
+
+// The ONE curated read endpoint a non-showcase share link is allowed to hit (the
+// per-kind allowlist in worker/index.ts keeps these kinds off everything else).
+// It returns a hand-picked subset — never the whole household — so the privacy
+// boundary is real, not cosmetic:
+//   • welcome  → just the visitor card: wifi, bin day, house rules.
+//   • sitter   → that, plus today's plan, bedtime routines, "à savoir" (allergies/
+//                notes on the kids), and emergency contacts.
+//   • family   → the grandparents' window: grandkids' upcoming dates, birthdays and
+//                the latest photos. No wifi/rules — cross-household warmth (#36).
+// showcase uses the real /api/board (full read-only hub), not this.
+//
+// Everything except the migration-0072 share fields is READ from existing data, so
+// there's no duplicate source of truth.
+
+interface EvOut {
+  id: string
+  title: string
+  start_at: number
+  all_day: number
+  who: string | null // member's first name, when the event is tied to a face
+}
+
+const CURATED: GuestKind[] = ['sitter', 'welcome', 'family']
+
+export const onRequestGet = authed(async (ctx, actor) => {
+  // The kind: a guest carries its own (bound in the token); an operator may preview
+  // a curated view with ?kind= (handy for the issuance editor). showcase doesn't use
+  // this endpoint — it reads the real hub — so it's rejected here.
+  const previewKind = new URL(ctx.request.url).searchParams.get('kind') as GuestKind | null
+  const kind: GuestKind | null =
+    actor.scope === 'guest'
+      ? (actor.guestKind ?? 'showcase')
+      : previewKind && CURATED.includes(previewKind)
+        ? previewKind
+        : null
+  if (!kind || !CURATED.includes(kind)) {
+    return forbidden('This view is for a babysitter, welcome, or family link.')
+  }
+
+  const hh = actor.householdId
+  const nameRow = await ctx.env.DB.prepare('SELECT name FROM households WHERE id = ?')
+    .bind(hh)
+    .first<{ name: string }>()
+  const householdName = nameRow?.name ?? ''
+
+  // ---- family: the grandparents' window -------------------------------------
+  if (kind === 'family') return ok(await familyWindow(ctx.env, hh, householdName))
+
+  const share = await householdShareInfo(ctx.env, hh)
+  const base = {
+    kind,
+    householdName,
+    wifi: { ssid: share.wifiSsid, password: share.wifiPassword },
+    houseRules: share.houseRules,
+    binDay: share.binDay,
+  }
+
+  // welcome stops at the visitor card — no people, no agenda.
+  if (kind === 'welcome') return ok(base)
+
+  // ---- sitter: today's handoff ----------------------------------------------
+  const today = localDayStart(new Date(Date.now()))
+  const tomorrow = addLocalDays(today, 1)
+
+  const [members, oneOff, recurring, meals, routines, contacts] = await Promise.all([
+    ctx.env.DB.prepare(
+      'SELECT id, display_name, is_child, notes FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+    )
+      .bind(hh)
+      .all<{ id: string; display_name: string; is_child: number; notes: string | null }>(),
+    // Today's one-off events.
+    ctx.env.DB.prepare(
+      'SELECT id, title, start_at, all_day, member_id FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
+    )
+      .bind(hh, today, tomorrow)
+      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null }>(),
+    // Recurring series — expanded onto today below (same engine the board uses).
+    ctx.env.DB.prepare(
+      'SELECT id, title, start_at, all_day, member_id, recur_json FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
+    )
+      .bind(hh)
+      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json: string }>(),
+    // Today's meals (all slots).
+    ctx.env.DB.prepare(
+      'SELECT id, slot, title FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
+    )
+      .bind(hh, today, tomorrow)
+      .all<{ id: string; slot: string; title: string }>(),
+    // Bedtime routines — time_of_day = 'evening' (migration 0016). The cards ARE the steps.
+    ctx.env.DB.prepare(
+      "SELECT id, name, member_id, cards_json FROM routines WHERE household_id = ? AND time_of_day = 'evening' ORDER BY created_at",
+    )
+      .bind(hh)
+      .all<{ id: string; name: string; member_id: string | null; cards_json: string }>(),
+    // Emergency contacts — Le cercle contacts the operator tagged "urgence".
+    ctx.env.DB.prepare(
+      "SELECT first_name, last_name, phone, tags FROM contacts WHERE household_id = ? AND phone IS NOT NULL AND phone != ''",
+    )
+      .bind(hh)
+      .all<{ first_name: string; last_name: string; phone: string | null; tags: string }>(),
+  ])
+
+  const memberName = (id: string | null): string | null =>
+    (id && members.results.find((m) => m.id === id)?.display_name) || null
+
+  const toEv = (r: { id: string; title: string; start_at: number; all_day: number; member_id: string | null }): EvOut => ({
+    id: r.id,
+    title: r.title,
+    start_at: r.start_at,
+    all_day: r.all_day,
+    who: memberName(r.member_id),
+  })
+
+  const events: EvOut[] = [...oneOff.results.map(toEv)]
+  for (const e of recurring.results) {
+    const rule = parseRecur(e.recur_json)
+    if (!rule) continue
+    for (const at of expandRange(e.start_at, rule, today, tomorrow)) {
+      events.push({ id: `${e.id}#${at}`, title: e.title, start_at: at, all_day: e.all_day, who: memberName(e.member_id) })
+    }
+  }
+  events.sort((a, b) => b.all_day - a.all_day || a.start_at - b.start_at)
+
+  // Cards on a routine are { icon, label } — the steps a sitter reads off.
+  const isCard = (v: unknown): v is { icon?: string; label?: string } => typeof v === 'object' && v !== null
+  const bedtimeRoutines = routines.results.map((r) => ({
+    id: r.id,
+    name: r.name,
+    who: memberName(r.member_id),
+    cards: parseJsonArray<{ icon?: string; label?: string }>(r.cards_json, isCard).map((c) => ({
+      icon: c.icon ?? '',
+      label: c.label ?? '',
+    })),
+  }))
+
+  // "À savoir" — kids' allergies / notes a parent jotted on a member.
+  const toKnow = members.results
+    .filter((m) => (m.notes ?? '').trim() !== '')
+    .map((m) => ({ name: m.display_name, isChild: !!m.is_child, notes: m.notes }))
+
+  const emergency = contacts.results
+    .filter((c) => parseJsonArray<string>(c.tags).some((t) => t.toLowerCase() === 'urgence'))
+    .map((c) => ({ name: `${c.first_name} ${c.last_name}`.trim(), phone: c.phone }))
+
+  return ok({ ...base, today: { events, meals: meals.results }, bedtimeRoutines, toKnow, emergency })
+})
+
+// The grandparents' window (#36): the grandkids' upcoming dates, the family's
+// birthdays, and the latest photos. All derived from existing data (events,
+// members/contacts birthdays, the photos table) — no wifi/rules, no list, no
+// settings. Photos ride the public-by-key /api/img route (allowlisted).
+async function familyWindow(env: Env, hh: string, householdName: string) {
+  const today = localDayStart(new Date(Date.now()))
+  const eventsEnd = addLocalDays(today, 21) // ~3 weeks of upcoming dates
+  const bdayEnd = addLocalDays(today, 35) // a little further for birthdays
+
+  const members = await env.DB.prepare(
+    'SELECT id, display_name, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+  )
+    .bind(hh)
+    .all<{ id: string; display_name: string; is_child: number }>()
+
+  // The grandkids' calendar: events tied to a CHILD member. If the household marks
+  // no children, fall back to every member-tied event so the window isn't empty.
+  const childIds = members.results.filter((m) => m.is_child).map((m) => m.id)
+  const targetIds = childIds.length ? childIds : members.results.map((m) => m.id)
+  const nameOf = (id: string | null) =>
+    (id && members.results.find((m) => m.id === id)?.display_name) || null
+
+  const events: EvOut[] = []
+  if (targetIds.length) {
+    const ph = targetIds.map(() => '?').join(',')
+    const [oneOff, recurring] = await Promise.all([
+      env.DB.prepare(
+        `SELECT id, title, start_at, all_day, member_id FROM events WHERE household_id = ? AND recur_json IS NULL AND member_id IN (${ph}) AND start_at >= ? AND start_at < ? ORDER BY start_at`,
+      )
+        .bind(hh, ...targetIds, today, eventsEnd)
+        .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null }>(),
+      env.DB.prepare(
+        `SELECT id, title, start_at, all_day, member_id, recur_json FROM events WHERE household_id = ? AND recur_json IS NOT NULL AND member_id IN (${ph})`,
+      )
+        .bind(hh, ...targetIds)
+        .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json: string }>(),
+    ])
+    for (const e of oneOff.results)
+      events.push({ id: e.id, title: e.title, start_at: e.start_at, all_day: e.all_day, who: nameOf(e.member_id) })
+    for (const e of recurring.results) {
+      const rule = parseRecur(e.recur_json)
+      if (!rule) continue
+      for (const at of expandRange(e.start_at, rule, today, eventsEnd))
+        events.push({ id: `${e.id}#${at}`, title: e.title, start_at: at, all_day: e.all_day, who: nameOf(e.member_id) })
+    }
+    events.sort((a, b) => a.start_at - b.start_at)
+  }
+
+  // Birthdays — derived from members + contacts (never event rows), same engine the
+  // board uses. The warm heart of the window.
+  const people = await fetchBirthdayPeople(env.DB, hh)
+  const birthdays = birthdayOccurrences(people, today, bdayEnd)
+    .sort((a, b) => a.at - b.at)
+    .map((b) => ({ name: b.name, at: b.at, age: b.age }))
+
+  // Latest photos — keys only; the <img> loads them via the public-by-key route.
+  const photos = await env.DB.prepare(
+    'SELECT r2_key FROM photos WHERE household_id = ? ORDER BY created_at DESC LIMIT 12',
+  )
+    .bind(hh)
+    .all<{ r2_key: string }>()
+
+  return {
+    kind: 'family' as const,
+    householdName,
+    upcoming: events.slice(0, 20),
+    birthdays,
+    photos: photos.results.map((p) => p.r2_key),
+  }
+}

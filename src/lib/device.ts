@@ -59,6 +59,42 @@ export function setGuestToken(token: string): void {
 export function clearGuestToken(): void {
   try {
     localStorage.removeItem(GUEST_KEY)
+    localStorage.removeItem(GUEST_KIND_KEY)
+  } catch {
+    /* noop */
+  }
+}
+
+// The share-mode of the current LINK guest (auth.ts GuestKind), learned from
+// /api/guest/whoami after boot and cached so the SPA can route synchronously
+// (showcase → the read-only hub; sitter/welcome → their curated scene). Cleared
+// when a new ?guest= token arrives (main.tsx), so a different link can't inherit
+// a stale kind. The token is opaque/server-signed — the client can't read its own
+// kind without asking the server.
+export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family'
+const GUEST_KIND_KEY = 'babillard-guest-kind'
+const GUEST_KINDS: GuestKind[] = ['showcase', 'sitter', 'welcome', 'family']
+
+export function getGuestKind(): GuestKind | null {
+  try {
+    const k = localStorage.getItem(GUEST_KIND_KEY) as GuestKind | null
+    return k && GUEST_KINDS.includes(k) ? k : null
+  } catch {
+    return null
+  }
+}
+
+export function setGuestKind(kind: GuestKind): void {
+  try {
+    localStorage.setItem(GUEST_KIND_KEY, kind)
+  } catch {
+    /* noop */
+  }
+}
+
+export function clearGuestKind(): void {
+  try {
+    localStorage.removeItem(GUEST_KIND_KEY)
   } catch {
     /* noop */
   }

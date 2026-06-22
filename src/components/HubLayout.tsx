@@ -10,6 +10,7 @@ import { useAmbient } from '../lib/ambient'
 import { AmbientScreen } from './AmbientScreen'
 import { onAuthLost } from '../lib/authEvents'
 import { clearDeviceToken, isPaired, isGuestLocked } from '../lib/device'
+import { useGuestKind } from '../lib/guestKind'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
 import { DetailProvider } from './detail/DetailProvider'
@@ -229,6 +230,15 @@ export function HubLayout() {
   // mode. Either way the server independently 403s every guest write.
   const guest = isGuestLocked() || guestPreview
   const guestLocked = isGuestLocked()
+  // A CURATED share link (sitter / welcome) has no business in the hub — its data
+  // 403s server-side anyway. Bounce it to its own standalone scene. showcase stays
+  // (it IS the read-only hub); a settings-preview guest isn't a link guest, so it's
+  // unaffected. guestKind resolves async (whoami); until then a link normally lands
+  // on its scene route directly (the operator's URL targets it), so no flash.
+  const guestKind = useGuestKind()
+  if (guestLocked && guestKind === 'sitter') return <Navigate to="/handoff" replace />
+  if (guestLocked && guestKind === 'welcome') return <Navigate to="/welcome" replace />
+  if (guestLocked && guestKind === 'family') return <Navigate to="/family" replace />
   // The toddler lens has no business in Réglages — not on a locked kiosk, and
   // not in an unlocked parent preview either (a kid mustn't reach settings via a
   // stray /settings URL). Only the parent view (and the guest PREVIEW) open Réglages.
@@ -351,7 +361,8 @@ export function HubLayout() {
         <OfflineBanner />
         {guest && (
           <p className="board__empty mono" role="status" style={{ textAlign: 'center', opacity: 0.8 }}>
-            <InlineIcon name="user-bold" /> {t.guest.banner}
+            <InlineIcon name="user-bold" />{' '}
+            {guestLocked && guestKind === 'showcase' ? t.guest.demoBadge : t.guest.banner}
           </p>
         )}
         <Outlet />

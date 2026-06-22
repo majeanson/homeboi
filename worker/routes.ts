@@ -19,6 +19,7 @@ import * as cercle from '../functions/api/cercle'
 import * as cercleGroups from '../functions/api/cercle-groups'
 import * as cercleLinks from '../functions/api/cercle-links'
 import * as cerclePhotos from '../functions/api/cercle-photos'
+import * as pets from '../functions/api/pets'
 import * as chores from '../functions/api/chores'
 import * as choresLedger from '../functions/api/chores-ledger'
 import * as dayNotes from '../functions/api/day-notes'
@@ -31,6 +32,8 @@ import * as flyerImg from '../functions/api/flyer-img'
 import * as flyers from '../functions/api/flyers'
 import * as ghost from '../functions/api/ghost'
 import * as guestStart from '../functions/api/guest/start'
+import * as guestWindow from '../functions/api/guest/window'
+import * as guestWhoami from '../functions/api/guest/whoami'
 import * as health from '../functions/api/health'
 import * as household from '../functions/api/household'
 import * as list from '../functions/api/list'
@@ -73,6 +76,10 @@ import * as pairStart from '../functions/api/pair/start'
 import * as imgKey from '../functions/api/img/[key]'
 import type { Env } from '../functions/_lib/env'
 
+// Re-exported so existing importers of `./routes` keep working; the predicate now
+// lives in _lib/guestScope (testable without the handler table).
+export { guestKindAllows } from '../functions/_lib/guestScope'
+
 // A handler module exposes per-method exports (onRequestGet/Post/Patch/Delete),
 // each a Pages Function. We index them by name at dispatch time. `any` for the
 // params/data type args so every handler (incl. the [key] dynamic route) fits
@@ -112,6 +119,8 @@ const TABLE: Record<string, RouteMod> = {
   flyers,
   ghost,
   'guest/start': guestStart,
+  'guest/window': guestWindow,
+  'guest/whoami': guestWhoami,
   health,
   household,
   list,
@@ -125,6 +134,7 @@ const TABLE: Record<string, RouteMod> = {
   notes,
   'note-media': noteMedia,
   pantry,
+  pets,
   photos,
   'place-import': placeImport,
   recap,
