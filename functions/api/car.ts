@@ -71,10 +71,18 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const hh = actor.householdId
   const url = new URL(ctx.request.url)
   const today = localDayStart(new Date(Date.now()))
-  const fromParam = Number(url.searchParams.get('from'))
-  const toParam = Number(url.searchParams.get('to'))
-  const from = Number.isFinite(fromParam) ? fromParam : today
-  const to = Number.isFinite(toParam) ? toParam : addLocalDays(today, 1)
+  // A MISSING param must fall back to today's window — NOT parse as 0. `Number(null)`
+  // (an absent searchParam) is 0, which `Number.isFinite` accepts, so the old
+  // `Number(get(...))` silently yielded from=to=0 → an empty day loop → no `todayDay`
+  // → status fell back to "Libre toute la journée" on the board glance (which calls
+  // /api/car with no params) even while the car was at work. Treat null/empty as absent.
+  const numParam = (key: string, fallback: number): number => {
+    const raw = url.searchParams.get(key)
+    const n = raw == null || raw === '' ? NaN : Number(raw)
+    return Number.isFinite(n) ? n : fallback
+  }
+  const from = numParam('from', today)
+  const to = numParam('to', addLocalDays(today, 1))
 
   const cars = (await householdCars(ctx.env, hh)) ?? []
   // v1: the schedule commits THE car; focus the resolved spans on the primary car.

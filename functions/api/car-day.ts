@@ -42,8 +42,14 @@ const minute = (v: unknown): number | null => {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const url = new URL(ctx.request.url)
-  const from = Number(url.searchParams.get('from'))
-  const to = Number(url.searchParams.get('to'))
+  // Parse null/empty as NaN (not 0): `Number(null)` is 0, which would slip past the
+  // finite check below and silently query the [0, 0) window instead of 400-ing.
+  const num = (key: string): number => {
+    const raw = url.searchParams.get(key)
+    return raw == null || raw === '' ? NaN : Number(raw)
+  }
+  const from = num('from')
+  const to = num('to')
   if (!Number.isFinite(from) || !Number.isFinite(to)) return badRequest('from + to requis.')
   const { results } = await ctx.env.DB.prepare(
     'SELECT id, car_id, day, free, holder_id, start_min, end_min, label FROM car_day WHERE household_id = ? AND day >= ? AND day < ? ORDER BY day',
