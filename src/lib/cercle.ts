@@ -19,7 +19,7 @@ export interface ContactAddress {
   country?: string
 }
 
-export interface ContactCustomField {
+interface ContactCustomField {
   label: string
   value: string
   type: 'text' | 'date' | 'url' | 'number'
@@ -311,22 +311,25 @@ export type RelationshipType =
   | 'in_law'
   | 'step_family'
   | 'relative' // generic "same family" kin tie — no precise rung known (used by « Compléter les familles »)
+  | 'owner' // a human who OWNS a pet (inverse: 'pet') — binds the animal into the family group, but is NOT a closure rung (a pet never becomes a grandparent)
+  | 'pet' // an animal that belongs to a person (inverse: 'owner')
   | 'best_friend'
   | 'friend'
   | 'colleague'
   | 'neighbor'
   | 'other'
 
-export type RelationshipGroup = 'immediate' | 'extended' | 'social' | 'other'
+type RelationshipGroup = 'immediate' | 'extended' | 'social' | 'animal' | 'other'
 
-export const RELATIONSHIP_GROUPS: Record<RelationshipGroup, { label: Bi; order: number }> = {
+const RELATIONSHIP_GROUPS: Record<RelationshipGroup, { label: Bi; order: number }> = {
   immediate: { label: { fr: 'Famille proche', en: 'Immediate family' }, order: 0 },
   extended: { label: { fr: 'Famille élargie', en: 'Extended family' }, order: 1 },
   social: { label: { fr: 'Cercle social', en: 'Social' }, order: 2 },
-  other: { label: { fr: 'Autres', en: 'Other' }, order: 3 },
+  animal: { label: { fr: 'Animaux', en: 'Pets' }, order: 3 },
+  other: { label: { fr: 'Autres', en: 'Other' }, order: 4 },
 }
 
-export interface RelationshipConfig {
+interface RelationshipConfig {
   label: Bi // singular relation label ("Parent")
   group: RelationshipGroup
   groupOrder: number
@@ -335,7 +338,7 @@ export interface RelationshipConfig {
 
 // Keys are stable; labels are FR-CA first. Colours are calm, warm hexes (not the
 // tailwind classes the original used) so they sit beside the member-face palette.
-export const RELATIONSHIP_CONFIG: Record<RelationshipType, RelationshipConfig> = {
+const RELATIONSHIP_CONFIG: Record<RelationshipType, RelationshipConfig> = {
   parent: { label: { fr: 'Parent', en: 'Parent' }, group: 'immediate', groupOrder: 0, color: '#5891AC' },
   child: { label: { fr: 'Enfant', en: 'Child' }, group: 'immediate', groupOrder: 1, color: '#6FA0B7' },
   sibling: { label: { fr: 'Frère / sœur', en: 'Sibling' }, group: 'immediate', groupOrder: 2, color: '#7FAEC3' },
@@ -349,6 +352,8 @@ export const RELATIONSHIP_CONFIG: Record<RelationshipType, RelationshipConfig> =
   in_law: { label: { fr: 'Belle-famille', en: 'In-law' }, group: 'extended', groupOrder: 5, color: '#5E8C8C' },
   step_family: { label: { fr: 'Famille recomposée', en: 'Step-family' }, group: 'extended', groupOrder: 6, color: '#5AA08C' },
   relative: { label: { fr: 'Membre de la famille', en: 'Family member' }, group: 'extended', groupOrder: 7, color: '#6E8FA0' },
+  owner: { label: { fr: 'Propriétaire', en: 'Owner' }, group: 'animal', groupOrder: 0, color: '#C7873F' },
+  pet: { label: { fr: 'Animal', en: 'Pet' }, group: 'animal', groupOrder: 1, color: '#C7873F' },
   best_friend: { label: { fr: 'Meilleur·e ami·e', en: 'Best friend' }, group: 'social', groupOrder: 0, color: '#4F8A4A' },
   friend: { label: { fr: 'Ami·e', en: 'Friend' }, group: 'social', groupOrder: 1, color: '#6B8A52' },
   colleague: { label: { fr: 'Collègue', en: 'Colleague' }, group: 'social', groupOrder: 2, color: '#D9842A' },
@@ -374,6 +379,8 @@ export const RELATIONSHIP_INVERSES: Record<RelationshipType, RelationshipType> =
   in_law: 'in_law',
   step_family: 'step_family',
   relative: 'relative',
+  owner: 'pet',
+  pet: 'owner',
   best_friend: 'best_friend',
   friend: 'friend',
   colleague: 'colleague',
@@ -427,8 +434,10 @@ export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | nul
   return relLabel(type, lang)
 }
 
-// Relationship types grouped + ordered, for a sectioned picker.
-export function groupedRelationshipTypes(): { group: RelationshipGroup; label: Bi; types: RelationshipType[] }[] {
+// Relationship types grouped + ordered, for a sectioned picker (ALL groups,
+// including « Animaux »). Callers render via `relationshipPickerGroups`, which
+// shows/hides the pet group by context.
+function groupedRelationshipTypes(): { group: RelationshipGroup; label: Bi; types: RelationshipType[] }[] {
   const groups = (Object.entries(RELATIONSHIP_GROUPS) as [RelationshipGroup, { label: Bi; order: number }][])
     .sort(([, a], [, b]) => a.order - b.order)
     .map(([group, value]) => ({ group, label: value.label, types: [] as RelationshipType[] }))
@@ -438,6 +447,26 @@ export function groupedRelationshipTypes(): { group: RelationshipGroup; label: B
       groups.find((g) => g.group === config.group)?.types.push(type)
     })
   return groups
+}
+
+// The relationship groups to render in a CONNECT/EDIT picker, given whether a PET is
+// one of the two endpoints. A pet can't carry a human rung (parent/grandparent…), so
+// when one is involved we offer only the « Animaux » ties (Propriétaire / Animal) plus
+// the generic kin / autre fallbacks; between two humans the pet group is hidden so it
+// never leaks into a human-to-human picker. Used by ConnectPeople + LinkComposer
+// (per-endpoint) and FamilyBuilder (always human → `false`).
+export function relationshipPickerGroups(
+  petInvolved: boolean,
+): { group: RelationshipGroup; label: Bi; types: RelationshipType[] }[] {
+  return groupedRelationshipTypes()
+    .map((g) => ({
+      ...g,
+      types: g.types.filter((ty) => {
+        const isPetType = ty === 'owner' || ty === 'pet'
+        return petInvolved ? isPetType || ty === 'relative' || ty === 'other' : !isPetType
+      }),
+    }))
+    .filter((g) => g.types.length > 0)
 }
 
 // Family edges (the ones that bind people into a "family"); a friend/colleague
@@ -456,6 +485,8 @@ const FAMILY_REL_TYPES = new Set<RelationshipType>([
   'in_law',
   'step_family',
   'relative', // generic kin — binds a family + appears in the Arbre (same-generation)
+  'owner', // a pet's human — binds the animal into its owner's family (same band, never a rung)
+  'pet',
 ])
 
 // Is this a blood/family tie (binds a family + appears in the Arbre tree)? Social
@@ -552,6 +583,8 @@ const GEN_DELTA: Partial<Record<RelationshipType, number>> = {
   in_law: 0,
   step_family: 0,
   relative: 0, // generic kin: no rung known → place beside its known relatives, same band
+  owner: 0, // a pet sits on the same band as its owner (no generational rung)
+  pet: 0,
 }
 
 // Assign each person a generation number via BFS over family edges (lower = older).
@@ -994,6 +1027,8 @@ const REL_PRIORITY: Record<RelationshipType, number> = {
   in_law: 6,
   step_family: 6,
   relative: 6,
+  owner: 6,
+  pet: 6,
   best_friend: 7,
   friend: 8,
   colleague: 8,
@@ -1163,6 +1198,7 @@ export interface FamilyLinkProposal {
   op: 'create' | 'modify'
   existingId: string | null // the stored link to PATCH (modify only)
   inferred: boolean // true = precise rung from the hierarchy; false = generic `relative` fallback
+  reason?: Bi // a transitive deduction (from inferLinks) carries its own human "why"
 }
 
 const unorderedPair = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`)
@@ -1260,4 +1296,28 @@ export function proposeFamilyLinks(
     }
   }
   return out
+}
+
+// The one-button "does it all" proposer: every link worth offering across the WHOLE
+// circle, in one review checklist. It merges
+//   • the group-completion proposals (`proposeFamilyLinks` — make each named famille
+//     group 100% related), AND
+//   • the transitive cross-family bridges the explicit links already imply
+//     (`inferLinks` — co-parents → spouse, a shared parent → sibling, a spouse's
+//     parents → in-law) — the deductions that connect TWO families through a single
+//     junction link, even with no named group built.
+// Deduped by unordered pair (a precise group completion wins a conflict); each
+// transitive item carries its own human `reason` for the checklist row. Pure — the
+// caller shows them for approval, then POST/PATCHes only the ticked ones.
+export function proposeAllFamilyLinks(
+  people: Person[],
+  storedLinks: ContactLink[],
+  groups: ContactGroup[],
+): FamilyLinkProposal[] {
+  const fromGroups = proposeFamilyLinks(people, storedLinks, groups)
+  const covered = new Set(fromGroups.map((p) => unorderedPair(p.aKey, p.bKey)))
+  const transitive: FamilyLinkProposal[] = inferLinks(people, storedLinks)
+    .filter((s) => !covered.has(unorderedPair(s.aKey, s.bKey)))
+    .map((s) => ({ aKey: s.aKey, bKey: s.bKey, type: s.type, op: 'create' as const, existingId: null, inferred: true, reason: s.reason }))
+  return [...fromGroups, ...transitive]
 }

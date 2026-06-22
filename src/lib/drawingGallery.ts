@@ -18,7 +18,7 @@ export interface GalleryDrawing {
   created_at: number
 }
 
-export const GALLERY_KEY = ['drawings']
+const GALLERY_KEY = ['drawings']
 
 export function useGallery() {
   return useQuery({ queryKey: GALLERY_KEY, queryFn: () => api<{ drawings: GalleryDrawing[] }>('drawings') })
@@ -99,7 +99,7 @@ export function usePinToFridge() {
 
 // Keep a drawing that lives elsewhere (a fridge note) into the gallery — again a
 // fresh INDEPENDENT copy, so clearing the note never frees the kept drawing.
-export function useKeepKeysInGallery() {
+function useKeepKeysInGallery() {
   const save = useSaveToGallery()
   // Returns the new gallery row id (for an undoable "kept" toast).
   return async (media_key: string, scene_key?: string | null): Promise<string> => {

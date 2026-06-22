@@ -932,6 +932,11 @@ export function Board() {
             </Section>
           )}
 
+            {/* « L'auto » glance — the car's status today + today's rides — sits as a
+                full-width band ABOVE the drawings/photos (below the agenda, which
+                stays the primary glance). #28 */}
+            <AutoCard />
+
             {/* Family drawings (#14) live only here in the Grille view, just above
                 the photos — tap one to add to it. Kept off the compact
                 Next/Lanes/Month layouts. The door to the lasting collection
@@ -945,9 +950,10 @@ export function Board() {
       )}
 
       {/* « L'auto » glance — the car's status today + today's rides, a calm strip
-          BELOW the day (not above it — the agenda is the primary glance). Renders
-          nothing when nothing's set up + no rides. Shared across every view. #28 */}
-      <AutoCard />
+          BELOW the day. The Grille (bento) view renders it inside the grid, just
+          above the drawings/photos; the compact Next/Lanes/Month views (no drawings)
+          show it here at the foot. Renders nothing when nothing's set up + no rides. #28 */}
+      {view !== 'bento' && <AutoCard />}
 
       {stale && <p className="board__synced mono">{t.board.offline}</p>}
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}

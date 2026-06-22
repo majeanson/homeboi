@@ -1365,8 +1365,15 @@
 .kit-modal.cnote-memo {
   width: min(38rem, 94vw);
 }
+/* The textarea owns a full-width row of its own; the submit + cancel then wrap
+   onto a footer line below it (right-aligned) instead of stretching to the
+   textarea's full height beside it. */
 .cnote-memo .edit-field__box {
+  flex: 1 1 100%;
   align-items: stretch;
+}
+.cnote-memo .edit-field__row {
+  justify-content: flex-end;
 }
 .cnote-memo .edit-field__input.input {
   min-height: clamp(9rem, 45vh, 22rem);
@@ -1422,6 +1429,16 @@
   background: var(--surface);
   color: var(--ink-soft);
   font-size: 0.72rem;
+}
+/* Empty-state nudge: shown in place of the button when nothing is deducible yet,
+   guiding the operator to seed a few links first ("then complete here"). */
+.cercle-complete__hint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
 }
 
 /* ReviewChecklist — the shared review-then-apply list (vcf import + « Compléter

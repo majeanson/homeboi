@@ -251,8 +251,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Tout chercher', en: 'Search everything' },
         detail: {
-          fr: 'La loupe 🔍 en haut de chaque onglet ouvre une recherche unique : tape un mot et tu vois d’un coup tes recettes, les gens de ton cercle, tes événements et les articles de ta liste qui correspondent — et même ce guide d’aide, pour trouver comment faire quelque chose. Touche un résultat pour y aller directement (un résultat d’aide ouvre la bonne fiche du guide). Les accents sont ignorés (« cafe » trouve « café »).',
-          en: 'The magnifier 🔍 at the top of every tab opens one search: type a word and see, at once, the matching recipes, people from your circle, events and items on your list — and even this help guide, to find how to do something. Tap a result to jump straight there (a help result opens the right guide card). Accents are ignored (“cafe” finds “café”).',
+          fr: 'La loupe 🔍 en haut de chaque onglet ouvre une recherche unique : tape un mot et tu vois d’un coup tout ce qui correspond — tes recettes, les gens et les animaux de ton cercle, tes services (vétérinaire, plombier…), tes événements, tes routines, tes listes « À compléter », les articles de ta liste, ton garde-manger et ta réserve, l’auto, tes notes du babillard — et même ce guide d’aide, pour trouver comment faire quelque chose. Touche un résultat pour y aller directement (un résultat d’aide ouvre la bonne fiche du guide). Les accents sont ignorés (« cafe » trouve « café »).',
+          en: 'The magnifier 🔍 at the top of every tab opens one search: type a word and see, at once, everything that matches — your recipes, the people and pets in your circle, your services (vet, plumber…), your events, your routines, your to-do lists, items on your list, your pantry and reserve, the car, your board notes — and even this help guide, to find how to do something. Tap a result to jump straight there (a help result opens the right guide card). Accents are ignored (“cafe” finds “café”).',
         },
         why: {
           fr: 'Retrouver une chose sans te rappeler dans quel onglet elle vit.',
@@ -428,8 +428,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Cuisiner plusieurs plats ensemble', en: 'Cook several dishes together' },
         detail: {
-          fr: 'Quand au moins deux repas prévus aujourd’hui sont des recettes, le ＋ « Cuisiner » offre « Cuisiner ensemble » en haut de la liste. Chaque plat s’ouvre dans le mode cuisson au complet — son affichage, sa taille de texte, ses minuteries — et un petit onglet sous les réglages te fait passer du plat A au plat B. Les plats restent ouverts en arrière-plan : une minuterie lancée sur le plat A continue et sonne pendant que tu lis le plat B.',
-          en: 'When at least two of today’s planned meals are recipes, the ＋ “Cook” picker offers “Cook together” at the top of the list. Each dish opens in the full cook mode — its own layout, text size and timers — and a small sub-tab under the controls flips you between dish A and dish B. The dishes stay open in the background: a timer you started on dish A keeps running and chimes while you read dish B.',
+          fr: 'Quand au moins deux repas prévus aujourd’hui sont des recettes, le ＋ « Cuisiner » offre « Cuisiner ensemble » en haut de la liste. Touche-le : tape les plats à cuisiner (deux ou plus), puis « Commencer ». Chaque plat s’ouvre dans le mode cuisson au complet — son affichage, sa taille de texte, ses minuteries — et un petit onglet sous les réglages te fait passer du plat A au plat B. Les plats restent ouverts en arrière-plan : une minuterie lancée sur le plat A continue et sonne pendant que tu lis le plat B.',
+          en: 'When at least two of today’s planned meals are recipes, the ＋ “Cook” picker offers “Cook together” at the top of the list. Tap it: tap the dishes you want to cook (two or more), then “Start”. Each dish opens in the full cook mode — its own layout, text size and timers — and a small sub-tab under the controls flips you between dish A and dish B. The dishes stay open in the background: a timer you started on dish A keeps running and chimes while you read dish B.',
         },
         why: {
           fr: 'Faire souper et accompagnement en même temps sans jongler trois minuteurs de four : ils vivent tous au même endroit.',

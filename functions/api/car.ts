@@ -4,7 +4,7 @@ import { localDayStart, addLocalDays, localDayOfWeek } from '../_lib/ids'
 import { parseRecur, occurrenceOn } from '../_lib/recur'
 import { householdCars } from '../_lib/carPrefs'
 import { carBusySpansForDay, membersOutAt, type ScheduleBlock, type CarDayOverride } from '../_lib/carResolve'
-import { carStatusAt, rideConflicts, type CarSpan, type Ride } from '../_lib/carAvail'
+import { carStatusAt, rideConflicts, rideSpans, type CarSpan, type Ride } from '../_lib/carAvail'
 
 // « L'auto » read model — the resolved car picture, shared by the board glance card
 // (today) and the /voiture week view (a date range). One read so both surfaces see
@@ -208,7 +208,17 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const now = Math.floor(Date.now() / 1000)
   const todayInRange = today >= from && today < to
   const todayDay = days.find((d) => d.day === today)
-  const status = todayDay ? carStatusAt(todayDay.spans, now, addLocalDays(today, 1)) : { free: true as const }
+  const dayEnd = addLocalDays(today, 1)
+  // Fold today's car-taking rides into the STATUS (not the returned spans, which stay
+  // the real schedule windows for /voiture + conflicts) so the glance answers "où est
+  // l'auto" truthfully: a ride in progress reads "Avec Camille · revient ~17 h", an
+  // upcoming one "Libre jusqu'à 14 h", a past one "le reste de la journée" — never
+  // "Libre toute la journée" while the car is out. Driver + all-day ride along.
+  const todayRides: Ride[] = todayDay
+    ? todayDay.rides.map((r) => ({ id: r.id, at: r.at, carId: r.carId, holderId: r.memberId, allDay: r.allDay === 1 }))
+    : []
+  const statusSpans = todayDay ? [...todayDay.spans, ...rideSpans(todayRides, today, dayEnd)] : []
+  const status = todayDay ? carStatusAt(statusSpans, now, dayEnd) : { free: true as const }
   const membersOut = todayInRange ? membersOutAt(today, localDayOfWeek(new Date(today * 1000)), blocks, now) : []
 
   return ok({

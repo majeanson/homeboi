@@ -829,6 +829,16 @@ body.is-recording .add-fab {
   gap: 12px;
   margin-top: 6px;
 }
+/* "Cuisiner ensemble" picker actions — Annuler · Commencer, the start CTA leading. */
+.addsheet__cook-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.addsheet__cook-actions .btn--primary {
+  flex: 1;
+  justify-content: center;
+}
 /* The meal planner's day + slot selects, side by side above the title field. */
 .sheet__row {
   display: flex;

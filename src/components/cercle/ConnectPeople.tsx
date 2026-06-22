@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { CERCLE_KEY } from '../../lib/queryKeys'
@@ -6,7 +6,7 @@ import {
   type Person,
   type RelationshipType,
   parsePersonKey,
-  groupedRelationshipTypes,
+  relationshipPickerGroups,
   relLabel,
   genderedRelLabel,
 } from '../../lib/cercle'
@@ -47,7 +47,17 @@ export function ConnectPeople({
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
   const a = aKey ? byKey.get(aKey) ?? null : null
   const b = bKey ? byKey.get(bKey) ?? null : null
-  const relGroups = useMemo(() => groupedRelationshipTypes(), [])
+  // A pet on either end can't carry a human rung (parent/grandparent…) — the picker
+  // then offers the « Animaux » ties + generic fallbacks; between two humans it's hidden.
+  const petInvolved = a?.kind === 'pet' || b?.kind === 'pet'
+  const shownGroups = relationshipPickerGroups(petInvolved)
+  // Drop a stale pick when the pet-context flips (e.g. swapping a human end for a pet
+  // after choosing "parent") so we never save a human rung onto an animal.
+  useEffect(() => {
+    if (type && !shownGroups.some((g) => g.types.includes(type))) setType('')
+    // Only react to the pet-context flip; shownGroups is recomputed every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [petInvolved])
 
   // keywords fold first + last name into the match (so a nickname-labelled person
   // still surfaces by their real name); exclude the already-picked other end.
@@ -58,7 +68,7 @@ export function ConnectPeople({
         id: p.key,
         label: p.name,
         data: p,
-        icon: p.kind === 'member' ? 'users-three-bold' : 'user-bold',
+        icon: p.kind === 'pet' ? 'smiley-bold' : p.kind === 'member' ? 'users-three-bold' : 'user-bold',
         keywords: [p.firstName, p.lastName].filter(Boolean) as string[],
       }))
 
@@ -111,7 +121,7 @@ export function ConnectPeople({
         <span className="cf__label">{t.cercle.connectRelation}</span>
         <select className="cf__input" value={type} onChange={(e) => setType(e.target.value as RelationshipType | '')}>
           <option value="">—</option>
-          {relGroups.map((g) => (
+          {shownGroups.map((g) => (
             <optgroup key={g.group} label={g.label[lang]}>
               {g.types.map((ty) => (
                 <option key={ty} value={ty}>

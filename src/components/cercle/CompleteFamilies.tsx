@@ -5,22 +5,28 @@ import { CERCLE_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 import { ReviewChecklist } from '../ReviewChecklist'
 import {
-  proposeFamilyLinks,
+  proposeAllFamilyLinks,
   parsePersonKey,
   genderedRelLabel,
+  isFamilyRel,
   type Person,
   type ContactLink,
   type ContactGroup,
   type FamilyLinkProposal,
 } from '../../lib/cercle'
 
-// « Compléter les familles » — one button that makes every named « famille »-kind
-// group 100% related, using the hierarchy the existing links already imply: it
-// proposes the precise rung where the links reveal one (siblings via a shared parent,
-// grandparent chains, cousins…) and a generic « membre de la famille » tie where none
-// can be known, so nobody you grouped together is left disconnected. The proposals go
-// through the SHARED ReviewChecklist (the same approve-then-apply flow as the .vcf
-// import) — the operator ticks what to keep, then we POST/PATCH the chosen links.
+// « Compléter les familles » — ONE button that deduces every family link worth making
+// across the whole circle, then lets you tick which to keep (the same approve-then-apply
+// ReviewChecklist as the .vcf import). It proposes both:
+//   • the precise rungs that complete each named famille group (siblings via a shared
+//     parent, grandparent chains, cousins…) + a generic « membre de la famille » tie
+//     where no rung is knowable, AND
+//   • the cross-family bridges the existing links already imply (`proposeAllFamilyLinks`
+//     folds in inferLinks: co-parents → spouse, shared parent → sibling, a spouse's
+//     parents → in-law) — so connecting ONE member to another family surfaces all the
+//     in-law/sibling ties between them, no named group required.
+// Nothing to propose yet → a calm hint nudges "link a few people first, then complete
+// here" instead of an empty void.
 export function CompleteFamilies({
   people,
   storedLinks,
@@ -39,10 +45,19 @@ export function CompleteFamilies({
   const [busy, setBusy] = useState(false)
 
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
-  const proposals = useMemo(() => proposeFamilyLinks(people, storedLinks, groups), [people, storedLinks, groups])
+  const proposals = useMemo(() => proposeAllFamilyLinks(people, storedLinks, groups), [people, storedLinks, groups])
 
-  // Nothing to do (no family groups, or every one already complete) → no button, calm.
-  if (proposals.length === 0) return null
+  // Nothing deducible. Distinguish "no links seeded yet" → a one-line nudge to get
+  // started ("link a few people, then complete here"), from "already all connected" →
+  // stay calm + empty (no dangling affordance). The nudge only shows on a sparse circle.
+  if (proposals.length === 0) {
+    if (storedLinks.some((l) => isFamilyRel(l.type))) return null
+    return (
+      <p className="cercle-complete__hint mono">
+        <Icon name="users-three-bold" size={14} /> {t.cercle.completeHint}
+      </p>
+    )
+  }
 
   async function apply(selected: FamilyLinkProposal[]) {
     setBusy(true)
@@ -78,7 +93,7 @@ export function CompleteFamilies({
     const a = byKey.get(p.aKey)
     const b = byKey.get(p.bKey)
     const rel = genderedRelLabel(p.type, a?.gender ?? null, lang)
-    const why = p.op === 'modify' ? t.cercle.completePrecise : p.inferred ? t.cercle.completeInferred : t.cercle.completeGuess
+    const why = p.reason ? p.reason[lang] : p.op === 'modify' ? t.cercle.completePrecise : p.inferred ? t.cercle.completeInferred : t.cercle.completeGuess
     return (
       <>
         <span className="review__name">

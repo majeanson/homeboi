@@ -26,6 +26,31 @@ export interface Ride {
   at: number // unix seconds — the ride's start instant
   label?: string
   carId?: string | null // only car-taking rides matter to availability; null = carpool/bus
+  holderId?: string | null // the driver (member) — becomes the synthetic span's holder
+  allDay?: boolean // an all-day ride holds the car for the whole day, not a window
+}
+
+// A planned outing carries no end time (events store only a start), so a car-taking
+// ride holds the car for this default window — long enough that an in-progress trip
+// reads as "busy now · back ~X" instead of vanishing the instant it starts.
+const RIDE_DEFAULT_SEC = 2 * 3600
+
+// Car-taking rides as synthetic BUSY spans so the status engine can treat an outing
+// like any other commitment: an in-progress ride is "busy now" (back ≈ start + the
+// default window), an upcoming one tightens "free until", a past one keeps the day
+// "committed". A timed ride spans [at, at+default] (clamped to the day); an all-day
+// ride holds the whole day. Carpool/bus rides (carId null) take someone else's car,
+// never ours, so they produce no span. The driver rides along as `holderId` so the
+// glance can show "Avec Camille".
+export function rideSpans(rides: Ride[], dayStart: number, dayEnd: number, defaultSec = RIDE_DEFAULT_SEC): CarSpan[] {
+  return rides
+    .filter((r) => r.carId != null)
+    .map((r) => ({
+      start: r.allDay ? dayStart : r.at,
+      end: r.allDay ? dayEnd : Math.min(r.at + defaultSec, dayEnd),
+      label: r.label,
+      holderId: r.holderId ?? null,
+    }))
 }
 
 // Drop empty/inverted spans and merge overlapping or touching ones into a minimal
@@ -80,16 +105,26 @@ export interface CarStatus {
   // again within the day (so "libre jusqu'à 15 h"), or undefined if free all day.
   until?: number
   span?: CarSpan // the covering span when busy
+  // The day holds at least one commitment (a busy span OR a car-taking ride), even
+  // if the car is free right NOW. Lets the glance say "libre — le reste de la
+  // journée" instead of "libre toute la journée" when an outing already happened or
+  // is still to come, so the headline never contradicts the rides listed under it.
+  committed?: boolean
 }
 
 // The car's status at instant `t`, bounded by the day so "free until" never points
-// past the day's end. The single fact the board glance card renders.
+// past the day's end. The single fact the board glance card renders. Works purely on
+// busy spans — the caller folds car-taking RIDES in by appending rideSpans() to the
+// span list (so an in-progress outing reads as "busy now · back ~X", an upcoming one
+// tightens "free until", and a past one keeps the day "committed" → "le reste de la
+// journée" instead of "toute la journée").
 export function carStatusAt(busy: CarSpan[], t: number, dayEnd: number): CarStatus {
   const merged = mergeSpans(busy)
+  const committed = merged.length > 0
   const covering = merged.find((s) => t >= s.start && s.end > t)
-  if (covering) return { free: false, until: covering.end, span: covering }
+  if (covering) return { free: false, until: covering.end, span: covering, committed: true }
   const next = merged.find((s) => s.start > t && s.start < dayEnd)
-  return { free: true, until: next?.start }
+  return { free: true, until: next?.start, committed }
 }
 
 export interface RideConflict {

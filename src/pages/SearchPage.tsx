@@ -6,10 +6,15 @@ import { api } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { fold } from '../lib/normalize'
 import { CATS } from '../lib/cats'
-import { CERCLE_KEY, FAMILY_NOTES_KEY } from '../lib/queryKeys'
-import { type Contact } from '../lib/cercle'
+import { CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY } from '../lib/queryKeys'
+import { type Contact, type Pet } from '../lib/cercle'
 import { type FamilyNote } from '../lib/familyNotes'
-import { useRecipes, useBoardData } from '../lib/queryHooks'
+import { type Business, BUSINESS_COLOUR } from '../lib/businesses'
+import { type Routine } from '../components/operator/types'
+import { type TodosData } from '../lib/todos'
+import { type ReserveData, RESERVE_KEY } from '../components/kitchen/types'
+import { useCars } from '../lib/carPrefs'
+import { useRecipes, useBoardData, usePantry } from '../lib/queryHooks'
 import { recipeImg } from '../lib/recipes'
 import { GUIDE } from '../lib/guideContent'
 import { stripTokens } from '../lib/richText'
@@ -127,10 +132,30 @@ export function SearchPage() {
 
   const recipesData = useRecipes().data?.recipes ?? []
   const board = useBoardData().data
-  const contacts = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<{ contacts: Contact[] }>('cercle') }).data?.contacts ?? []
+  // /api/cercle carries BOTH the people directory and the household animals (#pets):
+  // read both off the one shared cache — no extra fetch — and search each as its own
+  // section (a pet has its own /cercle/pet/:id card).
+  const cercleData = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<{ contacts: Contact[]; pets: Pet[] }>('cercle') }).data
+  const contacts = cercleData?.contacts ?? []
+  const pets = cercleData?.pets ?? []
   // Le cercle → Famille → "Notes & recommandations" — searchable too (text only;
   // media-only notes carry no text so they don't surface here).
   const familyNotes = useQuery({ queryKey: FAMILY_NOTES_KEY, queryFn: () => api<{ notes: FamilyNote[] }>('family-notes') }).data?.notes ?? []
+  // Le cercle → Business: the services / vendors directory (vet, plumber…).
+  const businesses = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<{ businesses: Business[] }>('businesses') }).data?.businesses ?? []
+  // Kid routines — the same ROUTINES_KEY cache the Routines tab + Réglages fill.
+  const routines = useQuery({ queryKey: ROUTINES_KEY, queryFn: () => api<{ routines: Routine[] }>('routines') }).data?.routines ?? []
+  // À compléter — the board glance's open todos (global + today) under TODOS_KEY.
+  const todos = useQuery({ queryKey: TODOS_KEY, queryFn: () => api<TodosData>('todos') }).data?.todos ?? []
+  // Garde-manger: "ce qui s'achève" (running-low) + La réserve (the stash). Both
+  // live under the kitchen Pantry tab; each item links there.
+  const low = usePantry().data?.low ?? []
+  const reserve = useQuery({ queryKey: RESERVE_KEY, queryFn: () => api<ReserveData>('reserve') }).data?.reserve ?? []
+  // « L'auto » — the household car(s); a name match jumps to the /voiture week view.
+  const cars = useCars().cars
+  // The board's fridge memos (#38/#14/#13) — distinct from the cercle family notes
+  // above. Already in the board payload; only text notes surface (media-only carry none).
+  const boardNotes = board?.notes ?? []
 
   const needle = fold(q.trim())
   const res = useMemo(() => {
@@ -152,6 +177,30 @@ export function SearchPage() {
     const events = allEvents.filter((e) => fold(e.title).includes(needle)).slice(0, CAP)
     const listItems = (board?.list ?? []).filter((li) => fold(li.text).includes(needle)).slice(0, CAP)
     const notes = familyNotes.filter((n) => n.text && fold(n.text).includes(needle)).slice(0, CAP)
+    // Le cercle animals — match on name/species/breed + the care free-text.
+    const petHits = pets
+      .filter((p) => fold(`${p.name} ${p.species ?? ''} ${p.breed ?? ''} ${p.notes ?? ''}`).includes(needle))
+      .slice(0, CAP)
+    // Services / commerces (vet, plumber…) — name + category + contact details.
+    const bizHits = businesses
+      .filter((b) => fold(`${b.name} ${b.category ?? ''} ${b.phone ?? ''} ${b.address ?? ''} ${b.notes ?? ''}`).includes(needle))
+      .slice(0, CAP)
+    // Kid routines — the routine name plus every card label.
+    const routineHits = routines
+      .filter((r) => fold(`${r.name} ${(r.cards ?? []).map((c) => c.label).join(' ')}`).includes(needle))
+      .slice(0, CAP)
+    // À compléter — open todos by title.
+    const todoHits = todos.filter((td) => fold(td.title).includes(needle)).slice(0, CAP)
+    // Garde-manger + La réserve — both keyed on the free-text item; tagged so the
+    // row can label which list it's from while linking to the same Pantry tab.
+    const pantryHits = [
+      ...low.filter((l) => fold(l.item).includes(needle)).map((l) => ({ id: l.id, item: l.item, reserve: false })),
+      ...reserve.filter((r) => fold(r.item).includes(needle)).map((r) => ({ id: r.id, item: r.item, reserve: true })),
+    ].slice(0, CAP)
+    // « L'auto » — the household car name(s).
+    const carHits = cars.filter((c) => fold(c.name).includes(needle)).slice(0, CAP)
+    // The board's fridge memos — text notes only (media-only notes carry no text).
+    const fridgeNotes = boardNotes.filter((n) => n.text && fold(n.text).includes(needle)).slice(0, CAP)
     // The Guide / in-app help. Match a card on its title + one-liner + every
     // sub-point (label, detail, why) in the active language, tokens stripped to
     // the words a reader sees. A title/summary hit links to the whole card; when
@@ -180,10 +229,24 @@ export function SearchPage() {
         to: usePoint ? `/settings?tab=guide&card=${e.id}&point=${pointIdx}` : `/settings?tab=guide&card=${e.id}`,
       })
     }
-    return { recipes, people, events, listItems, notes, guide }
-  }, [needle, recipesData, contacts, board, familyNotes, lang])
+    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, events, listItems, notes, fridgeNotes, guide }
+  }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, board, familyNotes, boardNotes, lang])
 
-  const total = res ? res.recipes.length + res.people.length + res.events.length + res.listItems.length + res.notes.length + res.guide.length : 0
+  const total = res
+    ? res.recipes.length +
+      res.people.length +
+      res.pets.length +
+      res.businesses.length +
+      res.routines.length +
+      res.todos.length +
+      res.pantry.length +
+      res.cars.length +
+      res.events.length +
+      res.listItems.length +
+      res.notes.length +
+      res.fridgeNotes.length +
+      res.guide.length
+    : 0
 
   return (
     <div className="scene search" aria-label={t.search.title}>
@@ -297,6 +360,40 @@ export function SearchPage() {
               </Section>
             )}
 
+            {res!.pets.length > 0 && (
+              <Section label={t.search.pets}>
+                {res!.pets.map((p) => (
+                  <Link key={p.id} to={`/cercle/pet/${p.id}`} className="search__row">
+                    <span className="search__pic" aria-hidden="true">
+                      <Avatar kind={p.photoKey ? 'photo' : null} photo={p.photoKey} colour={p.colour ?? '#C7873F'} name={p.name} size={34} />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{p.name}</span>
+                      {(p.species || p.breed) && <span className="search__sub mono">{[p.species, p.breed].filter(Boolean).join(' · ')}</span>}
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.businesses.length > 0 && (
+              <Section label={t.search.businesses}>
+                {res!.businesses.map((b) => (
+                  <Link key={b.id} to="/cercle?section=business" className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: b.colour ?? BUSINESS_COLOUR }}>
+                      <InlineIcon name="storefront-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{b.name}</span>
+                      {b.category && <span className="search__sub mono">{b.category}</span>}
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
             {res!.events.length > 0 && (
               <Section label={t.search.events}>
                 {res!.events.map((e) => (
@@ -307,6 +404,39 @@ export function SearchPage() {
                     <span className="search__main">
                       <span className="search__title">{e.title}</span>
                       <span className="search__sub mono">{new Date(e.start_at * 1000).toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.routines.length > 0 && (
+              <Section label={t.search.routines}>
+                {res!.routines.map((r) => (
+                  <Link key={r.id} to={`/routine/${r.id}`} className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: CATS.routine.deep }}>
+                      <InlineIcon name="smiley-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{r.name}</span>
+                      {r.memberName && <span className="search__sub mono">{r.memberName}</span>}
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.todos.length > 0 && (
+              <Section label={t.search.todos}>
+                {res!.todos.map((td) => (
+                  <Link key={td.id} to="/board" className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: CATS.chore.deep }}>
+                      <InlineIcon name="check-square-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{td.title}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -328,12 +458,61 @@ export function SearchPage() {
               </Section>
             )}
 
+            {res!.pantry.length > 0 && (
+              <Section label={t.search.pantry}>
+                {res!.pantry.map((it) => (
+                  <Link key={(it.reserve ? 'r:' : 'l:') + it.id} to="/kitchen?tab=pantry" className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: CATS.pantry.deep }}>
+                      <InlineIcon name={it.reserve ? 'cloud-snow-bold' : 'carrot-bold'} />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{it.item}</span>
+                      <span className="search__sub mono">{it.reserve ? t.kitchen.reserve : t.kitchen.tabPantry}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.cars.length > 0 && (
+              <Section label={t.search.auto}>
+                {res!.cars.map((c) => (
+                  <Link key={c.id} to="/voiture" className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: c.color ?? CATS.work.deep }}>
+                      <InlineIcon name="car-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{c.name}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
             {res!.notes.length > 0 && (
               <Section label={t.search.notes}>
                 {res!.notes.map((n) => (
                   <Link key={n.id} to="/cercle?section=family&view=list" className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <InlineIcon name="file-text-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{n.text}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.fridgeNotes.length > 0 && (
+              <Section label={t.search.boardNotes}>
+                {res!.fridgeNotes.map((n) => (
+                  <Link key={n.id} to="/board" className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: CATS.list.deep }}>
+                      <InlineIcon name="push-pin-bold" />
                     </span>
                     <span className="search__main">
                       <span className="search__title">{n.text}</span>

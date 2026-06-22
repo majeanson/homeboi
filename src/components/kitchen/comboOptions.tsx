@@ -46,7 +46,7 @@ export function recipeOptions(
 
 // The Restants pool — no cookability (a leftover is already cooked), just the
 // recycle picto, so it reads as a leftover beside the recipe rows.
-export function leftoverOptions(leftovers: Leftover[], group?: string): ComboOption<Leftover>[] {
+function leftoverOptions(leftovers: Leftover[], group?: string): ComboOption<Leftover>[] {
   return leftovers.map((l) => ({
     id: l.id,
     label: l.title,

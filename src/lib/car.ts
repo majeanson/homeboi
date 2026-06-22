@@ -7,7 +7,7 @@ import type { Car } from './carPrefs'
 // Client view of the « L'auto » read model (/api/car). The board glance card reads
 // today; the /voiture week reads a date range. Shapes mirror functions/api/car.ts.
 
-export interface CarSpan {
+interface CarSpan {
   start: number
   end: number
   label?: string
@@ -29,7 +29,7 @@ export interface CarRide {
   conflict: boolean
 }
 
-export interface CarDayOverride {
+interface CarDayOverride {
   carId: string
   day: number
   free: boolean
@@ -46,10 +46,14 @@ export interface CarDay {
   override: CarDayOverride | null
 }
 
-export interface CarStatus {
+interface CarStatus {
   free: boolean
   until?: number
   span?: CarSpan
+  // The day holds at least one commitment (busy span or car-taking ride) even if the
+  // car is free right now → "libre — le reste de la journée" instead of "toute la
+  // journée". Mirrors functions/_lib/carAvail CarStatus.
+  committed?: boolean
 }
 
 export interface CarModel {

@@ -10,7 +10,7 @@ export const storeKey = (merchant: string): string => merchant.trim().toLowerCas
 
 // Parse + sanitize the stored JSON into a deduped list of merchant keys. Tolerant
 // of null, non-arrays, and non-string entries (anything invalid → empty list).
-export function parseStoreKeys(raw: string | null | undefined): string[] {
+function parseStoreKeys(raw: string | null | undefined): string[] {
   if (!raw) return []
   try {
     const v: unknown = JSON.parse(raw)

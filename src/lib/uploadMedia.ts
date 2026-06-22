@@ -23,7 +23,7 @@ export class MediaUnavailableError extends Error {
 
 /** A resized blob is still over the server cap — a format no decoder could shrink.
  *  Callers skip it (show a soft note) rather than hard-rejecting. */
-export class MediaTooLargeError extends Error {
+class MediaTooLargeError extends Error {
   constructor() {
     super('media too large')
     this.name = 'MediaTooLargeError'

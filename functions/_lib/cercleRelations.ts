@@ -21,6 +21,8 @@ export const INVERSES: Record<string, string> = {
   in_law: 'in_law',
   step_family: 'step_family',
   relative: 'relative',
+  owner: 'pet',
+  pet: 'owner',
   best_friend: 'best_friend',
   friend: 'friend',
   colleague: 'colleague',

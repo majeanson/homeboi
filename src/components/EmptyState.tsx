@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
+import { useHelp } from '../lib/help'
+import { useAudience } from '../lib/audience'
 import { Icon } from './Icon'
 
 // The ONE "nothing here, and that's fine" line. Empty states were scattered across
@@ -12,7 +14,9 @@ import { Icon } from './Icon'
 // Optional `guide` adds a small "→ Voir le guide" deep-link under the line (#8),
 // for the "what do I even do here?" empties a first-time household lands on — the
 // same /settings?tab=guide&card=… target HelpDot/HelpBubble use. Opt-in on purpose:
-// a link on every trivial empty would be noise, not calm.
+// a link on every trivial empty would be noise, not calm. Gated exactly like the
+// HelpDot "?": tutorial mode only, never the toddler lens — an expert household
+// (help off) sees the empty line with no guide link.
 export function EmptyState({
   children,
   tone = 'plain',
@@ -25,9 +29,12 @@ export function EmptyState({
   guide?: { card: string; point?: number }
 }) {
   const t = useT()
-  const to = guide
-    ? `/settings?tab=guide&card=${guide.card}${guide.point != null ? `&point=${guide.point}` : ''}`
-    : null
+  const { tutorial } = useHelp()
+  const { audience } = useAudience()
+  const to =
+    guide && tutorial && audience !== 'toddler'
+      ? `/settings?tab=guide&card=${guide.card}${guide.point != null ? `&point=${guide.point}` : ''}`
+      : null
   return (
     <p
       className={'empty-state' + (tone === 'calm' ? ' empty-state--calm' : '') + (className ? ` ${className}` : '')}

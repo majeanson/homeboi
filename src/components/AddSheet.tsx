@@ -264,10 +264,19 @@ export function AddSheet({
   // Fetched from the shared meal + recipe caches only while the sheet's open and
   // the tile is shown. mealPrefs colours each slot the way the rest of the app does.
   const cookChoices = useCookableMeals(open && shown.includes('cook'))
-  // #43 — how many DISTINCT dishes are cookable today; 2+ adds a "Cuisiner ensemble"
-  // entry to the picker (cook them at once, /kitchen/cook/multi) beside the single
-  // dishes — the old standalone button atop La cuisine moved in here.
-  const cookTogetherCount = useMemo(() => new Set(cookChoices.map((c) => c.recipe.id)).size, [cookChoices])
+  // #43 — the DISTINCT cookable dishes today (a recipe planned in two slots shows
+  // once): the pool the "Cuisiner ensemble" picker selects from. 2+ unlocks it.
+  const cookDistinct = useMemo(() => {
+    const seen = new Set<string>()
+    return cookChoices.filter((c) => {
+      if (seen.has(c.recipe.id)) return false
+      seen.add(c.recipe.id)
+      return true
+    })
+  }, [cookChoices])
+  // null = not picking; a Set of recipe ids = the ensemble selection is open. Starts
+  // EMPTY — you tap the dishes you want, then "Commencer" (needs 2+).
+  const [ensemblePick, setEnsemblePick] = useState<Set<string> | null>(null)
   const mealPrefs = useMealPrefs()
   const weekStart = mealsData?.weekStart ?? 0
   // Same 10-day countdown window the Kitchen grid renders (shrinks 10 → 4 across
@@ -368,6 +377,7 @@ export function AddSheet({
 
   const close = useCallback(() => {
     setRouted(null)
+    setEnsemblePick(null) // leave the ensemble picker so it reopens fresh next time
     onClose()
   }, [onClose])
 
@@ -940,29 +950,32 @@ export function AddSheet({
             </div>
           ) : (
             <div className="addsheet__cook">
-              <p className="sheet__group-label mono">{t.kitchen.cookWhich}</p>
-              {/* #43 — 2+ distinct dishes today ⇒ offer to cook them all at once
-                  (one coordinated cook mode), as the first choice above the singles. */}
-              {cookTogetherCount >= 2 && (
+              <p className="sheet__group-label mono">
+                {ensemblePick ? t.kitchen.cookTogetherPick : t.kitchen.cookWhich}
+              </p>
+              {/* #43 — 2+ distinct dishes today ⇒ offer to cook them at once. Tapping
+                  it doesn't launch straight away: it opens an empty selection (every
+                  dish a check row), then "Commencer" starts the coordinated cook with
+                  the dishes you ticked. */}
+              {!ensemblePick && cookDistinct.length >= 2 && (
                 <div className="addsheet__cooklist">
                   <Act
                     cat="meal"
                     icon="cooking-pot-bold"
                     title={t.kitchen.cookTogether}
-                    who={t.kitchen.cookTogetherN(cookTogetherCount)}
-                    onActivate={() => {
-                      close()
-                      nav('/kitchen/cook/multi')
-                    }}
+                    who={t.kitchen.cookTogetherN(cookDistinct.length)}
+                    onActivate={() => setEnsemblePick(new Set())}
                   />
                 </div>
               )}
               {/* Each choice is the app's shared Act row (board/Act) — colour spine,
                   the recipe's photo (or the slot glyph) in the tile, slot · recipe as
-                  the sub-line, a caret since it navigates, and the next-due meal's
-                  "Prochain" badge. One row primitive, so this matches the board. */}
+                  the sub-line, the next-due meal's "Prochain" badge. In ensemble mode
+                  the same rows become CHECK rows (tap toggles the selection); the
+                  pool collapses to distinct recipes so a dish never lists twice.
+                  One row primitive, so this matches the board. */}
               <div className="addsheet__cooklist">
-                {cookChoices.map((c) => {
+                {(ensemblePick ? cookDistinct : cookChoices).map((c) => {
                   const slot = c.meal.slot
                   // Cookable meals are always real slots, so the colour is a hex —
                   // safe to hand Act as its spine/tile colour (no CSS-var footgun).
@@ -977,6 +990,7 @@ export function AddSheet({
                     (isMealSlot(slot) ? t.kitchen.slots[slot] : '') +
                     (sameName ? '' : ` · ${c.recipe.title}`) +
                     (cookName ? ` · ${cookName}` : '')
+                  const picked = ensemblePick?.has(c.recipe.id) ?? false
                   return (
                     <Act
                       key={c.meal.id}
@@ -986,15 +1000,55 @@ export function AddSheet({
                       photo={recipeImg(c.recipe.image) || undefined}
                       title={c.meal.title}
                       who={sub}
-                      badge={c.isNext ? t.kitchen.cookNext : undefined}
-                      onActivate={() => {
-                        close()
-                        nav(c.target)
-                      }}
+                      badge={!ensemblePick && c.isNext ? t.kitchen.cookNext : undefined}
+                      // Ensemble mode → a check row (toggle in/out of the selection);
+                      // otherwise a nav row straight into that one dish's cook mode.
+                      done={ensemblePick ? picked : undefined}
+                      onCheck={
+                        ensemblePick
+                          ? () =>
+                              setEnsemblePick((prev) => {
+                                const next = new Set(prev)
+                                if (next.has(c.recipe.id)) next.delete(c.recipe.id)
+                                else next.add(c.recipe.id)
+                                return next
+                              })
+                          : undefined
+                      }
+                      onActivate={
+                        ensemblePick
+                          ? undefined
+                          : () => {
+                              close()
+                              nav(c.target)
+                            }
+                      }
                     />
                   )
                 })}
               </div>
+              {/* Ensemble actions: cancel back to the single picker, or start the
+                  coordinated cook with the ticked dishes (needs 2+). */}
+              {ensemblePick && (
+                <div className="addsheet__cook-actions">
+                  <button type="button" className="btn btn--ghost" onClick={() => setEnsemblePick(null)}>
+                    {t.common.cancel}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    disabled={ensemblePick.size < 2}
+                    onClick={() => {
+                      const ids = [...ensemblePick]
+                      close()
+                      nav(`/kitchen/cook/multi?r=${ids.join(',')}`)
+                    }}
+                  >
+                    <Icon name="cooking-pot-bold" size={18} />
+                    {t.kitchen.cookTogetherStart(ensemblePick.size)}
+                  </button>
+                </div>
+              )}
             </div>
           ))}
 

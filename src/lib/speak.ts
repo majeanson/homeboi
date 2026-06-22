@@ -67,7 +67,7 @@ export function setRate(rate: number): void {
 const READ_LANG_KEY = 'babillard-read-lang'
 export type ReadLang = 'auto' | Lang
 const readLangListeners = new Set<() => void>()
-export function getReadLang(): ReadLang {
+function getReadLang(): ReadLang {
   try {
     const v = localStorage.getItem(READ_LANG_KEY)
     return v === 'fr' || v === 'en' ? v : 'auto'

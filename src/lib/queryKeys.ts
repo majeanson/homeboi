@@ -48,7 +48,3 @@ export const SCHEDULE_KEY = ['schedule']
 // window under ['car', from] (a prefix of CAR_KEY). Invalidated by a ride, an
 // horaire, or a car_day override so every car surface re-resolves at once.
 export const CAR_KEY = ['car']
-// « L'auto » — per-date car overrides (car_day). Read by the /voiture week view
-// under ['car-day', from] (the visible week window); a prefix of CAR_DAY_KEY so
-// invalidating it refreshes every loaded week.
-export const CAR_DAY_KEY = ['car-day']

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
@@ -9,7 +9,7 @@ import {
   type RelationshipType,
   type InferredLink,
   personKey,
-  groupedRelationshipTypes,
+  relationshipPickerGroups,
   relLabel,
   genderedRelLabel,
   inferLinks,
@@ -51,7 +51,6 @@ export function LinkComposer({
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
-  const groups = useMemo(() => groupedRelationshipTypes(), [])
 
   // This person's existing links, resolved FROM THEIR perspective.
   const mine = links
@@ -77,9 +76,20 @@ export function LinkComposer({
   // Everyone except this person, as combobox options.
   const options: ComboOption<Person>[] = people
     .filter((p) => p.key !== person.key)
-    .map((p) => ({ id: p.key, label: p.name, data: p, icon: p.kind === 'member' ? 'users-three-bold' : 'user-bold' }))
+    .map((p) => ({ id: p.key, label: p.name, data: p, icon: p.kind === 'pet' ? 'smiley-bold' : p.kind === 'member' ? 'users-three-bold' : 'user-bold' }))
 
   const otherPerson = otherKey ? byKey.get(otherKey) : null
+  // When the subject or the picked other is a pet, the picker offers the « Animaux »
+  // ties (Propriétaire / Animal) instead of human rungs; otherwise that group is hidden.
+  const petInvolved = person.kind === 'pet' || otherPerson?.kind === 'pet'
+  const groups = relationshipPickerGroups(petInvolved)
+  // Keep the selected type valid as the pet-context flips (default 'parent' is invalid
+  // once a pet is the other end → fall to 'owner', and vice-versa).
+  useEffect(() => {
+    setType((cur) => (groups.some((g) => g.types.includes(cur)) ? cur : petInvolved ? 'owner' : 'parent'))
+    // Only react to the pet-context flip; groups is recomputed every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [petInvolved])
   // The sentence reads "{person} est [type] de {other}", so the relation describes the
   // SUBJECT (`person`) and is gendered by THEIR gender — not the other person's.
   const preview = otherPerson ? `${person.name} · ${genderedRelLabel(type, person.gender, lang)} · ${otherPerson.name}` : null

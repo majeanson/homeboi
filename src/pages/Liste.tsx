@@ -314,8 +314,10 @@ export function Liste() {
       <HubHead
         title={t.nav.list}
         icon={CATS.list.icon}
-        iconColor={CATS.list.deep}
-        background="var(--marigold-wash)"
+        // Match the footer nav's Liste tab (sky #5891AC = --sky-deep), not
+        // CATS.list's marigold — the section identity is sky blue everywhere else.
+        iconColor="var(--sky-deep)"
+        background="var(--sky-wash)"
         card="liste"
       />
 

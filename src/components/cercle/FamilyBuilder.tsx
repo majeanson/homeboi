@@ -12,7 +12,7 @@ import {
   FAMILY_BANDS,
   personKey,
   parsePersonKey,
-  groupedRelationshipTypes,
+  relationshipPickerGroups,
   relLabel,
   familyLinksFromBands,
   familyLinksFromMatrix,
@@ -233,7 +233,8 @@ export function FamilyBuilder({
     }
   }
 
-  const relGroups = useMemo(() => groupedRelationshipTypes(), [])
+  // The generational builder is human-only; never offer the « Animaux » group here.
+  const relGroups = useMemo(() => relationshipPickerGroups(false), [])
 
   // One draggable face chip (bands mode) — the whole chip is the drag handle
   // (touch-action:none via the class); the ✕ removes from the family.

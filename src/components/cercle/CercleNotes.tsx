@@ -391,6 +391,7 @@ export function CercleNotes({
               placeholder={isRename ? fn.rename : fn.placeholder}
               submitLabel={fn.save}
               submitLeadingIcon="check-bold"
+              submitVariant="primary"
               ariaLabel={isRename ? fn.rename : fn.edit}
             />
           </Modal>

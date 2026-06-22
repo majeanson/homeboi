@@ -103,6 +103,12 @@
   column-span: all;
   margin-top: 1.25rem;
 }
+/* « L'auto » rides inside the grid (just above the drawings/photos) as a full-width
+   band, so it reads as its own strip rather than squeezing into a column. */
+.board-grid > .auto-card {
+  column-span: all;
+  margin: 0.25rem 0 1rem;
+}
 @media (max-width: 680px) {
   .board-wall {
     padding: 1rem 0.9rem 1.5rem;

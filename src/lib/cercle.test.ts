@@ -13,6 +13,7 @@ import {
   closedLinks,
   friendLinksFromGroups,
   proposeFamilyLinks,
+  proposeAllFamilyLinks,
   parsePersonKey,
   personKey,
   daysUntilBirthday,
@@ -472,5 +473,43 @@ describe('proposeFamilyLinks (« Compléter les familles »)', () => {
   it('ignores non-family-kind groups', () => {
     const friends = { id: 'g', name: 'g', kind: 'friends' as const, colour: null, memberKeys: new Set([k('a'), k('b')]) }
     expect(proposeFamilyLinks(ppl('a', 'b'), [], [friends])).toHaveLength(0)
+  })
+})
+
+describe('proposeAllFamilyLinks (one button: group completion + transitive bridges)', () => {
+  const k = (id: string) => personKey('contact', id)
+  const ppl = (...ids: string[]) => buildPeople(ids.map((id) => contact(id, id)), [])
+  const famGroup = (id: string, ...ids: string[]) => ({
+    id, name: id, kind: 'family' as const, colour: null, memberKeys: new Set(ids.map(k)),
+  })
+  const tie = (props: { aKey: string; bKey: string; type: string }[], x: string, y: string) =>
+    props.find((p) => [p.aKey, p.bKey].sort().join() === [k(x), k(y)].sort().join())?.type
+
+  it('surfaces a transitive bridge with NO group built (shared parent → sibling) + carries a reason', () => {
+    // p is parent of x AND y, no named group → group completion alone proposes nothing,
+    // but the deduction still connects x & y as siblings — the "do a few links" case.
+    const props = proposeAllFamilyLinks(ppl('p', 'x', 'y'), [link('p', 'x', 'parent'), link('p', 'y', 'parent')], [])
+    expect(props).toHaveLength(1)
+    expect(props[0]).toMatchObject({ op: 'create', type: 'sibling' })
+    expect([props[0].aKey, props[0].bKey].sort()).toEqual([k('x'), k('y')])
+    expect(props[0].reason).toBeDefined() // a transitive item carries its own "why"
+  })
+
+  it('deduces spouse from co-parents (links two families through one junction)', () => {
+    const props = proposeAllFamilyLinks(ppl('a', 'b', 'c'), [link('a', 'c', 'parent'), link('b', 'c', 'parent')], [])
+    expect(tie(props, 'a', 'b')).toBe('spouse')
+  })
+
+  it("deduces an in-law from a spouse's parent across families", () => {
+    // a is spouse of b; d is b's parent → d is a's in-law.
+    const props = proposeAllFamilyLinks(ppl('a', 'b', 'd'), [link('a', 'b', 'spouse'), link('d', 'b', 'parent')], [])
+    expect(tie(props, 'a', 'd')).toBe('in_law')
+  })
+
+  it('dedups: a pair the group already completes is not also added as a transitive guess', () => {
+    const links = [link('p', 'x', 'parent'), link('p', 'y', 'parent')]
+    const props = proposeAllFamilyLinks(ppl('p', 'x', 'y'), links, [famGroup('g', 'p', 'x', 'y')])
+    const xy = props.filter((pp) => [pp.aKey, pp.bKey].sort().join() === [k('x'), k('y')].sort().join())
+    expect(xy).toHaveLength(1)
   })
 })

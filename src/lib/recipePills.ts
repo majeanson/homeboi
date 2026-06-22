@@ -14,18 +14,18 @@ import { withoutHeadings } from './recipeSections'
 // renders exactly the shown pills, in this order; everything degrades gracefully
 // (a pill whose data is absent — no low items, no favourites — simply doesn't show).
 
-export const PILL_BUILTINS = ['cookable', 'useSoon', 'fast', 'neglected', 'favorites', 'recent'] as const
+const PILL_BUILTINS = ['cookable', 'useSoon', 'fast', 'neglected', 'favorites', 'recent'] as const
 export type BuiltinKey = (typeof PILL_BUILTINS)[number]
 
 // Sorts are mutually exclusive (one orders the grid); filters stack (AND).
-export const SORT_KEYS: readonly BuiltinKey[] = ['cookable', 'useSoon', 'neglected', 'recent']
+const SORT_KEYS: readonly BuiltinKey[] = ['cookable', 'useSoon', 'neglected', 'recent']
 export const isSortKey = (k: string): boolean => (SORT_KEYS as readonly string[]).includes(k)
 
 // Numeric recipe attributes a custom rule can test. `ingredients` counts real
 // lines (skips "## Section" headings); the rest are the recipe's own minutes/yield.
 export const NUM_FIELDS = ['totalMin', 'prepMin', 'cookMin', 'ingredients', 'servings'] as const
 export type NumField = (typeof NUM_FIELDS)[number]
-export type Op = 'lte' | 'gte'
+type Op = 'lte' | 'gte'
 
 export type Criterion =
   | { field: NumField; op: Op; n: number }
@@ -37,7 +37,7 @@ export type Criterion =
   | { field: 'photo' }
 export type CriterionField = Criterion['field']
 export type NumCriterion = { field: NumField; op: Op; n: number }
-export const isNumField = (f: string): f is NumField => (NUM_FIELDS as readonly string[]).includes(f)
+const isNumField = (f: string): f is NumField => (NUM_FIELDS as readonly string[]).includes(f)
 // Narrowing guard so the editor can spread a numeric criterion (op/n) type-safely.
 export const isNumCriterion = (c: Criterion): c is NumCriterion => isNumField(c.field)
 
@@ -74,7 +74,7 @@ export const DEFAULT_PILLS: Pill[] = PILL_BUILTINS.map((k) => ({ k }))
 
 // A field's value for a recipe, or null when the recipe carries no such data (an
 // unknown value never matches — a "≤ 20 min" pill won't surface untimed recipes).
-export function numFieldValue(r: Recipe, f: NumField): number | null {
+function numFieldValue(r: Recipe, f: NumField): number | null {
   switch (f) {
     case 'totalMin':
       return recipeTotalMin(r)

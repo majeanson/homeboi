@@ -127,7 +127,7 @@ export interface BoardData {
   // car. Only today's: the forward rota lives on the calendar, not the glance.
   work?: WorkRow[]
 }
-export interface WorkRow {
+interface WorkRow {
   id: string
   label: string | null // the block's free-text label ("Travail", "Garderie…"), or null
   at: number // window start (unix seconds)

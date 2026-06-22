@@ -34,7 +34,6 @@ export function AutoCard() {
   if (!car) return null
   const today = car.days.find((d) => d.day === car.today)
   const rides = today?.rides ?? []
-  const spans = today?.spans ?? []
   // Render whenever the household USES « L'auto » — a car configured, a work
   // schedule, or a ride today — even on an idle/free day, so the board always
   // answers "où est l'auto ?" (#28). Only a household that's set nothing up sees no card.
@@ -45,9 +44,11 @@ export function AutoCard() {
   const tint = carColor(primary?.id) ?? '#6b7a8f'
 
   // The status line. Day-AWARE so the glance never lies: "Libre toute la journée"
-  // only when the day truly holds NOTHING. If the car was out earlier today but is
-  // back now (a finished work block, an evening), it reads "libre — le reste de la
-  // journée", not "toute la journée" (the old now-only bug).
+  // only when the day truly holds NOTHING — no busy span AND no car-taking ride
+  // (car.status.committed, computed server-side in carAvail). If the car was out
+  // earlier today but is back now, OR an outing is still planned, it reads "libre —
+  // le reste de la journée" / "libre jusqu'à …", never "toute la journée" (the old
+  // bug where the status ignored rides and said the car was free all day).
   let status: string
   let busy = false
   if (!car.status.free) {
@@ -57,7 +58,7 @@ export function AutoCard() {
     status = holder ? `${t.auto.withWho(holder)}${back ? ` · ${back}` : ''}` : t.auto.taken + (back ? ` · ${back}` : '')
   } else if (car.status.until) {
     status = t.auto.freeUntil(hhmm(car.status.until))
-  } else if (spans.length > 0) {
+  } else if (car.status.committed) {
     status = t.auto.freeRestOfDay
   } else {
     status = t.auto.freeAllDay

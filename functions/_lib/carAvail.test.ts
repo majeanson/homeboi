@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mergeSpans, freeGaps, busyAt, carStatusAt, rideConflicts, type CarSpan, type Ride } from './carAvail'
+import { mergeSpans, freeGaps, busyAt, carStatusAt, rideConflicts, rideSpans, type CarSpan, type Ride } from './carAvail'
 
 // All instants are plain unix seconds on one synthetic day so the math reads as
 // wall-clock hours. carAvail is timezone-agnostic, so a fixed base is enough — no TZ
@@ -90,6 +90,69 @@ describe('carStatusAt', () => {
     expect(s.free).toBe(false)
     expect(s.until).toBe(h(17))
     expect(s.span?.label).toBe('au travail')
+  })
+
+  it('truly empty day → free all day, not committed', () => {
+    const s = carStatusAt([], h(9), DAY_END)
+    expect(s).toMatchObject({ free: true, committed: false })
+    expect(s.until).toBeUndefined()
+  })
+})
+
+describe('rideSpans', () => {
+  const DAY_START = DAY
+  it('turns a car-taking ride into a default-window busy span carrying the driver', () => {
+    const rides: Ride[] = [{ id: 'r1', at: h(15), label: 'Épicerie', carId: 'car', holderId: 'm1' }]
+    const spans = rideSpans(rides, DAY_START, DAY_END)
+    expect(spans).toEqual([{ start: h(15), end: h(17), label: 'Épicerie', holderId: 'm1' }])
+  })
+
+  it('an all-day car ride holds the whole day', () => {
+    const rides: Ride[] = [{ id: 'r1', at: h(0), carId: 'car', holderId: 'm1', allDay: true }]
+    expect(rideSpans(rides, DAY_START, DAY_END)).toEqual([{ start: DAY_START, end: DAY_END, label: undefined, holderId: 'm1' }])
+  })
+
+  it('a carpool/bus ride (carId null) produces no span — it never takes our car', () => {
+    const rides: Ride[] = [{ id: 'r1', at: h(15), label: 'Soccer (covoiturage)', carId: null }]
+    expect(rideSpans(rides, DAY_START, DAY_END)).toEqual([])
+  })
+
+  it('clamps a late ride window to the end of the day', () => {
+    const rides: Ride[] = [{ id: 'r1', at: h(23), carId: 'car' }]
+    expect(rideSpans(rides, DAY_START, DAY_END)[0].end).toBe(DAY_END)
+  })
+})
+
+// The board glance reads carStatusAt over schedule spans PLUS rideSpans — the bug was
+// a ride (no work block) reading as "libre toute la journée". These cover that path.
+describe('carStatusAt with ride spans folded in', () => {
+  const rideAt = (n: number, holderId?: string): Ride => ({ id: `r${n}`, at: h(n), carId: 'car', holderId })
+  const withRides = (spans: CarSpan[], rides: Ride[], t: number) =>
+    carStatusAt([...spans, ...rideSpans(rides, DAY, DAY_END)], t, DAY_END)
+
+  it('an in-progress car ride reads as busy now, back ≈ start + default, with the driver', () => {
+    const s = withRides([], [rideAt(15, 'm1')], h(16)) // mid-ride (15→17)
+    expect(s.free).toBe(false)
+    expect(s.until).toBe(h(17))
+    expect(s.span?.holderId).toBe('m1')
+  })
+
+  it('an upcoming car ride tightens "free until" instead of saying all day', () => {
+    const s = withRides([], [rideAt(14)], h(9))
+    expect(s).toMatchObject({ free: true, committed: true })
+    expect(s.until).toBe(h(14))
+  })
+
+  it('a past car ride → free for the rest of the day (committed, no "until")', () => {
+    const s = withRides([], [rideAt(8)], h(12)) // 8→10, now noon
+    expect(s).toMatchObject({ free: true, committed: true })
+    expect(s.until).toBeUndefined()
+  })
+
+  it('a carpool ride leaves the day genuinely free all day', () => {
+    const s = withRides([], [{ id: 'r1', at: h(14), carId: null }], h(9))
+    expect(s).toMatchObject({ free: true, committed: false })
+    expect(s.until).toBeUndefined()
   })
 })
 
