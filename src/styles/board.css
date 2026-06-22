@@ -1262,13 +1262,17 @@
   color: var(--paper);
   background: var(--berry-deep, var(--accent, #4a8a5a));
 }
-/* Parent "La galerie" door inside the Grille drawings strip: a small trailing
-   chip that rides beside the photos/drawings on a wide tablet and wraps under
-   them on a phone, instead of claiming its own centered row. */
+/* The "Dessiner" + "La galerie" actions inside the Grille drawings strip: a small
+   trailing cluster that rides to the END of the row beside the drawings on a wide
+   tablet (margin-left:auto), and wraps neatly under them on a phone — never
+   claiming its own centered row, never stretching to the tallest card. */
 .notes__action {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  align-self: center; /* don't stretch to the tallest card in the row */
+  align-self: center;
+  gap: 0.5rem;
+  margin-left: auto;
 }
 /* A touch more room between the drawing/photo cards (and the trailing door). */
 .notes--drawings .notes__grid {

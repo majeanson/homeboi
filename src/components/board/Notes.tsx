@@ -264,18 +264,21 @@ export function Notes({
             </button>
           )
         })}
-        {/* Quick-add: start a new drawing straight from the strip (same DrawPad +
-            POST as the ＋ sheet). Sits beside the gallery door as a trailing chip. */}
-        {canDraw && (
+        {/* Trailing actions — the strip's own quick-add (a new drawing, same DrawPad
+            + POST as the ＋ sheet) and the door to the lasting collection ("La
+            galerie"). Grouped into ONE compact cluster that trails the cards on a
+            wide tablet and wraps neatly under them on a phone, never claiming its
+            own row. */}
+        {(canDraw || action) && (
           <div className="notes__action">
-            <button type="button" className="chip" onClick={() => setCreating(true)}>
-              <InlineIcon name="pencil-simple-bold" /> {t.memo.draw}
-            </button>
+            {canDraw && (
+              <button type="button" className="chip" onClick={() => setCreating(true)}>
+                <InlineIcon name="pencil-simple-bold" /> {t.memo.draw}
+              </button>
+            )}
+            {action}
           </div>
         )}
-        {/* Trailing door (e.g. "La galerie") — a flex item beside the cards on a
-            wide tablet, wrapping under them on a phone. */}
-        {action && <div className="notes__action">{action}</div>}
       </div>
       {/* Ask how to continue a kept drawing before opening the pad (#14). */}
       <DrawEditChoice open={draw.chooserOpen} onCancel={draw.cancelChoice} onPick={draw.pick} />

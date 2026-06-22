@@ -801,6 +801,7 @@
   border-radius: 999px;
   background: transparent;
   color: var(--ink-soft);
+  text-decoration: none; /* a chip is a chip whether it's a <button> or a <Link> */
   cursor: pointer;
 }
 .chip.is-on {
