@@ -8,7 +8,7 @@ import { isGuest } from '../../lib/device'
 import { type HelpMode } from '../../lib/helpMode'
 import { HOME_PROJECTS_KEY } from '../../lib/queryKeys'
 import { recurLabel } from '../../lib/recurLabel'
-import { formatDay } from '../../lib/format'
+import { formatDayMaybeYear } from '../../lib/format'
 import { formatMoney } from '../../lib/money'
 import { InlineIcon } from '../Icon'
 import { ListRow } from '../ListRow'
@@ -47,8 +47,8 @@ export function ChoresTabPanel({ chores, onChange, help }: { chores: Chore[]; on
           <ChoreLedger help={help} />
         </>
       )}
-      {sub === 'projets' && <HomeProjectsSection kind="plan" />}
-      {sub === 'entretien' && <HomeProjectsSection kind="upkeep" />}
+      {sub === 'projets' && <HomeProjectsSection kind="plan" help={help} />}
+      {sub === 'entretien' && <HomeProjectsSection kind="upkeep" help={help} />}
     </>
   )
 }
@@ -59,7 +59,7 @@ export function ChoresTabPanel({ chores, onChange, help }: { chores: Chore[]; on
 // kind; the dated upkeep rows ALSO surface on the board/month. Mirrors
 // ChoresSection: in-section add (not the ＋ FAB), edit in place, deferred-undo
 // delete; hidden writes for a read-only guest.
-export function HomeProjectsSection({ kind }: { kind: 'plan' | 'upkeep' }) {
+function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: HelpMode }) {
   const t = useT()
   const ro = isGuest()
   const [adding, setAdding] = useState(false)
@@ -72,7 +72,7 @@ export function HomeProjectsSection({ kind }: { kind: 'plan' | 'upkeep' }) {
   const rows = (projectsQ.data?.projects ?? []).filter((p) => (p.kind ?? 'plan') === kind)
 
   const c = kind === 'upkeep' ? t.operator.home.entretienTitle : t.operator.home.projetsTitle
-  const hint = kind === 'upkeep' ? t.operator.home.entretienHint : t.operator.home.projetsHint
+  const helpKey = kind === 'upkeep' ? 'homeEntretien' : 'homeProjets'
   const addLabel = kind === 'upkeep' ? t.operator.home.addEntretien : t.operator.home.addProjet
   const emptyLabel = kind === 'upkeep' ? t.operator.home.emptyEntretien : t.operator.home.emptyProjets
 
@@ -88,7 +88,7 @@ export function HomeProjectsSection({ kind }: { kind: 'plan' | 'upkeep' }) {
   }
 
   return (
-    <OperatorSection title={c} hint={hint}>
+    <OperatorSection title={c} help={help} helpKey={helpKey}>
       {rows.length === 0 && !adding ? (
         <EmptyState>{emptyLabel}</EmptyState>
       ) : (
@@ -128,7 +128,7 @@ function HomeProjectRow({ project, kind, onRemove }: { project: HomeProject; kin
 
   const parts: string[] = []
   if (project.recur_json) parts.push(recurLabel(project.recur_json, t))
-  else if (project.at) parts.push(formatDay(project.at, lang))
+  else if (project.at) parts.push(formatDayMaybeYear(project.at, lang))
   const money = formatMoney(project.budget_cents, lang)
   if (money) parts.push(money)
   const subtitle = parts.filter(Boolean).join(' · ')

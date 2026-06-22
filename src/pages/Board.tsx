@@ -25,7 +25,7 @@ import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
-import { formatDay, formatTime } from '../lib/format'
+import { formatDay, formatDayMaybeYear, formatTime } from '../lib/format'
 import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
@@ -580,7 +580,7 @@ export function Board() {
       key={c.id}
       cat="chore"
       title={c.title}
-      when={withDay ? withRel(formatDay(c.at, lang), c.at) : undefined}
+      when={withDay ? withRel(formatDayMaybeYear(c.at, lang), c.at) : undefined}
       who={c.who ?? undefined}
       color={c.color ?? undefined}
       mine={!!profileId && c.who_id === profileId}
@@ -661,7 +661,7 @@ export function Board() {
       key={c.id}
       cat="chore"
       title={c.title}
-      when={withDay ? withRel(formatDay(c.at, lang), c.at) : undefined}
+      when={withDay ? withRel(formatDayMaybeYear(c.at, lang), c.at) : undefined}
       color={c.color ?? undefined}
       soon={c.soon}
       onCheck={withDay ? undefined : () => markHomeDone(c)}
@@ -756,7 +756,12 @@ export function Board() {
       ) : view === 'next' ? (
         <NowNext data={data} lang={lang} t={t} profileId={profileId} todos={openTodos} />
       ) : view === 'lanes' ? (
-        <Lanes data={data} lang={lang} t={t} profileId={profileId} todos={openTodos} />
+        <>
+          {/* « L'auto » rides below the fridge note (rendered above the view) and
+              above the per-person lanes table, as a full-width strip. #28 */}
+          <AutoCard />
+          <Lanes data={data} lang={lang} t={t} profileId={profileId} todos={openTodos} />
+        </>
       ) : view === 'month' ? (
         <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
       ) : (
@@ -826,6 +831,11 @@ export function Board() {
           )}
 
           <div className="board-grid">
+            {/* « L'auto » glance — the car's status today + today's rides — rides at
+                the TOP of the grid as a full-width band, just above « Aujourd'hui »
+                and below the weather heroes. #28 */}
+            <AutoCard />
+
             <Section label={t.board.today}>
             {todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
               <EmptyState tone="calm">{t.board.todayClear}</EmptyState>
@@ -987,11 +997,6 @@ export function Board() {
             </Section>
           )}
 
-            {/* « L'auto » glance — the car's status today + today's rides — sits as a
-                full-width band ABOVE the drawings/photos (below the agenda, which
-                stays the primary glance). #28 */}
-            <AutoCard />
-
             {/* Family drawings (#14) live only here in the Grille view, just above
                 the photos — tap one to add to it. Kept off the compact
                 Next/Lanes/Month layouts. The door to the lasting collection
@@ -1004,13 +1009,11 @@ export function Board() {
         </>
       )}
 
-      {/* « L'auto » glance — the car's status today + today's rides, a calm strip
-          BELOW the day. The Grille (bento) view renders it inside the grid, just
-          above the drawings/photos; the compact Next/Lanes views show it here at the
-          foot. The Mois (calendar) view renders it INSIDE its day panel instead, so
-          the card follows the SELECTED date rather than being stuck on today (#28).
-          Renders nothing when nothing's set up + no rides. */}
-      {view !== 'bento' && view !== 'month' && <AutoCard />}
+      {/* « L'auto » glance is now placed per-view: the Grille (bento) view renders it
+          at the TOP of its grid (above « Aujourd'hui »); the Maintenant view renders it
+          inside NowNext (above the À compléter footer); the per-person lanes view above
+          its table; the Mois (calendar) view inside its day panel (so it follows the
+          selected date). #28 */}
 
       {stale && <p className="board__synced mono">{t.board.offline}</p>}
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}

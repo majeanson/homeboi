@@ -51,7 +51,7 @@ export function CercleGroupsSection({ help }: { help?: HelpMode }) {
   if (isLoading && !data) return <p className="loading mono">{t.common.loading}</p>
 
   return (
-    <OperatorSection title={t.operator.cercleGroupsTitle} hint={t.operator.cercleGroupsHint} help={help} helpKey="cercleGroups">
+    <OperatorSection title={t.operator.cercleGroupsTitle} help={help} helpKey="cercleGroups">
       {groups.length === 0 ? (
         <EmptyState>{t.operator.cercleGroupsEmpty}</EmptyState>
       ) : (

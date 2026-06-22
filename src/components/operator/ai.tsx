@@ -35,7 +35,7 @@ export function AiSection({ help }: { help?: HelpMode }) {
   const statusLabel = enabled ? t.operator.aiOn : t.operator.aiDisabled
 
   return (
-    <OperatorSection title={t.operator.aiTitle} help={help} helpKey="ai" hint={t.operator.aiSectionHint}>
+    <OperatorSection title={t.operator.aiTitle} help={help} helpKey="ai">
       {!available ? (
         // The env.AI binding isn't wired on this deployment — there's nothing to
         // switch on. Say so plainly rather than showing a dead toggle.

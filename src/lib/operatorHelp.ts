@@ -220,6 +220,22 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
       en: `What the household did this week — who did what, which day. No scores or rankings, just names and faces.`,
     },
   },
+  homeProjets: {
+    card: 'home-projects',
+    point: 0,
+    body: {
+      fr: `Les grands projets : rénover, budgéter, planifier. Sans date, ils restent ici, au calme.`,
+      en: `The bigger plans: renovate, budget, plan ahead. With no date they rest here, calmly.`,
+    },
+  },
+  homeEntretien: {
+    card: 'home-projects',
+    point: 1,
+    body: {
+      fr: `L'entretien qui revient : filtre, gouttières, arbres. Avec une date, il s'affiche au babillard.`,
+      en: `The upkeep that comes back: filter, gutters, trees. With a date it shows on the board.`,
+    },
+  },
   cercleGroups: {
     card: 'cercle',
     point: 6,

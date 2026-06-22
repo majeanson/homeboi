@@ -76,7 +76,12 @@ interface CercleData {
 }
 
 type View = 'list' | 'links' | 'tree'
-const VIEW_ICON: Record<View, IconName> = { list: 'user-bold', links: 'users-three-bold', tree: 'tree-bold' }
+// « Monde » rides the same segmented control as a 4th tab, but it's a full-screen
+// scene (it navigates to /cercle/monde) rather than an in-page view the body switches
+// on — so it's a tab key, not a `View`.
+type ViewTab = View | 'monde'
+const VIEW_TABS: readonly ViewTab[] = ['list', 'links', 'tree', 'monde']
+const VIEW_ICON: Record<ViewTab, IconName> = { list: 'user-bold', links: 'users-three-bold', tree: 'tree-bold', monde: 'sparkle-bold' }
 // The primary split: Famille (Maisonnée + families) vs Social (friends/work/other
 // groups + ungrouped people) vs Notes (the durable quick-notes board, CercleNotes).
 // The list body partitions People by the first two; Notes owns its whole body; the
@@ -548,16 +553,19 @@ function CercleParent() {
 
   const viewSwitch = (
     <>
-      {/* The Liste · Liens · Arbre sub-tabs reuse the app-wide segmented control
-          (SubTabs / .subtabs, same as La cuisine's Repas · Garde-manger · Recettes). */}
-      <SubTabs<View>
-        options={(['list', 'links', 'tree'] as View[]).map((v) => ({
+      {/* The Liste · Liens · Arbre · Monde sub-tabs reuse the app-wide segmented
+          control (SubTabs / .subtabs, same as La cuisine's Repas · Garde-manger ·
+          Recettes). « Monde » is the big-picture overview map — a full-screen scene,
+          so picking it navigates to /cercle/monde rather than swapping the in-page
+          view (so it never reads as the active segment). */}
+      <SubTabs<ViewTab>
+        options={VIEW_TABS.map((v) => ({
           key: v,
           label: t.cercle.view[v],
           icon: VIEW_ICON[v],
         }))}
         value={view}
-        onSelect={setView}
+        onSelect={(v) => (v === 'monde' ? nav('/cercle/monde') : setView(v))}
         pick={help.pick}
         armed={help.active}
         ariaLabel={t.nav.cercle}
@@ -568,6 +576,7 @@ function CercleParent() {
       {help.bubbleFor('list')}
       {help.bubbleFor('links')}
       {help.bubbleFor('tree')}
+      {help.bubbleFor('monde')}
     </>
   )
 
@@ -590,6 +599,8 @@ function CercleParent() {
       </div>
       {help.bubbleFor('social')}
       {help.bubbleFor('family')}
+      {help.bubbleFor('notes')}
+      {help.bubbleFor('business')}
     </>
   )
 
@@ -626,15 +637,8 @@ function CercleParent() {
         <>
           {sectionSwitch}
 
-          {/* « Notre monde » — the big-picture overview scene: all families, groups
-              and the bridges between them, tappable + read aloud. A calm entry that
-              sits above the per-section views (which zoom in on one circle). */}
-          {section !== 'notes' && section !== 'business' && (
-            <button type="button" className="cercle-world-cta" onClick={() => nav('/cercle/monde')}>
-              <InlineIcon name="sparkle-bold" size={16} /> {t.cercle.world.open}
-              <span className="cercle-world-cta__hint mono">{t.cercle.world.openHint}</span>
-            </button>
-          )}
+          {/* « Notre monde » lives as the 4th view segment (Liste · Liens · Arbre ·
+              Monde) inside `viewSwitch` below — see the Famille/Social branch. */}
 
           {section === 'notes' ? (
             /* The notes board owns its whole tab body — no people list, no view

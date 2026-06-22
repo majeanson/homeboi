@@ -108,7 +108,7 @@ export function CarsSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.carsTitle} hint={t.operator.carsHint} help={help} helpKey="cars">
+    <OperatorSection title={t.operator.carsTitle} help={help} helpKey="cars">
       {cars.length === 0 ? (
         <EmptyState>{t.operator.carsEmpty}</EmptyState>
       ) : (

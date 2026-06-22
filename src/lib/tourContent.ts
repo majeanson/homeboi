@@ -61,10 +61,10 @@ export const TOURS: Tour[] = [
         target: 'hubnav',
         icon: 'sparkle-bold',
         card: 'first-time',
-        title: { fr: 'Les cinq sections', en: 'The five sections' },
+        title: { fr: 'Les six sections', en: 'The six sections' },
         body: {
-          fr: 'Tes cinq onglets : [[icon:sun-bold]] Le babillard (le coup d’œil), [[icon:carrot-bold]] La cuisine (soupers et recettes), [[icon:smiley-bold]] Routines (les enfants), [[icon:sparkle-bold]] La liste (l’épicerie) et [[icon:gear-six-bold]] Réglages.',
-          en: 'Your five tabs: [[icon:sun-bold]] the Board (the glance), [[icon:carrot-bold]] the Kitchen (suppers and recipes), [[icon:smiley-bold]] Routines (the kids), [[icon:sparkle-bold]] the List (groceries) and [[icon:gear-six-bold]] Settings.',
+          fr: 'Tes six onglets : [[icon:sun-bold]] Le babillard (le coup d’œil), [[icon:carrot-bold]] La cuisine (soupers et recettes), [[icon:smiley-bold]] Routines (les enfants), [[icon:users-three-bold]] Le cercle (la famille et les amis), [[icon:sparkle-bold]] La liste (l’épicerie) et [[icon:gear-six-bold]] Réglages.',
+          en: 'Your six tabs: [[icon:sun-bold]] the Board (the glance), [[icon:carrot-bold]] the Kitchen (suppers and recipes), [[icon:smiley-bold]] Routines (the kids), [[icon:users-three-bold]] the Circle (family and friends), [[icon:sparkle-bold]] the List (groceries) and [[icon:gear-six-bold]] Settings.',
         },
       },
       {

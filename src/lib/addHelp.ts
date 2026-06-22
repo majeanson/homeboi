@@ -32,12 +32,36 @@ export const ADD_HELP: Record<string, AddHelp> = {
       en: 'Add a chore, one-off or recurring, with who handles it.',
     },
   },
+  'chores-pick': {
+    card: 'set-chores',
+    point: 0,
+    body: {
+      fr: 'Choisis : une corvée, un entretien qui revient, ou un projet de la maison.',
+      en: 'Choose: a chore, recurring maintenance, or a home project.',
+    },
+  },
   todo: {
     card: 'todos',
     point: 0,
     body: {
       fr: 'Ajoute une chose « à compléter » : en tout temps, ou juste pour aujourd’hui. Coche-la quand c’est fait.',
       en: 'Add something “to complete”: anytime, or just for today. Check it off when done.',
+    },
+  },
+  ride: {
+    card: 'auto',
+    point: 4,
+    body: {
+      fr: 'Ajoute un trajet : qui conduit (un membre prend l’auto, ou quelqu’un du cercle en covoiturage) et qui embarque.',
+      en: 'Add a ride: who drives (a member takes the car, or someone from the circle carpools) and who rides along.',
+    },
+  },
+  departure: {
+    card: 'board',
+    point: 5,
+    body: {
+      fr: 'Ouvre l’écran « Avant de partir » : une liste à cocher, l’horaire du jour et la météo, le temps d’attraper tes clés.',
+      en: 'Open the “Before you go” screen: a checklist, today’s schedule and the weather, while you grab your keys.',
     },
   },
   routine: {
@@ -104,6 +128,13 @@ export const ADD_HELP: Record<string, AddHelp> = {
     point: 0,
     body: { fr: 'Feuillette les circulaires et envoie des aubaines sur ta liste.', en: 'Browse the flyers and send deals to your list.' },
   },
+  share: {
+    card: 'liste',
+    body: {
+      fr: 'Envoie ta liste d’épicerie à quelqu’un (texto, courriel…) par le partage de ton appareil.',
+      en: 'Send your grocery list to someone (text, email…) through your device’s share sheet.',
+    },
+  },
   'auto-pick': {
     card: 'liste',
     point: 8,
@@ -157,5 +188,9 @@ export const ADD_HELP: Record<string, AddHelp> = {
     card: 'cercle',
     point: 10,
     body: { fr: 'Ajoute un commerce ou service (vét, plombier, garderie) : catégorie, téléphone, adresse, carte d’affaires.', en: 'Add a business or service (vet, plumber, daycare): category, phone, address, business card.' },
+  },
+  pet: {
+    card: 'cercle',
+    body: { fr: 'Ajoute un animal de la maisonnée : nom, photo, et les infos utiles (vétérinaire, soins).', en: 'Add a household pet: name, photo, and the useful info (vet, care).' },
   },
 }

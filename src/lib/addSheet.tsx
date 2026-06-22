@@ -16,6 +16,13 @@ export type AddSheetMode =
   // pre-opened + the household car pre-picked). Operator-grade like `event`.
   | 'ride'
   | 'chore'
+  // Board ＋ « Corvées » tile — NOT a direct jump to the chore form. Picking it
+  // expands an in-sheet sub-choice (Corvée · Entretien · Projets), mirroring the
+  // « Planifier un repas » day-picker: one tile, an extra step, then the right
+  // form. Corvée → /chore/new; Entretien/Projets → /home-project/new?kind=. So
+  // the longer-horizon home work (home_projects) is reachable straight from the
+  // board, not only buried in Réglages ▸ Corvées.
+  | 'chores-pick'
   | 'todo'
   | 'routine'
   // The Routines ＋ opens a small in-sheet picker (NOT a straight jump to the
@@ -71,7 +78,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // (/kitchen/day/<date>): one place to set a day's meals + events + chores + note.
   // Their dates are dynamic, so AddSheet resolves the target at click time (like
   // cook/auto-pick) rather than through the static NAV_TARGET table.
-  board: ['capture', 'event', 'ride', 'chore', 'todo', 'routine', 'plan-today', 'plan-tomorrow', 'departure'],
+  board: ['capture', 'event', 'ride', 'chores-pick', 'todo', 'routine', 'plan-today', 'plan-tomorrow', 'departure'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`
@@ -95,7 +102,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
 // see functions/api/routines.ts). So the Routines-tab ＋ manage picker (new + edit
 // existing) works on a parent-audience kiosk, matching the backend. Everything
 // else here (event/chore add forms, capture, list, kitchen adds) is unchanged.
-export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'chore', 'routine'])
+export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'chore', 'chores-pick', 'routine'])
 
 // The operator forms are full-screen SCENE routes now, not in-sheet forms: a
 // tall multi-field form (a routine's name + member chips + template + card deck)

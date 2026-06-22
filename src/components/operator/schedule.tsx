@@ -83,7 +83,7 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.schedTitle} hint={t.operator.schedHint} help={help} helpKey="schedule">
+    <OperatorSection title={t.operator.schedTitle} help={help} helpKey="schedule">
       {blocks.length === 0 ? (
         <EmptyState>{t.operator.schedEmpty}</EmptyState>
       ) : (

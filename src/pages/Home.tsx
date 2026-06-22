@@ -56,7 +56,7 @@ export function Home() {
         </section>
 
         {/* Everything it does — themed feature cards (same taxonomy as the Guide),
-            so a first visitor sees the app's real range, not five bare labels. */}
+            so a first visitor sees the app's real range, not six bare labels. */}
         <section className="home__block">
           <h2 className="home__h mono">{t.home.featHeading}</h2>
           <ul className="home__features">

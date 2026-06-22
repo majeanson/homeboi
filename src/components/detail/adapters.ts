@@ -8,7 +8,7 @@ import { CATS } from '../../lib/cats'
 import { imgUrl } from '../../lib/image'
 import { type Contact, type Person, type Pet, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, fullName } from '../../lib/cercle'
 import { type Business, BUSINESS_COLOUR } from '../../lib/businesses'
-import { formatDay, formatTime } from '../../lib/format'
+import { formatDay, formatDayMaybeYear, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { recipeImg, recipeTotalMin, tagColor, type Recipe } from '../../lib/recipes'
 import { SLOT_ICON_NAME, isMealSlot } from '../../lib/mealSlots'
@@ -214,7 +214,7 @@ export function buildChore(
     title: c.title,
     icon: opts?.todo ? 'check-bold' : CATS.chore.icon,
     accent: c.color ?? CATS.chore.color,
-    when: opts?.upcoming ? formatDay(c.at, lang) : undefined,
+    when: opts?.upcoming ? formatDayMaybeYear(c.at, lang) : undefined,
     who: whoOf(members, c.who_id, t.detail.turn),
     blocks,
     actions,

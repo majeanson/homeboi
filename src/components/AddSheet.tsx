@@ -75,6 +75,9 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   event: { cat: 'event', icon: 'calendar-blank-bold' },
   ride: { cat: 'event', icon: 'key-bold' },
   chore: { cat: 'chore', icon: 'hand-heart-bold' },
+  // The board ＋ « Corvées » tile — same chore dressing; it opens the Corvée /
+  // Entretien / Projets sub-choice rather than jumping straight to a form.
+  'chores-pick': { cat: 'chore', icon: 'hand-heart-bold' },
   todo: { cat: 'chore', icon: 'check-bold' },
   routine: { cat: 'routine', icon: CATS.routine.icon },
   'routine-pick': { cat: 'routine', icon: CATS.routine.icon },
@@ -129,6 +132,15 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   business: '/cercle?add=business',
   ...FORM_ROUTES,
 }
+
+// The board ＋ « Corvées » sub-choice (rendered for mode === 'chores-pick'): a
+// chore vs the two home-project kinds. Each navigates to its full-screen form
+// scene. Labels resolve from t.operator.home at render (locale-aware).
+const CHORE_KINDS: { key: 'chore' | 'upkeep' | 'plan'; icon: IconName; to: string }[] = [
+  { key: 'chore', icon: 'hand-heart-bold', to: '/chore/new' },
+  { key: 'upkeep', icon: 'gear-six-bold', to: '/home-project/new?kind=upkeep' },
+  { key: 'plan', icon: 'paint-brush-bold', to: '/home-project/new?kind=plan' },
+]
 
 export function AddSheet({
   open,
@@ -547,6 +559,7 @@ export function AddSheet({
       event: t.capture.types.event,
       ride: t.auto.addRide,
       chore: t.operator.chores,
+      'chores-pick': t.operator.chores,
       todo: t.todos.title,
       'routine-pick': t.nav.routines,
       'plan-today': t.board.planToday,
@@ -914,6 +927,40 @@ export function AddSheet({
                 <Chip key={d} onClick={() => planDay(d)}>
                   {formatWeekday(d, lang)}
                 </Chip>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* « Corvées » sub-choice — the extra step (like « Planifier un repas »):
+            a chore, recurring maintenance, or a home project. Each jumps to the
+            matching full-screen form scene (the chore form, or the home-project
+            form pre-set to its kind). One ＋ tile, three destinations. */}
+        {mode === 'chores-pick' && (
+          <div className="addsheet__chorepick">
+            <p className="sheet__group-label mono">{t.operator.home.pickKind}</p>
+            <div className="cat-grid cat-grid--3">
+              {CHORE_KINDS.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  className="cat-pick"
+                  onClick={() => {
+                    close()
+                    nav(c.to)
+                  }}
+                >
+                  <span className="ct" style={{ background: CATS.chore.wash }}>
+                    <Icon name={c.icon} size={22} color={CATS.chore.deep} />
+                  </span>
+                  <span>
+                    {c.key === 'chore'
+                      ? t.operator.home.subCorvees
+                      : c.key === 'upkeep'
+                        ? t.operator.home.subEntretien
+                        : t.operator.home.subProjets}
+                  </span>
+                </button>
               ))}
             </div>
           </div>

@@ -7,7 +7,7 @@ import { useAuth } from './lib/auth'
 import { isPaired } from './lib/device'
 
 // Hot paths eager (Home, Board — the kiosk surfaces a tablet hits on boot).
-// Everything else is lazy. The five themed tabs render inside HubLayout, which
+// Everything else is lazy. The six themed tabs render inside HubLayout, which
 // owns the chrome + tab bar + the Parent/Toddler audience switch.
 import { HubLayout } from './components/HubLayout'
 import { Board } from './pages/Board'
@@ -59,6 +59,8 @@ const VoiturePage = lazy(() => import('./pages/VoiturePage').then((m) => ({ defa
 // inputs under the mobile keyboard). Edit still happens inline in Réglages.
 const EventFormPage = lazy(() => import('./pages/EventFormPage').then((m) => ({ default: m.EventFormPage })))
 const ChoreFormPage = lazy(() => import('./pages/ChoreFormPage').then((m) => ({ default: m.ChoreFormPage })))
+// Projets / Entretien (home_projects) add-form — the board ＋ « Corvées » sub-choice.
+const HomeProjectFormPage = lazy(() => import('./pages/HomeProjectFormPage').then((m) => ({ default: m.HomeProjectFormPage })))
 const RoutineFormPage = lazy(() => import('./pages/RoutineFormPage').then((m) => ({ default: m.RoutineFormPage })))
 // Run a routine on any surface (parent phone, kiosk) — the shared player as a scene.
 const RoutineRunPage = lazy(() => import('./pages/RoutineRunPage').then((m) => ({ default: m.RoutineRunPage })))
@@ -134,6 +136,7 @@ export function AppRoutes() {
         <Route path="/jouer" element={<JouerPage />} />
         <Route path="/event/new" element={<EventFormPage />} />
         <Route path="/chore/new" element={<ChoreFormPage />} />
+        <Route path="/home-project/new" element={<HomeProjectFormPage />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />
         <Route path="/routine/:id" element={<RoutineFormPage />} />
         {/* Run a routine standalone (the ▶ on the Routines tab / the peek action). */}

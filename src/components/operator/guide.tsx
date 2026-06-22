@@ -110,7 +110,7 @@ export function GuideCard({
 // concepts, then the kitchen/recipe cluster, then the shopping/deals cluster.
 // This keeps related cards adjacent (recipes↔cook mode, deals↔flyers) without
 // moving the bilingual prose blocks around in guideContent.ts. The "sections"
-// group keeps its file order, which already matches the five tabs.
+// group keeps its file order, which already matches the six tabs.
 // NOTE: a new concept not listed here falls to the end (file order preserved) —
 // add its id below to place it in the right cluster.
 const CONCEPT_ORDER = [
@@ -276,7 +276,7 @@ export function GuideSection() {
         </div>
       )}
 
-      {/* The real groups — five sections, the cross-cutting concepts, then the
+      {/* The real groups — six sections, the cross-cutting concepts, then the
           per-tab "settings" cards. Titles only (no blurb): each card's own
           one-line "what" carries the explanation, so the landing stays
           card-focused, not prose-heavy. The settings cards ALSO live inline in

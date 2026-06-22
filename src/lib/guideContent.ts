@@ -64,10 +64,10 @@ export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] =
   },
   {
     id: 'sections',
-    label: { fr: 'Les cinq sections', en: 'The five sections' },
+    label: { fr: 'Les six sections', en: 'The six sections' },
     blurb: {
-      fr: 'Les cinq onglets en bas (ou à gauche sur la tablette). Chacun montre la même information de famille sous un angle différent.',
-      en: 'The five tabs at the bottom (or down the left on the tablet). Each shows the same household info from a different angle.',
+      fr: 'Les six onglets en bas (ou à gauche sur la tablette). Chacun montre la même information de famille sous un angle différent.',
+      en: 'The six tabs at the bottom (or down the left on the tablet). Each shows the same household info from a different angle.',
     },
   },
   {
@@ -128,12 +128,12 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
   },
 ]
 
-// The jump-grid tiles: the five sections + each concept theme + settings, in the
+// The jump-grid tiles: the six sections + each concept theme + settings, in the
 // order they appear in the Guide. Each `key` matches a scroll anchor the Guide
 // renders (guide-th-<key>: 'sections' | <theme.key> | 'settings').
 export type FeatureMapTile = { key: string; icon: IconName; label: Bi }
 export const FEATURE_MAP_TILES: FeatureMapTile[] = [
-  { key: 'sections', icon: 'sun-bold', label: { fr: 'Les cinq sections', en: 'The five sections' } },
+  { key: 'sections', icon: 'sun-bold', label: { fr: 'Les six sections', en: 'The six sections' } },
   ...CONCEPT_THEMES.map((th) => ({ key: th.key, icon: th.icon, label: th.label })),
   { key: 'settings', icon: 'gear-six-bold', label: { fr: 'Réglages', en: 'Settings' } },
 ]
@@ -147,8 +147,8 @@ export const GUIDE: GuideEntry[] = [
     action: 'replay-tour',
     title: { fr: 'Première fois', en: 'First time' },
     what: {
-      fr: 'Tout Babillard en bref — ce que c’est, les cinq sections, comment ajouter, et la promesse « calme ».',
-      en: 'All of Babillard in brief — what it is, the five sections, how to add, and the “calm” promise.',
+      fr: 'Tout Babillard en bref — ce que c’est, les six sections, comment ajouter, et la promesse « calme ».',
+      en: 'All of Babillard in brief — what it is, the six sections, how to add, and the “calm” promise.',
     },
     points: [
       {
@@ -204,7 +204,7 @@ export const GUIDE: GuideEntry[] = [
       },
     ],
   },
-  // ── Sections (the five hub tabs) ──────────────────────────────────────────
+  // ── Sections (the six hub tabs) ───────────────────────────────────────────
   {
     id: 'board',
     icon: 'sun-bold',

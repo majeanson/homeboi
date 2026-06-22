@@ -837,7 +837,7 @@ export const FR = {
       sayIsland: (name: string, names: string) => (names ? `${name} : ${names}.` : `${name}.`),
       sayBridge: (via: string, a: string, b: string) => `${via} relie ${a} et ${b}.`,
     },
-    view: { list: 'Liste', links: 'Liens', tree: 'Arbre' },
+    view: { list: 'Liste', links: 'Liens', tree: 'Arbre', monde: 'Monde' },
     memberBadge: 'Maisonnée',
     // The "voir le cercle selon une personne" focus row (reuses MemberSwitcher).
     focusLabel: 'Voir selon une personne',
@@ -1199,9 +1199,7 @@ export const FR = {
       subProjets: 'Projets',
       subEntretien: 'Entretien',
       projetsTitle: 'Projets de la maison',
-      projetsHint: 'Les grands projets : rénover, budgéter, planifier. Sans date, ils restent ici, au calme.',
       entretienTitle: 'Entretien',
-      entretienHint: 'L’entretien qui revient : filtre, gouttières, arbres. Avec une date, il s’affiche au babillard.',
       addProjet: 'Ajouter un projet',
       addEntretien: 'Ajouter un entretien',
       editProjet: 'Modifier le projet',
@@ -1217,6 +1215,9 @@ export const FR = {
       dateLabel: 'Date (optionnel)',
       common: 'Courants :',
       done: 'Fait',
+      // The ＋ « Corvées » sub-choice prompt (board AddSheet): chore vs the two
+      // home-project kinds.
+      pickKind: 'Corvée, entretien ou projet ?',
     },
     cardWord: 'mot',
     addCard: 'carte',
@@ -1276,8 +1277,6 @@ export const FR = {
     aiTitle: 'Intelligence artificielle',
     aiDisabled: 'IA : désactivée',
     aiSaving: 'Enregistrement…',
-    aiSectionHint:
-      'L’IA donne un coup de main à quelques endroits — la capture, l’import de recettes, le bilan, les suggestions de repas et la recherche. Coupe-la ici pour toute la maisonnée : tout continue de fonctionner, simplement sans aucune fonction IA.',
     aiUnavailableHint: 'Aucune IA n’est configurée sur ce déploiement — il n’y a rien à activer ici.',
     aiToggleHintOn: 'L’IA est active. Touche pour la couper pour toute la maisonnée.',
     aiToggleHintOff:
@@ -1330,8 +1329,6 @@ export const FR = {
     reserveEmpty: 'Aucun emplacement. La réserve regroupe tout sous « Autres ».',
     autoTab: 'L’auto',
     carsTitle: 'Tes véhicules',
-    carsHint:
-      'L’auto que la maisonnée se partage. Donne-lui un nom et une couleur — elle sert à savoir qui l’a, quand elle est libre, et qui reconduit qui. Sans auto, les trajets se font en covoiturage.',
     carDefaultName: 'L’auto',
     carName: 'Nom du véhicule',
     carAdd: 'Ajouter un véhicule…',
@@ -1340,8 +1337,6 @@ export const FR = {
     eventCarWho: 'Quelle auto ?',
     eventPassengers: 'Passagers',
     schedTitle: 'Horaires',
-    schedHint:
-      'Les heures récurrentes de chacun (travail, garderie…). Coche « prend l’auto » pour celles qui mobilisent la voiture — c’est ce qui dit à L’auto quand elle est libre. Une semaine différente ? Ajuste-la dans la vue L’auto, sans toucher au modèle.',
     schedEmpty: 'Aucun horaire. Ajoute les heures de travail pour savoir quand l’auto est prise.',
     schedAdd: 'Ajouter un horaire',
     schedLabel: 'Étiquette (Travail, Garderie…)',
@@ -1357,8 +1352,6 @@ export const FR = {
     schedEveryNWeeksShort: (n: number) => `aux ${n} sem.`,
     cercleTab: 'Le cercle',
     cercleGroupsTitle: 'Groupes du cercle',
-    cercleGroupsHint:
-      'Tous tes groupes — même les vides et ceux masqués du répertoire (un groupe « famille » composé uniquement de la maisonnée y est caché). Supprime ici n’importe quel groupe; les personnes restent dans le cercle.',
     cercleGroupsEmpty: 'Aucun groupe pour l’instant.',
     cercleGroupMembers: (n: number) => `${n} ${n === 1 ? 'personne' : 'personnes'}`,
     cercleGroupHidden: 'Masqué du répertoire',
@@ -1434,6 +1427,9 @@ export const FR = {
       'Quand une fonction IA échoue (modèle retiré, panne), une note apparaît à l’écran ; une fois acceptée, elle s’inscrit ici. Efface quand tu l’as lue.',
     aiLogEmpty: 'Aucune erreur enregistrée.',
     aiLogClear: 'Effacer le journal',
+    buildTitle: 'Version',
+    buildBuilt: 'Dernière mise à jour',
+    buildNever: 'Inconnue',
     debugIdleTitle: 'Mode inactif',
     debugIdleHint:
       'Sur un kiosque, quand un visage est choisi, l’app revient à « Maisonnée » après 3 minutes d’inactivité (avec un avertissement 30 s avant). Ici tu peux accélérer ou forcer ce comportement pour le tester.',
@@ -2570,7 +2566,7 @@ export const EN: typeof FR = {
       sayIsland: (name: string, names: string) => (names ? `${name}: ${names}.` : `${name}.`),
       sayBridge: (via: string, a: string, b: string) => `${via} connects ${a} and ${b}.`,
     },
-    view: { list: 'List', links: 'Links', tree: 'Tree' },
+    view: { list: 'List', links: 'Links', tree: 'Tree', monde: 'World' },
     memberBadge: 'Household',
     focusLabel: 'See from a person',
     focusBy: (name: string) => `Links seen from ${name}`,
@@ -2923,9 +2919,7 @@ export const EN: typeof FR = {
       subProjets: 'Plans',
       subEntretien: 'Maintenance',
       projetsTitle: 'Home plans',
-      projetsHint: 'The bigger plans: renovate, budget, plan ahead. With no date they rest here, calmly.',
       entretienTitle: 'Maintenance',
-      entretienHint: 'The upkeep that comes back: filter, gutters, trees. With a date it shows on the board.',
       addProjet: 'Add a plan',
       addEntretien: 'Add maintenance',
       editProjet: 'Edit plan',
@@ -2941,6 +2935,7 @@ export const EN: typeof FR = {
       dateLabel: 'Date (optional)',
       common: 'Common:',
       done: 'Done',
+      pickKind: 'Chore, maintenance or plan?',
     },
     cardWord: 'word',
     addCard: 'card',
@@ -2999,8 +2994,6 @@ export const EN: typeof FR = {
     aiTitle: 'Artificial intelligence',
     aiDisabled: 'AI: off',
     aiSaving: 'Saving…',
-    aiSectionHint:
-      'AI lends a hand in a few spots — capture, recipe import, the recap, meal suggestions and search. Turn it off here for the whole household: everything keeps working, just with no AI features at all.',
     aiUnavailableHint: 'No AI is configured on this deployment — there’s nothing to enable here.',
     aiToggleHintOn: 'AI is on. Tap to turn it off for the whole household.',
     aiToggleHintOff:
@@ -3053,8 +3046,6 @@ export const EN: typeof FR = {
     reserveEmpty: 'No locations. The reserve groups everything under “Other”.',
     autoTab: 'The car',
     carsTitle: 'Your vehicles',
-    carsHint:
-      'The car the household shares. Give it a name and a colour — it’s used to know who has it, when it’s free, and who drives whom. With no car, rides are carpooled.',
     carDefaultName: 'The car',
     carName: 'Vehicle name',
     carAdd: 'Add a vehicle…',
@@ -3063,8 +3054,6 @@ export const EN: typeof FR = {
     eventCarWho: 'Which car?',
     eventPassengers: 'Passengers',
     schedTitle: 'Schedules',
-    schedHint:
-      'Everyone’s recurring hours (work, daycare…). Tick “takes the car” for the ones that tie up the vehicle — that’s what tells The car when it’s free. Different week? Adjust it in the car view, without touching the template.',
     schedEmpty: 'No schedules yet. Add work hours so you know when the car is taken.',
     schedAdd: 'Add a schedule',
     schedLabel: 'Label (Work, Daycare…)',
@@ -3080,8 +3069,6 @@ export const EN: typeof FR = {
     schedEveryNWeeksShort: (n: number) => `every ${n} wks`,
     cercleTab: 'The circle',
     cercleGroupsTitle: 'Circle groups',
-    cercleGroupsHint:
-      'All your groups — including empty ones and ones hidden from the directory (a “family” group made up only of the household is hidden there). Delete any group here; the people stay in the circle.',
     cercleGroupsEmpty: 'No groups yet.',
     cercleGroupMembers: (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`,
     cercleGroupHidden: 'Hidden from the directory',
@@ -3157,6 +3144,9 @@ export const EN: typeof FR = {
       "When an AI feature fails (a retired model, an outage), a note pops up on screen; once accepted it's recorded here. Clear it once you've read it.",
     aiLogEmpty: 'No errors logged.',
     aiLogClear: 'Clear the log',
+    buildTitle: 'Version',
+    buildBuilt: 'Last updated',
+    buildNever: 'Unknown',
     debugIdleTitle: 'Idle mode',
     debugIdleHint:
       'On a kiosk, once a face is picked the app drifts back to “Household” after 3 idle minutes (with a heads-up 30 s before). Here you can speed that up or force it to test it.',

@@ -136,12 +136,14 @@ for (const theme of ['day', 'night'] as Theme[]) {
 
 // The two tall operator forms — now full-screen SCENES, not in-sheet forms (tall
 // forms strand inputs under the mobile keyboard in a height-capped sheet). The
-// board ＋ chooser tiles (order: capture(0) / event(1) / chore(2) / routine(3))
-// are navigate-only: tapping one leaves the sheet for the scene.
+// board ＋ chooser tiles (order: capture(0) / event(1) / « Corvées »(2) /
+// routine(…)) are mostly navigate-only; « Corvées » first expands an in-sheet
+// sub-choice (Corvée · Entretien · Projets) before the scene.
 test('scene-add-chore', async ({ page }) => {
   await boot(page, '/board')
   await page.locator('.add-fab').click()
-  await page.locator('.cat-pick').nth(2).click() // Corvée tile → /chore/new scene
+  await page.locator('.cat-pick').nth(2).click() // « Corvées » tile → sub-choice
+  await page.locator('.addsheet__chorepick .cat-pick').first().click() // Corvée → /chore/new scene
   await page.locator('.scene .operator__chore-form').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'scene-add-chore-phone', false)

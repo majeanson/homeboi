@@ -29,6 +29,21 @@ export function formatDay(unixSec: number, lang: Lang): string {
   )
 }
 
+// Like formatDay, but appends the year once the date is far out (more than ~11
+// months from `now`) so a long-horizon home project reads unambiguously across
+// the year boundary ("sam 4 mars 2028"). Near dates stay terse. `now` is
+// injectable (ms) so it stays pure/testable.
+export function formatDayMaybeYear(unixSec: number, lang: Lang, now: number = Date.now()): string {
+  const ELEVEN_MONTHS_SEC = 11 * 30 * 24 * 60 * 60
+  const far = unixSec - now / 1000 > ELEVEN_MONTHS_SEC
+  return new Intl.DateTimeFormat(LOCALE[lang], {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(far ? { year: 'numeric' } : {}),
+  }).format(unixSec * 1000)
+}
+
 export function formatWeekday(unixSec: number, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'long' }).format(unixSec * 1000)
 }

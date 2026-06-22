@@ -16,6 +16,7 @@ import { isGuest } from '../../lib/device'
 import { type Lang } from '../../i18n'
 import { Icon, InlineIcon } from '../Icon'
 import { Act } from './Act'
+import { AutoCard } from './AutoCard'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../detail/adapters'
 import { type Todo } from '../../lib/todos'
@@ -258,6 +259,10 @@ export function NowNext({
           ))}
         </div>
       )}
+
+      {/* « L'auto » glance rides just above the À compléter footer in this view (#28).
+          Renders nothing when the household uses no car. */}
+      <AutoCard />
 
       {/* À compléter — open todos (global + today) ride as a quiet footer here too,
           so switching to "Maintenant" doesn't hide them. Read-only on this glance;

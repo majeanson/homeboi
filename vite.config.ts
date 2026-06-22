@@ -160,6 +160,12 @@ self.addEventListener('fetch', (e) => {
 `
 
 export default defineConfig({
+  // Stamp the build moment into the bundle so Réglages ▸ Debug can show "last
+  // updated" — a proxy for the last push (CI builds + deploys on every push to
+  // main). Evaluated once when the build starts; in dev it's the dev-server start.
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [react(), serviceWorker()],
   server: {
     proxy: {

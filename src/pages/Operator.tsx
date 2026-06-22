@@ -28,6 +28,7 @@ import { CercleGroupsSection } from '../components/operator/cercle'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
 import { AiSection } from '../components/operator/ai'
 import { IdleDebugSection } from '../components/operator/idleDebug'
+import { BuildInfoSection } from '../components/operator/buildInfo'
 import { MicSelfTest } from '../components/operator/micTest'
 import { GuideSection } from '../components/operator/guide'
 import { SectionGuide } from '../components/operator/sectionGuide'
@@ -298,6 +299,7 @@ export function Operator() {
         {tab === 'ai' && <AiSection help={operatorHelp} />}
         {tab === 'ai-log' && (
           <>
+            <BuildInfoSection />
             <IdleDebugSection help={operatorHelp} />
             <MicSelfTest help={operatorHelp} />
             {/* The AI error log is an AI feature — hide it when AI is switched off
