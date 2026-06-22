@@ -85,7 +85,11 @@ export function useNextMeal(enabled = true): { meal?: MealRow; recipe?: Recipe; 
 // meals that resolve to a saved recipe make the list (a free-text meal has no
 // cook mode to open); the meal `useNextMeal` would auto-pick is flagged `isNext`.
 // Empty when nothing cookable is planned today. Same shared caches as useNextMeal.
-export function useCookableMeals(enabled = true): CookChoice[] {
+//
+// `allDays` widens the pool to EVERY planned day in the meals window (sorted by
+// date then slot, today first) — used by the "Cuisiner ensemble" batch picker so
+// you can cook dishes from any planned day at once, not just today's (#43).
+export function useCookableMeals(enabled = true, allDays = false): CookChoice[] {
   const { data: mealsData } = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), enabled })
   const { data: recipesData } = useQuery({
     queryKey: RECIPES_KEY,
@@ -93,12 +97,16 @@ export function useCookableMeals(enabled = true): CookChoice[] {
     enabled,
   })
   const today = mealsData?.weekStart ?? 0
-  const todayMeals = today ? (mealsData?.days ?? []).filter((m) => m.date === today) : []
+  const days = mealsData?.days ?? []
+  const todayMeals = today ? days.filter((m) => m.date === today) : []
+  // The "cook now" pick is always today-anchored, even when we list every day.
   const next = pickNextMeal(todayMeals, new Date().getHours())
   const recipes = recipesData?.recipes ?? []
-  return todayMeals
+  const pool = allDays ? days : todayMeals
+  return pool
     .filter((m) => isMealSlot(m.slot))
-    .sort((a, b) => SLOT_RANK[a.slot as MealSlot] - SLOT_RANK[b.slot as MealSlot])
+    // Today first, then by date; within a day by slot order.
+    .sort((a, b) => a.date - b.date || SLOT_RANK[a.slot as MealSlot] - SLOT_RANK[b.slot as MealSlot])
     .map((meal): CookChoice | null => {
       const recipe = recipeForMeal(meal, recipes)
       if (!recipe) return null

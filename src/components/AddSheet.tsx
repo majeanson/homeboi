@@ -264,16 +264,20 @@ export function AddSheet({
   // Fetched from the shared meal + recipe caches only while the sheet's open and
   // the tile is shown. mealPrefs colours each slot the way the rest of the app does.
   const cookChoices = useCookableMeals(open && shown.includes('cook'))
-  // #43 — the DISTINCT cookable dishes today (a recipe planned in two slots shows
-  // once): the pool the "Cuisiner ensemble" picker selects from. 2+ unlocks it.
+  // #43 — the "Cuisiner ensemble" pool spans EVERY planned day in the window (not
+  // just today): batch-cooking is naturally cross-day, so you can pick a dish from
+  // Tuesday and one from Thursday at once. Same shared caches (deduped fetch).
+  const cookWeek = useCookableMeals(open && shown.includes('cook'), true)
+  // The DISTINCT cookable dishes across the plan (a recipe planned on two days /
+  // slots shows once): the set the ensemble picker selects from. 2+ unlocks it.
   const cookDistinct = useMemo(() => {
     const seen = new Set<string>()
-    return cookChoices.filter((c) => {
+    return cookWeek.filter((c) => {
       if (seen.has(c.recipe.id)) return false
       seen.add(c.recipe.id)
       return true
     })
-  }, [cookChoices])
+  }, [cookWeek])
   // null = not picking; a Set of recipe ids = the ensemble selection is open. Starts
   // EMPTY — you tap the dishes you want, then "Commencer" (needs 2+).
   const [ensemblePick, setEnsemblePick] = useState<Set<string> | null>(null)
@@ -940,7 +944,9 @@ export function AddSheet({
             meal the app would auto-pick (next due) is flagged "Prochain". Empty
             ⇒ nothing with a recipe planned today, so offer to plan one instead. */}
         {mode === 'cook' &&
-          (cookChoices.length === 0 ? (
+          // Nothing to offer only when today has no cookable meal AND the week
+          // can't form an ensemble (2+ distinct dishes) — otherwise show the picker.
+          (cookChoices.length === 0 && cookDistinct.length < 2 ? (
             <div className="addsheet__cook-empty">
               <p className="sheet__group-label mono">{t.kitchen.cookNone}</p>
               <button type="button" className="btn" onClick={() => setMode('meal')}>
@@ -986,7 +992,12 @@ export function AddSheet({
                   const cookName = c.meal.cook_member_id
                     ? members.find((m) => m.id === c.meal.cook_member_id)?.display_name
                     : undefined
+                  // The ensemble pool spans days, so prefix the weekday for any dish
+                  // not planned today — the single picker is today-only, no prefix.
+                  const dayLabel =
+                    ensemblePick && weekStart && c.meal.date !== weekStart ? `${formatWeekday(c.meal.date, lang)} · ` : ''
                   const sub =
+                    dayLabel +
                     (isMealSlot(slot) ? t.kitchen.slots[slot] : '') +
                     (sameName ? '' : ` · ${c.recipe.title}`) +
                     (cookName ? ` · ${cookName}` : '')
