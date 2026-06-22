@@ -121,6 +121,20 @@ export interface BoardData {
   notes: NoteRow[]
   // Undated leftovers to finish — the "Restants à finir" reminder card.
   leftovers: LeftoverRow[]
+  // « L'auto » work-schedule windows landing TODAY (#28) — DERIVED from the
+  // recurring schedule blocks (never event rows), read-only. `member_id` attributes
+  // each window to a face/lane; `holds_car` flags the ones that tie up the shared
+  // car. Only today's: the forward rota lives on the calendar, not the glance.
+  work?: WorkRow[]
+}
+export interface WorkRow {
+  id: string
+  label: string | null // the block's free-text label ("Travail", "Garderie…"), or null
+  at: number // window start (unix seconds)
+  endAt: number // window end
+  member_id: string | null
+  color: string | null // the block's tint; the member colour falls back
+  holds_car: number // 1 = this window takes the shared car
 }
 
 // The bilingual copy object, passed down so the extracted views don't each

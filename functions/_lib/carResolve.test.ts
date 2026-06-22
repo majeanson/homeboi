@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { carBusySpansForDay, membersOutAt, type ScheduleBlock, type CarDayOverride } from './carResolve'
-import { localDayStart, localTimeOnDay } from './ids'
+import { carBusySpansForDay, membersOutAt, workOccurrencesInRange, type ScheduleBlock, type CarDayOverride } from './carResolve'
+import { localDayStart, localTimeOnDay, addLocalDays } from './ids'
 
 // Anchor on a real LOCAL midnight (a normal, non-DST June day) so the resolver's
 // localTimeOnDay-based instant math lines up with the test's expectations. `at`
@@ -55,6 +55,49 @@ describe('carBusySpansForDay — per-date override', () => {
   it('a non-free override with no usable window = car free that day', () => {
     const ov: CarDayOverride = { carId: 'car', day: DAY, free: false }
     expect(carBusySpansForDay(DAY, 3, BLOCKS, ov)).toEqual([])
+  })
+})
+
+describe('carBusySpansForDay — every-N-weeks recurrence (#28)', () => {
+  // Marc works the car every OTHER Wednesday, phased from DAY's week (week 0 = "on").
+  const BIWEEKLY: ScheduleBlock = { id: 'bi', memberId: 'marc', startMin: min(8), endMin: min(17), weekdays: [3], holdsCar: true, weekInterval: 2, anchorDay: DAY }
+
+  it('is busy on the anchor week (an "on" week)', () => {
+    expect(carBusySpansForDay(DAY, 3, [BIWEEKLY])).toEqual([{ start: at(8), end: at(17), label: undefined, holderId: 'marc' }])
+  })
+  it('is free the following week (an "off" week)', () => {
+    const nextWed = addLocalDays(DAY, 7)
+    expect(carBusySpansForDay(nextWed, 3, [BIWEEKLY])).toEqual([])
+  })
+  it('is busy again two weeks on', () => {
+    const wedPlus2 = addLocalDays(DAY, 14)
+    expect(carBusySpansForDay(wedPlus2, 3, [BIWEEKLY]).length).toBe(1)
+  })
+  it('interval 1 (or a missing anchor) behaves as every week', () => {
+    const weekly: ScheduleBlock = { ...BIWEEKLY, weekInterval: 1, anchorDay: null }
+    expect(carBusySpansForDay(addLocalDays(DAY, 7), 3, [weekly]).length).toBe(1)
+  })
+})
+
+describe('workOccurrencesInRange — derived schedule (calendar/agenda)', () => {
+  it('emits one window per matching weekday in the range', () => {
+    // A single Wednesday window → exactly Marc's + (Julie is Tue/Thu, so none today).
+    const occs = workOccurrencesInRange(BLOCKS, DAY, addLocalDays(DAY, 1))
+    expect(occs).toEqual([
+      { id: `work:b1:${DAY}`, blockId: 'b1', memberId: 'marc', label: 'Travail', startAt: at(8), endAt: at(17), holdsCar: true, color: null },
+    ])
+  })
+  it('includes non-car (presence-only) blocks too — they surface on the calendar', () => {
+    // Thursday: Marc (car) + Julie (bus) both have a window.
+    const thu = addLocalDays(DAY, 1)
+    const occs = workOccurrencesInRange(BLOCKS, thu, addLocalDays(thu, 1))
+    expect(occs.map((o) => o.memberId).sort()).toEqual(['julie', 'marc'])
+    expect(occs.find((o) => o.memberId === 'julie')?.holdsCar).toBe(false)
+  })
+  it('respects every-N-weeks (off weeks produce no window)', () => {
+    const bi: ScheduleBlock = { id: 'bi', memberId: 'marc', startMin: min(8), endMin: min(17), weekdays: [3], holdsCar: true, weekInterval: 2, anchorDay: DAY }
+    const offWed = addLocalDays(DAY, 7)
+    expect(workOccurrencesInRange([bi], offWed, addLocalDays(offWed, 1))).toEqual([])
   })
 })
 

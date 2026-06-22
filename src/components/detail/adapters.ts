@@ -522,6 +522,14 @@ export function buildRoutine(
       ? { name: r.memberName, colour: r.color ?? null, avatarKind: r.avatarPhoto ? 'photo' : null, avatarRef: r.avatarPhoto ?? null }
       : null,
     blocks: items.length ? [{ kind: 'pictos', label: t.detail.steps, items }] : [],
-    actions: [{ key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold', primary: true, href: `/routine/${r.id}` }],
+    // "Faire la routine" (the run player, now available on every surface) is the
+    // primary action when there are steps to run; editing drops to secondary. An
+    // empty shell (no steps) shows only "Modifier" — nothing to run into.
+    actions: items.length
+      ? [
+          { key: 'run', label: t.detail.runRoutine, icon: 'play-bold', primary: true, href: `/routine/${r.id}/run` },
+          { key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold', href: `/routine/${r.id}` },
+        ]
+      : [{ key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold', primary: true, href: `/routine/${r.id}` }],
   }
 }

@@ -1,7 +1,7 @@
 // The ONLY path to /api/*. Handles CSRF echo (operator), device-token header
 // (kiosk), credentials, and JSON error parsing. Don't call fetch directly for
 // the API — you'll lose one of these and get a silent 403.
-import { getDeviceToken, getGuestToken } from './device'
+import { getDeviceToken, getGuestToken, isGuest } from './device'
 import { emitAiError } from './aiErrorBus'
 
 export class ApiError extends Error {
@@ -51,6 +51,21 @@ type Options = { method?: string; body?: unknown; idempotencyKey?: string }
 
 export async function api<T = unknown>(path: string, opts: Options = {}): Promise<T> {
   const method = opts.method ?? 'GET'
+
+  // Read-only backstop. A guest session is read-only two ways: a LINK guest
+  // (babysitter token) — the server independently 403s those — and the operator's
+  // SETTINGS PREVIEW, where the server CAN'T help because it sees the operator's
+  // real session, not a guest token. `writeWith()` already refuses guest writes,
+  // but direct api() callers (media upload, ghost toggle, contact-photo edits)
+  // skip that path. So refuse every mutating method here — the single network
+  // chokepoint — mirroring the server's own 403 so callers handle it identically.
+  // Exception: an offline-outbox REPLAY (idempotencyKey set) is an operator write
+  // authored before preview; it was never guest-authored (writeWith blocks that at
+  // enqueue), so replaying it is correct, not a guest mutation.
+  if (method !== 'GET' && method !== 'HEAD' && !opts.idempotencyKey && isGuest()) {
+    throw new ApiError(403, 'Lecture seule (mode invité).')
+  }
+
   const headers: Record<string, string> = {}
 
   // A Blob body (image upload) is sent raw with its own type; everything else is

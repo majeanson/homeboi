@@ -15,9 +15,26 @@ interface Card {
   icon: string
   label: string
   narration?: string
+  // Optional per-step countdown in seconds (e.g. 120 = a 2-minute teeth brush).
+  // The player offers a tap-to-start timer; it's a calm aid, never a gate. A
+  // missing/0 value means "no timer". Stored inline in cards_json (no migration).
+  seconds?: number
 }
 
 const isNumber = (v: unknown): v is number => typeof v === 'number'
+
+// Cards are stored as the client sends them, but the one numeric field a bad
+// payload could wedge the countdown UI with is the per-step timer — clamp it to a
+// whole number of seconds in a calm range, or drop the key. Every other field
+// (icon / label / narration) passes through unchanged, as it always has.
+const MAX_TIMER = 3600 // an hour: a sane ceiling — no routine step needs more
+function sanitizeCards(cards: Card[]): Card[] {
+  return cards.map((c) => {
+    const { seconds, ...rest } = c ?? ({} as Card)
+    const ok = typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0
+    return ok ? { ...rest, seconds: Math.min(Math.round(seconds as number), MAX_TIMER) } : rest
+  })
+}
 const isStr = (v: unknown): v is string => typeof v === 'string'
 // The time-of-day cue ('morning'|'afternoon'|'evening'); anything else → null
 // (anytime). An ordering hint for the kid view, never a gate.
@@ -115,7 +132,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .filter((m): m is string => typeof m === 'string' && m.length > 0)
     .slice(0, 8)
   if (!memberIds.length || !body?.name?.trim()) return badRequest('memberId(s) + nom requis.')
-  const cards = (body.cards ?? []).slice(0, 12)
+  const cards = sanitizeCards((body.cards ?? []).slice(0, 12))
   const name = body.name.trim()
   const cardsJson = JSON.stringify(cards)
   // Keep the clip + photo arrays parallel + same-length as the deck (feature #17 A/C).
@@ -183,7 +200,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     }
     // The deck whose length governs the parallel clip array: the freshly sent
     // cards when editing them, else the routine's current deck.
-    const newCards = Array.isArray(body.cards) ? body.cards.slice(0, 12) : null
+    const newCards = Array.isArray(body.cards) ? sanitizeCards(body.cards.slice(0, 12)) : null
     const deckLen = (newCards ?? parseJsonArray<Card>(owns.cards_json)).length
     if (newCards) {
       sets.push('cards_json = ?')

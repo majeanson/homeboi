@@ -4,6 +4,7 @@ import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
 import { isSoon as isSoonAt } from '../_lib/reminder'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
+import { workOccurrencesInRange, type ScheduleBlock } from '../_lib/carResolve'
 
 interface Ev {
   id: string
@@ -69,7 +70,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const mealTomorrow = tomorrow
   const mealDayAfter = dayAfter
 
-  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes, leftoversRes] = await Promise.all([
+  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes, leftoversRes, scheduleRes] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
     )
@@ -154,6 +155,25 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all(),
+    // « L'auto » work-schedule blocks (#28) — the recurring "who's out / car taken"
+    // windows. Derived onto the day below (never event rows), like birthdays. Tiny
+    // table (a few rows/household), so it rides the board poll cheaply.
+    ctx.env.DB.prepare(
+      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
+    )
+      .bind(hh)
+      .all<{
+        id: string
+        member_id: string
+        label: string | null
+        start_min: number
+        end_min: number
+        weekdays: string
+        holds_car: number
+        color: string | null
+        week_interval: number
+        anchor_day: number | null
+      }>(),
   ])
 
   // "Up next" beyond tomorrow (rest of the week) — tomorrow has its own card, so
@@ -382,11 +402,58 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // All of today's suppers — the board's "Ce soir" lists every one, not just the hero.
   const tonightMeals = todayMeals.filter((m) => m.slot === 'supper')
 
+  // « L'auto » work windows landing TODAY (#28) — the recurring schedule surfaced on
+  // the board agenda, derived (never event rows) like birthdays. Only today's: the
+  // weekly rota would flood À venir, so the calendar (month/day page) is where the
+  // full forward schedule lives; here it's just "who's out today". Read-only.
+  const scheduleBlocks: ScheduleBlock[] = (scheduleRes.results as {
+    id: string
+    member_id: string
+    label: string | null
+    start_min: number
+    end_min: number
+    weekdays: string
+    holds_car: number
+    color: string | null
+    week_interval: number
+    anchor_day: number | null
+  }[]).map((r) => {
+    let weekdays: number[] = []
+    try {
+      const v = JSON.parse(r.weekdays)
+      if (Array.isArray(v)) weekdays = v.filter((n): n is number => Number.isInteger(n))
+    } catch {
+      weekdays = []
+    }
+    return {
+      id: r.id,
+      memberId: r.member_id,
+      label: r.label,
+      startMin: r.start_min,
+      endMin: r.end_min,
+      weekdays,
+      holdsCar: r.holds_car === 1,
+      color: r.color,
+      weekInterval: r.week_interval ?? 1,
+      anchorDay: r.anchor_day ?? null,
+    }
+  })
+  const work = workOccurrencesInRange(scheduleBlocks, today, tomorrow).map((o) => ({
+    id: o.id,
+    label: o.label,
+    at: o.startAt,
+    endAt: o.endAt,
+    member_id: o.memberId,
+    color: o.color,
+    holds_car: o.holdsCar ? 1 : 0,
+  }))
+
   return ok({
     syncedAt: Math.floor(Date.now() / 1000),
     scope: actor.scope,
     members: members.results,
     today: todayMerged,
+    work,
     tomorrow: tomorrowMerged,
     upcoming: upcomingMerged,
     tonight: tonightMeal.results[0] ?? null,

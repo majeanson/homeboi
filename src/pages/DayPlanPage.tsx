@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useParams, Navigate } from 'react-router-dom'
+import { useParams, Navigate, useNavigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
@@ -49,7 +49,7 @@ const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 // recurring) and recurring-chore occurrences. Meals/notes come from their own
 // caches via DayEditor, so they're ignored here.
 interface DayItemsData {
-  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; business_colour?: string | null; birthday?: boolean; age?: number | null }[]
+  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; business_colour?: string | null; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null }[]
   chores: { id: string; title: string; color: string | null; who: string | null }[]
 }
 
@@ -80,6 +80,7 @@ function DayPlanInner() {
   const recordUndo = useRecordUndo()
   const write = useWrite()
   const close = useSceneClose('/kitchen')
+  const nav = useNavigate()
   useEscapeKey(close)
   // Tap a meal's recipe glyph → peek its recipe (photo + glance), same as the board.
   const detail = useEntityDetail()
@@ -504,15 +505,25 @@ function DayPlanInner() {
             dayEvents.map((e) => (
               <div key={e.id} className="day-plan__act-row">
                 <Act
-                  cat={e.birthday ? 'birthday' : 'event'}
-                  title={e.title}
-                  when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
-                  who={e.business_name ?? e.contact_name ?? memberName(e.member_id) ?? undefined}
-                  color={e.business_colour ?? undefined}
-                  soon={e.birthday ? undefined : eventSoon(e.id, e.at)}
-                  onActivate={ro || e.birthday ? undefined : () => openEventEdit(e.id)}
+                  cat={e.work ? 'work' : e.birthday ? 'birthday' : 'event'}
+                  title={e.work ? e.title || t.auto.work : e.title}
+                  when={
+                    e.work
+                      ? t.auto.range(formatTime(e.at, lang), e.end != null ? formatTime(e.end, lang) : '')
+                      : e.birthday
+                        ? e.age != null
+                          ? t.cercle.turnsN(e.age)
+                          : t.board.birthday
+                        : e.all_day
+                          ? t.board.allDay
+                          : formatTime(e.at, lang)
+                  }
+                  who={e.work ? memberName(e.member_id) || undefined : e.business_name ?? e.contact_name ?? memberName(e.member_id) ?? undefined}
+                  color={e.work ? e.color ?? undefined : e.business_colour ?? undefined}
+                  soon={e.birthday || e.work ? undefined : eventSoon(e.id, e.at)}
+                  onActivate={e.work ? () => nav('/voiture') : ro || e.birthday ? undefined : () => openEventEdit(e.id)}
                 />
-                {!!navigator.share && (
+                {!e.work && !!navigator.share && (
                   <button
                     type="button"
                     className="btn btn--ghost mono day-plan__act-share"

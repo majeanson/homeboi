@@ -57,6 +57,8 @@ const VoiturePage = lazy(() => import('./pages/VoiturePage').then((m) => ({ defa
 const EventFormPage = lazy(() => import('./pages/EventFormPage').then((m) => ({ default: m.EventFormPage })))
 const ChoreFormPage = lazy(() => import('./pages/ChoreFormPage').then((m) => ({ default: m.ChoreFormPage })))
 const RoutineFormPage = lazy(() => import('./pages/RoutineFormPage').then((m) => ({ default: m.RoutineFormPage })))
+// Run a routine on any surface (parent phone, kiosk) — the shared player as a scene.
+const RoutineRunPage = lazy(() => import('./pages/RoutineRunPage').then((m) => ({ default: m.RoutineRunPage })))
 // Dev-only component gallery (unlinked). A live catalogue of the shared primitives
 // across the four presentation axes — see src/pages/DevKit.tsx.
 const DevKit = lazy(() => import('./pages/DevKit').then((m) => ({ default: m.DevKit })))
@@ -125,6 +127,8 @@ export function AppRoutes() {
         <Route path="/chore/new" element={<ChoreFormPage />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />
         <Route path="/routine/:id" element={<RoutineFormPage />} />
+        {/* Run a routine standalone (the ▶ on the Routines tab / the peek action). */}
+        <Route path="/routine/:id/run" element={<RoutineRunPage />} />
         {/* The drawing collection / gallery — "Mes dessins" (#14). */}
         <Route path="/drawings" element={<DrawingGalleryPage />} />
         {/* #30 — global search, reachable from every hub tab's header. */}

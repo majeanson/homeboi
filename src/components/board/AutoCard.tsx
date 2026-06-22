@@ -31,9 +31,11 @@ export function AutoCard() {
   if (!car) return null
   const today = car.days.find((d) => d.day === car.today)
   const rides = today?.rides ?? []
-  const busy = today?.spans ?? []
-  // Nothing to glance at → render nothing (no empty card on the wall).
-  if (rides.length === 0 && busy.length === 0) return null
+  // Render whenever the household USES « L'auto » — a car configured, a work
+  // schedule, or a ride today — even on an idle/free day, so the board always
+  // answers "où est l'auto ?" (the always-visible board behaviour, #28). Only a
+  // household that's set nothing up at all sees no card.
+  if (car.cars.length === 0 && !car.hasSchedule && rides.length === 0) return null
 
   const hhmm = (at: number) => formatTime(at, lang)
   const carLabel = carName(primary?.id) ?? t.auto.car
@@ -46,7 +48,7 @@ export function AutoCard() {
     const back = car.status.until ? t.auto.backAround(hhmm(car.status.until)) : ''
     status = holder ? `${t.auto.withWho(holder)}${back ? ` · ${back}` : ''}` : t.auto.taken + (back ? ` · ${back}` : '')
   } else {
-    status = car.status.until ? t.auto.freeUntil(hhmm(car.status.until)) : t.auto.free
+    status = car.status.until ? t.auto.freeUntil(hhmm(car.status.until)) : t.auto.freeAllDay
   }
 
   // Who drives a ride: a member = we drive (our car); a cercle contact = a carpool

@@ -570,7 +570,8 @@
   margin: 2px 0 4px 56px; /* one shared indent under the emoji tile */
 }
 .deck__media .deck__clip,
-.deck__media .deck__photo {
+.deck__media .deck__photo,
+.deck__media .deck__timer {
   display: contents;
 }
 

@@ -400,6 +400,9 @@ export const FR = {
     taken: 'Prise',
     withWho: (n: string) => `Avec ${n}`,
     backAround: (t: string) => `revient ~${t}`,
+    work: 'Travail',
+    workToday: 'Horaires du jour',
+    range: (a: string, b: string) => `${a}–${b}`,
     drives: (n: string) => `${n} conduit`,
     carpool: (n: string) => `${n} (covoiturage)`,
     conflict: 'L’auto est déjà prise à ce moment-là.',
@@ -996,6 +999,15 @@ export const FR = {
     cardPhotoRemove: 'Retirer la photo',
     cardDraw: 'Dessiner',
     cardDrawRedo: 'Redessiner',
+    // Per-step tap-to-start timer (ex. 2 min pour brosser les dents). The editor
+    // control cycles through presets; the player shows a calm countdown ring.
+    timer: 'Minuterie',
+    timerOff: 'Sans minuterie',
+    timerStart: 'Touche pour démarrer',
+    timerPause: 'Touche pour pause',
+    timerDone: 'Fini !',
+    // The ▶ "run the routine" affordance (now available on every surface).
+    doRoutine: 'Faire',
   },
   login: {
     title: 'Connexion',
@@ -1236,6 +1248,10 @@ export const FR = {
     schedHoldsCarShort: '🚗',
     schedEveryDay: 'Tous les jours',
     schedBad: 'Membre et plage horaire valide requis.',
+    schedRepeat: 'Répétition',
+    schedEveryWeek: 'Chaque semaine',
+    schedEveryNWeeks: (n: number) => `Aux ${n} semaines`,
+    schedEveryNWeeksShort: (n: number) => `aux ${n} sem.`,
     cercleTab: 'Le cercle',
     cercleGroupsTitle: 'Groupes du cercle',
     cercleGroupsHint:
@@ -1611,6 +1627,7 @@ export const FR = {
     markEaten: 'Marquer mangé',
     openRecipe: 'Ouvrir la recette',
     openDay: 'Voir la journée',
+    runRoutine: 'Faire la routine',
     editRoutine: 'Modifier la routine',
     turn: 'Tour de',
     cook: 'Cuisine',
@@ -2017,6 +2034,9 @@ export const EN: typeof FR = {
     taken: 'Taken',
     withWho: (n: string) => `With ${n}`,
     backAround: (t: string) => `back ~${t}`,
+    work: 'Work',
+    workToday: 'Today’s schedule',
+    range: (a: string, b: string) => `${a}–${b}`,
     drives: (n: string) => `${n} drives`,
     carpool: (n: string) => `${n} (carpool)`,
     conflict: 'The car is already taken then.',
@@ -2600,6 +2620,15 @@ export const EN: typeof FR = {
     cardPhotoRemove: 'Remove photo',
     cardDraw: 'Draw',
     cardDrawRedo: 'Redraw',
+    // Per-step tap-to-start timer (e.g. 2 min for brushing teeth). The editor
+    // control cycles through presets; the player shows a calm countdown ring.
+    timer: 'Timer',
+    timerOff: 'No timer',
+    timerStart: 'Tap to start',
+    timerPause: 'Tap to pause',
+    timerDone: 'Done!',
+    // The ▶ "run the routine" affordance (now available on every surface).
+    doRoutine: 'Do it',
   },
   login: {
     title: 'Sign in',
@@ -2839,6 +2868,10 @@ export const EN: typeof FR = {
     schedHoldsCarShort: '🚗',
     schedEveryDay: 'Every day',
     schedBad: 'A member and a valid time range are required.',
+    schedRepeat: 'Repeat',
+    schedEveryWeek: 'Every week',
+    schedEveryNWeeks: (n: number) => `Every ${n} weeks`,
+    schedEveryNWeeksShort: (n: number) => `every ${n} wks`,
     cercleTab: 'The circle',
     cercleGroupsTitle: 'Circle groups',
     cercleGroupsHint:
@@ -3207,6 +3240,7 @@ export const EN: typeof FR = {
     markEaten: 'Mark eaten',
     openRecipe: 'Open recipe',
     openDay: 'See the day',
+    runRoutine: 'Do the routine',
     editRoutine: 'Edit routine',
     turn: 'Turn:',
     cook: 'Cooking',

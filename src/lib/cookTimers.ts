@@ -12,7 +12,9 @@ export const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padS
 // A short two-note chime when a timer reaches zero — gentle, not an alarm. Built
 // lazily on Web Audio (the cook already tapped to start the timer, so audio is
 // unlocked); silent no-op where Web Audio is missing. Pairs with a vibration.
-function chime() {
+// Exported so the routine player's per-step timer (a 2-min teeth brush) rings the
+// SAME friendly "ding-ding" as the cook timers, rather than forking a second tone.
+export function chime() {
   try {
     const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     if (!Ctx) return

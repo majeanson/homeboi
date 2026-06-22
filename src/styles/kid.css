@@ -312,6 +312,79 @@
   font-weight: 700;
   color: var(--ink-soft);
 }
+/* A per-step tap-to-start countdown (e.g. 2 min to brush teeth). A calm donut ring
+   drains as it counts down (`--p` = fraction elapsed, 0 full → 1 empty); the
+   remaining time reads in the hole. Tap to start / pause; at zero it rings + shows
+   a ✓ and a gentle pulse, but never advances the routine (NFR-CALM). */
+.tdl-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 2px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.tdl-countdown__face {
+  width: clamp(110px, 22vh, 156px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  /* The white hole sits over the conic ring → a donut; the filled arc is the
+     time remaining (1 − elapsed), in the routine's tint, the rest a faint track. */
+  background:
+    radial-gradient(closest-side, var(--card) 71%, transparent 72%),
+    conic-gradient(
+      var(--tint, #88a36f) calc((1 - var(--p, 0)) * 360deg),
+      color-mix(in srgb, var(--tint, #88a36f) 16%, transparent) 0
+    );
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.tdl-countdown:active .tdl-countdown__face {
+  transform: scale(0.96);
+}
+.tdl-countdown__time {
+  font-size: clamp(1.6rem, 6vh, 2.4rem);
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+.tdl-countdown__hint {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+/* Done: the ring fills solid in the tint, the ✓ turns the tint's ink, one soft
+   pulse — a calm "that's your two minutes", not an alarm. */
+.tdl-countdown.is-done .tdl-countdown__face {
+  background: var(--tint, #88a36f);
+  animation: tdl-countdown-pop var(--dur-med, 0.32s) var(--ease-soft) 1;
+}
+.tdl-countdown.is-done .tdl-countdown__time {
+  color: #fff;
+}
+@keyframes tdl-countdown-pop {
+  0% {
+    transform: scale(0.9);
+  }
+  60% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tdl-countdown.is-done .tdl-countdown__face {
+    animation: none;
+  }
+}
 /* The end-of-routine recap, pre-reader edition: the story's pictures again, each
    wearing its ✓ — tap one to hear the step. No table, no numbers to read (the
    small running total above stays for a parent's glance). NFR-KID-2. */

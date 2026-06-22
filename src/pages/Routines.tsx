@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
 import { EmptyState } from '../components/EmptyState'
 import { useAudience } from '../lib/audience'
@@ -46,6 +47,7 @@ interface RoutineRow {
 function RoutinesParent() {
   const t = useT()
   const { lang } = useLang()
+  const navigate = useNavigate()
   // Tap a routine to peek it (child, steps) with "Ouvrir la routine" to edit —
   // the same shared entity-detail sheet the board uses.
   const detail = useEntityDetail()
@@ -172,7 +174,27 @@ function RoutinesParent() {
                 ) : (
                   <div className="routine-card__steps routine-card__steps--empty mono">{t.routines.empty}</div>
                 )}
-                <div className="routine-card__count mono">{t.routines.stepsN(r.cards.length)}</div>
+                <div className="routine-card__foot">
+                  <span className="routine-card__count mono">{t.routines.stepsN(r.cards.length)}</span>
+                  {/* ▶ Run the routine — the player now works on every surface, so a
+                      parent can do the routine WITH the kid from their phone, timers
+                      and all. In help mode the tap explains the card instead. */}
+                  {r.cards.length > 0 && (
+                    <button
+                      type="button"
+                      className="routine-card__run mono"
+                      onClick={(e) => {
+                        // Don't also open the card's peek (the div's onClick); then
+                        // navigate — or, in help mode, explain via the shared target.
+                        e.stopPropagation()
+                        help.pick('card', () => navigate(`/routine/${r.id}/run`))()
+                      }}
+                      aria-label={t.routines.doRoutine}
+                    >
+                      <InlineIcon name="play-bold" /> {t.routines.doRoutine}
+                    </button>
+                  )}
+                </div>
               </div>
             )
           })}

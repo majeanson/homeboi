@@ -271,6 +271,24 @@ export function NowNext({
         </div>
       )}
 
+      {/* « L'auto » work windows today (#28) — who's out / car taken, derived from
+          the recurring schedule. Read-only on the glance; tune it in Réglages. */}
+      {(data.work ?? []).length > 0 && (
+        <div className="nownext__chores">
+          <span className="nownext__meals-label mono">{t.auto.workToday}</span>
+          {(data.work ?? []).map((w) => (
+            <Act
+              key={w.id}
+              cat="work"
+              title={w.label || t.auto.work}
+              when={t.auto.range(formatTime(w.at, lang), formatTime(w.endAt, lang))}
+              who={nameOf(data.members, w.member_id) ?? undefined}
+              color={w.color ?? colorOf(data.members, w.member_id) ?? undefined}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Today's full meal table rides as a footer too — every slot, not just the
           supper (which can also be the fallback focus above). One colour chip per
           slot: slot icon + meals, tinted with the slot's colour. */}
@@ -463,7 +481,9 @@ export function Lanes({
         const chores = [...data.choresToday, ...data.todos].filter((c) => c.who_id === m.id)
         // À compléter todos this member owns (optional face).
         const myTodos = todos.filter((td) => td.member_id === m.id)
-        const empty = events.length === 0 && chores.length === 0 && myTodos.length === 0
+        // « L'auto » work windows this member has today (#28) — read-only.
+        const myWork = (data.work ?? []).filter((w) => w.member_id === m.id)
+        const empty = events.length === 0 && chores.length === 0 && myTodos.length === 0 && myWork.length === 0
         const mine = m.id === profileId
         return (
           <div key={m.id} className={'lane bento' + (mine ? ' lane--mine' : '')}>
@@ -504,6 +524,15 @@ export function Lanes({
                 ))}
                 {myTodos.map((td) => (
                   <Act key={td.id} cat="chore" icon="check-bold" title={td.title} color={m.colour} />
+                ))}
+                {myWork.map((w) => (
+                  <Act
+                    key={w.id}
+                    cat="work"
+                    title={w.label || t.auto.work}
+                    when={t.auto.range(formatTime(w.at, lang), formatTime(w.endAt, lang))}
+                    color={w.color ?? m.colour}
+                  />
                 ))}
               </>
             )}

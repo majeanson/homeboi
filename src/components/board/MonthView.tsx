@@ -27,7 +27,7 @@ const DAY = 86400
 // The /api/month payload: every dated thing, already bucketed onto a UTC `day`
 // key by the server. Mirrors the families on the bento board so the calendar is a
 // faithful "is it all here?" inventory — events, meals, recurring chores, notes.
-interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; day: number; birthday?: boolean; age?: number | null }
+interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; day: number; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; holds_car?: number }
 interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number }
 interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 interface MNote { id: string; text: string; member_id: string | null; day: number }
@@ -46,7 +46,7 @@ const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 // reusing Réglages ▸ Repas) tinted with the slot colour — far more glanceable than
 // a square and it carries which meal. Colour still carries who (events) / slot
 // (meals) / chore tint.
-type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday'
+type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday' | 'work'
 interface Dot {
   color: string
   kind: DotKind
@@ -62,7 +62,9 @@ function dotsFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs):
     out.push(
       e.birthday
         ? { color: CATS.birthday.color, kind: 'birthday' }
-        : { color: e.business_colour ?? colorOf(members, e.member_id) ?? CATS.event.color, kind: 'event' },
+        : e.work
+          ? { color: e.color ?? colorOf(members, e.member_id) ?? CATS.work.color, kind: 'work' }
+          : { color: e.business_colour ?? colorOf(members, e.member_id) ?? CATS.event.color, kind: 'event' },
     )
   // Each shown meal gets its slot colour + icon (Réglages ▸ Repas); hidden slots = no marker.
   for (const m of b.meals)
@@ -252,6 +254,11 @@ export function MonthView({
                       <span key={i} className="monthv__dot-icon">
                         <Icon name="cake-bold" size={12} color={dot.color} />
                       </span>
+                    ) : dot.kind === 'work' ? (
+                      // A derived « L'auto » work window → a clock, tinted by the member.
+                      <span key={i} className="monthv__dot-icon">
+                        <Icon name="clock-bold" size={12} color={dot.color} />
+                      </span>
                     ) : (
                       <span
                         key={i}
@@ -331,24 +338,38 @@ export function MonthView({
                 }
               />
             ))}
-            {sel!.events.map((e) => (
-              <Act
-                key={e.id}
-                cat={e.birthday ? 'birthday' : 'event'}
-                title={e.title}
-                when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
-                who={e.business_name ?? e.contact_name ?? nameOf(members, e.member_id) ?? undefined}
-                color={e.business_colour ?? colorOf(members, e.member_id) ?? undefined}
-                onOpen={() =>
-                  detail.open(
-                    buildEvent(
-                      { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, contact_name: e.contact_name, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, birthday: e.birthday, age: e.age },
-                      detailCtx,
-                    ),
-                  )
-                }
-              />
-            ))}
+            {sel!.events.map((e) =>
+              e.work ? (
+                // A derived « L'auto » work window — read-only; tapping opens the car
+                // week view (where the schedule is tuned), never an event editor.
+                <Act
+                  key={e.id}
+                  cat="work"
+                  title={e.title || t.auto.work}
+                  when={t.auto.range(formatTime(e.at, lang), e.end != null ? formatTime(e.end, lang) : '')}
+                  who={nameOf(members, e.member_id) ?? undefined}
+                  color={e.color ?? colorOf(members, e.member_id) ?? undefined}
+                  onActivate={() => nav('/voiture')}
+                />
+              ) : (
+                <Act
+                  key={e.id}
+                  cat={e.birthday ? 'birthday' : 'event'}
+                  title={e.title}
+                  when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
+                  who={e.business_name ?? e.contact_name ?? nameOf(members, e.member_id) ?? undefined}
+                  color={e.business_colour ?? colorOf(members, e.member_id) ?? undefined}
+                  onOpen={() =>
+                    detail.open(
+                      buildEvent(
+                        { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, contact_name: e.contact_name, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, birthday: e.birthday, age: e.age },
+                        detailCtx,
+                      ),
+                    )
+                  }
+                />
+              ),
+            )}
             {sel!.chores.map((c) => (
               <Act
                 key={c.id}

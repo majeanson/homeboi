@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
+import { workOccurrencesInRange, type ScheduleBlock } from '../_lib/carResolve'
 
 // Everything dated in the household, for a calendar-month window. /api/board is
 // the 7-day glance; the month view zooms out, so it needs its own read across an
@@ -30,7 +31,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople] = await Promise.all([
+  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
@@ -83,6 +84,14 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .all<{ id: string; title: string; member_id: string | null; day: number; section: string | null }>(),
     // Automatic birthdays — derived from members + contacts, never stored as events.
     fetchBirthdayPeople(ctx.env.DB, hh),
+    // « L'auto » work-schedule blocks (#28) — derived onto each matching day across
+    // the window (never event rows). A calendar is where the full recurring rota
+    // belongs, so unlike the board these span the whole [from, to).
+    ctx.env.DB.prepare(
+      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
+    )
+      .bind(hh)
+      .all<{ id: string; member_id: string; label: string | null; start_min: number; end_min: number; weekdays: string; holds_car: number; color: string | null; week_interval: number; anchor_day: number | null }>(),
   ])
 
   const inRange = (day: number) => day >= from && day < to
@@ -101,6 +110,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     day: number
     birthday?: boolean
     age?: number | null
+    work?: boolean // a derived « L'auto » work-schedule window (read-only → /voiture)
+    end?: number // work windows carry an end instant (a span, not a point)
+    color?: string | null // the block's tint (member colour falls back client-side)
+    holds_car?: number // 1 = this window ties up the shared car
   }[] = []
   for (const e of oneOff.results) {
     const day = dayOf(e.start_at)
@@ -142,6 +155,22 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // tap to the person, not an event editor).
   for (const o of birthdayOccurrences(birthdayPeople, from, to)) {
     events.push({ id: o.id, title: o.name, at: o.at, all_day: 1, member_id: o.memberId, day: dayOf(o.at), birthday: true, age: o.age })
+  }
+
+  // Derived « L'auto » work windows — read-only (the client renders a clock + routes
+  // the tap to /voiture, not an event editor). A span, so `end` rides along.
+  const scheduleBlocks: ScheduleBlock[] = (scheduleRes.results).map((r) => {
+    let weekdays: number[] = []
+    try {
+      const v = JSON.parse(r.weekdays)
+      if (Array.isArray(v)) weekdays = v.filter((n): n is number => Number.isInteger(n))
+    } catch {
+      weekdays = []
+    }
+    return { id: r.id, memberId: r.member_id, label: r.label, startMin: r.start_min, endMin: r.end_min, weekdays, holdsCar: r.holds_car === 1, color: r.color, weekInterval: r.week_interval ?? 1, anchorDay: r.anchor_day ?? null }
+  })
+  for (const o of workOccurrencesInRange(scheduleBlocks, from, to)) {
+    events.push({ id: o.id, title: o.label ?? '', at: o.startAt, end: o.endAt, all_day: 0, member_id: o.memberId, day: dayOf(o.startAt), work: true, color: o.color, holds_car: o.holdsCar ? 1 : 0 })
   }
 
   const meals: { id: string; slot: string; title: string; cook_member_id: string | null; day: number; is_leftover?: number }[] = []

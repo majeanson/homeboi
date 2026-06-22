@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { authed } from './route'
-import { issueSession, issueDeviceToken } from './auth'
+import { issueSession, issueDeviceToken, issueGuestToken } from './auth'
 import type { Env, Ctx } from './env'
 import type { Actor } from './household'
 
@@ -26,9 +26,9 @@ const envWith = (firstRow: unknown): Env =>
 // `Cookie` is a forbidden request header that the runtime's Request constructor
 // silently drops, so we hand authed a minimal request exposing only what
 // resolveActor + the error boundary touch: method, url, headers.get.
-const reqWith = (headers: Record<string, string>): Request =>
+const reqWith = (headers: Record<string, string>, method = 'POST'): Request =>
   ({
-    method: 'POST',
+    method,
     url: 'https://x/api/thing',
     headers: { get: (k: string) => headers[k] ?? null },
   }) as unknown as Request
@@ -72,6 +72,35 @@ describe('authed', () => {
     const res = await handler(ctxFor(env, reqWith({ 'X-Device-Token': token })))
     expect(res.status).toBe(403)
     expect(ran).toBe(false)
+  })
+
+  it('forbids a guest from any mutating method and never runs the handler', async () => {
+    const env = envWith({ id: 'hh1' })
+    const token = await issueGuestToken(env, 'g1', 'hh1', 3600)
+    for (const method of ['POST', 'PATCH', 'PUT', 'DELETE']) {
+      let ran = false
+      const handler = authed(async () => {
+        ran = true
+        return new Response('ok')
+      })
+      const res = await handler(ctxFor(env, reqWith({ 'X-Device-Token': token }, method)))
+      expect(res.status).toBe(403)
+      expect(ran).toBe(false)
+    }
+  })
+
+  it('lets a guest read (GET) with the resolved guest actor', async () => {
+    const env = envWith({ id: 'hh1' })
+    const token = await issueGuestToken(env, 'g1', 'hh1', 3600)
+    let seen: Actor | null = null
+    const handler = authed(async (_ctx, actor) => {
+      seen = actor
+      return new Response('ok')
+    })
+    const res = await handler(ctxFor(env, reqWith({ 'X-Device-Token': token }, 'GET')))
+    expect(res.status).toBe(200)
+    expect(seen!.scope).toBe('guest')
+    expect(seen!.householdId).toBe('hh1')
   })
 
   it('turns a thrown error into a clean 500 instead of leaking it', async () => {

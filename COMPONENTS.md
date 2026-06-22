@@ -71,6 +71,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | --- | --- | --- |
 | **Avatar** | `components/Avatar.tsx` | Person = photo or coloured initial disc. 10+ call sites. |
 | **BigTiles** + **Sayable** | `components/BigTiles.tsx` | Toddler picture-tiles + tap-to-speak text (`useSpeak`). |
+| **RoutinePlayer** | `components/RoutinePlayer.tsx` | THE shared RUN of one routine — the calm "right now / then" picture story (big hero card read aloud on tap, picture filmstrip beneath, ▶ start → → advance → ✓ finish, "sweet dreams" recap). Extracted from `KidView` so it plays on EVERY surface, not just the locked toddler kiosk: `KidView` mounts it after its face-picker; the `/routine/:id/run` scene (`RoutineRunPage`, reached from the Routines tab's ▶ "Faire" + the routine detail-peek's "Faire la routine" action) mounts it directly for a parent on any device. Owns its own optimistic done-toggle (`ROUTINES_KEY`). `routine`/`ro` (guest hides the progress controls)/`exitTo`/`onBack`+`backLabel`. **Per-step timers (`card.seconds`):** a timed step shows a calm tap-to-start countdown **donut ring** (`Countdown` sub-component) — soft `chime` (shared from `lib/cookTimers`) + ✓ pulse at zero, **never force-advances** (NFR-CALM). Styled by `.tdl-*` / `.tdl-countdown*` (kid.css). |
 | **KidCollections** | `components/kitchen/KidCollections.tsx` | Toddler hear-first 3-stage recipe-collection picker (collection → recipe → day) over the recipe-tag system (#11). Reuses `buildCollections` + the shared `kidSuggest` meal-plan write. Surfaced as a "Les collections" door tile inside `KidKitchen`. |
 | **TimerRail** + **useCookTimers** | `components/cook/TimerRail.tsx`, `lib/cookTimers.ts` | The shared cook-timer engine + rail: named countdowns, a one-second ticker, and a chime + vibration on finish. Extracted from `CookMode` so single-recipe cook AND the #43 multi-recipe cook run ONE timer system. `addTimer(seconds, label)` (caller builds the label), `toggleTimer`/`removeTimer`; `onFinish(labels)` lets a caller also announce aloud. Styled by `.cook__timer*` (cook.css). |
 | **MultiCookMode** | `components/MultiCookMode.tsx` | #43 — cook several recipes at once. A `/kitchen/cook/multi` scene (entered from the meals tab ▸ "Cuisiner ensemble" when 2+ of today's planned meals are saved recipes): one column per dish, each an independent step stepper, under ONE shared `TimerRail`. Tapping a duration in any step starts a named countdown ("Pâtes · 10 min") in the shared rail; reuses `findDurations`, `groupSections`, density, and per-recipe read-aloud language. |
@@ -194,20 +195,32 @@ is the Réglages ▸ Affichage editor for the spoon/cup colours (`lib/measurePre
 answer to "où est l'auto, et est-elle libre ?" for a one-car household. Page-level /
 live-data, so catalogued not gallery-rendered: `AutoCard` (`components/board/AutoCard.tsx`
 — the board glance strip, mounted in `Board` beside `CercleBirthdays`: status now +
-today's rides + soft conflict cue, renders nothing when idle, taps into `/voiture`) and
+today's rides + soft conflict cue; **always visible once the household uses L'auto**
+(a car, a schedule, or a ride today) — "Libre toute la journée" on an idle day, only a
+never-configured household sees nothing — taps into `/voiture`) and
 `VoiturePage` (`/voiture` — the fast weekly editor: the schedule template pre-fills each
 day, tap a day to override just that date without touching the template; week nav +
 "copier la semaine passée" / "réinitialiser au modèle"; toddler "qui te reconduit ?").
 A **ride is just an event** (`EventForm` gained a **Transport** `Disclosure`: which car +
-passenger faces; the ＋ FAB's "Ajouter un trajet" tile opens it via `/event/new?ride=1`).
+passenger faces; the ＋ FAB's "Ajouter un trajet" tile opens it via `/event/new?ride=1`) —
+**rides recur fully** through the event `recur_json`.
 Config in **Réglages ▸ L'auto**: `CarsSection` (`operator/cars.tsx`, mirrors `reserve.tsx`;
 `households.cars` JSON, mig 0067) + `ScheduleSection` (`operator/schedule.tsx` — per-member
-recurring work windows + "prend l'auto", mig 0069 `schedule_blocks`). Per-date overrides in
-`car_day` (mig 0070). Pure engine: `functions/_lib/carAvail.ts` (free gaps / busy-now /
-conflicts) + `carResolve.ts` (template + override → spans, DST-safe via `localTimeOnDay`),
-both unit-tested. Read model: `GET /api/car` (today for the card, a range for the week) +
-`lib/car.ts` hooks (`CAR_KEY`); writes via `/api/schedule` + `/api/car-day`. No counts/
-quantities (calm). Reuses `Chip`/`EditField`/`RowActions`/`Disclosure`/`SceneHead`/
+recurring work windows + "prend l'auto", mig 0069 `schedule_blocks`). **Horaires recur
+every-N-weeks** (mig 0073 `week_interval` + `anchor_day`; 1 = weekly default — `BlockForm`
+has a 1/2/3/4-week segmented for alternating shifts; `carResolve.weekActive()` gates it
+with the same fortnight math as `recur.ts`). Per-date overrides in `car_day` (mig 0070).
+**Horaires also surface across the calendar/agenda** — DERIVED, never event rows (like
+birthdays) via `carResolve.workOccurrencesInRange()`: `/api/board` adds `work[]` (today
+only — the weekly rota would flood À venir) rendered in NowNext + per-member Lanes;
+`/api/month` adds them to `events` (`work:true`+`end`, full window) rendered in `MonthView`
+(clock dot + read-only row) and `DayPlanPage`. New **`work` `CatKey`** (`lib/cats.ts`,
+clock-bold/slate, member colour overrides); read-only everywhere → tap routes to `/voiture`.
+Pure engine: `functions/_lib/carAvail.ts` (free gaps / busy-now /
+conflicts) + `carResolve.ts` (template + override → spans + work occurrences, DST-safe via
+`localTimeOnDay`), both unit-tested. Read model: `GET /api/car` (today for the card, a range
+for the week) + `lib/car.ts` hooks (`CAR_KEY`); writes via `/api/schedule` + `/api/car-day`.
+No counts/quantities (calm). Reuses `Chip`/`EditField`/`RowActions`/`Disclosure`/`SceneHead`/
 `MemberSwitcher`-style faces — no new shared primitive.
 
 ---

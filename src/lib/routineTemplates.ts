@@ -7,6 +7,9 @@ import type { Lang } from '../i18n'
 export interface DeckCard {
   icon: string // an emoji — the picture a pre-reader reads
   label: string // the word, narrated on tap
+  // Optional per-step countdown in seconds — the player offers a tap-to-start
+  // timer on this step (e.g. 120 = a 2-minute teeth brush). Absent/0 = no timer.
+  seconds?: number
 }
 
 interface RawTemplate {
@@ -15,10 +18,12 @@ interface RawTemplate {
   // The implied time-of-day cue ('morning'|'afternoon'|'evening'; undefined =
   // anytime) — picking the template pre-fills the form's moment picker.
   tod?: 'morning' | 'afternoon' | 'evening'
-  cards: { icon: string; label: Record<Lang, string> }[]
+  cards: { icon: string; label: Record<Lang, string>; seconds?: number }[]
 }
 
-const c = (icon: string, fr: string, en: string) => ({ icon, label: { fr, en } })
+// `seconds` (optional, last arg) seeds the step's tap-to-start timer — e.g. the
+// dentist's two minutes for brushing teeth — so the example works out of the box.
+const c = (icon: string, fr: string, en: string, seconds?: number) => ({ icon, label: { fr, en }, seconds })
 
 const ROUTINES: RawTemplate[] = [
   {
@@ -28,7 +33,7 @@ const ROUTINES: RawTemplate[] = [
     cards: [
       c('🌅', 'réveil', 'wake up'),
       c('🚽', 'toilette', 'potty'),
-      c('🪥', 'brosse les dents', 'brush teeth'),
+      c('🪥', 'brosse les dents', 'brush teeth', 120),
       c('👕', 'habille-toi', 'get dressed'),
       c('🥞', 'déjeuner', 'breakfast'),
     ],
@@ -39,7 +44,7 @@ const ROUTINES: RawTemplate[] = [
     tod: 'evening',
     cards: [
       c('🛁', 'bain', 'bath'),
-      c('🪥', 'brosse les dents', 'brush teeth'),
+      c('🪥', 'brosse les dents', 'brush teeth', 120),
       c('👚', 'pyjama', 'pyjamas'),
       c('📖', 'histoire', 'story'),
       c('🌙', 'dodo', 'sleep'),
@@ -79,7 +84,7 @@ export function routineTemplates(lang: Lang): RoutineTemplate[] {
     id: t.id,
     name: t.name[lang],
     tod: t.tod ?? null,
-    cards: t.cards.map((card) => ({ icon: card.icon, label: card.label[lang] })),
+    cards: t.cards.map((card) => ({ icon: card.icon, label: card.label[lang], seconds: card.seconds })),
   }))
 }
 

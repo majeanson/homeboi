@@ -161,13 +161,17 @@ export function CardDeckEditor({
               deleteLabel={t.operator.removeCard}
             />
           </div>
-          {/* Per-card media — the parent-voice clip (#17 A), the photo (#17 C) and
-              "draw a step" all live in ONE indented row under the card so the
-              record / photo / draw affordances read as a single group and wrap
-              together instead of as separate stacked strips. */}
-          {((clips && !audioOff) || (photos && !photoOff)) && (
-            <div className="deck__media">
-              {clips && !audioOff && (
+          {/* Per-card aids — the tap-to-start timer (needs no R2), the parent-voice
+              clip (#17 A), the photo (#17 C) and "draw a step" all live in ONE
+              indented row under the card so the affordances read as a single group
+              and wrap together instead of as separate stacked strips. The timer
+              always shows; the media controls hide where R2 audio/photo is unset. */}
+          <div className="deck__media">
+            <TimerControl
+              seconds={card.seconds}
+              onChange={(s) => update(i, { seconds: s || undefined })}
+            />
+            {clips && !audioOff && (
                 <ClipControl
                   clipKey={clips[i]}
                   cardLabel={card.label || card.icon}
@@ -188,7 +192,6 @@ export function CardDeckEditor({
                 />
               )}
             </div>
-          )}
           {paletteFor === i && (
             <div className="deck__palette">
               {DECK_EMOJIS.map((e) => (
@@ -212,6 +215,44 @@ export function CardDeckEditor({
         <InlineIcon name="plus-bold" /> {t.operator.addCard}
       </button>
       <DragGhost ghost={dnd.ghost} />
+    </div>
+  )
+}
+
+// Preset per-step durations the ⏱ control cycles through: off, then 30 s and
+// 1–5 min — the calm "tap to cycle" the time-of-day chip uses, no menu to open.
+// The duration lives ON the card (`seconds`), so unlike clips/photos it needs no
+// parallel array and no R2 — every household can set a timer.
+const TIMER_PRESETS = [0, 30, 60, 120, 180, 300]
+// "30 s", "1 min", "2 min" — readable in both registers (min/s are universal).
+const fmtDur = (s: number) => (s % 60 === 0 ? `${s / 60} min` : `${s} s`)
+
+function TimerControl({ seconds = 0, onChange }: { seconds?: number; onChange: (s: number) => void }) {
+  const t = useT()
+  const isOn = seconds > 0
+  // indexOf a non-preset (legacy custom) value is -1; +1 lands on 0 = off, so one
+  // more tap clears an odd value and re-enters the preset cycle cleanly.
+  const cycle = () => onChange(TIMER_PRESETS[(TIMER_PRESETS.indexOf(seconds) + 1) % TIMER_PRESETS.length])
+  return (
+    <div className="deck__timer mono">
+      <button
+        type="button"
+        className={'deck__clip-btn' + (isOn ? ' is-on' : '')}
+        onClick={cycle}
+        aria-label={t.routines.timer}
+      >
+        <InlineIcon name="timer-bold" size={15} /> {isOn ? fmtDur(seconds) : t.routines.timer}
+      </button>
+      {isOn && (
+        <button
+          type="button"
+          className="deck__clip-btn deck__clip-del"
+          onClick={() => onChange(0)}
+          aria-label={t.routines.timerOff}
+        >
+          <Icon name="x-bold" size={14} />
+        </button>
+      )}
     </div>
   )
 }

@@ -559,6 +559,28 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Une minuterie sur une étape', en: 'A timer on a step' },
+        detail: {
+          fr: 'Sur chaque carte (Réglages ▸ Routines), touche ⏱ pour donner une durée à l’étape — par exemple 2 minutes pour brosser les dents. Pendant la routine, l’étape montre un anneau : l’enfant touche pour le partir, et un petit son joue à la fin. Touche encore pour changer la durée; ça se retire en un toucher.',
+          en: 'On each card (Settings ▸ Routines), tap ⏱ to give the step a length — say 2 minutes for brushing teeth. During the routine the step shows a ring: the child taps to start it, and a soft sound plays when it’s done. Tap again to change the length; it clears in one tap.',
+        },
+        why: {
+          fr: 'Pour les étapes qui durent un temps précis. La minuterie ne force jamais la suite et ne presse pas — c’est un repère calme, pas un chrono.',
+          en: 'For steps that should last a set time. The timer never forces the next step and never nags — it’s a calm cue, not a stopwatch.',
+        },
+      },
+      {
+        label: { fr: 'Se fait sur n’importe quel appareil', en: 'Done on any device' },
+        detail: {
+          fr: 'La routine ne se fait plus seulement sur la tablette en mode tout-petit : sur l’onglet Routines, touche ▶ « Faire » (ou « Faire la routine » dans la fiche) pour la lancer depuis ton téléphone et la faire avec l’enfant, minuteries comprises.',
+          en: 'A routine isn’t only run on the toddler kiosk anymore: on the Routines tab, tap ▶ “Do it” (or “Do the routine” in the card) to run it from your phone and do it with the child — timers and all.',
+        },
+        why: {
+          fr: 'Le même déroulé, partout — pratique en déplacement ou pour accompagner l’enfant.',
+          en: 'The same flow, everywhere — handy on the go or to walk a child through it.',
+        },
+      },
+      {
         label: { fr: 'D’une recette à une routine', en: 'From a recipe to a routine' },
         detail: {
           fr: 'Touche une [[card:recipes|recette]] dans la cuisine pour ouvrir sa fiche, puis « En routine pour enfant » : chaque étape devient une carte-image (avec sa photo d’étape si elle en a une), et l’enfant « cuisine » la recette comme une routine lue à voix haute. On te demande encore pour qui — tu peux retoucher les cartes avant de garder.',
@@ -3003,12 +3025,19 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Les horaires, une fois', en: 'Schedules, once' },
         detail: {
-          fr: 'Dans Réglages ▸ L’auto ▸ Horaires, entre les heures de chacun (travail, garderie) et coche « prend l’auto » au besoin. C’est ce qui dit à L’auto quand la voiture n’est pas là.',
-          en: 'In Settings ▸ The car ▸ Schedules, enter everyone’s hours (work, daycare) and tick “takes the car” where it applies. That’s what tells The car when the vehicle is away.',
+          fr: 'Dans Réglages ▸ L’auto ▸ Horaires, entre les heures de chacun (travail, garderie) et coche « prend l’auto » au besoin. C’est ce qui dit à L’auto quand la voiture n’est pas là. Choisis la répétition : chaque semaine, ou aux 2 (3, 4) semaines pour un quart en alternance.',
+          en: 'In Settings ▸ The car ▸ Schedules, enter everyone’s hours (work, daycare) and tick “takes the car” where it applies. That’s what tells The car when the vehicle is away. Pick the repeat: every week, or every 2 (3, 4) weeks for an alternating shift.',
         },
         why: {
           fr: 'Réglé une fois, ça façonne chaque journée tout seul — tu n’y reviens que pour une semaine différente.',
           en: 'Set once, it shapes every day on its own — you only return for an off week.',
+        },
+      },
+      {
+        label: { fr: 'Visible partout', en: 'Visible everywhere' },
+        detail: {
+          fr: 'Les horaires apparaissent là où c’est utile : la carte L’auto du babillard (toujours là quand tu utilises l’auto, même un jour libre), les journées de chacun sur le babillard, et le calendrier — chaque case porte une petite horloge. En lecture seule ailleurs : touche-la et ça ouvre la vue de la semaine pour l’ajuster.',
+          en: 'Schedules show where they help: the board’s The-car card (always there once you use the car, even on a free day), everyone’s board lanes, and the calendar — each cell carries a small clock. Read-only elsewhere: tap one and it opens the week view to adjust it.',
         },
       },
       {

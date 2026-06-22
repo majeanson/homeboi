@@ -1,6 +1,6 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { newId, nowSec } from '../_lib/ids'
+import { newId, nowSec, localDayStart, localDayOfWeek } from '../_lib/ids'
 
 // Work / recurring-schedule blocks for « L'auto » (migration 0069). The quiet weekly
 // backdrop that shapes when the shared car is spoken for — one member's recurring
@@ -24,6 +24,8 @@ interface BlockRow {
   weekdays: string
   holds_car: number
   color: string | null
+  week_interval: number
+  anchor_day: number | null
 }
 
 // Client-facing camelCase shape (matches _lib/carResolve.ScheduleBlock). A NEW
@@ -46,7 +48,25 @@ const toClient = (r: BlockRow) => {
     weekdays,
     holdsCar: r.holds_car === 1,
     color: r.color,
+    weekInterval: r.week_interval ?? 1,
+    anchorDay: r.anchor_day ?? null,
   }
+}
+
+// Repeat-every-N-weeks: 1 = every week (the default), capped at 8 (a two-month
+// rota is the practical ceiling for a household shift). Garbage → 1.
+const weekInterval = (v: unknown): number => {
+  const n = Number(v)
+  return Number.isFinite(n) ? Math.min(8, Math.max(1, Math.round(n))) : 1
+}
+// The reference week an every-N-weeks block phases from: the START of the current
+// LOCAL week (Sunday). Stamped server-side when a recurring (interval > 1) block is
+// saved so the client never has to compute a DST-correct week boundary; weekly
+// blocks (interval 1) store NULL — phasing is irrelevant.
+const DAY = 86400
+const currentWeekStart = (): number => {
+  const today = localDayStart(new Date())
+  return today - localDayOfWeek(new Date(today * 1000)) * DAY
 }
 
 const MAX_MIN = 24 * 60
@@ -67,13 +87,26 @@ interface Body {
   weekdays?: unknown
   holdsCar?: boolean
   color?: string | null
+  weekInterval?: unknown // repeat every N weeks (1 = every week)
+  anchorDay?: unknown // optional explicit phase (editing); else server stamps the current week
+}
+
+// Resolve the stored (week_interval, anchor_day) pair from the request. A weekly
+// block (interval 1) stores NULL anchor; an every-N-weeks block keeps a valid
+// client-sent anchor (so editing doesn't re-phase the rota) or, lacking one, phases
+// from the current local week.
+const resolveRecurrence = (body: Body | null): { interval: number; anchor: number | null } => {
+  const interval = weekInterval(body?.weekInterval)
+  if (interval <= 1) return { interval: 1, anchor: null }
+  const given = Number(body?.anchorDay)
+  return { interval, anchor: Number.isFinite(given) && given > 0 ? Math.floor(given) : currentWeekStart() }
 }
 
 const isHex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color FROM schedule_blocks WHERE household_id = ? ORDER BY start_min',
+    'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ? ORDER BY start_min',
   )
     .bind(actor.householdId)
     .all<BlockRow>()
@@ -89,8 +122,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
     return badRequest('Membre + plage horaire valide requis.')
   }
   const id = newId()
+  const { interval, anchor } = resolveRecurrence(body)
   await ctx.env.DB.prepare(
-    'INSERT INTO schedule_blocks (id, household_id, member_id, label, start_min, end_min, weekdays, holds_car, color, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO schedule_blocks (id, household_id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -102,6 +136,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
       JSON.stringify(cleanWeekdays(body?.weekdays)),
       body?.holdsCar === false ? 0 : 1,
       isHex(body?.color) ? body!.color!.toLowerCase() : null,
+      interval,
+      anchor,
       nowSec(),
     )
     .run()
@@ -117,8 +153,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!id || !memberId || startMin == null || endMin == null || endMin <= startMin) {
     return badRequest('id + membre + plage horaire valide requis.')
   }
+  const { interval, anchor } = resolveRecurrence(body)
   const res = await ctx.env.DB.prepare(
-    'UPDATE schedule_blocks SET member_id = ?, label = ?, start_min = ?, end_min = ?, weekdays = ?, holds_car = ?, color = ? WHERE id = ? AND household_id = ?',
+    'UPDATE schedule_blocks SET member_id = ?, label = ?, start_min = ?, end_min = ?, weekdays = ?, holds_car = ?, color = ?, week_interval = ?, anchor_day = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       memberId,
@@ -128,6 +165,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       JSON.stringify(cleanWeekdays(body?.weekdays)),
       body?.holdsCar === false ? 0 : 1,
       isHex(body?.color) ? body!.color!.toLowerCase() : null,
+      interval,
+      anchor,
       id,
       actor.householdId,
     )

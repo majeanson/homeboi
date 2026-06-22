@@ -128,6 +128,33 @@
   color: var(--ink-soft);
   font-size: 0.85rem;
 }
+/* The card foot: the quiet step count on the left, the ▶ "Faire" run action on the
+   right — a routine can now be done from any surface, not only the toddler kiosk. */
+.routine-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+.routine-card__run {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  background: color-mix(in srgb, var(--tint) 78%, #000 4%);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.routine-card__run:active {
+  transform: scale(0.96);
+}
 .kitchen__head-actions {
   display: flex;
   gap: 0.5rem;

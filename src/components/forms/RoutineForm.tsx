@@ -29,7 +29,7 @@ export interface RoutineInit {
   id: string
   name: string
   timeOfDay: string | null
-  cards?: { icon: string; label: string; narration?: string }[]
+  cards?: { icon: string; label: string; narration?: string; seconds?: number }[]
   // Parallel parent-voice clip keys (feature #17 A), one R2 key per card
   // ('' = none). Same length as cards; prefills the deck's recorded clips on edit.
   cardsNarration?: string[]
@@ -62,7 +62,7 @@ export function RoutineForm({
   const [memberIds, setMemberIds] = useState<string[]>([])
   const [name, setName] = useState(value?.name ?? seed?.name ?? '')
   const [cards, setCards] = useState<DeckCard[]>(
-    value?.cards?.map((c) => ({ icon: c.icon, label: c.label })) ?? seed?.cards ?? [],
+    value?.cards?.map((c) => ({ icon: c.icon, label: c.label, seconds: c.seconds })) ?? seed?.cards ?? [],
   )
   // Parallel parent-voice clip keys (feature #17 A), kept rigorously the SAME
   // length as `cards` — CardDeckEditor mutates both arrays together on every
@@ -111,6 +111,7 @@ export function RoutineForm({
       .map((c, i) => ({
         icon: c.icon,
         label: c.label.trim(),
+        seconds: c.seconds,
         clip: cardsNarration[i] ?? '',
         photo: cardsPhoto[i] ?? '',
       }))
@@ -119,6 +120,9 @@ export function RoutineForm({
       icon: c.icon,
       label: c.label || c.icon,
       narration: c.label || c.icon,
+      // Carry the per-step timer through (server clamps/validates it); omit the
+      // key entirely when there's none so a timer-less card stays clean.
+      ...(c.seconds ? { seconds: c.seconds } : {}),
     }))
     const narrationPayload = kept.map((c) => c.clip)
     const photoPayload = kept.map((c) => c.photo)

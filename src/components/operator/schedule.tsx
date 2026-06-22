@@ -31,6 +31,8 @@ export interface ScheduleBlock {
   weekdays: number[]
   holdsCar: boolean
   color: string | null
+  weekInterval?: number // repeat every N weeks (1 = every week). #28
+  anchorDay?: number | null // the fortnight phase, stamped server-side; preserved on edit
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -65,6 +67,7 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
   const colorOf = (id: string) => members.find((m) => m.id === id)?.colour
   const daysLabel = (wd: number[]) =>
     wd.length === 0 ? t.operator.schedEveryDay : [...wd].sort((a, b) => a - b).map((d) => t.recur.weekdayShort[d]).join(' ')
+  const everyLabel = (n: number | undefined) => (n && n > 1 ? ` · ${t.operator.schedEveryNWeeksShort(n)}` : '')
 
   async function save(b: Omit<ScheduleBlock, 'id'> & { id?: string }) {
     await write('schedule', {
@@ -100,7 +103,8 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
                   />
                   <span className="meal-slots__label">
                     <strong>{nameOf(b.memberId)}</strong>
-                    {b.label ? ` · ${b.label}` : ''} · {daysLabel(b.weekdays)} · {minToHHMM(b.startMin)}–
+                    {b.label ? ` · ${b.label}` : ''} · {daysLabel(b.weekdays)}
+                    {everyLabel(b.weekInterval)} · {minToHHMM(b.startMin)}–
                     {minToHHMM(b.endMin)}
                     {b.holdsCar ? ` · ${t.operator.schedHoldsCarShort}` : ''}
                   </span>
@@ -161,6 +165,9 @@ function BlockForm({
   const [end, setEnd] = useState(minToHHMM(value?.endMin ?? 17 * 60))
   const [weekdays, setWeekdays] = useState<number[]>(value?.weekdays ?? [1, 2, 3, 4, 5])
   const [holdsCar, setHoldsCar] = useState(value?.holdsCar ?? true)
+  // Repeat every N weeks (1 = every week, the default). Biweekly/alternating-week
+  // shifts (#28); the server stamps the fortnight phase when interval > 1.
+  const [interval, setInterval] = useState(value?.weekInterval ?? 1)
   const [err, setErr] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -177,7 +184,7 @@ function BlockForm({
     setBusy(true)
     setErr(false)
     try {
-      await onSave({ id: value?.id, memberId, label: label.trim() || null, startMin, endMin, weekdays, holdsCar, color: value?.color ?? null })
+      await onSave({ id: value?.id, memberId, label: label.trim() || null, startMin, endMin, weekdays, holdsCar, color: value?.color ?? null, weekInterval: interval, anchorDay: value?.anchorDay ?? null })
     } catch {
       setErr(true)
     } finally {
@@ -215,6 +222,20 @@ function BlockForm({
           <Chip key={d} selected={weekdays.includes(d)} onClick={() => toggleDay(d)} ariaLabel={lbl}>
             {lbl}
           </Chip>
+        ))}
+      </div>
+      {/* Repeat every N weeks — every week (default) or an alternating-week rota. */}
+      <p className="mono event-transport__label">{t.operator.schedRepeat}</p>
+      <div className="operator__rotation mono">
+        {[1, 2, 3, 4].map((n) => (
+          <button
+            key={n}
+            type="button"
+            className={`btn btn--ghost${interval === n ? ' is-active' : ''}`}
+            onClick={() => setInterval(n)}
+          >
+            {n === 1 ? t.operator.schedEveryWeek : t.operator.schedEveryNWeeks(n)}
+          </button>
         ))}
       </div>
       <label className="operator__check mono">

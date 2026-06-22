@@ -83,7 +83,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const [blocksRes, overridesRes, ridesRes] = await Promise.all([
     ctx.env.DB.prepare(
-      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color FROM schedule_blocks WHERE household_id = ?',
+      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
     )
       .bind(hh)
       .all<{
@@ -95,6 +95,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
         weekdays: string
         holds_car: number
         color: string | null
+        week_interval: number
+        anchor_day: number | null
       }>(),
     ctx.env.DB.prepare(
       'SELECT car_id, day, free, holder_id, start_min, end_min, label FROM car_day WHERE household_id = ? AND day >= ? AND day < ?',
@@ -139,6 +141,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
       weekdays,
       holdsCar: r.holds_car === 1,
       color: r.color,
+      weekInterval: r.week_interval ?? 1,
+      anchorDay: r.anchor_day ?? null,
     }
   })
 
