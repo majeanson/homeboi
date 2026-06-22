@@ -6,7 +6,7 @@
 // the shared formatters (lib/format), images imgUrl()/recipeImg().
 import { CATS } from '../../lib/cats'
 import { imgUrl } from '../../lib/image'
-import { type Contact, type Person, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, fullName } from '../../lib/cercle'
+import { type Contact, type Person, type Pet, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, fullName } from '../../lib/cercle'
 import { type Business, BUSINESS_COLOUR } from '../../lib/businesses'
 import { formatDay, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
@@ -133,6 +133,65 @@ export function buildBusiness(
     icon: 'storefront-bold',
     accent,
     photo: b.photoKey ? imgUrl(b.photoKey) : null,
+    blocks,
+    actions,
+  }
+}
+
+// — A « Le cercle » Pet (PersonKind 'pet') — an animal as a card, with its care
+// fields (species/breed, birthday, microchip, feeding, sitter notes, latest weight,
+// vet) + the same family group toggle + relations as a person. `vetName` is resolved
+// by the caller (the vet is a Business). Edit reopens the PetForm.
+export function buildPet(
+  pet: Pet,
+  ctx: DetailCtx,
+  opts?: {
+    relations?: string[]
+    groupToggle?: GroupToggle
+    vetName?: string | null
+    onEdit?: () => void
+    onDelete?: () => void
+    buildFamilyHref?: string
+    onConnect?: () => void
+  },
+): DetailModel {
+  const { t, lang } = ctx
+  const p = t.cercle.pet
+  const accent = pet.colour ?? '#C7873F'
+  const bday = formatBirthday(pet.birthday, lang)
+  const days = daysUntilBirthday(pet.birthday)
+  const when = bday ? [bday, days != null ? t.cercle.inDaysN(days) : null].filter(Boolean).join(' · ') : undefined
+
+  const speciesChips = [pet.species?.trim(), pet.breed?.trim()].filter((s): s is string => !!s)
+  const care: string[] = []
+  if (pet.feeding?.trim()) care.push(`${p.feeding} : ${pet.feeding.trim()}`)
+  if (pet.microchip?.trim()) care.push(`${p.microchip} : ${pet.microchip.trim()}`)
+  if (opts?.vetName) care.push(`${p.vet} : ${opts.vetName}`)
+  const lastWeight = pet.weights.length ? pet.weights[pet.weights.length - 1] : null
+  if (lastWeight) care.push(`${p.weight} : ${lastWeight.kg} ${p.kg} (${lastWeight.date})`)
+
+  const blocks: DetailBlock[] = []
+  if (speciesChips.length) blocks.push({ kind: 'chips', chips: speciesChips })
+  if (pet.notes?.trim()) blocks.push({ kind: 'text', text: pet.notes.trim() })
+  if (pet.sitterNotes?.trim()) blocks.push({ kind: 'text', text: `${p.sitterNotes} : ${pet.sitterNotes.trim()}` })
+  if (care.length) blocks.push({ kind: 'list', label: p.title, items: care })
+  if (opts?.relations?.length) blocks.push({ kind: 'list', label: t.cercle.relationships, items: opts.relations })
+  if (opts?.groupToggle?.options.length)
+    blocks.push({ kind: 'togglechips', label: t.cercle.groups, options: opts.groupToggle.options, onToggle: opts.groupToggle.onToggle })
+
+  const actions: DetailAction[] = []
+  if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
+  if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', run: opts.onConnect })
+  if (opts?.onDelete) actions.push({ key: 'delete', label: p.delete, icon: 'trash-bold', run: opts.onDelete })
+  if (opts?.onEdit) actions.push({ key: 'edit', label: p.edit, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
+
+  return {
+    kind: 'contact',
+    title: pet.name,
+    icon: 'smiley-bold',
+    accent,
+    photo: pet.photoKey ? imgUrl(pet.photoKey) : null,
+    when,
     blocks,
     actions,
   }

@@ -60,7 +60,42 @@ export interface Member {
   gender: 'm' | 'f' | null
 }
 
-export type PersonKind = 'contact' | 'member'
+export type PersonKind = 'contact' | 'member' | 'pet'
+
+// A household animal — a person in the circle (PersonKind 'pet'), with its own care
+// fields. Wire shape matches /api/pets + the `pets` array of GET /api/cercle.
+export interface PetWeight {
+  date: string // 'YYYY-MM-DD'
+  kg: number
+  note?: string | null
+}
+// Common species, for the PetForm suggestion list (free text — type anything).
+export const PET_SPECIES: Bi[] = [
+  { fr: 'Chien', en: 'Dog' },
+  { fr: 'Chat', en: 'Cat' },
+  { fr: 'Oiseau', en: 'Bird' },
+  { fr: 'Poisson', en: 'Fish' },
+  { fr: 'Lapin', en: 'Rabbit' },
+  { fr: 'Reptile', en: 'Reptile' },
+  { fr: 'Rongeur', en: 'Small pet' },
+  { fr: 'Autre', en: 'Other' },
+]
+
+export interface Pet {
+  id: string
+  name: string
+  species: string | null
+  breed: string | null
+  photoKey: string | null
+  colour: string | null
+  birthday: string | null // 'YYYY-MM-DD' ('0000-MM-DD' = year unknown)
+  microchip: string | null
+  feeding: string | null
+  sitterNotes: string | null
+  vetBusinessId: string | null // → a Business (the vet)
+  weights: PetWeight[]
+  notes: string | null
+}
 
 export interface ContactLink {
   id: string
@@ -95,6 +130,7 @@ export interface Person {
 }
 
 const CONTACT_ACCENT = '#C45E86' // the cercle rose, for photoless contacts
+const PET_ACCENT = '#C7873F' // a warm amber, for photoless pets (distinct from the rose)
 
 export const personKey = (kind: PersonKind, id: string): string => `${kind}:${id}`
 
@@ -104,9 +140,10 @@ export function parsePersonKey(key: string): { kind: PersonKind; id: string } {
   return { kind: key.slice(0, i) as PersonKind, id: key.slice(i + 1) }
 }
 
-// Merge contacts + members into one people set. Contacts render their photo (or a
-// rose initials tile); members render their member avatar/colour (their board face).
-export function buildPeople(contacts: Contact[], members: Member[]): Person[] {
+// Merge contacts + members (+ pets) into one people set. Contacts render their photo
+// (or a rose initials tile); members render their member avatar/colour (their board
+// face); pets render their photo (or an amber initials tile).
+export function buildPeople(contacts: Contact[], members: Member[], pets: Pet[] = []): Person[] {
   const fromContacts: Person[] = contacts.map((c) => ({
     kind: 'contact' as const,
     id: c.id,
@@ -139,7 +176,23 @@ export function buildPeople(contacts: Contact[], members: Member[]): Person[] {
     phone: m.phone ?? null,
     gender: m.gender ?? null,
   }))
-  return [...fromMembers, ...fromContacts]
+  const fromPets: Person[] = pets.map((p) => ({
+    kind: 'pet' as const,
+    id: p.id,
+    key: personKey('pet', p.id),
+    name: p.name,
+    firstName: p.name,
+    lastName: '',
+    avatarKind: p.photoKey ? 'photo' : null,
+    avatarRef: p.photoKey,
+    colour: p.colour || PET_ACCENT,
+    birthday: p.birthday,
+    isChild: false,
+    email: null,
+    phone: null,
+    gender: null,
+  }))
+  return [...fromMembers, ...fromContacts, ...fromPets]
 }
 
 // A Maisonnée member and a « Le cercle » contact hard-linked to it (contact.memberId)
@@ -160,6 +213,7 @@ export function unifyCircle(
   members: Member[],
   links: ContactLink[],
   groups: ContactGroupRaw[],
+  pets: Pet[] = [],
 ): { people: Person[]; links: ContactLink[]; groups: ContactGroupRaw[] } {
   const memberById = new Map(members.map((m) => [m.id, m]))
   // contact.id → member.id, for contacts hard-linked to a member that still exists.
@@ -167,7 +221,7 @@ export function unifyCircle(
   for (const c of contacts) {
     if (c.memberId && memberById.has(c.memberId)) absorbed.set(c.id, c.memberId)
   }
-  if (absorbed.size === 0) return { people: buildPeople(contacts, members), links, groups }
+  if (absorbed.size === 0) return { people: buildPeople(contacts, members, pets), links, groups }
 
   // member.id → its linked contact (first wins if several somehow point at one member).
   const contactByMember = new Map<string, Contact>()
@@ -193,6 +247,7 @@ export function unifyCircle(
   const people = buildPeople(
     contacts.filter((c) => !absorbed.has(c.id)),
     enrichedMembers,
+    pets,
   )
 
   // An endpoint pointing at an absorbed contact becomes its member.
@@ -255,6 +310,7 @@ export type RelationshipType =
   | 'cousin'
   | 'in_law'
   | 'step_family'
+  | 'relative' // generic "same family" kin tie — no precise rung known (used by « Compléter les familles »)
   | 'best_friend'
   | 'friend'
   | 'colleague'
@@ -292,6 +348,7 @@ export const RELATIONSHIP_CONFIG: Record<RelationshipType, RelationshipConfig> =
   cousin: { label: { fr: 'Cousin·e', en: 'Cousin' }, group: 'extended', groupOrder: 4, color: '#7E6BB0' },
   in_law: { label: { fr: 'Belle-famille', en: 'In-law' }, group: 'extended', groupOrder: 5, color: '#5E8C8C' },
   step_family: { label: { fr: 'Famille recomposée', en: 'Step-family' }, group: 'extended', groupOrder: 6, color: '#5AA08C' },
+  relative: { label: { fr: 'Membre de la famille', en: 'Family member' }, group: 'extended', groupOrder: 7, color: '#6E8FA0' },
   best_friend: { label: { fr: 'Meilleur·e ami·e', en: 'Best friend' }, group: 'social', groupOrder: 0, color: '#4F8A4A' },
   friend: { label: { fr: 'Ami·e', en: 'Friend' }, group: 'social', groupOrder: 1, color: '#6B8A52' },
   colleague: { label: { fr: 'Collègue', en: 'Colleague' }, group: 'social', groupOrder: 2, color: '#D9842A' },
@@ -316,6 +373,7 @@ export const RELATIONSHIP_INVERSES: Record<RelationshipType, RelationshipType> =
   cousin: 'cousin',
   in_law: 'in_law',
   step_family: 'step_family',
+  relative: 'relative',
   best_friend: 'best_friend',
   friend: 'friend',
   colleague: 'colleague',
@@ -397,6 +455,7 @@ const FAMILY_REL_TYPES = new Set<RelationshipType>([
   'cousin',
   'in_law',
   'step_family',
+  'relative', // generic kin — binds a family + appears in the Arbre (same-generation)
 ])
 
 // Is this a blood/family tie (binds a family + appears in the Arbre tree)? Social
@@ -492,6 +551,7 @@ const GEN_DELTA: Partial<Record<RelationshipType, number>> = {
   cousin: 0,
   in_law: 0,
   step_family: 0,
+  relative: 0, // generic kin: no rung known → place beside its known relatives, same band
 }
 
 // Assign each person a generation number via BFS over family edges (lower = older).
@@ -933,6 +993,7 @@ const REL_PRIORITY: Record<RelationshipType, number> = {
   cousin: 5,
   in_law: 6,
   step_family: 6,
+  relative: 6,
   best_friend: 7,
   friend: 8,
   colleague: 8,
@@ -1084,6 +1145,119 @@ export function closedLinks(people: Person[], links: ContactLink[]): ContactLink
       label: null,
       notes: null,
     })
+  }
+  return out
+}
+
+// ---- « Compléter les familles » (one-button family completion) --------------
+
+// A single change « Compléter les familles » proposes, for the review checklist: a
+// directed family tie to CREATE (or a vague stored one to MODIFY into a precise rung),
+// so a named « famille »-kind group ends up 100% related. `inferred` = the rung came
+// from the existing link hierarchy (closedLinks); when no rung can be known we fall
+// back to a generic `relative` kin tie so no group member is ever left disconnected.
+export interface FamilyLinkProposal {
+  aKey: string // "A is `type` of B" — directed, ready to split + POST to /api/cercle-links
+  bKey: string
+  type: RelationshipType
+  op: 'create' | 'modify'
+  existingId: string | null // the stored link to PATCH (modify only)
+  inferred: boolean // true = precise rung from the hierarchy; false = generic `relative` fallback
+}
+
+const unorderedPair = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`)
+
+// Compute every link needed to make each « famille »-kind group fully related, using
+// the hierarchy the explicit links already give us:
+//   • a pair the link closure can type precisely (sibling/parent/grandparent/cousin…)
+//     → CREATE that exact directed tie (materialize what was only inferred);
+//   • a pair the hierarchy can't place → CREATE a generic `relative` tie;
+//   • a pair already carrying a stored `relative` the hierarchy can now sharpen
+//     → MODIFY it up to the precise rung.
+// Any pair with an explicit stored tie of another type is left ALONE (an explicit
+// relationship always wins, matching friendLinksFromGroups). Pure + deterministic;
+// the caller shows these in the approval checklist, then POSTs/PATCHes the chosen ones.
+export function proposeFamilyLinks(
+  people: Person[],
+  storedLinks: ContactLink[],
+  groups: ContactGroup[],
+): FamilyLinkProposal[] {
+  const present = new Set(people.map((p) => p.key))
+
+  // The full inferred family graph from the stored links, indexed by unordered pair.
+  // closedLinks emits each pair canonically (a < b), so the stored direction/type is
+  // the one to materialize.
+  const closed = closedLinks(people, storedLinks)
+  const inferred = new Map<string, { aKey: string; bKey: string; type: RelationshipType }>()
+  for (const l of closed) {
+    if (!FAMILY_REL_TYPES.has(l.type) || l.type === 'relative') continue
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    const pk = unorderedPair(aKey, bKey)
+    if (!inferred.has(pk)) inferred.set(pk, { aKey, bKey, type: l.type })
+  }
+
+  // Children of a shared parent are siblings. closedLinks won't seed that on its own
+  // (it needs an explicit sibling edge to propagate — the same conservatism that keeps
+  // co-parents from becoming spouses), but it's precisely the "missing link" this
+  // completion exists to fill, so derive co-child sibling ties from the closed parent
+  // edges. A precise rung the closure already found always wins over this.
+  const childrenOf = new Map<string, string[]>()
+  for (const l of closed) {
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    const [parentKey, childKey] = l.type === 'parent' ? [aKey, bKey] : l.type === 'child' ? [bKey, aKey] : [null, null]
+    if (!parentKey || !childKey) continue
+    if (!childrenOf.has(parentKey)) childrenOf.set(parentKey, [])
+    childrenOf.get(parentKey)!.push(childKey)
+  }
+  for (const kids of childrenOf.values()) {
+    const sorted = [...new Set(kids)].sort()
+    for (let i = 0; i < sorted.length; i++)
+      for (let j = i + 1; j < sorted.length; j++) {
+        const pk = `${sorted[i]}|${sorted[j]}`
+        if (!inferred.has(pk)) inferred.set(pk, { aKey: sorted[i], bKey: sorted[j], type: 'sibling' })
+      }
+  }
+
+  // Every stored tie (ANY type) by unordered pair — an explicit one wins over a guess.
+  const stored = new Map<string, ContactLink>()
+  for (const l of storedLinks) {
+    const pk = unorderedPair(personKey(l.personAKind, l.personAId), personKey(l.personBKind, l.personBId))
+    if (!stored.has(pk)) stored.set(pk, l)
+  }
+
+  const out: FamilyLinkProposal[] = []
+  const done = new Set<string>()
+  for (const g of groups) {
+    if (g.kind !== 'family') continue
+    const keys = [...g.memberKeys].filter((k) => present.has(k)).sort() // a < b already
+    for (let i = 0; i < keys.length; i++) {
+      for (let j = i + 1; j < keys.length; j++) {
+        const a = keys[i]
+        const b = keys[j]
+        const pk = `${a}|${b}`
+        if (done.has(pk)) continue
+        done.add(pk)
+        const have = stored.get(pk)
+        const inf = inferred.get(pk)
+        if (have) {
+          // Sharpen a vague stored `relative` once the hierarchy can place it; otherwise
+          // an explicit tie of any kind already covers this pair — leave it alone. Orient
+          // the rung to the STORED row's a→b direction (PATCH keeps the endpoints, only
+          // swaps the type), so an asymmetric rung (parent/child…) never points backwards.
+          if (have.type === 'relative' && inf) {
+            const storedAKey = personKey(have.personAKind, have.personAId)
+            const storedBKey = personKey(have.personBKind, have.personBId)
+            const type = storedAKey === inf.aKey ? inf.type : RELATIONSHIP_INVERSES[inf.type]
+            out.push({ aKey: storedAKey, bKey: storedBKey, type, op: 'modify', existingId: have.id, inferred: true })
+          }
+          continue
+        }
+        if (inf) out.push({ aKey: inf.aKey, bKey: inf.bKey, type: inf.type, op: 'create', existingId: null, inferred: true })
+        else out.push({ aKey: a, bKey: b, type: 'relative', op: 'create', existingId: null, inferred: false })
+      }
+    }
   }
   return out
 }

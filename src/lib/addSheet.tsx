@@ -51,6 +51,8 @@ export type AddSheetMode =
   // BusinessForm modal on /cercle via ?add=business. The Business tab no longer
   // carries its own add button; the ＋ FAB is the single entry, like the others.
   | 'business'
+  // Add a pet (PersonKind 'pet') — opens the PetForm modal on /cercle via ?add=pet.
+  | 'pet'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
 // action → the sheet skips the chooser and opens that form directly. Liste's ＋
@@ -78,7 +80,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // business — all navigate-only tiles (the page opens connect/group/business from a
   // ?param). Every cercle subtab (Famille/Social/Notes/Business) offers the full set,
   // so e.g. "create a business" is reachable from the ＋ on any of them.
-  cercle: ['person', 'family', 'connect', 'group', 'business'],
+  cercle: ['person', 'family', 'connect', 'group', 'business', 'pet'],
 }
 
 // The operator-grade forms a kiosk that isn't signed in never sees as ＋ tiles.

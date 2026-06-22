@@ -10,8 +10,8 @@ import { INVERSES, isRelationshipType as isType } from '../_lib/cercleRelations'
 // INVERSES map (functions/_lib/cercleRelations.ts) so a client can never desync the
 // edge, and validates each endpoint against ITS table for this household.
 
-type Kind = 'contact' | 'member'
-const kindOf = (v: unknown): Kind => (v === 'member' ? 'member' : 'contact')
+type Kind = 'contact' | 'member' | 'pet'
+const kindOf = (v: unknown): Kind => (v === 'member' ? 'member' : v === 'pet' ? 'pet' : 'contact')
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
 
 interface Person {
@@ -23,7 +23,7 @@ interface Person {
 // `contacts`, a member id in `members`. One COUNT per table that's actually used.
 async function ownsPersons(db: D1Database, householdId: string, people: Person[]): Promise<boolean> {
   const byKind = (kind: Kind) => people.filter((p) => p.kind === kind).map((p) => p.id)
-  const check = async (table: 'contacts' | 'members', ids: string[]): Promise<boolean> => {
+  const check = async (table: 'contacts' | 'members' | 'pets', ids: string[]): Promise<boolean> => {
     if (ids.length === 0) return true
     const placeholders = ids.map(() => '?').join(', ')
     const row = await db
@@ -32,7 +32,11 @@ async function ownsPersons(db: D1Database, householdId: string, people: Person[]
       .first<{ n: number }>()
     return (row?.n ?? 0) === ids.length
   }
-  return (await check('contacts', byKind('contact'))) && (await check('members', byKind('member')))
+  return (
+    (await check('contacts', byKind('contact'))) &&
+    (await check('members', byKind('member'))) &&
+    (await check('pets', byKind('pet')))
+  )
 }
 
 export const onRequestPost = authed(async (ctx, actor) => {

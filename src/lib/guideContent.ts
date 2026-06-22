@@ -739,6 +739,28 @@ export const GUIDE: GuideEntry[] = [
           en: 'The useful numbers and appointments in the same place as the rest of the home — without mixing it into family.',
         },
       },
+      {
+        label: { fr: 'Les animaux de la maisonnée', en: 'Your household pets' },
+        detail: {
+          fr: 'Ajoute tes animaux comme des fiches dans Le cercle (tuile ＋ « Ajouter un animal ») : espèce, race, anniversaire, numéro de micropuce, horaire des repas, consignes pour la gardienne, un petit suivi du poids, et le vétérinaire — choisi parmi tes Business. Un animal apparaît comme une carte, peut faire partie d’une famille, mais n’entre jamais dans les liens parent/enfant (ton chien ne deviendra pas grand-père).',
+          en: 'Add your pets as cards in the circle (the ＋ “Add a pet” tile): species, breed, birthday, microchip number, feeding schedule, sitter instructions, a small weight log, and the vet — picked from your Businesses. A pet shows as a card, can belong to a family, but never enters the parent/child links (your dog won’t become a grandparent).',
+        },
+        why: {
+          fr: 'Tout ce qu’une gardienne ou le vét doit savoir, au même endroit que le reste de la maisonnée.',
+          en: 'Everything a sitter or the vet needs to know, in the same place as the rest of the household.',
+        },
+      },
+      {
+        label: { fr: 'Compléter les familles d’un bouton', en: 'Complete the families in one tap' },
+        detail: {
+          fr: 'Mets des gens dans un groupe « famille », puis touche « Compléter les familles » : à partir des liens que tu as déjà, on déduit les liens manquants (deux enfants d’un même parent sont frères/sœurs, le parent d’un parent est un grand-parent…) et on relie le reste comme « membre de la famille ». Rien n’est ajouté sans toi : tu vois la liste, tu coches ce que tu gardes, puis tu appliques — exactement comme l’import d’un fichier de contacts.',
+          en: 'Put people in a “family” group, then tap “Complete the families”: from the links you already have, we infer the missing ones (two children of one parent are siblings, a parent’s parent is a grandparent…) and tie the rest together as “family member”. Nothing is added without you: you see the list, tick what to keep, then apply — exactly like importing a contacts file.',
+        },
+        why: {
+          fr: 'Personne que tu as regroupé ne reste isolé — la famille se complète sans tout dessiner à la main.',
+          en: 'No one you grouped stays disconnected — the family fills itself in without drawing every link by hand.',
+        },
+      },
     ],
   },
   {

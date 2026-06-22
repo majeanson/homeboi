@@ -12,6 +12,7 @@ import {
   dedupeNewLinks,
   closedLinks,
   friendLinksFromGroups,
+  proposeFamilyLinks,
   parsePersonKey,
   personKey,
   daysUntilBirthday,
@@ -430,4 +431,46 @@ describe('friendLinksFromGroups (friends-kind group → friend ties)', () => {
     return out
   }
   const ppl = (...ids: string[]) => buildPeople(ids.map((id) => contact(id, id)), [])
+})
+
+describe('proposeFamilyLinks (« Compléter les familles »)', () => {
+  const k = (id: string) => personKey('contact', id)
+  const ppl = (...ids: string[]) => buildPeople(ids.map((id) => contact(id, id)), [])
+  const famGroup = (id: string, ...ids: string[]) => ({
+    id,
+    name: id,
+    kind: 'family' as const,
+    colour: null,
+    memberKeys: new Set(ids.map(k)),
+  })
+
+  it('materializes the precise rung the hierarchy already implies (siblings via shared parent)', () => {
+    // p is parent of x AND y → closure knows x & y are siblings, but no link stores it.
+    const props = proposeFamilyLinks(ppl('p', 'x', 'y'), [link('p', 'x', 'parent'), link('p', 'y', 'parent')], [famGroup('g', 'p', 'x', 'y')])
+    expect(props).toHaveLength(1) // p-x and p-y already stored; only x-y is missing
+    expect(props[0]).toMatchObject({ op: 'create', type: 'sibling', inferred: true })
+    expect([props[0].aKey, props[0].bKey].sort()).toEqual([k('x'), k('y')])
+  })
+
+  it('falls back to a generic relative tie when no rung can be known', () => {
+    const props = proposeFamilyLinks(ppl('a', 'b', 'c'), [], [famGroup('g', 'a', 'b', 'c')])
+    expect(props).toHaveLength(3) // a-b, a-c, b-c
+    expect(props.every((p) => p.op === 'create' && p.type === 'relative' && !p.inferred)).toBe(true)
+  })
+
+  it('leaves a pair with an explicit tie of another type alone (explicit wins)', () => {
+    expect(proposeFamilyLinks(ppl('a', 'b'), [link('a', 'b', 'friend')], [famGroup('g', 'a', 'b')])).toHaveLength(0)
+  })
+
+  it('upgrades a vague stored relative to the precise rung the hierarchy now reveals', () => {
+    const links = [link('p', 'x', 'parent'), link('p', 'y', 'parent'), link('x', 'y', 'relative')]
+    const props = proposeFamilyLinks(ppl('p', 'x', 'y'), links, [famGroup('g', 'p', 'x', 'y')])
+    expect(props).toHaveLength(1)
+    expect(props[0]).toMatchObject({ op: 'modify', type: 'sibling', inferred: true, existingId: 'x-y' })
+  })
+
+  it('ignores non-family-kind groups', () => {
+    const friends = { id: 'g', name: 'g', kind: 'friends' as const, colour: null, memberKeys: new Set([k('a'), k('b')]) }
+    expect(proposeFamilyLinks(ppl('a', 'b'), [], [friends])).toHaveLength(0)
+  })
 })

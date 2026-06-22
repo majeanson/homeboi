@@ -20,6 +20,7 @@ export const INVERSES: Record<string, string> = {
   cousin: 'cousin',
   in_law: 'in_law',
   step_family: 'step_family',
+  relative: 'relative',
   best_friend: 'best_friend',
   friend: 'friend',
   colleague: 'colleague',

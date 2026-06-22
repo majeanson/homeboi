@@ -18,9 +18,12 @@ import { MemberSwitcher } from '../components/MemberSwitcher'
 import { FaceSelect } from '../components/FaceSelect'
 import { GroupForm } from '../components/cercle/GroupForm'
 import { BusinessForm } from '../components/cercle/BusinessForm'
+import { PetForm } from '../components/cercle/PetForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
-import type { Member, Person } from '../lib/cercle'
+import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
+import { ReviewChecklist } from '../components/ReviewChecklist'
+import type { ContactGroup, Member, Person } from '../lib/cercle'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
@@ -92,6 +95,39 @@ const DEMO_PEOPLE: Person[] = [
   { kind: 'contact', id: 'a', key: 'contact:a', name: 'Aliss Descôteaux', firstName: 'Aliss', lastName: 'Descôteaux', avatarKind: null, avatarRef: null, colour: '#C45E86', birthday: null, isChild: false, email: null, phone: null, gender: 'f' },
   { kind: 'contact', id: 'b', key: 'contact:b', name: 'Félix Descôteaux', firstName: 'Félix', lastName: 'Descôteaux', avatarKind: null, avatarRef: null, colour: '#C45E86', birthday: null, isChild: false, email: null, phone: null, gender: 'm' },
 ]
+
+// A family-kind group over the two demo people, for the CompleteFamilies specimen —
+// with no links between them the engine proposes one generic « membre de la famille » tie.
+const DEMO_FAMILY_GROUP: ContactGroup = {
+  id: 'g-demo',
+  name: 'Famille Descôteaux',
+  kind: 'family',
+  colour: null,
+  memberKeys: new Set(['contact:a', 'contact:b']),
+}
+
+// Self-contained ReviewChecklist specimen: a button opens the approve-then-apply list.
+function ReviewDemo() {
+  const [open, setOpen] = useState(false)
+  const items = ['Ajouter Aliss', 'Ajouter Félix', 'Préciser : Aliss · Sœur de Félix']
+  return (
+    <>
+      <button type="button" className="btn btn--sm btn--ghost" onClick={() => setOpen(true)}>
+        Ouvrir la liste de révision
+      </button>
+      <ReviewChecklist
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Réviser les changements"
+        items={items}
+        renderItem={(s) => <span className="review__name">{s}</span>}
+        onApply={() => setOpen(false)}
+        applyAllLabel={(n) => `Tout appliquer (${n})`}
+        applySelectedLabel={(n) => `Appliquer (${n})`}
+      />
+    </>
+  )
+}
 
 // Stand-in household members for the CercleNotes specimen (the face row).
 const DEMO_MEMBERS: Member[] = [
@@ -465,6 +501,47 @@ export function DevKit() {
         // The relationship closure (lib/cercle closedLinks) propagates the rest.
         <Demo label='"X est [lien] de Y" — one link connects two families'>
           <ConnectPeople people={DEMO_PEOPLE} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'PetForm',
+      file: 'components/cercle/PetForm.tsx',
+      kw: 'cercle animal pet chien chat vétérinaire micropuce gamelle poids gardienne species breed vet weight sitter',
+      render: () => (
+        // « Le cercle » → Pets: add / edit one animal (PersonKind 'pet') — name, species,
+        // breed, birthday, microchip, feeding, sitter notes, a weight log + a VET picked
+        // from the Businesses. Mirrors BusinessForm; writes /api/pets, refreshes the cercle.
+        <Demo label="name + species + care fields + weight log + vet — a Pet card">
+          <PetForm onSaved={() => {}} onCancel={() => {}} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'CompleteFamilies',
+      file: 'components/cercle/CompleteFamilies.tsx',
+      kw: 'cercle compléter familles famille groupe lien relative relier checklist approbation completion',
+      render: () => (
+        // « Le cercle » → Famille: one button that makes a famille-kind group 100%
+        // related — precise rung from the link hierarchy where known, a generic kin tie
+        // otherwise — behind the shared ReviewChecklist (same flow as the .vcf import).
+        <Demo label="Smart-complete a family group, with review-then-apply">
+          <CompleteFamilies people={DEMO_PEOPLE} storedLinks={[]} groups={[DEMO_FAMILY_GROUP]} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'ReviewChecklist',
+      file: 'components/ReviewChecklist.tsx',
+      kw: 'review checklist approbation tick select all apply batch vcf import compléter familles modal',
+      render: () => (
+        // The shared "propose a batch of writes → tick which to keep → apply all or the
+        // selection" Modal. Behind the .vcf contact import AND « Compléter les familles ».
+        <Demo label="Approve-then-apply a batch of proposed changes">
+          <ReviewDemo />
         </Demo>
       ),
     },

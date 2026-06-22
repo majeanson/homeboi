@@ -76,6 +76,22 @@ interface GroupMemberRow {
   person_kind: string
 }
 
+interface PetRow {
+  id: string
+  name: string
+  species: string | null
+  breed: string | null
+  photo_key: string | null
+  colour: string | null
+  birthday: string | null
+  microchip: string | null
+  feeding: string | null
+  sitter_notes: string | null
+  vet_business_id: string | null
+  weights: string
+  notes: string | null
+}
+
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
 const genderOrNull = (v: unknown): string | null => (v === 'm' || v === 'f' ? v : null)
 const BIRTHDAY_RE = /^\d{1,4}-\d{2}-\d{2}$/
@@ -145,6 +161,16 @@ export const onRequestGet = authed(async (ctx, actor) => {
     gmByGroup.get(gm.group_id)!.push({ personId: gm.person_id, personKind: gm.person_kind })
   }
 
+  // Pets are people in the circle too (PersonKind 'pet') — returned so the SPA folds
+  // them into the same people set. Only the fields the directory + people graph need;
+  // the rich care fields (feeding/microchip/weights/sitter/vet) ride the same rows.
+  const pets = await ctx.env.DB.prepare(
+    `SELECT id, name, species, breed, photo_key, colour, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes
+       FROM pets WHERE household_id = ? AND deleted_at IS NULL ORDER BY name COLLATE NOCASE`,
+  )
+    .bind(actor.householdId)
+    .all<PetRow>()
+
   return ok({
     members: members.results.map((m) => ({
       id: m.id,
@@ -193,6 +219,21 @@ export const onRequestGet = authed(async (ctx, actor) => {
       kind: g.kind,
       colour: g.colour,
       memberKeys: gmByGroup.get(g.id) ?? [],
+    })),
+    pets: pets.results.map((p) => ({
+      id: p.id,
+      name: p.name,
+      species: p.species,
+      breed: p.breed,
+      photoKey: p.photo_key,
+      colour: p.colour,
+      birthday: p.birthday,
+      microchip: p.microchip,
+      feeding: p.feeding,
+      sitterNotes: p.sitter_notes,
+      vetBusinessId: p.vet_business_id,
+      weights: parseJson<unknown[]>(p.weights, []),
+      notes: p.notes,
     })),
   })
 })

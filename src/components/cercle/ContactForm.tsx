@@ -24,7 +24,7 @@ import {
 } from '../../lib/cercle'
 import { parseVCard, type ParsedContact } from '../../lib/vcard'
 import { ContactPhotos } from './ContactPhotos'
-import { Modal } from '../Modal'
+import { ReviewChecklist } from '../ReviewChecklist'
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
@@ -92,7 +92,6 @@ export function ContactForm({
   // and which indices are checked (all preselected). A mid-step before bulk import so
   // a phone's "export all" doesn't dump every contact in.
   const [vcfPick, setVcfPick] = useState<ParsedContact[] | null>(null)
-  const [picked, setPicked] = useState<Set<number>>(new Set())
 
   // If this person is a Maisonnée member (hard-linked), their face is the member's
   // board avatar — the ONE photo, managed in Réglages ▸ Membres — not a separate
@@ -160,7 +159,6 @@ export function ContactForm({
     // Many cards: open the picker (all preselected) so you choose WHO to import — the
     // mid-step. "Importer tout" in the picker skips the choosing.
     setVcfPick(parsed)
-    setPicked(new Set(parsed.map((_, i) => i)))
   }
 
   // Bulk-create a chosen subset of parsed cards (offline-safe via the outbox), then
@@ -366,56 +364,24 @@ export function ContactForm({
   return (
     <div className="cf">
       {/* #44 — the multi-card .vcf picker (mid-step): tick who to import (all
-          preselected), with select-all / unselect-all. "Importer tout" skips it. */}
-      <Modal open={!!vcfPick} onClose={() => setVcfPick(null)} title={t.cercle.importVcfPick}>
-        {vcfPick && (
-          <div className="cf-vcf">
-            <button
-              type="button"
-              className="btn btn--sm btn--ghost cf-vcf__all"
-              onClick={() => setPicked(picked.size === vcfPick.length ? new Set() : new Set(vcfPick.map((_, i) => i)))}
-            >
-              <Icon name={picked.size === vcfPick.length ? 'square-bold' : 'check-square-bold'} size={16} />
-              {picked.size === vcfPick.length ? t.cercle.unselectAll : t.cercle.selectAll}
-            </button>
-            <ul className="cf-vcf__list">
-              {vcfPick.map((p, i) => (
-                <li key={i}>
-                  <label className="cf-vcf__row">
-                    <input
-                      type="checkbox"
-                      checked={picked.has(i)}
-                      onChange={() =>
-                        setPicked((s) => {
-                          const n = new Set(s)
-                          if (n.has(i)) n.delete(i)
-                          else n.add(i)
-                          return n
-                        })
-                      }
-                    />
-                    <span className="cf-vcf__name">{fullName(p) || t.cercle.importVcfUnnamed}</span>
-                    {(p.email || p.phone) && <span className="cf-vcf__sub mono">{p.email || p.phone}</span>}
-                  </label>
-                </li>
-              ))}
-            </ul>
-            <div className="cf-vcf__actions">
-              <button type="button" className="btn btn--sm btn--ghost" onClick={() => void importList(vcfPick)}>
-                {t.cercle.importVcfDo(vcfPick.length)}
-              </button>
-              <button
-                type="button"
-                className="btn btn--sm btn--primary"
-                disabled={picked.size === 0}
-                onClick={() => void importList(vcfPick.filter((_, i) => picked.has(i)))}
-              >
-                {t.cercle.importVcfSelected(picked.size)}
-              </button>
-            </div>
-          </div>
+          preselected). Shares the ReviewChecklist primitive with « Compléter les
+          familles ». "Importer tout" applies every card; the primary applies the ticks. */}
+      <ReviewChecklist
+        open={!!vcfPick}
+        onClose={() => setVcfPick(null)}
+        title={t.cercle.importVcfPick}
+        items={vcfPick ?? []}
+        renderItem={(p) => (
+          <>
+            <span className="review__name">{fullName(p) || t.cercle.importVcfUnnamed}</span>
+            {(p.email || p.phone) && <span className="review__sub mono">{p.email || p.phone}</span>}
+          </>
         )}
-      </Modal>
+        onApply={(sel) => void importList(sel)}
+        applyAllLabel={(n) => t.cercle.importVcfDo(n)}
+        applySelectedLabel={(n) => t.cercle.importVcfSelected(n)}
+        busy={saving}
+      />
 
       {/* Photo. A member's face comes from the Maisonnée (their board avatar) and is
           edited there, so for a linked member we SHOW that face read-only; otherwise

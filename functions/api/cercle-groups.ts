@@ -26,7 +26,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // Add person to existing group
   if (body?.groupId) {
     if (!body.personId || !body.personKind) return badRequest('personId et personKind requis.')
-    if (body.personKind !== 'contact' && body.personKind !== 'member') return badRequest('personKind invalide.')
+    if (body.personKind !== 'contact' && body.personKind !== 'member' && body.personKind !== 'pet')
+      return badRequest('personKind invalide.')
     const grp = await ctx.env.DB.prepare('SELECT id FROM contact_groups WHERE id = ? AND household_id = ?')
       .bind(body.groupId, actor.householdId)
       .first()

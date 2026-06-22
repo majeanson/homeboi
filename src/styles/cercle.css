@@ -1332,15 +1332,70 @@
 }
 
 /* --- The multi-card .vcf import picker (ContactForm Modal) -------------------- */
-.cf-vcf {
+/* PetForm — the weight log + vet chip. */
+.pet-form__vet {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--ink-soft);
+}
+.pet-form__weights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.pet-form__weight {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: var(--radius-sm, 8px);
+}
+.pet-form__weight-kg {
+  flex: 1 1 auto;
+}
+.pet-form__weight-add {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.pet-form__weight-add .input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* « Compléter les familles » — the smart-complete button above the family list. */
+.cercle-complete {
+  margin: 0 0 0.6rem;
+}
+.cercle-complete__n {
+  margin-inline-start: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+}
+
+/* ReviewChecklist — the shared review-then-apply list (vcf import + « Compléter
+   les familles »). Generic class family so any batch-approval flow can reuse it. */
+.review {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
-.cf-vcf__all {
+.review__empty {
+  margin: 0;
+  color: var(--ink-soft);
+}
+.review__all {
   align-self: flex-start;
 }
-.cf-vcf__list {
+.review__list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1351,7 +1406,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.cf-vcf__row {
+.review__row {
   display: flex;
   align-items: baseline;
   gap: 0.6rem;
@@ -1359,20 +1414,20 @@
   border-radius: var(--radius-sm, 8px);
   cursor: pointer;
 }
-.cf-vcf__row:hover {
+.review__row:hover {
   background: var(--surface);
 }
-.cf-vcf__row input {
+.review__row input {
   flex: none;
   width: 1.15rem;
   height: 1.15rem;
   align-self: center;
 }
-.cf-vcf__name {
+.review__name {
   flex: 1 1 auto;
   min-width: 0;
 }
-.cf-vcf__sub {
+.review__sub {
   flex: 0 1 auto;
   color: var(--ink-soft);
   font-size: 0.78rem;
@@ -1380,7 +1435,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cf-vcf__actions {
+.review__actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;

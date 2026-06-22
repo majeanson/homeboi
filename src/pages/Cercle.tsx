@@ -6,7 +6,7 @@ import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useTabParam } from '../lib/tabParam'
 import { useEntityDetail } from '../components/detail/DetailProvider'
-import { buildContact, buildMemberPerson } from '../components/detail/adapters'
+import { buildContact, buildMemberPerson, buildPet } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { useWrite } from '../lib/write'
@@ -15,7 +15,7 @@ import { useRecordUndo } from '../lib/toast'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { isGuest } from '../lib/device'
 import { useOpenPersonSheet } from '../lib/personSheet'
-import { CERCLE_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
+import { CERCLE_KEY, HOUSEHOLD_KEY, BUSINESSES_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { EmptyState } from '../components/EmptyState'
 import { HubHead } from '../components/HubHead'
@@ -32,6 +32,8 @@ import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { BusinessesTab } from '../components/cercle/BusinessesTab'
 import { BusinessForm } from '../components/cercle/BusinessForm'
+import { PetForm } from '../components/cercle/PetForm'
+import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
 import { SubTabs } from '../components/SubTabs'
 import { MemberSwitcher } from '../components/MemberSwitcher'
 import { FaceSelect } from '../components/FaceSelect'
@@ -43,6 +45,7 @@ import {
   type Contact,
   type ContactLink,
   type Member,
+  type Pet,
   type Person,
   type RelationshipType,
   type ContactGroupRaw,
@@ -67,6 +70,7 @@ interface CercleData {
   members: Member[]
   links: ContactLink[]
   groups: ContactGroupRaw[]
+  pets: Pet[]
 }
 
 type View = 'list' | 'links' | 'tree'
@@ -167,6 +171,10 @@ function CercleParent() {
   // The ＋ "Nouveau commerce" tile opens the BusinessForm here (page-level, like the
   // group/connect modals) so it works from ANY cercle subtab, not just Business.
   const [addingBusiness, setAddingBusiness] = useState(false)
+  // The ＋ "Ajouter un animal" tile opens the PetForm here (page-level, like the
+  // group/business modals). `editingPet` reopens it on a pet's detail peek.
+  const [addingPet, setAddingPet] = useState(false)
+  const [editingPet, setEditingPet] = useState<Pet | null>(null)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   // The "Relier deux personnes" connector, opened (optionally seeded with one side)
   // from the ＋ chooser, a person's peek, or a family group header.
@@ -204,6 +212,7 @@ function CercleParent() {
     if (params.get('connect') === '1') setConnect({})
     else if (params.get('add') === 'group') setAddingGroup(true)
     else if (params.get('add') === 'business') setAddingBusiness(true)
+    else if (params.get('add') === 'pet') setAddingPet(true)
     else return
     const next = new URLSearchParams(params)
     next.delete('connect')
@@ -220,11 +229,17 @@ function CercleParent() {
   const members = useMemo(() => data?.members ?? [], [data])
   const rawLinks = useMemo(() => data?.links ?? [], [data])
   const rawGroups = useMemo(() => data?.groups ?? [], [data])
+  const pets = useMemo(() => data?.pets ?? [], [data])
+  // Businesses, only to resolve a pet's vet name in its detail peek (the vet IS a
+  // Business). Shares BUSINESSES_KEY so it's already warm if the Business tab was open.
+  const { data: bizData } = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<{ businesses: { id: string; name: string }[] }>('businesses'), ...live })
+  const bizById = useMemo(() => new Map((bizData?.businesses ?? []).map((b) => [b.id, b.name])), [bizData])
   // Collapse each member + its hard-linked contact into ONE person (and remap that
-  // contact's links/groups onto the member) so nobody shows up twice.
+  // contact's links/groups onto the member) so nobody shows up twice. Pets join as
+  // their own PersonKind 'pet' (never absorbed).
   const unified = useMemo(
-    () => unifyCircle(contacts, members, rawLinks, rawGroups),
-    [contacts, members, rawLinks, rawGroups],
+    () => unifyCircle(contacts, members, rawLinks, rawGroups, pets),
+    [contacts, members, rawLinks, rawGroups, pets],
   )
   const people = unified.people
   // Relationship CLOSURE: derive implied family ties (siblings share parents +
@@ -363,6 +378,11 @@ function CercleParent() {
   if (isUnauthorized(error)) return <PairPrompt />
   if (!data && !error) return <Loading />
 
+  async function deletePet(pet: Pet) {
+    if (!(await confirm({ title: t.cercle.pet.delete, message: pet.name, tone: 'danger' }))) return
+    await write('pets', { method: 'DELETE', body: { id: pet.id }, affectedKeys: [CERCLE_KEY] })
+  }
+
   const openPerson = (p: Person) => {
     const relations = relationsOf(p.key, links, byKey, lang)
     // Seed a brand-new family with THIS person, so a family can grow out of anyone.
@@ -383,7 +403,22 @@ function CercleParent() {
       : undefined
     // "Relier à quelqu'un" — open the connector seeded with this person as side A.
     const onConnect = () => setConnect({ seedAKey: p.key })
-    if (p.kind === 'contact') {
+    if (p.kind === 'pet') {
+      const pet = pets.find((x) => x.id === p.id)
+      if (!pet) return
+      const vetName = pet.vetBusinessId ? bizById.get(pet.vetBusinessId) ?? null : null
+      detail.open(
+        buildPet(pet, { t, lang, members: [] }, {
+          relations,
+          groupToggle,
+          vetName,
+          onConnect,
+          buildFamilyHref,
+          onEdit: () => setEditingPet(pet),
+          onDelete: ro ? undefined : () => void deletePet(pet),
+        }),
+      )
+    } else if (p.kind === 'contact') {
       const c = contactsById.get(p.id)
       if (!c) return
       detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onExport: () => downloadVCard(c), onConnect, buildFamilyHref }))
@@ -542,6 +577,27 @@ function CercleParent() {
         <BusinessForm onSaved={() => setAddingBusiness(false)} onCancel={() => setAddingBusiness(false)} />
       </Modal>
 
+      <Modal
+        open={addingPet || !!editingPet}
+        onClose={() => {
+          setAddingPet(false)
+          setEditingPet(null)
+        }}
+        title={editingPet ? t.cercle.pet.edit : t.cercle.pet.add}
+      >
+        <PetForm
+          value={editingPet}
+          onSaved={() => {
+            setAddingPet(false)
+            setEditingPet(null)
+          }}
+          onCancel={() => {
+            setAddingPet(false)
+            setEditingPet(null)
+          }}
+        />
+      </Modal>
+
 
       {people.length === 0 ? (
         <>
@@ -627,6 +683,18 @@ function CercleParent() {
                   </div>
                 </section>
               )}
+
+              {/* « Compléter les familles » — make every named famille-kind group
+                  100% related from the hierarchy the links already imply (precise rung
+                  where known, generic kin tie otherwise), behind a review checklist. */}
+                {section === 'family' && (
+                  <CompleteFamilies
+                    people={people}
+                    storedLinks={unified.links}
+                    groups={allNamedGroups.filter((g) => g.kind === 'family')}
+                    disabled={ro}
+                  />
+                )}
 
               <>
                   {/* The Maisonnée — your one family, titled from Réglages. Always at

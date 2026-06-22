@@ -104,6 +104,7 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   connect: { cat: 'cercle', icon: 'users-three-bold' },
   group: { cat: 'cercle', icon: 'tag-bold' },
   business: { cat: 'cercle', icon: 'storefront-bold' },
+  pet: { cat: 'cercle', icon: 'smiley-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -124,6 +125,7 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   connect: '/cercle?connect=1',
   group: '/cercle?add=group',
   business: '/cercle?add=business',
+  pet: '/cercle?add=pet',
   ...FORM_ROUTES,
 }
 
@@ -548,6 +550,7 @@ export function AddSheet({
       connect: t.cercle.connectTwo,
       group: t.cercle.addGroup,
       business: t.cercle.business.add,
+      pet: t.cercle.pet.add,
     }
     return labels[m]
   }
