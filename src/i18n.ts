@@ -2296,6 +2296,14 @@ export const EN: typeof FR = {
     importVcfUnnamed: 'No name',
     selectAll: 'Select all',
     unselectAll: 'Unselect all',
+    // « Compléter les familles » — fill in every relationship a famille-kind group implies.
+    completeFamilies: 'Complete the families',
+    completeApplyAll: (n: number) => `Add all (${n})`,
+    completeApply: (n: number) => `Add (${n})`,
+    completeEmpty: 'These families are already complete.',
+    completeInferred: 'inferred from existing links',
+    completeGuess: 'family link',
+    completePrecise: 'specify the link',
     photoFromMaisonnee: 'Photo managed in the household',
     photoFromMaisonneeTile: 'Household',
     // Family builder — define a whole family's relationships at once.
