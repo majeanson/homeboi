@@ -700,10 +700,6 @@ export function Board() {
           every parent view (renders nothing when none are near). */}
       <CercleBirthdays />
 
-      {/* « L'auto » glance — the car's status today + today's rides, a calm strip in
-          every parent view (renders nothing when nothing's busy + no rides). #28 */}
-      <AutoCard />
-
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
       ) : view === 'next' ? (
@@ -947,6 +943,11 @@ export function Board() {
           </div>
         </>
       )}
+
+      {/* « L'auto » glance — the car's status today + today's rides, a calm strip
+          BELOW the day (not above it — the agenda is the primary glance). Renders
+          nothing when nothing's set up + no rides. Shared across every view. #28 */}
+      <AutoCard />
 
       {stale && <p className="board__synced mono">{t.board.offline}</p>}
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}

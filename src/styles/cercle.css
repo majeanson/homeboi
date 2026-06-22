@@ -1215,6 +1215,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.7rem;
   padding: 0.7rem 0.85rem;
   border-bottom: 1px solid var(--line);
@@ -1222,8 +1223,9 @@
 .cnote:last-child {
   border-bottom: 0;
 }
-.cnote--editing {
-  padding: 0.6rem 0.7rem;
+/* An expanded note: its title may wrap, and the full body sits on its own row. */
+.cnote--expanded {
+  background: color-mix(in srgb, var(--note-tint) 6%, var(--card));
 }
 /* The author tint: a small leading dot (text/audio) or a framed thumbnail (visual). */
 .cnote__dot {
@@ -1263,6 +1265,13 @@
 .cnote__main--static {
   cursor: default;
 }
+/* Title + an expand caret on one line; the caret hints the row opens to read. */
+.cnote__titlerow {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
 .cnote__title {
   font-size: 1rem;
   font-weight: 600;
@@ -1271,6 +1280,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.cnote__caret {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  color: var(--ink-faint);
+}
+/* Open: let the title wrap to its full text instead of clipping to one line. */
+.cnote--expanded .cnote__title {
+  white-space: normal;
+}
+/* The full note body, revealed on expand — spans the row's full width, wraps, and
+   keeps the author's own line breaks (pre-wrap). */
+.cnote__full {
+  flex: 1 0 100%;
+  margin: 0.1rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 .cnote__meta {
   font-size: 0.8rem;
@@ -1329,6 +1359,19 @@
   border: 1px dashed var(--line);
   border-radius: var(--radius-md, 14px);
   background: var(--surface);
+}
+/* The full-width memo editor (the edit dialog): a roomy textarea that fills the
+   sheet so a long note is comfortable to read and edit, not a cramped one-liner. */
+.kit-modal.cnote-memo {
+  width: min(38rem, 94vw);
+}
+.cnote-memo .edit-field__box {
+  align-items: stretch;
+}
+.cnote-memo .edit-field__input.input {
+  min-height: clamp(9rem, 45vh, 22rem);
+  resize: vertical;
+  line-height: 1.5;
 }
 
 /* --- The multi-card .vcf import picker (ContactForm Modal) -------------------- */

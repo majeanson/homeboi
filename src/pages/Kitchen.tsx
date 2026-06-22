@@ -20,7 +20,6 @@ import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays, todayLocalDay } from '../lib/localDay'
 import { type Recipe } from '../lib/recipes'
 import { useRecipeToRoutine } from '../lib/recipeToRoutine'
-import { useCookableMeals } from '../lib/nextMeal'
 import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers, useTagColors } from '../lib/queryHooks'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
@@ -86,10 +85,9 @@ export function Kitchen() {
   // Recipe → toddler picture routine (#19): each step becomes a read-aloud card,
   // step photos copied to independent card photos. Parent-only (gated at onView).
   const makeRoutine = useRecipeToRoutine()
-  // #43 — how many DISTINCT dishes are planned + cookable today; 2+ unlocks the
-  // "Cuisiner ensemble" entry (shared caches, so no extra fetch).
-  const cookable = useCookableMeals()
-  const cookTogetherCount = useMemo(() => new Set(cookable.map((c) => c.recipe.id)).size, [cookable])
+  // #43 — "Cuisiner ensemble" (cook 2+ of today's dishes at once) now lives inside
+  // the ＋ "Cuisiner" picker (AddSheet), beside the single-dish choices — not as a
+  // standalone button up here.
   // The full per-day editor (add/remove/reorder meals, the staples step, the day
   // note, clear the day) lives on its own full-screen scene now — /kitchen/day/:date
   // (DayPlanPage). This page is the calm read-only week glance: a row's pencil and
@@ -501,14 +499,6 @@ export function Kitchen() {
               </div>
             )}
           </div>
-          {/* #43 — when 2+ of today's planned meals are saved recipes, offer to cook
-              them side by side with one shared timer rail. Parent-only. */}
-          {audience === 'parent' && cookTogetherCount >= 2 && (
-            <button type="button" className="btn btn--ghost mono kitchen__cook-together" onClick={() => nav('/kitchen/cook/multi')}>
-              <InlineIcon name="cooking-pot-bold" /> {t.kitchen.cookTogether}
-              <span className="kitchen__cook-together-n"> · {t.kitchen.cookTogetherN(cookTogetherCount)}</span>
-            </button>
-          )}
           <ul className="kitchen__week">
             {week.map(({ date }) => {
               const dow = new Date(date * 1000).getDay()

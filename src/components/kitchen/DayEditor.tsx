@@ -298,15 +298,17 @@ export function DayEditor({
               dragLabel={t.kitchen.dragMeal}
             />
             {supperEditing && !ro && (
-              // Souper's box: type a free-text supper (→ AI staples) or pick a
-              // recipe / leftover. When recipes exist, the dropdown leads with the
-              // "+ ingrédients" opt-in so a recipe pick can also fill the grocery list.
+              // Souper's box: type a free-text supper or pick a recipe / leftover.
+              // The dropdown leads with the "+ ingrédients" opt-in (off by default):
+              // it governs BOTH a recipe pick (also fill the grocery list with its
+              // ingredients) AND free text (→ AI staples). Default off → "Mettre"
+              // just saves the meal, one less step.
               <EntityCombobox
                 value={mealText}
                 onChange={setMealText}
                 options={mealOpts}
                 onPick={pickMeal(date, 'supper')}
-                onSubmit={() => beginSetMeal(date, 'supper')}
+                onSubmit={() => beginSetMeal(date, 'supper', pickWithStaples)}
                 submitLabel={staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
                 busy={staplesBusy}
                 noMatchLabel={t.combo.noMatch}
@@ -317,17 +319,15 @@ export function DayEditor({
                 autoFocus
                 placeholder={t.kitchen.plan}
                 listHeader={
-                  recipes.length > 0 ? (
-                    <button
-                      type="button"
-                      className={'chip kitchen__recipe-staples' + (pickWithStaples ? ' is-on' : '')}
-                      onClick={() => setPickWithStaples((s) => !s)}
-                      aria-pressed={pickWithStaples}
-                    >
-                      <InlineIcon name={pickWithStaples ? 'check-square-bold' : 'square-bold'} />{' '}
-                      <InlineIcon name="shopping-bag-bold" /> {t.kitchen.alsoStaples}
-                    </button>
-                  ) : undefined
+                  <button
+                    type="button"
+                    className={'chip kitchen__recipe-staples' + (pickWithStaples ? ' is-on' : '')}
+                    onClick={() => setPickWithStaples((s) => !s)}
+                    aria-pressed={pickWithStaples}
+                  >
+                    <InlineIcon name={pickWithStaples ? 'check-square-bold' : 'square-bold'} />{' '}
+                    <InlineIcon name="shopping-bag-bold" /> {t.kitchen.alsoStaples}
+                  </button>
                 }
               />
             )}

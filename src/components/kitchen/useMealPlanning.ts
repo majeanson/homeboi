@@ -54,12 +54,19 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
     }
   }
 
-  // Setting a meal first asks the router for its staples (B3). If AI finds some,
-  // we show the confirm chips; if AI is off (503) or finds nothing, we just save
-  // the meal — the staple step is a bonus, never a gate (NFR-DEGRADE-1).
-  async function beginSetMeal(date: number, slot: string) {
+  // Setting a meal optionally asks the router for its staples (B3). The staple step
+  // is OPT-IN, governed by the same "+ ingrédients" toggle a recipe pick uses
+  // (`withStaples`): default off → just save the meal, one less step. When it's on
+  // and AI finds some, we show the confirm chips; if AI is off (503) or finds
+  // nothing, we still just save — the staple step is a bonus, never a gate
+  // (NFR-DEGRADE-1).
+  async function beginSetMeal(date: number, slot: string, withStaples = false) {
     const title = mealText.trim()
     if (!title) return
+    if (!withStaples) {
+      await saveMeal(date, slot, title, [])
+      return
+    }
     setStaplesBusy(true)
     ai.aiStart()
     try {

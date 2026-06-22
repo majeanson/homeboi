@@ -911,6 +911,43 @@
   color: var(--ink);
 }
 
+/* --- "Cuisiner ensemble" dish switcher (#43) ------------------------------- */
+/* A full-width sub-tab row under the bar that flips between the dishes; each tab is
+   a whole cook view of its own. Underline-style like the split phone tabs, but it
+   scrolls sideways when the titles don't fit (a tablet may cook 3+ dishes). */
+.cook__siblings {
+  display: flex;
+  gap: 1px;
+  background: var(--line);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  flex: none;
+}
+.cook__sibling {
+  flex: 1 0 auto;
+  min-width: max-content;
+  padding: 0.7rem 1.1rem;
+  border: 0;
+  background: var(--card);
+  color: var(--ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.cook__sibling.is-on {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+.cook__sibling:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 /* --- Split view: ingredients pinned beside the steps ----------------------- */
 /* The split stage doesn't centre a card — it fills, and each pane scrolls on its
    own so the ingredients stay put while the method scrolls. */
@@ -1097,137 +1134,6 @@
   font-size: 1.1rem;
 }
 
-/* --- #43 Multi-recipe cook: columns under one shared timer rail ----------- */
-/* Reuses the .cook full-screen shell + .cook__bar + .cook__timer-rail. The body
-   is a row of dish columns; each is an independent stepper, the rail above them
-   coordinates every dish's timers in one place. */
-.multicook__cols {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  gap: 1px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  background: var(--line);
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
-}
-.multicook__col {
-  flex: 1 0 min(100%, 22rem);
-  min-width: min(100%, 18rem);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--paper);
-  scroll-snap-align: start;
-}
-.multicook__head {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.6rem;
-  padding: 0.8rem 1rem 0.6rem;
-  border-bottom: 2px solid var(--col-tint);
-  background: color-mix(in srgb, var(--col-tint) 12%, var(--paper));
-}
-.multicook__dish {
-  margin: 0;
-  font-family: var(--display);
-  font-size: 1.15rem;
-  line-height: 1.15;
-  color: color-mix(in srgb, var(--col-tint) 55%, var(--ink));
-}
-.multicook__progress {
-  flex: none;
-  color: var(--ink-soft);
-}
-.multicook__step {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.9rem;
-  padding: 1.2rem 1rem;
-  border: 0;
-  background: transparent;
-  text-align: center;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.multicook__step--empty {
-  justify-content: center;
-  color: var(--ink-soft);
-  cursor: default;
-}
-.multicook__num {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 50%;
-  background: var(--col-tint);
-  color: #fff;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 1.3rem;
-}
-.multicook__photo {
-  max-width: 100%;
-  max-height: 9rem;
-  border-radius: 14px;
-  object-fit: cover;
-}
-.multicook__text {
-  font-size: 1.18rem;
-  line-height: 1.45;
-}
-.cook[data-density='compact'] .multicook__text {
-  font-size: 1.02rem;
-}
-.cook[data-density='large'] .multicook__text {
-  font-size: 1.42rem;
-}
-.multicook__timers {
-  flex: 0 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0 1rem 0.6rem;
-  justify-content: center;
-}
-.multicook__timer-add {
-  cursor: pointer;
-}
-.multicook__nav {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--line);
-}
-.multicook__spacer {
-  flex: 1 1 auto;
-}
-.multicook__done {
-  flex: 1 1 auto;
-  text-align: center;
-  color: color-mix(in srgb, var(--col-tint) 55%, var(--ink));
-}
-/* The "Cuisiner ensemble" entry in the meals tab. */
-.kitchen__cook-together {
-  width: 100%;
-  justify-content: center;
-  margin: 0 0 0.8rem;
-}
-.kitchen__cook-together-n {
-  color: var(--ink-soft);
-}
+/* #43 "Cuisiner ensemble" is now CookMode itself (tabbed via .cook__siblings,
+   above), so the old side-by-side .multicook__* columns + the standalone
+   .kitchen__cook-together button were removed. */

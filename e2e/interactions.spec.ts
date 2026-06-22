@@ -545,20 +545,28 @@ test.describe('kitchen', () => {
     await expect(lows).toHaveCount(3)
   })
 
-  test('planning a supper asks for its staples', async ({ page }) => {
+  test('planning a supper saves directly; "+ ingrédients" opt-in fetches staples', async ({ page }) => {
     // The per-day planning controls live in the day editor SCENE now
-    // (/kitchen/day/:date). Souper renders LAST (chronological order), with its
-    // own grocery-staples step.
+    // (/kitchen/day/:date). Souper renders LAST (chronological order). The
+    // grocery-staples step is OPT-IN via the "+ ingrédients" toggle — off by
+    // default so "Mettre" just saves the meal (one less step).
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.scene')
-    // The souper section's add control opens the supper title form (beginSetMeal →
-    // the staples opt-in, which posts to meal-staples to fetch the staple list).
     await sheet.locator('[data-dnd-zone="supper"] .kitchen__slot-add').click()
     // The supper title editor is an EntityCombobox (reuses .edit-field styling but
-    // is NOT a form — Enter commits the free text → beginSetMeal → POST meal-staples).
+    // is NOT a form — Enter commits the free text → beginSetMeal).
     const edit = sheet.locator('[data-dnd-zone="supper"] .edit-field')
     await edit.locator('input.input').fill('Pizza maison')
-    await expectApi(page, 'POST', 'meal-staples', () => edit.locator('input.input').press('Enter'))
+    // Default (opt-in OFF): Enter just saves — a straight POST meals, no staples.
+    await expectApi(page, 'POST', 'meals', () => edit.locator('input.input').press('Enter'))
+
+    // Re-open and turn the "+ ingrédients" opt-in ON → committing now fetches the
+    // staple list first (POST meal-staples).
+    await sheet.locator('[data-dnd-zone="supper"] .kitchen__slot-add').click()
+    const edit2 = sheet.locator('[data-dnd-zone="supper"] .edit-field')
+    await edit2.locator('input.input').fill('Lasagne')
+    await edit2.locator('.kitchen__recipe-staples').click()
+    await expectApi(page, 'POST', 'meal-staples', () => edit2.locator('input.input').press('Enter'))
   })
 
   test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {

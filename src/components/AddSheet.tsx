@@ -119,14 +119,14 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   departure: '/board/departure',
   'quick-add': '/liste/quick',
   flyer: '/liste/circulaires',
-  // Le cercle: person + family are scene routes; connect + group open on /cercle
-  // itself via a ?param the page reads (then strips).
+  // Le cercle: person + family + pet are scene routes; connect + group open on
+  // /cercle itself via a ?param the page reads (then strips).
   person: '/cercle/person/new',
   family: '/cercle/family/new',
+  pet: '/cercle/pet/new',
   connect: '/cercle?connect=1',
   group: '/cercle?add=group',
   business: '/cercle?add=business',
-  pet: '/cercle?add=pet',
   ...FORM_ROUTES,
 }
 
@@ -264,6 +264,10 @@ export function AddSheet({
   // Fetched from the shared meal + recipe caches only while the sheet's open and
   // the tile is shown. mealPrefs colours each slot the way the rest of the app does.
   const cookChoices = useCookableMeals(open && shown.includes('cook'))
+  // #43 — how many DISTINCT dishes are cookable today; 2+ adds a "Cuisiner ensemble"
+  // entry to the picker (cook them at once, /kitchen/cook/multi) beside the single
+  // dishes — the old standalone button atop La cuisine moved in here.
+  const cookTogetherCount = useMemo(() => new Set(cookChoices.map((c) => c.recipe.id)).size, [cookChoices])
   const mealPrefs = useMealPrefs()
   const weekStart = mealsData?.weekStart ?? 0
   // Same 10-day countdown window the Kitchen grid renders (shrinks 10 → 4 across
@@ -937,6 +941,22 @@ export function AddSheet({
           ) : (
             <div className="addsheet__cook">
               <p className="sheet__group-label mono">{t.kitchen.cookWhich}</p>
+              {/* #43 — 2+ distinct dishes today ⇒ offer to cook them all at once
+                  (one coordinated cook mode), as the first choice above the singles. */}
+              {cookTogetherCount >= 2 && (
+                <div className="addsheet__cooklist">
+                  <Act
+                    cat="meal"
+                    icon="cooking-pot-bold"
+                    title={t.kitchen.cookTogether}
+                    who={t.kitchen.cookTogetherN(cookTogetherCount)}
+                    onActivate={() => {
+                      close()
+                      nav('/kitchen/cook/multi')
+                    }}
+                  />
+                </div>
+              )}
               {/* Each choice is the app's shared Act row (board/Act) — colour spine,
                   the recipe's photo (or the slot glyph) in the tile, slot · recipe as
                   the sub-line, a caret since it navigates, and the next-due meal's

@@ -20,6 +20,7 @@ const Routines = lazy(() => import('./pages/Routines').then((m) => ({ default: m
 const Cercle = lazy(() => import('./pages/Cercle').then((m) => ({ default: m.Cercle })))
 const CercleFormPage = lazy(() => import('./pages/CercleFormPage').then((m) => ({ default: m.CercleFormPage })))
 const CercleFamilyPage = lazy(() => import('./pages/CercleFamilyPage').then((m) => ({ default: m.CercleFamilyPage })))
+const CerclePetPage = lazy(() => import('./pages/CerclePetPage').then((m) => ({ default: m.CerclePetPage })))
 const Liste = lazy(() => import('./pages/Liste').then((m) => ({ default: m.Liste })))
 const Pair = lazy(() => import('./pages/Pair').then((m) => ({ default: m.Pair })))
 const Setup = lazy(() => import('./pages/Setup').then((m) => ({ default: m.Setup })))
@@ -123,6 +124,8 @@ export function AppRoutes() {
         {/* `new` before `:id` so it isn't captured as a contact id. */}
         <Route path="/cercle/person/new" element={<CercleFormPage />} />
         <Route path="/cercle/person/:id" element={<CercleFormPage />} />
+        <Route path="/cercle/pet/new" element={<CerclePetPage />} />
+        <Route path="/cercle/pet/:id" element={<CerclePetPage />} />
         <Route path="/event/new" element={<EventFormPage />} />
         <Route path="/chore/new" element={<ChoreFormPage />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />

@@ -17,6 +17,7 @@ import { Icon, InlineIcon } from '../Icon'
 import { MemberSwitcher } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
 import { EditField } from '../EditField'
+import { Modal } from '../Modal'
 import { MemoControls } from '../MemoControls'
 import { ZoomableImg } from '../ZoomableImg'
 import { DrawPad } from '../DrawPad'
@@ -59,6 +60,10 @@ export function CercleNotes({
   const [text, setText] = useState('')
   // iOS-Notes-style live search across the visible list (text + author name).
   const [query, setQuery] = useState('')
+  // A long note is read inline by EXPANDING it in place (tap the body to open/close),
+  // and edited in a full-width memo dialog — not the cramped in-row box. The two are
+  // separate: tapping reads; the pencil edits.
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   // Re-opening a drawing note (#14): the shared chooser (modify / copy / calquer) + the
@@ -267,29 +272,6 @@ export function CercleNotes({
             const scopeChip = n.member_id === null ? fn.forFamily : (nameOf(n.member_id) ?? fn.scopeSelf)
             const when = formatDay(n.created_at, lang)
 
-            // Inline text edit — the row turns into the editor in place. Text notes
-            // edit their body; audio/photo notes edit their NAME (the caption shown as
-            // the title), so a "Mémo vocal" can become "Liste d'épicerie de mémé". A
-            // drawing keeps the redraw flow instead, so it's excluded here.
-            if (editingId === n.id && media !== 'drawing') {
-              return (
-                <li key={n.id} className="cnote cnote--editing" style={css}>
-                  <EditField
-                    value={editText}
-                    onChange={setEditText}
-                    onSubmit={(v) => saveEdit(n, v)}
-                    onCancel={() => setEditingId(null)}
-                    multiline={!media}
-                    maxLength={2000}
-                    autoFocus
-                    placeholder={media ? fn.rename : fn.placeholder}
-                    submitIcon="check-bold"
-                    ariaLabel={media ? fn.rename : fn.edit}
-                  />
-                </li>
-              )
-            }
-
             // iOS row anatomy: a bold first-line title, then a quieter "date · preview"
             // line. Media notes title themselves (Dessin / Photo / Mémo vocal).
             const firstLine = n.text.split('\n').find((l) => l.trim()) ?? ''
@@ -298,8 +280,19 @@ export function CercleNotes({
             const title = firstLine || mediaLabel || fn.title
             const preview = firstLine ? rest || (media ? mediaLabel : '') : media ? '' : rest
 
+            // A text note with more than its first line (or a long single line) can be
+            // read in place: tapping the body expands the row to show the full text
+            // wrapped, tapping again collapses it. Short notes stay one inert line.
+            const isText = !media
+            const expandable = isText && (rest.length > 0 || firstLine.length > 48)
+            const expanded = expandedId === n.id
+            const openEdit = () => {
+              setEditingId(n.id)
+              setEditText(n.text)
+            }
+
             return (
-              <li key={n.id} className="cnote" style={css}>
+              <li key={n.id} className={'cnote' + (expanded ? ' cnote--expanded' : '')} style={css}>
                 {/* Visual notes show a tappable thumbnail; text/audio show a tint dot. */}
                 {media === 'drawing' || media === 'image' ? (
                   <ZoomableImg className="cnote__thumb" src={imgUrl(n.media_key!)} alt={title} />
@@ -309,25 +302,30 @@ export function CercleNotes({
                   </span>
                 )}
 
-                {/* The body: tapping a text note edits it; an audio note plays it; a
-                    visual note's body is inert (its thumbnail handles the zoom). */}
+                {/* The body: tapping a text note expands/collapses it (to read long
+                    notes in place); an audio note plays it; a visual note's body is
+                    inert (its thumbnail handles the zoom). Editing is the pencil, not
+                    the tap, so reading and editing never get confused. */}
                 {media === 'audio' ? (
                   <button type="button" className="cnote__main" onClick={() => playClip(n.media_key!)} aria-label={fn.memo}>
                     <span className="cnote__title">{title}</span>
                     <span className="cnote__meta mono">{when}{preview ? ` · ${preview}` : ''}</span>
                   </button>
-                ) : !media && !ro ? (
+                ) : expandable ? (
                   <button
                     type="button"
                     className="cnote__main"
-                    onClick={() => {
-                      setEditingId(n.id)
-                      setEditText(n.text)
-                    }}
-                    aria-label={fn.edit}
+                    onClick={() => setExpandedId(expanded ? null : n.id)}
+                    aria-expanded={expanded}
+                    aria-label={expanded ? fn.collapse : fn.expand}
                   >
-                    <span className="cnote__title">{title}</span>
-                    <span className="cnote__meta mono">{when}{preview ? ` · ${preview}` : ''}</span>
+                    <span className="cnote__titlerow">
+                      <span className="cnote__title">{title}</span>
+                      <span className="cnote__caret" aria-hidden="true">
+                        <InlineIcon name={expanded ? 'caret-up-bold' : 'caret-down-bold'} size={14} />
+                      </span>
+                    </span>
+                    <span className="cnote__meta mono">{when}{!expanded && preview ? ` · ${preview}` : ''}</span>
                   </button>
                 ) : (
                   <span className="cnote__main cnote__main--static">
@@ -345,17 +343,15 @@ export function CercleNotes({
                         <Icon name="pencil-simple-bold" size={15} />
                       </button>
                     )}
-                    {/* Rename: audio + photo notes have no inline tap-to-edit (tapping
-                        plays / zooms), so a pencil opens the in-place name editor. */}
-                    {(media === 'audio' || media === 'image') && (
+                    {/* Pencil opens the full-width memo editor: a text note edits its
+                        body, an audio/photo note edits its NAME (the caption shown as
+                        the title) so a "Mémo vocal" can become "Liste de mémé". */}
+                    {(isText || media === 'audio' || media === 'image') && (
                       <button
                         type="button"
                         className="cnote__act"
-                        onClick={() => {
-                          setEditingId(n.id)
-                          setEditText(n.text)
-                        }}
-                        aria-label={fn.rename}
+                        onClick={openEdit}
+                        aria-label={media ? fn.rename : fn.edit}
                       >
                         <Icon name="pencil-simple-bold" size={15} />
                       </button>
@@ -365,11 +361,41 @@ export function CercleNotes({
                     </button>
                   </span>
                 )}
+
+                {/* Expanded: the whole note, wrapped, spanning the row's full width. */}
+                {expanded && <p className="cnote__full">{n.text}</p>}
               </li>
             )
           })}
         </ul>
       )}
+
+      {/* Full-width memo editor — a roomy dialog, not the cramped in-row box, so a
+          long personal note has space to breathe (mic + clear come along via
+          EditField). A text note edits its body; an audio/photo note edits its name. */}
+      {(() => {
+        const note = editingId ? all.find((n) => n.id === editingId) : null
+        if (!note) return null
+        const m = note.media_kind && note.media_key ? note.media_kind : null
+        const isRename = m === 'audio' || m === 'image'
+        return (
+          <Modal open onClose={() => setEditingId(null)} title={isRename ? fn.rename : fn.edit} className="cnote-memo">
+            <EditField
+              value={editText}
+              onChange={setEditText}
+              onSubmit={(v) => saveEdit(note, v)}
+              onCancel={() => setEditingId(null)}
+              multiline={!isRename}
+              maxLength={2000}
+              autoFocus
+              placeholder={isRename ? fn.rename : fn.placeholder}
+              submitLabel={fn.save}
+              submitLeadingIcon="check-bold"
+              ariaLabel={isRename ? fn.rename : fn.edit}
+            />
+          </Modal>
+        )
+      })()}
 
       {/* Ask how to continue a drawing note before opening the pad (#14): modify in
           place, an independent copy, or a faded calque. */}

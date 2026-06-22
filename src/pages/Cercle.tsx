@@ -32,7 +32,6 @@ import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { BusinessesTab } from '../components/cercle/BusinessesTab'
 import { BusinessForm } from '../components/cercle/BusinessForm'
-import { PetForm } from '../components/cercle/PetForm'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
 import { SubTabs } from '../components/SubTabs'
 import { MemberSwitcher } from '../components/MemberSwitcher'
@@ -171,10 +170,6 @@ function CercleParent() {
   // The ＋ "Nouveau commerce" tile opens the BusinessForm here (page-level, like the
   // group/connect modals) so it works from ANY cercle subtab, not just Business.
   const [addingBusiness, setAddingBusiness] = useState(false)
-  // The ＋ "Ajouter un animal" tile opens the PetForm here (page-level, like the
-  // group/business modals). `editingPet` reopens it on a pet's detail peek.
-  const [addingPet, setAddingPet] = useState(false)
-  const [editingPet, setEditingPet] = useState<Pet | null>(null)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   // The "Relier deux personnes" connector, opened (optionally seeded with one side)
   // from the ＋ chooser, a person's peek, or a family group header.
@@ -212,7 +207,6 @@ function CercleParent() {
     if (params.get('connect') === '1') setConnect({})
     else if (params.get('add') === 'group') setAddingGroup(true)
     else if (params.get('add') === 'business') setAddingBusiness(true)
-    else if (params.get('add') === 'pet') setAddingPet(true)
     else return
     const next = new URLSearchParams(params)
     next.delete('connect')
@@ -414,7 +408,7 @@ function CercleParent() {
           vetName,
           onConnect,
           buildFamilyHref,
-          onEdit: () => setEditingPet(pet),
+          onEdit: () => nav(`/cercle/pet/${pet.id}`),
           onDelete: ro ? undefined : () => void deletePet(pet),
         }),
       )
@@ -576,28 +570,6 @@ function CercleParent() {
       <Modal open={addingBusiness} onClose={() => setAddingBusiness(false)} title={t.cercle.business.add}>
         <BusinessForm onSaved={() => setAddingBusiness(false)} onCancel={() => setAddingBusiness(false)} />
       </Modal>
-
-      <Modal
-        open={addingPet || !!editingPet}
-        onClose={() => {
-          setAddingPet(false)
-          setEditingPet(null)
-        }}
-        title={editingPet ? t.cercle.pet.edit : t.cercle.pet.add}
-      >
-        <PetForm
-          value={editingPet}
-          onSaved={() => {
-            setAddingPet(false)
-            setEditingPet(null)
-          }}
-          onCancel={() => {
-            setAddingPet(false)
-            setEditingPet(null)
-          }}
-        />
-      </Modal>
-
 
       {people.length === 0 ? (
         <>

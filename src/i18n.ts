@@ -412,6 +412,7 @@ export const FR = {
     weekHint: 'Touche un jour pour dire qui a l’auto — l’horaire le remplit déjà tout seul.',
     noRides: 'Aucun trajet',
     freeAllDay: 'Libre toute la journée',
+    freeRestOfDay: 'Libre — le reste de la journée',
     staysHome: 'Reste à la maison',
     whoHasCar: 'Qui a l’auto ?',
     copyLastWeek: '← Copier la semaine passée',
@@ -972,6 +973,8 @@ export const FR = {
       noMatch: 'Aucune note ne correspond.',
       drawing: 'Dessin',
       photo: 'Photo',
+      expand: 'Voir la note au complet',
+      collapse: 'Réduire la note',
     },
   },
   routines: {
@@ -2045,6 +2048,7 @@ export const EN: typeof FR = {
     weekHint: 'Tap a day to say who has the car — the schedule already fills it in.',
     noRides: 'No rides',
     freeAllDay: 'Free all day',
+    freeRestOfDay: 'Free — rest of the day',
     staysHome: 'Stays home',
     whoHasCar: 'Who has the car?',
     copyLastWeek: '← Copy last week',
@@ -2593,6 +2597,8 @@ export const EN: typeof FR = {
       noMatch: 'No matching notes.',
       drawing: 'Drawing',
       photo: 'Photo',
+      expand: 'Show the full note',
+      collapse: 'Collapse note',
     },
   },
   routines: {

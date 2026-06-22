@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { api } from '../lib/api'
@@ -13,6 +13,8 @@ import { todayLocalDay, addLocalDays, localDayOfWeek } from '../lib/localDay'
 import { formatWeekday, formatDay, formatTime } from '../lib/format'
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
+import { Avatar } from '../components/Avatar'
+import { Icon } from '../components/Icon'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useNavigate } from 'react-router-dom'
 
@@ -42,8 +44,9 @@ export function VoiturePage() {
   useEscapeKey(close)
   const { audience } = useAudience()
   const write = useWrite()
-  const { name: carName, primary } = useCars()
+  const { name: carName, color: carColorOf, primary } = useCars()
   const carId = primary?.id ?? 'car'
+  const carColor = carColorOf(primary?.id) ?? '#6b7a8f'
   const { data: membersData } = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members'), ...live })
   const members = membersData?.members ?? []
   const nameOf = (id: string | null | undefined) => (id ? members.find((m) => m.id === id)?.display_name : undefined)
@@ -114,7 +117,11 @@ export function VoiturePage() {
           {firstRide ? (
             <div className="voiture__kid-card">
               <span className="voiture__kid-face" style={{ background: colorOf(driverId) ?? '#6b7a8f' }}>
-                {(firstRide.contactName ?? nameOf(driverId) ?? '🚗').slice(0, 1)}
+                {firstRide.contactName || nameOf(driverId) ? (
+                  (firstRide.contactName ?? nameOf(driverId) ?? '').slice(0, 1)
+                ) : (
+                  <Icon name="car-bold" size={72} color="#fff" />
+                )}
               </span>
               <span className="voiture__kid-name">{firstRide.contactName ?? nameOf(driverId) ?? t.auto.car}</span>
               <span className="voiture__kid-what">{firstRide.title}</span>
@@ -170,6 +177,7 @@ export function VoiturePage() {
               members={members}
               nameOf={nameOf}
               colorOf={colorOf}
+              carColor={carColor}
               hhmm={hhmm}
               driverLine={driverLine}
               editing={editDay === d.day}
@@ -195,7 +203,10 @@ export function VoiturePage() {
   )
 }
 
-// One day in the week — its resolved car windows + rides, tap to adjust.
+// One day in the week — its resolved car windows + rides, tap to adjust. Reads at a
+// glance: a BUSY day (the car is claimed) gets a coloured accent + the holder's face
+// and window; a FREE day stays muted with a calm « Libre ». Drivers + passengers show
+// as faces (colour = who), never just text — "qui a l'auto" answered visually.
 function DayRow({
   d,
   isToday,
@@ -204,6 +215,7 @@ function DayRow({
   members,
   nameOf,
   colorOf,
+  carColor,
   hhmm,
   driverLine,
   editing,
@@ -219,6 +231,7 @@ function DayRow({
   members: Member[]
   nameOf: (id: string | null | undefined) => string | undefined
   colorOf: (id: string | null | undefined) => string | undefined
+  carColor: string
   hhmm: (at: number) => string
   driverLine: (r: CarRide) => string
   editing: boolean
@@ -227,42 +240,89 @@ function DayRow({
   onClear: () => void
   onAddRide: () => void
 }) {
-  const spanText =
-    d.spans.length === 0
-      ? t.auto.freeAllDay
-      : d.spans.map((s) => `${hhmm(s.start)}–${hhmm(s.end)}${s.holderId ? ` · ${nameOf(s.holderId) ?? s.label ?? ''}` : s.label ? ` · ${s.label}` : ''}`).join(' · ')
+  const memberOf = (id: string | null | undefined) => (id ? members.find((m) => m.id === id) : undefined)
+  const busy = d.spans.length > 0
+  // The face(s) shown on a busy day = the distinct people holding the car (most days
+  // it's one). The accent colour follows the first holder, else the car's own colour.
+  const holderIds = [...new Set(d.spans.map((s) => s.holderId).filter((x): x is string => !!x))]
+  const tint = colorOf(holderIds[0]) ?? carColor
 
   return (
-    <div className={`voiture__day${isToday ? ' voiture__day--today' : ''}`}>
+    <div
+      className={`voiture__day${isToday ? ' voiture__day--today' : ''}${busy ? ' voiture__day--busy' : ' voiture__day--free'}`}
+      style={busy ? ({ '--day-tint': tint } as CSSProperties) : undefined}
+    >
       <button type="button" className="voiture__day-head" onClick={onEdit} aria-expanded={editing}>
-        <span className="voiture__day-name mono">
-          {formatWeekday(d.day, lang)} {formatDay(d.day, lang)}
+        <span className="voiture__day-date">
+          <span className="voiture__day-dow">{formatWeekday(d.day, lang)}</span>
+          <span className="voiture__day-num mono">{formatDay(d.day, lang)}</span>
         </span>
-        <span className="voiture__day-status">{spanText}</span>
+        <span className="voiture__day-main">
+          {busy ? (
+            <>
+              <span className="voiture__day-holders">
+                {holderIds.length > 0 ? (
+                  holderIds.map((id) => {
+                    const m = memberOf(id)
+                    return (
+                      <span key={id} className="voiture__day-holder">
+                        <Avatar kind={m?.avatar_kind} photo={m?.avatar_ref} colour={m?.colour ?? tint} name={m?.display_name} size={30} />
+                        <span className="voiture__day-holdername">{nameOf(id) ?? d.spans.find((s) => s.holderId === id)?.label ?? ''}</span>
+                      </span>
+                    )
+                  })
+                ) : (
+                  <span className="voiture__day-holder">
+                    <span className="voiture__day-caricon" style={{ color: tint }} aria-hidden="true">
+                      <Icon name="car-bold" size={22} />
+                    </span>
+                    <span className="voiture__day-holdername">{d.spans[0]?.label ?? t.auto.car}</span>
+                  </span>
+                )}
+              </span>
+              <span className="voiture__day-window mono">{d.spans.map((s) => `${hhmm(s.start)}–${hhmm(s.end)}`).join(' · ')}</span>
+            </>
+          ) : (
+            <span className="voiture__day-free-label">{t.auto.freeAllDay}</span>
+          )}
+        </span>
         {d.override && <span className="voiture__day-badge mono">{t.auto.adjusted}</span>}
       </button>
 
       {d.rides.length > 0 && (
         <ul className="voiture__rides">
-          {d.rides.map((r) => (
-            <li key={r.id} className={`voiture__ride${r.conflict ? ' voiture__ride--conflict' : ''}`}>
-              <span className="voiture__ride-when mono">{r.allDay ? '' : hhmm(r.at)}</span>
-              <span className="voiture__ride-what">
-                {r.title}
-                {driverLine(r) ? <span className="mono"> · {driverLine(r)}</span> : null}
-              </span>
-              {r.passengers.length > 0 && (
-                <span className="voiture__pax" aria-hidden="true">
-                  {r.passengers.map((pid) => (
-                    <span key={pid} className="voiture__face" style={{ background: colorOf(pid) ?? '#888' }}>
-                      {(nameOf(pid) ?? '?').slice(0, 1)}
-                    </span>
-                  ))}
+          {d.rides.map((r) => {
+            const driver = memberOf(r.memberId)
+            return (
+              <li key={r.id} className={`voiture__ride${r.conflict ? ' voiture__ride--conflict' : ''}`}>
+                <span className="voiture__ride-when mono">{r.allDay ? '' : hhmm(r.at)}</span>
+                {driver ? (
+                  <Avatar kind={driver.avatar_kind} photo={driver.avatar_ref} colour={driver.colour} name={driver.display_name} size={26} />
+                ) : (
+                  <span className="voiture__day-caricon voiture__day-caricon--ride" style={{ color: carColor }} aria-hidden="true">
+                    <Icon name="car-bold" size={18} />
+                  </span>
+                )}
+                <span className="voiture__ride-what">
+                  <span className="voiture__ride-title">{r.title}</span>
+                  {driverLine(r) ? <span className="voiture__ride-driver">{driverLine(r)}</span> : null}
                 </span>
-              )}
-              {r.conflict && <span className="voiture__conflict mono" title={t.auto.conflict}>⚠️</span>}
-            </li>
-          ))}
+                {r.passengers.length > 0 && (
+                  <span className="voiture__pax" aria-hidden="true">
+                    {r.passengers.map((pid) => {
+                      const p = memberOf(pid)
+                      return <Avatar key={pid} kind={p?.avatar_kind} photo={p?.avatar_ref} colour={p?.colour ?? '#888'} name={p?.display_name} size={22} />
+                    })}
+                  </span>
+                )}
+                {r.conflict && (
+                  <span className="voiture__conflict" title={t.auto.conflict} aria-label={t.auto.conflict}>
+                    <Icon name="warning-bold" size={17} />
+                  </span>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
 

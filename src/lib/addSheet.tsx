@@ -55,7 +55,8 @@ export type AddSheetMode =
   // BusinessForm modal on /cercle via ?add=business. The Business tab no longer
   // carries its own add button; the ＋ FAB is the single entry, like the others.
   | 'business'
-  // Add a pet (PersonKind 'pet') — opens the PetForm modal on /cercle via ?add=pet.
+  // Add a pet (PersonKind 'pet') — a full-screen scene route (/cercle/pet/new),
+  // like the person form, so the care form rides above the mobile keyboard.
   | 'pet'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One

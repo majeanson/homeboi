@@ -65,7 +65,24 @@ type Stage =
   | { kind: 'ingredients' }
   | { kind: 'step'; text: string; n: number; section: string | null; srcIdx: number }
 
-export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
+// `siblings` turns Cook mode into the "Cuisiner ensemble" tabbed view (#43): a small
+// sub-tab row under the bar controls flips between dish A / dish B / … Each dish is a
+// full, independent CookMode kept mounted (its step, gather list and timers survive a
+// switch — a pasta timer set on dish A still chimes while you read dish B); `hidden`
+// display:none-s the inactive ones and no-ops their modal/keyboard wiring.
+type Siblings = { titles: string[]; active: number; onSwitch: (i: number) => void }
+
+export function CookMode({
+  recipe,
+  onClose,
+  hidden = false,
+  siblings,
+}: {
+  recipe: Recipe
+  onClose: () => void
+  hidden?: boolean
+  siblings?: Siblings
+}) {
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
@@ -75,7 +92,9 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const say = (txt: string | undefined) => speak(txt, recipe.lang ?? undefined)
   // Esc-to-exit + scroll-lock + focus-trap for the full-screen cooking view.
   const cookRef = useRef<HTMLDivElement>(null)
-  useModal(cookRef, onClose)
+  // Hidden sibling tabs stay mounted but inert — no Esc/scroll-lock/focus-trap
+  // fighting between the stacked instances (useModal no-ops when `open` is false).
+  useModal(cookRef, onClose, { open: !hidden })
   const [idx, setIdx] = useState(0)
   // The view follows the audience: a toddler is LOCKED to the calm stepper (a
   // one-way door — no in-cook escape), while a parent picks any of the three and
@@ -136,10 +155,15 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
   const [autoRead, setAutoRead] = useState(loadAutoRead)
   const autoReadRef = useRef(autoRead)
   autoReadRef.current = autoRead
+  // A hidden sibling tab must stay silent — otherwise every dish in "Cuisiner
+  // ensemble" would read its first step aloud at once on mount (read through a ref
+  // so toggling visibility never itself triggers a read).
+  const hiddenRef = useRef(hidden)
+  hiddenRef.current = hidden
   // Only the stepper auto-narrates on arrival; the full / split pages are tap-to-hear.
   const stepText = mode === 'step' && cur?.kind === 'step' ? cur.text : null
   useEffect(() => {
-    if (autoReadRef.current && stepText) speak(stepText, recipe.lang ?? undefined)
+    if (autoReadRef.current && stepText && !hiddenRef.current) speak(stepText, recipe.lang ?? undefined)
   }, [stepText, speak, recipe.lang])
 
   function toggleAutoRead() {
@@ -355,6 +379,7 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
       role="dialog"
       aria-modal="true"
       aria-label={recipe.title}
+      style={hidden ? { display: 'none' } : undefined}
     >
       <div className="cook__bar">
         <span className="cook__title">{recipe.title}</span>
@@ -461,6 +486,27 @@ export function CookMode({ recipe, onClose }: { recipe: Recipe; onClose: () => v
           </button>
         </div>
       </div>
+
+      {/* "Cuisiner ensemble" dish switcher (#43): a sub-tab row under the display +
+          text-size controls that flips between the dishes — each one a full cook view
+          of its own. Sits below the bar so the layout/size controls govern whichever
+          dish is showing. */}
+      {siblings && siblings.titles.length > 1 && (
+        <div className="cook__siblings" role="tablist" aria-label={t.kitchen.cookTogether}>
+          {siblings.titles.map((title, i) => (
+            <button
+              key={i}
+              type="button"
+              role="tab"
+              aria-selected={i === siblings.active}
+              className={'cook__sibling' + (i === siblings.active ? ' is-on' : '')}
+              onClick={() => siblings.onSwitch(i)}
+            >
+              {title}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* A spoken-command hint while the mic is open — so the words are discoverable
           (you can't see a menu of them otherwise). */}
