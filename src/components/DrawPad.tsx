@@ -382,9 +382,15 @@ export function DrawPad({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tpl, traceCh, shape])
   // #14b — the watermark fade slider repaints the base photo at the new alpha.
+  // Only touch the alpha ref when a watermark/calque photo is actually loaded:
+  // photoAlpha's state default (0.4) is the slider's resting value, NOT the opacity
+  // of a plain base image. A flat base PNG (an old scene-less drawing re-opened to
+  // MODIFY/COPY) must render at the opaque useRef(1) default — otherwise it'd come
+  // back faded, looking like an unwanted « filigrane ».
   useEffect(() => {
+    if (!hasPhoto) return
     photoAlphaRef.current = photoAlpha
-    if (hasPhoto) render(padRef.current?.toData() ?? [])
+    render(padRef.current?.toData() ?? [])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photoAlpha])
 
