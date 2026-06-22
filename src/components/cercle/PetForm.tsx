@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
 import { api } from '../../lib/api'
@@ -7,12 +7,24 @@ import { live } from '../../lib/query'
 import { useWrite } from '../../lib/write'
 import { CERCLE_KEY, BUSINESSES_KEY } from '../../lib/queryKeys'
 import { type Business } from '../../lib/businesses'
-import { type Pet, type PetWeight, PET_SPECIES } from '../../lib/cercle'
+import {
+  type Pet,
+  type PetWeight,
+  type Contact,
+  type Member,
+  type ContactLink,
+  type Person,
+  PET_SPECIES,
+  unifyCircle,
+  personKey,
+  parsePersonKey,
+} from '../../lib/cercle'
 import { BirthdayPicker } from './BirthdayPicker'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { ColorPicker } from '../ColorPicker'
 import { StatusMessage } from '../StatusMessage'
 import { RowActions } from '../RowActions'
+import { Avatar } from '../Avatar'
 import { Icon } from '../Icon'
 
 const PET_COLOUR = '#C7873F' // the pet amber (mirrors PET_ACCENT in lib/cercle)
@@ -56,6 +68,63 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
   const businesses = bzData?.businesses ?? []
   const vet = businesses.find((b) => b.id === vetBusinessId) ?? null
 
+  // Owner(s) — who this animal belongs to. A household MEMBER owner makes it a
+  // Maisonnée pet (shows in the Maisonnée card); a friend (contact) owner makes it
+  // the friend's pet (it follows them into Social). We POST/DELETE owner→pet links
+  // alongside the pet write so the form is the one place you say "whose pet is this".
+  const { data: cData } = useQuery({
+    queryKey: CERCLE_KEY,
+    queryFn: () => api<{ contacts: Contact[]; members: Member[]; links: ContactLink[] }>('cercle'),
+    ...live,
+  })
+  // Pickable owners: members + contacts (deduped so a member+linked-contact is one),
+  // never other pets.
+  const ownerPeople = useMemo<Person[]>(
+    () => unifyCircle(cData?.contacts ?? [], cData?.members ?? [], cData?.links ?? [], []).people.filter((pp) => pp.kind !== 'pet'),
+    [cData],
+  )
+  const peopleByKey = useMemo(() => new Map(ownerPeople.map((pp) => [pp.key, pp])), [ownerPeople])
+  // Stored owner links for THIS pet (edit mode): owner person-key → link id (to PATCH/DELETE).
+  const existingOwners = useMemo(() => {
+    const m = new Map<string, string>()
+    if (!value) return m
+    const petKey = personKey('pet', value.id)
+    for (const l of cData?.links ?? []) {
+      const aKey = personKey(l.personAKind, l.personAId)
+      const bKey = personKey(l.personBKind, l.personBId)
+      if (l.type === 'owner' && bKey === petKey) m.set(aKey, l.id)
+      else if (l.type === 'pet' && aKey === petKey) m.set(bKey, l.id)
+    }
+    return m
+  }, [cData, value])
+
+  const [ownerKeys, setOwnerKeys] = useState<Set<string>>(new Set())
+  const [ownerQuery, setOwnerQuery] = useState('')
+  // Seed the picked owners from the stored links once they load (edit mode only).
+  const seeded = useRef(false)
+  useEffect(() => {
+    if (!seeded.current && value && cData) {
+      setOwnerKeys(new Set(existingOwners.keys()))
+      seeded.current = true
+    }
+  }, [value, cData, existingOwners])
+
+  // Add the new owner links and drop the removed ones, after the pet exists.
+  async function reconcileOwners(petId: string) {
+    for (const key of ownerKeys) {
+      if (existingOwners.has(key)) continue
+      const { kind, id } = parsePersonKey(key)
+      await write('cercle-links', {
+        method: 'POST',
+        body: { aId: id, aKind: kind, bId: petId, bKind: 'pet', type: 'owner' },
+        affectedKeys: [CERCLE_KEY],
+      }).catch(() => {})
+    }
+    for (const [key, linkId] of existingOwners) {
+      if (!ownerKeys.has(key)) await write('cercle-links', { method: 'DELETE', body: { id: linkId }, affectedKeys: [CERCLE_KEY] }).catch(() => {})
+    }
+  }
+
   function addWeight() {
     const kg = Number(wKg)
     if (!wDate || !Number.isFinite(kg) || kg <= 0) return
@@ -98,11 +167,15 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
     setBusy(true)
     setErr(false)
     try {
-      await write('pets', {
+      const res = await write<{ id?: string }>('pets', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...body } : body,
         affectedKeys: [CERCLE_KEY],
       })
+      // Wire owner links once we know the pet id. A brand-new pet created OFFLINE has
+      // no id yet (queued) — owners then wait for the next edit; the rest still saves.
+      const petId = value?.id ?? res.data?.id ?? null
+      if (petId) await reconcileOwners(petId)
       onSaved()
     } catch {
       setErr(true)
@@ -132,6 +205,46 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
 
       <label className="cf__label">{p.birthday}</label>
       <BirthdayPicker value={birthday} onChange={setBirthday} />
+
+      {/* Owner(s) — drives where the animal lives in Le cercle. A member → Maisonnée;
+          a friend → it shows with them in Social. Leave empty = the Maisonnée's. */}
+      <label className="cf__label">{p.owner}</label>
+      <EntityCombobox<Person>
+        value={ownerQuery}
+        onChange={setOwnerQuery}
+        options={ownerPeople
+          .filter((pp) => !ownerKeys.has(pp.key))
+          .map((pp): ComboOption<Person> => ({ id: pp.key, label: pp.name, data: pp, icon: pp.kind === 'member' ? 'users-three-bold' : 'user-bold' }))}
+        onPick={(opt) => {
+          if (opt.data) setOwnerKeys((s) => new Set(s).add(opt.data!.key))
+          setOwnerQuery('')
+        }}
+        placeholder={p.ownerPick}
+        submitIcon={null}
+        typeaheadOnly
+      />
+      {ownerKeys.size > 0 && (
+        <ul className="pet-form__owners">
+          {[...ownerKeys].map((k) => {
+            const pp = peopleByKey.get(k)
+            return (
+              <li key={k} className="pet-form__owner">
+                {pp && <Avatar kind={pp.avatarKind} photo={pp.avatarRef} colour={pp.colour} name={pp.firstName} size={28} />}
+                <span className="pet-form__owner-name">{pp?.name ?? k}</span>
+                <button
+                  type="button"
+                  className="row-actions__btn"
+                  aria-label={t.common.cancel}
+                  onClick={() => setOwnerKeys((s) => { const n = new Set(s); n.delete(k); return n })}
+                >
+                  <Icon name="x-bold" size={14} />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      <p className="pet-form__owner-hint mono">{p.ownerHint}</p>
 
       <input className="input" value={microchip} onChange={(e) => setMicrochip(e.target.value)} placeholder={p.microchip} aria-label={p.microchip} />
       <textarea className="input" value={feeding} onChange={(e) => setFeeding(e.target.value)} placeholder={p.feeding} aria-label={p.feeding} rows={2} />

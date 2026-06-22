@@ -693,8 +693,10 @@ export function Board() {
       {data && <Notes notes={data.notes ?? []} members={data.members} variant="notes" />}
 
       {/* Today's day note (the per-day memo from La cuisine) rides here too, in
-          every view — read-only on the wall, edited in the kitchen. */}
-      {data?.dayNote && <DayNote note={data.dayNote} members={data.members} />}
+          every view — read-only on the wall, edited in the kitchen. Skipped in the
+          Calendar (Mois) view: its day panel already shows today's note below, so
+          this top copy would just repeat it. */}
+      {view !== 'month' && data?.dayNote && <DayNote note={data.dayNote} members={data.members} />}
 
       {/* Upcoming birthdays from « Le cercle » — a calm strip above the day, in
           every parent view (renders nothing when none are near). */}
@@ -951,9 +953,11 @@ export function Board() {
 
       {/* « L'auto » glance — the car's status today + today's rides, a calm strip
           BELOW the day. The Grille (bento) view renders it inside the grid, just
-          above the drawings/photos; the compact Next/Lanes/Month views (no drawings)
-          show it here at the foot. Renders nothing when nothing's set up + no rides. #28 */}
-      {view !== 'bento' && <AutoCard />}
+          above the drawings/photos; the compact Next/Lanes views show it here at the
+          foot. The Mois (calendar) view renders it INSIDE its day panel instead, so
+          the card follows the SELECTED date rather than being stuck on today (#28).
+          Renders nothing when nothing's set up + no rides. */}
+      {view !== 'bento' && view !== 'month' && <AutoCard />}
 
       {stale && <p className="board__synced mono">{t.board.offline}</p>}
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}

@@ -16,6 +16,9 @@ import {
   proposeAllFamilyLinks,
   parsePersonKey,
   personKey,
+  petOwners,
+  isHouseholdPet,
+  familyReachableKeys,
   daysUntilBirthday,
   ageOnNextBirthday,
   parseBirthday,
@@ -23,6 +26,8 @@ import {
   type Contact,
   type ContactLink,
   type Member,
+  type Pet,
+  type PersonKind,
   type RelationshipType,
 } from './cercle'
 
@@ -511,5 +516,110 @@ describe('proposeAllFamilyLinks (one button: group completion + transitive bridg
     const props = proposeAllFamilyLinks(ppl('p', 'x', 'y'), links, [famGroup('g', 'p', 'x', 'y')])
     const xy = props.filter((pp) => [pp.aKey, pp.bKey].sort().join() === [k('x'), k('y')].sort().join())
     expect(xy).toHaveLength(1)
+  })
+})
+
+// ---- Pet ownership + household-family reach (the « Famille vs Social » rule) -----
+
+const pet = (id: string, name: string): Pet => ({
+  id,
+  name,
+  species: null,
+  breed: null,
+  photoKey: null,
+  colour: null,
+  birthday: null,
+  microchip: null,
+  feeding: null,
+  sitterNotes: null,
+  vetBusinessId: null,
+  weights: [],
+  notes: null,
+})
+// A typed link with explicit kinds on either endpoint (the `link` helper above is
+// contact/member only; pets need 'pet').
+const klink = (aId: string, aKind: PersonKind, bId: string, bKind: PersonKind, type: RelationshipType): ContactLink => ({
+  id: `${aId}-${bId}`,
+  personAId: aId,
+  personAKind: aKind,
+  personBId: bId,
+  personBKind: bKind,
+  type,
+  reverseType: RELATIONSHIP_INVERSES[type],
+  label: null,
+  notes: null,
+})
+
+describe('petOwners', () => {
+  it('maps a pet to its owner, in either stored direction', () => {
+    const fwd = petOwners([klink('m1', 'member', 'p1', 'pet', 'owner')])
+    expect(fwd.get('pet:p1')).toEqual(new Set(['member:m1']))
+    // mirror: "pet is pet of owner"
+    const rev = petOwners([klink('p1', 'pet', 'm1', 'member', 'pet')])
+    expect(rev.get('pet:p1')).toEqual(new Set(['member:m1']))
+  })
+  it('collects multiple owners and ignores non-owner links', () => {
+    const m = petOwners([
+      klink('m1', 'member', 'p1', 'pet', 'owner'),
+      klink('c9', 'contact', 'p1', 'pet', 'owner'),
+      link('a', 'b', 'friend'),
+    ])
+    expect(m.get('pet:p1')).toEqual(new Set(['member:m1', 'contact:c9']))
+  })
+})
+
+describe('isHouseholdPet', () => {
+  const memberKeys = new Set(['member:m1'])
+  it('an unowned pet defaults to the Maisonnée', () => {
+    expect(isHouseholdPet('pet:p1', petOwners([]), memberKeys)).toBe(true)
+  })
+  it('a member-owned pet is ours', () => {
+    const owners = petOwners([klink('m1', 'member', 'p1', 'pet', 'owner')])
+    expect(isHouseholdPet('pet:p1', owners, memberKeys)).toBe(true)
+  })
+  it("a friend-only-owned pet is NOT ours", () => {
+    const owners = petOwners([klink('c9', 'contact', 'p1', 'pet', 'owner')])
+    expect(isHouseholdPet('pet:p1', owners, memberKeys)).toBe(false)
+  })
+  it('co-owned by a member + a friend is still ours', () => {
+    const owners = petOwners([
+      klink('m1', 'member', 'p1', 'pet', 'owner'),
+      klink('c9', 'contact', 'p1', 'pet', 'owner'),
+    ])
+    expect(isHouseholdPet('pet:p1', owners, memberKeys)).toBe(true)
+  })
+})
+
+describe('familyReachableKeys (Famille = family-reachable from the household)', () => {
+  // Cast of characters:
+  //   m1 = household member (the seed)
+  //   c1 = m1's parent (family edge) → reachable (your extended family)
+  //   p1 = m1's pet (owner edge, a family rel) → reachable
+  //   f1 = m1's FRIEND (social edge) → NOT reachable
+  //   f1k = f1's kid (f1 is parent of f1k) → NOT reachable (only via the social bridge)
+  //   fp = f1's pet → NOT reachable
+  const members = [member('m1', 'Moi')]
+  const contacts = [contact('c1', 'Maman'), contact('f1', 'Ami'), contact('f1k', 'Petit')]
+  const pets = [pet('p1', 'Rex'), pet('fp', 'Minou')]
+  const people = buildPeople(contacts, members, pets)
+  const links = [
+    klink('c1', 'contact', 'm1', 'member', 'parent'), // Maman is parent of Moi
+    klink('m1', 'member', 'p1', 'pet', 'owner'), // Moi owns Rex
+    klink('m1', 'member', 'f1', 'contact', 'friend'), // Moi ↔ Ami (social bridge)
+    klink('f1', 'contact', 'f1k', 'contact', 'parent'), // Ami is parent of his kid
+    klink('f1', 'contact', 'fp', 'pet', 'owner'), // Ami owns his pet
+  ]
+
+  const reach = familyReachableKeys(new Set(['member:m1']), people, links)
+
+  it('includes the seed, your family and your pet', () => {
+    expect(reach.has('member:m1')).toBe(true)
+    expect(reach.has('contact:c1')).toBe(true)
+    expect(reach.has('pet:p1')).toBe(true)
+  })
+  it('excludes a friend, the friend’s kid and the friend’s pet (social bridge not crossed)', () => {
+    expect(reach.has('contact:f1')).toBe(false)
+    expect(reach.has('contact:f1k')).toBe(false)
+    expect(reach.has('pet:fp')).toBe(false)
   })
 })

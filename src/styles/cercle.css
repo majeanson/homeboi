@@ -1417,6 +1417,30 @@
   flex: 1 1 auto;
   min-width: 0;
 }
+/* Owner(s) chips — who this animal belongs to (members or a friend). */
+.pet-form__owners {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.pet-form__owner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.3rem;
+  border-radius: var(--radius-sm, 8px);
+}
+.pet-form__owner-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pet-form__owner-hint {
+  margin: 0.1rem 0 0;
+  color: var(--ink-soft);
+}
 
 /* « Compléter les familles » — the smart-complete button above the family list. */
 .cercle-complete {

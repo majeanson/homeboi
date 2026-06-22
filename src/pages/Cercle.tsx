@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
@@ -55,6 +55,9 @@ import {
   unifyCircle,
   personKey,
   detectFamilyGroups,
+  petOwners,
+  isHouseholdPet,
+  familyReachableKeys,
   closedLinks,
   relPriority,
   daysUntilBirthday,
@@ -249,15 +252,30 @@ function CercleParent() {
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
   const contactsById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
 
-  // The Maisonnée IS your one family: every household member, in a single card
-  // titled with the household name from Réglages (auto-synced). It supersedes both
-  // the auto-detected family clone and any hand-built group that's just the
-  // household, so the same faces never scatter across two cards.
+  // The Maisonnée IS your one family: every household member — AND the household's
+  // own animals — in a single card titled with the household name from Réglages
+  // (auto-synced). It supersedes both the auto-detected family clone and any
+  // hand-built group that's just the household, so the same faces never scatter.
   const householdName = household?.name?.trim() || t.cercle.memberBadge
-  const householdPeople = useMemo(
+  // Pet → its owner person-keys (from owner/pet links), to tell OUR animals from a
+  // friend's (which follow their owner into Social). Built off the stored links.
+  const owners = useMemo(() => petOwners(unified.links), [unified.links])
+  const householdMembers = useMemo(
     () => people.filter((p) => p.kind === 'member').sort((a, b) => a.name.localeCompare(b.name, lang)),
     [people, lang],
   )
+  const householdMemberKeys = useMemo(() => new Set(householdMembers.map((p) => p.key)), [householdMembers])
+  // Our animals: a pet owned by a household member, or one with no owner at all
+  // (an unowned pet defaults to the Maisonnée). A friend's pet is excluded here.
+  const householdPets = useMemo(
+    () =>
+      people
+        .filter((p) => p.kind === 'pet' && isHouseholdPet(p.key, owners, householdMemberKeys))
+        .sort((a, b) => a.name.localeCompare(b.name, lang)),
+    [people, owners, householdMemberKeys, lang],
+  )
+  // The Maisonnée card: members first, then the household's animals.
+  const householdPeople = useMemo(() => [...householdMembers, ...householdPets], [householdMembers, householdPets])
   const householdKeys = useMemo(() => new Set(householdPeople.map((p) => p.key)), [householdPeople])
 
   // Named explicit groups (phase 3) — but hide any FAMILY group whose every member
@@ -272,21 +290,61 @@ function CercleParent() {
     [allNamedGroups, householdKeys],
   )
 
-  // Auto-detected family groups (Union-Find over family edges), over people NOT
-  // already shown in a card: not the Maisonnée, and not a named FAMILY group you
-  // built by hand — otherwise the one big transitive "Famille X" clone duplicates
-  // every face you've already organised into a group.
-  const namedFamilyKeys = useMemo(
-    () => new Set(namedGroups.filter((g) => g.kind === 'family').flatMap((g) => [...g.memberKeys])),
-    [namedGroups],
+  // closeKeys — "your family", i.e. the Famille tab: the household (members + our
+  // animals), everyone reachable from a member through FAMILY links (so your extended
+  // family counts — the closure already derived the implied ties), and anyone you put
+  // in a named FAMILY group alongside a household member. Everyone ELSE is Social,
+  // INCLUDING a friend and the friend's own family/pets: they reach you only through a
+  // social tie, which the family walk never crosses. This single rule is what keeps
+  // your friend the important link while his kids hang off him in Social, never gaining
+  // a false direct tie to you. (See familyReachableKeys.)
+  const closeKeys = useMemo(() => {
+    const reachable = familyReachableKeys(householdMemberKeys, people, links)
+    const s = new Set<string>([...reachable, ...householdKeys])
+    for (const g of namedGroups)
+      if (g.kind === 'family' && [...g.memberKeys].some((k) => householdMemberKeys.has(k)))
+        for (const k of g.memberKeys) s.add(k)
+    return s
+  }, [householdMemberKeys, people, links, householdKeys, namedGroups])
+
+  // Which tab a named group belongs to: any close-family member → Famille; otherwise
+  // Social. A friend's family group — built with the SAME tools — has no household
+  // member, so it lives in Social.
+  const groupSection = useCallback(
+    (g: ContactGroup): Section => ([...g.memberKeys].some((k) => closeKeys.has(k)) ? 'family' : 'social'),
+    [closeKeys],
   )
-  const familyPeople = useMemo(
-    () => people.filter((p) => !householdKeys.has(p.key) && !namedFamilyKeys.has(p.key)),
-    [people, householdKeys, namedFamilyKeys],
+  // Is this person in the ACTIVE section? Famille = your family; Social = the rest.
+  const inSection = useCallback(
+    (key: string) => (section === 'family' ? closeKeys.has(key) : !closeKeys.has(key)),
+    [section, closeKeys],
+  )
+
+  // Named groups shown under the active section.
+  const sectionNamedGroups = useMemo(() => namedGroups.filter((g) => groupSection(g) === section), [namedGroups, groupSection, section])
+  const sectionNamedKeys = useMemo(() => new Set(sectionNamedGroups.flatMap((g) => [...g.memberKeys])), [sectionNamedGroups])
+
+  // Auto-detected families WITHIN the active section (Union-Find over family edges),
+  // over people not already in the Maisonnée or a named group of this section. In
+  // Famille → your extended-family clusters; in Social → a friend's family
+  // ("Famille de X"), the very same engine — so a friend's kids/spouse/pet read as
+  // his family without you ever linking them to yourself.
+  const autoFamilyPeople = useMemo(
+    () => people.filter((p) => inSection(p.key) && !householdKeys.has(p.key) && !sectionNamedKeys.has(p.key)),
+    [people, inSection, householdKeys, sectionNamedKeys],
   )
   const familyGroups = useMemo(
-    () => detectFamilyGroups(familyPeople, links, (name) => (name ? t.cercle.familyOf(name) : t.cercle.familyGeneric)),
-    [familyPeople, links, t],
+    () => detectFamilyGroups(autoFamilyPeople, links, (name) => (name ? t.cercle.familyOf(name) : t.cercle.familyGeneric)),
+    [autoFamilyPeople, links, t],
+  )
+  const familyGroupedKeys = useMemo(() => new Set(familyGroups.flatMap((g) => [...g.memberKeys])), [familyGroups])
+
+  // Family-kind named groups to feed « Compléter les familles » for THIS section, so
+  // the completion tool works on your families in Famille and on a friend's families
+  // in Social. Uses every family group (incl. a household-only one) routed by section.
+  const sectionCompleteGroups = useMemo(
+    () => allNamedGroups.filter((g) => g.kind === 'family' && groupSection(g) === section),
+    [allNamedGroups, groupSection, section],
   )
 
   // Upcoming birthdays — contacts AND members (now members carry birthday too)
@@ -299,42 +357,26 @@ function CercleParent() {
     [people],
   )
 
-  // Keys already shown: the Maisonnée, a named group, or an auto-detected family.
-  const namedGroupedKeys = useMemo(() => new Set(namedGroups.flatMap((g) => [...g.memberKeys])), [namedGroups])
-  const familyGroupedKeys = useMemo(() => new Set(familyGroups.flatMap((g) => [...g.memberKeys])), [familyGroups])
+  // Whatever's left in this section with no card of its own.
   const others = useMemo(
     () =>
       people
-        .filter((p) => !householdKeys.has(p.key) && !namedGroupedKeys.has(p.key) && !familyGroupedKeys.has(p.key))
+        .filter((p) => inSection(p.key) && !householdKeys.has(p.key) && !sectionNamedKeys.has(p.key) && !familyGroupedKeys.has(p.key))
         .sort((a, b) => a.name.localeCompare(b.name, lang)),
-    [people, householdKeys, namedGroupedKeys, familyGroupedKeys, lang],
+    [people, inSection, householdKeys, sectionNamedKeys, familyGroupedKeys, lang],
   )
 
-  // The set of people that read as "family" in Liste — the Maisonnée, any named
-  // FAMILY group, and the auto-detected families. The relationship views honour the
-  // Famille / Social split off this: Famille shows these, Social shows everyone else
-  // (so the social graph isn't drowned out by the family).
-  const familyKeySet = useMemo(() => {
-    const s = new Set<string>(householdKeys)
-    for (const g of namedGroups) if (g.kind === 'family') for (const k of g.memberKeys) s.add(k)
-    for (const g of familyGroups) for (const k of g.memberKeys) s.add(k)
-    return s
-  }, [householdKeys, namedGroups, familyGroups])
-
-  // People for the active section's Liens/Arbre: Famille → the family set, Social →
-  // the rest. The views (CercleEgo/CercleTree) build their own byKey off this list,
-  // so any link to a filtered-out person is simply dropped — no separate link filter.
-  const sectionPeople = useMemo(
-    () => (section === 'family' ? people.filter((p) => familyKeySet.has(p.key)) : people.filter((p) => !familyKeySet.has(p.key))),
-    [people, familyKeySet, section],
-  )
+  // People for the active section's Liens/Arbre. The views (CercleEgo/CercleTree)
+  // build their own byKey off this list, so any link to a filtered-out person is
+  // simply dropped — no separate link filter.
+  const sectionPeople = useMemo(() => people.filter((p) => inSection(p.key)), [people, inSection])
 
   // Per-person family grouping shared by BOTH relationship views (Liens + Arbre):
   // the cluster a person sits in + the disc colour (reusing the directory's family
   // colours). One helper so the two views never drift. See buildFamilyGrouping.
   const grouping = useMemo(
-    () => buildFamilyGrouping(householdKeys, namedGroups, familyGroups),
-    [householdKeys, namedGroups, familyGroups],
+    () => buildFamilyGrouping(householdKeys, sectionNamedGroups, familyGroups),
+    [householdKeys, sectionNamedGroups, familyGroups],
   )
 
   // The focus lens, resolved: the focused member's person key + display name. A
@@ -498,6 +540,7 @@ function CercleParent() {
           </a>
         )}
         {p.kind === 'member' && !hideBadge && <span className="cercle-row__badge mono">{t.cercle.memberBadge}</span>}
+        {p.kind === 'pet' && <span className="cercle-row__badge mono">{t.cercle.pet.title}</span>}
       </div>
     )
   }
@@ -609,8 +652,8 @@ function CercleParent() {
               header, surface-for-surface: the always-in-view face ROW on a kiosk wall,
               the collapsed tap-to-open chip on mobile (FaceSelect). Not on the tree, nor
               on the Social web (no single centre to read from). */}
-          {view !== 'tree' && !showWeb && householdPeople.length > 0 && (() => {
-            const faces = householdPeople.map((p) => ({
+          {view !== 'tree' && !showWeb && householdMembers.length > 0 && (() => {
+            const faces = householdMembers.map((p) => ({
               id: p.id,
               name: p.firstName,
               colour: p.colour,
@@ -658,15 +701,15 @@ function CercleParent() {
 
               {/* « Compléter les familles » — make every named famille-kind group
                   100% related from the hierarchy the links already imply (precise rung
-                  where known, generic kin tie otherwise), behind a review checklist. */}
-                {section === 'family' && (
-                  <CompleteFamilies
-                    people={people}
-                    storedLinks={unified.links}
-                    groups={allNamedGroups.filter((g) => g.kind === 'family')}
-                    disabled={ro}
-                  />
-                )}
+                  where known, generic kin tie otherwise), behind a review checklist.
+                  Available in BOTH tabs: it completes your families in Famille and a
+                  friend's families in Social (same tool, section-scoped groups). */}
+                <CompleteFamilies
+                  people={people}
+                  storedLinks={unified.links}
+                  groups={sectionCompleteGroups}
+                  disabled={ro}
+                />
 
               <>
                   {/* The Maisonnée — your one family, titled from Réglages. Always at
@@ -691,7 +734,7 @@ function CercleParent() {
                           aria-label={t.cercle.familyDefineLinks}
                           title={t.cercle.familyDefineLinks}
                           onClick={help.pick('householdLinks', () =>
-                            nav(`/cercle/family/new?linksOnly=1&seed=${encodeURIComponent(householdPeople.map((p) => p.key).join(','))}`),
+                            nav(`/cercle/family/new?linksOnly=1&seed=${encodeURIComponent(householdMembers.map((p) => p.key).join(','))}`),
                           )}
                         >
                           <InlineIcon name="tree-bold" size={12} />
@@ -705,11 +748,11 @@ function CercleParent() {
                     </section>
                   )}
 
-                  {/* Named explicit groups — family-kind under Famille, the rest (amis /
-                      travail / autre) under Social. */}
-                  {namedGroups
-                    .filter((g) => (section === 'family' ? g.kind === 'family' : g.kind !== 'family'))
-                    .map((g) => (
+                  {/* Named explicit groups, routed by closeness: your family groups
+                      under Famille, a friend's family group (+ amis / travail / autre)
+                      under Social. Family-kind groups keep their builder tools in BOTH
+                      tabs, so you build a friend's family with the same mechanisms. */}
+                  {sectionNamedGroups.map((g) => (
                     <section
                       key={g.id}
                       data-dnd-zone={`group:${g.id}`}
@@ -791,9 +834,9 @@ function CercleParent() {
                     </section>
                   ))}
 
-                  {/* Auto-detected family groups (Famille only) */}
-                  {section === 'family' &&
-                    familyGroups.map((g) => (
+                  {/* Auto-detected family groups — your extended-family clusters in
+                      Famille; a friend's family ("Famille de X") in Social. Same engine. */}
+                  {familyGroups.map((g) => (
                       <section key={g.id} className="cercle-group">
                         <HelpTitle help={help} k="familyAuto" className="cercle-section__label">
                           <InlineIcon name="users-three-bold" size={16} color={ACCENT} /> {g.name}
@@ -807,10 +850,11 @@ function CercleParent() {
                       </section>
                     ))}
 
-                  {/* People in no group (Social) */}
-                  {section === 'social' && others.length > 0 && (
+                  {/* People in this section with no card of their own. A header only
+                      when there ARE cards above to distinguish them from. */}
+                  {others.length > 0 && (
                     <section className="cercle-group">
-                      {namedGroups.some((g) => g.kind !== 'family') && (
+                      {(sectionNamedGroups.length > 0 || familyGroups.length > 0) && (
                         <>
                           <HelpTitle help={help} k="others" className="cercle-section__label">
                             {t.cercle.others}
@@ -822,9 +866,14 @@ function CercleParent() {
                     </section>
                   )}
 
-                  {/* Social with nothing in it yet — a calm pointer to the ＋ chooser. */}
-                  {section === 'social' && others.length === 0 && !namedGroups.some((g) => g.kind !== 'family') && (
-                    <EmptyState guide={{ card: 'cercle' }}>{t.cercle.empty}</EmptyState>
+                  {/* This section is empty — a calm pointer to the ＋ chooser. (Famille
+                      with members shows the Maisonnée card, so this only fires for the
+                      Social tab, or a brand-new circle.) */}
+                  {others.length === 0 && sectionNamedGroups.length === 0 && familyGroups.length === 0 &&
+                    (section === 'social' || householdPeople.length === 0) && (
+                    <EmptyState guide={{ card: 'cercle' }}>
+                      {section === 'social' ? t.cercle.socialEmpty : t.cercle.empty}
+                    </EmptyState>
                   )}
                   {/* Creation actions (add person / family / connect / new group) all
                       live on the ＋ chooser now — no in-page add buttons here. */}
@@ -844,9 +893,10 @@ function CercleParent() {
   )
 }
 
-// Toddler lens: a faces grid of EVERYONE (members + contacts). Tap a face →
+// Toddler lens: a faces grid of EVERYONE (members + contacts + pets). Tap a face →
 // hear the name AND flip to a relationship panel showing their direct connections.
-// No view switch, no add/edit (one-way door).
+// Pets are part of "who's who" a toddler learns (the family dog reads its owner as
+// « Propriétaire »). No view switch, no add/edit (one-way door).
 function CircleKidView() {
   const t = useT()
   const { lang } = useLang()
@@ -857,8 +907,10 @@ function CircleKidView() {
   const contacts = data?.contacts ?? []
   const members = data?.members ?? []
   const rawLinks = data?.links ?? []
-  // Same dedup as the parent view: a member + its linked contact are one face.
-  const unified = useMemo(() => unifyCircle(contacts, members, rawLinks, []), [contacts, members, rawLinks])
+  const pets = data?.pets ?? []
+  // Same dedup as the parent view: a member + its linked contact are one face. Pets
+  // join as their own faces (never absorbed).
+  const unified = useMemo(() => unifyCircle(contacts, members, rawLinks, [], pets), [contacts, members, rawLinks, pets])
   const people = unified.people
   // Same relationship closure as the parent view, so a toddler tapping a face sees
   // ALL their family (a grandparent linked once shows for every grandchild).

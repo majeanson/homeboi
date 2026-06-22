@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { useOpenPersonSheet } from '../../lib/personSheet'
-import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
+import { HOUSEHOLD_KEY, CERCLE_KEY } from '../../lib/queryKeys'
 import { isGuest } from '../../lib/device'
+import { petOwners, isHouseholdPet, personKey, type Pet, type ContactLink } from '../../lib/cercle'
 import { PALETTE } from '../../lib/colors'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
 import { Avatar } from '../Avatar'
@@ -117,7 +118,70 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
           </>
         }
       />
+
+      {/* The household's own animals — a calm list mirroring the member cards. Add /
+          edit opens the full pet scene in Le cercle; what makes a pet "ours" is having
+          a member owner (or no owner), exactly the Maisonnée-card rule. Operator-only. */}
+      {!isGuest() && <HouseholdPets />}
     </OperatorSection>
+  )
+}
+
+// Réglages ▸ La maisonnée → « Animaux de la maisonnée ». Lists the pets that belong
+// to the household (a member owns them, or they have no owner yet) and lets you add /
+// edit / remove them. The rich form lives in Le cercle (full-screen scene), so this
+// just navigates there — one source of truth for the pet record.
+function HouseholdPets() {
+  const t = useT()
+  const nav = useNavigate()
+  const confirm = useConfirm()
+  const write = useWrite()
+  const p = t.cercle.pet
+  const { data } = useQuery({
+    queryKey: CERCLE_KEY,
+    queryFn: () => api<{ members: { id: string }[]; links: ContactLink[]; pets: Pet[] }>('cercle'),
+  })
+  const owners = useMemo(() => petOwners(data?.links ?? []), [data])
+  const memberKeys = useMemo(() => new Set((data?.members ?? []).map((m) => personKey('member', m.id))), [data])
+  const mine = useMemo(
+    () => (data?.pets ?? []).filter((pet) => isHouseholdPet(personKey('pet', pet.id), owners, memberKeys)),
+    [data, owners, memberKeys],
+  )
+
+  async function remove(pet: Pet) {
+    if (!(await confirm({ title: p.delete, message: pet.name, tone: 'danger' }))) return
+    await write('pets', { method: 'DELETE', body: { id: pet.id }, affectedKeys: [CERCLE_KEY] }).catch(() => {})
+  }
+
+  return (
+    <div className="operator__pets">
+      <h3 className="operator__field-label">{p.householdTitle}</h3>
+      {mine.length === 0 ? (
+        <p className="operator__field-hint mono">{p.none}</p>
+      ) : (
+        <ul className="member-cards">
+          {mine.map((pet) => (
+            <li key={pet.id} className="member-card surface">
+              <Avatar kind={pet.photoKey ? 'photo' : null} photo={pet.photoKey} colour={pet.colour ?? '#C7873F'} name={pet.name} size={64} />
+              <span className="member-card__name">{pet.name}</span>
+              {pet.species ? <span className="tag mono">{pet.species}</span> : null}
+              <div className="member-card__actions">
+                <RowActions
+                  onEdit={() => nav(`/cercle/pet/${pet.id}`)}
+                  onDelete={() => remove(pet)}
+                  editLabel={p.edit}
+                  deleteLabel={p.delete}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button type="button" className="btn btn--ghost operator__pets-add" onClick={() => nav('/cercle/pet/new')}>
+        <Icon name="plus-bold" size={16} /> {p.add}
+      </button>
+      <p className="operator__field-hint mono">{p.householdHint}</p>
+    </div>
   )
 }
 

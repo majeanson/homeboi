@@ -5,7 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
-import { TODOS_KEY, MONTH_KEY } from '../../lib/queryKeys'
+import { TODOS_KEY, MONTH_KEY, CAR_KEY } from '../../lib/queryKeys'
+import { type CarModel } from '../../lib/car'
 import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDayLong, weekdayShort } from '../../lib/format'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
@@ -17,6 +18,7 @@ import { useTagColors } from '../../lib/queryHooks'
 import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
 import { Act } from './Act'
+import { AutoCardView } from './AutoCard'
 import { DayNote } from './DayNote'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildEvent, buildChore, buildMeal, type DetailCtx } from '../detail/adapters'
@@ -123,6 +125,15 @@ export function MonthView({
   const { data, isLoading } = useQuery({
     queryKey: [...MONTH_KEY, from],
     queryFn: () => api<MonthData>(`month?from=${from}&to=${to}`),
+    staleTime: 30_000,
+  })
+
+  // « L'auto » resolved across the visible range, so the day panel can show the
+  // SELECTED date's car status (#28) — not a stuck "today" glance. A calm slow read
+  // (staleTime, no live poll) like the month above: browsing isn't the glance surface.
+  const { data: car } = useQuery({
+    queryKey: [...CAR_KEY, from],
+    queryFn: () => api<CarModel>(`car?from=${from}&to=${to}`),
     staleTime: 30_000,
   })
 
@@ -316,6 +327,9 @@ export function MonthView({
             {t.monthView.openDay} <Icon name="caret-right-bold" size={14} />
           </button>
         </div>
+        {/* « L'auto » for the SELECTED day — its status + rides follow the picked date
+            (today shows the live status; another date summarizes that day's windows). */}
+        {car && <AutoCardView model={car} day={selected} />}
         {isLoading && !data ? (
           <p className="loading mono">{t.common.loading}</p>
         ) : selCount === 0 ? (

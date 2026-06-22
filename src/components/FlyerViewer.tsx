@@ -389,7 +389,7 @@ export function FlyerViewer({
           >
             {dl.state === 'busy' ? (
               <>
-                <InlineIcon name="cloud-bold" /> {t.shop.flyerSaving} {dl.done}/{dl.total}
+                <InlineIcon name="download-simple-bold" /> {t.shop.flyerSaving} {dl.done}/{dl.total}
               </>
             ) : dl.state === 'done' ? (
               <>
@@ -397,7 +397,7 @@ export function FlyerViewer({
               </>
             ) : (
               <>
-                <InlineIcon name="cloud-bold" /> {t.shop.flyerSaveOffline}
+                <InlineIcon name="download-simple-bold" /> {t.shop.flyerSaveOffline}
               </>
             )}
           </button>
@@ -414,20 +414,20 @@ export function FlyerViewer({
           <button
             type="button"
             role="tab"
-            className={`subtabs__opt${view === 'offres' ? ' is-on' : ''}`}
-            onClick={() => setView('offres')}
-            aria-selected={view === 'offres'}
-          >
-            <InlineIcon name="tag-bold" /> {t.shop.flyerTabOffers}
-          </button>
-          <button
-            type="button"
-            role="tab"
             className={`subtabs__opt${view === 'plan' ? ' is-on' : ''}`}
             onClick={() => setView('plan')}
             aria-selected={view === 'plan'}
           >
             <InlineIcon name="map-pin-bold" /> {t.shop.flyerTabMap}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`subtabs__opt${view === 'offres' ? ' is-on' : ''}`}
+            onClick={() => setView('offres')}
+            aria-selected={view === 'offres'}
+          >
+            <InlineIcon name="tag-bold" /> {t.shop.flyerTabOffers}
           </button>
         </div>
       )}

@@ -4,23 +4,34 @@ import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
 import { formatTime } from '../../lib/format'
-import { useCarToday, type CarRide } from '../../lib/car'
+import { useCarToday, type CarRide, type CarModel } from '../../lib/car'
 import { useCars } from '../../lib/carPrefs'
 import { type Member } from '../../lib/members'
 import { Icon } from '../Icon'
 import { Avatar } from '../Avatar'
 
 // The board "L'auto" glance card — a calm strip near the day, in every parent view
-// (like CercleBirthdays). Answers "où est l'auto, et est-elle libre ?" at a glance:
-// the car's status right now (libre jusqu'à… / avec X — revient ~…), today's rides
-// with WHO drives (their face) + who rides along, and a soft conflict note when a
-// ride collides with a moment the car's already spoken for. Renders NOTHING when
-// there's nothing to say (no car, no schedule, no rides) — finite glance, NFR-CALM.
-// Taps into /voiture. Icons are Pip (Phosphor) glyphs, never emoji (NFR-KID-2).
+// (like CercleBirthdays). Answers "où est l'auto, et est-elle libre ?" at a glance.
+// The board feeds it TODAY's resolved model (the status line is the live "right
+// now"). The calendar (Mois) feeds the SAME view a single day out of a week range,
+// so the card FOLLOWS the selected date instead of always showing today (#28) — on
+// another date there is no "now", so it summarizes that day's committed windows
+// (who has the car, when) rather than a live status.
+// Renders NOTHING when the household uses no car at all. Icons are Pip (Phosphor)
+// glyphs, never emoji (NFR-KID-2).
 export function AutoCard() {
+  const { data: car } = useCarToday()
+  if (!car) return null
+  return <AutoCardView model={car} day={car.today} />
+}
+
+// One day of a resolved CarModel, rendered as the calm L'auto card. `day` selects
+// which day of `model.days` to show; the status line is the live "right now" only
+// when `day` is today (the model carries `status` for today only), else a summary of
+// that date's car windows.
+export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
   const t = useT()
   const { lang } = useLang()
-  const { data: car } = useCarToday()
   const { name: carName, color: carColor, primary } = useCars()
   const { data: membersData } = useQuery({
     queryKey: ['members'],
@@ -31,39 +42,53 @@ export function AutoCard() {
   const memberOf = (id: string | null | undefined) => (id ? members.find((m) => m.id === id) : undefined)
   const nameOf = (id: string | null | undefined) => memberOf(id)?.display_name
 
-  if (!car) return null
-  const today = car.days.find((d) => d.day === car.today)
-  const rides = today?.rides ?? []
+  const carDay = model.days.find((d) => d.day === day)
+  const rides = carDay?.rides ?? []
+  const isToday = day === model.today
   // Render whenever the household USES « L'auto » — a car configured, a work
-  // schedule, or a ride today — even on an idle/free day, so the board always
-  // answers "où est l'auto ?" (#28). Only a household that's set nothing up sees no card.
-  if (car.cars.length === 0 && !car.hasSchedule && rides.length === 0) return null
+  // schedule, or a ride on this day — even on an idle/free day, so the card always
+  // answers "où est l'auto ?". Only a household that's set nothing up sees no card.
+  if (model.cars.length === 0 && !model.hasSchedule && rides.length === 0) return null
 
   const hhmm = (at: number) => formatTime(at, lang)
   const carLabel = carName(primary?.id) ?? t.auto.car
   const tint = carColor(primary?.id) ?? '#6b7a8f'
 
-  // The status line. Day-AWARE so the glance never lies: "Libre toute la journée"
-  // only when the day truly holds NOTHING — no busy span AND no car-taking ride
-  // (car.status.committed, computed server-side in carAvail). If the car was out
-  // earlier today but is back now, OR an outing is still planned, it reads "libre —
-  // le reste de la journée" / "libre jusqu'à …", never "toute la journée" (the old
-  // bug where the status ignored rides and said the car was free all day).
+  // The status line. For TODAY it is day-AWARE + time-AWARE: the live "right now"
+  // status the server folds rides into (committed → "le reste de la journée", never a
+  // false "toute la journée"). For ANOTHER calendar date there is no "now", so it
+  // describes the day's committed windows (who holds the car, when) — or "libre toute
+  // la journée" when nothing claims it.
   let status: string
   let busy = false
-  if (!car.status.free) {
-    busy = true
-    const holder = nameOf(car.status.span?.holderId) ?? car.status.span?.label ?? ''
-    const back = car.status.until ? t.auto.backAround(hhmm(car.status.until)) : ''
-    status = holder ? `${t.auto.withWho(holder)}${back ? ` · ${back}` : ''}` : t.auto.taken + (back ? ` · ${back}` : '')
-  } else if (car.status.until) {
-    status = t.auto.freeUntil(hhmm(car.status.until))
-  } else if (car.status.committed) {
-    status = t.auto.freeRestOfDay
+  let holder: Member | undefined
+  if (isToday) {
+    if (!model.status.free) {
+      busy = true
+      const hName = nameOf(model.status.span?.holderId) ?? model.status.span?.label ?? ''
+      const back = model.status.until ? t.auto.backAround(hhmm(model.status.until)) : ''
+      status = hName ? `${t.auto.withWho(hName)}${back ? ` · ${back}` : ''}` : t.auto.taken + (back ? ` · ${back}` : '')
+    } else if (model.status.until) {
+      status = t.auto.freeUntil(hhmm(model.status.until))
+    } else if (model.status.committed) {
+      status = t.auto.freeRestOfDay
+    } else {
+      status = t.auto.freeAllDay
+    }
+    holder = busy ? memberOf(model.status.span?.holderId) : undefined
   } else {
-    status = t.auto.freeAllDay
+    const spans = carDay?.spans ?? []
+    if (spans.length > 0) {
+      busy = true
+      const hId = spans.find((s) => s.holderId)?.holderId ?? null
+      holder = memberOf(hId)
+      const windows = spans.map((s) => `${hhmm(s.start)}–${hhmm(s.end)}`).join(' · ')
+      const who = nameOf(hId) ?? spans.find((s) => s.label)?.label ?? ''
+      status = who ? `${t.auto.withWho(who)} · ${windows}` : windows
+    } else {
+      status = t.auto.freeAllDay
+    }
   }
-  const holder = busy ? memberOf(car.status.span?.holderId) : undefined
 
   // Who drives a ride: a member = we drive (our car); a cercle contact = a carpool
   // parent drives (their car); a business = a rendez-vous destination.

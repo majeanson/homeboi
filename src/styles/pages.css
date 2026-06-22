@@ -1358,6 +1358,20 @@
 .operator__household-name .input {
   max-width: 22rem;
 }
+/* « Animaux de la maisonnée » — the pets subsection under the member list, set apart
+   with a hairline above it so it reads as its own group. */
+.operator__pets {
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.operator__pets .member-cards {
+  width: 100%;
+}
 /* The how-it-works card carried inline at the top of each Réglages tab — a quiet
    reference above the actual controls, set a touch apart from the section below. */
 .section-guide {
@@ -3163,7 +3177,8 @@
    tapping into /voiture. Mirrors the surface-card look; rides read as compact rows. */
 .auto-card {
   display: block;
-  margin: 0 0 0.75rem;
+  /* Sits next to other cards/strips in every view — keep a clear gap above it. */
+  margin: 1rem 0 0.75rem;
   padding: 0.8rem 0.95rem;
   text-decoration: none;
   color: inherit;

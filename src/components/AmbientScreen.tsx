@@ -93,13 +93,28 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
     : undefined
 
   if (!show) return null
+  // Wake without leaking the gesture into the app underneath: preventDefault on the
+  // pointerdown suppresses the compatibility mouse/click, and a one-shot capturing
+  // click swallower catches any straggler before it lands on a board control.
+  const wake = (e: React.PointerEvent | React.KeyboardEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const swallow = (ev: Event) => {
+      ev.preventDefault()
+      ev.stopPropagation()
+    }
+    window.addEventListener('click', swallow, { capture: true, once: true })
+    // Drop the listener shortly after in case no click ever follows (keyboard wake).
+    setTimeout(() => window.removeEventListener('click', swallow, { capture: true } as EventListenerOptions), 700)
+    onWake()
+  }
   return (
     <div
       className="ambient"
       role="dialog"
       aria-label={t.ambient.title}
-      onPointerDown={onWake}
-      onKeyDown={onWake}
+      onPointerDown={wake}
+      onKeyDown={wake}
       tabIndex={-1}
     >
       {(a.showPhotos || a.showDrawings) && (
@@ -132,7 +147,6 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
           </div>
         )}
       </div>
-      <p className="ambient__wake mono">{t.ambient.wake}</p>
     </div>
   )
 }

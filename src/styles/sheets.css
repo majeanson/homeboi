@@ -1264,7 +1264,7 @@ body.is-recording .add-fab {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 18px;
+  padding: 8px 16px;
   border-bottom: 1.5px solid var(--line);
   background: var(--paper);
 }
@@ -1278,9 +1278,9 @@ body.is-recording .add-fab {
 }
 .flyer-bar__logo {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  border-radius: 11px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
   object-fit: contain;
   background: #fff;
   border: 1.5px solid var(--line-strong);
@@ -1306,7 +1306,7 @@ body.is-recording .add-fab {
   min-width: 0;
   font-family: var(--display);
   font-weight: 800;
-  font-size: 18px;
+  font-size: 16px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1318,17 +1318,21 @@ body.is-recording .add-fab {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 4px 12px;
-  padding: 7px 18px;
+  gap: 6px 8px;
+  padding: 5px 16px;
   border-bottom: 1px solid var(--line);
 }
 /* Data-quality note: green when it's an official (image) flyer, muted when it's
    an SFML reconstruction (so the cashier knows the difference). */
 .flyer-note {
   flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
-  font-size: 12px;
-  line-height: 1.35;
+  font-size: 11.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .flyer-note--official {
   color: #2f7d4f;
@@ -1343,7 +1347,7 @@ body.is-recording .add-fab {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
+  padding: 5px 11px;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -1367,7 +1371,7 @@ body.is-recording .add-fab {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
+  padding: 5px 11px;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -1407,7 +1411,7 @@ body.is-recording .add-fab {
   flex: 1 1 auto;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 14px;
+  padding: 10px 12px;
   max-width: 46rem;
   margin: 0 auto;
   width: 100%;
@@ -1416,8 +1420,8 @@ body.is-recording .add-fab {
    the flyer column rather than spanning the full-screen overlay. */
 .flyer-tabs {
   max-width: 46rem;
-  width: calc(100% - 28px);
-  margin: 0 auto 6px;
+  width: calc(100% - 24px);
+  margin: 6px auto 4px;
 }
 
 /* Offres — a masonry of clippings packed tight (no flyer-coordinate gaps). Each
@@ -1510,12 +1514,12 @@ body.is-recording .add-fab {
   box-shadow: 0 0 0 4px var(--marigold-wash);
 }
 .flyer-page-wrap {
-  margin: 0 auto 22px;
+  margin: 0 auto 16px;
 }
 .flyer-page-label {
   font-size: 12px;
   color: var(--ink-soft);
-  margin: 0 0 6px 2px;
+  margin: 0 0 4px 2px;
 }
 .flyer-page {
   position: relative;
@@ -1858,6 +1862,16 @@ body.is-recording .add-fab {
 }
 .qa__chip.is-added .qa__act {
   color: var(--sage, var(--accent));
+}
+/* Swipe-to-delete wrapper for a Quick-add candidate — the same clip-window +
+   red delete pane as La liste's rows (useSwipeToDelete), but sized to the chip
+   (radius-md) so the pane lines up under it. The chip itself is the sliding
+   foreground (.list-row__main); the free-text "Add" chip stays a plain button. */
+.qa__row {
+  border-radius: var(--radius-md);
+}
+.qa__row .list-row__del {
+  border-radius: var(--radius-md);
 }
 .list-actions {
   display: flex;

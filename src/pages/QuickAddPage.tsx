@@ -1,14 +1,18 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from '../components/EmptyState'
 import { useWrite } from '../lib/write'
+import { useUndoToast } from '../lib/toast'
 import { isGuest } from '../lib/device'
 import { useT } from '../i18n'
 import { pictoFor } from '../lib/picto'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
 import { BOARD_KEY } from '../lib/queryKeys'
+import { patchGhost } from '../lib/ghost'
 import { useQuickItems, type QuickItem } from '../lib/quickItems'
+import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // Accent/case-blind matching so "creme" filters to "Crème".
@@ -26,6 +30,8 @@ const HISTORY_KEY = ['list-history']
 export function QuickAddPage() {
   const t = useT()
   const write = useWrite()
+  const qc = useQueryClient()
+  const undo = useUndoToast()
   const close = useSceneClose('/liste')
   useEscapeKey(close)
   const items = useQuickItems()
@@ -33,12 +39,17 @@ export function QuickAddPage() {
   const [q, setQ] = useState('')
   const [alpha, setAlpha] = useState(false)
   const [added, setAdded] = useState<Set<string>>(new Set())
+  // Suggestions swiped away this session — hidden at once, the real removal held
+  // behind the undo toast (deferred, like La liste). The held write only fires if
+  // the undo window lapses, so a mis-swipe is fully recoverable.
+  const [removed, setRemoved] = useState<Set<string>>(new Set())
   // The entire scene is a restock/add tool — nothing here but writes. A read-only
   // guest has no business on it; slip back to the list (also guards a deep link).
   // Placed after every hook so this isn't a conditional-hook violation.
   const ro = isGuest()
   const fq = fold(q)
-  const filtered = fq ? items.filter((i) => fold(i.label).includes(fq)) : items
+  const base = removed.size ? items.filter((i) => !removed.has(i.key)) : items
+  const filtered = fq ? base.filter((i) => fold(i.label).includes(fq)) : base
   // Default order is status/frequency (from useQuickItems); the Aa toggle re-sorts
   // the same set alphabetically so a long list is easy to scan by name.
   const shown = alpha ? [...filtered].sort((a, b) => a.label.localeCompare(b.label)) : filtered
@@ -74,32 +85,50 @@ export function QuickAddPage() {
     setQ('')
   }
 
+  // Swipe a suggestion away → hide it now, hold the real removal behind the undo
+  // toast (deferred). On commit we prune the source(s) the candidate folds in —
+  // the exact actions Réglages exposes: drop the purchase-history entry, mute the
+  // ghost prediction, and unpin a standing staple from "Toujours".
+  function removeSuggestion(item: QuickItem) {
+    setRemoved((s) => new Set(s).add(item.key))
+    undo({
+      message: t.list.quickRemoved(item.label),
+      onUndo: () =>
+        setRemoved((s) => {
+          const n = new Set(s)
+          n.delete(item.key)
+          return n
+        }),
+      onCommit: () => {
+        const ghostKey = item.ghostKey ?? item.stapleKey
+        if (item.historyKey)
+          void write('list', {
+            method: 'DELETE',
+            body: { historyKey: item.historyKey },
+            affectedKeys: [BOARD_KEY, HISTORY_KEY],
+          }).catch(() => {})
+        if (ghostKey)
+          // muted hides it from predictions; standing:false drops it from the
+          // "Toujours" staple group. Both in one upsert covers every ghost source.
+          void patchGhost({ key: ghostKey, label: item.label, muted: true, standing: false })
+            .then(() => qc.invalidateQueries({ queryKey: GHOSTS_KEY }))
+            .catch(() => {})
+      },
+    })
+  }
+
   // One candidate chip — shared by the "Toujours" group and the rest, so the two
-  // groups draw identical rows (just a different header above them).
+  // groups draw identical rows (just a different header above them). Swipe-left to
+  // remove (touch), the same gesture as La liste.
   function renderChip(item: QuickItem) {
-    const isAdded = added.has(item.key)
     return (
-      <button
+      <QaChip
         key={item.key}
-        type="button"
-        className={`qa__chip${isAdded ? ' is-added' : ''}`}
-        onClick={() => add(item)}
-        disabled={isAdded}
-        aria-label={`${t.ghost.add} ${item.label}`}
-      >
-        <span className="qa__pic" aria-hidden="true">
-          {pictoFor(item.label, '🛒')}
-        </span>
-        <span className="qa__label">{item.label}</span>
-        {item.status && (
-          <span className={`qa__tag qa__tag--${item.status}`}>
-            {item.status === 'due' ? t.ghost.due : t.ghost.soon}
-          </span>
-        )}
-        <span className="qa__act" aria-hidden="true">
-          <Icon name={isAdded ? 'check-bold' : 'plus-bold'} size={16} />
-        </span>
-      </button>
+        item={item}
+        isAdded={added.has(item.key)}
+        onAdd={() => add(item)}
+        onRemove={() => removeSuggestion(item)}
+      />
     )
   }
 
@@ -168,6 +197,56 @@ export function QuickAddPage() {
           {shown.length === 0 && !canAddTyped && <EmptyState>{t.list.quickEmpty}</EmptyState>}
         </div>
       </div>
+    </div>
+  )
+}
+
+// One suggestion row: the add button is the sliding foreground (.list-row__main),
+// the red delete pane sits behind it — the same clip-window structure La liste's
+// rows use, driven by the shared useSwipeToDelete. onRemove fires after the row
+// slides out, so the undo toast takes over while it unmounts.
+function QaChip({
+  item,
+  isAdded,
+  onAdd,
+  onRemove,
+}: {
+  item: QuickItem
+  isAdded: boolean
+  onAdd: () => void
+  onRemove: () => void
+}) {
+  const t = useT()
+  const mainRef = useRef<HTMLButtonElement>(null)
+  // An already-added chip is inert (✓ locked) — don't let it swipe away too.
+  useSwipeToDelete(mainRef, isAdded ? () => {} : onRemove)
+  return (
+    <div className="list-row qa__row">
+      <span className="list-row__del" aria-hidden="true">
+        <span className="list-row__del-icon"><Icon name="trash-bold" size={18} /></span>
+        <span className="list-row__del-label">{t.list.swipeDelete}</span>
+      </span>
+      <button
+        ref={mainRef}
+        type="button"
+        className={`list-row__main qa__chip${isAdded ? ' is-added' : ''}`}
+        onClick={onAdd}
+        disabled={isAdded}
+        aria-label={`${t.ghost.add} ${item.label}`}
+      >
+        <span className="qa__pic" aria-hidden="true">
+          {pictoFor(item.label, '🛒')}
+        </span>
+        <span className="qa__label">{item.label}</span>
+        {item.status && (
+          <span className={`qa__tag qa__tag--${item.status}`}>
+            {item.status === 'due' ? t.ghost.due : t.ghost.soon}
+          </span>
+        )}
+        <span className="qa__act" aria-hidden="true">
+          <Icon name={isAdded ? 'check-bold' : 'plus-bold'} size={16} />
+        </span>
+      </button>
     </div>
   )
 }

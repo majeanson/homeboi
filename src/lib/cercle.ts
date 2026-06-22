@@ -493,6 +493,74 @@ const FAMILY_REL_TYPES = new Set<RelationshipType>([
 // ties (friend/colleague/neighbor) are not.
 export const isFamilyRel = (type: RelationshipType): boolean => FAMILY_REL_TYPES.has(type)
 
+// ---- Pet ownership + household reach ----------------------------------------
+
+// Each PET's owner person-keys, derived from the owner/pet links. A tie is stored as
+// "A is owner of B(pet)" (type 'owner', B a pet) or its mirror "A(pet) is pet of B"
+// (type 'pet', A a pet); either direction yields the same pet→owner mapping. Pure.
+export function petOwners(links: ContactLink[]): Map<string, Set<string>> {
+  const m = new Map<string, Set<string>>()
+  const add = (petKey: string, ownerKey: string) => {
+    if (!m.has(petKey)) m.set(petKey, new Set())
+    m.get(petKey)!.add(ownerKey)
+  }
+  for (const l of links) {
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    if (l.type === 'owner' && l.personBKind === 'pet') add(bKey, aKey)
+    else if (l.type === 'pet' && l.personAKind === 'pet') add(aKey, bKey)
+  }
+  return m
+}
+
+// Does this pet belong to the Maisonnée? Yes when at least one owner is a household
+// member, OR when it has no owner at all (an unowned pet defaults to "ours" — the
+// common case: add your dog and it's in the Maisonnée). A pet owned only by outside
+// contacts (a friend's pet) is NOT a household pet — it follows its owner into Social.
+export function isHouseholdPet(petKey: string, owners: Map<string, Set<string>>, householdMemberKeys: Set<string>): boolean {
+  const o = owners.get(petKey)
+  if (!o || o.size === 0) return true
+  for (const k of o) if (householdMemberKeys.has(k)) return true
+  return false
+}
+
+// Everyone reachable from the seed people (the household members) by walking ONLY
+// FAMILY relationship edges over the given link set (pass the CLOSED links so derived
+// ties — shared grandparents, cousins… — count). This is your close + extended family,
+// i.e. the Famille tab. A friend bridges to you by a SOCIAL edge, which this walk never
+// crosses, so the friend and their own relatives/pets stay out (→ Social). Pure; the
+// returned set includes the seeds themselves. Only people present in `people` are walked.
+export function familyReachableKeys(seedKeys: Set<string>, people: Person[], links: ContactLink[]): Set<string> {
+  const present = new Set(people.map((p) => p.key))
+  const adj = new Map<string, string[]>()
+  const addEdge = (a: string, b: string) => {
+    if (!adj.has(a)) adj.set(a, [])
+    adj.get(a)!.push(b)
+  }
+  for (const l of links) {
+    if (!isFamilyRel(l.type)) continue
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    if (!present.has(aKey) || !present.has(bKey)) continue
+    addEdge(aKey, bKey)
+    addEdge(bKey, aKey)
+  }
+  const seen = new Set<string>()
+  const queue: string[] = []
+  for (const k of seedKeys) if (present.has(k) && !seen.has(k)) {
+    seen.add(k)
+    queue.push(k)
+  }
+  while (queue.length) {
+    const cur = queue.shift()!
+    for (const nx of adj.get(cur) ?? []) if (!seen.has(nx)) {
+      seen.add(nx)
+      queue.push(nx)
+    }
+  }
+  return seen
+}
+
 export interface FamilyGroup {
   id: string // the root person key
   name: string // "<lastName> family" / "Famille <nom>"

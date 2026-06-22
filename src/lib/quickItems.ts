@@ -20,6 +20,12 @@ export interface QuickItem {
   searchTerms: string[]
   status?: 'due' | 'soon'
   always?: boolean // #27: a standing staple — shown first in a "Toujours" group
+  // Source keys, carried so the Quick-add page can swipe-remove a suggestion the
+  // same way Réglages does (history prune / ghost mute / unpin). A candidate folds
+  // several sources under one label, so it can carry more than one.
+  historyKey?: string // purchase_log item_key → DELETE (drop from history)
+  ghostKey?: string // ghost suggestion key → mute (hide from predictions)
+  stapleKey?: string // standing staple item_key → unpin from the "Toujours" group
 }
 
 interface ListRow {
@@ -60,15 +66,17 @@ export function useQuickItems(): QuickItem[] {
   for (const h of history ?? []) {
     const f = fold(h.text)
     if (!f || openTexts.has(f)) continue
-    quickByLabel.set(f, { key: f, label: h.text, count: h.count, searchTerms: parseTerms(h.searchTerms) })
+    quickByLabel.set(f, { key: f, label: h.text, count: h.count, searchTerms: parseTerms(h.searchTerms), historyKey: h.key })
   }
   for (const g of ghosts) {
     const f = fold(g.label)
     if (!f || openTexts.has(f)) continue
     const status = g.status === 'later' ? undefined : g.status
     const ex = quickByLabel.get(f)
-    if (ex) ex.status = status
-    else quickByLabel.set(f, { key: f, label: g.label, count: g.count, searchTerms: [], status })
+    if (ex) {
+      ex.status = status
+      ex.ghostKey = g.key
+    } else quickByLabel.set(f, { key: f, label: g.label, count: g.count, searchTerms: [], status, ghostKey: g.key })
   }
   // #27: standing staples take precedence — mark the "Toujours" group. If a staple
   // also shows up via history/ghost, fold them into one (keep the learned synonyms),
@@ -78,8 +86,10 @@ export function useQuickItems(): QuickItem[] {
     const f = fold(s.label)
     if (!f || openTexts.has(f)) continue
     const ex = quickByLabel.get(f)
-    if (ex) ex.always = true
-    else quickByLabel.set(f, { key: f, label: s.label, count: 0, searchTerms: [], always: true })
+    if (ex) {
+      ex.always = true
+      ex.stapleKey = s.key
+    } else quickByLabel.set(f, { key: f, label: s.label, count: 0, searchTerms: [], always: true, stapleKey: s.key })
   }
   const rankStatus = (s?: 'due' | 'soon') => (s === 'due' ? 0 : s === 'soon' ? 1 : 2)
   // Standing staples first (alphabetical), then the usual status/frequency order.
