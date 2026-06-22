@@ -50,6 +50,7 @@ interface DayOut {
   day: number
   spans: CarSpan[]
   rides: RideOut[]
+  override: CarDayOverride | null // the per-date override in effect (so the editor can prefill + badge "Ajusté")
 }
 
 const parsePassengers = (raw: string | null): string[] => {
@@ -195,7 +196,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         conflict: conflictIds.has(row.id),
       }))
       .sort((a, b) => a.allDay - b.allDay || a.at - b.at)
-    days.push({ day, spans, rides })
+    days.push({ day, spans, rides, override: overrideFor(day) })
   }
 
   // "Now" block — only meaningful for today; the board card reads it. status = is

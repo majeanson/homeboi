@@ -29,10 +29,21 @@ export interface CarRide {
   conflict: boolean
 }
 
+export interface CarDayOverride {
+  carId: string
+  day: number
+  free: boolean
+  holderId?: string | null
+  startMin?: number | null
+  endMin?: number | null
+  label?: string | null
+}
+
 export interface CarDay {
   day: number
   spans: CarSpan[]
   rides: CarRide[]
+  override: CarDayOverride | null
 }
 
 export interface CarStatus {
