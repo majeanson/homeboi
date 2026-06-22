@@ -60,6 +60,7 @@ import * as reserve from '../functions/api/reserve'
 import * as routineAudio from '../functions/api/routine-audio'
 import * as routineCardPhoto from '../functions/api/routine-card-photo'
 import * as routines from '../functions/api/routines'
+import * as car from '../functions/api/car'
 import * as schedule from '../functions/api/schedule'
 import * as carDay from '../functions/api/car-day'
 import * as suggestMeal from '../functions/api/suggest-meal'
@@ -143,6 +144,7 @@ const TABLE: Record<string, RouteMod> = {
   'routine-audio': routineAudio,
   'routine-card-photo': routineCardPhoto,
   routines,
+  car,
   schedule,
   'car-day': carDay,
   'suggest-meal': suggestMeal,

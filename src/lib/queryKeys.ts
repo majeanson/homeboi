@@ -43,6 +43,11 @@ export const BUSINESSES_KEY = ['businesses']
 // ▸ L'auto AND by the /voiture week view (it resolves the car's busy spans from it),
 // so the key is shared — editing an horaire refreshes the week + the board glance.
 export const SCHEDULE_KEY = ['schedule']
+// « L'auto » resolved read model (/api/car): the car's busy spans + rides +
+// conflicts. The board glance reads today under ['car']; the /voiture week reads its
+// window under ['car', from] (a prefix of CAR_KEY). Invalidated by a ride, an
+// horaire, or a car_day override so every car surface re-resolves at once.
+export const CAR_KEY = ['car']
 // « L'auto » — per-date car overrides (car_day). Read by the /voiture week view
 // under ['car-day', from] (the visible week window); a prefix of CAR_DAY_KEY so
 // invalidating it refreshes every loaded week.

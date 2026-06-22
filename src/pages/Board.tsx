@@ -8,6 +8,7 @@ import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { WelcomeCard } from '../components/WelcomeCard'
 import { CercleBirthdays } from '../components/cercle/CercleBirthdays'
+import { AutoCard } from '../components/board/AutoCard'
 import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
 import { wash, tintInk } from '../lib/colors'
@@ -698,6 +699,10 @@ export function Board() {
       {/* Upcoming birthdays from « Le cercle » — a calm strip above the day, in
           every parent view (renders nothing when none are near). */}
       <CercleBirthdays />
+
+      {/* « L'auto » glance — the car's status today + today's rides, a calm strip in
+          every parent view (renders nothing when nothing's busy + no rides). #28 */}
+      <AutoCard />
 
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>

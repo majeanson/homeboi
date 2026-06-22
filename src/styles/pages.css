@@ -3115,3 +3115,85 @@
   color: var(--ink-soft);
   padding: 0.4rem 0.2rem;
 }
+
+/* « L'auto » board glance card — a calm strip above the day (status + today's rides),
+   tapping into /voiture. Mirrors the surface-card look; rides read as compact rows. */
+.auto-card {
+  display: block;
+  margin: 0 0 0.75rem;
+  padding: 0.7rem 0.9rem;
+  text-decoration: none;
+  color: inherit;
+}
+.auto-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.auto-card__title {
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.auto-card__status {
+  color: var(--ink-soft);
+  font-size: 0.9em;
+}
+.auto-card__status--busy {
+  color: var(--ink);
+}
+.auto-card__rides {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.auto-card__ride {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.auto-card__when {
+  flex: none;
+  min-width: 3.4rem;
+  color: var(--ink-soft);
+  font-size: 0.85em;
+}
+.auto-card__what {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.auto-card__who {
+  color: var(--ink-soft);
+  font-size: 0.85em;
+}
+.auto-card__pax {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+.auto-card__face {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+}
+.auto-card__conflict {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.8em;
+  color: var(--warn, #b4690e);
+}
