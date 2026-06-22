@@ -51,6 +51,11 @@ function gridFor(w: number, h: number, photoCount: number): { cols: number; rows
   cols = Math.max(1, Math.min(maxCols, cols))
   let rows = Math.max(1, Math.ceil(target / cols))
   rows = Math.min(rows, maxRows)
+  // Never tile more cells than we have distinct images — a screensaver that shows
+  // the same drawing across several tiles isn't calm. Trim the last partial row
+  // (and, in the tiny case, narrow the columns) so every tile holds its own image.
+  while (cols * rows > photoCount && rows > 1) rows--
+  if (cols * rows > photoCount) cols = Math.max(1, photoCount)
   return { cols, rows }
 }
 
@@ -68,19 +73,25 @@ function seedTiles(count: number, n: number): Tile[] {
   return Array.from({ length: count }, (_, i) => ({ photo: order[i % n], nonce: 0 }))
 }
 
-// Pick the next image index for a tile: choose the source group (drawings vs
-// photos) by the daypart weight when both exist, then a not-already-on-screen
-// index within that group (falling back outward so a pick is always returned).
+// Pick the next image index for a tile: bring in an image that is NOT already on
+// another tile, so the wall never shows the same drawing/photo twice. Choose the
+// source group (drawings vs photos) by the daypart weight only among images still
+// free; if a group is exhausted on screen we take the other rather than duplicate.
+// When nothing fresh remains (tiles == images) we return `current` — the caller
+// reads that as "stay put", so a small gallery rests rather than churning dupes.
 function pickBiased(images: Img[], used: Set<number>, current: number, drawWeight: number): number {
-  if (images.length <= 1) return 0
+  if (images.length <= 1) return current
   const draws: number[] = []
   const photos: number[] = []
   images.forEach((im, i) => (im.draw ? draws : photos).push(i))
-  const group = draws.length && photos.length ? (Math.random() < drawWeight ? draws : photos) : draws.length ? draws : photos
-  const free = group.filter((i) => i !== current && !used.has(i))
-  const pool = free.length ? free : group.filter((i) => i !== current)
-  const any = pool.length ? pool : images.map((_, i) => i).filter((i) => i !== current)
-  return any[Math.floor(Math.random() * any.length)]
+  const freshIn = (g: number[]) => g.filter((i) => i !== current && !used.has(i))
+  const fd = freshIn(draws)
+  const fp = freshIn(photos)
+  let pool: number[]
+  if (fd.length && fp.length) pool = Math.random() < drawWeight ? fd : fp
+  else if (fd.length || fp.length) pool = fd.length ? fd : fp
+  else return current // every image is already on a tile — no fresh pick, stay put
+  return pool[Math.floor(Math.random() * pool.length)]
 }
 
 export function PhotoMosaic() {
@@ -144,6 +155,7 @@ export function PhotoMosaic() {
         const t = Math.floor(Math.random() * prev.length)
         const used = new Set(prev.map((x) => x.photo))
         const next = pickBiased(images, used, prev[t].photo, weight)
+        if (next === prev[t].photo) return prev // no fresh image to bring in — no churn (and no dupe)
         const copy = prev.slice()
         copy[t] = { photo: next, nonce: prev[t].nonce + 1 }
         return copy

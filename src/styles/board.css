@@ -109,6 +109,14 @@
   column-span: all;
   margin: 1rem 0 1rem;
 }
+/* The family-drawings strip is a full-width band like « L'auto » / the photos.
+   Span all columns so a tall drawing card is never flowed into — and split across
+   — a multi-column break (which clipped a drawing mid-image on the wall, leaving a
+   stray ✕). Its own flex grid then tiles the drawings cleanly within the band. */
+.board-grid > .notes--drawings {
+  column-span: all;
+  margin: 1rem 0;
+}
 @media (max-width: 680px) {
   .board-wall {
     padding: 1rem 0.9rem 1.5rem;
@@ -1265,6 +1273,19 @@
 /* A touch more room between the drawing/photo cards (and the trailing door). */
 .notes--drawings .notes__grid {
   gap: 0.8rem;
+}
+/* Inside the full-width drawings band, drawings TILE side by side at a calm size
+   (wrapping to the next line), rather than each claiming a full-wall-width row the
+   way a lone shared photo does in the notes strip above. */
+.notes--drawings .note-card--visual {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 18rem;
+}
+.notes--drawings .note-card--visual .note-card__draw {
+  width: auto;
+  max-width: 16rem;
+  max-height: 16rem;
 }
 
 /* ---- Month view: a calm six-week calendar of everything dated -------------
