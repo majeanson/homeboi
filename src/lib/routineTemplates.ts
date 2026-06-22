@@ -105,6 +105,31 @@ export function choreTemplates(lang: Lang): DeckCard[] {
   return CHORES.map((ch) => ({ icon: ch.icon, label: ch.label[lang] }))
 }
 
+// Starter presets for "Projets & Entretien" (home_projects), one set per kind —
+// the same emoji+label preset-chip idiom as choreTemplates, so the form is "pick
+// a common one, tweak" instead of a blank field. 'plan' = aspirational home
+// projects (a new kitchen); 'upkeep' = recurring maintenance (furnace filter).
+const HOME_PROJECTS: Record<'plan' | 'upkeep', { icon: string; label: Record<Lang, string> }[]> = {
+  plan: [
+    { icon: '🏠', label: { fr: 'Nouvelle cuisine', en: 'New kitchen' } },
+    { icon: '🛋️', label: { fr: 'Sous-sol', en: 'Basement' } },
+    { icon: '🪵', label: { fr: 'Terrasse', en: 'Deck' } },
+    { icon: '🎨', label: { fr: 'Peinture', en: 'Repaint' } },
+    { icon: '🌳', label: { fr: 'Aménagement paysager', en: 'Landscaping' } },
+  ],
+  upkeep: [
+    { icon: '🔧', label: { fr: 'Filtre de fournaise', en: 'Furnace filter' } },
+    { icon: '🍂', label: { fr: 'Gouttières', en: 'Gutters' } },
+    { icon: '🌳', label: { fr: 'Vérifier les arbres', en: 'Check the trees' } },
+    { icon: '🧯', label: { fr: 'Détecteurs de fumée', en: 'Smoke detectors' } },
+    { icon: '❄️', label: { fr: 'Pneus d’hiver', en: 'Winter tires' } },
+    { icon: '🔥', label: { fr: 'Ramonage', en: 'Chimney sweep' } },
+  ],
+}
+export function homeProjectTemplates(kind: 'plan' | 'upkeep', lang: Lang): DeckCard[] {
+  return HOME_PROJECTS[kind].map((p) => ({ icon: p.icon, label: p.label[lang] }))
+}
+
 // A friendly, toddler-relevant emoji palette for the card switcher.
 export const DECK_EMOJIS = [
   '🌅', '☀️', '🌙', '⭐', '🚽', '🪥', '🛁', '🚿', '🧼', '🧴',

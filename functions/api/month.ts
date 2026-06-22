@@ -27,11 +27,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Bad/missing window → empty calendar rather than a 400; the view just shows
   // empty cells, mirroring how the board tolerates a thin frame.
   if (!Number.isFinite(from) || !Number.isFinite(to) || from <= 0 || to <= from) {
-    return ok({ events: [], meals: [], chores: [], dayNotes: [] })
+    return ok({ events: [], meals: [], chores: [], dayNotes: [], todos: [], homeProjects: [] })
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes] = await Promise.all([
+  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
@@ -92,6 +92,14 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<{ id: string; member_id: string; label: string | null; start_min: number; end_min: number; weekdays: string; holds_car: number; color: string | null; week_interval: number; anchor_day: number | null }>(),
+    // "Projets & Entretien" (home_projects, #home-projects) — DATED rows only;
+    // recurring expand across the window, one-off land on their day. Like chores,
+    // they ride the same calendar. Undated rows (at IS NULL) have no cell.
+    ctx.env.DB.prepare(
+      'SELECT id, kind, title, color, at, recur_json FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+    )
+      .bind(hh)
+      .all<{ id: string; kind: string; title: string; color: string | null; at: number; recur_json: string | null }>(),
   ])
 
   const inRange = (day: number) => day >= from && day < to
@@ -228,5 +236,21 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   }
 
-  return ok({ events, meals, chores, dayNotes, todos })
+  // "Projets & Entretien" expanded across the window: recurring via the shared
+  // expander (anchored on `at`), one-off bucketed on their day. `kind` rides along
+  // so the client can tint/label projet vs entretien.
+  const homeProjects: { id: string; kind: string; title: string; color: string | null; day: number }[] = []
+  for (const h of homeRes.results) {
+    const r = parseRecur(h.recur_json)
+    if (r) {
+      for (const at of expandRange(h.at, r, from, to)) {
+        homeProjects.push({ id: `${h.id}#${at}`, kind: h.kind, title: h.title, color: h.color, day: dayOf(at) })
+      }
+    } else {
+      const day = dayOf(h.at)
+      if (inRange(day)) homeProjects.push({ id: h.id, kind: h.kind, title: h.title, color: h.color, day })
+    }
+  }
+
+  return ok({ events, meals, chores, dayNotes, todos, homeProjects })
 })

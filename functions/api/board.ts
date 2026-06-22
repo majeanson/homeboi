@@ -388,6 +388,57 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   choresUpcoming.sort((a, b) => a.at - b.at)
 
+  // "Projets & Entretien" (home_projects, #home-projects) dated rows surface like
+  // recurring chores: an occurrence TODAY (and not already done) shows on
+  // Aujourd'hui; otherwise the next occurrence this week shows on À venir. Undated
+  // rows (at IS NULL) stay quiet — they live only in Réglages. Checkable off the
+  // board (sets last_done_at), so "done this cycle" mirrors a chore. No rotation
+  // (who/team empty); the row's own colour + title emoji distinguish it.
+  const homeRows = await ctx.env.DB.prepare(
+    'SELECT id, title, color, at, recur_json, lead_seconds, last_done_at FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+  )
+    .bind(hh)
+    .all<{
+      id: string
+      title: string
+      color: string | null
+      at: number
+      recur_json: string | null
+      lead_seconds: number | null
+      last_done_at: number | null
+    }>()
+  const homeToday: ChoreInst[] = []
+  const homeUpcoming: ChoreInst[] = []
+  for (const h of homeRows.results) {
+    const hinst = (at: number): ChoreInst => ({
+      id: h.id,
+      title: h.title,
+      color: h.color,
+      at,
+      soon: isSoon(at, h.lead_seconds),
+      who: null,
+      who_id: null,
+      team: [],
+    })
+    const r = parseRecur(h.recur_json)
+    if (!r) {
+      // One-off dated row: a single occurrence at `at`. Show until it's marked done.
+      if (h.last_done_at != null) continue
+      if (h.at >= today && h.at < tomorrow) homeToday.push(hinst(today))
+      else if (h.at >= tomorrow && h.at < weekEnd) homeUpcoming.push(hinst(h.at))
+      continue
+    }
+    // The picked date `at` is the recurrence anchor (same role as a chore's recur_start).
+    if (occurrenceOn(today, h.at, r) !== null) {
+      const doneToday = h.last_done_at != null && h.last_done_at >= today
+      if (!doneToday) homeToday.push(hinst(today))
+    } else {
+      const next = expandRange(h.at, r, tomorrow, weekEnd)[0]
+      if (next != null) homeUpcoming.push(hinst(next))
+    }
+  }
+  homeUpcoming.sort((a, b) => a.at - b.at)
+
   // Today's meals, ordered through the day (déjeuner → collation) so the board
   // reads top-to-bottom like a menu. Supper stays the headline hero above; the
   // client lists the rest here so nothing planned for the day is hidden.
@@ -467,6 +518,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     chores: choresOut,
     choresToday,
     choresUpcoming,
+    homeToday,
+    homeUpcoming,
     todos,
     notes: notes.results,
     leftovers: leftoversRes.results,

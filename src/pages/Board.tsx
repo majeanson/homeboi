@@ -215,6 +215,10 @@ export function Board() {
   const tomorrowEvents = (data?.tomorrow ?? []).filter(mineEvent)
   const upcomingEvents = (data?.upcoming ?? []).filter(mineEvent)
   const upcomingChores = (data?.choresUpcoming ?? []).filter(mineChore)
+  // "Projets & Entretien" (home_projects) dated occurrences — family-wide (no
+  // rotation), so not personal-focus filtered. Minus any just checked (held undo).
+  const todayHome = (data?.homeToday ?? []).filter((c) => !pendingDone.has(c.id))
+  const upcomingHome = data?.homeUpcoming ?? []
   // Undated leftovers to finish — a calm "eat these first" nudge. Family-wide (not
   // personal-focus filtered), minus any just marked Fini (held behind the undo).
   const leftovers = (data?.leftovers ?? []).filter((l) => !pendingLeftover.has(l.id))
@@ -331,10 +335,18 @@ export function Board() {
             {/* A big, friendly door into "Mes dessins" — the kid's own drawing
                 collection (draw new ones with handwriting lines / tracing / colour-in
                 / stickers, and see everything they've kept). */}
-            <Link to="/drawings" className="today-kid__draw">
-              <span className="today-kid__draw-icn" aria-hidden="true">🎨</span>
-              <span>{t.memo.galleryTitle}</span>
-            </Link>
+            <div className="today-kid__doors">
+              <Link to="/drawings" className="today-kid__draw">
+                <span className="today-kid__draw-icn" aria-hidden="true">🎨</span>
+                <span>{t.memo.galleryTitle}</span>
+              </Link>
+              {/* A big, friendly door into « Jouer » — the toddler play space (find-it,
+                  the day timeline, the birthday countdown). All hear-first, no score. */}
+              <Link to="/jouer" className="today-kid__draw today-kid__play">
+                <span className="today-kid__draw-icn" aria-hidden="true">🎲</span>
+                <span>{t.play.door}</span>
+              </Link>
+            </div>
             {data.dayNote && <DayNote note={data.dayNote} members={data.members} toddler />}
             {/* Every meal planned for today, read-aloud — supper rides up in the
                 heroes, so this lists the rest of the day's table. */}
@@ -620,6 +632,43 @@ export function Board() {
     />
   )
 
+  // "Projets & Entretien" occurrence — checking it stamps last_done_at server-side
+  // (home-projects PATCH with id alone), so a recurring upkeep's next occurrence
+  // shows and a one-off drops off. DEFERRED behind the undo toast, like markChoreDone.
+  const markHomeDone = (c: ChoreInstance) => {
+    setPendingDone((s) => new Set(s).add(c.id))
+    undo({
+      message: t.undo.choreDone(c.title),
+      onUndo: () =>
+        setPendingDone((s) => {
+          const n = new Set(s)
+          n.delete(c.id)
+          return n
+        }),
+      onCommit: async () => {
+        await write('home-projects', { method: 'PATCH', body: { id: c.id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
+        setPendingDone((s) => {
+          const n = new Set(s)
+          n.delete(c.id)
+          return n
+        })
+      },
+    })
+  }
+  const homeAct = (c: ChoreInstance, withDay?: boolean) => (
+    <Act
+      key={c.id}
+      cat="chore"
+      title={c.title}
+      when={withDay ? withRel(formatDay(c.at, lang), c.at) : undefined}
+      color={c.color ?? undefined}
+      soon={c.soon}
+      onCheck={withDay ? undefined : () => markHomeDone(c)}
+      onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, onDone: withDay ? undefined : () => markHomeDone(c) }))}
+    />
+  )
+
   return (
     <main className="board-wall">
       {/* No per-page add button: the shared yellow ＋ FAB (HubLayout) floats
@@ -778,7 +827,7 @@ export function Board() {
 
           <div className="board-grid">
             <Section label={t.board.today}>
-            {todayEvents.length === 0 && todayChores.length === 0 && otherMeals.length === 0 ? (
+            {todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
               <EmptyState tone="calm">{t.board.todayClear}</EmptyState>
             ) : (
               <>
@@ -811,6 +860,8 @@ export function Board() {
                 {todayEvents.map(eventAct)}
                 {/* Recurring chores due today — tap to check off (advances the turn). */}
                 {todayChores.map((c) => choreAct(c))}
+                {/* Projets & Entretien due today — tap to check off (stamps done). */}
+                {todayHome.map((c) => homeAct(c))}
               </>
             )}
           </Section>
@@ -917,7 +968,7 @@ export function Board() {
               cochées", and one-tap departure checklists (templates). */}
           <TodoSection title={t.todos.title} members={data.members} />
 
-          {(upcomingEvents.length > 0 || upcomingChores.length > 0) && (
+          {(upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) && (
             <Section label={t.board.upcoming}>
               {upcomingEvents.map((e) => (
                 <Act
@@ -931,6 +982,8 @@ export function Board() {
               ))}
               {/* Recurring chores coming up later this week, with their day. */}
               {upcomingChores.map((c) => choreAct(c, true))}
+              {/* Projets & Entretien coming up this week, with their day. */}
+              {upcomingHome.map((c) => homeAct(c, true))}
             </Section>
           )}
 

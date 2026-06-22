@@ -22,6 +22,7 @@ const CercleFormPage = lazy(() => import('./pages/CercleFormPage').then((m) => (
 const CercleFamilyPage = lazy(() => import('./pages/CercleFamilyPage').then((m) => ({ default: m.CercleFamilyPage })))
 const CerclePetPage = lazy(() => import('./pages/CerclePetPage').then((m) => ({ default: m.CerclePetPage })))
 const CercleWorldPage = lazy(() => import('./pages/CercleWorldPage').then((m) => ({ default: m.CercleWorldPage })))
+const JouerPage = lazy(() => import('./pages/JouerPage').then((m) => ({ default: m.JouerPage })))
 const Liste = lazy(() => import('./pages/Liste').then((m) => ({ default: m.Liste })))
 const Pair = lazy(() => import('./pages/Pair').then((m) => ({ default: m.Pair })))
 const Setup = lazy(() => import('./pages/Setup').then((m) => ({ default: m.Setup })))
@@ -129,6 +130,8 @@ export function AppRoutes() {
         <Route path="/cercle/pet/:id" element={<CerclePetPage />} />
         {/* « Notre monde » — the big-picture overview map (full-screen scene). */}
         <Route path="/cercle/monde" element={<CercleWorldPage />} />
+        {/* « Jouer » — the toddler play space (full-screen scene). */}
+        <Route path="/jouer" element={<JouerPage />} />
         <Route path="/event/new" element={<EventFormPage />} />
         <Route path="/chore/new" element={<ChoreFormPage />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />

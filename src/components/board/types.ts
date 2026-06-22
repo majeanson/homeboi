@@ -118,6 +118,12 @@ export interface BoardData {
   // standing chores with no schedule). Surfaced on Aujourd'hui; checking one
   // marks it done so it drops off. Shares the ChoreInstance shape.
   todos: ChoreInstance[]
+  // "Projets & Entretien" (home_projects) — DATED home work surfaced like chores:
+  // an occurrence today is checkable on Aujourd'hui (homeToday), the next one this
+  // week shows on À venir (homeUpcoming). Undated plans stay quiet (Réglages only).
+  // Shares the ChoreInstance shape; no rotation (who/who_id null).
+  homeToday?: ChoreInstance[]
+  homeUpcoming?: ChoreInstance[]
   notes: NoteRow[]
   // Undated leftovers to finish — the "Restants à finir" reminder card.
   leftovers: LeftoverRow[]

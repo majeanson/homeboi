@@ -34,9 +34,11 @@ interface MMeal { id: string; slot: string; title: string; cook_member_id: strin
 interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 interface MNote { id: string; text: string; member_id: string | null; day: number }
 interface MTodo { id: string; title: string; member_id: string | null; day: number; section: string | null }
-export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[] }
+// "Projets & Entretien" (home_projects) dated occurrence — chore-like on the calendar.
+interface MHome { id: string; kind: string; title: string; color: string | null; day: number }
+export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[] }
 
-interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[] }
+interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[]; home: MHome[] }
 
 // Intl gives a lowercase French month/weekday ("juin", "lun") — calendars want it
 // capitalized.
@@ -73,6 +75,8 @@ function dotsFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs):
     if (meals.isVisible(m.slot))
       out.push({ color: meals.color(m.slot) ?? CATS.meal.color, kind: 'meal', slot: isMealSlot(m.slot) ? m.slot : undefined })
   for (const c of b.chores) out.push({ color: c.color ?? CATS.chore.color, kind: 'chore' })
+  // Projets & Entretien read as chore-shaped dots; the row's own colour sets them apart.
+  for (const h of b.home) out.push({ color: h.color ?? CATS.chore.color, kind: 'chore' })
   // À compléter todos → a check icon tinted with the member colour (drawn like the
   // meal slot icons), so they read apart from the filled chore/event dots.
   for (const td of b.todos) out.push({ color: colorOf(members, td.member_id) ?? CATS.chore.color, kind: 'todo' })
@@ -144,7 +148,7 @@ export function MonthView({
     const at = (d: number) => {
       let b = m.get(d)
       if (!b) {
-        b = { events: [], meals: [], chores: [], notes: [], todos: [] }
+        b = { events: [], meals: [], chores: [], notes: [], todos: [], home: [] }
         m.set(d, b)
       }
       return b
@@ -153,6 +157,7 @@ export function MonthView({
     for (const x of data?.meals ?? []) at(x.day).meals.push(x)
     for (const c of data?.chores ?? []) at(c.day).chores.push(c)
     for (const td of data?.todos ?? []) at(td.day).todos.push(td)
+    for (const h of data?.homeProjects ?? []) at(h.day).home.push(h)
     for (const n of data?.dayNotes ?? []) at(n.day).notes.push(n)
     return m
   }, [data])
@@ -200,7 +205,7 @@ export function MonthView({
   const selMeals = sel ? sel.meals.filter((m) => mealPrefs.isVisible(m.slot)) : []
   // Todos just marked done are held out of the panel (and the count) at once.
   const selTodos = sel ? sel.todos.filter((td) => !pendingTodo.has(td.id)) : []
-  const selCount = sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.notes.length : 0
+  const selCount = sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.notes.length : 0
   const atToday = offset === 0 && selected === todayDay
   // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
   // time — the household's wall month/weekday, no UTC flag.
@@ -394,6 +399,17 @@ export function MonthView({
                 onOpen={() =>
                   detail.open(buildChore({ id: c.id, title: c.title, color: c.color, at: c.day, who: c.who, who_id: choreWhoId(c.who) }, detailCtx))
                 }
+              />
+            ))}
+            {/* Projets & Entretien landing on this day — read-only peek (managed in
+                Réglages); tap opens the same chore-style detail. */}
+            {sel!.home.map((h) => (
+              <Act
+                key={h.id}
+                cat="chore"
+                title={h.title}
+                color={h.color ?? undefined}
+                onOpen={() => detail.open(buildChore({ id: h.id, title: h.title, color: h.color, at: h.day, who: null, who_id: null }, detailCtx))}
               />
             ))}
             {/* À compléter todos pinned to this day — check them off right here (the

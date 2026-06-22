@@ -51,6 +51,9 @@ const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 interface DayItemsData {
   events: { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; business_colour?: string | null; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null }[]
   chores: { id: string; title: string; color: string | null; who: string | null }[]
+  // "Projets & Entretien" (home_projects) landing on this day — read-only here
+  // (managed in Réglages ▸ Corvées). null homeProjects = older payload → [].
+  homeProjects?: { id: string; kind: string; title: string; color: string | null }[]
 }
 
 // /kitchen/day/:date — one day's full meal-planning editor, as a full-screen
@@ -110,6 +113,7 @@ function DayPlanInner() {
   })
   const dayEvents = dayItemsQ.data?.events ?? []
   const dayChores = dayItemsQ.data?.chores ?? []
+  const dayHome = dayItemsQ.data?.homeProjects ?? []
   // Full editable rows (recur_json, lead_seconds, rotation…) so a day row taps open
   // to its inline form pre-filled. The /api/month occurrence carries only display
   // fields; we resolve the series by its base id (recurring ids are `base#at`).
@@ -557,6 +561,21 @@ function DayPlanInner() {
                 <Icon name="plus-bold" size={16} /> {t.operator.addEvent}
               </button>
             ))}
+
+          {/* Projets & Entretien landing on this day — read-only (managed in
+              Réglages ▸ Corvées); shown only when there's something, to keep the
+              day page calm. */}
+          {dayHome.length > 0 && (
+            <>
+              <div className="sec-label">
+                <b>{t.operator.home.subEntretien}</b>
+                <span className="ln" />
+              </div>
+              {dayHome.map((h) => (
+                <Act key={h.id} cat="chore" title={h.title} color={h.color || undefined} />
+              ))}
+            </>
+          )}
         </section>
       </div>
     </div>

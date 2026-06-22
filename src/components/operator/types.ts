@@ -21,6 +21,22 @@ export interface Chore {
   recur_start?: number | null
   lead_seconds?: number | null
 }
+// "Projets & Entretien" (home_projects) — the longer-horizon home work under
+// Corvées. ONE row shape; `kind` discriminates the two sub-tabs. A row may carry
+// both a budget and a recurrence. Mirrors the raw GET payload (snake_case).
+export interface HomeProject {
+  id: string
+  kind: 'plan' | 'upkeep'
+  title: string
+  notes?: string | null
+  budget_cents?: number | null
+  color?: string
+  at?: number | null // target/occurrence date OR recurrence anchor (unix sec); null = undated
+  recur_json?: string | null
+  lead_seconds?: number | null
+  last_done_at?: number | null
+}
+
 interface RoutineCard {
   icon: string
   label: string

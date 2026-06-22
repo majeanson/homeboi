@@ -24,6 +24,8 @@ import { CercleNotes } from '../components/cercle/CercleNotes'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
 import { CercleConstellation } from '../components/cercle/CercleConstellation'
 import { personKey } from '../lib/cercle'
+import { SeekGame } from '../components/jouer/SeekGame'
+import { buildSeekDecks } from '../lib/playContent'
 import { ReviewChecklist } from '../components/ReviewChecklist'
 import type { ContactGroup, Member, Person, PersonKind, World } from '../lib/cercle'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
@@ -602,6 +604,22 @@ export function DevKit() {
           <div style={{ height: '60vh' }}>
             <CercleConstellation world={DEMO_WORLD} byKey={DEMO_WORLD_BYKEY} />
           </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Toddler',
+      name: 'SeekGame',
+      file: 'components/jouer/SeekGame.tsx',
+      kw: 'jouer play cherche trouve find-it toddler hear-first game educational decks animals colours food weather faces calm',
+      render: () => (
+        // « Cherche et trouve » — the hear-first find-it toy (part of the « Jouer »
+        // play space). Pick a deck, then "Trouve X !"; right tile → "Bravo !" + a new
+        // prompt, anything else just reads its name. No score, no fail (NFR-CALM).
+        <Demo label="Find-it toy — pick a deck, then « Trouve X ! »">
+          <SeekGame
+            decks={buildSeekDecks([], 'fr', { faces: 'Visages', animals: 'Animaux', colors: 'Couleurs', foods: 'Aliments', weather: 'Météo', mix: 'Mélange' })}
+          />
         </Demo>
       ),
     },

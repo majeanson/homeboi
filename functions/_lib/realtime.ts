@@ -76,6 +76,9 @@ const PATH_KEYS: Record<string, string[][]> = {
   // Chores + the rotation ledger feed the board, the chores tab, and the month.
   chores: [['chores'], ['board'], ['month']],
   'chores-ledger': [['chores'], ['board'], ['month']],
+  // Projets & Entretien (home_projects): dated upkeep shows on the board + month,
+  // and the Réglages sub-tabs read ['home-projects']. Mirrors the chores keys.
+  'home-projects': [['home-projects'], ['board'], ['month']],
   // Calendar events show on the board, the events list, and the month grid.
   events: [['events'], ['board'], ['month']],
   // Meal plan: the kitchen week grid + the board's "ce soir".

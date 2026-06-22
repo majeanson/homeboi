@@ -28,6 +28,11 @@ export const LOVES_KEY = ['recipe-loves']
 // invalidating TODOS_KEY refreshes both. Templates feed Réglages + the picker.
 export const TODOS_KEY = ['todos']
 export const TODO_TEMPLATES_KEY = ['todo-templates']
+// Projets & Entretien (home_projects): the longer-horizon home work under Corvées.
+// Read by the Réglages Corvées sub-tabs (Projets/Entretien) AND surfaced on the
+// board + month (dated upkeep), so the key is shared — an edit invalidates it and
+// every surface refreshes. Filtered by `kind` ('plan'|'upkeep') on the client.
+export const HOME_PROJECTS_KEY = ['home-projects']
 // Le cercle (people directory): contacts + relationship edges, read on the cercle
 // tab AND on the board (upcoming birthdays derive from it), so the key is shared —
 // a contact/birthday edit invalidates it and both surfaces refresh.

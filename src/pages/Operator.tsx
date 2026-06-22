@@ -14,8 +14,8 @@ import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
 import { GuestSection } from '../components/operator/guest'
 import { EventsSection } from '../components/operator/agenda'
-import { ChoresSection, RoutinesSection } from '../components/operator/chores'
-import { ChoreLedger } from '../components/ChoreLedger'
+import { RoutinesSection } from '../components/operator/chores'
+import { ChoresTabPanel } from '../components/operator/homeProjects'
 import { PhotosSection, RecapSection } from '../components/operator/media'
 import { RecipeTagsSection } from '../components/operator/recipesTags'
 import { RecipePillsSection } from '../components/operator/recipePills'
@@ -252,12 +252,7 @@ export function Operator() {
         {tab === 'household' && <MembersSection members={members} onChange={load} />}
         {tab === 'cercle' && <CercleGroupsSection help={operatorHelp} />}
         {tab === 'agenda' && <EventsSection events={events} members={members} onChange={load} />}
-        {tab === 'chores' && (
-          <>
-            <ChoresSection chores={chores} onChange={load} />
-            <ChoreLedger help={operatorHelp} />
-          </>
-        )}
+        {tab === 'chores' && <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} />}
         {tab === 'routines' && <RoutinesSection routines={routines} onChange={load} />}
         {tab === 'todos' && <TodoTemplatesSection help={operatorHelp} />}
         {tab === 'shopping' && (

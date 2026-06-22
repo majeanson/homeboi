@@ -358,6 +358,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'So you dress the kids right before heading out, without opening another app.',
         },
       },
+      {
+        label: { fr: 'Jouer : des jeux tout en douceur', en: 'Play: gentle little games' },
+        detail: {
+          fr: 'En vue enfant, une grande porte « 🎲 Jouer » ouvre un coin de jeux calmes, faits à partir de VOTRE maison et lus à voix haute. « Cherche et trouve » : « Trouve le chien ! » — touche la bonne image et tu entends « Bravo ! », touche-en une autre et elle dit juste son nom (jamais d’erreur). Choisis ce que tu cherches : les visages de la famille, les animaux, les couleurs, les aliments ou la météo. « Notre journée » déroule la journée du matin au dodo et raconte ce qui s’y passe (repas, sorties). « Les fêtes » montre à qui c’est bientôt l’anniversaire — « dans 3 dodos ! ». Aucun pointage, rien à gagner ou à perdre, rien d’enregistré : que du jeu, aussi longtemps que l’enfant en a envie.',
+          en: 'In kid view, a big « 🎲 Play » door opens a corner of calm games, built from YOUR home and read aloud. « Find it »: “Find the dog!” — tap the right picture and you hear “Yay!”, tap another and it just says its name (never wrong). Pick what to look for: the family’s faces, animals, colours, food, or the weather. « Our day » walks the day from morning to bedtime and tells what happens (meals, outings). « Birthdays » shows whose birthday is soon — “in 3 sleeps!”. No score, nothing to win or lose, nothing saved — just play, for as long as the child likes.',
+        },
+        why: {
+          fr: 'Apprendre les noms, les couleurs et l’ordre de la journée en jouant — calme, sans récompense ni dépendance (les principes du calme tiennent même au jeu).',
+          en: 'Learning names, colours and the shape of the day through play — calm, with no rewards or hooks (the calm tenets hold even at play).',
+        },
+      },
     ],
   },
   {
@@ -1268,6 +1279,44 @@ export const GUIDE: GuideEntry[] = [
     // Surfaces the same card inline at the top of Réglages ▸ À compléter (where the
     // departure templates live) and offers a "go there" link from the main Guide.
     tab: 'todos',
+  },
+  {
+    id: 'home-projects',
+    icon: 'broom-bold',
+    group: 'concepts',
+    title: { fr: 'Projets & entretien', en: 'Plans & maintenance' },
+    what: {
+      fr: 'Sous les corvées, deux listes pour les plus gros sujets de la maison : les Projets (rénover, budgéter — « nouvelle cuisine ») et l’Entretien qui revient (filtre, gouttières, vérifier les arbres). Une corvée, c’est aujourd’hui; un projet, c’est l’horizon.',
+      en: 'Under chores, two lists for the bigger home topics: Plans (renovate, budget — “new kitchen”) and the Maintenance that comes back (filter, gutters, check the trees). A chore is for today; a plan is for the horizon.',
+    },
+    points: [
+      {
+        label: { fr: 'Projets', en: 'Plans' },
+        detail: {
+          fr: 'Les grands projets de la maison, avec un budget visé optionnel et des notes (devis, à déléguer). Sans date, ils restent au calme dans Réglages ▸ Corvées ▸ Projets — rien sur le babillard.',
+          en: 'The bigger home projects, with an optional target budget and notes (quotes, to delegate). With no date they rest quietly in Settings ▸ Chores ▸ Plans — nothing on the board.',
+        },
+        why: { fr: 'Un endroit pour « un jour », sans que ça crie chaque matin.', en: 'A home for “someday”, without it shouting every morning.' },
+      },
+      {
+        label: { fr: 'Entretien', en: 'Maintenance' },
+        detail: {
+          fr: 'L’entretien qui revient se règle une fois (« tous les 3 mois ») et réapparaît tout seul. Avec une date, il s’affiche au babillard et au calendrier, avec un rappel « Bientôt » optionnel; coche-le quand c’est fait et la prochaine fois s’installe.',
+          en: 'Recurring upkeep is set once (“every 3 months”) and comes back on its own. With a date it shows on the board and the calendar, with an optional “Soon” reminder; check it off when done and the next one settles in.',
+        },
+        why: { fr: 'Le chauffe-eau et les gouttières ne s’oublient plus.', en: 'The water heater and the gutters don’t get forgotten anymore.' },
+      },
+      {
+        label: { fr: 'Calme', en: 'Calm' },
+        detail: {
+          fr: 'Le budget est une cible, pas un compteur : aucune barre de progression, aucun pointage. Juste de quoi se souvenir et planifier.',
+          en: 'The budget is a target, not a tracker: no progress bar, no score. Just enough to remember and plan.',
+        },
+      },
+    ],
+    // Surfaces the same card at the top of Réglages ▸ Corvées (where the Projets /
+    // Entretien sub-tabs live) and offers a "go there" link from the main Guide.
+    tab: 'chores',
   },
   {
     id: 'screensaver',

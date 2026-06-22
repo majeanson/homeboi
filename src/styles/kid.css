@@ -782,3 +782,320 @@
 .tbook__back {
   flex: none;
 }
+
+/* ===== « Jouer » — the toddler play space ================================= */
+
+/* Two big doors on the toddler board (Mes dessins + Jouer), side by side. */
+.today-kid__doors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.today-kid__doors .today-kid__draw {
+  width: 100%;
+}
+.today-kid__play {
+  background: color-mix(in srgb, var(--sky) 24%, var(--card));
+}
+
+/* The play scene fills full width (no 46rem cap) and scrolls normally. */
+.scene__body--play {
+  max-width: none;
+}
+
+/* --- the activity menu (three big doors) --- */
+.play-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.play-menu__title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  text-align: center;
+}
+.play-menu__doors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.9rem;
+}
+.play-door {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1.4rem 0.8rem;
+  border: 0;
+  border-radius: 1.3rem;
+  background: color-mix(in srgb, var(--marigold) 18%, var(--card));
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.play-door:active {
+  transform: scale(0.98);
+}
+.play-door__emoji {
+  font-size: 3rem;
+  line-height: 1;
+}
+.play-door__label {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+.play-door__hint {
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* --- Cherche et trouve --- */
+.seek {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.seek__title,
+.seek--pick .seek__title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.4rem;
+  text-align: center;
+}
+.seek__decks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.8rem;
+}
+.seek-deck {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.2rem 0.6rem;
+  border: 0;
+  border-radius: 1.2rem;
+  background: color-mix(in srgb, var(--berry) 16%, var(--card));
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.seek-deck:active {
+  transform: scale(0.98);
+}
+.seek-deck__emoji {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+.seek-deck__label {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.seek__bar {
+  display: flex;
+}
+.seek__prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 0;
+  border-radius: 1.1rem;
+  background: color-mix(in srgb, var(--marigold) 28%, var(--card));
+  color: var(--ink);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.seek__board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.8rem;
+}
+.seek__board.is-found .seek-tile:not(.is-right) {
+  opacity: 0.4;
+}
+.seek-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1rem 0.5rem;
+  border: 2px solid transparent;
+  border-radius: 1.2rem;
+  background: var(--card);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.seek-tile:active {
+  transform: scale(0.96);
+}
+.seek-tile.is-right {
+  border-color: var(--ok, #3bb24a);
+  transform: scale(1.05);
+}
+.seek-tile__face {
+  font-size: 3.4rem;
+  line-height: 1;
+  width: 4.6rem;
+  height: 4.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+}
+.seek-tile__face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.seek-tile__face--swatch {
+  border: 2px solid color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.seek-tile__label {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.seek-tile__check {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  color: var(--ok, #3bb24a);
+}
+.seek__bravo {
+  margin: 0;
+  text-align: center;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: var(--ok, #3bb24a);
+}
+
+/* --- Notre journée (the day timeline) --- */
+.daytl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.daytl__intro {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.35rem;
+  text-align: center;
+}
+.daytl__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+}
+/* A vertical rail connecting the parts — the sequence made visible. */
+.daytl__list::before {
+  content: '';
+  position: absolute;
+  left: 2.4rem;
+  top: 1.5rem;
+  bottom: 1.5rem;
+  width: 3px;
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 2px;
+}
+.daytl__tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 0;
+  border-radius: 1.2rem;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+}
+.daytl__tile:active {
+  transform: scale(0.99);
+}
+.daytl__emoji {
+  font-size: 2.6rem;
+  line-height: 1;
+  width: 2.8rem;
+  text-align: center;
+}
+.daytl__main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.daytl__label {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+.daytl__sub {
+  color: var(--ink-soft);
+}
+
+/* --- Les fêtes (birthday countdown) --- */
+.fete {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.fete__intro {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.35rem;
+  text-align: center;
+}
+.fete__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.9rem;
+}
+.fete-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1.1rem 0.6rem 0.9rem;
+  border: 0;
+  border-radius: 1.3rem;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.fete-card:active {
+  transform: scale(0.98);
+}
+.fete-card.is-today {
+  background: color-mix(in srgb, var(--marigold) 30%, var(--card));
+}
+.fete-card__cake {
+  font-size: 2rem;
+  line-height: 1;
+}
+.fete-card__name {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.15rem;
+}
+.fete-card__when {
+  color: var(--ink-soft);
+}
