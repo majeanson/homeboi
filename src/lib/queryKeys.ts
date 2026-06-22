@@ -39,3 +39,11 @@ export const FAMILY_NOTES_KEY = ['family-notes']
 // cercle Business tab AND by the EventForm "Avec" picker (a rendez-vous can link a
 // business), so the key is shared — adding a business there refreshes the picker.
 export const BUSINESSES_KEY = ['businesses']
+// « L'auto » — the weekly work-schedule template (schedule_blocks). Read in Réglages
+// ▸ L'auto AND by the /voiture week view (it resolves the car's busy spans from it),
+// so the key is shared — editing an horaire refreshes the week + the board glance.
+export const SCHEDULE_KEY = ['schedule']
+// « L'auto » — per-date car overrides (car_day). Read by the /voiture week view
+// under ['car-day', from] (the visible week window); a prefix of CAR_DAY_KEY so
+// invalidating it refreshes every loaded week.
+export const CAR_DAY_KEY = ['car-day']
