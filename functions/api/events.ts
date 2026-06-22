@@ -17,7 +17,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // may be in the past, e.g. "garbage every Wednesday" set weeks ago).
   const today = dayStart(new Date(Date.now()))
   const { results } = await ctx.env.DB.prepare(
-    `SELECT id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, lead_seconds,
+    `SELECT id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, lead_seconds, car_id, passengers,
             (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name,
             (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name,
             (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour
@@ -40,6 +40,8 @@ interface EventBody {
   businessId?: string | null // a « Le cercle » Business (vet, plumber…) — a rendez-vous
   recur?: unknown // {freq,interval?,weekdays?} or null/absent for a one-off
   leadSeconds?: number | null // calm "Bientôt" lead window; null/absent = no reminder
+  carId?: string | null // « L'auto »: which household car this ride takes (null = carpool/none)
+  passengers?: unknown // « L'auto »: member ids riding along (JSON array)
 }
 
 const recurJson = (recur: unknown): string | null => {
@@ -67,6 +69,24 @@ const leadSeconds = (v: unknown): number | null => {
   return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), MAX_LEAD) : null
 }
 
+// « L'auto » ride fields. car_id is a free-form households.cars JSON id (not an FK):
+// trimmed + capped, empty/garbage → null (no car / carpool). passengers is a deduped
+// list of member-id strings (which kids ride along), capped — references, never a
+// count (NFR-CALM). Membership isn't verified server-side; a stale id simply renders
+// as nobody, like a dangling car_id reads as "no car".
+const carIdOf = (v: unknown): string | null => {
+  const s = typeof v === 'string' ? v.trim().slice(0, 40) : ''
+  return s || null
+}
+const passengersOf = (v: unknown): string | null => {
+  if (!Array.isArray(v)) return null
+  const ids = [...new Set(v.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter(Boolean))].slice(
+    0,
+    12,
+  )
+  return ids.length ? JSON.stringify(ids) : null
+}
+
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<EventBody>(ctx.request)
   const title = body?.title?.trim()
@@ -76,7 +96,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // clears the others so the rendez-vous stays a single, unambiguous answer.
   const { businessId, contactId, memberId } = pickWho(body)
   await ctx.env.DB.prepare(
-    'INSERT INTO events (id, household_id, member_id, contact_id, business_id, title, start_at, all_day, recur_json, lead_seconds, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO events (id, household_id, member_id, contact_id, business_id, title, start_at, all_day, recur_json, lead_seconds, car_id, passengers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -89,6 +109,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
       body.allDay ? 1 : 0,
       recurJson(body.recur),
       leadSeconds(body.leadSeconds),
+      carIdOf(body.carId),
+      passengersOf(body.passengers),
       nowSec(),
     )
     .run()
@@ -101,7 +123,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!body?.id || !title || typeof body?.startAt !== 'number') return badRequest('id + titre + date requis.')
   const { businessId, contactId, memberId } = pickWho(body)
   const res = await ctx.env.DB.prepare(
-    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, contact_id = ?, business_id = ?, recur_json = ?, lead_seconds = ? WHERE id = ? AND household_id = ?',
+    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, contact_id = ?, business_id = ?, recur_json = ?, lead_seconds = ?, car_id = ?, passengers = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title,
@@ -112,6 +134,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       businessId,
       recurJson(body.recur),
       leadSeconds(body.leadSeconds),
+      carIdOf(body.carId),
+      passengersOf(body.passengers),
       body.id,
       actor.householdId,
     )

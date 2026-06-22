@@ -54,4 +54,6 @@ export interface EventRow {
   business_colour?: string | null // the business's own tint — colours the rendez-vous
   recur_json?: string | null
   lead_seconds?: number | null
+  car_id?: string | null // « L'auto »: which household car this ride takes (null = carpool/none)
+  passengers?: string | null // « L'auto »: member ids riding along (JSON array)
 }

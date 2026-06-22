@@ -1805,6 +1805,16 @@
   gap: 0.4rem;
   flex-wrap: wrap;
 }
+/* « L'auto » Transport block (EventForm): tight, muted captions over each toggle
+   row (car · passengers) so the grouping reads without shouting. */
+.event-transport__label {
+  margin: 0.5rem 0 0.3rem;
+  opacity: 0.7;
+  font-size: 0.85em;
+}
+.event-transport__label:first-child {
+  margin-top: 0;
+}
 .operator__cards {
   min-width: 100%;
 }

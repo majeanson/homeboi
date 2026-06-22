@@ -11,7 +11,21 @@ import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
+import { Disclosure } from '../Disclosure'
+import { useCars } from '../../lib/carPrefs'
 import { recurOf } from '../../lib/recurLabel'
+
+// Parse the events.passengers JSON column (a member-id array) into a string[] for the
+// form's multi-select. Defensive: a malformed/absent value reads as no passengers.
+const parsePassengers = (raw?: string | null): string[] => {
+  if (!raw) return []
+  try {
+    const v = JSON.parse(raw)
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
 
 // The complete event (rendez-vous) form — title, date, optional time (no time =
 // all-day), member, and recurrence. Shared by Settings ▸ Agenda AND the global
@@ -34,6 +48,8 @@ export interface EventInit {
   business_name?: string | null // seed the "with" picker's text when editing
   recur_json?: string | null
   lead_seconds?: number | null
+  car_id?: string | null // « L'auto »: which household car this ride takes
+  passengers?: string | null // « L'auto »: member ids riding along (JSON array)
 }
 
 // The "with" combobox lists BOTH cercle people and businesses; the picked option
@@ -93,6 +109,18 @@ export function EventForm({
   }
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
+  // « L'auto » — the optional ride layer: does this event take a household car, and
+  // which kids ride along. Both default off so a plain event is unchanged. The
+  // driver is still the member/contact above (member = we drive · a cercle contact =
+  // a carpool parent drives their car). Collapsed in a Disclosure (calm: secondary).
+  const { cars, hasCar } = useCars()
+  const [carId, setCarId] = useState<string | null>(value?.car_id ?? null)
+  const [passengers, setPassengers] = useState<string[]>(parsePassengers(value?.passengers))
+  const togglePassenger = (id: string) =>
+    setPassengers((cur) => (cur.includes(id) ? cur.filter((p) => p !== id) : [...cur, id]))
+  // Show the Transport block open when the event already is a ride, so an edit
+  // doesn't hide its own car/passengers behind a collapsed summary.
+  const isRide = carId != null || passengers.length > 0
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
   const write = useWrite()
@@ -115,6 +143,8 @@ export function EventForm({
       businessId,
       recur,
       leadSeconds: lead,
+      carId,
+      passengers,
     }
     setBusy(true)
     setErr(false)
@@ -198,6 +228,49 @@ export function EventForm({
       )}
       <RecurPicker value={recur} onChange={setRecur} />
       <LeadPicker value={lead} onChange={setLead} />
+      {/* « L'auto » ride layer — collapsed by default (calm: secondary), opened when
+          the event already is a ride. Which household car it takes (tap again to
+          clear = no car / carpool) and which kids ride along. The driver stays the
+          member/contact above. Hidden entirely when there's nothing to assign. */}
+      {(hasCar || members.length > 0) && (
+        <Disclosure label={t.operator.eventTransport} defaultOpen={isRide} className="event-transport">
+          {hasCar && (
+            <>
+              <p className="mono event-transport__label">{t.operator.eventCarWho}</p>
+              <div className="operator__rotation mono">
+                {cars.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`btn btn--ghost${carId === c.id ? ' is-active' : ''}`}
+                    style={carId === c.id && c.color ? { borderColor: c.color, color: c.color } : undefined}
+                    onClick={() => setCarId(carId === c.id ? null : c.id)}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {members.length > 0 && (
+            <>
+              <p className="mono event-transport__label">{t.operator.eventPassengers}</p>
+              <div className="operator__rotation mono">
+                {members.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className={`btn btn--ghost${passengers.includes(m.id) ? ' is-active' : ''}`}
+                    onClick={() => togglePassenger(m.id)}
+                  >
+                    {m.display_name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </Disclosure>
+      )}
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <button type="submit" className="btn" disabled={!title.trim() || !date || busy}>
         {value ? t.common.save : t.operator.addEvent}

@@ -811,6 +811,14 @@ export const FR = {
     importVcfUnnamed: 'Sans nom',
     selectAll: 'Tout sélectionner',
     unselectAll: 'Tout désélectionner',
+    // « Compléter les familles » — fill in every relationship a famille-kind group implies.
+    completeFamilies: 'Compléter les familles',
+    completeApplyAll: (n: number) => `Tout ajouter (${n})`,
+    completeApply: (n: number) => `Ajouter (${n})`,
+    completeEmpty: 'Ces familles sont déjà complètes.',
+    completeInferred: 'déduit des liens existants',
+    completeGuess: 'lien de famille',
+    completePrecise: 'préciser le lien',
     photoFromMaisonnee: 'Photo gérée dans la Maisonnée',
     photoFromMaisonneeTile: 'Maisonnée',
     // Family builder — define a whole family's relationships at once.
@@ -1150,6 +1158,9 @@ export const FR = {
     carName: 'Nom du véhicule',
     carAdd: 'Ajouter un véhicule…',
     carsEmpty: 'Aucun véhicule — les trajets se font en covoiturage.',
+    eventTransport: 'Transport',
+    eventCarWho: 'Quelle auto ?',
+    eventPassengers: 'Passagers',
     cercleTab: 'Le cercle',
     cercleGroupsTitle: 'Groupes du cercle',
     cercleGroupsHint:
@@ -2620,6 +2631,9 @@ export const EN: typeof FR = {
     carName: 'Vehicle name',
     carAdd: 'Add a vehicle…',
     carsEmpty: 'No vehicle — rides are carpooled.',
+    eventTransport: 'Transport',
+    eventCarWho: 'Which car?',
+    eventPassengers: 'Passengers',
     cercleTab: 'The circle',
     cercleGroupsTitle: 'Circle groups',
     cercleGroupsHint:
