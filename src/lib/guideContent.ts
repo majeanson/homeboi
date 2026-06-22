@@ -115,6 +115,12 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     ids: ['surface', 'audience', 'pairing', 'screensaver', 'share', 'offline', 'account'],
   },
   {
+    key: 'getting-around',
+    icon: 'key-bold',
+    label: { fr: 'Se déplacer', en: 'Getting around' },
+    ids: ['auto'],
+  },
+  {
     key: 'ai-calm',
     icon: 'sparkle-bold',
     label: { fr: 'Intelligence & calme', en: 'AI & calm' },
@@ -2876,6 +2882,63 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Aucun compteur à surveiller — c’est un carnet d’entretien, pas un tableau de bord.',
           en: 'No counter to watch — it’s a maintenance log, not a dashboard.',
+        },
+      },
+    ],
+  },
+  // ── « L'auto » (#28) — the single shared car + carpool + work schedules ──────
+  {
+    id: 'auto',
+    icon: 'key-bold',
+    group: 'concepts',
+    tab: 'auto',
+    title: { fr: 'L’auto', en: 'The car' },
+    what: {
+      fr: 'Une seule auto pour la maisonnée ? L’auto sait quand elle est prise, quand elle est libre, et qui reconduit qui — sans cinq fils de textos.',
+      en: 'One car for the household? The car knows when it’s taken, when it’s free, and who drives whom — without five text threads.',
+    },
+    points: [
+      {
+        label: { fr: 'Ton auto', en: 'Your car' },
+        detail: {
+          fr: 'Donne un nom et une couleur à l’auto dans Réglages ▸ L’auto. Pas d’auto à toi ? Laisse la liste vide — les trajets se font alors en covoiturage.',
+          en: 'Name and colour the car in Settings ▸ The car. No car of your own? Leave the list empty — rides are then carpooled.',
+        },
+      },
+      {
+        label: { fr: 'Les horaires, une fois', en: 'Schedules, once' },
+        detail: {
+          fr: 'Dans Réglages ▸ L’auto ▸ Horaires, entre les heures de chacun (travail, garderie) et coche « prend l’auto » au besoin. C’est ce qui dit à L’auto quand la voiture n’est pas là.',
+          en: 'In Settings ▸ The car ▸ Schedules, enter everyone’s hours (work, daycare) and tick “takes the car” where it applies. That’s what tells The car when the vehicle is away.',
+        },
+        why: {
+          fr: 'Réglé une fois, ça façonne chaque journée tout seul — tu n’y reviens que pour une semaine différente.',
+          en: 'Set once, it shapes every day on its own — you only return for an off week.',
+        },
+      },
+      {
+        label: { fr: 'La semaine, en un tap', en: 'The week, one tap' },
+        detail: {
+          fr: 'Touche l’auto sur le babillard pour ouvrir la semaine. L’horaire la remplit déjà ; touche un jour pour ajuster qui a l’auto (ou « reste à la maison ») sans toucher au modèle. « Copier la semaine passée » pour les semaines qui se ressemblent.',
+          en: 'Tap the car on the board to open the week. The schedule pre-fills it; tap a day to adjust who has the car (or “stays home”) without touching the template. “Copy last week” for weeks that look alike.',
+        },
+      },
+      {
+        label: { fr: 'Qui reconduit', en: 'Who drives' },
+        detail: {
+          fr: 'Un trajet conduit par un membre prend votre auto ; choisis plutôt une personne du cercle et c’est elle qui conduit (covoiturage) — sans mobiliser la voiture. Ajoute les enfants comme passagers.',
+          en: 'A ride driven by a member takes your car; pick someone from the circle instead and they drive (carpool) — without tying up the vehicle. Add the kids as passengers.',
+        },
+      },
+      {
+        label: { fr: 'Quand ça se chevauche', en: 'When it clashes' },
+        detail: {
+          fr: 'Si un trajet tombe pendant que l’auto est déjà prise (au travail, par exemple), une petite note ⚠ le signale — calme, jamais bloquant.',
+          en: 'If a ride lands while the car is already taken (at work, say), a small ⚠ note flags it — calm, never blocking.',
+        },
+        why: {
+          fr: 'C’est le piège du foyer à une auto : L’auto le voit pour toi au lieu de te laisser le découvrir à 17 h.',
+          en: 'That’s the one-car household trap: The car spots it for you instead of letting you find out at 5 p.m.',
         },
       },
     ],

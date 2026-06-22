@@ -11,6 +11,10 @@ import { createContext, useContext } from 'react'
 export type AddSheetMode =
   | 'capture'
   | 'event'
+  // « L'auto » (#28) — a ride is an event that takes the car / carries passengers.
+  // Navigate-only to /event/new?ride=1 (the event form with its Transport block
+  // pre-opened + the household car pre-picked). Operator-grade like `event`.
+  | 'ride'
   | 'chore'
   | 'todo'
   | 'routine'
@@ -64,7 +68,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // (/kitchen/day/<date>): one place to set a day's meals + events + chores + note.
   // Their dates are dynamic, so AddSheet resolves the target at click time (like
   // cook/auto-pick) rather than through the static NAV_TARGET table.
-  board: ['capture', 'event', 'chore', 'todo', 'routine', 'plan-today', 'plan-tomorrow', 'departure'],
+  board: ['capture', 'event', 'ride', 'chore', 'todo', 'routine', 'plan-today', 'plan-tomorrow', 'departure'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`
@@ -88,7 +92,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
 // see functions/api/routines.ts). So the Routines-tab ＋ manage picker (new + edit
 // existing) works on a parent-audience kiosk, matching the backend. Everything
 // else here (event/chore add forms, capture, list, kitchen adds) is unchanged.
-export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'chore', 'routine'])
+export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'chore', 'routine'])
 
 // The operator forms are full-screen SCENE routes now, not in-sheet forms: a
 // tall multi-field form (a routine's name + member chips + template + card deck)
@@ -98,6 +102,8 @@ export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'chore', 'routine'
 // the Réglages add buttons (open() in HubLayout).
 export const FORM_ROUTES: Partial<Record<AddSheetMode, string>> = {
   event: '/event/new',
+  // A ride is the event form with its Transport block pre-opened (?ride=1).
+  ride: '/event/new?ride=1',
   chore: '/chore/new',
   routine: '/routine/new',
 }

@@ -187,6 +187,26 @@ per recipe and the density device-wide via `lib/cookPrefs.ts`. The TODDLER lens
 stays locked to the stepper (one-way door). `operator/display.tsx ▸ MeasureColorsSection`
 is the Réglages ▸ Affichage editor for the spoon/cup colours (`lib/measurePrefs.ts`).
 
+**« L'auto »** (#28 — the single shared car + carpool + work schedules). The calm
+answer to "où est l'auto, et est-elle libre ?" for a one-car household. Page-level /
+live-data, so catalogued not gallery-rendered: `AutoCard` (`components/board/AutoCard.tsx`
+— the board glance strip, mounted in `Board` beside `CercleBirthdays`: status now +
+today's rides + soft conflict cue, renders nothing when idle, taps into `/voiture`) and
+`VoiturePage` (`/voiture` — the fast weekly editor: the schedule template pre-fills each
+day, tap a day to override just that date without touching the template; week nav +
+"copier la semaine passée" / "réinitialiser au modèle"; toddler "qui te reconduit ?").
+A **ride is just an event** (`EventForm` gained a **Transport** `Disclosure`: which car +
+passenger faces; the ＋ FAB's "Ajouter un trajet" tile opens it via `/event/new?ride=1`).
+Config in **Réglages ▸ L'auto**: `CarsSection` (`operator/cars.tsx`, mirrors `reserve.tsx`;
+`households.cars` JSON, mig 0067) + `ScheduleSection` (`operator/schedule.tsx` — per-member
+recurring work windows + "prend l'auto", mig 0069 `schedule_blocks`). Per-date overrides in
+`car_day` (mig 0070). Pure engine: `functions/_lib/carAvail.ts` (free gaps / busy-now /
+conflicts) + `carResolve.ts` (template + override → spans, DST-safe via `localTimeOnDay`),
+both unit-tested. Read model: `GET /api/car` (today for the card, a range for the week) +
+`lib/car.ts` hooks (`CAR_KEY`); writes via `/api/schedule` + `/api/car-day`. No counts/
+quantities (calm). Reuses `Chip`/`EditField`/`RowActions`/`Disclosure`/`SceneHead`/
+`MemberSwitcher`-style faces — no new shared primitive.
+
 ---
 
 ## CSS design system (condensed)

@@ -73,6 +73,7 @@ const TYPE_DRESS: { type: CaptureType; cat: CatKey; icon: IconName }[] = [
 const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   capture: { cat: 'list', icon: 'sparkle-bold' },
   event: { cat: 'event', icon: 'calendar-blank-bold' },
+  ride: { cat: 'event', icon: 'key-bold' },
   chore: { cat: 'chore', icon: 'hand-heart-bold' },
   todo: { cat: 'chore', icon: 'check-bold' },
   routine: { cat: 'routine', icon: CATS.routine.icon },
@@ -524,6 +525,7 @@ export function AddSheet({
     const labels: Record<AddSheetMode, string> = {
       capture: t.capture.quick,
       event: t.capture.types.event,
+      ride: t.auto.addRide,
       chore: t.operator.chores,
       todo: t.todos.title,
       'routine-pick': t.nav.routines,

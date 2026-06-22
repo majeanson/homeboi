@@ -63,12 +63,14 @@ export function EventForm({
   members,
   value,
   initialDate,
+  defaultRide,
   onSaved,
   onCancel,
 }: {
   members: FormMember[]
   value?: EventInit | null
   initialDate?: number // local-midnight unix s to pre-fill a NEW event's date (from the calendar)
+  defaultRide?: boolean // « L'auto »: open as a ride (Transport block expanded + car pre-picked)
   onSaved: () => void
   onCancel?: () => void
 }) {
@@ -113,14 +115,15 @@ export function EventForm({
   // which kids ride along. Both default off so a plain event is unchanged. The
   // driver is still the member/contact above (member = we drive · a cercle contact =
   // a carpool parent drives their car). Collapsed in a Disclosure (calm: secondary).
-  const { cars, hasCar } = useCars()
-  const [carId, setCarId] = useState<string | null>(value?.car_id ?? null)
+  const { cars, hasCar, primary } = useCars()
+  // A new ride (defaultRide) pre-picks the household car so it's a one-tap add.
+  const [carId, setCarId] = useState<string | null>(value?.car_id ?? (defaultRide && primary ? primary.id : null))
   const [passengers, setPassengers] = useState<string[]>(parsePassengers(value?.passengers))
   const togglePassenger = (id: string) =>
     setPassengers((cur) => (cur.includes(id) ? cur.filter((p) => p !== id) : [...cur, id]))
-  // Show the Transport block open when the event already is a ride, so an edit
-  // doesn't hide its own car/passengers behind a collapsed summary.
-  const isRide = carId != null || passengers.length > 0
+  // Show the Transport block open when the event already is a ride (or was opened as
+  // one), so it doesn't hide its own car/passengers behind a collapsed summary.
+  const isRide = carId != null || passengers.length > 0 || !!defaultRide
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
   const write = useWrite()
