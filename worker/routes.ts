@@ -9,6 +9,7 @@ import * as authLogin from '../functions/api/auth/login'
 import * as authLogout from '../functions/api/auth/logout'
 import * as authMe from '../functions/api/auth/me'
 import * as authSignup from '../functions/api/auth/signup'
+import * as aRegler from '../functions/api/a-regler'
 import * as aiErrors from '../functions/api/ai-errors'
 import * as aiTest from '../functions/api/ai-test'
 import * as board from '../functions/api/board'
@@ -106,6 +107,7 @@ const TABLE: Record<string, RouteMod> = {
   'auth/logout': authLogout,
   'auth/me': authMe,
   'auth/signup': authSignup,
+  'a-regler': aRegler,
   'ai-errors': aiErrors,
   'ai-test': aiTest,
   ask,

@@ -17,7 +17,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // may be in the past, e.g. "garbage every Wednesday" set weeks ago).
   const today = dayStart(new Date(Date.now()))
   const { results } = await ctx.env.DB.prepare(
-    `SELECT id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, lead_seconds, car_id, passengers,
+    `SELECT id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, lead_seconds, car_id, passengers, bring_template_id,
             (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name,
             (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name,
             (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour
@@ -42,6 +42,7 @@ interface EventBody {
   leadSeconds?: number | null // calm "Bientôt" lead window; null/absent = no reminder
   carId?: string | null // « L'auto »: which household car this ride takes (null = carpool/none)
   passengers?: unknown // « L'auto »: member ids riding along (JSON array)
+  bringTemplateId?: string | null // « Activité »: the todo_templates id of its "what to bring" list
 }
 
 const recurJson = (recur: unknown): string | null => {
@@ -86,6 +87,13 @@ const passengersOf = (v: unknown): string | null => {
   )
   return ids.length ? JSON.stringify(ids) : null
 }
+// The activity's « quoi apporter » list = a todo_templates id (operator-managed,
+// reused from the departure checklists). Trimmed; empty/garbage → null (no list),
+// like a dangling car_id reads as "no car".
+const bringTemplateOf = (v: unknown): string | null => {
+  const s = typeof v === 'string' ? v.trim().slice(0, 40) : ''
+  return s || null
+}
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<EventBody>(ctx.request)
@@ -96,7 +104,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // clears the others so the rendez-vous stays a single, unambiguous answer.
   const { businessId, contactId, memberId } = pickWho(body)
   await ctx.env.DB.prepare(
-    'INSERT INTO events (id, household_id, member_id, contact_id, business_id, title, start_at, all_day, recur_json, lead_seconds, car_id, passengers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO events (id, household_id, member_id, contact_id, business_id, title, start_at, all_day, recur_json, lead_seconds, car_id, passengers, bring_template_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -111,6 +119,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       leadSeconds(body.leadSeconds),
       carIdOf(body.carId),
       passengersOf(body.passengers),
+      bringTemplateOf(body.bringTemplateId),
       nowSec(),
     )
     .run()
@@ -123,7 +132,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!body?.id || !title || typeof body?.startAt !== 'number') return badRequest('id + titre + date requis.')
   const { businessId, contactId, memberId } = pickWho(body)
   const res = await ctx.env.DB.prepare(
-    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, contact_id = ?, business_id = ?, recur_json = ?, lead_seconds = ?, car_id = ?, passengers = ? WHERE id = ? AND household_id = ?',
+    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, contact_id = ?, business_id = ?, recur_json = ?, lead_seconds = ?, car_id = ?, passengers = ?, bring_template_id = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title,
@@ -136,6 +145,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       leadSeconds(body.leadSeconds),
       carIdOf(body.carId),
       passengersOf(body.passengers),
+      bringTemplateOf(body.bringTemplateId),
       body.id,
       actor.householdId,
     )

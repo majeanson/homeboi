@@ -105,7 +105,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     key: 'everyday',
     icon: 'plus-bold',
     label: { fr: 'Au quotidien', en: 'Everyday' },
-    ids: ['capture', 'type-or-choose', 'favorites', 'todos', 'reminders', 'moment', 'undo'],
+    ids: ['capture', 'type-or-choose', 'favorites', 'todos', 'activities', 'reminders', 'moment', 'undo'],
   },
   {
     key: 'kitchen-shop',
@@ -129,7 +129,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     key: 'ai-calm',
     icon: 'sparkle-bold',
     label: { fr: 'Intelligence & calme', en: 'AI & calm' },
-    ids: ['ai', 'calm'],
+    ids: ['ai', 'a-regler', 'calm'],
   },
 ]
 
@@ -1290,6 +1290,61 @@ export const GUIDE: GuideEntry[] = [
     // Surfaces the same card inline at the top of Réglages ▸ À compléter (where the
     // departure templates live) and offers a "go there" link from the main Guide.
     tab: 'todos',
+  },
+  {
+    id: 'activities',
+    icon: 'users-three-bold',
+    group: 'concepts',
+    title: { fr: 'Les activités', en: 'Activities' },
+    what: {
+      fr: 'Le soccer du mardi, le piano du jeudi : une activité qui revient, avec qui conduit et quoi apporter. Tu la crées une fois et elle revient toute seule sur le babillard.',
+      en: 'Tuesday soccer, Thursday piano: a recurring commitment, with who drives and what to bring. You create it once and it comes back on its own.',
+    },
+    points: [
+      {
+        label: { fr: 'Une fois, puis ça roule', en: 'Once, then it runs' },
+        detail: {
+          fr: 'Depuis le ＋ du babillard, choisis « Activité » : un titre, l’enfant, la récurrence (chaque mardi 17 h), qui conduit et — au besoin — l’auto. C’est un rendez-vous récurrent, donc il apparaît sur le babillard et le calendrier comme le reste.',
+          en: 'From the board ＋, pick “Activity”: a title, the child, the recurrence (every Tuesday 5 pm), who drives and — if needed — the car. It’s a recurring event, so it shows on the board and calendar like everything else.',
+        },
+        why: { fr: 'Le rythme de la semaine se met en place sans y repenser.', en: 'The week’s rhythm falls into place without rethinking it.' },
+      },
+      {
+        label: { fr: 'Quoi apporter, au bon moment', en: 'What to bring, at the right time' },
+        detail: {
+          fr: 'Attache une liste « [[card:todos|À apporter]] » (souliers, gourde…) — une de tes listes à compléter. Le jour de l’activité, l’écran « [[card:board|Avant de partir]] » la montre, et d’un geste tu la passes en cochables.',
+          en: 'Attach a “[[card:todos|What to bring]]” list (cleats, water bottle…) — one of your to-do lists. On the activity’s day, the “[[card:board|Before you go]]” screen shows it, and one tap turns it into check-offs.',
+        },
+        why: { fr: 'Finis les « on a oublié les souliers ».', en: 'No more “we forgot the cleats”.' },
+      },
+    ],
+  },
+  {
+    id: 'a-regler',
+    icon: 'warning-bold',
+    group: 'concepts',
+    title: { fr: '« À régler »', en: '“To sort”' },
+    what: {
+      fr: 'Un coup d’œil qui relie ce que les onglets gardent séparé : une sortie sans conducteur, le souper de demain vide, une fête bientôt sans idée de cadeau. Seulement ce qui mérite ton attention — et ça se vide quand c’est réglé.',
+      en: 'One glance that connects what the tabs keep apart: a ride with no driver, tomorrow’s supper empty, a birthday soon with no gift idea. Only what deserves your attention — and it empties as you sort it.',
+    },
+    points: [
+      {
+        label: { fr: 'Où le voir', en: 'Where to see it' },
+        detail: {
+          fr: 'Une petite carte « À régler » apparaît sur le babillard quand il y a quelque chose à régler (sur ton téléphone, pas sur la tablette murale). La liste complète, avec un raccourci pour chaque correction, vit dans Réglages ▸ « Cette semaine ».',
+          en: 'A small “To sort” card shows on the board when there’s something to sort (on your phone, not the wall tablet). The full list, with a one-tap fix for each, lives in Settings ▸ “This week”.',
+        },
+        why: { fr: 'La charge mentale invisible devient une courte liste qu’on règle.', en: 'The invisible mental load becomes a short list you can clear.' },
+      },
+      {
+        label: { fr: 'Calme', en: 'Calm' },
+        detail: {
+          fr: 'Pas de score, pas de reproche. Quand il n’y a rien : « Tout est sous contrôle ». La liste se vide et reste vide.',
+          en: 'No score, no blame. When there’s nothing: “Everything is under control.” The list empties and stays empty.',
+        },
+      },
+    ],
   },
   {
     id: 'home-projects',

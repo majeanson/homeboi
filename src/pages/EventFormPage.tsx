@@ -17,12 +17,17 @@ export function EventFormPage() {
   // ?ride=1 (the ＋ "Ajouter un trajet" tile / the /voiture add) opens the form as a
   // ride: the Transport block expanded + the household car pre-picked.
   const ride = params.get('ride') === '1'
+  // ?activity=1 (the ＋ « Activité » tile) opens the form as a recurring kid
+  // commitment: weekly recurrence + the logistics block (car · passengers · à
+  // apporter) expanded.
+  const activity = params.get('activity') === '1'
   return (
-    <FormScene title={ride ? t.auto.addRide : t.operator.addEvent} icon="calendar-blank-bold" fallback="/board">
+    <FormScene title={activity ? t.operator.addActivity : ride ? t.auto.addRide : t.operator.addEvent} icon="calendar-blank-bold" fallback="/board">
       {(members, close) => (
         <EventForm
           members={members}
           defaultRide={ride}
+          defaultActivity={activity}
           initialDate={Number.isFinite(dateSeed) && dateSeed > 0 ? dateSeed : undefined}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ['board'] })

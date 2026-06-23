@@ -494,6 +494,9 @@ const ROUTES: Record<string, unknown> = {
   // Empty is the normal calm state; an absent `notes` must never crash the section.
   'family-notes': { notes: [] },
   recap: { recap: 'Belle semaine : 3 soupers planifiés, 2 sorties, liste à jour.' },
+  // « À régler » cross-domain scan — empty by default (the card hides; calm). Set a
+  // [{kind,key,label,sub?,at?,href}] to exercise the heads-up.
+  'a-regler': { signals: [] },
   // « L'auto » read model (board glance card + /voiture week). Same body for the
   // today and ?from=&to= week reads — the path is 'car' either way.
   car: CAR,

@@ -28,6 +28,9 @@ export const LOVES_KEY = ['recipe-loves']
 // invalidating TODOS_KEY refreshes both. Templates feed Réglages + the picker.
 export const TODOS_KEY = ['todos']
 export const TODO_TEMPLATES_KEY = ['todo-templates']
+// « À régler » — the cross-domain heads-up scan (functions/api/a-regler). Read by
+// the board card AND the « Cette semaine » block, so the key is shared.
+export const A_REGLER_KEY = ['a-regler']
 // Projets & Entretien (home_projects): the longer-horizon home work under Corvées.
 // Read by the Réglages Corvées sub-tabs (Projets/Entretien) AND surfaced on the
 // board + month (dated upkeep), so the key is shared — an edit invalidates it and

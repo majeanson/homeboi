@@ -10,6 +10,7 @@ import { WelcomeCard } from '../components/WelcomeCard'
 import { CercleBirthdays } from '../components/cercle/CercleBirthdays'
 import { AutoCard } from '../components/board/AutoCard'
 import { MomentPeek } from '../components/board/MomentPeek'
+import { ARegler } from '../components/board/ARegler'
 import { MomentsView } from '../components/board/MomentsView'
 import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
@@ -759,6 +760,11 @@ export function Board() {
       {/* Upcoming birthdays from « Le cercle » — a calm strip above the day, in
           every parent view (renders nothing when none are near). */}
       <CercleBirthdays />
+
+      {/* « À régler » — the cross-domain heads-up; a quiet card only when something
+          needs sorting. Parent-mobile only: the fixes are operator writes, so a
+          locked kiosk / toddler / guest never sees it. */}
+      <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} />
 
       {/* Evening-only nudge → « Moments »: a one-tap glance at tomorrow + its
           handoff checklist. Renders nothing outside the wind-down (see MomentPeek);

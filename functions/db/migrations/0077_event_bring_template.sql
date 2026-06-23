@@ -1,0 +1,17 @@
+-- « Quoi apporter » for an activity. A kid activity (soccer, piano) is just a
+-- recurring event that touches the car (the ride fields, 0068) and now also a
+-- "what to bring" checklist — so we extend events rather than add a parallel
+-- "activities" table: the recurrence engine, the board/day/month expansion, the
+-- driver attribution and the « L'auto » glance all come for free.
+--
+--   bring_template_id  the todo_templates row whose items are what to bring (cleats,
+--                      water bottle…). NULL = no list. Reuses the departure-checklist
+--                      template system: « Avant de partir » surfaces the day's
+--                      activities' bring-lists, and one tap instantiates them onto
+--                      the day as real, tickable todos. Not a hard FK (templates are
+--                      operator-managed); a dangling id after a template is deleted
+--                      simply reads as "no list", like a dangling car_id.
+--
+-- Nullable so every existing event stays valid. Additive, forward-only,
+-- filename-locked.
+ALTER TABLE events ADD COLUMN bring_template_id TEXT;

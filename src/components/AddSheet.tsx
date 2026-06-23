@@ -74,6 +74,9 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   capture: { cat: 'list', icon: 'sparkle-bold' },
   event: { cat: 'event', icon: 'calendar-blank-bold' },
   ride: { cat: 'event', icon: 'key-bold' },
+  // « Activité » — a recurring kid commitment (a team/lesson glyph), distinct from
+  // the plain calendar event and the ride's key.
+  activity: { cat: 'event', icon: 'users-three-bold' },
   chore: { cat: 'chore', icon: 'hand-heart-bold' },
   // The board ＋ « Corvées » tile — same chore dressing; it opens the Corvée /
   // Entretien / Projets sub-choice rather than jumping straight to a form.
@@ -558,6 +561,7 @@ export function AddSheet({
       capture: t.capture.quick,
       event: t.capture.types.event,
       ride: t.auto.addRide,
+      activity: t.operator.addActivity,
       chore: t.operator.chores,
       'chores-pick': t.operator.chores,
       todo: t.todos.title,

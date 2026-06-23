@@ -13,6 +13,7 @@ import { SceneHead } from '../components/SceneHead'
 import { TodoSection } from '../components/todos/TodoSection'
 import { Act } from '../components/board/Act'
 import { AutoCard } from '../components/board/AutoCard'
+import { ActivityBring } from '../components/board/ActivityBring'
 import { DayNote } from '../components/board/DayNote'
 import { InlineIcon } from '../components/Icon'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
@@ -27,7 +28,7 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
 interface DepMonth {
-  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; birthday?: boolean; day: number }[]
+  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; birthday?: boolean; bring_template_id?: string | null; day: number }[]
   chores: { id: string; title: string; color: string | null; who: string | null; day: number }[]
   dayNotes: { id: string; text: string; member_id: string | null; day: number }[]
 }
@@ -102,6 +103,10 @@ export function DeparturePage() {
             specific day's list otherwise. Tick one here and it syncs everywhere; add
             a one-off or drop a saved checklist from its own field. */}
         <TodoSection title={t.departure.checklist} members={members} day={isToday ? undefined : day} bento={false} />
+
+        {/* « À apporter » — the bring-lists for the day's activities (soccer cleats,
+            instrument…). One tap promotes one into the checklist above. */}
+        <ActivityBring events={events} day={day} />
 
         {/* The day's fridge / day note (« Sans gluten ce soir »…) — the shared board
             card; read-aloud only in toddler. Hidden when the day carries no note. */}

@@ -4,7 +4,8 @@ import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
-import { CERCLE_KEY, BUSINESSES_KEY, MONTH_KEY } from '../../lib/queryKeys'
+import { CERCLE_KEY, BUSINESSES_KEY, MONTH_KEY, TODO_TEMPLATES_KEY } from '../../lib/queryKeys'
+import { type TemplatesData } from '../../lib/todos'
 import { fullName, type Contact, type ContactLink } from '../../lib/cercle'
 import { type Business } from '../../lib/businesses'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
@@ -50,6 +51,7 @@ export interface EventInit {
   lead_seconds?: number | null
   car_id?: string | null // « L'auto »: which household car this ride takes
   passengers?: string | null // « L'auto »: member ids riding along (JSON array)
+  bring_template_id?: string | null // « Activité »: the todo_templates id of its "what to bring" list
 }
 
 // The "with" combobox lists BOTH cercle people and businesses; the picked option
@@ -64,6 +66,7 @@ export function EventForm({
   value,
   initialDate,
   defaultRide,
+  defaultActivity,
   onSaved,
   onCancel,
 }: {
@@ -71,6 +74,7 @@ export function EventForm({
   value?: EventInit | null
   initialDate?: number // local-midnight unix s to pre-fill a NEW event's date (from the calendar)
   defaultRide?: boolean // « L'auto »: open as a ride (Transport block expanded + car pre-picked)
+  defaultActivity?: boolean // « Activité »: a recurring kid commitment — default weekly + open the logistics block
   onSaved: () => void
   onCancel?: () => void
 }) {
@@ -109,8 +113,16 @@ export function EventForm({
     setBusinessId(null)
     setPickText('')
   }
-  const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
+  // A new « Activité » defaults to a weekly recurrence (a soccer-every-Tuesday rhythm)
+  // so the operator usually just confirms it.
+  const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json) ?? (defaultActivity ? { freq: 'weekly', interval: 1, weekdays: [] } : null))
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
+  // « Activité » — the optional "what to bring" checklist, picked from the household's
+  // saved lists (the SAME todo_templates that power the departure checklists). On the
+  // activity's day, « Avant de partir » surfaces it. Reuses the template cache.
+  const templatesQ = useQuery({ queryKey: TODO_TEMPLATES_KEY, queryFn: () => api<TemplatesData>('todo-templates'), ...live })
+  const templates = templatesQ.data?.templates ?? []
+  const [bringTemplateId, setBringTemplateId] = useState<string | null>(value?.bring_template_id ?? null)
   // « L'auto » — the optional ride layer: does this event take a household car, and
   // which kids ride along. Both default off so a plain event is unchanged. The
   // driver is still the member/contact above (member = we drive · a cercle contact =
@@ -121,9 +133,9 @@ export function EventForm({
   const [passengers, setPassengers] = useState<string[]>(parsePassengers(value?.passengers))
   const togglePassenger = (id: string) =>
     setPassengers((cur) => (cur.includes(id) ? cur.filter((p) => p !== id) : [...cur, id]))
-  // Show the Transport block open when the event already is a ride (or was opened as
-  // one), so it doesn't hide its own car/passengers behind a collapsed summary.
-  const isRide = carId != null || passengers.length > 0 || !!defaultRide
+  // Show the logistics block open when the event already is a ride/activity (or was
+  // opened as one), so it doesn't hide its car/passengers/bring-list behind a summary.
+  const isRide = carId != null || passengers.length > 0 || bringTemplateId != null || !!defaultRide || !!defaultActivity
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
   const write = useWrite()
@@ -148,6 +160,7 @@ export function EventForm({
       leadSeconds: lead,
       carId,
       passengers,
+      bringTemplateId,
     }
     setBusy(true)
     setErr(false)
@@ -235,7 +248,7 @@ export function EventForm({
           the event already is a ride. Which household car it takes (tap again to
           clear = no car / carpool) and which kids ride along. The driver stays the
           member/contact above. Hidden entirely when there's nothing to assign. */}
-      {(hasCar || members.length > 0) && (
+      {(hasCar || members.length > 0 || templates.length > 0) && (
         <Disclosure label={t.operator.eventTransport} defaultOpen={isRide} className="event-transport">
           {hasCar && (
             <>
@@ -267,6 +280,27 @@ export function EventForm({
                     onClick={() => togglePassenger(m.id)}
                   >
                     {m.display_name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {/* « À apporter » — a kid activity's bring-list, picked from the household's
+              saved lists (reuses todo_templates). On the day, « Avant de partir »
+              shows it. Hidden when no list exists yet (make one in Réglages ▸ À
+              compléter). Tap an active one to clear. */}
+          {templates.length > 0 && (
+            <>
+              <p className="mono event-transport__label">{t.operator.eventBring}</p>
+              <div className="operator__rotation mono">
+                {templates.map((tp) => (
+                  <button
+                    key={tp.id}
+                    type="button"
+                    className={`btn btn--ghost${bringTemplateId === tp.id ? ' is-active' : ''}`}
+                    onClick={() => setBringTemplateId(bringTemplateId === tp.id ? null : tp.id)}
+                  >
+                    {tp.title}
                   </button>
                 ))}
               </div>

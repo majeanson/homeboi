@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { useT, useLang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
+import { useARegler, frictionRow } from '../../lib/aRegler'
 import { Avatar } from '../Avatar'
 import { EmptyState } from '../EmptyState'
 import { Icon } from '../Icon'
@@ -42,6 +44,10 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
   const { lang } = useLang()
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
   const { data, isLoading } = useQuery({ queryKey: THIS_WEEK_KEY, queryFn: () => api<WeekData>('this-week') })
+  // « À régler » — the cross-domain heads-up rides at the top of the ritual: resolve
+  // these few frictions first, then read the week. Always enabled here (Réglages is
+  // operator-only). One-tap fix links per row; empties to « Tout est sous contrôle ».
+  const frictions = useARegler(true).data?.signals ?? []
 
   const dayName = (sec: number) => new Date(sec * 1000).toLocaleDateString(loc, { weekday: 'short', day: 'numeric' })
 
@@ -65,6 +71,24 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.operator.thisWeekTitle} help={help}>
       <p className="operator__hint mono">{t.operator.thisWeekHint}</p>
+
+      {/* « À régler » — the few cross-domain frictions to resolve first, each a one-tap
+          fix link. Calm: empties to « Tout est sous contrôle », never a backlog. */}
+      <div className="tweek__regler">
+        <h3 className="tweek__col-h"><Icon name="warning-bold" size={14} /> {t.aRegler.title}</h3>
+        {frictions.length === 0 ? (
+          <EmptyState tone="calm">{t.aRegler.empty}</EmptyState>
+        ) : (
+          frictions.map((f) => {
+            const r = frictionRow(f, t)
+            return (
+              <Link key={f.key} to={f.href} className="tweek__row a-regler__row">
+                <Icon name={r.icon} size={15} /> <span>{r.text}</span>
+              </Link>
+            )
+          })
+        )}
+      </div>
 
       {isLoading ? null : (
         <div className="tweek">
