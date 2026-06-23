@@ -753,6 +753,64 @@ export function familyLinksFromBands(bands: {
   return out
 }
 
+// The inverse of `familyLinksFromBands`: read existing links back into generation
+// bands so an ALREADY-configured family opens with its faces pre-placed (not all
+// stranded in « À placer »). Bands carry ABSOLUTE meaning, so only the generational
+// link types pin a rung — a stored 'grandparent'/'parent' tells us both ends:
+//   • grandparent A-of-B → A: grandparents, B: children
+//   • parent      A-of-B → A: parents,      B: children
+//   • (their inverses grandchild/child mirror it)
+// Grandparent links are authoritative (most specific) and win; parent/child links
+// only fill rungs still unknown — so in a chain they never demote a pinned
+// grandparent. sibling/spouse/partner then carry a known rung sideways to the
+// generation-mates the band model leaves un-pinned (two parents, sibling kids).
+// People with no generational tie stay un-placed (left in the tray for the user).
+export function bandsFromLinks(humanKeys: string[], links: ContactLink[]): Record<string, FamilyBand> {
+  const present = new Set(humanKeys)
+  const LEVEL_BAND: Record<number, FamilyBand> = { 0: 'children', 1: 'parents', 2: 'grandparents' }
+  const level = new Map<string, number>()
+  const set = (key: string, lvl: number, authoritative: boolean) => {
+    if (!present.has(key)) return
+    if (authoritative || !level.has(key)) level.set(key, lvl)
+  }
+
+  // 1. Grandparent ties first (authoritative), then parent ties (fill-only).
+  for (const auth of [true, false]) {
+    for (const l of links) {
+      const aKey = personKey(l.personAKind, l.personAId)
+      const bKey = personKey(l.personBKind, l.personBId)
+      if (!present.has(aKey) || !present.has(bKey)) continue
+      if (auth && l.type === 'grandparent') { set(aKey, 2, true); set(bKey, 0, true) }
+      else if (auth && l.type === 'grandchild') { set(aKey, 0, true); set(bKey, 2, true) }
+      else if (!auth && l.type === 'parent') { set(aKey, 1, false); set(bKey, 0, false) }
+      else if (!auth && l.type === 'child') { set(aKey, 0, false); set(bKey, 1, false) }
+    }
+  }
+
+  // 2. Carry a known rung sideways across same-generation ties (to a fixpoint, so a
+  //    sibling-of-a-sibling resolves). Bounded by the human count.
+  const sideways = new Set<RelationshipType>(['sibling', 'spouse', 'partner'])
+  for (let pass = 0; pass < humanKeys.length; pass++) {
+    let changed = false
+    for (const l of links) {
+      if (!sideways.has(l.type)) continue
+      const aKey = personKey(l.personAKind, l.personAId)
+      const bKey = personKey(l.personBKind, l.personBId)
+      if (!present.has(aKey) || !present.has(bKey)) continue
+      if (level.has(aKey) && !level.has(bKey)) { level.set(bKey, level.get(aKey)!); changed = true }
+      else if (level.has(bKey) && !level.has(aKey)) { level.set(aKey, level.get(bKey)!); changed = true }
+    }
+    if (!changed) break
+  }
+
+  const out: Record<string, FamilyBand> = {}
+  for (const [key, lvl] of level) {
+    const b = LEVEL_BAND[lvl]
+    if (b) out[key] = b
+  }
+  return out
+}
+
 // Links from the "everyone's relation to one anchor" form: each pick reads
 // "{person} is {type} of {anchor}". Picks without a type (skipped) are dropped.
 export function familyLinksFromMatrix(

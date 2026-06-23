@@ -9,6 +9,7 @@ import {
   genderedRelLabel,
   familyLinksFromBands,
   familyLinksFromMatrix,
+  bandsFromLinks,
   dedupeNewLinks,
   closedLinks,
   friendLinksFromGroups,
@@ -268,6 +269,31 @@ describe('family builder engine', () => {
     expect(links).toHaveLength(2)
     expect(links).toContainEqual({ aKey: k('mum'), bKey: k('me'), type: 'parent' })
     expect(links).toContainEqual({ aKey: k('bro'), bKey: k('me'), type: 'sibling' })
+  })
+
+  it('bandsFromLinks round-trips familyLinksFromBands (an existing family pre-places)', () => {
+    const roster = [k('gp'), k('pa'), k('ma'), k('x'), k('y')]
+    const gen = familyLinksFromBands({ grandparents: [k('gp')], parents: [k('pa'), k('ma')], children: [k('x'), k('y')] })
+    // GeneratedLink → ContactLink shape the builder actually stores.
+    const stored = gen.map((g) => link(parsePersonKey(g.aKey).id, parsePersonKey(g.bKey).id, g.type))
+    expect(bandsFromLinks(roster, stored)).toEqual({
+      [k('gp')]: 'grandparents',
+      [k('pa')]: 'parents',
+      [k('ma')]: 'parents', // reached sideways via the spouse tie
+      [k('x')]: 'children',
+      [k('y')]: 'children', // reached sideways via the sibling tie
+    })
+  })
+
+  it('bandsFromLinks: a grandparent tie keeps the grandparent rung, never demoted to parent', () => {
+    const bands = bandsFromLinks([k('gp'), k('kid')], [link('gp', 'kid', 'grandparent')])
+    expect(bands).toEqual({ [k('gp')]: 'grandparents', [k('kid')]: 'children' })
+  })
+
+  it('bandsFromLinks: a person with no generational tie stays un-placed (tray)', () => {
+    const bands = bandsFromLinks([k('pa'), k('kid'), k('loner')], [link('pa', 'kid', 'parent')])
+    expect(bands).toEqual({ [k('pa')]: 'parents', [k('kid')]: 'children' })
+    expect(bands[k('loner')]).toBeUndefined()
   })
 
   it('dedupeNewLinks skips pairs already linked (either direction)', () => {

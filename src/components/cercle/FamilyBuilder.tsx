@@ -16,6 +16,7 @@ import {
   relLabel,
   familyLinksFromBands,
   familyLinksFromMatrix,
+  bandsFromLinks,
   dedupeNewLinks,
 } from '../../lib/cercle'
 import { Avatar } from '../Avatar'
@@ -80,7 +81,16 @@ export function FamilyBuilder({
     }
     return [...set]
   })
-  const [band, setBand] = useState<Record<string, FamilyBand>>({})
+  // Seed the generation bands from the family's EXISTING links so an already-built
+  // family opens with its faces in place (grands-parents / parents / enfants) instead
+  // of all stranded in « À placer ». People with no generational tie stay un-placed.
+  const [band, setBand] = useState<Record<string, FamilyBand>>(() => {
+    const petKeys = new Set(people.filter((p) => p.kind === 'pet').map((p) => p.key))
+    return bandsFromLinks(
+      roster.filter((k) => !petKeys.has(k)),
+      links,
+    )
+  })
   const [pick, setPick] = useState<Record<string, RelationshipType>>({})
   const [anchor, setAnchor] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('bands')
