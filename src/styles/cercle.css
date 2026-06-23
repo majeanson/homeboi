@@ -1003,12 +1003,23 @@
   align-self: stretch;
   overflow-x: auto;
   scrollbar-width: none;
+  /* The flex-overflow fix: let this scroller shrink below its content so its
+     overflow-x clips instead of pushing the page sideways (a 1px subpixel body
+     overflow with the 4th « Business » tab flaked the e2e overflow guard at phone
+     width). */
+  min-width: 0;
 }
 .cercle-sectionswitch::-webkit-scrollbar {
   display: none;
 }
 .cercle-sectionswitch__btn {
-  flex: 1 0 auto;
+  /* 1 1 auto (was 1 0 auto): the four section tabs SHRINK to fit a phone instead of
+     forcing a horizontal scroll / a 1px page overflow. They still grow to fill on a
+     wall. min-width:0 + ellipsis keep a long label from pushing back out. */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   display: inline-flex;
   align-items: center;
   justify-content: center;
