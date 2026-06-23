@@ -775,47 +775,58 @@ export function Board() {
               {/* "Ce soir" lists EVERY supper planned for today — a day can hold more
                   than one. Each carries the souper food icon (no carrot, no emoji)
                   and the souper colour (Réglages ▸ Repas). */}
-              {tonightMeals.map((m) => {
-                const openSupper = () =>
-                  detail.open(buildMeal(m, detailCtx, {
-                    color: supperColor,
-                    slotLabel: t.board.tonight,
-                    daySec: todayDay,
-                    onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
-                    onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? 'supper', todayDay),
-                  }))
-                return (
+              {tonightMeals.length > 0 && (
+                /* A day can hold more than one supper (a main + its rice + the
+                    leftovers it finishes). They AGGLOMERATE into ONE hero card —
+                    a meal per tappable row — instead of multiplying the card. */
                 <div
-                  key={m.id}
-                  className="now-card now-card--tap"
+                  className="now-card now-card--supper"
                   style={{ background: wash(supperColor!), color: tintInk(supperColor!) }}
-                  role="button"
-                  tabIndex={0}
-                  onClick={openSupper}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      openSupper()
-                    }
-                  }}
                 >
                   <div className="blob" style={{ background: supperColor }} />
                   <div className="label">{t.board.tonight}</div>
-                  <div className="what">{m.title}</div>
-                  {/* A planned leftover reads as "Restants" so the glance shows it's
-                      a finish-the-fridge supper, not a fresh cook. */}
-                  {m.is_leftover ? (
-                    <div className="who">
-                      <InlineIcon name="arrow-counter-clockwise-bold" size={13} /> {t.kitchen.leftoversTag}
-                    </div>
-                  ) : null}
-                  {cookLine(m) && <div className="who">{cookLine(m)}</div>}
+                  <div className="now-card__meals">
+                    {tonightMeals.map((m) => {
+                      const openSupper = () =>
+                        detail.open(buildMeal(m, detailCtx, {
+                          color: supperColor,
+                          slotLabel: t.board.tonight,
+                          daySec: todayDay,
+                          onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+                          onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? 'supper', todayDay),
+                        }))
+                      return (
+                        <div
+                          key={m.id}
+                          className="now-card__meal now-card--tap"
+                          role="button"
+                          tabIndex={0}
+                          onClick={openSupper}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              openSupper()
+                            }
+                          }}
+                        >
+                          <div className="what">{m.title}</div>
+                          {/* A planned leftover reads as "Restants" so the glance shows
+                              it's a finish-the-fridge supper, not a fresh cook. */}
+                          {m.is_leftover ? (
+                            <div className="who">
+                              <InlineIcon name="arrow-counter-clockwise-bold" size={13} /> {t.kitchen.leftoversTag}
+                            </div>
+                          ) : null}
+                          {cookLine(m) && <div className="who">{cookLine(m)}</div>}
+                        </div>
+                      )
+                    })}
+                  </div>
                   <div className="icn">
                     <Icon name={SLOT_ICON_NAME.supper} size={40} color={supperColor} />
                   </div>
                 </div>
-                )
-              })}
+              )}
               {weather && (
                 <div className="now-card now-card--wx" style={{ background: CATS.event.wash, color: CATS.event.deep }}>
                   <div className="blob" style={{ background: CATS.event.color }} />

@@ -432,6 +432,24 @@
   margin: 0;
 }
 
+/* « Ce soir » agglomerates every supper into ONE hero card: a meal per row,
+   each its own tap target → its detail peek. Rows hang a hairline divider and
+   reserve right room so the last line clears the bottom-right slot icon. */
+.now-card__meals {
+  margin-top: 4px;
+}
+.now-card__meal {
+  padding: 6px 56px 6px 0;
+}
+.now-card__meal + .now-card__meal {
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+.now-card__meal .what {
+  margin-top: 0;
+}
+
 /* Section label: Morning / Afternoon / Evening — a rule + a quiet count. */
 .sec-label {
   display: flex;

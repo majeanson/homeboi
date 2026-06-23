@@ -20,13 +20,17 @@ export function useSwipeToDismiss(
   onClose: () => void,
   { open = true }: { open?: boolean } = {},
 ): void {
-  // Reset any dismiss transform when an always-mounted sheet reopens.
+  // Drop any leftover inline dismiss transform on EVERY open/close edge — not
+  // just on reopen. On reopen it lets the `.show` slide-in run from rest. On
+  // CLOSE it clears a half-finished drag transform: a rapid close mid-drag would
+  // otherwise leave a partial inline `translateY(Npx)` + `transition:none` that
+  // overrides — and FREEZES — the CSS slide-out (`.sheet` → translateY(110%)),
+  // stranding the sheet half-open over the page (the iOS app-switch glitch).
   useEffect(() => {
     const el = ref.current
-    if (el && open) {
-      el.style.transform = ''
-      el.style.transition = ''
-    }
+    if (!el) return
+    el.style.transform = ''
+    el.style.transition = ''
   }, [open, ref])
 
   useEffect(() => {
@@ -36,6 +40,9 @@ export function useSwipeToDismiss(
     let startY = 0
     let delta = 0
     let active = false
+    // Set while a committed dismiss is animating out, so a background event can
+    // finalize it (its transitionend/timer is paused once the tab is hidden).
+    let finalizeDismiss: (() => void) | null = null
 
     const onStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return
@@ -90,21 +97,47 @@ export function useSwipeToDismiss(
         if (settled || (e && e.propertyName !== 'transform')) return
         settled = true
         el.removeEventListener('transitionend', done)
+        finalizeDismiss = null
         onClose()
       }
+      finalizeDismiss = () => done()
       el.addEventListener('transitionend', done)
       window.setTimeout(done, 320) // fallback if transitionend is swallowed
+    }
+
+    // iOS can suspend the app mid-gesture (app-switcher, lock, rapid close):
+    // touchend/touchcancel never arrive, so a drag freezes with a stale inline
+    // translateY and `active` stuck on, and a committed dismiss's transitionend
+    // + timer are paused. The sheet then returns frozen half-open over the page.
+    // On hide: finalize a committed dismiss; otherwise snap an abandoned drag
+    // back to rest so the sheet comes back clean.
+    const abort = () => {
+      if (finalizeDismiss) {
+        finalizeDismiss()
+        return
+      }
+      if (!active) return
+      active = false
+      el.style.transition = 'none'
+      el.style.transform = ''
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') abort()
     }
 
     el.addEventListener('touchstart', onStart, { passive: true })
     el.addEventListener('touchmove', onMove, { passive: false })
     el.addEventListener('touchend', finish)
     el.addEventListener('touchcancel', finish)
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', abort)
     return () => {
       el.removeEventListener('touchstart', onStart)
       el.removeEventListener('touchmove', onMove)
       el.removeEventListener('touchend', finish)
       el.removeEventListener('touchcancel', finish)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', abort)
     }
   }, [open, ref, onClose])
 }
