@@ -62,7 +62,18 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   // Exception: an offline-outbox REPLAY (idempotencyKey set) is an operator write
   // authored before preview; it was never guest-authored (writeWith blocks that at
   // enqueue), so replaying it is correct, not a guest mutation.
-  if (method !== 'GET' && method !== 'HEAD' && !opts.idempotencyKey && isGuest()) {
+  // Exception: the family-info intake submit — the ONE write an 'intake' link is
+  // meant to make. The server still verifies the token IS an intake guest before
+  // it writes (functions/api/guest/intake-submit.ts), so this only lets the call
+  // reach the server; it doesn't grant anyone write access they wouldn't have.
+  const cleanPath = path.replace(/^\/+/, '')
+  if (
+    method !== 'GET' &&
+    method !== 'HEAD' &&
+    !opts.idempotencyKey &&
+    cleanPath !== 'guest/intake-submit' &&
+    isGuest()
+  ) {
     throw new ApiError(403, 'Lecture seule (mode invité).')
   }
 

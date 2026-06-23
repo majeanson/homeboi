@@ -35,13 +35,24 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // The kind: a guest carries its own (bound in the token); an operator may preview
   // a curated view with ?kind= (handy for the issuance editor). showcase doesn't use
   // this endpoint — it reads the real hub — so it's rejected here.
-  const previewKind = new URL(ctx.request.url).searchParams.get('kind') as GuestKind | null
+  const url = new URL(ctx.request.url)
+  const previewKind = url.searchParams.get('kind') as GuestKind | null
   const kind: GuestKind | null =
     actor.scope === 'guest'
       ? (actor.guestKind ?? 'showcase')
-      : previewKind && CURATED.includes(previewKind)
+      : previewKind && (CURATED.includes(previewKind) || previewKind === 'intake')
         ? previewKind
         : null
+
+  // ---- intake: the family-info form greeting --------------------------------
+  // Deliberately minimal — only the addressed person's first name (for "Bonjour
+  // Marie, complète ta fiche"). NO stored private fields are returned, so the form
+  // starts blank and the link can't be used to read the household.
+  if (kind === 'intake') {
+    const targetKey = actor.scope === 'guest' ? (actor.guestTargetKey ?? null) : url.searchParams.get('target')
+    return ok(await intakeGreeting(ctx.env, actor.householdId, targetKey))
+  }
+
   if (!kind || !CURATED.includes(kind)) {
     return forbidden('This view is for a babysitter, welcome, or family link.')
   }
@@ -153,6 +164,34 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   return ok({ ...base, today: { events, meals: meals.results }, bedtimeRoutines, toKnow, emergency })
 })
+
+// The intake form greeting (the 'intake' GuestKind). Returns ONLY the household
+// name and — for a per-person link — the addressed person's first name, so the form
+// can say "Bonjour Marie". No birthday/phone/notes/etc. are returned: the link is a
+// write surface, not a read one, and pre-filling stored data would leak the cercle.
+async function intakeGreeting(env: Env, hh: string, targetKey: string | null) {
+  const nameRow = await env.DB.prepare('SELECT name FROM households WHERE id = ?')
+    .bind(hh)
+    .first<{ name: string }>()
+  let targetName: string | null = null
+  if (targetKey) {
+    const sep = targetKey.indexOf(':')
+    const k = sep > 0 ? targetKey.slice(0, sep) : ''
+    const id = sep > 0 ? targetKey.slice(sep + 1) : ''
+    if (k === 'member' && id) {
+      const r = await env.DB.prepare('SELECT display_name FROM members WHERE id = ? AND household_id = ?')
+        .bind(id, hh)
+        .first<{ display_name: string }>()
+      targetName = r?.display_name?.split(' ')[0] ?? null
+    } else if (k === 'contact' && id) {
+      const r = await env.DB.prepare('SELECT first_name FROM contacts WHERE id = ? AND household_id = ?')
+        .bind(id, hh)
+        .first<{ first_name: string }>()
+      targetName = r?.first_name ?? null
+    }
+  }
+  return { kind: 'intake' as const, householdName: nameRow?.name ?? '', targetName }
+}
 
 // The grandparents' window (#36): the grandkids' upcoming dates, the family's
 // birthdays, and the latest photos. All derived from existing data (events,

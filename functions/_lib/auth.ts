@@ -196,14 +196,26 @@ export async function currentDevice(
 // (it branches on kind), so the allowlist is identical for them. The kind is bound
 // into the SIGNED token, so a curated guest can't widen its scope by editing the
 // URL. A legacy token (no `k`) normalizes to 'showcase'.
-export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family'
+//   - 'intake'    a relative-facing FORM link: the ONE guest kind that may WRITE,
+//                 and only to its single submit endpoint (functions/api/guest/
+//                 intake-submit.ts). It fills a quarantine row the operator later
+//                 reviews — it never touches the live cercle. Its scope (whoami /
+//                 window greeting / intake-submit) lives in guestScope.ts and the
+//                 narrow write carve-out in route.ts. An optional target person is
+//                 bound into the token (`p`) for a per-person link; absent ⇒ an open
+//                 family link.
+export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family' | 'intake'
+// Kinds that share the curated read-only guest/window endpoint. 'intake' is NOT one
+// of them — it has its own scope + a write endpoint — but it IS a valid requestable
+// kind, so normalization recognises it without granting the window scope.
 const CURATED_KINDS: GuestKind[] = ['sitter', 'welcome', 'family']
+const KNOWN_KINDS: GuestKind[] = [...CURATED_KINDS, 'intake']
 
 // One place decides the legacy/unknown → 'showcase' fallback, so every reader
 // (verify, the allowlist, the SPA) agrees. Today's guests are read-only-
 // everything, which IS showcase — so old links keep working unchanged.
 export function normalizeGuestKind(k: unknown): GuestKind {
-  return CURATED_KINDS.includes(k as GuestKind) ? (k as GuestKind) : 'showcase'
+  return KNOWN_KINDS.includes(k as GuestKind) ? (k as GuestKind) : 'showcase'
 }
 
 export async function issueGuestToken(
@@ -212,8 +224,19 @@ export async function issueGuestToken(
   householdId: string,
   ttlSeconds: number,
   kind: GuestKind = 'showcase',
+  // Only meaningful for 'intake': the person key (`member:<id>` / `contact:<id>`)
+  // this form link is pre-addressed to, signed in so it can't be tampered. Absent
+  // ⇒ an open "add yourself" link.
+  targetKey?: string | null,
 ): Promise<string> {
-  return signToken(env, { g: guestId, h: householdId, k: kind, x: nowSec() + ttlSeconds })
+  const payload: { g: string; h: string; k: GuestKind; x: number; p?: string } = {
+    g: guestId,
+    h: householdId,
+    k: kind,
+    x: nowSec() + ttlSeconds,
+  }
+  if (targetKey) payload.p = targetKey
+  return signToken(env, payload)
 }
 
 // Verify a RAW guest-token string (HMAC + expiry), independent of transport —
@@ -224,17 +247,22 @@ export async function issueGuestToken(
 export async function verifyGuestToken(
   env: Env,
   token: string | null,
-): Promise<{ guestId: string; householdId: string; kind: GuestKind } | null> {
-  const payload = await verifyToken<{ g?: string; h: string; k?: string }>(env, token)
+): Promise<{ guestId: string; householdId: string; kind: GuestKind; targetKey: string | null } | null> {
+  const payload = await verifyToken<{ g?: string; h: string; k?: string; p?: string }>(env, token)
   return payload && typeof payload.g === 'string'
-    ? { guestId: payload.g, householdId: payload.h, kind: normalizeGuestKind(payload.k) }
+    ? {
+        guestId: payload.g,
+        householdId: payload.h,
+        kind: normalizeGuestKind(payload.k),
+        targetKey: typeof payload.p === 'string' ? payload.p : null,
+      }
     : null
 }
 
 export async function currentGuest(
   env: Env,
   request: Request,
-): Promise<{ guestId: string; householdId: string; kind: GuestKind } | null> {
+): Promise<{ guestId: string; householdId: string; kind: GuestKind; targetKey: string | null } | null> {
   // Same header as the device token (see verifyGuestToken for how the two are
   // told apart). HMAC-only, no DB read — cheap enough to run on the dispatch path.
   return verifyGuestToken(env, request.headers.get(DEVICE_HEADER))

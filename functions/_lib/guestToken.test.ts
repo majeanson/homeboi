@@ -7,10 +7,11 @@ import type { Env } from './env'
 const env = { SESSION_SECRET: 'x'.repeat(40) } as unknown as Env
 
 describe('normalizeGuestKind', () => {
-  it('keeps the curated kinds, falls back to showcase otherwise', () => {
+  it('keeps the known kinds, falls back to showcase otherwise', () => {
     expect(normalizeGuestKind('sitter')).toBe('sitter')
     expect(normalizeGuestKind('welcome')).toBe('welcome')
     expect(normalizeGuestKind('family')).toBe('family')
+    expect(normalizeGuestKind('intake')).toBe('intake')
     expect(normalizeGuestKind('showcase')).toBe('showcase')
     expect(normalizeGuestKind(undefined)).toBe('showcase')
     expect(normalizeGuestKind('bogus')).toBe('showcase')
@@ -20,11 +21,17 @@ describe('normalizeGuestKind', () => {
 
 describe('guest token kind round-trip', () => {
   it('preserves the kind through issue → verify', async () => {
-    for (const kind of ['showcase', 'sitter', 'welcome', 'family'] as const) {
+    for (const kind of ['showcase', 'sitter', 'welcome', 'family', 'intake'] as const) {
       const token = await issueGuestToken(env, 'g1', 'hh1', 3600, kind)
       const v = await verifyGuestToken(env, token)
-      expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind })
+      expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind, targetKey: null })
     }
+  })
+
+  it('binds an intake target person into the token', async () => {
+    const token = await issueGuestToken(env, 'g1', 'hh1', 3600, 'intake', 'member:m9')
+    const v = await verifyGuestToken(env, token)
+    expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind: 'intake', targetKey: 'member:m9' })
   })
 
   it('treats a legacy token with no kind as showcase', async () => {

@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { BirthdayPicker } from './BirthdayPicker'
 import { LinkComposer } from './LinkComposer'
 import { api } from '../../lib/api'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
@@ -24,6 +23,7 @@ import {
 } from '../../lib/cercle'
 import { parseVCard, type ParsedContact } from '../../lib/vcard'
 import { ContactPhotos } from './ContactPhotos'
+import { ContactFields, type ContactCoreValue } from './ContactFields'
 import { ReviewChecklist } from '../ReviewChecklist'
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon } from '../Icon'
@@ -271,6 +271,24 @@ export function ContactForm({
     }
   }
 
+  // Bridge the discrete field states to the shared ContactFields cluster. The
+  // individual setters stay (vcf prefill etc. still use them); ContactFields just
+  // renders the markup and routes each change back to the right one.
+  const core: ContactCoreValue = { firstName, lastName, nickname, birthday, gender, phone, email, street, city, province, postal }
+  function setCore(p: Partial<ContactCoreValue>) {
+    if (p.firstName !== undefined) setFirstName(p.firstName)
+    if (p.lastName !== undefined) setLastName(p.lastName)
+    if (p.nickname !== undefined) setNickname(p.nickname)
+    if (p.birthday !== undefined) setBirthday(p.birthday)
+    if (p.gender !== undefined) setGender(p.gender)
+    if (p.phone !== undefined) setPhone(p.phone)
+    if (p.email !== undefined) setEmail(p.email)
+    if (p.street !== undefined) setStreet(p.street)
+    if (p.city !== undefined) setCity(p.city)
+    if (p.province !== undefined) setProvince(p.province)
+    if (p.postal !== undefined) setPostal(p.postal)
+  }
+
   // Collapse the address parts into the stored object (or null when all empty).
   function buildAddress(): ContactAddress | null {
     const a: ContactAddress = {}
@@ -437,86 +455,10 @@ export function ContactForm({
         )}
       </div>
 
-      <div className="cf__grid">
-        <label className="cf__field">
-          <span className="cf__label">{t.cercle.firstName}</span>
-          <input className="cf__input" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoFocus />
-        </label>
-        <label className="cf__field">
-          <span className="cf__label">{t.cercle.lastName}</span>
-          <input className="cf__input" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-        </label>
-        <label className="cf__field">
-          <span className="cf__label">{t.cercle.nickname}</span>
-          <input className="cf__input" value={nickname} onChange={(e) => setNickname(e.target.value)} />
-        </label>
-        <div className="cf__field cf__field--bday">
-          <span className="cf__label">
-            <Icon name="cake-bold" size={14} /> {t.cercle.birthday}
-          </span>
-          <BirthdayPicker value={birthday || null} onChange={(v) => setBirthday(v ?? '')} />
-        </div>
-        <div className="cf__field cf__gender">
-          <span className="cf__label">{t.cercle.gender}</span>
-          <div className="cf__gender-chips">
-            {(['m', 'f', null] as const).map((g) => (
-              <Chip key={String(g)} selected={gender === g} onClick={() => setGender(g)}>
-                {g === 'm' ? t.cercle.genderM : g === 'f' ? t.cercle.genderF : t.cercle.genderN}
-              </Chip>
-            ))}
-          </div>
-        </div>
-        <label className="cf__field">
-          <span className="cf__label">
-            <Icon name="phone-bold" size={14} /> {t.cercle.phone}
-          </span>
-          <input className="cf__input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </label>
-        <label className="cf__field">
-          <span className="cf__label">
-            <Icon name="envelope-bold" size={14} /> {t.cercle.email}
-          </span>
-          <input className="cf__input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label>
-      </div>
+      {/* Identity + address — the shared ContactFields cluster (also used by the
+          relative-facing intake form). Address drives the « Itinéraire » action. */}
+      <ContactFields value={core} onChange={setCore} autoFocus />
 
-      {/* Address — a structured address the schema always carried but the form never
-          edited. Drives the « Itinéraire » (Google Maps directions) action in the peek. */}
-      <div className="cf__field">
-        <span className="cf__label">
-          <Icon name="map-pin-bold" size={14} /> {t.cercle.address}
-        </span>
-        <input
-          className="cf__input"
-          value={street}
-          onChange={(e) => setStreet(e.target.value)}
-          placeholder={t.cercle.addressStreet}
-          autoComplete="address-line1"
-        />
-        <div className="cf__addr-row">
-          <input
-            className="cf__input"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder={t.cercle.addressCity}
-            autoComplete="address-level2"
-          />
-          <input
-            className="cf__input cf__addr-prov"
-            value={province}
-            onChange={(e) => setProvince(e.target.value)}
-            placeholder={t.cercle.addressProvince}
-            autoComplete="address-level1"
-          />
-          <input
-            className="cf__input cf__addr-postal"
-            value={postal}
-            onChange={(e) => setPostal(e.target.value)}
-            placeholder={t.cercle.addressPostal}
-            autoComplete="postal-code"
-          />
-        </div>
-      </div>
 
       {members.length > 0 && (
         <div className="cf__field">

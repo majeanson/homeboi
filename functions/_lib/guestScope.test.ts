@@ -25,4 +25,18 @@ describe('guestKindAllows', () => {
       expect(guestKindAllows(kind, 'guest/start')).toBe(false)
     })
   }
+
+  // The 'intake' kind is the only WRITABLE link, but its reach is still tightly
+  // scoped: its greeting endpoint, whoami, images, and its ONE submit path.
+  it('intake reaches only whoami / window / intake-submit / img', () => {
+    for (const p of ['guest/whoami', 'guest/window', 'guest/intake-submit', 'img', 'img/x']) {
+      expect(guestKindAllows('intake', p)).toBe(true)
+    }
+  })
+
+  it('intake is blocked from the household AND from minting links', () => {
+    for (const p of [...sensitive, 'guest/start']) {
+      expect(guestKindAllows('intake', p)).toBe(false)
+    }
+  })
 })

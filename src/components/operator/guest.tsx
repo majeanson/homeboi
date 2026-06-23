@@ -1,13 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
+import { IntakeReview } from './IntakeReview'
 import { api } from '../../lib/api'
 import { isGuest, type GuestKind } from '../../lib/device'
+import { CERCLE_KEY } from '../../lib/queryKeys'
+import {
+  unifyCircle,
+  type Contact,
+  type ContactLink,
+  type ContactGroupRaw,
+  type Member,
+  type Person,
+} from '../../lib/cercle'
 import { InlineIcon } from '../Icon'
 import { StatusMessage } from '../StatusMessage'
 import { QrCode } from '../QrCode'
+import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 
 // Typed read-only share links. The operator picks a KIND (what the link can see)
 // and a duration, and gets a time-boxed token (?guest=<token>). The link lands on
@@ -19,13 +31,16 @@ import { QrCode } from '../QrCode'
 //   sitter   → /handoff, the babysitter card (today + routines + à-savoir + wifi)
 //   welcome  → /welcome, the visitor card (wifi + bin day + house rules)
 //   family   → /family, the grandparents' window (kids' dates + birthdays + photos)
-type KindLabelKey = 'kindShowcase' | 'kindSitter' | 'kindWelcome' | 'kindFamily'
-type KindHintKey = 'kindShowcaseHint' | 'kindSitterHint' | 'kindWelcomeHint' | 'kindFamilyHint'
+//   intake   → /intake, the family-info FORM a relative fills + sends back (the one
+//              writable kind; the submission is quarantined for the operator to merge)
+type KindLabelKey = 'kindShowcase' | 'kindSitter' | 'kindWelcome' | 'kindFamily' | 'kindIntake'
+type KindHintKey = 'kindShowcaseHint' | 'kindSitterHint' | 'kindWelcomeHint' | 'kindFamilyHint' | 'kindIntakeHint'
 const KINDS: { kind: GuestKind; path: string; labelKey: KindLabelKey; hintKey: KindHintKey }[] = [
   { kind: 'showcase', path: '/board', labelKey: 'kindShowcase', hintKey: 'kindShowcaseHint' },
   { kind: 'sitter', path: '/handoff', labelKey: 'kindSitter', hintKey: 'kindSitterHint' },
   { kind: 'welcome', path: '/welcome', labelKey: 'kindWelcome', hintKey: 'kindWelcomeHint' },
   { kind: 'family', path: '/family', labelKey: 'kindFamily', hintKey: 'kindFamilyHint' },
+  { kind: 'intake', path: '/intake', labelKey: 'kindIntake', hintKey: 'kindIntakeHint' },
 ]
 
 // Per-kind duration menu (mirrors the server clamp in _lib/shareModes). showcase can
@@ -57,8 +72,20 @@ const TTL_BY_KIND: Record<GuestKind, { seconds: number; key: TtlKey }[]> = {
     { seconds: 48 * H, key: 'ttl2d' },
     { seconds: 7 * 24 * H, key: 'ttl7d' },
   ],
+  // A relative needs a few days to get to the form — same window as the family one.
+  intake: [
+    { seconds: 24 * H, key: 'ttl24h' },
+    { seconds: 48 * H, key: 'ttl2d' },
+    { seconds: 7 * 24 * H, key: 'ttl7d' },
+  ],
 }
-const DEFAULT_TTL: Record<GuestKind, number> = { showcase: 24 * H, sitter: 12 * H, welcome: 4 * H, family: 7 * 24 * H }
+const DEFAULT_TTL: Record<GuestKind, number> = {
+  showcase: 24 * H,
+  sitter: 12 * H,
+  welcome: 4 * H,
+  family: 7 * 24 * H,
+  intake: 7 * 24 * H,
+}
 
 export function GuestSection({ help }: { help?: HelpMode }) {
   const t = useT()
@@ -72,11 +99,34 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   const [err, setErr] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // For an 'intake' link: the person it's pre-addressed to (null = an open link
+  // anyone can fill). Bound into the signed token by the server.
+  const [targetKey, setTargetKey] = useState<string | null>(null)
+  const [targetText, setTargetText] = useState('')
+
+  // People to choose a per-person intake link's recipient from — loaded only when
+  // the intake kind is picked. unifyCircle gives one node per person (member +
+  // hard-linked contact merged), and its .key is exactly the token's targetKey.
+  const { data: cercleData } = useQuery({
+    queryKey: CERCLE_KEY,
+    queryFn: () =>
+      api<{ contacts: Contact[]; members: Member[]; links: ContactLink[]; groups?: ContactGroupRaw[] }>('cercle'),
+    enabled: kind === 'intake',
+  })
+  const people = useMemo<Person[]>(
+    () =>
+      cercleData
+        ? unifyCircle(cercleData.contacts, cercleData.members, cercleData.links, cercleData.groups ?? []).people
+        : [],
+    [cercleData],
+  )
 
   function chooseKind(k: GuestKind) {
     setKind(k)
     setTtl(DEFAULT_TTL[k]) // reset the duration to the kind's sensible default
     setLink(null) // a link minted for the old kind no longer matches the picker
+    setTargetKey(null) // the recipient picker only applies to intake
+    setTargetText('')
   }
 
   async function generate() {
@@ -87,7 +137,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
     try {
       const res = await api<{ guestToken: string }>('guest/start', {
         method: 'POST',
-        body: { ttlSeconds: ttl, kind },
+        body: { ttlSeconds: ttl, kind, ...(kind === 'intake' && targetKey ? { targetKey } : {}) },
       })
       const path = KINDS.find((k) => k.kind === kind)?.path ?? '/board'
       setLink(`${window.location.origin}${path}?guest=${encodeURIComponent(res.guestToken)}`)
@@ -135,6 +185,34 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           </select>
         </label>
         <p className="operator__hint mono">{t.guest[KINDS.find((k) => k.kind === kind)!.hintKey]}</p>
+
+        {/* Per-person intake: pick WHO the form is for, or leave blank for an open
+            "add yourself" link the whole family can use. */}
+        {kind === 'intake' && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.guest.intakeForLabel}</span>
+            <EntityCombobox<Person>
+              value={targetText}
+              onChange={(v) => {
+                setTargetText(v)
+                if (!v.trim()) setTargetKey(null)
+                setLink(null)
+              }}
+              options={people.map((p): ComboOption<Person> => ({ id: p.key, label: p.name, data: p, icon: 'user-bold' }))}
+              onPick={(opt) => {
+                setTargetKey(opt.id)
+                setTargetText(opt.label)
+                setLink(null)
+              }}
+              placeholder={t.guest.intakeOpenPlaceholder}
+              submitIcon={null}
+              typeaheadOnly
+            />
+            <p className="operator__hint mono">
+              {targetKey ? t.guest.intakeForPerson(targetText) : t.guest.intakeOpenHint}
+            </p>
+          </div>
+        )}
 
         <label className="operator__seg">
           <span className="operator__seg-label mono">{t.guest.ttlLabel}</span>
@@ -189,6 +267,10 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           </div>
         )}
       </OperatorSection>
+
+      {/* Family-info forms relatives sent back (the 'intake' kind). Hidden until one
+          arrives, so it never adds noise. */}
+      <IntakeReview help={help} />
 
       <ShareInfoEditor help={help} />
     </>

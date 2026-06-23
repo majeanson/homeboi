@@ -1,0 +1,122 @@
+/* Family-info intake — the relative-facing form scene (src/pages/IntakeForm.tsx)
+   and the operator review rows (components/operator/IntakeReview.tsx). The form
+   reuses .scene + the .cf field cluster (cercle.css); only the wrapper bits live
+   here. Phone-first: comfortable spacing, single readable column. */
+
+.intake__body {
+  max-width: 40rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.intake__intro {
+  margin: 0 0 1rem;
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
+.intake__sec {
+  margin-bottom: 1.5rem;
+}
+
+.intake__h {
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}
+
+.intake__hint {
+  margin: 0 0 0.75rem;
+  opacity: 0.7;
+}
+
+/* Each added household member sits in its own soft card so the form reads as a
+   stack of people, not one long field run. */
+.intake__person {
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+  border-radius: var(--radius, 12px);
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: var(--surface-2, rgba(0, 0, 0, 0.02));
+}
+
+.intake__person-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.intake__send {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Confirmation screen after a successful submit. */
+.intake__done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.5rem;
+  min-height: 60vh;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.intake__done-mark {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent, #2a8f85);
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.intake__done-title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.intake__done-sub {
+  margin: 0;
+  opacity: 0.75;
+  line-height: 1.5;
+}
+
+/* Operator review rows (Réglages ▸ Partage). */
+.intake-review__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+}
+.intake-review__row:first-child {
+  border-top: none;
+}
+
+.intake-review__name {
+  font-weight: 600;
+}
+
+/* The per-person merge-vs-create toggle inside a review row. Sits below the name;
+   "on" (merging into an existing person) reads as the calm accent. */
+.intake-review__merge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.intake-review__merge.is-on {
+  background: var(--accent, #2a8f85);
+  color: #fff;
+  border-color: var(--accent, #2a8f85);
+}

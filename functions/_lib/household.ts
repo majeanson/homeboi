@@ -24,6 +24,10 @@ export interface Actor {
   // Only set when scope === 'guest'. Selects the share-mode lens; the per-kind
   // read allowlist lives in worker/index.ts (see auth.ts GuestKind).
   guestKind?: GuestKind
+  // Only meaningful for an 'intake' guest: the person key (`member:<id>` /
+  // `contact:<id>`) the form link is pre-addressed to, signed into the token.
+  // null ⇒ an open "add yourself" link.
+  guestTargetKey?: string | null
 }
 
 // Exported so the realtime WS upgrade (worker/index.ts → /api/live) can resolve
@@ -68,7 +72,13 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
       .bind(guest.householdId)
       .first<{ id: string }>()
     if (row)
-      return { householdId: guest.householdId, scope: 'guest', guestId: guest.guestId, guestKind: guest.kind }
+      return {
+        householdId: guest.householdId,
+        scope: 'guest',
+        guestId: guest.guestId,
+        guestKind: guest.kind,
+        guestTargetKey: guest.targetKey,
+      }
   }
 
   return null

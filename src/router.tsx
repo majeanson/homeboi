@@ -54,6 +54,9 @@ const HandoffPage = lazy(() => import('./pages/HandoffPage').then((m) => ({ defa
 const WelcomePage = lazy(() => import('./pages/WelcomePage').then((m) => ({ default: m.WelcomePage })))
 // #36 — the grandparents' window: kids' upcoming dates + birthdays + latest photos.
 const FamilyWindowPage = lazy(() => import('./pages/FamilyWindowPage').then((m) => ({ default: m.FamilyWindowPage })))
+// Family-info intake: a relative fills their own card + household via an 'intake'
+// share link; the operator reviews + merges it into Le cercle. See lib/auth GuestKind.
+const IntakeForm = lazy(() => import('./pages/IntakeForm').then((m) => ({ default: m.IntakeForm })))
 const VoiturePage = lazy(() => import('./pages/VoiturePage').then((m) => ({ default: m.VoiturePage })))
 // Operator add-forms — full-screen scenes (were tall sheet forms that stranded
 // inputs under the mobile keyboard). Edit still happens inline in Réglages.
@@ -151,6 +154,8 @@ export function AppRoutes() {
         <Route path="/handoff" element={<HandoffPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/family" element={<FamilyWindowPage />} />
+        {/* Family-info intake form — a relative's 'intake' share link lands here. */}
+        <Route path="/intake" element={<IntakeForm />} />
         {/* #28 — « L'auto » week view (single-car + carpool + work schedules). */}
         <Route path="/voiture" element={<VoiturePage />} />
         <Route path="/share" element={<SharePage />} />

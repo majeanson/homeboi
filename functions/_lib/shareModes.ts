@@ -20,6 +20,9 @@ const TTL_BY_KIND: Record<GuestKind, { max: number; def: number }> = {
   // The grandparents' window is a standing pane they glance at over days — longest
   // allowed (still expiring, never permanent), defaulting to the full week.
   family: { max: 7 * DAY, def: 7 * DAY },
+  // An intake form link: a relative needs a few days to get around to filling it,
+  // so it matches the family window (a week, still expiring).
+  intake: { max: 7 * DAY, def: 7 * DAY },
 }
 
 // Clamp a requested TTL into the kind's window, or fall back to the kind default

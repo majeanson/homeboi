@@ -9,6 +9,7 @@ import { PIP_ICONS, type IconName } from '../lib/pipIcons'
 import { Icon, InlineIcon } from '../components/Icon'
 import { EditField } from '../components/EditField'
 import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
+import { ContactFields, EMPTY_CONTACT_CORE, type ContactCoreValue } from '../components/cercle/ContactFields'
 import { RowActions } from '../components/RowActions'
 import { DragPill } from '../components/DragPill'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
@@ -260,6 +261,7 @@ export function DevKit() {
   const [text2, setText2] = useState('Macaroni chinois')
   const [text3, setText3] = useState('')
   const [comboVal, setComboVal] = useState('')
+  const [cfDemo, setCfDemo] = useState<ContactCoreValue>(EMPTY_CONTACT_CORE)
   const [tagDemo, setTagDemo] = useState('')
   const [color, setColor] = useState(PALETTE[0])
   const [cards, setCards] = useState(['toilette', 'rince', 'pyjama'])
@@ -445,6 +447,34 @@ export function DevKit() {
           </>
         )
       },
+    },
+    {
+      cat: 'Saisie',
+      name: 'ContactFields',
+      file: 'components/cercle/ContactFields.tsx',
+      kw: 'cercle person contact form fields name birthday gender address intake fiche identité champs',
+      render: () => (
+        // The shared identity field cluster (name parts, birthday, gender, optional
+        // phone/email/address). Used by the cercle ContactForm AND the relative-facing
+        // intake form (/intake) so both show the exact same fields.
+        <>
+          <Demo label="full (self card — names, birthday, gender, contact, address)">
+            <div className="cf">
+              <ContactFields value={cfDemo} onChange={(p) => setCfDemo((c) => ({ ...c, ...p }))} />
+            </div>
+          </Demo>
+          <Demo label="compact (a household member — names, birthday, gender only)">
+            <div className="cf">
+              <ContactFields
+                value={cfDemo}
+                onChange={(p) => setCfDemo((c) => ({ ...c, ...p }))}
+                showContact={false}
+                showAddress={false}
+              />
+            </div>
+          </Demo>
+        </>
+      ),
     },
     {
       cat: 'Saisie',

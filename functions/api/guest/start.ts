@@ -15,7 +15,7 @@ import { newId, nowSec } from '../../_lib/ids'
 // TTLs short for that reason. (See functions/_lib/auth.ts issueGuestToken.)
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ ttlSeconds?: number; kind?: string }>(ctx.request)
+  const body = await readJson<{ ttlSeconds?: number; kind?: string; targetKey?: string }>(ctx.request)
 
   // Validate the kind explicitly: an unknown string is a client bug, not a silent
   // downgrade to showcase (which would over-share). Absent kind defaults to showcase.
@@ -25,9 +25,15 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const kind: GuestKind = normalizeGuestKind(body?.kind)
   const ttlSeconds = clampShareTtl(kind, body?.ttlSeconds)
 
+  // A per-person intake link binds the addressed person into the SIGNED token so it
+  // can't be retargeted by editing the URL. Only meaningful for 'intake'; ignored
+  // for every other kind (a curated/showcase link has no target).
+  const targetKey =
+    kind === 'intake' && typeof body?.targetKey === 'string' && body.targetKey ? body.targetKey : null
+
   const guestId = newId()
-  const guestToken = await issueGuestToken(ctx.env, guestId, actor.householdId, ttlSeconds, kind)
+  const guestToken = await issueGuestToken(ctx.env, guestId, actor.householdId, ttlSeconds, kind, targetKey)
   const expiresAt = nowSec() + ttlSeconds
 
-  return ok({ guestToken, guestId, kind, ttlSeconds, expiresAt })
+  return ok({ guestToken, guestId, kind, ttlSeconds, expiresAt, targetKey })
 }, 'operator')

@@ -1419,14 +1419,25 @@ export const GUIDE: GuideEntry[] = [
     },
     points: [
       {
-        label: { fr: 'Quatre genres de liens', en: 'Four kinds of links' },
+        label: { fr: 'Cinq genres de liens', en: 'Five kinds of links' },
         detail: {
-          fr: '« Démo » montre tout le babillard en lecture seule (tes vraies données, pour « regarde mon app »); « Gardienne » montre la journée + les routines + les infos à savoir + les urgences + le wifi; « Accueil » montre le wifi + le jour des poubelles + les règles de la maison; « Famille » est la fenêtre des grands-parents (dates des enfants + anniversaires + photos).',
-          en: '“Demo” shows the whole board read-only (your real data, for “look at my app”); “Sitter” shows today + the routines + things-to-know + emergencies + wifi; “Welcome” shows the wifi + bin day + house rules; “Family” is the grandparents’ window (kids’ dates + birthdays + photos).',
+          fr: '« Démo » montre tout le babillard en lecture seule (tes vraies données, pour « regarde mon app »); « Gardienne » montre la journée + les routines + les infos à savoir + les urgences + le wifi; « Accueil » montre le wifi + le jour des poubelles + les règles de la maison; « Famille » est la fenêtre des grands-parents (dates des enfants + anniversaires + photos); « Fiche famille » est le seul lien qui écrit — un proche remplit ses coordonnées et te les renvoie.',
+          en: '“Demo” shows the whole board read-only (your real data, for “look at my app”); “Sitter” shows today + the routines + things-to-know + emergencies + wifi; “Welcome” shows the wifi + bin day + house rules; “Family” is the grandparents’ window (kids’ dates + birthdays + photos); “Family details” is the only writable link — a relative fills in their own info and sends it back.',
         },
         why: {
           fr: 'Chaque visiteur a un besoin différent — un genre par besoin, jamais plus.',
           en: 'Each visitor has a different need — one kind per need, never more.',
+        },
+      },
+      {
+        label: { fr: '« Fiche famille » — remplie et renvoyée', en: '“Family details” — filled and sent back' },
+        detail: {
+          fr: 'Au lieu de tout saisir toi-même, envoie un lien « Fiche famille ». Le proche remplit ses coordonnées (et, s’il veut, sa maisonnée + qui est qui), puis envoie. Tu choisis « Pour une personne » (le lien met à jour SA fiche) ou un « lien ouvert » que toute la famille peut remplir. Rien n’entre dans Le cercle tout de suite : la fiche t’attend dans Réglages ▸ Partage (« Fiches reçues ») — tu révises, tu coches qui ajouter, puis « Compléter les familles » déduit le reste (frères, beaux-parents…).',
+          en: 'Instead of typing it all yourself, send a “Family details” link. The relative fills in their info (and, if they like, their household + who’s who), then sends. You pick “For one person” (the link updates THEIR card) or an “open link” the whole family can fill. Nothing enters Le cercle right away: the form waits in Settings ▸ Sharing (“Forms received”) — you review, tick who to add, then “Complete families” infers the rest (siblings, in-laws…).',
+        },
+        why: {
+          fr: 'Ce sont eux qui connaissent leur anniversaire et leur numéro — laisse-les l’écrire, garde le contrôle de ce qui entre.',
+          en: 'They’re the ones who know their birthday and number — let them write it, keep control of what lands.',
         },
       },
       {
@@ -2769,22 +2780,22 @@ export const GUIDE: GuideEntry[] = [
     tab: 'guest',
     title: { fr: 'Partage', en: 'Sharing' },
     what: {
-      fr: 'Crée des liens temporaires en lecture seule — Démo, Gardienne, Accueil ou Famille — et règle les « Infos à partager » (wifi, règles, poubelles) qui les alimentent.',
-      en: 'Mint temporary read-only links — Demo, Sitter, Welcome or Family — and set the “Info to share” (wifi, rules, bin day) that feeds them.',
+      fr: 'Crée des liens temporaires en lecture seule — Démo, Gardienne, Accueil ou Famille — plus la « Fiche famille » qu’un proche remplit et te renvoie, et règle les « Infos à partager » (wifi, règles, poubelles) qui les alimentent.',
+      en: 'Mint temporary read-only links — Demo, Sitter, Welcome or Family — plus the “Family details” form a relative fills and sends back, and set the “Info to share” (wifi, rules, bin day) that feeds them.',
     },
     points: [
       {
         label: { fr: 'Choisir le genre', en: 'Pick the kind' },
         detail: {
-          fr: 'Voir [[card:share-access|Partager un accès]] pour le détail des quatre genres.',
-          en: 'See [[card:share-access|Share access]] for the detail of the four kinds.',
+          fr: 'Voir [[card:share-access|Partager un accès]] pour le détail des cinq genres.',
+          en: 'See [[card:share-access|Share access]] for the detail of the five kinds.',
         },
       },
       {
         label: { fr: 'Chaque genre, sa vue', en: 'Each kind, its view' },
         detail: {
-          fr: 'Démo (tout le babillard), Gardienne (journée + routines + à savoir + wifi), Accueil (wifi + poubelles + règles) ou Famille (dates des enfants + anniversaires + photos) — chacun avec sa durée.',
-          en: 'Demo (the whole board), Sitter (day + routines + things-to-know + wifi), Welcome (wifi + bin day + rules) or Family (kids’ dates + birthdays + photos) — each with its own duration.',
+          fr: 'Démo (tout le babillard), Gardienne (journée + routines + à savoir + wifi), Accueil (wifi + poubelles + règles), Famille (dates des enfants + anniversaires + photos) ou Fiche famille (un proche remplit ses infos et te les renvoie) — chacun avec sa durée.',
+          en: 'Demo (the whole board), Sitter (day + routines + things-to-know + wifi), Welcome (wifi + bin day + rules), Family (kids’ dates + birthdays + photos) or Family details (a relative fills in their info and sends it back) — each with its own duration.',
         },
         why: {
           fr: 'Un lien par besoin : le visiteur ne voit que ce qui le concerne.',
