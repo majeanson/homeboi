@@ -30,7 +30,13 @@ async function noHOverflow(page: Page): Promise<string> {
   })
 }
 
-const SURFACES = ['/board', '/kitchen', '/routines', '/liste', '/settings']
+// All SIX hub tabs (« Le cercle » included — its long member/group names + graph
+// labels are a prime overflow risk and it's absent from every other long-text run).
+const SURFACES = ['/board', '/kitchen', '/routines', '/cercle', '/liste', '/settings']
+// The audience-aware tabs also render a TODDLER lens off the same (now long) data —
+// big tiles + faces wrap differently and must not overflow either. Settings is
+// parent-only.
+const TODDLER_SURFACES = ['/board', '/kitchen', '/routines', '/cercle', '/liste']
 
 for (const f of FORMATS) {
   for (const path of SURFACES) {
@@ -45,10 +51,36 @@ for (const f of FORMATS) {
       await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
     })
   }
+
+  for (const path of TODDLER_SURFACES) {
+    test(`lt ${f.name}: ${path.slice(1)} (toddler)`, async ({ page }) => {
+      await page.setViewportSize({ width: f.w, height: f.h })
+      await mockApi(page, { longText: true })
+      await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true, surface: f.surface })
+      await page.goto(path)
+      await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
+      await page.waitForTimeout(700)
+      await page.screenshot({ path: `e2e/screenshots/lt-${f.name}-${path.slice(1)}-toddler.png`, fullPage: false })
+      await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
+    })
+  }
 }
 
-// Densest overlays with long content: the recipe sheet (long title + ingredients)
-// and the cashier review (long deal + item names).
+// ── "In use" under long text: the full-screen overlays/scenes ────────────────
+// These take over the viewport, so a long unbreakable string overflows the DOCUMENT
+// (not a .hub__body scroller). Assert no horizontal overflow at the document level
+// AND inside the overlay's own root, so a stranded wide child is caught even if the
+// page lets it scroll. Screenshots remain for eyeballing wrap/spacing.
+async function docOverflow(page: Page, root: string): Promise<string> {
+  return page.evaluate((sel) => {
+    const doc = document.documentElement
+    if (doc.scrollWidth > doc.clientWidth + 1) return 'doc-overflow'
+    const el = document.querySelector(sel) as HTMLElement | null
+    if (el && el.scrollWidth > el.clientWidth + 1) return 'root-overflow'
+    return 'ok'
+  }, root)
+}
+
 test('lt phone: recipe sheet long title', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await mockApi(page, { longText: true })
@@ -57,12 +89,12 @@ test('lt phone: recipe sheet long title', async ({ page }) => {
   await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
   await page.getByRole('tab', { name: /Recettes/ }).click().catch(() => {})
   await page.waitForTimeout(400)
-  const card = page.locator('.recipe-card').first()
-  if (await card.count()) {
-    await card.click()
-    await page.waitForTimeout(500)
-    await page.screenshot({ path: 'e2e/screenshots/lt-recipe-sheet.png', fullPage: false })
-  }
+  await page.locator('.recipe-card').first().click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la recette' }).click()
+  await page.locator('.recipe-modal').waitFor({ state: 'visible' })
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'e2e/screenshots/lt-recipe-sheet.png', fullPage: false })
+  await expect.poll(() => docOverflow(page, '.recipe-modal'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
 })
 
 test('lt phone: cashier review long names', async ({ page }) => {
@@ -71,7 +103,46 @@ test('lt phone: cashier review long names', async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
   await page.goto('/liste')
   await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
-  await page.getByRole('button', { name: /Montrer/ }).first().click().catch(() => {})
-  await page.waitForTimeout(500)
+  await page.getByRole('button', { name: /Montrer/ }).first().click()
+  await page.locator('.cashier').waitFor({ state: 'visible', timeout: 15_000 })
+  await page.waitForTimeout(400)
   await page.screenshot({ path: 'e2e/screenshots/lt-cashier-review.png', fullPage: false })
+  await expect.poll(() => docOverflow(page, '.cashier'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
+})
+
+test('lt phone: cook mode (full) long steps', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page, { longText: true })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
+  // Straight to cook mode for rc1 (long ingredients/steps under longText).
+  await page.goto('/kitchen/recipe/rc1/cook')
+  await page.locator('.cook').waitFor({ state: 'visible', timeout: 15_000 })
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'e2e/screenshots/lt-cook-full.png', fullPage: false })
+  await expect.poll(() => docOverflow(page, '.cook'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
+})
+
+test('lt phone: day editor long meal titles', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page, { longText: true })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
+  await page.goto('/kitchen')
+  await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
+  await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+  await page.locator('.scene .day-mng__sec').first().waitFor({ state: 'visible', timeout: 15_000 })
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'e2e/screenshots/lt-day-editor.png', fullPage: false })
+  await expect.poll(() => docOverflow(page, '.scene'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
+})
+
+// « Le cercle » full-screen overview map under long member/group names.
+test('lt phone: cercle « Notre monde » long names', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page, { longText: true })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
+  await page.goto('/cercle/monde')
+  await page.locator('.scene').first().waitFor({ state: 'visible', timeout: 15_000 })
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: 'e2e/screenshots/lt-cercle-monde.png', fullPage: false })
+  await expect.poll(() => docOverflow(page, '.scene'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
 })

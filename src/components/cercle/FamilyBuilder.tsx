@@ -23,6 +23,7 @@ import { Icon, InlineIcon } from '../Icon'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 
 const ACCENT = '#2A8F85' // cercle turquoise
+const PET_COLOUR = '#C7873F' // the pet amber (mirrors PetForm / PET_ACCENT)
 type Mode = 'bands' | 'matrix'
 type Slot = FamilyBand | 'tray'
 
@@ -63,11 +64,22 @@ export function FamilyBuilder({
   const allPeople = useMemo(() => [...people, ...extra], [people, extra])
   const byKey = useMemo(() => new Map(allPeople.map((p) => [p.key, p])), [allPeople])
 
-  // Roster = everyone in this family. Seeded from the group being edited, or from
-  // the person a "build their family" entry point handed in.
-  const [roster, setRoster] = useState<string[]>(() =>
-    group ? group.memberKeys.map((m) => personKey(m.personKind, m.personId)) : seedKeys ?? [],
-  )
+  // Roster = everyone in this family — people AND the family's pets (one list so the
+  // existing group-save loop adds each with its own kind). Seeded from the group being
+  // edited or the "build their family" person, PLUS any pet OWNED by a seeded human so
+  // the « Animaux de la famille » section opens up to date with the family's animals.
+  // (owner: human→pet, pet: pet→human — read both directions off the existing links.)
+  const [roster, setRoster] = useState<string[]>(() => {
+    const base = group ? group.memberKeys.map((m) => personKey(m.personKind, m.personId)) : seedKeys ?? []
+    const set = new Set(base)
+    for (const l of links) {
+      if (l.type === 'owner' && l.personBKind === 'pet' && set.has(personKey(l.personAKind, l.personAId)))
+        set.add(personKey('pet', l.personBId))
+      else if (l.type === 'pet' && l.personAKind === 'pet' && set.has(personKey(l.personBKind, l.personBId)))
+        set.add(personKey('pet', l.personAId))
+    }
+    return [...set]
+  })
   const [band, setBand] = useState<Record<string, FamilyBand>>({})
   const [pick, setPick] = useState<Record<string, RelationshipType>>({})
   const [anchor, setAnchor] = useState<string | null>(null)
@@ -75,6 +87,8 @@ export function FamilyBuilder({
   const [name, setName] = useState(group?.name ?? '')
   const [addText, setAddText] = useState('')
   const [newName, setNewName] = useState('')
+  const [petText, setPetText] = useState('')
+  const [newPet, setNewPet] = useState('')
   const [saving, setSaving] = useState(false)
 
   // Suggested family name: the most common last name among the roster → "Famille X".
@@ -89,8 +103,12 @@ export function FamilyBuilder({
   }, [roster, byKey, t])
 
   const rosterSet = useMemo(() => new Set(roster), [roster])
+  // Pets ride in the same roster but are wired through their own section, never the
+  // generational bands/matrix (a pet can't carry a human rung). Split the two.
+  const humanRoster = useMemo(() => roster.filter((k) => byKey.get(k)?.kind !== 'pet'), [roster, byKey])
+  const petRoster = useMemo(() => roster.filter((k) => byKey.get(k)?.kind === 'pet'), [roster, byKey])
   const addOptions: ComboOption<Person>[] = allPeople
-    .filter((p) => !rosterSet.has(p.key))
+    .filter((p) => p.kind !== 'pet' && !rosterSet.has(p.key))
     // keywords fold first name AND last name into the type-to-filter match, so a
     // search hits either — even when the label is a nickname (fullName prefers it).
     .map((p) => ({
@@ -100,23 +118,27 @@ export function FamilyBuilder({
       icon: p.kind === 'member' ? 'users-three-bold' : 'user-bold',
       keywords: [p.firstName, p.lastName].filter(Boolean) as string[],
     }))
+  // The family's pets to pick from (existing animals not already in the family).
+  const addPetOptions: ComboOption<Person>[] = allPeople
+    .filter((p) => p.kind === 'pet' && !rosterSet.has(p.key))
+    .map((p) => ({ id: p.key, label: p.name, data: p, icon: 'smiley-bold', keywords: [p.firstName].filter(Boolean) as string[] }))
 
   // The links the current mode would create (before de-duping against what exists).
   const generated = useMemo(() => {
     if (mode === 'bands') {
       return familyLinksFromBands({
-        grandparents: roster.filter((k) => band[k] === 'grandparents'),
-        parents: roster.filter((k) => band[k] === 'parents'),
-        children: roster.filter((k) => band[k] === 'children'),
+        grandparents: humanRoster.filter((k) => band[k] === 'grandparents'),
+        parents: humanRoster.filter((k) => band[k] === 'parents'),
+        children: humanRoster.filter((k) => band[k] === 'children'),
       })
     }
     return anchor
       ? familyLinksFromMatrix(
           anchor,
-          roster.filter((k) => k !== anchor).map((k) => ({ key: k, type: pick[k] ?? null })),
+          humanRoster.filter((k) => k !== anchor).map((k) => ({ key: k, type: pick[k] ?? null })),
         )
       : []
-  }, [mode, roster, band, pick, anchor])
+  }, [mode, humanRoster, band, pick, anchor])
   const freshCount = useMemo(() => dedupeNewLinks(generated, links).length, [generated, links])
 
   const dnd = usePointerDnd({ onDrop: (key, zone) => moveTo(key, zone as Slot), holdMs: DND_HOLD_MS })
@@ -164,6 +186,52 @@ export function FamilyBuilder({
       avatarKind: null,
       avatarRef: null,
       colour: ACCENT,
+      birthday: null,
+      isChild: false,
+      email: null,
+      phone: null,
+      gender: null,
+    }
+    setExtra((prev) => [...prev, p])
+    addToRoster(p.key)
+  }
+
+  // Quick-create a pet by name (the full care fields live in the pet editor). POSTs
+  // /api/pets, then drops it into the roster so save adds it to the family group.
+  async function addNewPet() {
+    const nm = newPet.trim()
+    if (!nm) return
+    const res = await write<{ id: string }>('pets', {
+      method: 'POST',
+      body: {
+        name: nm,
+        species: null,
+        breed: null,
+        birthday: null,
+        microchip: null,
+        feeding: null,
+        sitterNotes: null,
+        vetBusinessId: null,
+        weights: [],
+        colour: PET_COLOUR,
+        photoKey: null,
+        notes: null,
+      },
+      affectedKeys: [CERCLE_KEY, BOARD_KEY],
+    })
+    const id = res.queued ? null : res.data?.id ?? null
+    setNewPet('')
+    if (!id) return // offline create is queued without an id — can't link it yet
+    const p: Person = {
+      kind: 'pet',
+      id,
+      key: personKey('pet', id),
+      name: nm,
+      firstName: nm,
+      lastName: '',
+      avatarKind: null,
+      avatarRef: null,
+      colour: PET_COLOUR,
       birthday: null,
       isChild: false,
       email: null,
@@ -257,7 +325,19 @@ export function FamilyBuilder({
     </span>
   )
 
-  const tray = roster.filter((k) => !band[k])
+  // A pet chip — like a face chip but never draggable (pets stay out of the bands);
+  // the ✕ takes it back out of the family.
+  const PetChip = ({ p }: { p: Person }) => (
+    <span className="cercle-fam__chip">
+      <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={32} />
+      <span className="cercle-fam__chip-name">{p.firstName}</span>
+      <button type="button" className="cercle-fam__chip-x" aria-label={t.common.delete} onClick={() => removeFromRoster(p.key)}>
+        <Icon name="x-bold" size={11} />
+      </button>
+    </span>
+  )
+
+  const tray = humanRoster.filter((k) => !band[k])
 
   return (
     <div className="cercle-fam">
@@ -312,7 +392,7 @@ export function FamilyBuilder({
         </div>
       </div>
 
-      {roster.length === 0 ? (
+      {humanRoster.length === 0 ? (
         <p className="cf__rels-empty mono">{t.cercle.familyEmpty}</p>
       ) : (
         <>
@@ -349,7 +429,7 @@ export function FamilyBuilder({
               </div>
               {/* Generation bands */}
               {FAMILY_BANDS.map((b) => {
-                const here = roster.filter((k) => band[k] === b)
+                const here = humanRoster.filter((k) => band[k] === b)
                 return (
                   <div
                     key={b}
@@ -371,11 +451,11 @@ export function FamilyBuilder({
                 <span className="cf__label">{t.cercle.familyAnchor}</span>
                 <select className="cf__input" value={anchor ?? ''} onChange={(e) => setAnchor(e.target.value || null)}>
                   <option value="">—</option>
-                  {roster.map((k) => byKey.get(k)).map((p) => p && <option key={p.key} value={p.key}>{p.name}</option>)}
+                  {humanRoster.map((k) => byKey.get(k)).map((p) => p && <option key={p.key} value={p.key}>{p.name}</option>)}
                 </select>
               </label>
               {anchor &&
-                roster
+                humanRoster
                   .filter((k) => k !== anchor)
                   .map((k) => byKey.get(k))
                   .map(
@@ -424,6 +504,52 @@ export function FamilyBuilder({
             </div>
           )}
         </>
+      )}
+
+      {/* Animaux de la famille — add an existing pet or a new one. Pets join the family
+          group on save (kind 'pet') and never enter the human bands. Hidden in the
+          links-only Maisonnée flow (no group to attach them to). */}
+      {!linksOnly && (
+        <div className="cf__field">
+          <span className="cf__label">
+            <Icon name="smiley-bold" size={14} /> {t.cercle.familyPets}
+          </span>
+          <EntityCombobox<Person>
+            value={petText}
+            onChange={setPetText}
+            options={addPetOptions}
+            onPick={(opt) => {
+              addToRoster(opt.id)
+              setPetText('')
+            }}
+            placeholder={t.cercle.familyAddPet}
+            submitIcon={null}
+            typeaheadOnly
+          />
+          <div className="cercle-fam__newrow">
+            <input
+              className="cf__input"
+              value={newPet}
+              onChange={(e) => setNewPet(e.target.value)}
+              placeholder={t.cercle.familyNewPet}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  void addNewPet()
+                }
+              }}
+            />
+            <button type="button" className="btn btn--sm" disabled={!newPet.trim()} onClick={addNewPet}>
+              <Icon name="plus-bold" size={14} />
+            </button>
+          </div>
+          {petRoster.length > 0 && (
+            <div className="cercle-fam__chips">
+              {petRoster.map((k) => byKey.get(k)).map((p) => p && <PetChip key={p.key} p={p} />)}
+            </div>
+          )}
+          <p className="cercle-fam__hint mono">{t.cercle.familyPetsHint}</p>
+        </div>
       )}
 
       {/* Save */}

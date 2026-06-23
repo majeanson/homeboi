@@ -45,6 +45,11 @@
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--ink-soft);
+  /* A long, unbreakable group name must break and wrap rather than push the row's
+     edit/delete actions (margin-left:auto) past the viewport. overflow-wrap:anywhere
+     also shrinks the text's intrinsic min-width so the flex row can't be forced wide. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .cercle-group {
@@ -58,6 +63,10 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  /* The row is nearly full-width; when a vertical scrollbar narrows the body the
+     "?" would poke a pixel past. Let it wrap rather than overflow (calm: only the
+     tight edge case wraps; normal widths stay one line). */
+  flex-wrap: wrap;
 }
 
 /* View switch (Liste / Liens / Arbre) — a calm segmented control */

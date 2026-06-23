@@ -308,6 +308,51 @@ const DEVICES = {
   ],
 }
 
+// « L'auto » (#28) read model — the board AutoCard reads today, /voiture reads a
+// week. A populated model so the board's L'auto glance card and the /voiture editor
+// both render with real content. `today` MUST equal a days[].day or AutoCard finds
+// no day. NOTE: this also makes the board mount the AutoCard (the old empty `{}`
+// fallthrough left it absent — and would in fact have CRASHED AutoCardView's
+// model.days.find if it had mounted); the real shape is the safe, covered state.
+const CAR = {
+  cars: [{ id: 'car1', name: 'La familiale', color: '#5891AC' }],
+  hasSchedule: true,
+  now: BASE,
+  today: MMID,
+  status: { free: false, until: BASE + 9 * 3600, span: { start: BASE - 3600, end: BASE + 9 * 3600, label: 'Travail', holderId: 'm2' }, committed: true },
+  membersOut: ['m2'],
+  days: [
+    {
+      day: MMID,
+      spans: [{ start: MMID + 8 * 3600, end: MMID + 17 * 3600, label: 'Travail', holderId: 'm2' }],
+      rides: [{ id: 'ride1', title: 'Soccer de Léa', at: MMID + 18 * 3600, allDay: 0, carId: 'car1', passengers: ['m3'], memberId: 'm1', contactId: null, contactName: null, businessId: null, businessName: null, conflict: false }],
+      override: null,
+    },
+    {
+      day: MMID + DAY,
+      spans: [{ start: MMID + DAY + 8 * 3600, end: MMID + DAY + 16 * 3600, label: 'Travail', holderId: 'm2' }],
+      rides: [],
+      override: null,
+    },
+    {
+      day: MMID + 2 * DAY,
+      spans: [],
+      rides: [{ id: 'ride2', title: 'Rendez-vous dentiste', at: MMID + 2 * DAY + 14 * 3600, allDay: 0, carId: 'car1', passengers: ['m4'], memberId: 'm1', contactId: null, contactName: null, businessId: null, businessName: null, conflict: false }],
+      override: null,
+    },
+  ],
+}
+
+// « Avant de partir » (#17) departure checklists — DeparturePage needs at least one
+// template or it sits on its empty state. A list with a nested ref to a second list.
+// Only /board/departure reads this, so it perturbs no other (existing-tested) surface.
+const TODO_TEMPLATES = {
+  templates: [
+    { id: 'tpl1', title: 'Avant de partir', position: 0, items: [{ kind: 'item', label: 'Vérifier les portes' }, { kind: 'item', label: 'Clés + téléphone + portefeuille' }, { kind: 'ref', refId: 'tpl2' }] },
+    { id: 'tpl2', title: 'Sac des enfants', position: 1, items: [{ kind: 'item', label: 'Boîte à lunch' }, { kind: 'item', label: 'Bouteille d’eau' }] },
+  ],
+}
+
 // « Le cercle » — a populated people graph so the directory, the family COLOURS, the
 // Liens (ego) graph and the generational Arbre all render with real content. Members
 // are the Maisonnée; contacts add an extended family + a few social ties. The named
@@ -438,6 +483,11 @@ const ROUTES: Record<string, unknown> = {
   // Empty is the normal calm state; an absent `notes` must never crash the section.
   'family-notes': { notes: [] },
   recap: { recap: 'Belle semaine : 3 soupers planifiés, 2 sorties, liste à jour.' },
+  // « L'auto » read model (board glance card + /voiture week). Same body for the
+  // today and ?from=&to= week reads — the path is 'car' either way.
+  car: CAR,
+  // Departure checklists (#17) — /board/departure only.
+  'todo-templates': TODO_TEMPLATES,
   // The kept-drawing collection / gallery (#14). Two works so /drawings renders a
   // populated wall; the images resolve via /api/img/* (served a tiny SVG below).
   drawings: {

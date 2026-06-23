@@ -15,12 +15,22 @@ const CASES: Case[] = [
   { name: 'board', path: '/board', audience: 'parent' },
   { name: 'kitchen', path: '/kitchen', audience: 'parent' },
   { name: 'routines', path: '/routines', audience: 'parent' },
+  { name: 'cercle', path: '/cercle', audience: 'parent' },
   { name: 'liste', path: '/liste', audience: 'parent' },
   { name: 'settings', path: '/settings', audience: 'parent' },
   { name: 'board', path: '/board', audience: 'toddler' },
   { name: 'kitchen', path: '/kitchen', audience: 'toddler' },
   { name: 'routines', path: '/routines', audience: 'toddler' },
+  { name: 'cercle', path: '/cercle', audience: 'toddler' },
   { name: 'liste', path: '/liste', audience: 'toddler' },
+]
+
+// The mobile surface pins the nav to the bottom at EVERY width (hub.css
+// [data-surface='mobile'] .hubnav), so a portrait wall tablet (834px) can strand a
+// control under the bar just like the phone — a distinct layout worth its own pass.
+const FORMATS = [
+  { name: 'phone', width: 390, height: 844 },
+  { name: 'tablet', width: 834, height: 1112 },
 ]
 
 async function settle(page: Page) {
@@ -77,16 +87,18 @@ async function occludedControls(page: Page): Promise<string[]> {
   })
 }
 
-for (const c of CASES) {
-  test(`footer-clearance ${c.name}-${c.audience}`, async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 })
-    await mockApi(page)
-    await seedState(page, { theme: 'day', audience: c.audience, lang: 'fr', calm: true, surface: 'mobile' })
-    await page.goto(c.path)
-    await settle(page)
-    await scrollToBottom(page)
-    await page.screenshot({ path: `e2e/screenshots/footer-${c.name}-${c.audience}-bottom.png`, fullPage: false })
-    const occluded = await occludedControls(page)
-    expect(occluded, `controls hidden behind the fixed bottom nav on ${c.path} [${c.audience}]`).toEqual([])
-  })
+for (const f of FORMATS) {
+  for (const c of CASES) {
+    test(`footer-clearance ${f.name} ${c.name}-${c.audience}`, async ({ page }) => {
+      await page.setViewportSize({ width: f.width, height: f.height })
+      await mockApi(page)
+      await seedState(page, { theme: 'day', audience: c.audience, lang: 'fr', calm: true, surface: 'mobile' })
+      await page.goto(c.path)
+      await settle(page)
+      await scrollToBottom(page)
+      await page.screenshot({ path: `e2e/screenshots/footer-${f.name}-${c.name}-${c.audience}-bottom.png`, fullPage: false })
+      const occluded = await occludedControls(page)
+      expect(occluded, `controls hidden behind the fixed bottom nav on ${c.path} [${c.audience}/${f.name}]`).toEqual([])
+    })
+  }
 }

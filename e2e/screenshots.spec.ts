@@ -21,6 +21,7 @@ const SURFACES: Surface[] = [
   { name: 'board', path: '/board', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'kitchen', path: '/kitchen', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'routines', path: '/routines', audiences: ['parent', 'toddler'], ready: '.hub' },
+  { name: 'cercle', path: '/cercle', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'liste', path: '/liste', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'settings', path: '/settings', audiences: ['parent'], ready: '.hub' },
   { name: 'login', path: '/login', audiences: ['parent'], ready: 'form, .page' },
@@ -141,7 +142,7 @@ test('toddler routines reaches the picture-card story', async ({ page }) => {
 // blanks a surface — the screenshot tests still "pass" because they only shoot a
 // frame. So assert every PARENT surface actually paints content and throws no
 // pageerror. This is what would have caught the blank-Kitchen regression.
-for (const path of ['/board', '/kitchen', '/routines', '/liste', '/settings']) {
+for (const path of ['/board', '/kitchen', '/routines', '/cercle', '/liste', '/settings']) {
   test(`no blank surface (no render crash): ${path}`, async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', (e) => errors.push(e.message))
@@ -167,6 +168,8 @@ const OVERFLOW_CASES: { path: string; audience: Audience; ready: string }[] = [
   { path: '/kitchen', audience: 'parent', ready: '.hub' },
   { path: '/kitchen', audience: 'toddler', ready: '.hub' },
   { path: '/routines', audience: 'parent', ready: '.hub' },
+  { path: '/cercle', audience: 'parent', ready: '.hub' },
+  { path: '/cercle', audience: 'toddler', ready: '.hub' },
   { path: '/liste', audience: 'parent', ready: '.hub' },
   { path: '/liste', audience: 'toddler', ready: '.hub' },
   { path: '/settings', audience: 'parent', ready: '.hub' },

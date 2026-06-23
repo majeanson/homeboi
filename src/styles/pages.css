@@ -1064,6 +1064,10 @@
 .kid__face-name {
   font-size: 1.05rem;
   font-weight: 700;
+  /* A long, unbreakable routine/child name wraps within the card instead of
+     stretching it past the toddler grid. */
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 /* Who it's for: a small avatar + name, shown only on a shared device. */
 .kid__routine-who {
@@ -2279,6 +2283,10 @@
   font-size: 2rem;
   font-weight: 700;
   text-align: center;
+  /* A very long, unbreakable supper/weather name must wrap inside the hero, not
+     stretch the card (and the whole toddler board) past the viewport. */
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .today-hero__sub {
   color: var(--ink-soft);
@@ -3245,6 +3253,9 @@
 }
 .auto-card__what {
   flex: 1 1 auto;
+  /* min-width:0 lets this flex child shrink below its content so a very long,
+     unbreakable ride title wraps instead of pushing the card past the viewport. */
+  min-width: 0;
   display: inline-flex;
   align-items: baseline;
   gap: 0.1rem 0.45rem;
@@ -3252,10 +3263,12 @@
 }
 .auto-card__ride-title {
   font-size: 0.98rem;
+  overflow-wrap: anywhere;
 }
 .auto-card__who {
   color: var(--ink-soft);
   font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 .auto-card__pax {
   display: inline-flex;

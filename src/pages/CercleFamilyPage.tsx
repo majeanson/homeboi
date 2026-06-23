@@ -8,13 +8,14 @@ import { CERCLE_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
 import { Loading } from '../components/Fallback'
 import { FamilyBuilder } from '../components/cercle/FamilyBuilder'
-import { unifyCircle, type Contact, type ContactLink, type Member, type ContactGroupRaw } from '../lib/cercle'
+import { unifyCircle, type Contact, type ContactLink, type Member, type ContactGroupRaw, type Pet } from '../lib/cercle'
 
 interface CercleData {
   contacts: Contact[]
   members: Member[]
   links: ContactLink[]
   groups?: ContactGroupRaw[]
+  pets?: Pet[]
 }
 
 // /cercle/family/new — build a new family; /cercle/family/:groupId — extend an
@@ -36,7 +37,9 @@ export function CercleFamilyPage() {
 
   // Collapse member + linked contact into one person, and remap links/group keys onto
   // the member — so the builder shows each human once and links attach to one node.
-  const unified = unifyCircle(data.contacts, data.members, data.links, data.groups ?? [])
+  // Pets ride along (kind 'pet') so the builder's « Animaux de la famille » section can
+  // list and add the family's animals.
+  const unified = unifyCircle(data.contacts, data.members, data.links, data.groups ?? [], data.pets ?? [])
   const group = groupId ? unified.groups.find((g) => g.id === groupId) ?? null : null
   // Editing but the group is gone (loaded + not found) → bounce back to the directory.
   if (groupId && !group) return <Navigate to="/cercle" replace />

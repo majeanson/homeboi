@@ -113,16 +113,32 @@ async function occluded(page: Page): Promise<string[]> {
   })
 }
 
+// Horizontal overflow under REAL content volume — long member names, many recipes,
+// a full list. Checks the doc + the hub scroller. Logged (not asserted) so one bad
+// surface never blocks the rest of the manual pass; review the console summary.
+async function overflowing(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const doc = document.documentElement
+    const body = document.querySelector('.hub__body')
+    if (doc.scrollWidth > doc.clientWidth + 1) return 'doc-overflow'
+    if (body && body.scrollWidth > body.clientWidth + 1) return 'body-overflow'
+    return 'ok'
+  })
+}
+
 async function shoot(page: Page, name: string) {
   await page.screenshot({ path: `e2e/screenshots/real-${name}.png`, fullPage: false })
   const hidden = await occluded(page)
+  const over = await overflowing(page)
   console.log(`[occlusion] ${name}: ${hidden.length ? '⚠ HIDDEN ' + JSON.stringify(hidden) : 'ok'}`)
+  console.log(`[overflow]  ${name}: ${over === 'ok' ? 'ok' : '⚠ ' + over}`)
 }
 
 const SURFACES = [
   { name: 'board', path: '/board' },
   { name: 'kitchen', path: '/kitchen' },
   { name: 'routines', path: '/routines' },
+  { name: 'cercle', path: '/cercle' },
   { name: 'liste', path: '/liste' },
   { name: 'settings', path: '/settings' },
 ]
@@ -276,5 +292,65 @@ test('real recipe + cook mode @phone', async ({ page, context }) => {
     }
   } else {
     console.log('[info] no .recipe-card found on /kitchen (maybe a different tab is default)')
+  }
+})
+
+// « Le cercle » under the real people graph — the directory, the colour-coded tree,
+// and the ego/web graphs are where real names + many links crowd or overflow. A
+// TALL phone-width viewport reveals the whole grouped list in one frame; the graph
+// views pan inside an SVG so a tall frame still shows the controls. Logged overflow
+// probe on each.
+test('real cercle sub-views @phone-tall', async ({ page, context }) => {
+  await seed(context)
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'routines', 'liste', 'cercle']))
+    } catch {
+      /* noop */
+    }
+  })
+  await page.setViewportSize(PHONE_TALL)
+  await login(page, context)
+  const views = [
+    { name: 'family-list', q: 'section=family&view=list' },
+    { name: 'family-tree', q: 'section=family&view=tree' },
+    { name: 'family-links', q: 'section=family&view=links' },
+    { name: 'social-list', q: 'section=social&view=list' },
+    { name: 'business', q: 'section=business' },
+    { name: 'notes', q: 'section=notes' },
+  ]
+  for (const v of views) {
+    await page.goto(`/cercle?${v.q}`)
+    await settle(page)
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: `e2e/screenshots/real-cercle-${v.name}.png`, fullPage: true })
+    console.log(`[overflow]  cercle-${v.name}: ${(await overflowing(page)) === 'ok' ? 'ok' : '⚠'}`)
+  }
+})
+
+// The standalone scenes over real data — « L'auto » week, the « Notre monde »
+// overview map, global search results, departure mode. Phone (their primary
+// surface); tall so the whole scene shows.
+test('real scenes @phone-tall', async ({ page, context }) => {
+  await seed(context)
+  await page.setViewportSize(PHONE_TALL)
+  await login(page, context)
+  const scenes = [
+    { name: 'voiture', path: '/voiture', ready: '.voiture, .scene' },
+    { name: 'cercle-monde', path: '/cercle/monde', ready: '.scene' },
+    { name: 'departure', path: '/board/departure', ready: '.departure, .scene' },
+    { name: 'search', path: '/search', ready: '.search, .scene' },
+  ]
+  for (const s of scenes) {
+    await page.goto(s.path)
+    await page.locator(s.ready.split(',')[0].trim()).first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
+    await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+    await page.waitForTimeout(600)
+    await page.screenshot({ path: `e2e/screenshots/real-scene-${s.name}.png`, fullPage: true })
+    const over = await page.evaluate(() => {
+      const doc = document.documentElement
+      return doc.scrollWidth > doc.clientWidth + 1 ? 'doc-overflow' : 'ok'
+    })
+    console.log(`[overflow]  scene-${s.name}: ${over === 'ok' ? 'ok' : '⚠ ' + over}`)
   }
 })
