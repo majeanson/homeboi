@@ -50,6 +50,22 @@ export interface IntakeSubmission {
   links: IntakeLinkInput[]
 }
 
+// Which optional sections the form asks for (name is always required). A compact
+// bitmask rides the link token; absent ⇒ ask everything. Twin of src/lib/intake.ts
+// (decode only — the SPA owns encode at link-creation time).
+export interface IntakeScope {
+  bday: boolean
+  contact: boolean
+  addr: boolean
+  household: boolean
+}
+export const INTAKE_FIELDS_ALL = 1 | 2 | 4 | 8 // 15
+
+export function decodeIntakeScope(f: number | null | undefined): IntakeScope {
+  const m = f == null ? INTAKE_FIELDS_ALL : f
+  return { bday: !!(m & 1), contact: !!(m & 2), addr: !!(m & 4), household: !!(m & 8) }
+}
+
 // Generous-but-bounded caps. Names short, notes a paragraph; a household of a dozen
 // and a few dozen ties is plenty. Bounding counts + field lengths bounds total size.
 const MAX_HOUSEHOLD = 12

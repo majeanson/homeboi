@@ -16,9 +16,11 @@ import {
   type Member,
   type Person,
 } from '../../lib/cercle'
+import { encodeIntakeScope, type IntakeScope } from '../../lib/intake'
 import { InlineIcon } from '../Icon'
 import { StatusMessage } from '../StatusMessage'
 import { QrCode } from '../QrCode'
+import { Chip } from '../Chip'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 
 // Typed read-only share links. The operator picks a KIND (what the link can see)
@@ -103,6 +105,9 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   // anyone can fill). Bound into the signed token by the server.
   const [targetKey, setTargetKey] = useState<string | null>(null)
   const [targetText, setTargetText] = useState('')
+  // For an 'intake' link: which optional sections the form asks for (name is always
+  // required). All on by default — the operator unchecks what they don't want.
+  const [scope, setScope] = useState<IntakeScope>({ bday: true, contact: true, addr: true, household: true })
 
   // People to choose a per-person intake link's recipient from — loaded only when
   // the intake kind is picked. unifyCircle gives one node per person (member +
@@ -137,7 +142,13 @@ export function GuestSection({ help }: { help?: HelpMode }) {
     try {
       const res = await api<{ guestToken: string }>('guest/start', {
         method: 'POST',
-        body: { ttlSeconds: ttl, kind, ...(kind === 'intake' && targetKey ? { targetKey } : {}) },
+        body: {
+          ttlSeconds: ttl,
+          kind,
+          ...(kind === 'intake'
+            ? { ...(targetKey ? { targetKey } : {}), fields: encodeIntakeScope(scope) }
+            : {}),
+        },
       })
       const path = KINDS.find((k) => k.kind === kind)?.path ?? '/board'
       setLink(`${window.location.origin}${path}?guest=${encodeURIComponent(res.guestToken)}`)
@@ -211,6 +222,28 @@ export function GuestSection({ help }: { help?: HelpMode }) {
             <p className="operator__hint mono">
               {targetKey ? t.guest.intakeForPerson(targetText) : t.guest.intakeOpenHint}
             </p>
+          </div>
+        )}
+
+        {/* Which optional sections the form asks for. Name is always required; the
+            operator unchecks anything they'd rather not request. */}
+        {kind === 'intake' && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.guest.intakeAsk}</span>
+            <div className="cf__gender-chips">
+              <Chip selected={scope.bday} onClick={() => setScope((s) => ({ ...s, bday: !s.bday }))}>
+                {t.guest.intakeFieldBday}
+              </Chip>
+              <Chip selected={scope.contact} onClick={() => setScope((s) => ({ ...s, contact: !s.contact }))}>
+                {t.guest.intakeFieldContact}
+              </Chip>
+              <Chip selected={scope.addr} onClick={() => setScope((s) => ({ ...s, addr: !s.addr }))}>
+                {t.guest.intakeFieldAddr}
+              </Chip>
+              <Chip selected={scope.household} onClick={() => setScope((s) => ({ ...s, household: !s.household }))}>
+                {t.guest.intakeFieldHousehold}
+              </Chip>
+            </div>
           </div>
         )}
 

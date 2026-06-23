@@ -8,7 +8,13 @@ import { Icon, InlineIcon } from '../components/Icon'
 import { Chip } from '../components/Chip'
 import { StatusMessage } from '../components/StatusMessage'
 import type { RelationshipType } from '../lib/cercle'
-import type { IntakeSubmission, IntakePersonInput, IntakeAddress } from '../lib/intake'
+import {
+  decodeIntakeScope,
+  type IntakeScope,
+  type IntakeSubmission,
+  type IntakePersonInput,
+  type IntakeAddress,
+} from '../lib/intake'
 
 // The relative-facing family-info form (#— intake). A relative opens a typed,
 // time-boxed 'intake' share link, fills in their own card and optionally the people
@@ -27,6 +33,7 @@ interface GreetingData {
   kind: 'intake'
   householdName: string
   targetName: string | null
+  scope?: IntakeScope
 }
 
 // The relation an added household member has TO the submitter. A small, friendly
@@ -76,6 +83,10 @@ export function IntakeForm() {
     queryKey: ['guest-window', preview ?? 'self', 'intake'],
     queryFn: () => api<GreetingData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
   })
+
+  // Which sections to show — chosen by the operator at link creation; default to all
+  // while the greeting loads (or for an operator preview without a scoped token).
+  const scope: IntakeScope = data?.scope ?? decodeIntakeScope(null)
 
   const [self, setSelf] = useState<ContactCoreValue>(EMPTY_CONTACT_CORE)
   const [notes, setNotes] = useState('')
@@ -159,7 +170,14 @@ export function IntakeForm() {
         <section className="intake__sec">
           <h3 className="intake__h">{t.intake.yourInfo}</h3>
           <div className="cf">
-            <ContactFields value={self} onChange={(p) => setSelf((s) => ({ ...s, ...p }))} autoFocus />
+            <ContactFields
+              value={self}
+              onChange={(p) => setSelf((s) => ({ ...s, ...p }))}
+              autoFocus
+              showBirthday={scope.bday}
+              showContact={scope.contact}
+              showAddress={scope.addr}
+            />
             <label className="cf__field">
               <span className="cf__label">{t.intake.notesLabel}</span>
               <textarea
@@ -173,7 +191,9 @@ export function IntakeForm() {
           </div>
         </section>
 
-        {/* 2 — optional household. Each person + one relation to YOU. */}
+        {/* 2 — optional household. Each person + one relation to YOU. Shown only when
+            the operator's link asked for it. */}
+        {scope.household && (
         <section className="intake__sec">
           <h3 className="intake__h">{t.intake.householdTitle}</h3>
           <p className="intake__hint mono">{t.intake.householdHint}</p>
@@ -189,6 +209,7 @@ export function IntakeForm() {
               <ContactFields
                 value={p.core}
                 onChange={(patch) => patchPerson(p.id, patch)}
+                showBirthday={scope.bday}
                 showContact={false}
                 showAddress={false}
               />
@@ -209,6 +230,7 @@ export function IntakeForm() {
             <InlineIcon name="plus-bold" /> {t.intake.addPerson}
           </button>
         </section>
+        )}
 
         {err && <StatusMessage tone="error">{err}</StatusMessage>}
 

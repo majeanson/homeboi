@@ -15,7 +15,7 @@ import { newId, nowSec } from '../../_lib/ids'
 // TTLs short for that reason. (See functions/_lib/auth.ts issueGuestToken.)
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ ttlSeconds?: number; kind?: string; targetKey?: string }>(ctx.request)
+  const body = await readJson<{ ttlSeconds?: number; kind?: string; targetKey?: string; fields?: number }>(ctx.request)
 
   // Validate the kind explicitly: an unknown string is a client bug, not a silent
   // downgrade to showcase (which would over-share). Absent kind defaults to showcase.
@@ -31,8 +31,15 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const targetKey =
     kind === 'intake' && typeof body?.targetKey === 'string' && body.targetKey ? body.targetKey : null
 
+  // Field scope: which optional sections the intake form asks for. Clamp to the
+  // valid 4-bit range; anything out of range (or non-intake) → null = ask everything.
+  const fields =
+    kind === 'intake' && typeof body?.fields === 'number' && body.fields >= 0 && body.fields <= 15
+      ? Math.floor(body.fields)
+      : null
+
   const guestId = newId()
-  const guestToken = await issueGuestToken(ctx.env, guestId, actor.householdId, ttlSeconds, kind, targetKey)
+  const guestToken = await issueGuestToken(ctx.env, guestId, actor.householdId, ttlSeconds, kind, targetKey, fields)
   const expiresAt = nowSec() + ttlSeconds
 
   return ok({ guestToken, guestId, kind, ttlSeconds, expiresAt, targetKey })

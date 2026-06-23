@@ -1,6 +1,23 @@
 import { describe, it, expect } from 'vitest'
-import { matchIntakePerson, type IntakePersonInput } from './intake'
+import { matchIntakePerson, decodeIntakeScope, encodeIntakeScope, INTAKE_FIELDS_ALL, type IntakePersonInput } from './intake'
 import type { Contact, Member } from './cercle'
+
+describe('intake field scope', () => {
+  it('absent bitmask means ask everything', () => {
+    expect(decodeIntakeScope(null)).toEqual({ bday: true, contact: true, addr: true, household: true })
+    expect(decodeIntakeScope(undefined)).toEqual({ bday: true, contact: true, addr: true, household: true })
+    expect(INTAKE_FIELDS_ALL).toBe(15)
+  })
+
+  it('round-trips through encode → decode', () => {
+    const scope = { bday: true, contact: false, addr: false, household: true }
+    expect(decodeIntakeScope(encodeIntakeScope(scope))).toEqual(scope)
+  })
+
+  it('encodes a known combination', () => {
+    expect(encodeIntakeScope({ bday: true, contact: true, addr: false, household: false })).toBe(3)
+  })
+})
 
 // Dedupe matcher: an incoming intake card should fold into an existing person when
 // it clearly IS them (email / phone / name), so an open link never duplicates.

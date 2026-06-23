@@ -3,6 +3,7 @@ import { authed } from '../../_lib/route'
 import { localDayStart, addLocalDays } from '../../_lib/ids'
 import { parseRecur, expandRange } from '../../_lib/recur'
 import { householdShareInfo } from '../../_lib/shareModes'
+import { decodeIntakeScope } from '../../_lib/intake'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../../_lib/birthdays'
 import type { GuestKind } from '../../_lib/auth'
 import type { Env } from '../../_lib/env'
@@ -46,11 +47,14 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   // ---- intake: the family-info form greeting --------------------------------
   // Deliberately minimal — only the addressed person's first name (for "Bonjour
-  // Marie, complète ta fiche"). NO stored private fields are returned, so the form
-  // starts blank and the link can't be used to read the household.
+  // Marie, complète ta fiche") plus the field scope the operator chose. NO stored
+  // private fields are returned, so the form starts blank and the link can't be
+  // used to read the household.
   if (kind === 'intake') {
     const targetKey = actor.scope === 'guest' ? (actor.guestTargetKey ?? null) : url.searchParams.get('target')
-    return ok(await intakeGreeting(ctx.env, actor.householdId, targetKey))
+    // Operator preview has no token scope → show everything; a real guest carries it.
+    const fields = actor.scope === 'guest' ? (actor.guestFields ?? null) : null
+    return ok(await intakeGreeting(ctx.env, actor.householdId, targetKey, fields))
   }
 
   if (!kind || !CURATED.includes(kind)) {
@@ -169,7 +173,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 // name and — for a per-person link — the addressed person's first name, so the form
 // can say "Bonjour Marie". No birthday/phone/notes/etc. are returned: the link is a
 // write surface, not a read one, and pre-filling stored data would leak the cercle.
-async function intakeGreeting(env: Env, hh: string, targetKey: string | null) {
+async function intakeGreeting(env: Env, hh: string, targetKey: string | null, fields: number | null) {
   const nameRow = await env.DB.prepare('SELECT name FROM households WHERE id = ?')
     .bind(hh)
     .first<{ name: string }>()
@@ -190,7 +194,7 @@ async function intakeGreeting(env: Env, hh: string, targetKey: string | null) {
       targetName = r?.first_name ?? null
     }
   }
-  return { kind: 'intake' as const, householdName: nameRow?.name ?? '', targetName }
+  return { kind: 'intake' as const, householdName: nameRow?.name ?? '', targetName, scope: decodeIntakeScope(fields) }
 }
 
 // The grandparents' window (#36): the grandkids' upcoming dates, the family's

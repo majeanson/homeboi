@@ -24,14 +24,14 @@ describe('guest token kind round-trip', () => {
     for (const kind of ['showcase', 'sitter', 'welcome', 'family', 'intake'] as const) {
       const token = await issueGuestToken(env, 'g1', 'hh1', 3600, kind)
       const v = await verifyGuestToken(env, token)
-      expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind, targetKey: null })
+      expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind, targetKey: null, fields: null })
     }
   })
 
-  it('binds an intake target person into the token', async () => {
-    const token = await issueGuestToken(env, 'g1', 'hh1', 3600, 'intake', 'member:m9')
+  it('binds an intake target person + field scope into the token', async () => {
+    const token = await issueGuestToken(env, 'g1', 'hh1', 3600, 'intake', 'member:m9', 3)
     const v = await verifyGuestToken(env, token)
-    expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind: 'intake', targetKey: 'member:m9' })
+    expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind: 'intake', targetKey: 'member:m9', fields: 3 })
   })
 
   it('treats a legacy token with no kind as showcase', async () => {

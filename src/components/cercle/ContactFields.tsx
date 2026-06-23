@@ -42,12 +42,14 @@ export function ContactFields({
   value,
   onChange,
   autoFocus,
+  showBirthday = true,
   showContact = true,
   showAddress = true,
 }: {
   value: ContactCoreValue
   onChange: (patch: Partial<ContactCoreValue>) => void
   autoFocus?: boolean
+  showBirthday?: boolean
   showContact?: boolean
   showAddress?: boolean
 }) {
@@ -72,12 +74,14 @@ export function ContactFields({
           <span className="cf__label">{t.cercle.nickname}</span>
           <input className="cf__input" value={value.nickname} onChange={(e) => onChange({ nickname: e.target.value })} />
         </label>
-        <div className="cf__field cf__field--bday">
-          <span className="cf__label">
-            <Icon name="cake-bold" size={14} /> {t.cercle.birthday}
-          </span>
-          <BirthdayPicker value={value.birthday || null} onChange={(v) => onChange({ birthday: v ?? '' })} />
-        </div>
+        {showBirthday && (
+          <div className="cf__field cf__field--bday">
+            <span className="cf__label">
+              <Icon name="cake-bold" size={14} /> {t.cercle.birthday}
+            </span>
+            <BirthdayPicker value={value.birthday || null} onChange={(v) => onChange({ birthday: v ?? '' })} />
+          </div>
+        )}
         <div className="cf__field cf__gender">
           <span className="cf__label">{t.cercle.gender}</span>
           <div className="cf__gender-chips">

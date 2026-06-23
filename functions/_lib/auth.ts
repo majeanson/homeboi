@@ -228,14 +228,18 @@ export async function issueGuestToken(
   // this form link is pre-addressed to, signed in so it can't be tampered. Absent
   // ⇒ an open "add yourself" link.
   targetKey?: string | null,
+  // Only meaningful for 'intake': a bitmask of which optional sections the form asks
+  // for (see _lib/intake.ts decodeIntakeScope). Absent ⇒ ask everything.
+  fields?: number | null,
 ): Promise<string> {
-  const payload: { g: string; h: string; k: GuestKind; x: number; p?: string } = {
+  const payload: { g: string; h: string; k: GuestKind; x: number; p?: string; f?: number } = {
     g: guestId,
     h: householdId,
     k: kind,
     x: nowSec() + ttlSeconds,
   }
   if (targetKey) payload.p = targetKey
+  if (typeof fields === 'number') payload.f = fields
   return signToken(env, payload)
 }
 
@@ -247,14 +251,15 @@ export async function issueGuestToken(
 export async function verifyGuestToken(
   env: Env,
   token: string | null,
-): Promise<{ guestId: string; householdId: string; kind: GuestKind; targetKey: string | null } | null> {
-  const payload = await verifyToken<{ g?: string; h: string; k?: string; p?: string }>(env, token)
+): Promise<{ guestId: string; householdId: string; kind: GuestKind; targetKey: string | null; fields: number | null } | null> {
+  const payload = await verifyToken<{ g?: string; h: string; k?: string; p?: string; f?: number }>(env, token)
   return payload && typeof payload.g === 'string'
     ? {
         guestId: payload.g,
         householdId: payload.h,
         kind: normalizeGuestKind(payload.k),
         targetKey: typeof payload.p === 'string' ? payload.p : null,
+        fields: typeof payload.f === 'number' ? payload.f : null,
       }
     : null
 }
@@ -262,7 +267,7 @@ export async function verifyGuestToken(
 export async function currentGuest(
   env: Env,
   request: Request,
-): Promise<{ guestId: string; householdId: string; kind: GuestKind; targetKey: string | null } | null> {
+): Promise<{ guestId: string; householdId: string; kind: GuestKind; targetKey: string | null; fields: number | null } | null> {
   // Same header as the device token (see verifyGuestToken for how the two are
   // told apart). HMAC-only, no DB read — cheap enough to run on the dispatch path.
   return verifyGuestToken(env, request.headers.get(DEVICE_HEADER))

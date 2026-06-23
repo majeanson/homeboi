@@ -39,6 +39,31 @@ export interface IntakeSubmission {
   links: IntakeLinkInput[]
 }
 
+// ---- Field scope: which sections the form asks for ---------------------------
+// Bound into the link token (tamper-proof) so the operator controls what a relative
+// is even asked for — name is always required; these are the optional sections. A
+// compact bitmask rides the token; absent ⇒ ask everything (back-compat + default).
+// Twin of functions/_lib/intake.ts (kept in step by hand, like the rest of the file).
+export interface IntakeScope {
+  bday: boolean
+  contact: boolean // phone + email
+  addr: boolean
+  household: boolean // spouse/kids + relationships
+}
+const BDAY = 1
+const CONTACT = 2
+const ADDR = 4
+const HOUSEHOLD = 8
+export const INTAKE_FIELDS_ALL = BDAY | CONTACT | ADDR | HOUSEHOLD // 15
+
+export function decodeIntakeScope(f: number | null | undefined): IntakeScope {
+  const m = f == null ? INTAKE_FIELDS_ALL : f
+  return { bday: !!(m & BDAY), contact: !!(m & CONTACT), addr: !!(m & ADDR), household: !!(m & HOUSEHOLD) }
+}
+export function encodeIntakeScope(s: IntakeScope): number {
+  return (s.bday ? BDAY : 0) | (s.contact ? CONTACT : 0) | (s.addr ? ADDR : 0) | (s.household ? HOUSEHOLD : 0)
+}
+
 // What GET /api/intake returns per pending submission (payload inlined + envelope).
 export interface PendingIntake extends IntakeSubmission {
   id: string

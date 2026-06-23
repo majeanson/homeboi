@@ -28,6 +28,9 @@ export interface Actor {
   // `contact:<id>`) the form link is pre-addressed to, signed into the token.
   // null ⇒ an open "add yourself" link.
   guestTargetKey?: string | null
+  // Only meaningful for an 'intake' guest: bitmask of which optional form sections
+  // to ask for (see _lib/intake.ts). null ⇒ ask everything.
+  guestFields?: number | null
 }
 
 // Exported so the realtime WS upgrade (worker/index.ts → /api/live) can resolve
@@ -78,6 +81,7 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
         guestId: guest.guestId,
         guestKind: guest.kind,
         guestTargetKey: guest.targetKey,
+        guestFields: guest.fields,
       }
   }
 
