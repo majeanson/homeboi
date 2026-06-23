@@ -380,8 +380,9 @@ test.describe('settings forms', () => {
   })
 
   test('generate the weekly recap', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Bilan de la semaine' }).click()
-    await expectApi(page, 'GET', 'recap', () => page.locator('.operator__panel button').click())
+    // The AI recap now lives at the bottom of the "Cette semaine" ritual tab.
+    await page.getByRole('tab', { name: 'Cette semaine' }).click()
+    await expectApi(page, 'GET', 'recap', () => page.getByRole('button', { name: 'Générer le bilan' }).click())
     await expect(page.locator('.operator__panel')).toContainText('Belle semaine')
   })
 })

@@ -48,6 +48,9 @@ const repoRoot = join(here, '..', '..', '..')
 const ledgerSrc = [
   join(repoRoot, 'functions', 'api', 'chores-ledger.ts'),
   join(repoRoot, 'src', 'components', 'ChoreLedger.tsx'),
+  // "Cette semaine ensemble" widens the same faces-not-counts pattern household-wide.
+  join(repoRoot, 'functions', 'api', 'this-week.ts'),
+  join(repoRoot, 'src', 'components', 'operator', 'ThisWeekTogetherSection.tsx'),
 ]
   .map((f) => readFileSync(f, 'utf8'))
   .join('\n')

@@ -2883,15 +2883,26 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-recap',
     icon: 'pencil-simple-bold',
     group: 'settings',
-    tab: 'recap',
-    title: { fr: 'Récapitulatif', en: 'Recap' },
+    tab: 'week',
+    title: { fr: 'Cette semaine ensemble', en: 'This week together' },
     what: {
-      fr: 'Un petit bilan calme de la semaine, écrit par l’IA — sur demande seulement. Un bouton, jamais un fil sans fin.',
-      en: 'A small, calm weekly reflection, written by AI — on demand only. A button, never an endless feed.',
+      fr: 'Un coup d’œil calme sur la semaine : ce qui s’en vient (repas, qui travaille, anniversaires, projets) et ce qu’on a fait ensemble (corvées, routines, projets) — par visages, jamais par pointage. Un petit bilan IA s’ajoute au bas, sur demande.',
+      en: 'A calm look at the week: what’s coming (meals, who works, birthdays, projects) and what we did together (chores, routines, projects) — by faces, never a score. A small AI recap sits at the bottom, on demand.',
     },
     points: [
       {
-        label: { fr: 'Sur demande', en: 'On demand' },
+        label: { fr: 'Des visages, pas des pointages', en: 'Faces, not scores' },
+        detail: {
+          fr: 'On voit QUI a donné un coup de main, jamais un classement ni un décompte.',
+          en: 'You see WHO pitched in, never a ranking or a count.',
+        },
+        why: {
+          fr: 'Observer ce qu’on a fait ensemble, sans en faire une compétition (NFR-CALM).',
+          en: 'See what we did together, without turning it into a competition (NFR-CALM).',
+        },
+      },
+      {
+        label: { fr: 'Bilan IA sur demande', en: 'AI recap on demand' },
         detail: {
           fr: 'Touche le bouton quand ça te tente.',
           en: 'Tap the button when you feel like it.',

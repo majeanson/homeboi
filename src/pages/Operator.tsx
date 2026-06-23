@@ -17,6 +17,7 @@ import { EventsSection } from '../components/operator/agenda'
 import { RoutinesSection } from '../components/operator/chores'
 import { ChoresTabPanel } from '../components/operator/homeProjects'
 import { PhotosSection, RecapSection } from '../components/operator/media'
+import { ThisWeekTogetherSection } from '../components/operator/ThisWeekTogetherSection'
 import { RecipeTagsSection } from '../components/operator/recipesTags'
 import { RecipePillsSection } from '../components/operator/recipePills'
 import { MealSlotsSection } from '../components/operator/meals'
@@ -59,7 +60,7 @@ const SECTIONS = [
   { id: 'devices', key: 'devices' as const },
   { id: 'guest', key: 'guestTab' as const },
   { id: 'photos', key: 'photos' as const },
-  { id: 'recap', key: 'recapTitle' as const },
+  { id: 'week', key: 'thisWeekTab' as const },
   { id: 'display', key: 'display' as const },
   { id: 'calm', key: 'calmTitle' as const },
   { id: 'ai', key: 'aiTab' as const },
@@ -286,7 +287,14 @@ export function Operator() {
         )}
         {tab === 'guest' && <GuestSection help={operatorHelp} />}
         {tab === 'photos' && <PhotosSection help={operatorHelp} />}
-        {tab === 'recap' && <RecapSection help={operatorHelp} />}
+        {/* "Cette semaine ensemble" — the weekly ritual; the AI 2-liner recap folds
+            in below it so the reflection lives in one place. */}
+        {tab === 'week' && (
+          <>
+            <ThisWeekTogetherSection help={operatorHelp} />
+            <RecapSection help={operatorHelp} />
+          </>
+        )}
         {tab === 'display' && (
           <>
             <DisplaySection help={operatorHelp} />

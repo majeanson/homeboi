@@ -1522,6 +1522,77 @@
   font-size: 0.86rem;
   color: var(--ink-soft);
 }
+
+/* "Cette semaine ensemble" — the weekly ritual surface. Two calm columns (ahead /
+   behind) that stack on a phone; reuses .ledger__helper(s)/.ledger__name for faces. */
+.tweek {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+@media (min-width: 720px) {
+  .tweek {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.tweek__col-h {
+  font-size: 1.05rem;
+  margin: 0 0 0.75rem;
+}
+.tweek__group {
+  margin-bottom: 1rem;
+}
+.tweek__h {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin: 0 0 0.4rem;
+}
+.tweek__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.25rem 0;
+  min-width: 0;
+}
+.tweek__row--faces {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.tweek__when {
+  flex: none;
+  width: 4.2rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  text-transform: capitalize;
+}
+.tweek__what {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tweek__what--face {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.tweek__sub {
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+}
+.tweek__chore {
+  font-weight: 600;
+  margin-right: 0.3rem;
+}
+.tweek__spine {
+  display: inline-block;
+  width: 4px;
+  align-self: stretch;
+  min-height: 1.2em;
+  border-radius: 2px;
+  flex: none;
+}
 /* Destructive row actions (Supprimer / Retirer / Révoquer) recede: a quiet
    borderless label, not a second bordered button competing with the constructive
    one beside it. Terracotta (the warn ink) only surfaces on hover/focus — the

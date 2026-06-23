@@ -70,6 +70,7 @@ import * as car from '../functions/api/car'
 import * as schedule from '../functions/api/schedule'
 import * as carDay from '../functions/api/car-day'
 import * as suggestMeal from '../functions/api/suggest-meal'
+import * as thisWeek from '../functions/api/this-week'
 import * as todos from '../functions/api/todos'
 import * as todoTemplates from '../functions/api/todo-templates'
 import * as transcribe from '../functions/api/transcribe'
@@ -164,6 +165,7 @@ const TABLE: Record<string, RouteMod> = {
   schedule,
   'car-day': carDay,
   'suggest-meal': suggestMeal,
+  'this-week': thisWeek,
   todos,
   'todo-templates': todoTemplates,
   transcribe,
