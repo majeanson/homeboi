@@ -464,6 +464,7 @@ export function FamilyBuilder({
                   {humanRoster.map((k) => byKey.get(k)).map((p) => p && <option key={p.key} value={p.key}>{p.name}</option>)}
                 </select>
               </label>
+              {!anchor && <p className="cercle-fam__hint mono">{t.cercle.familyAnchorHint}</p>}
               {anchor &&
                 humanRoster
                   .filter((k) => k !== anchor)
