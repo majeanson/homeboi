@@ -3,19 +3,21 @@ import { matchIntakePerson, decodeIntakeScope, encodeIntakeScope, INTAKE_FIELDS_
 import type { Contact, Member } from './cercle'
 
 describe('intake field scope', () => {
+  const ALL = { bday: true, contact: true, addr: true, household: true, pets: true, photo: true }
   it('absent bitmask means ask everything', () => {
-    expect(decodeIntakeScope(null)).toEqual({ bday: true, contact: true, addr: true, household: true })
-    expect(decodeIntakeScope(undefined)).toEqual({ bday: true, contact: true, addr: true, household: true })
-    expect(INTAKE_FIELDS_ALL).toBe(15)
+    expect(decodeIntakeScope(null)).toEqual(ALL)
+    expect(decodeIntakeScope(undefined)).toEqual(ALL)
+    expect(INTAKE_FIELDS_ALL).toBe(63)
   })
 
   it('round-trips through encode → decode', () => {
-    const scope = { bday: true, contact: false, addr: false, household: true }
+    const scope = { bday: true, contact: false, addr: false, household: true, pets: true, photo: false }
     expect(decodeIntakeScope(encodeIntakeScope(scope))).toEqual(scope)
   })
 
   it('encodes a known combination', () => {
-    expect(encodeIntakeScope({ bday: true, contact: true, addr: false, household: false })).toBe(3)
+    // bday(1) + contact(2) + pets(16) = 19
+    expect(encodeIntakeScope({ bday: true, contact: true, addr: false, household: false, pets: true, photo: false })).toBe(19)
   })
 })
 
@@ -32,6 +34,7 @@ const person = (p: Partial<IntakePersonInput>): IntakePersonInput => ({
   phone: '',
   address: null,
   notes: '',
+  photoKey: null,
   ...p,
 })
 

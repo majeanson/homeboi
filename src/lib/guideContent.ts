@@ -1432,12 +1432,41 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: '« Fiche famille » — remplie et renvoyée', en: '“Family details” — filled and sent back' },
         detail: {
-          fr: 'Au lieu de tout saisir toi-même, envoie un lien « Fiche famille ». Le proche remplit ses coordonnées (et, s’il veut, sa maisonnée + qui est qui), puis envoie. Tu choisis « Pour une personne » (le lien met à jour SA fiche) ou un « lien ouvert » que toute la famille peut remplir. Rien n’entre dans Le cercle tout de suite : la fiche t’attend dans Réglages ▸ Partage (« Fiches reçues ») — tu révises, tu coches qui ajouter, puis « Compléter les familles » déduit le reste (frères, beaux-parents…).',
-          en: 'Instead of typing it all yourself, send a “Family details” link. The relative fills in their info (and, if they like, their household + who’s who), then sends. You pick “For one person” (the link updates THEIR card) or an “open link” the whole family can fill. Nothing enters Le cercle right away: the form waits in Settings ▸ Sharing (“Forms received”) — you review, tick who to add, then “Complete families” infers the rest (siblings, in-laws…).',
+          fr: 'Au lieu de tout saisir toi-même, envoie un lien « Fiche famille ». Le proche remplit ses coordonnées (et, s’il veut, sa maisonnée, ses animaux, et une photo), puis envoie. Tu choisis « Pour une personne » (le lien met à jour SA fiche) ou un « lien ouvert » que toute la famille peut remplir. Rien n’entre dans Le cercle tout de suite : la fiche t’attend dans Réglages ▸ Partage (« Fiches reçues ») — tu révises, tu coches qui ajouter, puis « Compléter les familles » déduit le reste (frères, beaux-parents…).',
+          en: 'Instead of typing it all yourself, send a “Family details” link. The relative fills in their info (and, if they like, their household, their pets, and a photo), then sends. You pick “For one person” (the link updates THEIR card) or an “open link” the whole family can fill. Nothing enters Le cercle right away: the form waits in Settings ▸ Sharing (“Forms received”) — you review, tick who to add, then “Complete families” infers the rest (siblings, in-laws…).',
         },
         why: {
           fr: 'Ce sont eux qui connaissent leur anniversaire et leur numéro — laisse-les l’écrire, garde le contrôle de ce qui entre.',
           en: 'They’re the ones who know their birthday and number — let them write it, keep control of what lands.',
+        },
+      },
+      {
+        label: { fr: 'Tu choisis quoi demander', en: 'You choose what to ask for' },
+        detail: {
+          fr: 'À la création du lien, coche ce que le formulaire demande : anniversaire, téléphone/courriel, adresse, sa maisonnée, ses animaux, une photo. Le prénom est toujours demandé; le reste est optionnel — un formulaire court se remplit plus souvent.',
+          en: 'When you create the link, tick what the form asks for: birthday, phone/email, address, their household, their pets, a photo. The first name is always asked; the rest is optional — a short form gets filled more often.',
+        },
+        why: {
+          fr: 'Demande seulement ce dont tu as besoin — moins d’effort pour eux, moins de tri pour toi.',
+          en: 'Ask only for what you need — less effort for them, less sorting for you.',
+        },
+      },
+      {
+        label: { fr: 'Photos et animaux', en: 'Photos and pets' },
+        detail: {
+          fr: 'Une photo envoyée attend dans une zone temporaire jusqu’à ce que tu l’ajoutes — elle se pose alors sur la bonne fiche; si tu ignores la fiche, la photo est effacée. Les animaux deviennent des fiches d’animal reliées à leur propriétaire.',
+          en: 'A sent photo waits in a temporary holding area until you add it — then it lands on the right card; if you dismiss the form, the photo is deleted. Pets become pet cards linked to their owner.',
+        },
+        why: {
+          fr: 'Rien ne traîne dans le stockage : une photo non utilisée est nettoyée toute seule.',
+          en: 'Nothing lingers in storage: an unused photo is cleaned up on its own.',
+        },
+      },
+      {
+        label: { fr: 'Pas de doublons', en: 'No duplicates' },
+        detail: {
+          fr: 'Si la personne existe déjà (même courriel, téléphone ou nom), la révision propose de FUSIONNER au lieu de créer un doublon — et ne remplace jamais une info que tu as déjà par un champ vide. Tu peux toujours forcer « Créer une nouvelle fiche ».',
+          en: 'If the person already exists (same email, phone or name), the review offers to MERGE instead of creating a duplicate — and never overwrites info you already have with a blank field. You can always force “Create a new card”.',
         },
       },
       {

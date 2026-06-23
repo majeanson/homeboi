@@ -107,7 +107,14 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   const [targetText, setTargetText] = useState('')
   // For an 'intake' link: which optional sections the form asks for (name is always
   // required). All on by default — the operator unchecks what they don't want.
-  const [scope, setScope] = useState<IntakeScope>({ bday: true, contact: true, addr: true, household: true })
+  const [scope, setScope] = useState<IntakeScope>({
+    bday: true,
+    contact: true,
+    addr: true,
+    household: true,
+    pets: true,
+    photo: true,
+  })
 
   // People to choose a per-person intake link's recipient from — loaded only when
   // the intake kind is picked. unifyCircle gives one node per person (member +
@@ -242,6 +249,12 @@ export function GuestSection({ help }: { help?: HelpMode }) {
               </Chip>
               <Chip selected={scope.household} onClick={() => setScope((s) => ({ ...s, household: !s.household }))}>
                 {t.guest.intakeFieldHousehold}
+              </Chip>
+              <Chip selected={scope.pets} onClick={() => setScope((s) => ({ ...s, pets: !s.pets }))}>
+                {t.guest.intakeFieldPets}
+              </Chip>
+              <Chip selected={scope.photo} onClick={() => setScope((s) => ({ ...s, photo: !s.photo }))}>
+                {t.guest.intakeFieldPhoto}
               </Chip>
             </div>
           </div>

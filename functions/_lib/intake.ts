@@ -35,6 +35,7 @@ export interface IntakePersonInput {
   phone: string
   address: IntakeAddress | null
   notes: string
+  photoKey: string | null // a staged R2 key (guest/intake-media); resolved on merge
 }
 
 export interface IntakeLinkInput {
@@ -44,10 +45,18 @@ export interface IntakeLinkInput {
   type: string
 }
 
+export interface IntakePetInput {
+  name: string
+  species: string
+  photoKey: string | null
+  ownerIndex: number // index into [self, ...household] of the owner (self = 0)
+}
+
 export interface IntakeSubmission {
   self: IntakePersonInput
   household: IntakePersonInput[]
   links: IntakeLinkInput[]
+  pets: IntakePetInput[]
 }
 
 // Which optional sections the form asks for (name is always required). A compact
@@ -58,22 +67,39 @@ export interface IntakeScope {
   contact: boolean
   addr: boolean
   household: boolean
+  pets: boolean
+  photo: boolean
 }
-export const INTAKE_FIELDS_ALL = 1 | 2 | 4 | 8 // 15
+export const INTAKE_FIELDS_ALL = 1 | 2 | 4 | 8 | 16 | 32 // 63
 
 export function decodeIntakeScope(f: number | null | undefined): IntakeScope {
   const m = f == null ? INTAKE_FIELDS_ALL : f
-  return { bday: !!(m & 1), contact: !!(m & 2), addr: !!(m & 4), household: !!(m & 8) }
+  return {
+    bday: !!(m & 1),
+    contact: !!(m & 2),
+    addr: !!(m & 4),
+    household: !!(m & 8),
+    pets: !!(m & 16),
+    photo: !!(m & 32),
+  }
 }
 
 // Generous-but-bounded caps. Names short, notes a paragraph; a household of a dozen
 // and a few dozen ties is plenty. Bounding counts + field lengths bounds total size.
 const MAX_HOUSEHOLD = 12
+const MAX_PETS = 12
+const CAP = { name: 80, email: 200, phone: 60, addr: 120, notes: 1000, species: 60 }
 const MAX_LINKS = 60
-const CAP = { name: 80, email: 200, phone: 60, addr: 120, notes: 1000 }
 
 function str(v: unknown, max: number): string {
   return typeof v === 'string' ? v.trim().slice(0, max) : ''
+}
+
+// A staged R2 media key we minted (guest/intake-media → prefix `ik_`). Validate the
+// shape so a client can't smuggle an arbitrary R2 path or a giant string; anything
+// else → null (no photo). Keys are `<prefix>_<id>` (opaque, safe chars only).
+function mediaKey(v: unknown): string | null {
+  return typeof v === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(v) ? v : null
 }
 
 function birthday(v: unknown): string | null {
@@ -114,11 +140,23 @@ function person(v: unknown): IntakePersonInput | null {
     phone: str(p.phone, CAP.phone),
     address: address(p.address),
     notes: str(p.notes, CAP.notes),
+    photoKey: mediaKey(p.photoKey),
   }
 }
 
+function pet(v: unknown, count: number): IntakePetInput | null {
+  if (typeof v !== 'object' || v === null) return null
+  const p = v as Record<string, unknown>
+  const name = str(p.name, CAP.name)
+  if (!name) return null
+  let ownerIndex = Number(p.ownerIndex)
+  // Default/clamp the owner to self when out of range, so a pet never dangles.
+  if (!Number.isInteger(ownerIndex) || ownerIndex < 0 || ownerIndex >= count) ownerIndex = 0
+  return { name, species: str(p.species, CAP.species), photoKey: mediaKey(p.photoKey), ownerIndex }
+}
+
 // Returns a clean IntakeSubmission, or null if the payload is unusable (no named
-// self). Drops malformed household entries + out-of-range / unknown-type links
+// self). Drops malformed household/pet entries + out-of-range / unknown-type links
 // rather than failing the whole submission.
 export function sanitizeIntake(raw: unknown): IntakeSubmission | null {
   if (typeof raw !== 'object' || raw === null) return null
@@ -148,5 +186,20 @@ export function sanitizeIntake(raw: unknown): IntakeSubmission | null {
     })
     .filter((l): l is IntakeLinkInput => l !== null)
 
-  return { self, household, links }
+  const pets = (Array.isArray(r.pets) ? r.pets : [])
+    .slice(0, MAX_PETS)
+    .map((p) => pet(p, count))
+    .filter((p): p is IntakePetInput => p !== null)
+
+  return { self, household, links, pets }
+}
+
+// All staged R2 media keys a submission references (self + household + pets). Used
+// to free the blobs on dismiss and to spare them from the orphan sweep while pending.
+export function intakeMediaKeys(s: IntakeSubmission): string[] {
+  const keys: string[] = []
+  if (s.self.photoKey) keys.push(s.self.photoKey)
+  for (const p of s.household) if (p.photoKey) keys.push(p.photoKey)
+  for (const p of s.pets) if (p.photoKey) keys.push(p.photoKey)
+  return keys
 }

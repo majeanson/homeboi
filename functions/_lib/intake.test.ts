@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeIntake } from './intake'
+import { sanitizeIntake, intakeMediaKeys } from './intake'
 
 // The defensive boundary for a relative's submitted form: a named self is required,
 // junk is dropped, and counts/lengths are bounded so a hostile blob can't land.
@@ -56,5 +56,34 @@ describe('sanitizeIntake', () => {
     const household = Array.from({ length: 50 }, (_, i) => ({ firstName: `K${i}` }))
     const out = sanitizeIntake({ self: { firstName: 'A' }, household })
     expect(out!.household.length).toBeLessThanOrEqual(12)
+  })
+
+  it('accepts a valid staged photo key, rejects junk', () => {
+    expect(sanitizeIntake({ self: { firstName: 'A', photoKey: 'ik_abc123' } })!.self.photoKey).toBe('ik_abc123')
+    // path traversal / spaces / over-length → null (no photo)
+    expect(sanitizeIntake({ self: { firstName: 'A', photoKey: '../secret' } })!.self.photoKey).toBeNull()
+    expect(sanitizeIntake({ self: { firstName: 'A', photoKey: 'a'.repeat(200) } })!.self.photoKey).toBeNull()
+  })
+
+  it('keeps named pets, drops unnamed, clamps a bad owner to self', () => {
+    const out = sanitizeIntake({
+      self: { firstName: 'A' },
+      pets: [
+        { name: 'Rex', species: 'Chien', ownerIndex: 9 }, // owner out of range → 0 (self)
+        { name: '', species: 'Chat' }, // unnamed → dropped
+        { species: 'Poisson' }, // no name → dropped
+      ],
+    })
+    expect(out!.pets).toHaveLength(1)
+    expect(out!.pets[0]).toEqual({ name: 'Rex', species: 'Chien', photoKey: null, ownerIndex: 0 })
+  })
+
+  it('collects all media keys for cleanup', () => {
+    const out = sanitizeIntake({
+      self: { firstName: 'A', photoKey: 'ik_self' },
+      household: [{ firstName: 'B', photoKey: 'ik_b' }],
+      pets: [{ name: 'Rex', photoKey: 'ik_rex' }],
+    })
+    expect(intakeMediaKeys(out!).sort()).toEqual(['ik_b', 'ik_rex', 'ik_self'])
   })
 })

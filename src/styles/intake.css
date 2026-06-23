@@ -47,6 +47,20 @@
   margin-bottom: 0.5rem;
 }
 
+/* Photo control (self / household member / pet): the round preview beside its add /
+   change / remove actions. */
+.intake__photo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.intake__photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .intake__send {
   margin-top: 1.25rem;
   display: flex;

@@ -18,6 +18,6 @@ export function guestKindAllows(kind: GuestKind, apiPath: string): boolean {
   // and NOTHING else (not board/cercle/list). The write itself is let through by a
   // matching carve-out in route.ts; together they pin intake to exactly one write.
   if (kind === 'intake')
-    return apiPath === 'guest/window' || apiPath === 'guest/intake-submit'
+    return apiPath === 'guest/window' || apiPath === 'guest/intake-submit' || apiPath === 'guest/intake-media'
   return apiPath === 'guest/window' // sitter | welcome | family: their curated endpoint
 }

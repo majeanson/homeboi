@@ -25,6 +25,9 @@ export interface IntakePersonInput {
   phone: string
   address: IntakeAddress | null
   notes: string
+  // An R2 key from a STAGED upload (functions/api/guest/intake-media.ts). null = no
+  // photo. Resolved into the contact's photoKey on merge; deleted on dismiss.
+  photoKey: string | null
 }
 
 export interface IntakeLinkInput {
@@ -33,10 +36,19 @@ export interface IntakeLinkInput {
   type: RelationshipType
 }
 
+export interface IntakePetInput {
+  name: string
+  species: string
+  photoKey: string | null
+  // Index into [self, ...household] of the person who owns this pet (self = 0).
+  ownerIndex: number
+}
+
 export interface IntakeSubmission {
   self: IntakePersonInput
   household: IntakePersonInput[]
   links: IntakeLinkInput[]
+  pets: IntakePetInput[]
 }
 
 // ---- Field scope: which sections the form asks for ---------------------------
@@ -49,19 +61,37 @@ export interface IntakeScope {
   contact: boolean // phone + email
   addr: boolean
   household: boolean // spouse/kids + relationships
+  pets: boolean // their animals
+  photo: boolean // a photo per person/pet (needs R2)
 }
 const BDAY = 1
 const CONTACT = 2
 const ADDR = 4
 const HOUSEHOLD = 8
-export const INTAKE_FIELDS_ALL = BDAY | CONTACT | ADDR | HOUSEHOLD // 15
+const PETS = 16
+const PHOTO = 32
+export const INTAKE_FIELDS_ALL = BDAY | CONTACT | ADDR | HOUSEHOLD | PETS | PHOTO // 63
 
 export function decodeIntakeScope(f: number | null | undefined): IntakeScope {
   const m = f == null ? INTAKE_FIELDS_ALL : f
-  return { bday: !!(m & BDAY), contact: !!(m & CONTACT), addr: !!(m & ADDR), household: !!(m & HOUSEHOLD) }
+  return {
+    bday: !!(m & BDAY),
+    contact: !!(m & CONTACT),
+    addr: !!(m & ADDR),
+    household: !!(m & HOUSEHOLD),
+    pets: !!(m & PETS),
+    photo: !!(m & PHOTO),
+  }
 }
 export function encodeIntakeScope(s: IntakeScope): number {
-  return (s.bday ? BDAY : 0) | (s.contact ? CONTACT : 0) | (s.addr ? ADDR : 0) | (s.household ? HOUSEHOLD : 0)
+  return (
+    (s.bday ? BDAY : 0) |
+    (s.contact ? CONTACT : 0) |
+    (s.addr ? ADDR : 0) |
+    (s.household ? HOUSEHOLD : 0) |
+    (s.pets ? PETS : 0) |
+    (s.photo ? PHOTO : 0)
+  )
 }
 
 // What GET /api/intake returns per pending submission (payload inlined + envelope).

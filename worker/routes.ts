@@ -35,6 +35,7 @@ import * as guestStart from '../functions/api/guest/start'
 import * as guestWindow from '../functions/api/guest/window'
 import * as guestWhoami from '../functions/api/guest/whoami'
 import * as guestIntakeSubmit from '../functions/api/guest/intake-submit'
+import * as guestIntakeMedia from '../functions/api/guest/intake-media'
 import * as intake from '../functions/api/intake'
 import * as health from '../functions/api/health'
 import * as homeProjects from '../functions/api/home-projects'
@@ -129,6 +130,7 @@ const TABLE: Record<string, RouteMod> = {
   'guest/window': guestWindow,
   'guest/whoami': guestWhoami,
   'guest/intake-submit': guestIntakeSubmit,
+  'guest/intake-media': guestIntakeMedia,
   health,
   intake,
   'home-projects': homeProjects,

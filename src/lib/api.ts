@@ -72,6 +72,7 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
     method !== 'HEAD' &&
     !opts.idempotencyKey &&
     cleanPath !== 'guest/intake-submit' &&
+    cleanPath !== 'guest/intake-media' &&
     isGuest()
   ) {
     throw new ApiError(403, 'Lecture seule (mode invité).')
