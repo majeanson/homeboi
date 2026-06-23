@@ -157,8 +157,10 @@ export function CercleConstellation({ world, byKey, toddler = false }: { world: 
   }, [world, byKey, FACE, PAD, GAP, LABEL_H])
 
   // ----- narration lines ------------------------------------------------------
-  const firstNames = (keys: string[], max = 4): string[] =>
-    keys.map((k) => byKey.get(k)?.firstName).filter((n): n is string => !!n).slice(0, max)
+  // Name EVERYONE on the island — people AND pets (#pets-in-story). No cap: dropping
+  // the tail used to silently leave out whoever sorted last, often the pets.
+  const firstNames = (keys: string[]): string[] =>
+    keys.map((k) => byKey.get(k)?.firstName).filter((n): n is string => !!n)
   const islandLine = (isl: WorldIsland): string => {
     const names = firstNames(isl.memberKeys)
     return w.sayIsland(isl.name, names.join(', '))
@@ -195,8 +197,10 @@ export function CercleConstellation({ world, byKey, toddler = false }: { world: 
     return b ? bridgeLine(b) : ''
   }
 
-  // Drive the tour: speak the current step, caption it, auto-advance on a timer sized
-  // to the line length, until the sequence ends. Cleanup clears the pending advance.
+  // Drive the tour: speak the current step, caption it, and advance to the next only
+  // when the VOICE has finished this line (speak's onEnd) — not on a length-guess that
+  // cut off the last name. A generous timer is just a fallback so the tour never
+  // stalls if TTS is off / interrupted / never fires onend. Cleanup cancels it.
   const lineRef = useRef(lineForStep)
   lineRef.current = lineForStep
   useEffect(() => {
@@ -208,9 +212,17 @@ export function CercleConstellation({ world, byKey, toddler = false }: { world: 
     }
     const line = lineRef.current(sequence[tourAt])
     setCaption(line)
-    speak(line)
-    const dur = Math.min(7000, Math.max(2500, 1400 + line.length * 46))
-    const id = setTimeout(() => setTourAt((a) => (a == null ? null : a + 1)), dur)
+    let advanced = false
+    const next = () => {
+      if (advanced) return
+      advanced = true
+      setTourAt((a) => (a == null ? null : a + 1))
+    }
+    speak(line, undefined, { onEnd: next })
+    // Fallback ceiling: long enough to never clip the spoken line, but the tour still
+    // moves on if no voice is installed or onend is swallowed after a cancel().
+    const dur = Math.min(15000, Math.max(3500, 1400 + line.length * 80))
+    const id = setTimeout(next, dur)
     return () => clearTimeout(id)
   }, [tourAt, sequence, speak])
 

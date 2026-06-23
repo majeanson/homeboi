@@ -285,7 +285,7 @@ export function useSpeak() {
   // English voice (when one is installed), instead of English words in a French
   // mouth. Omitted → the UI language, the long-standing default.
   return useCallback(
-    (raw: string | undefined, langOverride?: Lang) => {
+    (raw: string | undefined, langOverride?: Lang, opts?: { onEnd?: () => void }) => {
       if (!raw || !SUPPORTED) return
       const text = spokenOnly(raw)
       if (!text) return
@@ -304,6 +304,9 @@ export function useSpeak() {
           u.lang = v?.lang ?? want
           if (v) u.voice = v // matched voice -> reads in the toggled language
           u.rate = getRate() // parent-set speaking speed (Réglages ▸ Affichage)
+          // Let a caller (e.g. the « Raconte-moi » tour) advance only once the voice
+          // has actually finished this line, instead of guessing from text length.
+          if (opts?.onEnd) u.onend = opts.onEnd
           window.speechSynthesis.cancel() // never overlap; narration is a nicety
           window.speechSynthesis.speak(u)
         } catch {

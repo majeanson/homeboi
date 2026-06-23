@@ -168,6 +168,12 @@
 .cercle-row__name {
   font-weight: 600;
   color: var(--ink);
+  /* Long names ellipsis inside the row instead of forcing the card wider (overflowed
+     on landscape tablet). Pairs with min-width:0 up the flex chain. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .cercle-row__sub {
   font-size: 0.82rem;
@@ -220,7 +226,10 @@
 @media (min-width: 720px) {
   .cercle-group {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* minmax(0, 1fr) — NOT 1fr — so a wide row can shrink below its content and let
+       the name ellipsis, instead of blowing the track past the column (overflowed on
+       landscape tablet). */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0.5rem;
   }
   .cercle-section__label {
