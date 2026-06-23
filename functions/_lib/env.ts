@@ -26,6 +26,14 @@ export interface Env {
   // single shared secret for a household-owned deployment, not a SaaS.
   LOGIN_PASSWORD?: string
 
+  // OPTIONAL NASA api.nasa.gov key for the board's "Photo du jour" daily-wonder
+  // band — it powers all three sources the band rotates through (APOD, EPIC's
+  // daily Earth photo, and the Mars rover). Unset falls back to DEMO_KEY (fine
+  // behind the handler's 6 h edge cache); set via `.dev.vars` (local) /
+  // `wrangler secret put NASA_APOD_KEY` (prod) to lift the rate limit. Each
+  // source degrades to hidden if its feed is unreachable.
+  NASA_APOD_KEY?: string
+
   // Plaintext vars from wrangler.toml.
   APP_NAME?: string
   DEFAULT_LANG?: string

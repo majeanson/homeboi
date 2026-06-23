@@ -100,10 +100,17 @@ export function TourOverlay() {
     const measure = () => {
       const el = document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`)
       if (!el) {
-        if (tries++ < 5) {
+        // The anchor can mount late: start() navigates to the tour's route, then a
+        // lazy page + its data fetch land a beat later. Retry for a few seconds.
+        // If it's STILL absent (hidden on this surface, or it never mounts), do NOT
+        // skip the step — fall back to a centred card so the user still reads it and
+        // advances on their own. Nothing auto-advances and nothing auto-closes:
+        // every step is shown to the end, Next is always a deliberate tap.
+        if (tries++ < 25) {
           timer = setTimeout(measure, 120)
         } else {
-          next() // truly absent → skip this step
+          setRect(null)
+          setPos(null)
         }
         return
       }
@@ -128,7 +135,7 @@ export function TourOverlay() {
       window.removeEventListener('scroll', onChange, true)
       window.visualViewport?.removeEventListener('resize', onChange)
     }
-  }, [live, step, next])
+  }, [live, step])
 
   if (!live || !step) return null
 

@@ -77,6 +77,7 @@ import * as todoTemplates from '../functions/api/todo-templates'
 import * as transcribe from '../functions/api/transcribe'
 import * as useSoon from '../functions/api/use-soon'
 import * as weather from '../functions/api/weather'
+import * as wonder from '../functions/api/wonder'
 import * as pairClaim from '../functions/api/pair/claim'
 import * as pairDevices from '../functions/api/pair/devices'
 import * as pairPoll from '../functions/api/pair/poll'
@@ -173,6 +174,7 @@ const TABLE: Record<string, RouteMod> = {
   transcribe,
   'use-soon': useSoon,
   weather,
+  wonder,
   'pair/claim': pairClaim,
   'pair/devices': pairDevices,
   'pair/poll': pairPoll,

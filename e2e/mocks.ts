@@ -343,9 +343,19 @@ const CAR = {
   ],
 }
 
-// « Avant de partir » (#17) departure checklists — DeparturePage needs at least one
-// template or it sits on its empty state. A list with a nested ref to a second list.
-// Only /board/departure reads this, so it perturbs no other (existing-tested) surface.
+// « À compléter » (#17) — the real todos list, served at /api/todos (board glance =
+// global + today). The departure screen renders these via the shared TodoSection, so
+// it populates instead of sitting on its empty state. Two standing items.
+const TODOS = {
+  todos: [
+    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: null, member_id: null, done_at: null, position: 0, section: null },
+    { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null },
+  ],
+}
+
+// Reusable checklist TEMPLATES — instantiated into real todos from the TodoSection
+// add field (Réglages ▸ À compléter authors them). A list with a nested ref to a
+// second list, to exercise composed sections.
 const TODO_TEMPLATES = {
   templates: [
     { id: 'tpl1', title: 'Avant de partir', position: 0, items: [{ kind: 'item', label: 'Vérifier les portes' }, { kind: 'item', label: 'Clés + téléphone + portefeuille' }, { kind: 'ref', refId: 'tpl2' }] },
@@ -408,6 +418,7 @@ const ROUTES: Record<string, unknown> = {
   'auth/me': AUTH_ME,
   board: BOARD,
   weather: { weather: { tempC: 21, bucket: 'clear', isDay: true }, tomorrow: { bucket: 'rain', highC: 18, lowC: 11 } },
+  wonder: { wonder: null }, // daily-wonder band hides in screenshots; set a {source,title,explanation,imgUrl} object to exercise it
   photos: { photos: [] },
   meals: MEALS,
   'meal-ideas': {
@@ -486,7 +497,9 @@ const ROUTES: Record<string, unknown> = {
   // « L'auto » read model (board glance card + /voiture week). Same body for the
   // today and ?from=&to= week reads — the path is 'car' either way.
   car: CAR,
-  // Departure checklists (#17) — /board/departure only.
+  // « À compléter » todos (#17) — board glance, day pages + the departure screen.
+  todos: TODOS,
+  // Reusable checklist templates (instantiated into real todos from the add field).
   'todo-templates': TODO_TEMPLATES,
   // The kept-drawing collection / gallery (#14). Two works so /drawings renders a
   // populated wall; the images resolve via /api/img/* (served a tiny SVG below).

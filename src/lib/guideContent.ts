@@ -48,9 +48,14 @@ export type GuideEntry = {
   // Guide can offer a direct "go there" link (/settings?tab=<tab>). Must match a
   // SECTION id in pages/Operator.tsx.
   tab?: string
-  // An optional action button the card hosts. 'replay-tour' restarts the guided
-  // tour (lib/tour.tsx) — used by the "Première fois" card.
-  action?: 'replay-tour'
+  // An optional guided tour (lib/tourContent TOURS id) this card can replay. Given
+  // → the card hosts a "replay" button that (re)starts that tour, so a tour is
+  // permanently re-doable from the Guide, not just on first run. 'essentials' on the
+  // "Première fois" card; each section card names its own section tour.
+  tour?: string
+  // When true, the card also hosts a "show the welcome checklist again" button
+  // (re-shows the Board first-run WelcomeCard). Only on the "Première fois" card.
+  resetOnboarding?: boolean
 }
 
 export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] = [
@@ -100,7 +105,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     key: 'everyday',
     icon: 'plus-bold',
     label: { fr: 'Au quotidien', en: 'Everyday' },
-    ids: ['capture', 'type-or-choose', 'favorites', 'todos', 'reminders', 'undo'],
+    ids: ['capture', 'type-or-choose', 'favorites', 'todos', 'reminders', 'moment', 'undo'],
   },
   {
     key: 'kitchen-shop',
@@ -112,7 +117,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     key: 'devices',
     icon: 'device-tablet-bold',
     label: { fr: 'Appareils & affichage', en: 'Devices & display' },
-    ids: ['surface', 'audience', 'pairing', 'screensaver', 'share', 'share-access', 'offline', 'account'],
+    ids: ['surface', 'audience', 'pairing', 'screensaver', 'apod', 'share', 'share-access', 'offline', 'account'],
   },
   {
     key: 'getting-around',
@@ -144,7 +149,8 @@ export const GUIDE: GuideEntry[] = [
     id: 'first-time',
     icon: 'sparkle-bold',
     group: 'start',
-    action: 'replay-tour',
+    tour: 'essentials',
+    resetOnboarding: true,
     title: { fr: 'Première fois', en: 'First time' },
     what: {
       fr: 'Tout Babillard en bref — ce que c’est, les six sections, comment ajouter, et la promesse « calme ».',
@@ -209,6 +215,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'board',
     icon: 'sun-bold',
     group: 'sections',
+    tour: 'board',
     title: { fr: 'Le babillard', en: 'The board' },
     what: {
       fr: 'L’écran « coup d’œil » de la maisonnée : l’heure, l’agenda du jour, le souper de ce soir, la liste et les corvées, réunis sur un même mur — pour que tout le monde voie la journée d’un regard, sans demander ni rien toucher.',
@@ -284,8 +291,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
-          fr: 'Grille (toute la semaine), « Maintenant » (la prochaine affaire), par personne (la journée d’un seul) ou le mois (la vue d’ensemble).',
-          en: 'Grid (the whole week), “Now” (the next thing), by person (one person’s day) or the month (the big picture).',
+          fr: 'Grille (toute la semaine), « Maintenant » (la prochaine affaire), par personne (la journée d’un seul), le mois (la vue d’ensemble) ou « Moments » (un moment choisi — ce soir, demain, une date, la semaine — avec sa liste « À compléter »).',
+          en: 'Grid (the whole week), “Now” (the next thing), by person (one person’s day), the month (the big picture) or “Moments” (a chosen moment — tonight, tomorrow, a date, the week — with its “To complete” list).',
         },
         why: {
           fr: 'Chaque vue répond à une question différente; choisis celle qui parle à ta famille.',
@@ -375,6 +382,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'kitchen',
     icon: 'carrot-bold',
     group: 'sections',
+    tour: 'kitchen',
     title: { fr: 'La cuisine', en: 'The kitchen' },
     what: {
       fr: 'Le garde-manger : tu planifies les repas de la semaine et tu signales ce qui achève, et la cuisine remplit ta liste d’épicerie pour toi. Elle garde aussi tes recettes et propose des idées quand tu sèches.',
@@ -517,6 +525,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'routines',
+    tour: 'routines',
     icon: 'smiley-bold',
     group: 'sections',
     title: { fr: 'Routines', en: 'Routines' },
@@ -657,6 +666,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'cercle',
+    tour: 'cercle',
     icon: 'users-three-bold',
     group: 'sections',
     title: { fr: 'Le cercle', en: 'The circle' },
@@ -815,6 +825,7 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'liste',
+    tour: 'liste',
     icon: 'sparkle-bold',
     group: 'sections',
     title: { fr: 'La liste', en: 'The list' },
@@ -1255,8 +1266,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Listes de départ', en: 'Departure lists' },
         detail: {
-          fr: 'Prépare des modèles réutilisables dans Réglages ▸ À compléter (ex. « Avant de partir », « Chez grand-papa »). D’un geste, tout le modèle s’ajoute en cochables — un départ pressé devient moins stressant. Sur le babillard, l’écran « [[card:board|Avant de partir]] » en charge une.',
-          en: 'Prep reusable templates in Settings ▸ To complete (e.g. “Before leaving”, “At grandpa’s”). One tap drops the whole list in as check-offs — a hectic departure gets less stressful. On the board, the “[[card:board|Before you go]]” screen loads one.',
+          fr: 'Prépare des modèles réutilisables dans Réglages ▸ À compléter (ex. « Avant de partir », « Chez grand-papa »). D’un geste, tout le modèle s’ajoute en cochables — un départ pressé devient moins stressant. Sur le babillard, l’écran « [[card:board|Avant de partir]] » montre ta vraie liste « À compléter » du jour (coche ici, c’est coché partout) avec la météo et le programme de la journée.',
+          en: 'Prep reusable templates in Settings ▸ To complete (e.g. “Before leaving”, “At grandpa’s”). One tap drops the whole list in as check-offs — a hectic departure gets less stressful. On the board, the “[[card:board|Before you go]]” screen shows your real “To complete” list for the day (tick it here, it’s ticked everywhere) alongside the weather and the day’s plan.',
         },
         why: { fr: 'On y pense une fois, pas chaque fois qu’on court.', en: 'You think it through once, not every time you’re rushing out.' },
       },
@@ -1359,6 +1370,43 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Une tablette partagée ne reste jamais bloquée sur une seule personne.',
           en: 'A shared tablet never stays stuck on one person.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'apod',
+    icon: 'moon-stars-bold',
+    group: 'concepts',
+    title: { fr: 'La photo du jour', en: 'The picture of the day' },
+    what: {
+      fr: 'Derrière la météo du babillard, une belle photo qui change chaque jour. Elle puise dans plusieurs sources gratuites : la photo du jour de Bing (paysages, nature), l’image du jour de Wikipédia, et la NASA (l’espace, la Terre vue d’en haut, le robot sur Mars).',
+      en: 'Behind the board’s weather, a beautiful photo that changes every day. It draws from several free sources: Bing’s photo of the day (landscapes, nature), Wikipedia’s picture of the day, and NASA (space, Earth from above, the rover on Mars).',
+    },
+    points: [
+      {
+        label: { fr: 'La météo, bien lisible', en: 'The weather, clearly readable' },
+        detail: {
+          fr: 'La photo sert de fond à la carte météo : la température reste toujours lisible par-dessus. Touche le 🔊 pour entendre ce que montre l’image — dans sa langue, pour une belle prononciation.',
+          en: 'The photo is the backdrop of the weather card: the temperature stays readable on top. Tap 🔊 to hear what the image shows — in its own language, for a clean pronunciation.',
+        },
+        why: {
+          fr: 'Un petit moment d’émerveillement chaque jour, sans rien faire.',
+          en: 'A small daily moment of wonder, with nothing to do.',
+        },
+      },
+      {
+        label: { fr: 'Une autre image', en: 'Another image' },
+        detail: {
+          fr: 'Le bouton ⟳ dans le coin change de source au hasard quand tu as envie d’autre chose.',
+          en: 'The ⟳ button in the corner switches to another source at random whenever you want something different.',
+        },
+      },
+      {
+        label: { fr: 'À couper si tu veux', en: 'Turn it off if you like' },
+        detail: {
+          fr: 'Active ou cache la bande dans Réglages ▸ [[card:display|Affichage]]. Le réglage ne touche que cet appareil.',
+          en: 'Show or hide the band in Settings ▸ [[card:display|Display]]. The setting affects this device only.',
         },
       },
     ],
@@ -1672,6 +1720,65 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Fidèle au calme de l’app — un rappel qui attire l’œil au passage, jamais qui interrompt.',
           en: 'True to the app’s calm — a reminder that catches the eye in passing, never one that interrupts.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'moment',
+    icon: 'sun-bold',
+    group: 'concepts',
+    title: { fr: '« Moments » : ta ligne du temps', en: '“Moments”: your timeline' },
+    what: {
+      fr: 'Une vue qui rassemble tout ce qui s’en vient pour un moment choisi — ce soir, demain, une date, ou la semaine — au même endroit : l’agenda, le souper, les corvées, l’auto… et la liste « À compléter » de chaque journée, à cocher sur place.',
+      en: 'One view that gathers everything coming up for a chosen moment — tonight, tomorrow, a date, or the week — in one place: the agenda, supper, chores, the car… and each day’s “To complete” list, checkable right there.',
+    },
+    points: [
+      {
+        label: { fr: 'Choisis le moment', en: 'Pick the moment' },
+        detail: {
+          fr: 'En haut, un sélecteur : « Ce soir » (le reste de la journée), « Demain », « Une date » (choisis-la au calendrier), ou « Cette semaine » (les sept prochains jours, jour par jour).',
+          en: 'At the top, a selector: “Tonight” (the rest of today), “Tomorrow”, “A date” (pick it on the calendar), or “This week” (the next seven days, day by day).',
+        },
+        why: {
+          fr: 'Le coup d’œil du soir — « c’est quoi, demain ? » — sans fouiller le babillard, le menu et l’auto un par un.',
+          en: 'The evening glance — “what does tomorrow look like?” — without digging through the board, the menu and the car one by one.',
+        },
+      },
+      {
+        label: { fr: 'Le passage de relais, en un geste', en: 'The quick handoff, in one tap' },
+        detail: {
+          fr: 'Chaque journée porte sa liste « À compléter » directement dans la vue. Le bouton « Avant de partir » dépose ta liste de départ sur CETTE journée d’un seul geste, ou ajoute une autre liste prête (« Chez grand-papa ») et coche-la sur place — parfait pour préparer demain ou briefer la gardienne.',
+          en: 'Each day carries its “To complete” list right in the view. The “Before you go” button drops your leaving checklist onto THAT day in one tap, or add another ready list (“At grandpa’s”) and tick it off in place — perfect for prepping tomorrow or briefing the sitter.',
+        },
+        why: {
+          fr: 'La vue récapitulative devient aussi l’endroit où tu prépares — voir et agir au même endroit.',
+          en: 'The recap view doubles as where you prepare — see and act in the same place.',
+        },
+      },
+      {
+        label: { fr: 'Ce soir dans le ciel', en: 'In the sky tonight' },
+        detail: {
+          fr: 'Sur « Ce soir » et « Demain », une petite ligne montre la phase de la lune de ce soir 🌙. Touche-la pour l’entendre. C’est calculé sur l’appareil — ça marche même hors ligne, sans rien à régler.',
+          en: 'On “Tonight” and “Tomorrow”, a small line shows tonight’s moon phase 🌙. Tap it to hear it. It’s computed on the device — it works offline, with nothing to set up.',
+        },
+        why: {
+          fr: 'Un petit point d’émerveillement à hauteur d’enfant, à regarder dehors le soir.',
+          en: 'A small wonder at a child’s level, to look up at outside in the evening.',
+        },
+      },
+      {
+        label: { fr: 'Pour agir en détail, ouvre la journée', en: 'To edit in detail, open the day' },
+        detail: {
+          fr: 'Le bouton « Planifier cette journée » mène à la page du jour pour ajouter ou modifier repas et rendez-vous. « Moments » reste un coup d’œil calme — il ne compte rien, ne classe personne.',
+          en: 'The “Plan this day” button opens the day page to add or edit meals and events. “Moments” stays a calm glance — it counts nothing, ranks no one.',
+        },
+      },
+      {
+        label: { fr: 'Où la trouver', en: 'Where to find it' },
+        detail: {
+          fr: 'C’est une vue du babillard : touche « Moments » dans le sélecteur de vue (Grille · Maintenant · Par personne · Mois · Moments). En prime, le soir, le babillard montre un discret « Demain en bref » qui l’ouvre directement sur demain.',
+          en: 'It’s one of the board’s views: tap “Moments” in the view switcher (Grid · Now · Per person · Month · Moments). As a bonus, in the evening the board shows a quiet “Tomorrow at a glance” that opens it straight on tomorrow.',
         },
       },
     ],

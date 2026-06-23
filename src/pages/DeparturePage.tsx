@@ -1,26 +1,36 @@
-import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
-import { TODO_TEMPLATES_KEY } from '../lib/queryKeys'
-import { type TemplatesData, expandSectioned } from '../lib/todos'
 import { type Weather, type DayOutlook, weatherIcon, weatherTint, weatherTip } from '../lib/weather'
 import { useBoardData } from '../lib/queryHooks'
 import { nameOf } from '../components/board/types'
+import { todayLocalDay, addLocalDays } from '../lib/localDay'
+import { formatDayLong } from '../lib/format'
+import { MONTH_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
-import { EmptyState } from '../components/EmptyState'
-import { Icon, InlineIcon } from '../components/Icon'
+import { TodoSection } from '../components/todos/TodoSection'
+import { Act } from '../components/board/Act'
+import { AutoCard } from '../components/board/AutoCard'
+import { DayNote } from '../components/board/DayNote'
+import { InlineIcon } from '../components/Icon'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
-// #17 — departure mode: one calm "before you go" screen that fuses a chosen to-do
-// TEMPLATE ("Avant de partir", "Chez grand-papa"), today's EVENTS, and the WEATHER
-// dressing tip. The checklist is EPHEMERAL — tick items as you grab keys/bag while
-// leaving; it resets next time and never writes a todo (so it can't pollute the
-// "À compléter" list or break the calm finite-list tenet). A navigate-only ＋
-// quick-add action on the board (NOT an on-page button). Reuses the templates,
-// board events, and weather caches — no new endpoint.
-const LAST_KEY = 'babillard-departure-template'
+// #17 — departure mode: one calm "before you go" screen for a chosen day (today by
+// default, or ?day=<local-midnight sec> when reached from a specific Moments day).
+// It fuses the REAL « À compléter » list (the shared TodoSection), that day's
+// EVENTS + CORVÉES + fridge/day NOTE (read from /api/month, the same window the
+// calendar uses), and — for today — the WEATHER dressing tip and the « L'auto »
+// glance. Navigate-only: nothing is written on entry; tick a checklist item and it
+// syncs everywhere. Reuses board data + shared components — no new endpoint.
+const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
+
+interface DepMonth {
+  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; birthday?: boolean; day: number }[]
+  chores: { id: string; title: string; color: string | null; who: string | null; day: number }[]
+  dayNotes: { id: string; text: string; member_id: string | null; day: number }[]
+}
 
 export function DeparturePage() {
   const t = useT()
@@ -28,53 +38,46 @@ export function DeparturePage() {
   const close = useSceneClose('/board')
   useEscapeKey(close)
 
-  const templates = useQuery({ queryKey: TODO_TEMPLATES_KEY, queryFn: () => api<TemplatesData>('todo-templates'), ...live }).data?.templates ?? []
+  const [params] = useSearchParams()
+  const today = todayLocalDay()
+  const dayParam = Number(params.get('day'))
+  const day = Number.isFinite(dayParam) && dayParam > 0 ? dayParam : today
+  const isToday = day === today
+  const isTomorrow = day === addLocalDays(today, 1)
+
   const board = useBoardData().data
+  const members = board?.members ?? []
   const wx = useQuery({ queryKey: ['weather'], queryFn: () => api<{ weather: Weather | null; tomorrow: DayOutlook | null }>('weather'), staleTime: 15 * 60 * 1000 }).data
   const weather = wx?.weather ?? null
-
-  // Which template to run (remember the last pick); default to the first list.
-  const [pick, setPick] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem(LAST_KEY)
-    } catch {
-      return null
-    }
-  })
-  const activeId = templates.find((tp) => tp.id === pick)?.id ?? templates[0]?.id ?? null
-  const choose = (id: string) => {
-    setPick(id)
-    setDone(new Set()) // checks are index-keyed — start the new list fresh
-    try {
-      localStorage.setItem(LAST_KEY, id)
-    } catch {
-      /* private mode — the pick still holds for this session */
-    }
-  }
-
-  // The chosen list, flattened into sectioned items (refs expand). Ephemeral checks.
-  const items = useMemo(() => (activeId ? expandSectioned(templates, activeId) : []), [templates, activeId])
-  const [done, setDone] = useState<Set<string>>(new Set())
-  const toggle = (k: string) =>
-    setDone((s) => {
-      const n = new Set(s)
-      n.has(k) ? n.delete(k) : n.add(k)
-      return n
-    })
-  const doneCount = items.filter((_, i) => done.has(String(i))).length
-
-  const events = board?.today ?? []
   const tip = weatherTip(weather)
 
-  const timeLabel = (start_at: number, all_day: number) =>
-    all_day ? t.departure.allDay : new Date(start_at * 1000).toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-CA', { hour: '2-digit', minute: '2-digit' })
+  // That day's events + corvées + fridge note, from the same /api/month window the
+  // calendar + Moments use (DST-safe, recurring expanded server-side).
+  const data = useQuery({ queryKey: [...MONTH_KEY, day, addLocalDays(day, 1)], queryFn: () => api<DepMonth>(`month?from=${day}&to=${addLocalDays(day, 1)}`), ...live }).data
+  const events = data?.events ?? []
+  // The day's recurring rotation chores (whose turn it is) + today's one-off « À
+  // faire » (those are a today glance, so only on the today screen).
+  const chores = [...(data?.chores ?? []), ...(isToday ? (board?.todos ?? []) : [])]
+  const dayNote = data?.dayNotes?.[0] ?? null
+
+  const timeLabel = (at: number, all_day: number) =>
+    all_day ? t.departure.allDay : new Date(at * 1000).toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-CA', { hour: '2-digit', minute: '2-digit' })
+
+  // Header names the day when it isn't today, so a departure reached from « Demain »
+  // reads as such.
+  const title = isToday ? t.departure.title : `${t.departure.title} · ${capitalize(formatDayLong(day, lang))}`
+
+  // Weather is a "now" glance: the live card for today, tomorrow's outlook for
+  // tomorrow, nothing further out.
+  const tomorrow = wx?.tomorrow ?? null
+  const tomorrowTip = tomorrow ? weatherTip({ bucket: tomorrow.bucket, isDay: true, tempC: tomorrow.lowC }) : null
 
   return (
-    <div className="scene departure" aria-label={t.departure.title}>
-      <SceneHead title={t.departure.title} icon="key-bold" onClose={close} />
+    <div className="scene departure" aria-label={title}>
+      <SceneHead title={title} icon="key-bold" onClose={close} />
       <div className="scene__body departure__body">
         {/* Weather + the one dressing tip — the first glance before the door. */}
-        {weather && (
+        {isToday && weather && (
           <div className="departure__wx" style={{ borderColor: weatherTint(weather) }}>
             <InlineIcon name={weatherIcon(weather)} size={30} color={weatherTint(weather)} />
             <span className="departure__wx-temp">{Math.round(weather.tempC)}°</span>
@@ -84,54 +87,27 @@ export function DeparturePage() {
             </span>
           </div>
         )}
-
-        {/* The checklist — pick a list, then tick as you go (resets next time). */}
-        {templates.length === 0 ? (
-          <EmptyState>{t.departure.noTemplate}</EmptyState>
-        ) : (
-          <section className="departure__list">
-            <div className="departure__head">
-              <h2 className="departure__h mono">{t.departure.checklist}</h2>
-              {items.length > 0 && <span className="departure__count mono">{doneCount}/{items.length}</span>}
-            </div>
-            {templates.length > 1 && (
-              <div className="departure__picks">
-                {templates.map((tp) => (
-                  <button
-                    key={tp.id}
-                    type="button"
-                    className={'chip' + (tp.id === activeId ? ' is-on' : '')}
-                    onClick={() => choose(tp.id)}
-                    aria-pressed={tp.id === activeId}
-                  >
-                    {tp.title}
-                  </button>
-                ))}
-              </div>
-            )}
-            <ul className="departure__rows">
-              {items.map((it, i) => {
-                const k = String(i)
-                const checked = done.has(k)
-                const head = i === 0 || items[i - 1].section !== it.section
-                return (
-                  <li key={k}>
-                    {head && it.section && <p className="departure__section mono">{it.section}</p>}
-                    <button type="button" className={'departure__row' + (checked ? ' is-done' : '')} onClick={() => toggle(k)} aria-pressed={checked}>
-                      <span className="departure__check" aria-hidden="true">
-                        {checked && <Icon name="check-bold" size={20} />}
-                      </span>
-                      <span className="departure__label">{it.label}</span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-            {items.length === 0 && activeId && <p className="departure__empty mono">{t.departure.emptyList}</p>}
-          </section>
+        {isTomorrow && tomorrow && (
+          <div className="departure__wx" style={{ borderColor: weatherTint({ bucket: tomorrow.bucket, isDay: true, tempC: tomorrow.highC }) }}>
+            <InlineIcon name={weatherIcon({ bucket: tomorrow.bucket, isDay: true, tempC: tomorrow.highC })} size={30} color={weatherTint({ bucket: tomorrow.bucket, isDay: true, tempC: tomorrow.highC })} />
+            <span className="departure__wx-temp">{Math.round(tomorrow.highC)}° / {Math.round(tomorrow.lowC)}°</span>
+            <span className="departure__wx-text">
+              <span className="departure__wx-cond">{t.weather[tomorrow.bucket]}</span>
+              {tomorrowTip && <span className="departure__wx-tip mono">{t.weather.tip[tomorrowTip]}</span>}
+            </span>
+          </div>
         )}
 
-        {/* Today's plan — a read-only reminder of what the day holds before you go. */}
+        {/* The REAL « À compléter » list — global + today for today's screen, or that
+            specific day's list otherwise. Tick one here and it syncs everywhere; add
+            a one-off or drop a saved checklist from its own field. */}
+        <TodoSection title={t.departure.checklist} members={members} day={isToday ? undefined : day} bento={false} />
+
+        {/* The day's fridge / day note (« Sans gluten ce soir »…) — the shared board
+            card; read-aloud only in toddler. Hidden when the day carries no note. */}
+        {dayNote && <DayNote note={dayNote} members={members} label={t.board.dayNote} />}
+
+        {/* The day's plan — a read-only reminder of what it holds before you go. */}
         <section className="departure__events">
           <h2 className="departure__h mono">{t.departure.today}</h2>
           {events.length === 0 ? (
@@ -139,10 +115,10 @@ export function DeparturePage() {
           ) : (
             <ul className="departure__agenda">
               {events.map((e) => {
-                const who = e.business_name ?? e.contact_name ?? nameOf(board?.members ?? [], e.member_id)
+                const who = e.business_name ?? e.contact_name ?? nameOf(members, e.member_id)
                 return (
                   <li key={e.id} className="departure__ev">
-                    <span className="departure__ev-time mono">{timeLabel(e.start_at, e.all_day)}</span>
+                    <span className="departure__ev-time mono">{timeLabel(e.at, e.all_day)}</span>
                     <span className="departure__ev-title">
                       {e.birthday && <InlineIcon name="cake-bold" size={14} />} {e.title}
                     </span>
@@ -153,6 +129,21 @@ export function DeparturePage() {
             </ul>
           )}
         </section>
+
+        {/* The day's corvées — whose turn it is, before everyone scatters. Read-only
+            (the board / day page is where you tick them); hidden when there are none. */}
+        {chores.length > 0 && (
+          <section className="departure__chores">
+            <h2 className="departure__h mono">{t.departure.chores}</h2>
+            {chores.map((c) => (
+              <Act key={c.id} cat="chore" title={c.title} who={c.who || undefined} color={c.color || undefined} />
+            ))}
+          </section>
+        )}
+
+        {/* « L'auto » — is the car free, who has it, today's rides. A "now" glance, so
+            today only; renders nothing when the household uses no car. */}
+        {isToday && <AutoCard />}
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { RecentsPanel } from '../RecentsPanel'
 import { useAudience } from '../../lib/audience'
+import { useApodEnabled, setApodEnabled } from '../../lib/apod'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
 import { isGuest } from '../../lib/device'
@@ -57,6 +58,9 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   const [theme, setThemeState] = useState<Theme>(() => getTheme())
   // Ambient day-part drift (feature #1) — calm furniture, default ON, opt-out here.
   const [ambient, setAmbientState] = useState<boolean>(() => isDaypartAuto())
+  // "Photo du jour" (NASA APOD) band — calm furniture, default ON, opt-out here.
+  // Read live from the localStorage store so the board reacts without a reload.
+  const apod = useApodEnabled()
   function toggleAmbient() {
     const next = !ambient
     setAmbientState(next)
@@ -130,6 +134,21 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               <InlineIcon name={ambient ? 'sun-horizon-bold' : 'sun-bold'} size={16} />{' '}
               {ambient ? t.operator.ambientOn : t.operator.ambientOff}
             </button>
+          </div>
+        )}
+        {!ro && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.apodLabel}</span>
+            <button
+              type="button"
+              className={`btn${apod ? ' btn--primary' : ''}`}
+              onClick={() => setApodEnabled(!apod)}
+              aria-pressed={apod}
+            >
+              <InlineIcon name="moon-stars-bold" size={16} />{' '}
+              {apod ? t.operator.apodOn : t.operator.apodOff}
+            </button>
+            <p className="operator__seg-hint mono">{t.operator.apodHint}</p>
           </div>
         )}
         {!ro && (

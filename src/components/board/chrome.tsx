@@ -6,7 +6,8 @@ import { MemberSwitcher as FaceSwitcher } from '../MemberSwitcher'
 import { type Dict, type Member } from './types'
 
 // A tiny segmented control in the board header: bento (grid) · next (focus) ·
-// lanes (per-person). Calm and small; the choice is remembered per device.
+// lanes (per-person) · month (calendar) · moment (a chosen window + handoff list).
+// Calm and small; the choice is remembered per device.
 export function BoardViewToggle({
   view,
   onChange,
@@ -28,6 +29,7 @@ export function BoardViewToggle({
     { v: 'next', icon: 'clock-bold', label: t.boardView.next },
     { v: 'lanes', icon: 'smiley-bold', label: t.boardView.lanes },
     { v: 'month', icon: 'calendar-dots-bold', label: t.boardView.month },
+    { v: 'moment', icon: 'sun-bold', label: t.boardView.moment },
   ]
   return (
     <div className={'boardview' + (armed ? ' help-armed' : '')} role="group" aria-label={t.boardView.label} data-tour="board-views">

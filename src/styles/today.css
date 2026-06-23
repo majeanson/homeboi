@@ -418,6 +418,14 @@
   bottom: 14px;
   opacity: 0.9;
 }
+/* « Ce soir » can stack several suppers → a tall card. Anchor its decorative blob to
+   the BOTTOM-right (with the slot icon) rather than the top, so the meal icon always
+   sits inside its bubble however many meals stack — on a multi-meal card the
+   top-anchored blob drifted up and left the icon bare. */
+.now-card--supper .blob {
+  top: auto;
+  bottom: -26px;
+}
 /* The "today" zone: supper + weather as equal hero cards. They sit in their own
    flex row above the section grid so weather reads as a peer of supper, and they
    stack on a phone. */
@@ -430,6 +438,62 @@
 .board-heroes > .now-card {
   flex: 1 1 16rem;
   margin: 0;
+}
+
+/* Weather hero with the daily-wonder photo as its BACKDROP: the image covers the
+   card, a scrim + soft text shadow keep the temperature legible over any picture,
+   and the wonder's source + a 🔊 + a ⟳ shuffle ride in frosted corners. No photo
+   (feed down / opted out) → the plain tinted card above, untouched. */
+.now-card--wx-photo {
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  min-height: 9.5rem;
+}
+.now-card__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgb(0 0 0 / 0.58), rgb(0 0 0 / 0.18) 55%, rgb(0 0 0 / 0.04));
+  pointer-events: none;
+}
+.now-card--wx-photo .label,
+.now-card--wx-photo .what,
+.now-card--wx-photo .who {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.6);
+}
+.now-card--wx-photo .label,
+.now-card--wx-photo .who {
+  opacity: 0.95;
+}
+/* The weather glyph is redundant over a photo (the condition word « Dégagé » + the
+   temperature already say it) and clashed with the image — hide it on the photo
+   card. The plain tinted fallback card keeps its bottom-right icon. */
+.now-card--wx-photo .icn {
+  display: none;
+}
+.now-card__shuffle {
+  z-index: 2;
+}
+/* Wonder source label, bottom-left in a frosted pill (static — read-aloud is a
+   toddler-only affordance, so the parent weather card just names the picture). */
+.now-card__wonder-hear {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: rgb(0 0 0 / 0.42);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* « Ce soir » agglomerates every supper into ONE hero card: a meal per row,

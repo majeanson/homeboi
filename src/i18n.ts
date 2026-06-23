@@ -52,6 +52,7 @@ export const FR = {
     title: 'Avant de partir',
     checklist: 'Liste de départ',
     today: 'Aujourd’hui',
+    chores: 'Les corvées',
     allDay: 'Toute la journée',
     noTemplate: 'Crée une liste « Avant de partir » dans Réglages ▸ À compléter pour la cocher ici.',
     emptyList: 'Cette liste est vide.',
@@ -361,6 +362,13 @@ export const FR = {
     laneClear: 'Libre',
     kidAllClear: 'Rien de prévu. Belle journée !',
     shufflePhoto: 'Une autre photo',
+    // « Photo du jour » daily-wonder band — one localized kicker per NASA source
+    // the band rotates through (the shuffle button jumps between them).
+    wonderKicker: { bing: 'Photo du jour', wiki: 'Image du jour', apod: 'Astronomie du jour', epic: 'La Terre aujourd’hui', mars: 'Un robot sur Mars' },
+    shuffleWonder: 'Une autre image',
+    apodReadMore: 'Lire la suite',
+    apodReadLess: 'Lire moins',
+    apodHear: 'Écouter',
   },
   boardView: {
     label: 'Vue du babillard',
@@ -370,6 +378,7 @@ export const FR = {
     next: 'Maintenant',
     lanes: 'Par personne',
     month: 'Mois',
+    moment: 'Moments',
     then: 'ensuite',
     nothingNext: 'Rien de prévu pour l’instant',
   },
@@ -385,6 +394,40 @@ export const FR = {
     legendChores: 'Corvées',
     legendTodos: 'À compléter',
     legendNotes: 'Notes',
+  },
+  // « Moments » (/moment) — the windowed recap + quick-handoff scene.
+  moment: {
+    title: 'Moments',
+    scope: { tonight: 'Ce soir', tomorrow: 'Demain', date: 'Une date', week: 'Cette semaine' },
+    pickDate: 'Date :',
+    empty: 'Rien de prévu pour ce moment.',
+    // The calm dusk card on the board that deep-links here (scope=tomorrow).
+    peek: 'Demain en bref',
+    // « Ce soir dans le ciel » — tonight's moon phase, computed locally. `phase`
+    // labels the chip; `heard` is the full sentence read aloud (toddler-friendly).
+    sky: {
+      title: 'Ce soir dans le ciel',
+      phase: {
+        new: 'Nouvelle lune',
+        waxingCrescent: 'Premier croissant',
+        firstQuarter: 'Premier quartier',
+        waxingGibbous: 'Lune gibbeuse croissante',
+        full: 'Pleine lune',
+        waningGibbous: 'Lune gibbeuse décroissante',
+        lastQuarter: 'Dernier quartier',
+        waningCrescent: 'Dernier croissant',
+      },
+      heard: {
+        new: 'Ce soir, c’est la nouvelle lune.',
+        waxingCrescent: 'Ce soir, on voit un premier croissant de lune.',
+        firstQuarter: 'Ce soir, c’est le premier quartier de lune.',
+        waxingGibbous: 'Ce soir, la lune est presque pleine.',
+        full: 'Ce soir, c’est la pleine lune.',
+        waningGibbous: 'Ce soir, la lune est encore presque pleine.',
+        lastQuarter: 'Ce soir, c’est le dernier quartier de lune.',
+        waningCrescent: 'Ce soir, on voit un dernier croissant de lune.',
+      },
+    },
   },
   weather: {
     clear: 'Dégagé', cloud: 'Nuageux', fog: 'Brouillard', drizzle: 'Bruine', rain: 'Pluie', snow: 'Neige', storm: 'Orage',
@@ -1246,6 +1289,10 @@ export const FR = {
     ambientLabel: 'Ambiance du jour',
     ambientOn: 'Suit la journée',
     ambientOff: 'Couleurs fixes',
+    apodLabel: 'Photo du jour',
+    apodHint: 'Une photo de la NASA, différente chaque jour, au bas du babillard. N’affecte que cet appareil.',
+    apodOn: 'Affichée',
+    apodOff: 'Cachée',
     a11yTitle: 'Accessibilité',
     a11yHint:
       'Contraste renforcé et plus gros texte, pour mieux voir de loin ou de plus près. N’affecte que cet appareil.',
@@ -1509,6 +1556,8 @@ export const FR = {
     guideGoTo: 'Aller à cet onglet',
     guideMap: 'Tout ce que Babillard fait',
     replayTour: 'Rejouer la visite guidée',
+    replaySectionTour: 'Refaire le tour de cette section',
+    resetOnboarding: 'Revoir l’accueil',
     guestTab: 'Partage',
   },
   guest: {
@@ -1879,6 +1928,7 @@ export const EN: typeof FR = {
     title: 'Before you go',
     checklist: 'Leaving checklist',
     today: 'Today',
+    chores: 'Chores',
     allDay: 'All day',
     noTemplate: 'Make a “Before you go” list in Settings ▸ To-do lists to tick it off here.',
     emptyList: 'This list is empty.',
@@ -2181,6 +2231,11 @@ export const EN: typeof FR = {
     laneClear: 'Free',
     kidAllClear: 'Nothing planned. Have a nice day!',
     shufflePhoto: 'Another photo',
+    wonderKicker: { bing: 'Photo of the day', wiki: 'Picture of the day', apod: 'Astronomy picture', epic: 'Earth today', mars: 'A robot on Mars' },
+    shuffleWonder: 'Another image',
+    apodReadMore: 'Read more',
+    apodReadLess: 'Read less',
+    apodHear: 'Listen',
   },
   boardView: {
     label: 'Board view',
@@ -2188,6 +2243,7 @@ export const EN: typeof FR = {
     next: 'Up next',
     lanes: 'Per person',
     month: 'Month',
+    moment: 'Moments',
     then: 'then',
     nothingNext: 'Nothing coming up',
   },
@@ -2203,6 +2259,38 @@ export const EN: typeof FR = {
     legendChores: 'Chores',
     legendTodos: 'To complete',
     legendNotes: 'Notes',
+  },
+  // « Moments » (/moment) — the windowed recap + quick-handoff scene.
+  moment: {
+    title: 'Moments',
+    scope: { tonight: 'Tonight', tomorrow: 'Tomorrow', date: 'A date', week: 'This week' },
+    pickDate: 'Date:',
+    empty: 'Nothing planned for this moment.',
+    // The calm dusk card on the board that deep-links here (scope=tomorrow).
+    peek: 'Tomorrow at a glance',
+    sky: {
+      title: 'In the sky tonight',
+      phase: {
+        new: 'New moon',
+        waxingCrescent: 'Waxing crescent',
+        firstQuarter: 'First quarter',
+        waxingGibbous: 'Waxing gibbous',
+        full: 'Full moon',
+        waningGibbous: 'Waning gibbous',
+        lastQuarter: 'Last quarter',
+        waningCrescent: 'Waning crescent',
+      },
+      heard: {
+        new: 'Tonight is a new moon.',
+        waxingCrescent: 'Tonight there’s a thin crescent moon.',
+        firstQuarter: 'Tonight is the first quarter moon.',
+        waxingGibbous: 'Tonight the moon is almost full.',
+        full: 'Tonight is a full moon.',
+        waningGibbous: 'Tonight the moon is still almost full.',
+        lastQuarter: 'Tonight is the last quarter moon.',
+        waningCrescent: 'Tonight there’s a thin crescent moon.',
+      },
+    },
   },
   weather: {
     clear: 'Clear', cloud: 'Cloudy', fog: 'Fog', drizzle: 'Drizzle', rain: 'Rain', snow: 'Snow', storm: 'Storm',
@@ -3047,6 +3135,10 @@ export const EN: typeof FR = {
     ambientLabel: 'Ambient theming',
     ambientOn: 'Follows the day',
     ambientOff: 'Fixed colours',
+    apodLabel: 'Picture of the day',
+    apodHint: 'A NASA photo, different every day, at the bottom of the board. Affects this device only.',
+    apodOn: 'Shown',
+    apodOff: 'Hidden',
     a11yTitle: 'Accessibility',
     a11yHint:
       'Stronger contrast and bigger text, to read better from afar or up close. Affects this device only.',
@@ -3310,6 +3402,8 @@ export const EN: typeof FR = {
     guideGoTo: 'Go to this tab',
     guideMap: 'Everything Babillard does',
     replayTour: 'Replay the guided tour',
+    replaySectionTour: 'Replay this section’s tour',
+    resetOnboarding: 'Show the welcome card again',
     guestTab: 'Sharing',
   },
   guest: {

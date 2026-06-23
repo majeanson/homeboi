@@ -111,8 +111,8 @@ export const TOURS: Tour[] = [
         icon: 'calendar-dots-bold',
         title: { fr: 'Change la vue', en: 'Change the view' },
         body: {
-          fr: 'Grille (la semaine), « Maintenant » (la prochaine affaire), par personne, ou le mois — le même babillard, vu autrement.',
-          en: 'Grid (the week), “Now” (the next thing), by person, or the month — the same board, seen differently.',
+          fr: 'Grille (la semaine), « Maintenant » (la prochaine affaire), par personne, le mois, ou « Moments » (un moment choisi + sa liste « À compléter ») — le même babillard, vu autrement.',
+          en: 'Grid (the week), “Now” (the next thing), by person, the month, or “Moments” (a chosen moment + its “To complete” list) — the same board, seen differently.',
         },
       },
       {

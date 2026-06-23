@@ -9,6 +9,8 @@ import { SectionIntro } from '../components/SectionIntro'
 import { WelcomeCard } from '../components/WelcomeCard'
 import { CercleBirthdays } from '../components/cercle/CercleBirthdays'
 import { AutoCard } from '../components/board/AutoCard'
+import { MomentPeek } from '../components/board/MomentPeek'
+import { MomentsView } from '../components/board/MomentsView'
 import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
 import { wash, tintInk } from '../lib/colors'
@@ -32,6 +34,7 @@ import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
+import { WonderFrame, useWonder } from '../components/board/ApodFrame'
 import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
@@ -99,7 +102,7 @@ export function Board() {
   const [view, setView] = useState<BoardView>(() => readBoardView())
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
   // learn what it shows instead of switching. Label = the view's own name.
-  const help = useHelpMode(BOARD_HELP, (k) => t.boardView[k.replace('view-', '') as 'bento' | 'next' | 'lanes' | 'month'] ?? k)
+  const help = useHelpMode(BOARD_HELP, (k) => t.boardView[k.replace('view-', '') as 'bento' | 'next' | 'lanes' | 'month' | 'moment'] ?? k)
   // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
   // out of the rendered board at once so the live poll can't resurrect them before
   // the write commits — same guard as Liste's pendingClear. Tapping Annuler means
@@ -135,6 +138,10 @@ export function Board() {
   const weather = wx?.weather ?? null
   const tomorrowWx = wx?.tomorrow ?? null
   const tip = weatherTip(weather)
+  // The daily-wonder picture (Bing / Wikipedia / NASA…) — used as the BACKDROP of
+  // the weather card so the glance is a beautiful photo with the temperature read
+  // clearly on top. Keeps its own last-good-frame + shuffle (lib ApodFrame).
+  const { wonder, shuffle: shuffleWonder } = useWonder()
 
   // À compléter (todos, migration 0046) — its own light poll, separate from the
   // loose-chore "À faire" the board payload already carries (data.todos). The
@@ -429,6 +436,8 @@ export function Board() {
               <Sayable className="today-kid__clear" text={`🌤️ ${t.board.kidAllClear}`} />
             )}
             <PhotoFrame />
+            {/* « Photo du jour » — a big tap-to-hear tile in the toddler lens. */}
+            <WonderFrame />
           </>
         )}
       </main>
@@ -751,6 +760,11 @@ export function Board() {
           every parent view (renders nothing when none are near). */}
       <CercleBirthdays />
 
+      {/* Evening-only nudge → « Moments »: a one-tap glance at tomorrow + its
+          handoff checklist. Renders nothing outside the wind-down (see MomentPeek);
+          hidden in the Moments view itself, where it'd point at its own view. */}
+      {view !== 'moment' && <MomentPeek />}
+
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
       ) : view === 'next' ? (
@@ -764,6 +778,10 @@ export function Board() {
         </>
       ) : view === 'month' ? (
         <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
+      ) : view === 'moment' ? (
+        // « Moments » — the windowed recap + per-day handoff checklist, in-board
+        // (the same component the /moment scene wraps). Defaults to « Ce soir ».
+        <MomentsView defaultScope="tonight" />
       ) : (
         <>
           {/* The "today" zone: tonight's supper and today's weather as equal hero
@@ -828,13 +846,42 @@ export function Board() {
                 </div>
               )}
               {weather && (
-                <div className="now-card now-card--wx" style={{ background: CATS.event.wash, color: CATS.event.deep }}>
-                  <div className="blob" style={{ background: CATS.event.color }} />
+                // The wonder picture rides as the card's BACKDROP (a calm photo
+                // behind the glance); the weather sits on top in frosted chips so the
+                // temperature is always legible over any image. No picture (feed down
+                // / opted out) → the plain tinted card, unchanged.
+                <div
+                  className={`now-card now-card--wx${wonder ? ' now-card--wx-photo' : ''}`}
+                  style={
+                    wonder
+                      ? { backgroundImage: `url("${wonder.imgUrl}")` }
+                      : { background: CATS.event.wash, color: CATS.event.deep }
+                  }
+                >
+                  {wonder ? (
+                    <>
+                      <span className="now-card__scrim" aria-hidden="true" />
+                      <button
+                        type="button"
+                        className="photo-frame__shuffle now-card__shuffle"
+                        onClick={shuffleWonder}
+                        aria-label={t.board.shuffleWonder}
+                        title={t.board.shuffleWonder}
+                      >
+                        <Icon name="repeat-bold" size={16} />
+                      </button>
+                      {/* Source label only — read-aloud is a toddler-mode affordance,
+                          so the parent weather card just names the picture. */}
+                      <span className="now-card__wonder-hear mono">{t.board.wonderKicker[wonder.source]}</span>
+                    </>
+                  ) : (
+                    <div className="blob" style={{ background: CATS.event.color }} />
+                  )}
                   <div className="label">{t.weather[weather.bucket]}</div>
                   <div className="what">{weather.tempC}°</div>
                   {tip && <div className="who">{t.weather.tip[tip]}</div>}
                   <div className="icn" aria-hidden="true">
-                    <Icon name={weatherIcon(weather)} size={38} color={weatherTint(weather)} />
+                    <Icon name={weatherIcon(weather)} size={38} color={wonder ? '#fff' : weatherTint(weather)} />
                   </div>
                 </div>
               )}
@@ -1016,6 +1063,8 @@ export function Board() {
             <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
 
             <PhotoFrame />
+            {/* The « Photo du jour » now rides as the weather card's backdrop at the
+                top of this view (see board-heroes), so there's no separate band here. */}
           </div>
         </>
       )}

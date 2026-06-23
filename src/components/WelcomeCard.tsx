@@ -37,6 +37,17 @@ function persist(s: State) {
   }
 }
 
+// Bring the first-run checklist back (Réglages ▸ Guide ▸ Première fois ▸ « Revoir
+// l'accueil »): drop the dismissed/done record so the card shows again. It re-reads
+// localStorage on its next mount, so the caller navigates to /board afterwards.
+export function resetWelcome(): void {
+  try {
+    localStorage.removeItem(KEY)
+  } catch {
+    /* noop */
+  }
+}
+
 const STEPS: { id: 'members' | 'meals' | 'pair'; tab: string; icon: IconName }[] = [
   { id: 'members', tab: 'household', icon: 'users-three-bold' },
   { id: 'meals', tab: 'meals', icon: 'fork-knife-bold' },

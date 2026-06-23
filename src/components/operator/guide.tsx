@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type Ref } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { GUIDE, GUIDE_GROUPS, type GuideEntry, CONCEPT_THEMES } from '../../lib/guideContent'
 import { renderRich, stripTokens } from '../../lib/richText'
 import { useTour } from '../../lib/tour'
+import { resetWelcome } from '../WelcomeCard'
 import { OperatorSection } from './OperatorSection'
 import { FeatureMap } from '../FeatureMap'
 import { Icon } from '../Icon'
@@ -24,6 +25,7 @@ export function GuideCard({
   showGoTo = true,
   targetPoint,
   onReplayTour,
+  onResetOnboarding,
 }: {
   entry: GuideEntry
   open?: boolean
@@ -33,7 +35,12 @@ export function GuideCard({
   showGoTo?: boolean
   // A specific sub-point to open + highlight + scroll to (contextual "?" deep-link).
   targetPoint?: number
-  onReplayTour?: () => void
+  // Replay a guided tour by id (the card names it via entry.tour). Generalized so
+  // EVERY tour — the essentials one AND each section tour — is re-doable here, not
+  // just on first run.
+  onReplayTour?: (tourId: string) => void
+  // Re-show the Board first-run WelcomeCard checklist (the "Première fois" card).
+  onResetOnboarding?: () => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -91,12 +98,20 @@ export function GuideCard({
             <Icon name="arrow-right-bold" size={18} />
           </Link>
         )}
-        {/* The "Première fois" card hosts the replay button: it starts the
-            guided tour, which navigates to /board itself. */}
-        {entry.action === 'replay-tour' && onReplayTour && (
-          <button type="button" className="guide__goto" onClick={onReplayTour}>
+        {/* Any card naming a tour hosts a replay button: it (re)starts that tour,
+            which navigates to its own start route. The essentials tour reads
+            "replay the guided tour"; a section tour reads "redo this section's tour". */}
+        {entry.tour && onReplayTour && (
+          <button type="button" className="guide__goto" onClick={() => onReplayTour(entry.tour!)}>
             <Icon name="repeat-bold" size={18} />
-            <span>{t.operator.replayTour}</span>
+            <span>{entry.tour === 'essentials' ? t.operator.replayTour : t.operator.replaySectionTour}</span>
+          </button>
+        )}
+        {/* Re-show the Board first-run welcome checklist (it's dismiss-once). */}
+        {entry.resetOnboarding && onResetOnboarding && (
+          <button type="button" className="guide__goto" onClick={onResetOnboarding}>
+            <Icon name="sparkle-bold" size={18} />
+            <span>{t.operator.resetOnboarding}</span>
           </button>
         )}
       </div>
@@ -157,6 +172,13 @@ export function GuideSection() {
   const t = useT()
   const { lang } = useLang()
   const { start } = useTour()
+  const nav = useNavigate()
+  // Re-show the first-run welcome checklist: clear its record, then land on the
+  // board where it remounts and reads the cleared state.
+  const resetOnboarding = () => {
+    resetWelcome()
+    nav('/board')
+  }
   const [query, setQuery] = useState('')
   const [params, setParams] = useSearchParams()
 
@@ -226,7 +248,8 @@ export function GuideSection() {
       targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
       open={q.length > 0 || e.id === openId}
       pointsOpen={q.length > 0}
-      onReplayTour={() => start('essentials')}
+      onReplayTour={start}
+      onResetOnboarding={resetOnboarding}
     />
   )
   // Scroll a feature-map tile's target block into view (anchored by id below).
@@ -270,7 +293,8 @@ export function GuideSection() {
               targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
               open
               pointsOpen={q.length > 0}
-              onReplayTour={() => start('essentials')}
+              onReplayTour={start}
+              onResetOnboarding={resetOnboarding}
             />
           ))}
         </div>

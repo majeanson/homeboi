@@ -36,6 +36,9 @@ const PriceMatchPage = lazy(() => import('./pages/PriceMatchPage').then((m) => (
 const ListEditPage = lazy(() => import('./pages/ListEditPage').then((m) => ({ default: m.ListEditPage })))
 const QuickAddPage = lazy(() => import('./pages/QuickAddPage').then((m) => ({ default: m.QuickAddPage })))
 const DayPlanPage = lazy(() => import('./pages/DayPlanPage').then((m) => ({ default: m.DayPlanPage })))
+// « Moments » — a read-only recap of a chosen time window (tonight / tomorrow / a
+// picked date / this week), with each day's « À compléter » handoff checklist inline.
+const MomentScene = lazy(() => import('./pages/MomentScene').then((m) => ({ default: m.MomentScene })))
 const DrawingGalleryPage = lazy(() => import('./pages/DrawingGalleryPage').then((m) => ({ default: m.DrawingGalleryPage })))
 const RecipeViewPage = lazy(() => import('./pages/RecipeViewPage').then((m) => ({ default: m.RecipeViewPage })))
 const RecipeFormPage = lazy(() => import('./pages/RecipeFormPage').then((m) => ({ default: m.RecipeFormPage })))
@@ -158,6 +161,9 @@ export function AppRoutes() {
         <Route path="/intake" element={<IntakeForm />} />
         {/* #28 — « L'auto » week view (single-car + carpool + work schedules). */}
         <Route path="/voiture" element={<VoiturePage />} />
+        {/* « Moments » — pick a window (tonight / tomorrow / date / week) → its recap
+            + handoff checklist. ?scope= deep-links a preset (the dusk board card uses it). */}
+        <Route path="/moment" element={<MomentScene />} />
         <Route path="/share" element={<SharePage />} />
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />

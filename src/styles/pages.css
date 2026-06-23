@@ -3150,6 +3150,14 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+/* Corvées glance: the shared Act rows sit under the heading; give the heading room
+   and drop the last row's trailing margin so the section closes cleanly. */
+.departure__chores .departure__h {
+  margin-bottom: 0.6rem;
+}
+.departure__chores .act:last-child {
+  margin-bottom: 0;
+}
 .departure__count {
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;

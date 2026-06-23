@@ -65,6 +65,7 @@ import { IngredientLine } from '../components/IngredientLine'
 import { MeasureScoops } from '../components/MeasureScoops'
 import { findMeasures } from '../lib/measure'
 import { ZoomableImg } from '../components/ZoomableImg'
+import { WonderBand } from '../components/board/ApodFrame'
 import { PanZoom } from '../components/PanZoom'
 import { EntityDetailSheet } from '../components/detail/EntityDetailSheet'
 import { type DetailModel } from '../lib/detail'
@@ -1240,6 +1241,39 @@ export function DevKit() {
       render: () => (
         <Demo label="tap to lightbox (Esc / tap to close)">
           <ZoomableImg src={sampleImg} alt="exemple" className="recipe-thumb" />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'WonderBand',
+      file: 'components/board/ApodFrame.tsx',
+      kw: 'apod epic mars wonder nasa photo du jour picture of the day band babillard image écouter lire shuffle terre robot',
+      render: () => (
+        <Demo label="« Photo du jour » — shuffles Wikipédia / APOD / EPIC / Mars; tap image to zoom, 🔊 to hear (in the text's language), ⟳ for another source">
+          <WonderBand
+            wonder={{
+              source: 'wiki',
+              title: 'Un groupe de gazelles dorcas au crépuscule, au Maroc.',
+              explanation: '',
+              lang: 'fr',
+              imgUrl: sampleImg,
+              copyright: 'Wikimedia Commons / exemple',
+            }}
+            onShuffle={() => {}}
+          />
+          <WonderBand
+            wonder={{
+              source: 'apod',
+              title: 'The Lagoon Nebula',
+              explanation:
+                'A vast cloud of gas and dust some 5,000 light-years away where new stars are born. Its pink hues come from hydrogen lit by the young stars at its heart.',
+              lang: 'en',
+              imgUrl: sampleImg,
+              copyright: 'NASA / example',
+            }}
+            onShuffle={() => {}}
+          />
         </Demo>
       ),
     },

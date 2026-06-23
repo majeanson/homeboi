@@ -402,6 +402,13 @@
   color: var(--ink-faint);
   font-size: 0.9rem;
 }
+/* « Avant de partir » door at the foot of the Maintenant view — centred, with a
+   breath of space above the glance footers. */
+.nownext__depart {
+  display: flex;
+  align-self: center;
+  margin: 0.5rem auto 0;
+}
 /* The day's meals as a centred row of colour-coded slot chips (.meal-chip, shared
    — see misc.css), with a quiet label. Wraps on a narrow phone. */
 .nownext__meals {
@@ -1500,6 +1507,18 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+/* « Moments » view: the per-day action buttons (« Avant de partir » + « Ouvrir la
+   journée ») sat cramped against each other and the checklist above. Give them a
+   breath of top margin and a gap so each reads as its own tap target. */
+.moments__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.moments__actions .day-plan__add {
+  margin: 0;
 }
 .day-plan__act-row {
   display: flex;

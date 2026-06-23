@@ -331,6 +331,12 @@ export function NowNext({
           {t.board.prepTomorrow} · {data.tomorrowNote.text}
         </div>
       )}
+
+      {/* « Avant de partir » — the Maintenant view IS a leaving focus, so it carries a
+          one-tap door to the full pre-departure glance (checklist, corvées, L'auto…). */}
+      <button type="button" className="btn btn--ghost mono nownext__depart" onClick={() => nav('/board/departure')}>
+        <Icon name="key-bold" size={16} /> {t.departure.title}
+      </button>
     </div>
   )
 }

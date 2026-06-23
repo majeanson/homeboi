@@ -72,6 +72,103 @@
   object-fit: cover;
 }
 
+/* « Photo du jour » (NASA APOD) — the photo-frame band with a caption: kicker +
+   title + a clamped blurb that expands, a 🔊 hear button, and an optional credit.
+   Reuses .photo-frame for the full-width card shell + the image sizing above. */
+.apod__cap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.85rem 1rem 1rem;
+}
+.apod__kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.apod__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.apod__name {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  color: var(--ink);
+}
+/* Round 🔊 button — same quiet circular affordance as the shuffle, sat inline
+   beside the title rather than floating over the image. */
+.apod__hear {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2, rgb(0 0 0 / 0.06));
+  color: var(--ink);
+  cursor: pointer;
+}
+.apod__hear:hover {
+  background: var(--surface-3, rgb(0 0 0 / 0.12));
+}
+.apod__text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.apod__text.is-open {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+.apod__more {
+  align-self: flex-start;
+  padding: 0.15rem 0;
+  border: none;
+  background: none;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.apod__credit {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+/* Toddler lens: the whole band is one big tap-to-hear tile (no read-more text
+   wall) — hear-first, like the rest of the toddler board. */
+.apod--kid {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  text-align: center;
+  cursor: pointer;
+}
+.apod__cap--kid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+.apod__cap--kid .apod__name {
+  font-size: 1.3rem;
+}
+
 /* Small "show another photo" shuffle button, tucked in the corner so it never
    competes with the photo (tap the photo itself to open the full ZoomableImg). */
 .photo-frame__shuffle {
@@ -118,4 +215,62 @@
       opacity: 1;
     }
   }
+}
+
+/* « Ce soir dans le ciel » — a calm one-tap line in Moments showing tonight's
+   moon phase (lib/moonPhase). Tap to hear it. The whole thing is one button. */
+.sky-tonight {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  margin: 0.25rem 0 0.85rem;
+  padding: 0.6rem 0.85rem;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2, rgb(0 0 0 / 0.05));
+  color: var(--ink);
+  text-align: left;
+}
+/* Only the toddler tile is tap-to-hear; the parent line is plain info. */
+.sky-tonight--kid {
+  cursor: pointer;
+}
+.sky-tonight__emoji {
+  font-size: 1.7rem;
+  line-height: 1;
+  flex: none;
+}
+.sky-tonight__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.sky-tonight__kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.sky-tonight__phase {
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+/* Toddler lens: a big centered emoji tile, hear-first (speaks a full sentence). */
+.sky-tonight--kid {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  text-align: center;
+}
+.sky-tonight--kid .sky-tonight__emoji {
+  font-size: 3rem;
+}
+.sky-tonight--kid .sky-tonight__text {
+  align-items: center;
+}
+.sky-tonight--kid .sky-tonight__phase {
+  font-size: 1.3rem;
 }
