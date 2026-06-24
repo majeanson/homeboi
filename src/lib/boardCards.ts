@@ -18,7 +18,7 @@ import { type IconName } from './pipIcons'
 // The bunched Aujourd'hui+Demain is one card ('today'); « À finir » bundles leftovers +
 // à-faire; « À compléter » is the persistent checklist.
 export type BandCardId = 'notes' | 'heroes' | 'aRegler' | 'moments'
-export type GridCardId = 'autoCard' | 'today' | 'toFinish' | 'todos' | 'upcoming' | 'drawings' | 'photos'
+export type GridCardId = 'autoCard' | 'fil' | 'today' | 'toFinish' | 'todos' | 'upcoming' | 'drawings' | 'photos'
 export type BoardCardId = BandCardId | GridCardId
 
 export interface BoardCardPrefs {
@@ -33,10 +33,11 @@ export interface BoardCardPrefs {
 // only.
 const BAND_CARD_IDS: BandCardId[] = ['notes', 'heroes', 'aRegler', 'moments']
 
-// Default GRID order = today's importance: car → the day → standing lists → upcoming →
-// media. Everything visible. This is also the canonical grid-id list (read() reconciles
-// a saved layout against it, so a NEW card added here auto-appears, visible, at the end).
-const DEFAULT_GRID_ORDER: GridCardId[] = ['autoCard', 'today', 'toFinish', 'todos', 'upcoming', 'drawings', 'photos']
+// Default GRID order = today's importance: car → the day's shape (« Le fil du jour ») →
+// the day list → standing lists → upcoming → media. Everything visible. This is also the
+// canonical grid-id list (read() reconciles a saved layout against it, so a NEW card
+// added here auto-appears, visible, at the end for existing devices).
+const DEFAULT_GRID_ORDER: GridCardId[] = ['autoCard', 'fil', 'today', 'toFinish', 'todos', 'upcoming', 'drawings', 'photos']
 // Every known id (band + grid) — used to validate the persisted `hidden` set.
 const ALL_IDS: BoardCardId[] = [...BAND_CARD_IDS, ...DEFAULT_GRID_ORDER]
 
@@ -53,6 +54,7 @@ export const BAND_CARD_META: { id: BandCardId; icon: IconName }[] = [
 ]
 export const GRID_CARD_META: { id: GridCardId; icon: IconName }[] = [
   { id: 'autoCard', icon: 'car-bold' },
+  { id: 'fil', icon: 'clock-bold' },
   { id: 'today', icon: 'sun-bold' },
   { id: 'toFinish', icon: 'check-bold' },
   { id: 'todos', icon: 'check-bold' },

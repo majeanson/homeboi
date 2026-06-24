@@ -2,7 +2,7 @@ import { useT } from '../../i18n'
 import { wash, tintInk } from '../../lib/colors'
 import { CATS } from '../../lib/cats'
 import { SLOT_ICON_NAME } from '../../lib/mealSlots'
-import { type Weather, weatherIcon, weatherTint, weatherTip } from '../../lib/weather'
+import { type Weather, type HourOutlook, weatherIcon, weatherTint, weatherTip } from '../../lib/weather'
 import { type DayMealRow } from './types'
 import { type Wonder } from './ApodFrame'
 import { Icon, InlineIcon } from '../Icon'
@@ -18,6 +18,7 @@ export function DayHeroes({
   onOpenMeal,
   cookLine,
   weather,
+  hours,
   wonder,
   onShuffleWonder,
 }: {
@@ -26,6 +27,7 @@ export function DayHeroes({
   onOpenMeal: (m: DayMealRow) => void
   cookLine: (m: DayMealRow) => string | undefined
   weather: Weather | null
+  hours?: HourOutlook[] | null
   wonder: Wonder | null
   onShuffleWonder: () => void
 }) {
@@ -97,6 +99,19 @@ export function DayHeroes({
           <div className="label">{t.weather[weather.bucket]}</div>
           <div className="what">{weather.tempC}°</div>
           {tip && <div className="who">{t.weather.tip[tip]}</div>}
+          {/* A calm few-hours-ahead glance: 3 frosted chips (icon + temp), legible over
+              the wonder photo. No hourly table — just the shape of the afternoon. */}
+          {hours && hours.length > 0 && (
+            <div className="now-card__hours" aria-hidden="true">
+              {hours.map((h) => (
+                <span className="now-card__hour" key={h.hour}>
+                  <span className="now-card__hour-when mono">{h.hour}h</span>
+                  <Icon name={weatherIcon({ bucket: h.bucket, isDay: h.hour >= 7 && h.hour < 20, tempC: h.tempC })} size={18} color={wonder ? '#fff' : weatherTint({ bucket: h.bucket, isDay: true, tempC: h.tempC })} />
+                  <b>{h.tempC}°</b>
+                </span>
+              ))}
+            </div>
+          )}
           <div className="icn" aria-hidden="true">
             <Icon name={weatherIcon(weather)} size={38} color={wonder ? '#fff' : weatherTint(weather)} />
           </div>

@@ -245,6 +245,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Le fil du jour', en: 'The day’s timeline' },
+        detail: {
+          fr: 'Les rendez-vous d’aujourd’hui placés dans l’ordre de l’heure, avec un repère « Maintenant » entre ce qui est passé (estompé) et ce qui s’en vient. Plus deux choses sont éloignées, plus l’espace entre elles est grand — la forme de la journée se lit d’un coup d’œil. Touche un rendez-vous pour sa fiche. Tu peux le cacher ou le réordonner dans [[card:set-display|Réglages ▸ Affichage ▸ Disposition]]; en mode tout-petit, c’est la séquence « Notre journée » (matin → dodo).',
+          en: 'Today’s appointments placed in time order, with a “Now” marker between what’s past (dimmed) and what’s coming. The farther apart two things are, the more space between them — so the shape of the day reads at a glance. Tap an appointment for its card. Hide or reorder it in [[card:set-display|Settings ▸ Display ▸ Layout]]; in toddler mode it’s the “Our day” sequence (morning → bedtime).',
+        },
+        why: {
+          fr: 'Voir *quand* la journée se remplit, pas seulement *quoi* — sans lire chaque heure.',
+          en: 'See *when* the day fills up, not just *what* — without reading every time.',
+        },
+      },
+      {
         label: { fr: 'Toucher pour les détails', en: 'Tap for details' },
         detail: {
           fr: 'Touche un élément du babillard — un rendez-vous, un repas, une corvée, le souper de ce soir — pour ouvrir une fiche : une image, la date, le texte utile et de qui il s’agit, avec un ou deux gestes rapides (Modifier, Marquer fait, Ouvrir la recette). Sur une corvée, le crochet à droite reste pour cocher; touche le reste de la ligne pour la fiche. La même fiche s’ouvre aussi sur une recette ou une routine.',

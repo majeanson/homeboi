@@ -339,6 +339,11 @@ export const FR = {
   },
   board: {
     today: 'Aujourd’hui',
+    // « Le fil du jour » — the day-ribbon card: today's timed events as a shape, with a
+    // calm « maintenant » marker. `anytime` heads the all-day items that have no clock time.
+    fil: 'Le fil du jour',
+    now: 'Maintenant',
+    anytime: 'À tout moment',
     tonight: 'Ce soir',
     tomorrow: 'Demain',
     planToday: 'Planifier aujourd’hui',
@@ -401,6 +406,7 @@ export const FR = {
     aRegler: 'À régler',
     moments: 'Moments',
     autoCard: 'L’auto',
+    fil: 'Le fil du jour',
     today: 'Aujourd’hui',
     toFinish: 'À finir',
     todos: 'À compléter',
@@ -2250,6 +2256,9 @@ export const EN: typeof FR = {
   },
   board: {
     today: 'Today',
+    fil: 'The day’s timeline',
+    now: 'Now',
+    anytime: 'Anytime today',
     tonight: 'Tonight',
     tomorrow: 'Tomorrow',
     planToday: 'Plan today',
@@ -2307,6 +2316,7 @@ export const EN: typeof FR = {
     aRegler: 'To settle',
     moments: 'Moments',
     autoCard: 'The car',
+    fil: 'Day timeline',
     today: 'Today',
     toFinish: 'To finish',
     todos: 'To complete',

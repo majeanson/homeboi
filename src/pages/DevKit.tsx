@@ -34,6 +34,7 @@ import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
 import { Act, Section as BoardSection } from '../components/board/Act'
+import { Fil } from '../components/board/Fil'
 import { TodoSection } from '../components/todos/TodoSection'
 import { RecurPicker, type RecurValue } from '../components/RecurPicker'
 import { LeadPicker } from '../components/LeadPicker'
@@ -949,6 +950,38 @@ export function DevKit() {
           </Demo>
         </>
       ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'Fil (le fil du jour)',
+      file: 'components/board/Fil.tsx',
+      kw: 'fil jour timeline ribbon day shape maintenant now board babillard',
+      // The day-ribbon: today's timed events as a shape (soft time axis + « maintenant »
+      // marker), rows reuse `Act`. Pure layout in lib/dayRibbon. Sample times are anchored
+      // around a fixed "now" so the marker lands mid-list.
+      render: () => {
+        const base = Math.floor(Date.UTC(2026, 5, 24, 0, 0, 0) / 1000)
+        const at = (h: number) => base + h * 3600
+        const ev = (id: string, title: string, h: number, allDay = false) => ({
+          id, title, start_at: at(h), all_day: allDay ? 1 : 0, member_id: null,
+        })
+        const timed = [ev('1', 'Garderie', 8), ev('2', 'Rendez-vous dentiste', 14), ev('3', 'Soccer', 18)]
+        const untimed = [ev('4', 'Congé férié', 0, true)]
+        return (
+          <Demo label="day-ribbon (now ≈ midi, marker drops in between)">
+            <BoardSection label="Le fil du jour" icon="clock-bold" tint="var(--sky)">
+              <Fil
+                timed={timed}
+                untimed={untimed}
+                renderEvent={(e) => <Act key={e.id} cat="event" title={e.title} when={e.all_day ? 'Toute la journée' : ''} onOpen={() => {}} />}
+                anytimeLabel="À tout moment"
+                nowLabel="Maintenant"
+                lang="fr"
+              />
+            </BoardSection>
+          </Demo>
+        )
+      },
     },
     {
       cat: 'Rangées & actions',

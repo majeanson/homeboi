@@ -595,6 +595,39 @@
   text-transform: uppercase;
 }
 
+/* The weather hero's calm few-hours-ahead strip: 3 small icon+temp chips under the
+   current temperature. A glance, never an hourly table. Frosted over the wonder photo
+   so the temps stay legible; a quiet tinted chip on the plain fallback card. */
+.now-card__hours {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+  flex-wrap: wrap;
+}
+.now-card__hour {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 0.25rem 0.45rem;
+  border-radius: var(--radius-sm);
+  line-height: 1.15;
+  font-size: 0.78rem;
+  background: rgb(0 0 0 / 0.06);
+}
+.now-card__hour-when {
+  font-size: 0.66rem;
+  opacity: 0.8;
+}
+.now-card--wx-photo .now-card__hour {
+  background: rgb(0 0 0 / 0.32);
+  color: #fff;
+  backdrop-filter: blur(3px);
+  text-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+}
+
 /* « Ce soir » agglomerates every supper into ONE hero card: a meal per row,
    each its own tap target → its detail peek. Rows hang a hairline divider and
    reserve right room so the last line clears the bottom-right slot icon. */

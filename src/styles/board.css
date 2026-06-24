@@ -1753,3 +1753,78 @@
   line-height: 1.2;
   color: var(--ink);
 }
+
+/* ── « Le fil du jour » — the day-ribbon ─────────────────────────────────────────
+   Today's timed events as a SHAPE: in time order, spaced by how far apart they are
+   (a soft time axis via an inline margin-top from lib/dayRibbon), past ones dimmed,
+   with a calm « maintenant » divider between what's behind us and what's ahead. The
+   rows are the board's own `.act` cards (reused), so this only styles the spacing,
+   the past-fade, and the now-marker. */
+.fil__list {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+}
+/* A just-passed item stays readable but recedes, so the eye lands on what's still
+   to come (calm: faded, never struck or hidden). */
+.fil__row--past {
+  opacity: 0.55;
+}
+/* The « maintenant » marker: a soft sky rule with the current time in the middle —
+   "──── Maintenant · 14:32 ────". A position cue, never an alarm. */
+.fil__now {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.7rem 0;
+}
+.fil__now::before,
+.fil__now::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--sky-deep);
+  opacity: 0.4;
+}
+.fil__now-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--sky-deep);
+}
+.fil__now-label::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--sky-deep);
+  box-shadow: 0 0 0 4px var(--sky-wash);
+}
+
+/* ── Wide-kiosk wall layout ───────────────────────────────────────────────────────
+   On a big wall the `columns:300px` masonry spreads thin across many columns and the
+   glance goes diffuse (AUJOURDHUI §5/§9). Cap it to ~3 columns and centre it so the
+   board stays a focused block, not a 4K-wide spread. (A true fixed "now-lane + rail"
+   via grid-template-areas was set aside: it fights the per-device card reorder. Capping
+   + centring the masonry kills the diffuse spread while keeping reorder intact.) */
+.hub[data-surface='kiosk'] .board-grid {
+  column-width: 340px;
+  columns: 340px 3;
+  max-width: 1180px;
+  margin-inline: auto;
+}
+/* Intermediate tablet width (the 520–680px transition + just above): two calm columns
+   rather than one cramped or three squeezed (AUJOURDHUI §5 P2 untested widths). */
+@media (min-width: 600px) and (max-width: 900px) {
+  .board-grid {
+    columns: 2;
+    column-gap: 0.85rem;
+  }
+}

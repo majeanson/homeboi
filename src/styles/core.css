@@ -20,7 +20,10 @@
   --card: #fffcf5;
   --ink: #2c2722;
   --ink-soft: #6b6258;
-  --ink-faint: #a99e8e;
+  /* Faint tier — hints + `.act .when` time labels. Darkened from #a99e8e (~2.6:1 on the
+     cream --card, an always-on AA fail) to clear 4.5:1 for small text, keeping the warm
+     taupe identity (AUJOURDHUI §5 P2, base-day contrast). */
+  --ink-faint: #7a7060;
 
   --marigold: #f2a03d;
   --marigold-deep: #d9842a;

@@ -38,6 +38,7 @@ The board is built on a few orthogonal ideas. Keeping them clean is what keeps i
 | **ARegler** (`board/ARegler.tsx`)       | parent **mobile** + signals exist | `useARegler()` (derived `/api/a-regler`)             | tap → the fix (1) or « Cette semaine » (N)                          |
 | **MomentPeek** (`board/MomentPeek.tsx`) | parent board                      | `timeOfDay()`                                        | 4 window chips → `/moment?scope=` (lead chip emphasized)            |
 | **AutoCard** (`board/AutoCard.tsx`)     | a car / schedule / ride exists    | `useCarToday()`                                      | tap → `/voiture`                                                    |
+| **Fil** (`board/Fil.tsx`)               | ≥2 timed events today             | `todayEvents` (timed) + `lib/dayRibbon` `placeFil`   | « Le fil du jour » — timed events as a shape: time-ordered, gap-spaced (soft axis), past dimmed, « maintenant » marker; tap → peek. Optional grid card `'fil'`; supersedes the lone-next-up `Prochainement`. Toddler = `DayTimeline`. |
 | **Aujourd'hui + Demain** (bunched)      | always (Demain hidden if empty)   | `data.today/choresToday/todos/todayMeals` + tomorrow | « Prochainement » headline, cook/departure pills, rows → peek/check |
 | **À finir** (leftovers + à faire)       | leftovers OR todayTodos           | `data.leftovers`, `data.todos`                       | check → deferred undo; tap → peek                                   |
 | **À compléter** (`todos/TodoSection`)   | always (add surface)              | `TODOS_KEY`                                          | check in place, add, templates                                      |
@@ -181,4 +182,25 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
 - **e2e** (§6): new `board-customize.spec.ts` — Moments chips → scene scope, the « Disposition » toggle UI → card leaves/returns to the Grille, a fixed band card hide, and the face lens re-rendering the board.
 - **Exhaustive card settings**: « Disposition du babillard » now covers **every** Grille card — the fixed top band (**Notes (frigo)** / Ce soir + météo / À régler / Moments) gained show/hide toggles (band stays fixed-position; grid cards still reorder). `lib/boardCards.ts` split into band vs grid (`BandCardId`/`GridCardId`, `isCardVisible`); `Board.tsx` gates each band card; the settings panel groups band-vs-grid with accurate hint copy.
 
-> Next session: remaining **P1** (Notes.tsx roles/labels), the **e2e gaps** still open (unified event form, empty-state hiding, toddler-board flow, calendar→Moments, drag-reorder), and the deferred contrast calls (base-day `--ink-faint`, tintInk'd titles).
+### Shipped in the display/information pass (2026-06-24, pass 3)
+
+- **« Le fil du jour »** (new): a calm day-ribbon — today's TIMED events read as a *shape*
+  (time-ordered, gap-spaced for a soft time axis, past ones dimmed, a « maintenant » divider
+  between past and upcoming), all-day items pooled under « À tout moment ». Rows reuse
+  `eventAct` (tap → the same peek); pure layout in `lib/dayRibbon.placeFil` (+ test). A new
+  optional grid card (`boardCards` `'fil'`, default before `today`); only with ≥2 timed events,
+  and it hides the lone-next-up `Prochainement` while on screen. Toddler lens reuses the play
+  space's `DayTimeline` (« Notre journée »). Registered in DevKit + COMPONENTS.md + Guide.
+- **Weather micro-forecast strip**: `/api/weather` now fetches Open-Meteo `hourly` and returns
+  a 3-step `hours` outlook; `DayHeroes` renders it as calm frosted icon+temp chips
+  (`.now-card__hours`) on the weather hero. Degrades to null on partial payloads.
+- **Base-day contrast** (§5 P2 — now DONE): base-day `--ink-faint` darkened `#a99e8e→#7a7060`
+  to clear WCAG AA (4.5:1) on the cream `--card` for `.act .when` time labels + hints.
+- **Wide-kiosk layout** (§9 column cap — now DONE): the masonry is capped to ~3 columns and
+  centred on a kiosk (`max-width:1180px`) so a 4K wall stays a focused block, not a diffuse
+  spread; a 600–900px two-column intermediate breakpoint added. (A fixed grid-template-areas
+  "now-lane + rail" was set aside — it fights the per-device card reorder.)
+
+> Next session: remaining **P1** (Notes.tsx roles/labels), the **e2e gaps** still open (unified
+> event form, empty-state hiding, toddler-board flow, calendar→Moments, drag-reorder; **add a
+> `fil`-card frame**), and the remaining deferred contrast call (tintInk'd member-colour titles).

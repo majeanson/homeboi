@@ -27,13 +27,15 @@ import { timeOfDay } from '../lib/timeofday'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
-import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
+import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook, type HourOutlook } from '../lib/weather'
 import { formatDay, formatDayMaybeYear, formatTime } from '../lib/format'
 import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
 import { Act, Section, SubHead } from '../components/board/Act'
+import { Fil } from '../components/board/Fil'
+import { DayTimeline } from '../components/jouer/DayTimeline'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { WonderFrame, useWonder } from '../components/board/ApodFrame'
 import { Notes } from '../components/board/Notes'
@@ -135,12 +137,13 @@ export function Board() {
   const FIFTEEN_MIN = 15 * 60 * 1000
   const { data: wx } = useQuery({
     queryKey: ['weather'],
-    queryFn: () => api<{ weather: Weather | null; tomorrow: DayOutlook | null }>('weather'),
+    queryFn: () => api<{ weather: Weather | null; tomorrow: DayOutlook | null; hours: HourOutlook[] | null }>('weather'),
     refetchInterval: FIFTEEN_MIN,
     staleTime: FIFTEEN_MIN,
   })
   const weather = wx?.weather ?? null
   const tomorrowWx = wx?.tomorrow ?? null
+  const wxHours = wx?.hours ?? null
   const tip = weatherTip(weather)
   // The daily-wonder picture (Bing / Wikipedia / NASA…) — used as the BACKDROP of
   // the weather card so the glance is a beautiful photo with the temperature read
@@ -247,6 +250,14 @@ export function Board() {
   const nextUpToday = [...todayEvents]
     .filter((e) => !e.all_day && e.start_at >= nowSecBoard - 1800)
     .sort((a, b) => a.start_at - b.start_at)[0]
+  // « Le fil du jour » — today's TIMED events read as a shape (a soft time axis + a
+  // « maintenant » marker), all-day events pooled. A separate, optional glance card
+  // (lib/boardCards 'fil'): it answers *when*, the day list answers *what*. Shown only
+  // with ≥2 timed events — a single one is already the « Prochainement » headline, so we
+  // also drop that headline when the fil is actually on screen (no double next-up).
+  const filTimed = todayEvents.filter((e) => !e.all_day)
+  const filUntimed = todayEvents.filter((e) => !!e.all_day)
+  const filShown = isCardVisible(boardCards, 'fil') && filTimed.length >= 2
   // « Demain » is bunched into the Aujourd'hui card — show it ONLY when tomorrow holds
   // something (a forecast, a prep note, a meal, an event, or a pinned to-do), so an
   // empty tomorrow never renders a bare "Rien de prévu" sub-group.
@@ -382,6 +393,16 @@ export function Board() {
                 <span>{t.play.door}</span>
               </Link>
             </div>
+            {/* « Le fil du jour », toddler lens — the hear-first day SEQUENCE (matin →
+                midi → soir → dodo) the play space uses, so a pre-reader gets the same
+                "shape of the day" the parent ribbon gives. Honours the per-device 'fil'
+                toggle (Réglages ▸ Affichage ▸ Disposition). */}
+            {isCardVisible(boardCards, 'fil') && (
+              <section className="today-kid__section">
+                <Sayable className="today-kid__h" text={t.board.fil} />
+                <DayTimeline />
+              </section>
+            )}
             {data.dayNote && <DayNote note={data.dayNote} members={data.members} toddler />}
             {/* Every meal planned for today, read-aloud — supper rides up in the
                 heroes, so this lists the rest of the day's table. */}
@@ -836,6 +857,7 @@ export function Board() {
               }
               cookLine={cookLine}
               weather={weather}
+              hours={wxHours}
               wonder={wonder}
               onShuffleWonder={shuffleWonder}
             />
@@ -852,13 +874,28 @@ export function Board() {
               const nodes: Partial<Record<GridCardId, ReactNode>> = {}
               // « L'auto » glance — the car's status today + today's rides. #28
               nodes.autoCard = <AutoCard />
+              // « Le fil du jour » — the day's timed shape (≥2 timed events; else the
+              // « Prochainement » headline on the day card already covers the lone next-up).
+              nodes.fil = filTimed.length >= 2 ? (
+                <Section label={t.board.fil} icon="clock-bold" tint="var(--sky)">
+                  <Fil
+                    timed={filTimed}
+                    untimed={filUntimed}
+                    renderEvent={eventAct}
+                    anytimeLabel={t.board.anytime}
+                    nowLabel={t.board.now}
+                    lang={lang}
+                  />
+                </Section>
+              ) : null
               // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda.
               nodes.today = (
                 <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)">
             {/* « Prochainement » — the next timed thing today as a calm tappable
                 headline above the full day list (the glance the « Maintenant » view
-                used to give). Renders nothing once today's timed events are behind us. */}
-            {nextUpToday && (
+                used to give). Renders nothing once today's timed events are behind us.
+                Hidden when « Le fil du jour » is on screen — the ribbon shows the next-up in place. */}
+            {!filShown && nextUpToday && (
               <button
                 type="button"
                 className="board-nextup"

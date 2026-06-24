@@ -19,6 +19,14 @@ export interface DayOutlook {
   lowC: number
 }
 
+// A few-hours-ahead glance for the weather hero's calm forecast strip — mirror of
+// functions/api/weather's HourOutlook (the two trees don't share code).
+export interface HourOutlook {
+  hour: number // local hour-of-day, 0–23
+  tempC: number
+  bucket: WeatherBucket
+}
+
 // A single, calm dressing tip from today's conditions — never a list, never an
 // alarm. Returns a key into i18n `weather.tip`, or null when nothing's worth
 // saying (the common case; the line then hides). Order = most actionable first.
