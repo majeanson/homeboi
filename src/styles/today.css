@@ -418,6 +418,14 @@
   bottom: 14px;
   opacity: 0.9;
 }
+/* Time-aware emphasis (lib/momentFocus): « Ce soir » gets a soft ring + lift as dinner
+   nears. Subtle, static — a calm "look here now", not an alarm. */
+.now-card--now {
+  box-shadow: var(--shadow-lg);
+  outline: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+  outline-offset: 2px;
+}
+
 /* « Ce soir » can stack several suppers → a tall card. Anchor its decorative blob to
    the BOTTOM-right (with the slot icon) rather than the top, so the meal icon always
    sits inside its bubble however many meals stack — on a multi-meal card the

@@ -24,6 +24,8 @@ import { ProfilePicker } from '../components/ProfilePicker'
 import { readBoardView, saveBoardView, type BoardView } from '../lib/boardview'
 import { useSpeak } from '../lib/speak'
 import { timeOfDay } from '../lib/timeofday'
+import { isDaypartAuto } from '../lib/theme'
+import { momentFocus } from '../lib/momentFocus'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
@@ -289,6 +291,13 @@ export function Board() {
     todayTodos.length === 0 &&
     openTodos.length === 0 &&
     filWork.length === 0
+  // Time-aware emphasis (lib/momentFocus): the board gently leans toward what matters now —
+  // the day ahead in the morning, the supper hero as dinner nears, « Demain » prep in the
+  // evening. Folded under the ambient toggle (Réglages ▸ Affichage): ambient on → the board
+  // also leans by time; off → no emphasis. A soft accent, never a reshuffle.
+  const focus = isDaypartAuto() ? momentFocus(Date.now()) : null
+  const filNow = focus === 'day' && filShown
+  const todayNow = (focus === 'day' && !filShown) || focus === 'evening'
   // « Demain » is bunched into the Aujourd'hui card — show it ONLY when tomorrow holds
   // something (a forecast, a prep note, a meal, an event, or a pinned to-do), so an
   // empty tomorrow never renders a bare "Rien de prévu" sub-group.
@@ -915,6 +924,7 @@ export function Board() {
               hours={wxHours}
               wonder={wonder}
               onShuffleWonder={shuffleWonder}
+              supperNow={focus === 'supper'}
             />
           )}
 
@@ -934,7 +944,7 @@ export function Board() {
               // to place; when on, the « Aujourd'hui » card below drops these same events +
               // chores so nothing renders twice.
               nodes.fil = filShown ? (
-                <Section label={t.board.fil} icon="clock-bold" tint="var(--sky)" help={help} helpKey="fil">
+                <Section label={t.board.fil} icon="clock-bold" tint="var(--sky)" help={help} helpKey="fil" now={filNow}>
                   <Fil
                     timed={[
                       ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, node: eventAct(e) })),
@@ -953,7 +963,7 @@ export function Board() {
               ) : null
               // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda.
               nodes.today = (
-                <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)" help={help} helpKey="today">
+                <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)" help={help} helpKey="today" now={todayNow}>
             {/* « Prochainement » — the next timed thing today as a calm tappable
                 headline above the full day list (the glance the « Maintenant » view
                 used to give). Renders nothing once today's timed events are behind us.

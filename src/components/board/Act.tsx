@@ -17,12 +17,17 @@ export function Section({
   tint,
   help,
   helpKey,
+  now,
   children,
 }: {
   label: string
   count?: number
   icon?: IconName
   tint?: string
+  // Time-aware emphasis (lib/momentFocus): a gentle accent on the card that matters at
+  // this hour (the day ahead in the morning, tomorrow's prep in the evening). A soft lift
+  // — never a reshuffle, never motion. Gated by the ambient toggle on the board side.
+  now?: boolean
   // Optional contextual help (lib/helpMode): pass the board's help instance + a key in
   // its content map and, while help mode is armed, the section TITLE becomes tappable →
   // an in-place HelpBubble explaining the section (a "→ Voir le guide" deep-link). Outside
@@ -36,7 +41,7 @@ export function Section({
   const style = tint ? ({ '--sec-tint': tint } as React.CSSProperties) : undefined
   const helpable = !!help && !!helpKey && help.active
   return (
-    <div className={'bento' + (tint ? ' bento--tinted' : '')} style={style}>
+    <div className={'bento' + (tint ? ' bento--tinted' : '') + (now ? ' bento--now' : '')} style={style}>
       <div className="sec-label">
         {icon && (
           <span className="sec-label__ico" aria-hidden="true">

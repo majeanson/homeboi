@@ -21,6 +21,7 @@ export function DayHeroes({
   hours,
   wonder,
   onShuffleWonder,
+  supperNow,
 }: {
   suppers: DayMealRow[]
   supperColor: string
@@ -30,6 +31,8 @@ export function DayHeroes({
   hours?: HourOutlook[] | null
   wonder: Wonder | null
   onShuffleWonder: () => void
+  // Time-aware emphasis (lib/momentFocus): a gentle accent on « Ce soir » as dinner nears.
+  supperNow?: boolean
 }) {
   const t = useT()
   const tip = weatherTip(weather)
@@ -39,7 +42,7 @@ export function DayHeroes({
       {suppers.length > 0 && (
         // « Ce soir » — every supper planned today agglomerates into ONE hero card, a
         // tappable row each.
-        <div className="now-card now-card--supper" style={{ background: wash(supperColor), color: tintInk(supperColor) }}>
+        <div className={'now-card now-card--supper' + (supperNow ? ' now-card--now' : '')} style={{ background: wash(supperColor), color: tintInk(supperColor) }}>
           <div className="blob" style={{ background: supperColor }} />
           <div className="label">{t.board.tonight}</div>
           <div className="now-card__meals">

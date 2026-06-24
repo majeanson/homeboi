@@ -96,6 +96,13 @@
   border-radius: var(--radius-lg);
   padding: 0.9rem 1rem 1.1rem;
   box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--dur-slow) var(--ease-out);
+}
+/* Time-aware emphasis (lib/momentFocus): the card that matters at this hour gets a soft
+   lift + a faint accent top-edge in its own category tint. No motion, no reshuffle — just
+   a gentle "look here now". */
+.board-grid > .bento.bento--now {
+  box-shadow: var(--shadow-md), inset 0 3px 0 0 color-mix(in srgb, var(--sec-tint, var(--marigold)) 55%, transparent);
 }
 /* The photo frame closes the board as a full-width band beneath the columns —
    give it a breath of top margin so it sits apart from the bento tiles above. */
