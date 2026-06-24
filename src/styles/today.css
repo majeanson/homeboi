@@ -723,6 +723,21 @@
   transform: translate(1px, 1px);
   box-shadow: var(--shadow-press);
 }
+/* Keyboard focus: the act row (and its split sub-buttons) draw a clear accent ring
+   so a keyboard/switch user can see where they are (AUJOURDHUI §5 — :focus-visible
+   was missing). Pointer taps don't trigger :focus-visible, so the calm look holds. */
+.act:focus-visible,
+.act__hit:focus-visible,
+.act__checkbtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* The split row's body button is inside the card — inset the ring so it reads as
+   "this row" rather than spilling past the rounded card edge. */
+.act__hit:focus-visible {
+  outline-offset: -2px;
+  border-radius: var(--radius-md);
+}
 .act .spine {
   position: absolute;
   left: 0;
@@ -767,6 +782,11 @@
   font-weight: 700;
   font-size: 19px;
   line-height: 1.1;
+  /* A long unbroken title (a 30-char event, a pasted URL) must wrap inside its own
+     box instead of shoving the time/who off the row or forcing a horizontal scroll
+     (AUJOURDHUI §5 long-title overflow). --act-text owns min-width:0 already. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .act .who {
   font-size: 12.5px;
@@ -800,6 +820,16 @@
   justify-content: center;
   color: transparent;
   transition: all var(--dur-base) var(--ease-soft);
+  /* The disc stays a calm 30px, but the TAP target reaches 44px (WCAG 2.5.5 / a
+     toddler's finger on a wall tablet) via an invisible pseudo that extends the
+     hittable box ±7px. The check disc is the most-tapped affordance on the board —
+     a 30px target was the worst offender (AUJOURDHUI §5 touch targets). */
+  position: relative;
+}
+.act .check::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
 }
 .act.done .check {
   background: var(--sage);

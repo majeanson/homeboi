@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { useT } from '../i18n'
+import { useQuery } from '@tanstack/react-query'
+import { useT, useLang } from '../i18n'
+import { api } from '../lib/api'
 import { useAudience } from '../lib/audience'
 import { isGuest } from '../lib/device'
 import { imgUrl } from '../lib/image'
@@ -10,11 +12,13 @@ import { useDrawEdit } from '../lib/drawEdit'
 import { useConfirm } from '../lib/confirm'
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
+import { Avatar } from '../components/Avatar'
 import { Icon } from '../components/Icon'
 import { DrawPad } from '../components/DrawPad'
 import { DrawEditChoice } from '../components/DrawEditChoice'
 import { ZoomableImg } from '../components/ZoomableImg'
 import type { GalleryDrawing } from '../lib/drawingGallery'
+import type { Member } from '../lib/members'
 
 // /drawings — the drawing COLLECTION / gallery (#14). "Mes dessins": a lasting wall
 // of kept drawings, especially a toddler's growing collection (big tap targets,
@@ -23,12 +27,19 @@ import type { GalleryDrawing } from '../lib/drawingGallery'
 // original stays). A read-only guest can browse but not add/remove.
 export function DrawingGalleryPage() {
   const t = useT()
+  const { lang } = useLang()
   const close = useSceneClose('/board')
   useEscapeKey(close)
   const { audience } = useAudience()
   const toddler = audience === 'toddler'
   const ro = isGuest()
   const { data } = useGallery()
+  // Who drew it + when — the gallery should credit the author and the date, not just
+  // show anonymous works. Members give us the face/name behind each drawing's member_id.
+  const { data: membersData } = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members') })
+  const members = membersData?.members ?? []
+  const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
+  const fmtDate = (sec: number) => new Date(sec * 1000).toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' })
   const save = useSaveToGallery()
   const update = useUpdateInGallery()
   const remove = useDeleteFromGallery()
@@ -75,7 +86,9 @@ export function DrawingGalleryPage() {
           <EmptyState tone="calm">{t.memo.galleryEmpty}</EmptyState>
         ) : (
           <div className={'drawgallery__grid' + (toddler ? ' drawgallery__grid--kid' : '')}>
-            {drawings.map((d) => (
+            {drawings.map((d) => {
+              const author = members.find((m) => m.id === d.member_id)
+              return (
               <div key={d.id} className="drawgallery__item">
                 {ro ? (
                   // Read-only guest: can't open the pad, so the thumbnail IS the
@@ -109,8 +122,19 @@ export function DrawingGalleryPage() {
                     <Icon name="trash-bold" size={14} />
                   </button>
                 )}
+                {/* Credit: who drew it (face + name) and when it was kept. */}
+                <div className="drawgallery__meta">
+                  {author && (
+                    <span className="drawgallery__by">
+                      <Avatar kind={author.avatar_kind} photo={author.avatar_ref} colour={author.colour} name={author.display_name} size={18} />
+                      {author.display_name}
+                    </span>
+                  )}
+                  <time className="drawgallery__date">{fmtDate(d.created_at)}</time>
+                </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

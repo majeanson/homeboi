@@ -394,7 +394,8 @@ export function DayEditor({
         )}
       </section>
 
-      {/* Wipe the whole day's meals at once — only when there's something. */}
+      {/* Wipe the whole day's meals at once — only when there's something. Sits
+          last, reads red: a deliberate, destructive clear, not a quiet control. */}
       {!ro && dayMealCount > 0 && (
         <button
           type="button"

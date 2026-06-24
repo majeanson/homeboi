@@ -382,6 +382,23 @@
 .board-layout__toggle {
   flex: none;
 }
+/* Group heading separating the fixed top band from the reorderable grid cards. */
+.board-layout__group {
+  margin: 0.9rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+.board-layout__group:first-of-type {
+  margin-top: 0.4rem;
+}
+/* A fixed band row carries no drag grip — pad its left edge to line up with the
+   grid rows (whose grip occupies that space). */
+.board-layout__row--fixed {
+  padding-left: 0.85rem;
+}
 
 /* Read-aloud voice picker (Réglages ▸ Affichage). Stacked rows: voice select,
    speed slider, then the test button. */

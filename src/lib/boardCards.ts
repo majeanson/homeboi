@@ -8,27 +8,50 @@ import { type IconName } from './pipIcons'
 // chores) live server-side; this is just "what do I want on THIS screen". Calm: it
 // only hides/reorders existing cards — no counts, no new surfaces.
 //
-// The ids are the board's grid cards (the top heroes + status band stay fixed). The
-// bunched Aujourd'hui+Demain is one card ('today'); « À finir » bundles leftovers +
+// Two families of card, so EVERY Grille card has a show/hide setting (Marc: make it
+// exhaustive):
+//   • BAND cards — the fixed top band: the « Ce soir »/météo heroes, « À régler », and
+//     « Moments ». They keep their structural position (the glance band stays on top),
+//     so they're show/hide ONLY, not reordered.
+//   • GRID cards — the masonry below: car, the day, standing lists, upcoming, media.
+//     These show/hide AND reorder.
+// The bunched Aujourd'hui+Demain is one card ('today'); « À finir » bundles leftovers +
 // à-faire; « À compléter » is the persistent checklist.
-export type BoardCardId = 'autoCard' | 'today' | 'toFinish' | 'todos' | 'upcoming' | 'drawings' | 'photos'
+export type BandCardId = 'notes' | 'heroes' | 'aRegler' | 'moments'
+export type GridCardId = 'autoCard' | 'today' | 'toFinish' | 'todos' | 'upcoming' | 'drawings' | 'photos'
+export type BoardCardId = BandCardId | GridCardId
 
 export interface BoardCardPrefs {
-  order: BoardCardId[]
+  // The reorderable GRID cards, in display order. Band cards are never in here (they
+  // hold a fixed position) — only their hidden state is tracked.
+  order: GridCardId[]
+  // Any card (band or grid) the device has hidden.
   hidden: BoardCardId[]
 }
 
-// Default order = today's importance: car → the day → standing lists → upcoming →
-// media. Everything visible. This is also the canonical id list (read() reconciles a
-// saved layout against it, so a NEW card added here auto-appears, visible, at the end).
-const DEFAULTS: BoardCardPrefs = {
-  order: ['autoCard', 'today', 'toFinish', 'todos', 'upcoming', 'drawings', 'photos'],
-  hidden: [],
-}
+// The fixed top band, in render order (fridge notes ride above the heroes). Show/hide
+// only.
+const BAND_CARD_IDS: BandCardId[] = ['notes', 'heroes', 'aRegler', 'moments']
+
+// Default GRID order = today's importance: car → the day → standing lists → upcoming →
+// media. Everything visible. This is also the canonical grid-id list (read() reconciles
+// a saved layout against it, so a NEW card added here auto-appears, visible, at the end).
+const DEFAULT_GRID_ORDER: GridCardId[] = ['autoCard', 'today', 'toFinish', 'todos', 'upcoming', 'drawings', 'photos']
+// Every known id (band + grid) — used to validate the persisted `hidden` set.
+const ALL_IDS: BoardCardId[] = [...BAND_CARD_IDS, ...DEFAULT_GRID_ORDER]
+
+const DEFAULTS: BoardCardPrefs = { order: DEFAULT_GRID_ORDER, hidden: [] }
 
 // Static meta for the settings UI (the label comes from i18n `boardCard.<id>`, so this
-// lib stays free of i18n imports). Icons mirror each card's own header glyph.
-export const BOARD_CARD_META: { id: BoardCardId; icon: IconName }[] = [
+// lib stays free of i18n imports). Icons mirror each card's own header glyph. Split so
+// the settings panel can group the fixed band apart from the reorderable grid.
+export const BAND_CARD_META: { id: BandCardId; icon: IconName }[] = [
+  { id: 'notes', icon: 'push-pin-bold' },
+  { id: 'heroes', icon: 'sun-bold' },
+  { id: 'aRegler', icon: 'warning-bold' },
+  { id: 'moments', icon: 'moon-stars-bold' },
+]
+export const GRID_CARD_META: { id: GridCardId; icon: IconName }[] = [
   { id: 'autoCard', icon: 'car-bold' },
   { id: 'today', icon: 'sun-bold' },
   { id: 'toFinish', icon: 'check-bold' },
@@ -42,14 +65,19 @@ const KEY = 'babillard-card-prefs'
 const listeners = new Set<() => void>()
 let cache: BoardCardPrefs | null = null
 
-// Reconcile a saved layout against the canonical id list: keep saved order for known
-// ids, drop ids that no longer exist, and APPEND any new default cards at the end
-// (visible). So adding a card to DEFAULTS.order never strands it off an old device.
+// Reconcile a saved layout against the canonical id lists: keep saved GRID order for
+// known grid ids, drop ids that no longer exist, and APPEND any new default grid cards
+// at the end (visible) — so adding a grid card never strands it off an old device. The
+// `hidden` set may name any card (band or grid).
 function reconcile(saved: Partial<BoardCardPrefs>): BoardCardPrefs {
-  const savedOrder = Array.isArray(saved.order) ? saved.order.filter((id): id is BoardCardId => DEFAULTS.order.includes(id as BoardCardId)) : []
-  const missing = DEFAULTS.order.filter((id) => !savedOrder.includes(id))
+  const savedOrder = Array.isArray(saved.order)
+    ? saved.order.filter((id): id is GridCardId => DEFAULT_GRID_ORDER.includes(id as GridCardId))
+    : []
+  const missing = DEFAULT_GRID_ORDER.filter((id) => !savedOrder.includes(id))
   const order = [...savedOrder, ...missing]
-  const hidden = Array.isArray(saved.hidden) ? saved.hidden.filter((id): id is BoardCardId => DEFAULTS.order.includes(id as BoardCardId)) : []
+  const hidden = Array.isArray(saved.hidden)
+    ? saved.hidden.filter((id): id is BoardCardId => ALL_IDS.includes(id as BoardCardId))
+    : []
   return { order, hidden }
 }
 
@@ -100,7 +128,13 @@ export function useBoardCards(): BoardCardPrefs {
   return useSyncExternalStore(subscribe, snapshot, () => DEFAULTS)
 }
 
-// The visible cards in order — the one thing the board needs to render.
-export function visibleCardOrder(prefs: BoardCardPrefs): BoardCardId[] {
+// The visible GRID cards in order — what the masonry needs to render.
+export function visibleCardOrder(prefs: BoardCardPrefs): GridCardId[] {
   return prefs.order.filter((id) => !prefs.hidden.includes(id))
+}
+
+// Is a single card (band OR grid) visible on this device? Band cards use this to gate
+// their fixed-position render; grid cards already go through visibleCardOrder.
+export function isCardVisible(prefs: BoardCardPrefs, id: BoardCardId): boolean {
+  return !prefs.hidden.includes(id)
 }

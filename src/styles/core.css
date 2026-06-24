@@ -122,14 +122,20 @@
    (set by themeForPart), so they're genuine palette tiers, not light-side tints —
    the text colour and grounds shift together. Tune the hexes to taste. */
 :root[data-theme='twilight'] {
-  --paper: #5d505c; /* warm dusk-violet, lamps just on */
-  --paper-deep: #524655;
-  --card: #6a5c69;
-  --ink: #f4eee2;
-  --ink-soft: #d6cabf;
-  --ink-faint: #a99e95;
-  --line: #716470;
-  --line-strong: #847585;
+  /* Warm dusk-violet, lamps just on. Grounds darkened a step from the first cut
+     (#5d505c/#6a5c69) so small text actually reads: the old card was a mid-tone
+     and `.act .when` time labels (--ink-faint, 12.5px) landed at 2.4:1 on it — a
+     clear AA fail on the dawn/dusk purple Marc flagged. Still distinctly lighter
+     than deep-twilight (#322a35), so the day→twilight→deep-twilight→night step
+     stays gradual; just dim enough that the existing light inks clear 4.5:1. */
+  --paper: #4a3f4d;
+  --paper-deep: #41374a;
+  --card: #564a57;
+  --ink: #f4eee2; /* 7.2:1 on card */
+  --ink-soft: #d6cabf; /* 5.2:1 on card — secondary text (.who) */
+  --ink-faint: #c6bdb3; /* lifted from #a99e95 → 4.5:1 on card — time labels (.when) */
+  --line: #7e727b;
+  --line-strong: #a498a0; /* 3:1 on card — the check-disc border must be visible */
 
   --marigold-wash: #5b4a33;
   --terracotta-wash: #5b4034;
@@ -145,9 +151,9 @@
   --card: #3a3140;
   --ink: #ece6d8;
   --ink-soft: #b6aca0;
-  --ink-faint: #847b70;
+  --ink-faint: #a39b8f; /* lifted from #847b70 → 4.5:1 on card (was 3.0 — AA fail for small text) */
   --line: #473d49;
-  --line-strong: #574b58;
+  --line-strong: #877d81; /* lifted → 3:1 on card so the check-disc border reads */
 
   --marigold-wash: #463821;
   --terracotta-wash: #452e23;

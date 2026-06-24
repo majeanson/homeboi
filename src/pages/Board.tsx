@@ -45,7 +45,7 @@ import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { useBoardData, useTagColors } from '../lib/queryHooks'
-import { useBoardCards, visibleCardOrder, type BoardCardId } from '../lib/boardCards'
+import { useBoardCards, visibleCardOrder, isCardVisible, type GridCardId } from '../lib/boardCards'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -710,10 +710,15 @@ export function Board() {
   // match the supper/weather heroes (same card look + height). It rides DIRECTLY
   // UNDER the heroes in Grille only — so the day's two glance cards sit on top, the
   // two heads-up cards just beneath. (Mois stays a clean calendar.)
+  // Both band cards are per-device show/hide-able (« Disposition du babillard »), on top
+  // of their own render conditions. When both are hidden the `.board-status:empty` rule
+  // collapses the band.
   const statusBand = (
     <div className="board-status">
-      <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} variant="card" />
-      <MomentPeek />
+      {isCardVisible(boardCards, 'aRegler') && (
+        <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} variant="card" />
+      )}
+      {isCardVisible(boardCards, 'moments') && <MomentPeek />}
     </div>
   )
 
@@ -786,8 +791,11 @@ export function Board() {
 
       {/* Fridge notes (text / voice / photo) ride above the day in both parent
           views. DRAWINGS are split out to the Grille view only (below) — they
-          deserve room and shouldn't crowd the compact Mois calendar. */}
-      {data && <Notes notes={data.notes ?? []} members={data.members} variant="notes" />}
+          deserve room and shouldn't crowd the compact Mois calendar. Per-device
+          show/hide-able like the other band cards (« Disposition du babillard »). */}
+      {data && isCardVisible(boardCards, 'notes') && (
+        <Notes notes={data.notes ?? []} members={data.members} variant="notes" />
+      )}
 
       {/* Today's day note (the per-day memo from La cuisine) rides here too, in
           every view — read-only on the wall, edited in the kitchen. Skipped in the
@@ -813,23 +821,25 @@ export function Board() {
               on top via DayHeroes (the polished glance cards). The meal tap keeps
               Grille's leftover/remove detail actions. The heads-up cards (À régler +
               Moments) sit DIRECTLY beneath them via statusBand, matching their look. */}
-          <DayHeroes
-            suppers={tonightMeals}
-            supperColor={supperColor!}
-            onOpenMeal={(m) =>
-              detail.open(buildMeal(m, detailCtx, {
-                color: supperColor,
-                slotLabel: t.board.tonight,
-                daySec: todayDay,
-                onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
-                onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? 'supper', todayDay),
-              }))
-            }
-            cookLine={cookLine}
-            weather={weather}
-            wonder={wonder}
-            onShuffleWonder={shuffleWonder}
-          />
+          {isCardVisible(boardCards, 'heroes') && (
+            <DayHeroes
+              suppers={tonightMeals}
+              supperColor={supperColor!}
+              onOpenMeal={(m) =>
+                detail.open(buildMeal(m, detailCtx, {
+                  color: supperColor,
+                  slotLabel: t.board.tonight,
+                  daySec: todayDay,
+                  onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+                  onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? 'supper', todayDay),
+                }))
+              }
+              cookLine={cookLine}
+              weather={weather}
+              wonder={wonder}
+              onShuffleWonder={shuffleWonder}
+            />
+          )}
 
           {/* Heads-up cards (À régler + Moments) directly under the heroes. */}
           {statusBand}
@@ -839,7 +849,7 @@ export function Board() {
                 the per-device order with hidden ones dropped (lib/boardCards, set in
                 Réglages ▸ Affichage). The card JSX is unchanged — just addressable. */}
             {(() => {
-              const nodes: Partial<Record<BoardCardId, ReactNode>> = {}
+              const nodes: Partial<Record<GridCardId, ReactNode>> = {}
               // « L'auto » glance — the car's status today + today's rides. #28
               nodes.autoCard = <AutoCard />
               // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda.
@@ -994,11 +1004,16 @@ export function Board() {
                 </Section>
               )
               // « À finir » — leftovers + à-faire bunched (null when both empty).
+              // The two sub-headers ("Restants à finir" / "À faire") only earn their
+              // keep when BOTH groups show — they're dividers. With one group the
+              // section label "À finir" already heads it, so a lone subhead just
+              // stacks a second near-synonymous title (Marc's redundant-title note).
+              const bothToFinish = leftovers.length > 0 && todayTodos.length > 0
               nodes.toFinish = (leftovers.length > 0 || todayTodos.length > 0) ? (
                 <Section label={t.board.toFinish} icon="check-bold" tint="var(--sage)">
               {leftovers.length > 0 && (
                 <>
-                  <SubHead label={t.kitchen.leftoversBoard} icon="arrow-counter-clockwise-bold" />
+                  {bothToFinish && <SubHead label={t.kitchen.leftoversBoard} icon="arrow-counter-clockwise-bold" />}
                   {leftovers.map((l) => (
                     <Act
                       key={l.id}
@@ -1017,7 +1032,7 @@ export function Board() {
               )}
               {todayTodos.length > 0 && (
                 <>
-                  <SubHead label={t.board.todos} icon="check-bold" />
+                  {bothToFinish && <SubHead label={t.board.todos} icon="check-bold" />}
                   {todayTodos.map(todoAct)}
                 </>
               )}

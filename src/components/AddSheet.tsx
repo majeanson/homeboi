@@ -10,7 +10,7 @@ import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { useReserveLocations } from '../lib/reservePrefs'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { VoiceButton } from './VoiceButton'
-import { formatWeekday } from '../lib/format'
+import { formatWeekday, formatRelativeWeekday } from '../lib/format'
 import { OPERATOR_MODES, FORM_ROUTES, type AddSheetMode } from '../lib/addSheet'
 import { CATS, type CatKey } from '../lib/cats'
 import { Act } from './board/Act'
@@ -929,7 +929,7 @@ export function AddSheet({
             <div className="addsheet__days">
               {weekDays.map((d) => (
                 <Chip key={d} onClick={() => planDay(d)}>
-                  {formatWeekday(d, lang)}
+                  {formatRelativeWeekday(d, lang, t.board.today, t.board.tomorrow)}
                 </Chip>
               ))}
             </div>

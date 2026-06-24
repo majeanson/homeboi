@@ -749,11 +749,21 @@
 .kitchen__add-cancel {
   align-self: flex-start;
 }
+/* "Vider la journée" — the day's destructive clear. Pinned last and full-width,
+   reading red so it never reads as a quiet, easy-to-miss control. */
 .kitchen__clear-day {
   flex-basis: 100%;
-  align-self: flex-start;
-  margin-top: 0.3rem;
-  color: var(--ink-faint);
+  align-self: stretch;
+  justify-content: center;
+  margin-top: 0.8rem;
+  border-color: color-mix(in srgb, var(--danger, #c0392b) 40%, transparent);
+  color: var(--danger, #c0392b);
+}
+.kitchen__clear-day:hover,
+.kitchen__clear-day:focus-visible {
+  border-color: var(--danger, #c0392b);
+  background: color-mix(in srgb, var(--danger, #c0392b) 10%, transparent);
+  color: var(--danger, #c0392b);
 }
 /* The meal -> grocery staple confirm step (B3). Breaks the day row into a
    column: dish + chips + the two save actions. */

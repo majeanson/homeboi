@@ -250,8 +250,8 @@
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  height: 32px;
-  padding: 0 0.7rem;
+  height: 40px; /* was 32px — toward the 44px touch target (AUJOURDHUI §5) */
+  padding: 0 0.85rem;
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
@@ -259,6 +259,10 @@
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
+}
+.boardview__opt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .boardview__label {
   white-space: nowrap;
@@ -271,7 +275,7 @@
    there (the labels stay for tablets/kiosk where the discoverability matters). */
 @media (max-width: 520px) {
   .boardview__opt {
-    width: 36px;
+    width: 40px;
     padding: 0;
   }
   .boardview__label {
@@ -1370,6 +1374,30 @@
 .drawgallery__pin.is-done {
   color: var(--paper);
   background: var(--berry-deep, var(--accent, #4a8a5a));
+}
+/* Credit line under each kept drawing: who drew it + when. Calm — a quiet caption,
+   never counts. Wraps gracefully on a narrow tile. */
+.drawgallery__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.drawgallery__by {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.drawgallery__by .avatar {
+  flex: none;
+}
+.drawgallery__date {
+  margin-left: auto;
 }
 /* The "Dessiner" + "La galerie" actions inside the Grille drawings strip: a small
    trailing cluster that rides to the END of the row beside the drawings on a wide

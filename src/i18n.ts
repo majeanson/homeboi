@@ -395,6 +395,10 @@ export const FR = {
   // Card names for « Disposition du babillard » (Réglages ▸ Affichage) — show/hide +
   // reorder the Grille cards per device.
   boardCard: {
+    notes: 'Notes (frigo)',
+    heroes: 'Ce soir + météo',
+    aRegler: 'À régler',
+    moments: 'Moments',
     autoCard: 'L’auto',
     today: 'Aujourd’hui',
     toFinish: 'À finir',
@@ -1319,10 +1323,12 @@ export const FR = {
     apodOff: 'Cachée',
     // « Disposition du babillard » — per-device show/hide + reorder of the Grille cards.
     boardLayout: 'Disposition du babillard',
-    boardLayoutHint: 'Choisis quelles cartes afficher et dans quel ordre — propre à cet appareil. Glisse la poignée pour réordonner.',
+    boardLayoutHint: 'Choisis quelles cartes afficher — propre à cet appareil. Le bandeau du haut garde sa place; glisse la poignée des cartes pour les réordonner.',
     boardLayoutReset: 'Réinitialiser',
     boardLayoutShown: 'Affichée',
     boardLayoutHidden: 'Cachée',
+    boardLayoutBand: 'Bandeau du haut (position fixe)',
+    boardLayoutGrid: 'Cartes (glisse pour réordonner)',
     a11yTitle: 'Accessibilité',
     a11yHint:
       'Contraste renforcé et plus gros texte, pour mieux voir de loin ou de plus près. N’affecte que cet appareil.',
@@ -2294,6 +2300,10 @@ export const EN: typeof FR = {
   },
   // Card names for the board-layout panel (Settings ▸ Display).
   boardCard: {
+    notes: 'Notes (fridge)',
+    heroes: 'Tonight + weather',
+    aRegler: 'To settle',
+    moments: 'Moments',
     autoCard: 'The car',
     today: 'Today',
     toFinish: 'To finish',
@@ -3199,10 +3209,12 @@ export const EN: typeof FR = {
     apodOff: 'Hidden',
     // Per-device show/hide + reorder of the Grille cards.
     boardLayout: 'Board layout',
-    boardLayoutHint: 'Choose which cards show and in what order — specific to this device. Drag the handle to reorder.',
+    boardLayoutHint: 'Choose which cards show — specific to this device. The top band keeps its place; drag a card’s handle to reorder it.',
     boardLayoutReset: 'Reset',
     boardLayoutShown: 'Shown',
     boardLayoutHidden: 'Hidden',
+    boardLayoutBand: 'Top band (fixed position)',
+    boardLayoutGrid: 'Cards (drag to reorder)',
     a11yTitle: 'Accessibility',
     a11yHint:
       'Stronger contrast and bigger text, to read better from afar or up close. Affects this device only.',

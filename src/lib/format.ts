@@ -1,4 +1,5 @@
 import type { Lang } from '../i18n'
+import { daysUntilLocal } from './localDay'
 
 const LOCALE: Record<Lang, string> = { fr: 'fr-CA', en: 'en-CA' }
 
@@ -46,6 +47,27 @@ export function formatDayMaybeYear(unixSec: number, lang: Lang, now: number = Da
 
 export function formatWeekday(unixSec: number, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'long' }).format(unixSec * 1000)
+}
+
+// Like formatWeekday, but anchors the two nearest days to "today"/"tomorrow" so a
+// day picker reads "Aujourd'hui · Demain · mercredi · jeudi…" instead of a wall of
+// bare weekday names where the user has to work out which one is now. The labels
+// are passed in (the caller owns the locale copy — t.board.today/tomorrow); `now`
+// is injectable so it stays pure/testable.
+export function formatRelativeWeekday(
+  unixSec: number,
+  lang: Lang,
+  todayLabel: string,
+  tomorrowLabel: string,
+  now: number = Date.now(),
+): string {
+  const d = daysUntilLocal(unixSec, now)
+  if (d === 0) return todayLabel
+  if (d === 1) return tomorrowLabel
+  // Capitalize the bare weekday so it sits uniformly beside the capitalized
+  // "Aujourd'hui"/"Demain" chips (Intl lowercases the French weekday).
+  const wd = formatWeekday(unixSec, lang)
+  return wd.charAt(0).toUpperCase() + wd.slice(1)
 }
 
 // These render LOCAL-midnight day-starts (the Kitchen day grid + the month view,
