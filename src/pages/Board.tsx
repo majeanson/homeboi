@@ -108,9 +108,17 @@ export function Board() {
   const boardCards = useBoardCards()
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
   // learn what it shows instead of switching. Label = the view's own name.
-  const help = useHelpMode(BOARD_HELP, (k) =>
-    k.startsWith('view-') ? t.boardView[k.slice(5) as 'bento' | 'month'] : k === 'todos' ? t.board.todos : k,
-  )
+  const help = useHelpMode(BOARD_HELP, (k) => {
+    if (k.startsWith('view-')) return t.boardView[k.slice(5) as 'bento' | 'month']
+    const titles: Record<string, string> = {
+      todos: t.board.todos,
+      today: t.board.today,
+      fil: t.board.fil,
+      toFinish: t.board.toFinish,
+      upcoming: t.board.upcoming,
+    }
+    return titles[k] ?? k
+  })
   // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
   // out of the rendered board at once so the live poll can't resurrect them before
   // the write commits — same guard as Liste's pendingClear. Tapping Annuler means
@@ -926,7 +934,7 @@ export function Board() {
               // to place; when on, the « Aujourd'hui » card below drops these same events +
               // chores so nothing renders twice.
               nodes.fil = filShown ? (
-                <Section label={t.board.fil} icon="clock-bold" tint="var(--sky)">
+                <Section label={t.board.fil} icon="clock-bold" tint="var(--sky)" help={help} helpKey="fil">
                   <Fil
                     timed={[
                       ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, node: eventAct(e) })),
@@ -945,7 +953,7 @@ export function Board() {
               ) : null
               // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda.
               nodes.today = (
-                <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)">
+                <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)" help={help} helpKey="today">
             {/* « Prochainement » — the next timed thing today as a calm tappable
                 headline above the full day list (the glance the « Maintenant » view
                 used to give). Renders nothing once today's timed events are behind us.
@@ -1107,7 +1115,7 @@ export function Board() {
               // « À finir » — leftovers to eat first (loose one-off tasks moved into the
               // unified « À faire » card below). Hidden when there are no leftovers.
               nodes.toFinish = leftovers.length > 0 ? (
-                <Section label={t.board.toFinish} icon="arrow-counter-clockwise-bold" tint="var(--sage)">
+                <Section label={t.board.toFinish} icon="arrow-counter-clockwise-bold" tint="var(--sage)" help={help} helpKey="toFinish">
                   {leftovers.map((l) => (
                     <Act
                       key={l.id}
@@ -1138,7 +1146,7 @@ export function Board() {
               )
               // « À venir » — upcoming events/chores (null when none).
               nodes.upcoming = (upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) ? (
-                <Section label={t.board.upcoming} icon="calendar-blank-bold" tint="var(--sky)">
+                <Section label={t.board.upcoming} icon="calendar-blank-bold" tint="var(--sky)" help={help} helpKey="upcoming">
               {upcomingEvents.map((e) => (
                 <Act
                   key={e.id}

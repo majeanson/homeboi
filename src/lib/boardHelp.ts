@@ -28,4 +28,34 @@ export const BOARD_HELP: Record<string, HelpEntry> = {
       en: '“À faire”: one-off things you tick off, then they’re done (often dictated). “À compléter” below: your recurring checklists — pool bag, before leaving… — reusable in one tap.',
     },
   },
+  // The rest of the board's section cards — a one-line "what is this" each, deep-linking to
+  // the relevant guide concept. Help-mode only (armed via the board "?"), so no clutter.
+  today: {
+    card: 'board',
+    body: {
+      fr: 'Aujourd’hui : l’agenda du jour — repas, événements, corvées. « Demain » se range en dessous quand il y a quelque chose à préparer.',
+      en: 'Today: the day’s agenda — meals, events, chores. “Tomorrow” tucks in below when there’s something to prep.',
+    },
+  },
+  fil: {
+    card: 'board',
+    body: {
+      fr: 'Le fil du jour : tes rendez-vous, trajets et heures de travail placés dans l’ordre de l’heure, avec un repère « Maintenant » et les plages « Libre ».',
+      en: 'The day’s timeline: your appointments, rides and work hours placed in time order, with a “Now” marker and “Free” stretches.',
+    },
+  },
+  toFinish: {
+    card: 'leftovers',
+    body: {
+      fr: 'À finir : les restes à manger en premier, pour ne rien gaspiller. Coche quand c’est fini.',
+      en: 'To finish: leftovers to eat first so nothing’s wasted. Tick one off when it’s gone.',
+    },
+  },
+  upcoming: {
+    card: 'reminders',
+    body: {
+      fr: 'À venir : ce qui s’en vient cette semaine, avec « dans X jours » quand c’est proche.',
+      en: 'Coming up: what’s ahead this week, with “in X days” when it’s close.',
+    },
+  },
 }
