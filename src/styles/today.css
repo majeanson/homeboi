@@ -575,11 +575,13 @@
 .now-card__shuffle {
   z-index: 2;
 }
-/* Wonder source label, bottom-left in a frosted pill (static — read-aloud is a
-   toddler-only affordance, so the parent weather card just names the picture). */
+/* Wonder source label, bottom-RIGHT in a frosted pill (static — read-aloud is a
+   toddler-only affordance, so the parent weather card just names the picture). Bottom-
+   right keeps it clear of the left-aligned few-hours forecast strip (.now-card__hours),
+   which the bottom-left position used to overlap; the shuffle button sits top-right. */
 .now-card__wonder-hear {
   position: absolute;
-  left: 14px;
+  right: 14px;
   bottom: 12px;
   z-index: 2;
   display: inline-flex;
