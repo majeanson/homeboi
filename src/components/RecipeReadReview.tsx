@@ -65,6 +65,13 @@ export function RecipeReadReview({
   const [title, setTitle] = useState(draft.title ?? '')
   const [ingredients, setIngredients] = useState<string[]>(draft.ingredients.length ? draft.ingredients : [])
   const [steps, setSteps] = useState<string[]>(draft.steps.length ? draft.steps : [])
+  // Portions + times are read off the page too and easy to mis-read, so they're
+  // checkable against the photo here (not just later in the form). Kept as strings
+  // so the fields can be blanked; parsed back to numbers on confirm.
+  const numStr = (n: number | null | undefined) => (n ? String(n) : '')
+  const [servings, setServings] = useState(numStr(draft.servings))
+  const [prep, setPrep] = useState(numStr(draft.times?.prep))
+  const [cook, setCook] = useState(numStr(draft.times?.cook))
 
   const lowSet = useMemo(() => new Set(lowConfidenceWords.map((w) => w.toLowerCase())), [lowConfidenceWords])
   // How many lines we're asking the cook to glance at — drives the header hint so a
@@ -79,11 +86,18 @@ export function RecipeReadReview({
 
   const confirm = () => {
     if (busy) return
+    // A blank or non-positive field clears that value (parseInt → NaN → null).
+    const num = (s: string): number | null => {
+      const n = parseInt(s, 10)
+      return Number.isFinite(n) && n > 0 ? n : null
+    }
     onConfirm({
       ...draft,
       title: title.trim() || null,
       ingredients: ingredients.map((s) => s.trim()).filter(Boolean),
       steps: steps.map((s) => s.trim()).filter(Boolean),
+      servings: num(servings),
+      times: { prep: num(prep), cook: num(cook), total: draft.times?.total ?? null },
     })
   }
 
@@ -141,6 +155,44 @@ export function RecipeReadReview({
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t.recipes.titlePlaceholder}
             />
+
+            {/* Portions + times — read off the page, checkable against the photo
+                (blank = none). Numbers are in minutes; the form has the same fields. */}
+            <div className="read-review__meta">
+              <label className="read-review__num mono">
+                {t.recipes.servings}
+                <input
+                  className="input"
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  value={servings}
+                  onChange={(e) => setServings(e.target.value)}
+                />
+              </label>
+              <label className="read-review__num mono">
+                {t.recipes.timePrep}
+                <input
+                  className="input"
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  value={prep}
+                  onChange={(e) => setPrep(e.target.value)}
+                />
+              </label>
+              <label className="read-review__num mono">
+                {t.recipes.timeCook}
+                <input
+                  className="input"
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  value={cook}
+                  onChange={(e) => setCook(e.target.value)}
+                />
+              </label>
+            </div>
 
             <h3 className="read-review__sec">
               <Icon name="carrot-bold" size={16} color="var(--terracotta-deep)" /> {t.recipes.ingredients}

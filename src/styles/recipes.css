@@ -1024,6 +1024,24 @@
   font-weight: 700;
   font-size: 1.05rem;
 }
+/* Portions + prep/cook, read off the page and checkable against the photo. */
+.read-review__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+.read-review__num {
+  flex: 1 1 5rem;
+  min-width: 4.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--ink-faint);
+}
+.read-review__num .input {
+  width: 100%;
+}
 .read-review__sec {
   display: flex;
   align-items: center;

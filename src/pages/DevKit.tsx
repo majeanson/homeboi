@@ -1509,6 +1509,9 @@ export function DevKit() {
                   title: 'Biscuits à l’avoine',
                   ingredients: ['3/4 tasse de farine', '1 c. à thé de cannelle', '2 œufs'],
                   steps: ['Préchauffer le four à 180 °C.', 'Mélanger le tout et cuire 12 minutes.'],
+                  servings: 24,
+                  servingsUnit: 'biscuits',
+                  times: { prep: 15, cook: 12, total: null },
                 }}
                 lowConfidenceWords={['cannelle']}
                 onConfirm={() => setReadReviewOpen(false)}
