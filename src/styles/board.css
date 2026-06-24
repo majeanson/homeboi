@@ -516,12 +516,22 @@
   color: var(--ink-faint);
   font-size: 0.8rem;
 }
-/* The « Cette semaine » block reuses the rows but as plain links above the columns. */
+/* « À régler » in « Cette semaine » is prevalent enough to stand on its own — give it
+   a distinct marigold heads-up card (the same warm identity as the board's À régler hero)
+   instead of bare links jammed above the week columns. */
 .tweek__regler {
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.3rem;
+  padding: 0.85rem 1rem 0.6rem;
+  background: var(--marigold-wash);
+  border: 1px solid color-mix(in srgb, var(--marigold-deep) 22%, transparent);
+  border-radius: var(--radius-lg, 18px);
+}
+.tweek__regler > .tweek__col-h {
+  margin: 0 0 0.5rem;
+  color: var(--marigold-deep);
 }
 .tweek__regler .a-regler__row {
-  padding: 0.32rem 0;
+  padding: 0.34rem 0;
 }
 /* The day's meals as a centred row of colour-coded slot chips (.meal-chip, shared
    — see misc.css), with a quiet label. Wraps on a narrow phone. */
@@ -1861,8 +1871,13 @@
    + (via :root[data-daypart]) the time of day. Sits BEHIND the content: the board's own
    children are lifted to z-index 1 so the canvas (z 0) never covers a card or text. Low
    opacity → never touches readability. Per-device opt-out; reduced-motion drops the snow. */
-.board-wall > :not(.board-canvas),
-.today-kid > :not(.board-canvas) {
+/* Lift the board's in-flow content above the canvas (z 0). EXCLUDE the always-mounted
+   overlays the board mounts as direct children — the ProfilePicker's `.scrim` + `.sheet`
+   are `position: fixed` (pinned to the viewport, hidden off-screen until opened); forcing
+   them `relative` dropped the closed "Qui es-tu ?" sheet back into flow at the bottom of
+   the board, so it sat there permanently. They carry their own stacking (sheets.css). */
+.board-wall > :not(.board-canvas):not(.scrim):not(.sheet),
+.today-kid > :not(.board-canvas):not(.scrim):not(.sheet) {
   position: relative;
   z-index: 1;
 }

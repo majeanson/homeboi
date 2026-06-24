@@ -7,7 +7,6 @@ import { PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { WelcomeCard } from '../components/WelcomeCard'
-import { CercleBirthdays } from '../components/cercle/CercleBirthdays'
 import { AutoCard } from '../components/board/AutoCard'
 import { MomentPeek } from '../components/board/MomentPeek'
 import { ARegler } from '../components/board/ARegler'
@@ -77,12 +76,16 @@ const SLOT_PAST_MIN: Partial<Record<string, number>> = {
 }
 
 // Keep the greeting on one line beside the help dot + section icon: a long
-// display name collapses to its initials (split on spaces/hyphens, e.g.
-// "Marie-Christine" → "MC"), so "Bonne soirée, …" never wraps or overflows.
-const greetName = (name: string) =>
-  name.length > 10
-    ? name.split(/[\s-]+/).filter(Boolean).map((p) => p[0]!.toUpperCase()).join('') || name
-    : name
+// display name collapses so "Bonne soirée, …" never wraps or overflows. A
+// MULTI-word name → its initials ("Marie-Christine" → "MC"); a single long
+// first name ("Alexandrina") would collapse to a lone "A", which reads oddly,
+// so it's truncated with an ellipsis instead.
+const greetName = (name: string) => {
+  if (name.length <= 10) return name
+  const parts = name.split(/[\s-]+/).filter(Boolean)
+  if (parts.length > 1) return parts.map((p) => p[0]!.toUpperCase()).join('')
+  return name.slice(0, 9) + '…'
+}
 
 export function Board() {
   const t = useT()
@@ -695,8 +698,8 @@ export function Board() {
       color={c.color ?? undefined}
       mine={!!profileId && c.who_id === profileId}
       soon={c.soon}
-      onCheck={withDay ? undefined : () => markChoreDone(c)}
-      onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, onDone: withDay ? undefined : () => markChoreDone(c) }))}
+      onCheck={withDay || ro ? undefined : () => markChoreDone(c)}
+      onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, onDone: withDay || ro ? undefined : () => markChoreDone(c) }))}
     />
   )
 
@@ -737,8 +740,8 @@ export function Board() {
       color={c.color ?? undefined}
       mine={!!profileId && c.who_id === profileId}
       soon={c.soon}
-      onCheck={() => markTodoDone(c)}
-      onOpen={() => detail.open(buildChore(c, detailCtx, { todo: true, onDone: () => markTodoDone(c) }))}
+      onCheck={ro ? undefined : () => markTodoDone(c)}
+      onOpen={() => detail.open(buildChore(c, detailCtx, { todo: true, onDone: ro ? undefined : () => markTodoDone(c) }))}
     />
   )
 
@@ -774,8 +777,8 @@ export function Board() {
       when={withDay ? withRel(formatDayMaybeYear(c.at, lang), c.at) : undefined}
       color={c.color ?? undefined}
       soon={c.soon}
-      onCheck={withDay ? undefined : () => markHomeDone(c)}
-      onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, onDone: withDay ? undefined : () => markHomeDone(c) }))}
+      onCheck={withDay || ro ? undefined : () => markHomeDone(c)}
+      onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, onDone: withDay || ro ? undefined : () => markHomeDone(c) }))}
     />
   )
 
@@ -891,9 +894,9 @@ export function Board() {
           this top copy would just repeat it. */}
       {view !== 'month' && data?.dayNote && <DayNote note={data.dayNote} members={data.members} />}
 
-      {/* Upcoming birthdays from « Le cercle » — a calm strip above the day, in
-          every parent view (renders nothing when none are near). */}
-      <CercleBirthdays />
+      {/* (Upcoming birthdays are NOT a separate strip here — they already ride in the
+          « À venir » card below as dated rows, so a second « Anniversaires à venir »
+          band would just duplicate them. « Le cercle » still has its own faces view.) */}
 
       {/* (« À régler » + « Moments » ride as the `statusBand` cards in GRILLE only —
           directly under the heroes. The calendar (Mois) stays a clean grid; you reach
@@ -1136,9 +1139,9 @@ export function Board() {
                       icon="arrow-counter-clockwise-bold"
                       when={t.kitchen.leftoversTag}
                       title={l.title}
-                      onCheck={() => markLeftoverDone(l)}
+                      onCheck={ro ? undefined : () => markLeftoverDone(l)}
                       onOpen={() => detail.open(buildLeftover(l, detailCtx, {
-                        onDone: () => markLeftoverDone(l),
+                        onDone: ro ? undefined : () => markLeftoverDone(l),
                         onPlanTonight: ro ? undefined : () => planLeftoverTonight(l.id, l.title),
                       }))}
                     />
@@ -1152,7 +1155,7 @@ export function Board() {
               // own header — two clearly-labelled groups in one card. The help "?" on the
               // title explains the distinction. Always on (TodoSection is the add surface).
               nodes.todos = (
-                <Section label={t.board.todos} icon="check-bold" tint="var(--sage)" help={help} helpKey="todos">
+                <Section label={t.board.todos} icon="check-bold" tint="var(--terracotta)" help={help} helpKey="todos">
                   {todayTodos.map(todoAct)}
                   <TodoSection title={t.todos.title} members={data.members} bento={false} />
                 </Section>

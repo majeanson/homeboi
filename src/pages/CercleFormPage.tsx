@@ -4,7 +4,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { isGuest } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
-import { CERCLE_KEY, BOARD_KEY } from '../lib/queryKeys'
+import { CERCLE_KEY, BOARD_KEY, A_REGLER_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
 import { Loading } from '../components/Fallback'
 import { ContactForm } from '../components/cercle/ContactForm'
@@ -54,6 +54,10 @@ export function CercleFormPage() {
           onSaved={() => {
             qc.invalidateQueries({ queryKey: CERCLE_KEY })
             qc.invalidateQueries({ queryKey: BOARD_KEY })
+            // Editing a person feeds the « À régler » heads-up (e.g. a birthday's gift
+            // idea just filled in). Without this, the polled signal lingered up to its
+            // 5-min staleTime, so the « aucune idée de cadeau » warning cleared late.
+            qc.invalidateQueries({ queryKey: A_REGLER_KEY })
             close()
           }}
         />
