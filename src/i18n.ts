@@ -384,16 +384,11 @@ export const FR = {
   },
   boardView: {
     label: 'Vue du babillard',
-    jour: 'La journée',
     bento: 'Grille',
-    // "Maintenant" (not "À venir") so the view toggle doesn't share a name with
-    // the bento grid's "À venir" (upcoming) section — they were indistinguishable.
-    next: 'Maintenant',
-    lanes: 'Par personne',
     month: 'Mois',
-    moment: 'Moments',
-    then: 'ensuite',
-    nothingNext: 'Rien de prévu pour l’instant',
+    // « Prochainement » — the next still-to-come timed thing today, surfaced as a calm
+    // lead at the top of the Grille day (the one glance the retired « Maintenant » gave).
+    nextUp: 'Prochainement',
   },
   monthView: {
     today: 'Aujourd’hui',
@@ -2265,14 +2260,9 @@ export const EN: typeof FR = {
   },
   boardView: {
     label: 'Board view',
-    jour: 'The day',
     bento: 'Grid',
-    next: 'Up next',
-    lanes: 'Per person',
     month: 'Month',
-    moment: 'Moments',
-    then: 'then',
-    nothingNext: 'Nothing coming up',
+    nextUp: 'Up next',
   },
   monthView: {
     today: 'Today',

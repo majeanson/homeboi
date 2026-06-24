@@ -291,12 +291,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
-          fr: 'Grille (toute la semaine), « Maintenant » (la prochaine affaire), par personne (la journée d’un seul), le mois (la vue d’ensemble) ou « Moments » (un moment choisi — ce soir, demain, une date, la semaine — avec sa liste « À compléter »).',
-          en: 'Grid (the whole week), “Now” (the next thing), by person (one person’s day), the month (the big picture) or “Moments” (a chosen moment — tonight, tomorrow, a date, the week — with its “To complete” list).',
+          fr: 'Deux vues : la Grille (toute la journée d’un coup d’œil, avec « Prochainement » en tête) et le Mois (la vue d’ensemble; touche une journée pour la planifier). Le visage choisi à côté du sélecteur filtre l’une comme l’autre — Maisonnée montre tout le monde, un visage ne montre que ses affaires à lui. Le bouton « Moments » ouvre un moment choisi (ce soir, demain, une date, la semaine) avec sa liste « À compléter ».',
+          en: 'Two views: the Grid (the whole day at a glance, with “Up next” at the top) and the Month (the big picture; tap a day to plan it). The face you pick beside the selector filters both — Household shows everyone, a face shows just their things. The “Moments” button opens a chosen moment (tonight, tomorrow, a date, the week) with its “To complete” list.',
         },
         why: {
-          fr: 'Chaque vue répond à une question différente; choisis celle qui parle à ta famille.',
-          en: 'Each view answers a different question; pick the one that speaks to your family.',
+          fr: 'Deux vues claires plutôt que cinq qui se ressemblent; le visage et « Moments » couvrent le reste sans encombrer.',
+          en: 'Two clear views instead of five that blur together; the face picker and “Moments” cover the rest without clutter.',
         },
       },
       {

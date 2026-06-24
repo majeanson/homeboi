@@ -1641,65 +1641,52 @@
   }
 }
 
-/* « La journée » — the unified prototype view: a face lens + scope tabs, then the
-   shared DaySection. Mostly reuses Section/Act/SubTabs/Disclosure; these are the few
-   bespoke bits (the weather chip, the « Maintenant » focus + supper lines). */
-.lajournee {
+/* « Prochainement » — the next still-to-come timed event today, surfaced as a calm,
+   tappable headline at the top of the Grille « Aujourd'hui » section. This is the one
+   glance the retired « Maintenant » view gave: a departure-board "what's next". Sky
+   tint (schedule/time), distinct from the marigold greeting above and the meal heroes;
+   the kicker + time sit on one line with the title as the headline beneath. */
+.board-nextup {
   display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-.lajournee__wx {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.6rem 0.9rem;
-  border-radius: var(--radius-lg);
-  background: var(--card);
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.7rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.85rem;
+  margin-bottom: 0.5rem;
+  border: 0;
+  border-left: 4px solid var(--sky-deep);
+  border-radius: var(--radius-md, 12px);
+  background: var(--sky-wash);
   box-shadow: var(--shadow-sm);
-  border-left: 5px solid var(--ink-soft);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
-.lajournee__wx-temp {
-  font-family: var(--display);
-  font-size: 1.6rem;
-  line-height: 1;
+.board-nextup:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md, var(--shadow-sm));
 }
-.lajournee__wx-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.board-nextup:active {
+  transform: translateY(0);
 }
-.lajournee__wx-tip {
-  color: var(--ink-soft);
-  font-size: 0.85rem;
-}
-.lajournee__focus {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.4rem 0;
-}
-.lajournee__focus-when {
-  color: var(--ink-soft);
-  font-size: 0.8rem;
-}
-.lajournee__focus-title {
-  font-family: var(--display);
-  font-size: 1.3rem;
-  line-height: 1.2;
-}
-.lajournee__supper {
-  display: flex;
+.board-nextup__kicker {
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  color: var(--ink-soft);
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sky-deep);
+}
+.board-nextup__when {
   font-size: 0.95rem;
-  padding: 0.2rem 0;
+  color: var(--ink-soft);
 }
-.lajournee__supper--hero {
+.board-nextup__title {
+  flex: 1 1 100%;
+  font-family: var(--display);
+  font-size: 1.15rem;
+  line-height: 1.2;
   color: var(--ink);
-  font-weight: 600;
-}
-.lajournee__more {
-  margin-top: 0.2rem;
 }

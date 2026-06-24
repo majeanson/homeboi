@@ -1,24 +1,22 @@
 // How the parent board lays itself out, chosen per device and remembered (a wall
-// kiosk and a phone each keep their own pick). Three takes on the SAME board data:
-//   • bento  — the default calm grid (today / tomorrow / upcoming).
-//   • next   — "Now & Next": the next thing up, big, departure-board style.
-//   • lanes  — one column per family member (their events + current chore).
-//   • month  — a six-week calendar of everything dated (events/meals/chores/notes).
-//   • moment — « Moments »: a chosen window (tonight / tomorrow / a date / the week)
-//              with each day's agenda + its « À compléter » handoff checklist.
-//   • jour   — « La journée »: the unified PROTOTYPE — a face lens (Maisonnée / a
-//              person) + scopes (Maintenant + « À régler », Aujourd'hui) rendered
-//              through the shared DaySection. The eventual replacement for next +
-//              lanes (+ moment); the old views stay as reference while we iterate.
-// Persisted to localStorage; a tiny corner toggle on the board cycles it.
-export type BoardView = 'bento' | 'next' | 'lanes' | 'month' | 'moment' | 'jour'
+// kiosk and a phone each keep their own pick). TWO takes on the SAME board data:
+//   • bento  — « Grille »: today / tomorrow / upcoming, the everyday glance.
+//   • month  — « Mois »: a six-week calendar of everything dated (events/meals/
+//              chores/notes); tap a day to plan it.
+// The per-person split is the FACE PICKER beside the toggle (Maisonnée = everyone,
+// a face = just their items), not a separate layout; the windowed recap/handoff is
+// the « Moments » SCENE (/moment), reached by a button — not a third glance view.
+// (The retired next/lanes/moment/jour layouts migrate to 'bento' below.)
+// Persisted to localStorage; the corner toggle on the board flips it.
+export type BoardView = 'bento' | 'month'
 
 const KEY = 'babillard-boardview'
 
 export function readBoardView(): BoardView {
   try {
-    const v = localStorage.getItem(KEY)
-    if (v === 'next' || v === 'lanes' || v === 'month' || v === 'moment' || v === 'jour') return v
+    // Only 'month' survives as an alternate; every legacy value (next/lanes/moment/
+    // jour) falls through to the default grid so an old device doesn't land nowhere.
+    if (localStorage.getItem(KEY) === 'month') return 'month'
   } catch {
     /* noop */
   }

@@ -693,8 +693,8 @@ export interface AppState {
   // The device role. When set, the `/` smart entry treats the device as "chosen"
   // and skips the marketing page. Leave undefined to exercise a first-time visitor.
   surface?: Surface
-  // The parent board layout (bento | next | lanes). Defaults to bento when unset.
-  boardView?: 'bento' | 'next' | 'lanes'
+  // The parent board layout (bento = Grille | month = Mois). Defaults to bento.
+  boardView?: 'bento' | 'month'
   // Pretend this device holds a (possibly revoked) device token — pairs with
   // mockApi({ unauthorized: true }) to exercise the pairing-lost recovery.
   paired?: boolean

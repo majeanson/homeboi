@@ -76,8 +76,10 @@ for (const surface of SURFACES) {
   }
 }
 
-// The two alternate board layouts (kiosk wall): Now & Next, and per-person lanes.
-for (const boardView of ['next', 'lanes'] as const) {
+// The alternate board layout (kiosk wall): « Mois », the calendar. (« Grille » is the
+// default, covered by the main board frames; the per-person split is the face picker,
+// and « Moments » is its own scene — no longer separate board layouts.)
+for (const boardView of ['month'] as const) {
   test(`board-${boardView}-parent-day-wall`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await mockApi(page)
@@ -86,8 +88,8 @@ for (const boardView of ['next', 'lanes'] as const) {
     page.on('pageerror', (e) => errors.push(e.message))
     await page.goto('/board')
     await settle(page, '.hub')
-    // Guard: the alternate views read newer board fields (todayMeals, …) — assert
-    // they actually render content and don't throw, not just shoot a blank frame.
+    // Guard: the calendar reads dated board fields — assert it actually renders content
+    // and doesn't throw, not just shoot a blank frame.
     await expect.poll(async () => (await page.locator('.hub__body').innerText()).trim().length, {
       timeout: 8000,
     }).toBeGreaterThan(20)

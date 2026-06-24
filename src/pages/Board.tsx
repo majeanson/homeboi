@@ -11,8 +11,6 @@ import { CercleBirthdays } from '../components/cercle/CercleBirthdays'
 import { AutoCard } from '../components/board/AutoCard'
 import { MomentPeek } from '../components/board/MomentPeek'
 import { ARegler } from '../components/board/ARegler'
-import { MomentsView } from '../components/board/MomentsView'
-import { LaJournee } from '../components/board/LaJournee'
 import { DayHeroes } from '../components/board/DayHeroes'
 import { Icon, InlineIcon } from '../components/Icon'
 import { TOD_ICON } from '../lib/cats'
@@ -40,7 +38,6 @@ import { WonderFrame, useWonder } from '../components/board/ApodFrame'
 import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
-import { NowNext, Lanes } from '../components/board/views'
 import { MonthView } from '../components/board/MonthView'
 import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
 import { useEntityDetail } from '../components/detail/DetailProvider'
@@ -51,9 +48,9 @@ import { useBoardData, useTagColors } from '../lib/queryHooks'
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
 // flips a "showing cache" stamp instead of blanking. The day's list empties
-// and stays empty — no counters, no score for clearing it. The alternate views
-// (Now & Next, per-person lanes) and the card/section atoms live in
-// src/components/board/*.
+// and stays empty — no counters, no score for clearing it. The board has two
+// glances — « Grille » (this file) and « Mois » (MonthView) — with the face picker
+// as the per-person lens; the card/section atoms live in src/components/board/*.
 import { BOARD_KEY, TODOS_KEY } from '../lib/queryKeys'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData, todosKey, todosPath } from '../lib/todos'
@@ -100,11 +97,11 @@ export function Board() {
   // Resolves a tapped meal → its saved recipe so the peek shows the photo + glance.
   const recipeFor = useRecipeForMeal()
   const tagColors = useTagColors()
-  // The board layout for this device (bento | next | lanes), remembered locally.
+  // The board layout for this device (bento = Grille | month = Mois), remembered locally.
   const [view, setView] = useState<BoardView>(() => readBoardView())
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
   // learn what it shows instead of switching. Label = the view's own name.
-  const help = useHelpMode(BOARD_HELP, (k) => t.boardView[k.replace('view-', '') as 'bento' | 'next' | 'lanes' | 'month' | 'moment' | 'jour'] ?? k)
+  const help = useHelpMode(BOARD_HELP, (k) => t.boardView[k.replace('view-', '') as 'bento' | 'month'] ?? k)
   // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
   // out of the rendered board at once so the live poll can't resurrect them before
   // the write commits — same guard as Liste's pendingClear. Tapping Annuler means
@@ -231,6 +228,14 @@ export function Board() {
   // Undated leftovers to finish — a calm "eat these first" nudge. Family-wide (not
   // personal-focus filtered), minus any just marked Fini (held behind the undo).
   const leftovers = (data?.leftovers ?? []).filter((l) => !pendingLeftover.has(l.id))
+  // « Prochainement » — the soonest still-to-come timed event today (after the face
+  // lens), surfaced as a calm headline at the top of the Grille day. This is the one
+  // genuinely useful thing the retired « Maintenant » view gave: a glanceable "next".
+  // A 30-min grace keeps an event that's happening right now in the headline.
+  const nowSecBoard = Math.floor(Date.now() / 1000)
+  const nextUpToday = [...todayEvents]
+    .filter((e) => !e.all_day && e.start_at >= nowSecBoard - 1800)
+    .sort((a, b) => a.start_at - b.start_at)[0]
 
   if (unauth) return <PairPrompt />
 
@@ -747,9 +752,9 @@ export function Board() {
           auto-hides once the steps are done (or dismissed). */}
       {data && <WelcomeCard members={data.members} />}
 
-      {/* Fridge notes (text / voice / photo) ride above the day in every parent
-          view. DRAWINGS are split out to the Grille/bento view only (below) — they
-          deserve room and shouldn't crowd the compact Next/Lanes/Month layouts. */}
+      {/* Fridge notes (text / voice / photo) ride above the day in both parent
+          views. DRAWINGS are split out to the Grille view only (below) — they
+          deserve room and shouldn't crowd the compact Mois calendar. */}
       {data && <Notes notes={data.notes ?? []} members={data.members} variant="notes" />}
 
       {/* Today's day note (the per-day memo from La cuisine) rides here too, in
@@ -763,34 +768,19 @@ export function Board() {
       <CercleBirthdays />
 
       {/* A compact status strip above the day: « À régler » (the cross-domain
-          heads-up, parent-mobile only) and the evening « Demain en bref » nudge sit
-          on ONE quiet row so they whisper instead of stacking two banners. Each
-          renders nothing when not applicable; the row collapses to whatever's left. */}
+          heads-up, parent-mobile only) and the « Moments » entry — the time-aware
+          button into the recap/handoff scene — sit on ONE quiet row so they whisper
+          instead of stacking. À régler renders nothing when there's nothing to sort;
+          the row collapses to whatever's left. */}
       <div className="board-status">
         <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} />
-        {view !== 'moment' && <MomentPeek />}
+        <MomentPeek />
       </div>
 
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
-      ) : view === 'next' ? (
-        <NowNext data={data} lang={lang} t={t} profileId={profileId} todos={openTodos} />
-      ) : view === 'lanes' ? (
-        <>
-          {/* « L'auto » rides below the fridge note (rendered above the view) and
-              above the per-person lanes table, as a full-width strip. #28 */}
-          <AutoCard />
-          <Lanes data={data} lang={lang} t={t} profileId={profileId} todos={openTodos} />
-        </>
       ) : view === 'month' ? (
         <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
-      ) : view === 'moment' ? (
-        // « Moments » — the windowed recap + per-day handoff checklist, in-board
-        // (the same component the /moment scene wraps). Defaults to « Ce soir ».
-        <MomentsView defaultScope="tonight" />
-      ) : view === 'jour' ? (
-        // « La journée » — the unified prototype (face lens + scopes via DaySection).
-        <LaJournee />
       ) : (
         <>
           {/* The "today" zone heroes — tonight's supper + the weather/photo card —
@@ -821,6 +811,22 @@ export function Board() {
             <AutoCard />
 
             <Section label={t.board.today}>
+            {/* « Prochainement » — the next timed thing today as a calm tappable
+                headline above the full day list (the glance the « Maintenant » view
+                used to give). Renders nothing once today's timed events are behind us. */}
+            {nextUpToday && (
+              <button
+                type="button"
+                className="board-nextup"
+                onClick={() => detail.open(buildEvent(nextUpToday, detailCtx))}
+              >
+                <span className="board-nextup__kicker mono">
+                  <InlineIcon name="clock-bold" size={12} /> {t.boardView.nextUp}
+                </span>
+                <span className="board-nextup__when mono">{formatTime(nextUpToday.start_at, lang)}</span>
+                <span className="board-nextup__title">{nextUpToday.title}</span>
+              </button>
+            )}
             {todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
               <EmptyState tone="calm">{t.board.todayClear}</EmptyState>
             ) : (
@@ -982,10 +988,9 @@ export function Board() {
           )}
 
             {/* Family drawings (#14) live only here in the Grille view, just above
-                the photos — tap one to add to it. Kept off the compact
-                Next/Lanes/Month layouts. The door to the lasting collection
-                ("Mes dessins") rides as a trailing chip inside the strip rather
-                than on its own row. */}
+                the photos — tap one to add to it. Kept off the compact Mois calendar.
+                The door to the lasting collection ("Mes dessins") rides as a trailing
+                chip inside the strip rather than on its own row. */}
             <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
 
             <PhotoFrame />
@@ -995,11 +1000,9 @@ export function Board() {
         </>
       )}
 
-      {/* « L'auto » glance is now placed per-view: the Grille (bento) view renders it
-          at the TOP of its grid (above « Aujourd'hui »); the Maintenant view renders it
-          inside NowNext (above the À compléter footer); the per-person lanes view above
-          its table; the Mois (calendar) view inside its day panel (so it follows the
-          selected date). #28 */}
+      {/* « L'auto » glance is placed per-view: the Grille view renders it at the TOP
+          of its grid (above « Aujourd'hui »); the Mois (calendar) view renders it
+          inside its day panel (so it follows the selected date). #28 */}
 
       {stale && <p className="board__synced mono">{t.board.offline}</p>}
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}
