@@ -392,6 +392,17 @@ export const FR = {
     // lead at the top of the Grille day (the one glance the retired « Maintenant » gave).
     nextUp: 'Prochainement',
   },
+  // Card names for « Disposition du babillard » (Réglages ▸ Affichage) — show/hide +
+  // reorder the Grille cards per device.
+  boardCard: {
+    autoCard: 'L’auto',
+    today: 'Aujourd’hui',
+    toFinish: 'À finir',
+    todos: 'À compléter',
+    upcoming: 'À venir',
+    drawings: 'Dessins',
+    photos: 'Photo du jour',
+  },
   monthView: {
     today: 'Aujourd’hui',
     empty: 'Rien de prévu',
@@ -1306,6 +1317,12 @@ export const FR = {
     apodHint: 'Une photo de la NASA, différente chaque jour, au bas du babillard. N’affecte que cet appareil.',
     apodOn: 'Affichée',
     apodOff: 'Cachée',
+    // « Disposition du babillard » — per-device show/hide + reorder of the Grille cards.
+    boardLayout: 'Disposition du babillard',
+    boardLayoutHint: 'Choisis quelles cartes afficher et dans quel ordre — propre à cet appareil. Glisse la poignée pour réordonner.',
+    boardLayoutReset: 'Réinitialiser',
+    boardLayoutShown: 'Affichée',
+    boardLayoutHidden: 'Cachée',
     a11yTitle: 'Accessibilité',
     a11yHint:
       'Contraste renforcé et plus gros texte, pour mieux voir de loin ou de plus près. N’affecte que cet appareil.',
@@ -2271,6 +2288,16 @@ export const EN: typeof FR = {
     month: 'Month',
     nextUp: 'Up next',
   },
+  // Card names for the board-layout panel (Settings ▸ Display).
+  boardCard: {
+    autoCard: 'The car',
+    today: 'Today',
+    toFinish: 'To finish',
+    todos: 'To complete',
+    upcoming: 'Coming up',
+    drawings: 'Drawings',
+    photos: 'Photo of the day',
+  },
   monthView: {
     today: 'Today',
     empty: 'Nothing planned',
@@ -3166,6 +3193,12 @@ export const EN: typeof FR = {
     apodHint: 'A NASA photo, different every day, at the bottom of the board. Affects this device only.',
     apodOn: 'Shown',
     apodOff: 'Hidden',
+    // Per-device show/hide + reorder of the Grille cards.
+    boardLayout: 'Board layout',
+    boardLayoutHint: 'Choose which cards show and in what order — specific to this device. Drag the handle to reorder.',
+    boardLayoutReset: 'Reset',
+    boardLayoutShown: 'Shown',
+    boardLayoutHidden: 'Hidden',
     a11yTitle: 'Accessibility',
     a11yHint:
       'Stronger contrast and bigger text, to read better from afar or up close. Affects this device only.',

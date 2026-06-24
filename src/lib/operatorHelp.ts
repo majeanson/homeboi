@@ -6,6 +6,14 @@ import { type HelpEntry } from './helpMode'
 // at the matching GUIDE card/point so "→ Voir le guide" lands on the right line.
 // Resets when the active tab changes (tab is passed as resetKey to useHelpMode).
 export const OPERATOR_HELP: Record<string, HelpEntry> = {
+  boardLayout: {
+    card: 'board',
+    point: 5,
+    body: {
+      fr: `Choisis quelles cartes du babillard afficher et dans quel ordre — propre à CET appareil (la tablette murale et ton téléphone gardent chacun leur disposition). Glisse la poignée pour réordonner, touche pour cacher ou montrer une carte.`,
+      en: `Choose which board cards show and in what order — specific to THIS device (the wall tablet and your phone keep their own layout). Drag the handle to reorder, tap to hide or show a card.`,
+    },
+  },
   ai: {
     card: 'ai',
     body: {

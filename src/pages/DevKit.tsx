@@ -13,6 +13,7 @@ import { ContactFields, EMPTY_CONTACT_CORE, type ContactCoreValue } from '../com
 import { RowActions } from '../components/RowActions'
 import { DragPill } from '../components/DragPill'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
+import { BoardLayoutSection } from '../components/operator/boardLayout'
 import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
 import { MemberSwitcher } from '../components/MemberSwitcher'
@@ -296,6 +297,13 @@ export function DevKit() {
 
   // The catalogue. Order within a category is the reading order.
   const entries: Entry[] = [
+    {
+      cat: 'Affichage',
+      name: 'BoardLayoutSection',
+      file: 'components/operator/boardLayout.tsx',
+      kw: 'board cards show hide reorder disposition babillard layout per-device',
+      render: () => <BoardLayoutSection />,
+    },
     // ── Inputs ──────────────────────────────────────────────────────────
     {
       cat: 'Saisie',

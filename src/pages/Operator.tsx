@@ -9,6 +9,7 @@ import { isPaired } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection } from '../components/operator/display'
 import { AmbientSettingsSection } from '../components/operator/ambient'
+import { BoardLayoutSection } from '../components/operator/boardLayout'
 import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
@@ -298,6 +299,7 @@ export function Operator() {
         {tab === 'display' && (
           <>
             <DisplaySection help={operatorHelp} />
+            <BoardLayoutSection help={operatorHelp} />
             <AmbientSettingsSection help={operatorHelp} />
             <MeasureColorsSection help={operatorHelp} />
             <VoiceSection help={operatorHelp} />

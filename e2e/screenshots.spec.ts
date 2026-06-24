@@ -98,6 +98,34 @@ for (const boardView of ['month'] as const) {
   })
 }
 
+// Per-device card layout (« Disposition du babillard »): a saved layout with a card
+// hidden + reordered renders cleanly — no crash, no overflow, and the hidden card is
+// gone from the board (lib/boardCards + Board.tsx registry).
+test('board respects a custom card layout', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'kiosk' })
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'babillard-card-prefs',
+      JSON.stringify({ order: ['upcoming', 'today', 'autoCard', 'toFinish', 'drawings', 'photos'], hidden: ['todos'] }),
+    ),
+  )
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.goto('/board')
+  await settle(page, '.hub')
+  await page.locator('.board-grid').first().waitFor({ timeout: 8000 })
+  // « À compléter » (todos) is hidden → its global card is absent from the board.
+  expect(await page.locator('.todo-sec.bento').count()).toBe(0)
+  expect(errors, 'pageerror with custom layout').toEqual([])
+  const overflow = await page.evaluate(() => {
+    const b = document.querySelector('.hub__body')
+    return !!b && b.scrollWidth > b.clientWidth + 1
+  })
+  expect(overflow, 'no horizontal overflow with custom layout').toBeFalsy()
+})
+
 // Language spot-check: English on the busiest surfaces, where FR→EN length
 // changes most often break a layout. Day + both formats.
 const EN_SURFACES = SURFACES.filter((s) => ['home', 'board', 'kitchen', 'settings'].includes(s.name))

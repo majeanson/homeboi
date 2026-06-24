@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -45,6 +45,7 @@ import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { useBoardData, useTagColors } from '../lib/queryHooks'
+import { useBoardCards, visibleCardOrder, type BoardCardId } from '../lib/boardCards'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -100,6 +101,9 @@ export function Board() {
   const tagColors = useTagColors()
   // The board layout for this device (bento = Grille | month = Mois), remembered locally.
   const [view, setView] = useState<BoardView>(() => readBoardView())
+  // Which Grille cards this device shows + their order (Réglages ▸ Affichage ▸
+  // Disposition). Per-device, live via useSyncExternalStore (lib/boardCards).
+  const boardCards = useBoardCards()
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
   // learn what it shows instead of switching. Label = the view's own name.
   const help = useHelpMode(BOARD_HELP, (k) => t.boardView[k.replace('view-', '') as 'bento' | 'month'] ?? k)
@@ -831,12 +835,16 @@ export function Board() {
           {statusBand}
 
           <div className="board-grid">
-            {/* « L'auto » glance — the car's status today + today's rides — rides at
-                the TOP of the grid as a full-width band, just above « Aujourd'hui »
-                and below the weather heroes. #28 */}
-            <AutoCard />
-
-            <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)">
+            {/* Data-driven card registry: each Grille card is keyed, then rendered in
+                the per-device order with hidden ones dropped (lib/boardCards, set in
+                Réglages ▸ Affichage). The card JSX is unchanged — just addressable. */}
+            {(() => {
+              const nodes: Partial<Record<BoardCardId, ReactNode>> = {}
+              // « L'auto » glance — the car's status today + today's rides. #28
+              nodes.autoCard = <AutoCard />
+              // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda.
+              nodes.today = (
+                <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)">
             {/* « Prochainement » — the next timed thing today as a calm tappable
                 headline above the full day list (the glance the « Maintenant » view
                 used to give). Renders nothing once today's timed events are behind us. */}
@@ -982,14 +990,11 @@ export function Board() {
             <TodoSection day={tomorrowTodoDay} title={t.todos.title} members={data.members} bento={false} hideWhenEmpty />
               </>
             )}
-          </Section>
-
-          {/* « À finir » — the day's two ephemeral lists BUNCHED into one card:
-              undated leftovers ("eat these first", terracotta) + loose to-dos
-              ("À faire", sage), each a labelled sub-group. Hidden when both are empty.
-              (« À compléter », the persistent checklist feature, keeps its own card.) */}
-          {(leftovers.length > 0 || todayTodos.length > 0) && (
-            <Section label={t.board.toFinish} icon="check-bold" tint="var(--sage)">
+                </Section>
+              )
+              // « À finir » — leftovers + à-faire bunched (null when both empty).
+              nodes.toFinish = (leftovers.length > 0 || todayTodos.length > 0) ? (
+                <Section label={t.board.toFinish} icon="check-bold" tint="var(--sage)">
               {leftovers.length > 0 && (
                 <>
                   <SubHead label={t.kitchen.leftoversBoard} icon="arrow-counter-clockwise-bold" />
@@ -1015,16 +1020,13 @@ export function Board() {
                   {todayTodos.map(todoAct)}
                 </>
               )}
-            </Section>
-          )}
-
-          {/* À compléter — standalone check-off todos (global + today), distinct
-              from the loose-chore "À faire" above. Check in place, "Effacer
-              cochées", and one-tap departure checklists (templates). */}
-          <TodoSection title={t.todos.title} members={data.members} icon="check-bold" tint="var(--sage)" />
-
-          {(upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) && (
-            <Section label={t.board.upcoming} icon="calendar-blank-bold" tint="var(--sky)">
+                </Section>
+              ) : null
+              // « À compléter » — the persistent checklist (always on: its own add surface).
+              nodes.todos = <TodoSection title={t.todos.title} members={data.members} icon="check-bold" tint="var(--sage)" />
+              // « À venir » — upcoming events/chores (null when none).
+              nodes.upcoming = (upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) ? (
+                <Section label={t.board.upcoming} icon="calendar-blank-bold" tint="var(--sky)">
               {upcomingEvents.map((e) => (
                 <Act
                   key={e.id}
@@ -1039,18 +1041,15 @@ export function Board() {
               {upcomingChores.map((c) => choreAct(c, true))}
               {/* Projets & Entretien coming up this week, with their day. */}
               {upcomingHome.map((c) => homeAct(c, true))}
-            </Section>
-          )}
-
-            {/* Family drawings (#14) live only here in the Grille view, just above
-                the photos — tap one to add to it. Kept off the compact Mois calendar.
-                The door to the lasting collection ("Mes dessins") rides as a trailing
-                chip inside the strip rather than on its own row. */}
-            <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
-
-            <PhotoFrame />
-            {/* The « Photo du jour » now rides as the weather card's backdrop at the
-                top of this view (see board-heroes), so there's no separate band here. */}
+                </Section>
+              ) : null
+              // Family drawings strip (#14) — its own full-width band (CSS column-span).
+              nodes.drawings = <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
+              // « Photo du jour » band (the wonder photo also backs the weather hero).
+              nodes.photos = <PhotoFrame />
+              // Render the visible cards in this device's order.
+              return visibleCardOrder(boardCards).map((id) => <Fragment key={id}>{nodes[id]}</Fragment>)
+            })()}
           </div>
         </>
       )}
