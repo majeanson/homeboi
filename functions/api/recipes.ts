@@ -61,6 +61,10 @@ interface RecipeOriginal {
   servings?: number | null
   source?: string | null
   importedAt?: number
+  // R2 key of the photo this recipe was read from (photo-import path), so the
+  // sheet's "Original" view can show the source card. An R2 key only — never a
+  // remote URL — and freed with the row on delete.
+  sourceImage?: string | null
 }
 
 // An image value is either an R2 key (a single path segment we own) or a remote
@@ -116,6 +120,13 @@ function normalizeStepImages(v: unknown, count: number): string[] {
 // The R2 keys actually present in a step-image array — for cleanup on delete.
 const stepImageKeys = (v: unknown): string[] => normalizeStepImages(v, 40).filter((k) => k.length > 0)
 
+// The read-from photo's R2 key inside a stored original snapshot, if any — so it's
+// freed with the row (and when a re-import during edit replaces the snapshot).
+function originalSourceImage(json: string | null): string | null {
+  const o = parseOriginal(json)
+  return isStepImgKey(o?.sourceImage) ? (o!.sourceImage as string) : null
+}
+
 // Validate + serialize the as-imported snapshot. Returns the JSON string for
 // the column, or null when the value isn't a usable snapshot. Same caps as the
 // live fields so a hostile client can't bloat the row through this side door.
@@ -132,6 +143,8 @@ function cleanOriginal(v: unknown): string | null {
     servings: typeof o.servings === 'number' && o.servings > 0 ? Math.floor(o.servings) : null,
     source: isStr(o.source) ? o.source.trim().slice(0, 600) || null : null,
     importedAt: typeof o.importedAt === 'number' ? Math.floor(o.importedAt) : null,
+    // The read-from photo's R2 key (validated like a step-image key, never a URL).
+    sourceImage: isStepImgKey(o.sourceImage) ? o.sourceImage : null,
   })
 }
 
@@ -290,6 +303,11 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     const kept = new Set(newStepImages)
     const orphaned = stepImageKeys(prev.steps_images_json).filter((k) => !kept.has(k))
     for (const k of orphaned) await deleteR2Blob(ctx.env.PHOTOS, k)
+    // A re-import during the edit can replace the snapshot (and its source photo);
+    // free the old source-card blob when it's no longer the one we just stored.
+    const prevSrc = originalSourceImage(prev.original_json)
+    const nextSrc = originalSourceImage(original)
+    if (prevSrc && prevSrc !== nextSrc) await deleteR2Blob(ctx.env.PHOTOS, prevSrc)
   }
   return ok({ ok: true })
 })
@@ -300,13 +318,16 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   // Free the R2 blobs this recipe owned: its display picture (remote URLs aren't
   // ours) AND every per-step photo key (feature #17 B). Best-effort, never blocks.
   const row = await ctx.env.DB.prepare(
-    'SELECT image, steps_images_json FROM recipes WHERE id = ? AND household_id = ?',
+    'SELECT image, steps_images_json, original_json FROM recipes WHERE id = ? AND household_id = ?',
   )
     .bind(body.id, actor.householdId)
-    .first<{ image: string | null; steps_images_json: string | null }>()
+    .first<{ image: string | null; steps_images_json: string | null; original_json: string | null }>()
   if (ctx.env.PHOTOS) {
     if (isR2Key(row?.image)) await deleteR2Blob(ctx.env.PHOTOS, row?.image)
     for (const k of stepImageKeys(row?.steps_images_json)) await deleteR2Blob(ctx.env.PHOTOS, k)
+    // The source-card photo lives in the original snapshot (photo-import path).
+    const src = originalSourceImage(row?.original_json ?? null)
+    if (src) await deleteR2Blob(ctx.env.PHOTOS, src)
   }
   await ctx.env.DB.prepare('DELETE FROM recipes WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)

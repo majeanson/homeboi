@@ -206,6 +206,15 @@ export function RecipeSheet({
               {orig ? t.recipes.originalImported : t.recipes.originalAsWritten}
               {orig?.importedAt ? ` · ${new Date(orig.importedAt * 1000).toLocaleDateString()}` : ''}
             </p>
+            {/* The photo this recipe was READ from (photo-import path), so the cook
+                can re-check the parsed text against the real card any time. */}
+            {orig?.sourceImage && recipeImg(orig.sourceImage) && (
+              <ZoomableImg
+                className="recipe-original__source"
+                src={recipeImg(orig.sourceImage)!}
+                alt={t.recipes.reviewPhotoAlt}
+              />
+            )}
             <h3 className="recipe-original__title">{origView.title}</h3>
             {origView.servings ? <p className="recipe-original__meta">{t.recipes.servingsN(origView.servings)}</p> : null}
             {origView.ingredients.length > 0 && (

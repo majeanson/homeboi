@@ -12,6 +12,11 @@ export interface RecipeOriginal {
   servings?: number | null
   source?: string | null
   importedAt?: number | null
+  // The R2 key of the photo this recipe was READ from (the cookbook page /
+  // handwritten card), kept so the cook can re-check the card against the parsed
+  // text months later (the sheet's "Original" view renders it). Only set for the
+  // photo-import path; null/undefined for URL/paste imports or when R2 is unbound.
+  sourceImage?: string | null
 }
 
 export interface Recipe {

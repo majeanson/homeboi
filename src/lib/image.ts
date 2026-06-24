@@ -6,6 +6,10 @@
 
 export const AVATAR_MAX = 256 // px — a face on the pick screen / member list
 export const PHOTO_MAX = 1600 // px — a family photo on the wall frame
+// px — the READ resolution for OCR (lib/ocr.ts). Higher than PHOTO_MAX because a
+// "3/4" hinges on a few pixels of slash + digit, and the read text is never stored
+// (only the AI-fallback bytes + a PHOTO_MAX-resized source snapshot upload to R2).
+export const OCR_MAX = 2200
 
 // Mirror of recipe-vision / recipe-image's server cap (6 MB). If resize had to
 // fall back to the original (a file no decoder could read) AND it's over this,

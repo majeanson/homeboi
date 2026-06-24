@@ -57,6 +57,7 @@ import { SceneHead } from '../components/SceneHead'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
 import { DrawEditChoice, type DrawEditMode } from '../components/DrawEditChoice'
+import { RecipeReadReview } from '../components/RecipeReadReview'
 import { RecentsPanel } from '../components/RecentsPanel'
 import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
@@ -98,6 +99,14 @@ type Entry = {
   kw?: string // extra search keywords
   render: () => ReactNode
 }
+
+// A stand-in "recipe card" photo for the RecipeReadReview specimen — an inline SVG
+// data URL so the gallery needs no asset/network.
+const SAMPLE_RECIPE_PHOTO =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="400"><rect width="320" height="400" fill="#f4ecdc"/><text x="24" y="56" font-family="Georgia" font-size="26" fill="#5b4a36">Biscuits à l'avoine</text><text x="24" y="110" font-family="Georgia" font-size="18" fill="#7a6a52">3/4 tasse de farine</text><text x="24" y="140" font-family="Georgia" font-size="18" fill="#7a6a52">1 c. à thé de cannelle</text><text x="24" y="170" font-family="Georgia" font-size="18" fill="#7a6a52">2 œufs</text><text x="24" y="230" font-family="Georgia" font-size="18" fill="#7a6a52">Cuire 12 minutes.</text></svg>`,
+  )
 
 // Two stand-in people for the ConnectPeople specimen.
 const DEMO_PEOPLE: Person[] = [
@@ -277,6 +286,7 @@ export function DevKit() {
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
   const [drawChoiceOpen, setDrawChoiceOpen] = useState(false)
+  const [readReviewOpen, setReadReviewOpen] = useState(false)
   const [drawChoiceMode, setDrawChoiceMode] = useState<DrawEditMode | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [listPickOpen, setListPickOpen] = useState(false)
@@ -1477,6 +1487,34 @@ export function DevKit() {
                 setDrawChoiceOpen(false)
               }}
             />
+          </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'RecipeReadReview',
+      file: 'components/RecipeReadReview.tsx',
+      kw: 'recipe photo ocr verify review confirm fraction measure source card lecture vérifier',
+      render: () => (
+        <Demo label="verify a photo-read recipe against the source card (flags measures + shaky words)">
+          <div>
+            <button className="btn" onClick={() => setReadReviewOpen(true)}>
+              Ouvrir la vérification
+            </button>
+            {readReviewOpen && (
+              <RecipeReadReview
+                photoUrl={SAMPLE_RECIPE_PHOTO}
+                draft={{
+                  title: 'Biscuits à l’avoine',
+                  ingredients: ['3/4 tasse de farine', '1 c. à thé de cannelle', '2 œufs'],
+                  steps: ['Préchauffer le four à 180 °C.', 'Mélanger le tout et cuire 12 minutes.'],
+                }}
+                lowConfidenceWords={['cannelle']}
+                onConfirm={() => setReadReviewOpen(false)}
+                onCancel={() => setReadReviewOpen(false)}
+              />
+            )}
           </div>
         </Demo>
       ),

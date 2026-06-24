@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { useAi } from '../lib/ai'
-import { resizeImage, imgUrl, PHOTO_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
+import { resizeImage, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
+import { ocrImage, disposeOcr } from '../lib/ocr'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
+import { RecipeReadReview, type ReadReviewDraft } from './RecipeReadReview'
 import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
 import {
   type Recipe,
@@ -56,6 +58,9 @@ export function RecipeForm({
   const { enabled: aiEnabled } = useAi()
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onCancel)
+  // Free the OCR worker's WASM heap when the editor closes — a cheap wall tablet
+  // shouldn't hold megabytes after one read. Safe no-op if no read happened.
+  useEffect(() => () => void disposeOcr(), [])
   const [title, setTitle] = useState(value?.title ?? '')
   // Keep at least one empty row so there's always somewhere to type.
   const [ingredients, setIngredients] = useState<string[]>(value?.ingredients?.length ? value.ingredients : [''])
@@ -96,6 +101,17 @@ export function RecipeForm({
 
   const [busy, setBusy] = useState(false)
   const [reading, setReading] = useState(false)
+  // OCR progress (0..1) for the "Lecture… 60 %" label while transcribing on-device.
+  const [readProgress, setReadProgress] = useState(0)
+  // The read result awaiting the cook's verify-against-the-photo confirm (Pillar 3).
+  // Null when no read is pending review. `confirming` flags the source-photo upload.
+  const [readReview, setReadReview] = useState<{
+    draft: ReadReviewDraft
+    photoUrl: string
+    sourceFile: File
+    lowConfidenceWords: string[]
+  } | null>(null)
+  const [confirming, setConfirming] = useState(false)
   const [importing, setImporting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [readMsg, setReadMsg] = useState<string | null>(null)
@@ -227,6 +243,9 @@ export function RecipeForm({
     source?: string | null
     // Auto-detected reading language from the import ('fr'|'en'|null = undetected).
     lang?: 'fr' | 'en' | null
+    // R2 key of the photo this was READ from (photo-import path) — stashed into the
+    // original snapshot so the sheet can show the source card later.
+    sourceImage?: string | null
   }
   function applyDraft(d: Draft) {
     if (d.title && !title.trim()) setTitle(d.title)
@@ -257,42 +276,90 @@ export function RecipeForm({
         servings: d.servings ?? null,
         source: d.source ?? null,
         importedAt: Math.floor(Date.now() / 1000),
+        sourceImage: d.sourceImage ?? null,
       })
     }
   }
 
-  // Read a recipe out of a photo (cookbook page, handwritten card, screenshot):
-  // the vision model OCRs + structures it, then we drop the result into the
-  // empty fields (applyDraft never clobbers what's already typed). The picked
-  // file is only sent for reading — it does NOT become the dish's display photo.
-  async function readPhoto(file: File) {
-    if (reading) return
+  type ReadDraft = {
+    title: string | null
+    ingredients: string[]
+    steps: string[]
+    servings: number | null
+    servingsUnit: string | null
+    times: { prep: number | null; cook: number | null; total: number | null }
+    lang: 'fr' | 'en' | null
+    empty?: boolean
+  }
+  const draftHasContent = (d: ReadDraft) => !!(d.title || d.ingredients.length || d.steps.length)
+
+  // Read a recipe out of a photo (cookbook page, handwritten card, screenshot).
+  // Faithful-first: real on-device OCR (lib/ocr.ts) transcribes the page — it can
+  // garble but it NEVER flips a 3/4 into a 1/4 or invents an ingredient — then the
+  // SAME structuring path paste-import uses (/api/recipe-import) organises the text.
+  // Only when OCR comes up near-empty do we fall back to the generative vision read
+  // (/api/recipe-vision), which is the part that hallucinates. The result is shown
+  // for a verify-against-the-photo confirm (Pillar 3) before it touches the form.
+  // Several photos can be read at once (a long recipe split over pages) — their
+  // transcripts are stitched in pick order; the heading-aware parser merges an
+  // "Ingrédients" page with a "Préparation" page into one card. The picked files
+  // are only read — they do NOT become the dish's display photo.
+  async function readPhoto(files: File[]) {
+    if (reading || !files.length) return
     setReading(true)
+    setReadProgress(0)
     setReadMsg(null)
     try {
-      const blob = await resizeImage(file, PHOTO_MAX)
-      // resize fell back to the un-shrunk original (a format no decoder could
-      // read) and it's over the server cap — say so instead of uploading just to
-      // get a generic reject. After HEIC handling this is rare (a corrupt/exotic
-      // file), but it's the difference between "trop lourde" and silent failure.
-      if (blob.size > MAX_UPLOAD_BYTES) {
-        setReadMsg(t.recipes.photoTooBig)
+      // Transcribe each page at the higher OCR resolution (a fraction's slash lives
+      // in a few pixels). Stitch in pick order; average confidence; union shaky words.
+      const texts: string[] = []
+      const lowWords = new Set<string>()
+      let confSum = 0
+      let confN = 0
+      for (let i = 0; i < files.length; i++) {
+        const big = await resizeImage(files[i], OCR_MAX)
+        const res = await ocrImage(big, (p) => setReadProgress((i + p) / files.length))
+        if (res.text) texts.push(res.text)
+        if (res.confidence > 0) {
+          confSum += res.confidence
+          confN++
+        }
+        res.lowConfidenceWords.forEach((w) => lowWords.add(w))
+      }
+      const stitched = texts.join('\n\n').trim()
+      const meanConf = confN ? confSum / confN : 0
+
+      // OCR gave usable text → structure it through the no-/low-AI text path. Only a
+      // near-empty or very-low-confidence read (handwriting, skew, a weak tablet)
+      // drops to the generative vision read as a safety net.
+      let draft: ReadDraft | null = null
+      if (stitched.length >= 25 && meanConf >= 40) {
+        draft = await api<ReadDraft>('recipe-import', { method: 'POST', body: { text: stitched } }).catch(() => null)
+      }
+      if ((!draft || draft.empty || !draftHasContent(draft)) && aiEnabled) {
+        // Fallback: the generative vision read of the FIRST page (resized to the
+        // upload cap, like recipe-image). 503 = AI off → handled below as readFail.
+        const small = await resizeImage(files[0], PHOTO_MAX)
+        if (small.size <= MAX_UPLOAD_BYTES) {
+          draft = await api<ReadDraft>('recipe-vision', { method: 'POST', body: small }).catch((e) => {
+            if (isStatus(e, 503) || isStatus(e, 400)) return null
+            throw e
+          })
+        }
+      }
+
+      if (!draft || !draftHasContent(draft)) {
+        setReadMsg(t.recipes.readFail)
         return
       }
-      const r = await api<{
-        title: string | null
-        ingredients: string[]
-        steps: string[]
-        servings: number | null
-        servingsUnit: string | null
-        times: { prep: number | null; cook: number | null; total: number | null }
-        lang: 'fr' | 'en' | null
-      }>('recipe-vision', {
-        method: 'POST',
-        body: blob,
+      // Hand off to the verify panel rather than applying straight to the form: the
+      // cook glances at the photo, confirms the flagged numbers, THEN it lands.
+      setReadReview({
+        draft,
+        photoUrl: URL.createObjectURL(files[0]),
+        sourceFile: files[0],
+        lowConfidenceWords: [...lowWords],
       })
-      if (!r.title && !r.ingredients.length && !r.steps.length) setReadMsg(t.recipes.readFail)
-      else applyDraft(r)
     } catch (e) {
       if (isStatus(e, 503)) setReadMsg(t.recipes.aiOff)
       else if (isStatus(e, 400)) setReadMsg(t.recipes.photoTooBig)
@@ -300,6 +367,30 @@ export function RecipeForm({
     } finally {
       setReading(false)
     }
+  }
+
+  // The cook confirmed the read in the verify panel. Stash the source card to R2
+  // (best-effort — R2 unbound just means no "original" photo), then drop the
+  // verified draft into the form (applyDraft never clobbers what's already typed).
+  async function confirmRead(edited: Draft) {
+    if (!readReview) return
+    setConfirming(true)
+    let sourceImage: string | null = null
+    try {
+      sourceImage = await uploadMedia('recipe-image', readReview.sourceFile, { maxBytes: MAX_UPLOAD_BYTES })
+    } catch {
+      /* R2 off / un-shrinkable — keep the parsed recipe, just no source snapshot */
+    }
+    applyDraft({ ...edited, sourceImage })
+    closeReadReview()
+    setConfirming(false)
+  }
+
+  function closeReadReview() {
+    setReadReview((r) => {
+      if (r) URL.revokeObjectURL(r.photoUrl)
+      return null
+    })
   }
 
   async function runImport() {
@@ -673,22 +764,29 @@ export function RecipeForm({
               recipe (scan a card / import a link) into the fields. */}
           <span className="recipe-fill-label mono">{t.recipes.fillFrom}</span>
           <div className="recipe-helpers">
-            {aiEnabled && (
-              <label className={'btn btn--ghost mono' + (reading ? ' is-busy' : '')}>
-                <InlineIcon name="camera-bold" /> {reading ? t.recipes.reading : t.recipes.readPhoto}
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  disabled={reading}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) readPhoto(f)
-                    e.target.value = ''
-                  }}
-                />
-              </label>
-            )}
+            {/* Read a photo is on-device OCR now — it works with AI OFF, so it's no
+                longer gated behind aiEnabled. `multiple`: a long recipe split over
+                pages is read in one go (ingredients page + steps page → one card). */}
+            <label className={'btn btn--ghost mono' + (reading ? ' is-busy' : '')}>
+              <InlineIcon name="camera-bold" />{' '}
+              {reading
+                ? readProgress > 0
+                  ? `${t.recipes.reading} ${Math.round(readProgress * 100)} %`
+                  : t.recipes.reading
+                : t.recipes.readPhoto}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                disabled={reading}
+                onChange={(e) => {
+                  const fs = Array.from(e.target.files ?? [])
+                  if (fs.length) readPhoto(fs)
+                  e.target.value = ''
+                }}
+              />
+            </label>
             <button
               type="button"
               className="btn btn--ghost mono"
@@ -698,6 +796,9 @@ export function RecipeForm({
               <InlineIcon name="link-bold" /> {t.recipes.import}
             </button>
           </div>
+          {/* The gold path: an online recipe imported by link is verbatim — no OCR,
+              nothing to mis-read. Gently point cooks there. */}
+          <p className="recipe-fill-hint mono">{t.recipes.readHint}</p>
           {readMsg && <p className="recipe-aioff mono">{readMsg}</p>}
 
           {showImport && (
@@ -870,6 +971,19 @@ export function RecipeForm({
           </button>
         </div>
       </form>
+
+      {/* Verify-against-the-photo gate (Pillar 3): a read result waits here while the
+          cook checks the flagged numbers against the source card, then it's applied. */}
+      {readReview && (
+        <RecipeReadReview
+          photoUrl={readReview.photoUrl}
+          draft={readReview.draft}
+          lowConfidenceWords={readReview.lowConfidenceWords}
+          busy={confirming}
+          onConfirm={confirmRead}
+          onCancel={closeReadReview}
+        />
+      )}
     </div>
   )
 }

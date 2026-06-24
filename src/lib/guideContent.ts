@@ -478,6 +478,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Scanner une fiche (et la vérifier)', en: 'Scan a card (and check it)' },
+        detail: {
+          fr: 'Dans une nouvelle recette, touche « Scanner une fiche » et choisis la ou les photos (page de livre, fiche, capture d’écran). L’appareil LIT le texte lui-même, ici, sans l’envoyer nulle part — ça marche même sans connexion et sans IA. Avant que rien n’arrive dans la recette, on te montre la photo à côté du texte lu, et on surligne les endroits à vérifier d’un coup d’œil — les quantités (¾ et non ¼…) et les mots lus avec hésitation. Corrige au besoin, puis « C’est bon ». Recette en ligne ? Colle plutôt son lien : c’est une copie parfaite, rien à relire. Plusieurs pages (ingrédients d’un bord, étapes de l’autre) ? Scanne-les ensemble, on les recolle dans l’ordre. La photo lue se garde dans la fiche, sous « l’original », pour comparer plus tard.',
+          en: 'In a new recipe, tap “Scan a card” and pick one or more photos (a book page, a card, a screenshot). The device READS the text itself, right here, without sending it anywhere — it works even offline and with no AI. Before anything lands in the recipe, we show the photo beside the read text and highlight the spots worth a glance — amounts (¾ not ¼…) and words read with hesitation. Fix what you need, then “Looks good”. Recipe online? Paste its link instead: it’s a perfect copy, nothing to re-read. Several pages (ingredients on one, steps on the other)? Scan them together and we stitch them in order. The scanned photo is kept on the card, under “the original”, to compare later.',
+        },
+        why: {
+          fr: 'Une vraie lecture du texte (pas une devinette) ne transforme jamais un ¾ en ¼ ni n’invente un ingrédient — et le dernier coup d’œil sur la photo attrape le reste, en cinq secondes, pas au moment de cuisiner.',
+          en: 'A real read of the text (not a guess) never turns a ¾ into a ¼ or invents an ingredient — and the last glance at the photo catches the rest in five seconds, not at the stove.',
+        },
+      },
+      {
         label: { fr: 'Collections', en: 'Collections' },
         detail: {
           fr: 'Range tes recettes par étiquette (Soupes, Desserts…) et feuillette-les par collection. En vue Collections, touche des étiquettes pour n’afficher que ces collections-là (en vue « Aa », les mêmes étiquettes filtrent plutôt les recettes). En mode bambin, c’est trois écrans tout en images, lus à voix haute : la collection, la recette, puis le jour — deux touches pour confirmer.',

@@ -924,3 +924,162 @@
   border-radius: 999px;
   padding: 0.1rem 0.3rem;
 }
+
+/* The "import a link gives a perfect copy" nudge under the fast-fill helpers. */
+.recipe-fill-hint {
+  color: var(--ink-faint);
+  margin: 0.1rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+/* --- Verify-against-the-photo panel (RecipeReadReview) --------------------- */
+/* Sits ABOVE the recipe modal (z-index 80) so the cook checks the read against the
+   source card before it lands in the form. */
+.read-review {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0px, 2vw, 1rem);
+}
+.read-review__scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+.read-review__card {
+  position: relative;
+  width: 100%;
+  max-width: 56rem;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.read-review__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.read-review__bar h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.read-review__hint {
+  margin: 0;
+  padding: 0.55rem 1rem;
+  color: var(--ink-soft);
+  background: var(--paper-deep);
+  border-bottom: 1px solid var(--line);
+}
+.read-review__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+}
+/* Side-by-side once there's room; stacked (photo first) on a phone. */
+@media (min-width: 44rem) {
+  .read-review__body {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .read-review__photo {
+    position: sticky;
+    top: 0;
+    flex: 0 0 42%;
+  }
+  .read-review__fields {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+.read-review__photo img {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  background: var(--paper-deep);
+}
+.read-review__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.read-review__title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.read-review__sec {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0.1rem;
+  font-size: 1rem;
+}
+.read-review__empty {
+  color: var(--ink-faint);
+  margin: 0;
+}
+.read-review__line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.read-review__line .input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.read-review__line.is-sec .input {
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+/* A flagged line gets a soft warning rail + the icon, so the eye lands on the
+   numbers worth a second look without shouting (calm). */
+.read-review__line.is-flagged .input {
+  border-color: var(--warn);
+  box-shadow: inset 2px 0 0 var(--warn);
+}
+.read-review__flag {
+  flex: none;
+  color: var(--warn);
+  display: inline-flex;
+}
+.read-review__chiptag {
+  flex: none;
+  color: var(--warn);
+  border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+.read-review__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid var(--line);
+}
+/* The source-card photo at the top of the sheet's "Original" view. */
+.recipe-original__source {
+  display: block;
+  width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  background: var(--paper-deep);
+  margin-bottom: 0.5rem;
+}

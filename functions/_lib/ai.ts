@@ -303,11 +303,26 @@ ${raw}`
 // written card, a screenshot). Separate from the text model — this one accepts
 // image bytes. Same free Neuron tier, in-network (Loi 25).
 //
+// ROLE NOTE: as of the faithful-import work this is now the FALLBACK, not the
+// primary read. The client first transcribes the photo with real on-device OCR
+// (src/lib/ocr.ts, Tesseract) — which can garble but never flips a 3/4 into a 1/4
+// or invents an ingredient — and structures that text through /api/recipe-import.
+// This generative vision read only runs when OCR comes up near-empty (handwriting,
+// skew, a weak tablet). It's the part that hallucinates, so keep it secondary.
+//
 // GOTCHA: this is a GATED Meta model. The account must accept the Llama Community
 // License ONCE before any inference works, otherwise every call fails with
 // `5016: ... you must submit the prompt 'agree'` and recipe-vision degrades to
 // empty. Accept per-account by POSTing {"prompt":"agree"} once to
 // /accounts/<id>/ai/run/@cf/meta/llama-3.2-11b-vision-instruct (done 2026-06-13).
+//
+// DEFERRED upgrade: @cf/mistralai/mistral-small-3.1-24b-instruct is multimodal,
+// ungated, and stronger on the handwriting/skew cases that actually reach this
+// fallback. Not swapped yet — its Workers AI IMAGE-input schema isn't documented
+// (messages + base64 image_url vs the `image:[...bytes]` shape below), and the AI
+// path can't be exercised locally (no `wrangler login` → AI unbound). Verify the
+// input arg against a live account before switching; the read silently degrades to
+// EMPTY if the shape is wrong, so an unverified swap would quietly kill the fallback.
 const VISION_MODEL = '@cf/meta/llama-3.2-11b-vision-instruct'
 
 // A photo read carries more than the paste path's RecipeStructured: the printed
