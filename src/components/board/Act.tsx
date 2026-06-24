@@ -3,6 +3,7 @@ import { tintInk } from '../../lib/colors'
 import { isGuest } from '../../lib/device'
 import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
+import { type HelpMode } from '../../lib/helpMode'
 
 // Pip section header: an optional category glyph + label + rule + a quiet count
 // (never a score). Each Section is a bento tile in the board grid. `icon` + `tint`
@@ -14,15 +15,26 @@ export function Section({
   count,
   icon,
   tint,
+  help,
+  helpKey,
   children,
 }: {
   label: string
   count?: number
   icon?: IconName
   tint?: string
+  // Optional contextual help (lib/helpMode): pass the board's help instance + a key in
+  // its content map and, while help mode is armed, the section TITLE becomes tappable →
+  // an in-place HelpBubble explaining the section (a "→ Voir le guide" deep-link). Outside
+  // help mode it's an ordinary title — identical DOM, no dead tab stops. Lets ANY board
+  // section be made explainable without forking a header.
+  help?: HelpMode
+  helpKey?: string
   children: React.ReactNode
 }) {
+  const t = useT()
   const style = tint ? ({ '--sec-tint': tint } as React.CSSProperties) : undefined
+  const helpable = !!help && !!helpKey && help.active
   return (
     <div className={'bento' + (tint ? ' bento--tinted' : '')} style={style}>
       <div className="sec-label">
@@ -31,10 +43,17 @@ export function Section({
             <Icon name={icon} size={16} />
           </span>
         )}
-        <b>{label}</b>
+        {helpable ? (
+          <button type="button" className="help-title" onClick={help!.pick(helpKey!, () => {})} title={t.help.learnMore}>
+            <b>{label}</b>
+          </button>
+        ) : (
+          <b>{label}</b>
+        )}
         <span className="ln" />
         {count ? <span className="ct">{count}</span> : null}
       </div>
+      {help && helpKey ? help.bubbleFor(helpKey) : null}
       {children}
     </div>
   )

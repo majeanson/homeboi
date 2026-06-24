@@ -1271,12 +1271,20 @@ export const GUIDE: GuideEntry[] = [
     id: 'todos',
     icon: 'check-bold',
     group: 'concepts',
-    title: { fr: 'À compléter', en: 'To complete' },
+    title: { fr: 'À faire & à compléter', en: 'To do & to complete' },
     what: {
-      fr: 'De petites listes à cocher, à part des corvées (« À faire »). Une chose à faire ? Ajoute-la « en tout temps » ou juste « aujourd’hui ». Coche-la quand c’est fait, puis « Effacer cochées » nettoie la liste.',
-      en: 'Small check-off lists, separate from chores (“À faire”). Something to do? Add it “anytime” or just “today”. Check it when done, then “Clear checked” tidies the list.',
+      fr: 'Sur le babillard, une seule carte « À faire » réunit deux choses : les p’tites tâches ponctuelles (souvent dictées — « appeler le dentiste »), et tes listes à cocher réutilisables (« À compléter »). Coche quand c’est fait, puis « Effacer cochées » nettoie.',
+      en: 'On the board, a single “À faire” card gathers two things: small one-off tasks (often dictated — “call the dentist”), and your reusable check-off lists (“À compléter”). Check them off when done, then “Clear checked” tidies up.',
     },
     points: [
+      {
+        label: { fr: '« À faire » ou « À compléter » ?', en: '“À faire” or “À compléter”?' },
+        detail: {
+          fr: '« À faire » : une chose ponctuelle — tu la dictes ou la captures, tu coches, c’est fini. « À compléter » : une liste qui revient (sac de piscine, avant de partir) — préparée une fois, réutilisable d’un tap. Les deux vivent dans la même carte du babillard, sous leurs étiquettes. En cas de doute, touche le « ? » du babillard puis le titre de la carte.',
+          en: '“À faire”: a one-off thing — dictate or capture it, tick it, done. “À compléter”: a recurring list (pool bag, before leaving) — set up once, reusable in one tap. Both live in the same board card under their labels. If unsure, tap the board’s “?” then the card title.',
+        },
+        why: { fr: 'Une chose vite faite et une liste qu’on garde, ce n’est pas pareil — mais c’est au même endroit.', en: 'A quick one-off and a list you keep aren’t the same — but they’re in one place.' },
+      },
       {
         label: { fr: 'Globale ou pour une journée', en: 'Global or for one day' },
         detail: {

@@ -117,8 +117,9 @@ test('board respects a custom card layout', async ({ page }) => {
   await page.goto('/board')
   await settle(page, '.hub')
   await page.locator('.board-grid').first().waitFor({ timeout: 8000 })
-  // « À compléter » (todos) is hidden → its global card is absent from the board.
-  expect(await page.locator('.todo-sec.bento').count()).toBe(0)
+  // « À faire » (todos) is hidden → the unified to-do card (which embeds the TodoSection
+  // as a plain .todo-sec) is absent from the board.
+  expect(await page.locator('.todo-sec').count()).toBe(0)
   expect(errors, 'pageerror with custom layout').toEqual([])
   const overflow = await page.evaluate(() => {
     const b = document.querySelector('.hub__body')
@@ -135,13 +136,13 @@ test('board layout panel toggle hides a card', async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/settings?tab=display')
   await page.locator('.board-layout').first().waitFor({ timeout: 15000 })
-  // Hide « À compléter » via its show/hide toggle.
-  const row = page.locator('.board-layout__row', { hasText: 'À compléter' }).first()
+  // Hide « À faire » (the unified to-do card) via its show/hide toggle.
+  const row = page.locator('.board-layout__row', { hasText: 'À faire' }).first()
   await row.locator('.board-layout__toggle').click()
   await page.waitForTimeout(150)
   await page.goto('/board')
   await page.locator('.board-grid').first().waitFor({ timeout: 8000 })
-  expect(await page.locator('.todo-sec.bento').count()).toBe(0)
+  expect(await page.locator('.todo-sec').count()).toBe(0)
 })
 
 // The unified event form: ONE form with optional « Trajet » + « À apporter », and the

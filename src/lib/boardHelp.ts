@@ -19,4 +19,13 @@ export const BOARD_HELP: Record<string, HelpEntry> = {
       en: 'The month: the big picture; tap a day to plan it.',
     },
   },
+  // The « À faire » card holds two kinds of to-do, distinguished in place: loose one-off
+  // tasks (often dictated) up top, and reusable checklists (« À compléter ») below.
+  todos: {
+    card: 'todos',
+    body: {
+      fr: '« À faire » : des choses ponctuelles à cocher, puis c’est fini (souvent dictées). « À compléter » en dessous : tes listes qui reviennent — sac de piscine, avant de partir… — réutilisables d’un tap.',
+      en: '“À faire”: one-off things you tick off, then they’re done (often dictated). “À compléter” below: your recurring checklists — pool bag, before leaving… — reusable in one tap.',
+    },
+  },
 }

@@ -108,7 +108,9 @@ export function Board() {
   const boardCards = useBoardCards()
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
   // learn what it shows instead of switching. Label = the view's own name.
-  const help = useHelpMode(BOARD_HELP, (k) => t.boardView[k.replace('view-', '') as 'bento' | 'month'] ?? k)
+  const help = useHelpMode(BOARD_HELP, (k) =>
+    k.startsWith('view-') ? t.boardView[k.slice(5) as 'bento' | 'month'] : k === 'todos' ? t.board.todos : k,
+  )
   // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
   // out of the rendered board at once so the live poll can't resurrect them before
   // the write commits — same guard as Liste's pendingClear. Tapping Annuler means
@@ -447,11 +449,11 @@ export function Board() {
                 color: c.color ?? undefined,
               })),
             )}
-            {/* One-off to-dos, read aloud too — a parent checks them off in the
-                parent board; here a pre-reader just sees what's left to do. */}
-            {kidSection(
-              t.board.todos,
-              todayTodos.map((c) => ({
+            {/* « À faire » — read aloud too. Mirrors the parent board's ONE to-do card:
+                the loose one-off tasks AND the checklists (« À compléter ») in a single
+                section, so a pre-reader sees everything left to do in one place. */}
+            {kidSection(t.board.todos, [
+              ...todayTodos.map((c) => ({
                 key: c.id,
                 icon: pictoFor(c.title, '✅'),
                 label: c.title,
@@ -459,19 +461,14 @@ export function Board() {
                 narration: c.title,
                 color: c.color ?? undefined,
               })),
-            )}
-            {/* À compléter (todos) — read aloud too; a parent checks them off in the
-                parent board, here a pre-reader just sees what's left to complete. */}
-            {kidSection(
-              t.todos.title,
-              openTodos.map((td) => ({
+              ...openTodos.map((td) => ({
                 key: td.id,
                 icon: pictoFor(td.title, '✅'),
                 label: td.title,
                 narration: td.title,
                 color: memberColor(td.member_id) ?? undefined,
               })),
-            )}
+            ])}
             {data.tomorrowNote && (
               <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} toddler />
             )}
@@ -1076,12 +1073,10 @@ export function Board() {
               // keep when BOTH groups show — they're dividers. With one group the
               // section label "À finir" already heads it, so a lone subhead just
               // stacks a second near-synonymous title (Marc's redundant-title note).
-              const bothToFinish = leftovers.length > 0 && todayTodos.length > 0
-              nodes.toFinish = (leftovers.length > 0 || todayTodos.length > 0) ? (
-                <Section label={t.board.toFinish} icon="check-bold" tint="var(--sage)">
-              {leftovers.length > 0 && (
-                <>
-                  {bothToFinish && <SubHead label={t.kitchen.leftoversBoard} icon="arrow-counter-clockwise-bold" />}
+              // « À finir » — leftovers to eat first (loose one-off tasks moved into the
+              // unified « À faire » card below). Hidden when there are no leftovers.
+              nodes.toFinish = leftovers.length > 0 ? (
+                <Section label={t.board.toFinish} icon="arrow-counter-clockwise-bold" tint="var(--sage)">
                   {leftovers.map((l) => (
                     <Act
                       key={l.id}
@@ -1096,18 +1091,20 @@ export function Board() {
                       }))}
                     />
                   ))}
-                </>
-              )}
-              {todayTodos.length > 0 && (
-                <>
-                  {bothToFinish && <SubHead label={t.board.todos} icon="check-bold" />}
-                  {todayTodos.map(todoAct)}
-                </>
-              )}
                 </Section>
               ) : null
-              // « À compléter » — the persistent checklist (always on: its own add surface).
-              nodes.todos = <TodoSection title={t.todos.title} members={data.members} icon="check-bold" tint="var(--sage)" />
+              // « À faire » — the ONE to-do surface (UI merge of the two old todo cards;
+              // backends unchanged). Loose one-off tasks (data.todos, often dictated) sit
+              // under the « À faire » header; the reusable checklists (« À compléter »,
+              // todos table + departure templates) ride below via the embedded TodoSection's
+              // own header — two clearly-labelled groups in one card. The help "?" on the
+              // title explains the distinction. Always on (TodoSection is the add surface).
+              nodes.todos = (
+                <Section label={t.board.todos} icon="check-bold" tint="var(--sage)" help={help} helpKey="todos">
+                  {todayTodos.map(todoAct)}
+                  <TodoSection title={t.todos.title} members={data.members} bento={false} />
+                </Section>
+              )
               // « À venir » — upcoming events/chores (null when none).
               nodes.upcoming = (upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) ? (
                 <Section label={t.board.upcoming} icon="calendar-blank-bold" tint="var(--sky)">
