@@ -695,6 +695,10 @@ export interface AppState {
   surface?: Surface
   // The parent board layout (bento = Grille | month = Mois). Defaults to bento.
   boardView?: 'bento' | 'month'
+  // Per-device Grille card layout (« Disposition du babillard », lib/boardCards) —
+  // show/hide + order. Lets a spec exercise a custom layout without hand-injecting the
+  // localStorage key. Unset → the default order, all visible.
+  cardPrefs?: { order?: string[]; hidden?: string[] }
   // Pretend this device holds a (possibly revoked) device token — pairs with
   // mockApi({ unauthorized: true }) to exercise the pairing-lost recovery.
   paired?: boolean
@@ -722,6 +726,7 @@ export async function seedState(page: Page, s: AppState) {
       if (state.calm !== undefined) localStorage.setItem('babillard-calm', state.calm ? 'on' : 'off')
       if (state.surface) localStorage.setItem('babillard-surface', state.surface)
       if (state.boardView) localStorage.setItem('babillard-boardview', state.boardView)
+      if (state.cardPrefs) localStorage.setItem('babillard-card-prefs', JSON.stringify(state.cardPrefs))
       // Pin the day-part ambient drift OFF (feature #1): otherwise the board palette
       // tints by wall-clock time, making every screenshot non-deterministic. Tests
       // assert the fixed day/night palette; the drift is covered by unit tests.

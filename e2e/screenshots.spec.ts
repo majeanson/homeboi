@@ -104,13 +104,14 @@ for (const boardView of ['month'] as const) {
 test('board respects a custom card layout', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'kiosk' })
-  await page.addInitScript(() =>
-    localStorage.setItem(
-      'babillard-card-prefs',
-      JSON.stringify({ order: ['upcoming', 'today', 'autoCard', 'toFinish', 'drawings', 'photos'], hidden: ['todos'] }),
-    ),
-  )
+  await seedState(page, {
+    theme: 'day',
+    audience: 'parent',
+    lang: 'fr',
+    calm: true,
+    surface: 'kiosk',
+    cardPrefs: { order: ['upcoming', 'today', 'autoCard', 'toFinish', 'drawings', 'photos'], hidden: ['todos'] },
+  })
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto('/board')
@@ -124,6 +125,44 @@ test('board respects a custom card layout', async ({ page }) => {
     return !!b && b.scrollWidth > b.clientWidth + 1
   })
   expect(overflow, 'no horizontal overflow with custom layout').toBeFalsy()
+})
+
+// « Disposition du babillard » panel: toggling a card OFF in Réglages removes it from
+// the board (the full store→board flow, not just a pre-seeded layout).
+test('board layout panel toggle hides a card', async ({ page }) => {
+  await page.setViewportSize({ width: 430, height: 1400 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/settings?tab=display')
+  await page.locator('.board-layout').first().waitFor({ timeout: 15000 })
+  // Hide « À compléter » via its show/hide toggle.
+  const row = page.locator('.board-layout__row', { hasText: 'À compléter' }).first()
+  await row.locator('.board-layout__toggle').click()
+  await page.waitForTimeout(150)
+  await page.goto('/board')
+  await page.locator('.board-grid').first().waitFor({ timeout: 8000 })
+  expect(await page.locator('.todo-sec.bento').count()).toBe(0)
+})
+
+// The unified event form: ONE form with optional « Trajet » + « À apporter », and the
+// inline bring-list builder accepts typed items (no bounce to Réglages).
+test('event form: optional Trajet + À apporter with inline bring builder', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.setViewportSize({ width: 430, height: 1200 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/event/new')
+  await page.locator('form').first().waitFor({ timeout: 15000 })
+  await expect(page.getByText('Trajet', { exact: true })).toBeVisible()
+  await expect(page.getByText('À apporter', { exact: true })).toBeVisible()
+  await page.getByText('À apporter', { exact: true }).click()
+  const item = page.getByPlaceholder('Ajoute un article')
+  await item.fill('souliers')
+  await item.press('Enter')
+  await expect(page.getByText('souliers')).toBeVisible()
+  await expect(page.getByText('Créer la liste')).toBeVisible()
+  expect(errors, 'pageerror on event form').toEqual([])
 })
 
 // Language spot-check: English on the busiest surfaces, where FR→EN length

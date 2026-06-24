@@ -300,14 +300,25 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Planifier une journée', en: 'Plan a day' },
+        label: { fr: 'Voir un moment', en: 'See a moment' },
         detail: {
-          fr: 'Dans la vue Mois, touche une journée puis « Planifier cette journée » : sa page s’ouvre pour y mettre repas, note, rendez-vous et corvées — pour n’importe quelle date, pas juste aujourd’hui.',
-          en: 'In the Month view, tap a day then “Plan this day”: that day’s page opens to add meals, a note, events and chores — for any date, not just today.',
+          fr: 'Dans la vue Mois, touche une journée puis « Voir ce moment » : « Moments » s’ouvre sur cette date — tout ce qui s’en vient ce jour-là, avec sa liste « À compléter » à cocher. Le bouton « Moments » du babillard ouvre les mêmes fenêtres : ce soir, demain, une date, la semaine.',
+          en: 'In the Month view, tap a day then “See this moment”: “Moments” opens on that date — everything coming up that day, with its “To complete” list to check off. The board’s “Moments” button opens the same windows: tonight, tomorrow, a date, the week.',
         },
         why: {
-          fr: 'Pour préparer une journée à l’avance d’un seul endroit, au lieu de chercher où ajouter chaque chose.',
-          en: 'To set a day up ahead from one place, instead of hunting for where to add each thing.',
+          fr: 'Pour zoomer sur un moment précis et préparer la passation (gardienne, fin de semaine) d’un seul coup d’œil.',
+          en: 'To zoom into one moment and prep a handoff (sitter, the weekend) at a glance.',
+        },
+      },
+      {
+        label: { fr: 'Personnaliser le babillard', en: 'Customize the board' },
+        detail: {
+          fr: 'Réglages ▸ Affichage ▸ « Disposition du babillard » : choisis quelles cartes afficher (L’auto, À finir, À venir, Dessins…) et glisse-les dans l’ordre que tu veux. C’est propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
+          en: 'Settings ▸ Display ▸ “Board layout”: choose which cards to show (The car, To finish, Coming up, Drawings…) and drag them into the order you want. It’s specific to THIS device — the wall tablet and your phone each keep their own layout.',
+        },
+        why: {
+          fr: 'Pour que le babillard montre ce qui compte pour TOI sur CET écran — la tablette murale glanceable, ton téléphone plus court.',
+          en: 'So the board shows what matters to YOU on THIS screen — the wall tablet glanceable, your phone shorter.',
         },
       },
       {

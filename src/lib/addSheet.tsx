@@ -83,7 +83,11 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // (/kitchen/day/<date>): one place to set a day's meals + events + chores + note.
   // Their dates are dynamic, so AddSheet resolves the target at click time (like
   // cook/auto-pick) rather than through the static NAV_TARGET table.
-  board: ['capture', 'event', 'ride', 'activity', 'chores-pick', 'todo', 'routine', 'plan-today', 'plan-tomorrow', 'departure'],
+  // ONE « Événement » tile — the unified event form covers a plain rendez-vous AND its
+  // optional « Trajet » (car + passengers) / « À apporter » (bring-list) / recurrence,
+  // so we no longer split it into three tiles. `ride`/`activity` stay as deep-links
+  // (FORM_ROUTES, e.g. the L'auto card's quick "+ trajet") but aren't board ＋ tiles.
+  board: ['capture', 'event', 'chores-pick', 'todo', 'routine', 'plan-today', 'plan-tomorrow', 'departure'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`

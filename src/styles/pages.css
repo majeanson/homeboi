@@ -1955,6 +1955,31 @@
 .event-transport__label:first-child {
   margin-top: 0;
 }
+/* « À apporter » inline list builder (EventForm): type items → chips → « Créer la
+   liste ». A calm stacked column; the typed items are removable tag chips. */
+.event-bring__build {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+.event-bring__add {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.event-bring__add .input {
+  flex: 1;
+  min-width: 0;
+}
+.event-bring__build .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.event-bring__build .tags .tag {
+  cursor: pointer;
+}
 .operator__cards {
   min-width: 100%;
 }

@@ -853,6 +853,7 @@ export function Board() {
                 type="button"
                 className="board-nextup"
                 onClick={() => detail.open(buildEvent(nextUpToday, detailCtx))}
+                aria-label={`${t.boardView.nextUp} · ${formatTime(nextUpToday.start_at, lang)} · ${nextUpToday.title}`}
               >
                 <span className="board-nextup__kicker mono">
                   <InlineIcon name="clock-bold" size={12} /> {t.boardView.nextUp}

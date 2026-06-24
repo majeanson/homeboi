@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -13,6 +13,7 @@ import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { Disclosure } from '../Disclosure'
+import { InlineIcon } from '../Icon'
 import { useCars } from '../../lib/carPrefs'
 import { recurOf } from '../../lib/recurLabel'
 
@@ -123,6 +124,38 @@ export function EventForm({
   const templatesQ = useQuery({ queryKey: TODO_TEMPLATES_KEY, queryFn: () => api<TemplatesData>('todo-templates'), ...live })
   const templates = templatesQ.data?.templates ?? []
   const [bringTemplateId, setBringTemplateId] = useState<string | null>(value?.bring_template_id ?? null)
+  // Build a bring-list INLINE: type items here (souliers · gourde) to create a new
+  // todo_templates list without leaving the form — the same lists « Avant de partir »
+  // surfaces. The new list is named after the event (« Soccer ») and auto-selected.
+  const qc = useQueryClient()
+  const [bringInput, setBringInput] = useState('')
+  const [bringDraft, setBringDraft] = useState<string[]>([])
+  const [bringBusy, setBringBusy] = useState(false)
+  async function createBringList() {
+    const items = bringDraft.map((s) => s.trim()).filter(Boolean)
+    if (!items.length || bringBusy) return
+    setBringBusy(true)
+    try {
+      const res = await api<{ id: string }>('todo-templates', {
+        method: 'POST',
+        body: { title: title.trim() || t.operator.bringDefaultName, items },
+      })
+      setBringTemplateId(res.id)
+      setBringDraft([])
+      setBringInput('')
+      await qc.invalidateQueries({ queryKey: TODO_TEMPLATES_KEY })
+    } catch {
+      /* keep the draft so nothing typed is lost */
+    } finally {
+      setBringBusy(false)
+    }
+  }
+  const pushBringItem = (raw: string) => {
+    const x = raw.trim()
+    if (!x) return
+    setBringDraft((d) => [...d, x])
+    setBringInput('')
+  }
   // « L'auto » — the optional ride layer: does this event take a household car, and
   // which kids ride along. Both default off so a plain event is unchanged. The
   // driver is still the member/contact above (member = we drive · a cercle contact =
@@ -133,9 +166,6 @@ export function EventForm({
   const [passengers, setPassengers] = useState<string[]>(parsePassengers(value?.passengers))
   const togglePassenger = (id: string) =>
     setPassengers((cur) => (cur.includes(id) ? cur.filter((p) => p !== id) : [...cur, id]))
-  // Show the logistics block open when the event already is a ride/activity (or was
-  // opened as one), so it doesn't hide its car/passengers/bring-list behind a summary.
-  const isRide = carId != null || passengers.length > 0 || bringTemplateId != null || !!defaultRide || !!defaultActivity
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
   const write = useWrite()
@@ -244,12 +274,18 @@ export function EventForm({
       )}
       <RecurPicker value={recur} onChange={setRecur} />
       <LeadPicker value={lead} onChange={setLead} />
-      {/* « L'auto » ride layer — collapsed by default (calm: secondary), opened when
-          the event already is a ride. Which household car it takes (tap again to
-          clear = no car / carpool) and which kids ride along. The driver stays the
-          member/contact above. Hidden entirely when there's nothing to assign. */}
-      {(hasCar || members.length > 0 || templates.length > 0) && (
-        <Disclosure label={t.operator.eventTransport} defaultOpen={isRide} className="event-transport">
+      {/* The event form is ONE form: a plain rendez-vous up top, then two OPTIONAL
+          sections (calm: collapsed by default). They replace the old separate
+          ＋ « Trajet » / « Activité » tiles — fill only what you need. */}
+      {/* « Trajet » — the optional ride layer: which household car it takes (tap again
+          to clear = no car / carpool) + which kids ride along. The driver stays the
+          member/contact above. Hidden when there's no car AND no members. */}
+      {(hasCar || members.length > 0) && (
+        <Disclosure
+          label={t.operator.eventTrajet}
+          defaultOpen={carId != null || passengers.length > 0 || !!defaultRide}
+          className="event-transport"
+        >
           {hasCar && (
             <>
               <p className="mono event-transport__label">{t.operator.eventCarWho}</p>
@@ -285,29 +321,82 @@ export function EventForm({
               </div>
             </>
           )}
-          {/* « À apporter » — a kid activity's bring-list, picked from the household's
-              saved lists (reuses todo_templates). On the day, « Avant de partir »
-              shows it. Hidden when no list exists yet (make one in Réglages ▸ À
-              compléter). Tap an active one to clear. */}
-          {templates.length > 0 && (
-            <>
-              <p className="mono event-transport__label">{t.operator.eventBring}</p>
-              <div className="operator__rotation mono">
-                {templates.map((tp) => (
-                  <button
-                    key={tp.id}
-                    type="button"
-                    className={`btn btn--ghost${bringTemplateId === tp.id ? ' is-active' : ''}`}
-                    onClick={() => setBringTemplateId(bringTemplateId === tp.id ? null : tp.id)}
-                  >
-                    {tp.title}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
         </Disclosure>
       )}
+      {/* « À apporter » — the optional bring-list for an activity (« Soccer : souliers ·
+          gourde »). Pick a saved list OR build one INLINE (type items → a new
+          todo_templates list, the same lists « Avant de partir » uses). Always
+          available, so a first list can be made right here, not only in Réglages. */}
+      <Disclosure
+        label={t.operator.eventBring}
+        defaultOpen={bringTemplateId != null || !!defaultActivity}
+        className="event-bring"
+      >
+        {templates.length > 0 && (
+          <div className="operator__rotation mono">
+            {templates.map((tp) => (
+              <button
+                key={tp.id}
+                type="button"
+                className={`btn btn--ghost${bringTemplateId === tp.id ? ' is-active' : ''}`}
+                onClick={() => setBringTemplateId(bringTemplateId === tp.id ? null : tp.id)}
+              >
+                {tp.title}
+              </button>
+            ))}
+          </div>
+        )}
+        {/* Build a NEW list inline — only when none is picked (picking one IS the list). */}
+        {bringTemplateId == null && (
+          <div className="event-bring__build">
+            {/* A plain input + button (NOT EditField — it renders its own <form>, which
+                can't nest inside this event <form>). Enter adds an item too. */}
+            <div className="event-bring__add">
+              <input
+                className="input"
+                value={bringInput}
+                onChange={(e) => setBringInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    pushBringItem(bringInput)
+                  }
+                }}
+                placeholder={t.operator.bringAddItem}
+                aria-label={t.operator.bringAddItem}
+              />
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => pushBringItem(bringInput)}
+                aria-label={t.operator.bringAddItem}
+              >
+                <InlineIcon name="plus-bold" size={16} />
+              </button>
+            </div>
+            {bringDraft.length > 0 && (
+              <>
+                <div className="tags">
+                  {bringDraft.map((it, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="tag"
+                      onClick={() => setBringDraft((d) => d.filter((_, j) => j !== i))}
+                      aria-label={`${it} — ${t.common.delete}`}
+                    >
+                      {it} <InlineIcon name="x-bold" size={11} />
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="btn" disabled={bringBusy} onClick={createBringList}>
+                  <InlineIcon name="check-bold" size={15} /> {t.operator.bringCreate}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </Disclosure>
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <button type="submit" className="btn" disabled={!title.trim() || !date || busy}>
         {value ? t.common.save : t.operator.addEvent}
