@@ -6,7 +6,8 @@
 // unit-tested, like whenparse/carAvail — the component just renders this.
 
 export interface FilItem {
-  start_at: number // unix seconds
+  start_at: number // unix seconds — when it sits on the axis
+  until?: number // optional end (a job window): "past" only once it has ENDED, not when it starts
 }
 
 export interface FilRow<T> {
@@ -38,7 +39,8 @@ const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n
 export function placeFil<T extends FilItem>(items: T[], nowSec: number): FilLayout<T> {
   const sorted = [...items].sort((a, b) => a.start_at - b.start_at)
   const rows: FilRow<T>[] = sorted.map((item, i) => {
-    const past = item.start_at < nowSec
+    // A plain event is past once it has started; a job window only once it has ended.
+    const past = (item.until ?? item.start_at) < nowSec
     const gapBefore = i === 0 ? 0 : clamp(((item.start_at - sorted[i - 1].start_at) / 3600) * GAP_PER_HOUR, MIN_GAP, MAX_GAP)
     return { item, past, gapBefore }
   })

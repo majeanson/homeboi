@@ -1,32 +1,42 @@
 import { useEffect, useState, Fragment, type ReactNode } from 'react'
 import { placeFil } from '../../lib/dayRibbon'
 import { formatTime } from '../../lib/format'
-import type { Lang } from '../../i18n'
 import { SubHead } from './Act'
-import type { EventRow } from './types'
+import type { Lang } from '../../i18n'
 
-// « Le fil du jour » — the day-ribbon. The same timed events the day list carries, but
-// read as a SHAPE: in time order, spaced by how far apart they are (a soft time axis),
-// past ones gently dimmed, with a calm « maintenant » marker dropped in between what's
-// behind us and what's still to come. It answers *when* at a glance — the flat list
-// answers *what* (and stays the place you tap to check things off). Rows reuse the
-// board's own `eventAct` (so a tap still opens the same detail peek); this file only
-// does the layout + the now-marker. Untimed/all-day items pool under a quiet foot.
+// One thing on the ribbon: a pre-rendered row (the host builds it with its own
+// `eventAct`/`choreAct`/`workAct`, so taps + checks keep working) plus the times the
+// layout needs. `until` lets a job window count as "past" only once it has ended.
+export interface FilTimed {
+  id: string
+  start_at: number
+  until?: number
+  node: ReactNode
+}
+export interface FilUntimed {
+  id: string
+  node: ReactNode
+}
+
+// « Le fil du jour » — the day-ribbon. The day read as a SHAPE: timed things (events +
+// L'auto rides + work/job windows) placed in time order, spaced by how far apart they
+// are (a soft time axis), past ones dimmed, with a calm « maintenant » marker dropped in
+// between what's behind us and what's ahead. Untimed things (chores, all-day events) pool
+// under a quiet « À tout moment » foot. Rows are built by the host (reusing the board's
+// own row renderers), so a tap still opens the same peek and a chore's check still ticks;
+// this file only does the layout + the now-marker.
 //
-// Calm: no counts, no "you're late" — just position. The marker shows the current time,
-// never an alarm. Rendered only when there are ≥2 timed events (Board's guard); a single
-// next-up is already covered by the « Prochainement » headline on the day card.
+// Calm: no counts, no "you're late" — just position; the marker shows the time, never an
+// alarm. Rendered only when there are ≥2 timed items (Board's guard).
 export function Fil({
   timed,
   untimed,
-  renderEvent,
   anytimeLabel,
   nowLabel,
   lang,
 }: {
-  timed: EventRow[]
-  untimed: EventRow[]
-  renderEvent: (e: EventRow) => ReactNode
+  timed: FilTimed[]
+  untimed: FilUntimed[]
   anytimeLabel: string
   nowLabel: string
   lang: Lang
@@ -56,7 +66,7 @@ export function Fil({
           <Fragment key={r.item.id}>
             {i === nowIndex && marker}
             <li className={'fil__row' + (r.past ? ' fil__row--past' : '')} style={{ marginTop: `${r.gapBefore}rem` }}>
-              {renderEvent(r.item)}
+              {r.item.node}
             </li>
           </Fragment>
         ))}
@@ -65,7 +75,9 @@ export function Fil({
       {untimed.length > 0 && (
         <>
           <SubHead label={anytimeLabel} icon="clock-bold" />
-          {untimed.map(renderEvent)}
+          {untimed.map((u) => (
+            <Fragment key={u.id}>{u.node}</Fragment>
+          ))}
         </>
       )}
     </div>

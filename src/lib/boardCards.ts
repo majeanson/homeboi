@@ -68,15 +68,29 @@ const listeners = new Set<() => void>()
 let cache: BoardCardPrefs | null = null
 
 // Reconcile a saved layout against the canonical id lists: keep saved GRID order for
-// known grid ids, drop ids that no longer exist, and APPEND any new default grid cards
-// at the end (visible) — so adding a grid card never strands it off an old device. The
-// `hidden` set may name any card (band or grid).
+// known grid ids, drop ids that no longer exist, and splice any new default grid card in
+// at its CANONICAL position (right after its canonical predecessor that the device still
+// has) rather than at the very end — so a new card (e.g. 'fil' before 'today') lands where
+// it belongs on a device with an existing layout, not stranded last. The `hidden` set may
+// name any card (band or grid).
 function reconcile(saved: Partial<BoardCardPrefs>): BoardCardPrefs {
   const savedOrder = Array.isArray(saved.order)
     ? saved.order.filter((id): id is GridCardId => DEFAULT_GRID_ORDER.includes(id as GridCardId))
     : []
-  const missing = DEFAULT_GRID_ORDER.filter((id) => !savedOrder.includes(id))
-  const order = [...savedOrder, ...missing]
+  const order = [...savedOrder]
+  for (const id of DEFAULT_GRID_ORDER) {
+    if (order.includes(id)) continue
+    const canonIdx = DEFAULT_GRID_ORDER.indexOf(id)
+    let insertAt = order.length
+    for (let k = canonIdx - 1; k >= 0; k--) {
+      const p = order.indexOf(DEFAULT_GRID_ORDER[k]!)
+      if (p >= 0) {
+        insertAt = p + 1
+        break
+      }
+    }
+    order.splice(insertAt, 0, id)
+  }
   const hidden = Array.isArray(saved.hidden)
     ? saved.hidden.filter((id): id is BoardCardId => ALL_IDS.includes(id as BoardCardId))
     : []

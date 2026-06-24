@@ -36,6 +36,14 @@ describe('placeFil', () => {
     expect(rows[2].gapBefore).toBe(2.5)
   })
 
+  it('a job window spanning now is not yet past (uses `until`, not start)', () => {
+    // Started 9:00, ends 17:00, now 12:00 → still ongoing, not dimmed.
+    const { rows } = placeFil([{ start_at: at(9), until: at(17) }], at(12))
+    expect(rows[0].past).toBe(false)
+    // Same window after it ends → past.
+    expect(placeFil([{ start_at: at(9), until: at(17) }], at(18)).rows[0].past).toBe(true)
+  })
+
   it('handles an empty list', () => {
     expect(placeFil([], at(12))).toEqual({ rows: [], nowIndex: 0 })
   })

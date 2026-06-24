@@ -42,7 +42,7 @@ import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { MonthView } from '../components/board/MonthView'
-import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow } from '../components/board/types'
+import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
@@ -250,14 +250,19 @@ export function Board() {
   const nextUpToday = [...todayEvents]
     .filter((e) => !e.all_day && e.start_at >= nowSecBoard - 1800)
     .sort((a, b) => a.start_at - b.start_at)[0]
-  // « Le fil du jour » — today's TIMED events read as a shape (a soft time axis + a
-  // « maintenant » marker), all-day events pooled. A separate, optional glance card
-  // (lib/boardCards 'fil'): it answers *when*, the day list answers *what*. Shown only
-  // with ≥2 timed events — a single one is already the « Prochainement » headline, so we
-  // also drop that headline when the fil is actually on screen (no double next-up).
+  // « Le fil du jour » — the day read as a SHAPE (a soft time axis + a « maintenant »
+  // marker): timed events + L'auto rides + work/job windows on the axis; chores + all-day
+  // events pool under « À tout moment ». A separate, optional card (lib/boardCards 'fil');
+  // it answers *when*, so when it's on screen the « Aujourd'hui » card drops the same
+  // events + chores (and the lone-next-up « Prochainement » headline) to avoid rendering
+  // them twice. Shown with ≥2 things to place on the axis (timed events + work windows).
   const filTimed = todayEvents.filter((e) => !e.all_day)
   const filUntimed = todayEvents.filter((e) => !!e.all_day)
-  const filShown = isCardVisible(boardCards, 'fil') && filTimed.length >= 2
+  // L'auto work/job windows landing today (data.work — derived schedule spans, real
+  // start/end times); filtered by the same face lens as events.
+  const mineWork = (w: WorkRow) => !focusing || w.member_id === profileId || w.member_id === null
+  const filWork = (data?.work ?? []).filter(mineWork)
+  const filShown = isCardVisible(boardCards, 'fil') && filTimed.length + filWork.length >= 2
   // « Demain » is bunched into the Aujourd'hui card — show it ONLY when tomorrow holds
   // something (a forecast, a prep note, a meal, an event, or a pinned to-do), so an
   // empty tomorrow never renders a bare "Rien de prévu" sub-group.
@@ -528,6 +533,21 @@ export function Board() {
       mine={!!profileId && e.member_id === profileId}
       soon={e.soon}
       onOpen={() => detail.open(buildEvent(e, detailCtx))}
+    />
+  )
+  // A L'auto work/job window on « Le fil du jour » — a static info row (no peek; work
+  // windows are derived, not editable here): the time span, who, and a 🚗 when this
+  // window holds the shared car. Tinted by the block colour (member colour falls back).
+  const workAct = (w: WorkRow) => (
+    <Act
+      key={`work-${w.id}`}
+      cat="work"
+      title={w.label || t.board.atWork}
+      when={`${formatTime(w.at, lang)}–${formatTime(w.endAt, lang)}`}
+      who={memberName(w.member_id) ?? undefined}
+      color={w.color ?? memberColor(w.member_id) ?? undefined}
+      mine={!!profileId && w.member_id === profileId}
+      icon={w.holds_car ? 'car-bold' : 'clock-bold'}
     />
   )
   const cookLine = (m: MealRow) =>
@@ -874,14 +894,21 @@ export function Board() {
               const nodes: Partial<Record<GridCardId, ReactNode>> = {}
               // « L'auto » glance — the car's status today + today's rides. #28
               nodes.autoCard = <AutoCard />
-              // « Le fil du jour » — the day's timed shape (≥2 timed events; else the
-              // « Prochainement » headline on the day card already covers the lone next-up).
-              nodes.fil = filTimed.length >= 2 ? (
+              // « Le fil du jour » — the day's shape: timed events + L'auto rides + work
+              // windows on the axis; chores + all-day events pooled. Shown with ≥2 things
+              // to place; when on, the « Aujourd'hui » card below drops these same events +
+              // chores so nothing renders twice.
+              nodes.fil = filShown ? (
                 <Section label={t.board.fil} icon="clock-bold" tint="var(--sky)">
                   <Fil
-                    timed={filTimed}
-                    untimed={filUntimed}
-                    renderEvent={eventAct}
+                    timed={[
+                      ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, node: eventAct(e) })),
+                      ...filWork.map((w) => ({ id: `work-${w.id}`, start_at: w.at, until: w.endAt, node: workAct(w) })),
+                    ]}
+                    untimed={[
+                      ...todayChores.map((c) => ({ id: c.id, node: choreAct(c) })),
+                      ...filUntimed.map((e) => ({ id: e.id, node: eventAct(e) })),
+                    ]}
                     anytimeLabel={t.board.anytime}
                     nowLabel={t.board.now}
                     lang={lang}
@@ -932,7 +959,10 @@ export function Board() {
                 <InlineIcon name="key-bold" size={16} /> {t.departure.title}
               </button>
             </div>
-            {todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
+            {/* When « Le fil du jour » is on screen it carries today's events + chores, so
+                the day list shows only meals + home work here (no double render). The calm
+                "Rien de prévu" only stands in when the fil is OFF and nothing's planned. */}
+            {!filShown && todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
               <EmptyState tone="calm">{t.board.todayClear}</EmptyState>
             ) : (
               <>
@@ -962,9 +992,10 @@ export function Board() {
                     }
                   />
                 ))}
-                {todayEvents.map(eventAct)}
+                {/* Events + chores move to « Le fil du jour » when it's shown (see filShown). */}
+                {!filShown && todayEvents.map(eventAct)}
                 {/* Recurring chores due today — tap to check off (advances the turn). */}
-                {todayChores.map((c) => choreAct(c))}
+                {!filShown && todayChores.map((c) => choreAct(c))}
                 {/* Projets & Entretien due today — tap to check off (stamps done). */}
                 {todayHome.map((c) => homeAct(c))}
               </>

@@ -962,18 +962,23 @@ export function DevKit() {
       render: () => {
         const base = Math.floor(Date.UTC(2026, 5, 24, 0, 0, 0) / 1000)
         const at = (h: number) => base + h * 3600
-        const ev = (id: string, title: string, h: number, allDay = false) => ({
-          id, title, start_at: at(h), all_day: allDay ? 1 : 0, member_id: null,
-        })
-        const timed = [ev('1', 'Garderie', 8), ev('2', 'Rendez-vous dentiste', 14), ev('3', 'Soccer', 18)]
-        const untimed = [ev('4', 'Congé férié', 0, true)]
+        const row = (cat: 'event' | 'work' | 'chore', title: string, when: string) => (
+          <Act cat={cat} title={title} when={when} onOpen={() => {}} />
+        )
         return (
-          <Demo label="day-ribbon (now ≈ midi, marker drops in between)">
+          <Demo label="day-ribbon: events + a work window on the axis, chores pooled">
             <BoardSection label="Le fil du jour" icon="clock-bold" tint="var(--sky)">
               <Fil
-                timed={timed}
-                untimed={untimed}
-                renderEvent={(e) => <Act key={e.id} cat="event" title={e.title} when={e.all_day ? 'Toute la journée' : ''} onOpen={() => {}} />}
+                timed={[
+                  { id: '1', start_at: at(8), node: row('event', 'Garderie', '8:00') },
+                  { id: 'w', start_at: at(9), until: at(17), node: row('work', 'Au travail', '9:00–17:00') },
+                  { id: '2', start_at: at(14), node: row('event', 'Rendez-vous dentiste', '14:00') },
+                  { id: '3', start_at: at(18), node: row('event', 'Soccer', '18:00') },
+                ]}
+                untimed={[
+                  { id: 'c1', node: row('chore', 'Sortir les poubelles', '') },
+                  { id: 'e4', node: row('event', 'Congé férié', 'Toute la journée') },
+                ]}
                 anytimeLabel="À tout moment"
                 nowLabel="Maintenant"
                 lang="fr"
