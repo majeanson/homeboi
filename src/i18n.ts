@@ -384,6 +384,7 @@ export const FR = {
   },
   boardView: {
     label: 'Vue du babillard',
+    jour: 'La journée',
     bento: 'Grille',
     // "Maintenant" (not "À venir") so the view toggle doesn't share a name with
     // the bento grid's "À venir" (upcoming) section — they were indistinguishable.
@@ -2264,6 +2265,7 @@ export const EN: typeof FR = {
   },
   boardView: {
     label: 'Board view',
+    jour: 'The day',
     bento: 'Grid',
     next: 'Up next',
     lanes: 'Per person',

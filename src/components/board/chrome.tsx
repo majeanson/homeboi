@@ -25,6 +25,8 @@ export function BoardViewToggle({
   armed?: boolean
 }) {
   const opts: { v: BoardView; icon: IconName; label: string }[] = [
+    // « La journée » — the unified prototype, surfaced first so it's easy to try.
+    { v: 'jour', icon: 'sun-horizon-bold', label: t.boardView.jour },
     { v: 'bento', icon: 'calendar-blank-bold', label: t.boardView.bento },
     { v: 'next', icon: 'clock-bold', label: t.boardView.next },
     { v: 'lanes', icon: 'smiley-bold', label: t.boardView.lanes },

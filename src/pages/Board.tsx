@@ -12,6 +12,7 @@ import { AutoCard } from '../components/board/AutoCard'
 import { MomentPeek } from '../components/board/MomentPeek'
 import { ARegler } from '../components/board/ARegler'
 import { MomentsView } from '../components/board/MomentsView'
+import { LaJournee } from '../components/board/LaJournee'
 import { Icon, InlineIcon } from '../components/Icon'
 import { CATS, TOD_ICON } from '../lib/cats'
 import { wash, tintInk } from '../lib/colors'
@@ -103,7 +104,7 @@ export function Board() {
   const [view, setView] = useState<BoardView>(() => readBoardView())
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
   // learn what it shows instead of switching. Label = the view's own name.
-  const help = useHelpMode(BOARD_HELP, (k) => t.boardView[k.replace('view-', '') as 'bento' | 'next' | 'lanes' | 'month' | 'moment'] ?? k)
+  const help = useHelpMode(BOARD_HELP, (k) => t.boardView[k.replace('view-', '') as 'bento' | 'next' | 'lanes' | 'month' | 'moment' | 'jour'] ?? k)
   // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
   // out of the rendered board at once so the live poll can't resurrect them before
   // the write commits — same guard as Liste's pendingClear. Tapping Annuler means
@@ -788,6 +789,9 @@ export function Board() {
         // « Moments » — the windowed recap + per-day handoff checklist, in-board
         // (the same component the /moment scene wraps). Defaults to « Ce soir ».
         <MomentsView defaultScope="tonight" />
+      ) : view === 'jour' ? (
+        // « La journée » — the unified prototype (face lens + scopes via DaySection).
+        <LaJournee />
       ) : (
         <>
           {/* The "today" zone: tonight's supper and today's weather as equal hero

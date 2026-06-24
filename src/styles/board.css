@@ -1612,3 +1612,66 @@
     height: 8px;
   }
 }
+
+/* « La journée » — the unified prototype view: a face lens + scope tabs, then the
+   shared DaySection. Mostly reuses Section/Act/SubTabs/Disclosure; these are the few
+   bespoke bits (the weather chip, the « Maintenant » focus + supper lines). */
+.lajournee {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.lajournee__wx {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  border-left: 5px solid var(--ink-soft);
+}
+.lajournee__wx-temp {
+  font-family: var(--display);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.lajournee__wx-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.lajournee__wx-tip {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.lajournee__focus {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.4rem 0;
+}
+.lajournee__focus-when {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+.lajournee__focus-title {
+  font-family: var(--display);
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+.lajournee__supper {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  padding: 0.2rem 0;
+}
+.lajournee__supper--hero {
+  color: var(--ink);
+  font-weight: 600;
+}
+.lajournee__more {
+  margin-top: 0.2rem;
+}
