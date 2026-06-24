@@ -26,6 +26,7 @@ export function DaySection({
   items,
   members,
   eveningOnly = false,
+  actionsOnly = false,
   showTodos = false,
   todosTitle,
   todosHideWhenEmpty = false,
@@ -36,6 +37,9 @@ export function DaySection({
   members: Member[]
   // « Ce soir » trim: supper-only meals + still-to-come / all-day / birthday / work events.
   eveningOnly?: boolean
+  // « Actions à faire »: only the to-do items (chores + home upkeep + todos), skipping
+  // meals + events — for the « Maintenant » "what needs doing today/tomorrow" lens.
+  actionsOnly?: boolean
   showTodos?: boolean
   todosTitle?: string
   todosHideWhenEmpty?: boolean
@@ -82,10 +86,10 @@ export function DaySection({
       actions: [{ key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${day}` }],
     } as DetailModel)
 
-  const meals = items.meals.filter((m) => !eveningOnly || m.slot === 'supper')
-  const events = items.events
-    .filter((e) => !eveningOnly || e.all_day || e.birthday || e.work || e.at >= nowSec)
-    .sort((a, b) => a.at - b.at)
+  const meals = actionsOnly ? [] : items.meals.filter((m) => !eveningOnly || m.slot === 'supper')
+  const events = actionsOnly
+    ? []
+    : items.events.filter((e) => !eveningOnly || e.all_day || e.birthday || e.work || e.at >= nowSec).sort((a, b) => a.at - b.at)
 
   return (
     <>

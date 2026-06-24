@@ -1,0 +1,107 @@
+import { useT } from '../../i18n'
+import { wash, tintInk } from '../../lib/colors'
+import { CATS } from '../../lib/cats'
+import { SLOT_ICON_NAME } from '../../lib/mealSlots'
+import { type Weather, weatherIcon, weatherTint, weatherTip } from '../../lib/weather'
+import { type DayMealRow } from './types'
+import { type Wonder } from './ApodFrame'
+import { Icon, InlineIcon } from '../Icon'
+
+// The board's two "today" hero cards, extracted so Grille AND « La journée » render
+// the SAME polished visuals instead of one re-rolling a thinner version: the « Ce
+// soir » supper card (every supper as a tappable row) and the weather card with the
+// daily-wonder photo as its backdrop. The meal tap is a caller callback (`onOpenMeal`)
+// so each view keeps its own detail actions; the wonder/shuffle is passed in too.
+export function DayHeroes({
+  suppers,
+  supperColor,
+  onOpenMeal,
+  cookLine,
+  weather,
+  wonder,
+  onShuffleWonder,
+}: {
+  suppers: DayMealRow[]
+  supperColor: string
+  onOpenMeal: (m: DayMealRow) => void
+  cookLine: (m: DayMealRow) => string | undefined
+  weather: Weather | null
+  wonder: Wonder | null
+  onShuffleWonder: () => void
+}) {
+  const t = useT()
+  const tip = weatherTip(weather)
+  if (suppers.length === 0 && !weather) return null
+  return (
+    <div className="board-heroes">
+      {suppers.length > 0 && (
+        // « Ce soir » — every supper planned today agglomerates into ONE hero card, a
+        // tappable row each.
+        <div className="now-card now-card--supper" style={{ background: wash(supperColor), color: tintInk(supperColor) }}>
+          <div className="blob" style={{ background: supperColor }} />
+          <div className="label">{t.board.tonight}</div>
+          <div className="now-card__meals">
+            {suppers.map((m) => (
+              <div
+                key={m.id}
+                className="now-card__meal now-card--tap"
+                role="button"
+                tabIndex={0}
+                onClick={() => onOpenMeal(m)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onOpenMeal(m)
+                  }
+                }}
+              >
+                <div className="what">{m.title}</div>
+                {m.is_leftover ? (
+                  <div className="who">
+                    <InlineIcon name="arrow-counter-clockwise-bold" size={13} /> {t.kitchen.leftoversTag}
+                  </div>
+                ) : null}
+                {cookLine(m) && <div className="who">{cookLine(m)}</div>}
+              </div>
+            ))}
+          </div>
+          <div className="icn">
+            <Icon name={SLOT_ICON_NAME.supper} size={40} color={supperColor} />
+          </div>
+        </div>
+      )}
+      {weather && (
+        // The wonder picture is the card's BACKDROP; the weather sits on top in
+        // frosted chips so the temperature is legible over any image.
+        <div
+          className={`now-card now-card--wx${wonder ? ' now-card--wx-photo' : ''}`}
+          style={wonder ? { backgroundImage: `url("${wonder.imgUrl}")` } : { background: CATS.event.wash, color: CATS.event.deep }}
+        >
+          {wonder ? (
+            <>
+              <span className="now-card__scrim" aria-hidden="true" />
+              <button
+                type="button"
+                className="photo-frame__shuffle now-card__shuffle"
+                onClick={onShuffleWonder}
+                aria-label={t.board.shuffleWonder}
+                title={t.board.shuffleWonder}
+              >
+                <Icon name="repeat-bold" size={16} />
+              </button>
+              <span className="now-card__wonder-hear mono">{t.board.wonderKicker[wonder.source]}</span>
+            </>
+          ) : (
+            <div className="blob" style={{ background: CATS.event.color }} />
+          )}
+          <div className="label">{t.weather[weather.bucket]}</div>
+          <div className="what">{weather.tempC}°</div>
+          {tip && <div className="who">{t.weather.tip[tip]}</div>}
+          <div className="icn" aria-hidden="true">
+            <Icon name={weatherIcon(weather)} size={38} color={wonder ? '#fff' : weatherTint(weather)} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

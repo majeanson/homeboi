@@ -54,7 +54,7 @@ interface LeftoverRow {
 }
 // One of today's planned meals, with its slot (déjeuner/dîner/souper/collation)
 // so the board can label it. The full day's table, shown beside the supper hero.
-interface DayMealRow {
+export interface DayMealRow {
   id: string
   slot: string
   title: string

@@ -410,42 +410,70 @@
   margin: 0.5rem auto 0;
 }
 
-/* « À régler » — a quiet heads-up card; a soft marigold wash so it reads as "look
-   here" without alarming. Only rendered when there's something to sort. */
-.a-regler {
-  display: block;
-  margin: 0.5rem 0 0.75rem;
-  padding: 0.7rem 0.9rem;
-  border-radius: var(--radius-lg);
-  background: rgb(242 160 61 / 0.1);
-  box-shadow: inset 0 0 0 1.5px rgb(242 160 61 / 0.32);
-  color: var(--ink);
-  text-decoration: none;
+/* The quiet status strip above the day: « À régler » + « Demain en bref » on one row
+   (they wrap on a phone), so two whispers replace two stacked banners. */
+.board-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
-.a-regler__head {
+.board-status:empty {
+  display: none;
+}
+.board-status .a-regler {
+  flex: 1 1 14rem;
+}
+.board-status .moment-peek {
+  flex: 0 1 auto;
+  margin: 0;
+}
+
+/* « À régler » — a QUIET one-line heads-up chip: it sits above every board view, so
+   it whispers (a hairline marigold tint, not a filled banner). The full list lives in
+   « Cette semaine ». */
+.a-regler {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  margin: 0.4rem 0;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-pill);
+  background: rgb(242 160 61 / 0.07);
+  box-shadow: inset 0 0 0 1px rgb(242 160 61 / 0.28);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.a-regler__title {
+  flex: none;
   color: var(--ink-soft);
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
-.a-regler__title {
+.a-regler__lead {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.a-regler__lead span,
+.a-regler__lead {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .a-regler__count {
+  flex: none;
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
+  color: var(--ink-soft);
 }
-.a-regler__list {
-  list-style: none;
-  margin: 0.45rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
+/* The EXPANDED friction rows (full list) — used by « Cette semaine » and any inline
+   list, NOT the compact board chip above. */
 .a-regler__row {
   display: flex;
   align-items: center;

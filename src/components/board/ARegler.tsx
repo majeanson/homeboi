@@ -16,26 +16,21 @@ export function ARegler({ enabled }: { enabled: boolean }) {
   const { data } = useARegler(enabled)
   const signals = data?.signals ?? []
   if (!enabled || signals.length === 0) return null
-  const top = signals.slice(0, 2)
-  const rest = signals.length - top.length
+  // One quiet line: the label + the first friction + a "+N" when there are more.
+  // With a SINGLE friction, tap goes straight to its one-tap fix; with several, to
+  // « Cette semaine » for the full list. Deliberately compact — it sits above every
+  // board view, so it must whisper, not shout.
+  const first = frictionRow(signals[0], t)
+  const to = signals.length === 1 ? signals[0].href : '/settings?tab=week'
   return (
-    <Link to="/settings?tab=week" className="a-regler" aria-label={`${t.aRegler.title} (${signals.length})`}>
-      <div className="a-regler__head mono">
-        <Icon name="warning-bold" size={15} />
-        <span className="a-regler__title">{t.aRegler.title}</span>
-        <span className="a-regler__count">{signals.length}</span>
-      </div>
-      <ul className="a-regler__list">
-        {top.map((f) => {
-          const r = frictionRow(f, t)
-          return (
-            <li key={f.key} className="a-regler__row">
-              <Icon name={r.icon} size={15} /> <span>{r.text}</span>
-            </li>
-          )
-        })}
-        {rest > 0 && <li className="a-regler__more mono">{t.aRegler.more(rest)}</li>}
-      </ul>
+    <Link to={to} className="a-regler" aria-label={`${t.aRegler.title} (${signals.length})`}>
+      <Icon name="warning-bold" size={14} />
+      <span className="a-regler__title mono">{t.aRegler.title}</span>
+      <span className="a-regler__lead">
+        <Icon name={first.icon} size={14} /> {first.text}
+      </span>
+      {signals.length > 1 && <span className="a-regler__count mono">+{signals.length - 1}</span>}
+      <Icon name="caret-right-bold" size={13} />
     </Link>
   )
 }

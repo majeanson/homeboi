@@ -13,9 +13,9 @@ import { MomentPeek } from '../components/board/MomentPeek'
 import { ARegler } from '../components/board/ARegler'
 import { MomentsView } from '../components/board/MomentsView'
 import { LaJournee } from '../components/board/LaJournee'
+import { DayHeroes } from '../components/board/DayHeroes'
 import { Icon, InlineIcon } from '../components/Icon'
-import { CATS, TOD_ICON } from '../lib/cats'
-import { wash, tintInk } from '../lib/colors'
+import { TOD_ICON } from '../lib/cats'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -762,15 +762,14 @@ export function Board() {
           every parent view (renders nothing when none are near). */}
       <CercleBirthdays />
 
-      {/* « À régler » — the cross-domain heads-up; a quiet card only when something
-          needs sorting. Parent-mobile only: the fixes are operator writes, so a
-          locked kiosk / toddler / guest never sees it. */}
-      <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} />
-
-      {/* Evening-only nudge → « Moments »: a one-tap glance at tomorrow + its
-          handoff checklist. Renders nothing outside the wind-down (see MomentPeek);
-          hidden in the Moments view itself, where it'd point at its own view. */}
-      {view !== 'moment' && <MomentPeek />}
+      {/* A compact status strip above the day: « À régler » (the cross-domain
+          heads-up, parent-mobile only) and the evening « Demain en bref » nudge sit
+          on ONE quiet row so they whisper instead of stacking two banners. Each
+          renders nothing when not applicable; the row collapses to whatever's left. */}
+      <div className="board-status">
+        <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} />
+        {view !== 'moment' && <MomentPeek />}
+      </div>
 
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
@@ -794,109 +793,26 @@ export function Board() {
         <LaJournee />
       ) : (
         <>
-          {/* The "today" zone: tonight's supper and today's weather as equal hero
-              cards (mirrors the toddler heroes row), so weather has a real bubble
-              instead of hiding in the timestamp line. The dressing tip rides under
-              the temperature where it's actionable. */}
-          {(tonightMeals.length > 0 || weather) && (
-            <div className="board-heroes">
-              {/* "Ce soir" lists EVERY supper planned for today — a day can hold more
-                  than one. Each carries the souper food icon (no carrot, no emoji)
-                  and the souper colour (Réglages ▸ Repas). */}
-              {tonightMeals.length > 0 && (
-                /* A day can hold more than one supper (a main + its rice + the
-                    leftovers it finishes). They AGGLOMERATE into ONE hero card —
-                    a meal per tappable row — instead of multiplying the card. */
-                <div
-                  className="now-card now-card--supper"
-                  style={{ background: wash(supperColor!), color: tintInk(supperColor!) }}
-                >
-                  <div className="blob" style={{ background: supperColor }} />
-                  <div className="label">{t.board.tonight}</div>
-                  <div className="now-card__meals">
-                    {tonightMeals.map((m) => {
-                      const openSupper = () =>
-                        detail.open(buildMeal(m, detailCtx, {
-                          color: supperColor,
-                          slotLabel: t.board.tonight,
-                          daySec: todayDay,
-                          onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
-                          onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? 'supper', todayDay),
-                        }))
-                      return (
-                        <div
-                          key={m.id}
-                          className="now-card__meal now-card--tap"
-                          role="button"
-                          tabIndex={0}
-                          onClick={openSupper}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault()
-                              openSupper()
-                            }
-                          }}
-                        >
-                          <div className="what">{m.title}</div>
-                          {/* A planned leftover reads as "Restants" so the glance shows
-                              it's a finish-the-fridge supper, not a fresh cook. */}
-                          {m.is_leftover ? (
-                            <div className="who">
-                              <InlineIcon name="arrow-counter-clockwise-bold" size={13} /> {t.kitchen.leftoversTag}
-                            </div>
-                          ) : null}
-                          {cookLine(m) && <div className="who">{cookLine(m)}</div>}
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <div className="icn">
-                    <Icon name={SLOT_ICON_NAME.supper} size={40} color={supperColor} />
-                  </div>
-                </div>
-              )}
-              {weather && (
-                // The wonder picture rides as the card's BACKDROP (a calm photo
-                // behind the glance); the weather sits on top in frosted chips so the
-                // temperature is always legible over any image. No picture (feed down
-                // / opted out) → the plain tinted card, unchanged.
-                <div
-                  className={`now-card now-card--wx${wonder ? ' now-card--wx-photo' : ''}`}
-                  style={
-                    wonder
-                      ? { backgroundImage: `url("${wonder.imgUrl}")` }
-                      : { background: CATS.event.wash, color: CATS.event.deep }
-                  }
-                >
-                  {wonder ? (
-                    <>
-                      <span className="now-card__scrim" aria-hidden="true" />
-                      <button
-                        type="button"
-                        className="photo-frame__shuffle now-card__shuffle"
-                        onClick={shuffleWonder}
-                        aria-label={t.board.shuffleWonder}
-                        title={t.board.shuffleWonder}
-                      >
-                        <Icon name="repeat-bold" size={16} />
-                      </button>
-                      {/* Source label only — read-aloud is a toddler-mode affordance,
-                          so the parent weather card just names the picture. */}
-                      <span className="now-card__wonder-hear mono">{t.board.wonderKicker[wonder.source]}</span>
-                    </>
-                  ) : (
-                    <div className="blob" style={{ background: CATS.event.color }} />
-                  )}
-                  <div className="label">{t.weather[weather.bucket]}</div>
-                  <div className="what">{weather.tempC}°</div>
-                  {tip && <div className="who">{t.weather.tip[tip]}</div>}
-                  <div className="icn" aria-hidden="true">
-                    <Icon name={weatherIcon(weather)} size={38} color={wonder ? '#fff' : weatherTint(weather)} />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {/* The "today" zone heroes — tonight's supper + the weather/photo card —
+              shared with « La journée » via DayHeroes (so both render the same polished
+              visuals). The meal tap keeps Grille's leftover/remove detail actions. */}
+          <DayHeroes
+            suppers={tonightMeals}
+            supperColor={supperColor!}
+            onOpenMeal={(m) =>
+              detail.open(buildMeal(m, detailCtx, {
+                color: supperColor,
+                slotLabel: t.board.tonight,
+                daySec: todayDay,
+                onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+                onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? 'supper', todayDay),
+              }))
+            }
+            cookLine={cookLine}
+            weather={weather}
+            wonder={wonder}
+            onShuffleWonder={shuffleWonder}
+          />
 
           <div className="board-grid">
             {/* « L'auto » glance — the car's status today + today's rides — rides at
