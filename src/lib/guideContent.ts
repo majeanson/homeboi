@@ -218,8 +218,8 @@ export const GUIDE: GuideEntry[] = [
     tour: 'board',
     title: { fr: 'Le babillard', en: 'The board' },
     what: {
-      fr: 'L’écran « coup d’œil » de la maisonnée : l’heure, l’agenda du jour, le souper de ce soir, la liste et les corvées, réunis sur un même mur — pour que tout le monde voie la journée d’un regard, sans demander ni rien toucher.',
-      en: 'The household glance screen: the time, today’s agenda, tonight’s supper, the list and the chores, gathered on one wall — so everyone sees the day at a glance, without asking or touching a thing.',
+      fr: 'L’écran « coup d’œil » de la maisonnée : l’heure, l’agenda du jour, le souper de ce soir, les corvées et ce qu’il y a à faire, réunis sur un même mur — pour que tout le monde voie la journée d’un regard, sans demander ni rien toucher.',
+      en: 'The household glance screen: the time, today’s agenda, tonight’s supper, the chores and what’s to do, gathered on one wall — so everyone sees the day at a glance, without asking or touching a thing.',
     },
     points: [
       {
@@ -247,8 +247,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le fil du jour', en: 'The day’s timeline' },
         detail: {
-          fr: 'Les rendez-vous d’aujourd’hui placés dans l’ordre de l’heure, avec un repère « Maintenant » entre ce qui est passé (estompé) et ce qui s’en vient. Plus deux choses sont éloignées, plus l’espace entre elles est grand — la forme de la journée se lit d’un coup d’œil. Touche un rendez-vous pour sa fiche. Tu peux le cacher ou le réordonner dans [[card:set-display|Réglages ▸ Affichage ▸ Disposition]]; en mode tout-petit, c’est la séquence « Notre journée » (matin → dodo).',
-          en: 'Today’s appointments placed in time order, with a “Now” marker between what’s past (dimmed) and what’s coming. The farther apart two things are, the more space between them — so the shape of the day reads at a glance. Tap an appointment for its card. Hide or reorder it in [[card:set-display|Settings ▸ Display ▸ Layout]]; in toddler mode it’s the “Our day” sequence (morning → bedtime).',
+          fr: 'Les rendez-vous, trajets et heures de travail d’aujourd’hui placés dans l’ordre de l’heure, avec un repère « Maintenant » entre ce qui est passé (estompé) et ce qui s’en vient, et des plages « Libre » dans les grands trous. Les corvées et ce qui n’a pas d’heure se rangent sous « À tout moment ». Plus deux choses sont éloignées, plus l’espace entre elles est grand — la forme de la journée se lit d’un coup d’œil. Touche une ligne pour sa fiche. Tu peux le cacher ou le réordonner dans [[card:set-display|Réglages ▸ Affichage ▸ Disposition]]; en mode tout-petit, c’est la séquence « Notre journée » (matin → dodo).',
+          en: 'Today’s appointments, rides and work hours placed in time order, with a “Now” marker between what’s past (dimmed) and what’s coming, and “Free” stretches in the big gaps. Chores and anything without a time sit under “Anytime”. The farther apart two things are, the more space between them — so the shape of the day reads at a glance. Tap a row for its card. Hide or reorder it in [[card:set-display|Settings ▸ Display ▸ Layout]]; in toddler mode it’s the “Our day” sequence (morning → bedtime).',
         },
         why: {
           fr: 'Voir *quand* la journée se remplit, pas seulement *quoi* — sans lire chaque heure.',
@@ -302,8 +302,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
-          fr: 'Deux vues : la Grille (toute la journée d’un coup d’œil, avec « Prochainement » en tête) et le Mois (la vue d’ensemble; touche une journée pour la planifier). Le visage choisi à côté du sélecteur filtre l’une comme l’autre — Maisonnée montre tout le monde, un visage ne montre que ses affaires à lui. Le bouton « Moments » ouvre un moment choisi (ce soir, demain, une date, la semaine) avec sa liste « À compléter ».',
-          en: 'Two views: the Grid (the whole day at a glance, with “Up next” at the top) and the Month (the big picture; tap a day to plan it). The face you pick beside the selector filters both — Household shows everyone, a face shows just their things. The “Moments” button opens a chosen moment (tonight, tomorrow, a date, the week) with its “To complete” list.',
+          fr: 'Deux vues : la Grille (toute la journée d’un coup d’œil) et le Mois (la vue d’ensemble; touche une journée pour la planifier). Le visage choisi à côté du sélecteur filtre l’une comme l’autre — Maisonnée montre tout le monde, un visage ne montre que ses affaires à lui. Le bouton « Moments » ouvre un moment choisi (ce soir, demain, une date, la semaine) avec sa liste à cocher.',
+          en: 'Two views: the Grid (the whole day at a glance) and the Month (the big picture; tap a day to plan it). The face you pick beside the selector filters both — Household shows everyone, a face shows just their things. The “Moments” button opens a chosen moment (tonight, tomorrow, a date, the week) with its check-off list.',
         },
         why: {
           fr: 'Deux vues claires plutôt que cinq qui se ressemblent; le visage et « Moments » couvrent le reste sans encombrer.',
@@ -324,8 +324,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Personnaliser le babillard', en: 'Customize the board' },
         detail: {
-          fr: 'Réglages ▸ Affichage ▸ « Disposition du babillard » : choisis quelles cartes afficher (L’auto, À finir, À venir, Dessins…) et glisse-les dans l’ordre que tu veux. C’est propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
-          en: 'Settings ▸ Display ▸ “Board layout”: choose which cards to show (The car, To finish, Coming up, Drawings…) and drag them into the order you want. It’s specific to THIS device — the wall tablet and your phone each keep their own layout.',
+          fr: 'Réglages ▸ Affichage ▸ « Disposition du babillard » : choisis quelles cartes afficher (Le fil du jour, L’auto, À faire, À venir, Dessins…) et glisse-les dans l’ordre que tu veux. C’est propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
+          en: 'Settings ▸ Display ▸ “Board layout”: choose which cards to show (The day’s timeline, The car, To do, Coming up, Drawings…) and drag them into the order you want. It’s specific to THIS device — the wall tablet and your phone each keep their own layout.',
         },
         why: {
           fr: 'Pour que le babillard montre ce qui compte pour TOI sur CET écran — la tablette murale glanceable, ton téléphone plus court.',
@@ -379,12 +379,34 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Conseil météo', en: 'Weather tip' },
         detail: {
-          fr: 'Sous la température, une ligne d’habillement (manteau, parapluie, bois de l’eau). De nuit, le [[icon:sun-bold]] devient [[icon:moon-stars-bold]]. En vue enfant, touche la météo pour l’entendre.',
-          en: 'Under the temperature, a dressing tip (coat, umbrella, drink water). At night [[icon:sun-bold]] becomes [[icon:moon-stars-bold]]. In kid view, tap the weather to hear it.',
+          fr: 'Sous la température, une ligne d’habillement (manteau, parapluie, bois de l’eau) et quelques heures à venir en pastilles (icône + température) pour deviner l’après-midi. De nuit, le [[icon:sun-bold]] devient [[icon:moon-stars-bold]]. En vue enfant, touche la météo pour l’entendre.',
+          en: 'Under the temperature, a dressing tip (coat, umbrella, drink water) and a few hours ahead as chips (icon + temperature) to read the afternoon. At night [[icon:sun-bold]] becomes [[icon:moon-stars-bold]]. In kid view, tap the weather to hear it.',
         },
         why: {
           fr: 'Pour habiller les enfants comme il faut avant de sortir, sans ouvrir une autre app.',
           en: 'So you dress the kids right before heading out, without opening another app.',
+        },
+      },
+      {
+        label: { fr: '« À faire » et « À finir »', en: '“À faire” and “À finir”' },
+        detail: {
+          fr: 'Une carte « À faire » réunit tes p’tites tâches ponctuelles (souvent dictées) et tes listes à cocher réutilisables (« À compléter ») — deux groupes étiquetés dans la même carte (voir [[card:todos|À faire & à compléter]]). À côté, « À finir » te rappelle les restes à manger en premier. Coche d’un geste; un mauvais coup se défait avec « Annuler ».',
+          en: 'An “À faire” card gathers your small one-off tasks (often dictated) and your reusable check-off lists (“À compléter”) — two labelled groups in one card (see [[card:todos|To do & to complete]]). Beside it, “À finir” reminds you of leftovers to eat first. Tick with a tap; a mis-tap undoes with “Undo”.',
+        },
+        why: {
+          fr: 'Tout ce qu’il reste à faire au même endroit, sans pointage.',
+          en: 'Everything left to do in one place, no scoring.',
+        },
+      },
+      {
+        label: { fr: 'Une ambiance qui suit le moment', en: 'An ambience that follows the moment' },
+        detail: {
+          fr: 'Quand l’« Ambiance vivante » est activée (Réglages ▸ Affichage), le babillard suit doucement le moment : la teinte du fond glisse selon l’heure et la saison (un peu de neige l’hiver), et la carte qui compte à cette heure-ci se met en valeur en douceur — la journée le matin, le souper en fin d’après-midi, demain le soir. Les jours sans rien de prévu, une carte « Tout est calme » le dit gentiment. Rien à toucher, rien qui clignote; tout est désactivable.',
+          en: 'When “Living ambience” is on (Settings ▸ Display), the board gently follows the moment: the background tint drifts with the hour and the season (a little snow in winter), and the card that matters right now lifts softly — the day in the morning, supper in the late afternoon, tomorrow in the evening. On an empty day, a calm “All calm” card says so. Nothing to tap, nothing flashing; all of it can be turned off.',
+        },
+        why: {
+          fr: 'Pour que le mur se sente vivant et te guide sans jamais te presser.',
+          en: 'So the wall feels alive and quietly guides you without ever rushing you.',
         },
       },
       {
