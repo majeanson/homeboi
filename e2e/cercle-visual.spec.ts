@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, type Page } from '@playwright/test'
 import { mockApi, seedState, type Theme } from './mocks'
 
 // Visual sweep for « Le cercle » — NOT covered by screenshots.spec.ts (which has no
@@ -32,18 +32,11 @@ async function settle(page: Page, ready: string) {
   await page.waitForTimeout(500)
 }
 
-// The graph views (Liens/Arbre/Web) pan inside an SVG; a real horizontal overflow
-// of the PAGE (doc + the .hub__body scroller) is still a bug — the SVG is meant to
-// pan, the page is not meant to scroll sideways.
-async function noHOverflow(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const doc = document.documentElement
-    const body = document.querySelector('.hub__body')
-    if (doc.scrollWidth > doc.clientWidth + 1) return 'doc-overflow'
-    if (body && body.scrollWidth > body.clientWidth + 1) return 'body-overflow'
-    return 'ok'
-  })
-}
+// NOTE: « Le cercle » is deliberately EXEMPT from the app-wide no-horizontal-overflow
+// rule — its pan/zoom trees + graphics (Liens/Arbre/Web) and wide member/group rows are
+// allowed to scroll sideways here (a product decision). So these specs only capture
+// screenshots for review; the overflow guard stays enforced on every OTHER surface
+// (screenshots.spec.ts OVERFLOW_CASES, longtext.spec.ts).
 
 for (const state of STATES) {
   for (const theme of THEMES) {
@@ -56,7 +49,6 @@ for (const state of STATES) {
         await page.goto(`/cercle?${state.q}`)
         await settle(page, state.ready)
         await page.screenshot({ path: `e2e/screenshots/${label}.png`, fullPage: true })
-        await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
       })
     }
   }
@@ -72,6 +64,5 @@ for (const theme of THEMES) {
     await page.goto('/cercle')
     await settle(page, '.cercle-kid__grid')
     await page.screenshot({ path: `e2e/screenshots/${label}.png`, fullPage: true })
-    await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
   })
 }

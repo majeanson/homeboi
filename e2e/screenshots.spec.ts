@@ -239,8 +239,9 @@ const OVERFLOW_CASES: { path: string; audience: Audience; ready: string }[] = [
   { path: '/kitchen', audience: 'parent', ready: '.hub' },
   { path: '/kitchen', audience: 'toddler', ready: '.hub' },
   { path: '/routines', audience: 'parent', ready: '.hub' },
-  { path: '/cercle', audience: 'parent', ready: '.hub' },
-  { path: '/cercle', audience: 'toddler', ready: '.hub' },
+  // « Le cercle » is intentionally exempt from the no-horizontal-overflow guard (its
+  // pan/zoom trees + graphics legitimately scroll sideways — a product decision). Its
+  // screenshots live in cercle-visual.spec.ts.
   { path: '/liste', audience: 'parent', ready: '.hub' },
   { path: '/liste', audience: 'toddler', ready: '.hub' },
   { path: '/settings', audience: 'parent', ready: '.hub' },

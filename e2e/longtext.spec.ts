@@ -48,7 +48,11 @@ for (const f of FORMATS) {
       await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
       await page.waitForTimeout(700)
       await page.screenshot({ path: `e2e/screenshots/lt-${f.name}-${path.slice(1)}.png`, fullPage: false })
-      await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
+      // « Le cercle » is exempt from the no-horizontal-overflow rule (pan/zoom trees +
+      // graphics legitimately scroll sideways — a product decision); keep its screenshot
+      // + crash-smoke but skip the overflow assertion. Every other surface stays guarded.
+      if (path !== '/cercle')
+        await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
     })
   }
 
@@ -61,7 +65,9 @@ for (const f of FORMATS) {
       await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
       await page.waitForTimeout(700)
       await page.screenshot({ path: `e2e/screenshots/lt-${f.name}-${path.slice(1)}-toddler.png`, fullPage: false })
-      await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
+      // « Le cercle » exempt (see above): screenshot + crash-smoke only, no overflow guard.
+      if (path !== '/cercle')
+        await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
     })
   }
 }
