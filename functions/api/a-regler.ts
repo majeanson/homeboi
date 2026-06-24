@@ -31,6 +31,12 @@ const CAP = 6
 const dayOf = (at: number) => localDayStart(new Date(at * 1000))
 const norm = (s: string) => s.trim().toLowerCase()
 
+// Today's empty supper is only worth flagging while there's still time to act on it —
+// before ~supper. After this local hour an "à planifier" nudge is just noise (you're
+// cooking, or you've eaten). Tomorrow's empty supper has no such gate: planning ahead
+// is useful all day.
+const TODAY_SUPPER_CUTOFF_H = 18
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const hh = actor.householdId
   const now = nowSec()
@@ -39,7 +45,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const weekEnd = addLocalDays(today, 7)
   const in2w = addLocalDays(today, 14)
 
-  const [oneOffRides, recurRides, supperCount, supperMeals, lowRows, birthdayPeople] = await Promise.all([
+  const [oneOffRides, recurRides, supperDays, supperMeals, lowRows, birthdayPeople] = await Promise.all([
     // Driverless rides (a car-taking trip with nobody driving — no member, no carpool
     // contact) in the next week. One-offs by date…
     ctx.env.DB.prepare(
@@ -54,16 +60,18 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<{ id: string; title: string; start_at: number; recur_json: string }>(),
-    // Is tomorrow's supper slot empty?
-    ctx.env.DB.prepare("SELECT COUNT(*) AS n FROM meals WHERE household_id = ? AND slot = 'supper' AND date = ?")
-      .bind(hh, tomorrow)
-      .first<{ n: number }>(),
-    // Tomorrow's planned suppers that link a recipe (to cross-check ingredients).
+    // Which of today / tomorrow already have a supper planned? (one row per filled day)
     ctx.env.DB.prepare(
-      "SELECT id, title, recipe_id FROM meals WHERE household_id = ? AND slot = 'supper' AND date = ? AND recipe_id IS NOT NULL",
+      "SELECT date, COUNT(*) AS n FROM meals WHERE household_id = ? AND slot = 'supper' AND date IN (?, ?) GROUP BY date",
     )
-      .bind(hh, tomorrow)
-      .all<{ id: string; title: string; recipe_id: string }>(),
+      .bind(hh, today, tomorrow)
+      .all<{ date: number; n: number }>(),
+    // Today's + tomorrow's planned suppers that link a recipe (to cross-check ingredients).
+    ctx.env.DB.prepare(
+      "SELECT id, title, recipe_id, date FROM meals WHERE household_id = ? AND slot = 'supper' AND date IN (?, ?) AND recipe_id IS NOT NULL",
+    )
+      .bind(hh, today, tomorrow)
+      .all<{ id: string; title: string; recipe_id: string; date: number }>(),
     // The running-low items (garde-manger).
     ctx.env.DB.prepare('SELECT item FROM pantry_low WHERE household_id = ?')
       .bind(hh)
@@ -84,9 +92,16 @@ export const onRequestGet = authed(async (ctx, actor) => {
     if (occ) signals.push({ kind: 'ride', key: e.id, label: e.title, at: occ, href: `/kitchen/day/${dayOf(occ)}` })
   }
 
-  // — Empty supper tomorrow —
-  if ((supperCount?.n ?? 0) === 0) {
-    signals.push({ kind: 'meal-empty', key: `supper:${tomorrow}`, label: '', at: tomorrow, href: `/kitchen/day/${tomorrow}` })
+  // — Empty supper today / tomorrow —
+  const filledDays = new Set(supperDays.results.filter((r) => (r.n ?? 0) > 0).map((r) => r.date))
+  const localHour = Math.floor((now - today) / 3600) // hours since local midnight
+  // Today: only while there's still time to act on it (before supper).
+  if (!filledDays.has(today) && localHour < TODAY_SUPPER_CUTOFF_H) {
+    signals.push({ kind: 'meal-empty', key: `supper:${today}`, label: '', sub: 'today', at: today, href: `/kitchen/day/${today}` })
+  }
+  // Tomorrow: always worth a heads-up.
+  if (!filledDays.has(tomorrow)) {
+    signals.push({ kind: 'meal-empty', key: `supper:${tomorrow}`, label: '', sub: 'tomorrow', at: tomorrow, href: `/kitchen/day/${tomorrow}` })
   }
 
   // — A planned meal whose recipe needs a running-low ingredient —
@@ -117,7 +132,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       const names = ingByRecipe.get(m.recipe_id) ?? []
       // The first low ingredient this meal needs (loose contains match both ways).
       const hit = lowItems.find((low) => names.some((n) => n === low || n.includes(low) || low.includes(n)))
-      if (hit) signals.push({ kind: 'meal-low', key: `low:${m.id}`, label: m.title, sub: hit, at: tomorrow, href: '/liste' })
+      if (hit) signals.push({ kind: 'meal-low', key: `low:${m.id}`, label: m.title, sub: hit, at: m.date, href: '/liste' })
     }
   }
 

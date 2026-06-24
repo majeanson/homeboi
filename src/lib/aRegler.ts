@@ -41,7 +41,11 @@ export function frictionRow(f: Friction, t: Dict): { icon: IconName; text: strin
     case 'ride':
       return { icon: 'car-bold', text: t.aRegler.ride(f.label) }
     case 'meal-empty':
-      return { icon: 'cooking-pot-bold', text: t.aRegler.mealEmpty }
+      // `sub` carries which day the empty supper is ('today' | 'tomorrow').
+      return {
+        icon: 'cooking-pot-bold',
+        text: t.aRegler.mealEmpty(t.aRegler.dayWord[f.sub === 'today' ? 'today' : 'tomorrow']),
+      }
     case 'meal-low':
       return { icon: 'carrot-bold', text: t.aRegler.mealLow(f.label, f.sub ?? '') }
     case 'birthday':
