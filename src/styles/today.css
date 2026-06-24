@@ -654,10 +654,12 @@
   width: 1.3rem;
   height: 1.3rem;
 }
-/* A tinted bento: a barely-there category wash so colour reads without shouting
-   (calm — not a filled banner), and the header rule fades from the tint. */
+/* A tinted bento: the card stays NEUTRAL (no background wash — the rows already carry
+   the meaningful member/chore/meal colour), and gets its category identity from a thin
+   coloured OUTLINE + the coloured header glyph + a faintly tinted rule. Outline-not-
+   wash keeps the board calm, never rainbowy (mirrors the .board-nextup accent). */
 .bento--tinted {
-  background: color-mix(in srgb, var(--sec-tint) 5%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--sec-tint) 55%, var(--line));
 }
 .bento--tinted > .sec-label .ln,
 .sec-sublabel .ln {

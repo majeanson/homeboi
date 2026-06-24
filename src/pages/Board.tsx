@@ -243,6 +243,16 @@ export function Board() {
   const nextUpToday = [...todayEvents]
     .filter((e) => !e.all_day && e.start_at >= nowSecBoard - 1800)
     .sort((a, b) => a.start_at - b.start_at)[0]
+  // « Demain » is bunched into the Aujourd'hui card — show it ONLY when tomorrow holds
+  // something (a forecast, a prep note, a meal, an event, or a pinned to-do), so an
+  // empty tomorrow never renders a bare "Rien de prévu" sub-group.
+  const hasTomorrow =
+    !!tomorrowWx ||
+    !!data?.tomorrowNote ||
+    showTomorrowSupper ||
+    otherTomorrowMeals.length > 0 ||
+    tomorrowEvents.length > 0 ||
+    tomorrowTodoCount > 0
 
   if (unauth) return <PairPrompt />
 
@@ -826,7 +836,7 @@ export function Board() {
                 and below the weather heroes. #28 */}
             <AutoCard />
 
-            <Section label={t.board.today} icon="sun-bold">
+            <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)">
             {/* « Prochainement » — the next timed thing today as a calm tappable
                 headline above the full day list (the glance the « Maintenant » view
                 used to give). Renders nothing once today's timed events are behind us. */}
@@ -906,7 +916,9 @@ export function Board() {
 
             {/* « Demain » is BUNCHED into the same card as today (one tile, two groups)
                 via a quiet sub-divider — the second-most-important glance (what's
-                coming + prep-ahead) without a second box. */}
+                coming + prep-ahead). Hidden ENTIRELY when tomorrow holds nothing. */}
+            {hasTomorrow && (
+              <>
             <SubHead label={t.board.tomorrow} icon="sun-horizon-bold" />
             {tomorrowWx && (
               <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
@@ -968,8 +980,7 @@ export function Board() {
             {/* À compléter pinned to tomorrow — its named sections collapse so a long
                 checklist stays a compact glance here; check/add stay functional. */}
             <TodoSection day={tomorrowTodoDay} title={t.todos.title} members={data.members} bento={false} hideWhenEmpty />
-            {tomorrowEvents.length === 0 && !showTomorrowSupper && otherTomorrowMeals.length === 0 && !data.tomorrowNote && tomorrowTodoCount === 0 && (
-              <EmptyState tone="calm">{t.board.tomorrowClear}</EmptyState>
+              </>
             )}
           </Section>
 
@@ -978,7 +989,7 @@ export function Board() {
               ("À faire", sage), each a labelled sub-group. Hidden when both are empty.
               (« À compléter », the persistent checklist feature, keeps its own card.) */}
           {(leftovers.length > 0 || todayTodos.length > 0) && (
-            <Section label={t.board.toFinish} icon="check-bold">
+            <Section label={t.board.toFinish} icon="check-bold" tint="var(--sage)">
               {leftovers.length > 0 && (
                 <>
                   <SubHead label={t.kitchen.leftoversBoard} icon="arrow-counter-clockwise-bold" />
@@ -1010,10 +1021,10 @@ export function Board() {
           {/* À compléter — standalone check-off todos (global + today), distinct
               from the loose-chore "À faire" above. Check in place, "Effacer
               cochées", and one-tap departure checklists (templates). */}
-          <TodoSection title={t.todos.title} members={data.members} icon="check-bold" />
+          <TodoSection title={t.todos.title} members={data.members} icon="check-bold" tint="var(--sage)" />
 
           {(upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) && (
-            <Section label={t.board.upcoming} icon="calendar-blank-bold">
+            <Section label={t.board.upcoming} icon="calendar-blank-bold" tint="var(--sky)">
               {upcomingEvents.map((e) => (
                 <Act
                   key={e.id}

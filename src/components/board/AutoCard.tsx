@@ -1,3 +1,4 @@
+import { type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
@@ -100,7 +101,12 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
   }
 
   return (
-    <Link to="/voiture" className="auto-card" aria-label={t.auto.title}>
+    <Link
+      to="/voiture"
+      className="auto-card"
+      style={{ ['--car-tint']: tint } as CSSProperties}
+      aria-label={t.auto.title}
+    >
       {/* Same header anatomy as every board section (icon disc + label + rule), so
           « L'auto » reads as a peer of the other cards — neutral, no bespoke tint. */}
       <div className="sec-label">

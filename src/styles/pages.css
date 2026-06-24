@@ -1769,6 +1769,13 @@
 .edit-field__input.input:focus {
   outline: none;
 }
+/* Inside a narrow board card (.bento, ~300px column on a wall), the add-row input takes
+   a FULL line so its placeholder is never clipped (« Ajouter à compléter », not
+   « Ajouter à comp… ») — the submit button wraps neatly beneath it. Wider hosts
+   (settings forms) keep the inline box + button. */
+.bento .edit-field__box {
+  flex-basis: 100%;
+}
 /* The inline clear ✕ / icon submit / trash — a quiet 40px icon button, mirroring
    the row-actions affordance so the whole app shares one look. */
 .edit-field__icon-btn {
@@ -3298,6 +3305,9 @@
   color: inherit;
   border-radius: var(--radius-lg);
   background: var(--card);
+  /* Thin outline in the car's own colour — the same outline-not-wash identity the
+     board sections use (.bento--tinted), so « L'auto » reads as a coloured peer card. */
+  border: 1px solid color-mix(in srgb, var(--car-tint, var(--ink-faint)) 55%, var(--line));
   box-shadow: var(--shadow-sm);
   transition:
     transform var(--dur-fast, 0.12s) var(--ease-soft, ease),
@@ -3308,9 +3318,15 @@
   box-shadow: var(--shadow-press, var(--shadow-sm));
 }
 /* The header is now a standard .sec-label — tighten its margins (it's a compact strip,
-   not a tall section) and drop the rule onto its own row with the status beneath. */
+   not a tall section). Its glyph disc + rule pick up the car colour via --sec-tint. */
+.auto-card {
+  --sec-tint: var(--car-tint);
+}
 .auto-card .sec-label {
   margin: 2px 2px 8px;
+}
+.auto-card .sec-label .ln {
+  background: color-mix(in srgb, var(--car-tint, var(--line)) 32%, var(--line));
 }
 .auto-card__caricon {
   display: inline-flex;
