@@ -469,6 +469,26 @@
 .now-card--moment .blob {
   background: var(--berry);
 }
+/* The calm "all-clear" hero (an empty day) — a sage peer of the À régler / Moments
+   tiles, but static (not a button). Reassurance, never a prompt to fill the day. */
+.now-card--clear {
+  display: block;
+  width: 100%;
+  min-height: 6.5rem;
+  background: var(--sage-wash);
+  color: var(--ink);
+}
+.now-card--clear .label,
+.now-card--clear .icn {
+  color: var(--sage-deep);
+}
+.now-card--clear .blob {
+  background: var(--sage);
+}
+.now-card--clear .what {
+  font-size: 1.35rem;
+  margin-top: 4px;
+}
 .now-card--regler .what,
 .now-card--moment .what {
   font-size: 1.15rem;

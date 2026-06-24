@@ -33,12 +33,14 @@ export function Fil({
   untimed,
   anytimeLabel,
   nowLabel,
+  freeLabel,
   lang,
 }: {
   timed: FilTimed[]
   untimed: FilUntimed[]
   anytimeLabel: string
   nowLabel: string
+  freeLabel: string
   lang: Lang
 }) {
   // A gentle minute tick so the « maintenant » marker drifts with the clock between
@@ -65,7 +67,14 @@ export function Fil({
         {rows.map((r, i) => (
           <Fragment key={r.item.id}>
             {i === nowIndex && marker}
-            <li className={'fil__row' + (r.past ? ' fil__row--past' : '')} style={{ marginTop: `${r.gapBefore}rem` }}>
+            {/* A calm « libre » divider in a notably open stretch — breathing room, not a
+                gap to fill. Sits in the space the proportional margin already opened up. */}
+            {r.freeBefore && (
+              <li className="fil__free" aria-hidden="true">
+                <span className="fil__free-label">{freeLabel}</span>
+              </li>
+            )}
+            <li className={'fil__row' + (r.past ? ' fil__row--past' : '')} style={{ marginTop: `${r.freeBefore ? 0 : r.gapBefore}rem` }}>
               {r.item.node}
             </li>
           </Fragment>

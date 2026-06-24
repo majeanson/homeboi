@@ -1807,6 +1807,25 @@
   background: var(--sky-deep);
   box-shadow: 0 0 0 4px var(--sky-wash);
 }
+/* A calm « libre » divider in an open stretch — quiet, dashed, faded. Breathing room,
+   never a gap to fill (NFR-CALM). */
+.fil__free {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.7rem 0;
+}
+.fil__free-label {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 0.1rem 0.7rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-pill);
+}
 
 /* ── Wide-kiosk wall layout ───────────────────────────────────────────────────────
    On a big wall the `columns:300px` masonry spreads thin across many columns and the

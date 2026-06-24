@@ -265,6 +265,22 @@ export function Board() {
   const mineWork = (w: WorkRow) => !focusing || w.member_id === profileId || w.member_id === null
   const filWork = (data?.work ?? []).filter(mineWork)
   const filShown = isCardVisible(boardCards, 'fil') && filTimed.length + filWork.length >= 2
+  // A genuinely clear day for the PARENT board: nothing to attend or do today (events,
+  // chores, home work, meals, leftovers, to-dos, work windows all empty). Weather/notes/
+  // tomorrow don't count — this is "today's agenda is empty". Surfaces one calm "all-clear"
+  // hero so a light day reads as intentional, not broken (the toddler lens already has its
+  // own `kidAllClear`). NFR-CALM.
+  const dayClear =
+    !!data &&
+    todayEvents.length === 0 &&
+    todayChores.length === 0 &&
+    todayHome.length === 0 &&
+    otherMeals.length === 0 &&
+    tonightMeals.length === 0 &&
+    leftovers.length === 0 &&
+    todayTodos.length === 0 &&
+    openTodos.length === 0 &&
+    filWork.length === 0
   // « Demain » is bunched into the Aujourd'hui card — show it ONLY when tomorrow holds
   // something (a forecast, a prep note, a meal, an event, or a pinned to-do), so an
   // empty tomorrow never renders a bare "Rien de prévu" sub-group.
@@ -753,6 +769,20 @@ export function Board() {
   // collapses the band.
   const statusBand = (
     <div className="board-status">
+      {/* A calm "all-clear" hero on a genuinely empty day — so a light day reads as
+          intentional, not broken. Auto-hiding (no customization toggle), like the other
+          empty-aware strips. NFR-CALM: a reassurance, never a prompt to fill the day. */}
+      {dayClear && (
+        <div className="now-card now-card--clear">
+          <span className="blob" aria-hidden="true" />
+          <div className="label">{t.board.today}</div>
+          <div className="what">{t.board.allClearTitle}</div>
+          <div className="who">{t.board.allClearSub}</div>
+          <span className="icn" aria-hidden="true">
+            <Icon name="sun-bold" size={38} color="var(--sage-deep)" />
+          </span>
+        </div>
+      )}
       {isCardVisible(boardCards, 'aRegler') && (
         <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} variant="card" />
       )}
@@ -908,6 +938,7 @@ export function Board() {
                     ]}
                     anytimeLabel={t.board.anytime}
                     nowLabel={t.board.now}
+                    freeLabel={t.board.free}
                     lang={lang}
                   />
                 </Section>
@@ -959,7 +990,7 @@ export function Board() {
             {/* When « Le fil du jour » is on screen it carries today's events + chores, so
                 the day list shows only meals + home work here (no double render). The calm
                 "Rien de prévu" only stands in when the fil is OFF and nothing's planned. */}
-            {!filShown && todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
+            {!dayClear && !filShown && todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
               <EmptyState tone="calm">{t.board.todayClear}</EmptyState>
             ) : (
               <>

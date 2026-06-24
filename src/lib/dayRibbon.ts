@@ -17,6 +17,10 @@ export interface FilRow<T> {
   // since the previous item, clamped so clustered times don't collide and far-apart
   // ones don't blow the card height out.
   gapBefore: number
+  // A notable OPEN stretch precedes this item (≥ FREE_GAP_MIN since the previous item's
+  // end) → the Fil shows a calm « libre » marker. Uses the previous item's `until` (a job
+  // window's end) when present, else its start. Never on the first row.
+  freeBefore: boolean
 }
 
 export interface FilLayout<T> {
@@ -33,6 +37,8 @@ export interface FilLayout<T> {
 const MIN_GAP = 0.5
 const MAX_GAP = 2.5
 const GAP_PER_HOUR = 0.9
+// A stretch of ≥ 2 h with nothing on it reads as « libre » — calm breathing room.
+const FREE_GAP_MIN = 120
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n))
 
@@ -41,8 +47,11 @@ export function placeFil<T extends FilItem>(items: T[], nowSec: number): FilLayo
   const rows: FilRow<T>[] = sorted.map((item, i) => {
     // A plain event is past once it has started; a job window only once it has ended.
     const past = (item.until ?? item.start_at) < nowSec
-    const gapBefore = i === 0 ? 0 : clamp(((item.start_at - sorted[i - 1].start_at) / 3600) * GAP_PER_HOUR, MIN_GAP, MAX_GAP)
-    return { item, past, gapBefore }
+    const prev = i === 0 ? null : sorted[i - 1]
+    const gapBefore = prev == null ? 0 : clamp(((item.start_at - prev.start_at) / 3600) * GAP_PER_HOUR, MIN_GAP, MAX_GAP)
+    // Gap measured from the previous item's END (a job's `until`) to this one's start.
+    const freeBefore = prev != null && item.start_at - (prev.until ?? prev.start_at) >= FREE_GAP_MIN * 60
+    return { item, past, gapBefore, freeBefore }
   })
   // The marker sits just before the first item that hasn't started yet. If they've all
   // started it falls after the last row; if none have, before the first.

@@ -44,6 +44,18 @@ describe('placeFil', () => {
     expect(placeFil([{ start_at: at(9), until: at(17) }], at(18)).rows[0].past).toBe(true)
   })
 
+  it('flags a « libre » gap of ≥2h between commitments (measured from the previous end)', () => {
+    // 9:00 event, then 14:00 event → 5 h apart → free. 14:00 then 15:00 → 1 h → not free.
+    const { rows } = placeFil([{ start_at: at(9) }, { start_at: at(14) }, { start_at: at(15) }], at(0))
+    expect(rows.map((r) => r.freeBefore)).toEqual([false, true, false])
+  })
+
+  it('measures the free gap from a job window’s end (until), not its start', () => {
+    // Job 9:00–17:00, then an 18:00 event → only 1 h after work → NOT free.
+    const { rows } = placeFil([{ start_at: at(9), until: at(17) }, { start_at: at(18) }], at(20))
+    expect(rows[1].freeBefore).toBe(false)
+  })
+
   it('handles an empty list', () => {
     expect(placeFil([], at(12))).toEqual({ rows: [], nowIndex: 0 })
   })

@@ -981,6 +981,7 @@ export function DevKit() {
                 ]}
                 anytimeLabel="À tout moment"
                 nowLabel="Maintenant"
+                freeLabel="Libre"
                 lang="fr"
               />
             </BoardSection>
