@@ -3307,7 +3307,7 @@
   background: var(--card);
   /* Thin outline in the car's own colour — the same outline-not-wash identity the
      board sections use (.bento--tinted), so « L'auto » reads as a coloured peer card. */
-  border: 1px solid color-mix(in srgb, var(--car-tint, var(--ink-faint)) 55%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--car-tint, var(--ink-faint)) 65%, var(--line));
   box-shadow: var(--shadow-sm);
   transition:
     transform var(--dur-fast, 0.12s) var(--ease-soft, ease),

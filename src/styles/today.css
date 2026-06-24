@@ -659,7 +659,7 @@
    coloured OUTLINE + the coloured header glyph + a faintly tinted rule. Outline-not-
    wash keeps the board calm, never rainbowy (mirrors the .board-nextup accent). */
 .bento--tinted {
-  border: 1px solid color-mix(in srgb, var(--sec-tint) 55%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--sec-tint) 65%, var(--line));
 }
 .bento--tinted > .sec-label .ln,
 .sec-sublabel .ln {
