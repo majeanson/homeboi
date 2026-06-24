@@ -39,6 +39,7 @@ import { Act, Section, SubHead } from '../components/board/Act'
 import { Fil } from '../components/board/Fil'
 import { DayTimeline } from '../components/jouer/DayTimeline'
 import { PhotoFrame } from '../components/board/PhotoFrame'
+import { BoardCanvas } from '../components/board/BoardCanvas'
 import { WonderFrame, useWonder } from '../components/board/ApodFrame'
 import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
@@ -404,6 +405,7 @@ export function Board() {
       (data.tomorrowMeals?.length ?? 0) === 0
     return (
       <main className="kid__main today-kid">
+        <BoardCanvas weatherBucket={weather?.bucket} />
         {/* Greet the picked child by name — same personal touch the parent
             board gets. Generic when nobody's picked (shared wall). Tap to hear. */}
         <Sayable className="today-kid__greet" text={greet} />
@@ -809,6 +811,7 @@ export function Board() {
 
   return (
     <main className="board-wall">
+      <BoardCanvas weatherBucket={weather?.bucket} />
       {/* No per-page add button: the shared yellow ＋ FAB (HubLayout) floats
           bottom-right here just like every other tab. */}
       {/* Time-of-day icon sits top-right as the section's identity (and, in

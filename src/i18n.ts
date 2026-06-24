@@ -1333,6 +1333,10 @@ export const FR = {
     apodHint: 'Une photo de la NASA, différente chaque jour, au bas du babillard. N’affecte que cet appareil.',
     apodOn: 'Affichée',
     apodOff: 'Cachée',
+    canvasLabel: 'Ambiance vivante',
+    canvasHint: 'Un fond discret qui suit la saison, la météo et l’heure (une teinte douce, un peu de neige l’hiver). N’affecte que cet appareil.',
+    canvasOn: 'Activée',
+    canvasOff: 'Désactivée',
     // « Disposition du babillard » — per-device show/hide + reorder of the Grille cards.
     boardLayout: 'Disposition du babillard',
     boardLayoutHint: 'Choisis quelles cartes afficher — propre à cet appareil. Le bandeau du haut garde sa place; glisse la poignée des cartes pour les réordonner.',
@@ -3229,6 +3233,10 @@ export const EN: typeof FR = {
     apodHint: 'A NASA photo, different every day, at the bottom of the board. Affects this device only.',
     apodOn: 'Shown',
     apodOff: 'Hidden',
+    canvasLabel: 'Living ambience',
+    canvasHint: 'A subtle backdrop that follows the season, weather and time of day (a soft tint, a little snow in winter). Affects this device only.',
+    canvasOn: 'On',
+    canvasOff: 'Off',
     // Per-device show/hide + reorder of the Grille cards.
     boardLayout: 'Board layout',
     boardLayoutHint: 'Choose which cards show — specific to this device. The top band keeps its place; drag a card’s handle to reorder it.',

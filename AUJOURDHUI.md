@@ -201,6 +201,19 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
   spread; a 600–900px two-column intermediate breakpoint added. (A fixed grid-template-areas
   "now-lane + rail" was set aside — it fights the per-device card reorder.)
 
+### Shipped in the "think new" pass (2026-06-24, pass 4)
+
+- **To-do merge** — the two surfaces folded into ONE « À faire » card (UI-only, backends kept):
+  loose one-off tasks up top, the « À compléter » checklists below; « À finir » is leftovers-only.
+  Help "?" on the title explains the distinction; Guide card retitled « À faire & à compléter ».
+- **Parent « all-clear » hero** on a genuinely empty day; **« libre » gaps** in Le fil du jour.
+- **Contextual help "?"** on EVERY board section card (Section is now help-aware).
+- **a11y/contrast**: adaptive `tintInk` (bright colours clear AA) + detail-sheet focus restoration.
+- **Time-aware emphasis** (`lib/momentFocus`): the board softly leans toward the moment
+  (morning → day glance, afternoon → supper hero, evening → tomorrow prep). Under the ambient toggle.
+- **« Living canvas »** (`lib/canvas` + `lib/season` + `BoardCanvas`): an ambient backdrop that
+  drifts with season + weather (winter snow) + day-part. Per-device opt-out, reduced-motion-safe.
+
 > Next session: remaining **P1** (Notes.tsx roles/labels), the **e2e gaps** still open (unified
 > event form, empty-state hiding, toddler-board flow, calendar→Moments, drag-reorder; **add a
 > `fil`-card frame**), and the remaining deferred contrast call (tintInk'd member-colour titles).

@@ -6,6 +6,7 @@ import { OperatorSection } from './OperatorSection'
 import { RecentsPanel } from '../RecentsPanel'
 import { useAudience } from '../../lib/audience'
 import { useApodEnabled, setApodEnabled } from '../../lib/apod'
+import { useCanvasEnabled, setCanvasEnabled } from '../../lib/canvas'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
 import { isGuest } from '../../lib/device'
@@ -61,6 +62,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   // "Photo du jour" (NASA APOD) band — calm furniture, default ON, opt-out here.
   // Read live from the localStorage store so the board reacts without a reload.
   const apod = useApodEnabled()
+  const canvas = useCanvasEnabled()
   function toggleAmbient() {
     const next = !ambient
     setAmbientState(next)
@@ -149,6 +151,21 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               {apod ? t.operator.apodOn : t.operator.apodOff}
             </button>
             <p className="operator__seg-hint mono">{t.operator.apodHint}</p>
+          </div>
+        )}
+        {!ro && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.canvasLabel}</span>
+            <button
+              type="button"
+              className={`btn${canvas ? ' btn--primary' : ''}`}
+              onClick={() => setCanvasEnabled(!canvas)}
+              aria-pressed={canvas}
+            >
+              <InlineIcon name={canvas ? 'sun-horizon-bold' : 'sun-bold'} size={16} />{' '}
+              {canvas ? t.operator.canvasOn : t.operator.canvasOff}
+            </button>
+            <p className="operator__seg-hint mono">{t.operator.canvasHint}</p>
           </div>
         )}
         {!ro && (

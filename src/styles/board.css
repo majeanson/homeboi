@@ -3,6 +3,7 @@
   max-width: 1500px;
   margin: 0 auto;
   padding: 1.25rem 1.25rem 2rem;
+  position: relative;
 }
 /* Fresh household (zero members): one gentle pointer to Réglages instead of a
    wall of empty sections. */
@@ -1853,4 +1854,56 @@
     columns: 2;
     column-gap: 0.85rem;
   }
+}
+
+/* ── « Living canvas » — ambient board backdrop (lib/canvas + lib/season) ──────────
+   A faint, non-interactive layer behind the board that drifts with the season + weather
+   + (via :root[data-daypart]) the time of day. Sits BEHIND the content: the board's own
+   children are lifted to z-index 1 so the canvas (z 0) never covers a card or text. Low
+   opacity → never touches readability. Per-device opt-out; reduced-motion drops the snow. */
+.board-wall > :not(.board-canvas),
+.today-kid > :not(.board-canvas) {
+  position: relative;
+  z-index: 1;
+}
+.today-kid { position: relative; }
+.board-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* Seasonal wash — a soft single-hue glow from the top corner, barely there. */
+.board-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 85% at 100% 0%, var(--canvas-tint, transparent), transparent 62%);
+  transition: background var(--dur-slow) var(--ease-out);
+}
+.board-canvas[data-season='winter'] { --canvas-tint: rgba(123, 176, 201, 0.16); }
+.board-canvas[data-season='spring'] { --canvas-tint: rgba(136, 163, 111, 0.16); }
+.board-canvas[data-season='summer'] { --canvas-tint: rgba(242, 160, 61, 0.14); }
+.board-canvas[data-season='autumn'] { --canvas-tint: rgba(224, 114, 78, 0.15); }
+/* Gentle snow when it's actually snowing — soft cool-white dots drifting down slowly. */
+.board-canvas__snow { position: absolute; inset: 0; }
+.board-canvas__flake {
+  position: absolute;
+  top: -2%;
+  border-radius: 50%;
+  background: rgba(228, 240, 248, 0.85);
+  box-shadow: 0 0 3px rgba(120, 150, 170, 0.45);
+  animation-name: board-flake;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes board-flake {
+  0%   { transform: translateY(-2vh) translateX(0); opacity: 0; }
+  12%  { opacity: 0.85; }
+  88%  { opacity: 0.85; }
+  100% { transform: translateY(100vh) translateX(2.5vw); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .board-canvas__snow { display: none; }
 }
