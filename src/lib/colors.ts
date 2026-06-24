@@ -29,10 +29,24 @@ export const faint = (hex: string) => hex + '14' //  ~8%  — barely-there fill
 export const hairline = (hex: string) => hex + '40' // ~25% — quiet border
 export const edge = (hex: string) => hex + '55' //  ~33% — tinted border
 
-// A legible, theme-aware ink tint: mostly the colour, pulled toward the current
-// --ink so it stays readable on cream (day) AND dark (night). Use for titles and
-// labels we want coloured-but-readable rather than flat black.
-export const tintInk = (hex: string) => `color-mix(in srgb, ${hex} 68%, var(--ink) 32%)`
+// A legible, theme-aware ink tint: mostly the colour, pulled toward the current --ink so
+// it stays readable on cream (day) AND dark (night). Use for titles/labels we want
+// coloured-but-readable rather than flat black. ADAPTIVE: a dark colour keeps most of its
+// hue (~32% ink), but a BRIGHT one (a pale yellow/butter member colour) — which would land
+// well under WCAG AA on cream as a flat 68/32 mix — is pulled harder toward ink by its
+// relative luminance, so a coloured title stays legible whatever face/slot colour it wears.
+export function tintInk(hex: string): string {
+  const c = hex.replace('#', '')
+  let inkPct = 32
+  if (c.length >= 6) {
+    const ch = (i: number) => parseInt(c.slice(i, i + 2), 16) / 255
+    const lin = (x: number) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4)
+    const L = 0.2126 * lin(ch(0)) + 0.7152 * lin(ch(2)) + 0.0722 * lin(ch(4))
+    // Dark/mid colours (L ≤ 0.35) keep ~32% ink; brighter ones ramp up to a 62% cap.
+    inkPct = Math.min(62, Math.round(32 + Math.max(0, L - 0.35) * 60))
+  }
+  return `color-mix(in srgb, ${hex} ${100 - inkPct}%, var(--ink) ${inkPct}%)`
+}
 
 // Dark or light ink for text sitting ON a solid colour (e.g. a tinted pill).
 // Picks whichever contrasts more, via relative luminance (WCAG). Reads our own
