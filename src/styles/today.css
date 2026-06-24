@@ -482,6 +482,48 @@
   color: var(--ink-soft);
   letter-spacing: 0.02em;
 }
+/* The four windows as DIRECT tap targets — each deep-links to that scope of the
+   recap scene. Frosted berry pills on the berry-wash card; the contextually-relevant
+   one (tonight by day / tomorrow in the evening) is filled to suggest "look here now".
+   They sit above the decorative blob. */
+.now-card--moment__windows {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+.now-card--moment .label {
+  position: relative;
+  z-index: 1;
+}
+.moment-chip {
+  border: 0;
+  cursor: pointer;
+  padding: 0.34rem 0.72rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--berry-deep);
+  background: color-mix(in srgb, var(--berry) 16%, var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--berry) 32%, transparent);
+  transition:
+    transform var(--dur-fast, 0.12s) var(--ease-soft, ease),
+    background var(--dur-fast, 0.12s);
+}
+.moment-chip:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--berry) 24%, var(--card));
+}
+.moment-chip:active {
+  transform: translateY(0);
+}
+.moment-chip.is-lead {
+  color: #fff;
+  background: var(--berry);
+  box-shadow: var(--shadow-sm);
+}
 
 /* The "today" zone: supper + weather as equal hero cards. They sit in their own
    flex row above the section grid so weather reads as a peer of supper, and they
@@ -593,6 +635,53 @@
   font-size: 12px;
   color: var(--ink-faint);
   font-weight: 600;
+}
+/* The category glyph leading a section header: a small coloured disc tinted to the
+   section's --sec-tint, giving each bento a subtle identity. Falls back to a neutral
+   ink when no tint is set. */
+.sec-label__ico {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  color: color-mix(in srgb, var(--sec-tint, var(--ink-soft)) 82%, var(--ink));
+  background: color-mix(in srgb, var(--sec-tint, var(--ink-faint)) 18%, var(--card));
+}
+.sec-label__ico--sm {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+/* A tinted bento: a barely-there category wash so colour reads without shouting
+   (calm — not a filled banner), and the header rule fades from the tint. */
+.bento--tinted {
+  background: color-mix(in srgb, var(--sec-tint) 5%, var(--card));
+}
+.bento--tinted > .sec-label .ln,
+.sec-sublabel .ln {
+  background: color-mix(in srgb, var(--sec-tint, var(--line)) 32%, var(--line));
+}
+/* Inner sub-group divider — a second bunched group in one tile (« Demain » under
+   « Aujourd'hui »; « À compléter » under « Restants »). One notch quieter than the
+   section header so two related groups share a card cleanly. */
+.sec-sublabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 2px 10px;
+}
+.sec-sublabel b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+.sec-sublabel .ln {
+  flex: 1;
+  height: 1px;
+  border-radius: 2px;
 }
 
 /* Activity card: colour spine, washed icon tile, title, a tappable check. */

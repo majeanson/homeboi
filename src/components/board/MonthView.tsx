@@ -322,14 +322,15 @@ export function MonthView({
       <div className="monthv__day">
         <div className="monthv__day-h">
           <b>{cap(formatDayLong(selected, lang))}</b>
-          {/* Open the full day page (meals, note, events, chores) for the selected
-              date — the calendar's way into planning any day, not just today. */}
+          {/* « Voir ce moment » — open that date in « Moments » (its recap + handoff
+              list + a place to act on the day). The calendar's one way into a specific
+              day; deep-links via ?scope=date&date= so Moments lands on it. */}
           <button
             type="button"
             className="btn btn--ghost btn--sm mono monthv__open-day"
-            onClick={() => nav(`/kitchen/day/${selected}`)}
+            onClick={() => nav(`/moment?scope=date&date=${selected}`)}
           >
-            {t.monthView.openDay} <Icon name="caret-right-bold" size={14} />
+            {t.monthView.openMoment} <Icon name="caret-right-bold" size={14} />
           </button>
         </div>
         {/* « L'auto » for the SELECTED day — its status + rides follow the picked date
@@ -424,7 +425,7 @@ export function MonthView({
                 who={td.section ?? undefined}
                 color={colorOf(members, td.member_id) ?? undefined}
                 onCheck={() => markTodoDone(td)}
-                onOpen={() => nav(`/kitchen/day/${selected}`)}
+                onOpen={() => nav(`/moment?scope=date&date=${selected}`)}
               />
             ))}
             {sel!.notes.map((n) => (

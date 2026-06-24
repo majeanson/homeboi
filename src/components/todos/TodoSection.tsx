@@ -23,7 +23,7 @@ import {
 } from '../../lib/todos'
 import { CATS } from '../../lib/cats'
 import { tintInk, readableInk } from '../../lib/colors'
-import { Icon } from '../Icon'
+import { Icon, type IconName } from '../Icon'
 import { EditField } from '../EditField'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { RowActions } from '../RowActions'
@@ -53,12 +53,18 @@ export function TodoSection({
   members = [],
   bento = true,
   hideWhenEmpty = false,
+  icon,
+  tint,
 }: {
   day?: number | null
   title: string
   members?: FaceMember[]
   bento?: boolean
   hideWhenEmpty?: boolean
+  // Subtle Pip identity (a coloured header glyph + a barely-there card wash), to match
+  // the board's other tinted sections (Section / SubHead in board/Act).
+  icon?: IconName
+  tint?: string
 }) {
   const t = useT()
   const write = useWrite()
@@ -271,8 +277,16 @@ export function TodoSection({
   }
 
   return (
-    <section className={'todo-sec' + (bento ? ' bento' : '')}>
+    <section
+      className={'todo-sec' + (bento ? ' bento' : '') + (bento && tint ? ' bento--tinted' : '')}
+      style={tint ? ({ '--sec-tint': tint } as React.CSSProperties) : undefined}
+    >
       <div className="sec-label">
+        {icon && (
+          <span className="sec-label__ico" aria-hidden="true">
+            <Icon name={icon} size={16} />
+          </span>
+        )}
         <b>{title}</b>
         <span className="ln" />
         {openCount ? <span className="ct">{openCount}</span> : null}

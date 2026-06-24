@@ -1,3 +1,4 @@
+import { type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
@@ -100,11 +101,16 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
   }
 
   return (
-    <Link to="/voiture" className="surface auto-card" aria-label={t.auto.title}>
+    <Link
+      to="/voiture"
+      className="auto-card"
+      style={{ ['--car-tint']: tint } as CSSProperties}
+      aria-label={t.auto.title}
+    >
       <div className="auto-card__head">
         <span className="auto-card__title">
           <span className="auto-card__caricon" style={{ color: tint }} aria-hidden="true">
-            <Icon name="car-bold" size={22} />
+            <Icon name="car-bold" size={20} />
           </span>
           {carLabel}
         </span>

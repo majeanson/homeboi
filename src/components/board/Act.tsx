@@ -4,17 +4,57 @@ import { isGuest } from '../../lib/device'
 import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
 
-// Pip section header: label + rule + a quiet count (never a score). Each Section
-// is a bento tile in the board grid.
-export function Section({ label, count, children }: { label: string; count?: number; children: React.ReactNode }) {
+// Pip section header: an optional category glyph + label + rule + a quiet count
+// (never a score). Each Section is a bento tile in the board grid. `icon` + `tint`
+// give the card a SUBTLE category identity (a coloured glyph, a tinted rule, a barely
+// -there card wash) so the board reads as a cohesive, colour-coded Pip surface rather
+// than a stack of plain white boxes — uniform across every section.
+export function Section({
+  label,
+  count,
+  icon,
+  tint,
+  children,
+}: {
+  label: string
+  count?: number
+  icon?: IconName
+  tint?: string
+  children: React.ReactNode
+}) {
+  const style = tint ? ({ '--sec-tint': tint } as React.CSSProperties) : undefined
   return (
-    <div className="bento">
+    <div className={'bento' + (tint ? ' bento--tinted' : '')} style={style}>
       <div className="sec-label">
+        {icon && (
+          <span className="sec-label__ico" aria-hidden="true">
+            <Icon name={icon} size={16} />
+          </span>
+        )}
         <b>{label}</b>
         <span className="ln" />
         {count ? <span className="ct">{count}</span> : null}
       </div>
       {children}
+    </div>
+  )
+}
+
+// A lighter inner divider for a SECOND group bunched inside one bento tile (e.g.
+// « Demain » under « Aujourd'hui », or « À compléter » under « Restants »). Same
+// colour language as the section header, one notch quieter — so two related groups
+// share a card without reading as two separate boxes.
+export function SubHead({ label, icon, tint }: { label: string; icon?: IconName; tint?: string }) {
+  const style = tint ? ({ '--sec-tint': tint } as React.CSSProperties) : undefined
+  return (
+    <div className="sec-sublabel" style={style}>
+      {icon && (
+        <span className="sec-label__ico sec-label__ico--sm" aria-hidden="true">
+          <Icon name={icon} size={14} />
+        </span>
+      )}
+      <b>{label}</b>
+      <span className="ln" />
     </div>
   )
 }

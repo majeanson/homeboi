@@ -33,7 +33,7 @@ import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
-import { Act, Section } from '../components/board/Act'
+import { Act, Section, SubHead } from '../components/board/Act'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { WonderFrame, useWonder } from '../components/board/ApodFrame'
 import { Notes } from '../components/board/Notes'
@@ -694,8 +694,8 @@ export function Board() {
 
   // The status band: « À régler » + the « Moments » entry, both as calm cards that
   // match the supper/weather heroes (same card look + height). It rides DIRECTLY
-  // UNDER the heroes in Grille, and above the calendar in Mois — so the day's two
-  // glance cards always sit on top, the two heads-up cards just beneath.
+  // UNDER the heroes in Grille only — so the day's two glance cards sit on top, the
+  // two heads-up cards just beneath. (Mois stays a clean calendar.)
   const statusBand = (
     <div className="board-status">
       <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} variant="card" />
@@ -785,17 +785,14 @@ export function Board() {
           every parent view (renders nothing when none are near). */}
       <CercleBirthdays />
 
-      {/* (« À régler » + « Moments » now ride as the `statusBand` cards INSIDE each
-          view — directly under the heroes in Grille, above the calendar in Mois — so
-          the day's glance cards sit on top and the heads-up cards just beneath.) */}
+      {/* (« À régler » + « Moments » ride as the `statusBand` cards in GRILLE only —
+          directly under the heroes. The calendar (Mois) stays a clean grid; you reach
+          a specific day's recap by tapping it → « Voir ce moment ».) */}
 
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
       ) : view === 'month' ? (
-        <>
-          {statusBand}
-          <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
-        </>
+        <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
       ) : (
         <>
           {/* The "today" zone heroes — tonight's supper + the weather/photo card — ride
@@ -829,7 +826,7 @@ export function Board() {
                 and below the weather heroes. #28 */}
             <AutoCard />
 
-            <Section label={t.board.today}>
+            <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)">
             {/* « Prochainement » — the next timed thing today as a calm tappable
                 headline above the full day list (the glance the « Maintenant » view
                 used to give). Renders nothing once today's timed events are behind us. */}
@@ -906,11 +903,11 @@ export function Board() {
                 {todayHome.map((c) => homeAct(c))}
               </>
             )}
-          </Section>
 
-          {/* Demain rides directly under today — the second-most-important glance
-              (what's coming + prep-ahead), above the day's standing lists. */}
-          <Section label={t.board.tomorrow}>
+            {/* « Demain » is BUNCHED into the same card as today (one tile, two groups)
+                via a quiet sub-divider — the second-most-important glance (what's
+                coming + prep-ahead) without a second box. */}
+            <SubHead label={t.board.tomorrow} icon="sun-horizon-bold" tint="var(--sky)" />
             {tomorrowWx && (
               <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
                 <span aria-hidden="true" style={{ display: 'inline-flex' }}>
@@ -976,42 +973,47 @@ export function Board() {
             )}
           </Section>
 
-          {/* Restants à finir — undated leftovers, a calm "eat these first" nudge.
-              Tap the check to mark one Fini (eaten). Hidden when the pool is empty. */}
-          {leftovers.length > 0 && (
-            <Section label={t.kitchen.leftoversBoard}>
-              {leftovers.map((l) => (
-                <Act
-                  key={l.id}
-                  cat="meal"
-                  icon="arrow-counter-clockwise-bold"
-                  when={t.kitchen.leftoversTag}
-                  title={l.title}
-                  onCheck={() => markLeftoverDone(l)}
-                  onOpen={() => detail.open(buildLeftover(l, detailCtx, {
-                    onDone: () => markLeftoverDone(l),
-                    onPlanTonight: ro ? undefined : () => planLeftoverTonight(l.id, l.title),
-                  }))}
-                />
-              ))}
-            </Section>
-          )}
-
-          {/* One-off to-dos — captured "corvées" / standing tasks with no schedule.
-              Tap to check off (drops away). Hidden when there are none. */}
-          {todayTodos.length > 0 && (
-            <Section label={t.board.todos}>
-              {todayTodos.map(todoAct)}
+          {/* « À finir » — the day's two ephemeral lists BUNCHED into one card:
+              undated leftovers ("eat these first", terracotta) + loose to-dos
+              ("À faire", sage), each a labelled sub-group. Hidden when both are empty.
+              (« À compléter », the persistent checklist feature, keeps its own card.) */}
+          {(leftovers.length > 0 || todayTodos.length > 0) && (
+            <Section label={t.board.toFinish} icon="check-bold" tint="var(--sage)">
+              {leftovers.length > 0 && (
+                <>
+                  <SubHead label={t.kitchen.leftoversBoard} icon="arrow-counter-clockwise-bold" tint="#E0724E" />
+                  {leftovers.map((l) => (
+                    <Act
+                      key={l.id}
+                      cat="meal"
+                      icon="arrow-counter-clockwise-bold"
+                      when={t.kitchen.leftoversTag}
+                      title={l.title}
+                      onCheck={() => markLeftoverDone(l)}
+                      onOpen={() => detail.open(buildLeftover(l, detailCtx, {
+                        onDone: () => markLeftoverDone(l),
+                        onPlanTonight: ro ? undefined : () => planLeftoverTonight(l.id, l.title),
+                      }))}
+                    />
+                  ))}
+                </>
+              )}
+              {todayTodos.length > 0 && (
+                <>
+                  <SubHead label={t.board.todos} icon="check-bold" tint="var(--sage)" />
+                  {todayTodos.map(todoAct)}
+                </>
+              )}
             </Section>
           )}
 
           {/* À compléter — standalone check-off todos (global + today), distinct
               from the loose-chore "À faire" above. Check in place, "Effacer
               cochées", and one-tap departure checklists (templates). */}
-          <TodoSection title={t.todos.title} members={data.members} />
+          <TodoSection title={t.todos.title} members={data.members} icon="check-bold" tint="var(--sage)" />
 
           {(upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) && (
-            <Section label={t.board.upcoming}>
+            <Section label={t.board.upcoming} icon="calendar-blank-bold" tint="var(--sky)">
               {upcomingEvents.map((e) => (
                 <Act
                   key={e.id}

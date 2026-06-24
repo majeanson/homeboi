@@ -355,6 +355,8 @@ export const FR = {
     chores: 'Les corvées',
     choresEmpty: 'Aucune corvée.',
     todos: 'À faire',
+    // Umbrella for the bunched « Restants à finir » + « À faire » board card.
+    toFinish: 'À finir',
     focusedOn: 'Vue de',
     showAll: 'Tout voir',
     upcoming: 'À venir',
@@ -396,6 +398,7 @@ export const FR = {
     prev: 'Mois précédent',
     next: 'Mois suivant',
     openDay: 'Planifier cette journée',
+    openMoment: 'Voir ce moment',
     // Shape-key labels for the calendar dots (● rendez-vous · ▪ repas · ◆ corvée · ○ note).
     legendEvents: 'Rendez-vous',
     legendMeals: 'Repas',
@@ -2235,6 +2238,8 @@ export const EN: typeof FR = {
     chores: 'Chores',
     choresEmpty: 'No chores.',
     todos: 'To do',
+    // Umbrella for the bunched leftovers + to-dos board card.
+    toFinish: 'To finish',
     focusedOn: 'Showing',
     showAll: 'Show all',
     upcoming: 'Coming up',
@@ -2272,6 +2277,7 @@ export const EN: typeof FR = {
     prev: 'Previous month',
     next: 'Next month',
     openDay: 'Plan this day',
+    openMoment: 'See this moment',
     // Shape-key labels for the calendar dots (● event · ▪ meal · ◆ chore · ○ note).
     legendEvents: 'Events',
     legendMeals: 'Meals',

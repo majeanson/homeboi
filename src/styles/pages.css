@@ -3291,9 +3291,23 @@
   display: block;
   /* Sits next to other cards/strips in every view — keep a clear gap above it. */
   margin: 1rem 0 0.75rem;
-  padding: 0.8rem 0.95rem;
+  padding: 0.85rem 1rem;
   text-decoration: none;
   color: inherit;
+  /* A self-contained Pip card tinted to the car's colour: a barely-there wash + a
+     colour accent spine on the left, so « L'auto » reads as a peer of the day's
+     other colour-coded cards rather than a plain white strip (calm — subtle). */
+  border-radius: var(--radius-lg);
+  border-left: 3px solid color-mix(in srgb, var(--car-tint, var(--sky-deep)) 55%, transparent);
+  background: color-mix(in srgb, var(--car-tint, var(--sky)) 6%, var(--card));
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform var(--dur-fast, 0.12s) var(--ease-soft, ease),
+    box-shadow var(--dur-fast, 0.12s);
+}
+.auto-card:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-press, var(--shadow-sm));
 }
 .auto-card__head {
   display: flex;
@@ -3307,11 +3321,19 @@
   font-size: 1.05rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 .auto-card__caricon {
   display: inline-flex;
   align-items: center;
+}
+/* The title's car glyph sits in a tinted disc, mirroring the section header glyphs. */
+.auto-card__title > .auto-card__caricon {
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--car-tint, var(--sky)) 16%, var(--card));
 }
 .auto-card__status {
   display: inline-flex;

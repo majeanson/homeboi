@@ -94,11 +94,21 @@ export function MomentsView({
 
   const [params, setParams] = useSearchParams()
   const fromParam = params.get('scope')
+  const dateParam = params.get('date')
   const [scope, setScope] = useState<MomentScope>(() =>
     urlSync && SCOPES.includes(fromParam as MomentScope) ? (fromParam as MomentScope) : defaultScope,
   )
   const today = todayLocalDay()
-  const [pickDate, setPickDate] = useState<number>(today)
+  // A deep link from the calendar (/moment?scope=date&date=<local-midnight>) pre-selects
+  // that day; a junk param falls back to today. So « voir ce moment » on a calendar day
+  // lands straight on that date's recap + handoff list.
+  const [pickDate, setPickDate] = useState<number>(() => {
+    if (urlSync && dateParam) {
+      const d = Number(dateParam)
+      if (Number.isFinite(d) && d > 0) return d
+    }
+    return today
+  })
 
   // Resolve the scope → a [from, to) LOCAL-midnight window.
   let from: number
