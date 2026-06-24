@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
@@ -15,6 +15,7 @@ import { DayHeroes } from '../components/board/DayHeroes'
 import { Icon, InlineIcon } from '../components/Icon'
 import { TOD_ICON } from '../lib/cats'
 import { useMealPrefs } from '../lib/mealPrefs'
+import { useNextMeal } from '../lib/nextMeal'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
@@ -183,6 +184,12 @@ export function Board() {
   // card here and everywhere it shows; a hidden slot drops off the glance.
   const mealPrefs = useMealPrefs()
   const supperColor = mealPrefs.color('supper')
+  // « Préparer le repas » — the next meal due that resolves to a recipe → its cook
+  // mode (or the picker when it's free-text). Reused from the retired « Maintenant »
+  // view: a quick action beside « Prochainement », never a dead end (a planned
+  // leftover has nothing to cook, so the CTA hides for it).
+  const cook = useNextMeal()
+  const nav = useNavigate()
   // Today's meals beside the supper hero. Supper is already the "Ce soir" hero, so
   // the day list shows the OTHER slots — together they cover the whole day's table.
   // Hidden slots are filtered out so "I only care about souper" empties the row.
@@ -685,6 +692,17 @@ export function Board() {
     />
   )
 
+  // The status band: « À régler » + the « Moments » entry, both as calm cards that
+  // match the supper/weather heroes (same card look + height). It rides DIRECTLY
+  // UNDER the heroes in Grille, and above the calendar in Mois — so the day's two
+  // glance cards always sit on top, the two heads-up cards just beneath.
+  const statusBand = (
+    <div className="board-status">
+      <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} variant="card" />
+      <MomentPeek />
+    </div>
+  )
+
   return (
     <main className="board-wall">
       {/* No per-page add button: the shared yellow ＋ FAB (HubLayout) floats
@@ -767,25 +785,23 @@ export function Board() {
           every parent view (renders nothing when none are near). */}
       <CercleBirthdays />
 
-      {/* A compact status strip above the day: « À régler » (the cross-domain
-          heads-up, parent-mobile only) and the « Moments » entry — the time-aware
-          button into the recap/handoff scene — sit on ONE quiet row so they whisper
-          instead of stacking. À régler renders nothing when there's nothing to sort;
-          the row collapses to whatever's left. */}
-      <div className="board-status">
-        <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} />
-        <MomentPeek />
-      </div>
+      {/* (« À régler » + « Moments » now ride as the `statusBand` cards INSIDE each
+          view — directly under the heroes in Grille, above the calendar in Mois — so
+          the day's glance cards sit on top and the heads-up cards just beneath.) */}
 
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
       ) : view === 'month' ? (
-        <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
+        <>
+          {statusBand}
+          <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
+        </>
       ) : (
         <>
-          {/* The "today" zone heroes — tonight's supper + the weather/photo card —
-              shared with « La journée » via DayHeroes (so both render the same polished
-              visuals). The meal tap keeps Grille's leftover/remove detail actions. */}
+          {/* The "today" zone heroes — tonight's supper + the weather/photo card — ride
+              on top via DayHeroes (the polished glance cards). The meal tap keeps
+              Grille's leftover/remove detail actions. The heads-up cards (À régler +
+              Moments) sit DIRECTLY beneath them via statusBand, matching their look. */}
           <DayHeroes
             suppers={tonightMeals}
             supperColor={supperColor!}
@@ -803,6 +819,9 @@ export function Board() {
             wonder={wonder}
             onShuffleWonder={shuffleWonder}
           />
+
+          {/* Heads-up cards (À régler + Moments) directly under the heroes. */}
+          {statusBand}
 
           <div className="board-grid">
             {/* « L'auto » glance — the car's status today + today's rides — rides at
@@ -827,6 +846,29 @@ export function Board() {
                 <span className="board-nextup__title">{nextUpToday.title}</span>
               </button>
             )}
+            {/* Quick actions, reused from the retired « Maintenant » view: jump straight
+                to cooking the next planned meal (hidden for a leftover — nothing to
+                cook) and a one-tap door to « Avant de partir » (the pre-departure
+                checklist + corvées + L'auto). Calm pills, not banners. */}
+            <div className="board-actions">
+              {cook.meal && !cook.meal.is_leftover && (
+                <button
+                  type="button"
+                  className="btn btn--ghost mono board-action--cook"
+                  onClick={() => nav(cook.target ?? '/kitchen')}
+                >
+                  <InlineIcon name="cooking-pot-bold" size={16} />
+                  <span>{cook.target ? t.board.cook : t.board.cookPlan} · <b>{cook.meal.title}</b></span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn btn--ghost mono board-action--depart"
+                onClick={() => nav('/board/departure')}
+              >
+                <InlineIcon name="key-bold" size={16} /> {t.departure.title}
+              </button>
+            </div>
             {todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
               <EmptyState tone="calm">{t.board.todayClear}</EmptyState>
             ) : (

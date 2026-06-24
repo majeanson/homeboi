@@ -411,6 +411,8 @@ export const FR = {
     empty: 'Rien de prévu pour ce moment.',
     // The calm dusk card on the board that deep-links here (scope=tomorrow).
     peek: 'Demain en bref',
+    // The sub-line on the board « Moments » card — the windows it opens onto.
+    windows: 'ce soir · demain · une date · la semaine',
     // « Ce soir dans le ciel » — tonight's moon phase, computed locally. `phase`
     // labels the chip; `heard` is the full sentence read aloud (toddler-friendly).
     sky: {
@@ -2285,6 +2287,8 @@ export const EN: typeof FR = {
     empty: 'Nothing planned for this moment.',
     // The calm dusk card on the board that deep-links here (scope=tomorrow).
     peek: 'Tomorrow at a glance',
+    // The sub-line on the board « Moments » card — the windows it opens onto.
+    windows: 'tonight · tomorrow · a date · the week',
     sky: {
       title: 'In the sky tonight',
       phase: {

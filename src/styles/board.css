@@ -410,23 +410,41 @@
   margin: 0.5rem auto 0;
 }
 
-/* The quiet status strip above the day: « À régler » + « Demain en bref » on one row
-   (they wrap on a phone), so two whispers replace two stacked banners. */
+/* The status band: « À régler » + « Moments » as hero-style cards, sitting directly
+   under the supper/weather heroes (Grille) or above the calendar (Mois). A flex row
+   that mirrors .board-heroes so the two heads-up cards read as peers of the day's
+   glance cards — they stretch to equal height and stack on a phone. */
 .board-status {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
+  margin: 0 0 22px;
 }
 .board-status:empty {
   display: none;
 }
-.board-status .a-regler {
-  flex: 1 1 14rem;
-}
-.board-status .moment-peek {
-  flex: 0 1 auto;
+.board-status > .now-card {
+  flex: 1 1 16rem;
   margin: 0;
+}
+
+/* Quick actions under « Prochainement » — cook the next planned meal · « Avant de
+   partir » (the pre-departure glance). Reused from the retired « Maintenant » view as
+   calm pills (the shared .btn--ghost look); they wrap on a phone. */
+.board-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.1rem 0 0.5rem;
+}
+.board-actions .btn {
+  font-size: 0.9rem;
+}
+.board-action--cook b {
+  font-weight: 700;
+}
+.board-action--cook {
+  color: var(--marigold-deep);
 }
 
 /* « À régler » — a QUIET one-line heads-up chip: it sits above every board view, so

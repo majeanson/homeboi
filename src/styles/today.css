@@ -426,6 +426,63 @@
   top: auto;
   bottom: -26px;
 }
+/* Status-band cards — « À régler » (marigold heads-up) + « Moments » (berry recap) —
+   styled as hero-style tiles so they read as peers of the supper/weather heroes just
+   above them. Softer min-height than the photo card; both stretch to equal height in
+   their row. The headline (.what) is smaller than a hero's 28px and clamps to 2 lines
+   so a long friction line never blows the card out. */
+.now-card--regler,
+.now-card--moment {
+  display: block;
+  width: 100%;
+  min-height: 6.5rem;
+  text-align: left;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+}
+.now-card--regler .label,
+.now-card--moment .label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.now-card--regler {
+  background: var(--marigold-wash);
+  color: var(--ink);
+}
+.now-card--regler .label,
+.now-card--regler .icn {
+  color: var(--marigold-deep);
+}
+.now-card--regler .blob {
+  background: var(--marigold);
+}
+.now-card--moment {
+  background: var(--berry-wash);
+  color: var(--ink);
+}
+.now-card--moment .label,
+.now-card--moment .icn {
+  color: var(--berry-deep);
+}
+.now-card--moment .blob {
+  background: var(--berry);
+}
+.now-card--regler .what,
+.now-card--moment .what {
+  font-size: 1.15rem;
+  margin-top: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.now-card--moment .who {
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+
 /* The "today" zone: supper + weather as equal hero cards. They sit in their own
    flex row above the section grid so weather reads as a peer of supper, and they
    stack on a phone. */

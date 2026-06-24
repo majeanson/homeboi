@@ -130,7 +130,9 @@ test('board renders household data', async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr' })
   await page.goto('/board')
   await expect(page.locator('.hub')).toBeVisible()
-  await expect(page.getByText('Spaghetti maison')).toBeVisible()
+  // The next meal now shows BOTH in the « Ce soir » hero AND the « Préparer le repas »
+  // quick-action under « Prochainement », so scope to the first match.
+  await expect(page.getByText('Spaghetti maison').first()).toBeVisible()
 })
 
 test('toddler routines reaches the picture-card story', async ({ page }) => {
