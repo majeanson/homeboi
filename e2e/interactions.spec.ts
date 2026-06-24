@@ -33,9 +33,12 @@ const isApi = (method: string, path: string) => (r: Request) =>
   r.method() === method && new URL(r.url()).pathname === `/api/${path}`
 
 // Run `action` and assert the expected API call fires as a result of it. The
-// waiter is armed BEFORE the action so a fast request can't slip through.
+// waiter is armed BEFORE the action so a fast request can't slip through. The
+// timeout sits ABOVE the 15 s undo-toast hold (toast.tsx DEFAULT_UNDO_MS): a
+// deferred write (e.g. checking a low item → POST /list) only commits when that
+// window closes, so a 15 s waiter raced it and flaked.
 async function expectApi(page: Page, method: string, path: string, action: () => Promise<void>) {
-  await Promise.all([page.waitForRequest(isApi(method, path), { timeout: 15_000 }), action()])
+  await Promise.all([page.waitForRequest(isApi(method, path), { timeout: 20_000 }), action()])
 }
 
 // ───────────────────────────── navigation ──────────────────────────────
@@ -180,11 +183,11 @@ test.describe('settings tabs', () => {
     await settle(page, '.operator__tabs')
     const tabs = page.getByRole('tab')
     const n = await tabs.count()
-    // 20 sections: Guide (first/default), Maisonnée, Le cercle, Rendez-vous,
+    // 21 sections: Guide (first/default), Maisonnée, Le cercle, Rendez-vous,
     // Corvées, Routines, À compléter, Magasinage, Recettes, Repas, Réserve, Liste
-    // fantôme, Tablettes, Invité (Guest), Photos, Bilan, Affichage, Mode calme, IA
-    // (the AI on/off switch), and the AI/Debug journal tab (ai-log).
-    expect(n).toBe(20)
+    // fantôme, Tablettes, Invité (Guest), Photos, Cette semaine, Bilan, Affichage,
+    // Mode calme, IA (the AI on/off switch), and the AI/Debug journal tab (ai-log).
+    expect(n).toBe(21)
     for (let i = 0; i < n; i++) {
       await tabs.nth(i).click()
       await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true')
@@ -854,7 +857,7 @@ test.describe('list', () => {
 
   test('the quick-add panel re-adds a past item and stays open', async ({ page }) => {
     await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
-    await page.getByRole('button', { name: 'Ajout rapide' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Ajout rapide' }).click() // scope to sheet (page has its own shortcut)
     const panel = page.locator('.scene')
     await expect(panel).toBeVisible()
     const chip = panel.locator('.qa__chip', { hasText: 'Beurre' })
@@ -868,7 +871,7 @@ test.describe('list', () => {
 
   test('quick-add re-adds an item with the flyer synonyms it last carried', async ({ page }) => {
     await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
-    await page.getByRole('button', { name: 'Ajout rapide' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Ajout rapide' }).click() // scope to sheet (page has its own shortcut)
     const chip = page.locator('.scene .qa__chip', { hasText: 'Beurre' })
     const [req] = await Promise.all([
       page.waitForRequest((r) => r.url().includes('/api/list') && r.method() === 'POST'),
@@ -879,7 +882,7 @@ test.describe('list', () => {
 
   test('a due-soon prediction shows in quick-add with a tag', async ({ page }) => {
     await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
-    await page.getByRole('button', { name: 'Ajout rapide' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Ajout rapide' }).click() // scope to sheet (page has its own shortcut)
     // Œufs is 'soon' in the ghost mock and not on the list → tagged in the panel.
     const oeufs = page.locator('.scene .qa__chip', { hasText: 'Œufs' })
     await expect(oeufs).toHaveCount(1)
@@ -1023,7 +1026,9 @@ test.describe('recurring chores on the board', () => {
   test('a chore can be given a weekly schedule in settings (PATCH recur)', async ({ page }) => {
     await APP('/settings?tab=chores')(page)
     await settle(page, '.operator__tabs')
-    await page.getByRole('tab', { name: 'Corvées' }).click()
+    // Scope to the settings tab strip: « Projets & Entretien » added a Corvées SubTab
+    // inside the panel, so an unscoped tab-name lookup is now ambiguous.
+    await page.locator('.operator__tabs').getByRole('tab', { name: 'Corvées' }).click()
     // The "Céduler"-only expander is gone — a chore row is now a ListRow whose
     // RowActions ✏️ ("Modifier la corvée") expands the SAME full ChoreForm (one
     // editor) with the RecurPicker. The .operator__chore-row class only appears on

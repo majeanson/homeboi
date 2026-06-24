@@ -43,7 +43,7 @@ test('ms: liste quick add panel', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await open(page, '/liste')
   await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
-  await page.getByRole('button', { name: /Ajout rapide/ }).first().click()
+  await page.getByRole('dialog').getByRole('button', { name: /Ajout rapide/ }).click() // scope to sheet (page has its own shortcut behind the scrim)
   await page.waitForTimeout(600)
   await shot(page, 'liste-quickadd')
 })

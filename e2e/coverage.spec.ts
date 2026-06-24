@@ -83,7 +83,9 @@ for (const theme of ['day', 'night'] as Theme[]) {
   test(`list-quick-add${sfx}`, async ({ page }) => {
     await boot(page, '/liste', { theme })
     await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
-    await page.getByRole('button', { name: 'Ajout rapide' }).click()
+    // Scope to the sheet (dialog): the liste page also has a direct « Ajout rapide »
+    // shortcut button now, so an unscoped name lookup is ambiguous.
+    await page.getByRole('dialog').getByRole('button', { name: 'Ajout rapide' }).click()
     await page.locator('.scene .qa__list').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `list-quick-add-phone${sfx}`, false)
@@ -142,8 +144,10 @@ for (const theme of ['day', 'night'] as Theme[]) {
 test('scene-add-chore', async ({ page }) => {
   await boot(page, '/board')
   await page.locator('.add-fab').click()
-  await page.locator('.cat-pick').nth(2).click() // « Corvées » tile → sub-choice
-  await page.locator('.addsheet__chorepick .cat-pick').first().click() // Corvée → /chore/new scene
+  // Target « Corvées » by label (the tile order shifted as ride/activity tiles were
+  // added), then its first sub-choice (Corvée → /chore/new scene).
+  await page.getByRole('dialog').locator('.cat-pick', { hasText: 'Corvées' }).click()
+  await page.locator('.addsheet__chorepick .cat-pick').first().click()
   await page.locator('.scene .operator__chore-form').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'scene-add-chore-phone', false)
