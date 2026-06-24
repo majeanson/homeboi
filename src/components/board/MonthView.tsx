@@ -10,7 +10,7 @@ import { type CarModel } from '../../lib/car'
 import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDayLong, weekdayShort } from '../../lib/format'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
-import { localYMD } from '../../lib/localDay'
+import { localYMD, addLocalDays } from '../../lib/localDay'
 import { SLOT_ICON_NAME, isMealSlot, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
@@ -114,6 +114,16 @@ export function MonthView({
   // Selected day drives the detail panel; it opens on today.
   const [offset, setOffset] = useState(0)
   const [selected, setSelected] = useState(todayDay)
+  // « Voir ce moment » → the Moments scene for that day, ADAPTED for the special cases:
+  // today opens its nicer « Ce soir » framing, tomorrow opens « Demain », any other
+  // date deep-links the « Une date » scope. So the scene never shows a generic date
+  // picker for today/tomorrow when a friendlier window exists.
+  const momentHref = (day: number) =>
+    day === todayDay
+      ? '/moment?scope=tonight'
+      : day === addLocalDays(todayDay, 1)
+        ? '/moment?scope=tomorrow'
+        : `/moment?scope=date&date=${day}`
   // À compléter todos marked done from the panel — DEFERRED behind the undo toast:
   // hidden at once so /api/month can't resurrect them before the PATCH commits, and
   // a tap of Annuler simply never marks it done (Liste's pendingClear pattern).
@@ -328,7 +338,7 @@ export function MonthView({
           <button
             type="button"
             className="btn btn--ghost btn--sm mono monthv__open-day"
-            onClick={() => nav(`/moment?scope=date&date=${selected}`)}
+            onClick={() => nav(momentHref(selected))}
           >
             {t.monthView.openMoment} <Icon name="caret-right-bold" size={14} />
           </button>
@@ -425,7 +435,7 @@ export function MonthView({
                 who={td.section ?? undefined}
                 color={colorOf(members, td.member_id) ?? undefined}
                 onCheck={() => markTodoDone(td)}
-                onOpen={() => nav(`/moment?scope=date&date=${selected}`)}
+                onOpen={() => nav(momentHref(selected))}
               />
             ))}
             {sel!.notes.map((n) => (

@@ -3289,17 +3289,15 @@
    tapping into /voiture. Mirrors the surface-card look; rides read as compact rows. */
 .auto-card {
   display: block;
-  /* Sits next to other cards/strips in every view — keep a clear gap above it. */
+  /* Sits next to other cards/strips in every view — keep a clear gap above it. A
+     neutral Pip card (like every board section): card bg + the shared section header
+     anatomy, no bespoke tint. */
   margin: 1rem 0 0.75rem;
-  padding: 0.85rem 1rem;
+  padding: 0.85rem 1rem 0.95rem;
   text-decoration: none;
   color: inherit;
-  /* A self-contained Pip card tinted to the car's colour: a barely-there wash + a
-     colour accent spine on the left, so « L'auto » reads as a peer of the day's
-     other colour-coded cards rather than a plain white strip (calm — subtle). */
   border-radius: var(--radius-lg);
-  border-left: 3px solid color-mix(in srgb, var(--car-tint, var(--sky-deep)) 55%, transparent);
-  background: color-mix(in srgb, var(--car-tint, var(--sky)) 6%, var(--card));
+  background: var(--card);
   box-shadow: var(--shadow-sm);
   transition:
     transform var(--dur-fast, 0.12s) var(--ease-soft, ease),
@@ -3309,31 +3307,14 @@
   transform: translateY(1px);
   box-shadow: var(--shadow-press, var(--shadow-sm));
 }
-.auto-card__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem 0.8rem;
-  flex-wrap: wrap;
-}
-.auto-card__title {
-  font-weight: 600;
-  font-size: 1.05rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+/* The header is now a standard .sec-label — tighten its margins (it's a compact strip,
+   not a tall section) and drop the rule onto its own row with the status beneath. */
+.auto-card .sec-label {
+  margin: 2px 2px 8px;
 }
 .auto-card__caricon {
   display: inline-flex;
   align-items: center;
-}
-/* The title's car glyph sits in a tinted disc, mirroring the section header glyphs. */
-.auto-card__title > .auto-card__caricon {
-  justify-content: center;
-  width: 1.7rem;
-  height: 1.7rem;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--car-tint, var(--sky)) 16%, var(--card));
 }
 .auto-card__status {
   display: inline-flex;

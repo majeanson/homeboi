@@ -826,7 +826,7 @@ export function Board() {
                 and below the weather heroes. #28 */}
             <AutoCard />
 
-            <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)">
+            <Section label={t.board.today} icon="sun-bold">
             {/* « Prochainement » — the next timed thing today as a calm tappable
                 headline above the full day list (the glance the « Maintenant » view
                 used to give). Renders nothing once today's timed events are behind us. */}
@@ -907,7 +907,7 @@ export function Board() {
             {/* « Demain » is BUNCHED into the same card as today (one tile, two groups)
                 via a quiet sub-divider — the second-most-important glance (what's
                 coming + prep-ahead) without a second box. */}
-            <SubHead label={t.board.tomorrow} icon="sun-horizon-bold" tint="var(--sky)" />
+            <SubHead label={t.board.tomorrow} icon="sun-horizon-bold" />
             {tomorrowWx && (
               <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
                 <span aria-hidden="true" style={{ display: 'inline-flex' }}>
@@ -978,10 +978,10 @@ export function Board() {
               ("À faire", sage), each a labelled sub-group. Hidden when both are empty.
               (« À compléter », the persistent checklist feature, keeps its own card.) */}
           {(leftovers.length > 0 || todayTodos.length > 0) && (
-            <Section label={t.board.toFinish} icon="check-bold" tint="var(--sage)">
+            <Section label={t.board.toFinish} icon="check-bold">
               {leftovers.length > 0 && (
                 <>
-                  <SubHead label={t.kitchen.leftoversBoard} icon="arrow-counter-clockwise-bold" tint="#E0724E" />
+                  <SubHead label={t.kitchen.leftoversBoard} icon="arrow-counter-clockwise-bold" />
                   {leftovers.map((l) => (
                     <Act
                       key={l.id}
@@ -1000,7 +1000,7 @@ export function Board() {
               )}
               {todayTodos.length > 0 && (
                 <>
-                  <SubHead label={t.board.todos} icon="check-bold" tint="var(--sage)" />
+                  <SubHead label={t.board.todos} icon="check-bold" />
                   {todayTodos.map(todoAct)}
                 </>
               )}
@@ -1010,10 +1010,10 @@ export function Board() {
           {/* À compléter — standalone check-off todos (global + today), distinct
               from the loose-chore "À faire" above. Check in place, "Effacer
               cochées", and one-tap departure checklists (templates). */}
-          <TodoSection title={t.todos.title} members={data.members} icon="check-bold" tint="var(--sage)" />
+          <TodoSection title={t.todos.title} members={data.members} icon="check-bold" />
 
           {(upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) && (
-            <Section label={t.board.upcoming} icon="calendar-blank-bold" tint="var(--sky)">
+            <Section label={t.board.upcoming} icon="calendar-blank-bold">
               {upcomingEvents.map((e) => (
                 <Act
                   key={e.id}

@@ -1,4 +1,3 @@
-import { type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
@@ -101,25 +100,21 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
   }
 
   return (
-    <Link
-      to="/voiture"
-      className="auto-card"
-      style={{ ['--car-tint']: tint } as CSSProperties}
-      aria-label={t.auto.title}
-    >
-      <div className="auto-card__head">
-        <span className="auto-card__title">
-          <span className="auto-card__caricon" style={{ color: tint }} aria-hidden="true">
-            <Icon name="car-bold" size={20} />
-          </span>
-          {carLabel}
+    <Link to="/voiture" className="auto-card" aria-label={t.auto.title}>
+      {/* Same header anatomy as every board section (icon disc + label + rule), so
+          « L'auto » reads as a peer of the other cards — neutral, no bespoke tint. */}
+      <div className="sec-label">
+        <span className="sec-label__ico" aria-hidden="true">
+          <Icon name="car-bold" size={16} />
         </span>
-        <span className={`auto-card__status${busy ? ' auto-card__status--busy' : ''}`}>
-          {holder && (
-            <Avatar kind={holder.avatar_kind} photo={holder.avatar_ref} colour={holder.colour} name={holder.display_name} size={22} />
-          )}
-          <span>{status}</span>
-        </span>
+        <b>{carLabel}</b>
+        <span className="ln" />
+      </div>
+      <div className={`auto-card__status${busy ? ' auto-card__status--busy' : ''}`}>
+        {holder && (
+          <Avatar kind={holder.avatar_kind} photo={holder.avatar_ref} colour={holder.colour} name={holder.display_name} size={22} />
+        )}
+        <span>{status}</span>
       </div>
       {rides.length > 0 && (
         <ul className="auto-card__rides">
