@@ -1444,7 +1444,7 @@ export const FR = {
     // le téléviseur via Chromecast (diffuser l’onglet depuis Chrome sur l’ordinateur).
     castTitle: 'Diffuser au salon',
     castIntro:
-      'Affiche une vue en lecture seule sur le téléviseur du salon — comme un deuxième écran permanent. Choisis l’écran, génère un lien, puis ouvre-le une fois dans le navigateur du téléviseur (un Google TV bon marché, une télé connectée) : il garde l’écran. Sur Chrome (ordinateur), le bouton « Diffuser » le lance directement.',
+      'Affiche une vue en lecture seule sur le téléviseur du salon — un écran d’appoint calme. Choisis l’écran, génère le lien, puis ouvre-le dans le navigateur du téléviseur (un Google TV bon marché, une télé connectée). Sur Chrome (ordinateur), le bouton « Diffuser » le lance directement.',
     // Which TV face the link shows — the full board, the ambient screensaver, or the
     // visitor welcome window. Mirrors the per-kind picker on the phone-link side.
     castSceneLabel: 'Écran',
@@ -1458,12 +1458,12 @@ export const FR = {
       welcome: 'La fenêtre d’accueil pour les visiteurs : wifi, jour des poubelles et consignes de la maison.',
     },
     castGenerate: 'Générer le lien TV',
-    castReady: 'Lien TV prêt — ouvre-le dans Chrome sur l’ordinateur :',
+    castReady: 'Lien TV prêt — ouvre-le dans le navigateur du téléviseur, ou diffuse-le depuis Chrome :',
     castStep1: 'Ouvre ce lien dans Google Chrome sur l’ordinateur.',
     castStep2: 'Menu ⋮ ▸ Caster… ▸ choisis le Chromecast.',
     castStep3: 'Sources ▸ « Caster l’onglet » — le babillard s’affiche au salon.',
     castCaveat:
-      'L’ordinateur doit rester allumé tant que l’onglet est diffusé. Le lien expire après 7 jours — regénère-le au besoin.',
+      'En diffusant l’onglet depuis Chrome, l’ordinateur doit rester allumé ; ouvert directement dans le navigateur du téléviseur, non. Le lien est temporaire (jusqu’à 7 jours ; l’accueil, 24 h) — regénère-le quand le téléviseur perd l’accès.',
     // Stage 2 — le bouton « Diffuser maintenant » (Chrome seulement) lance le récepteur.
     castNow: 'Diffuser maintenant',
     castNowBusy: 'Diffusion…',
@@ -3487,7 +3487,7 @@ export const EN: typeof FR = {
     // Chromecast (cast the tab from Chrome on the computer).
     castTitle: 'Cast to the living room',
     castIntro:
-      'Show a read-only view on the living-room TV — like a permanent second screen. Pick the screen, generate a link, then open it once in the TV’s browser (a cheap Google TV, a smart TV): it holds the screen. On Chrome (computer), the “Cast” button launches it directly.',
+      'Show a read-only view on the living-room TV — a calm extra screen. Pick the screen, generate the link, then open it in the TV’s browser (a cheap Google TV, a smart TV). On Chrome (computer), the “Cast” button launches it directly.',
     // Which TV face the link shows — the full board, the ambient screensaver, or the
     // visitor welcome window. Mirrors the per-kind picker on the phone-link side.
     castSceneLabel: 'Screen',
@@ -3501,12 +3501,12 @@ export const EN: typeof FR = {
       welcome: 'The visitor welcome window: wifi, bin day and house rules.',
     },
     castGenerate: 'Generate TV link',
-    castReady: 'TV link ready — open it in Chrome on the computer:',
+    castReady: 'TV link ready — open it in the TV’s browser, or cast it from Chrome:',
     castStep1: 'Open this link in Google Chrome on the computer.',
     castStep2: 'Menu ⋮ ▸ Cast… ▸ pick the Chromecast.',
     castStep3: 'Sources ▸ “Cast tab” — the board appears on the TV.',
     castCaveat:
-      'The computer must stay awake while the tab is casting. The link expires after 7 days — regenerate it as needed.',
+      'When casting the tab from Chrome, the computer must stay awake; opened directly in the TV’s browser, it needn’t. The link is time-boxed (up to 7 days; welcome, 24 h) — regenerate it when the TV loses access.',
     // Stage 2 — the "Cast now" button (Chrome only) launches the receiver directly.
     castNow: 'Cast now',
     castNowBusy: 'Casting…',
