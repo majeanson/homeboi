@@ -90,6 +90,13 @@ export function carnetEmoji(c: Pick<Carnet, 'kind' | 'facts'>): string {
   return typeof e === 'string' && e.trim() ? e : KIND_EMOJI[c.kind] ?? '📦'
 }
 
+// A stored doc key is a PDF when its key carries the `.pdf` suffix (care-log uploads
+// with extFromType on). Older keys (pre-suffix) have no extension, so the doc viewer
+// also falls back to PDF when an `<img>` load fails — this is just the fast path.
+export function isPdfKey(key: string): boolean {
+  return /\.pdf$/i.test(key)
+}
+
 // The projected replacement day (mirrors functions/_lib/carnetLife.replacementAt):
 // add whole months to the install date. Noon-UTC keeps us inside the civil date.
 export function replacementDate(installedAt: number, lifespanMonths: number): Date {

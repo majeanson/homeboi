@@ -24,6 +24,7 @@ import { EmptyState } from '../components/EmptyState'
 import { Icon, InlineIcon } from '../components/Icon'
 import { RowActions } from '../components/RowActions'
 import { CarnetForm } from '../components/cercle/CarnetForm'
+import { CarnetDocs } from '../components/cercle/CarnetDocs'
 import { CareLogForm } from '../components/cercle/CareLogForm'
 import { HomePinForm } from '../components/cercle/HomePinForm'
 import { HomeProjectForm } from '../components/forms/HomeProjectForm'
@@ -65,6 +66,15 @@ export function CercleCarnetPage() {
   const carnet = id ? data.carnets.find((x) => x.id === id) ?? null : null
   if (id && !carnet) return <Navigate to="/cercle?section=carnets" replace />
   if (!carnet) return <Navigate to="/cercle?section=carnets" replace />
+
+  // Ancestor chain (root → this carnet) so a child thing shows where it lives —
+  // 🏠 Maison › 🔥 Chauffe-eau — with each ancestor tappable to climb back up.
+  const byId = new Map(data.carnets.map((x) => [x.id, x]))
+  const crumbs: typeof data.carnets = []
+  for (let cur = carnet as (typeof carnet) | undefined; cur; cur = cur.parentId ? byId.get(cur.parentId) : undefined) {
+    crumbs.unshift(cur)
+    if (crumbs.length > 8) break // guard a malformed cycle
+  }
 
   const children = data.carnets.filter((x) => x.parentId === carnet.id)
   const childIds = new Set(children.map((x) => x.id))
@@ -116,6 +126,30 @@ export function CercleCarnetPage() {
     <div className="scene carnet-scene" aria-label={carnet.name}>
       <SceneHead title={carnet.name} icon="book-open-bold" card="cercle" onClose={close} />
       <div className="scene__body">
+        {/* Breadcrumb — only when this carnet sits inside another (a thing in a house).
+            Emoji + name per level; ancestors tap to climb up, the last is the page. */}
+        {crumbs.length > 1 && (
+          <nav className="carnet-crumbs mono" aria-label={c.breadcrumb}>
+            {crumbs.map((x, i) => {
+              const last = i === crumbs.length - 1
+              return (
+                <span key={x.id} className="carnet-crumbs__seg">
+                  {i > 0 && <span className="carnet-crumbs__sep" aria-hidden="true">›</span>}
+                  {last ? (
+                    <span className="carnet-crumbs__here" aria-current="page">
+                      <span aria-hidden="true">{carnetEmoji(x)}</span> {x.name}
+                    </span>
+                  ) : (
+                    <button type="button" className="carnet-crumbs__link" onClick={() => nav(`/cercle/carnet/${x.id}`)}>
+                      <span aria-hidden="true">{carnetEmoji(x)}</span> {x.name}
+                    </button>
+                  )}
+                </span>
+              )
+            })}
+          </nav>
+        )}
+
         {/* Hero — the thing's face: photo or its emoji disc, name, kind. */}
         <div className="carnet-hero" style={{ ['--carnet-tint']: carnet.color } as CSSProperties}>
           <span className="carnet-hero__av" style={!photo ? { background: faint(carnet.color) } : undefined}>
@@ -294,13 +328,7 @@ export function CercleCarnetPage() {
                         {e.costCents != null ? ` · ${formatMoney(e.costCents, lang)}` : ''}
                       </span>
                       {e.note && <span className="carnet-logrow__note">{e.note}</span>}
-                      {e.mediaKeys.length > 0 && (
-                        <span className="carnet-docs">
-                          {e.mediaKeys.map((k) => (
-                            <img key={k} src={imgUrl(k)} alt="" className="carnet-docs__doc" onError={(ev) => (ev.currentTarget.style.display = 'none')} />
-                          ))}
-                        </span>
-                      )}
+                      <CarnetDocs keys={e.mediaKeys} />
                     </span>
                     {!ro && <RowActions onEdit={() => setEditLog(e)} onDelete={() => removeLog(e)} />}
                   </div>
@@ -357,11 +385,7 @@ export function CercleCarnetPage() {
                       <span className="cercle-row__main">
                         <span className="cercle-row__name">{PIN_EMOJI[p.kind]} {p.label}</span>
                         {p.detail && <span className="cercle-row__sub mono">{p.detail}</span>}
-                        {p.mediaKey && (
-                          <span className="carnet-docs">
-                            <img src={imgUrl(p.mediaKey)} alt="" className="carnet-docs__doc" onError={(ev) => (ev.currentTarget.style.display = 'none')} />
-                          </span>
-                        )}
+                        <CarnetDocs keys={p.mediaKey ? [p.mediaKey] : []} />
                       </span>
                       {!ro && <RowActions onEdit={() => setEditPin(p)} onDelete={() => removePin(p)} />}
                     </div>

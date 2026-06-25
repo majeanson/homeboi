@@ -10,11 +10,23 @@ import { Icon } from './Icon'
 // initial fit — native browser pinch is locked app-wide (viewport user-scalable=no
 // + the gesture guards in viewportVars.ts), so the overlay does it itself with
 // pointer events and a CSS transform.
-export function ZoomableImg({ src, alt = '', className }: { src: string; alt?: string; className?: string }) {
+export function ZoomableImg({
+  src,
+  alt = '',
+  className,
+  onError,
+}: {
+  src: string
+  alt?: string
+  className?: string
+  // Forwarded to the thumbnail — lets a caller detect a blob that won't render as an
+  // image (e.g. an extension-less PDF key) and swap in a different affordance.
+  onError?: React.ReactEventHandler<HTMLImageElement>
+}) {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <img src={src} alt={alt} className={className} onClick={() => setOpen(true)} style={{ cursor: 'zoom-in' }} />
+      <img src={src} alt={alt} className={className} onClick={() => setOpen(true)} onError={onError} style={{ cursor: 'zoom-in' }} />
       {open && <ZoomOverlay src={src} alt={alt} onClose={() => setOpen(false)} />}
     </>
   )

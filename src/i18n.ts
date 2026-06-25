@@ -469,6 +469,7 @@ export const FR = {
     // The scene toggle.
     segSurveiller: 'À surveiller',
     segCarnet: 'Le carnet',
+    breadcrumb: 'Où on est',
     allGood: 'Rien à surveiller — tout va bien.',
     longJeu: 'Le long jeu',
     overdue: 'À prévoir bientôt',
@@ -494,6 +495,8 @@ export const FR = {
     costPh: 'ex. 140',
     installer: 'Installateur (un business)',
     addDoc: 'Joindre une facture / un manuel',
+    docTitle: 'Document',
+    openInTab: 'Ouvrir en plein écran',
     noEntretien: 'Aucun entretien récurrent.',
     addCare: 'Ajouter un entretien',
     // « En cas de pépin » — the house map (home carnets).
@@ -2536,6 +2539,7 @@ export const EN: typeof FR = {
     toWatch: 'Coming up soon',
     segSurveiller: 'To watch',
     segCarnet: 'The carnet',
+    breadcrumb: 'Where we are',
     allGood: 'Nothing to watch — all good.',
     longJeu: 'The long game',
     overdue: 'Plan for it soon',
@@ -2561,6 +2565,8 @@ export const EN: typeof FR = {
     costPh: 'e.g. 140',
     installer: 'Installer (a business)',
     addDoc: 'Attach an invoice / manual',
+    docTitle: 'Document',
+    openInTab: 'Open full screen',
     noEntretien: 'No recurring upkeep.',
     addCare: 'Add upkeep',
     enCasDePepin: 'In a pinch',

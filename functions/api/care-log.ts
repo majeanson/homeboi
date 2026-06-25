@@ -97,7 +97,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // be misrouted into R2).
   if (type.startsWith('image/') || type.startsWith('application/pdf')) {
     if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage indisponible ici.')
-    const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, { prefix: 'cl', maxBytes: MAX_DOC_BYTES, accept: () => true })
+    // extFromType: the stored key carries `.pdf`/`.jpg` so the doc viewer can tell a
+    // PDF (→ iframe) from an image (→ zoom) from the key alone.
+    const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, { prefix: 'cl', maxBytes: MAX_DOC_BYTES, accept: () => true, extFromType: true })
     if ('error' in up) return up.error
     return ok({ key: up.key })
   }

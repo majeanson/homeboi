@@ -39,7 +39,30 @@ export interface UploadR2Opts {
   typeError?: string
   /** 400 message when the body is empty or too large. Default: "Image vide ou trop grande." */
   sizeError?: string
+  /**
+   * Append a content-type extension to the opaque key (e.g. `cl_<id>.pdf`). Off by
+   * default — most handlers store images and render them in a plain `<img>`, which
+   * never needs the type. The carnet docs accept a PDF too, and the viewer must tell
+   * a PDF from an image FROM THE KEY ALONE (it only has the stored key, not the file),
+   * so it opts in to read the suffix and render an iframe instead of a broken `<img>`.
+   * The `/api/img/<key>` route matches the whole key, so a suffix is transparent.
+   */
+  extFromType?: boolean
 }
+
+// The file extension for a stored content-type, or '' for an unrecognised one — used
+// to make a key self-describe (see `extFromType`). Only the PDF case actually drives
+// behaviour today; the image cases keep a downloaded blob's name sensible.
+export function extForContentType(contentType: string): string {
+  const t = contentType.toLowerCase()
+  if (t.startsWith('application/pdf')) return '.pdf'
+  if (t.startsWith('image/jpeg')) return '.jpg'
+  if (t.startsWith('image/png')) return '.png'
+  if (t.startsWith('image/webp')) return '.webp'
+  if (t.startsWith('image/gif')) return '.gif'
+  return ''
+}
+
 export async function uploadR2Media(
   bucket: R2Bucket,
   request: Request,
@@ -51,15 +74,16 @@ export async function uploadR2Media(
   const buf = await request.arrayBuffer()
   if (buf.byteLength === 0 || buf.byteLength > opts.maxBytes)
     return { error: badRequest(opts.sizeError ?? 'Image vide ou trop grande.') }
-  const key = await putR2Blob(bucket, buf, contentType, opts.prefix)
+  const ext = opts.extFromType ? extForContentType(contentType) : ''
+  const key = await putR2Blob(bucket, buf, contentType, opts.prefix, ext)
   return { key, contentType }
 }
 
 // Store bytes we ALREADY hold (not an incoming Request) under an opaque
 // `<prefix>_<id>` key — e.g. a place photo the server fetched from Google's CDN for
 // the « Le cercle » business import. Returns the new key.
-export async function putR2Blob(bucket: R2Bucket, buf: ArrayBuffer, contentType: string, prefix: string): Promise<string> {
-  const key = `${prefix}_${newId()}`
+export async function putR2Blob(bucket: R2Bucket, buf: ArrayBuffer, contentType: string, prefix: string, ext = ''): Promise<string> {
+  const key = `${prefix}_${newId()}${ext}`
   await bucket.put(key, buf, { httpMetadata: { contentType } })
   return key
 }

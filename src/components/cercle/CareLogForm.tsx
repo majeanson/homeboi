@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
-import { resizeImage, imgUrl } from '../../lib/image'
+import { resizeImage } from '../../lib/image'
 import { useWrite } from '../../lib/write'
 import { live } from '../../lib/query'
 import { parseMoney } from '../../lib/money'
@@ -12,6 +12,7 @@ import { type CareLog } from '../../lib/carnets'
 import { type Business } from '../../lib/businesses'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { StatusMessage } from '../StatusMessage'
+import { CarnetDocs } from './CarnetDocs'
 import { Icon } from '../Icon'
 
 const LOG_KINDS: CareLog['kind'][] = ['service', 'install', 'purchase', 'note']
@@ -150,18 +151,7 @@ export function CareLogForm({
         </span>
         <input type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => void addDocs(e.target.files)} />
       </label>
-      {mediaKeys.length > 0 && (
-        <div className="carnet-docs">
-          {mediaKeys.map((k) => (
-            <span key={k} className="carnet-docs__doc">
-              <img src={imgUrl(k)} alt="" onError={(e) => ((e.currentTarget.style.display = 'none'))} />
-              <button type="button" className="carnet-docs__rm" aria-label={t.common.delete} onClick={() => setMediaKeys((prev) => prev.filter((x) => x !== k))}>
-                <Icon name="x-bold" size={12} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+      <CarnetDocs keys={mediaKeys} onRemove={(k) => setMediaKeys((prev) => prev.filter((x) => x !== k))} />
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <button type="submit" className="btn" disabled={!title.trim() || busy}>
