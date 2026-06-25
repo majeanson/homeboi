@@ -28,9 +28,33 @@
   transform: scale(var(--cast-scale, 1));
 }
 
-/* Use the FULL TV width — a landscape screen, not a phone column. */
+/* Use the FULL TV width — a landscape screen, not a phone column. Tight side padding
+   so the board reaches near the edges; tighter top/bottom too, which also lowers the
+   board height → less fit-shrink → less letterbox at the sides. */
 .cast .board-wall {
   max-width: none;
+  padding: 0.6rem 0.7rem 0.8rem;
+}
+
+/* Agglomerate the greeting + date into one compact header block (less vertical space,
+   which again trims the shrink). */
+.cast .app-head {
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.cast .greet {
+  margin: 0;
+  line-height: 1.1;
+}
+.cast .board-controls {
+  margin-top: 0.1rem;
+  padding-top: 0;
+}
+
+/* Drop the drawings strip's buttons (« Dessiner » + « La galerie ») — useless on a
+   passive TV; the drawings themselves stay. */
+.cast .notes__action {
+  display: none !important;
 }
 
 /* Cast layout = a column MASONRY that fills the page. The board's grid is already
