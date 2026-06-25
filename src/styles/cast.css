@@ -1,34 +1,48 @@
 /* « Diffuser au salon » — the read-only TV / cast surface (/cast, src/pages/CastPage).
    It wraps the REAL <Board/> (no forked layout to drift) so the living-room screen is
-   the exact board, just bigger, calmer, and non-interactive. Uniquely scoped under
+   the exact board, just passive and SHRUNK TO FIT the TV. Uniquely scoped under
    `.cast`, so its position in the @import list is immaterial.
 
-   - pointer-events:none makes the whole board genuinely passive (a TV nobody taps):
-     no detail peeks, no checks, no toggles can fire — read-only by construction, on
-     top of the read-only guest token the page already loads with.
-   - the device chrome (face picker, view toggle, help, quick-action pills, first-run
-     card) is hidden — a TV is a glance, not a control panel. They're dead under
-     pointer-events:none anyway; hiding them keeps the surface calm.
-   - type scales up for 10-foot "across the room" legibility, clamped so a small
-     monitor and a big TV both stay readable. */
+   A TV has no scroll — so the board can't overflow. CastPage measures the board's
+   natural size and sets `--cast-scale` so the whole thing fits the viewport (it never
+   ZOOMS in past 1×; it only shrinks to fit). pointer-events:none makes it genuinely
+   passive (no peeks/checks fire), and the device chrome / onboarding is hidden so the
+   screen is a calm glance, not a control panel. */
 .cast {
+  position: fixed;
+  inset: 0;
+  overflow: hidden; /* fixed TV glance — never scroll, never overflow */
+  background: var(--paper); /* theme bg behind any letterbox margin from the fit-scale */
   pointer-events: none;
-  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
-/* 10-foot scale: bump the board's root font so every rem/em size grows together. */
+/* The scale-to-fit wrapper: CastPage sets --cast-scale (≤ 1) from the board's natural
+   size vs the viewport. transform-origin top so it pins under the top edge; the board
+   keeps its normal type size — we shrink the whole surface, we don't restyle it. */
+.cast__fit {
+  width: 100%;
+  transform-origin: top center;
+  transform: scale(var(--cast-scale, 1));
+}
+
+/* Use the full TV width so the board lays out in columns (shorter) instead of one tall
+   phone-width stack — less to shrink, bigger result. */
 .cast .board-wall {
-  font-size: clamp(1.05rem, 1.1vw + 0.7rem, 1.55rem);
   max-width: none;
 }
 
-/* Hide the interactive device chrome — a glance surface, not a control panel.
-   (Unknown class names here are harmless no-ops; the live ones do the hiding.) */
+/* Hide the interactive device chrome + onboarding — a glance surface, not a control
+   panel (and it's all dead under pointer-events:none anyway). Unknown class names here
+   are harmless no-ops; the live ones do the hiding. */
 .cast .profile-chip,
 .cast .boardview,
 .cast .mswitch,
 .cast .help-toggle,
 .cast .board-actions,
-.cast .welcome-card {
+.cast .welcome-card,
+.cast .app-head__search {
   display: none !important;
 }

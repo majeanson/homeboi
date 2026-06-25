@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Board } from './Board'
 import { DetailProvider } from '../components/detail/DetailProvider'
 import { useProfile } from '../lib/profile'
@@ -19,6 +19,7 @@ import { isGuest } from '../lib/device'
 export function CastPage() {
   const guest = isGuest()
   const { setMemberId } = useProfile()
+  const fitRef = useRef<HTMLDivElement>(null)
   // A TV is shared: clear any picked face so the board shows everyone (Maisonnée) —
   // but only when actually launched as a cast/guest, so an operator previewing /cast
   // in their own signed-in browser doesn't lose their picked face.
@@ -26,10 +27,43 @@ export function CastPage() {
     if (guest) setMemberId(null)
   }, [guest, setMemberId])
 
+  // Shrink-to-fit: a TV can't scroll, so the whole board must fit one screen. Measure
+  // the board's NATURAL layout size (scrollWidth/Height — unaffected by the transform)
+  // and set --cast-scale so it fills the viewport without overflowing. Never scales
+  // PAST 1× (we shrink to fit, never zoom in). Recomputes as the board polls in fresh
+  // data (height changes), on resize, and on a slow interval as a backstop.
+  useEffect(() => {
+    const fit = fitRef.current
+    if (!fit) return
+    const apply = () => {
+      const cw = fit.scrollWidth
+      const ch = fit.scrollHeight
+      if (!cw || !ch) return
+      const s = Math.min(1, window.innerWidth / cw, window.innerHeight / ch)
+      fit.style.setProperty('--cast-scale', String(s > 0 ? s : 1))
+    }
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(fit)
+    window.addEventListener('resize', apply)
+    const id = window.setInterval(apply, 4000)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', apply)
+      window.clearInterval(id)
+    }
+  }, [])
+
   return (
     <div className="cast" data-cast="1">
+      {/* DetailProvider stays OUTSIDE .cast__fit: its always-mounted (closed) detail
+          Sheet is position:fixed, and a transformed ancestor would re-anchor its
+          off-screen position so it peeks in. Outside the transform it sits off-screen
+          as intended (the peek never opens here — the board is pointer-events:none). */}
       <DetailProvider>
-        <Board />
+        <div className="cast__fit" ref={fitRef}>
+          <Board />
+        </div>
       </DetailProvider>
     </div>
   )

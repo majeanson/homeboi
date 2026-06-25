@@ -8,6 +8,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useNavigate } from 'react-router-dom'
 import { useAudience } from './audience'
 import { useAuth } from './auth'
+import { isGuest } from './device'
 import { TOURS, type Tour } from './tourContent'
 
 // One key holds the SET of finished/skipped tour ids (JSON array), so adding more
@@ -107,6 +108,11 @@ export function TourProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (autoTried.current) return
     if (audience !== 'parent' || !signedIn) return
+    // Never onboard a guest / cast surface — the tour is operator-only. A sitter /
+    // family / welcome / cast link carries a guest token (isGuest), and the « Diffuser
+    // au salon » TV board lives at /cast; neither should ever get the spotlight tour.
+    // (Don't set autoTried here, so a later normal session in this tab still runs it.)
+    if (isGuest() || window.location.pathname.startsWith('/cast')) return
     autoTried.current = true
     if (!hasTourSeen('essentials')) start('essentials')
   }, [audience, signedIn, start])
