@@ -143,13 +143,14 @@ test('proof peek @phone', async ({ page }) => {
   await openGrid(page)
   await openPeek(page)
   // Everything the cashier needs, all visible: store, which item it's for, the BIG
-  // price, and a way to open the whole flyer as proof.
+  // price, the prominent validity date, and a way to open the whole flyer as proof.
   await expect(page.locator('.bigcard__store')).toContainText('Super C')
   await expect(page.locator('.bigcard__for')).toContainText('Lait')
   await expect(page.locator('.bigcard__price')).toContainText('4,99')
+  await expect(page.locator('.bigcard__valid')).toContainText('juin') // date is high-level, not fine print
   await expect(page.getByRole('button', { name: /Voir la circulaire/ })).toBeVisible()
-  // Operator: revise (pick another price) + remove are both offered.
-  expect(await page.locator('.bigcard__actions .row-actions__btn').count()).toBe(2)
+  // The peek is a clean proof: NO edit/delete buttons anywhere.
+  await expect(page.locator('.row-actions__btn')).toHaveCount(0)
   await shot(page, 'peek-phone')
   await expectNoOverflow(page)
 })
@@ -178,14 +179,14 @@ test('shown check + reset', async ({ page }) => {
 })
 
 // --- Read-only guest (babysitter) -----------------------------------------
-test('guest peek is read-only', async ({ page }) => {
+test('guest can view the proof', async ({ page }) => {
   await openGrid(page, { guest: true })
   await openPeek(page)
-  // The proof still shows in full…
+  // A guest reaches the till and sees the full proof (read path works under a
+  // read-only session) — and, like everyone, no edit/delete buttons.
   await expect(page.locator('.bigcard__price')).toContainText('4,99')
   await expect(page.getByRole('button', { name: /Voir la circulaire/ })).toBeVisible()
-  // …but no revise/remove affordances (RowActions hides itself for a guest).
-  await expect(page.locator('.bigcard__actions .row-actions__btn')).toHaveCount(0)
+  await expect(page.locator('.row-actions__btn')).toHaveCount(0)
   await shot(page, 'peek-guest')
   await expectNoOverflow(page)
 })

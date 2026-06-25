@@ -1,22 +1,19 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { CashierMode } from '../components/CashierMode'
 import { Loading } from '../components/Fallback'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { BOARD_KEY } from '../lib/queryKeys'
-import { pickListFrom, unstageDeal, type ListItem } from '../lib/picks'
+import { pickListFrom, type ListItem } from '../lib/picks'
 import { useSceneClose } from '../lib/sceneNav'
 
 // /liste/cashier — the till-side stepper as a route (was a full-screen overlay
 // toggled from Liste, with the price-match sheet able to stack ON TOP of it). The
 // pick set is server state, so it reconstructs straight from the ['board'] cache —
-// no props to thread. "Revise a price" navigates to the price-match route
-// (/liste/deals/:itemId) instead of stacking a sheet over the cashier.
+// no props to thread. The peek is a clean, read-only proof (no edit/delete) — revise
+// or remove a staged deal back on the list / price-match route instead.
 export function CashierPage() {
-  const qc = useQueryClient()
-  const nav = useNavigate()
   const close = useSceneClose('/liste')
   const { data: board } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
   // Stores the household chose to hide at the till (Réglages ▸ Mes magasins ▸ "À la
@@ -39,12 +36,5 @@ export function CashierPage() {
 
   if (!board) return <Loading />
   if (picks.length === 0) return null
-  return (
-    <CashierMode
-      picks={picks}
-      onRemove={(itemId) => unstageDeal(qc, itemId)}
-      onRevise={(p) => nav(`/liste/deals/${encodeURIComponent(p.itemId)}`)}
-      onClose={close}
-    />
-  )
+  return <CashierMode picks={picks} onClose={close} />
 }

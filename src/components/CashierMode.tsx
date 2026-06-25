@@ -6,7 +6,6 @@ import { type Pick, money } from '../lib/deals'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
-import { RowActions } from './RowActions'
 import { useModal } from '../lib/useModal'
 
 // "Show the cashier" mode. The user holds the phone (the cashier never does) and
@@ -19,13 +18,9 @@ import { useModal } from '../lib/useModal'
 // a big cart stays trackable. Deliberately oversized + low-text for use under pressure.
 export function CashierMode({
   picks,
-  onRevise,
-  onRemove,
   onClose,
 }: {
   picks: Pick[]
-  onRevise: (pick: Pick) => void
-  onRemove: (itemId: string) => void
   onClose: () => void
 }) {
   const t = useT()
@@ -173,22 +168,12 @@ export function CashierMode({
             </span>
             <span className="bigcard__name">{d.name}</span>
             <span className="bigcard__price">{money(d.price)}</span>
-            {d.unitPrice != null && (
-              <span className="bigcard__unit mono">
-                {d.unitApprox && (
-                  <>
-                    <InlineIcon name="approximate-equals-bold" size={13} />{' '}
-                  </>
-                )}
-                {money(d.unitPrice)}
-                {d.unitLabel}
-              </span>
-            )}
             {/* Validity is high-level info — a cashier checks the deal is still valid
-                before adjusting — so it's a prominent dated pill, not fine print. */}
+                before adjusting — so it's the loud, prominent dated pill, not fine
+                print. No edit/delete here: the peek is a clean proof to hold up. */}
             {d.validTo && (
               <span className="bigcard__valid">
-                <InlineIcon name="calendar-dots-bold" size={18} /> {t.shop.until} {fmtDate(d.validTo)}
+                <InlineIcon name="calendar-dots-bold" size={28} /> {t.shop.until} {fmtDate(d.validTo)}
               </span>
             )}
             {d.flyerId != null && (
@@ -196,19 +181,6 @@ export function CashierMode({
                 <InlineIcon name="file-text-bold" /> {t.shop.viewFlyer}
               </button>
             )}
-            {/* Revise (pick another price) / remove from the cashier set. The shared
-                RowActions hides itself for a read-only guest, so a babysitter sees a
-                clean proof with no edit affordances. */}
-            <RowActions
-              className="bigcard__actions"
-              onEdit={() => onRevise(selected)}
-              onDelete={() => {
-                onRemove(selected.itemId)
-                setSelected(null)
-              }}
-              editLabel={t.shop.choose}
-              deleteLabel={t.shop.clearPicks}
-            />
           </div>
         </div>
       </div>
