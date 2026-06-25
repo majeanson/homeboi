@@ -33,6 +33,9 @@ export function useSwipeToDelete(ref: RefObject<HTMLElement | null>, onDelete: (
     let startY = 0
     let dx = 0
     let axis: 'undecided' | 'horizontal' | 'vertical' = 'undecided'
+    // A gesture that begins on a drag handle (⠿) is a reorder, not a swipe-delete —
+    // let pointer DnD own it so the two don't fight over the same finger.
+    let skip = false
 
     // Promote to a compositor layer and reveal the red delete pane ONLY while a
     // swipe is armed. Both are off at rest (and during vertical scroll), so a
@@ -50,6 +53,8 @@ export function useSwipeToDelete(ref: RefObject<HTMLElement | null>, onDelete: (
 
     const onStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return
+      skip = !!(e.target as Element)?.closest?.('[data-dnd-grip]')
+      if (skip) return
       startX = e.touches[0].clientX
       startY = e.touches[0].clientY
       dx = 0
@@ -57,6 +62,7 @@ export function useSwipeToDelete(ref: RefObject<HTMLElement | null>, onDelete: (
       el.style.transition = 'none'
     }
     const onMove = (e: TouchEvent) => {
+      if (skip) return
       const ddx = e.touches[0].clientX - startX
       const ddy = e.touches[0].clientY - startY
       if (axis === 'undecided') {
@@ -81,6 +87,10 @@ export function useSwipeToDelete(ref: RefObject<HTMLElement | null>, onDelete: (
       el.style.transform = `translateX(${dx}px)`
     }
     const finish = () => {
+      if (skip) {
+        skip = false
+        return
+      }
       if (axis !== 'horizontal') {
         axis = 'undecided'
         return

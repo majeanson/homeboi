@@ -1168,7 +1168,10 @@ export function Board() {
                   key={e.id}
                   cat={e.birthday ? 'birthday' : 'event'}
                   title={e.title}
-                  when={withRel(eventWhen(e), e.start_at)}
+                  // Upcoming rows show the DATE too (not just the time): an event
+                  // days out otherwise read as a bare "12 h 00" with no day. Match
+                  // the chore rows below — date · time, then withRel's "· dans X j".
+                  when={withRel(`${formatDayMaybeYear(e.start_at, lang)} · ${eventWhen(e)}`, e.start_at)}
                   soon={e.soon}
                   onOpen={() => detail.open(buildEvent(e, detailCtx))}
                 />

@@ -129,11 +129,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // move: checked rows stay in place (struck through) until "Clear checked"
     // removes them, so checked_at rides along to drive that struck state.
     ctx.env.DB.prepare(
-      // created_at + id: a stable total order. Quick-add can stamp several rows in
-      // the same second, so created_at alone leaves ties SQLite may return in a
-      // different order each read — making the list visibly reshuffle on every
-      // refetch (e.g. right after a check). The id tiebreaker pins them.
-      'SELECT id, text, source, added_by, deal_json, search_terms, checked_at FROM list_items WHERE household_id = ? ORDER BY created_at, id',
+      // Hand order first (position 0..n from drag-and-drop), then created_at + id:
+      // a stable total order. Quick-add can stamp several rows in the same second,
+      // so created_at alone leaves ties SQLite may return in a different order each
+      // read — making the list visibly reshuffle on every refetch (e.g. right after
+      // a check). The id tiebreaker pins them. Rows never dragged (position NULL)
+      // sort after placed ones, so a new item still lands last until it's moved.
+      'SELECT id, text, source, added_by, deal_json, search_terms, checked_at FROM list_items WHERE household_id = ? ORDER BY position IS NULL, position, created_at, id',
     )
       .bind(hh)
       .all(),

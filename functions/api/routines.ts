@@ -35,6 +35,37 @@ function sanitizeCards(cards: Card[]): Card[] {
     return ok ? { ...rest, seconds: Math.min(Math.round(seconds as number), MAX_TIMER) } : rest
   })
 }
+// Per-step countdown timer state, persisted on today's run row so a tap-to-start
+// timer survives leaving + reopening the app. A RUNNING (or just-finished) timer is
+// stored as { endsAt } — the unix second it hits zero — so the player derives the
+// real remaining from the wall clock on load, not a counter that froze when the app
+// closed. A PAUSED one is { left } — the banked seconds remaining. Keyed by card idx.
+type TimerEntry = { endsAt: number } | { left: number }
+function normalizeTimer(v: unknown): TimerEntry | null {
+  if (!v || typeof v !== 'object') return null
+  const o = v as Record<string, unknown>
+  if (typeof o.endsAt === 'number' && Number.isFinite(o.endsAt)) return { endsAt: Math.round(o.endsAt) }
+  if (typeof o.left === 'number' && Number.isFinite(o.left) && o.left >= 0)
+    return { left: Math.min(Math.round(o.left), MAX_TIMER) }
+  return null
+}
+function sanitizeTimers(json: string | null | undefined): Record<number, TimerEntry> {
+  const out: Record<number, TimerEntry> = {}
+  if (!json) return out
+  try {
+    const obj = JSON.parse(json) as Record<string, unknown>
+    if (obj && typeof obj === 'object')
+      for (const [k, v] of Object.entries(obj)) {
+        const idx = Number(k)
+        const e = normalizeTimer(v)
+        if (Number.isInteger(idx) && idx >= 0 && e) out[idx] = e
+      }
+  } catch {
+    /* corrupt JSON → no timers (the step just starts fresh) */
+  }
+  return out
+}
+
 const isStr = (v: unknown): v is string => typeof v === 'string'
 // The time-of-day cue ('morning'|'afternoon'|'evening'); anything else → null
 // (anytime). An ordering hint for the kid view, never a gate.
@@ -83,12 +114,14 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   // Today's runs in one query, keyed by routine.
   const runs = await ctx.env.DB.prepare(
-    `SELECT routine_id, done_idx_json FROM routine_runs
+    `SELECT routine_id, done_idx_json, timers_json FROM routine_runs
       WHERE date = ? AND routine_id IN (SELECT id FROM routines WHERE household_id = ?)`,
   )
     .bind(today, actor.householdId)
-    .all<{ routine_id: string; done_idx_json: string }>()
+    .all<{ routine_id: string; done_idx_json: string; timers_json: string | null }>()
   const doneByRoutine = new Map(runs.results.map((r) => [r.routine_id, r.done_idx_json]))
+  // Per-step countdown state so a started timer keeps real time across an app close.
+  const timersByRoutine = new Map(runs.results.map((r) => [r.routine_id, r.timers_json]))
 
   const out = routines.results.map((r) => {
     const cards = parseJsonArray<Card>(r.cards_json)
@@ -106,6 +139,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
       // Parallel card photos, one R2 key per card ('' = none → the card's emoji).
       cardsPhoto: normalizeKeys(r.cards_photo_json, cards.length),
       doneIdx: parseJsonArray<number>(doneByRoutine.get(r.id), isNumber),
+      // Per-step countdown timers (card idx → {endsAt}|{left}); {} when none started.
+      timers: sanitizeTimers(timersByRoutine.get(r.id)),
     }
   })
   return ok({ routines: out, date: today })
@@ -168,6 +203,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     // Clear today's run (the "Recommencer" affordance) — wipes every ✓ so the
     // routine can be played again the same day. Deliberate, not a streak hook.
     reset?: boolean
+    // Persist one card's countdown timer (with cardIdx): {endsAt}|{left}, or null to
+    // clear it. Survives leaving the app so the timer reads real elapsed on return.
+    timer?: unknown
   }>(ctx.request)
   if (!body?.routineId) return badRequest('routineId requis.')
 
@@ -261,6 +299,36 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (typeof body.cardIdx !== 'number') return badRequest('routineId + cardIdx requis.')
 
   const today = localDayStart(new Date(Date.now()))
+
+  // Persist one card's countdown timer (tap-to-start / pause / clear). We merge into
+  // the day's run row's timers_json without touching done_idx_json, so a running
+  // timer and the ✓ progress coexist. No row yet → insert one with empty progress.
+  if ('timer' in body) {
+    const existing = await ctx.env.DB.prepare(
+      'SELECT done_idx_json, timers_json FROM routine_runs WHERE routine_id = ? AND date = ?',
+    )
+      .bind(body.routineId, today)
+      .first<{ done_idx_json: string; timers_json: string | null }>()
+    const timers = sanitizeTimers(existing?.timers_json)
+    const entry = normalizeTimer(body.timer)
+    if (entry === null) delete timers[body.cardIdx]
+    else timers[body.cardIdx] = entry
+    const timersJson = Object.keys(timers).length ? JSON.stringify(timers) : null
+    const ts = nowSec()
+    if (existing) {
+      await ctx.env.DB.prepare('UPDATE routine_runs SET timers_json = ?, updated_at = ? WHERE routine_id = ? AND date = ?')
+        .bind(timersJson, ts, body.routineId, today)
+        .run()
+    } else {
+      await ctx.env.DB.prepare(
+        'INSERT INTO routine_runs (id, routine_id, date, done_idx_json, timers_json, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+      )
+        .bind(newId(), body.routineId, today, '[]', timersJson, ts)
+        .run()
+    }
+    return ok({ ok: true })
+  }
+
   const existing = await ctx.env.DB.prepare(
     'SELECT done_idx_json FROM routine_runs WHERE routine_id = ? AND date = ?',
   )

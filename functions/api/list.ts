@@ -60,10 +60,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // The whole active list — unchecked AND checked. A check is a mark, not a move:
   // checked items stay in place (struck through) until "Clear checked" removes them.
   const { results } = await ctx.env.DB.prepare(
-    // created_at + id so the order is a stable total order — same-second rows
-    // (quick-add) keep a fixed position instead of reshuffling on each read. Mirror
-    // of the board read, which is the list the Liste page actually renders.
-    'SELECT id, text, source, added_by, deal_json, search_terms, checked_at FROM list_items WHERE household_id = ? ORDER BY created_at, id',
+    // Hand order first (position 0..n), then anything never dragged by created_at +
+    // id — a stable total order, so same-second rows (quick-add) keep a fixed slot
+    // instead of reshuffling on each read. Mirror of the board read, which is the
+    // list the Liste page actually renders.
+    'SELECT id, text, source, added_by, deal_json, search_terms, checked_at FROM list_items WHERE household_id = ? ORDER BY position IS NULL, position, created_at, id',
   )
     .bind(actor.householdId)
     .all()
@@ -109,9 +110,29 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     search_terms?: unknown
     clearChecked?: boolean
     ids?: unknown
+    reorder?: unknown // a full ordered array of list_item ids (drag-and-drop)
     historyKey?: string // a purchase_log item_key to rename (Réglages cleanup)
     renameTo?: string // the generic name to fold that key into
   }>(ctx.request)
+
+  // Drag-and-drop reorder: the client sends the list ids in their new order. Write
+  // position 0..n across them (household-scoped, so a forged id can't touch another
+  // home's rows). After this every row carries an explicit slot, so the GET's
+  // "position IS NULL" rows sort after them — new items still land last until moved.
+  if (Array.isArray(body?.reorder)) {
+    const ids = body.reorder.map((x) => String(x)).slice(0, 500)
+    if (ids.length)
+      await ctx.env.DB.batch(
+        ids.map((id, i) =>
+          ctx.env.DB.prepare('UPDATE list_items SET position = ? WHERE id = ? AND household_id = ?').bind(
+            i,
+            id,
+            actor.householdId,
+          ),
+        ),
+      )
+    return ok({ ok: true })
+  }
 
   // Rename / merge a grocery-history entry to a generic name (Réglages ▸
   // Magasinage). Re-keys every purchase_log row from the old item_key to the new

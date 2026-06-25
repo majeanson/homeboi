@@ -68,7 +68,10 @@
 .photo-frame img {
   display: block;
   width: 100%;
-  max-height: 42vh;
+  /* FIXED height (not max-height): every photo renders in the same box, so
+     shuffling to a portrait/landscape with a different aspect ratio can't change
+     the frame's height and bump the page scroll mid-glance. object-fit crops. */
+  height: 42vh;
   object-fit: cover;
 }
 

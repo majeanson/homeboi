@@ -948,6 +948,16 @@ body.is-recording .add-fab {
   display: flex;
   align-items: center;
 }
+/* The reorder grip (⠿) on each list row: a calm, comfortable tablet tap target at
+   the row's left, before the picture. .dnd-grip carries the gesture (touch-action:
+   none) + cursor; this just centres it and gives it room on a wall tablet. */
+.list-row__grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-width: 30px;
+}
 /* The check is now the ONLY check-off target (the rest of the row edits / opens
    deals), so give it a comfortable tap area — a 42px circle, not the old 30px.
    Loaded after today.css, so this ties-and-wins over `.act .check`. */

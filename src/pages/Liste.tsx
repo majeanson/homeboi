@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { Icon, InlineIcon } from '../components/Icon'
 import { HubHead } from '../components/HubHead'
@@ -24,6 +24,7 @@ import { money } from '../lib/deals'
 import { pickListFrom, parseDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
+import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { LISTE_HELP } from '../lib/listeHelp'
@@ -89,6 +90,8 @@ function ListItemRow({
   onToggle,
   onDelete,
   deleteLabel,
+  dnd,
+  index,
   readOnly = isGuest(),
 }: {
   text: string
@@ -105,15 +108,26 @@ function ListItemRow({
   onToggle: () => void
   onDelete: () => void
   deleteLabel: string
-  // Read-only guest: no check toggle, no swipe-to-delete, no delete pane. The
-  // picture/name taps stay — they only navigate (open the flyer / a read detail).
+  // Drag-and-drop reorder: the shared pointer-DnD handle + this row's position. The
+  // zone id and the drag id are both the index (a drop = "move dragged row here").
+  dnd?: ReturnType<typeof usePointerDnd>
+  index: number
+  // Read-only guest: no check toggle, no swipe-to-delete, no delete pane, no drag
+  // grip. The picture/name taps stay — they only navigate (open the flyer / detail).
   readOnly?: boolean
 }) {
+  const t = useT()
   const mainRef = useRef<HTMLDivElement>(null)
   // Only wire the swipe-delete when writes are allowed; a guest's row never deletes.
   useSwipeToDelete(mainRef, readOnly ? () => {} : onDelete)
+  const zoneId = String(index)
+  const draggable = !!dnd && !readOnly
+  const zoneClass =
+    'list-row' +
+    (dnd?.activeId === zoneId ? ' is-dragging' : '') +
+    (dnd?.over === zoneId ? ' dnd-over' : '')
   return (
-    <div className="list-row">
+    <div className={zoneClass} data-dnd-zone={draggable ? zoneId : undefined}>
       {/* The delete pane revealed behind the row as it slides left under the
           finger. Inert/aria-hidden — the swipe drives it; the edit sheet keeps an
           actual Delete button for non-touch. */}
@@ -125,6 +139,21 @@ function ListItemRow({
       )}
       <div ref={mainRef} className={`act list-row__main${checked ? ' done' : ''}`}>
         <span className="spine" style={{ background: CATS.list.color }} aria-hidden="true" />
+        {draggable && (
+          // Press-and-hold the grip to reorder. It lives outside the swipe path
+          // (data-dnd-grip makes useSwipeToDelete ignore it), so dragging the handle
+          // never half-arms a swipe-delete.
+          <span
+            className="dnd-grip list-row__grip"
+            data-dnd-grip=""
+            role="button"
+            aria-label={t.operator.dragHint}
+            title={t.operator.dragHint}
+            onPointerDown={(e) => dnd!.start(zoneId, text, e)}
+          >
+            ⠿
+          </span>
+        )}
         <button type="button" className="list-row__img" onClick={onImage} aria-label={imageLabel}>
           {dealImage ? (
             // A linked flyer deal with a clipping → show the product picture.
@@ -180,6 +209,27 @@ export function Liste() {
   // pioneered): hide cleared/deleted ids + filter them out, and await a refetch
   // before un-hiding so the poll can't flash a just-removed row back.
   const removal = useDeferredRemoval(BOARD_KEY)
+  const qc = useQueryClient()
+  // Drag-and-drop reorder of the list. The grip on each row starts a press-and-hold
+  // drag (DND_HOLD_MS); dropping onto another row's zone moves the dragged row to
+  // that slot. We read the live rendered order out of the cache at drop time (the
+  // hook must run before any early return, so it can't close over the `list` const
+  // computed below), splice it, and persist the new id order — the server writes
+  // position 0..n and the poll resorts everyone to match.
+  const dnd = usePointerDnd({
+    onDrop: (fromId, toZone) => {
+      const from = Number(fromId)
+      const to = Number(toZone)
+      if (!Number.isInteger(from) || !Number.isInteger(to) || from === to) return
+      const cur = removal.visible(qc.getQueryData<BoardListData>(BOARD_KEY)?.list ?? [])
+      const ids = cur.map((i) => i.id)
+      if (from < 0 || from >= ids.length || to < 0 || to >= ids.length) return
+      const [moved] = ids.splice(from, 1)
+      ids.splice(to, 0, moved)
+      reorderTo(ids)
+    },
+    holdMs: DND_HOLD_MS,
+  })
   // Contextual "?" help mode (shared hook): arm it in the header, then tap one of
   // the list's controls (flyer search / Vider les cochés / cashier) to learn what
   // it does in place instead of running it. La liste is one flat list, so its help
@@ -267,6 +317,27 @@ export function Liste() {
         affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
       }).catch(() => {}),
     )
+  }
+
+  // Persist a hand-reordered list. Optimistically resort the shared board cache to
+  // the new id order so the move sticks instantly (offline too, via useWrite's
+  // outbox); the server writes position 0..n and the next poll confirms it. A row
+  // not in the set (mid-undo removal) sorts last and self-heals on refetch.
+  function reorderTo(ids: string[]) {
+    void write('list', {
+      method: 'PATCH',
+      body: { reorder: ids },
+      affectedKeys: [BOARD_KEY],
+      optimistic: (cache) =>
+        cache.setQueryData<BoardListData>(BOARD_KEY, (b) => {
+          if (!b) return b
+          const pos = new Map(ids.map((id, i) => [id, i]))
+          const sorted = [...b.list].sort(
+            (a, c) => (pos.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (pos.get(c.id) ?? Number.MAX_SAFE_INTEGER),
+          )
+          return { ...b, list: sorted }
+        }),
+    }).catch(() => {})
   }
 
   // Swipe-left delete: a plain remove from the list — NOT logged as bought (that
@@ -387,7 +458,7 @@ export function Liste() {
         <EmptyState guide={{ card: 'liste' }}>{t.board.listEmpty}</EmptyState>
       ) : (
         <div className="list-rows">
-          {list.map((item) => {
+          {list.map((item, index) => {
             const adder = item.added_by ? memberById.get(item.added_by) : null
             const staged = parseDeal(item.deal_json)
             const checked = !!item.checked_at
@@ -397,6 +468,8 @@ export function Liste() {
             return (
               <ListItemRow
                 key={item.id}
+                dnd={dnd}
+                index={index}
                 text={item.text}
                 picto={pic}
                 dealImage={staged?.image}
@@ -456,6 +529,8 @@ export function Liste() {
       )}
       {help.bubbleFor('cashier')}
 
+      {/* The floating drag label that trails the finger while reordering. */}
+      <DragGhost ghost={dnd.ghost} />
     </main>
   )
 }

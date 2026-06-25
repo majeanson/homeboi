@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
 import { useCalm } from '../lib/calm'
@@ -41,7 +41,14 @@ export interface PlayerRoutine {
   // Parallel card photo keys (feature #17 C), one per card ('' = none → emoji).
   cardsPhoto?: string[]
   doneIdx: number[]
+  // Server-persisted per-step countdown state (card idx → {endsAt}|{left}), so a
+  // started timer keeps real wall-clock time across leaving and reopening the app.
+  timers?: Record<number, TimerEntry>
 }
+// A running/just-finished timer is { endsAt } (the unix second it reaches zero);
+// a paused one is { left } (banked seconds). The player derives remaining from the
+// clock, never a frozen counter — so it stays true after the app was closed.
+type TimerEntry = { endsAt: number } | { left: number }
 // The shape GET /api/routines returns — the optimistic toggle rewrites doneIdx in
 // this cache the same way whether KidView or the run scene owns the query.
 type RoutinesData = { routines: PlayerRoutine[] }
@@ -91,7 +98,26 @@ export function RoutinePlayer({
     queryKey: ROUTINES_KEY,
     mutationFn: (v) => api('routines', { method: 'PATCH', body: { ...v, reset: true } }),
     apply: (old, v) => ({
-      routines: old.routines.map((r) => (r.id === v.routineId ? { ...r, doneIdx: [] } : r)),
+      // Recommencer wipes the whole day's run row server-side (doneIdx AND timers),
+      // so clear both in the cache to match.
+      routines: old.routines.map((r) => (r.id === v.routineId ? { ...r, doneIdx: [], timers: {} } : r)),
+    }),
+  })
+
+  // Persist one step's countdown timer (start / pause / resume / restart / clear).
+  // Optimistic so the tap feels instant on the tablet; the server merges it into
+  // today's run row so reopening the app shows the timer at its real remaining.
+  const setTimer = useOptimisticMutation<RoutinesData, { routineId: string; cardIdx: number; timer: TimerEntry | null }>({
+    queryKey: ROUTINES_KEY,
+    mutationFn: (v) => api('routines', { method: 'PATCH', body: v }),
+    apply: (old, v) => ({
+      routines: old.routines.map((r) => {
+        if (r.id !== v.routineId) return r
+        const timers = { ...(r.timers ?? {}) }
+        if (v.timer === null) delete timers[v.cardIdx]
+        else timers[v.cardIdx] = v.timer
+        return { ...r, timers }
+      }),
     }),
   })
 
@@ -253,8 +279,19 @@ export function RoutinePlayer({
               {/* A per-step countdown when this step carries a timer (e.g. brush
                   teeth for 2 min). Tap-to-start, calm: a soft chime + ✓ at zero, but
                   it NEVER force-advances or nags — the kid still taps → to continue.
-                  Keyed by curIdx so it resets fresh on every step. */}
-              {cur?.seconds ? <Countdown key={curIdx} seconds={cur.seconds} tint={tint} /> : null}
+                  Keyed by curIdx so it resets fresh on every step. Its state is
+                  persisted server-side (via onPersist) so leaving + reopening the app
+                  shows the timer at its real remaining; a guest (ro) runs it locally
+                  only — no onPersist, so they can use it but never commit. */}
+              {cur?.seconds ? (
+                <Countdown
+                  key={curIdx}
+                  seconds={cur.seconds}
+                  tint={tint}
+                  persisted={routine.timers?.[curIdx]}
+                  onPersist={ro ? undefined : (s) => setTimer.mutate({ routineId: routine.id, cardIdx: curIdx, timer: s })}
+                />
+              ) : null}
 
               {/* The whole routine as a picture filmstrip: every step in order, the
                   current one lifted + ringed ("you are here"), finished ones softened
@@ -334,37 +371,90 @@ export function RoutinePlayer({
 // soft chime + a gentle vibration + a ✓ pulse, and it STOPS — it never advances the
 // routine or nags (NFR-CALM). Tapping a finished timer restarts it. The chime is
 // the shared cook-timer "ding-ding" so the whole app sounds the same.
-function Countdown({ seconds, tint }: { seconds: number; tint: string }) {
+//
+// State is WALL-CLOCK driven, not a frozen counter: a running timer is anchored to
+// an absolute `endsAt`, so the remaining is recomputed from the clock on every tick
+// and on (re)mount — leaving the app and coming back shows the timer where it really
+// is, not where it paused. `persisted` seeds + syncs that state from the server (so
+// it survives an app close, and a second device sees it); `onPersist` saves each
+// start/pause/restart. With no `onPersist` (a read-only guest) it just runs locally.
+function Countdown({
+  seconds,
+  tint,
+  persisted,
+  onPersist,
+}: {
+  seconds: number
+  tint: string
+  persisted?: TimerEntry
+  onPersist?: (s: TimerEntry | null) => void
+}) {
   const t = useT()
-  const [left, setLeft] = useState(seconds)
-  const [running, setRunning] = useState(false)
-  const done = left <= 0
+  const nowSec = () => Math.floor(Date.now() / 1000)
+  // Local mirror so a tap feels instant; the server (persisted) is the source of
+  // truth on load and when another device changes it.
+  const [state, setState] = useState<TimerEntry | null>(persisted ?? null)
+  // Re-sync when the server delivers a different timer for this card. Keyed on the
+  // meaningful fields so a same-value poll doesn't reset a live tick.
+  const pEndsAt = persisted && 'endsAt' in persisted ? persisted.endsAt : null
+  const pLeft = persisted && 'left' in persisted ? persisted.left : null
+  useEffect(() => {
+    setState(persisted ?? null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pEndsAt, pLeft])
+  // A bare re-render pulse each second while running (left is derived, not stored).
+  const [, force] = useState(0)
 
+  // Derive the live remaining + running from the clock, so it's correct even after
+  // the app was closed for a while.
+  let left: number
+  let running: boolean
+  if (state && 'endsAt' in state) {
+    left = Math.max(0, state.endsAt - nowSec())
+    running = left > 0
+  } else if (state && 'left' in state) {
+    left = state.left
+    running = false
+  } else {
+    left = seconds
+    running = false
+  }
+  const done = left <= 0 && !!state && 'endsAt' in state
+
+  // Tick once a second while running so `left` recomputes; cleared the instant it
+  // hits zero (running flips false) or the step changes (unmount).
+  const everRan = useRef(false)
   useEffect(() => {
     if (!running) return
-    const id = setInterval(() => setLeft((l) => Math.max(0, l - 1)), 1000)
+    everRan.current = true
+    const id = setInterval(() => force((x) => x + 1), 1000)
     return () => clearInterval(id)
   }, [running])
-  // Ring out + stop the moment it reaches zero (separate from the ticker so the
-  // chime fires exactly once, on the running→done edge).
+  // Chime + buzz EXACTLY once, only on a LIVE running→zero edge — never when we load
+  // a timer that already finished while the app was away (everRan stays false then).
+  const chimed = useRef(false)
   useEffect(() => {
-    if (!running || left > 0) return
-    setRunning(false)
-    chime()
-    try {
-      navigator.vibrate?.([200, 100, 200])
-    } catch {
-      /* no vibration API — the chime + the ✓ pulse carry it */
+    if (done && everRan.current && !chimed.current) {
+      chimed.current = true
+      chime()
+      try {
+        navigator.vibrate?.([200, 100, 200])
+      } catch {
+        /* no vibration API — the chime + the ✓ pulse carry it */
+      }
     }
-  }, [left, running])
+    if (!done) chimed.current = false
+  }, [done])
 
   function tap() {
-    if (done) {
-      setLeft(seconds) // restart a finished timer
-      setRunning(true)
-    } else {
-      setRunning((r) => !r) // first tap starts; later taps pause / resume
-    }
+    const now = nowSec()
+    let next: TimerEntry
+    if (running) next = { left } // pause: bank the remaining
+    else if (done) next = { endsAt: now + seconds } // restart a finished timer
+    else if (state && 'left' in state) next = { endsAt: now + state.left } // resume from pause
+    else next = { endsAt: now + seconds } // first start
+    setState(next)
+    onPersist?.(next)
   }
 
   // Fraction elapsed → how far the ring has drained (0 full, 1 empty).
