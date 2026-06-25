@@ -28,10 +28,34 @@
   transform: scale(var(--cast-scale, 1));
 }
 
-/* Use the full TV width so the board lays out in columns (shorter) instead of one tall
-   phone-width stack — less to shrink, bigger result. */
+/* Use the FULL TV width — a landscape screen, not a phone column. */
 .cast .board-wall {
   max-width: none;
+}
+
+/* Cast layout = a column MASONRY that fills the page. The board's grid is already
+   CSS multi-column; on a wide TV we widen the columns and — crucially — UN-SPAN the
+   three full-width bands (L'auto, the drawings strip, the photo) so they flow as
+   ordinary column items instead of tall full-width strips. Those strips (the family
+   photo most of all) were what made the board portrait-tall and forced the whole
+   thing to shrink. Flowing them into the columns fills the landscape and keeps the
+   board short enough to render at (or near) full size. Card order + visibility
+   (lib/boardCards) is untouched — multi-column just wraps the SAME source order. */
+.cast .board-grid {
+  column-width: 20rem;
+  column-gap: 1rem;
+}
+.cast .board-grid > .auto-card,
+.cast .board-grid > .notes--drawings,
+.cast .board-grid > .photo-frame {
+  column-span: none !important;
+  margin: 0 0 1rem !important;
+}
+/* Keep a tiled photo/drawing reasonable inside its column (no giant full-bleed image
+   blowing the height back up). */
+.cast .board-grid > .photo-frame img,
+.cast .board-grid > .notes--drawings img {
+  max-height: 30vh;
 }
 
 /* Hide the interactive device chrome + onboarding — a glance surface, not a control
