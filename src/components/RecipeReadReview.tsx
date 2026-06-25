@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../i18n'
 import { useModal } from '../lib/useModal'
-import { findMeasures } from '../lib/measure'
+import { findMeasures, measuresDisagree } from '../lib/measure'
 import { isSectionHeading, SECTION_PREFIX } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
 import { ZoomableImg } from './ZoomableImg'
@@ -31,10 +31,14 @@ export interface ReadReviewDraft {
 // risk, flagged even when no cup/spoon unit follows.
 const FRACTION = /[¼½¾⅓⅔⅛⅜⅝⅞⅙⅚⅕⅖⅗⅘⅐⅑⅒]|\b\d+\s*\/\s*\d+\b/
 
-// Why a line is worth a second look, or null when it's plain text. A measurement or
-// a fraction is a number-flip risk; a low-confidence word is an OCR-read risk.
-function flagReason(line: string, lowSet: Set<string>): 'number' | 'shaky' | null {
-  if (findMeasures(line).length > 0 || FRACTION.test(line)) return 'number'
+// Why a line is worth a second look, or null when it's plain text, most-serious
+// first: a 'mismatch' is two units on the line that DISAGREE by conversion (one was
+// mis-read); 'number' is a measurement/fraction/"%" (a "%" is the classic OCR misread
+// of ¾/½/¼); 'shaky' is a word the OCR engine itself read with low confidence.
+type FlagReason = 'mismatch' | 'number' | 'shaky'
+function flagReason(line: string, lowSet: Set<string>): FlagReason | null {
+  if (measuresDisagree(line)) return 'mismatch'
+  if (findMeasures(line).length > 0 || FRACTION.test(line) || line.includes('%')) return 'number'
   if (lowSet.size) {
     for (const w of line.toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
       if (w && lowSet.has(w)) return 'shaky'
@@ -42,6 +46,8 @@ function flagReason(line: string, lowSet: Set<string>): 'number' | 'shaky' | nul
   }
   return null
 }
+const reasonTip = (r: FlagReason, t: ReturnType<typeof useT>): string =>
+  r === 'mismatch' ? t.recipes.reviewCheckMismatch : r === 'number' ? t.recipes.reviewCheckNumber : t.recipes.reviewCheckWord
 
 export function RecipeReadReview({
   photoUrl,
@@ -111,7 +117,7 @@ export function RecipeReadReview({
     return (
       <div key={i} className={'read-review__line' + (reason ? ' is-flagged' : '') + (sec ? ' is-sec' : '')}>
         {reason && (
-          <span className="read-review__flag" title={reason === 'number' ? t.recipes.reviewCheckNumber : t.recipes.reviewCheckWord}>
+          <span className="read-review__flag" title={reasonTip(reason, t)}>
             <Icon name="warning-bold" size={14} />
           </span>
         )}

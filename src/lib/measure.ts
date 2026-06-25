@@ -139,6 +139,33 @@ export function findMeasures(line: string): Measure[] {
   return out
 }
 
+// ---- Conversion cross-check (OCR sanity) ---------------------------------- //
+// Québec recipes very often print BOTH units — "1,25 ml (1/4 c. à thé)",
+// "180 ml (3/4 tasse)" — which makes the line self-checking: convert the scoopable
+// imperial amount to millilitres and compare it to the printed ml. A big gap means
+// one was MIS-READ (OCR drops a decimal comma → "1,25 ml" becomes "125 ml", or a
+// vulgar fraction → "%"). We don't guess a fix — we just surface the line so the
+// cook checks it against the photo. Canadian/metric kitchen convention.
+const ML_PER: Record<MeasureUnit, number> = { tsp: 5, tbsp: 15, cup: 250 }
+const METRIC_ML = /(\d+(?:[.,]\d+)?)\s*ml\b/i
+
+// True when a line carries a metric (ml) amount AND a scoopable imperial one that
+// DISAGREE beyond kitchen-rounding tolerance (¼ cup printed as 60 vs the exact 62.5
+// is fine; 125 vs 1.25 is a dropped comma). No ml or no scoop on the line → false.
+export function measuresDisagree(line: string): boolean {
+  const ml = METRIC_ML.exec(line)
+  if (!ml) return false
+  const printed = parseFloat(ml[1].replace(',', '.'))
+  if (!isFinite(printed) || printed <= 0) return false
+  for (const m of findMeasures(line)) {
+    const expected = m.value * ML_PER[m.unit]
+    // Wide band absorbs rounding (5 vs 4.93 ml, 250 vs 240); only real mis-reads —
+    // a dropped comma is ~10–100×, a flipped fraction well outside — trip it.
+    if (printed < expected * 0.55 || printed > expected * 1.8) return true
+  }
+  return false
+}
+
 // ---- Read-aloud phrasing -------------------------------------------------- //
 // Expand a terse "1 c. à thé" into something a TTS voice says naturally in the
 // current language ("une cuillère à thé"). A nicety on top of the pill — never

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findMeasures, qtyKey, spokenMeasure, spokenIngredient } from './measure'
+import { findMeasures, measuresDisagree, qtyKey, spokenMeasure, spokenIngredient } from './measure'
 
 const keys = (line: string) => findMeasures(line).map((m) => m.key)
 const one = (line: string) => {
@@ -81,6 +81,24 @@ describe('qtyKey', () => {
     expect(qtyKey(0.25)).toBe('1/4')
     expect(qtyKey(1 / 3)).toBe('1/3')
     expect(qtyKey(1.5)).toBe('1 1/2')
+  })
+})
+
+describe('measuresDisagree — conversion cross-check', () => {
+  it('flags a dropped decimal comma (1,25 ml read as 125 ml)', () => {
+    expect(measuresDisagree('125 ml (1/4 c. à thé) de vanille')).toBe(true) // ¼ tsp ≈ 1.25 ml, 125 is 100×
+    expect(measuresDisagree('5 ml (3/4 tasse) de farine')).toBe(true) // ¾ cup ≈ 187 ml, not 5
+  })
+  it('accepts matching dual units within kitchen-rounding tolerance', () => {
+    expect(measuresDisagree('1,25 ml (1/4 c. à thé) de vanille')).toBe(false)
+    expect(measuresDisagree('180 ml (3/4 tasse) de farine')).toBe(false) // exact 187.5
+    expect(measuresDisagree('15 ml (1 c. à soupe) d’huile')).toBe(false)
+    expect(measuresDisagree('60 ml (1/4 tasse) de sucre')).toBe(false) // 62.5 exact, 60 within band
+  })
+  it('returns false when a line has no ml or no scoopable unit', () => {
+    expect(measuresDisagree('1/4 c. à thé de sel')).toBe(false)
+    expect(measuresDisagree('250 ml de lait')).toBe(false)
+    expect(measuresDisagree('2 œufs')).toBe(false)
   })
 })
 

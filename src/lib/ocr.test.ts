@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createWorker } from 'tesseract.js'
-import { ocrImage, disposeOcr } from './ocr'
+import { ocrImage, disposeOcr, normalizeOcrText } from './ocr'
 
 // tesseract.js is a heavy WASM package; ocr.ts dynamic-imports it. Mock the module
 // so these stay pure-logic — we're testing the wrapper (degrade-to-empty, text +
@@ -56,6 +56,7 @@ describe('ocrImage', () => {
     }
     mockCreateWorker.mockResolvedValueOnce({
       recognize: vi.fn().mockResolvedValue({ data: page }),
+      setParameters: vi.fn().mockResolvedValue(undefined),
       terminate: vi.fn(),
     } as never)
     const r = await ocrImage(blob)
@@ -64,9 +65,19 @@ describe('ocrImage', () => {
     expect(r.lowConfidenceWords).toEqual(['3/4'])
   })
 
+  it('normalizes vulgar fraction glyphs to ASCII (so measure pills parse them)', () => {
+    expect(normalizeOcrText('¾ tasse de farine')).toBe('3/4 tasse de farine')
+    expect(normalizeOcrText('½ c. à thé de sel')).toBe('1/2 c. à thé de sel')
+    expect(normalizeOcrText('1½ tasse')).toBe('1 1/2 tasse') // mixed number
+    expect(normalizeOcrText('1 ⅓ tasse')).toBe('1 1/3 tasse')
+    expect(normalizeOcrText('farine')).toBe('farine') // untouched
+    expect(normalizeOcrText('')).toBe('')
+  })
+
   it('tolerates a null block tree (no words) without throwing', async () => {
     mockCreateWorker.mockResolvedValueOnce({
       recognize: vi.fn().mockResolvedValue({ data: { text: 'hi', confidence: 50, blocks: null } }),
+      setParameters: vi.fn().mockResolvedValue(undefined),
       terminate: vi.fn(),
     } as never)
     const r = await ocrImage(blob)

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { useAi } from '../lib/ai'
-import { resizeImage, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
+import { resizeImage, resizeImageForOcr, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { ocrImage, disposeOcr } from '../lib/ocr'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { RecipeReadReview, type ReadReviewDraft } from './RecipeReadReview'
@@ -317,7 +317,7 @@ export function RecipeForm({
       let confSum = 0
       let confN = 0
       for (let i = 0; i < files.length; i++) {
-        const big = await resizeImage(files[i], OCR_MAX)
+        const big = await resizeImageForOcr(files[i], OCR_MAX)
         const res = await ocrImage(big, (p) => setReadProgress((i + p) / files.length))
         if (res.text) texts.push(res.text)
         if (res.confidence > 0) {

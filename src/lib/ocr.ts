@@ -39,19 +39,44 @@ function getWorker(onProgress?: (fraction: number) => void): Promise<Worker | nu
     workerPromise = (async () => {
       try {
         const { createWorker } = await import('tesseract.js')
-        return await createWorker(['fra', 'eng'], 1, {
+        const worker = await createWorker(['fra', 'eng'], 1, {
           logger: (m) => {
             // Only the recognize phase carries a meaningful 0..1 for the "Lecture…"
             // progress; download/init phases just spin.
             if (m.status === 'recognizing text' && typeof m.progress === 'number') onProgress?.(m.progress)
           },
         })
+        // Recipe-tuned recognition. A recipe card almost never prints a literal "%",
+        // yet "%" is Tesseract's most common misread of a vulgar fraction (¾/½/¼ share
+        // its diagonal-with-circles shape) — blacklisting it nudges the engine to its
+        // next-best guess (often the real fraction). user_defined_dpi steadies digit/
+        // punctuation calls (a dropped comma turns "1,25 ml" into "125 ml").
+        await worker.setParameters({ tessedit_char_blacklist: '%', user_defined_dpi: '300' })
+        return worker
       } catch {
         return null
       }
     })()
   }
   return workerPromise
+}
+
+// Tesseract's vulgar-fraction recognition is shaky; when it DOES emit a glyph, fold
+// it to the ASCII form the rest of the app expects ("¾"→"3/4", "1½"→"1 1/2"). Pure;
+// empty in → empty out. (It can't recover a fraction already lost to "%" — that's
+// what the blacklist above + the verify panel's flagging are for.)
+const VULGAR: Record<string, string> = {
+  '¼': '1/4', '½': '1/2', '¾': '3/4', '⅐': '1/7', '⅑': '1/9', '⅒': '1/10',
+  '⅓': '1/3', '⅔': '2/3', '⅕': '1/5', '⅖': '2/5', '⅗': '3/5', '⅘': '4/5',
+  '⅙': '1/6', '⅚': '5/6', '⅛': '1/8', '⅜': '3/8', '⅝': '5/8', '⅞': '7/8',
+}
+const VULGAR_CLASS = /[¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/g
+export function normalizeOcrText(text: string): string {
+  if (!text) return text
+  return text
+    // A whole number glued to a fraction glyph ("1½" / "1 ½") → mixed "1 1/2".
+    .replace(/(\d)\s*([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/g, (_, d, g) => `${d} ${VULGAR[g]}`)
+    .replace(VULGAR_CLASS, (g) => VULGAR[g])
 }
 
 // Walk the OCR page tree (blocks → paragraphs → lines → words) collecting words
@@ -87,7 +112,7 @@ export async function ocrImage(image: Blob, onProgress?: (fraction: number) => v
     const worker = await getWorker(onProgress)
     if (!worker) return EMPTY
     const { data } = await worker.recognize(image)
-    const text = typeof data.text === 'string' ? data.text.trim() : ''
+    const text = normalizeOcrText(typeof data.text === 'string' ? data.text.trim() : '')
     return {
       text,
       confidence: typeof data.confidence === 'number' ? data.confidence : 0,
