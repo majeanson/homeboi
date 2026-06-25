@@ -16,15 +16,15 @@
   pointer-events: none;
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center; /* centre the board both ways so it fills the TV nicely */
 }
 
 /* The scale-to-fit wrapper: CastPage sets --cast-scale (≤ 1) from the board's natural
-   size vs the viewport. transform-origin top so it pins under the top edge; the board
+   size vs the viewport. Centred origin so it stays centred at any scale; the board
    keeps its normal type size — we shrink the whole surface, we don't restyle it. */
 .cast__fit {
   width: 100%;
-  transform-origin: top center;
+  transform-origin: center center;
   transform: scale(var(--cast-scale, 1));
 }
 
@@ -43,6 +43,9 @@
 .cast .help-toggle,
 .cast .board-actions,
 .cast .welcome-card,
-.cast .app-head__search {
+.cast .app-head__search,
+.cast .section-intro, /* the per-section tutorial intro band (« Faire le tour ») */
+.cast .sheet,         /* any bottom sheet (profile picker « Qui es-tu? », detail peek) */
+.cast .scrim {        /* …and its dimming backdrop — never on a passive TV board */
   display: none !important;
 }
