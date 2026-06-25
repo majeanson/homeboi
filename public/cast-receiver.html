@@ -51,19 +51,25 @@
         var frame = document.getElementById('frame')
         var wait = document.getElementById('wait')
 
-        // Point the iframe at /cast. With a token we pass it as ?guest= so main.tsx stashes
-        // it; without one we still try (the Chromecast may hold a token in its webview
-        // storage from a previous cast — instant resume). A fresh device with no token shows
-        // the app's pair prompt until the sender's token message arrives, which reloads here.
-        function showBoard(token) {
-          frame.src = '/cast' + (token ? '?guest=' + encodeURIComponent(token) : '')
+        // Point the iframe at the chosen TV scene. With a token we pass it as ?guest= so
+        // main.tsx stashes it; without one we still try (the Chromecast may hold a token in
+        // its webview storage from a previous cast — instant resume). A fresh device with no
+        // token shows the app's pair prompt until the sender's token message arrives, which
+        // reloads here. `scene` selects the face: 'ambient' = the screensaver (a permanent
+        // photo-frame), 'welcome' = the visitor window (/welcome), anything else = the board.
+        function showBoard(token, scene) {
+          var base = scene === 'welcome' ? '/welcome' : '/cast'
+          var params = []
+          if (scene === 'ambient') params.push('scene=ambient')
+          if (token) params.push('guest=' + encodeURIComponent(token))
+          frame.src = base + (params.length ? '?' + params.join('&') : '')
           frame.hidden = false
           wait.style.display = 'none'
         }
 
         var context = cast.framework.CastReceiverContext.getInstance()
         context.addCustomMessageListener(NS, function (e) {
-          if (e && e.data && e.data.token) showBoard(e.data.token)
+          if (e && e.data && e.data.token) showBoard(e.data.token, e.data.scene)
         })
 
         var options = new cast.framework.CastReceiverOptions()
@@ -75,8 +81,8 @@
         context.start(options)
 
         // Try a stored-token (or pair-prompt) resume right away; the token message, when it
-        // arrives, reloads the iframe with the fresh credential.
-        showBoard(null)
+        // arrives, reloads the iframe with the fresh credential + chosen scene.
+        showBoard(null, 'board')
       })()
     </script>
   </body>

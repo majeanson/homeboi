@@ -8,6 +8,7 @@ import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { useModal } from '../lib/useModal'
+import { warmImageCache } from '../lib/cacheWarm'
 
 // Full-flyer viewer. A Flipp flyer page is a canvas of item clippings positioned
 // by coordinates (no scanned page image), so we fetch /api/flyer and reconstruct
@@ -130,7 +131,9 @@ export async function prefetchFlyer(qc: QueryClient, flyerId: number): Promise<v
     })
     .catch(() => null)
   if (!data) return
-  for (const it of data.items) if (it.image) new Image().src = proxied(it.image)
+  // fetch() each clipping (not `new Image()`, which can satisfy from the browser memory
+  // cache without ever populating the SW cache-first store) — see lib/cacheWarm.
+  await warmImageCache(data.items.map((it) => proxied(it.image)))
 }
 
 export function FlyerViewer({
@@ -230,18 +233,8 @@ export function FlyerViewer({
     const urls = data.items.map((it) => proxied(it.image)).filter(Boolean)
     if (!urls.length) return
     setDl({ state: 'busy', done: 0, total: urls.length })
-    let done = 0
-    let next = 0
-    // A small pool keeps the warm-up off the main work without hammering the proxy.
-    const pull = async () => {
-      while (next < urls.length) {
-        const u = urls[next++]
-        await fetch(u).catch(() => {})
-        done++
-        setDl((d) => (d.state === 'busy' ? { ...d, done } : d))
-      }
-    }
-    await Promise.all(Array.from({ length: Math.min(6, urls.length) }, pull))
+    // Shared cache-warm pool, with a progress tick driving the bar (see lib/cacheWarm).
+    await warmImageCache(urls, 6, (done) => setDl((d) => (d.state === 'busy' ? { ...d, done } : d)))
     try {
       localStorage.setItem(offlineKey, '1')
     } catch {
@@ -249,6 +242,19 @@ export function FlyerViewer({
     }
     setDl({ state: 'done', done: urls.length, total: urls.length })
   }
+
+  // #21 — eager warm on OPEN: as soon as the flyer's data lands, quietly fetch every
+  // clipping into the cache-first store (best-effort, no progress UI) so browsing every
+  // page is instant and the whole flyer survives going offline at the store — without
+  // waiting for the operator to tap "download for offline". On WebKit there's no
+  // Background Fetch, so this in-session warm is the way. Runs once per flyer; if the
+  // operator already downloaded it, the bytes are cached and these fetches are cheap.
+  const warmedRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!data || warmedRef.current === flyerId) return
+    warmedRef.current = flyerId
+    void warmImageCache(data.items.map((it) => proxied(it.image)))
+  }, [data, flyerId])
 
   // The selected item drives the ring, the directions banner, and the detail
   // card. We track it by ARRAY INDEX, not id: many flyer items come back with a

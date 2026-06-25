@@ -21,6 +21,8 @@ import { InlineIcon } from '../Icon'
 import { StatusMessage } from '../StatusMessage'
 import { QrCode } from '../QrCode'
 import { Chip } from '../Chip'
+import { SubTabs } from '../SubTabs'
+import { castSenderPossible, castToSalon } from '../../lib/cast'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 
 // Typed read-only share links. The operator picks a KIND (what the link can see)
@@ -95,6 +97,9 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   // Issuing a share link is operator-only — a read-only guest can't mint more, so
   // the whole section is hidden for them.
   const ro = isGuest()
+  // The two ways to share, as sub-tabs ("one job at a time"): a link for someone's
+  // PHONE (the typed read-only kinds), or a face cast to the living-room TV.
+  const [subTab, setSubTab] = useState<'phone' | 'salon'>('phone')
   const [kind, setKind] = useState<GuestKind>('showcase')
   const [ttl, setTtl] = useState(DEFAULT_TTL.showcase)
   const [busy, setBusy] = useState(false)
@@ -191,6 +196,20 @@ export function GuestSection({ help }: { help?: HelpMode }) {
 
   return (
     <>
+      <SubTabs
+        options={[
+          { key: 'phone', label: t.guest.onPhone },
+          { key: 'salon', label: t.guest.toTv },
+        ]}
+        value={subTab}
+        onSelect={setSubTab}
+        ariaLabel={t.guest.title}
+      />
+
+      {subTab === 'salon' && <CastTvSection help={help} />}
+
+      {subTab === 'phone' && (
+        <>
       <OperatorSection title={t.guest.title} help={help} helpKey="guest">
         <label className="operator__seg">
           <span className="operator__seg-label mono">{t.guest.kindLabel}</span>
@@ -319,6 +338,8 @@ export function GuestSection({ help }: { help?: HelpMode }) {
       <IntakeReview help={help} />
 
       <ShareInfoEditor help={help} />
+        </>
+      )}
     </>
   )
 }
@@ -399,6 +420,152 @@ function ShareInfoEditor({ help }: { help?: HelpMode }) {
       <button type="button" className="btn" onClick={save} disabled={saving}>
         <InlineIcon name="check-bold" /> {saved ? t.shareMode.saved : t.shareMode.save}
       </button>
+    </OperatorSection>
+  )
+}
+
+// « Diffuser au salon » — set up a permanent read-only TV face for the living room.
+// Three scenes share one flow (pick the face, mint a read-only token, then either
+// cast from Chrome — the bonus one-tap, only on a Chromium device — or, the path that
+// works for EVERYONE since iOS can't START a cast, open the link/QR once in any TV
+// browser so it holds the screen as a permanent second display):
+//   board   → the full board                       (showcase token, /cast)
+//   ambient → the screensaver: clock + photo frame (showcase token, /cast?scene=ambient)
+//   welcome → the visitor window: wifi + consignes (welcome token,  /welcome)
+// It reuses the showcase kind for board/ambient on purpose: the full board reads
+// board+meals+recipes+household on mount, so a narrower scope would 403 its own deps.
+type CastScene = 'board' | 'ambient' | 'welcome'
+const CAST_SCENES: Record<CastScene, { kind: GuestKind; link: (origin: string, token: string) => string }> = {
+  board: { kind: 'showcase', link: (o, tk) => `${o}/cast?guest=${encodeURIComponent(tk)}` },
+  ambient: { kind: 'showcase', link: (o, tk) => `${o}/cast?scene=ambient&guest=${encodeURIComponent(tk)}` },
+  welcome: { kind: 'welcome', link: (o, tk) => `${o}/welcome?guest=${encodeURIComponent(tk)}` },
+}
+
+function CastTvSection({ help }: { help?: HelpMode }) {
+  const t = useT()
+  // Minting a link is operator-only — a read-only guest can't hand out access.
+  const ro = isGuest()
+  const [scene, setScene] = useState<CastScene>('board')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  // The raw token (the sender needs it) — the shareable link is derived from it.
+  const [token, setToken] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [casting, setCasting] = useState(false)
+  // Show the one-tap cast button only where the Web Sender can actually run (Chrome
+  // desktop/Android, with an App ID configured) — never on iOS.
+  const canCast = castSenderPossible()
+  if (ro) return null
+  const cfg = CAST_SCENES[scene]
+  const link = token ? cfg.link(window.location.origin, token) : null
+
+  // Mint a fresh read-only TV token (the scene's kind, 7-day clamp) and remember it.
+  async function mint(): Promise<string> {
+    const res = await api<{ guestToken: string }>('guest/start', {
+      method: 'POST',
+      body: { kind: cfg.kind, ttlSeconds: 7 * 24 * 3600 },
+    })
+    setToken(res.guestToken)
+    return res.guestToken
+  }
+
+  function chooseScene(s: CastScene) {
+    setScene(s)
+    setToken(null) // a token minted for the old scene's link no longer matches it
+    setCopied(false)
+    setErr(null)
+  }
+
+  async function generate() {
+    if (busy) return
+    setBusy(true)
+    setErr(null)
+    setCopied(false)
+    try {
+      await mint()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // One-tap cast (Chrome only): ensure a token, then open the device picker + launch
+  // the receiver, handing it the token + chosen scene. Any failure (cancelled picker,
+  // non-Chrome) falls back to the link/QR below.
+  async function castNow() {
+    if (casting) return
+    setCasting(true)
+    setErr(null)
+    try {
+      const tok = token ?? (await mint())
+      await castToSalon(tok, scene)
+    } catch {
+      setErr(t.operator.castFailed)
+    } finally {
+      setCasting(false)
+    }
+  }
+
+  async function copy() {
+    if (!link) return
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+    } catch {
+      /* clipboard blocked — the link is shown for manual copy */
+    }
+  }
+
+  return (
+    <OperatorSection title={t.operator.castTitle} help={help} helpKey="guest">
+      <p className="operator__hint mono">{t.operator.castIntro}</p>
+      <label className="operator__seg">
+        <span className="operator__seg-label mono">{t.operator.castSceneLabel}</span>
+        <select className="input" value={scene} onChange={(e) => chooseScene(e.target.value as CastScene)} disabled={busy}>
+          <option value="board">{t.operator.castSceneBoard}</option>
+          <option value="ambient">{t.operator.castSceneAmbient}</option>
+          <option value="welcome">{t.operator.castSceneWelcome}</option>
+        </select>
+      </label>
+      <p className="operator__hint mono">{t.operator.castSceneHint[scene]}</p>
+      <div className="operator__inline-form">
+        {canCast && (
+          <button type="button" className="btn btn--primary" onClick={castNow} disabled={casting}>
+            <InlineIcon name="key-bold" /> {casting ? t.operator.castNowBusy : t.operator.castNow}
+          </button>
+        )}
+        <button type="button" className={`btn${canCast ? '' : ' btn--primary'}`} onClick={generate} disabled={busy}>
+          <InlineIcon name="link-bold" /> {busy ? t.guest.generating : t.operator.castGenerate}
+        </button>
+      </div>
+      {canCast && <p className="operator__seg-hint mono">{t.operator.castNowHint}</p>}
+      {err && <StatusMessage tone="error">{err}</StatusMessage>}
+      {link && (
+        <div className="operator__guest-link">
+          <p className="operator__hint mono">{t.operator.castReady}</p>
+          <input
+            className="input mono"
+            readOnly
+            value={link}
+            onFocus={(e) => e.target.select()}
+            aria-label={t.operator.castTitle}
+          />
+          <div className="operator__inline-form">
+            <button type="button" className="btn" onClick={copy}>
+              <InlineIcon name="link-bold" /> {copied ? t.guest.copied : t.guest.copy}
+            </button>
+          </div>
+          {/* Scan it off the wall tablet to open on the TV/computer, or copy the link. */}
+          <QrCode value={link} />
+          <ol className="operator__hint mono">
+            <li>{t.operator.castStep1}</li>
+            <li>{t.operator.castStep2}</li>
+            <li>{t.operator.castStep3}</li>
+          </ol>
+          <p className="operator__seg-hint mono">{t.operator.castCaveat}</p>
+        </div>
+      )}
     </OperatorSection>
   )
 }

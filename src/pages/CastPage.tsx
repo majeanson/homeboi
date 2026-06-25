@@ -1,8 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { Board } from './Board'
+import { AmbientScreen } from '../components/AmbientScreen'
 import { DetailProvider } from '../components/detail/DetailProvider'
 import { useProfile } from '../lib/profile'
 import { isGuest } from '../lib/device'
+
+const noop = () => {}
 
 // « Diffuser au salon » — the living-room TV surface. It reuses the REAL <Board/>
 // (rather than a forked read-only layout that would drift) rendered passive and
@@ -20,6 +23,12 @@ export function CastPage() {
   const guest = isGuest()
   const { setMemberId } = useProfile()
   const fitRef = useRef<HTMLDivElement>(null)
+  // Which TV scene to render. `?scene=ambient` is the calm screensaver face — a
+  // permanent photo-frame / clock "second screen" for the living room; anything else
+  // (default) is the full board. main.tsx strips `?guest` but keeps the remaining
+  // query, so this param survives the guest-token scrub before we read it.
+  const scene = new URLSearchParams(window.location.search).get('scene') ?? 'board'
+
   // A TV is shared: clear any picked face so the board shows everyone (Maisonnée) —
   // but only when actually launched as a cast/guest, so an operator previewing /cast
   // in their own signed-in browser doesn't lose their picked face.
@@ -33,6 +42,9 @@ export function CastPage() {
   // PAST 1× (we shrink to fit, never zoom in). Recomputes as the board polls in fresh
   // data (height changes), on resize, and on a slow interval as a backstop.
   useEffect(() => {
+    // Only the Board scene shrinks to fit — AmbientScreen is a full-viewport fixed
+    // overlay that already sizes itself to any wall, so it needs no measurement.
+    if (scene !== 'board') return
     const fit = fitRef.current
     if (!fit) return
     const apply = () => {
@@ -52,10 +64,22 @@ export function CastPage() {
       window.removeEventListener('resize', apply)
       window.clearInterval(id)
     }
-  }, [])
+  }, [scene])
+
+  // The calm screensaver face on the TV — a permanent photo-frame + clock "second
+  // screen". It's a full-screen fixed overlay, so it sits directly inside `.cast`
+  // (no shrink-to-fit wrapper); pointer-events:none keeps it passive and the TV can't
+  // wake it, so onWake is a no-op. Boots on the showcase token like the board scene.
+  if (scene === 'ambient') {
+    return (
+      <div className="cast" data-cast="ambient">
+        <AmbientScreen show onWake={noop} />
+      </div>
+    )
+  }
 
   return (
-    <div className="cast" data-cast="1">
+    <div className="cast" data-cast="board">
       {/* DetailProvider stays OUTSIDE .cast__fit: its always-mounted (closed) detail
           Sheet is position:fixed, and a transformed ancestor would re-anchor its
           off-screen position so it peeks in. Outside the transform it sits off-screen
