@@ -62,13 +62,14 @@ function getWorker(onProgress?: (fraction: number) => void): Promise<Worker | nu
           return null // no models at all → caller degrades to the AI vision read
         }
       }
-      // Recipe-tuned recognition. A recipe card almost never prints a literal "%",
-      // yet "%" is Tesseract's most common misread of a vulgar fraction (¾/½/¼ share
-      // its diagonal-with-circles shape) — blacklisting it nudges the engine to its
-      // next-best guess (often the real fraction). user_defined_dpi steadies digit/
-      // punctuation calls (a dropped comma turns "1,25 ml" into "125 ml").
+      // Steady digit/punctuation calls (a dropped comma turns "1,25 ml" into "125 ml").
+      // NOTE: we deliberately do NOT blacklist "%" here — it seems clever (a recipe
+      // rarely prints "%", and "%" is a common misread of ¾/½/¼) but in practice it
+      // just pushes the engine to OTHER junk ("Ÿ", "A", "R"), which is harder to spot
+      // and to flag than a "%". The vulgar fraction is rescued from the metric instead
+      // (measure.ts repairImperialFromMetric), since the plain "60 ml" reads reliably.
       try {
-        await worker.setParameters({ tessedit_char_blacklist: '%', user_defined_dpi: '300' })
+        await worker.setParameters({ user_defined_dpi: '300' })
       } catch {
         /* a model variant may reject a param — recognition still works without it */
       }

@@ -5,6 +5,7 @@ import { api, isStatus } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { resizeImage, resizeImageForOcr, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { ocrImage, mergeOcrPages, disposeOcr } from '../lib/ocr'
+import { repairImperialFromMetric } from '../lib/measure'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { RecipeReadReview, type ReadReviewDraft } from './RecipeReadReview'
 import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
@@ -355,6 +356,11 @@ export function RecipeForm({
         setReadMsg(t.recipes.readFail)
         return
       }
+      // Rescue garbled imperial fractions from the (reliably-read) millilitres: a
+      // recipe printing "60 ml (¼ de tasse)" keeps the "60 ml" but loses the tiny ¼,
+      // so derive it back. No-op on lines without the "n ml (… unit …)" shape.
+      draft.ingredients = draft.ingredients.map(repairImperialFromMetric)
+      draft.steps = draft.steps.map(repairImperialFromMetric)
       // Hand off to the verify panel rather than applying straight to the form: the
       // cook glances at the photo, confirms the flagged numbers, THEN it lands.
       setReadReview({

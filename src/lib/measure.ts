@@ -65,10 +65,16 @@ const TBSP =
   `|tbsp|tbs|tablespoons?`
 const CUP = `tasses?|cups?`
 
+// An optional connector between the amount and the unit — QC recipes write "¼ DE
+// tasse" (a quarter OF a cup), not just "¼ tasse". Optional, so "1 c. à thé" and
+// "3/4 tasse" still match, while "1/4 de tasse" now reads as a quarter-cup (needed
+// for the colour pills AND the metric→fraction repair below).
+const CONNECT = `(?:de\\s+|d['’]\\s*|of\\s+)?`
+
 // One scan over the line. The negative lookahead stops a unit from matching the
 // head of a longer word ("2 cups" yes, "2 cupcakes" no).
 const TOKEN = new RegExp(
-  `(?<qty>${Q})\\s*(?:(?<tsp>${TSP})|(?<tbsp>${TBSP})|(?<cup>${CUP}))(?![a-zà-ÿ])`,
+  `(?<qty>${Q})\\s*${CONNECT}(?:(?<tsp>${TSP})|(?<tbsp>${TBSP})|(?<cup>${CUP}))(?![a-zà-ÿ])`,
   'giu',
 )
 
@@ -164,6 +170,54 @@ export function measuresDisagree(line: string): boolean {
     if (printed < expected * 0.55 || printed > expected * 1.8) return true
   }
   return false
+}
+
+// ---- Repair a garbled fraction FROM the metric (OCR rescue) --------------- //
+// The key insight from real recipe photos: the plain "60 ml" survives OCR perfectly,
+// but the tiny vulgar fraction beside it ("¼ de tasse") comes out as junk ("Ÿ", "A",
+// "%"). Since the recipe prints BOTH and they're redundant, we rebuild the imperial
+// fraction FROM the reliable millilitres: 60 ml ÷ 250 ml/cup ≈ ¼ → "1/4 de tasse".
+// Conservative — only when the ml lands cleanly on a standard kitchen fraction; a
+// nonsense value (a dropped comma made "1,25 ml" into "125 ml" → 25 tsp) is left as
+// is for the verify panel to flag. The unit word survives OCR; only its amount didn't.
+
+// Standard kitchen amounts a derived value may snap to. Ascending, generous tolerance
+// absorbs QC rounding (¼ cup is printed 60 ml, not 62.5).
+const NICE_AMOUNTS: [number, string][] = [
+  [1 / 8, '1/8'], [1 / 4, '1/4'], [1 / 3, '1/3'], [1 / 2, '1/2'], [2 / 3, '2/3'], [3 / 4, '3/4'],
+  [1, '1'], [1.25, '1 1/4'], [4 / 3, '1 1/3'], [1.5, '1 1/2'], [2, '2'], [2.5, '2 1/2'], [3, '3'], [4, '4'],
+]
+function snapAmount(v: number): string | null {
+  for (const [val, sym] of NICE_AMOUNTS) if (Math.abs(v - val) <= val * 0.12) return sym
+  return null
+}
+// The unit named inside the parenthetical (even when its amount is garbled), and the
+// millilitres it represents — Canadian/metric kitchen convention.
+const UNIT_IN_PAREN =
+  /cuill[èe]res?\s*(?:à|a)\s*(?:soupe|table|th[ée]s?|caf[ée]s?)|c\.?\s*(?:à|a)\.?\s*(?:soupe|table|th[ée]s?|caf[ée]s?|[tcs])\b\.?|tasses?|cups?|tbsp|tbs|tsp/i
+const mlPerUnit = (unit: string): number =>
+  /tasse|cup/i.test(unit) ? 250 : /soupe|table|tbsp|tbs|(?:à|a)\.?\s*s\b/i.test(unit) ? 15 : 5
+const ML_PAREN = /(\d+(?:[.,]\d+)?)\s*ml\s*\(\s*([^)]*?)\s*\)/i
+
+// Rewrite "60 ml (<garbled> de tasse)" → "60 ml (1/4 de tasse)" using the ml. Returns
+// the line unchanged when there's no "<n> ml ( … unit … )" shape, or when the ml
+// doesn't convert to a clean fraction (we never invent an amount).
+export function repairImperialFromMetric(line: string): string {
+  const m = ML_PAREN.exec(line)
+  if (!m) return line
+  const ml = parseFloat(m[1].replace(',', '.'))
+  if (!isFinite(ml) || ml <= 0) return line
+  const inner = m[2]
+  const u = UNIT_IN_PAREN.exec(inner)
+  if (!u) return line
+  const snapped = snapAmount(ml / mlPerUnit(u[0]))
+  if (!snapped) return line
+  // Keep the unit phrase verbatim (including a leading "de "); swap only the amount.
+  let start = u.index
+  const de = inner.slice(0, start).match(/\b(?:de|d['’]|of)\s*$/i)
+  if (de) start -= de[0].length
+  const unitPhrase = inner.slice(start).trim()
+  return line.slice(0, m.index) + `${m[1]} ml (${snapped} ${unitPhrase})` + line.slice(m.index + m[0].length)
 }
 
 // ---- Read-aloud phrasing -------------------------------------------------- //

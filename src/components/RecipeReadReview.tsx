@@ -35,10 +35,22 @@ const FRACTION = /[¼½¾⅓⅔⅛⅜⅝⅞⅙⅚⅕⅖⅗⅘⅐⅑⅒]|\b\d+\s*
 // first: a 'mismatch' is two units on the line that DISAGREE by conversion (one was
 // mis-read); 'number' is a measurement/fraction/"%" (a "%" is the classic OCR misread
 // of ¾/½/¼); 'shaky' is a word the OCR engine itself read with low confidence.
+// A unit word (cup/spoon), so we can tell "a measurement whose amount didn't read"
+// from plain prose. Paired with a metric ml on the line, an unreadable amount is the
+// garbled-fraction signature ("125 ml (A de c. à thé)").
+const UNIT_WORD = /\b(?:tasses?|cups?|cuill[èe]res?|tbsp|tbs|tsp)\b|c\.?\s*(?:à|a)\b/i
+
+// Why a line is worth a second look, or null when it's clean. We flag the RISKY
+// lines (a number that doesn't add up, a "%", a measurement whose amount is garbled,
+// a low-confidence word) — NOT every measurement, so a correctly-read "60 ml (1/4 de
+// tasse)" stays calm while "125 ml (A de c. à thé)" stands out.
 type FlagReason = 'mismatch' | 'number' | 'shaky'
 function flagReason(line: string, lowSet: Set<string>): FlagReason | null {
   if (measuresDisagree(line)) return 'mismatch'
-  if (findMeasures(line).length > 0 || FRACTION.test(line) || line.includes('%')) return 'number'
+  if (line.includes('%') || FRACTION.test(line)) return 'number' // a stray fraction glyph the repair couldn't place
+  // A "<n> ml ( … unit … )" line whose imperial amount we can't read = a fraction the
+  // OCR mangled (and the metric repair couldn't rescue) — exactly what to double-check.
+  if (/\d\s*ml\b/i.test(line) && UNIT_WORD.test(line) && findMeasures(line).length === 0) return 'number'
   if (lowSet.size) {
     for (const w of line.toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
       if (w && lowSet.has(w)) return 'shaky'

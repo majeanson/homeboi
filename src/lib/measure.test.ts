@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { findMeasures, measuresDisagree, qtyKey, spokenMeasure, spokenIngredient } from './measure'
+import { findMeasures, measuresDisagree, repairImperialFromMetric, qtyKey, spokenMeasure, spokenIngredient } from './measure'
 
 const keys = (line: string) => findMeasures(line).map((m) => m.key)
 const one = (line: string) => {
@@ -99,6 +99,37 @@ describe('measuresDisagree — conversion cross-check', () => {
     expect(measuresDisagree('1/4 c. à thé de sel')).toBe(false)
     expect(measuresDisagree('250 ml de lait')).toBe(false)
     expect(measuresDisagree('2 œufs')).toBe(false)
+  })
+})
+
+describe('findMeasures — "de tasse" connector (FR)', () => {
+  it('reads "¼ de tasse" / "1/4 de tasse" as a quarter-cup (so the pill shows)', () => {
+    expect(keys('60 ml (1/4 de tasse) de beurre')).toEqual(['1/4|cup'])
+    expect(keys('¼ de tasse de farine')).toEqual(['1/4|cup'])
+    expect(keys('1/3 de tasse de cassonade')).toEqual(['1/3|cup'])
+  })
+})
+
+describe('repairImperialFromMetric — rescue a fraction from the ml (FR recipes)', () => {
+  it('derives the garbled fraction from the reliable millilitres', () => {
+    expect(repairImperialFromMetric('60 ml (Ÿ de tasse) de beurre ramolli')).toBe(
+      '60 ml (1/4 de tasse) de beurre ramolli',
+    )
+    expect(repairImperialFromMetric('80 ml (A de tasse) de cassonade')).toBe('80 ml (1/3 de tasse) de cassonade')
+    expect(repairImperialFromMetric('125 ml (R tasse) de pépites')).toBe('125 ml (1/2 tasse) de pépites')
+  })
+  it('leaves already-correct lines untouched', () => {
+    expect(repairImperialFromMetric('250 ml (1 tasse) de farine')).toBe('250 ml (1 tasse) de farine')
+    expect(repairImperialFromMetric('5 ml (1 c. à thé) de vanille')).toBe('5 ml (1 c. à thé) de vanille')
+    expect(repairImperialFromMetric('30 ml (2 c. à soupe) de cacao')).toBe('30 ml (2 c. à soupe) de cacao')
+  })
+  it('does NOT invent an amount when the ml is itself nonsense (dropped comma)', () => {
+    // "1,25 ml (¼ c. à thé)" mis-read as "125 ml (…)" → 25 tsp, no clean snap → left for the panel to flag
+    expect(repairImperialFromMetric('125 ml (A de c. à thé) de sel')).toBe('125 ml (A de c. à thé) de sel')
+  })
+  it('is a no-op on lines without the "n ml ( … unit … )" shape', () => {
+    expect(repairImperialFromMetric('1 gros œuf')).toBe('1 gros œuf')
+    expect(repairImperialFromMetric('Mélanger le tout')).toBe('Mélanger le tout')
   })
 })
 
