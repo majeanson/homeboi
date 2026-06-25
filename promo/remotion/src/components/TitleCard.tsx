@@ -1,5 +1,5 @@
 import React from 'react'
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion'
+import { AbsoluteFill, Audio, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion'
 import type { Bi, Lang, Orientation } from '../manifest'
 import { COLORS, DISPLAY, FONT, INK, SURROUND, type Surround } from '../theme'
 
@@ -26,6 +26,8 @@ export const TitleCard: React.FC<{
 
   return (
     <AbsoluteFill style={{ background: SURROUND[surround], justifyContent: 'center', alignItems: 'center', opacity: Math.min(enter, exit) }}>
+      {/* A soft transition whoosh as the card lands. */}
+      <Audio src={staticFile('music/sfx-whoosh.wav')} volume={0.16} />
       {/* subtle vignette for depth */}
       <AbsoluteFill style={{ background: 'radial-gradient(70% 70% at 50% 45%, transparent 55%, rgba(0,0,0,0.35) 100%)' }} />
       <div style={{ textAlign: 'center', padding: '0 8%' }}>

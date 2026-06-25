@@ -37,6 +37,18 @@ export async function preparePage(
   await page.route('**/api/deals*', async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PROMO_DEALS) })
   })
+  // The ＋ capture spine POSTs /api/capture and shows « Ajouté comme … ». The generic
+  // mock returns {ok:true} (no routing → degraded fallback). Route it cleanly so the
+  // quick-add demo shows the AI filing a typed phrase as an event. Bilingual via X-Lang.
+  await page.route('**/api/capture', async (route) => {
+    const en = (route.request().headers()['x-lang'] || '').toLowerCase().startsWith('en')
+    const label = en ? 'an event' : 'un événement'
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ type: 'event', degraded: false, routed: { kind: 'event', label } }),
+    })
+  })
   // Freeze the clock so every beat's date agrees (and runs are deterministic).
   await page.clock.setFixedTime(new Date(PROMO_NOW))
   await page.addInitScript(() => {

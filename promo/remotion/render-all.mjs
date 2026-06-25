@@ -48,26 +48,51 @@ if (scripts.length === 0) {
 
 mkdirSync('out', { recursive: true })
 
-let failures = 0
-for (const { id, cuts } of scripts) {
-  for (const orientation of ORIENTATIONS) {
-    for (const lang of LANGS) {
-      for (const cut of cuts) {
-        const comp = `${id}-${orientation}-${lang}-${cut}`
-        const out = `out/${comp}.mp4`
-        console.log(`\n▶ rendering ${comp} → ${out} (concurrency=${CONCURRENCY})`)
-        const res = spawnSync('npx', ['remotion', 'render', comp, out, `--concurrency=${CONCURRENCY}`], {
-          stdio: 'inherit',
-          shell: process.platform === 'win32',
-        })
-        if (res.status !== 0) {
-          failures++
-          console.error(`✗ ${comp} failed (exit ${res.status})`)
-        }
-      }
+// Reclaim memory BETWEEN comps. At 2× retina the per-frame footprint is ~4× and a
+// lingering Chrome/compositor from the just-finished comp starves the next one — a
+// single comp renders fine, but 8-in-a-row exhausted memory ("readFile"/resource
+// errors mid-render). Kill any stray render child processes and pause so the OS
+// reclaims the pages before the next render starts.
+function reclaim() {
+  if (process.platform === 'win32') {
+    for (const im of ['chrome-headless-shell.exe', 'remotion.exe']) {
+      spawnSync('taskkill', ['/F', '/T', '/IM', im], { stdio: 'ignore', shell: true })
     }
+  } else {
+    spawnSync('pkill', ['-f', 'chrome-headless-shell'], { stdio: 'ignore' })
   }
+  spawnSync(process.execPath, ['-e', 'setTimeout(()=>{}, 3000)'], { stdio: 'ignore' }) // settle
 }
+
+let failures = 0
+const comps = []
+for (const { id, cuts } of scripts)
+  for (const orientation of ORIENTATIONS)
+    for (const lang of LANGS) for (const cut of cuts) comps.push(`${id}-${orientation}-${lang}-${cut}`)
+
+const renderOne = (comp, out) =>
+  spawnSync('npx', ['remotion', 'render', comp, out, `--concurrency=${CONCURRENCY}`], {
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  })
+
+comps.forEach((comp, i) => {
+  const out = `out/${comp}.mp4`
+  console.log(`\n▶ rendering ${comp} → ${out} (concurrency=${CONCURRENCY})`)
+  let res = renderOne(comp, out)
+  // The Rust compositor can crash mid-render under transient memory pressure (an
+  // identical comp succeeds on a fresh start). Reclaim + retry once before giving up.
+  if (res.status !== 0) {
+    console.error(`… ${comp} failed (exit ${res.status}) — reclaiming + retrying once`)
+    reclaim()
+    res = renderOne(comp, out)
+  }
+  if (res.status !== 0) {
+    failures++
+    console.error(`✗ ${comp} failed after retry (exit ${res.status})`)
+  }
+  if (i < comps.length - 1) reclaim() // free memory before the next comp
+})
 
 console.log(failures ? `\nDone with ${failures} failure(s).` : '\n✓ All renders complete → out/')
 process.exit(failures ? 1 : 0)

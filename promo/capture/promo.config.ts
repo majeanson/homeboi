@@ -21,7 +21,7 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:5173',
     // Freeze the zone like the e2e suite so time-of-day surfaces render a fixed bucket.
     timezoneId: 'America/Toronto',
-    navigationTimeout: 25_000,
+    navigationTimeout: 45_000,
     actionTimeout: 15_000,
     // Retina capture. The spec also sets this per-context, but keep it here for any
     // default-fixture use.

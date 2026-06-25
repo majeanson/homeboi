@@ -41,20 +41,37 @@ async function recordClip(
   const size = VIEWPORT[surface]
   const isPip = variant === 'pip'
   const ctxStart = Date.now()
+  // Record at 1× the viewport (deviceScaleFactor 1). A higher dpr does NOT scale the
+  // recorded video to fill — Playwright paints the dpr-1 page into the TOP-LEFT of a
+  // larger recordVideo.size and greys the rest. So zoom sharpness comes from sizing the
+  // Remotion device screen 1:1 with this source (theme.screenSize) + moderate punches,
+  // not from a bigger capture.
   const ctx = await browser.newContext({ viewport: size, deviceScaleFactor: 1, recordVideo: { dir: TMP, size } })
   const page = await ctx.newPage()
   let clipMs = 1000
   let leadMs = 1000
   try {
     await preparePage(page, beat, surface, lang, { pip: isPip })
-    await page.goto(beat.route!)
+    // domcontentloaded (not the default 'load') + settle() — heavy routes (the cercle
+    // constellation) can stall the full load event past the nav timeout; settle waits
+    // for the real content + fonts anyway. Retry once: across 60+ sequential contexts the
+    // browser bogs down and an occasional nav exceeds the timeout (a flaky full-capture).
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await page.goto(beat.route!, { waitUntil: 'domcontentloaded' })
+        break
+      } catch (e) {
+        if (attempt >= 1) throw e
+        await page.waitForTimeout(800)
+      }
+    }
     await settle(page, beat.settle ?? 700)
     await page.mouse.move(size.width * 0.5, size.height * 0.72)
     leadMs = Date.now() - ctxStart
     await page.waitForTimeout(300)
     if (isPip) {
       // A calm kid-mode hold (no cursor choreography) — it's a small glance window.
-      await page.waitForTimeout(3200)
+      await page.waitForTimeout(2000)
     } else {
       await page.evaluate(installCursor)
       if (beat.play) {
@@ -65,7 +82,9 @@ async function recordClip(
           console.warn(`  ⚠ ${beat.id} [${surface}/${lang}] play() failed: ${(e as Error).message}`)
         }
       }
-      await page.waitForTimeout(700)
+      // A short tail hold — keeps the reel snappy (was 700; the long end-hold was the
+      // main "creep" between cuts).
+      await page.waitForTimeout(320)
     }
     clipMs = Date.now() - (ctxStart + leadMs)
   } finally {
@@ -82,10 +101,30 @@ async function recordClip(
 
 for (const script of SCRIPTS) {
   test(`capture:${script.id}`, async ({ browser }) => {
-    test.setTimeout(600_000)
+    // 20 min — 2× retina recording (deviceScaleFactor:2, double-size video) is ~2× slower
+    // to save per clip; 60 clips overran the old 10-min cap and left the tail uncaptured.
+    test.setTimeout(1_200_000)
     const dir = path.join(OUT_ROOT, script.id)
     fs.mkdirSync(dir, { recursive: true })
     fs.mkdirSync(TMP, { recursive: true })
+
+    // Warm up Vite's on-demand compilation. Lazy routes (e.g. CookPage = React.lazy)
+    // compile their chunk on FIRST hit, which can take several seconds — long enough
+    // that the first real take records only the "Chargement…" Suspense fallback (the
+    // parent cook clip went blank while the toddler PiP, recorded right after against
+    // the now-compiled chunk, loaded fine). Pre-visit every unique route once so all
+    // chunks are built before any take.
+    {
+      const warm = await browser.newContext({ viewport: VIEWPORT.wall })
+      const wp = await warm.newPage()
+      await preparePage(wp, { id: 'warm', surfaces: ['wall'], route: '/board' } as Beat, 'wall', 'fr')
+      const routes = [...new Set(script.beats.filter((b) => b.route).map((b) => b.route!))]
+      for (const route of routes) {
+        await wp.goto(route, { waitUntil: 'domcontentloaded' }).catch(() => {})
+        await wp.waitForTimeout(900)
+      }
+      await warm.close()
+    }
 
     const beats = []
     for (const beat of script.beats) {

@@ -48,8 +48,11 @@ export const INK: Record<Surround, { fg: string; dim: string; kicker: string; sh
   cream: { fg: '#2c2722', dim: '#6b6258', kicker: '#d9842a', shadow: '0 1px 2px rgba(255,255,255,0.45)' },
 }
 
-// Device "screen" pixel box per orientation (source aspect: wall 1.6, phone ≈ 0.462).
+// Device "screen" pixel box per orientation. Sized to MATCH the 1× capture source
+// (wall 1280×800, phone 390×844) as closely as the output allows, so the footage
+// shows ~1:1 (no base upscale → sharp) and a moderate punch zooms from there. Wall is
+// 1:1 with its source; the phone is necessarily scaled up to read in a 1080-wide frame.
 export function screenSize(orientation: Orientation): { w: number; h: number } {
-  if (orientation === 'landscape') return { w: 1408, h: 880 }
-  return { w: 721, h: 1560 }
+  if (orientation === 'landscape') return { w: 1280, h: 800 }
+  return { w: 650, h: 1407 }
 }

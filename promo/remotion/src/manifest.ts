@@ -54,7 +54,7 @@ export interface Manifest {
   beats: ManifestBeat[]
 }
 
-export const TRANSITION_FRAMES = 14
+export const TRANSITION_FRAMES = 9
 // Safety margin (frames) shaved off the trim so a slightly-late lead estimate never cuts
 // into the first frames of the interaction.
 export const TRIM_SAFETY_FRAMES = 8

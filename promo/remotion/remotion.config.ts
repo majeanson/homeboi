@@ -12,4 +12,4 @@ Config.setOverwriteOutput(true)
 // bounded — the clips re-decode on demand instead of all living in RAM. Set here (not
 // a CLI flag) because the render-CLI flag is kebab-case and easy to pass wrong; config
 // is unambiguous and applies to `remotion render` + the studio alike.
-Config.setOffthreadVideoCacheSizeInBytes(300 * 1024 * 1024)
+Config.setOffthreadVideoCacheSizeInBytes(180 * 1024 * 1024)

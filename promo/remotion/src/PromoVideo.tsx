@@ -1,5 +1,5 @@
 import React from 'react'
-import { AbsoluteFill, Audio, staticFile, useVideoConfig } from 'remotion'
+import { AbsoluteFill, Audio, interpolate, staticFile, useVideoConfig } from 'remotion'
 import { TransitionSeries, linearTiming } from '@remotion/transitions'
 import { fade } from '@remotion/transitions/fade'
 import { slide } from '@remotion/transitions/slide'
@@ -17,7 +17,7 @@ export interface PromoVideoProps {
 }
 
 export const PromoVideo: React.FC<PromoVideoProps> = ({ scriptId, orientation, lang, cut, manifest }) => {
-  const { fps } = useVideoConfig()
+  const { fps, durationInFrames } = useVideoConfig()
   const surface = surfaceFor(orientation)
 
   if (!manifest) return <AbsoluteFill style={{ background: SURROUND.dark }} />
@@ -46,7 +46,19 @@ export const PromoVideo: React.FC<PromoVideoProps> = ({ scriptId, orientation, l
         })}
       </TransitionSeries>
 
-      {manifest.music ? <Audio src={staticFile(`music/${manifest.music}`)} volume={0.22} /> : null}
+      {manifest.music ? (
+        <Audio
+          src={staticFile(`music/${manifest.music}`)}
+          // Fade the bed in/out so it never hard-cuts when the (variable-length) cut
+          // ends mid-phrase — the generated WAV is longer than any single cut.
+          volume={(f) =>
+            interpolate(f, [0, fps * 0.8, durationInFrames - fps * 1.2, durationInFrames], [0, 0.34, 0.34, 0], {
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
+            })
+          }
+        />
+      ) : null}
     </AbsoluteFill>
   )
 }
