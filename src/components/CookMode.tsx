@@ -4,7 +4,7 @@ import { useT, useLang } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
-import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
+import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/recipeSteps'
 import { groupSections } from '../lib/recipeSections'
 import { imgUrl } from '../lib/image'
 import { spokenIngredient } from '../lib/measure'
@@ -134,7 +134,12 @@ export function CookMode({
   const stages: Stage[] = [
     ...(ingGroups.some((g) => g.items.length) ? [{ kind: 'ingredients' } as Stage] : []),
     ...stepGroups.flatMap((g) =>
-      g.items.map(({ text, idx }) => ({ kind: 'step', text, n: ++stepN, section: g.title, srcIdx: idx }) as Stage),
+      g.items.map(({ text, idx }) => {
+        const n = ++stepN
+        // Drop a leading "5" when this IS step 5 — the stepper already shows the
+        // number, so a doubled ordinal is noise (and gets read aloud otherwise).
+        return { kind: 'step', text: stripStepOrdinal(text, n), n, section: g.title, srcIdx: idx } as Stage
+      }),
     ),
   ]
   // A recipe with nothing to show shouldn't open, but guard so we never NaN.
@@ -277,8 +282,11 @@ export function CookMode({
         <div key={gi}>
           {g.title && <h3 className="cook__full-subh">{g.title}</h3>}
           <ol className="cook__full-steps" start={olStart}>
-            {g.items.map(({ text: s, idx }, i) => {
+            {g.items.map(({ text: rawS, idx }, i) => {
               const sN = olStart + i
+              // Drop a leading ordinal that just repeats this step's number (the
+              // <ol> already shows it) — see stripStepOrdinal.
+              const s = stripStepOrdinal(rawS, sN)
               const durs = findDurations(s)
               return (
                 <li

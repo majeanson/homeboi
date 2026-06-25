@@ -73,6 +73,24 @@ export function ingredientsForStep(step: string, ingredients: string[], section?
   })
 }
 
+// Drop a leading ordinal that just repeats the step's OWN number — the list
+// already renders "5." in front of step 5, so a step whose text ALSO starts with
+// "5" is a doubled marker the import didn't strip. Conservative: it removes the
+// number only when it EXACTLY equals the step position `n` AND reads as a marker
+// (trailing ./)/:/– punctuation, or a Capitalised word right after it) — so a real
+// quantity that happens to lead the step ("5 minutes au four" as step 5) is kept.
+export function stripStepOrdinal(text: string, n: number): string {
+  if (!Number.isInteger(n) || n < 1) return text
+  // ^<n> then EITHER marker punctuation (+ surrounding space) OR a space and a
+  // capital letter. The digit can't be followed by another digit, so "15 …" as
+  // step 1 never loses its "1".
+  const re = new RegExp(`^\\s*${n}(?:\\s*[.):\\-–—]\\s*|\\s+(?=[A-ZÀ-ÖØ-Þ]))`)
+  const m = text.match(re)
+  if (!m) return text
+  const rest = text.slice(m[0].length)
+  return rest.length ? rest : text
+}
+
 // Split a step into its sentences so a multi-sentence instruction reads as bullet
 // points ("do this. then that." → two bullets). Splits only after end punctuation
 // FOLLOWED by whitespace, so a decimal like "1.5 h" is never split. Always returns

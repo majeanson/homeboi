@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ingredientsForStep, stepSentences } from './recipeSteps'
+import { ingredientsForStep, stepSentences, stripStepOrdinal } from './recipeSteps'
 
 const INGS = ['400 g de pâtes', '1 pot de sauce tomate', '500 g de bœuf haché', '1 oignon']
 
@@ -67,6 +67,29 @@ describe('ingredientsForStep', () => {
   it('falls back to the whole list when the step section has no ingredient match', () => {
     // No "Cuisson" ingredient group → search everything (still skips markers).
     expect(ingredientsForStep('Incorporer la farine.', SECTIONED, 'Cuisson')).toEqual(['250 g de farine'])
+  })
+})
+
+describe('stripStepOrdinal', () => {
+  it('drops a leading number that matches the step position', () => {
+    expect(stripStepOrdinal('5. Mélanger le tout.', 5)).toBe('Mélanger le tout.')
+    expect(stripStepOrdinal('5) Ajouter le sel.', 5)).toBe('Ajouter le sel.')
+    expect(stripStepOrdinal('5 - Cuire au four.', 5)).toBe('Cuire au four.')
+    expect(stripStepOrdinal('5 Réserver.', 5)).toBe('Réserver.')
+    expect(stripStepOrdinal('12 Égoutter les pâtes.', 12)).toBe('Égoutter les pâtes.')
+  })
+  it('leaves a number that is NOT the step position', () => {
+    expect(stripStepOrdinal('3. Mélanger.', 5)).toBe('3. Mélanger.')
+  })
+  it('keeps a real quantity that happens to lead the step', () => {
+    // step 5 starting with "5 minutes" (lowercase word, no marker punctuation)
+    expect(stripStepOrdinal('5 minutes au four.', 5)).toBe('5 minutes au four.')
+    // "15 g" as step 1 must not lose its "1"
+    expect(stripStepOrdinal('15 g de beurre fondu.', 1)).toBe('15 g de beurre fondu.')
+  })
+  it('never strips the whole step to nothing, and ignores bad n', () => {
+    expect(stripStepOrdinal('5.', 5)).toBe('5.')
+    expect(stripStepOrdinal('5 Réserver.', 0)).toBe('5 Réserver.')
   })
 })
 

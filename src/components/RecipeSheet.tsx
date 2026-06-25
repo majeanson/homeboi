@@ -8,7 +8,7 @@ import { isGuest } from '../lib/device'
 import { wash, tintInk, edge } from '../lib/colors'
 import { formatDuration } from '../lib/duration'
 import { scaleIngredients } from '../lib/scale'
-import { ingredientsForStep, stepSentences } from '../lib/recipeSteps'
+import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/recipeSteps'
 import { groupSections, withoutHeadings } from '../lib/recipeSections'
 import { ingredientName } from '../lib/ingredient'
 import { type MealSlot } from '../lib/mealSlots'
@@ -360,7 +360,10 @@ export function RecipeSheet({
                 <Fragment key={gi}>
                   {g.title && <h4 className="recipe-subsec-h">{g.title}</h4>}
                   <ol className="recipe-view__steps" start={g.start}>
-                    {g.items.map(({ text, idx }) => {
+                    {g.items.map(({ text: raw, idx }, p) => {
+                      // Drop a leading ordinal that just repeats this step's
+                      // number (the <ol> already shows it) — see stripStepOrdinal.
+                      const text = stripStepOrdinal(raw, g.start + p)
                       // Each step: its instruction as sentence bullets, then the
                       // ingredients (with scaled quantities) that step uses —
                       // matched within the step's own section when one exists.
