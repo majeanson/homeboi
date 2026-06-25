@@ -103,9 +103,11 @@ Affichage ▸ « Diffuser au salon »**. Two ways it reaches the TV:
 
 1. Create a **Google Cast developer account** at <https://cast.google.com/publish>
    ($5 one-time; the account email can't be changed later).
-2. **Add New Application → Custom Receiver.** URL = `https://<your-prod-host>/cast-receiver.html`
-   (HTTPS, required once published — the prod Worker already is). Save → note the
-   **Application ID**.
+2. **Add New Application → Custom Receiver.** URL = `https://<your-prod-host>/cast-receiver`
+   (HTTPS, required once published — the prod Worker already is). ⚠️ Use the
+   **extensionless** path: Cloudflare's asset server 307-redirects `/cast-receiver.html`
+   → `/cast-receiver`, and registering the canonical 200 URL avoids relying on the
+   receiver following that redirect. Save → note the **Application ID**.
 3. **Add New Device** = the Chromecast's *software (Cast)* serial (Google Home app →
    device → settings, or cast the console page to read it). Wait ~15 min, then reboot
    the Chromecast → status **"Ready for Testing."**
