@@ -16,6 +16,8 @@ import {
   type CookDensity,
   useCookDensity,
   setCookDensity,
+  useShowStepIngredients,
+  setShowStepIngredients,
   loadCookView,
   saveCookView,
 } from '../lib/cookPrefs'
@@ -112,6 +114,13 @@ export function CookMode({
   }
   // Device-wide text size for every cooking view (the bar's A / A / A control).
   const density = useCookDensity()
+  // Device-wide: show each step's own ingredients ("what you need right now") under
+  // the instruction, in EVERY view — toggled from the bar's carrot button. The
+  // toddler stepper always shows them regardless (it has no bar toggle to undo it).
+  const showStepIngs = useShowStepIngredients()
+  const stepIngsOn = isToddler || showStepIngs
+  // The toggle is only meaningful when there are both ingredients and steps to pair.
+  const canPairIngs = recipe.ingredients.length > 0 && recipe.steps.length > 0
   // Split view: on a narrow phone the two panes collapse to a tab pair (ingredients
   // OR steps); on a tablet both show side by side and this is ignored (CSS).
   const [splitTab, setSplitTab] = useState<'ings' | 'steps'>('ings')
@@ -288,6 +297,10 @@ export function CookMode({
               // <ol> already shows it) — see stripStepOrdinal.
               const s = stripStepOrdinal(rawS, sN)
               const durs = findDurations(s)
+              // This step's own ingredients (scaled quantities + colour pills),
+              // shown inline when the bar toggle is on — the same "what you need
+              // right now" the stepper shows, generalized to the scroll views.
+              const used = stepIngsOn ? ingredientsForStep(s, recipe.ingredients, g.title) : []
               return (
                 <li
                   key={idx}
@@ -303,6 +316,15 @@ export function CookMode({
                   }}
                 >
                   {s}
+                  {used.length > 0 && (
+                    <ul className="recipe-step__ings cook__step-ings-inline mono" aria-label={t.recipes.stepIngredients}>
+                      {used.map((ing, j) => (
+                        <li key={j}>
+                          <IngredientLine line={ing} size="sm" />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {/* Start a timer for a duration in this step — same rail as the
                       stepper. stopPropagation so the tap doesn't also read the step. */}
                   {durs.length > 0 && (
@@ -428,6 +450,20 @@ export function CookMode({
                   </button>
                 ))}
               </div>
+              {/* Show / hide each step's own ingredients ("what you need right now")
+                  across every view. Only offered when the recipe has both lists. */}
+              {canPairIngs && (
+                <button
+                  type="button"
+                  className={'cook__autoread' + (showStepIngs ? ' is-on' : '')}
+                  onClick={() => setShowStepIngredients(!showStepIngs)}
+                  aria-pressed={showStepIngs}
+                  title={showStepIngs ? t.recipes.stepIngsShow : t.recipes.stepIngsHide}
+                  aria-label={showStepIngs ? t.recipes.stepIngsShow : t.recipes.stepIngsHide}
+                >
+                  <Icon name="carrot-bold" size={20} />
+                </button>
+              )}
             </>
           )}
           {mode === 'step' && (
@@ -639,6 +675,7 @@ export function CookMode({
               </ul>
             </div>
             {cur?.kind === 'step' &&
+              stepIngsOn &&
               (() => {
                 const used = ingredientsForStep(cur.text, recipe.ingredients, cur.section)
                 return used.length > 0 ? (

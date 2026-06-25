@@ -790,6 +790,8 @@ export const FR = {
     cookView: { full: 'Recette', split: 'Côte à côte', step: 'Focus' },
     cookDensityLabel: 'Taille du texte',
     cookDensity: { compact: 'Compact', normal: 'Normal', large: 'Grand' },
+    stepIngsShow: 'Ingrédients par étape affichés — touche pour masquer',
+    stepIngsHide: 'Ingrédients par étape masqués — touche pour afficher',
     // Per-step recipe photos (feature #17 B — upload UI TODO).
     stepPhotoAdd: 'Ajouter une photo',
     stepPhotoChange: 'Changer la photo',
@@ -2722,6 +2724,8 @@ export const EN: typeof FR = {
     cookView: { full: 'Recipe', split: 'Side by side', step: 'Focus' },
     cookDensityLabel: 'Text size',
     cookDensity: { compact: 'Compact', normal: 'Normal', large: 'Large' },
+    stepIngsShow: 'Per-step ingredients shown — tap to hide',
+    stepIngsHide: 'Per-step ingredients hidden — tap to show',
     // Per-step recipe photos (feature #17 B — upload UI TODO).
     stepPhotoAdd: 'Add a photo',
     stepPhotoChange: 'Change photo',

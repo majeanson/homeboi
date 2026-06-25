@@ -20,8 +20,11 @@
   font-family: var(--display);
   font-weight: 700;
   font-size: 1.2rem;
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 7rem;
+  /* A floor (not 0) so a crowded bar wraps its tools to a second row instead of
+     squashing the title to one letter on a phone — the bar is flex-wrap. Ellipsis
+     still trims a long title when the tools DO share the row (wide screens). */
+  min-width: 7rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -273,6 +276,17 @@
   position: absolute;
   left: 0.2rem;
   color: var(--terracotta-deep);
+}
+/* Per-step ingredients inline in the full / split scroll views (reuses the recipe
+   sheet's flat-wrap chip list). A hair of separation under the step text, and the
+   non-clickable list shouldn't inherit the step <li>'s pointer cursor. */
+.cook__step-ings-inline {
+  margin: 0.4rem 0 0.1rem;
+  cursor: default;
+  font-size: calc(0.9rem * var(--ds, 1));
+}
+.cook__step-ings-inline .meas-pill {
+  cursor: pointer;
 }
 /* The ingredients (with quantities) this step uses — a small card under the text. */
 .cook__step-ings {

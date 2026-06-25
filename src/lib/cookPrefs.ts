@@ -58,6 +58,50 @@ export function useCookDensity(): CookDensity {
   return useSyncExternalStore(subscribe, densitySnapshot, () => 'normal')
 }
 
+// — per-step ingredients (device-wide, live) —
+// Whether each step shows the ingredients it uses ("what you need right now",
+// with scaled quantities + colour pills). Default ON. Device-wide + live (same
+// store shape as density) so the bar toggle repaints every open cook view at once,
+// and the choice carries to the next recipe. The toddler stepper ignores this and
+// always shows them (its gather-then-cook flow needs them, and it has no toggle).
+const SIKEY = 'babillard-cook-step-ings'
+const siListeners = new Set<() => void>()
+let siCache: boolean | null = null
+
+function readStepIngs(): boolean {
+  try {
+    return localStorage.getItem(SIKEY) !== 'off'
+  } catch {
+    return true
+  }
+}
+
+function stepIngsSnapshot(): boolean {
+  if (siCache === null) siCache = readStepIngs()
+  return siCache
+}
+
+export function setShowStepIngredients(on: boolean): void {
+  siCache = on
+  try {
+    localStorage.setItem(SIKEY, on ? 'on' : 'off')
+  } catch {
+    /* private mode — holds for the session via the cache */
+  }
+  siListeners.forEach((l) => l())
+}
+
+function siSubscribe(cb: () => void): () => void {
+  siListeners.add(cb)
+  return () => {
+    siListeners.delete(cb)
+  }
+}
+
+export function useShowStepIngredients(): boolean {
+  return useSyncExternalStore(siSubscribe, stepIngsSnapshot, () => true)
+}
+
 // — per-recipe view (read once on open, saved on change) —
 const VIEWS: CookView[] = ['step', 'full', 'split']
 const vkey = (recipeId: string) => `babillard-cook-view:${recipeId}`
