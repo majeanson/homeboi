@@ -958,6 +958,127 @@ body.is-recording .add-fab {
   align-self: stretch;
   min-width: 30px;
 }
+/* Drag-and-drop drop feedback. The whole-row dashed outline (shared .dnd-over) is
+   too vague here — "somewhere on this row" — so for list rows we drop it and show a
+   precise INSERTION LINE in the gap instead, plus a faint wash + slight lift on the
+   target row so the eye lands there. The line tells you exactly where it'll go. */
+.list-row.dnd-over {
+  outline: none;
+  background: transparent;
+}
+.list-row.dnd-over .list-row__main {
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.list-row__drop {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+  z-index: 3;
+  pointer-events: none;
+}
+/* A small nub at the leading edge so the line reads as an insertion caret, not a
+   border. Sits just left of the bar. */
+.list-row__drop::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+/* Centre the line in the ~10px gap between rows (margin-top: 10px). */
+.list-row__drop--top {
+  top: -6px;
+}
+.list-row__drop--bottom {
+  bottom: -6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .list-row.dnd-over .list-row__main {
+    transform: none;
+  }
+}
+
+/* List sort toggle (Mon ordre / Par allée) — a small segmented pill above the list,
+   the same idiom as the cercle/recipe view switches. Per-device, quiet. */
+.list-sort {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  margin: 6px 0 10px;
+  padding: 3px;
+  background: var(--surface-2, var(--card));
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.list-sort__seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.list-sort__seg.is-on {
+  background: var(--sky-wash);
+  color: var(--sky-deep);
+}
+/* Aisle group header inside the list ("Par allée"). Calm: a small emoji + name,
+   never a count. */
+.list-aisle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 16px 0 2px;
+  padding: 0 2px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.list-aisle:first-child {
+  margin-top: 2px;
+}
+.list-aisle__emoji {
+  font-size: 1rem;
+}
+/* Réglages ▸ Magasinage — the aisle-order rows (reordered via DragPill / ⠿). */
+.aisle-order__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.aisle-order__pos {
+  min-width: 1.5rem;
+  text-align: right;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+.aisle-order__emoji {
+  font-size: 1.2rem;
+}
+.aisle-order__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.aisle-order__row--pinned {
+  opacity: 0.5;
+}
 /* The check is now the ONLY check-off target (the rest of the row edits / opens
    deals), so give it a comfortable tap area — a 42px circle, not the old 30px.
    Loaded after today.css, so this ties-and-wins over `.act .check`. */

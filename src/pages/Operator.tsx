@@ -11,6 +11,7 @@ import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection } from 
 import { AmbientSettingsSection } from '../components/operator/ambient'
 import { BoardLayoutSection } from '../components/operator/boardLayout'
 import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
+import { AisleOrderSection } from '../components/operator/aisles'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
 import { GuestSection } from '../components/operator/guest'
@@ -261,6 +262,7 @@ export function Operator() {
         {tab === 'shopping' && (
           <>
             <ShopSection help={operatorHelp} />
+            <AisleOrderSection />
             <StoreFilterSection help={operatorHelp} />
             <HistorySection help={operatorHelp} />
           </>

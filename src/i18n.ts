@@ -188,6 +188,10 @@ export const FR = {
     check: 'Cocher',
     uncheck: 'Décocher',
     clearChecked: 'Vider les cochés',
+    // Sort toggle: keep the hand-dragged order, or auto-group by store aisle.
+    sortMine: 'Mon ordre',
+    sortAisle: 'Par allée',
+    sortBy: 'Trier la liste',
     // Voice add (continuous): hint while listening + why nothing landed on error.
     voiceHint: 'Nomme tes articles un à un — touche 🎤 pour arrêter.',
     voiceDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
@@ -1421,6 +1425,12 @@ export const FR = {
     storeFilterNoPostal: 'Règle d’abord ton code postal ci-dessus pour voir les magasins du coin.',
     storeFilterError: 'Service de circulaires indisponible — réessaie plus tard.',
     storeFilterEmpty: 'Aucun magasin trouvé près de chez toi.',
+    // Grocery aisle order — drag the aisles into YOUR store's layout; La liste's
+    // « Par allée » then groups + sorts your items to follow that walk.
+    aisleOrder: 'Ordre des allées',
+    aisleOrderHint:
+      'Glisse les allées dans l’ordre de TON magasin. Dans La liste, « Par allée » regroupe et trie tes articles selon cet ordre — ton coup d’œil suit ton parcours en magasin.',
+    aisleReset: 'Remettre l’ordre par défaut',
     storeIncluded: 'Inclus',
     storeExcluded: 'Exclu',
     storeCashier: 'À la caisse',
@@ -2141,6 +2151,10 @@ export const EN: typeof FR = {
     check: 'Check off',
     uncheck: 'Uncheck',
     clearChecked: 'Clear checked',
+    // Sort toggle: keep the hand-dragged order, or auto-group by store aisle.
+    sortMine: 'My order',
+    sortAisle: 'By aisle',
+    sortBy: 'Sort list',
     // Voice add (continuous): hint while listening + why nothing landed on error.
     voiceHint: 'Name your items one at a time — tap 🎤 to stop.',
     voiceDenied: 'Mic blocked. Allow the microphone in your browser.',
@@ -3343,6 +3357,12 @@ export const EN: typeof FR = {
     storeFilterNoPostal: 'Set your postal code above first to see nearby stores.',
     storeFilterError: 'Flyer service unavailable — try again later.',
     storeFilterEmpty: 'No stores found near you.',
+    // Grocery aisle order — drag the aisles into YOUR store's layout; the list's
+    // "By aisle" then groups + sorts your items to follow that walk.
+    aisleOrder: 'Aisle order',
+    aisleOrderHint:
+      'Drag the aisles into YOUR store’s layout. In the list, “By aisle” groups and sorts your items in this order — a glance follows your walk through the store.',
+    aisleReset: 'Reset to default order',
     storeIncluded: 'Included',
     storeExcluded: 'Excluded',
     storeCashier: 'At the till',

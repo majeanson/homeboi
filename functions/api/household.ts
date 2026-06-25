@@ -6,6 +6,7 @@ import { householdMealSlotPrefs, cleanColors, cleanHidden } from '../_lib/mealSl
 import { householdMeasureColors, cleanMeasureColors } from '../_lib/measureColors'
 import { householdReserveLocations, cleanReserveLocations } from '../_lib/reserveLocations'
 import { householdCars, cleanCars } from '../_lib/carPrefs'
+import { householdAisleOrder, cleanAisleOrder } from '../_lib/aisleOrder'
 import { householdAiEnabled } from '../_lib/aiPref'
 import { householdShareInfo, cleanShareField } from '../_lib/shareModes'
 import { nowSec } from '../_lib/ids'
@@ -38,6 +39,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
   const cars = await householdCars(ctx.env, actor.householdId)
+  const aisleOrder = await householdAisleOrder(ctx.env, actor.householdId)
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   const shareInfo = await householdShareInfo(ctx.env, actor.householdId)
   return ok({
@@ -50,6 +52,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     measureColors,
     reserveLocations,
     cars,
+    aisleOrder,
     aiEnabled,
     ...shareInfo,
   })
@@ -66,6 +69,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     measureColors?: Record<string, string>
     reserveLocations?: unknown
     cars?: unknown
+    aisleOrder?: unknown
     aiEnabled?: boolean
     wifiSsid?: string | null
     wifiPassword?: string | null
@@ -174,6 +178,16 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
   }
 
+  // The grocery aisle order for the shared list's "Par allée" sort (migration 0080).
+  // A JSON array of aisle ids; only known ids survive. An empty/invalid result clears
+  // the column back to NULL (= the client's built-in default store-walk order).
+  if (body && 'aisleOrder' in body) {
+    const order = cleanAisleOrder(body.aisleOrder)
+    await ctx.env.DB.prepare('UPDATE households SET aisle_order = ?, updated_at = ? WHERE id = ?')
+      .bind(order.length ? JSON.stringify(order) : null, nowSec(), actor.householdId)
+      .run()
+  }
+
   // The household AI on/off switch (Réglages ▸ IA, migration 0061). Stored as
   // 1 = on / 0 = off; NULL never written from here (only legacy rows are NULL,
   // which read as on). Folded into /api/health's effective `ai` flag.
@@ -207,6 +221,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const measureColors = await householdMeasureColors(ctx.env, actor.householdId)
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
   const cars = await householdCars(ctx.env, actor.householdId)
+  const aisleOrder = await householdAisleOrder(ctx.env, actor.householdId)
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   const shareInfo = await householdShareInfo(ctx.env, actor.householdId)
   return ok({
@@ -219,6 +234,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     measureColors,
     reserveLocations,
     cars,
+    aisleOrder,
     aiEnabled,
     ...shareInfo,
   })

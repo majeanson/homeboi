@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
@@ -8,7 +8,9 @@ import { SectionIntro } from '../components/SectionIntro'
 import { EmptyState } from '../components/EmptyState'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
-import { useT } from '../i18n'
+import { useT, useLang } from '../i18n'
+import { useAisleOrder } from '../lib/aislePrefs'
+import { aisleFor, aisleRanks, AISLE_BY_ID } from '../lib/aisle'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { api, isUnauthorized } from '../lib/api'
@@ -68,6 +70,10 @@ interface ListMember {
 type BoardListData = { list: ListRow[]; members?: ListMember[] }
 const GHOSTS_KEY = ['ghosts']
 const HISTORY_KEY = ['list-history']
+// Per-DEVICE list sort choice (not a household setting — a phone may want aisle
+// order while the wall keeps the hand-dragged one). 'mine' = the dragged order,
+// 'aisle' = grouped/sorted by the household's aisle order.
+const LIST_SORT_KEY = 'liste-sort'
 
 // One list row, drawn the same way for every item. Three independent tap targets:
 // the picture opens the flyer/deals, the name opens the edit sheet, the check is
@@ -122,12 +128,23 @@ function ListItemRow({
   useSwipeToDelete(mainRef, readOnly ? () => {} : onDelete)
   const zoneId = String(index)
   const draggable = !!dnd && !readOnly
+  // Where, exactly, the dragged row will land — an INSERTION LINE on the right edge
+  // of this row, so you feel the gap it'll drop into rather than guessing from a
+  // whole-row highlight. Drag direction decides the edge: coming from above
+  // (from < here) it lands BELOW this row; from below, ABOVE it. Never on the
+  // dragged row's own slot (over === activeId), where there's no move to show.
+  const overHere = !!dnd && dnd.over === zoneId && dnd.activeId !== null && dnd.activeId !== zoneId
+  const fromIdx = dnd?.activeId != null ? Number(dnd.activeId) : null
+  const dropEdge = overHere ? (fromIdx !== null && fromIdx < index ? 'bottom' : 'top') : null
   const zoneClass =
     'list-row' +
     (dnd?.activeId === zoneId ? ' is-dragging' : '') +
-    (dnd?.over === zoneId ? ' dnd-over' : '')
+    (overHere ? ' dnd-over' : '')
   return (
     <div className={zoneClass} data-dnd-zone={draggable ? zoneId : undefined}>
+      {/* The precise drop indicator: a calm accent line in the gap where the row
+          will land, on the edge the drag is heading toward. */}
+      {dropEdge && <span className={`list-row__drop list-row__drop--${dropEdge}`} aria-hidden="true" />}
       {/* The delete pane revealed behind the row as it slides left under the
           finger. Inert/aria-hidden — the swipe drives it; the edit sheet keeps an
           actual Delete button for non-touch. */}
@@ -200,6 +217,7 @@ function ListItemRow({
 
 export function Liste() {
   const t = useT()
+  const { lang } = useLang()
   const { audience } = useAudience()
   const { surface } = useSurface()
   const nav = useNavigate()
@@ -230,6 +248,26 @@ export function Liste() {
     },
     holdMs: DND_HOLD_MS,
   })
+  // Aisle sort: the household's saved aisle order (Réglages ▸ Magasinage) + a
+  // per-device choice of which order to view the list in. 'aisle' groups + sorts by
+  // the store walk; 'mine' keeps the hand-dragged order (so the drag grip only shows
+  // there). Persisted to localStorage so a kiosk and a phone can each keep their own.
+  const aislePrefs = useAisleOrder()
+  const [sortMode, setSortMode] = useState<'mine' | 'aisle'>(() => {
+    try {
+      return localStorage.getItem(LIST_SORT_KEY) === 'aisle' ? 'aisle' : 'mine'
+    } catch {
+      return 'mine'
+    }
+  })
+  function chooseSort(m: 'mine' | 'aisle') {
+    setSortMode(m)
+    try {
+      localStorage.setItem(LIST_SORT_KEY, m)
+    } catch {
+      /* private mode / storage blocked — the choice just won't persist */
+    }
+  }
   // Contextual "?" help mode (shared hook): arm it in the header, then tap one of
   // the list's controls (flyer search / Vider les cochés / cashier) to learn what
   // it does in place instead of running it. La liste is one flat list, so its help
@@ -361,12 +399,22 @@ export function Liste() {
   // flyer browser (reached via the ＋ Add sheet → Circulaires).
   const pickList = pickListFrom(list)
 
+  // The order the list is shown in. 'aisle' → grouped + sorted by the household's
+  // aisle walk; classification reuses the row-picture keywords (aisleFor). A STABLE
+  // sort, so items in the same aisle keep their hand/position order. 'mine' → the
+  // list as the cache holds it (the dragged order), unchanged.
+  const byAisle = sortMode === 'aisle'
+  const ranks = aisleRanks(aislePrefs.order)
+  const displayList = byAisle
+    ? [...list].sort((a, b) => ranks[aisleFor(a.text)] - ranks[aisleFor(b.text)])
+    : list
+
   if (audience === 'toddler') {
     // Read-only for toddlers: tapping a tile reads it aloud but never checks it
     // off. Show only what's still needed (un-ticked) — a kid sees what's left to
     // get. Each tile draws its own picture (milk/bread/apple…) so it's legible to
     // someone who can't read, never a wall of identical carts.
-    const tiles: Tile[] = list
+    const tiles: Tile[] = displayList
       .filter((i) => !i.checked_at)
       .map((i) => ({ key: i.id, icon: pictoFor(i.text, '🛒'), label: i.text, narration: i.text }))
     return (
@@ -454,44 +502,82 @@ export function Liste() {
       {help.bubbleFor('flyer')}
       {help.bubbleFor('quick')}
 
+      {/* Sort toggle: keep the hand-dragged order ("Mon ordre") or auto-group by
+          store aisle ("Par allée", the order set in Réglages ▸ Magasinage). A quiet
+          per-device view choice; only worth showing once there's more than one row. */}
+      {list.length > 1 && (
+        <div className="list-sort" role="group" aria-label={t.list.sortBy}>
+          <button
+            type="button"
+            className={'list-sort__seg' + (!byAisle ? ' is-on' : '')}
+            aria-pressed={!byAisle}
+            onClick={() => chooseSort('mine')}
+          >
+            <InlineIcon name="scroll-bold" /> {t.list.sortMine}
+          </button>
+          <button
+            type="button"
+            className={'list-sort__seg' + (byAisle ? ' is-on' : '')}
+            aria-pressed={byAisle}
+            onClick={() => chooseSort('aisle')}
+          >
+            <InlineIcon name="storefront-bold" /> {t.list.sortAisle}
+          </button>
+        </div>
+      )}
+
       {list.length === 0 ? (
         <EmptyState guide={{ card: 'liste' }}>{t.board.listEmpty}</EmptyState>
       ) : (
         <div className="list-rows">
-          {list.map((item, index) => {
+          {displayList.map((item, index) => {
             const adder = item.added_by ? memberById.get(item.added_by) : null
             const staged = parseDeal(item.deal_json)
             const checked = !!item.checked_at
             // Draw the item's own picture (milk/bread/apple…), falling back to the
             // list glyph only when nothing matches (a non-grocery note).
             const pic = pictoFor(item.text, '')
+            // In aisle mode, a calm header before the first row of each aisle group.
+            const ai = byAisle ? aisleFor(item.text) : null
+            const showHeader = byAisle && ai !== (index > 0 ? aisleFor(displayList[index - 1].text) : null)
             return (
-              <ListItemRow
-                key={item.id}
-                dnd={dnd}
-                index={index}
-                text={item.text}
-                picto={pic}
-                dealImage={staged?.image}
-                // A staged flyer deal: store + price, visible on the row itself.
-                dealLabel={
-                  staged ? (
-                    <span className="list-row__deal mono">
-                      <InlineIcon name="tag-bold" /> {staged.merchant} · {money(staged.price)}
+              <Fragment key={item.id}>
+                {showHeader && ai && (
+                  <div className="list-aisle" role="presentation">
+                    <span className="list-aisle__emoji" aria-hidden="true">
+                      {AISLE_BY_ID[ai].emoji}
                     </span>
-                  ) : null
-                }
-                adder={adder}
-                checked={checked}
-                toggleLabel={checked ? t.list.uncheck : t.list.check}
-                onImage={() => nav(`/liste/deals/${item.id}`)}
-                imageLabel={t.list.openFlyer}
-                onName={() => nav(`/liste/item/${item.id}`)}
-                nameLabel={t.list.edit}
-                onToggle={() => toggleChecked(item)}
-                onDelete={() => deleteItem(item)}
-                deleteLabel={t.list.swipeDelete}
-              />
+                    <span className="list-aisle__name">{AISLE_BY_ID[ai].label[lang]}</span>
+                  </div>
+                )}
+                <ListItemRow
+                  // The drag grip only makes sense in "Mon ordre" — aisle sort owns
+                  // the order there, so no dnd is passed and the grip hides.
+                  dnd={byAisle ? undefined : dnd}
+                  index={index}
+                  text={item.text}
+                  picto={pic}
+                  dealImage={staged?.image}
+                  // A staged flyer deal: store + price, visible on the row itself.
+                  dealLabel={
+                    staged ? (
+                      <span className="list-row__deal mono">
+                        <InlineIcon name="tag-bold" /> {staged.merchant} · {money(staged.price)}
+                      </span>
+                    ) : null
+                  }
+                  adder={adder}
+                  checked={checked}
+                  toggleLabel={checked ? t.list.uncheck : t.list.check}
+                  onImage={() => nav(`/liste/deals/${item.id}`)}
+                  imageLabel={t.list.openFlyer}
+                  onName={() => nav(`/liste/item/${item.id}`)}
+                  nameLabel={t.list.edit}
+                  onToggle={() => toggleChecked(item)}
+                  onDelete={() => deleteItem(item)}
+                  deleteLabel={t.list.swipeDelete}
+                />
+              </Fragment>
             )
           })}
         </div>
