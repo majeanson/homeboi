@@ -9,6 +9,7 @@ import { PIP_ICONS, type IconName } from '../lib/pipIcons'
 import { Icon, InlineIcon } from '../components/Icon'
 import { EditField } from '../components/EditField'
 import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
+import { AislePicker } from '../components/AislePicker'
 import { ContactFields, EMPTY_CONTACT_CORE, type ContactCoreValue } from '../components/cercle/ContactFields'
 import { RowActions } from '../components/RowActions'
 import { DragPill } from '../components/DragPill'
@@ -387,6 +388,22 @@ export function DevKit() {
                 onDelete={() => setCards((cs) => cs.filter((_, idx) => idx !== i))}
               />
             ))}
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'AislePicker',
+      file: 'components/AislePicker.tsx',
+      kw: 'aisle allée grocery list sort override select épicerie magasin classer',
+      render: () => (
+        <>
+          <Demo label="set a grocery item's store aisle (override, keyed by item name)">
+            <AislePicker text="Lait 2%" />
+          </Demo>
+          <Demo label="compact (quick-add row)">
+            <AislePicker text="Pain tranché" className="qa__aisle" />
           </Demo>
         </>
       ),

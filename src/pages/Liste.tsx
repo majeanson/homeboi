@@ -96,6 +96,7 @@ function ListItemRow({
   onToggle,
   onDelete,
   deleteLabel,
+  aisleTag,
   dnd,
   index,
   readOnly = isGuest(),
@@ -114,6 +115,9 @@ function ListItemRow({
   onToggle: () => void
   onDelete: () => void
   deleteLabel: string
+  // A small muted aisle tag under the name (shown in "Mon ordre" so the aisle is
+  // still visible without grouping; "Par allée" uses headers instead).
+  aisleTag?: React.ReactNode
   // Drag-and-drop reorder: the shared pointer-DnD handle + this row's position. The
   // zone id and the drag id are both the index (a drop = "move dragged row here").
   dnd?: ReturnType<typeof usePointerDnd>
@@ -194,6 +198,7 @@ function ListItemRow({
             {text}
           </span>
           {dealLabel}
+          {aisleTag}
         </button>
         {adder && (
           <span
@@ -554,17 +559,20 @@ export function Liste() {
             // Draw the item's own picture (milk/bread/apple…), falling back to the
             // list glyph only when nothing matches (a non-grocery note).
             const pic = pictoFor(item.text, '')
-            // In aisle mode, a calm header before the first row of each aisle group.
-            const ai = byAisle ? aisleOf(item.text) : null
+            // This item's aisle. In "Par allée" it drives the group header; in
+            // "Mon ordre" it's shown as a small tag on the row so the aisle is still
+            // visible without grouping.
+            const ai = aisleOf(item.text)
+            const aisleInfo = AISLE_BY_ID[ai]
             const showHeader = byAisle && ai !== (index > 0 ? aisleOf(displayList[index - 1].text) : null)
             return (
               <Fragment key={item.id}>
-                {showHeader && ai && (
+                {showHeader && (
                   <div className="list-aisle" role="presentation">
                     <span className="list-aisle__emoji" aria-hidden="true">
-                      {AISLE_BY_ID[ai].emoji}
+                      {aisleInfo.emoji}
                     </span>
-                    <span className="list-aisle__name">{AISLE_BY_ID[ai].label[lang]}</span>
+                    <span className="list-aisle__name">{aisleInfo.label[lang]}</span>
                   </div>
                 )}
                 <ListItemRow
@@ -574,6 +582,14 @@ export function Liste() {
                   index={index}
                   text={item.text}
                   picto={pic}
+                  // In Mon ordre, a small aisle tag on the row (Par allée uses headers).
+                  aisleTag={
+                    !byAisle ? (
+                      <span className="list-row__aisle">
+                        <span aria-hidden="true">{aisleInfo.emoji}</span> {aisleInfo.label[lang]}
+                      </span>
+                    ) : undefined
+                  }
                   dealImage={staged?.image}
                   // A staged flyer deal: store + price, visible on the row itself.
                   dealLabel={

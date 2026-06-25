@@ -1096,6 +1096,31 @@ body.is-recording .add-fab {
 .aisle-order__row--pinned {
   opacity: 0.5;
 }
+/* A small muted aisle tag under a list row's name (shown in Mon ordre). */
+.list-row__aisle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+/* The shared aisle <select> (edit sheet, quick-add, detail peek). It's a plain
+   .input; cap its width so it doesn't stretch edge-to-edge in roomy contexts. */
+.aisle-pick {
+  max-width: 22rem;
+}
+/* Compact aisle select on a quick-add row — a secondary control beside the big add
+   button, narrow so the label keeps the room. */
+.qa__aisle {
+  flex: none;
+  width: auto;
+  max-width: 8.5rem;
+  align-self: center;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.4rem;
+}
 /* The check is now the ONLY check-off target (the rest of the row edits / opens
    deals), so give it a comfortable tap area — a 42px circle, not the old 30px.
    Loaded after today.css, so this ties-and-wins over `.act .check`. */

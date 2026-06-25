@@ -13,6 +13,7 @@ import { BOARD_KEY } from '../lib/queryKeys'
 import { patchGhost } from '../lib/ghost'
 import { useQuickItems, type QuickItem } from '../lib/quickItems'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
+import { AislePicker } from '../components/AislePicker'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // Accent/case-blind matching so "creme" filters to "Crème".
@@ -247,6 +248,10 @@ function QaChip({
           <Icon name={isAdded ? 'check-bold' : 'plus-bold'} size={16} />
         </span>
       </button>
+      {/* The aisle for this recurrent item — outside the add button (a select can't
+          nest in a button), keyed by the item's name so it's the SAME override the
+          list line uses. Set it once here on "Oeuf" and it sticks for the line too. */}
+      {!isGuest() && <AislePicker text={item.label} className="qa__aisle" />}
     </div>
   )
 }
