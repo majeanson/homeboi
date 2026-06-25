@@ -115,9 +115,8 @@ export function CashierMode({
                     )}
                     <span className="cashier__tile-for">{p.itemText}</span>
                     <span className="cashier__tile-name mono">{p.deal.name}</span>
-                    <span className="cashier__tile-meta mono">
-                      {p.deal.merchant} · {money(p.deal.price)}
-                    </span>
+                    <span className="cashier__tile-price">{money(p.deal.price)}</span>
+                    <span className="cashier__tile-store mono">{p.deal.merchant}</span>
                     {isShown && (
                       <span className="cashier__tile-check" aria-label={t.shop.shown}>
                         <Icon name="check-bold" size={14} />
@@ -152,54 +151,65 @@ export function CashierMode({
         </button>
       </div>
 
+      {/* Proof = picture | facts. Side-by-side on a wide tablet (fills the space, no
+          dead margins); stacked on a phone. Big type + numbers throughout so it reads
+          across the counter (NFR accessibility). */}
       <div className="cashier__stage">
         <div className="bigcard">
-          {/* Source flyer band: logo + store, so "where this deal is from" reads at
-              a glance before the cashier even taps "Voir la circulaire". */}
-          <span className="bigcard__store">
-            {d.logo && <img className="bigcard__logo" src={d.logo} alt="" loading="lazy" />}
-            {d.merchant}
-          </span>
-          {d.image && <ZoomableImg className="bigcard__img" src={d.image} alt={d.name} />}
-          <span className="bigcard__for mono">
-            {t.shop.matchFor}: {selected.itemText}
-          </span>
-          <span className="bigcard__name">{d.name}</span>
-          <span className="bigcard__price">{money(d.price)}</span>
-          {d.unitPrice != null && (
-            <span className="bigcard__unit mono">
-              {d.unitApprox && (
-                <>
-                  <InlineIcon name="approximate-equals-bold" size={11} />{' '}
-                </>
-              )}
-              {money(d.unitPrice)}
-              {d.unitLabel}
+          {d.image && (
+            <div className="bigcard__media">
+              <ZoomableImg className="bigcard__img" src={d.image} alt={d.name} />
+            </div>
+          )}
+          <div className="bigcard__info">
+            {/* Source flyer band: logo + store, so "where this deal is from" reads at
+                a glance before the cashier even taps "Voir la circulaire". */}
+            <span className="bigcard__store">
+              {d.logo && <img className="bigcard__logo" src={d.logo} alt="" loading="lazy" />}
+              {d.merchant}
             </span>
-          )}
-          {d.validTo && (
-            <span className="bigcard__dates mono">
-              {t.shop.until} {fmtDate(d.validTo)}
+            <span className="bigcard__for">
+              {t.shop.matchFor} <strong>{selected.itemText}</strong>
             </span>
-          )}
-          {d.flyerId != null && (
-            <button type="button" className="btn bigcard__flyer" onClick={() => setFlyerOpen(true)}>
-              <InlineIcon name="file-text-bold" /> {t.shop.viewFlyer}
-            </button>
-          )}
-          {/* Revise (pick another price) / remove from the cashier set. The shared
-              RowActions hides itself for a read-only guest, so a babysitter sees a
-              clean proof with no edit affordances. */}
-          <RowActions
-            className="bigcard__actions"
-            onEdit={() => onRevise(selected)}
-            onDelete={() => {
-              onRemove(selected.itemId)
-              setSelected(null)
-            }}
-            editLabel={t.shop.choose}
-            deleteLabel={t.shop.clearPicks}
-          />
+            <span className="bigcard__name">{d.name}</span>
+            <span className="bigcard__price">{money(d.price)}</span>
+            {d.unitPrice != null && (
+              <span className="bigcard__unit mono">
+                {d.unitApprox && (
+                  <>
+                    <InlineIcon name="approximate-equals-bold" size={13} />{' '}
+                  </>
+                )}
+                {money(d.unitPrice)}
+                {d.unitLabel}
+              </span>
+            )}
+            {/* Validity is high-level info — a cashier checks the deal is still valid
+                before adjusting — so it's a prominent dated pill, not fine print. */}
+            {d.validTo && (
+              <span className="bigcard__valid">
+                <InlineIcon name="calendar-dots-bold" size={18} /> {t.shop.until} {fmtDate(d.validTo)}
+              </span>
+            )}
+            {d.flyerId != null && (
+              <button type="button" className="btn bigcard__flyer" onClick={() => setFlyerOpen(true)}>
+                <InlineIcon name="file-text-bold" /> {t.shop.viewFlyer}
+              </button>
+            )}
+            {/* Revise (pick another price) / remove from the cashier set. The shared
+                RowActions hides itself for a read-only guest, so a babysitter sees a
+                clean proof with no edit affordances. */}
+            <RowActions
+              className="bigcard__actions"
+              onEdit={() => onRevise(selected)}
+              onDelete={() => {
+                onRemove(selected.itemId)
+                setSelected(null)
+              }}
+              editLabel={t.shop.choose}
+              deleteLabel={t.shop.clearPicks}
+            />
+          </div>
         </div>
       </div>
 

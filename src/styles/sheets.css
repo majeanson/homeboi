@@ -2146,15 +2146,21 @@ body.is-recording .add-fab {
   flex: 1 1 auto;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 14px;
+  padding: 16px;
   max-width: 60rem;
   margin: 0 auto;
   width: 100%;
+  /* Centre a short grid in the viewport instead of stranding a couple of tiles at
+     the top of a tall wall tablet (no dead space below); a long grid top-aligns and
+     scrolls (safe center). */
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
 }
 .cashier__hint {
-  margin: 0 0 12px;
+  margin: 0 0 16px;
   text-align: center;
-  font-size: 13px;
+  font-size: clamp(14px, 2vw, 18px);
   color: var(--ink-soft);
 }
 .cashier__grid {
@@ -2162,42 +2168,46 @@ body.is-recording .add-fab {
   margin: 0;
   padding: 0;
   display: grid;
-  /* 2-up on a phone, more on the wide wall sheet — auto-fill keeps the tap
-     targets a comfortable size on any surface. */
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
-  gap: 12px;
+  /* 2-up on a phone, more on the wide wall sheet — auto-fill keeps the tiles a
+     generous, glanceable size (and a comfortable tap target) on any surface. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  gap: 14px;
 }
 .cashier__tile {
   position: relative;
   width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   text-align: center;
   gap: 4px;
-  padding: 12px 10px;
+  padding: 16px 12px;
   border: 0;
   background: var(--card);
   border-radius: var(--radius-md);
   box-shadow: inset 0 0 0 1.5px var(--line);
   cursor: pointer;
   /* Comfortable thumb target on a wall tablet / for a toddler-proof tap. */
-  min-height: 44px;
+  min-height: 96px;
 }
 .cashier__tile.is-shown {
   opacity: 0.5;
 }
 .cashier__tile-img {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   object-fit: contain;
   background: #fff;
   border-radius: var(--radius-sm);
   flex: 0 0 auto;
+  margin-bottom: 2px;
 }
+/* The grocery item — the thing you match against what's on the belt: loud + clear. */
 .cashier__tile-for {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2212,20 +2222,33 @@ body.is-recording .add-fab {
   white-space: nowrap;
   max-width: 100%;
 }
-.cashier__tile-meta {
+/* The price, big enough to read at arm's length while the cashier waits. */
+.cashier__tile-price {
+  margin-top: 2px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ink);
+}
+.cashier__tile-store {
   font-size: 12px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 .cashier__tile-check {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 8px;
+  right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--sage, #88a36f);
   color: #fff;
@@ -2242,71 +2265,126 @@ body.is-recording .add-fab {
 }
 .bigcard {
   width: 100%;
-  max-width: 30rem;
+  /* Fills a wall tablet instead of stranding a thin column in the middle. */
+  max-width: min(94vw, 56rem);
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  gap: 6px;
+  gap: 18px;
 }
-.bigcard__store {
+/* Picture | facts side-by-side on a wide tablet (no dead margins); stacked on a
+   phone. */
+@media (min-width: 760px) {
+  .bigcard {
+    flex-direction: row;
+    justify-content: center;
+    gap: 40px;
+  }
+  .bigcard__info {
+    align-items: flex-start;
+    text-align: left;
+  }
+  /* Beside the facts on a wide tablet the picture can be large — it fills its half. */
+  .bigcard__img {
+    width: min(44vw, 460px);
+    height: min(58vh, 460px);
+  }
+}
+.bigcard__media {
+  flex: 0 1 auto;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 22px;
-  color: var(--ink);
-}
-.bigcard__logo {
-  width: 1.6em;
-  height: 1.6em;
-  object-fit: contain;
-  border-radius: var(--radius-sm);
 }
 .bigcard__img {
-  width: min(72vw, 320px);
-  height: min(40vh, 320px);
+  /* Stacked on a phone: keep the picture modest so the hero PRICE stays high on the
+     screen, not pushed below the fold. */
+  width: min(74vw, 320px);
+  height: min(34vh, 320px);
   object-fit: contain;
   background: #fff;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-  margin: 4px 0;
+}
+.bigcard__info {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 34rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+.bigcard__store {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(22px, 3.4vw, 34px);
+  color: var(--ink);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.bigcard__logo {
+  width: 1.4em;
+  height: 1.4em;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  flex: 0 0 auto;
 }
 .bigcard__for {
-  font-size: 13px;
+  font-size: clamp(15px, 2vw, 20px);
   color: var(--ink-soft);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.bigcard__for strong {
+  color: var(--ink);
+  font-weight: 800;
 }
 .bigcard__name {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: clamp(18px, 2.6vw, 28px);
+  font-weight: 700;
   color: var(--ink);
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .bigcard__price {
   font-family: var(--display);
   font-weight: 800;
-  font-size: 56px;
-  line-height: 1;
+  font-size: clamp(64px, 13vw, 112px);
+  line-height: 0.95;
   color: var(--ink);
 }
 .bigcard__unit {
-  font-size: 16px;
+  font-size: clamp(18px, 2.4vw, 24px);
   font-weight: 700;
   color: var(--sage-deep, var(--ink));
 }
-.bigcard__dates {
-  font-size: 13px;
-  color: var(--ink-soft);
+/* Validity is high-level info (a cashier checks the deal is still good before
+   adjusting), so it's a prominent dated pill — not fine print. Card + border keeps
+   it legible in day AND night. */
+.bigcard__valid {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: clamp(15px, 2vw, 20px);
 }
 .bigcard__flyer {
-  margin-top: 10px;
-  padding: 12px 20px;
-  font-size: 1.05rem;
+  margin-top: 12px;
+  padding: 14px 24px;
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
 }
 /* Secondary actions under the proof: pick another price / remove from the set.
    Reuses the shared RowActions glyph pair; nudged below the card with a little
    breathing room so it never competes with the big price. */
 .bigcard__actions {
-  margin-top: 14px;
+  margin-top: 16px;
 }

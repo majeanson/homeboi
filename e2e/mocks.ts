@@ -26,7 +26,11 @@ const MEMBERS = [
   { id: 'm4', display_name: 'Noah', colour: '#F2A03D', is_child: 1 },
 ]
 
-const BOARD = {
+// Exported so a spec can clone it and serve a richer variant via its own route
+// override (e.g. the cashier spec stages deals on several list lines for a true
+// multi-tile grid — the default fixture stages just one, and the mock board is
+// static so writes can't add more).
+export const BOARD = {
   syncedAt: BASE,
   scope: 'today',
   members: MEMBERS,
