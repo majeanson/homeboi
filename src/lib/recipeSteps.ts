@@ -1,9 +1,14 @@
 // Match a recipe's ingredients to the step that uses them, so each step (in cook
 // mode and the recipe sheet) can show "what you need right now" with its quantity,
 // instead of making you flip back to the full list. Heuristic + offline (no AI):
-// an ingredient belongs to a step when a significant word of its cleaned name
-// appears in the step text. Forgiving — an ingredient that matches no step (salt,
-// a garnish "to taste") simply isn't pinned to one; nothing is lost.
+// an ingredient belongs to a step when a significant WORD of its cleaned name
+// appears as a WORD in the step text. Forgiving — an ingredient that matches no
+// step (salt, a garnish "to taste") simply isn't pinned to one; nothing is lost.
+//
+// The match is whole-word (with a light plural fold), NOT a raw substring: an
+// earlier substring test mis-fired inside longer words — "ail" (garlic) lit up on
+// "t**ail**ler", "lait" on "lait­ue", "sel" on "vais**sel**le" — so an ingredient
+// kept showing on steps that never used it (the "ingredient on a random step" bug).
 import { ingredientName } from './ingredient'
 import { groupSections, isSectionHeading } from './recipeSections'
 
@@ -18,12 +23,26 @@ const norm = (s: string): string =>
     .replace(/œ/g, 'oe')
     .replace(/æ/g, 'ae')
 
-// The significant words of an ingredient's buyable name (≥3 chars, deduped) — the
-// tokens we look for in a step. "Bœuf haché" → ['boeuf','hache']; quantities and
-// units are already stripped by ingredientName, so no "g"/"de"/"1" noise tokens.
+// Fold a French plural to its stem so "oignon" matches "oignons" and "tomates"
+// matches "tomate": drop a single trailing 's'/'x' on words long enough that doing
+// so can't collapse two unrelated short words ("ail", "sel" stay whole). Stripping
+// only the regular plural marker — never an "-es" cluster — keeps "tomate" and
+// "tomates" landing on the same stem without dragging "lait" onto "laitue".
+const stem = (w: string): string => (w.length > 3 ? w.replace(/[sx]$/, '') : w)
+
+// The significant words of an ingredient's buyable name (≥3 chars, deduped, plural-
+// folded) — the tokens we look for in a step. "Bœuf haché" → ['boeuf','hache'];
+// quantities and units are already stripped by ingredientName, so no "g"/"de"/"1"
+// noise tokens.
 function nameTokens(ingredientLine: string): string[] {
   const name = ingredientName(ingredientLine) || ingredientLine
-  return [...new Set(norm(name).split(/[^a-z0-9]+/).filter((w) => w.length >= 3))]
+  return [...new Set(norm(name).split(/[^a-z0-9]+/).filter((w) => w.length >= 3).map(stem))]
+}
+
+// The words of a step, plural-folded into a lookup set, so an ingredient token
+// matches only a whole word (not a fragment inside a longer one).
+function stepWordSet(step: string): Set<string> {
+  return new Set(norm(step).split(/[^a-z0-9]+/).filter((w) => w.length >= 3).map(stem))
 }
 
 // The ingredient lines (original text, WITH quantities) a step uses. Pass the
@@ -44,13 +63,13 @@ export function ingredientsForStep(step: string, ingredients: string[], section?
     })
     if (match) pool = match.items.map((it) => it.text)
   }
-  const s = norm(step)
+  const words = stepWordSet(step)
   // Section markers aren't ingredients — and "## Glaçage" would otherwise match
   // every step that mentions the glaze.
   return pool.filter((ing) => {
     if (isSectionHeading(ing)) return false
     const toks = nameTokens(ing)
-    return toks.length > 0 && toks.some((tok) => s.includes(tok))
+    return toks.length > 0 && toks.some((tok) => words.has(tok))
   })
 }
 

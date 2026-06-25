@@ -63,9 +63,16 @@ const CUP = `tasses?|cups?`
 const METRIC = `kg|mg|cl|dl|ml|g|l`
 const IMPERIAL = `oz|lbs|lb`
 const UNIT = `(?:${TSP}|${TBSP}|${CUP}|${METRIC}|${IMPERIAL})`
+// An optional connector between the amount and the unit — QC recipes write "¼ DE
+// tasse" (a quarter OF a cup), not just "¼ tasse". Mirrors measure.ts's CONNECT so
+// the SAME measurement the colour pills read also gets scaled; without this a
+// non-leading "1/4 de tasse" was pilled but left unscaled (its text — and so its
+// pill colour — stayed at the original amount).
+const CONNECT = `(?:de\\s+|d['’]\\s*|of\\s+)?`
 // A quantity directly before a unit, anywhere in the line (so a parenthetical
-// alternate measure scales too). Groups: 1 = qty, 2 = separator, 3 = unit.
-const QTY_UNIT = new RegExp(`(${Q})(\\s*)(${UNIT})${NOT_LETTER}\\.?`, 'giu')
+// alternate measure scales too). Groups: 1 = qty, 2 = separator (whitespace + any
+// connector word, preserved verbatim in the output), 3 = unit.
+const QTY_UNIT = new RegExp(`(${Q})(\\s*${CONNECT})(${UNIT})${NOT_LETTER}\\.?`, 'giu')
 
 // Parse one already-isolated quantity token to a number. Returns NaN if it
 // somehow doesn't match (callers treat NaN as "leave it alone").

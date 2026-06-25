@@ -27,6 +27,20 @@ describe('ingredientsForStep', () => {
     expect(ingredientsForStep('Saler au goût.', INGS)).toEqual([])
   })
 
+  // Whole-word match: a token must not light up inside a longer, unrelated word —
+  // "ail" (garlic) must NOT match "tailler", "lait" must NOT match "laitue".
+  it('does not match an ingredient name inside a longer word', () => {
+    expect(ingredientsForStep('Tailler finement les légumes.', ['1 gousse d’ail'])).toEqual([])
+    expect(ingredientsForStep('Laver la laitue.', ['250 ml de lait'])).toEqual([])
+    expect(ingredientsForStep('Faire la vaisselle.', ['1 pincée de sel'])).toEqual([])
+  })
+
+  // …but a real plural/singular difference still matches (oignon ↔ oignons).
+  it('matches across a regular plural', () => {
+    expect(ingredientsForStep('Émincer les oignons.', ['1 oignon'])).toEqual(['1 oignon'])
+    expect(ingredientsForStep('Couper la tomate.', ['2 tomates'])).toEqual(['2 tomates'])
+  })
+
   it('keeps the quantities of the lines passed in (scaled or not)', () => {
     expect(ingredientsForStep('Cuire les pâtes.', ['800 g de pâtes'])).toEqual(['800 g de pâtes'])
   })

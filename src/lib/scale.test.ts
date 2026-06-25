@@ -87,6 +87,15 @@ describe('scaleLine', () => {
   it('keeps a measurable fraction (1 ½ c. à soupe), not a times-form', () => {
     expect(scaleLine('1 c. à soupe de miel', 1.5)).toBe('1 ½ c. à soupe de miel')
   })
+  // QC recipes write "¼ DE tasse" (a quarter OF a cup). The connector form must
+  // scale exactly like the bare form — and EVERY one on the line, not just the
+  // leading one (the colour pills read all of them, so all must agree).
+  it('scales a "de tasse" connector form, leading and non-leading', () => {
+    expect(scaleLine('1/4 de tasse de sucre', 2)).toBe('½ de tasse de sucre')
+    expect(scaleLine('Sucre, 1/4 de tasse', 2)).toBe('Sucre, ½ de tasse')
+    expect(scaleLine('2 tasses de farine + 1/4 de tasse de sucre', 2)).toBe('4 tasses de farine + ½ de tasse de sucre')
+    expect(scaleLine('60 ml (1/4 de tasse) de beurre', 2)).toBe('120 ml (½ de tasse) de beurre')
+  })
   it('falls back to a "times" form when the scaled scoop is not measurable', () => {
     // ⅓ tasse × 2.5 = 0.833 — no tidy fraction to scoop → "2 ½× ⅓ tasse".
     expect(scaleLine('⅓ tasse de sucre', 2.5)).toBe('2 ½× ⅓ tasse de sucre')
