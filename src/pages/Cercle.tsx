@@ -170,7 +170,7 @@ function CercleParent() {
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
   // Distinct URL key so it composes with `view` (?section=family&view=list). Famille
   // is the default — the Maisonnée is the heart of the cercle.
-  const [section, setSection] = useTabParam<Section>('section', 'family', ['social', 'family', 'notes', 'business'])
+  const [section, setSection] = useTabParam<Section>('section', 'family', ['social', 'family', 'notes', 'business', 'carnets'])
   // The "focus lens": pick a household member (the same MemberSwitcher as the board /
   // Notes) to re-read every relationship FROM their perspective — Léa's row becomes
   // "Fille" when Marc is focused. null = Maisonnée (each person's own relations, the
