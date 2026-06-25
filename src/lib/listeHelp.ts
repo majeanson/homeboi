@@ -36,8 +36,8 @@ export const LISTE_HELP: Record<string, HelpEntry> = {
     card: 'cashier',
     point: 0,
     body: {
-      fr: 'Passe en mode caisse : tes articles avec une aubaine choisie, prêts à montrer et à pointer à l’épicerie.',
-      en: 'Switch to cashier mode: your items with a picked deal, ready to show and check off at the store.',
+      fr: 'Passe en mode caisse : une grille de tes articles en aubaine. Touche celui que la caissière scanne pour montrer sa preuve de prix.',
+      en: 'Switch to cashier mode: a grid of your items on deal. Tap the one being scanned to show its price proof.',
     },
   },
 }

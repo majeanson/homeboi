@@ -121,7 +121,11 @@ Need live data/route context, so they're catalogued but not rendered as specimen
 `AddSheet`, `MemoControls` (the ＋ Note-rapide audio-memo + draw controls, #38/#14;
 parameterizable via `endpoint`/`affectedKey`/`extraBody` — reused by `CercleNotes`),
 `SharePage` (the `/share` PWA share-target landing → capture, #13),
-`HubLayout`, `RecipeSheet`, `RecipeForm`, `CookMode`, `CashierMode`,
+`HubLayout`, `RecipeSheet`, `RecipeForm`, `CookMode`,
+`CashierMode` (the « Montrer à la caisse » till surface — a **grid** of picked deals;
+tap the one being scanned → a full-screen `.bigcard` proof peek with `‹ Retour`; tapped
+tiles dim with an ephemeral ✓. Random-access, NOT a sequential stepper — the user holds
+the phone and items hit the belt out of order. Revise/remove via `RowActions` in the peek),
 `BusinessesTab` (the « Le cercle » → **Business** tab — a standalone services/vendors
 directory, isolated from the people graph; fetches `BUSINESSES_KEY`, rows + an edit
 `Modal`(`BusinessForm`) + detail peek via `buildBusiness`; **add** is the ＋ FAB's job

@@ -189,12 +189,14 @@ test('real liste overlays (cashier / quick-add / browse)', async ({ page, contex
   if (await present.count()) {
     await present.first().click()
     await page.waitForTimeout(700)
-    await page.screenshot({ path: 'e2e/screenshots/real-cashier-review.png', fullPage: false })
-    const go = page.getByRole('button', { name: /Montrer|Show the cashier/ })
-    if (await go.count()) {
-      await go.first().click()
+    await page.screenshot({ path: 'e2e/screenshots/real-cashier-grid.png', fullPage: false })
+    // Tap a tile → its big proof peek (random-access, no sequential stepper).
+    const tile = page.locator('.cashier__tile')
+    if (await tile.count()) {
+      await tile.first().click()
+      await page.locator('.bigcard').waitFor({ state: 'visible' }).catch(() => {})
       await page.waitForTimeout(600)
-      await page.screenshot({ path: 'e2e/screenshots/real-cashier-present.png', fullPage: false })
+      await page.screenshot({ path: 'e2e/screenshots/real-cashier-peek.png', fullPage: false })
     }
   } else {
     console.log('[info] no staged deal on the real list — cashier button absent, skipped')

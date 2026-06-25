@@ -2134,112 +2134,103 @@ body.is-recording .add-fab {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* The review→present CTA, pinned to the right of the top bar next to ✕ (kept off
-   the portal's bottom edge, which iOS Safari's toolbar covers). Compact so the
-   title + button + ✕ share one row. */
-.cashier__present {
+.cashier__reset {
   margin-left: auto;
   flex: 0 0 auto;
-  padding: 8px 14px;
-  font-size: 0.95rem;
+  padding: 8px 12px;
+  font-size: 0.9rem;
   white-space: nowrap;
 }
-/* When it's the only left-hand element (review bar has no title), let it sit at
-   the start so space-between pushes ✕ to the far edge. */
-.cashier__present--lead {
-  margin-left: 0;
-  margin-right: auto;
-}
-.cashier__count {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink-soft);
-}
-/* Review */
-.cashier__review {
+/* Grid: every picked deal as a tile, tap the one being scanned right now. */
+.cashier__grid-wrap {
   flex: 1 1 auto;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 14px;
-  max-width: 46rem;
+  max-width: 60rem;
   margin: 0 auto;
   width: 100%;
-  /* Centre a short pick set vertically instead of stranding one row at the top
-     above a tall void; a long list top-aligns and scrolls (safe center). */
-  display: flex;
-  flex-direction: column;
-  justify-content: safe center;
 }
-.review-list {
+.cashier__hint {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.cashier__grid {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: grid;
+  /* 2-up on a phone, more on the wide wall sheet — auto-fill keeps the tap
+     targets a comfortable size on any surface. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+  gap: 12px;
+}
+.cashier__tile {
+  position: relative;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-.review-row {
-  display: flex;
   align-items: center;
-  /* Wrap the actions onto their own line when the row is too narrow to hold the
-     "Choisir ce prix" + ✕ buttons beside the text — otherwise a long real flyer
-     name (deal names run 40+ chars) gets crushed into a sliver and wraps one
-     word per line. The body keeps an 11rem floor so it drops the buttons below
-     on a phone but stays inline on the wide (wall) sheet. */
-  flex-wrap: wrap;
-  gap: 10px 12px;
+  text-align: center;
+  gap: 4px;
+  padding: 12px 10px;
+  border: 0;
   background: var(--card);
   border-radius: var(--radius-md);
   box-shadow: inset 0 0 0 1.5px var(--line);
-  padding: 10px 12px;
+  cursor: pointer;
+  /* Comfortable thumb target on a wall tablet / for a toddler-proof tap. */
+  min-height: 44px;
 }
-.review-row__img {
-  width: 52px;
-  height: 52px;
+.cashier__tile.is-shown {
+  opacity: 0.5;
+}
+.cashier__tile-img {
+  width: 64px;
+  height: 64px;
   object-fit: contain;
   background: #fff;
   border-radius: var(--radius-sm);
   flex: 0 0 auto;
 }
-.review-row__body {
-  flex: 1 1 11rem;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.review-row__for {
-  font-size: 11px;
+.cashier__tile-for {
+  font-size: 15px;
   font-weight: 700;
-  color: var(--ink-soft);
-  text-transform: uppercase;
+  color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
 }
-.review-row__name {
-  font-size: 14px;
-  font-weight: 600;
+.cashier__tile-name {
+  font-size: 12px;
+  color: var(--ink-soft);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
 }
-.review-row__meta {
+.cashier__tile-meta {
   font-size: 12px;
-  color: var(--ink-soft);
+  font-weight: 700;
+  color: var(--ink);
 }
-.review-row__actions {
-  flex: 0 0 auto;
+.cashier__tile-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
   display: flex;
-  gap: 4px;
-  /* Push right when inline; keeps them right-aligned once wrapped to line two. */
-  margin-left: auto;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--sage, #88a36f);
+  color: #fff;
 }
-.review-row__del {
-  color: var(--danger, #b4543a);
-}
-/* Present (big stepper) */
+/* Present (the big proof peek) */
 .cashier__stage {
   flex: 1 1 auto;
   overflow-y: auto;
@@ -2313,47 +2304,9 @@ body.is-recording .add-fab {
   padding: 12px 20px;
   font-size: 1.05rem;
 }
-.cashier__nav {
-  flex: 0 0 auto;
-  display: flex;
-  gap: 12px;
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-  border-top: 1.5px solid var(--line);
-}
-.cashier__arrow {
-  flex: 1 1 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 20px;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: var(--card);
-  box-shadow: inset 0 0 0 1.5px var(--line-strong);
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--ink);
-  cursor: pointer;
-}
-.cashier__arrow:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-.cashier__arrow-label {
-  font-family: var(--sans);
-  font-size: 15px;
-  font-weight: 700;
-}
-.cashier__arrow--next {
-  background: var(--marigold);
-  box-shadow: none;
-  color: #3a2f12;
-  flex: 2 1 0;
-}
-.cashier__arrow--done {
-  background: var(--sage, #88a36f);
-  box-shadow: none;
-  color: #fff;
-  flex: 2 1 0;
+/* Secondary actions under the proof: pick another price / remove from the set.
+   Reuses the shared RowActions glyph pair; nudged below the card with a little
+   breathing room so it never competes with the big price. */
+.bigcard__actions {
+  margin-top: 14px;
 }

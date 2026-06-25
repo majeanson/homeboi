@@ -2008,26 +2008,26 @@ export const GUIDE: GuideEntry[] = [
     group: 'concepts',
     title: { fr: 'Mode caissier', en: 'Cashier mode' },
     what: {
-      fr: 'Une vue plein écran à la caisse : coche au fur et à mesure et montre tes preuves de prix pour l’ajustement.',
-      en: 'A full-screen view at the till: check items off as you go and show your price-match proof.',
+      fr: 'À la caisse : une grille de tes rabais. Touche celui que la caissière scanne pour montrer sa preuve de prix, en grand.',
+      en: 'At the till: a grid of your deals. Tap the one being scanned to show its price proof, big.',
     },
     points: [
       {
-        label: { fr: 'Étape par étape', en: 'Step by step' },
+        label: { fr: 'Touche, pas défile', en: 'Tap, don’t scroll' },
         detail: {
-          fr: 'Un gros article à la fois.',
-          en: 'One big item at a time.',
+          fr: 'Tes articles avec un rabais, en grille. Touche celui qui passe sur le tapis — dans n’importe quel ordre.',
+          en: 'Your items with a deal, in a grid. Tap whichever is on the belt — in any order.',
         },
         why: {
-          fr: 'Facile à suivre pendant que ça défile sur le tapis.',
-          en: 'Easy to follow as things move down the belt.',
+          fr: 'Les articles passent dans le désordre : tu choisis, tu n’avances pas dans une liste fixe.',
+          en: 'Items come down the belt out of order: you pick, you don’t advance through a fixed list.',
         },
       },
       {
         label: { fr: 'Preuve de prix', en: 'Price proof' },
         detail: {
-          fr: 'Montre le [[card:deals|rabais]] accroché à l’article : image de circulaire, magasin, prix, dates de validité.',
-          en: 'Shows the [[card:deals|deal]] attached to the item: flyer image, store, price, valid dates.',
+          fr: 'Montre le [[card:deals|rabais]] accroché à l’article : image de circulaire, magasin, prix, dates de validité. [[icon:caret-left-bold]] Retour pour revenir à la grille.',
+          en: 'Shows the [[card:deals|deal]] attached to the item: flyer image, store, price, valid dates. [[icon:caret-left-bold]] Back returns to the grid.',
         },
         why: {
           fr: 'De quoi réclamer l’ajustement « Imbattable » à la caisse, preuve à l’appui.',
@@ -2035,25 +2035,14 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Trois temps', en: 'Three beats' },
+        label: { fr: 'Déjà montré', en: 'Already shown' },
         detail: {
-          fr: 'Réviser la liste → présenter une carte à la fois ([[icon:caret-left-bold]] Précédent / Suivant [[icon:caret-right-bold]], avec « 3/5 ») → un petit écran de remerciement.',
-          en: 'Review the list → present one card at a time ([[icon:caret-left-bold]] Back / Next [[icon:caret-right-bold]], with “3/5”) → a small thank-you screen.',
+          fr: 'Un article montré se grise avec un ✓. « Tout réafficher » remet la grille à neuf.',
+          en: 'A shown item dims with a ✓. “Show all again” resets the grid.',
         },
         why: {
-          fr: 'Une cadence claire pour ne pas fouiller dans l’app devant la caissière.',
-          en: 'A clear rhythm so you’re not fumbling in the app in front of the cashier.',
-        },
-      },
-      {
-        label: { fr: 'Rendre l’appareil calmement', en: 'Hand the device back calmly' },
-        detail: {
-          fr: 'À la fin, le bouton « Continuer » n’apparaît qu’après une courte pause.',
-          en: 'At the end, the “Continue” button only appears after a short pause.',
-        },
-        why: {
-          fr: 'Pas de sortie accidentelle en pleine transaction.',
-          en: 'No accidental exit mid-transaction.',
+          fr: 'Pour suivre où tu en es dans un gros panier — sans pointage ni compte (ça reste calme).',
+          en: 'To keep track in a big cart — with no score or count (it stays calm).',
         },
       },
     ],

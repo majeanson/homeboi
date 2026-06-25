@@ -499,32 +499,6 @@
   text-align: center;
 }
 
-/* Cashier "thank you" hand-back screen. */
-.cashier--thanks {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.cashier__thanks {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 2rem;
-}
-.cashier__thanks-emoji {
-  font-size: 4rem;
-}
-.cashier__thanks-title {
-  font-family: var(--display);
-  font-size: clamp(2rem, 8vw, 3rem);
-  margin: 0;
-}
-.cashier__thanks-hint {
-  color: var(--ink-soft);
-}
-
 /* Offline awareness bar — calm amber, full-width at the top of the hub body, so a
    glance at cached data is clearly flagged as not-live. NFR-OFFLINE-1. Theme
    tokens keep the text legible in both day and night. */

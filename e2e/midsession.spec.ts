@@ -57,24 +57,18 @@ test('ms: liste deals browser', async ({ page }) => {
   await shot(page, 'liste-deals-browser')
 })
 
-test('ms: cashier review + present + thanks', async ({ page }) => {
+test('ms: cashier grid + proof peek', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await open(page, '/liste')
   await page.getByRole('button', { name: /Montrer à la caisse/ }).click()
   await page.locator('.cashier').waitFor({ timeout: 5000 })
   await page.waitForTimeout(400)
-  await shot(page, 'cashier-review')
-  // Into the big stepper.
-  await page.locator('.cashier__present').click()
-  await page.waitForTimeout(500)
-  await shot(page, 'cashier-present')
-  // Single pick → the "done" arrow ends the stepper; capture the thanks screen.
-  const done = page.locator('.cashier__arrow--done')
-  if (await done.count()) {
-    await done.click()
-    await page.waitForTimeout(500)
-    await shot(page, 'cashier-thanks')
-  }
+  await shot(page, 'cashier-grid')
+  // Tap a tile → the big proof peek (random-access, no sequential stepper).
+  await page.locator('.cashier__tile').first().click()
+  await page.locator('.bigcard').waitFor({ timeout: 5000 })
+  await page.waitForTimeout(400)
+  await shot(page, 'cashier-peek')
 })
 
 test('ms: liste edit item sheet', async ({ page }) => {
@@ -128,13 +122,13 @@ test('ms: board add sheet', async ({ page }) => {
 })
 
 // A couple of night-theme overlay shots (contrast check on portals/sheets).
-test('ms: cashier review night', async ({ page }) => {
+test('ms: cashier grid night', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await open(page, '/liste', 'night')
   await page.getByRole('button', { name: /Montrer à la caisse/ }).click()
   await page.locator('.cashier').waitFor({ timeout: 5000 })
   await page.waitForTimeout(400)
-  await shot(page, 'cashier-review-night')
+  await shot(page, 'cashier-grid-night')
 })
 
 test('ms: liste add sheet night', async ({ page }) => {

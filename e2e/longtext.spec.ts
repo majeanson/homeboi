@@ -103,16 +103,17 @@ test('lt phone: recipe sheet long title', async ({ page }) => {
   await expect.poll(() => docOverflow(page, '.recipe-modal'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
 })
 
-test('lt phone: cashier review long names', async ({ page }) => {
+test('lt phone: cashier grid long names', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await mockApi(page, { longText: true })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
   await page.goto('/liste')
   await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
   await page.getByRole('button', { name: /Montrer/ }).first().click()
-  await page.locator('.cashier').waitFor({ state: 'visible', timeout: 15_000 })
+  await page.locator('.cashier__tile').first().waitFor({ state: 'visible', timeout: 15_000 })
   await page.waitForTimeout(400)
-  await page.screenshot({ path: 'e2e/screenshots/lt-cashier-review.png', fullPage: false })
+  await page.screenshot({ path: 'e2e/screenshots/lt-cashier-grid.png', fullPage: false })
+  // Long deal names must ellipsize inside the tile, not blow out the grid.
   await expect.poll(() => docOverflow(page, '.cashier'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
 })
 

@@ -83,14 +83,14 @@ for (const theme of ['day', 'night'] as Theme[]) {
     await shoot(page, `sheet-pricematch-phone${sfx}`)
   })
 
-  test(`sheet-cashier-review${sfx}`, async ({ page }) => {
+  test(`sheet-cashier-grid${sfx}`, async ({ page }) => {
     await boot(page, '/liste', theme)
     await page.locator('.add-fab').click() // auto-pick (Meilleurs prix) lives in the ＋ sheet now
     await page.getByRole('button', { name: /Choisir les meilleurs/ }).click()
     await page.locator('.cashier').waitFor({ state: 'visible', timeout: 15_000 })
-    await page.locator('.review-row').first().waitFor({ state: 'visible' }).catch(() => {})
+    await page.locator('.cashier__tile').first().waitFor({ state: 'visible' }).catch(() => {})
     await page.waitForTimeout(300)
-    await shoot(page, `sheet-cashier-review-phone${sfx}`)
+    await shoot(page, `sheet-cashier-grid-phone${sfx}`)
   })
 }
 
@@ -120,17 +120,17 @@ test('sheet-recipe-form', async ({ page }) => {
   await shoot(page, 'sheet-recipe-form-phone')
 })
 
-test('sheet-cashier-present', async ({ page }) => {
+test('sheet-cashier-peek', async ({ page }) => {
   await boot(page, '/liste')
   await page.locator('.add-fab').click() // auto-pick (Meilleurs prix) lives in the ＋ sheet now
   await page.getByRole('button', { name: /Choisir les meilleurs/ }).click()
   await page.locator('.cashier').waitFor({ state: 'visible', timeout: 15_000 })
-  // The "present" CTA moved from a bottom bar (.cashier__go) to the top bar next
-  // to ✕ (iOS-toolbar-safe) — see CashierMode.
-  await page.locator('.cashier__present').click()
+  // Random-access now: tap the tile of the item being scanned → its big proof peek
+  // (no sequential present-stepper anymore). See CashierMode.
+  await page.locator('.cashier__tile').first().click()
   await page.locator('.bigcard').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
-  await shoot(page, 'sheet-cashier-present-phone')
+  await shoot(page, 'sheet-cashier-peek-phone')
 })
 
 test('sheet-deals-store', async ({ page }) => {

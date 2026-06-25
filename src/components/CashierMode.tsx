@@ -3,18 +3,20 @@ import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
 import { type Pick, money } from '../lib/deals'
-import { isGuest } from '../lib/device'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
+import { RowActions } from './RowActions'
 import { useModal } from '../lib/useModal'
 
-// "Show the cashier" mode. Two phases:
-//   review  — every picked deal in a list; revise or remove any before you go.
-//   present — a big one-card-at-a-time stepper to hold up at the till: store,
-//             picture, BIG price, unit price, dates, and a "view flyer" button.
-//             Back / Next, a progress count, nothing else to think about.
-// Deliberately oversized and low-text so it's usable at a glance under pressure.
+// "Show the cashier" mode. The user holds the phone (the cashier never does) and
+// items hit the belt in an unpredictable order — so this is RANDOM-ACCESS, not a
+// sequential stepper:
+//   grid — every picked deal as a tile; tap the one being scanned right now.
+//   peek — that pick blown up full-screen (store, picture, BIG price, unit price,
+//          dates, "view flyer"), with ‹ Retour back to the grid to pick the next.
+// A tapped tile dims with a ✓ (ephemeral, this trip only — no count, stays calm) so
+// a big cart stays trackable. Deliberately oversized + low-text for use under pressure.
 export function CashierMode({
   picks,
   onRevise,
@@ -29,25 +31,17 @@ export function CashierMode({
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
-  // Read-only guest: the present-phase stepper is all reads (keep), but the review
-  // phase's revise/remove per pick are writes — hide that action cluster.
-  const ro = isGuest()
-  // Esc-to-close + scroll-lock + focus-trap. One ref rides whichever phase view
-  // is rendered (only one is mounted at a time).
+  // Esc-to-close + scroll-lock + focus-trap. One ref rides whichever view is
+  // rendered (only one — grid or peek — is mounted at a time).
   const cashierRef = useRef<HTMLDivElement>(null)
   useModal(cashierRef, onClose)
-  const [phase, setPhase] = useState<'review' | 'present' | 'thanks'>('review')
-  const [idx, setIdx] = useState(0)
+  // selected === null → the grid; a Pick → its full-screen proof peek.
+  const [selected, setSelected] = useState<Pick | null>(null)
+  // Which picks have been shown this trip — dims the tile with a ✓ so a big,
+  // unordered cart stays trackable. Ephemeral by design (resets when the mode
+  // closes), and carries NO count/score, so it stays calm (no streak/points).
+  const [shown, setShown] = useState<Set<string>>(() => new Set())
   const [flyerOpen, setFlyerOpen] = useState(false)
-  // After the last deal: a "thank you" hand-back screen. The Continue button only
-  // appears after a 5s pause, so the device is calmly handed back to the user.
-  const [canContinue, setCanContinue] = useState(false)
-  useEffect(() => {
-    if (phase !== 'thanks') return
-    setCanContinue(false)
-    const id = setTimeout(() => setCanContinue(true), 5000)
-    return () => clearTimeout(id)
-  }, [phase])
 
   // Opened at home on wifi → warm each pick's flyer + clipping images so the
   // full-flyer proof is ready at the till even on poor signal. Re-runs only when
@@ -66,22 +60,18 @@ export function CashierMode({
       : d.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { month: 'short', day: 'numeric' })
   }
 
-  // Nothing picked yet — shouldn't normally open, but guard anyway.
+  // Show a pick: mark it shown (✓) and open its proof.
+  const show = (p: Pick) => {
+    setShown((s) => (s.has(p.itemId) ? s : new Set(s).add(p.itemId)))
+    setSelected(p)
+  }
+
+  // Nothing picked yet — CashierPage redirects in this case, but guard anyway.
   if (picks.length === 0) {
     return (
-      <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true">
+      <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true" aria-label={t.shop.cashierTitle}>
         <div className="cashier__bar">
           <span className="cashier__title">{t.shop.cashierTitle}</span>
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={() => {
-              setIdx(0)
-              setPhase('present')
-            }}
-          >
-            {t.shop.present} ({picks.length}) <InlineIcon name="arrow-right-bold" />
-          </button>
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
             <Icon name="x-bold" size={18} />
           </button>
@@ -91,91 +81,60 @@ export function CashierMode({
     )
   }
 
-  // ---- Review phase: tweak picks before presenting -------------------------
-  if (phase === 'review') {
+  // ---- Grid: every picked deal as a tile, tap the one being scanned ---------
+  if (!selected) {
     return (
       <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true" aria-label={t.shop.cashierTitle}>
         <div className="cashier__bar">
-          {/* No redundant title here: the big CTA already reads "Montrer à la
-              caisse". It lives up next to ✕, NOT as a bottom bar button — on iOS
-              Safari a portal's bottom edge sits under the browser toolbar, so a
-              footer CTA there is unreachable; the top bar is always clear. */}
-          <button
-            type="button"
-            className="btn btn--primary mono cashier__present cashier__present--lead"
-            onClick={() => {
-              setIdx(0)
-              setPhase('present')
-            }}
-          >
-            {t.shop.present} ({picks.length}) <InlineIcon name="arrow-right-bold" />
-          </button>
+          <span className="cashier__title">{t.shop.cashierTitle}</span>
+          {/* Reset the within-trip ✓ marks — only when there's something to reset. */}
+          {shown.size > 0 && (
+            <button type="button" className="btn btn--ghost mono cashier__reset" onClick={() => setShown(new Set())}>
+              <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.showAgain}
+            </button>
+          )}
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
             <Icon name="x-bold" size={18} />
           </button>
         </div>
 
-        <div className="cashier__review">
-          <ul className="review-list">
-            {picks.map((p) => (
-              <li key={p.itemId} className="review-row">
-                {p.deal.image && <ZoomableImg className="review-row__img" src={p.deal.image} alt={p.deal.name} />}
-                <div className="review-row__body">
-                  <span className="review-row__for mono">{p.itemText}</span>
-                  <span className="review-row__name">{p.deal.name}</span>
-                  <span className="review-row__meta mono">
-                    {p.deal.merchant} · {money(p.deal.price)}
-                    {p.deal.unitPrice != null ? ` · ${money(p.deal.unitPrice)}${p.deal.unitLabel}` : ''}
-                  </span>
-                </div>
-                {!ro && (
-                  <div className="review-row__actions">
-                    <button type="button" className="btn btn--ghost mono" onClick={() => onRevise(p)}>
-                      {t.shop.choose}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn--ghost mono review-row__del"
-                      onClick={() => onRemove(p.itemId)}
-                      aria-label={t.shop.clearPicks}
-                    >
-                      <Icon name="x-bold" size={15} />
-                    </button>
-                  </div>
-                )}
-              </li>
-            ))}
+        <div className="cashier__grid-wrap">
+          <p className="cashier__hint mono">{t.shop.tapToShow}</p>
+          <ul className="cashier__grid">
+            {picks.map((p) => {
+              const isShown = shown.has(p.itemId)
+              return (
+                <li key={p.itemId}>
+                  <button
+                    type="button"
+                    className={`cashier__tile${isShown ? ' is-shown' : ''}`}
+                    onClick={() => show(p)}
+                  >
+                    {p.deal.image && (
+                      <img className="cashier__tile-img" src={p.deal.image} alt="" loading="lazy" />
+                    )}
+                    <span className="cashier__tile-for">{p.itemText}</span>
+                    <span className="cashier__tile-name mono">{p.deal.name}</span>
+                    <span className="cashier__tile-meta mono">
+                      {p.deal.merchant} · {money(p.deal.price)}
+                    </span>
+                    {isShown && (
+                      <span className="cashier__tile-check" aria-label={t.shop.shown}>
+                        <Icon name="check-bold" size={14} />
+                      </span>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         </div>
       </div>
     )
   }
 
-  // ---- Thanks phase: hand the device back, Continue after a 5s pause -------
-  if (phase === 'thanks') {
-    return (
-      <div ref={cashierRef} className="cashier cashier--thanks" role="dialog" aria-modal="true" aria-label={t.shop.thanks}>
-        <div className="cashier__thanks">
-          <span className="cashier__thanks-emoji" aria-hidden="true">
-            <Icon name="heart-fill" size={56} color="#E8B84B" />
-          </span>
-          <h2 className="cashier__thanks-title">{t.shop.thanks}</h2>
-          <p className="cashier__thanks-hint mono">{t.shop.handBack}</p>
-          {canContinue && (
-            <button type="button" className="btn btn--primary" onClick={onClose}>
-              {t.shop.continueApp}
-            </button>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  // ---- Present phase: big one-at-a-time stepper ----------------------------
-  const cur = picks[Math.min(idx, picks.length - 1)]
-  const d = cur.deal
-  const atFirst = idx === 0
-  const atLast = idx === picks.length - 1
+  // ---- Peek: the picked deal blown up, the proof to hold up at the till -----
+  const d = selected.deal
 
   return (
     <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true" aria-label={t.shop.cashierTitle}>
@@ -183,14 +142,11 @@ export function CashierMode({
         <button
           type="button"
           className="btn btn--ghost mono"
-          onClick={() => setPhase('review')}
-          aria-label={t.shop.prev}
+          onClick={() => setSelected(null)}
+          aria-label={t.shop.back}
         >
-          <InlineIcon name="caret-left-bold" /> {t.shop.cashierTitle}
+          <InlineIcon name="caret-left-bold" /> {t.shop.back}
         </button>
-        <span className="cashier__count mono">
-          {idx + 1} / {picks.length}
-        </span>
         <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
           <Icon name="x-bold" size={18} />
         </button>
@@ -206,7 +162,7 @@ export function CashierMode({
           </span>
           {d.image && <ZoomableImg className="bigcard__img" src={d.image} alt={d.name} />}
           <span className="bigcard__for mono">
-            {t.shop.matchFor}: {cur.itemText}
+            {t.shop.matchFor}: {selected.itemText}
           </span>
           <span className="bigcard__name">{d.name}</span>
           <span className="bigcard__price">{money(d.price)}</span>
@@ -231,33 +187,20 @@ export function CashierMode({
               <InlineIcon name="file-text-bold" /> {t.shop.viewFlyer}
             </button>
           )}
+          {/* Revise (pick another price) / remove from the cashier set. The shared
+              RowActions hides itself for a read-only guest, so a babysitter sees a
+              clean proof with no edit affordances. */}
+          <RowActions
+            className="bigcard__actions"
+            onEdit={() => onRevise(selected)}
+            onDelete={() => {
+              onRemove(selected.itemId)
+              setSelected(null)
+            }}
+            editLabel={t.shop.choose}
+            deleteLabel={t.shop.clearPicks}
+          />
         </div>
-      </div>
-
-      <div className="cashier__nav">
-        <button
-          type="button"
-          className="cashier__arrow"
-          onClick={() => setIdx((i) => Math.max(0, i - 1))}
-          disabled={atFirst}
-          aria-label={t.shop.prev}
-        >
-          <Icon name="arrow-left-bold" size={20} /><span className="cashier__arrow-label">{t.shop.prev}</span>
-        </button>
-        {atLast ? (
-          <button type="button" className="cashier__arrow cashier__arrow--done" onClick={() => setPhase('thanks')}>
-            <Icon name="check-bold" size={20} /><span className="cashier__arrow-label">{t.shop.done}</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="cashier__arrow cashier__arrow--next"
-            onClick={() => setIdx((i) => Math.min(picks.length - 1, i + 1))}
-            aria-label={t.shop.next}
-          >
-            <span className="cashier__arrow-label">{t.shop.next}</span><Icon name="arrow-right-bold" size={20} />
-          </button>
-        )}
       </div>
 
       {flyerOpen && d.flyerId != null && (
