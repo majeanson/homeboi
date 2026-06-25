@@ -424,21 +424,30 @@ function ShareInfoEditor({ help }: { help?: HelpMode }) {
   )
 }
 
-// « Diffuser au salon » — set up a permanent read-only TV face for the living room.
-// Three scenes share one flow (pick the face, mint a read-only token, then either
-// cast from Chrome — the bonus one-tap, only on a Chromium device — or, the path that
-// works for EVERYONE since iOS can't START a cast, open the link/QR once in any TV
-// browser so it holds the screen as a permanent second display):
-//   board   → the full board                       (showcase token, /cast)
-//   ambient → the screensaver: clock + photo frame (showcase token, /cast?scene=ambient)
-//   welcome → the visitor window: wifi + consignes (welcome token,  /welcome)
-// It reuses the showcase kind for board/ambient on purpose: the full board reads
-// board+meals+recipes+household on mount, so a narrower scope would 403 its own deps.
+// « Diffuser au salon » — set up a TV face for the living room. Pick the face, mint the
+// right credential, then either cast from Chrome (the bonus one-tap, only on a Chromium
+// device) or — the path that works for EVERYONE since iOS can't START a cast — open the
+// link/QR once in any TV browser so it holds the screen:
+//   board   → the full board     — a PERMANENT, revocable read-only DISPLAY device
+//   ambient → the screensaver    — the same permanent display device (/cast?scene=ambient)
+//   welcome → the visitor window — a time-boxed WELCOME guest link (24 h), /welcome
+// board/ambient ride a display DEVICE token (never expires; killed from the paired-
+// devices list, Réglages ▸ Tablettes); they read board+meals+recipes+household, which a
+// kiosk-scope device can. welcome needs the guest-curated /welcome window → guest token.
 type CastScene = 'board' | 'ambient' | 'welcome'
-const CAST_SCENES: Record<CastScene, { kind: GuestKind; link: (origin: string, token: string) => string }> = {
-  board: { kind: 'showcase', link: (o, tk) => `${o}/cast?guest=${encodeURIComponent(tk)}` },
-  ambient: { kind: 'showcase', link: (o, tk) => `${o}/cast?scene=ambient&guest=${encodeURIComponent(tk)}` },
-  welcome: { kind: 'welcome', link: (o, tk) => `${o}/welcome?guest=${encodeURIComponent(tk)}` },
+const CAST_SCENES: Record<
+  CastScene,
+  { cred: 'display' | 'guest'; kind?: GuestKind; link: (origin: string, token: string, hh: string) => string }
+> = {
+  board: {
+    cred: 'display',
+    link: (o, tk, hh) => `${o}/cast?display=${encodeURIComponent(tk)}&hh=${encodeURIComponent(hh)}`,
+  },
+  ambient: {
+    cred: 'display',
+    link: (o, tk, hh) => `${o}/cast?scene=ambient&display=${encodeURIComponent(tk)}&hh=${encodeURIComponent(hh)}`,
+  },
+  welcome: { cred: 'guest', kind: 'welcome', link: (o, tk) => `${o}/welcome?guest=${encodeURIComponent(tk)}` },
 }
 
 function CastTvSection({ help }: { help?: HelpMode }) {
@@ -448,8 +457,10 @@ function CastTvSection({ help }: { help?: HelpMode }) {
   const [scene, setScene] = useState<CastScene>('board')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  // The raw token (the sender needs it) — the shareable link is derived from it.
+  // The raw token (the sender needs it) + householdId (a display link carries it so the
+  // TV can stash the device token); the shareable link is derived from both.
   const [token, setToken] = useState<string | null>(null)
+  const [hh, setHh] = useState('')
   const [copied, setCopied] = useState(false)
   const [casting, setCasting] = useState(false)
   // Show the one-tap cast button only where the Web Sender can actually run (Chrome
@@ -457,21 +468,37 @@ function CastTvSection({ help }: { help?: HelpMode }) {
   const canCast = castSenderPossible()
   if (ro) return null
   const cfg = CAST_SCENES[scene]
-  const link = token ? cfg.link(window.location.origin, token) : null
+  const link = token ? cfg.link(window.location.origin, token, hh) : null
 
-  // Mint a fresh read-only TV token (the scene's kind, 7-day clamp) and remember it.
-  async function mint(): Promise<string> {
+  // Mint the scene's credential. A display scene creates a PERMANENT revocable device
+  // (pair/devices mintDisplay) and returns its token + householdId; welcome mints a 24 h
+  // guest token. NOTE: this runs in the OPERATOR's browser — we never call setDeviceToken
+  // here (that would turn THIS device into the display); we only hand the token to the
+  // link/QR for the TV to stash.
+  async function mint(): Promise<{ token: string; hh: string }> {
+    if (cfg.cred === 'display') {
+      const label = `${t.operator.castDisplayLabel} — ${scene === 'ambient' ? t.operator.castSceneAmbient : t.operator.castSceneBoard}`
+      const res = await api<{ token: string; householdId: string }>('pair/devices', {
+        method: 'POST',
+        body: { mintDisplay: true, label },
+      })
+      setToken(res.token)
+      setHh(res.householdId)
+      return { token: res.token, hh: res.householdId }
+    }
     const res = await api<{ guestToken: string }>('guest/start', {
       method: 'POST',
-      body: { kind: cfg.kind, ttlSeconds: 7 * 24 * 3600 },
+      body: { kind: cfg.kind, ttlSeconds: 24 * 3600 },
     })
     setToken(res.guestToken)
-    return res.guestToken
+    setHh('')
+    return { token: res.guestToken, hh: '' }
   }
 
   function chooseScene(s: CastScene) {
     setScene(s)
     setToken(null) // a token minted for the old scene's link no longer matches it
+    setHh('')
     setCopied(false)
     setErr(null)
   }
@@ -490,16 +517,16 @@ function CastTvSection({ help }: { help?: HelpMode }) {
     }
   }
 
-  // One-tap cast (Chrome only): ensure a token, then open the device picker + launch
-  // the receiver, handing it the token + chosen scene. Any failure (cancelled picker,
-  // non-Chrome) falls back to the link/QR below.
+  // One-tap cast (Chrome only): ensure a token, then open the device picker + launch the
+  // receiver, handing it the token, scene, and (for a display) the device flag + hh. Any
+  // failure (cancelled picker, non-Chrome) falls back to the link/QR below.
   async function castNow() {
     if (casting) return
     setCasting(true)
     setErr(null)
     try {
-      const tok = token ?? (await mint())
-      await castToSalon(tok, scene)
+      const minted = token ? { token, hh } : await mint()
+      await castToSalon(minted.token, scene, cfg.cred === 'display', minted.hh)
     } catch {
       setErr(t.operator.castFailed)
     } finally {

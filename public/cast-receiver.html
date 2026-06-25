@@ -57,11 +57,22 @@
         // token shows the app's pair prompt until the sender's token message arrives, which
         // reloads here. `scene` selects the face: 'ambient' = the screensaver (a permanent
         // photo-frame), 'welcome' = the visitor window (/welcome), anything else = the board.
-        function showBoard(token, scene) {
+        function showBoard(token, scene, display, hh) {
           var base = scene === 'welcome' ? '/welcome' : '/cast'
           var params = []
           if (scene === 'ambient') params.push('scene=ambient')
-          if (token) params.push('guest=' + encodeURIComponent(token))
+          if (token) {
+            // A 'display' token is a permanent DEVICE credential (board/ambient) — main.tsx
+            // stashes ?display= on the device path so the puck holds the screen forever; a
+            // guest token (welcome) rides ?guest= and expires. hh = householdId for the
+            // device-path stash.
+            if (display) {
+              params.push('display=' + encodeURIComponent(token))
+              if (hh) params.push('hh=' + encodeURIComponent(hh))
+            } else {
+              params.push('guest=' + encodeURIComponent(token))
+            }
+          }
           frame.src = base + (params.length ? '?' + params.join('&') : '')
           frame.hidden = false
           wait.style.display = 'none'
@@ -69,7 +80,7 @@
 
         var context = cast.framework.CastReceiverContext.getInstance()
         context.addCustomMessageListener(NS, function (e) {
-          if (e && e.data && e.data.token) showBoard(e.data.token, e.data.scene)
+          if (e && e.data && e.data.token) showBoard(e.data.token, e.data.scene, e.data.display, e.data.hh)
         })
 
         var options = new cast.framework.CastReceiverOptions()
@@ -82,7 +93,7 @@
 
         // Try a stored-token (or pair-prompt) resume right away; the token message, when it
         // arrives, reloads the iframe with the fresh credential + chosen scene.
-        showBoard(null, 'board')
+        showBoard(null, 'board', false, '')
       })()
     </script>
   </body>

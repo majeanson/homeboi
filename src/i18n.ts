@@ -473,6 +473,7 @@ export const FR = {
     longJeu: 'Le long jeu',
     overdue: 'À prévoir bientôt',
     replaceAround: (year: number) => `À prévoir vers ${year}`,
+    yearsOut: (n: number) => `dans ~${n} an${n > 1 ? 's' : ''}`,
     entretien: 'Entretien',
     recent: 'Dernières entrées',
     identity: 'Identité',
@@ -1452,18 +1453,21 @@ export const FR = {
     castSceneAmbient: 'L’ambiance — horloge & photos',
     castSceneWelcome: 'L’accueil — wifi & consignes',
     castSceneHint: {
-      board: 'Le babillard complet, en lecture seule.',
+      board: 'Le babillard complet, en lecture seule. Écran permanent — révocable depuis Réglages ▸ Tablettes.',
       ambient:
-        'L’écran de veille : grande horloge, date et cadre photo qui défile. Parfait comme cadre photo permanent au salon.',
-      welcome: 'La fenêtre d’accueil pour les visiteurs : wifi, jour des poubelles et consignes de la maison.',
+        'L’écran de veille : grande horloge, date et cadre photo qui défile. Écran permanent — révocable depuis Réglages ▸ Tablettes.',
+      welcome:
+        'La fenêtre d’accueil pour les visiteurs : wifi, jour des poubelles et consignes. Lien temporaire (24 h).',
     },
+    // Label given to a permanent TV (a read-only 'display' device) in the devices list.
+    castDisplayLabel: 'Téléviseur du salon',
     castGenerate: 'Générer le lien TV',
     castReady: 'Lien TV prêt — ouvre-le dans le navigateur du téléviseur, ou diffuse-le depuis Chrome :',
     castStep1: 'Ouvre ce lien dans Google Chrome sur l’ordinateur.',
     castStep2: 'Menu ⋮ ▸ Caster… ▸ choisis le Chromecast.',
     castStep3: 'Sources ▸ « Caster l’onglet » — le babillard s’affiche au salon.',
     castCaveat:
-      'En diffusant l’onglet depuis Chrome, l’ordinateur doit rester allumé ; ouvert directement dans le navigateur du téléviseur, non. Le lien est temporaire (jusqu’à 7 jours ; l’accueil, 24 h) — regénère-le quand le téléviseur perd l’accès.',
+      'En diffusant l’onglet depuis Chrome, l’ordinateur doit rester allumé ; ouvert directement dans le navigateur du téléviseur, non. Le babillard et l’ambiance restent jusqu’à ce que tu les révoques (Réglages ▸ Tablettes) ; l’accueil expire après 24 h.',
     // Stage 2 — le bouton « Diffuser maintenant » (Chrome seulement) lance le récepteur.
     castNow: 'Diffuser maintenant',
     castNowBusy: 'Diffusion…',
@@ -2536,6 +2540,7 @@ export const EN: typeof FR = {
     longJeu: 'The long game',
     overdue: 'Plan for it soon',
     replaceAround: (year: number) => `Plan around ${year}`,
+    yearsOut: (n: number) => `in ~${n} yr${n > 1 ? 's' : ''}`,
     entretien: 'Upkeep',
     recent: 'Latest entries',
     identity: 'Identity',
@@ -3495,18 +3500,20 @@ export const EN: typeof FR = {
     castSceneAmbient: 'Ambience — clock & photos',
     castSceneWelcome: 'Welcome — wifi & house rules',
     castSceneHint: {
-      board: 'The full board, read-only.',
+      board: 'The full board, read-only. A permanent screen — revocable from Réglages ▸ Tablettes.',
       ambient:
-        'The screensaver: a big clock, date and a slow photo frame. Perfect as a permanent photo frame in the living room.',
-      welcome: 'The visitor welcome window: wifi, bin day and house rules.',
+        'The screensaver: a big clock, date and a slow photo frame. A permanent screen — revocable from Réglages ▸ Tablettes.',
+      welcome: 'The visitor welcome window: wifi, bin day and house rules. A temporary link (24 h).',
     },
+    // Label given to a permanent TV (a read-only 'display' device) in the devices list.
+    castDisplayLabel: 'Living-room TV',
     castGenerate: 'Generate TV link',
     castReady: 'TV link ready — open it in the TV’s browser, or cast it from Chrome:',
     castStep1: 'Open this link in Google Chrome on the computer.',
     castStep2: 'Menu ⋮ ▸ Cast… ▸ pick the Chromecast.',
     castStep3: 'Sources ▸ “Cast tab” — the board appears on the TV.',
     castCaveat:
-      'When casting the tab from Chrome, the computer must stay awake; opened directly in the TV’s browser, it needn’t. The link is time-boxed (up to 7 days; welcome, 24 h) — regenerate it when the TV loses access.',
+      'When casting the tab from Chrome, the computer must stay awake; opened directly in the TV’s browser, it needn’t. The board and ambience stay until you revoke them (Réglages ▸ Tablettes); welcome expires after 24 h.',
     // Stage 2 — the "Cast now" button (Chrome only) launches the receiver directly.
     castNow: 'Cast now',
     castNowBusy: 'Casting…',

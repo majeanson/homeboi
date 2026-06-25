@@ -34,6 +34,29 @@ export function clearDeviceToken(): void {
 
 export const isPaired = () => !!getDeviceToken()
 
+// A 'display' is a PERMANENT read-only TV (a living-room screen showing /cast). It rides
+// the DEVICE-token path above (revocable, never expires) but — unlike a wall-tablet
+// kiosk — must always show the shared Maisonnée view, so we flag it here for CastPage to
+// clear any picked face. Set when a `?display=` link boots the screen (see main.tsx).
+const DISPLAY_KEY = 'babillard-display'
+
+export function setDisplay(on: boolean): void {
+  try {
+    if (on) localStorage.setItem(DISPLAY_KEY, '1')
+    else localStorage.removeItem(DISPLAY_KEY)
+  } catch {
+    /* noop */
+  }
+}
+
+export const isDisplay = () => {
+  try {
+    return localStorage.getItem(DISPLAY_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 // Guest (babysitter) token. A stateless, read-only, time-boxed credential the
 // operator hands out. Stored separately from the device token; sent on the SAME
 // X-Device-Token header (the server distinguishes the two by payload tag). A

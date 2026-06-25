@@ -62,6 +62,12 @@ export function authed(
       if (actor.scope === 'guest' && actor.guestKind !== 'intake' && !SAFE_METHODS.has(method)) {
         return forbidden('Guest access is read-only.')
       }
+      // A 'display' device (a living-room TV showing /cast forever) is a read-only
+      // kiosk — same stance as a guest, enforced centrally so no write path leaks.
+      // Its only privilege over a guest is permanence + revocability (a devices row).
+      if (actor.scope === 'kiosk' && actor.deviceKind === 'display' && !SAFE_METHODS.has(method)) {
+        return forbidden('Display access is read-only.')
+      }
       // AI off (binding unset or household-disabled) → 503 before the handler runs.
       if (opts?.requiresAi && !(await aiUsable(ctx.env, actor))) {
         return serviceUnavailable('IA indisponible.')

@@ -71,13 +71,19 @@ function loadSender(): Promise<boolean> {
 }
 
 // Open the device picker, launch the receiver on the chosen Chromecast, and hand it the
-// read-only cast token. The optional `scene` selects which TV face the receiver shows
-// ('board' = the full board, 'ambient' = the screensaver, 'welcome' = the visitor
-// window); the receiver maps it to a URL. Throws 'cast-unavailable' when the sender SDK
-// isn't usable here (non-Chrome) — the caller shows the cast-tab fallback. A
-// user-cancelled picker rejects too; the caller treats any throw as "not cast, nothing
-// changed".
-export async function castToSalon(token: string, scene: string = 'board'): Promise<void> {
+// read-only cast token. `scene` selects which TV face the receiver shows ('board' = the
+// full board, 'ambient' = the screensaver, 'welcome' = the visitor window). `display`
+// marks the token as a PERMANENT device credential (board/ambient) vs a time-boxed guest
+// token (welcome): the receiver stashes a display token on its device path (so the puck
+// holds the screen forever), passing `householdId` along. Throws 'cast-unavailable' when
+// the sender SDK isn't usable here (non-Chrome) — the caller shows the cast-tab fallback.
+// A user-cancelled picker rejects too; the caller treats any throw as "nothing changed".
+export async function castToSalon(
+  token: string,
+  scene: string = 'board',
+  display: boolean = false,
+  householdId: string = '',
+): Promise<void> {
   const ok = await loadSender()
   if (!ok) throw new Error('cast-unavailable')
   const ctx = (window as unknown as {
@@ -95,5 +101,5 @@ export async function castToSalon(token: string, scene: string = 'board'): Promi
   await ctx.requestSession()
   const session = ctx.getCurrentSession()
   if (!session) throw new Error('cast-no-session')
-  await session.sendMessage(NS, { token, scene })
+  await session.sendMessage(NS, { token, scene, display, hh: householdId })
 }

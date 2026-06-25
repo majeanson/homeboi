@@ -25,7 +25,7 @@ import { startDaypartDrift } from './lib/daypartDrift'
 import { restorePersistedCache, startPersistingCache, clearPersistedCache } from './lib/persist'
 import { startOutbox, clearOutbox } from './lib/outbox'
 import { onAuthLost } from './lib/authEvents'
-import { setGuestToken, clearGuestToken, clearGuestKind, isGuestPreview, setGuestPreview as persistGuestPreview } from './lib/device'
+import { setGuestToken, clearGuestToken, clearGuestKind, isGuestPreview, setGuestPreview as persistGuestPreview, setDeviceToken, setDisplay } from './lib/device'
 import { connectRealtime } from './lib/realtime'
 import './styles.css'
 
@@ -55,6 +55,27 @@ try {
   }
 } catch {
   /* noop — guest boot is best-effort */
+}
+
+// `?display=<token>&hh=<householdId>` boots a PERMANENT read-only TV display (minted by
+// the operator from Réglages ▸ Partage ▸ « Au salon » — see pair/devices mintDisplay).
+// Unlike a guest link, this is a revocable DEVICE token: stash it on the DEVICE path so
+// lib/api sends it as X-Device-Token (it resolves to a read-only 'display' device, never
+// expiring, killable from the paired-devices list), flag the session as a display so
+// /cast shows the shared Maisonnée view (never a picked face), then strip it from the URL.
+try {
+  const q = new URLSearchParams(window.location.search)
+  const display = q.get('display')
+  if (display) {
+    setDeviceToken(display, q.get('hh') ?? '')
+    setDisplay(true)
+    q.delete('display')
+    q.delete('hh')
+    const rest = q.toString()
+    window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash)
+  }
+} catch {
+  /* noop — display boot is best-effort */
 }
 
 function Root() {

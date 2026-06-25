@@ -20,6 +20,10 @@ export interface Actor {
   scope: 'operator' | 'kiosk' | 'guest'
   email?: string
   deviceId?: string
+  // Only set when scope === 'kiosk'. A 'display' device (a living-room TV showing
+  // /cast) is read-only — route.ts blocks its non-GET methods, like a guest. A normal
+  // wall tablet is 'kiosk'. Older device rows default to 'kiosk' (migration 0083).
+  deviceKind?: 'kiosk' | 'display'
   guestId?: string
   // Only set when scope === 'guest'. Selects the share-mode lens; the per-kind
   // read allowlist lives in worker/index.ts (see auth.ts GuestKind).
@@ -51,17 +55,24 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
     // token — revocation is the whole point of device pairing over a static
     // capability URL.
     const row = await env.DB.prepare(
-      'SELECT id FROM devices WHERE id = ? AND household_id = ? AND revoked_at IS NULL',
+      'SELECT id, kind FROM devices WHERE id = ? AND household_id = ? AND revoked_at IS NULL',
     )
       .bind(device.deviceId, device.householdId)
-      .first<{ id: string }>()
+      .first<{ id: string; kind: string }>()
     if (row) {
       // Best-effort heartbeat; never block the request on it.
       await env.DB.prepare('UPDATE devices SET last_seen_at = ? WHERE id = ?')
         .bind(nowSec(), device.deviceId)
         .run()
         .catch(() => {})
-      return { householdId: device.householdId, scope: 'kiosk', deviceId: device.deviceId }
+      // The row's kind is authoritative (revocable, server-owned) — read-only display
+      // vs full kiosk. route.ts gates a 'display' to GET/HEAD only.
+      return {
+        householdId: device.householdId,
+        scope: 'kiosk',
+        deviceId: device.deviceId,
+        deviceKind: row.kind === 'display' ? 'display' : 'kiosk',
+      }
     }
   }
 

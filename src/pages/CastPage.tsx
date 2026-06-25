@@ -3,7 +3,7 @@ import { Board } from './Board'
 import { AmbientScreen } from '../components/AmbientScreen'
 import { DetailProvider } from '../components/detail/DetailProvider'
 import { useProfile } from '../lib/profile'
-import { isGuest } from '../lib/device'
+import { isGuest, isDisplay } from '../lib/device'
 
 const noop = () => {}
 
@@ -30,10 +30,11 @@ export function CastPage() {
   const scene = new URLSearchParams(window.location.search).get('scene') ?? 'board'
 
   // A TV is shared: clear any picked face so the board shows everyone (Maisonnée) —
-  // but only when actually launched as a cast/guest, so an operator previewing /cast
-  // in their own signed-in browser doesn't lose their picked face.
+  // but only when actually launched as a cast (a guest link OR a permanent display
+  // device), so an operator previewing /cast in their own signed-in browser doesn't
+  // lose their picked face.
   useEffect(() => {
-    if (guest) setMemberId(null)
+    if (guest || isDisplay()) setMemberId(null)
   }, [guest, setMemberId])
 
   // Shrink-to-fit: a TV can't scroll, so the whole board must fit one screen. Measure
