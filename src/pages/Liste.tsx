@@ -9,7 +9,7 @@ import { EmptyState } from '../components/EmptyState'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
 import { useT, useLang } from '../i18n'
-import { useAisleOrder } from '../lib/aislePrefs'
+import { useAisleOrder, useAisleOverrides } from '../lib/aislePrefs'
 import { aisleFor, aisleRanks, AISLE_BY_ID } from '../lib/aisle'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
@@ -253,6 +253,7 @@ export function Liste() {
   // the store walk; 'mine' keeps the hand-dragged order (so the drag grip only shows
   // there). Persisted to localStorage so a kiosk and a phone can each keep their own.
   const aislePrefs = useAisleOrder()
+  const aisleOverrides = useAisleOverrides()
   const [sortMode, setSortMode] = useState<'mine' | 'aisle'>(() => {
     try {
       return localStorage.getItem(LIST_SORT_KEY) === 'aisle' ? 'aisle' : 'mine'
@@ -405,9 +406,17 @@ export function Liste() {
   // list as the cache holds it (the dragged order), unchanged.
   const byAisle = sortMode === 'aisle'
   const ranks = aisleRanks(aislePrefs.order)
-  const displayList = byAisle
-    ? [...list].sort((a, b) => ranks[aisleFor(a.text)] - ranks[aisleFor(b.text)])
-    : list
+  // Classify with the per-item overrides applied (a corrected item beats the guess).
+  const aisleOf = (text: string) => aisleFor(text, aisleOverrides)
+  const displayList = byAisle ? [...list].sort((a, b) => ranks[aisleOf(a.text)] - ranks[aisleOf(b.text)]) : list
+
+  // "Mon ordre" seed: write the list's positions to match the aisle walk right now,
+  // so you START from aisle order and then hand-tweak from there — and it's kept
+  // (persisted via the same reorder write). One tap; only meaningful in Mon ordre.
+  function sortByAisleNow() {
+    const ids = [...list].sort((a, b) => ranks[aisleOf(a.text)] - ranks[aisleOf(b.text)]).map((i) => i.id)
+    reorderTo(ids)
+  }
 
   if (audience === 'toddler') {
     // Read-only for toddlers: tapping a tile reads it aloud but never checks it
@@ -506,23 +515,31 @@ export function Liste() {
           store aisle ("Par allée", the order set in Réglages ▸ Magasinage). A quiet
           per-device view choice; only worth showing once there's more than one row. */}
       {list.length > 1 && (
-        <div className="list-sort" role="group" aria-label={t.list.sortBy}>
-          <button
-            type="button"
-            className={'list-sort__seg' + (!byAisle ? ' is-on' : '')}
-            aria-pressed={!byAisle}
-            onClick={() => chooseSort('mine')}
-          >
-            <InlineIcon name="scroll-bold" /> {t.list.sortMine}
-          </button>
-          <button
-            type="button"
-            className={'list-sort__seg' + (byAisle ? ' is-on' : '')}
-            aria-pressed={byAisle}
-            onClick={() => chooseSort('aisle')}
-          >
-            <InlineIcon name="storefront-bold" /> {t.list.sortAisle}
-          </button>
+        <div className="list-sortbar">
+          <div className="list-sort" role="group" aria-label={t.list.sortBy}>
+            <button
+              type="button"
+              className={'list-sort__seg' + (!byAisle ? ' is-on' : '')}
+              aria-pressed={!byAisle}
+              onClick={() => chooseSort('mine')}
+            >
+              <InlineIcon name="scroll-bold" /> {t.list.sortMine}
+            </button>
+            <button
+              type="button"
+              className={'list-sort__seg' + (byAisle ? ' is-on' : '')}
+              aria-pressed={byAisle}
+              onClick={() => chooseSort('aisle')}
+            >
+              <InlineIcon name="storefront-bold" /> {t.list.sortAisle}
+            </button>
+          </div>
+          {/* In Mon ordre, seed the hand order from the aisle walk (then tweak). */}
+          {!byAisle && !isGuest() && (
+            <button type="button" className="btn btn--ghost btn--sm list-sortbar__apply" onClick={sortByAisleNow}>
+              <InlineIcon name="storefront-bold" /> {t.list.sortApply}
+            </button>
+          )}
         </div>
       )}
 
@@ -538,8 +555,8 @@ export function Liste() {
             // list glyph only when nothing matches (a non-grocery note).
             const pic = pictoFor(item.text, '')
             // In aisle mode, a calm header before the first row of each aisle group.
-            const ai = byAisle ? aisleFor(item.text) : null
-            const showHeader = byAisle && ai !== (index > 0 ? aisleFor(displayList[index - 1].text) : null)
+            const ai = byAisle ? aisleOf(item.text) : null
+            const showHeader = byAisle && ai !== (index > 0 ? aisleOf(displayList[index - 1].text) : null)
             return (
               <Fragment key={item.id}>
                 {showHeader && ai && (

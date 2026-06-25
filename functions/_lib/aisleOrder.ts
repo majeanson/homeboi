@@ -3,7 +3,7 @@
 // + persists + reads the order; it never CLASSIFIES an item into an aisle — that's
 // client-side, reusing the row-picture keywords (src/lib/aisle.ts). So this stays a
 // tiny fixed allowlist of ids, kept in sync by hand with AisleId there.
-const AISLE_IDS = [
+export const AISLE_IDS = [
   'produce',
   'bakery',
   'meat',
@@ -48,5 +48,39 @@ export async function householdAisleOrder(
     return arr.length ? arr : null
   } catch {
     return null
+  }
+}
+
+// Per-item aisle OVERRIDES: a { normalizedItemKey: aisleId } map. Only known aisle
+// ids survive; keys are trimmed; capped so a runaway client can't bloat the row.
+const MAX_OVERRIDES = 400
+export function cleanAisleOverrides(v: unknown): Record<string, string> {
+  if (!v || typeof v !== 'object') return {}
+  const known = new Set<string>(AISLE_IDS)
+  const out: Record<string, string> = {}
+  let n = 0
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    if (n >= MAX_OVERRIDES) break
+    const key = typeof k === 'string' ? k.trim().slice(0, 80) : ''
+    if (key && typeof val === 'string' && known.has(val)) {
+      out[key] = val
+      n++
+    }
+  }
+  return out
+}
+
+export async function householdAisleOverrides(
+  env: { DB: D1Database },
+  householdId: string,
+): Promise<Record<string, string>> {
+  const row = await env.DB.prepare('SELECT aisle_overrides FROM households WHERE id = ?')
+    .bind(householdId)
+    .first<{ aisle_overrides: string | null }>()
+  if (!row?.aisle_overrides) return {}
+  try {
+    return cleanAisleOverrides(JSON.parse(row.aisle_overrides))
+  } catch {
+    return {}
   }
 }

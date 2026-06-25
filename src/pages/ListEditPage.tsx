@@ -5,13 +5,15 @@ import { api } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { isGuest } from '../lib/device'
 import { live } from '../lib/query'
-import { useT } from '../i18n'
+import { useT, useLang } from '../i18n'
 import { Loading } from '../components/Fallback'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
 import { parseDeal, parseTerms, unstageDeal, type ListItem } from '../lib/picks'
 import { money } from '../lib/deals'
-import { BOARD_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
+import { useAisleOverrides } from '../lib/aislePrefs'
+import { aisleFor, aisleKey, AISLES, AISLE_BY_ID } from '../lib/aisle'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // /liste/item/:itemId — edit one grocery line as a full-screen route (was a
@@ -21,8 +23,10 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 // ['board'] cache by id, so there are no props to thread and it's deep-linkable.
 export function ListEditPage() {
   const t = useT()
+  const { lang } = useLang()
   const qc = useQueryClient()
   const write = useWrite()
+  const overrides = useAisleOverrides()
   const { itemId = '' } = useParams()
   const close = useSceneClose('/liste')
   useEscapeKey(close)
@@ -86,6 +90,19 @@ export function ListEditPage() {
     close()
   }
 
+  // Set (or clear → 'auto') this item's aisle override, keyed by its normalized name
+  // so it sticks even after the line is cleared + re-added. Merges server-side, so it
+  // doesn't clobber other items' overrides. Invalidating HOUSEHOLD_KEY re-sorts the
+  // list (it reads overrides from the same cache). Persists instantly, no Save needed.
+  function setAisle(value: string) {
+    if (!item) return
+    void write('household', {
+      method: 'PATCH',
+      body: { aisleOverride: { key: aisleKey(item.text), aisle: value === 'auto' ? null : value } },
+      affectedKeys: [HOUSEHOLD_KEY],
+    }).catch(() => {})
+  }
+
   async function unlink() {
     setBusy(true)
     await unstageDeal(qc, itemId)
@@ -142,6 +159,29 @@ export function ListEditPage() {
               aria-label={t.list.nameLabel}
             />
           </label>
+
+          {/* Which store aisle this item sorts into under "Par allée". Defaults to
+              the automatic guess (from the row picture); pick one to correct it and
+              the choice is remembered for this item from now on. */}
+          <div className="li-edit__field">
+            <span className="li-edit__label">{t.list.aisleLabel}</span>
+            <span className="li-edit__hint">{t.list.aisleHint}</span>
+            <select
+              className="input"
+              value={overrides[aisleKey(item.text)] ?? 'auto'}
+              onChange={(e) => setAisle(e.target.value)}
+              aria-label={t.list.aisleLabel}
+            >
+              <option value="auto">
+                {`${t.list.aisleAuto} — ${AISLE_BY_ID[aisleFor(item.text)].emoji} ${AISLE_BY_ID[aisleFor(item.text)].label[lang]}`}
+              </option>
+              {AISLES.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {`${a.emoji} ${a.label[lang]}`}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="li-edit__field">
             <span className="li-edit__label">{t.list.termsLabel}</span>

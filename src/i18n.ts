@@ -192,6 +192,12 @@ export const FR = {
     sortMine: 'Mon ordre',
     sortAisle: 'Par allée',
     sortBy: 'Trier la liste',
+    // "Mon ordre": one tap to seed it from the aisle walk, then tweak by hand (kept).
+    sortApply: 'Ranger par allée',
+    // Per-item aisle override (edit sheet): pick the aisle, or leave it automatic.
+    aisleLabel: 'Allée',
+    aisleHint: 'Range cet article dans la bonne allée — gardé pour la prochaine fois.',
+    aisleAuto: 'Automatique',
     // Voice add (continuous): hint while listening + why nothing landed on error.
     voiceHint: 'Nomme tes articles un à un — touche 🎤 pour arrêter.',
     voiceDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
@@ -2155,6 +2161,12 @@ export const EN: typeof FR = {
     sortMine: 'My order',
     sortAisle: 'By aisle',
     sortBy: 'Sort list',
+    // "My order": one tap to seed it from the aisle walk, then tweak by hand (kept).
+    sortApply: 'Arrange by aisle',
+    // Per-item aisle override (edit sheet): pick the aisle, or leave it automatic.
+    aisleLabel: 'Aisle',
+    aisleHint: 'Put this item in the right aisle — kept for next time.',
+    aisleAuto: 'Automatic',
     // Voice add (continuous): hint while listening + why nothing landed on error.
     voiceHint: 'Name your items one at a time — tap 🎤 to stop.',
     voiceDenied: 'Mic blocked. Allow the microphone in your browser.',

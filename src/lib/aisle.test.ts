@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aisleFor, aisleRanks, DEFAULT_AISLE_ORDER, AISLES } from './aisle'
+import { aisleFor, aisleKey, aisleRanks, DEFAULT_AISLE_ORDER, AISLES } from './aisle'
 
 describe('aisleFor — free-text → aisle (reuses pictoFor keywords)', () => {
   it('classifies common groceries FR + EN', () => {
@@ -20,6 +20,19 @@ describe('aisleFor — free-text → aisle (reuses pictoFor keywords)', () => {
     expect(aisleFor('blablabla')).toBe('autres')
     expect(aisleFor('')).toBe('autres')
     expect(aisleFor('truc bidule')).toBe('autres')
+  })
+
+  it('a per-item override beats the keyword guess', () => {
+    expect(aisleFor('granola')).toBe('autres') // no keyword match
+    const ov = { [aisleKey('granola')]: 'snacks' as const }
+    expect(aisleFor('granola', ov)).toBe('snacks')
+  })
+
+  it('overrides stick by an accent/quantity-insensitive key', () => {
+    const ov = { [aisleKey('oeufs')]: 'bakery' as const }
+    // "2 douzaines d'œufs" normalizes to the same key as "oeufs".
+    expect(aisleKey("2 douzaines d'œufs")).toBe(aisleKey('oeufs'))
+    expect(aisleFor("2 douzaines d'œufs", ov)).toBe('bakery')
   })
 })
 

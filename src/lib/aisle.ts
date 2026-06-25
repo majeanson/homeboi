@@ -1,7 +1,17 @@
 import { pictoFor } from './picto'
+import { normalizeItem } from './normalize'
 
 // A bilingual label (FR-CA first), the app's standard { fr, en } shape.
 type Bi = { fr: string; en: string }
+
+// A per-item aisle override map: normalized item key → aisle id. Set in the list
+// item's edit sheet, stored on the household (survives a clear, like ghost/purchase
+// keys), so a mis-classified item ("granola" → snacks) stays put once corrected.
+export type AisleOverrides = Record<string, AisleId>
+
+// The stable key an override sticks to (accent/quantity-insensitive), so "oeufs"
+// and "2 douzaines d'oeufs" share one override.
+export const aisleKey = (text: string): string => normalizeItem(text)
 
 // Aisle = a coarse grocery category, so the shared list can be SORTED to match a
 // store's walk (produce → bakery → meat → dairy → …) instead of add-order. A calm
@@ -80,8 +90,14 @@ const EMOJI_AISLE: Record<string, AisleId> = {
   '🧹': 'household', '🧺': 'household',
 }
 
-// Classify one free-text list item into an aisle. Deterministic, offline, calm.
-export function aisleFor(text: string): AisleId {
+// Classify one free-text list item into an aisle. A per-item override (if any) wins;
+// otherwise reuse the row picture (pictoFor emoji → aisle), else 'autres'.
+// Deterministic, offline, calm.
+export function aisleFor(text: string, overrides?: AisleOverrides): AisleId {
+  if (overrides) {
+    const ov = overrides[aisleKey(text)]
+    if (ov && AISLE_BY_ID[ov]) return ov
+  }
   return EMOJI_AISLE[pictoFor(text, '')] ?? 'autres'
 }
 

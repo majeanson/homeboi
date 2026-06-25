@@ -999,6 +999,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'A mis-tap costs nothing (see [[card:undo|Undo]]).',
         },
       },
+      {
+        label: { fr: 'Trier par allée', en: 'Sort by aisle' },
+        detail: {
+          fr: 'En haut de la liste, bascule sur « Par allée » : tes articles se regroupent et se trient dans l’ordre de TON magasin (fruits → pain → viande → lait…). Tu règles cet ordre une seule fois dans [[card:settings|Réglages]] ▸ Magasinage en glissant les allées. Un article rangé dans la mauvaise allée ? Ouvre-le et choisis son allée — c’est gardé pour la prochaine fois. Tu préfères ton propre ordre ? Reste sur « Mon ordre » et glisse les articles à la main; « Ranger par allée » part de l’ordre des allées, que tu peux ensuite ajuster.',
+          en: 'At the top of the list, flip to “By aisle”: your items group and sort in YOUR store’s order (produce → bread → meat → milk…). You set that order once in [[card:settings|Settings]] ▸ Shopping by dragging the aisles. An item in the wrong aisle? Open it and pick its aisle — it’s kept for next time. Prefer your own order? Stay on “My order” and drag items by hand; “Arrange by aisle” seeds it from the aisle order, which you can then tweak.',
+        },
+        why: {
+          fr: 'Pour suivre ton parcours en magasin sans revenir sur tes pas — et sans jamais rien compter (juste un regroupement).',
+          en: 'To follow your walk through the store without backtracking — and never counting anything (just grouping).',
+        },
+      },
     ],
   },
   {

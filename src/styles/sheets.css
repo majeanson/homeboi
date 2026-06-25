@@ -1007,6 +1007,23 @@ body.is-recording .add-fab {
   }
 }
 
+/* The sort bar: the Mon ordre/Par allée toggle, plus (in Mon ordre) a one-tap
+   "Ranger par allée" that seeds the hand order from the aisle walk. Wraps on a
+   narrow phone so neither control squashes. */
+.list-sortbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+.list-sortbar .list-sort {
+  margin: 0;
+}
+.list-sortbar__apply {
+  flex: none;
+}
 /* List sort toggle (Mon ordre / Par allée) — a small segmented pill above the list,
    the same idiom as the cercle/recipe view switches. Per-device, quiet. */
 .list-sort {

@@ -6,7 +6,13 @@ import { householdMealSlotPrefs, cleanColors, cleanHidden } from '../_lib/mealSl
 import { householdMeasureColors, cleanMeasureColors } from '../_lib/measureColors'
 import { householdReserveLocations, cleanReserveLocations } from '../_lib/reserveLocations'
 import { householdCars, cleanCars } from '../_lib/carPrefs'
-import { householdAisleOrder, cleanAisleOrder } from '../_lib/aisleOrder'
+import {
+  householdAisleOrder,
+  cleanAisleOrder,
+  householdAisleOverrides,
+  cleanAisleOverrides,
+  AISLE_IDS,
+} from '../_lib/aisleOrder'
 import { householdAiEnabled } from '../_lib/aiPref'
 import { householdShareInfo, cleanShareField } from '../_lib/shareModes'
 import { nowSec } from '../_lib/ids'
@@ -40,6 +46,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
   const cars = await householdCars(ctx.env, actor.householdId)
   const aisleOrder = await householdAisleOrder(ctx.env, actor.householdId)
+  const aisleOverrides = await householdAisleOverrides(ctx.env, actor.householdId)
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   const shareInfo = await householdShareInfo(ctx.env, actor.householdId)
   return ok({
@@ -53,6 +60,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     reserveLocations,
     cars,
     aisleOrder,
+    aisleOverrides,
     aiEnabled,
     ...shareInfo,
   })
@@ -70,6 +78,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     reserveLocations?: unknown
     cars?: unknown
     aisleOrder?: unknown
+    aisleOverride?: { key?: unknown; aisle?: unknown } // merge ONE per-item override
     aiEnabled?: boolean
     wifiSsid?: string | null
     wifiPassword?: string | null
@@ -188,6 +197,25 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
   }
 
+  // Merge ONE per-item aisle override (migration 0081): { key, aisle } sets it,
+  // aisle null/unknown clears it. We read the current map, set/delete the one key,
+  // and write back (cleaned) — so concurrent edits to DIFFERENT items don't clobber
+  // each other (unlike a whole-map PATCH). Empty map clears the column to NULL.
+  if (body && body.aisleOverride && typeof body.aisleOverride === 'object') {
+    const rawKey = body.aisleOverride.key
+    const key = typeof rawKey === 'string' ? rawKey.trim().slice(0, 80) : ''
+    if (key) {
+      const map = await householdAisleOverrides(ctx.env, actor.householdId)
+      const aisle = body.aisleOverride.aisle
+      if (typeof aisle === 'string' && (AISLE_IDS as readonly string[]).includes(aisle)) map[key] = aisle
+      else delete map[key]
+      const cleaned = cleanAisleOverrides(map)
+      await ctx.env.DB.prepare('UPDATE households SET aisle_overrides = ?, updated_at = ? WHERE id = ?')
+        .bind(Object.keys(cleaned).length ? JSON.stringify(cleaned) : null, nowSec(), actor.householdId)
+        .run()
+    }
+  }
+
   // The household AI on/off switch (Réglages ▸ IA, migration 0061). Stored as
   // 1 = on / 0 = off; NULL never written from here (only legacy rows are NULL,
   // which read as on). Folded into /api/health's effective `ai` flag.
@@ -222,6 +250,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const reserveLocations = await householdReserveLocations(ctx.env, actor.householdId)
   const cars = await householdCars(ctx.env, actor.householdId)
   const aisleOrder = await householdAisleOrder(ctx.env, actor.householdId)
+  const aisleOverrides = await householdAisleOverrides(ctx.env, actor.householdId)
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   const shareInfo = await householdShareInfo(ctx.env, actor.householdId)
   return ok({
@@ -235,6 +264,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     reserveLocations,
     cars,
     aisleOrder,
+    aisleOverrides,
     aiEnabled,
     ...shareInfo,
   })
