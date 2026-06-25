@@ -10,7 +10,15 @@ import type { GuestKind } from './auth'
 // Lives in _lib (not worker/routes.ts) so it's unit-testable without importing the
 // whole handler table (those modules are CF-typed and don't load in a node test).
 export function guestKindAllows(kind: GuestKind, apiPath: string): boolean {
-  if (kind === 'showcase') return true // full hub, read-only
+  if (kind === 'showcase') {
+    // « Les carnets »: the house map (`home-pins` — spare-key / alarm / shutoff
+    // locations) and the service-history invoice amounts (`care-log` `cost_cents`) are
+    // materially more sensitive than the calendar/list data a public Démo link is meant
+    // to show, so keep them OUT of showcase. The carnet tree + identity (`carnets`)
+    // stays visible so the feature still demos.
+    if (apiPath === 'home-pins' || apiPath === 'care-log') return false
+    return true // otherwise the full hub, read-only
+  }
   if (apiPath === 'guest/whoami') return true // every kind learns its own kind
   if (apiPath === 'img' || apiPath.startsWith('img/')) return true // opaque-key media
   // 'intake' is the one writable kind: the relative-facing form link. It may read its

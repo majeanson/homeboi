@@ -16,6 +16,8 @@ import * as board from '../functions/api/board'
 import * as ask from '../functions/api/ask'
 import * as businesses from '../functions/api/businesses'
 import * as capture from '../functions/api/capture'
+import * as carnets from '../functions/api/carnets'
+import * as careLog from '../functions/api/care-log'
 import * as cercle from '../functions/api/cercle'
 import * as cercleGroups from '../functions/api/cercle-groups'
 import * as cercleLinks from '../functions/api/cercle-links'
@@ -39,6 +41,7 @@ import * as guestIntakeSubmit from '../functions/api/guest/intake-submit'
 import * as guestIntakeMedia from '../functions/api/guest/intake-media'
 import * as intake from '../functions/api/intake'
 import * as health from '../functions/api/health'
+import * as homePins from '../functions/api/home-pins'
 import * as homeProjects from '../functions/api/home-projects'
 import * as household from '../functions/api/household'
 import * as list from '../functions/api/list'
@@ -115,6 +118,8 @@ const TABLE: Record<string, RouteMod> = {
   board,
   businesses,
   capture,
+  carnets,
+  'care-log': careLog,
   cercle,
   'cercle-groups': cercleGroups,
   'cercle-links': cercleLinks,
@@ -137,6 +142,7 @@ const TABLE: Record<string, RouteMod> = {
   'guest/intake-media': guestIntakeMedia,
   health,
   intake,
+  'home-pins': homePins,
   'home-projects': homeProjects,
   household,
   list,

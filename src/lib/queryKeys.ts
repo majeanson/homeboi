@@ -47,6 +47,15 @@ export const FAMILY_NOTES_KEY = ['family-notes']
 // cercle Business tab AND by the EventForm "Avec" picker (a rendez-vous can link a
 // business), so the key is shared — adding a business there refreshes the picker.
 export const BUSINESSES_KEY = ['businesses']
+// « Les carnets » — the cared-for-things tree (/api/carnets) + the lifecycle "soon"
+// glance. Read by the cercle « Les carnets » SubTab, the carnet scene, AND the board
+// « Les carnets » card, so the key is shared — a carnet/care-log edit invalidates it
+// and every surface refreshes. A carnet's history reads ['care-log', <id>].
+export const CARNETS_KEY = ['carnets']
+export const CARE_LOG_KEY = ['care-log']
+// « En cas de pépin » — a home carnet's map pins (/api/home-pins). Read per-carnet as
+// ['home-pins', <id>]; a prefix invalidation refreshes the open map.
+export const HOME_PINS_KEY = ['home-pins']
 // « L'auto » — the weekly work-schedule template (schedule_blocks). Read in Réglages
 // ▸ L'auto AND by the /voiture week view (it resolves the car's busy spans from it),
 // so the key is shared — editing an horaire refreshes the week + the board glance.

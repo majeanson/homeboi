@@ -31,6 +31,7 @@ import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { BusinessesTab } from '../components/cercle/BusinessesTab'
+import { CarnetsTab } from '../components/cercle/CarnetsTab'
 import { BusinessForm } from '../components/cercle/BusinessForm'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
 import { SubTabs } from '../components/SubTabs'
@@ -87,12 +88,13 @@ const VIEW_ICON: Record<ViewTab, IconName> = { list: 'user-bold', links: 'users-
 // The list body partitions People by the first two; Notes owns its whole body; the
 // relationship views (Liens/Arbre) follow the same split — Famille shows the family
 // set, Social shows everyone outside it (see `sectionPeople`).
-type Section = 'social' | 'family' | 'notes' | 'business'
+type Section = 'social' | 'family' | 'notes' | 'business' | 'carnets'
 const SECTION_ICON: Record<Section, IconName> = {
   family: 'users-three-bold',
   social: 'user-bold',
   notes: 'file-text-bold',
   business: 'storefront-bold',
+  carnets: 'book-open-bold',
 }
 
 // « Le cercle » — the household people directory + relationship views. Parent:
@@ -584,7 +586,7 @@ function CercleParent() {
   const sectionSwitch = (
     <>
       <div className="cercle-sectionswitch" role="tablist" aria-label={t.nav.cercle}>
-        {(['family', 'social', 'notes', 'business'] as Section[]).map((s) => (
+        {(['family', 'social', 'notes', 'business', 'carnets'] as Section[]).map((s) => (
           <button
             key={s}
             type="button"
@@ -601,6 +603,7 @@ function CercleParent() {
       {help.bubbleFor('family')}
       {help.bubbleFor('notes')}
       {help.bubbleFor('business')}
+      {help.bubbleFor('carnets')}
     </>
   )
 
@@ -648,6 +651,10 @@ function CercleParent() {
             /* Business — a standalone services/vendors directory, ISOLATED from the
                people graph (no view switch, no focus lens, no relationships). */
             <BusinessesTab help={help} />
+          ) : section === 'carnets' ? (
+            /* Les carnets — the cared-for-things directory (houses, cars). Its own
+               query/scene, never the people graph (like Business). */
+            <CarnetsTab help={help} />
           ) : (
           <>
           {viewSwitch}

@@ -47,9 +47,24 @@ const leadSeconds = (v: unknown): number | null => {
   return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), MAX_LEAD) : null
 }
 
+// A nullable carnet_id (migration 0082) optionally ties an Entretien row to a
+// « carnet » (a house, a car, the water heater). NULL = an ordinary household-level
+// Projet/Entretien. The row surfaces on the board exactly the same either way — the
+// carnet link just lets « Les carnets » group + brand it (reuse seam #1).
+const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
+
+// A carnet_id is only honoured when it names a carnet THIS household owns (mirrors
+// care-log / home-pins). A foreign/garbage id stores NULL rather than a dangling link.
+async function validCarnetId(db: D1Database, hh: string, v: unknown): Promise<string | null> {
+  const id = str(v)
+  if (!id) return null
+  const owns = await db.prepare('SELECT id FROM carnets WHERE id = ? AND household_id = ?').bind(id, hh).first<{ id: string }>()
+  return owns ? id : null
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, kind, title, notes, budget_cents, color, at, recur_json, lead_seconds, last_done_at FROM home_projects WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, kind, title, notes, budget_cents, color, at, recur_json, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all()
@@ -66,14 +81,16 @@ export const onRequestPost = authed(async (ctx, actor) => {
     at?: unknown
     recur?: unknown
     leadSeconds?: number | null
+    carnetId?: string | null
   }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   const ts = nowSec()
   const at = atSec(body?.at)
+  const carnetId = await validCarnetId(ctx.env.DB, actor.householdId, body?.carnetId)
   await ctx.env.DB.prepare(
-    'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, color, at, recur_json, lead_seconds, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, color, at, recur_json, lead_seconds, carnet_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -86,6 +103,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       at,
       recurJson(body?.recur),
       at ? leadSeconds(body?.leadSeconds) : null, // a lead needs an occurrence date to anchor against
+      carnetId,
       ts,
       ts,
     )
@@ -109,6 +127,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     at?: unknown
     recur?: unknown
     leadSeconds?: number | null
+    carnetId?: string | null
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
@@ -119,7 +138,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     body.color !== undefined ||
     body.at !== undefined ||
     body.recur !== undefined ||
-    body.leadSeconds !== undefined
+    body.leadSeconds !== undefined ||
+    body.carnetId !== undefined
   if (editsContent) {
     const sets: string[] = []
     const binds: unknown[] = []
@@ -150,6 +170,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     if (body.leadSeconds !== undefined) {
       sets.push('lead_seconds = ?')
       binds.push(leadSeconds(body.leadSeconds))
+    }
+    if (body.carnetId !== undefined) {
+      sets.push('carnet_id = ?')
+      binds.push(await validCarnetId(ctx.env.DB, actor.householdId, body.carnetId))
     }
     if (!sets.length) return ok({ ok: true })
     sets.push('updated_at = ?')

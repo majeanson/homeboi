@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
 import { slotLabel } from '../lib/mealSlots'
+import { imgUrl } from '../lib/image'
+import { PIN_EMOJI, type HomePinKind } from '../lib/carnets'
 import { EmptyState } from '../components/EmptyState'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
@@ -22,6 +24,7 @@ interface WindowData {
   bedtimeRoutines?: { id: string; name: string; who: string | null; cards: { icon: string; label: string }[] }[]
   toKnow?: { name: string; isChild: boolean; notes: string | null }[]
   emergency?: { name: string; phone: string | null }[]
+  pins?: { kind: HomePinKind; label: string; detail: string | null; mediaKey: string | null; home: string }[]
 }
 
 export function HandoffPage() {
@@ -44,6 +47,8 @@ export function HandoffPage() {
   const routines = data?.bedtimeRoutines ?? []
   const toKnow = data?.toKnow ?? []
   const emergency = data?.emergency ?? []
+  const pins = data?.pins ?? []
+  const multiHome = new Set(pins.map((p) => p.home)).size > 1
   const wifi = data?.wifi
 
   return (
@@ -102,6 +107,29 @@ export function HandoffPage() {
                         {m.isChild && <span className="tag mono"> {t.shareMode.child}</span>}
                       </span>
                       <span className="handoff__note-text">{m.notes}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {/* En cas de pépin — the house map: where's the shutoff, the breaker… */}
+            {pins.length > 0 && (
+              <section className="handoff__sec">
+                <h3 className="handoff__h mono">
+                  <InlineIcon name="key-bold" /> {t.carnets.enCasDePepin}
+                </h3>
+                <ul className="handoff__rows">
+                  {pins.map((p, i) => (
+                    <li key={i} className="handoff__note">
+                      <span className="handoff__row-name">
+                        <span aria-hidden="true">{PIN_EMOJI[p.kind]}</span> {p.label}
+                        {multiHome && <span className="tag mono"> {p.home}</span>}
+                      </span>
+                      {p.detail && <span className="handoff__note-text">{p.detail}</span>}
+                      {p.mediaKey && (
+                        <img src={imgUrl(p.mediaKey)} alt="" className="handoff__pin-img" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -182,7 +210,7 @@ export function HandoffPage() {
               </section>
             )}
 
-            {!isLoading && events.length === 0 && meals.length === 0 && routines.length === 0 && toKnow.length === 0 && emergency.length === 0 && !wifi?.ssid && !data?.houseRules && !data?.binDay && (
+            {!isLoading && events.length === 0 && meals.length === 0 && routines.length === 0 && toKnow.length === 0 && emergency.length === 0 && pins.length === 0 && !wifi?.ssid && !data?.houseRules && !data?.binDay && (
               <EmptyState>{t.shareMode.empty}</EmptyState>
             )}
           </>

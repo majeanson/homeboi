@@ -320,6 +320,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // focus shows a shared chore to ANYONE on the team, even when it's not their
     // turn — they can still do it; `who`/`who_id` say whose turn it currently is.
     team: string[]
+    carnet_id?: string | null // « Les carnets » link (mig 0082) — set only on home-project rows
   }
   const memberName = (id: string | null) =>
     (id && (members.results as { id: string; display_name: string }[]).find((m) => m.id === id)?.display_name) || null
@@ -397,7 +398,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // board (sets last_done_at), so "done this cycle" mirrors a chore. No rotation
   // (who/team empty); the row's own colour + title emoji distinguish it.
   const homeRows = await ctx.env.DB.prepare(
-    'SELECT id, title, color, at, recur_json, lead_seconds, last_done_at FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+    'SELECT id, title, color, at, recur_json, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
   )
     .bind(hh)
     .all<{
@@ -408,6 +409,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       recur_json: string | null
       lead_seconds: number | null
       last_done_at: number | null
+      carnet_id: string | null
     }>()
   const homeToday: ChoreInst[] = []
   const homeUpcoming: ChoreInst[] = []
@@ -421,6 +423,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       who: null,
       who_id: null,
       team: [],
+      carnet_id: h.carnet_id,
     })
     const r = parseRecur(h.recur_json)
     if (!r) {

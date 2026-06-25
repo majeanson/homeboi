@@ -8,6 +8,7 @@ import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { WelcomeCard } from '../components/WelcomeCard'
 import { AutoCard } from '../components/board/AutoCard'
+import { CarnetsCard } from '../components/board/CarnetsCard'
 import { MomentPeek } from '../components/board/MomentPeek'
 import { ARegler } from '../components/board/ARegler'
 import { DayHeroes } from '../components/board/DayHeroes'
@@ -49,6 +50,7 @@ import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { useBoardData, useTagColors } from '../lib/queryHooks'
+import { useCarnets, carnetEmoji } from '../lib/carnets'
 import { useBoardCards, visibleCardOrder, isCardVisible, type GridCardId } from '../lib/boardCards'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
@@ -145,6 +147,12 @@ export function Board() {
   // and just flip the "offline" stamp. retry:false overrides the default → the
   // stale stamp appears promptly and the next poll recovers.
   const { data, error, isError } = useBoardData({ retry: false })
+  // « Les carnets » — map a carnet id → its thing, so a carnet-scoped Entretien row on
+  // the board reads with its thing's emoji (🔥 Chauffe-eau · filtre) while staying
+  // checkable in place. `live: false` shares the board card's non-polling observer (one
+  // /api/carnets fetch, off the poll cadence — the free-tier lever).
+  const { data: carnetsData } = useCarnets({ live: false })
+  const carnetById = new Map((carnetsData?.carnets ?? []).map((x) => [x.id, x]))
   const unauth = isUnauthorized(error)
   const stale = isError && !unauth && !!data
 
@@ -769,18 +777,23 @@ export function Board() {
       },
     })
   }
-  const homeAct = (c: ChoreInstance, withDay?: boolean) => (
+  const homeAct = (c: ChoreInstance, withDay?: boolean) => {
+    // A carnet-scoped row wears its thing's emoji so « Le chauffe-eau · filtre » reads
+    // at a glance — but it stays an ordinary checkable Entretien row in place.
+    const carnet = c.carnet_id ? carnetById.get(c.carnet_id) : undefined
+    return (
     <Act
       key={c.id}
       cat="chore"
-      title={c.title}
+      title={carnet ? `${carnetEmoji(carnet)} ${c.title}` : c.title}
       when={withDay ? withRel(formatDayMaybeYear(c.at, lang), c.at) : undefined}
       color={c.color ?? undefined}
       soon={c.soon}
       onCheck={withDay || ro ? undefined : () => markHomeDone(c)}
       onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, onDone: withDay || ro ? undefined : () => markHomeDone(c) }))}
     />
-  )
+    )
+  }
 
   // The status band: « À régler » + the « Moments » entry, both as calm cards that
   // match the supper/weather heroes (same card look + height). It rides DIRECTLY
@@ -1182,6 +1195,8 @@ export function Board() {
               {upcomingHome.map((c) => homeAct(c, true))}
                 </Section>
               ) : null
+              // « Les carnets » — the long-jeu heads-up; hides itself when nothing's near.
+              nodes.carnets = <CarnetsCard />
               // Family drawings strip (#14) — its own full-width band (CSS column-span).
               nodes.drawings = <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
               // « Photo du jour » band (the wonder photo also backs the weather hero).

@@ -166,7 +166,23 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .filter((c) => parseJsonArray<string>(c.tags).some((t) => t.toLowerCase() === 'urgence'))
     .map((c) => ({ name: `${c.first_name} ${c.last_name}`.trim(), phone: c.phone }))
 
-  return ok({ ...base, today: { events, meals: meals.results }, bedtimeRoutines, toKnow, emergency })
+  // « En cas de pépin » — the house map from the home carnets (#les-carnets): where's
+  // the shutoff / breaker / spare key, read-only for the sitter. Photos ride the
+  // public-by-key /api/img route (allowlisted). Flat list, tagged by home for a
+  // multi-home household.
+  const pinRows = await ctx.env.DB.prepare(
+    // A pin may hang off a home carnet OR a room ('zone' child of a home) — both are
+    // house-in-a-pinch info the sitter needs, so include both kinds.
+    `SELECT p.kind, p.label, p.detail, p.media_key, c.name AS home
+       FROM home_pins p JOIN carnets c ON c.id = p.carnet_id AND c.household_id = p.household_id
+      WHERE p.household_id = ? AND c.kind IN ('home', 'zone') AND c.archived_at IS NULL
+      ORDER BY c.sort, p.sort`,
+  )
+    .bind(hh)
+    .all<{ kind: string; label: string; detail: string | null; media_key: string | null; home: string }>()
+  const pins = pinRows.results.map((p) => ({ kind: p.kind, label: p.label, detail: p.detail, mediaKey: p.media_key, home: p.home }))
+
+  return ok({ ...base, today: { events, meals: meals.results }, bedtimeRoutines, toKnow, emergency, pins })
 })
 
 // The intake form greeting (the 'intake' GuestKind). Returns ONLY the household

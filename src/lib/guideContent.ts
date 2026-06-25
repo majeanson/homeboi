@@ -123,7 +123,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     key: 'getting-around',
     icon: 'key-bold',
     label: { fr: 'Se déplacer', en: 'Getting around' },
-    ids: ['auto'],
+    ids: ['auto', 'carnets'],
   },
   {
     key: 'ai-calm',
@@ -1457,6 +1457,54 @@ export const GUIDE: GuideEntry[] = [
     // Surfaces the same card at the top of Réglages ▸ Corvées (where the Projets /
     // Entretien sub-tabs live) and offers a "go there" link from the main Guide.
     tab: 'chores',
+  },
+  {
+    id: 'carnets',
+    icon: 'book-open-bold',
+    group: 'concepts',
+    title: { fr: 'Les carnets', en: 'The carnets' },
+    what: {
+      fr: 'Dans Le cercle, tes choses dont on prend soin — la maison, l’auto… et le chauffe-eau ou la toiture à l’intérieur d’une maison. Chacune garde son carnet, comme un carnet d’entretien d’auto : son identité, ses factures, son entretien qui revient, et « le long jeu » (quand la remplacer).',
+      en: 'In Le cercle, your cared-for things — the house, the car… and the water heater or roof inside a house. Each keeps a carnet, like a car’s maintenance booklet: its identity, its invoices, its recurring upkeep, and “the long game” (when to replace it).',
+    },
+    points: [
+      {
+        label: { fr: 'Une chose, un carnet', en: 'A thing, a carnet' },
+        detail: {
+          fr: 'Ajoute la maison ou l’auto, puis ses choses à l’intérieur (le chauffe-eau, les pneus). Touche-en une pour l’ouvrir : « À surveiller » (ce qui s’en vient) et « Le carnet » (l’info, l’historique, ses choses).',
+          en: 'Add the house or the car, then its things inside (the water heater, the tires). Tap one to open it: “To watch” (what’s coming) and “The carnet” (the info, the history, its things).',
+        },
+      },
+      {
+        label: { fr: 'L’historique', en: 'The history' },
+        detail: {
+          fr: 'Chaque entretien ou installation s’ajoute à l’historique avec la date, le coût, l’installateur (un business du cercle) et la facture ou le manuel en photo. Nouveau chauffe-eau ? Une entrée « Installation » avec sa facture, et c’est gardé pour toujours.',
+          en: 'Each service or install adds to the history with the date, the cost, the installer (a cercle business) and the invoice or manual as a photo. New water heater? One “Install” entry with its invoice, kept forever.',
+        },
+        why: { fr: 'Quand tu rappelles le plombier, tu sais déjà tout.', en: 'When you call the plumber back, you already know everything.' },
+      },
+      {
+        label: { fr: 'Le long jeu', en: 'The long game' },
+        detail: {
+          fr: 'Donne une date d’installation et une durée de vie : Babillard calcule « à prévoir vers 20XX » et te fait un petit signe quand ça approche, sur le babillard. Le calendrier ne sait pas faire ça.',
+          en: 'Give an install date and a service life: Babillard works out “plan around 20XX” and gives you a gentle nudge on the board when it nears. A calendar can’t do that.',
+        },
+      },
+      {
+        label: { fr: 'En cas de pépin', en: 'In a pinch' },
+        detail: {
+          fr: 'Une maison garde aussi son « plan de secours » : où est la valve d’eau, le panneau électrique, la clé de rechange, comment marche le thermostat. Et ça s’affiche tout seul, en lecture seule, dans le lien gardien(ne) — la maison expliquée à qui passe la soirée.',
+          en: 'A house also keeps its “in a pinch” map: where’s the water shutoff, the breaker panel, the spare key, how the thermostat works. And it shows up, read-only, in the babysitter link — the house explained to whoever’s over for the evening.',
+        },
+      },
+      {
+        label: { fr: 'Calme', en: 'Calm' },
+        detail: {
+          fr: 'Aucun pointage, aucun inventaire. Le coût est une facture notée, pas un solde. La carte du babillard se montre seulement quand une chose approche de sa fin de vie, sinon elle reste invisible.',
+          en: 'No score, no inventory. A cost is a noted invoice, not a balance. The board card only appears when something nears end of life — otherwise it stays out of the way.',
+        },
+      },
+    ],
   },
   {
     id: 'screensaver',

@@ -1,0 +1,226 @@
+/* « Les carnets » — the cared-for-things SubTab, the carnet scene, and the board
+   glance. Uniquely-named .carnet-/.carnets- classes, so cascade position is
+   immaterial. Leans on the shared .cercle-row / .sec-label / .btn families; only
+   the carnet-specific bits live here. Mobile- and tablet-first. */
+
+/* — SubTab directory — */
+.cercle-carnets__emoji {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.cercle-carnets__add {
+  margin-top: 0.5rem;
+}
+/* "needs a look" dot on a top-level carnet row */
+.cercle-carnets__flag {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--warn, #c98a3a);
+  flex: 0 0 auto;
+  align-self: center;
+  margin-inline-start: auto;
+}
+
+/* — Carnet scene — */
+.carnet-hero {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.5rem 0 0.85rem;
+}
+.carnet-hero__av {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.carnet-hero__av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.carnet-hero__emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+.carnet-hero__main h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+.carnet-hero__main p {
+  margin: 0.1rem 0 0;
+  opacity: 0.7;
+}
+
+.carnet-block {
+  margin: 1rem 0;
+}
+.carnet-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.75rem;
+  margin: 0.4rem 0 0;
+}
+.carnet-facts dt {
+  opacity: 0.6;
+}
+.carnet-facts dd {
+  margin: 0;
+}
+.carnet-notes {
+  margin: 0.5rem 0 0;
+  white-space: pre-wrap;
+}
+
+/* « Le long jeu » — the calm horizon: things sorted by projected replacement year. */
+.carnet-horizon {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  border-inline-start: 2px solid var(--line, #0002);
+}
+.carnet-horizon__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.4rem 0 0.4rem 0.85rem;
+  position: relative;
+}
+.carnet-horizon__row::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -5px;
+  top: 0.7rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-strong, #0004);
+}
+.carnet-horizon__row.is-due::before {
+  background: var(--warn, #c98a3a);
+}
+.carnet-horizon__thing {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.carnet-horizon__emoji {
+  font-size: 1.05rem;
+}
+.carnet-horizon__when {
+  opacity: 0.7;
+  flex: 0 0 auto;
+}
+.carnet-horizon__row.is-due .carnet-horizon__when {
+  color: var(--warn, #c98a3a);
+  opacity: 1;
+}
+
+/* Ses choses — children grid */
+.carnet-choses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.6rem;
+}
+.carnet-chose {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.7rem 0.4rem 0.4rem;
+  border: 1px solid var(--line, #0001);
+  border-radius: 999px;
+  background: var(--card, #fff);
+  cursor: pointer;
+  font: inherit;
+}
+.carnet-chose__emoji {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+}
+
+/* History rows */
+.carnet-logrow__note {
+  display: block;
+  opacity: 0.75;
+  margin-top: 0.15rem;
+}
+.carnet-docs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+.carnet-docs__doc {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line, #0001);
+  position: relative;
+  display: inline-block;
+}
+.carnet-docs__doc img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.carnet-docs__rm {
+  position: absolute;
+  top: -6px;
+  inset-inline-end: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ink, #222);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+/* — Board glance card — */
+.carnets-card__list {
+  list-style: none;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.carnets-card__open {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.2rem;
+  text-decoration: none;
+  color: inherit;
+}
+.carnets-card__name {
+  font-weight: 600;
+}
+.carnets-card__when {
+  opacity: 0.7;
+  flex: 0 0 auto;
+}
+
+/* — Sitter handoff: « En cas de pépin » pin photo — */
+.handoff__pin-img {
+  max-width: 140px;
+  max-height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 0.35rem;
+  display: block;
+}

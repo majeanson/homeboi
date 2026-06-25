@@ -95,6 +95,7 @@ export interface ChoreInstance {
   who_id: string | null
   team?: string[]
   soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
+  carnet_id?: string | null // « Les carnets » link (mig 0082) — set only on home-project rows
 }
 export interface BoardData {
   syncedAt: number

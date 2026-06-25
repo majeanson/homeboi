@@ -35,6 +35,7 @@ export interface HomeProject {
   recur_json?: string | null
   lead_seconds?: number | null
   last_done_at?: number | null
+  carnet_id?: string | null // « Les carnets » link (migration 0082); null = household-level
 }
 
 interface RoutineCard {

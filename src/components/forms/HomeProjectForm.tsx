@@ -20,11 +20,15 @@ import type { HomeProject } from '../operator/types'
 export function HomeProjectForm({
   kind,
   value,
+  carnetId,
   onSaved,
   onCancel,
 }: {
   kind: 'plan' | 'upkeep'
   value?: HomeProject | null
+  // « Les carnets »: when set, this Entretien row belongs to a carnet (a house, a
+  // car, the water heater) — it still surfaces on the board exactly the same.
+  carnetId?: string | null
   onSaved: () => void
   onCancel?: () => void
 }) {
@@ -62,12 +66,13 @@ export function HomeProjectForm({
       at: anchor,
       recur,
       leadSeconds: anchor ? lead : null, // no date → no occurrence to remind about
+      ...(carnetId !== undefined ? { carnetId } : {}),
     }
     try {
       await write('home-projects', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...fields } : fields,
-        affectedKeys: [HOME_PROJECTS_KEY, ['board'], MONTH_KEY],
+        affectedKeys: [HOME_PROJECTS_KEY, ['board'], MONTH_KEY, ['carnets']],
       })
       if (!value) {
         // Create: clear for the next one. Edit: the section closes via onSaved().

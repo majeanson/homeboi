@@ -126,13 +126,16 @@ parameterizable via `endpoint`/`affectedKey`/`extraBody` — reused by `CercleNo
 tap the one being scanned → a full-screen `.bigcard` proof peek with `‹ Retour`; tapped
 tiles dim with an ephemeral ✓. Random-access, NOT a sequential stepper — the user holds
 the phone and items hit the belt out of order. Revise/remove via `RowActions` in the peek),
-`CastPage` (the « Diffuser au salon » TV board, `/cast` — **composes the real `<Board/>`**
-rather than forking a read-only layout: a `.cast` scope scales the type for 10-foot
-viewing and `pointer-events:none` makes it genuinely passive, so the living-room TV shows
-the exact board with zero drift. Boots with a read-only `showcase` guest token; minted as a
-copyable link + QR from **Réglages ▸ Affichage ▸ « Diffuser au salon »** (`CastTvSection`).
-Reaches the TV via Chrome "Cast tab" today; a registered Cast receiver is the always-on
-Stage 2 — see DEPLOY.md/cast),
+`CastPage` (the « Diffuser au salon » TV surface, `/cast` — a `?scene=` chooser:
+`scene=board` (default) **composes the real `<Board/>`** rather than forking a read-only
+layout (a `.cast` scope scales the type for 10-foot viewing, `pointer-events:none` makes it
+passive); `scene=ambient` renders the `AmbientScreen` screensaver as a permanent
+photo-frame "second screen". Boots with a read-only guest token; minted as a link + QR from
+**Réglages ▸ Partage ▸ « Au salon »** (the scene-aware `CastTvSection`, moved out of
+Affichage — board/ambient use a `showcase` token, the welcome scene a `welcome` token →
+`/welcome`). The link/QR opened once in any TV browser is the path that works for everyone
+(iOS can't START a cast); the Chrome "Cast now" sender + registered Cast receiver are a
+bonus for Chromium devices — see DEPLOY.md/cast),
 `BusinessesTab` (the « Le cercle » → **Business** tab — a standalone services/vendors
 directory, isolated from the people graph; fetches `BUSINESSES_KEY`, rows + an edit
 `Modal`(`BusinessForm`) + detail peek via `buildBusiness`; **add** is the ＋ FAB's job
@@ -248,6 +251,43 @@ conflicts) + `carResolve.ts` (template + override → spans + work occurrences, 
 for the week) + `lib/car.ts` hooks (`CAR_KEY`); writes via `/api/schedule` + `/api/car-day`.
 No counts/quantities (calm). Reuses `Chip`/`EditField`/`RowActions`/`Disclosure`/`SceneHead`/
 `MemberSwitcher`-style faces — no new shared primitive.
+
+**« Les carnets »** (the household's cared-for things as a TREE — a house, a car, and the
+water heater INSIDE a house; mig 0082). Page-level / live-data, so catalogued not
+gallery-rendered. Lives as a new **SubTab in Le cercle** (`CarnetsTab`,
+`components/cercle/CarnetsTab.tsx`, mirrors `BusinessesTab`'s isolation — its own query,
+never the people graph), a generic **scene** `CercleCarnetPage` (`/cercle/carnet/:id`: a
+2-segment `SubTabs` toggle **« À surveiller »** / **« Le carnet »**, Intelligent default,
+hero adaptive by kind; identité · ses choses (children) · historique · entretien), and a
+board glance `CarnetsCard` (`components/board/CarnetsCard.tsx`, board card `'carnets'` in
+`useBoardCards`; shows the **« long jeu »** lifecycle heads-up, **hides when nothing is near
+end-of-life**). Forms: `CarnetForm` (identity — a carnet may carry an **emoji** identity,
+default by kind 🏠🚗🔌⚙️🚪📦) + `CareLogForm` (a history entry: date/kind/title/cost/installer
+business via `EntityCombobox` + invoice/manual docs via R2). **Three reuse seams** (no parallel
+machinery): (1) cadence = an Entretien row scoped via **`home_projects.carnet_id`** → surfaces
+on the board through the *existing* pipeline (`HomeProjectForm` gained a `carnetId` prop); (2)
+« le long jeu » = a DERIVED lifecycle source `functions/_lib/carnetLife.ts` (install + lifespan →
+"à prévoir", like birthdays — unit-tested); (3) the carnet scene IS the detail view (navigates,
+no peek adapter yet). Data: `carnets` (tree) + `care_log` (history + R2 docs) + `home_pins` (the
+map, P2); `lib/carnets.ts` (`useCarnets`/`useCareLog`, `CARNETS_KEY`). API: `/api/carnets` +
+`/api/care-log` (both `authed()` + route table + realtime keys). **Calm**: no score/inventory;
+`cost_cents` is a noted invoice, not a balance.
+**Phase 2** added: **« En cas de pépin »** — a home carnet's house map (`home_pins`,
+`/api/home-pins`, `HomePinForm`, `useHomePins`): calm reference of locations/how-tos
+(where's the shutoff/breaker/spare key), shown in the carnet scene (home-kind) AND surfaced
+**read-only to a sitter** — the curated `guest/window` (kind `sitter`) now returns `pins` and
+`HandoffPage` renders « En cas de pépin » (the guest allowlist still keeps the sitter off
+`/api/home-pins` directly — the window is the only door). The **L'auto bridge**: a `kind:'auto'`
+carnet can link an existing « L'auto » car (`link_id` = car id, picked in `CarnetForm` via
+`useCars`); its scene shows a « Voir l'horaire » link to `/voiture` (L'auto's own data untouched).
+**Phase 3** polish: **board branding** — a carnet-scoped Entretien row on Aujourd'hui/À venir wears
+its thing's emoji (🔥 Chauffe-eau · filtre) via `homeAct` (board.ts/`ChoreInstance` gained
+`carnet_id`; `Board` maps it through a **non-polling** `CARNETS_KEY` fetch so a carnet-less household
+never adds `/api/carnets` to the board poll) — and stays a normal **checkable-in-place** row
+(deliberately NOT moved into the card, to keep one-tap done). **« Le long jeu » horizon** — the
+carnet scene shows the aggregate of the carnet + its children's lifecycles on one calm timeline
+(`.carnet-horizon`, sorted by projected year, no progress-bar/countdown). Deferred: month-calendar
+lifecycle injection, on-this-day memory, the detail-peek adapter.
 
 ---
 

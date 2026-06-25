@@ -79,6 +79,11 @@ const PATH_KEYS: Record<string, string[][]> = {
   // Projets & Entretien (home_projects): dated upkeep shows on the board + month,
   // and the Réglages sub-tabs read ['home-projects']. Mirrors the chores keys.
   'home-projects': [['home-projects'], ['board'], ['month']],
+  // « Les carnets » (cared-for things): the tree feeds the cercle SubTab + the
+  // board's « Les carnets » glance; a care-log entry refreshes the same surfaces.
+  carnets: [['carnets'], ['board']],
+  'care-log': [['carnets'], ['care-log'], ['board']],
+  'home-pins': [['home-pins']],
   // Calendar events show on the board, the events list, and the month grid.
   events: [['events'], ['board'], ['month']],
   // Meal plan: the kitchen week grid + the board's "ce soir".
