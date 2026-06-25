@@ -42,28 +42,28 @@
    board short enough to render at (or near) full size. Card order + visibility
    (lib/boardCards) is untouched — multi-column just wraps the SAME source order. */
 .cast .board-grid {
-  column-width: 20rem;
+  column-width: 24rem;
   column-gap: 1rem;
 }
-/* L'auto + the drawings strip flow as column items (not tall full-width bands) so they
-   fill the masonry rather than forcing the board portrait-tall. */
+/* L'auto, the drawings strip, AND the photo all flow as COLUMN ITEMS (not tall
+   full-width bands) so nothing forces the board portrait-tall and triggers the shrink. */
 .cast .board-grid > .auto-card,
-.cast .board-grid > .notes--drawings {
+.cast .board-grid > .notes--drawings,
+.cast .board-grid > .photo-frame {
   column-span: none !important;
   margin: 0 0 1rem !important;
 }
 .cast .board-grid > .notes--drawings img {
   max-height: 30vh;
 }
-/* The family photo stays a FULL-WIDTH feature band, but BIG + cinematic: object-fit
-   cover fills the whole width at a generous, fixed height — a big picture without the
-   uncapped full-bleed image that used to blow the board height up and shrink everything. */
-.cast .board-grid > .photo-frame {
-  margin: 1rem 0 0 !important;
-}
+/* The family photo: a SQUARE-ish card filling its column (object-fit:cover crops to a
+   clean square). A column is ~a third–half the board width on a TV, so it reads as a
+   sizeable square photo — without the full-width band whose height blew up the board
+   and forced everything to shrink. Wider columns (below) make the square bigger. */
 .cast .board-grid > .photo-frame img {
   width: 100%;
-  height: 42vh;
+  aspect-ratio: 1 / 1;
+  height: auto;
   object-fit: cover;
   border-radius: var(--radius-lg);
 }
