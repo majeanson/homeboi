@@ -34,6 +34,14 @@ export interface Env {
   // source degrades to hidden if its feed is unreachable.
   NASA_APOD_KEY?: string
 
+  // OPTIONAL Mistral API key for the high-accuracy CLOUD recipe-photo reader
+  // (Mistral OCR, pay-as-you-go per page; free "Experiment" tier for testing). Unset
+  // = the feature hides and photo reads use the on-device Tesseract OCR (free,
+  // private) only. Set via `.dev.vars` (local) / `wrangler secret put MISTRAL_API_KEY`
+  // (prod). Sending an image to Mistral leaves the device, so the endpoint also
+  // respects the household AI switch. See functions/_lib/mistralOcr.ts.
+  MISTRAL_API_KEY?: string
+
   // Plaintext vars from wrangler.toml.
   APP_NAME?: string
   DEFAULT_LANG?: string

@@ -22,6 +22,7 @@ Deploy command is `npm run deploy` (build + `wrangler deploy`). Live URL ends up
 | `PHOTOS`         | R2 bucket `babillard-photos` | optional                  | photo/avatar/voice-clip/step-photo features hide |
 | `REALTIME_HUB`   | Durable Object `RealtimeHub` | optional                  | `/api/live` → 503; clients fall back to polling  |
 | `LOGIN_PASSWORD` | secret                       | optional                  | login is open (fine on a trusted LAN)            |
+| `MISTRAL_API_KEY`| secret (Mistral API key)     | optional                  | high-accuracy cloud recipe OCR hides; on-device read only |
 
 ## One-time setup
 
@@ -42,6 +43,9 @@ npx wrangler r2 bucket create babillard-photos
 # 4. Secrets
 npx wrangler secret put SESSION_SECRET     # paste ≥32 random chars
 npx wrangler secret put LOGIN_PASSWORD     # optional shared login password
+npx wrangler secret put MISTRAL_API_KEY    # optional: high-accuracy cloud recipe OCR
+#   Get a free key at https://console.mistral.ai (free "Experiment" tier, no card).
+#   Then in the app: Réglages ▸ Affichage ▸ « Lecture des photos de recette » → Haute précision.
 
 # 5. Workers AI needs no setup — the [ai] binding is available on deploy.
 ```

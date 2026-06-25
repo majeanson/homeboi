@@ -7,6 +7,7 @@ import { RecentsPanel } from '../RecentsPanel'
 import { useAudience } from '../../lib/audience'
 import { useApodEnabled, setApodEnabled } from '../../lib/apod'
 import { useCanvasEnabled, setCanvasEnabled } from '../../lib/canvas'
+import { useOcrEngine, setOcrEngine, useCloudOcrAvailable } from '../../lib/ocrPref'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
 import { isGuest } from '../../lib/device'
@@ -63,6 +64,10 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   // Read live from the localStorage store so the board reacts without a reload.
   const apod = useApodEnabled()
   const canvas = useCanvasEnabled()
+  // Recipe-photo reader (per device): on-device vs the high-accuracy cloud OCR. The
+  // choice only appears when the deployment actually has a Mistral key wired.
+  const ocrEngine = useOcrEngine()
+  const cloudOcrAvailable = useCloudOcrAvailable()
   function toggleAmbient() {
     const next = !ambient
     setAmbientState(next)
@@ -166,6 +171,32 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               {canvas ? t.operator.canvasOn : t.operator.canvasOff}
             </button>
             <p className="operator__seg-hint mono">{t.operator.canvasHint}</p>
+          </div>
+        )}
+        {!ro && cloudOcrAvailable && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.ocrLabel}</span>
+            <div className="audience-switch mono" role="group" aria-label={t.operator.ocrLabel}>
+              <button
+                type="button"
+                className={`audience-switch__opt${ocrEngine === 'device' ? ' is-active' : ''}`}
+                onClick={() => setOcrEngine('device')}
+                aria-pressed={ocrEngine === 'device'}
+              >
+                <InlineIcon name="camera-bold" /> {t.operator.ocrDevice}
+              </button>
+              <button
+                type="button"
+                className={`audience-switch__opt${ocrEngine === 'cloud' ? ' is-active' : ''}`}
+                onClick={() => setOcrEngine('cloud')}
+                aria-pressed={ocrEngine === 'cloud'}
+              >
+                <InlineIcon name="sparkle-bold" /> {t.operator.ocrCloud}
+              </button>
+            </div>
+            <p className="operator__seg-hint mono">
+              {ocrEngine === 'cloud' ? t.operator.ocrCloudHint : t.operator.ocrDeviceHint}
+            </p>
           </div>
         )}
         {!ro && (

@@ -59,6 +59,7 @@ import * as recipeDraft from '../functions/api/recipe-draft'
 import * as recipeImage from '../functions/api/recipe-image'
 import * as recipeLoves from '../functions/api/recipe-loves'
 import * as recipeImport from '../functions/api/recipe-import'
+import * as recipeOcr from '../functions/api/recipe-ocr'
 import * as recipeStepImage from '../functions/api/recipe-step-image'
 import * as recipeVision from '../functions/api/recipe-vision'
 import * as recipes from '../functions/api/recipes'
@@ -157,6 +158,7 @@ const TABLE: Record<string, RouteMod> = {
   'recipe-image': recipeImage,
   'recipe-loves': recipeLoves,
   'recipe-import': recipeImport,
+  'recipe-ocr': recipeOcr,
   'recipe-step-image': recipeStepImage,
   'recipe-vision': recipeVision,
   recipes,

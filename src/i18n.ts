@@ -1351,6 +1351,12 @@ export const FR = {
     canvasHint: 'Un fond discret qui suit la saison, la météo et l’heure (une teinte douce, un peu de neige l’hiver). N’affecte que cet appareil.',
     canvasOn: 'Activée',
     canvasOff: 'Désactivée',
+    // Lecture des recettes photo : moteur sur l’appareil vs nuage haute précision.
+    ocrLabel: 'Lecture des photos de recette',
+    ocrDevice: 'Sur l’appareil',
+    ocrCloud: 'Haute précision',
+    ocrDeviceHint: 'Lecture gratuite et privée, directement sur l’appareil — rien n’est envoyé ailleurs. Idéal pour le texte imprimé.',
+    ocrCloudHint: 'Lecture nuage (Mistral) — bien meilleure sur les petits chiffres et fractions. La photo est envoyée au service pour être lue : gratuit pour l’essai, puis moins d’un sou par recette. N’affecte que cet appareil.',
     // « Disposition du babillard » — per-device show/hide + reorder of the Grille cards.
     boardLayout: 'Disposition du babillard',
     boardLayoutHint: 'Choisis quelles cartes afficher — propre à cet appareil. Le bandeau du haut garde sa place; glisse la poignée des cartes pour les réordonner.',
@@ -3265,6 +3271,12 @@ export const EN: typeof FR = {
     canvasHint: 'A subtle backdrop that follows the season, weather and time of day (a soft tint, a little snow in winter). Affects this device only.',
     canvasOn: 'On',
     canvasOff: 'Off',
+    // Recipe-photo reading: on-device engine vs high-accuracy cloud.
+    ocrLabel: 'Recipe photo reading',
+    ocrDevice: 'On device',
+    ocrCloud: 'High accuracy',
+    ocrDeviceHint: 'Free, private reading right on the device — nothing is sent anywhere. Best for printed text.',
+    ocrCloudHint: 'Cloud reading (Mistral) — much better on tiny numbers and fractions. The photo is sent to the service to be read: free to try, then under a cent per recipe. Affects this device only.',
     // Per-device show/hide + reorder of the Grille cards.
     boardLayout: 'Board layout',
     boardLayoutHint: 'Choose which cards show — specific to this device. The top band keeps its place; drag a card’s handle to reorder it.',

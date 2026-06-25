@@ -6,6 +6,7 @@ import { useAi } from '../lib/ai'
 import { resizeImage, resizeImageForOcr, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { ocrImage, mergeOcrPages, disposeOcr } from '../lib/ocr'
 import { repairImperialFromMetric } from '../lib/measure'
+import { useOcrEngine, useCloudOcrAvailable } from '../lib/ocrPref'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { RecipeReadReview, type ReadReviewDraft } from './RecipeReadReview'
 import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
@@ -57,6 +58,10 @@ export function RecipeForm({
   // works without AI (JSON-LD / microdata / the paste heuristic), only free-form
   // text falls back, so it's not an AI-only feature.
   const { enabled: aiEnabled } = useAi()
+  // OCR engine (per-device): on-device Tesseract by default, or the high-accuracy
+  // cloud reader when the operator picked it AND the deployment has a Mistral key.
+  const ocrEngine = useOcrEngine()
+  const cloudOcrAvailable = useCloudOcrAvailable()
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onCancel)
   // Free the OCR worker's WASM heap when the editor closes — a cheap wall tablet
@@ -311,27 +316,49 @@ export function RecipeForm({
     setReadProgress(0)
     setReadMsg(null)
     try {
-      // Transcribe each page at the higher OCR resolution (a fraction's slash lives
-      // in a few pixels). Average confidence; union shaky words.
       const texts: string[] = []
       const lowWords = new Set<string>()
-      let confSum = 0
-      let confN = 0
-      for (let i = 0; i < files.length; i++) {
-        const big = await resizeImageForOcr(files[i], OCR_MAX)
-        const res = await ocrImage(big, (p) => setReadProgress((i + p) / files.length))
-        if (res.text) texts.push(res.text)
-        if (res.confidence > 0) {
-          confSum += res.confidence
-          confN++
+      let meanConf = 0
+
+      // The high-accuracy CLOUD reader (Mistral OCR), when the operator picked it and
+      // the deployment has a key. Sends each page to /api/recipe-ocr → faithful text.
+      const useCloud = ocrEngine === 'cloud' && cloudOcrAvailable && aiEnabled
+      if (useCloud) {
+        for (let i = 0; i < files.length; i++) {
+          // Downscale-only here (no Tesseract-style upscaling) — Mistral reads small
+          // text fine, and this keeps the upload under the endpoint's 6 MB cap.
+          const img = await resizeImage(files[i], OCR_MAX)
+          setReadProgress(i / files.length)
+          const r = await api<{ text: string }>('recipe-ocr', { method: 'POST', body: img }).catch(() => null)
+          if (r?.text) texts.push(r.text)
         }
-        res.lowConfidenceWords.forEach((w) => lowWords.add(w))
+        setReadProgress(1)
+        if (texts.length) meanConf = 95 // cloud OCR is reliable → skip the AI fallback gate
       }
+
+      // On-device Tesseract — the default, AND the fallback if cloud came back empty.
+      // Transcribe each page at the higher OCR resolution (a fraction's slash lives in
+      // a few pixels). Average confidence; union shaky words.
+      if (!texts.length) {
+        let confSum = 0
+        let confN = 0
+        for (let i = 0; i < files.length; i++) {
+          const big = await resizeImageForOcr(files[i], OCR_MAX)
+          const res = await ocrImage(big, (p) => setReadProgress((i + p) / files.length))
+          if (res.text) texts.push(res.text)
+          if (res.confidence > 0) {
+            confSum += res.confidence
+            confN++
+          }
+          res.lowConfidenceWords.forEach((w) => lowWords.add(w))
+        }
+        meanConf = confN ? confSum / confN : 0
+      }
+
       // Merge the pages: a wide shot + zoomed close-ups of the same recipe dedupe to
       // one transcript (the clearer zoom replaces a fuzzy line); separate pages
       // (ingredients here, steps there) just concatenate.
       const stitched = mergeOcrPages(texts).trim()
-      const meanConf = confN ? confSum / confN : 0
 
       // OCR gave usable text → structure it through the no-/low-AI text path. Only a
       // near-empty or very-low-confidence read (handwriting, skew, a weak tablet)

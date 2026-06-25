@@ -10,3 +10,9 @@ SESSION_SECRET=replace-with-at-least-32-random-characters-xx
 # for any public deployment so a stranger can't sign in as you (email-only login
 # has no other gate). Not a per-user password store — one shared household secret.
 # LOGIN_PASSWORD=choose-a-strong-passphrase
+
+# OPTIONAL Mistral API key — enables the high-accuracy CLOUD recipe-photo reader
+# (Réglages ▸ Affichage ▸ « Lecture des photos de recette » → Haute précision).
+# Free "Experiment" tier (no card) at https://console.mistral.ai. Unset = on-device
+# Tesseract OCR only (free, private). The image is sent to Mistral when enabled.
+# MISTRAL_API_KEY=your-mistral-api-key

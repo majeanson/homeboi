@@ -28,6 +28,10 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     app: ctx.env.APP_NAME ?? 'Babillard',
     ai,
     aiAvailable,
+    // The high-accuracy cloud recipe reader (Mistral OCR) is wired on this deployment
+    // (MISTRAL_API_KEY set). Just a presence fact, like aiAvailable — the SPA shows
+    // the "lecture haute précision" toggle only when true.
+    cloudOcr: !!ctx.env.MISTRAL_API_KEY,
     invite: !!ctx.env.LOGIN_PASSWORD,
     sessionSecret: !!ctx.env.SESSION_SECRET && ctx.env.SESSION_SECRET.length >= 32,
   })
