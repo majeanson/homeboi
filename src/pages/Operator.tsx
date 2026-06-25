@@ -7,7 +7,7 @@ import { useAuth } from '../lib/auth'
 import { useAi, useAiToggle } from '../lib/ai'
 import { isPaired } from '../lib/device'
 import { useProfile } from '../lib/profile'
-import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection } from '../components/operator/display'
+import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection, CastTvSection } from '../components/operator/display'
 import { AmbientSettingsSection } from '../components/operator/ambient'
 import { BoardLayoutSection } from '../components/operator/boardLayout'
 import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
@@ -303,6 +303,7 @@ export function Operator() {
             <DisplaySection help={operatorHelp} />
             <BoardLayoutSection help={operatorHelp} />
             <AmbientSettingsSection help={operatorHelp} />
+            <CastTvSection help={operatorHelp} />
             <MeasureColorsSection help={operatorHelp} />
             <VoiceSection help={operatorHelp} />
           </>

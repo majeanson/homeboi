@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Babillard — Salon</title>
+    <!--
+      « Diffuser au salon » — the Google Cast CUSTOM RECEIVER (Stage 2). Registered in the
+      Google Cast SDK Developer Console (Custom Receiver → this URL) under the household's
+      Application ID. The Chromecast loads THIS page; we run the CAF receiver framework on
+      it (so the Cast session stays alive on the device, no computer left running) and embed
+      the real /cast board in a SAME-ORIGIN iframe — so the TV shows the exact app with zero
+      duplication. The sender (src/lib/cast.ts, Chrome only) hands us the read-only cast
+      token over a custom channel; we reload the iframe with ?guest=<token> so /cast can read
+      the household API from the Chromecast (which has no operator cookie). See DEPLOY.md.
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #fbf3e4;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        color: #6b5b4a;
+      }
+      #frame {
+        border: 0;
+        width: 100vw;
+        height: 100vh;
+        display: block;
+      }
+      #wait {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2vw;
+        letter-spacing: 0.02em;
+      }
+    </style>
+    <script src="//www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+  </head>
+  <body>
+    <div id="wait">Babillard — connexion au salon…</div>
+    <iframe id="frame" title="Babillard" hidden></iframe>
+    <script>
+      (function () {
+        // Custom channel the sender uses to pass the read-only cast token.
+        var NS = 'urn:x-cast:com.babillard.cast'
+        var frame = document.getElementById('frame')
+        var wait = document.getElementById('wait')
+
+        // Point the iframe at /cast. With a token we pass it as ?guest= so main.tsx stashes
+        // it; without one we still try (the Chromecast may hold a token in its webview
+        // storage from a previous cast — instant resume). A fresh device with no token shows
+        // the app's pair prompt until the sender's token message arrives, which reloads here.
+        function showBoard(token) {
+          frame.src = '/cast' + (token ? '?guest=' + encodeURIComponent(token) : '')
+          frame.hidden = false
+          wait.style.display = 'none'
+        }
+
+        var context = cast.framework.CastReceiverContext.getInstance()
+        context.addCustomMessageListener(NS, function (e) {
+          if (e && e.data && e.data.token) showBoard(e.data.token)
+        })
+
+        var options = new cast.framework.CastReceiverOptions()
+        // A board is not media — keep the receiver alive indefinitely (no idle timeout), so
+        // the TV holds the board up until it's powered off or rebooted.
+        options.disableIdleTimeout = true
+        options.customNamespaces = {}
+        options.customNamespaces[NS] = cast.framework.system.MessageType.JSON
+        context.start(options)
+
+        // Try a stored-token (or pair-prompt) resume right away; the token message, when it
+        // arrives, reloads the iframe with the fresh credential.
+        showBoard(null)
+      })()
+    </script>
+  </body>
+</html>

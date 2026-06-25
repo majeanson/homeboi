@@ -82,6 +82,41 @@ Local secrets/vars go in `.dev.vars` (git-ignored — see `.dev.vars.example`).
 Without `wrangler login`, the `AI` binding is unavailable locally and the capture
 bar/recap take their graceful-degrade paths; everything else works.
 
+## Diffuser au salon (Cast the board to a TV)
+
+A read-only living-room board lives at **`/cast`** — it composes the real `<Board/>`
+made passive (`.cast` scope, `pointer-events:none`) and scaled for 10-foot viewing. It
+boots with a read-only `showcase` guest token, minted as a link + QR from **Réglages ▸
+Affichage ▸ « Diffuser au salon »**. Two ways it reaches the TV:
+
+- **Stage 1 — Cast tab (no setup).** Open the minted `/cast?guest=…` link in **Chrome on
+  a computer** → ⋮ → *Cast…* → pick the Chromecast → *Cast tab*. Works today; the
+  computer must stay awake while casting. (iOS browsers can't start a cast — Apple
+  blocks the sender SDK — so the computer's Chrome is the sender.)
+- **Stage 2 — Cast receiver (always-on, no computer running).** `public/cast-receiver.html`
+  is a registered **Custom Receiver**: the Chromecast loads it, runs the CAF receiver
+  framework (so the session stays alive on the device), and embeds `/cast` in a
+  same-origin iframe. A Chrome-only **« Diffuser maintenant »** button (`src/lib/cast.ts`)
+  launches it and hands it the token over a custom channel.
+
+**Enabling Stage 2 (one-time, by the household owner):**
+
+1. Create a **Google Cast developer account** at <https://cast.google.com/publish>
+   ($5 one-time; the account email can't be changed later).
+2. **Add New Application → Custom Receiver.** URL = `https://<your-prod-host>/cast-receiver.html`
+   (HTTPS, required once published — the prod Worker already is). Save → note the
+   **Application ID**.
+3. **Add New Device** = the Chromecast's *software (Cast)* serial (Google Home app →
+   device → settings, or cast the console page to read it). Wait ~15 min, then reboot
+   the Chromecast → status **"Ready for Testing."**
+4. **Do NOT publish** — an unpublished receiver works privately on your registered
+   device(s) indefinitely; publishing is only for worldwide listing. No iOS sender
+   fields are needed (the sender is desktop Chrome, the Web platform).
+5. Paste the Application ID into **`CAST_APP_ID`** in `src/lib/cast.ts`, then `npm run
+   deploy`. The « Diffuser maintenant » button then appears in Chrome; until it's set
+   the button stays hidden and Stage 1 (cast-tab) is the path. No CSP blocks the Cast
+   SDKs (loaded from `gstatic.com`); the service worker passes them through.
+
 ## Notes
 
 - **Migrations are forward-only and filename-locked** (`functions/db/migrations/`).

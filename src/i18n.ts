@@ -1363,6 +1363,23 @@ export const FR = {
     canvasHint: 'Un fond discret qui suit la saison, la météo et l’heure (une teinte douce, un peu de neige l’hiver). N’affecte que cet appareil.',
     canvasOn: 'Activée',
     canvasOff: 'Désactivée',
+    // « Diffuser au salon » — un lien TV (lecture seule) pour montrer le babillard sur
+    // le téléviseur via Chromecast (diffuser l’onglet depuis Chrome sur l’ordinateur).
+    castTitle: 'Diffuser au salon',
+    castIntro:
+      'Affiche le babillard sur le téléviseur, en lecture seule. Génère un lien, ouvre-le dans Chrome sur l’ordinateur, puis « Caster l’onglet » vers le Chromecast.',
+    castGenerate: 'Générer le lien TV',
+    castReady: 'Lien TV prêt — ouvre-le dans Chrome sur l’ordinateur :',
+    castStep1: 'Ouvre ce lien dans Google Chrome sur l’ordinateur.',
+    castStep2: 'Menu ⋮ ▸ Caster… ▸ choisis le Chromecast.',
+    castStep3: 'Sources ▸ « Caster l’onglet » — le babillard s’affiche au salon.',
+    castCaveat:
+      'L’ordinateur doit rester allumé tant que l’onglet est diffusé. Le lien expire après 7 jours — regénère-le au besoin.',
+    // Stage 2 — le bouton « Diffuser maintenant » (Chrome seulement) lance le récepteur.
+    castNow: 'Diffuser maintenant',
+    castNowBusy: 'Diffusion…',
+    castNowHint: 'Diffuse directement depuis Chrome sur cet ordinateur, sans copier le lien.',
+    castFailed: 'La diffusion n’a pas pu démarrer. Choisis le Chromecast, ou utilise le lien ci-dessous.',
     // Lecture des recettes photo : moteur sur l’appareil vs nuage haute précision.
     ocrLabel: 'Lecture des photos de recette',
     ocrDevice: 'Sur l’appareil',
@@ -3301,6 +3318,23 @@ export const EN: typeof FR = {
     canvasHint: 'A subtle backdrop that follows the season, weather and time of day (a soft tint, a little snow in winter). Affects this device only.',
     canvasOn: 'On',
     canvasOff: 'Off',
+    // "Cast to the living room" — a read-only TV link to show the board on the TV via
+    // Chromecast (cast the tab from Chrome on the computer).
+    castTitle: 'Cast to the living room',
+    castIntro:
+      'Show the board on the TV, read-only. Generate a link, open it in Chrome on the computer, then “Cast tab” to the Chromecast.',
+    castGenerate: 'Generate TV link',
+    castReady: 'TV link ready — open it in Chrome on the computer:',
+    castStep1: 'Open this link in Google Chrome on the computer.',
+    castStep2: 'Menu ⋮ ▸ Cast… ▸ pick the Chromecast.',
+    castStep3: 'Sources ▸ “Cast tab” — the board appears on the TV.',
+    castCaveat:
+      'The computer must stay awake while the tab is casting. The link expires after 7 days — regenerate it as needed.',
+    // Stage 2 — the "Cast now" button (Chrome only) launches the receiver directly.
+    castNow: 'Cast now',
+    castNowBusy: 'Casting…',
+    castNowHint: 'Cast straight from Chrome on this computer, no link to copy.',
+    castFailed: 'Casting couldn’t start. Pick the Chromecast, or use the link below.',
     // Recipe-photo reading: on-device engine vs high-accuracy cloud.
     ocrLabel: 'Recipe photo reading',
     ocrDevice: 'On device',

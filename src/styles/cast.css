@@ -1,0 +1,34 @@
+/* « Diffuser au salon » — the read-only TV / cast surface (/cast, src/pages/CastPage).
+   It wraps the REAL <Board/> (no forked layout to drift) so the living-room screen is
+   the exact board, just bigger, calmer, and non-interactive. Uniquely scoped under
+   `.cast`, so its position in the @import list is immaterial.
+
+   - pointer-events:none makes the whole board genuinely passive (a TV nobody taps):
+     no detail peeks, no checks, no toggles can fire — read-only by construction, on
+     top of the read-only guest token the page already loads with.
+   - the device chrome (face picker, view toggle, help, quick-action pills, first-run
+     card) is hidden — a TV is a glance, not a control panel. They're dead under
+     pointer-events:none anyway; hiding them keeps the surface calm.
+   - type scales up for 10-foot "across the room" legibility, clamped so a small
+     monitor and a big TV both stay readable. */
+.cast {
+  pointer-events: none;
+  min-height: 100dvh;
+}
+
+/* 10-foot scale: bump the board's root font so every rem/em size grows together. */
+.cast .board-wall {
+  font-size: clamp(1.05rem, 1.1vw + 0.7rem, 1.55rem);
+  max-width: none;
+}
+
+/* Hide the interactive device chrome — a glance surface, not a control panel.
+   (Unknown class names here are harmless no-ops; the live ones do the hiding.) */
+.cast .profile-chip,
+.cast .boardview,
+.cast .mswitch,
+.cast .help-toggle,
+.cast .board-actions,
+.cast .welcome-card {
+  display: none !important;
+}

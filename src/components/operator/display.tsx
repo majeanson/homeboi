@@ -34,6 +34,10 @@ import { computeDayPart } from '../../lib/timeofday'
 import { MEASURE_SWATCHES, swatchColor, useMeasureColorsEditor } from '../../lib/measurePrefs'
 import { IngredientLine } from '../IngredientLine'
 import { InlineIcon } from '../Icon'
+import { api } from '../../lib/api'
+import { StatusMessage } from '../StatusMessage'
+import { QrCode } from '../QrCode'
+import { castSenderPossible, castToSalon } from '../../lib/cast'
 import {
   getRate,
   getVoicePref,
@@ -326,6 +330,128 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           <InlineIcon name="gear-six-bold" size={14} /> Kit de composants (dev)
         </Link>
       </p>
+    </OperatorSection>
+  )
+}
+
+// « Diffuser au salon » — mint a read-only TV link (a showcase guest token) and show
+// it as a copyable URL + QR, with the Stage-1 "cast the tab from Chrome" steps. The
+// link lands on /cast (the real board, read-only + scaled for 10-foot viewing). We
+// reuse the showcase kind on purpose: the full board reads board+meals+recipes+
+// household on mount, so a narrower scope would 403 its own dependency hooks. The
+// computer's Chrome is the sender (iOS can't start a cast); see DEPLOY.md (cast).
+//
+// Stage 2 (once a Cast App ID is configured in lib/cast): a « Diffuser maintenant »
+// button appears IN CHROME only (castSenderPossible) and launches the registered
+// receiver directly — no copy-paste/cast-tab. iOS/Safari never see it; they use the
+// link + cast-tab steps below.
+export function CastTvSection({ help }: { help?: HelpMode }) {
+  const t = useT()
+  // Minting a link is operator-only — a read-only guest can't hand out access.
+  const ro = isGuest()
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  // The raw token (the sender needs it) — the shareable link is derived from it.
+  const [token, setToken] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [casting, setCasting] = useState(false)
+  // Show the one-tap cast button only where the Web Sender can actually run (Chrome
+  // desktop/Android, with an App ID configured) — never on iOS.
+  const canCast = castSenderPossible()
+  if (ro) return null
+  const link = token ? `${window.location.origin}/cast?guest=${encodeURIComponent(token)}` : null
+
+  // Mint a fresh read-only TV token (showcase, 7-day clamp) and remember it.
+  async function mint(): Promise<string> {
+    const res = await api<{ guestToken: string }>('guest/start', {
+      method: 'POST',
+      body: { kind: 'showcase', ttlSeconds: 7 * 24 * 3600 },
+    })
+    setToken(res.guestToken)
+    return res.guestToken
+  }
+
+  async function generate() {
+    if (busy) return
+    setBusy(true)
+    setErr(null)
+    setCopied(false)
+    try {
+      await mint()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // One-tap cast (Chrome only): ensure a token, then open the device picker + launch
+  // the receiver, handing it the token. Any failure (cancelled picker, non-Chrome)
+  // falls back to the cast-tab instructions.
+  async function castNow() {
+    if (casting) return
+    setCasting(true)
+    setErr(null)
+    try {
+      const tok = token ?? (await mint())
+      await castToSalon(tok)
+    } catch {
+      setErr(t.operator.castFailed)
+    } finally {
+      setCasting(false)
+    }
+  }
+
+  async function copy() {
+    if (!link) return
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+    } catch {
+      /* clipboard blocked — the link is shown for manual copy */
+    }
+  }
+
+  return (
+    <OperatorSection title={t.operator.castTitle} help={help} helpKey="display">
+      <p className="operator__hint mono">{t.operator.castIntro}</p>
+      <div className="operator__inline-form">
+        {canCast && (
+          <button type="button" className="btn btn--primary" onClick={castNow} disabled={casting}>
+            <InlineIcon name="key-bold" /> {casting ? t.operator.castNowBusy : t.operator.castNow}
+          </button>
+        )}
+        <button type="button" className={`btn${canCast ? '' : ' btn--primary'}`} onClick={generate} disabled={busy}>
+          <InlineIcon name="link-bold" /> {busy ? t.guest.generating : t.operator.castGenerate}
+        </button>
+      </div>
+      {canCast && <p className="operator__seg-hint mono">{t.operator.castNowHint}</p>}
+      {err && <StatusMessage tone="error">{err}</StatusMessage>}
+      {link && (
+        <div className="operator__guest-link">
+          <p className="operator__hint mono">{t.operator.castReady}</p>
+          <input
+            className="input mono"
+            readOnly
+            value={link}
+            onFocus={(e) => e.target.select()}
+            aria-label={t.operator.castTitle}
+          />
+          <div className="operator__inline-form">
+            <button type="button" className="btn" onClick={copy}>
+              <InlineIcon name="link-bold" /> {copied ? t.guest.copied : t.guest.copy}
+            </button>
+          </div>
+          {/* Scan it off the wall tablet to open on the computer, or copy the link. */}
+          <QrCode value={link} />
+          <ol className="operator__hint mono">
+            <li>{t.operator.castStep1}</li>
+            <li>{t.operator.castStep2}</li>
+            <li>{t.operator.castStep3}</li>
+          </ol>
+          <p className="operator__seg-hint mono">{t.operator.castCaveat}</p>
+        </div>
+      )}
     </OperatorSection>
   )
 }

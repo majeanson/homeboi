@@ -126,6 +126,13 @@ parameterizable via `endpoint`/`affectedKey`/`extraBody` — reused by `CercleNo
 tap the one being scanned → a full-screen `.bigcard` proof peek with `‹ Retour`; tapped
 tiles dim with an ephemeral ✓. Random-access, NOT a sequential stepper — the user holds
 the phone and items hit the belt out of order. Revise/remove via `RowActions` in the peek),
+`CastPage` (the « Diffuser au salon » TV board, `/cast` — **composes the real `<Board/>`**
+rather than forking a read-only layout: a `.cast` scope scales the type for 10-foot
+viewing and `pointer-events:none` makes it genuinely passive, so the living-room TV shows
+the exact board with zero drift. Boots with a read-only `showcase` guest token; minted as a
+copyable link + QR from **Réglages ▸ Affichage ▸ « Diffuser au salon »** (`CastTvSection`).
+Reaches the TV via Chrome "Cast tab" today; a registered Cast receiver is the always-on
+Stage 2 — see DEPLOY.md/cast),
 `BusinessesTab` (the « Le cercle » → **Business** tab — a standalone services/vendors
 directory, isolated from the people graph; fetches `BUSINESSES_KEY`, rows + an edit
 `Modal`(`BusinessForm`) + detail peek via `buildBusiness`; **add** is the ＋ FAB's job

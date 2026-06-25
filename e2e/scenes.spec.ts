@@ -31,6 +31,10 @@ const FORMATS = [
 type Scene = { name: string; path: string; audience?: Audience }
 const SCENES: Scene[] = [
   { name: 'voiture', path: '/voiture' },
+  // « Diffuser au salon » — the read-only TV board: the real <Board/>, scaled + passive
+  // (.cast pointer-events:none, no hub chrome → no FAB). Must render the mocked board
+  // without crashing or overflowing at any size (it's shown full-screen on a TV).
+  { name: 'cast', path: '/cast' },
   { name: 'departure', path: '/board/departure' },
   { name: 'jouer', path: '/jouer', audience: 'toddler' },
   { name: 'search', path: '/search' },

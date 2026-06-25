@@ -61,6 +61,9 @@ const FamilyWindowPage = lazy(() => import('./pages/FamilyWindowPage').then((m) 
 // share link; the operator reviews + merges it into Le cercle. See lib/auth GuestKind.
 const IntakeForm = lazy(() => import('./pages/IntakeForm').then((m) => ({ default: m.IntakeForm })))
 const VoiturePage = lazy(() => import('./pages/VoiturePage').then((m) => ({ default: m.VoiturePage })))
+// « Diffuser au salon » — the living-room TV board: the real board, read-only +
+// scaled, shown on a TV via Chromecast. Standalone (no hub chrome).
+const CastPage = lazy(() => import('./pages/CastPage').then((m) => ({ default: m.CastPage })))
 // Operator add-forms — full-screen scenes (were tall sheet forms that stranded
 // inputs under the mobile keyboard). Edit still happens inline in Réglages.
 const EventFormPage = lazy(() => import('./pages/EventFormPage').then((m) => ({ default: m.EventFormPage })))
@@ -161,6 +164,8 @@ export function AppRoutes() {
         <Route path="/intake" element={<IntakeForm />} />
         {/* #28 — « L'auto » week view (single-car + carpool + work schedules). */}
         <Route path="/voiture" element={<VoiturePage />} />
+        {/* « Diffuser au salon » — the read-only living-room TV board (cast to a TV). */}
+        <Route path="/cast" element={<CastPage />} />
         {/* « Moments » — pick a window (tonight / tomorrow / date / week) → its recap
             + handoff checklist. ?scope= deep-links a preset (the dusk board card uses it). */}
         <Route path="/moment" element={<MomentScene />} />
