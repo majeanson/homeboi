@@ -4,7 +4,7 @@ import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { resizeImage, resizeImageForOcr, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
-import { ocrImage, disposeOcr } from '../lib/ocr'
+import { ocrImage, mergeOcrPages, disposeOcr } from '../lib/ocr'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { RecipeReadReview, type ReadReviewDraft } from './RecipeReadReview'
 import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
@@ -311,7 +311,7 @@ export function RecipeForm({
     setReadMsg(null)
     try {
       // Transcribe each page at the higher OCR resolution (a fraction's slash lives
-      // in a few pixels). Stitch in pick order; average confidence; union shaky words.
+      // in a few pixels). Average confidence; union shaky words.
       const texts: string[] = []
       const lowWords = new Set<string>()
       let confSum = 0
@@ -326,7 +326,10 @@ export function RecipeForm({
         }
         res.lowConfidenceWords.forEach((w) => lowWords.add(w))
       }
-      const stitched = texts.join('\n\n').trim()
+      // Merge the pages: a wide shot + zoomed close-ups of the same recipe dedupe to
+      // one transcript (the clearer zoom replaces a fuzzy line); separate pages
+      // (ingredients here, steps there) just concatenate.
+      const stitched = mergeOcrPages(texts).trim()
       const meanConf = confN ? confSum / confN : 0
 
       // OCR gave usable text → structure it through the no-/low-AI text path. Only a

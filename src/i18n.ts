@@ -674,7 +674,7 @@ export const FR = {
     readPhoto: 'Scanner une fiche',
     reading: 'Je lis la photo…',
     readFail: 'Texte illisible — remplis à la main.',
-    readHint: 'Recette en ligne ? Le lien donne une copie parfaite. Plusieurs pages ? Scanne-les ensemble.',
+    readHint: 'Recette en ligne ? Le lien donne une copie parfaite. Sinon, scanne plusieurs photos d’un coup — une vue d’ensemble + des gros plans des petits chiffres.',
     photoTooBig: 'Photo trop lourde — essaie une capture d’écran ou une photo plus petite.',
     // Verify-against-the-photo panel
     reviewTitle: 'Vérifier la lecture',
@@ -2602,7 +2602,7 @@ export const EN: typeof FR = {
     readPhoto: 'Scan a card',
     reading: 'Reading the photo…',
     readFail: "Couldn't read it — fill it in by hand.",
-    readHint: 'Recipe online? A link copies it perfectly. Several pages? Scan them together.',
+    readHint: 'Recipe online? A link copies it perfectly. Otherwise scan several photos at once — a wide shot + close-ups of the small numbers.',
     photoTooBig: 'Photo too heavy — try a screenshot or a smaller photo.',
     // Verify-against-the-photo panel
     reviewTitle: 'Check the read',

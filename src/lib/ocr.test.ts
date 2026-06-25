@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createWorker } from 'tesseract.js'
-import { ocrImage, disposeOcr, normalizeOcrText } from './ocr'
+import { ocrImage, disposeOcr, normalizeOcrText, mergeOcrPages } from './ocr'
 
 // tesseract.js is a heavy WASM package; ocr.ts dynamic-imports it. Mock the module
 // so these stay pure-logic — we're testing the wrapper (degrade-to-empty, text +
@@ -73,7 +73,30 @@ describe('ocrImage', () => {
     expect(normalizeOcrText('farine')).toBe('farine') // untouched
     expect(normalizeOcrText('')).toBe('')
   })
+})
 
+describe('mergeOcrPages', () => {
+  it('returns the single page unchanged', () => {
+    expect(mergeOcrPages(['3/4 tasse de farine\n2 oeufs'])).toBe('3/4 tasse de farine\n2 oeufs')
+    expect(mergeOcrPages([])).toBe('')
+  })
+
+  it('lets a zoomed close-up REPLACE the matching fuzzy line, not duplicate it', () => {
+    const wide = '% tasse de farine\n2 oeufs\n1 pincee de sel'
+    const zoom = '3/4 tasse de farine' // the same line, read clearly
+    expect(mergeOcrPages([wide, zoom])).toBe('3/4 tasse de farine\n2 oeufs\n1 pincee de sel')
+  })
+
+  it('appends a non-overlapping page (ingredients + steps) instead of merging', () => {
+    const ingredients = '3/4 tasse de farine\n2 oeufs'
+    const steps = 'Melanger le tout\nCuire 12 minutes'
+    expect(mergeOcrPages([ingredients, steps])).toBe(
+      '3/4 tasse de farine\n2 oeufs\nMelanger le tout\nCuire 12 minutes',
+    )
+  })
+})
+
+describe('ocrImage edge', () => {
   it('tolerates a null block tree (no words) without throwing', async () => {
     mockCreateWorker.mockResolvedValueOnce({
       recognize: vi.fn().mockResolvedValue({ data: { text: 'hi', confidence: 50, blocks: null } }),

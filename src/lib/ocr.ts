@@ -34,28 +34,45 @@ const EMPTY: OcrResult = { text: '', confidence: 0, lowConfidenceWords: [] }
 // null so ocrImage degrades to the AI fallback instead of throwing.
 let workerPromise: Promise<Worker | null> | null = null
 
+// The high-accuracy ("best", float LSTM) traineddata — markedly better on the small
+// dense glyphs recipes live on (decimal commas, vulgar fractions) than the default
+// integerized models, for ~the same download (best fra is even smaller). Slower per
+// scan, which is a fine trade for a recipe you keep. If this CDN/path ever fails we
+// fall back to tesseract.js's default models so OCR still works.
+const BEST_LANGPATH = 'https://tessdata.projectnaptha.com/4.0.0_best'
+
 function getWorker(onProgress?: (fraction: number) => void): Promise<Worker | null> {
   if (!workerPromise) {
     workerPromise = (async () => {
-      try {
-        const { createWorker } = await import('tesseract.js')
-        const worker = await createWorker(['fra', 'eng'], 1, {
-          logger: (m) => {
-            // Only the recognize phase carries a meaningful 0..1 for the "Lecture…"
-            // progress; download/init phases just spin.
-            if (m.status === 'recognizing text' && typeof m.progress === 'number') onProgress?.(m.progress)
-          },
-        })
-        // Recipe-tuned recognition. A recipe card almost never prints a literal "%",
-        // yet "%" is Tesseract's most common misread of a vulgar fraction (¾/½/¼ share
-        // its diagonal-with-circles shape) — blacklisting it nudges the engine to its
-        // next-best guess (often the real fraction). user_defined_dpi steadies digit/
-        // punctuation calls (a dropped comma turns "1,25 ml" into "125 ml").
-        await worker.setParameters({ tessedit_char_blacklist: '%', user_defined_dpi: '300' })
-        return worker
-      } catch {
-        return null
+      const { createWorker } = await import('tesseract.js')
+      const logger = (m: { status: string; progress: number }) => {
+        // Only the recognize phase carries a meaningful 0..1 for the "Lecture…"
+        // progress; download/init phases just spin.
+        if (m.status === 'recognizing text' && typeof m.progress === 'number') onProgress?.(m.progress)
       }
+      const spawn = (langPath?: string) =>
+        createWorker(['fra', 'eng'], 1, langPath ? { langPath, logger } : { logger })
+      let worker: Worker
+      try {
+        worker = await spawn(BEST_LANGPATH) // accuracy first
+      } catch {
+        try {
+          worker = await spawn() // best models unreachable → default integerized ones
+        } catch {
+          return null // no models at all → caller degrades to the AI vision read
+        }
+      }
+      // Recipe-tuned recognition. A recipe card almost never prints a literal "%",
+      // yet "%" is Tesseract's most common misread of a vulgar fraction (¾/½/¼ share
+      // its diagonal-with-circles shape) — blacklisting it nudges the engine to its
+      // next-best guess (often the real fraction). user_defined_dpi steadies digit/
+      // punctuation calls (a dropped comma turns "1,25 ml" into "125 ml").
+      try {
+        await worker.setParameters({ tessedit_char_blacklist: '%', user_defined_dpi: '300' })
+      } catch {
+        /* a model variant may reject a param — recognition still works without it */
+      }
+      return worker
     })()
   }
   return workerPromise
@@ -77,6 +94,58 @@ export function normalizeOcrText(text: string): string {
     // A whole number glued to a fraction glyph ("1½" / "1 ½") → mixed "1 1/2".
     .replace(/(\d)\s*([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/g, (_, d, g) => `${d} ${VULGAR[g]}`)
     .replace(VULGAR_CLASS, (g) => VULGAR[g])
+}
+
+// Merge several OCR'd photos of the SAME recipe — a wide shot plus zoomed-in close-
+// ups of the dense parts — into ONE transcript without duplicating the overlapping
+// lines. The first photo is the base (the wide shot: the whole recipe, in order);
+// each later photo is detail — a line that strongly matches a base line REPLACES it
+// (the zoom read those small numbers more clearly), and a line that matches nothing
+// is appended so a separate page (ingredients here, steps there) still merges cleanly.
+// Pure; degrades to plain concatenation when photos don't overlap, and to the single
+// text when there's one photo.
+const lineTokens = (s: string): string[] => s.toLowerCase().split(/\s+/).filter(Boolean)
+// Jaccard overlap of two lines' word sets — robust to a single mis-read glyph
+// ("% tasse de farine" vs "3/4 tasse de farine" still share most words).
+function lineSimilarity(a: string, b: string): number {
+  const A = new Set(lineTokens(a))
+  const B = new Set(lineTokens(b))
+  if (!A.size || !B.size) return 0
+  let inter = 0
+  for (const x of A) if (B.has(x)) inter++
+  return inter / (A.size + B.size - inter)
+}
+const MERGE_THRESHOLD = 0.55 // high enough that different lines sharing a word or two don't merge
+
+export function mergeOcrPages(pages: string[]): string {
+  const texts = pages.map((p) => p.trim()).filter(Boolean)
+  if (texts.length <= 1) return texts[0] ?? ''
+  const splitLines = (t: string) => t.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+  const base = splitLines(texts[0])
+  // Best detail replacement found for each base line (highest-similarity wins).
+  const replacement = new Map<number, { line: string; score: number }>()
+  const extras: string[] = []
+  for (const page of texts.slice(1)) {
+    for (const line of splitLines(page)) {
+      let bestIdx = -1
+      let bestScore = MERGE_THRESHOLD
+      for (let i = 0; i < base.length; i++) {
+        const score = lineSimilarity(line, base[i])
+        if (score > bestScore) {
+          bestScore = score
+          bestIdx = i
+        }
+      }
+      if (bestIdx >= 0) {
+        const cur = replacement.get(bestIdx)
+        if (!cur || bestScore > cur.score) replacement.set(bestIdx, { line, score: bestScore })
+      } else {
+        extras.push(line) // matched nothing in the base → a genuinely new line
+      }
+    }
+  }
+  const merged = base.map((line, i) => replacement.get(i)?.line ?? line)
+  return [...merged, ...extras].join('\n')
 }
 
 // Walk the OCR page tree (blocks → paragraphs → lines → words) collecting words
