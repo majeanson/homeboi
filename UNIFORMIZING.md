@@ -485,10 +485,15 @@ Two related drifts:
 `intake_submissions`+`intake_media` and `postbox_submissions`+`postbox_media` implement an **identical**
 quarantine→stage→review→materialize→7-day-orphan-sweep pipeline; the two `*_media` tables and their cleanup
 queries are isomorphic (~50 LOC dup).
-- [ ] Migrate to ONE `staged_media(…, submission_kind)` table + extract `sweepAbandonedStagedMedia()` into
-  `_lib/stagedMedia.ts`, called by both `/api/intake` and `/api/postbox`.
-- **Keep separate:** the two *submission* tables + review UIs (`IntakeReview` structured-payload merge vs
-  `PostboxReview` flat accept) — their payloads are genuinely different. `ReviewChecklist` already shares the UI seam.
+- [x] ✅ **DONE 2026-06-26 (migration 0091).** Verified the two tables were **byte-for-byte isomorphic** (same 6
+  columns; only `intake_media` carried an index) and the write/sweep/resolve-delete identical bar the table name.
+  Merged into one **`staged_media(…, submission_kind)`** (backfilled from both, dropped the originals) +
+  `functions/_lib/stagedMedia.ts` with `insertStagedMedia` / `sweepAbandonedStagedMedia` / `deleteStagedMediaByKeys`,
+  now called by both `/api/intake` + `/api/postbox` (and the two guest writers). ~50 LOC of dup gone; the unified
+  index covers the sweep for both kinds. typecheck + 799 tests + build green.
+- **Kept separate (as planned):** the two *submission* tables + review UIs (`IntakeReview` structured-payload merge
+  vs `PostboxReview` flat accept) — their payloads genuinely differ; the sweep's `referenced`-key set is built per
+  -kind in each handler (the one part that isn't shared) and passed into the helper.
 
 ### P2-6 🟡 (med value / med risk) `things.ts` — one "given a thing, pick its colour/icon/emoji" registry
 Resolution is mostly centralized (`pictoFor` 350-entry grocery table, `aisleFor` reusing it, `CATS` category

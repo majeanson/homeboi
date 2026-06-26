@@ -2,6 +2,7 @@ import { ok, badRequest, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { nowSec } from '../_lib/ids'
 import { deleteR2Blob } from '../_lib/r2'
+import { sweepAbandonedStagedMedia, deleteStagedMediaByKeys } from '../_lib/stagedMedia'
 import { intakeMediaKeys, type IntakeSubmission } from '../_lib/intake'
 
 // Operator side of the family-info intake (migrations 0075 + 0076). Thin on purpose:
@@ -11,8 +12,6 @@ import { intakeMediaKeys, type IntakeSubmission } from '../_lib/intake'
 // submissions, marks one merged/dismissed, and owns the staged-photo lifecycle:
 // keep a merged submission's blobs (now contact/pet photos), free a dismissed one's,
 // and sweep abandoned uploads. Operator-only.
-
-const DAY = 86_400
 
 interface PendingOut extends IntakeSubmission {
   id: string
@@ -49,18 +48,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     submissions.push({ ...parsed, id: r.id, targetKey: r.target_key, createdAt: r.created_at })
   }
 
-  // Orphan sweep — best-effort, never blocks the read.
-  const cutoff = nowSec() - 7 * DAY
-  const stale = await ctx.env.DB.prepare(
-    "SELECT id, media_key AS r2_key FROM intake_media WHERE household_id = ? AND status = 'staged' AND created_at < ?",
-  )
-    .bind(hh, cutoff)
-    .all<{ id: string; r2_key: string }>()
-  for (const m of stale.results) {
-    if (referenced.has(m.r2_key)) continue // a still-pending submission needs it
-    await deleteR2Blob(ctx.env.PHOTOS, m.r2_key)
-    await ctx.env.DB.prepare('DELETE FROM intake_media WHERE id = ? AND household_id = ?').bind(m.id, hh).run()
-  }
+  // Orphan sweep — best-effort, never blocks the read (shared with postbox).
+  await sweepAbandonedStagedMedia(ctx.env.DB, ctx.env.PHOTOS, hh, 'intake', referenced)
 
   return ok({ submissions })
 }, 'operator')
@@ -90,9 +79,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
   // Either way, the staging rows are done with — the blobs are now orphan-swept-proof
   // (merged: owned by a contact; dismissed: just deleted).
-  for (const k of keys) {
-    await ctx.env.DB.prepare('DELETE FROM intake_media WHERE household_id = ? AND media_key = ?').bind(hh, k).run()
-  }
+  await deleteStagedMediaByKeys(ctx.env.DB, hh, 'intake', keys)
 
   await ctx.env.DB.prepare(
     'UPDATE intake_submissions SET status = ?, reviewed_at = ? WHERE id = ? AND household_id = ?',

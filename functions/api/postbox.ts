@@ -2,6 +2,7 @@ import { ok, badRequest, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob } from '../_lib/r2'
+import { sweepAbandonedStagedMedia, deleteStagedMediaByKeys } from '../_lib/stagedMedia'
 
 // Operator side of « La boîte aux lettres » (#postbox, migration 0085). A relative
 // left a message via a writable 'postbox' share link; it landed QUARANTINED here.
@@ -12,8 +13,6 @@ import { deleteR2Blob } from '../_lib/r2'
 // whoever happens to be reviewing. Owns the staged-media lifecycle: keep on accept
 // (the note owns the blob now), free on dismiss, and sweep abandoned uploads.
 // Operator-only. Lives in Réglages ▸ Partage beside the intake review.
-
-const DAY = 86_400
 
 interface PendingMsg {
   id: string
@@ -60,17 +59,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     if (m.mediaKey) referenced.add(m.mediaKey)
     if (m.sceneKey) referenced.add(m.sceneKey)
   }
-  const cutoff = nowSec() - 7 * DAY
-  const stale = await ctx.env.DB.prepare(
-    "SELECT id, media_key AS r2_key FROM postbox_media WHERE household_id = ? AND status = 'staged' AND created_at < ?",
-  )
-    .bind(hh, cutoff)
-    .all<{ id: string; r2_key: string }>()
-  for (const m of stale.results) {
-    if (referenced.has(m.r2_key)) continue
-    await deleteR2Blob(ctx.env.PHOTOS, m.r2_key)
-    await ctx.env.DB.prepare('DELETE FROM postbox_media WHERE id = ? AND household_id = ?').bind(m.id, hh).run()
-  }
+  // Orphan sweep — best-effort, never blocks the read (shared with intake).
+  await sweepAbandonedStagedMedia(ctx.env.DB, ctx.env.PHOTOS, hh, 'postbox', referenced)
 
   return ok({ messages })
 }, 'operator')
@@ -131,15 +121,11 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       )
       .run()
     // The blobs now belong to the note — drop the staging rows (keep the bytes).
-    for (const k of keys) {
-      await ctx.env.DB.prepare('DELETE FROM postbox_media WHERE household_id = ? AND media_key = ?').bind(hh, k).run()
-    }
+    await deleteStagedMediaByKeys(ctx.env.DB, hh, 'postbox', keys)
   } else {
     // Dismissed — nothing references the blobs; free them + the staging rows.
-    for (const k of keys) {
-      await deleteR2Blob(ctx.env.PHOTOS, k)
-      await ctx.env.DB.prepare('DELETE FROM postbox_media WHERE household_id = ? AND media_key = ?').bind(hh, k).run()
-    }
+    for (const k of keys) await deleteR2Blob(ctx.env.PHOTOS, k)
+    await deleteStagedMediaByKeys(ctx.env.DB, hh, 'postbox', keys)
   }
 
   await ctx.env.DB.prepare('UPDATE postbox_submissions SET status = ?, reviewed_at = ? WHERE id = ? AND household_id = ?')

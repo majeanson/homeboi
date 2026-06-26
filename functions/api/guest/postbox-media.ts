@@ -1,7 +1,7 @@
 import { ok, badRequest, forbidden, serviceUnavailable } from '../../_lib/json'
 import { authed } from '../../_lib/route'
 import { uploadR2Media } from '../../_lib/r2'
-import { newId, nowSec } from '../../_lib/ids'
+import { insertStagedMedia } from '../../_lib/stagedMedia'
 
 // Stage ONE media blob for a « boîte aux lettres » message (#postbox): a recorded
 // voice clip, a drawing PNG (+ its editable scene JSON), or a photo. Bytes go to R2
@@ -38,11 +38,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   })
   if ('error' in up) return up.error
 
-  await ctx.env.DB.prepare(
-    'INSERT INTO postbox_media (id, household_id, guest_id, media_key, status, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-  )
-    .bind(newId(), actor.householdId, actor.guestId ?? '', up.key, 'staged', nowSec())
-    .run()
+  await insertStagedMedia(ctx.env.DB, actor.householdId, actor.guestId ?? '', 'postbox', up.key)
 
   return ok({ key: up.key, kind })
 })
