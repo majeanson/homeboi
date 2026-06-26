@@ -411,11 +411,24 @@ defaults → KEY → listener Set → cache → read/snapshot/subscribe → `use
 8 settings live in `households.*` JSON columns and split across **three** write patterns (React-Query+useMutation;
 useState+useWrite+undo; useState+`api()`+invalidate): `recipeTags`, `recipePills`, `meals` (slot colours/hidden),
 `aisles`, `cars`, `reserve`, household name, household pets. Each re-implements GET→merge→PATCH + a list editor.
-- [ ] Converge on one pattern and extract `useHouseholdListSetting(field, {idKey, colourKey?, draggable, renameable})`
-  returning `{data, add, rename, recolour, remove, reorder}`. Pilot on `cars`/`reserve` (they already "mirror each
-  other deliberately"). Folds in the duplicated colour-override merge (`useColorOverride`) too.
-- ⚠️ Doesn't fix the known last-write-wins across two operator tabs (server optimistic-locking is out of scope;
-  one-operator assumption stands).
+- [x] ✅ **DONE 2026-06-26 — cars/reserve pilot, the rest left distinct (verified over-merge otherwise).**
+  Extracted **`useHouseholdListSetting(field, seed, clearedMsg)`** (`lib/householdListSetting.ts`: mount-once
+  `api('household')` read + seed, whole-array PATCH via `useWrite`, optimistic rename/recolour/add, undoable delete)
+  + the shared **`<HouseholdListSection>`** render (the identical `meal-slots` coloured-legend + ColorPicker +
+  EditField + OperatorSection). `cars.tsx` + `reserve.tsx` (previously byte-for-byte copies) are now ~20-line
+  wrappers passing `field`/`seed`/`labels`. Registered in DevKit + COMPONENTS.md. typecheck + 799 tests + build green.
+  > **Re-scoped from "8 settings":** on inspection only **cars/reserve** are true twins. The other 6 are legitimately
+  > divergent and folding them would be over-merge: `recipeTags`/`recipePills` hit a *different* endpoint
+  > (`/api/recipe-tags`) via `useMutation` with no undo; `meals` is per-slot toggles (no add/remove) via `api()`;
+  > `aisles` is reorder-only; household **name** is a single field (not a list); and **pets** aren't a JSON column at
+  > all (separate `pets` table — audit premise wrong). The duplicated `useColorOverride` the audit named **doesn't
+  > exist** (each setting's read hook does its own `override[id] ?? default` lookup — not worth a shared helper).
+- ⚠️ Doesn't fix the known last-write-wins across two operator tabs (carried, not introduced; one-operator stands).
+- [~] **DB-6 `household_preferences` split — DEFERRED (not bundled).** The roadmap suggested bundling it here, but
+  the hook reads/writes via `/api/household`, so it's **indifferent to where the columns physically live** — DB-6
+  buys nothing for it. DB-6 itself means churning ~15 pref columns + every SQL reader in `household.ts` (GET builds
+  one object from all of them) for a *modest* tenancy-vs-prefs separation. Not worth the reader-churn now; the audit
+  itself says "skip if you're not touching settings anyway." Revisit only if `households` genuinely needs the split.
 
 ---
 
@@ -630,7 +643,7 @@ The sweep **verified** these are fully adopted with no meaningful outliers:
 14. **P2-2** `<BoardCard>` + `DerivedOccurrence` (reads cleaner after DB-4).
 15. ~~**D.2** `attachmentsFor`/`deleteAttachments` helper~~ — **SKIPPED**: verified no orphan-blob leaks exist (all 13 paths already free correctly); pure-dedup churn not worth the indirection/risk. See D.2 above.
 16. **P2-3** `useItemList` behavioural hook (after DB renames so it targets final columns).
-17. **P2-5** `useHouseholdListSetting` + `useColorOverride` — **bundle DB-6** `household_preferences` split here (1-row move).
+17. **P2-5** `useHouseholdListSetting` — ✅ **DONE 2026-06-26** (cars/reserve pilot via `lib/householdListSetting.ts` + `<HouseholdListSection>`; other 6 settings verified divergent, `useColorOverride` doesn't exist). **DB-6 NOT bundled** — the hook is endpoint-based so it's indifferent to the column home; DB-6's ~15-column reader-churn isn't worth a modest tenancy split now (deferred).
 18. **P2-6** `things.ts` colour/icon/emoji registry (after DB-2 so it keys on `colour`).
 
 ### Phase 4 — Registries, contracts, polish (opportunistic; no hard ordering)

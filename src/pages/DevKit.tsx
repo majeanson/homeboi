@@ -67,6 +67,7 @@ import { Sheet } from '../components/Sheet'
 import { RecipeListPicker } from '../components/RecipeListPicker'
 import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
 import { OperatorSection } from '../components/operator/OperatorSection'
+import { HouseholdListSection } from '../components/operator/HouseholdListSection'
 import { DealCard } from '../components/DealCard'
 import { IngredientLine } from '../components/IngredientLine'
 import { MeasureScoops } from '../components/MeasureScoops'
@@ -1695,6 +1696,27 @@ export function DevKit() {
           <OperatorSection title="Magasinage" hint="Le code postal, utilisé par les rabais." action={<button className="btn btn--sm"><Icon name="plus-bold" size={16} /></button>}>
             <p className="mono" style={{ color: 'var(--ink-faint)' }}>…contenu du panneau…</p>
           </OperatorSection>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'HouseholdListSection',
+      file: 'components/operator/HouseholdListSection.tsx',
+      kw: 'household list setting cars reserve réglages colored items add rename recolor undo l auto réserve',
+      // The shared Réglages section for a "household list setting" (a coloured list of
+      // {id,name,colour} in one households.* JSON column). « L'auto » + « Réserve » are
+      // thin wrappers over it. Stub `field` (won't match a real column → seed fallback).
+      render: () => (
+        <Demo label="a coloured household list setting (cars / reserve share this)">
+          <HouseholdListSection
+            field="devkitList"
+            seed={() => [
+              { id: 'a', name: 'Garde-manger', color: PALETTE[0] },
+              { id: 'b', name: 'Congélateur', color: PALETTE[2] },
+            ]}
+            labels={{ title: 'Liste (démo)', name: 'Nom', add: 'Ajouter un emplacement…', empty: 'Vide' }}
+          />
         </Demo>
       ),
     },
