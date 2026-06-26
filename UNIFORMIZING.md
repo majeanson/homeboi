@@ -385,9 +385,14 @@ re-coded per list: query + live-poll setup, `useDeferredRemoval`, add-via-text-o
 ~10 localStorage stores (`ambient`, `boardCards`, `apod`, `canvas`, `cookPrefs`, `measurePrefs`, keep-awake,
 per-behaviour ambient opt-outs, …) each hand-roll the identical `useSyncExternalStore` shape: interface →
 defaults → KEY → listener Set → cache → read/snapshot/subscribe → `useXxx` hook (~58 LOC each, e.g. `lib/ambient.ts`).
-- [ ] Extract `createDeviceStore<T>(key, defaults)` → `{ use, set, reset }` (model it on `useBoardCards`'s
-  reconcile-on-read so a new field auto-appears). Refactor `ambient`/`boardCards`/`apod` as the proof, then the rest.
-- [ ] Add a `toggleField(name)` helper on it to absorb the ~8 hand-rolled on/off toggles.
+- [x] ✅ **DONE.** `lib/createDeviceStore.ts` — `createDeviceStore<T>(key, defaults, {read?, write?})` → `{ get, use,
+  set, reset }`, pluggable `read`/`write` so each store keeps its EXACT localStorage encoding (no user-pref reset).
+  Migrated all 8 device stores: scalar flags `apod`/`canvas`/`keepAwake` ('0'/'1'), `ocrPref` + `cookPrefs` density
+  ('device'/'cloud', enum) + `cookPrefs` step-ings ('on'/'off'), and the object stores `ambient` (JSON+clamp) /
+  `boardCards` (JSON+reconcile) via thin partial-merge `setX(patch)` wrappers. Call-site names unchanged; ~30–60 LOC
+  of subscribe/cache/useSyncExternalStore boilerplate per store collapsed to ~3 lines. typecheck + 797 tests + build.
+- [~] `toggleField(name)` helper — **skipped (YAGNI):** every call site sets an explicit value from a control
+  (`setApodEnabled(checked)`, `setCookDensity('large')`), not a toggle; `store.set(!store.get())` covers the rare case.
 
 ### P2-5 🟡 (med value / med risk) `useHouseholdListSetting` — the household-JSON setting concept
 8 settings live in `households.*` JSON columns and split across **three** write patterns (React-Query+useMutation;

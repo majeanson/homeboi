@@ -1,7 +1,7 @@
-import { useSyncExternalStore } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { HEALTH_KEY } from './queryKeys'
+import { createDeviceStore } from './createDeviceStore'
 
 // Which reader to use when scanning a recipe photo, a PER-DEVICE preference:
 //   • 'device' (default) — on-device Tesseract OCR: free, private, works offline,
@@ -16,44 +16,14 @@ import { HEALTH_KEY } from './queryKeys'
 
 export type OcrEngine = 'device' | 'cloud'
 
-const KEY = 'babillard-ocr-engine'
-const listeners = new Set<() => void>()
-let cache: OcrEngine | null = null
+const store = createDeviceStore<OcrEngine>('babillard-ocr-engine', 'device', {
+  read: (raw) => (raw === 'cloud' ? 'cloud' : 'device'),
+  write: (engine) => engine,
+})
 
-function read(): OcrEngine {
-  try {
-    return localStorage.getItem(KEY) === 'cloud' ? 'cloud' : 'device'
-  } catch {
-    return 'device'
-  }
-}
-
-function snapshot(): OcrEngine {
-  if (!cache) cache = read()
-  return cache
-}
-
-export function setOcrEngine(engine: OcrEngine): void {
-  cache = engine
-  try {
-    localStorage.setItem(KEY, engine)
-  } catch {
-    /* private mode — the choice still holds for this session via the cache */
-  }
-  listeners.forEach((l) => l())
-}
-
-function subscribe(cb: () => void): () => void {
-  listeners.add(cb)
-  return () => {
-    listeners.delete(cb)
-  }
-}
-
+export const setOcrEngine = store.set
 // The chosen engine (per device). Default 'device' on the server / before hydration.
-export function useOcrEngine(): OcrEngine {
-  return useSyncExternalStore(subscribe, snapshot, () => 'device')
-}
+export const useOcrEngine = store.use
 
 // Is the cloud reader wired on this deployment (MISTRAL_API_KEY set)? Reads the same
 // /api/health the AI flags use, so the settings toggle can offer it only when there's

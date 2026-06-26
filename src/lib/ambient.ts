@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { createDeviceStore } from './createDeviceStore'
 
 // Ambient / idle settings — what the kiosk does when nobody's touched it for a
 // while. Two calm behaviours, both opt-out-able and tunable here:
@@ -35,47 +35,24 @@ const AMBIENT_DEFAULTS: AmbientSettings = {
   returnHomeMin: 3,
 }
 
-const KEY = 'babillard-ambient'
-const listeners = new Set<() => void>()
-let cache: AmbientSettings | null = null
-
-function read(): AmbientSettings {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return AMBIENT_DEFAULTS
-    // Merge over defaults so a setting added later is never `undefined`.
-    return { ...AMBIENT_DEFAULTS, ...(JSON.parse(raw) as Partial<AmbientSettings>) }
-  } catch {
-    return AMBIENT_DEFAULTS
+// Keep the minute fields sane (1–60) so a bad value can't disable idle silently.
+function clampMinutes(s: AmbientSettings): AmbientSettings {
+  return {
+    ...s,
+    idleMin: Math.min(60, Math.max(1, Math.round(s.idleMin))),
+    returnHomeMin: Math.min(60, Math.max(1, Math.round(s.returnHomeMin))),
   }
 }
 
-function snapshot(): AmbientSettings {
-  if (!cache) cache = read()
-  return cache
-}
+const store = createDeviceStore<AmbientSettings>('babillard-ambient', AMBIENT_DEFAULTS, {
+  // Merge over defaults so a setting added later is never `undefined`, then clamp.
+  read: (raw) =>
+    raw == null ? AMBIENT_DEFAULTS : clampMinutes({ ...AMBIENT_DEFAULTS, ...(JSON.parse(raw) as Partial<AmbientSettings>) }),
+})
 
+export const useAmbient = store.use
+
+// Partial update: merge over the current value, clamp, persist.
 export function setAmbient(patch: Partial<AmbientSettings>): void {
-  const next = { ...snapshot(), ...patch }
-  // Keep the minute fields sane (1–60) so a bad value can't disable idle silently.
-  next.idleMin = Math.min(60, Math.max(1, Math.round(next.idleMin)))
-  next.returnHomeMin = Math.min(60, Math.max(1, Math.round(next.returnHomeMin)))
-  cache = next
-  try {
-    localStorage.setItem(KEY, JSON.stringify(next))
-  } catch {
-    /* private mode — the change still holds for this session via the cache */
-  }
-  listeners.forEach((l) => l())
-}
-
-function subscribe(cb: () => void): () => void {
-  listeners.add(cb)
-  return () => {
-    listeners.delete(cb)
-  }
-}
-
-export function useAmbient(): AmbientSettings {
-  return useSyncExternalStore(subscribe, snapshot, () => AMBIENT_DEFAULTS)
+  store.set(clampMinutes({ ...store.get(), ...patch }))
 }

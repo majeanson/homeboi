@@ -1,5 +1,5 @@
-import { useSyncExternalStore } from 'react'
 import { type IconName } from './pipIcons'
+import { createDeviceStore } from './createDeviceStore'
 
 // Which Grille cards this DEVICE shows, and in what order — a per-device layout (a
 // wall kiosk and a phone keep their own). localStorage-backed, read live via
@@ -65,10 +65,6 @@ export const GRID_CARD_META: { id: GridCardId; icon: IconName }[] = [
   { id: 'photos', icon: 'image-square-bold' },
 ]
 
-const KEY = 'babillard-card-prefs'
-const listeners = new Set<() => void>()
-let cache: BoardCardPrefs | null = null
-
 // Reconcile a saved layout against the canonical id lists: keep saved GRID order for
 // known grid ids, drop ids that no longer exist, and splice any new default grid card in
 // at its CANONICAL position (right after its canonical predecessor that the device still
@@ -99,52 +95,20 @@ function reconcile(saved: Partial<BoardCardPrefs>): BoardCardPrefs {
   return { order, hidden }
 }
 
-function read(): BoardCardPrefs {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return DEFAULTS
-    return reconcile(JSON.parse(raw) as Partial<BoardCardPrefs>)
-  } catch {
-    return DEFAULTS
-  }
-}
+const store = createDeviceStore<BoardCardPrefs>('babillard-card-prefs', DEFAULTS, {
+  read: (raw) => (raw == null ? DEFAULTS : reconcile(JSON.parse(raw) as Partial<BoardCardPrefs>)),
+})
 
-function snapshot(): BoardCardPrefs {
-  if (!cache) cache = read()
-  return cache
-}
+export const useBoardCards = store.use
 
+// Partial update: merge over the current layout, reconcile against the canonical ids,
+// persist.
 export function setCardPrefs(patch: Partial<BoardCardPrefs>): void {
-  cache = reconcile({ ...snapshot(), ...patch })
-  try {
-    localStorage.setItem(KEY, JSON.stringify(cache))
-  } catch {
-    /* private mode — the change still holds for this session via the cache */
-  }
-  listeners.forEach((l) => l())
+  store.set(reconcile({ ...store.get(), ...patch }))
 }
 
 // Restore the default layout (everything visible, canonical order).
-export function resetCardPrefs(): void {
-  cache = DEFAULTS
-  try {
-    localStorage.removeItem(KEY)
-  } catch {
-    /* noop */
-  }
-  listeners.forEach((l) => l())
-}
-
-function subscribe(cb: () => void): () => void {
-  listeners.add(cb)
-  return () => {
-    listeners.delete(cb)
-  }
-}
-
-export function useBoardCards(): BoardCardPrefs {
-  return useSyncExternalStore(subscribe, snapshot, () => DEFAULTS)
-}
+export const resetCardPrefs = store.reset
 
 // The visible GRID cards in order — what the masonry needs to render.
 export function visibleCardOrder(prefs: BoardCardPrefs): GridCardId[] {
