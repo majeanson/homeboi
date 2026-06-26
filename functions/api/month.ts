@@ -181,7 +181,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     return { id: r.id, memberId: r.member_id, label: r.label, startMin: r.start_min, endMin: r.end_min, weekdays, holdsCar: r.holds_car === 1, color: r.color, weekInterval: r.week_interval ?? 1, anchorDay: r.anchor_day ?? null }
   })
   for (const o of workOccurrencesInRange(scheduleBlocks, from, to)) {
-    events.push({ id: o.id, title: o.label ?? '', at: o.startAt, end: o.endAt, all_day: 0, member_id: o.memberId, day: dayOf(o.startAt), work: true, color: o.color, holds_car: o.holdsCar ? 1 : 0 })
+    events.push({ id: o.id, title: o.label ?? '', at: o.at, end: o.endAt, all_day: 0, member_id: o.memberId, day: dayOf(o.at), work: true, color: o.color, holds_car: o.holdsCar ? 1 : 0 })
   }
 
   const meals: { id: string; slot: string; title: string; cook_member_id: string | null; day: number; is_leftover?: number }[] = []

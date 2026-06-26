@@ -44,6 +44,11 @@ describe('carnetLifeSoon', () => {
     for (let i = 1; i < soon.length; i++) expect(soon[i].at).toBeGreaterThanOrEqual(soon[i - 1].at)
   })
 
+  it('carries a stable, source-prefixed DerivedOccurrence id', () => {
+    const a = carnetLifeSoon(items, now).find((s) => s.carnetId === 'a')!
+    expect(a.id).toBe('carnet-life:a')
+  })
+
   it('ignores items without an install date or lifespan', () => {
     const soon = carnetLifeSoon(
       [{ carnetId: 'x', name: 'Sans date', kind: 'thing', color: null, installedAt: 0, lifespanMonths: 0 }],

@@ -8,6 +8,7 @@
 // shows "≈ dans 2 ans" / "à prévoir", never a red timer.
 
 import { localDayStart } from './ids'
+import type { DerivedOccurrence } from './derived'
 
 export interface CarnetLifeItem {
   carnetId: string
@@ -18,10 +19,11 @@ export interface CarnetLifeItem {
   lifespanMonths: number // expected service life
 }
 
-export interface CarnetLifeSoon {
+export interface CarnetLifeSoon extends DerivedOccurrence {
+  id: string // `carnet-life:<carnetId>` — the stable derived id (a carnet has one live horizon)
   carnetId: string
   name: string
-  kind: string
+  kind: string // the CARNET's type (home/auto/appliance) — NOT a DerivedOccurrence discriminator
   color: string | null
   at: number // unix sec, local midnight of the projected replacement day
   monthsLeft: number // negative once overdue
@@ -47,6 +49,7 @@ export function carnetLifeSoon(items: CarnetLifeItem[], now: number, leadDays = 
     const at = replacementAt(it.installedAt, it.lifespanMonths)
     if (at > horizon) continue // still far off — stays quiet
     out.push({
+      id: `carnet-life:${it.carnetId}`,
       carnetId: it.carnetId,
       name: it.name,
       kind: it.kind,

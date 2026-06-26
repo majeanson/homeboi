@@ -38,6 +38,7 @@ export interface Carnet {
 
 // A « long jeu » nudge for the board glance — a thing entering (or past) its window.
 export interface CarnetSoon {
+  id: string // `carnet-life:<carnetId>` — the stable derived id (mirrors _lib/carnetLife)
   carnetId: string
   name: string
   kind: string

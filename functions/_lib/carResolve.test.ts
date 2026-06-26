@@ -84,7 +84,7 @@ describe('workOccurrencesInRange — derived schedule (calendar/agenda)', () => 
     // A single Wednesday window → exactly Marc's + (Julie is Tue/Thu, so none today).
     const occs = workOccurrencesInRange(BLOCKS, DAY, addLocalDays(DAY, 1))
     expect(occs).toEqual([
-      { id: `work:b1:${DAY}`, blockId: 'b1', memberId: 'marc', label: 'Travail', startAt: at(8), endAt: at(17), holdsCar: true, color: null },
+      { id: `work:b1:${DAY}`, blockId: 'b1', memberId: 'marc', label: 'Travail', at: at(8), endAt: at(17), holdsCar: true, color: null },
     ])
   })
   it('includes non-car (presence-only) blocks too — they surface on the calendar', () => {

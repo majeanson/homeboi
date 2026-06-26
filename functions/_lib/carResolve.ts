@@ -1,4 +1,5 @@
 import type { CarSpan } from './carAvail'
+import type { DerivedOccurrence } from './derived'
 import { localTimeOnDay, localDayOfWeek, localDayStart, addLocalDays } from './ids'
 
 // Bridge from « L'auto »'s stored schedule (the weekly schedule_blocks template +
@@ -104,12 +105,12 @@ export function membersOutAt(dayStart: number, weekday: number, blocks: Schedule
 // across the calendar/agenda (board, month, day page) the same way birthdays are
 // DERIVED, never materialized as rows. `holdsCar` rides along so a renderer can tint
 // the car-taking ones; the carAvail engine still owns conflicts/availability.
-export interface WorkOccurrence {
+export interface WorkOccurrence extends DerivedOccurrence {
   id: string // `work:<blockId>:<dayStart>` — stable, never collides with an event id
   blockId: string
   memberId: string
   label: string | null
-  startAt: number // unix seconds (the window's wall-clock start that local day)
+  at: number // unix seconds (the window's wall-clock start that local day) — DerivedOccurrence's instant
   endAt: number
   holdsCar: boolean
   color: string | null
@@ -134,12 +135,12 @@ export function workOccurrencesInRange(blocks: ScheduleBlock[], rangeStart: numb
         blockId: b.id,
         memberId: b.memberId,
         label: b.label ?? null,
-        startAt,
+        at: startAt,
         endAt,
         holdsCar: b.holdsCar,
         color: b.color ?? null,
       })
     }
   }
-  return out.sort((a, b) => a.startAt - b.startAt)
+  return out.sort((a, b) => a.at - b.at)
 }

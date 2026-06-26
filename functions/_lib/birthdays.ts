@@ -10,6 +10,7 @@
 // (no silent rollover to Mar 1) — the same calm choice yearly recurrence makes.
 
 import { localDayStart } from './ids'
+import type { DerivedOccurrence } from './derived'
 
 export interface BirthdayPerson {
   key: string // 'member:<id>' | 'contact:<id>' — stable, kind-tagged
@@ -19,7 +20,7 @@ export interface BirthdayPerson {
   giftIdeas?: string | null // #20: freeform gift notes, surfaced near the date
 }
 
-export interface BirthdayOccurrence {
+export interface BirthdayOccurrence extends DerivedOccurrence {
   id: string // `birthday:<key>:<year>` — stable, never collides with an event id
   personKey: string
   name: string

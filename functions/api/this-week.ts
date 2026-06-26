@@ -132,8 +132,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .map((b) => ({ name: b.name, at: b.at, age: b.age }))
 
   const work = workOccurrencesInRange(blocks.results, today, weekEnd)
-    .sort((a, b) => a.startAt - b.startAt)
-    .map((o) => ({ at: o.startAt, label: o.label, who: nameOf(o.memberId), face: faceOf(o.memberId) }))
+    .sort((a, b) => a.at - b.at)
+    .map((o) => ({ at: o.at, label: o.label, who: nameOf(o.memberId), face: faceOf(o.memberId) }))
 
   const projectsAhead = projects.results
     .filter((p) => p.at != null && p.at >= today && p.at < weekEnd)

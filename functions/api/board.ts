@@ -497,7 +497,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const work = workOccurrencesInRange(scheduleBlocks, today, tomorrow).map((o) => ({
     id: o.id,
     label: o.label,
-    at: o.startAt,
+    at: o.at,
     endAt: o.endAt,
     member_id: o.memberId,
     color: o.color,

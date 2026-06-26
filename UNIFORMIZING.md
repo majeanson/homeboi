@@ -425,9 +425,18 @@ Two related drifts:
   > out by design. `CercleBirthdays` is not a component (birthdays surface through the event system). Empty-hide
   > stays at each call site (the rules differ and read clearer inline). *(DerivedOccurrence half still open — below.)*
 - **Derived shape:** `birthdayOccurrences()`, `carResolve.workOccurrencesInRange()`, `carnetLife` all produce
-  "a date + label + metadata" in **different** shapes, re-wrapped per consumer. → [ ] Define one
-  `DerivedOccurrence {id, at, label, kind, …}` (stable `kind:source:…` id) that board/month/day consume uniformly.
-  This is the read-side companion to Part I **DB-4** (recurrence) and unblocks future derived signals cheaply.
+  "a date + label + metadata" in **different** shapes, re-wrapped per consumer. → [x] ✅ **DONE 2026-06-26.**
+  Introduced **`DerivedOccurrence { id; at }`** (`functions/_lib/derived.ts`); all three emitters now extend it.
+  Concrete wins: **carnet gained a stable `id`** (`carnet-life:<carnetId>`) — it was the only derived signal
+  lacking one — and `workOccurrencesInRange`'s `startAt`→**`at`** so the three are uniform on the two universal
+  fields (stable id + primary instant). Updated the 3 backend consumers (board/month/this-week) + the frontend
+  `CarnetSoon` mirror; added a carnet-id test. typecheck + 798 tests + build green.
+  > **Audit shape corrected — no `kind`/`source` field.** The proposed `{…, kind}` discriminator **collides**:
+  > `CarnetLifeSoon.kind` already means the carnet's TYPE (home/auto/appliance). Rather than rename that or add a
+  > dead colliding field, the **`id` PREFIX is the discriminator** (`birthday:`/`work:`/`carnet-life:`) — route a
+  > mixed list with `id.split(':')[0]`. `label`/`name`/extras stay per-kind (the consumers re-wrap to their own
+  > `Ev`/event shapes regardless, and a cross-boundary `name`→`label` rename — `guest/window`, frontend `CarnetsCard`
+  > — was high-churn/low-value), so the base names only `{id, at}`: what's truly common.
 
 ### <a id="p2-4"></a>P2-4 🟡 (med value / med risk) `staged_media` — unify the guest submission media pipeline
 `intake_submissions`+`intake_media` and `postbox_submissions`+`postbox_media` implement an **identical**
