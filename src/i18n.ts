@@ -1475,6 +1475,10 @@ export const FR = {
     canvasHint: 'Un fond discret qui suit la saison, la météo et l’heure (une teinte douce, un peu de neige l’hiver). N’affecte que cet appareil.',
     canvasOn: 'Activée',
     canvasOff: 'Désactivée',
+    keepAwakeLabel: 'Garder l’écran allumé',
+    keepAwakeOn: 'Allumé',
+    keepAwakeOff: 'Veille normale',
+    keepAwakeHint: 'Empêche cet appareil de se mettre en veille pendant que le babillard est affiché — idéal pour la tablette au mur. Sur un téléphone, laisse-le en veille normale pour épargner la pile (la veille reprend dès que l’app passe en arrière-plan).',
     // « Diffuser au salon » — un lien TV (lecture seule) pour montrer le babillard sur
     // le téléviseur via Chromecast (diffuser l’onglet depuis Chrome sur l’ordinateur).
     castTitle: 'Diffuser au salon',
@@ -3562,6 +3566,10 @@ export const EN: typeof FR = {
     canvasHint: 'A subtle backdrop that follows the season, weather and time of day (a soft tint, a little snow in winter). Affects this device only.',
     canvasOn: 'On',
     canvasOff: 'Off',
+    keepAwakeLabel: 'Keep the screen on',
+    keepAwakeOn: 'On',
+    keepAwakeOff: 'Normal sleep',
+    keepAwakeHint: 'Stops this device from sleeping while the board is showing — ideal for the wall tablet. On a phone, leave it on normal sleep to save battery (sleep resumes the moment the app goes to the background).',
     // "Cast to the living room" — a read-only TV link to show the board on the TV via
     // Chromecast (cast the tab from Chrome on the computer).
     castTitle: 'Cast to the living room',

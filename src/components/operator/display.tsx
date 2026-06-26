@@ -7,6 +7,7 @@ import { RecentsPanel } from '../RecentsPanel'
 import { useAudience } from '../../lib/audience'
 import { useApodEnabled, setApodEnabled } from '../../lib/apod'
 import { useCanvasEnabled, setCanvasEnabled } from '../../lib/canvas'
+import { useKeepAwake, setKeepAwake } from '../../lib/keepAwake'
 import { useOcrEngine, setOcrEngine, useCloudOcrAvailable } from '../../lib/ocrPref'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
@@ -64,6 +65,9 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   // Read live from the localStorage store so the board reacts without a reload.
   const apod = useApodEnabled()
   const canvas = useCanvasEnabled()
+  // Per-device Screen Wake Lock (HubLayout holds it): keep a wall tablet lit on the
+  // board. Read live so the toggle engages/releases the lock without a reload.
+  const keepAwake = useKeepAwake()
   // Recipe-photo reader (per device): on-device vs the high-accuracy cloud OCR. The
   // choice only appears when the deployment actually has a Mistral key wired.
   const ocrEngine = useOcrEngine()
@@ -171,6 +175,21 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               {canvas ? t.operator.canvasOn : t.operator.canvasOff}
             </button>
             <p className="operator__seg-hint mono">{t.operator.canvasHint}</p>
+          </div>
+        )}
+        {!ro && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.keepAwakeLabel}</span>
+            <button
+              type="button"
+              className={`btn${keepAwake ? ' btn--primary' : ''}`}
+              onClick={() => setKeepAwake(!keepAwake)}
+              aria-pressed={keepAwake}
+            >
+              <InlineIcon name="device-tablet-bold" size={16} />{' '}
+              {keepAwake ? t.operator.keepAwakeOn : t.operator.keepAwakeOff}
+            </button>
+            <p className="operator__seg-hint mono">{t.operator.keepAwakeHint}</p>
           </div>
         )}
         {!ro && cloudOcrAvailable && (

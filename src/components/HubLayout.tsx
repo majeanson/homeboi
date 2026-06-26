@@ -7,6 +7,8 @@ import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { onIdleDebug, idleOverrideMs } from '../lib/idleDebug'
 import { useAmbient } from '../lib/ambient'
+import { useKeepAwake } from '../lib/keepAwake'
+import { useWakeLock } from '../lib/useWakeLock'
 import { AmbientScreen } from './AmbientScreen'
 import { onAuthLost } from '../lib/authEvents'
 import { clearDeviceToken, isPaired, isGuestLocked } from '../lib/device'
@@ -50,6 +52,11 @@ export function HubLayout() {
   const t = useT()
   const { audience, locked, guestPreview } = useAudience()
   const { surface } = useSurface()
+  // Keep the screen lit while the hub is open, so a wall tablet doesn't dim/sleep on
+  // the board glance. Per-device opt-out (Réglages ▸ Affichage ▸ « Garder l'écran
+  // allumé »), default ON; releases the lock the moment it's turned off. The lock
+  // only holds while the tab is visible, so a backgrounded phone still sleeps normally.
+  useWakeLock(useKeepAwake())
   const loc = useLocation()
   const nav = useNavigate()
   const qc = useQueryClient()

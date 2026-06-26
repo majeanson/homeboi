@@ -320,6 +320,13 @@ registerSw()
 // action buttons stay visible above the on-screen keyboard (iOS overlays it).
 trackVisualViewport()
 
+// Ask the browser to make our storage PERSISTENT so the OS won't evict the offline
+// query-cache + write outbox (IndexedDB) under storage pressure — a kiosk can sit
+// installed for weeks between visits. Best-effort: unsupported/denied just means
+// eviction stays possible (Query + the outbox still work). Silent for an installed
+// PWA; iOS Safari and Chromium both support it.
+void navigator.storage?.persist?.().catch(() => {})
+
 // Ambient day-part drift (feature #1): theme-bootstrap.js set the first tint
 // before paint; this keeps it current for an always-on kiosk by recomputing
 // every ~10 min. No-op (and a no-op cleanup) when the operator opted out. Started
