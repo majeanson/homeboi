@@ -192,12 +192,12 @@ Safe today (ids come from scoped SELECTs) but lacks defense-in-depth; one refact
   and import everywhere media keys are accepted. ✅ (889753e — also found+folded `routines.ts`, `recipes.ts`)
 
 ### BE-3 🟢 Minor consistency
-- [ ] Redundant `if (ctx.env.PHOTOS)` guards before `deleteR2Blob()` in `care-log.ts:208` / `home-pins.ts:131`
-  (the helper already no-ops on an unset bucket) — drop them to match the rest.
-- [ ] Auth handlers (`login`/`signup`/`logout`) hand-build success `Response`s to set `Set-Cookie`. Acceptable —
-  either add a `json.ts` helper that accepts extra headers, or just add a comment documenting the carve-out.
-- [ ] Standardize the R2-unset message string (`'Stockage photo indisponible ici.'` vs `'…image…'`) or keep
-  intentionally differentiated.
+- [x] ✅ **DONE 2026-06-26.** Dropped the redundant `if (ctx.env.PHOTOS)` guards before `deleteR2Blob()` in
+  `care-log.ts:208` / `home-pins.ts:131` (the helper already no-ops on an unset bucket); kept the `owns` row-guard,
+  added a one-line comment noting why no env guard is needed.
+- [~] Auth handlers' hand-built `Set-Cookie` Responses — **left as-is** (audit said "acceptable"; a json.ts
+  extra-headers helper for 3 call sites is more indirection than it saves; the cookie-setting is self-evidently why).
+- [~] R2-unset message string variance — **left** (intentionally differentiated per feature; not worth flattening).
 
 ---
 

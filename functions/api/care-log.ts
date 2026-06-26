@@ -205,7 +205,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const owns = await ctx.env.DB.prepare('SELECT media_json FROM care_log WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .first<{ media_json: string | null }>()
-  if (ctx.env.PHOTOS && owns) for (const key of parseMedia(owns.media_json)) await deleteR2Blob(ctx.env.PHOTOS, key)
+  // deleteR2Blob no-ops on an unset bucket, so no env.PHOTOS guard needed here.
+  if (owns) for (const key of parseMedia(owns.media_json)) await deleteR2Blob(ctx.env.PHOTOS, key)
   await ctx.env.DB.prepare('DELETE FROM care_log WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId).run()
   return ok({ ok: true })
 })
