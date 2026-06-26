@@ -11,7 +11,8 @@ import { isGuest } from '../../lib/device'
 import { colourFor } from '../../lib/things'
 import { petOwners, isHouseholdPet, personKey, type Pet, type ContactLink } from '../../lib/cercle'
 import { PALETTE } from '../../lib/colors'
-import { resizeImage, AVATAR_MAX } from '../../lib/image'
+import { AVATAR_MAX } from '../../lib/image'
+import { uploadMedia } from '../../lib/uploadMedia'
 import { Avatar } from '../Avatar'
 import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
@@ -259,8 +260,8 @@ function MemberCard({
   const openSheet = useOpenPersonSheet()
 
   async function setPhoto(file: File) {
-    const blob = await resizeImage(file, AVATAR_MAX)
-    await api(`members/avatar?id=${member.id}`, { method: 'POST', body: blob }).catch(() => {})
+    // The shared media path (resize → POST → {key}, 503 → MediaUnavailableError).
+    await uploadMedia(`members/avatar?id=${member.id}`, file, { resize: AVATAR_MAX }).catch(() => {})
     onChange()
   }
   async function clearPhoto() {

@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
+import { uploadMedia } from './uploadMedia'
 import { imgUrl } from './image'
 import { BOARD_KEY } from './queryKeys'
 import { useT } from '../i18n'
@@ -25,8 +26,11 @@ export function useGallery() {
 }
 
 // Upload the PNG + (optional) scene to fresh R2 keys — both save paths need this.
+// The PNG (already export-capped by DrawPad) rides the shared media path
+// (uploadMedia: POST → {key}, 503 → MediaUnavailableError); the scene is a JSON
+// sidecar (not an image), so it stays a raw note-media POST.
 async function uploadDrawing(png: Blob, scene: string): Promise<{ media_key: string; scene_key?: string }> {
-  const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: png })
+  const media_key = await uploadMedia('note-media', png, { resize: false })
   let scene_key: string | undefined
   if (scene) {
     try {
@@ -36,7 +40,7 @@ async function uploadDrawing(png: Blob, scene: string): Promise<{ media_key: str
       /* scene optional — the PNG stands on its own */
     }
   }
-  return { media_key: key, scene_key }
+  return { media_key, scene_key }
 }
 
 export function useSaveToGallery() {

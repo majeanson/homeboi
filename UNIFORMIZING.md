@@ -165,9 +165,13 @@ Keys spelled as inline arrays in many files; should be the canonical constants i
   R2/img-url builders, slot-label functions. (Prior audits consolidated several — confirm none regressed.)
 
 ### LIB-4 🟡 Media upload not always via `uploadMedia()`/`useMediaUpload()`
-- [ ] `lib/drawingGallery.ts`, `components/cercle/ContactPhotos.tsx`, `components/operator/media.tsx`,
-  `operator/household.tsx` (~L262 avatar blob POST) call `api()` with a Blob directly. Route through the shared
-  helper so resize/`{key}`/503-`MediaUnavailableError` handling is uniform.
+- [x] ✅ **DONE 2026-06-26 — 2 of 4 were already migrated (audit stale).** `ContactPhotos.tsx` already uses
+  `useMediaUpload`; `operator/media.tsx` already uses `uploadMedia`. Migrated the two that were still hand-rolling:
+  `operator/household.tsx` avatar (`resizeImage(file, AVATAR_MAX)` + `api(POST, blob)` → `uploadMedia(ep, file,
+  {resize: AVATAR_MAX})`) and `lib/drawingGallery.ts` PNG (→ `uploadMedia('note-media', png, {resize:false})` for
+  uniform 503→`MediaUnavailableError`). **Left:** the drawing **scene** blob is a JSON sidecar, not an image —
+  routing it through a media-upload helper would mis-frame it, so it stays a raw `note-media` POST. typecheck +
+  799 tests + build green.
 
 ### LIB-5 🟢 Already-correct
 - ✅ **No HTML5 `draggable`** offenders — all DnD goes through `usePointerDnd`.
