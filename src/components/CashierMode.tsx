@@ -137,9 +137,9 @@ export function CashierMode({
           type="button"
           className="btn btn--ghost mono"
           onClick={() => setSelected(null)}
-          aria-label={t.shop.back}
+          aria-label={t.common.back}
         >
-          <InlineIcon name="caret-left-bold" /> {t.shop.back}
+          <InlineIcon name="caret-left-bold" /> {t.common.back}
         </button>
         <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
           <Icon name="x-bold" size={18} />

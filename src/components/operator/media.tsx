@@ -121,7 +121,7 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
                   type="button"
                   className="photo-grid__del"
                   onClick={() => remove(p.id)}
-                  aria-label={t.operator.delete}
+                  aria-label={t.common.delete}
                 >
                   <Icon name="x-bold" size={15} />
                 </button>

@@ -277,7 +277,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
               {t.operator.pillSave}
             </button>
             <button type="button" className="btn btn--ghost mono" onClick={() => setDraft(null)}>
-              {t.operator.pillCancel}
+              {t.common.cancel}
             </button>
           </div>
         </div>

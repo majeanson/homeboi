@@ -225,7 +225,7 @@ function QaChip({
     <div className="list-row qa__row">
       <span className="list-row__del" aria-hidden="true">
         <span className="list-row__del-icon"><Icon name="trash-bold" size={18} /></span>
-        <span className="list-row__del-label">{t.list.swipeDelete}</span>
+        <span className="list-row__del-label">{t.common.delete}</span>
       </span>
       <button
         ref={mainRef}
@@ -233,7 +233,7 @@ function QaChip({
         className={`list-row__main qa__chip${isAdded ? ' is-added' : ''}`}
         onClick={onAdd}
         disabled={isAdded}
-        aria-label={`${t.ghost.add} ${item.label}`}
+        aria-label={`${t.common.add} ${item.label}`}
       >
         <span className="qa__pic" aria-hidden="true">
           {pictoFor(item.label, '🛒')}

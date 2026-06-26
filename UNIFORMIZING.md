@@ -281,10 +281,14 @@ trio (notes/family_notes/postbox/drawings) is the most expressive — make it th
 
 ### <a id="i18n-1"></a>I18N-1 🟡 Duplicated translation values
 Same string defined in many domain namespaces — change-one-forget-the-other risk.
-- [ ] "Enregistrer" ×6 (`list.save`, `board.saveDay`, `cercle.save`, `recipes.save`, `operator.saveLabel`,
+- [x] "Enregistrer" ×6 (`list.save`, `board.saveDay`, `cercle.save`, `recipes.save`, `operator.saveLabel`,
   `common.save`), "Ajouter" ×5, "Retour" ×4, "Annuler" ×4, "Supprimer" ×4, "Modifier" ×3.
-- [ ] Consolidate generic verbs into `common.*`; keep a domain key only where the copy is genuinely
+- [x] Consolidate generic verbs into `common.*`; keep a domain key only where the copy is genuinely
   context-specific. (Register is otherwise clean — courriel/dîner/souper all correct, no France-French slips.)
+
+> ✅ **I18N-1 DONE 2026-06-26** — 19 bare-verb dup keys folded onto the 6 `common.*` verbs, 49 usages repointed
+> across 27 files (+`i18n.ts`). Context-specific copy kept (`recipes.save`='Enregistrer la recette',
+> `cercle.acceptSuggestion`, `cercle.pet.weightAdd`, `kid.backCollections`, `undo.action`='Undo'≠Cancel, `tour.*`).
 
 ### I18N-2 🟢 Structure
 - [ ] Mixed flat keys vs nested objects across ~30 domains. Optional: document the nesting convention; not worth

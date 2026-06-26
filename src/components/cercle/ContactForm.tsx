@@ -606,7 +606,7 @@ export function ContactForm({
           (cascades their links + group memberships). */}
       <div className="cf__save">
         <button type="button" className="btn btn--primary" disabled={!firstName.trim() || saving || uploading} onClick={save}>
-          <Icon name="check-bold" size={18} /> {t.cercle.save}
+          <Icon name="check-bold" size={18} /> {t.common.save}
         </button>
         {value && (
           <button type="button" className="btn btn--ghost btn--danger" disabled={saving} onClick={remove}>

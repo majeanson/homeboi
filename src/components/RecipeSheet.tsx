@@ -175,7 +175,7 @@ export function RecipeSheet({
   async function del() {
     // A recipe is a HEAVY object to lose by a stray tap — deliberate yes/no via
     // the in-app confirm dialog (not the platform confirm, which e2e can't see).
-    if (!(await confirm({ message: t.recipes.deleteConfirm, confirmLabel: t.recipes.delete, tone: 'danger' }))) return
+    if (!(await confirm({ message: t.recipes.deleteConfirm, confirmLabel: t.common.delete, tone: 'danger' }))) return
     await write('recipes', { method: 'DELETE', body: { id: recipe.id }, affectedKeys: [RECIPES_KEY] }).catch(() => {})
     onClose()
   }
@@ -495,12 +495,12 @@ export function RecipeSheet({
           )}
           {!ro && (
             <button type="button" className="btn btn--ghost mono" onClick={onEdit}>
-              {t.recipes.editBtn}
+              {t.common.edit}
             </button>
           )}
           {!ro && (
             <button type="button" className="btn btn--ghost mono recipe-del" onClick={del}>
-              {t.recipes.delete}
+              {t.common.delete}
             </button>
           )}
         </div>

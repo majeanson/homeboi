@@ -169,7 +169,7 @@ export function KidKitchen({
             </div>
             <BigTiles tiles={dayTiles} />
             <button type="button" className="kid-pick__back mono" onClick={() => setKidRecipe(null)}>
-              <InlineIcon name="arrow-left-bold" /> {t.kid.back}
+              <InlineIcon name="arrow-left-bold" /> {t.common.back}
             </button>
           </section>
         ) : (

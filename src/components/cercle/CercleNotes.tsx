@@ -226,7 +226,7 @@ export function CercleNotes({
             maxLength={2000}
             placeholder={fn.placeholder}
             ariaLabel={fn.addHint}
-            submitLabel={fn.add}
+            submitLabel={t.common.add}
             submitLeadingIcon="plus-bold"
           />
           {!drawHidden && (
@@ -389,7 +389,7 @@ export function CercleNotes({
               maxLength={2000}
               autoFocus
               placeholder={isRename ? fn.rename : fn.placeholder}
-              submitLabel={fn.save}
+              submitLabel={t.common.save}
               submitLeadingIcon="check-bold"
               submitVariant="primary"
               ariaLabel={isRename ? fn.rename : fn.edit}

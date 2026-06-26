@@ -145,7 +145,7 @@ export function DayEditor({
   const dayMealCount = SIDE_SLOTS.reduce((n, s) => n + mealsFor(date, s).length, suppers.length)
   // Add-affordance label: "Ajouter un autre" when the slot already holds a meal,
   // plain "Ajouter" when it's empty (no redundant "＋ Déjeuner" beside the header).
-  const addLabel = (count: number) => (count ? t.kitchen.addAnother : t.capture.add)
+  const addLabel = (count: number) => (count ? t.kitchen.addAnother : t.common.add)
 
   const supperEditing = editDate === date
   const supperStaples = staplePrompt?.date === date && staplePrompt.slot === 'supper'

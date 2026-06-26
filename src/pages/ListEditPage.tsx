@@ -199,7 +199,7 @@ export function ListEditPage() {
               <InlineIcon name="trash-bold" /> {t.list.deleteItem}
             </button>
             <button type="button" className="btn btn--primary" onClick={save} disabled={busy || !text.trim()}>
-              {t.list.save}
+              {t.common.save}
             </button>
           </div>
         </div>

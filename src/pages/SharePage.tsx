@@ -155,7 +155,7 @@ export function SharePage() {
               onClick={imageBlob ? addImage : addText}
               disabled={(!imageBlob && !text.trim()) || busy}
             >
-              <Icon name="plus-bold" size={18} /> {t.capture.add}
+              <Icon name="plus-bold" size={18} /> {t.common.add}
             </button>
           </div>
         </>

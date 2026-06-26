@@ -145,7 +145,7 @@ export function ReserveLocationsSection({ help }: { help?: HelpMode }) {
           value={adding}
           onChange={setAdding}
           onSubmit={() => add()}
-          submitLabel={t.capture.add}
+          submitLabel={t.common.add}
           placeholder={t.operator.reserveAddLocation}
           ariaLabel={t.operator.reserveAddLocation}
         />

@@ -220,7 +220,7 @@ export function TodoSection({
         onSubmit={(v) => rename(todo, v)}
         onCancel={() => setEditId(null)}
         autoFocus
-        ariaLabel={t.todos.edit}
+        ariaLabel={t.common.edit}
       />
     ) : (
       <div key={todo.id} className={'act todo-row' + (isChecked(todo) ? ' done' : '')}>
@@ -250,7 +250,7 @@ export function TodoSection({
             setEditText(todo.title)
           }}
           disabled={ro}
-          aria-label={ro ? undefined : t.todos.edit}
+          aria-label={ro ? undefined : t.common.edit}
         >
           <span className="title" style={isChecked(todo) ? undefined : { color: tintInk(rowColour) }}>
             {todo.title}
@@ -334,7 +334,7 @@ export function TodoSection({
             setAddText('')
             void instantiate(opt.data.id)
           }}
-          submitLabel={t.capture.add}
+          submitLabel={t.common.add}
           submitLeadingIcon="plus-bold"
           placeholder={t.todos.addPlaceholder}
           ariaLabel={t.todos.addPlaceholder}

@@ -437,7 +437,7 @@ function ShareInfoEditor({ help }: { help?: HelpMode }) {
         <textarea className="input" value={fields.houseRules} onChange={set('houseRules')} rows={3} />
       </label>
       <button type="button" className="btn" onClick={save} disabled={saving}>
-        <InlineIcon name="check-bold" /> {saved ? t.shareMode.saved : t.shareMode.save}
+        <InlineIcon name="check-bold" /> {saved ? t.shareMode.saved : t.common.save}
       </button>
     </OperatorSection>
   )

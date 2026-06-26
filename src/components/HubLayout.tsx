@@ -415,7 +415,7 @@ export function HubLayout() {
                   ? t.cercle.addTitle
                   : section === 'liste'
                     ? t.list.addTitle
-                    : t.capture.add
+                    : t.common.add
           }
         >
           <Icon name="plus-bold" size={26} />

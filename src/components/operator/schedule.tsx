@@ -245,7 +245,7 @@ function BlockForm({
       {err && <StatusMessage tone="error">{t.operator.schedBad}</StatusMessage>}
       <div className="operator__rotation mono">
         <button type="button" className="btn" onClick={submit} disabled={busy}>
-          {value ? t.common.save : t.capture.add}
+          {value ? t.common.save : t.common.add}
         </button>
         <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
           {t.common.cancel}

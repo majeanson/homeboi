@@ -151,7 +151,7 @@ export function PantryTab({
             void postSoon(v)
           }}
           voice={soonVoice}
-          submitLabel={t.capture.add}
+          submitLabel={t.common.add}
           placeholder={soonVoice.listening ? t.capture.listening : t.kitchen.useSoonAdd}
           ariaLabel={t.kitchen.useSoonAdd}
         />
@@ -185,7 +185,7 @@ export function PantryTab({
             void postLow(v)
           }}
           voice={lowVoice}
-          submitLabel={t.capture.add}
+          submitLabel={t.common.add}
           placeholder={lowVoice.listening ? t.capture.listening : t.kitchen.lowAdd}
           ariaLabel={t.kitchen.lowAdd}
         />

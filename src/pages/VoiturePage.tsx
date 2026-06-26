@@ -390,7 +390,7 @@ function DayEditor({
         <label>{t.auto.to} <input className="input" type="time" value={end} onChange={(e) => setEnd(e.target.value)} /></label>
       </div>
       <div className="voiture__editor-actions">
-        <button type="button" className="btn" onClick={save}>{t.auto.saveDay}</button>
+        <button type="button" className="btn" onClick={save}>{t.common.save}</button>
         <button type="button" className="btn btn--ghost mono" onClick={() => onSave({ free: true })}>{t.auto.staysHome}</button>
         {d.override && <button type="button" className="btn btn--ghost mono" onClick={onClear}>{t.auto.resetWeek}</button>}
         <button type="button" className="btn btn--ghost mono" onClick={onAddRide}>＋ {t.auto.addRide}</button>

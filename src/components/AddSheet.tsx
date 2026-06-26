@@ -609,7 +609,7 @@ export function AddSheet({
   const title =
     shown.length > 1
       ? shown.includes('capture')
-        ? t.capture.add
+        ? t.common.add
         : shown.includes('list-item')
           ? t.list.addTitle
           : shown.includes('person')
@@ -621,7 +621,7 @@ export function AddSheet({
         ? t.routines.add
         : mode === 'list-item'
           ? t.list.addTitle
-          : t.capture.add
+          : t.common.add
 
   return (
     <Sheet open={open} onClose={close} ariaLabel={title} className={help.active ? 'help-armed' : undefined}>
@@ -777,7 +777,7 @@ export function AddSheet({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={captureVoice.listening ? t.capture.listening : t.capture.placeholder}
-                aria-label={t.capture.add}
+                aria-label={t.common.add}
               />
               <VoiceButton voice={captureVoice} label={t.capture.voice} />
             </div>
@@ -809,7 +809,7 @@ export function AddSheet({
 
             <button type="submit" className="btn btn--primary" disabled={!text.trim() || busy}>
               <Icon name="plus-bold" size={20} />
-              {t.capture.add}
+              {t.common.add}
             </button>
           </form>
           {/* Or leave a memo instead of typing: a voice clip (#38) or a quick
@@ -832,7 +832,7 @@ export function AddSheet({
             </div>
             <button type="submit" className="btn btn--primary" disabled={!listText.trim() || busy}>
               <Icon name="plus-bold" size={20} />
-              {t.capture.add}
+              {t.common.add}
             </button>
           </form>
         )}
@@ -874,7 +874,7 @@ export function AddSheet({
                 setTodoText('')
                 void quickAddTemplate(opt.data.id)
               }}
-              submitLabel={t.capture.add}
+              submitLabel={t.common.add}
               submitLeadingIcon="plus-bold"
               submitVariant="primary"
               placeholder={todoVoice.listening ? t.capture.listening : t.todos.addPlaceholder}
@@ -899,7 +899,7 @@ export function AddSheet({
             </div>
             <button type="submit" className="btn btn--primary" disabled={!pantryText.trim() || busy}>
               <Icon name="plus-bold" size={20} />
-              {t.capture.add}
+              {t.common.add}
             </button>
           </form>
         )}
@@ -933,7 +933,7 @@ export function AddSheet({
             )}
             <button type="submit" className="btn btn--primary" disabled={!reserveText.trim() || busy}>
               <Icon name="plus-bold" size={20} />
-              {t.capture.add}
+              {t.common.add}
             </button>
           </form>
         )}

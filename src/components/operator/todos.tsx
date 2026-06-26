@@ -193,7 +193,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
                             setEditItem({ id: tpl.id, idx })
                             setEditText(it.label)
                           }}
-                          aria-label={t.todos.edit}
+                          aria-label={t.common.edit}
                         >
                           {it.label}
                         </button>

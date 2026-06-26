@@ -127,7 +127,7 @@ export function KidCollections({
         </div>
         <BigTiles tiles={dayTiles} />
         <button type="button" className="kid-pick__back mono" onClick={() => setKidRecipe(null)}>
-          <InlineIcon name="arrow-left-bold" /> {t.kid.back}
+          <InlineIcon name="arrow-left-bold" /> {t.common.back}
         </button>
       </section>
     )
@@ -163,7 +163,7 @@ export function KidCollections({
       <BigTiles tiles={collectionTiles} empty={t.recipes.collectionsEmpty} />
       {onBack && (
         <button type="button" className="kid-pick__back mono" onClick={onBack}>
-          <InlineIcon name="arrow-left-bold" /> {t.kid.back}
+          <InlineIcon name="arrow-left-bold" /> {t.common.back}
         </button>
       )}
     </section>

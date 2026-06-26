@@ -57,7 +57,7 @@ export function ToddlerCookBook({
   return (
     <section className="tbook" onPointerDown={onDown} onPointerUp={onUp}>
       {/* Small, quiet exit back to the kitchen — the kid surface keeps one way out. */}
-      <button type="button" className="tbook__close" onClick={onBack} aria-label={t.kid.back}>
+      <button type="button" className="tbook__close" onClick={onBack} aria-label={t.common.back}>
         <Icon name="x-bold" size={22} />
       </button>
 
@@ -101,7 +101,7 @@ export function ToddlerCookBook({
       </div>
 
       <button type="button" className="kid-pick__back mono tbook__back" onClick={onBack}>
-        <InlineIcon name="arrow-left-bold" /> {t.kid.back}
+        <InlineIcon name="arrow-left-bold" /> {t.common.back}
       </button>
     </section>
   )

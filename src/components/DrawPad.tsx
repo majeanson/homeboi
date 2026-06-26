@@ -1296,7 +1296,7 @@ export function DrawPad({
       {pickPhotoOnOpen && hasPhoto && <p className="drawpad__photohint mono" aria-hidden="true">{t.memo.photoHint}</p>}
 
       <div className="drawpad__actions">
-        <button type="button" className="btn btn--ghost" onClick={onCancel}>{t.memo.cancel}</button>
+        <button type="button" className="btn btn--ghost" onClick={onCancel}>{t.common.cancel}</button>
         <div className="drawpad__actions-end">
           {/* Keep (save to « Mes dessins ») — available to toddlers too, so a child
               can keep their own art. Share + Make-routine stay parent-only (an

@@ -148,7 +148,7 @@ export function CarsSection({ help }: { help?: HelpMode }) {
           value={adding}
           onChange={setAdding}
           onSubmit={() => add()}
-          submitLabel={t.capture.add}
+          submitLabel={t.common.add}
           placeholder={t.operator.carAdd}
           ariaLabel={t.operator.carAdd}
         />

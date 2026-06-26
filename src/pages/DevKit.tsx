@@ -350,7 +350,7 @@ export function DevKit() {
               value={text1}
               onChange={setText1}
               onSubmit={() => setText1('')}
-              submitLabel={t.capture.add}
+              submitLabel={t.common.add}
               submitLeadingIcon="plus-bold"
               submitVariant="primary"
               placeholder="Ajouter un article…"
@@ -371,7 +371,7 @@ export function DevKit() {
               value={text3}
               onChange={setText3}
               onSubmit={() => setText3('')}
-              submitLabel={t.capture.add}
+              submitLabel={t.common.add}
               voice={voice}
               placeholder={voice.listening ? t.capture.listening : 'Parler ou écrire…'}
             />
@@ -381,7 +381,7 @@ export function DevKit() {
               value={text1}
               onChange={setText1}
               onSubmit={() => setText1('')}
-              submitLabel={t.capture.add}
+              submitLabel={t.common.add}
               submitLeadingIcon="plus-bold"
               submitVariant="primary"
               placeholder="Ajouter un article…"

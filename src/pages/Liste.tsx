@@ -472,7 +472,7 @@ export function Liste() {
         value={addText}
         onChange={setAddText}
         onSubmit={() => addItem()}
-        submitLabel={t.capture.add}
+        submitLabel={t.common.add}
         submitLeadingIcon="plus-bold"
         submitVariant="primary"
         busy={adding}
@@ -605,10 +605,10 @@ export function Liste() {
                   onImage={() => nav(`/liste/deals/${item.id}`)}
                   imageLabel={t.list.openFlyer}
                   onName={() => nav(`/liste/item/${item.id}`)}
-                  nameLabel={t.list.edit}
+                  nameLabel={t.common.edit}
                   onToggle={() => toggleChecked(item)}
                   onDelete={() => deleteItem(item)}
-                  deleteLabel={t.list.swipeDelete}
+                  deleteLabel={t.common.delete}
                 />
               </Fragment>
             )

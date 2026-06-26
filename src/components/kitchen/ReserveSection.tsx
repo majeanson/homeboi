@@ -117,7 +117,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
         value={newItem}
         onChange={setNewItem}
         onSubmit={() => addItem()}
-        submitLabel={t.capture.add}
+        submitLabel={t.common.add}
         placeholder={t.kitchen.reserveAdd}
         ariaLabel={t.kitchen.reserveAdd}
         trailing={
