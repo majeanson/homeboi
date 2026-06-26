@@ -36,6 +36,7 @@ import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
 import { Act, Section as BoardSection } from '../components/board/Act'
 import { BoardCard } from '../components/board/BoardCard'
+import { MealPool } from '../components/kitchen/MealPool'
 import { Fil } from '../components/board/Fil'
 import { TodoSection } from '../components/todos/TodoSection'
 import { RecurPicker, type RecurValue } from '../components/RecurPicker'
@@ -1064,6 +1065,39 @@ export function DevKit() {
           </Demo>
         )
       },
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'MealPool (idées / restants)',
+      file: 'components/kitchen/MealPool.tsx',
+      kw: 'meal pool ideas leftovers restants idées plan picker kitchen list pooled candidate',
+      // The shared "pool of meal candidates you plan onto a day" — « Idées de repas »
+      // and « Restants » are thin wrappers over it. Add via combobox, live-poll-safe
+      // deferred delete + undo, inline rename, tap-to-reveal the plan picker. Stub data.
+      render: () => (
+        <Demo label="a pooled candidate list (shared by Idées + Restants)">
+          <MealPool
+            items={[{ id: 'i1', title: 'Tacos' }, { id: 'i2', title: 'Spaghetti' }]}
+            queryKey={['devkit-pool']}
+            collectionKey="items"
+            endpoint="meal-ideas"
+            options={[]}
+            buildAddBody={(title) => ({ title })}
+            onPlan={() => {}}
+            renderLead={() => null}
+            week={[{ date: 0, label: 'Lun' }, { date: 1, label: 'Mar' }]}
+            helpKey="ideas"
+            labels={{
+              heading: 'Idées de repas',
+              addAria: 'Ajouter une idée',
+              addPlaceholder: 'Ajouter une idée',
+              empty: 'Aucune idée',
+              removeLabel: 'Retirer',
+              removedUndo: (t) => `${t} retiré`,
+            }}
+          />
+        </Demo>
+      ),
     },
     {
       cat: 'Rangées & actions',

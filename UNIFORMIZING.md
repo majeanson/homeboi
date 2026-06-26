@@ -379,11 +379,20 @@ Same string defined in many domain namespaces — change-one-forget-the-other ri
 already shared (`CheckRow`/`ListRow`/`EditField`/`RowActions`/`EmptyState`). The **behavioural** layer is
 re-coded per list: query + live-poll setup, `useDeferredRemoval`, add-via-text-or-`EntityCombobox`, the
 "primary action" (check / check-and-side-effect / mark-done / plan-elsewhere), undo.
-- [ ] Extract `useItemList(queryKey, endpoint, {live})` bundling query + `useDeferredRemoval` + add/remove writes,
-  and an optional `<ItemList>` whose row delegates the primary action to a caller callback. Migrate PantryTab,
-  TodoSection, MealIdeas, Leftovers first.
-- **Keep per-list (don't over-merge):** what "check" *means*, editable columns, whether reorder/voice is enabled.
-- **Calm:** unifies chrome + undo across lists; adds no counts/badges. Do NOT merge the *tables* (Part I DB notes).
+- [x] ✅ **DONE 2026-06-26 — but RE-SCOPED after reading the four pilots.** The audit's monolithic
+  `useItemList`/`<ItemList>` across all ~9 lists is **over-merge** (the primary action — check-and-add-to-list /
+  toggle-in-place / open-a-plan-picker — and the markup genuinely differ per list; two of four don't even own
+  their query). What the evidence showed: **`MealIdeas` and `Leftovers` are ~85% copy-pasted** (same
+  `kitchen__idea` markup, EntityCombobox add, `useDeferredRemoval` delete+undo, `useInlineEdit`+EditField rename,
+  `useSingleOpen`+MealPlanPicker). Extracted that twin into **`<MealPool>`** (`components/kitchen/MealPool.tsx`,
+  generic over row + combobox entity); both are now ~70-line wrappers injecting only `endpoint`/`buildAddBody`/
+  `onPlan`(reusable vs consumed+compensating-undo)/`renderLead`/`options`/`labels`. ~170 LOC of duplication gone,
+  the two pools can't drift. Registered in DevKit + COMPONENTS.md. typecheck + 799 tests + build green.
+- **Kept per-list (NOT over-merged):** PantryTab (check→add-to-list, CheckRow), TodoSection (toggle-in-place,
+  cross-scope sync), réserve — different primary actions / markup. The genuinely-universal seam they DO share is
+  just the `useDeferredRemoval` delete-with-undo wiring, which is already a shared hook; a thin `useListRemoval`
+  wrapper over it is a possible small follow-up, not a monolith.
+- **Calm:** unifies chrome + undo across the two pools; adds no counts/badges. Did NOT merge the *tables*.
 
 ### <a id="p2-1"></a>P2-1 🟡 (high value / low risk) `createDeviceStore` — the per-device setting factory
 ~10 localStorage stores (`ambient`, `boardCards`, `apod`, `canvas`, `cookPrefs`, `measurePrefs`, keep-awake,
