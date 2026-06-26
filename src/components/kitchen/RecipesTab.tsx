@@ -14,6 +14,7 @@ import { formatDuration } from '../../lib/duration'
 import { pictoFor } from '../../lib/picto'
 import { todayLocalDay } from '../../lib/localDay'
 import { Icon, InlineIcon } from '../Icon'
+import { SubTabs } from '../SubTabs'
 import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
@@ -325,26 +326,20 @@ export function RecipesTab({
           {recipes.length > 0 && (
             <div className="recipe-view-toggle">
               {tags.length > 0 && (
-                <div className="subtabs subtabs--mini" role="tablist" aria-label={t.recipes.arrange}>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={!groupView}
-                    className={'subtabs__opt' + (!groupView ? ' is-on' : '')}
-                    onClick={help ? help.pick('collections', () => setGroupView(false)) : () => setGroupView(false)}
-                  >
-                    Aa
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={groupView}
-                    className={'subtabs__opt' + (groupView ? ' is-on' : '')}
-                    onClick={help ? help.pick('collections', () => setGroupView(true)) : () => setGroupView(true)}
-                  >
-                    {t.recipes.collectionsTitle}
-                  </button>
-                </div>
+                <SubTabs
+                  size="mini"
+                  ariaLabel={t.recipes.arrange}
+                  value={groupView ? 'collections' : 'aa'}
+                  onSelect={(k) => setGroupView(k === 'collections')}
+                  options={[
+                    { key: 'aa', label: 'Aa' },
+                    { key: 'collections', label: t.recipes.collectionsTitle },
+                  ]}
+                  // Both tabs share the single 'collections' help entry, so pin it
+                  // (ignore the per-tab key) — otherwise the 'aa' tab would request a
+                  // non-existent help entry (a P2-9 orphan).
+                  pick={help ? (_k, run) => help.pick('collections', run) : undefined}
+                />
               )}
               {/* Straight to the toddler picture cookbook (#45) — the same read-aloud,
                   swipeable book the kid kitchen opens, here as a one-tap shortcut that

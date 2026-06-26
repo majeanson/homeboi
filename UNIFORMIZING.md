@@ -40,8 +40,14 @@ the shared `SubTabs` (COMPONENTS.md already flags deal/flyer/recipe-book as migr
 
 - [x] `components/DealsBrowser.tsx` (~L150, `.subtabs deal-tabs`) → `<SubTabs className="deal-tabs">` ✅
 - [x] `components/FlyerViewer.tsx` (~L419, `.subtabs flyer-tabs`) → `<SubTabs className="flyer-tabs">` ✅
-- [ ] `components/kitchen/RecipesTab.tsx` (~L328, `.subtabs subtabs--mini`) → `<SubTabs size="mini">` — needs help-key
-  mapping (single `'collections'` key) + the sibling book button; do with a CSS check (own commit).
+- [x] ✅ `components/kitchen/RecipesTab.tsx` (~L328, `.subtabs subtabs--mini`) → `<SubTabs size="mini">` **DONE
+  2026-06-26.** The Aa/Collections toggle now uses the shared primitive. Two wrinkles handled: (1) both tabs share
+  the single `'collections'` help entry, so `pick` is wrapped to pin that key (ignoring the per-tab key) — else the
+  `'aa'` tab would request a non-existent entry (a P2-9 orphan); (2) the sibling `.recipe-view-toggle__book` button
+  lives in a bespoke unified pill, and `<SubTabs>` adds a `.subtabs-row` wrapper (own gap + bottom margin) that would
+  distort it — neutralized with one rule `.recipe-view-toggle .subtabs-row { display: contents }`, making the wrapper
+  layout-transparent so the rendered classes (`subtabs subtabs--mini` / `subtabs__opt is-on`) and 3-segment layout are
+  byte-identical to before. typecheck + build green.
 - [ ] `components/cercle/FamilyBuilder.tsx` (~L410, `.cercle-viewswitch`) → `<SubTabs>` if the API fits — **kept distinct
   for now**: `.cercle-viewswitch__btn`/`.is-active` is a deliberately different (boxed, not pill) style; adopting SubTabs
   restyles it. Revisit if we want it to match the pill family.

@@ -709,6 +709,13 @@
   border: 0;
   background: none;
 }
+/* The shared <SubTabs> wraps the group in a `.subtabs-row` (with its own gap +
+   bottom margin) — make that wrapper layout-transparent here so the `.subtabs--mini`
+   and the book button stay direct flush segments of this unified pill (no extra row
+   gap / margin breaking the 3-segment control). */
+.recipe-view-toggle .subtabs-row {
+  display: contents;
+}
 /* One-tap shortcut to the toddler picture cookbook (#45) — a third segment in the
    same pill, sized + shaped like the Aa/Collections options beside it. */
 .recipe-view-toggle__book {
