@@ -658,3 +658,42 @@
   border-color: var(--card);
   outline: 2.5px solid var(--ink);
 }
+
+/* ========================================================================== */
+/* View Transitions — a gentle cross-fade of the page CONTENT on tab nav.       */
+/* React Router v7 wraps the route change in document.startViewTransition when   */
+/* a hub NavLink carries `viewTransition` (HubLayout). We name ONLY .hub__body   */
+/* so the section rail / bottom bar stay rock-steady — the transition never      */
+/* fights their styles — and because it fires on NAVIGATION only, it never       */
+/* animates the board's data-poll re-renders or any modal/sheet (those are       */
+/* overlays, not routes). The whole block is gated behind prefers-reduced-       */
+/* motion: no-preference, so a reduced-motion device gets the instant swap it     */
+/* asked for. Calm by design: short, opacity-only, content-only.                 */
+/* ========================================================================== */
+@media (prefers-reduced-motion: no-preference) {
+  .hub__body {
+    view-transition-name: hub-content;
+  }
+  /* Everything outside .hub__body (the nav rail / bottom bar) swaps instantly,
+     so the chrome never flickers — only the content fades. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+  ::view-transition-old(hub-content) {
+    animation: bb-vt-out 150ms ease both;
+  }
+  ::view-transition-new(hub-content) {
+    animation: bb-vt-in 200ms ease both;
+  }
+}
+@keyframes bb-vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes bb-vt-in {
+  from {
+    opacity: 0;
+  }
+}

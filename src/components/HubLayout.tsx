@@ -334,6 +334,7 @@ export function HubLayout() {
           <NavLink
             key={tab.to}
             to={tab.to}
+            viewTransition
             className={({ isActive }) => `hubnav__btn${isActive ? ' is-active' : ''}`}
           >
             {({ isActive }) => (
