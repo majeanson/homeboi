@@ -12,6 +12,9 @@ export interface Business {
   notes: string | null
   photoKey: string | null
   colour: string | null // own tint (like a member's) — colours the row, peek + rendez-vous
+  // « Les carnets » this vendor has serviced (DERIVED server-side from care_log, no
+  // schema). Read-only backlink for the peek; empty for a never-logged business.
+  servicedCarnets?: { id: string; name: string; kind: string }[]
 }
 
 // The default Business tint when none is picked — the teal the storefront glyph + the

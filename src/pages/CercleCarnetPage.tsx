@@ -14,7 +14,7 @@ import { formatDay } from '../lib/format'
 import { formatMoney } from '../lib/money'
 import { imgUrl } from '../lib/image'
 import { faint } from '../lib/colors'
-import { useCarnets, useCareLog, useHomePins, carnetEmoji, replacementDate, PIN_EMOJI, type CareLog, type HomePin } from '../lib/carnets'
+import { useCarnets, useCareLog, useHomePins, carnetEmoji, replacementDate, warrantyExpiries, PIN_EMOJI, type CareLog, type HomePin } from '../lib/carnets'
 import type { HomeProject } from '../components/operator/types'
 import { SceneHead } from '../components/SceneHead'
 import { Loading } from '../components/Fallback'
@@ -82,6 +82,9 @@ export function CercleCarnetPage() {
   const entries = logData?.entries ?? []
   const shownEntries = logRemoval.visible(entries)
   const entretien = (hpData?.projects ?? []).filter((p) => p.carnet_id === carnet.id)
+  // Warranties ending soon — DERIVED from facts.warrantyUntil (this carnet + its
+  // things), a calm heads-up to use/extend before it lapses. No rows. See warrantyExpiries.
+  const warranties = warrantyExpiries([carnet, ...children], Math.floor(Date.now() / 1000))
   const shownPins = pinRemoval.visible(pinData?.pins ?? [])
   // « Le long jeu » horizon — the carnet + its children's lifecycles on one timeline,
   // sorted by projected replacement year (the house's "slow life"). Shown only when a
@@ -173,10 +176,27 @@ export function CercleCarnetPage() {
 
         {active === 'surveiller' ? (
           <>
-            {soon.length === 0 && !entretien.some((p) => p.at != null) && shownEntries.length === 0 ? (
+            {soon.length === 0 && warranties.length === 0 && !entretien.some((p) => p.at != null) && shownEntries.length === 0 ? (
               <EmptyState>{c.allGood}</EmptyState>
             ) : (
               <>
+                {warranties.length > 0 && (
+                  <section className="carnet-block">
+                    <div className="sec-label">
+                      <span className="sec-label__ico" aria-hidden="true"><Icon name="check-square-bold" size={16} /></span>
+                      <b>{c.warranties}</b>
+                      <span className="ln" />
+                    </div>
+                    {warranties.map((w) => (
+                      <div key={w.carnetId} className="cercle-row">
+                        <span className="cercle-row__main">
+                          <span className="cercle-row__name"><span aria-hidden="true">{w.emoji}</span> {w.name}</span>
+                          <span className="cercle-row__sub mono">{c.warrantyEndsOn(formatDay(w.at, lang))}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </section>
+                )}
                 {soon.length > 0 && (
                   <section className="carnet-block">
                     <div className="sec-label">

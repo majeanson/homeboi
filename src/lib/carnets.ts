@@ -97,6 +97,28 @@ export function isPdfKey(key: string): boolean {
   return /\.pdf$/i.test(key)
 }
 
+// A warranty entering its final stretch — DERIVED from facts.warrantyUntil, never a
+// row (mirrors carnetLifeSoon + the derived birthdays). Upcoming-only and within the
+// lead window, so a long-expired or far-off warranty stays quiet (calm: a heads-up to
+// decide whether to use/extend it, not a countdown). Soonest first.
+export interface WarrantySoon {
+  carnetId: string
+  name: string
+  emoji: string
+  at: number // unix sec — the day the warranty ends
+}
+export const WARRANTY_LEAD_DAYS = 120 // ~4 months: a season's notice to act on it
+export function warrantyExpiries(carnets: Carnet[], nowSec: number, leadDays = WARRANTY_LEAD_DAYS): WarrantySoon[] {
+  const horizon = nowSec + leadDays * 86400
+  const out: WarrantySoon[] = []
+  for (const c of carnets) {
+    const until = typeof c.facts?.warrantyUntil === 'number' ? c.facts.warrantyUntil : null
+    if (until == null || until <= nowSec || until > horizon) continue
+    out.push({ carnetId: c.id, name: c.name, emoji: carnetEmoji(c), at: until })
+  }
+  return out.sort((a, b) => a.at - b.at)
+}
+
 // The projected replacement day (mirrors functions/_lib/carnetLife.replacementAt):
 // add whole months to the install date. Noon-UTC keeps us inside the civil date.
 export function replacementDate(installedAt: number, lifespanMonths: number): Date {

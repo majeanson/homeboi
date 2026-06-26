@@ -46,6 +46,26 @@ export const onRequestGet = authed(async (ctx, actor) => {
   )
     .bind(actor.householdId)
     .all<BusinessRow>()
+
+  // Backlink: which « carnets » this business has serviced, from care_log.business_id
+  // → distinct carnet. Pure read over existing rows (no schema), so a vendor's peek can
+  // show "A servi : 🔥 Chauffe-eau". A since-archived carnet drops out of the join.
+  const served = await ctx.env.DB.prepare(
+    `SELECT DISTINCT cl.business_id AS bid, c.id AS cid, c.name AS cname, c.kind AS ckind
+       FROM care_log cl
+       JOIN carnets c ON c.id = cl.carnet_id AND c.household_id = cl.household_id
+      WHERE cl.household_id = ? AND cl.business_id IS NOT NULL AND c.archived_at IS NULL
+      ORDER BY c.sort, c.created_at`,
+  )
+    .bind(actor.householdId)
+    .all<{ bid: string; cid: string; cname: string; ckind: string }>()
+  const byBiz = new Map<string, { id: string; name: string; kind: string }[]>()
+  for (const r of served.results) {
+    const list = byBiz.get(r.bid) ?? []
+    list.push({ id: r.cid, name: r.cname, kind: r.ckind })
+    byBiz.set(r.bid, list)
+  }
+
   return ok({
     businesses: rows.results.map((b) => ({
       id: b.id,
@@ -58,6 +78,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       notes: b.notes,
       photoKey: b.photo_key,
       colour: b.colour,
+      servicedCarnets: byBiz.get(b.id) ?? [],
     })),
   })
 })

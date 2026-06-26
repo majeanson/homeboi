@@ -8,6 +8,7 @@ import { CATS } from '../../lib/cats'
 import { imgUrl } from '../../lib/image'
 import { type Contact, type Person, type Pet, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, fullName } from '../../lib/cercle'
 import { type Business, BUSINESS_COLOUR } from '../../lib/businesses'
+import { KIND_EMOJI, type CarnetKind } from '../../lib/carnets'
 import { formatDay, formatDayMaybeYear, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { recipeImg, recipeTotalMin, tagColor, type Recipe } from '../../lib/recipes'
@@ -115,6 +116,10 @@ export function buildBusiness(
   if (b.notes?.trim()) blocks.push({ kind: 'text', text: b.notes.trim() })
   if (b.address?.trim()) blocks.push({ kind: 'text', text: b.address.trim() })
   if (b.website?.trim()) blocks.push({ kind: 'text', text: b.website.trim() })
+  // Backlink: the « carnets » this vendor has serviced (from care_log), each chip an
+  // emoji + name. Read-only glance — tap-through stays on the carnet scene.
+  if (b.servicedCarnets?.length)
+    blocks.push({ kind: 'chips', label: bz.servicedCarnets, chips: b.servicedCarnets.map((cn) => `${KIND_EMOJI[cn.kind as CarnetKind] ?? '📦'} ${cn.name}`) })
 
   const actions: DetailAction[] = []
   if (b.phone) actions.push({ key: 'call', label: t.cercle.call, icon: 'phone-bold', run: () => { window.location.href = `tel:${b.phone}` } })

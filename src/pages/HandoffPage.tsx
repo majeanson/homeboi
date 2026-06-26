@@ -47,8 +47,13 @@ export function HandoffPage() {
   const routines = data?.bedtimeRoutines ?? []
   const toKnow = data?.toKnow ?? []
   const emergency = data?.emergency ?? []
-  const pins = data?.pins ?? []
-  const multiHome = new Set(pins.map((p) => p.home)).size > 1
+  const allPins = data?.pins ?? []
+  // Split the house map: « En cas de pépin » keeps the WHERE-is-it / document pins,
+  // while the HOW-TO pins ("comment partir le lave-vaisselle") get their own calm
+  // "Comment ça marche" section — the sitter reads them, not hunts for a shutoff.
+  const pins = allPins.filter((p) => p.kind !== 'howto')
+  const howto = allPins.filter((p) => p.kind === 'howto')
+  const multiHome = new Set(allPins.map((p) => p.home)).size > 1
   const wifi = data?.wifi
 
   return (
@@ -121,6 +126,29 @@ export function HandoffPage() {
                 </h3>
                 <ul className="handoff__rows">
                   {pins.map((p, i) => (
+                    <li key={i} className="handoff__note">
+                      <span className="handoff__row-name">
+                        <span aria-hidden="true">{PIN_EMOJI[p.kind]}</span> {p.label}
+                        {multiHome && <span className="tag mono"> {p.home}</span>}
+                      </span>
+                      {p.detail && <span className="handoff__note-text">{p.detail}</span>}
+                      {p.mediaKey && (
+                        <img src={imgUrl(p.mediaKey)} alt="" className="handoff__pin-img" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {/* Comment ça marche — the how-to pins (run the dishwasher, the thermostat). */}
+            {howto.length > 0 && (
+              <section className="handoff__sec">
+                <h3 className="handoff__h mono">
+                  <InlineIcon name="gear-six-bold" /> {t.shareMode.howItWorks}
+                </h3>
+                <ul className="handoff__rows">
+                  {howto.map((p, i) => (
                     <li key={i} className="handoff__note">
                       <span className="handoff__row-name">
                         <span aria-hidden="true">{PIN_EMOJI[p.kind]}</span> {p.label}
@@ -210,7 +238,7 @@ export function HandoffPage() {
               </section>
             )}
 
-            {!isLoading && events.length === 0 && meals.length === 0 && routines.length === 0 && toKnow.length === 0 && emergency.length === 0 && pins.length === 0 && !wifi?.ssid && !data?.houseRules && !data?.binDay && (
+            {!isLoading && events.length === 0 && meals.length === 0 && routines.length === 0 && toKnow.length === 0 && emergency.length === 0 && allPins.length === 0 && !wifi?.ssid && !data?.houseRules && !data?.binDay && (
               <EmptyState>{t.shareMode.empty}</EmptyState>
             )}
           </>
