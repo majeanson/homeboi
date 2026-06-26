@@ -280,7 +280,7 @@ async function familyWindow(env: Env, hh: string, householdName: string) {
 
   // Latest photos — keys only; the <img> loads them via the public-by-key route.
   const photos = await env.DB.prepare(
-    'SELECT r2_key FROM photos WHERE household_id = ? ORDER BY created_at DESC LIMIT 12',
+    'SELECT media_key AS r2_key FROM photos WHERE household_id = ? ORDER BY created_at DESC LIMIT 12',
   )
     .bind(hh)
     .all<{ r2_key: string }>()

@@ -236,10 +236,15 @@ Adopt a **"Schema Conventions"** section (CLAUDE.md or `bmad/`) so new migration
 Single-column (`r2_key`/`photo_key`/`media_key`) vs parallel arrays (`recipes.steps_images_json`,
 `routines.cards_*_json`) vs `media_kind`+`media_key`(+`scene_key`). The **`media_kind`+`media_key`+`scene_key`**
 trio (notes/family_notes/postbox/drawings) is the most expressive — make it the standard.
-- [ ] **Forward rule:** new blob attachments use the trio + name the column `media_key`.
+- [x] **Forward rule:** new blob attachments use the trio + name the column `media_key`.
+- [x] ✅ **Single-column stragglers renamed (mig 0088).** `photos.r2_key`, `contacts.photo_key`,
+  `contact_photos.photo_key`, `businesses.photo_key`, `pets.photo_key`, `intake_media.r2_key`,
+  `postbox_media.r2_key` → `media_key`. All backend-only (the API already maps these to camelCase; no src/ reader),
+  SELECTs alias `media_key AS <old>` so row interfaces stay identical. **Deliberately NOT renamed:** `recipes.image`
+  (holds a key OR a full `https://` URL — `media_key` would mislead). typecheck + 797 tests + build green.
 - [ ] **Opportunistic:** when next touching recipe-step-images / routine-card-audio, consider normalizing the
   parallel arrays into a `(parent_id, position, media_key)` junction table. **Do not** mass-migrate working data
-  just for tidiness — high risk, low user value.
+  just for tidiness — high risk, low user value. *(Still deferred — out of Phase 2 scope.)*
 
 ### DB-2 🟡→CONVENTION `color` vs `colour` (10+ tables)
 - [x] ✅ **DONE (mig 0087).** New columns use `colour`. Renamed every `color` outlier — scalar columns

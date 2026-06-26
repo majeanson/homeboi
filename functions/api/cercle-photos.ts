@@ -26,7 +26,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const contactId = new URL(ctx.request.url).searchParams.get('contactId')
   if (!contactId) return badRequest('contactId requis.')
   const rows = await ctx.env.DB.prepare(
-    `SELECT id, photo_key, caption, created_at FROM contact_photos
+    `SELECT id, media_key AS photo_key, caption, created_at FROM contact_photos
        WHERE contact_id = ? AND household_id = ? ORDER BY created_at DESC`,
   )
     .bind(contactId, actor.householdId)
@@ -47,7 +47,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!owns) return notFound('Contact introuvable.')
   const id = newId()
   await ctx.env.DB.prepare(
-    'INSERT INTO contact_photos (id, household_id, contact_id, photo_key, caption, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO contact_photos (id, household_id, contact_id, media_key, caption, created_at) VALUES (?, ?, ?, ?, ?, ?)',
   )
     .bind(id, actor.householdId, body.contactId, body.photoKey, caption(body.caption), nowSec())
     .run()
@@ -67,7 +67,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  const row = await ctx.env.DB.prepare('SELECT photo_key FROM contact_photos WHERE id = ? AND household_id = ?')
+  const row = await ctx.env.DB.prepare('SELECT media_key AS photo_key FROM contact_photos WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .first<{ photo_key: string }>()
   if (!row) return notFound('Photo introuvable.')

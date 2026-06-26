@@ -64,7 +64,7 @@ function cleanWeights(v: unknown): string {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    `SELECT id, name, species, breed, photo_key, colour, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes
+    `SELECT id, name, species, breed, media_key AS photo_key, colour, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes
        FROM pets WHERE household_id = ? AND deleted_at IS NULL ORDER BY name COLLATE NOCASE`,
   )
     .bind(actor.householdId)
@@ -116,7 +116,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   await ctx.env.DB.prepare(
     `INSERT INTO pets
-       (id, household_id, name, species, breed, photo_key, colour, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes, created_at, updated_at)
+       (id, household_id, name, species, breed, media_key, colour, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
@@ -147,7 +147,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const id = str(body.id)
   if (!id) return badRequest('id requis.')
 
-  const owns = await ctx.env.DB.prepare('SELECT photo_key FROM pets WHERE id = ? AND household_id = ? AND deleted_at IS NULL')
+  const owns = await ctx.env.DB.prepare('SELECT media_key AS photo_key FROM pets WHERE id = ? AND household_id = ? AND deleted_at IS NULL')
     .bind(id, actor.householdId)
     .first<{ photo_key: string | null }>()
   if (!owns) return notFound('Animal introuvable.')
@@ -167,7 +167,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
   setIf('species' in body, 'species', str(body.species))
   setIf('breed' in body, 'breed', str(body.breed))
-  setIf('photoKey' in body, 'photo_key', str(body.photoKey))
+  setIf('photoKey' in body, 'media_key', str(body.photoKey))
   setIf('colour' in body, 'colour', str(body.colour))
   setIf('birthday' in body, 'birthday', str(body.birthday))
   setIf('microchip' in body, 'microchip', str(body.microchip))
@@ -195,7 +195,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  const owns = await ctx.env.DB.prepare('SELECT photo_key FROM pets WHERE id = ? AND household_id = ? AND deleted_at IS NULL')
+  const owns = await ctx.env.DB.prepare('SELECT media_key AS photo_key FROM pets WHERE id = ? AND household_id = ? AND deleted_at IS NULL')
     .bind(body.id, actor.householdId)
     .first<{ photo_key: string | null }>()
   await deleteR2Blob(ctx.env.PHOTOS, owns?.photo_key)

@@ -62,7 +62,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   const cutoff = nowSec() - 7 * DAY
   const stale = await ctx.env.DB.prepare(
-    "SELECT id, r2_key FROM postbox_media WHERE household_id = ? AND status = 'staged' AND created_at < ?",
+    "SELECT id, media_key AS r2_key FROM postbox_media WHERE household_id = ? AND status = 'staged' AND created_at < ?",
   )
     .bind(hh, cutoff)
     .all<{ id: string; r2_key: string }>()
@@ -132,13 +132,13 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       .run()
     // The blobs now belong to the note — drop the staging rows (keep the bytes).
     for (const k of keys) {
-      await ctx.env.DB.prepare('DELETE FROM postbox_media WHERE household_id = ? AND r2_key = ?').bind(hh, k).run()
+      await ctx.env.DB.prepare('DELETE FROM postbox_media WHERE household_id = ? AND media_key = ?').bind(hh, k).run()
     }
   } else {
     // Dismissed — nothing references the blobs; free them + the staging rows.
     for (const k of keys) {
       await deleteR2Blob(ctx.env.PHOTOS, k)
-      await ctx.env.DB.prepare('DELETE FROM postbox_media WHERE household_id = ? AND r2_key = ?').bind(hh, k).run()
+      await ctx.env.DB.prepare('DELETE FROM postbox_media WHERE household_id = ? AND media_key = ?').bind(hh, k).run()
     }
   }
 

@@ -52,7 +52,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Orphan sweep — best-effort, never blocks the read.
   const cutoff = nowSec() - 7 * DAY
   const stale = await ctx.env.DB.prepare(
-    "SELECT id, r2_key FROM intake_media WHERE household_id = ? AND status = 'staged' AND created_at < ?",
+    "SELECT id, media_key AS r2_key FROM intake_media WHERE household_id = ? AND status = 'staged' AND created_at < ?",
   )
     .bind(hh, cutoff)
     .all<{ id: string; r2_key: string }>()
@@ -91,7 +91,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Either way, the staging rows are done with — the blobs are now orphan-swept-proof
   // (merged: owned by a contact; dismissed: just deleted).
   for (const k of keys) {
-    await ctx.env.DB.prepare('DELETE FROM intake_media WHERE household_id = ? AND r2_key = ?').bind(hh, k).run()
+    await ctx.env.DB.prepare('DELETE FROM intake_media WHERE household_id = ? AND media_key = ?').bind(hh, k).run()
   }
 
   await ctx.env.DB.prepare(

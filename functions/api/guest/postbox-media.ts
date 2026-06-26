@@ -39,7 +39,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if ('error' in up) return up.error
 
   await ctx.env.DB.prepare(
-    'INSERT INTO postbox_media (id, household_id, guest_id, r2_key, status, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO postbox_media (id, household_id, guest_id, media_key, status, created_at) VALUES (?, ?, ?, ?, ?, ?)',
   )
     .bind(newId(), actor.householdId, actor.guestId ?? '', up.key, 'staged', nowSec())
     .run()

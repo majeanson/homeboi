@@ -41,7 +41,7 @@ const TEXT_CAP = 2000
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    `SELECT id, name, category, phone, email, address, website, notes, photo_key, colour, created_at, updated_at
+    `SELECT id, name, category, phone, email, address, website, notes, media_key AS photo_key, colour, created_at, updated_at
        FROM businesses WHERE household_id = ? AND deleted_at IS NULL ORDER BY name COLLATE NOCASE`,
   )
     .bind(actor.householdId)
@@ -118,7 +118,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   await ctx.env.DB.prepare(
     `INSERT INTO businesses
-       (id, household_id, name, category, phone, email, address, website, notes, photo_key, colour, created_at, updated_at)
+       (id, household_id, name, category, phone, email, address, website, notes, media_key, colour, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
@@ -156,7 +156,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!body?.id) return badRequest('id requis.')
 
   const owns = await ctx.env.DB.prepare(
-    'SELECT photo_key FROM businesses WHERE id = ? AND household_id = ? AND deleted_at IS NULL',
+    'SELECT media_key AS photo_key FROM businesses WHERE id = ? AND household_id = ? AND deleted_at IS NULL',
   )
     .bind(body.id, actor.householdId)
     .first<{ photo_key: string | null }>()
@@ -181,7 +181,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   setIf('address' in body, 'address', str(body.address))
   setIf('website' in body, 'website', str(body.website))
   setIf('notes' in body, 'notes', str(body.notes)?.slice(0, TEXT_CAP) ?? null)
-  setIf('photoKey' in body, 'photo_key', str(body.photoKey))
+  setIf('photoKey' in body, 'media_key', str(body.photoKey))
   setIf('colour' in body, 'colour', str(body.colour))
 
   if (sets.length) {
@@ -204,7 +204,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
   const owns = await ctx.env.DB.prepare(
-    'SELECT photo_key FROM businesses WHERE id = ? AND household_id = ? AND deleted_at IS NULL',
+    'SELECT media_key AS photo_key FROM businesses WHERE id = ? AND household_id = ? AND deleted_at IS NULL',
   )
     .bind(body.id, actor.householdId)
     .first<{ photo_key: string | null }>()

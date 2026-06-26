@@ -115,7 +115,7 @@ function parseJson<T>(s: string | null, fallback: T): T {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const contacts = await ctx.env.DB.prepare(
-    `SELECT id, first_name, last_name, nickname, photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, gender, gift_ideas
+    `SELECT id, first_name, last_name, nickname, media_key AS photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, gender, gift_ideas
        FROM contacts WHERE household_id = ? ORDER BY last_name, first_name`,
   )
     .bind(actor.householdId)
@@ -165,7 +165,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // them into the same people set. Only the fields the directory + people graph need;
   // the rich care fields (feeding/microchip/weights/sitter/vet) ride the same rows.
   const pets = await ctx.env.DB.prepare(
-    `SELECT id, name, species, breed, photo_key, colour, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes
+    `SELECT id, name, species, breed, media_key AS photo_key, colour, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes
        FROM pets WHERE household_id = ? AND deleted_at IS NULL ORDER BY name COLLATE NOCASE`,
   )
     .bind(actor.householdId)
@@ -279,7 +279,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   await ctx.env.DB.prepare(
     `INSERT INTO contacts
-       (id, household_id, first_name, last_name, nickname, photo_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, gender, gift_ideas, created_at, updated_at)
+       (id, household_id, first_name, last_name, nickname, media_key, birthday, email, phone, address, notes, tags, member_id, custom_fields, gender, gift_ideas, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
@@ -326,7 +326,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
-  const owns = await ctx.env.DB.prepare('SELECT photo_key FROM contacts WHERE id = ? AND household_id = ?')
+  const owns = await ctx.env.DB.prepare('SELECT media_key AS photo_key FROM contacts WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .first<{ photo_key: string | null }>()
   if (!owns) return notFound('Contact introuvable.')
@@ -346,7 +346,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
   setIf(body.lastName !== undefined, 'last_name', str(body.lastName) ?? '')
   setIf('nickname' in body, 'nickname', str(body.nickname))
-  setIf('photoKey' in body, 'photo_key', str(body.photoKey))
+  setIf('photoKey' in body, 'media_key', str(body.photoKey))
   setIf('birthday' in body, 'birthday', birthdayOrNull(body.birthday))
   setIf('email' in body, 'email', str(body.email))
   setIf('phone' in body, 'phone', str(body.phone))
@@ -379,7 +379,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
-  const owns = await ctx.env.DB.prepare('SELECT photo_key FROM contacts WHERE id = ? AND household_id = ?')
+  const owns = await ctx.env.DB.prepare('SELECT media_key AS photo_key FROM contacts WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .first<{ photo_key: string | null }>()
   if (!owns) return notFound('Contact introuvable.')
@@ -390,7 +390,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   // R2 objects don't — fetch their keys first, then best-effort delete each blob).
   if (ctx.env.PHOTOS) {
     const gallery = await ctx.env.DB.prepare(
-      'SELECT photo_key FROM contact_photos WHERE contact_id = ? AND household_id = ?',
+      'SELECT media_key AS photo_key FROM contact_photos WHERE contact_id = ? AND household_id = ?',
     )
       .bind(body.id, actor.householdId)
       .all<{ photo_key: string }>()
