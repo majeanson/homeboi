@@ -28,6 +28,7 @@ import * as choresLedger from '../functions/api/chores-ledger'
 import * as dayNotes from '../functions/api/day-notes'
 import * as deals from '../functions/api/deals'
 import * as drawings from '../functions/api/drawings'
+import * as emptyFridge from '../functions/api/empty-fridge'
 import * as events from '../functions/api/events'
 import * as familyNotes from '../functions/api/family-notes'
 import * as flyer from '../functions/api/flyer'
@@ -129,6 +130,7 @@ const TABLE: Record<string, RouteMod> = {
   'day-notes': dayNotes,
   deals,
   drawings,
+  'empty-fridge': emptyFridge,
   events,
   'family-notes': familyNotes,
   flyer,

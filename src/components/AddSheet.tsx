@@ -744,6 +744,21 @@ export function AddSheet({
                   <span>{t.kitchen.useUpIdeas}</span>
                 </button>
               )}
+              {/* « Vide-frigo » (#5) — invent a recipe from what's about to spoil (the
+                  use-soon + réserve items). Hidden when AI is off OR nothing's about to
+                  spoil; help mode still shows it so the tile can be explained. */}
+              {(kitchenActions.flags.canEmptyFridge || help.active) && (
+                <button
+                  type="button"
+                  className="cat-pick"
+                  onClick={help.pick('emptyFridge', () => { kitchenActions.run('emptyFridge'); close() })}
+                >
+                  <span className="ct" style={{ background: 'var(--sage-wash)' }}>
+                    <Icon name="cooking-pot-bold" size={22} color="#6B8A52" />
+                  </span>
+                  <span>{t.kitchen.fridge.tile}</span>
+                </button>
+              )}
             </div>
           </div>
         )}

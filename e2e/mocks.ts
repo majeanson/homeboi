@@ -616,6 +616,29 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ key: 'nm_e2e', kind: 'drawing' }) })
         return
       }
+      // « Vide-frigo » (#5): step 'ideas' → dish names, step 'recipes' → full recipes.
+      if (path === 'empty-fridge') {
+        let step = ''
+        try {
+          step = JSON.parse(route.request().postData() || '{}').step ?? ''
+        } catch {
+          /* no body */
+        }
+        const body =
+          step === 'recipes'
+            ? {
+                recipes: [
+                  {
+                    title: 'Frittata aux épinards',
+                    ingredients: ['6 œufs', '2 t. épinards', '1/2 t. crème'],
+                    steps: ['Battre les œufs.', 'Ajouter les épinards.', 'Cuire au four 20 min.'],
+                  },
+                ],
+              }
+            : { ideas: ['Frittata aux épinards', 'Soupe minestrone', 'Gratin de restes', 'Quiche express', 'Sauté express'] }
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
+        return
+      }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
       return
     }

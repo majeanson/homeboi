@@ -32,6 +32,8 @@ import { useMealSuggest, type MealSuggestion, type SuggestSource } from '../comp
 import { type LowRow, type MealIdeasData, type ReserveData, type WeekDay, MEAL_IDEAS_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers } from '../components/kitchen/Leftovers'
+import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
+import { canEmptyFridge } from '../lib/emptyFridge'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { reschedule } from '../components/kitchen/mealMutations'
 import { useEntityDetail } from '../components/detail/DetailProvider'
@@ -142,6 +144,9 @@ export function Kitchen() {
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const soonItems = useMemo(() => (useSoonQ.data?.soon ?? []).map((s) => s.item), [useSoonQ.data])
+  // La réserve item names — the secondary "also on hand" signal the vide-frigo flow
+  // folds in alongside use-soon (anti-waste).
+  const reserveItems = useMemo(() => (reserveQ.data?.reserve ?? []).map((r) => r.item), [reserveQ.data])
   // #12 "Haven't had in a while": recipe id → the most recent local-midnight day a
   // meal linked to it (recipe_id, migration 0024) was *served*. Built from the meals
   // the page already holds — the 10-day window (`days`) plus the recent-history
@@ -249,6 +254,9 @@ export function Kitchen() {
   // (showing the ⏳ AI wake-up immediately, then the card). See the wrapped handlers
   // passed to registerKitchen below.
   const resultsRef = useRef<HTMLDivElement>(null)
+  // « Vide-frigo » (#5) — its own two-step sheet (ideas → recipes), opened from the
+  // ＋ tile rather than dropping an inline card like the other actions.
+  const [fridgeOpen, setFridgeOpen] = useState(false)
   const [scrollTick, setScrollTick] = useState(0)
   const requestScroll = () => setScrollTick((n) => n + 1)
   useEffect(() => {
@@ -293,6 +301,8 @@ export function Kitchen() {
               suggest.suggestUseUp()
               requestScroll()
             },
+            // Vide-frigo opens its own sheet — no inline result to scroll to.
+            emptyFridge: () => setFridgeOpen(true),
           }
         : null,
       kitchenActionsActive
@@ -303,6 +313,7 @@ export function Kitchen() {
             aiBusy: suggest.aiBusy,
             hasRecipes: suggest.hasRecipes,
             canUseUp: suggest.hasUseUp,
+            canEmptyFridge: canEmptyFridge(aiEnabled && !suggest.aiOff, soonItems.length, reserveItems.length),
           }
         : NO_KITCHEN_ACTIONS,
     )
@@ -314,6 +325,8 @@ export function Kitchen() {
     suggest.aiBusy,
     suggest.hasRecipes,
     suggest.hasUseUp,
+    soonItems.length,
+    reserveItems.length,
     beginShopWeek,
     suggest.suggestAi,
     suggest.suggestFromRecipes,
@@ -707,6 +720,13 @@ export function Kitchen() {
       </main>
       {/* "Ajouter à la liste" from a recipe peek → pick which ingredients (not all). */}
       {shopFor && <RecipeListPicker recipe={shopFor} onClose={() => setShopFor(null)} />}
+      {/* « Vide-frigo » (#5) — the two-step ideas→recipes sheet, opened from the ＋ tile. */}
+      <EmptyFridgeSheet
+        open={fridgeOpen}
+        onClose={() => setFridgeOpen(false)}
+        soonItems={soonItems}
+        reserveItems={reserveItems}
+      />
     </>
   )
 }

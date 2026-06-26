@@ -207,6 +207,70 @@
   background: color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
+/* ── « Vide-frigo » (#5): two-step ideas→recipes sheet ──────────────────────
+   Step 1 is a wrap of checkable idea chips (cap 3); step 2 stacks the generated
+   recipe cards. Reuses .chip / .btn / .surface; only the layout is bespoke.
+   Mobile + kiosk friendly: chips wrap, cards stack, the modal body scrolls. */
+.fridge-modal {
+  width: min(94vw, 540px);
+}
+.fridge-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.fridge-modal__lead,
+.fridge-modal__hint {
+  margin: 0;
+  color: var(--ink-faint);
+}
+.fridge-modal__status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.fridge-modal__ideas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.fridge-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+.fridge-recipe {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.fridge-recipe__title {
+  margin: 0;
+}
+.fridge-recipe__ings {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--ink-faint);
+}
+.fridge-recipe__steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.fridge-recipe__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 0.2rem;
+}
+
 /* ── DrawEditChoice (#14: how to continue a kept drawing) ───────────────────
    Three stacked, big tap targets in the shared Modal: modify in place / make a
    copy / trace over. Touch-friendly (kiosk + toddler), wraps fine on a phone. */

@@ -163,6 +163,14 @@ export const ADD_HELP: Record<string, AddHelp> = {
     point: 11,
     body: { fr: 'Propose une recette qui finit ce que tu as marqué « à utiliser bientôt ».', en: 'Suggest a recipe that uses up what you flagged “use soon”.' },
   },
+  emptyFridge: {
+    card: 'kitchen',
+    point: 13,
+    body: {
+      fr: 'Invente des recettes à partir de ce qui va bientôt se perdre : l’IA propose des idées, tu en coches quelques-unes, elle les rédige.',
+      en: 'Invent recipes from what’s about to spoil: the AI proposes ideas, you tick a few, it writes them up.',
+    },
+  },
   // « Le cercle » ＋ chooser tiles.
   person: {
     card: 'cercle',

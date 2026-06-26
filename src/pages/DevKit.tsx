@@ -63,6 +63,7 @@ import { RecentsPanel } from '../components/RecentsPanel'
 import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
 import { RecipeListPicker } from '../components/RecipeListPicker'
+import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
 import { OperatorSection } from '../components/operator/OperatorSection'
 import { DealCard } from '../components/DealCard'
 import { IngredientLine } from '../components/IngredientLine'
@@ -211,6 +212,26 @@ function DetailSheetDemo() {
         <Icon name="magnifying-glass-bold" size={18} /> Ouvrir le détail
       </button>
       <EntityDetailSheet model={open ? model : null} onClose={() => setOpen(false)} />
+    </>
+  )
+}
+
+// « Vide-frigo » (#5) opens a two-step sheet that talks to the AI, so its specimen is
+// a button. With no live API here it lands on the calm error state — the chrome (idea
+// chips, recipe cards, the back/keep/cook actions) is what the gallery shows.
+function FridgeSheetDemo() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button type="button" className="btn btn--primary" onClick={() => setOpen(true)}>
+        <Icon name="cooking-pot-bold" size={18} /> Ouvrir Vide-frigo
+      </button>
+      <EmptyFridgeSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        soonItems={['épinards', 'crème', 'champignons']}
+        reserveItems={['pâte feuilletée']}
+      />
     </>
   )
 }
@@ -1481,6 +1502,17 @@ export function DevKit() {
               </button>
             </Modal>
           </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'EmptyFridgeSheet',
+      file: 'components/kitchen/EmptyFridgeSheet.tsx',
+      kw: 'vide-frigo empty fridge anti-gaspillage use up spoil recette idées ai pré-filtre pick souper restes use-soon réserve',
+      render: () => (
+        <Demo label="« Vide-frigo » (#5) — AI ideas from what's about to spoil → pick a few → full recipes (needs the live API)">
+          <FridgeSheetDemo />
         </Demo>
       ),
     },

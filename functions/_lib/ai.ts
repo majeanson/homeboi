@@ -228,11 +228,23 @@ export async function draftRecipe(
   title: string,
   lang: Lang = 'fr',
   report?: AiReport,
+  // Optional "ingredients you already have, use them where they fit" context —
+  // passed by the « vide-frigo » flow so a generated recipe actually leans on what's
+  // about to spoil, not a generic version. recipe-draft passes nothing → the prompt
+  // is byte-for-byte unchanged.
+  have: string[] = [],
 ): Promise<RecipeDraft> {
   const dish = title.trim()
   if (!env.AI || !dish) return { ingredients: [], steps: [] }
+  const haveList = have.map((h) => h.trim()).filter(Boolean)
+  const haveLine =
+    haveList.length === 0
+      ? ''
+      : lang === 'en'
+        ? `\nLean on these ingredients on hand where they sensibly fit (the goal is to use them up): ${haveList.join(', ')}.`
+        : `\nAppuie-toi sur ces ingrédients déjà là où c'est logique (le but est de les écouler) : ${haveList.join(', ')}.`
   const prompt =
-    lang === 'en'
+    (lang === 'en'
       ? `Draft a simple family recipe for "${dish}".
 Reply ONLY with JSON: {"ingredients": string[], "steps": string[]}.
 Ingredients: short lines with rough quantities, at most 12. Steps: short imperative sentences, at most 8.
@@ -240,7 +252,8 @@ Example: {"ingredients":["400 g pasta","1 jar tomato sauce","500 g ground beef"]
       : `Rédige une recette familiale simple pour « ${dish} » (français québécois).
 Réponds UNIQUEMENT avec du JSON : {"ingredients": string[], "steps": string[]}.
 Ingrédients : lignes courtes avec quantités approximatives, 12 au maximum. Étapes : phrases impératives courtes, 8 au maximum.
-Exemple : {"ingredients":["400 g de pâtes","1 pot de sauce tomate","500 g de bœuf haché"],"steps":["Faire bouillir les pâtes.","Faire revenir le bœuf.","Ajouter la sauce et laisser mijoter."]}.`
+Exemple : {"ingredients":["400 g de pâtes","1 pot de sauce tomate","500 g de bœuf haché"],"steps":["Faire bouillir les pâtes.","Faire revenir le bœuf.","Ajouter la sauce et laisser mijoter."]}.`) +
+    haveLine
   try {
     const res = (await env.AI.run(MODEL, {
       messages: [{ role: 'user', content: prompt }],
@@ -674,6 +687,51 @@ Réponds UNIQUEMENT avec un tableau JSON de 10 noms de plats courts. Exemple : [
     return extractStringArray(res.response, 10)
   } catch (err) {
     if (report) report.error = logAi('suggestMeals', err)
+    return []
+  }
+}
+
+// « Vide-frigo », step 1 — dish NAMES that use up what's about to spoil. A cousin of
+// suggestMeals, but anchored on the « à utiliser bientôt » + réserve items rather
+// than low/favourites/neglected: the whole point is anti-waste, not variety. ONE
+// call returns ~10 names (NFR-COST); the client shows them as a checklist, the cook
+// ticks a few, and step 2 (draftRecipe with `have`) turns each pick into a full
+// recipe. Returns [] on no-AI/any failure so the caller hides the flow.
+export async function fridgeIdeas(
+  env: Env,
+  have: { soon: string[]; reserve: string[] },
+  lang: Lang = 'fr',
+  // The batch just shown, so a re-ask yields DIFFERENT dishes.
+  avoid: string[] = [],
+  report?: AiReport,
+): Promise<string[]> {
+  if (!env.AI) return []
+  const soon = have.soon.join(', ') || (lang === 'en' ? 'none' : 'aucun')
+  const reserve = have.reserve.join(', ') || (lang === 'en' ? 'none' : 'aucun')
+  const dontRepeat = [...new Set(avoid)].join(', ') || (lang === 'en' ? 'none' : 'aucun')
+  const prompt =
+    lang === 'en'
+      ? `Suggest 10 simple family dishes that USE UP these soon-to-spoil ingredients before they go to waste.
+Use as many of them as sensibly fit in a dish; assume basic staples (oil, salt, flour, onion, garlic, eggs) are on hand — do NOT require a grocery run.
+Ingredients to use up first: ${soon}.
+Also on hand (freezer / back of the pantry): ${reserve}.
+Dishes to AVOID repeating: ${dontRepeat}.
+Reply ONLY with a JSON array of 10 short dish names. Example: ["veggie frittata","minestrone soup","leftovers gratin"].`
+      : `Suggère 10 plats familiaux simples qui ÉCOULENT ces aliments qui vont bientôt se perdre.
+Utilises-en autant que possible dans un plat ; suppose que les essentiels (huile, sel, farine, oignon, ail, œufs) sont là — n'exige PAS d'aller à l'épicerie.
+Aliments à écouler en premier : ${soon}.
+Aussi sous la main (congélateur / fond du garde-manger) : ${reserve}.
+Plats à ÉVITER de répéter : ${dontRepeat}.
+Réponds UNIQUEMENT avec un tableau JSON de 10 noms de plats courts. Exemple : ["frittata aux légumes","soupe minestrone","gratin de restes"].`
+  try {
+    const res = (await env.AI.run(MODEL, {
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 300,
+      temperature: 0.9,
+    })) as { response?: unknown }
+    return extractStringArray(res.response, 10)
+  } catch (err) {
+    if (report) report.error = logAi('fridgeIdeas', err)
     return []
   }
 }

@@ -478,6 +478,29 @@ test.describe('add sheet', () => {
     )
   })
 
+  test('the kitchen ＋ Vide-frigo tile runs the two-step ideas→recipes flow', async ({ page }) => {
+    await APP('/kitchen')(page)
+    await settle(page, '.hub')
+    await page.locator('.add-fab').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await page.locator('.cat-pick', { hasText: 'Vide-frigo' }).click()
+    // Step 1 — the sheet auto-loads a batch of dish names (checkable chips).
+    const modal = page.locator('.kit-modal.fridge-modal')
+    await expect(modal).toBeVisible()
+    const ideas = modal.locator('.fridge-modal__ideas .chip')
+    await expect(ideas.first()).toBeVisible()
+    // Tick one idea, then build its recipe (a fresh empty-fridge POST, step 'recipes').
+    await ideas.first().click()
+    await expectApi(page, 'POST', 'empty-fridge', () =>
+      modal.getByRole('button', { name: /Voir les recettes/ }).click(),
+    )
+    // Step 2 — the recipe card renders; « Garder » saves it to the book (recipes POST).
+    await expect(modal.locator('.fridge-recipe')).toBeVisible()
+    await expectApi(page, 'POST', 'recipes', () =>
+      modal.getByRole('button', { name: 'Garder' }).click(),
+    )
+  })
+
   test('the liste ＋ offers add-line / quick-add / flyer / best-prices, defaulting to the add form', async ({ page }) => {
     await APP('/liste')(page)
     await settle(page, '.hub')

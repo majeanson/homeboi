@@ -49,6 +49,7 @@ const SILENT_PATHS = new Set<string>([
   'ai-errors',
   'ai-test',
   'capture-classify', // pure classifier; the follow-up write carries its own path
+  'empty-fridge', // « vide-frigo » AI ideas/recipes; saving a result hits recipes
   'guest/start',
   'health',
   'pair/start',
