@@ -296,11 +296,11 @@ trio (notes/family_notes/postbox/drawings) is the most expressive — make it th
   > carefully as its own gated commit with the engine test rewritten and the API contract held byte-stable.
 
 ### DB-5 🟡 Member-attribution fragmentation
-- [ ] Same "who" concept appears as soft-ref (`added_by`/`suggested_by`/`member_id`), hard-ish ref
-  (`cook_member_id`/`last_done_by`), junction (`task_participants`), and dual (`member_id`+`author_member_id`,
-  `member_id`+`author_label`). Don't rename existing columns; **do** write down the rule (DB conventions above)
-  and apply it to new tables. Flag the one real confusion to document: `member_id` meaning *subject/scope* on
-  notes/family_notes vs *author* elsewhere.
+- [x] ✅ **DONE 2026-06-26 — documented (no column renames, as instructed).** The "who" rule is written into
+  `CLAUDE.md` ▸ Schema conventions ▸ Attribution: the three coexisting patterns (soft member ref · explicit
+  `author_member_id` beside a scope ref · external `author_label`/`sender_name`), "pick by who's writing, don't
+  unify," and the flagged confusion (`member_id` = *subject/scope* on notes/family_notes vs *author* elsewhere → new
+  soft refs get a one-line comment naming the intent). Existing columns left as-is. Pairs with P2-8 above.
 
 ### DB-6 🟢→CONVENTION Household-config bloat
 - [ ] `households` carries ~15 JSON/pref columns (meal slots, recipe pills, aisle order, cars, wifi, rules…).
@@ -532,12 +532,18 @@ palette change means hunting multiple files.
 ### P2-8 🟢 Memo & attribution patterns — keep separate, write the rules down
 - **Notes family:** `notes` (transient/board), `family_notes` (durable/cercle), `day_notes` (date-anchored, no
   media) are **correctly separate** (different durability/scope/visibility). `MemoControls` already shares the
-  composer via `endpoint`/`affectedKey`/`extraBody`. → [ ] Document the **memo media lifecycle**
-  (`media_kind`+`media_key`+`scene_key`, upload→{key}→clear-frees-blob) in `_lib/memoMedia.ts` + a `MemoComposerProps`
-  type; optionally a calm-style test asserting `media_key` exists iff `media_kind` set. No table merge.
+  composer via `endpoint`/`affectedKey`/`extraBody`. → [x] ✅ **DONE 2026-06-26 — documented in `CLAUDE.md` ▸ Schema
+  conventions ▸ Media attachment.** Wrote the **memo media lifecycle** (uploadMedia → `{key}` → `media_key`+`media_kind`,
+  the **`media_key` iff `media_kind` invariant**, replace/clear **frees the R2 blob**, R2-unset hides) onto the
+  existing media-trio bullet. Chose docs over a `_lib/memoMedia.ts` stub: the code is already shared (`MemoControls`),
+  only the rule was unwritten. No table merge. *(The optional `media_key`-iff-`media_kind` test left as a future
+  guard — it edges into the "don't extract code" line the audit drew for P2-8.)*
 - **Attribution ("who"):** member soft-ref vs `author_member_id` vs external `author_label`/`sender_name` are each
   right for their context (postbox's name→member tint-on-exact-match is the model for future guest→household flows).
-  → [ ] Document the three patterns (ties to Part I **DB-5**); don't unify code.
+  → [x] ✅ **DONE 2026-06-26 (with DB-5) — documented in `CLAUDE.md` ▸ Schema conventions ▸ Attribution.** Enumerated
+  the **three "who" patterns** (existing-member soft ref · explicit `author_member_id` beside a scope ref · external
+  `author_label`/`sender_name` for a non-member, with postbox name→tint-on-exact-match as the guest→household model)
+  and the rule "pick by who's writing, don't unify them." Code unchanged.
 
 ### <a id="p2-9"></a>P2-9 🟡 (med value / low risk) Help/explainer: kill the orphan-bug class + curb drift
 The guide/help **system** is already excellent — `GUIDE`/`CONCEPT_THEMES`/`FEATURE_MAP_TILES` is one taxonomy that

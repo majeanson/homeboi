@@ -208,11 +208,29 @@ request into the `EventContext` a Pages Function expects, and reproducing the ol
 - **Media attachment** — the **`media_kind` + `media_key` (+ `scene_key` for editable
   drawings)** trio (as on notes/family_notes/postbox/drawings), a single column per
   blob — never parallel arrays, never a new `r2_key`/`photo_key`/`image` name.
+  **Lifecycle (P2-8 — the one memo-media pattern):** the composer uploads the blob via
+  **`uploadMedia()`** → gets back an opaque `{key}` → writes that into `media_key` with
+  the matching `media_kind` (and `scene_key` for a re-editable drawing). The pair is an
+  **invariant: `media_key` is set iff `media_kind` is set** — never one without the
+  other. Replacing or clearing the attachment **frees the old R2 blob** (`deleteR2Blob`,
+  which no-ops on an unset bucket); R2 unset → the media controls **hide** and the
+  text-only path still works. The board fridge-note composer (`MemoControls`) already
+  shares this across endpoints via its `endpoint`/`affectedKey`/`extraBody` props — a
+  new memo surface reuses it rather than re-wiring the upload→key→clear flow.
 - **Attribution ("who")** — a **soft `TEXT` member ref, nullable, no FK** so deleting
   a member never cascades old content. When you need role / timestamp / multiple
   authors, use a **junction table** (like `task_participants`). Comment whether the
   ref means *subject/scope* or *author* (they've been conflated before — e.g.
-  `member_id` is *scope* on notes but *author* elsewhere).
+  `member_id` is *scope* on notes but *author* elsewhere). **Three distinct "who"
+  patterns coexist on purpose (DB-5) — pick by who's writing, don't unify them:**
+  (1) **soft member ref** (`member_id`/`added_by`/`suggested_by`) — an *existing*
+  household member is the subject or author; (2) **`author_member_id`** — a second,
+  explicitly-the-author member ref where a row also carries a separate subject/scope
+  member ref; (3) **external `author_label` / `sender_name`** — a free-text name from
+  someone who is *not* (yet) a member (a relative via a guest link). Pattern (3)'s model
+  is **postbox**: the sender's typed name tints the resulting note to a member **only on
+  an exact name match**, never to whoever is reviewing — the template for any future
+  guest→household attribution.
 - **Discriminators** — **`kind`** for an entity sub-type, **`status`** for workflow
   state, **`type`** only for a relationship-edge label. Don't reuse `status` for an
   HTTP status integer (name it `status_code`).
