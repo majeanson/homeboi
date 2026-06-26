@@ -3347,16 +3347,15 @@
   transition:
     transform var(--dur-fast, 0.12s) var(--ease-soft, ease),
     box-shadow var(--dur-fast, 0.12s);
+  /* The header is a standard .sec-label; its glyph disc + rule pick up the car colour
+     via --sec-tint (folded in here from a duplicate .auto-card block, CSS-2). */
+  --sec-tint: var(--car-tint);
 }
 .auto-card:active {
   transform: translateY(1px);
   box-shadow: var(--shadow-press, var(--shadow-sm));
 }
-/* The header is now a standard .sec-label — tighten its margins (it's a compact strip,
-   not a tall section). Its glyph disc + rule pick up the car colour via --sec-tint. */
-.auto-card {
-  --sec-tint: var(--car-tint);
-}
+/* The .sec-label header is a compact strip here (not a tall section) — tighten it. */
 .auto-card .sec-label {
   margin: 2px 2px 8px;
 }

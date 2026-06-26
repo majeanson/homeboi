@@ -104,11 +104,17 @@ and own a parallel CSS family. Fold the outer chrome onto `<Modal>`, keep the in
 
 ### CSS-2 🟡 Duplicate / fragmented class definitions
 Same class defined twice (cascade-order-dependent, fragile):
-- [ ] In-file dupes: `.auto-card` (pages.css ×2), `.now-card--moment` (today.css ×2), `.recipe-meta-row`
-  (recipes.css ×2), `.sky-tonight--kid` (photos.css ×2), `.tdl-finish` (kid.css ×2) — merge.
-- [ ] Cross-file dupes (relying on import order to win): `.avatar` (photos+today), `.bigtile` (almanac+pages),
-  `.hub` (hub+pages), `.kid` (kid+pages), `.today-hero` (almanac+pages). Pick one canonical home; delete the
-  shadow; add a comment noting the canonical location.
+- [x] ✅ **In-file dupes DONE 2026-06-26 — 3 genuine, 2 false positives.** Merged the 3 real same-selector splits
+  (all provably **zero-visual-change** — the cascade already determined the result): `.recipe-meta-row` (recipes.css:
+  L338 was fully shadowed by L808 → deleted the dead block), `.auto-card` (pages.css: folded a standalone
+  `--sec-tint` decl into the base block), `.sky-tonight--kid` (photos.css: folded `cursor:pointer` into the variant
+  block). **`.now-card--moment` (today.css) and `.tdl-finish` (kid.css) are NOT dupes** — each is a grouped base
+  (`.now-card--regler, .now-card--moment` / `.tdl-start, .tdl-finish`) + a variant-specific block, the normal
+  shared-base pattern; merging would *duplicate* the base. Left. typecheck + build green.
+- [ ] **Cross-file dupes — DEFERRED (need visual QA).** `.avatar` (photos+today), `.bigtile` (almanac+pages),
+  `.hub` (hub+pages), `.kid` (kid+pages), `.today-hero` (almanac+pages) rely on `@import` order to win. These are
+  widely-used classes and merging them shifts the cascade — a real visual-regression surface that wants eyeballing
+  on a running app (the e2e screenshot suite is the right gate). Not a blind-ship; do with `/dev/kit` + a screenshot pass.
 
 ### CSS-3 🟡 `pages.css` is a 3.7k-line kitchen sink (423 classes, 19% of all CSS)
 - [ ] Extract shared layout/component patterns out of `pages.css` (and split `sheets.css` 2.4k / `board.css` 1.9k)

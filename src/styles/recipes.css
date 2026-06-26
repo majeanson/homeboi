@@ -335,10 +335,8 @@
 .recipe-step__del:hover {
   color: var(--warn);
 }
-.recipe-meta-row {
-  display: flex;
-  gap: 0.8rem;
-}
+/* `.recipe-meta-row` is defined once, below under "Real time fields + yield unit"
+   (this earlier duplicate was fully shadowed by it — removed, CSS-2). */
 .recipe-servings {
   display: flex;
   align-items: center;

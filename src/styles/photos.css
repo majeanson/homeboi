@@ -235,10 +235,6 @@
   color: var(--ink);
   text-align: left;
 }
-/* Only the toddler tile is tap-to-hear; the parent line is plain info. */
-.sky-tonight--kid {
-  cursor: pointer;
-}
 .sky-tonight__emoji {
   font-size: 1.7rem;
   line-height: 1;
@@ -260,8 +256,11 @@
   color: var(--ink);
 }
 
-/* Toddler lens: a big centered emoji tile, hear-first (speaks a full sentence). */
+/* Toddler lens: a big centered emoji tile, hear-first (speaks a full sentence). Only
+   this toddler tile is tap-to-hear (the parent line is plain info) → cursor:pointer.
+   Merged from a duplicate .sky-tonight--kid block (CSS-2). */
 .sky-tonight--kid {
+  cursor: pointer;
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
