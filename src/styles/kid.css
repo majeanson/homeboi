@@ -322,7 +322,7 @@
   margin-top: 14px;
   padding: 10px 18px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, currentColor 12%, transparent);
   font-family: inherit;
   font-size: 1.05rem;
@@ -695,7 +695,7 @@
 }
 .tbook__cook {
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0.9rem 2rem;
   font-family: var(--display);
   font-size: clamp(1.2rem, 4.5vw, 1.7rem);

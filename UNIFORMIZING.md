@@ -76,11 +76,11 @@ and own a parallel CSS family. Fold the outer chrome onto `<Modal>`, keep the in
 *(25 css files, ~19.5k lines; `styles.css` `@import` order IS the cascade — append-only.)*
 
 ### <a id="css-1"></a>CSS-1 🟡 Hardcoded values that should be tokens
-- [ ] **`border-radius: 999px`** — ~64 instances → `var(--radius-pill)`. Mechanical, safe.
+- [x] **`border-radius: 999px`** — ~64 instances → `var(--radius-pill)`. Mechanical, safe. ✅ (64 replaced, 16 files)
 - [ ] **`#fff` / `#000`** — ~55 instances across 12 files (sheets/pages/today/board/handoff…) → semantic tokens.
   Several **break night / high-contrast mode** (e.g. `handoff.css:220` `background:#fff;color:#000`). This is a
   correctness bug, not just a nit. May need new `--surface-inverse` / `--ink-inverse` tokens for overlays.
-- [ ] **`min-height: 44px`** (touch target, ~7×) → add `--touch-target: 44px`.
+- [x] **`min-height: 44px`** (touch target, ~7×) → add `--touch-target: 44px`. ✅ (token added; 9 min-h/min-w replaced)
 - [ ] Repeated `rgba(0,0,0,0.04/0.08/0.3)` hairline/overlay literals (~20×) → `--overlay-faint/-light/-dark`
   (+ warm-ink `rgba(44,39,34,…)` variants).
 

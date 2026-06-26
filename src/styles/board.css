@@ -27,7 +27,7 @@
   flex-wrap: wrap;
   padding: 8px 14px;
   margin: 0 0 0.6rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--ink-wash, rgba(0, 0, 0, 0.04));
   color: var(--ink-soft);
   font-size: 0.82rem;
@@ -63,7 +63,7 @@
   margin: 0;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 16px;
   box-shadow: var(--shadow-md);
   z-index: 40;
@@ -708,7 +708,7 @@
   gap: 0.45rem;
   font-size: 1.05rem;
   padding: 0.4rem 0.8rem 0.4rem 0.55rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--note-tint) 30%, var(--card));
   box-shadow: var(--shadow-sm);
   color: var(--ink);
@@ -717,7 +717,7 @@
 .note-card__memo svg {
   flex: none;
   padding: 0.25rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--note-tint) 55%, white);
   box-sizing: content-box;
 }
@@ -796,7 +796,7 @@
   left: 0.4rem;
   display: inline-flex;
   padding: 0.25rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--card) 80%, transparent);
   color: var(--ink-soft);
   box-shadow: var(--shadow-sm);
@@ -820,7 +820,7 @@
   display: inline-flex;
   padding: 0.25rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--card) 80%, transparent);
   color: var(--ink-soft);
   box-shadow: var(--shadow-sm);
@@ -1376,7 +1376,7 @@
   display: inline-flex;
   padding: 0.3rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--card) 85%, transparent);
   color: var(--ink-soft);
   cursor: pointer;
@@ -1391,7 +1391,7 @@
   display: inline-flex;
   padding: 0.3rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--card) 85%, transparent);
   color: var(--ink-soft);
   cursor: pointer;
@@ -1544,7 +1544,7 @@
   align-items: center;
   gap: 0.25rem;
   aspect-ratio: 1 / 1;
-  min-height: 44px;
+  min-height: var(--touch-target);
   padding: 0.3rem 0.2rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-md, 12px);

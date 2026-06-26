@@ -62,7 +62,7 @@ body.is-recording .add-fab {
   padding: 10px 12px 10px 18px;
   background: var(--ink);
   color: var(--paper);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   box-shadow: var(--shadow-lg);
 }
 /* On a phone the hub has a fixed bottom tab bar (z-index 30, ~74px); the toast
@@ -139,7 +139,7 @@ body.is-recording .add-fab {
   font: inherit;
   font-weight: 600;
   padding: 6px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -162,7 +162,7 @@ body.is-recording .add-fab {
   font-size: 0.84rem;
   opacity: 0.82;
   padding: 6px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -193,7 +193,7 @@ body.is-recording .add-fab {
   font-size: 0.84rem;
   opacity: 0.7;
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -233,7 +233,7 @@ body.is-recording .add-fab {
   align-items: center;
   gap: 10px;
   padding: 10px 6px;
-  min-height: 44px;
+  min-height: var(--touch-target);
 }
 .recents__row + .recents__row {
   border-top: 1px solid var(--line);
@@ -259,7 +259,7 @@ body.is-recording .add-fab {
   font-size: 0.82rem;
   min-height: 36px;
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1034,7 +1034,7 @@ body.is-recording .add-fab {
   padding: 3px;
   background: var(--surface-2, var(--card));
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 .list-sort__seg {
   display: inline-flex;
@@ -1047,7 +1047,7 @@ body.is-recording .add-fab {
   font-size: 0.85rem;
   font-weight: 600;
   padding: 0.4rem 0.85rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 .list-sort__seg.is-on {
@@ -1196,7 +1196,7 @@ body.is-recording .add-fab {
   align-items: center;
   gap: 0.35rem;
   padding: 0.3rem 0.3rem 0.3rem 0.7rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--paper-deep);
   border: 1px solid var(--line);
   font-size: 0.9rem;
@@ -1526,7 +1526,7 @@ body.is-recording .add-fab {
   white-space: nowrap;
   color: var(--accent-ink, #fff);
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1551,7 +1551,7 @@ body.is-recording .add-fab {
   color: var(--ink-soft);
   background: var(--paper-deep);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1577,7 +1577,7 @@ body.is-recording .add-fab {
   letter-spacing: 0.01em;
   color: var(--accent-ink);
   background: var(--accent-soft);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 1px 9px;
 }
 .flyer-scroll {
@@ -1927,7 +1927,7 @@ body.is-recording .add-fab {
 /* Small Aa toggle: re-sorts the candidate list alphabetically. >= 44px tap. */
 .qa__sort {
   flex: 0 0 auto;
-  min-width: 44px;
+  min-width: var(--touch-target);
   padding: 0 0.6rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
@@ -2014,7 +2014,7 @@ body.is-recording .add-fab {
 .qa__tag {
   flex: 0 0 auto;
   padding: 0.05rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -2369,7 +2369,7 @@ body.is-recording .add-fab {
   gap: 10px;
   margin-top: 2px;
   padding: 14px 28px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--marigold);
   color: #3a2f12;
   font-weight: 800;

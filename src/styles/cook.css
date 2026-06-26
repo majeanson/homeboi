@@ -45,7 +45,7 @@
   font-size: 1.15rem;
   line-height: 1;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--card);
   cursor: pointer;
   opacity: 0.65;
@@ -370,7 +370,7 @@
   align-items: center;
   gap: 0.25em;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
@@ -446,7 +446,7 @@
   color: var(--ink);
   font-size: 1.1rem;
   padding: 8px 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
@@ -490,7 +490,7 @@
   color: var(--ink-soft);
   width: 2.4rem;
   height: 2.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 /* Persistent timer rail under the bar — several countdowns at once, visible as you
@@ -862,7 +862,7 @@
 .cook__segctl {
   display: inline-flex;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
   background: var(--card);
   flex: none;

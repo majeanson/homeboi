@@ -174,7 +174,7 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.25rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--sky-wash, #e8eef6);
   color: var(--ink);
   font-size: 0.9rem;

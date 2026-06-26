@@ -200,7 +200,7 @@
   gap: 0.45rem;
   padding: 0.4rem 0.7rem 0.4rem 0.4rem;
   border: 1px solid var(--line, #0001);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--card, #fff);
   cursor: pointer;
   font: inherit;

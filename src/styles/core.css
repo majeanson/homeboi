@@ -79,6 +79,9 @@
   --radius: var(--radius-md);
   --gap: 1rem;
 
+  /* ---- sizing ---- */
+  --touch-target: 44px; /* min hit area for tappable controls (a11y) */
+
   /* ---- elevation (warm offset "printed" shadows — never gray) ---- */
   --shadow-sm: 2px 3px 0 rgba(72, 54, 30, 0.08);
   --shadow-md: 3px 5px 0 rgba(72, 54, 30, 0.1), 0 2px 8px rgba(72, 54, 30, 0.06);
@@ -413,7 +416,7 @@ button {
   padding: 0.6rem 1.1rem;
   /* A comfortable thumb target everywhere — incl. the small icon-only ghost
      buttons (✕, ＋, 📖) that would otherwise be ~30px and easy to miss. */
-  min-height: 44px;
+  min-height: var(--touch-target);
   border: 1.5px solid var(--line-strong);
   border-radius: var(--radius-pill);
   background: var(--card);
@@ -461,7 +464,7 @@ button {
    44px thumb target and never stretches. */
 .btn--icon {
   width: 44px;
-  min-width: 44px;
+  min-width: var(--touch-target);
   padding: 0;
   gap: 0;
   flex: 0 0 auto;
@@ -515,7 +518,7 @@ textarea,
   /* Finger-sized + never below 16px: a short input is hard to tap and to read
      the text you typed, and a sub-16px field makes iOS Safari zoom on focus
      (then leaves the page scrolled). 44px is the comfortable touch minimum. */
-  min-height: 44px;
+  min-height: var(--touch-target);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   background: var(--paper);
@@ -848,7 +851,7 @@ textarea.input {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, currentColor 14%, var(--card));
 }
 .setup__choice-icon {
