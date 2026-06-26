@@ -38,6 +38,7 @@ import { SectionGuide } from '../components/operator/sectionGuide'
 import { useHelpMode } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
+import { MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, EVENTS_KEY, BOARD_KEY } from '../lib/queryKeys'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
 
 // Réglages is one panel per tab; this list drives the tab strip. Deep links
@@ -90,11 +91,11 @@ export function Operator() {
   // WRITES under Membres stay operator-only and that tab is hidden for a kiosk.
   // Devices is operator-only top-to-bottom, so its read stays cookie-gated. Each
   // strip is independent so one failing read never blanks the rest (data?? []).
-  const membersQ = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members'), enabled: canEnter })
-  const devicesQ = useQuery({ queryKey: ['devices'], queryFn: () => api<{ devices: Device[] }>('pair/devices'), enabled: signedIn })
-  const choresQ = useQuery({ queryKey: ['chores'], queryFn: () => api<{ chores: Chore[] }>('chores'), enabled: canEnter })
+  const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: canEnter })
+  const devicesQ = useQuery({ queryKey: DEVICES_KEY, queryFn: () => api<{ devices: Device[] }>('pair/devices'), enabled: signedIn })
+  const choresQ = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: Chore[] }>('chores'), enabled: canEnter })
   const routinesQ = useQuery({ queryKey: ['routines'], queryFn: () => api<{ routines: Routine[] }>('routines'), enabled: canEnter })
-  const eventsQ = useQuery({ queryKey: ['events'], queryFn: () => api<{ events: EventRow[] }>('events'), enabled: canEnter })
+  const eventsQ = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventRow[] }>('events'), enabled: canEnter })
 
   const members = membersQ.data?.members ?? []
   const devices = devicesQ.data?.devices ?? []
@@ -112,7 +113,7 @@ export function Operator() {
   // ['board'] so member/chore/routine/event edits surface on the wall at once
   // (the ['routines'] key is shared with the Routines/KidView pages too).
   const load = useCallback(() => {
-    for (const key of [['members'], ['devices'], ['chores'], ['routines'], ['events'], ['health'], ['board']]) {
+    for (const key of [MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, ['routines'], EVENTS_KEY, ['health'], BOARD_KEY]) {
       qc.invalidateQueries({ queryKey: key })
     }
   }, [qc])

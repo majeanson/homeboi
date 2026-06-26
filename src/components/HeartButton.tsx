@@ -5,6 +5,7 @@ import { useProfile } from '../lib/profile'
 import { useLoves } from '../lib/loves'
 import { imgUrl } from '../lib/image'
 import { type Member } from '../lib/members'
+import { MEMBERS_KEY } from '../lib/queryKeys'
 import { Icon } from './Icon'
 
 // The ❤ on a recipe (or a planned meal linked to one) — family "favorites" (#21).
@@ -18,7 +19,7 @@ export function HeartButton({ recipeId }: { recipeId: string }) {
   const t = useT()
   const { memberId } = useProfile()
   const { loversOf, toggle } = useLoves()
-  const { data } = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members') })
+  const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') })
   const members = data?.members ?? []
 
   const lovers = loversOf(recipeId)

@@ -5,7 +5,7 @@ import { RoutineForm, type RoutineInit } from '../components/forms/RoutineForm'
 import type { RoutineSeed } from '../lib/drawingToRoutine'
 import { Loading } from '../components/Fallback'
 import { api } from '../lib/api'
-import { ROUTINES_KEY } from '../lib/queryKeys'
+import { ROUTINES_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { CATS } from '../lib/cats'
 import { useT } from '../i18n'
 
@@ -49,7 +49,7 @@ export function RoutineFormPage() {
             seed={editing ? null : seed}
             onSaved={() => {
               qc.invalidateQueries({ queryKey: ROUTINES_KEY })
-              qc.invalidateQueries({ queryKey: ['board'] })
+              qc.invalidateQueries({ queryKey: BOARD_KEY })
               close()
             }}
           />

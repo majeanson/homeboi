@@ -1,8 +1,7 @@
 import { type QueryClient } from '@tanstack/react-query'
 import { writeWith } from '../../lib/write'
+import { BOARD_KEY } from '../../lib/queryKeys'
 import { MEALS_KEY, type MealRow, type MealsData } from './types'
-
-const BOARD_KEY = ['board']
 
 // Meal-plan mutations shared by the calm week grid (Kitchen) and the day editor
 // (DayPlanPage). Pure functions over the query client — no component state — so

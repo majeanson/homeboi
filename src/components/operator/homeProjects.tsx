@@ -6,7 +6,7 @@ import { useWrite } from '../../lib/write'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { isGuest } from '../../lib/device'
 import { type HelpMode } from '../../lib/helpMode'
-import { HOME_PROJECTS_KEY } from '../../lib/queryKeys'
+import { HOME_PROJECTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { recurLabel } from '../../lib/recurLabel'
 import { currentSeason, SEASON_EMOJI, isThisSeason } from '../../lib/season'
 import { formatDayMaybeYear } from '../../lib/format'
@@ -88,7 +88,7 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
       listProp: 'projects',
       id: p.id,
       label: p.title,
-      commit: () => write('home-projects', { method: 'DELETE', body: { id: p.id }, affectedKeys: [HOME_PROJECTS_KEY, ['board'], ['month']] }),
+      commit: () => write('home-projects', { method: 'DELETE', body: { id: p.id }, affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, ['month']] }),
       after: () => {},
     })
   }

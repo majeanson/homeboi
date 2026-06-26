@@ -5,6 +5,7 @@ import { normKey } from '../../lib/cookable'
 import { ingredientName } from '../../lib/ingredient'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
+import { BOARD_KEY } from '../../lib/queryKeys'
 import { type MealRow } from './types'
 
 // "Shop this week", extracted from the Kitchen page: walk EVERY planned meal that
@@ -68,7 +69,7 @@ export function useRecipeShop(
     setShopBusy(true)
     try {
       await api('recipe-to-list', { method: 'POST', body: { items } })
-      qc.invalidateQueries({ queryKey: ['board'] })
+      qc.invalidateQueries({ queryKey: BOARD_KEY })
       qc.invalidateQueries({ queryKey: ['list'] })
     } catch {
       /* a failed add isn't worth an error wall — the list just won't grow */

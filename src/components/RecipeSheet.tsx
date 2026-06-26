@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useWrite } from '../lib/write'
+import { BOARD_KEY } from '../lib/queryKeys'
 import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor } from '../lib/recipes'
 import { isGuest } from '../lib/device'
 import { wash, tintInk, edge } from '../lib/colors'
@@ -154,7 +155,7 @@ export function RecipeSheet({
     if (!items.length) return
     setAdded(true)
     setListPrompt(null)
-    await write('recipe-to-list', { method: 'POST', body: { items }, affectedKeys: [['board'], ['list']] }).catch(() =>
+    await write('recipe-to-list', { method: 'POST', body: { items }, affectedKeys: [BOARD_KEY, ['list']] }).catch(() =>
       setAdded(false),
     )
   }
@@ -167,7 +168,7 @@ export function RecipeSheet({
     await write('meals', {
       method: 'POST',
       body: { date, slot: planSlot, title: recipe.title, staples: [], recipeId: recipe.id },
-      affectedKeys: [['meals'], ['board']],
+      affectedKeys: [['meals'], BOARD_KEY],
     }).catch(() => setPlannedDate(null))
   }
 

@@ -7,6 +7,7 @@ import { isGuest } from '../lib/device'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { type Deal, type FlyerSummary } from '../lib/deals'
+import { FLYERS_KEY } from '../lib/queryKeys'
 import { useModal } from '../lib/useModal'
 import { warmImageCache } from '../lib/cacheWarm'
 
@@ -172,7 +173,7 @@ export function FlyerViewer({
   // The reconstruction can't show reebee's rendered banner, so we brand our own.
   const resolvedLogo = useMemo(() => {
     if (logo != null) return logo
-    for (const [, data] of qc.getQueriesData<{ flyers: FlyerSummary[] }>({ queryKey: ['flyers'] })) {
+    for (const [, data] of qc.getQueriesData<{ flyers: FlyerSummary[] }>({ queryKey: FLYERS_KEY })) {
       const hit = data?.flyers?.find((f) => f.flyerId === flyerId)
       if (hit?.logo) return hit.logo
     }
@@ -187,7 +188,7 @@ export function FlyerViewer({
   // not per merchant. Resolved prop → flyers cache → unknown (null shows no note).
   const resolvedPremium = useMemo<boolean | null>(() => {
     if (typeof premium === 'boolean') return premium
-    for (const [, data] of qc.getQueriesData<{ flyers: FlyerSummary[] }>({ queryKey: ['flyers'] })) {
+    for (const [, data] of qc.getQueriesData<{ flyers: FlyerSummary[] }>({ queryKey: FLYERS_KEY })) {
       const hit = data?.flyers?.find((f) => f.flyerId === flyerId)
       if (hit && typeof hit.premium === 'boolean') return hit.premium
     }

@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { isGuest } from '../../lib/device'
+import { DEVICES_KEY } from '../../lib/queryKeys'
 import { InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
@@ -81,7 +82,7 @@ export function DevicesSection({ devices, onChange }: { devices: Device[]; onCha
   // device's delete; the trash glyph reads the same as everywhere.)
   function revoke(d: Device) {
     undoableRemove({
-      queryKey: ['devices'],
+      queryKey: DEVICES_KEY,
       listProp: 'devices',
       id: d.id,
       label: d.label,
@@ -125,9 +126,9 @@ function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: (
     await write('pair/devices', {
       method: 'PATCH',
       body: { id: device.id, label: next },
-      affectedKeys: [['devices']],
+      affectedKeys: [DEVICES_KEY],
       optimistic: (qc) =>
-        qc.setQueryData<{ devices: Device[] }>(['devices'], (data) =>
+        qc.setQueryData<{ devices: Device[] }>(DEVICES_KEY, (data) =>
           data ? { devices: data.devices.map((x) => (x.id === device.id ? { ...x, label: next } : x)) } : data,
         ),
     }).catch(() => {})

@@ -4,7 +4,7 @@ import { useLang, useT } from '../i18n'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { useWrite } from '../lib/write'
-import { CAR_KEY, BOARD_KEY } from '../lib/queryKeys'
+import { CAR_KEY, BOARD_KEY, MEMBERS_KEY } from '../lib/queryKeys'
 import { useCarWeek, type CarDay, type CarRide, type CarModel } from '../lib/car'
 import { useCars } from '../lib/carPrefs'
 import { type Member } from '../lib/members'
@@ -47,7 +47,7 @@ export function VoiturePage() {
   const { name: carName, color: carColorOf, primary } = useCars()
   const carId = primary?.id ?? 'car'
   const carColor = carColorOf(primary?.id) ?? '#6b7a8f'
-  const { data: membersData } = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members'), ...live })
+  const { data: membersData } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), ...live })
   const members = membersData?.members ?? []
   const nameOf = (id: string | null | undefined) => (id ? members.find((m) => m.id === id)?.display_name : undefined)
   const colorOf = (id: string | null | undefined) => (id ? members.find((m) => m.id === id)?.colour : undefined)

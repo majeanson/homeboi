@@ -6,6 +6,7 @@ import { OperatorSection } from './OperatorSection'
 import { EmptyState } from '../EmptyState'
 import { api, ApiError, isStatus } from '../../lib/api'
 import { isGuest } from '../../lib/device'
+import { AI_ERRORS_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 
 // The AI error journal (migration 0029 / functions/api/ai-errors). Failures the
@@ -98,14 +99,14 @@ export function AiErrorLogSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const { data } = useQuery({
-    queryKey: ['ai-errors'],
+    queryKey: AI_ERRORS_KEY,
     queryFn: () => api<{ errors: AiErrorRow[] }>('ai-errors'),
   })
   const errors = data?.errors ?? []
 
   async function clearAll() {
     await api('ai-errors', { method: 'DELETE' }).catch(() => {})
-    qc.invalidateQueries({ queryKey: ['ai-errors'] })
+    qc.invalidateQueries({ queryKey: AI_ERRORS_KEY })
   }
 
   return (

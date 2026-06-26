@@ -59,7 +59,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   for (const m of stale.results) {
     if (referenced.has(m.r2_key)) continue // a still-pending submission needs it
     await deleteR2Blob(ctx.env.PHOTOS, m.r2_key)
-    await ctx.env.DB.prepare('DELETE FROM intake_media WHERE id = ?').bind(m.id).run()
+    await ctx.env.DB.prepare('DELETE FROM intake_media WHERE id = ? AND household_id = ?').bind(m.id, hh).run()
   }
 
   return ok({ submissions })

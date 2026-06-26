@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { resizeImage, imgUrl } from '../../lib/image'
 import { useWrite } from '../../lib/write'
 import { useCars } from '../../lib/carPrefs'
-import { CARNETS_KEY } from '../../lib/queryKeys'
+import { CARNETS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { anchorSecToDate, dateToAnchorSec } from '../../lib/recurLabel'
 import {
   type Carnet,
@@ -98,7 +98,7 @@ export function CarnetForm({
       await write('carnets', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...body } : body,
-        affectedKeys: [CARNETS_KEY, ['board']],
+        affectedKeys: [CARNETS_KEY, BOARD_KEY],
       })
       onSaved()
     } catch {

@@ -9,6 +9,7 @@ import { imgUrl } from '../../lib/image'
 import { type Member } from '../../lib/members'
 import { Icon, InlineIcon } from '../Icon'
 import { OperatorSection } from './OperatorSection'
+import { MEMBERS_KEY } from '../../lib/queryKeys'
 import { currentIdleSpeed, setIdleSpeed, forceIdle, IDLE_SPEED_MS, type IdleSpeed } from '../../lib/idleDebug'
 
 // Debug the shared-kiosk idle drift (HubLayout): once a face is picked, the app
@@ -24,7 +25,7 @@ export function IdleDebugSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { surface } = useSurface()
   const { memberId, setMemberId } = useProfile()
-  const { data } = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members') })
+  const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') })
   const members = data?.members ?? []
   const current = members.find((m) => m.id === memberId)
 

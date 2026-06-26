@@ -9,6 +9,7 @@ import { useUndoableRemove } from '../../lib/undoRemove'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { isGuest } from '../../lib/device'
+import { PHOTOS_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
 
@@ -54,7 +55,7 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const { data } = useQuery({
-    queryKey: ['photos'],
+    queryKey: PHOTOS_KEY,
     queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
   })
   const photos = data?.photos ?? []
@@ -79,11 +80,11 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
         await uploadMedia('photos', files[i])
         setProgress({ done: i + 1, total: files.length })
       }
-      qc.invalidateQueries({ queryKey: ['photos'] })
+      qc.invalidateQueries({ queryKey: PHOTOS_KEY })
     } catch (e) {
       if (e instanceof MediaUnavailableError) setUnavailable(true)
       // A mid-batch failure still surfaces what DID upload.
-      qc.invalidateQueries({ queryKey: ['photos'] })
+      qc.invalidateQueries({ queryKey: PHOTOS_KEY })
     } finally {
       setBusy(false)
       setProgress(null)
@@ -95,13 +96,13 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
   // row, so two quick deletes stacking in one window can't resurrect each other.)
   function remove(id: string) {
     undoableRemove({
-      queryKey: ['photos'],
+      queryKey: PHOTOS_KEY,
       listProp: 'photos',
       id,
       label: '', // a photo has no name — use the dedicated copy instead
       message: t.undo.photoRemoved,
       commit: () => api('photos', { method: 'DELETE', body: { id } }),
-      after: () => qc.invalidateQueries({ queryKey: ['photos'] }),
+      after: () => qc.invalidateQueries({ queryKey: PHOTOS_KEY }),
     })
   }
 

@@ -14,6 +14,7 @@ import { api, isUnauthorized } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { withoutHeadings } from '../lib/recipeSections'
 import { live } from '../lib/query'
+import { BOARD_KEY } from '../lib/queryKeys'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
@@ -108,7 +109,7 @@ export function Kitchen() {
   // Shares the ['board'] cache with the Board/Liste pages — read only for the
   // shopping list, used to rank recipes by "what you could cook now".
   const boardQ = useQuery({
-    queryKey: ['board'],
+    queryKey: BOARD_KEY,
     queryFn: () => api<{ list: { text: string }[]; members?: { id: string; display_name: string }[] }>('board'),
     ...live,
   })

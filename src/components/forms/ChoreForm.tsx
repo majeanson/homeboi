@@ -8,7 +8,7 @@ import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
 import { anchorSecToDate, dateToAnchorSec, recurOf, todayAnchorDate } from '../../lib/recurLabel'
 import { choreTemplates } from '../../lib/routineTemplates'
-import { MONTH_KEY } from '../../lib/queryKeys'
+import { MONTH_KEY, CHORES_KEY, BOARD_KEY } from '../../lib/queryKeys'
 
 // The complete chore (corvée) form — title (with common presets), a round-robin
 // rotation of members, a colour, and an optional schedule. Shared by Settings ▸
@@ -92,7 +92,7 @@ export function ChoreForm({
       await write('chores', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...fields } : fields,
-        affectedKeys: [['chores'], ['board'], MONTH_KEY],
+        affectedKeys: [CHORES_KEY, BOARD_KEY, MONTH_KEY],
       })
       if (!value) {
         // Create: clear for the next one. Edit: leave the fields (the section

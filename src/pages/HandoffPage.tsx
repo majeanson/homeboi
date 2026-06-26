@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
+import { guestWindowKey } from '../lib/queryKeys'
 import { slotLabel } from '../lib/mealSlots'
 import { imgUrl } from '../lib/image'
 import { PIN_EMOJI, type HomePinKind } from '../lib/carnets'
@@ -33,7 +34,7 @@ export function HandoffPage() {
   // ?preview=sitter lets the operator see the sitter card from Réglages ▸ Partage.
   const preview = useSharePreview()
   const { data, isLoading } = useQuery({
-    queryKey: ['guest-window', preview ?? 'self'],
+    queryKey: guestWindowKey(preview),
     queryFn: () => api<WindowData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
   })
 

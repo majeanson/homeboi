@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { deleteR2Blob } from '../_lib/r2'
+import { isValidR2Key } from '../_lib/validate'
 
 // Fridge notes — short household notes shown on the Aujourd'hui board until
 // cleared. Notes are usually born from the capture router (the catch-all 'note'
@@ -29,9 +30,6 @@ interface NoteRow {
   author_label: string | null
 }
 
-// An R2 key shape (nm_/ns_/rcp_…): opaque token, no path separators.
-const keyish = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v.trim())
-
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
     'SELECT id, text, member_id, created_at, media_kind, media_key, scene_key, author_label FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC',
@@ -53,7 +51,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const mediaKey = kind ? body?.media_key?.trim() || null : null
   if (!text && !(kind && mediaKey)) return badRequest('Note vide.')
   // The editable drawing scene (#1) — only meaningful for a drawing.
-  const sceneKey = kind === 'drawing' && keyish(body?.scene_key) ? body!.scene_key!.trim() : null
+  const sceneKey = kind === 'drawing' && isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
   const id = newId()
   await ctx.env.DB.prepare(
     'INSERT INTO notes (id, household_id, text, member_id, created_at, media_kind, media_key, scene_key) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -72,7 +70,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const id = body?.id?.trim()
   const mediaKey = body?.media_key?.trim()
   if (!id || !mediaKey) return badRequest('id et media_key requis.')
-  const sceneKey = keyish(body?.scene_key) ? body!.scene_key!.trim() : null
+  const sceneKey = isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
   const row = await ctx.env.DB.prepare(
     "SELECT media_key, scene_key FROM notes WHERE id = ? AND household_id = ? AND media_kind = 'drawing' AND dismissed_at IS NULL",
   )

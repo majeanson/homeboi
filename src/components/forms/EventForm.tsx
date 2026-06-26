@@ -4,7 +4,7 @@ import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
-import { CERCLE_KEY, BUSINESSES_KEY, MONTH_KEY, TODO_TEMPLATES_KEY } from '../../lib/queryKeys'
+import { CERCLE_KEY, BUSINESSES_KEY, MONTH_KEY, TODO_TEMPLATES_KEY, EVENTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { type TemplatesData } from '../../lib/todos'
 import { fullName, type Contact, type ContactLink } from '../../lib/cercle'
 import { type Business } from '../../lib/businesses'
@@ -198,7 +198,7 @@ export function EventForm({
       await write('events', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...fields } : fields,
-        affectedKeys: [['events'], ['board'], MONTH_KEY],
+        affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY],
       })
       onSaved()
     } catch {

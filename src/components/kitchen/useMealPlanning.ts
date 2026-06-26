@@ -6,6 +6,7 @@ import { formatWeekday } from '../../lib/format'
 import { ingredientName } from '../../lib/ingredient'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
+import { BOARD_KEY } from '../../lib/queryKeys'
 import { MEALS_KEY, MEAL_IDEAS_KEY } from './types'
 import { type AiWake } from './useAiWake'
 
@@ -44,7 +45,7 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
       await write('meals', {
         method: 'POST',
         body: { date, slot, title, staples, recipeId },
-        affectedKeys: [MEALS_KEY, ['board']],
+        affectedKeys: [MEALS_KEY, BOARD_KEY],
       })
       setEditDate(null)
       setMealText('')

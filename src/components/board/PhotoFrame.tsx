@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
+import { PHOTOS_KEY } from '../../lib/queryKeys'
 import { imgUrl } from '../../lib/image'
 import { useT } from '../../i18n'
 import { ZoomableImg } from '../ZoomableImg'
@@ -14,7 +15,7 @@ import { Icon } from '../Icon'
 export function PhotoFrame() {
   const t = useT()
   const { data } = useQuery({
-    queryKey: ['photos'],
+    queryKey: PHOTOS_KEY,
     queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
     ...live,
   })

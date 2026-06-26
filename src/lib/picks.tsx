@@ -7,6 +7,7 @@ import { type QueryClient } from '@tanstack/react-query'
 import { writeWith } from './write'
 import { type Deal, type Pick } from './deals'
 import { normKey } from './cookable'
+import { BOARD_KEY } from './queryKeys'
 
 // A list row as it arrives in the ['board'] cache (deal_json = the staged deal).
 export interface ListItem {
@@ -59,7 +60,7 @@ export function pickListFrom(items: ListItem[]): Pick[] {
 export function existingListId(qc: QueryClient, name: string): string | null {
   const key = normKey(name)
   if (!key) return null
-  const list = qc.getQueryData<{ list?: ListItem[] }>(['board'])?.list ?? []
+  const list = qc.getQueryData<{ list?: ListItem[] }>(BOARD_KEY)?.list ?? []
   return (
     list.find((i) => normKey(i.text) === key)?.id ??
     list.find((i) => parseTerms(i.search_terms).some((term) => normKey(term) === key))?.id ??
@@ -72,17 +73,17 @@ export function existingListId(qc: QueryClient, name: string): string | null {
 export async function stageDeal(qc: QueryClient, name: string, deal: Deal): Promise<void> {
   const existing = existingListId(qc, name)
   if (existing) {
-    await writeWith(qc, 'list', { method: 'PATCH', body: { id: existing, deal }, affectedKeys: [['board']] }).catch(
+    await writeWith(qc, 'list', { method: 'PATCH', body: { id: existing, deal }, affectedKeys: [BOARD_KEY] }).catch(
       () => {},
     )
   } else {
-    await writeWith(qc, 'list', { method: 'POST', body: { text: name, deal }, affectedKeys: [['board']] }).catch(() => {})
+    await writeWith(qc, 'list', { method: 'POST', body: { text: name, deal }, affectedKeys: [BOARD_KEY] }).catch(() => {})
   }
 }
 
 // Unstage: keep the grocery line, drop its deal (remove it from the cashier set).
 export async function unstageDeal(qc: QueryClient, itemId: string): Promise<void> {
-  await writeWith(qc, 'list', { method: 'PATCH', body: { id: itemId, deal: null }, affectedKeys: [['board']] }).catch(
+  await writeWith(qc, 'list', { method: 'PATCH', body: { id: itemId, deal: null }, affectedKeys: [BOARD_KEY] }).catch(
     () => {},
   )
 }

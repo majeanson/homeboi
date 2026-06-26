@@ -6,7 +6,7 @@ import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { useOpenPersonSheet } from '../../lib/personSheet'
-import { HOUSEHOLD_KEY, CERCLE_KEY } from '../../lib/queryKeys'
+import { HOUSEHOLD_KEY, CERCLE_KEY, MEMBERS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { isGuest } from '../../lib/device'
 import { petOwners, isHouseholdPet, personKey, type Pet, type ContactLink } from '../../lib/cercle'
 import { PALETTE } from '../../lib/colors'
@@ -37,7 +37,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       await write('members', {
         method: 'POST',
         body: { name: name.trim(), isChild, color },
-        affectedKeys: [['members'], ['board']],
+        affectedKeys: [MEMBERS_KEY, BOARD_KEY],
       })
       setName('')
       setIsChild(false)
@@ -60,7 +60,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       tone: 'danger',
     })
     if (!okay) return
-    await write('members', { method: 'DELETE', body: { id: m.id }, affectedKeys: [['members'], ['board']] }).catch(
+    await write('members', { method: 'DELETE', body: { id: m.id }, affectedKeys: [MEMBERS_KEY, BOARD_KEY] }).catch(
       () => {},
     )
     onChange()
@@ -266,7 +266,7 @@ function MemberCard({
     await write('members', {
       method: 'PATCH',
       body: { id: member.id, clearPhoto: true },
-      affectedKeys: [['members'], ['board']],
+      affectedKeys: [MEMBERS_KEY, BOARD_KEY],
     }).catch(() => {})
     onChange()
   }
@@ -276,7 +276,7 @@ function MemberCard({
     await write('members', {
       method: 'PATCH',
       body: { id: member.id, name: name.trim(), isChild, colour: color },
-      affectedKeys: [['members'], ['board']],
+      affectedKeys: [MEMBERS_KEY, BOARD_KEY],
     }).catch(() => {})
     setBusy(false)
     setEditing(false)

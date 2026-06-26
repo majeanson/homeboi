@@ -9,7 +9,7 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { useDeferredRemoval } from '../lib/useDeferredRemoval'
-import { CARNETS_KEY, CARE_LOG_KEY, HOME_PROJECTS_KEY, HOME_PINS_KEY } from '../lib/queryKeys'
+import { CARNETS_KEY, CARE_LOG_KEY, HOME_PROJECTS_KEY, HOME_PINS_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { formatDay } from '../lib/format'
 import { formatMoney } from '../lib/money'
 import { imgUrl } from '../lib/image'
@@ -121,7 +121,7 @@ export function CercleCarnetPage() {
 
   async function removeCarnet() {
     if (!(await confirm({ message: c.deleteConfirm(carnet!.name), confirmLabel: c.delete }))) return
-    await write('carnets', { method: 'DELETE', body: { id: carnet!.id }, affectedKeys: [CARNETS_KEY, ['board']] })
+    await write('carnets', { method: 'DELETE', body: { id: carnet!.id }, affectedKeys: [CARNETS_KEY, BOARD_KEY] })
     nav('/cercle?section=carnets')
   }
 

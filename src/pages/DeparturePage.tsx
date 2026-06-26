@@ -8,7 +8,7 @@ import { useBoardData } from '../lib/queryHooks'
 import { nameOf } from '../components/board/types'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { formatDayLong } from '../lib/format'
-import { MONTH_KEY } from '../lib/queryKeys'
+import { MONTH_KEY, WEATHER_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
 import { TodoSection } from '../components/todos/TodoSection'
 import { Act } from '../components/board/Act'
@@ -48,7 +48,7 @@ export function DeparturePage() {
 
   const board = useBoardData().data
   const members = board?.members ?? []
-  const wx = useQuery({ queryKey: ['weather'], queryFn: () => api<{ weather: Weather | null; tomorrow: DayOutlook | null }>('weather'), staleTime: 15 * 60 * 1000 }).data
+  const wx = useQuery({ queryKey: WEATHER_KEY, queryFn: () => api<{ weather: Weather | null; tomorrow: DayOutlook | null }>('weather'), staleTime: 15 * 60 * 1000 }).data
   const weather = wx?.weather ?? null
   const tip = weatherTip(weather)
 

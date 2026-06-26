@@ -5,7 +5,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
 import { useWrite } from '../../lib/write'
-import { SCHEDULE_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { SCHEDULE_KEY, BOARD_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
 import { type Member } from '../../lib/members'
 import { isGuest } from '../../lib/device'
 import { Chip } from '../Chip'
@@ -54,7 +54,7 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
     ...live,
   })
   const { data: membersData } = useQuery({
-    queryKey: ['members'],
+    queryKey: MEMBERS_KEY,
     queryFn: () => api<{ members: Member[] }>('members'),
     ...live,
   })

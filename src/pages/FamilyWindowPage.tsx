@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
+import { guestWindowKey } from '../lib/queryKeys'
 import { imgUrl } from '../lib/image'
 import { EmptyState } from '../components/EmptyState'
 import { InlineIcon } from '../components/Icon'
@@ -26,7 +27,7 @@ export function FamilyWindowPage() {
   // ?preview=family lets the operator see the grandparents' window from Réglages.
   const preview = useSharePreview()
   const { data, isLoading } = useQuery({
-    queryKey: ['guest-window', preview ?? 'self'],
+    queryKey: guestWindowKey(preview),
     queryFn: () => api<FamilyData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
   })
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'

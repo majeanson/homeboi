@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { deleteR2Blob } from '../_lib/r2'
+import { isValidR2Key } from '../_lib/validate'
 
 // « Le cercle » → Famille → "Notes & recommandations". iOS-Notes-style quick notes
 // scoped to ONE household member (the "Moi" list) or to the whole Maisonnée (the
@@ -31,9 +32,6 @@ interface FamilyNoteRow {
   created_at: number
   updated_at: number | null
 }
-
-// An R2 key shape (nm_/ns_…): opaque token, no path separators.
-const keyish = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v.trim())
 
 const TEXT_CAP = 2000
 
@@ -65,7 +63,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const mediaKey = kind ? body?.media_key?.trim() || null : null
   if (!text && !(kind && mediaKey)) return badRequest('Note vide.')
   // The editable drawing scene (#1) — only meaningful for a drawing.
-  const sceneKey = kind === 'drawing' && keyish(body?.scene_key) ? body!.scene_key!.trim() : null
+  const sceneKey = kind === 'drawing' && isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
 
   // Scope resolution — the composer toggle is authoritative over X-Profile.
   //   'family' -> Maisonnée note (member_id NULL)
@@ -121,7 +119,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (newMediaKey) {
     // Re-draw: only a drawing carries an editable media+scene. Free the old blobs.
     if (row.media_kind !== 'drawing') return badRequest('Cette note n’est pas un dessin.')
-    const sceneKey = keyish(body?.scene_key) ? body!.scene_key!.trim() : null
+    const sceneKey = isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
     if (row.media_key && row.media_key !== newMediaKey) await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
     if (row.scene_key && row.scene_key !== sceneKey) await deleteR2Blob(ctx.env.PHOTOS, row.scene_key)
     await ctx.env.DB.prepare(

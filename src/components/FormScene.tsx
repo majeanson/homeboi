@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { isGuest } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
+import { MEMBERS_KEY } from '../lib/queryKeys'
 import { type IconName } from './Icon'
 import { SceneHead } from './SceneHead'
 
@@ -42,7 +43,7 @@ export function FormScene({
   const close = useSceneClose(fallback)
   useEscapeKey(close)
   const { data } = useQuery({
-    queryKey: ['members'],
+    queryKey: MEMBERS_KEY,
     queryFn: () => api<{ members: FormMember[] }>('members'),
     enabled: signedIn,
   })

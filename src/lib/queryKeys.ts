@@ -65,3 +65,27 @@ export const SCHEDULE_KEY = ['schedule']
 // window under ['car', from] (a prefix of CAR_KEY). Invalidated by a ride, an
 // horaire, or a car_day override so every car surface re-resolves at once.
 export const CAR_KEY = ['car']
+// Household members (/api/members): the roster read across the board, capture,
+// forms, and Réglages — shared so a member edit invalidates one key everywhere.
+export const MEMBERS_KEY = ['members']
+// Photo-frame / gallery photos (/api/photos): read on the board frame AND Réglages
+// media, so the key is shared.
+export const PHOTOS_KEY = ['photos']
+// Calendar events (/api/events): read by the event forms + Réglages agenda.
+export const EVENTS_KEY = ['events']
+// Chores/tasks (/api/chores): read by the chore forms + Réglages corvées.
+export const CHORES_KEY = ['chores']
+// Weather glance (/api/weather): read on the board + departure + day page.
+export const WEATHER_KEY = ['weather']
+// Paired devices (/api/devices): read in Réglages devices.
+export const DEVICES_KEY = ['devices']
+// Flyers/circulaires (/api/flyers): read by the flyer viewer + Réglages shopping.
+export const FLYERS_KEY = ['flyers']
+// AI error journal (/api/ai-errors): read in Réglages Debug.
+export const AI_ERRORS_KEY = ['ai-errors']
+// Unifies the per-kind guest-window read keys: WelcomePage/HandoffPage/
+// FamilyWindowPage use no sub, Postbox uses 'postbox', IntakeForm uses 'intake'.
+// `preview` is the operator's ?preview=<kind> override (null → 'self').
+export function guestWindowKey(preview: string | null | undefined, sub?: string) {
+  return sub ? ['guest-window', preview ?? 'self', sub] : ['guest-window', preview ?? 'self']
+}

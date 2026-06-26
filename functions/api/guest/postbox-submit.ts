@@ -1,6 +1,7 @@
 import { ok, badRequest, forbidden, readJson } from '../../_lib/json'
 import { authed } from '../../_lib/route'
 import { newId, nowSec } from '../../_lib/ids'
+import { isValidR2Key } from '../../_lib/validate'
 
 // The ONE message a 'postbox' link writes — « La boîte aux lettres » (#postbox,
 // migration 0085). A relative names themselves and leaves a word / voice clip /
@@ -10,7 +11,6 @@ import { newId, nowSec } from '../../_lib/ids'
 // postbox/intake guest past the read-only guard. The household comes from the SIGNED
 // token, never the client body, so a message can only ever land in the household that
 // issued its link. The explicit kind check below is defence-in-depth.
-const keyish = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v.trim())
 
 export const onRequestPost = authed(async (ctx, actor) => {
   if (!(actor.scope === 'guest' && actor.guestKind === 'postbox')) {
@@ -33,8 +33,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
     body?.media_kind === 'audio' || body?.media_kind === 'drawing' || body?.media_kind === 'image'
       ? body.media_kind
       : null
-  const mediaKey = kind && keyish(body?.media_key) ? body!.media_key!.trim() : null
-  const sceneKey = kind === 'drawing' && keyish(body?.scene_key) ? body!.scene_key!.trim() : null
+  const mediaKey = kind && isValidR2Key(body?.media_key?.trim()) ? body!.media_key!.trim() : null
+  const sceneKey = kind === 'drawing' && isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
 
   // Self-identify is required (the operator chose an open link many relatives share).
   if (!senderName) return badRequest('Ton nom est requis.')

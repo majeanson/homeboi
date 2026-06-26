@@ -2,6 +2,7 @@ import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json
 import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob } from '../_lib/r2'
+import { isValidR2Key } from '../_lib/validate'
 
 // Kid-view visual routines. GET returns each routine with TODAY's completion
 // set (which resets daily — the day empties, NFR-CALM-4). "Today" is the
@@ -66,7 +67,6 @@ function sanitizeTimers(json: string | null | undefined): Record<number, TimerEn
   return out
 }
 
-const isStr = (v: unknown): v is string => typeof v === 'string'
 // The time-of-day cue ('morning'|'afternoon'|'evening'); anything else → null
 // (anytime). An ordering hint for the kid view, never a gate.
 const todOrNull = (v: unknown): string | null =>
@@ -79,11 +79,10 @@ const todOrNull = (v: unknown): string | null =>
 // the deck so the kid view can index it positionally — pad/trim to `count` and
 // validate each entry is an R2-key-shaped token ('' otherwise) so a client can't
 // stuff junk into the column. Defensive on read: a bad/short row reads as all-''.
-const isKeyish = (v: unknown): v is string => isStr(v) && /^[A-Za-z0-9_-]{1,64}$/.test(v)
 function normalizeKeys(v: unknown, count: number): string[] {
   const src = parseJsonArray<unknown>(typeof v === 'string' ? v : JSON.stringify(v ?? []))
   const out: string[] = []
-  for (let i = 0; i < count; i++) out.push(isKeyish(src[i]) ? (src[i] as string) : '')
+  for (let i = 0; i < count; i++) out.push(isValidR2Key(src[i]) ? (src[i] as string) : '')
   return out
 }
 

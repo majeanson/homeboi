@@ -39,7 +39,7 @@ import {
   DAY_NOTES_KEY,
   LEFTOVERS_KEY,
 } from '../components/kitchen/types'
-import { MONTH_KEY } from '../lib/queryKeys'
+import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CHORES_KEY, WEATHER_KEY } from '../lib/queryKeys'
 
 // Intl lowercases the French weekday ("lundi 14 juin"); the scene title wants it
 // capitalized.
@@ -98,7 +98,7 @@ function DayPlanInner() {
   const recipesQ = useRecipes()
   const leftoversQ = useLeftovers()
   const boardQ = useQuery({
-    queryKey: ['board'],
+    queryKey: BOARD_KEY,
     queryFn: () => api<{ list: { text: string }[]; members?: { id: string; display_name: string }[] }>('board'),
     ...live,
   })
@@ -117,8 +117,8 @@ function DayPlanInner() {
   // Full editable rows (recur_json, lead_seconds, rotation…) so a day row taps open
   // to its inline form pre-filled. The /api/month occurrence carries only display
   // fields; we resolve the series by its base id (recurring ids are `base#at`).
-  const eventsFullQ = useQuery({ queryKey: ['events'], queryFn: () => api<{ events: EventInit[] }>('events'), ...live })
-  const choresFullQ = useQuery({ queryKey: ['chores'], queryFn: () => api<{ chores: ChoreInit[] }>('chores'), ...live })
+  const eventsFullQ = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventInit[] }>('events'), ...live })
+  const choresFullQ = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: ChoreInit[] }>('chores'), ...live })
   const baseId = (id: string) => id.split('#')[0]
   const formMembers = boardQ.data?.members ?? []
 
@@ -127,7 +127,7 @@ function DayPlanInner() {
   // (high/low outlook), so the strip shows only when this day IS today or
   // tomorrow; any other planned day simply has no forecast to show.
   const wxQ = useQuery({
-    queryKey: ['weather'],
+    queryKey: WEATHER_KEY,
     queryFn: () => api<{ weather: Weather | null; tomorrow: DayOutlook | null }>('weather'),
     staleTime: 15 * 60_000,
   })
@@ -162,14 +162,14 @@ function DayPlanInner() {
   }
   const afterEventSave = () => {
     setEventForm(null)
-    qc.invalidateQueries({ queryKey: ['board'] })
-    qc.invalidateQueries({ queryKey: ['events'] })
+    qc.invalidateQueries({ queryKey: BOARD_KEY })
+    qc.invalidateQueries({ queryKey: EVENTS_KEY })
     qc.invalidateQueries({ queryKey: MONTH_KEY })
   }
   const afterChoreSave = () => {
     setChoreForm(null)
-    qc.invalidateQueries({ queryKey: ['board'] })
-    qc.invalidateQueries({ queryKey: ['chores'] })
+    qc.invalidateQueries({ queryKey: BOARD_KEY })
+    qc.invalidateQueries({ queryKey: CHORES_KEY })
     qc.invalidateQueries({ queryKey: MONTH_KEY })
   }
 
@@ -252,7 +252,7 @@ function DayPlanInner() {
             void write('day-notes', {
               method: 'POST',
               body: { date: note.date, text: note.text },
-              affectedKeys: [DAY_NOTES_KEY, ['board']],
+              affectedKeys: [DAY_NOTES_KEY, BOARD_KEY],
             }).catch(() => {}),
         })
     } catch {
@@ -288,7 +288,7 @@ function DayPlanInner() {
     await write('meals', {
       method: 'PATCH',
       body: { id, title: v },
-      affectedKeys: [MEALS_KEY, ['board']],
+      affectedKeys: [MEALS_KEY, BOARD_KEY],
       optimistic: (c) =>
         c.setQueryData<MealsData>(MEALS_KEY, (d) =>
           d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, title: v } : m)) } : d,
@@ -356,7 +356,7 @@ function DayPlanInner() {
   // row is consumed server-side. Compensating undo: delete the created meal AND
   // re-insert the pool row, fully reversing the plan.
   async function planLeftover(l: Leftover, d: number, slot: string) {
-    const keys = [LEFTOVERS_KEY, MEALS_KEY, ['board']]
+    const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY]
     const res = await write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
       body: { action: 'plan', id: l.id, date: d, slot },

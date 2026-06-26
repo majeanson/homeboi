@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, ApiError, isStatus } from '../lib/api'
+import { guestWindowKey } from '../lib/queryKeys'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { imgUrl } from '../lib/image'
 import { DrawPad } from '../components/DrawPad'
@@ -39,7 +40,7 @@ export function Postbox() {
   const preview = useSharePreview()
 
   const { data } = useQuery({
-    queryKey: ['guest-window', preview ?? 'self', 'postbox'],
+    queryKey: guestWindowKey(preview, 'postbox'),
     queryFn: () => api<GreetingData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
   })
 

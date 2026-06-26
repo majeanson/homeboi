@@ -69,7 +69,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   for (const m of stale.results) {
     if (referenced.has(m.r2_key)) continue
     await deleteR2Blob(ctx.env.PHOTOS, m.r2_key)
-    await ctx.env.DB.prepare('DELETE FROM postbox_media WHERE id = ?').bind(m.id).run()
+    await ctx.env.DB.prepare('DELETE FROM postbox_media WHERE id = ? AND household_id = ?').bind(m.id, hh).run()
   }
 
   return ok({ messages })

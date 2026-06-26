@@ -6,6 +6,7 @@ import { isGuest } from '../../lib/device'
 import { type Recipe } from '../../lib/recipes'
 import { type MealSlot } from '../../lib/mealSlots'
 import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
+import { BOARD_KEY } from '../../lib/queryKeys'
 import { EntityCombobox } from '../EntityCombobox'
 import { recipeOptions } from './comboOptions'
 import { MealPlanPicker } from './MealPlanPicker'
@@ -110,7 +111,7 @@ export function MealIdeas({
     await write('meals', {
       method: 'POST',
       body: { date, slot, title: idea.title, recipeId: idea.recipe_id ?? null, staples: [] },
-      affectedKeys: [MEALS_KEY, ['board']],
+      affectedKeys: [MEALS_KEY, BOARD_KEY],
     }).catch(() => {})
   }
 

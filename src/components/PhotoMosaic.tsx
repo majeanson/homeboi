@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
+import { PHOTOS_KEY } from '../lib/queryKeys'
 import { imgUrl } from '../lib/image'
 import { useAmbient } from '../lib/ambient'
 import { useGallery } from '../lib/drawingGallery'
@@ -97,7 +98,7 @@ function pickBiased(images: Img[], used: Set<number>, current: number, drawWeigh
 export function PhotoMosaic() {
   const a = useAmbient()
   const photosQ = useQuery({
-    queryKey: ['photos'],
+    queryKey: PHOTOS_KEY,
     queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
     ...live,
   })

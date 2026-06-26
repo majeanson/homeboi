@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useProfile } from '../lib/profile'
 import { imgUrl } from '../lib/image'
 import { type Member } from '../lib/members'
+import { MEMBERS_KEY } from '../lib/queryKeys'
 import { Icon } from './Icon'
 import { Sheet } from './Sheet'
 
@@ -15,7 +16,7 @@ import { Sheet } from './Sheet'
 export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useT()
   const { memberId, setMemberId } = useProfile()
-  const { data } = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members'), enabled: open })
+  const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: open })
   const members = data?.members ?? []
 
   function pick(id: string | null) {

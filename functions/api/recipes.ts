@@ -2,6 +2,7 @@ import { badRequest, ok, created, notFound, readJson, parseJsonArray } from '../
 import { authed } from '../_lib/route'
 import { deleteR2Blob } from '../_lib/r2'
 import { newId, nowSec } from '../_lib/ids'
+import { isValidR2Key } from '../_lib/validate'
 
 // Recipe book CRUD (the "consultation + meal-planning helper" layer). A recipe is
 // a household card: title + ingredient lines + prep steps (both string[] stored
@@ -77,7 +78,7 @@ function cleanImage(v: unknown): string | null {
   const s = v.trim()
   if (!s) return null
   if (/^https?:\/\//i.test(s)) return s.slice(0, 600)
-  return /^[A-Za-z0-9_-]{1,64}$/.test(s) ? s : null
+  return isValidR2Key(s) ? s : null
 }
 
 const isStr = (v: unknown): v is string => typeof v === 'string'
@@ -110,11 +111,10 @@ const cleanSteps = (v: unknown): string[] => cleanList(v, 40, 500)
 // cook view indexes it positionally — pad/trim to `count`, validate each entry is
 // an R2-key-shaped token ('' otherwise). Defensive on read: a bad/short row reads
 // as all-''. Remote URLs aren't accepted here — step photos are always uploads.
-const isStepImgKey = (v: unknown): v is string => isStr(v) && /^[A-Za-z0-9_-]{1,64}$/.test(v)
 function normalizeStepImages(v: unknown, count: number): string[] {
   const src = parseJsonArray<unknown>(typeof v === 'string' ? v : JSON.stringify(v ?? []))
   const out: string[] = []
-  for (let i = 0; i < count; i++) out.push(isStepImgKey(src[i]) ? (src[i] as string) : '')
+  for (let i = 0; i < count; i++) out.push(isValidR2Key(src[i]) ? (src[i] as string) : '')
   return out
 }
 // The R2 keys actually present in a step-image array — for cleanup on delete.
@@ -124,7 +124,7 @@ const stepImageKeys = (v: unknown): string[] => normalizeStepImages(v, 40).filte
 // freed with the row (and when a re-import during edit replaces the snapshot).
 function originalSourceImage(json: string | null): string | null {
   const o = parseOriginal(json)
-  return isStepImgKey(o?.sourceImage) ? (o!.sourceImage as string) : null
+  return isValidR2Key(o?.sourceImage) ? (o!.sourceImage as string) : null
 }
 
 // Validate + serialize the as-imported snapshot. Returns the JSON string for
@@ -144,7 +144,7 @@ function cleanOriginal(v: unknown): string | null {
     source: isStr(o.source) ? o.source.trim().slice(0, 600) || null : null,
     importedAt: typeof o.importedAt === 'number' ? Math.floor(o.importedAt) : null,
     // The read-from photo's R2 key (validated like a step-image key, never a URL).
-    sourceImage: isStepImgKey(o.sourceImage) ? o.sourceImage : null,
+    sourceImage: isValidR2Key(o.sourceImage) ? o.sourceImage : null,
   })
 }
 

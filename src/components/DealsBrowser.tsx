@@ -10,6 +10,7 @@ import { Chip } from './Chip'
 import { Icon, InlineIcon } from './Icon'
 import { SceneHead } from './SceneHead'
 import { type Deal, type FlyerSummary } from '../lib/deals'
+import { BOARD_KEY } from '../lib/queryKeys'
 import { existingListId, stageDeal } from '../lib/picks'
 import { useEscapeKey } from '../lib/sceneNav'
 import { useTabParam } from '../lib/tabParam'
@@ -117,7 +118,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
     // Don't duplicate a line that's already on the list (matched by name or synonym).
     if (existingListId(qc, line)) return
     await api('list', { method: 'POST', body: { text: line } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: ['board'] })
+    qc.invalidateQueries({ queryKey: BOARD_KEY })
   }
 
   // Add a deal to the list in one tap — it attaches the deal to its grocery line

@@ -41,7 +41,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .all<{ id: string; r2_key: string }>()
   for (const row of stale.results) {
     await deleteR2Blob(ctx.env.PHOTOS, row.r2_key)
-    await ctx.env.DB.prepare('DELETE FROM photos WHERE id = ?').bind(row.id).run()
+    await ctx.env.DB.prepare('DELETE FROM photos WHERE id = ? AND household_id = ?').bind(row.id, actor.householdId).run()
   }
   return ok({ key })
 })

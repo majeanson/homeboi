@@ -10,7 +10,7 @@ import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
 import { ListRow } from '../ListRow'
-import { MONTH_KEY } from '../../lib/queryKeys'
+import { MONTH_KEY, EVENTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { OperatorSection } from './OperatorSection'
 import { type EventRow, type Member } from './types'
 
@@ -40,12 +40,12 @@ export function EventsSection({
   function remove(ev: EventRow) {
     if (editing?.id === ev.id) setEditing(null)
     undoableRemove({
-      queryKey: ['events'],
+      queryKey: EVENTS_KEY,
       listProp: 'events',
       id: ev.id,
       label: ev.title,
       commit: () =>
-        write('events', { method: 'DELETE', body: { id: ev.id }, affectedKeys: [['events'], ['board'], MONTH_KEY] }),
+        write('events', { method: 'DELETE', body: { id: ev.id }, affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY] }),
       after: onChange,
     })
   }

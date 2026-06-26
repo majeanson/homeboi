@@ -10,6 +10,7 @@ import { useGallery, useSaveToGallery, useUpdateInGallery, useDeleteFromGallery,
 import { useDrawingToRoutine } from '../lib/drawingToRoutine'
 import { useDrawEdit } from '../lib/drawEdit'
 import { useConfirm } from '../lib/confirm'
+import { MEMBERS_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
 import { Avatar } from '../components/Avatar'
@@ -36,7 +37,7 @@ export function DrawingGalleryPage() {
   const { data } = useGallery()
   // Who drew it + when — the gallery should credit the author and the date, not just
   // show anonymous works. Members give us the face/name behind each drawing's member_id.
-  const { data: membersData } = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: Member[] }>('members') })
+  const { data: membersData } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') })
   const members = membersData?.members ?? []
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
   const fmtDate = (sec: number) => new Date(sec * 1000).toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' })

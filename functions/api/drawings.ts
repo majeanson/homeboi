@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { deleteR2Blob } from '../_lib/r2'
+import { isValidR2Key } from '../_lib/validate'
 
 // The drawing COLLECTION / gallery (#14) — kept drawings that DON'T get cleared
 // like fridge notes. Each row owns its own R2 blobs (a flat PNG for the glance +
@@ -24,8 +25,6 @@ interface DrawingRow {
   created_at: number
 }
 
-const keyish = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v.trim())
-
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
     'SELECT id, member_id, media_key, scene_key, created_at FROM drawings WHERE household_id = ? ORDER BY created_at DESC',
@@ -37,8 +36,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ media_key?: string; scene_key?: string }>(ctx.request)
-  if (!keyish(body?.media_key)) return badRequest('media_key requis.')
-  const sceneKey = keyish(body?.scene_key) ? body!.scene_key!.trim() : null
+  if (!isValidR2Key(body?.media_key?.trim())) return badRequest('media_key requis.')
+  const sceneKey = isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
   const id = newId()
   await ctx.env.DB.prepare(
     'INSERT INTO drawings (id, household_id, member_id, media_key, scene_key, created_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -54,9 +53,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // re-draw path; calm — no counts.
   const body = await readJson<{ id?: string; media_key?: string; scene_key?: string }>(ctx.request)
   const id = body?.id?.trim()
-  if (!id || !keyish(body?.media_key)) return badRequest('id et media_key requis.')
+  if (!id || !isValidR2Key(body?.media_key?.trim())) return badRequest('id et media_key requis.')
   const mediaKey = body!.media_key!.trim()
-  const sceneKey = keyish(body?.scene_key) ? body!.scene_key!.trim() : null
+  const sceneKey = isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
   const row = await ctx.env.DB.prepare('SELECT media_key, scene_key FROM drawings WHERE id = ? AND household_id = ?')
     .bind(id, actor.householdId)
     .first<{ media_key: string | null; scene_key: string | null }>()

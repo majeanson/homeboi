@@ -5,6 +5,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
+import { FLYERS_KEY } from '../../lib/queryKeys'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 import { isGuest } from '../../lib/device'
@@ -135,7 +136,7 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
       await write('household', {
         method: 'PATCH',
         body: { includedStores: next.filter((x) => x.included).map((x) => x.key) },
-        affectedKeys: [['flyers']],
+        affectedKeys: [FLYERS_KEY],
       })
     } catch {
       setStores(prev) // revert on failure

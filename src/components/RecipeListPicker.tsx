@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Modal } from './Modal'
 import { useT } from '../i18n'
 import { useWrite } from '../lib/write'
+import { BOARD_KEY } from '../lib/queryKeys'
 import { withoutHeadings } from '../lib/recipeSections'
 import { ingredientName } from '../lib/ingredient'
 import { InlineIcon } from './Icon'
@@ -45,7 +46,7 @@ export function RecipeListPicker({ recipe, onClose }: { recipe: Recipe; onClose:
   async function confirm() {
     if (!picked.length) return
     onClose()
-    await write('recipe-to-list', { method: 'POST', body: { items: picked }, affectedKeys: [['board'], ['list']] }).catch(
+    await write('recipe-to-list', { method: 'POST', body: { items: picked }, affectedKeys: [BOARD_KEY, ['list']] }).catch(
       () => {},
     )
   }

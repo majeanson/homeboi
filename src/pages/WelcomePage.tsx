@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
+import { guestWindowKey } from '../lib/queryKeys'
 import { EmptyState } from '../components/EmptyState'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
@@ -25,7 +26,7 @@ export function WelcomePage() {
   // with a real guest's window.
   const preview = useSharePreview()
   const { data, isLoading } = useQuery({
-    queryKey: ['guest-window', preview ?? 'self'],
+    queryKey: guestWindowKey(preview),
     queryFn: () => api<WelcomeData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
   })
   const wifi = data?.wifi

@@ -60,7 +60,7 @@ import { useBoardCards, visibleCardOrder, isCardVisible, type GridCardId } from 
 // and stays empty — no counters, no score for clearing it. The board has two
 // glances — « Grille » (this file) and « Mois » (MonthView) — with the face picker
 // as the per-person lens; the card/section atoms live in src/components/board/*.
-import { BOARD_KEY, TODOS_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, TODOS_KEY, WEATHER_KEY } from '../lib/queryKeys'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData, todosKey, todosPath } from '../lib/todos'
 import { useUndoToast, useRecordUndo } from '../lib/toast'
@@ -161,7 +161,7 @@ export function Board() {
   // resolves to null when there's no postal / upstream is down → the chip hides.
   const FIFTEEN_MIN = 15 * 60 * 1000
   const { data: wx } = useQuery({
-    queryKey: ['weather'],
+    queryKey: WEATHER_KEY,
     queryFn: () => api<{ weather: Weather | null; tomorrow: DayOutlook | null; hours: HourOutlook[] | null }>('weather'),
     refetchInterval: FIFTEEN_MIN,
     staleTime: FIFTEEN_MIN,

@@ -6,7 +6,7 @@ import { resizeImage } from '../../lib/image'
 import { useWrite } from '../../lib/write'
 import { live } from '../../lib/query'
 import { parseMoney } from '../../lib/money'
-import { CARNETS_KEY, CARE_LOG_KEY, BUSINESSES_KEY } from '../../lib/queryKeys'
+import { CARNETS_KEY, CARE_LOG_KEY, BUSINESSES_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { anchorSecToDate, dateToAnchorSec, todayAnchorDate } from '../../lib/recurLabel'
 import { type CareLog } from '../../lib/carnets'
 import { type Business } from '../../lib/businesses'
@@ -91,7 +91,7 @@ export function CareLogForm({
       await write('care-log', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...body } : body,
-        affectedKeys: [CARE_LOG_KEY, CARNETS_KEY, ['board']],
+        affectedKeys: [CARE_LOG_KEY, CARNETS_KEY, BOARD_KEY],
       })
       onSaved()
     } catch {

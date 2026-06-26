@@ -14,6 +14,7 @@ import { OperatorSection } from './OperatorSection'
 import { ChoreForm } from '../forms/ChoreForm'
 import { RoutineForm } from '../forms/RoutineForm'
 import { recurLabel } from '../../lib/recurLabel'
+import { CHORES_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
 import { type Chore, type Routine } from './types'
 
 export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange: () => void }) {
@@ -23,11 +24,11 @@ export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange:
   const write = useWrite()
   function remove(c: Chore) {
     undoableRemove({
-      queryKey: ['chores'],
+      queryKey: CHORES_KEY,
       listProp: 'chores',
       id: c.id,
       label: c.title,
-      commit: () => write('chores', { method: 'DELETE', body: { id: c.id }, affectedKeys: [['chores']] }),
+      commit: () => write('chores', { method: 'DELETE', body: { id: c.id }, affectedKeys: [CHORES_KEY] }),
       after: onChange,
     })
   }
@@ -60,7 +61,7 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
   const label = recurLabel(chore.recur_json, t)
   // The rotation form needs the household roster; it's already cached by the
   // Réglages shell (the Household tab / board both read ['members']).
-  const members = qc.getQueryData<{ members: { id: string; display_name: string }[] }>(['members'])?.members ?? []
+  const members = qc.getQueryData<{ members: { id: string; display_name: string }[] }>(MEMBERS_KEY)?.members ?? []
 
   if (editing)
     return (

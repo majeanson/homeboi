@@ -181,6 +181,43 @@ request into the `EventContext` a Pages Function expects, and reproducing the ol
 - **Migrations** (`functions/db/migrations/NNNN_*.sql`) are **forward-only and
   filename-locked**. Never rename or edit an applied one; add the next number.
 
+### Schema conventions (every new migration follows these)
+
+> Canonical naming rules for new tables/columns, so the schema stops accumulating
+> drift. These are **forward rules**: adopt them for all new migrations. (Existing
+> outliers are tracked in `UNIFORMIZING.md` Part I §5 / Part II §D and converged only
+> during the one-household migration window — don't retro-churn a working table just
+> to match a name.) The calm-tenet test (`calm-tenets.test.ts`) still overrides
+> everything: no `streak`/`points`/`badge`/`push_subscription` table, no inventory
+> `quantity`/`stock_count` column, ever.
+
+- **Timestamps** — `created_at` (all rows), `updated_at` (anything mutable),
+  `deleted_at` (soft delete). Don't coin a bespoke name (`archived_at`,
+  `dismissed_at`) unless the semantic is genuinely different from "deleted" — and if
+  so, comment why.
+- **Colour** — one spelling: **`colour`** (matches members/businesses/pets/groups).
+  Never add a new `color` column. (Existing `color` outliers: `tasks`,
+  `home_projects`, `schedule_blocks`, `carnets`, + JSON keys.)
+- **Ordering** — **`position`** (integer). Not `sort_order`, not `sort`.
+- **Media attachment** — the **`media_kind` + `media_key` (+ `scene_key` for editable
+  drawings)** trio (as on notes/family_notes/postbox/drawings), a single column per
+  blob — never parallel arrays, never a new `r2_key`/`photo_key`/`image` name.
+- **Attribution ("who")** — a **soft `TEXT` member ref, nullable, no FK** so deleting
+  a member never cascades old content. When you need role / timestamp / multiple
+  authors, use a **junction table** (like `task_participants`). Comment whether the
+  ref means *subject/scope* or *author* (they've been conflated before — e.g.
+  `member_id` is *scope* on notes but *author* elsewhere).
+- **Discriminators** — **`kind`** for an entity sub-type, **`status`** for workflow
+  state, **`type`** only for a relationship-edge label. Don't reuse `status` for an
+  HTTP status integer (name it `status_code`).
+- **JSON columns** — default arrays to `'[]'`, objects to `'{}'`, always `NOT NULL` —
+  never a bare `NULL` a reader has to guard.
+- **Soft refs** — every `*_by` / `*_id`-without-FK gets a one-line comment naming the
+  soft-ref intent (so the missing FK reads as deliberate, not forgotten).
+- **Household config** — if you'd add a 5th-plus new preference column to
+  `households`, create a `household_preferences` table instead of widening the tenant
+  row.
+
 ### Optional bindings degrade gracefully (`functions/_lib/env.ts`)
 
 `DB` and `SESSION_SECRET` are required; **`AI`, `PHOTOS` (R2), `REALTIME_HUB` (the

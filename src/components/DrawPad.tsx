@@ -5,7 +5,7 @@ import SignaturePad from 'signature_pad'
 import type { PointGroup } from 'signature_pad'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
-import { CERCLE_KEY } from '../lib/queryKeys'
+import { CERCLE_KEY, MEMBERS_KEY } from '../lib/queryKeys'
 import { useRecipes } from '../lib/queryHooks'
 import { drawTraceLine, measureTrace, wrapTrace } from '../lib/traceFont'
 import { useModal } from '../lib/useModal'
@@ -270,7 +270,7 @@ export function DrawPad({
   // #37 word tracing — names + recipe titles a child can trace ("trace your name").
   // Household members + Le cercle for names, the recipe book for words; folded to
   // the font's A–Z a–z 0–9 alphabet, deduped, capped. Shared caches (cheap).
-  const membersQ = useQuery({ queryKey: ['members'], queryFn: () => api<{ members: { display_name: string }[] }>('members'), enabled: open })
+  const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: { display_name: string }[] }>('members'), enabled: open })
   const cercleQ = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<{ contacts: { firstName?: string; name?: string }[] }>('cercle'), enabled: open })
   const recipesQ = useRecipes()
   const traceWords = useMemo(() => {

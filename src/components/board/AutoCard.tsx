@@ -8,6 +8,7 @@ import { formatTime } from '../../lib/format'
 import { useCarToday, type CarRide, type CarModel } from '../../lib/car'
 import { useCars } from '../../lib/carPrefs'
 import { type Member } from '../../lib/members'
+import { MEMBERS_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 import { Avatar } from '../Avatar'
 
@@ -35,7 +36,7 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
   const { lang } = useLang()
   const { name: carName, color: carColor, primary } = useCars()
   const { data: membersData } = useQuery({
-    queryKey: ['members'],
+    queryKey: MEMBERS_KEY,
     queryFn: () => api<{ members: Member[] }>('members'),
     ...live,
   })

@@ -19,7 +19,7 @@ import { recipeImg } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
-import { BOARD_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, MEMBERS_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { type TodoTemplate, type TemplatesData } from '../lib/todos'
 import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
@@ -311,7 +311,7 @@ export function AddSheet({
   )
 
   const { data: membersData } = useQuery({
-    queryKey: ['members'],
+    queryKey: MEMBERS_KEY,
     queryFn: () => api<{ members: FormMember[] }>('members'),
     enabled: signedIn && open,
   })
@@ -416,7 +416,7 @@ export function AddSheet({
       const degraded = res.degraded && !forceType
       setRouted({ label: res.routed?.label ?? value, degraded })
       if (!degraded) setText('')
-      for (const key of [['board'], ['meals'], ['pantry'], ['leftovers']]) qc.invalidateQueries({ queryKey: key })
+      for (const key of [BOARD_KEY, ['meals'], ['pantry'], ['leftovers']]) qc.invalidateQueries({ queryKey: key })
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
     } finally {

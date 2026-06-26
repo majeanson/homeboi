@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
+import { guestWindowKey } from '../lib/queryKeys'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { ContactFields, EMPTY_CONTACT_CORE, type ContactCoreValue } from '../components/cercle/ContactFields'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
@@ -133,7 +134,7 @@ export function IntakeForm() {
   const preview = useSharePreview()
 
   const { data } = useQuery({
-    queryKey: ['guest-window', preview ?? 'self', 'intake'],
+    queryKey: guestWindowKey(preview, 'intake'),
     queryFn: () => api<GreetingData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
   })
 
