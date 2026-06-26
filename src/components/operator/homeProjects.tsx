@@ -8,6 +8,7 @@ import { isGuest } from '../../lib/device'
 import { type HelpMode } from '../../lib/helpMode'
 import { HOME_PROJECTS_KEY } from '../../lib/queryKeys'
 import { recurLabel } from '../../lib/recurLabel'
+import { currentSeason, SEASON_EMOJI, isThisSeason } from '../../lib/season'
 import { formatDayMaybeYear } from '../../lib/format'
 import { formatMoney } from '../../lib/money'
 import { InlineIcon } from '../Icon'
@@ -70,6 +71,11 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
   const undoableRemove = useUndoableRemove()
   const write = useWrite()
   const rows = (projectsQ.data?.projects ?? []).filter((p) => (p.kind ?? 'plan') === kind)
+  // « Cette saison » — for Entretien only, a calm glance of the upkeep due before the
+  // season turns over (derived from the server's nextAt). Read-only; the full editable
+  // list stays below. Same lens as the board card, so the two never drift.
+  const seasonItems = kind === 'upkeep' ? rows.filter((p) => isThisSeason(p.nextAt)) : []
+  const s = currentSeason()
 
   const c = kind === 'upkeep' ? t.operator.home.entretienTitle : t.operator.home.projetsTitle
   const helpKey = kind === 'upkeep' ? 'homeEntretien' : 'homeProjets'
@@ -89,6 +95,18 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
 
   return (
     <OperatorSection title={c} help={help} helpKey={helpKey}>
+      {seasonItems.length > 0 && (
+        <div className="season-glance">
+          <p className="season-glance__head mono">
+            <span aria-hidden="true">{SEASON_EMOJI[s]}</span> {t.season[s]}
+          </p>
+          <ul className="season-glance__list">
+            {seasonItems.map((p) => (
+              <li key={p.id} className="season-glance__item">{p.title}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       {rows.length === 0 && !adding ? (
         <EmptyState>{emptyLabel}</EmptyState>
       ) : (

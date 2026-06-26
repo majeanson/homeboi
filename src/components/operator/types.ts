@@ -32,6 +32,7 @@ export interface HomeProject {
   budget_cents?: number | null
   color?: string
   at?: number | null // target/occurrence date OR recurrence anchor (unix sec); null = undated
+  nextAt?: number | null // server-derived NEXT occurrence from today (recurring → expanded); drives « cette saison »
   recur_json?: string | null
   lead_seconds?: number | null
   last_done_at?: number | null

@@ -427,8 +427,16 @@ export const FR = {
     todos: 'À faire',
     upcoming: 'À venir',
     carnets: 'Les carnets',
+    seasonUpkeep: 'Cette saison',
     drawings: 'Dessins',
     photos: 'Photo du jour',
+  },
+  // « Cette saison » — l’entretien récurrent groupé par saison courante.
+  season: {
+    winter: 'Cet hiver',
+    spring: 'Ce printemps',
+    summer: 'Cet été',
+    autumn: 'Cet automne',
   },
   // « Les carnets » — les choses dont on prend soin (maison, auto… et le chauffe-eau
   // à l’intérieur d’une maison), chacune avec son carnet d’entretien.
@@ -2509,8 +2517,16 @@ export const EN: typeof FR = {
     todos: 'To do',
     upcoming: 'Coming up',
     carnets: 'The carnets',
+    seasonUpkeep: 'This season',
     drawings: 'Drawings',
     photos: 'Photo of the day',
+  },
+  // « This season » — recurring upkeep grouped by the current season.
+  season: {
+    winter: 'This winter',
+    spring: 'This spring',
+    summer: 'This summer',
+    autumn: 'This fall',
   },
   carnets: {
     title: 'The carnets',

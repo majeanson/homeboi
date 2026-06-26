@@ -1,8 +1,8 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { newId, nowSec } from '../_lib/ids'
+import { newId, nowSec, localDayStart } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
-import { normalizeRecur } from '../_lib/recur'
+import { normalizeRecur, parseRecur, expandRange } from '../_lib/recur'
 
 // "Projets & Entretien" — the longer-horizon home work that lives under Corvées
 // but isn't a chore (see migration 0074). ONE table, `kind` ('plan'|'upkeep')
@@ -62,13 +62,37 @@ async function validCarnetId(db: D1Database, hh: string, v: unknown): Promise<st
   return owns ? id : null
 }
 
+interface ProjectRow {
+  id: string
+  kind: string
+  title: string
+  notes: string | null
+  budget_cents: number | null
+  color: string | null
+  at: number | null
+  recur_json: string | null
+  lead_seconds: number | null
+  last_done_at: number | null
+  carnet_id: string | null
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
     'SELECT id, kind, title, notes, budget_cents, color, at, recur_json, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
-    .all()
-  return ok({ projects: results })
+    .all<ProjectRow>()
+  // nextAt: the NEXT occurrence from today (recurring → expandRange; one-off → its own
+  // date, even if past = overdue). Lets the client group « cette saison » upkeep without
+  // re-implementing recurrence — the anchor `at` alone would mis-season a recurring row.
+  const today = localDayStart(new Date(nowSec() * 1000))
+  const horizon = today + 400 * 86400 // ~13 months — always covers the current season
+  const projects = results.map((p) => {
+    const r = parseRecur(p.recur_json)
+    const nextAt = r && p.at != null ? expandRange(p.at, r, today, horizon)[0] ?? null : p.at
+    return { ...p, nextAt }
+  })
+  return ok({ projects })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

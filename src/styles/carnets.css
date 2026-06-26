@@ -3,6 +3,30 @@
    immaterial. Leans on the shared .cercle-row / .sec-label / .btn families; only
    the carnet-specific bits live here. Mobile- and tablet-first. */
 
+/* — « Cette saison » glance (Réglages ▸ Corvées ▸ Entretien) — */
+.season-glance {
+  margin-bottom: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  background: var(--surface-2, #0000000a);
+}
+.season-glance__head {
+  margin: 0 0 0.3rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.season-glance__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.season-glance__item {
+  font-size: 0.9rem;
+}
+
 /* — Scene breadcrumb (🏠 Maison › 🔥 Chauffe-eau) — */
 .carnet-crumbs {
   display: flex;

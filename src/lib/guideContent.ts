@@ -1733,6 +1733,61 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    id: 'cast-tv',
+    icon: 'link-bold',
+    group: 'concepts',
+    title: { fr: 'Le babillard au salon (téléviseur)', en: 'The board in the living room (TV)' },
+    what: {
+      fr: 'Affiche le babillard en lecture seule sur la télé du salon — un écran d’appoint calme, sans toucher à ton compte. Tu le mets en place une fois dans Réglages ▸ Partage ▸ « Au salon ».',
+      en: 'Show the board read-only on the living-room TV — a calm second screen, without touching your account. You set it up once in Settings ▸ Sharing ▸ “Living room”.',
+    },
+    points: [
+      {
+        label: { fr: 'Le lien court — facile à taper sur la télé', en: 'The short link — easy to type on the TV' },
+        detail: {
+          fr: 'Génère le lien : tu obtiens une adresse courte du genre babillard…/tv/k7m2 (4 caractères). Tape-la une fois dans le navigateur du téléviseur, puis garde-la en favori — le babillard s’affiche tout seul. Pas besoin de l’ordinateur ni de copier la longue adresse.',
+          en: 'Generate the link: you get a short address like babillard…/tv/k7m2 (4 characters). Type it once in the TV’s browser, then bookmark it — the board shows on its own. No computer, no long URL to copy.',
+        },
+        why: {
+          fr: 'Une télécommande ne peut pas taper la longue adresse; quatre caractères, oui.',
+          en: 'A remote can’t type the long address; four characters, it can.',
+        },
+      },
+      {
+        label: { fr: 'Le babillard ou l’ambiance', en: 'The board or the ambience' },
+        detail: {
+          fr: 'Choisis l’écran : « Le babillard » (la vraie page complète) ou « Ambiance » (l’horloge / cadre-photo plein écran, comme l’[[card:screensaver|économiseur d’écran]]). Le lien court se souvient de ton choix.',
+          en: 'Pick the screen: “The board” (the full real page) or “Ambience” (the full-screen clock / photo-frame, like the [[card:screensaver|screensaver]]). The short link remembers your choice.',
+        },
+      },
+      {
+        label: { fr: 'Diffuser depuis Chrome (en bonus)', en: 'Cast from Chrome (a bonus)' },
+        detail: {
+          fr: 'Sur un ordinateur avec Google Chrome, le bouton « Diffuser maintenant » l’envoie au Chromecast en un clic. Les iPhone/iPad ne peuvent pas lancer une diffusion (Apple le bloque) — d’où le lien à ouvrir directement sur la télé, qui marche pour tout le monde.',
+          en: 'On a computer with Google Chrome, the “Cast now” button sends it to the Chromecast in one tap. iPhones/iPads can’t start a cast (Apple blocks it) — hence the link you open right on the TV, which works for everyone.',
+        },
+      },
+      {
+        label: { fr: 'Permanent, et révocable', en: 'Permanent, and revocable' },
+        detail: {
+          fr: 'La télé devient un appareil « écran » qui garde l’affichage indéfiniment. Elle apparaît dans Réglages ▸ Tablettes avec les autres : un seul bouton la révoque — et son lien court cesse aussitôt de fonctionner.',
+          en: 'The TV becomes a “display” device that holds the screen indefinitely. It appears in Settings ▸ Tablets with the others: one button revokes it — and its short link stops working at once.',
+        },
+        why: {
+          fr: 'Un écran d’appoint permanent doit pouvoir s’éteindre proprement quand tu le veux.',
+          en: 'A permanent second screen must be able to be shut off cleanly when you want.',
+        },
+      },
+      {
+        label: { fr: 'Lecture seule', en: 'Read-only' },
+        detail: {
+          fr: 'La télé ne peut rien modifier — ni cocher, ni ouvrir un détail, ni atteindre les réglages. C’est une vitrine, pas une télécommande.',
+          en: 'The TV can change nothing — no checking off, no opening a detail, no reaching settings. It’s a window, not a remote.',
+        },
+      },
+    ],
+  },
+  {
     id: 'surface',
     icon: 'device-tablet-bold',
     group: 'concepts',

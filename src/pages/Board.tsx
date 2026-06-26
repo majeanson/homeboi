@@ -9,6 +9,7 @@ import { SectionIntro } from '../components/SectionIntro'
 import { WelcomeCard } from '../components/WelcomeCard'
 import { AutoCard } from '../components/board/AutoCard'
 import { CarnetsCard } from '../components/board/CarnetsCard'
+import { SeasonUpkeepCard } from '../components/board/SeasonUpkeepCard'
 import { MomentPeek } from '../components/board/MomentPeek'
 import { ARegler } from '../components/board/ARegler'
 import { DayHeroes } from '../components/board/DayHeroes'
@@ -1197,6 +1198,8 @@ export function Board() {
               ) : null
               // « Les carnets » — the long-jeu heads-up; hides itself when nothing's near.
               nodes.carnets = <CarnetsCard />
+              // « Cette saison » — recurring upkeep due before the season turns; self-hides.
+              nodes.seasonUpkeep = <SeasonUpkeepCard />
               // Family drawings strip (#14) — its own full-width band (CSS column-span).
               nodes.drawings = <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
               // « Photo du jour » band (the wonder photo also backs the weather hero).
