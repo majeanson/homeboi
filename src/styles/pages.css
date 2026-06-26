@@ -936,11 +936,10 @@
 }
 
 /* --- Kid view (pre-reader: big targets, calm, deterministic) -------------- */
-.kid {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+/* The bare `.kid` rule is canonical in kid.css (display:flex; flex-direction:
+   column; min-height:100%). A copy here was fully inert — kid.css imports later
+   so its min-height:100% won, and the other two props were identical — so it's
+   removed to kill the cross-file collision. Only the `.kid__*` helpers remain. */
 .kid__main,
 .kid__pick {
   flex: 1;

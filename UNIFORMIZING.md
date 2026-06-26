@@ -111,10 +111,22 @@ Same class defined twice (cascade-order-dependent, fragile):
   block). **`.now-card--moment` (today.css) and `.tdl-finish` (kid.css) are NOT dupes** — each is a grouped base
   (`.now-card--regler, .now-card--moment` / `.tdl-start, .tdl-finish`) + a variant-specific block, the normal
   shared-base pattern; merging would *duplicate* the base. Left. typecheck + build green.
-- [ ] **Cross-file dupes — DEFERRED (need visual QA).** `.avatar` (photos+today), `.bigtile` (almanac+pages),
-  `.hub` (hub+pages), `.kid` (kid+pages), `.today-hero` (almanac+pages) rely on `@import` order to win. These are
-  widely-used classes and merging them shifts the cascade — a real visual-regression surface that wants eyeballing
-  on a running app (the e2e screenshot suite is the right gate). Not a blind-ship; do with `/dev/kit` + a screenshot pass.
+- [x] ✅ **Cross-file dupes REVIEWED 2026-06-26 — premise largely overstated; 1 real redundancy removed.** Read both
+  sides of all five pairs. **Four are deliberate complementary layering, NOT shadows to delete** (the second file
+  contributes real, non-redundant declarations — there is nothing to "merge"):
+  - **`.hub`** — hub.css owns the structural layout (`display:flex; height:100%; position:relative`); pages.css has
+    only `.hub{font-size:1.05rem}` + a large block of `.hub <descendant>` **kiosk** tap-target/font bumps. Zero
+    property overlap. (Those kiosk overrides belong next to the kiosk block in pages.css — moving them buys nothing.)
+  - **`.bigtile`** — pages.css defines the whole tile; almanac.css adds only `border-radius:var(--radius-lg)`. A
+    deliberate single-prop override in the almanac context.
+  - **`.today-hero`** — pages.css defines the hero; almanac.css adds only `transition`. Complementary.
+  - **`.avatar`** — a genuine two-element collision (today.css's 50px section disc w/ `--help` pip vs photos.css's
+    generic component w/ `--photo`/`__initial`); the cascade merges them (photos wins `border-radius`+`display`).
+    Stable as-is — the section disc relies on the 50px default, the generic `<Avatar>` sets its own size. Splitting
+    is a class-rename refactor (touch TSX), not a shadow-delete; **left as-is, documented.**
+  - **`.kid`** — the ONE true redundancy. pages.css's bare `.kid{min-height:100vh; display:flex; flex-direction:
+    column}` was **fully inert** (kid.css imports later → its `min-height:100%` won; the other two props identical).
+    **Removed** (provably zero-visual-change), comment added pointing to kid.css as canonical. typecheck + build green.
 
 ### CSS-3 🟡 `pages.css` is a 3.7k-line kitchen sink (423 classes, 19% of all CSS)
 - [ ] Extract shared layout/component patterns out of `pages.css` (and split `sheets.css` 2.4k / `board.css` 1.9k)
