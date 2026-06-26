@@ -264,10 +264,15 @@ trio (notes/family_notes/postbox/drawings) is the most expressive — make it th
   syntax verified directly against local D1; typecheck + 797 tests + build green.
 
 ### DB-4 🟡→CONVENTION Recurrence schema split
-- [ ] `events`/`tasks`/`home_projects` use `recur_json {freq,interval,weekdays}`; `schedule_blocks` uses separate
+- [~] `events`/`tasks`/`home_projects` use `recur_json {freq,interval,weekdays}`; `schedule_blocks` uses separate
   `week_interval`+`anchor_day` columns, so `_lib/recur` can't be reused for it. **Forward rule:** new recurring
   entities use `recur_json`. Converging `schedule_blocks` is a real refactor (backfill + `carResolve` rewrite) —
   only if you're already in that engine. Note: the fortnight math is already shared via `recur.ts`/`weekActive`.
+  > **DEFERRED 2026-06-26 (Marc's call).** On inspection this is a *behavioural* engine refactor, not a rename:
+  > the fortnight math is **already shared** (`weekActive` mirrors `_lib/recur`), so the only delta is storage
+  > shape — and delivering real value means rewriting `carResolve` to drive off `recur.expandRange` + touching the
+  > `/voiture` editor + the schedule API. Low marginal value, real regression surface. **Do it inside the future
+  > P2-2 `DerivedOccurrence` work (Phase 3)** where the rewrite is actually warranted. Phase 2 closes 4/5.
 
 ### DB-5 🟡 Member-attribution fragmentation
 - [ ] Same "who" concept appears as soft-ref (`added_by`/`suggested_by`/`member_id`), hard-ish ref
@@ -566,7 +571,7 @@ The sweep **verified** these are fully adopted with no meaningful outliers:
 8. **DB-3** `sort_order`/`sort` → `position` (+ drop the `home_pins` redundancy) — smallest rename, proves the painless-migration assumption.
 9. **DB-2** `color` → `colour` (cols + JSON keys).
 10. **DB-1** media columns → `media_kind`/`media_key`(+`scene_key`) (rename only, **not** the polymorphic table).
-11. **DB-4** converge `schedule_blocks` recurrence onto `recur_json` (backfill is trivial now) — last, it's the biggest, and it sets up P2-2.
+11. **DB-4** converge `schedule_blocks` recurrence onto `recur_json` — **DEFERRED to P2-2** (Marc's call 2026-06-26): it's a behavioural `carResolve` rewrite, not a rename; do it with P2-2 `DerivedOccurrence`.
 12. **DB-7** small items (idempotency `status` comment, `carnets.archived_at` align) while in the migrations.
 
 ### Phase 3 — Behavioural extractions (the real generalization payoff, on the now-clean schema)
