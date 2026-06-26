@@ -24,6 +24,9 @@ interface NoteRow {
   media_kind: string | null
   media_key: string | null
   scene_key: string | null
+  // Who left it, when it came from « La boîte aux lettres » (#postbox) — « — Papi ».
+  // NULL for ordinary household notes. Set server-side by the postbox accept only.
+  author_label: string | null
 }
 
 // An R2 key shape (nm_/ns_/rcp_…): opaque token, no path separators.
@@ -31,7 +34,7 @@ const keyish = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    'SELECT id, text, member_id, created_at, media_kind, media_key, scene_key FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC',
+    'SELECT id, text, member_id, created_at, media_kind, media_key, scene_key, author_label FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC',
   )
     .bind(actor.householdId)
     .all<NoteRow>()

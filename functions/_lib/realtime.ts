@@ -96,6 +96,8 @@ const PATH_KEYS: Record<string, string[][]> = {
   'day-notes': [['day-notes'], ['board']],
   // Board-only sticky notes.
   notes: [['board']],
+  // Accepting a « boîte aux lettres » message inserts a board note — nudge the board.
+  postbox: [['board']],
   // Garde-manger flags.
   pantry: [['pantry']],
   'use-soon': [['use-soon']],

@@ -61,6 +61,10 @@ const FamilyWindowPage = lazy(() => import('./pages/FamilyWindowPage').then((m) 
 // Family-info intake: a relative fills their own card + household via an 'intake'
 // share link; the operator reviews + merges it into Le cercle. See lib/auth GuestKind.
 const IntakeForm = lazy(() => import('./pages/IntakeForm').then((m) => ({ default: m.IntakeForm })))
+// « La boîte aux lettres » — a relative's 'postbox' share link lands here: name
+// yourself + leave a message (word / voice / drawing / photo) → quarantined → the
+// operator accepts it into a board fridge note. See lib/device GuestKind.
+const Postbox = lazy(() => import('./pages/Postbox').then((m) => ({ default: m.Postbox })))
 const VoiturePage = lazy(() => import('./pages/VoiturePage').then((m) => ({ default: m.VoiturePage })))
 // « Diffuser au salon » — the living-room TV board: the real board, read-only +
 // scaled, shown on a TV via Chromecast. Standalone (no hub chrome).
@@ -164,6 +168,8 @@ export function AppRoutes() {
         <Route path="/family" element={<FamilyWindowPage />} />
         {/* Family-info intake form — a relative's 'intake' share link lands here. */}
         <Route path="/intake" element={<IntakeForm />} />
+        {/* « La boîte aux lettres » — a relative's 'postbox' share link lands here. */}
+        <Route path="/courrier" element={<Postbox />} />
         {/* #28 — « L'auto » week view (single-car + carpool + work schedules). */}
         <Route path="/voiture" element={<VoiturePage />} />
         {/* « Diffuser au salon » — the read-only living-room TV board (cast to a TV). */}

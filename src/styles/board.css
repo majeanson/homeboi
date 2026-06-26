@@ -766,6 +766,15 @@
   font-size: 0.95rem;
   overflow-wrap: anywhere;
 }
+/* Attribution on a « boîte aux lettres » message (#postbox) — « — Papi ». A quiet
+   signature under the note's body; never on an ordinary household note. */
+.note-card__from {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  font-style: italic;
+  opacity: 0.7;
+  overflow-wrap: anywhere;
+}
 .note-card__clear--btn {
   position: absolute;
   top: 0.2rem;

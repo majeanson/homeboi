@@ -5,6 +5,7 @@ import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { IntakeReview } from './IntakeReview'
+import { PostboxReview } from './PostboxReview'
 import { api } from '../../lib/api'
 import { isGuest, type GuestKind } from '../../lib/device'
 import { CERCLE_KEY } from '../../lib/queryKeys'
@@ -35,16 +36,26 @@ import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 //   sitter   → /handoff, the babysitter card (today + routines + à-savoir + wifi)
 //   welcome  → /welcome, the visitor card (wifi + bin day + house rules)
 //   family   → /family, the grandparents' window (kids' dates + birthdays + photos)
-//   intake   → /intake, the family-info FORM a relative fills + sends back (the one
-//              writable kind; the submission is quarantined for the operator to merge)
-type KindLabelKey = 'kindShowcase' | 'kindSitter' | 'kindWelcome' | 'kindFamily' | 'kindIntake'
-type KindHintKey = 'kindShowcaseHint' | 'kindSitterHint' | 'kindWelcomeHint' | 'kindFamilyHint' | 'kindIntakeHint'
+//   intake   → /intake, the family-info FORM a relative fills + sends back (a writable
+//              kind; the submission is quarantined for the operator to merge)
+//   postbox  → /courrier, « La boîte aux lettres » — a relative leaves a MESSAGE
+//              (word / voice / drawing / photo) that, once accepted, lands as a board
+//              fridge note (the second writable kind; quarantined for the operator)
+type KindLabelKey = 'kindShowcase' | 'kindSitter' | 'kindWelcome' | 'kindFamily' | 'kindIntake' | 'kindPostbox'
+type KindHintKey =
+  | 'kindShowcaseHint'
+  | 'kindSitterHint'
+  | 'kindWelcomeHint'
+  | 'kindFamilyHint'
+  | 'kindIntakeHint'
+  | 'kindPostboxHint'
 const KINDS: { kind: GuestKind; path: string; labelKey: KindLabelKey; hintKey: KindHintKey }[] = [
   { kind: 'showcase', path: '/board', labelKey: 'kindShowcase', hintKey: 'kindShowcaseHint' },
   { kind: 'sitter', path: '/handoff', labelKey: 'kindSitter', hintKey: 'kindSitterHint' },
   { kind: 'welcome', path: '/welcome', labelKey: 'kindWelcome', hintKey: 'kindWelcomeHint' },
   { kind: 'family', path: '/family', labelKey: 'kindFamily', hintKey: 'kindFamilyHint' },
   { kind: 'intake', path: '/intake', labelKey: 'kindIntake', hintKey: 'kindIntakeHint' },
+  { kind: 'postbox', path: '/courrier', labelKey: 'kindPostbox', hintKey: 'kindPostboxHint' },
 ]
 
 // Per-kind duration menu (mirrors the server clamp in _lib/shareModes). showcase can
@@ -82,6 +93,12 @@ const TTL_BY_KIND: Record<GuestKind, { seconds: number; key: TtlKey }[]> = {
     { seconds: 48 * H, key: 'ttl2d' },
     { seconds: 7 * 24 * H, key: 'ttl7d' },
   ],
+  // « La boîte aux lettres » — an open link relatives keep around to drop a word.
+  postbox: [
+    { seconds: 24 * H, key: 'ttl24h' },
+    { seconds: 48 * H, key: 'ttl2d' },
+    { seconds: 7 * 24 * H, key: 'ttl7d' },
+  ],
 }
 const DEFAULT_TTL: Record<GuestKind, number> = {
   showcase: 24 * H,
@@ -89,6 +106,7 @@ const DEFAULT_TTL: Record<GuestKind, number> = {
   welcome: 4 * H,
   family: 7 * 24 * H,
   intake: 7 * 24 * H,
+  postbox: 7 * 24 * H,
 }
 
 export function GuestSection({ help }: { help?: HelpMode }) {
@@ -333,9 +351,10 @@ export function GuestSection({ help }: { help?: HelpMode }) {
         )}
       </OperatorSection>
 
-      {/* Family-info forms relatives sent back (the 'intake' kind). Hidden until one
-          arrives, so it never adds noise. */}
+      {/* The two "things people sent us" buckets — both hidden until one arrives, so
+          they never add noise. Infos (intake forms) and Messages (boîte aux lettres). */}
       <IntakeReview help={help} />
+      <PostboxReview help={help} />
 
       <ShareInfoEditor help={help} />
         </>

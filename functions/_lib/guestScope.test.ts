@@ -39,4 +39,18 @@ describe('guestKindAllows', () => {
       expect(guestKindAllows('intake', p)).toBe(false)
     }
   })
+
+  // 'postbox' (« La boîte aux lettres ») is the second writable link: its greeting,
+  // whoami, images, and its TWO write paths (submit + media stage) — nothing else.
+  it('postbox reaches only whoami / window / postbox-submit / postbox-media / img', () => {
+    for (const p of ['guest/whoami', 'guest/window', 'guest/postbox-submit', 'guest/postbox-media', 'img', 'img/x']) {
+      expect(guestKindAllows('postbox', p)).toBe(true)
+    }
+  })
+
+  it('postbox is blocked from the household, from minting links, and from intake paths', () => {
+    for (const p of [...sensitive, 'guest/start', 'guest/intake-submit']) {
+      expect(guestKindAllows('postbox', p)).toBe(false)
+    }
+  })
 })

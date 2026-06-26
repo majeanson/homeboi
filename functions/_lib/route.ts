@@ -56,10 +56,16 @@ export function authed(
       const method = ctx.request.method
       // Guest = read-only. Block every non-safe method up front; never reaches
       // the handler, so no write path is exposed to a babysitter credential.
-      // SOLE exception: an 'intake' guest (the family-info form link). The path
-      // allowlist in guestScope.ts already pins intake to one writable endpoint
-      // (guest/intake-submit), so this carve-out can't widen into other handlers.
-      if (actor.scope === 'guest' && actor.guestKind !== 'intake' && !SAFE_METHODS.has(method)) {
+      // SOLE exceptions: the WRITABLE guest kinds — 'intake' (the family-info form)
+      // and 'postbox' (« La boîte aux lettres »). The path allowlist in guestScope.ts
+      // already pins each to its own submit/media endpoints, so this carve-out can't
+      // widen into other handlers.
+      if (
+        actor.scope === 'guest' &&
+        actor.guestKind !== 'intake' &&
+        actor.guestKind !== 'postbox' &&
+        !SAFE_METHODS.has(method)
+      ) {
         return forbidden('Guest access is read-only.')
       }
       // A 'display' device (a living-room TV showing /cast forever) is a read-only

@@ -1669,10 +1669,10 @@ export const GUIDE: GuideEntry[] = [
     },
     points: [
       {
-        label: { fr: 'Cinq genres de liens', en: 'Five kinds of links' },
+        label: { fr: 'Six genres de liens', en: 'Six kinds of links' },
         detail: {
-          fr: '« Démo » montre tout le babillard en lecture seule (tes vraies données, pour « regarde mon app »); « Gardienne » montre la journée + les routines + les infos à savoir + les urgences + le wifi; « Accueil » montre le wifi + le jour des poubelles + les règles de la maison; « Famille » est la fenêtre des grands-parents (dates des enfants + anniversaires + photos); « Fiche famille » est le seul lien qui écrit — un proche remplit ses coordonnées et te les renvoie.',
-          en: '“Demo” shows the whole board read-only (your real data, for “look at my app”); “Sitter” shows today + the routines + things-to-know + emergencies + wifi; “Welcome” shows the wifi + bin day + house rules; “Family” is the grandparents’ window (kids’ dates + birthdays + photos); “Family details” is the only writable link — a relative fills in their own info and sends it back.',
+          fr: '« Démo » montre tout le babillard en lecture seule (tes vraies données, pour « regarde mon app »); « Gardienne » montre la journée + les routines + les infos à savoir + les urgences + le wifi; « Accueil » montre le wifi + le jour des poubelles + les règles de la maison; « Famille » est la fenêtre des grands-parents (dates des enfants + anniversaires + photos); « Fiche famille » et « Boîte aux lettres » sont les deux liens qui écrivent — l’un pour qu’un proche remplisse ses coordonnées, l’autre pour qu’il laisse un mot sur le babillard.',
+          en: '“Demo” shows the whole board read-only (your real data, for “look at my app”); “Sitter” shows today + the routines + things-to-know + emergencies + wifi; “Welcome” shows the wifi + bin day + house rules; “Family” is the grandparents’ window (kids’ dates + birthdays + photos); “Family details” and “Postbox” are the two writable links — one for a relative to fill in their own info, the other to leave a note on the board.',
         },
         why: {
           fr: 'Chaque visiteur a un besoin différent — un genre par besoin, jamais plus.',
@@ -1688,6 +1688,17 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Ce sont eux qui connaissent leur anniversaire et leur numéro — laisse-les l’écrire, garde le contrôle de ce qui entre.',
           en: 'They’re the ones who know their birthday and number — let them write it, keep control of what lands.',
+        },
+      },
+      {
+        label: { fr: '« Boîte aux lettres » — un mot sur le babillard', en: '“Postbox” — a note on the board' },
+        detail: {
+          fr: 'Envoie un lien « Boîte aux lettres » à la parenté. Le proche se nomme, puis laisse un mot écrit, un message vocal, un dessin ou une photo — sans compte, depuis son téléphone. Rien n’apparaît tout de suite : le message t’attend dans Réglages ▸ Partage (« Messages reçus »). Tu acceptes, et il se pose sur le babillard comme une note de frigo, signé de son nom (et, si le nom correspond à un visage de la maisonnée, à sa couleur). C’est un lien ouvert : toute la famille peut s’en servir.',
+          en: 'Send relatives a “Postbox” link. They say who they are, then leave a written note, a voice message, a drawing or a photo — no account, from their phone. Nothing appears right away: the message waits in Settings ▸ Sharing (“Messages received”). You accept it, and it lands on the board like a fridge note, signed with their name (and, if the name matches a household face, its colour). It’s an open link the whole family can use.',
+        },
+        why: {
+          fr: 'Mamie n’a pas besoin de l’appli pour faire un coucou sur la tablette du mur — un lien suffit, et tu choisis ce qui s’affiche.',
+          en: 'Grandma doesn’t need the app to say hello on the wall tablet — a link is enough, and you choose what shows.',
         },
       },
       {
@@ -3169,8 +3180,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Choisir le genre', en: 'Pick the kind' },
         detail: {
-          fr: 'Voir [[card:share-access|Partager un accès]] pour le détail des cinq genres.',
-          en: 'See [[card:share-access|Share access]] for the detail of the five kinds.',
+          fr: 'Voir [[card:share-access|Partager un accès]] pour le détail des six genres.',
+          en: 'See [[card:share-access|Share access]] for the detail of the six kinds.',
         },
       },
       {

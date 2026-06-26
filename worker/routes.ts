@@ -40,7 +40,10 @@ import * as guestWindow from '../functions/api/guest/window'
 import * as guestWhoami from '../functions/api/guest/whoami'
 import * as guestIntakeSubmit from '../functions/api/guest/intake-submit'
 import * as guestIntakeMedia from '../functions/api/guest/intake-media'
+import * as guestPostboxSubmit from '../functions/api/guest/postbox-submit'
+import * as guestPostboxMedia from '../functions/api/guest/postbox-media'
 import * as intake from '../functions/api/intake'
+import * as postbox from '../functions/api/postbox'
 import * as health from '../functions/api/health'
 import * as homePins from '../functions/api/home-pins'
 import * as homeProjects from '../functions/api/home-projects'
@@ -142,8 +145,11 @@ const TABLE: Record<string, RouteMod> = {
   'guest/whoami': guestWhoami,
   'guest/intake-submit': guestIntakeSubmit,
   'guest/intake-media': guestIntakeMedia,
+  'guest/postbox-submit': guestPostboxSubmit,
+  'guest/postbox-media': guestPostboxMedia,
   health,
   intake,
+  postbox,
   'home-pins': homePins,
   'home-projects': homeProjects,
   household,

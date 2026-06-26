@@ -149,6 +149,11 @@ export function Notes({
           const tint = colorOf(n.member_id) ?? '#FBD66B'
           const css = { '--note-tint': tint } as React.CSSProperties
           const media = n.media_kind && n.media_key ? n.media_kind : null
+          // Attribution for a « boîte aux lettres » message (#postbox) — « — Papi ».
+          // Absent on ordinary household notes, so nothing changes for those.
+          const from = n.author_label ? (
+            <span className="note-card__from mono">— {n.author_label}</span>
+          ) : null
           // The card's inner face by kind: a drawing (#14) or shared photo (#13)
           // image, a voice-memo play affordance (#38), or the written line. An
           // image/audio note may also carry a caption (text), shown beneath.
@@ -220,6 +225,7 @@ export function Notes({
                     )}
                   </>
                 )}
+                {from}
                 {!ro && !toddler && (
                   <button
                     type="button"
@@ -239,6 +245,7 @@ export function Notes({
             return (
               <div key={n.id} className="note-card" style={css}>
                 <span className="note-card__text">{n.text}</span>
+                {from}
               </div>
             )
           }
@@ -256,6 +263,7 @@ export function Notes({
               aria-label={toddler ? n.text : `${n.text} — ${t.notes.clear}`}
             >
               <span className="note-card__text">{n.text}</span>
+              {from}
               {!toddler && (
                 <span className="note-card__clear" aria-hidden="true">
                   <Icon name="x-bold" size={14} />

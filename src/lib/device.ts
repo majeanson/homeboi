@@ -94,12 +94,12 @@ export function clearGuestToken(): void {
 // when a new ?guest= token arrives (main.tsx), so a different link can't inherit
 // a stale kind. The token is opaque/server-signed — the client can't read its own
 // kind without asking the server.
-// 'intake' is the one WRITABLE share kind — the family-info form a relative fills
-// (the SPA routes it to /intake; the server scopes it to one submit endpoint). See
-// functions/_lib/auth.ts GuestKind.
-export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family' | 'intake'
+// Two WRITABLE share kinds: 'intake' (the family-info form a relative fills → /intake)
+// and 'postbox' (« La boîte aux lettres » — a relative drops a message → /courrier).
+// Each is scoped server-side to its own submit endpoints. See functions/_lib/auth.ts.
+export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family' | 'intake' | 'postbox'
 const GUEST_KIND_KEY = 'babillard-guest-kind'
-const GUEST_KINDS: GuestKind[] = ['showcase', 'sitter', 'welcome', 'family', 'intake']
+const GUEST_KINDS: GuestKind[] = ['showcase', 'sitter', 'welcome', 'family', 'intake', 'postbox']
 
 export function getGuestKind(): GuestKind | null {
   try {

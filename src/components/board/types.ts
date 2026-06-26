@@ -80,6 +80,9 @@ export interface NoteRow {
   // The editable drawing SCENE (#1) — JSON in R2; lets a drawing be re-opened and
   // added to losslessly. Only present on 'drawing' notes saved by the newer pad.
   scene_key?: string | null
+  // Who left it, when it arrived via « La boîte aux lettres » (#postbox) — shown as
+  // « — Papi ». NULL for ordinary household notes.
+  author_label?: string | null
 }
 // A recurring chore expanded onto a specific day (today or an upcoming date).
 // `who`/`who_id` are whose turn it is (rotation + current_idx); null = unassigned

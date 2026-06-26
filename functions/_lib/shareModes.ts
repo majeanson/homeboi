@@ -23,6 +23,9 @@ const TTL_BY_KIND: Record<GuestKind, { max: number; def: number }> = {
   // An intake form link: a relative needs a few days to get around to filling it,
   // so it matches the family window (a week, still expiring).
   intake: { max: 7 * DAY, def: 7 * DAY },
+  // « La boîte aux lettres » — an open link relatives keep handy to drop a word over
+  // several days; same window as intake (a week, still expiring).
+  postbox: { max: 7 * DAY, def: 7 * DAY },
 }
 
 // Clamp a requested TTL into the kind's window, or fall back to the kind default

@@ -196,20 +196,25 @@ export async function currentDevice(
 // (it branches on kind), so the allowlist is identical for them. The kind is bound
 // into the SIGNED token, so a curated guest can't widen its scope by editing the
 // URL. A legacy token (no `k`) normalizes to 'showcase'.
-//   - 'intake'    a relative-facing FORM link: the ONE guest kind that may WRITE,
-//                 and only to its single submit endpoint (functions/api/guest/
-//                 intake-submit.ts). It fills a quarantine row the operator later
-//                 reviews — it never touches the live cercle. Its scope (whoami /
-//                 window greeting / intake-submit) lives in guestScope.ts and the
-//                 narrow write carve-out in route.ts. An optional target person is
-//                 bound into the token (`p`) for a per-person link; absent ⇒ an open
-//                 family link.
-export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family' | 'intake'
-// Kinds that share the curated read-only guest/window endpoint. 'intake' is NOT one
-// of them — it has its own scope + a write endpoint — but it IS a valid requestable
-// kind, so normalization recognises it without granting the window scope.
+//   - 'intake'    a relative-facing FORM link: a guest kind that may WRITE, and only
+//                 to its single submit endpoint (functions/api/guest/intake-submit.ts).
+//                 It fills a quarantine row the operator later reviews — it never
+//                 touches the live cercle. Its scope (whoami / window greeting /
+//                 intake-submit) lives in guestScope.ts and the narrow write carve-out
+//                 in route.ts. An optional target person is bound into the token (`p`)
+//                 for a per-person link; absent ⇒ an open family link.
+//   - 'postbox'   « La boîte aux lettres » — the SECOND writable kind: a relative
+//                 names themselves and drops a message (word / voice / drawing / photo)
+//                 that lands quarantined and, on accept, becomes a board fridge note
+//                 (functions/api/postbox.ts). Same shape as intake: scoped reads +
+//                 two write endpoints (postbox-submit / postbox-media) in guestScope.ts.
+export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family' | 'intake' | 'postbox'
+// Kinds that share the curated read-only guest/window endpoint. The writable kinds
+// ('intake', 'postbox') are NOT among them — each has its own scope + write endpoints —
+// but they ARE valid requestable kinds, so normalization recognises them without
+// granting the window scope.
 const CURATED_KINDS: GuestKind[] = ['sitter', 'welcome', 'family']
-const KNOWN_KINDS: GuestKind[] = [...CURATED_KINDS, 'intake']
+const KNOWN_KINDS: GuestKind[] = [...CURATED_KINDS, 'intake', 'postbox']
 
 // One place decides the legacy/unknown → 'showcase' fallback, so every reader
 // (verify, the allowlist, the SPA) agrees. Today's guests are read-only-

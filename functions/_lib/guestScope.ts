@@ -27,5 +27,9 @@ export function guestKindAllows(kind: GuestKind, apiPath: string): boolean {
   // matching carve-out in route.ts; together they pin intake to exactly one write.
   if (kind === 'intake')
     return apiPath === 'guest/window' || apiPath === 'guest/intake-submit' || apiPath === 'guest/intake-media'
+  // 'postbox' (« La boîte aux lettres ») is the second writable kind: it reads its
+  // greeting and POSTs a message (+ stages its one media blob) — and nothing else.
+  if (kind === 'postbox')
+    return apiPath === 'guest/window' || apiPath === 'guest/postbox-submit' || apiPath === 'guest/postbox-media'
   return apiPath === 'guest/window' // sitter | welcome | family: their curated endpoint
 }

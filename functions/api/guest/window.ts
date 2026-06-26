@@ -41,7 +41,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const kind: GuestKind | null =
     actor.scope === 'guest'
       ? (actor.guestKind ?? 'showcase')
-      : previewKind && (CURATED.includes(previewKind) || previewKind === 'intake')
+      : previewKind && (CURATED.includes(previewKind) || previewKind === 'intake' || previewKind === 'postbox')
         ? previewKind
         : null
 
@@ -55,6 +55,16 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // Operator preview has no token scope → show everything; a real guest carries it.
     const fields = actor.scope === 'guest' ? (actor.guestFields ?? null) : null
     return ok(await intakeGreeting(ctx.env, actor.householdId, targetKey, fields))
+  }
+
+  // ---- postbox: « La boîte aux lettres » greeting ---------------------------
+  // Just the household name, so the sender's scene can say "Laisse un mot à la
+  // Maisonnée de …". A write surface, not a read one — no stored data returned.
+  if (kind === 'postbox') {
+    const nameRow = await ctx.env.DB.prepare('SELECT name FROM households WHERE id = ?')
+      .bind(actor.householdId)
+      .first<{ name: string }>()
+    return ok({ kind: 'postbox' as const, householdName: nameRow?.name ?? '' })
   }
 
   if (!kind || !CURATED.includes(kind)) {
