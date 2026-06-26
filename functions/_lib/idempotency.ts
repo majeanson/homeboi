@@ -15,13 +15,13 @@ export async function withIdempotency(
 ): Promise<Response> {
   // Already processed for this household? Return the stored result verbatim.
   const prior = await env.DB.prepare(
-    'SELECT status, result_json FROM idempotency_keys WHERE household_id = ? AND key = ?',
+    'SELECT status_code, result_json FROM idempotency_keys WHERE household_id = ? AND key = ?',
   )
     .bind(householdId, key)
-    .first<{ status: number; result_json: string | null }>()
+    .first<{ status_code: number; result_json: string | null }>()
   if (prior) {
     return new Response(prior.result_json, {
-      status: prior.status,
+      status: prior.status_code,
       headers: { 'content-type': 'application/json', 'X-Idempotent-Replay': '1' },
     })
   }
@@ -35,7 +35,7 @@ export async function withIdempotency(
     try {
       await env.DB.batch([
         env.DB.prepare(
-          'INSERT OR IGNORE INTO idempotency_keys (household_id, key, status, result_json, created_at) VALUES (?, ?, ?, ?, ?)',
+          'INSERT OR IGNORE INTO idempotency_keys (household_id, key, status_code, result_json, created_at) VALUES (?, ?, ?, ?, ?)',
         ).bind(householdId, key, res.status, body, now),
         // Opportunistic prune so the ledger stays small (it's dedup, not history).
         env.DB.prepare('DELETE FROM idempotency_keys WHERE created_at < ?').bind(now - PRUNE_AFTER),

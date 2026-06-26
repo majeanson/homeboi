@@ -282,10 +282,11 @@ trio (notes/family_notes/postbox/drawings) is the most expressive — make it th
   another column on the tenant row.
 
 ### DB-7 🟢 Smaller items
-- [ ] `idempotency_keys.status` stores an HTTP status **integer** under a name that elsewhere means workflow
-  state — consider a comment or `status_code`.
-- [ ] Soft-delete naming: `carnets.archived_at` vs `deleted_at` elsewhere — document the difference or align.
-- [ ] Index coverage looks adequate; revisit only if a specific polled query shows up slow.
+- [x] ✅ `idempotency_keys.status` → **`status_code`** (mig 0089) — it's an HTTP status int, not workflow state;
+  reader updated, rule written into CLAUDE.md schema conventions.
+- [x] ✅ Soft-delete naming: `carnets.archived_at` **documented as a sanctioned exception** (reversible archive ≠
+  `deleted_at`) in CLAUDE.md — left as-is, not aligned (aligning would be wrong).
+- [x] Index coverage looks adequate; revisit only if a specific polled query shows up slow. *(No action — confirmed.)*
 
 ---
 

@@ -194,7 +194,13 @@ request into the `EventContext` a Pages Function expects, and reproducing the ol
 - **Timestamps** — `created_at` (all rows), `updated_at` (anything mutable),
   `deleted_at` (soft delete). Don't coin a bespoke name (`archived_at`,
   `dismissed_at`) unless the semantic is genuinely different from "deleted" — and if
-  so, comment why.
+  so, comment why. _Sanctioned exception:_ `carnets.archived_at` is a **reversible
+  archive** (a carnet + its descendants hide but can be restored), deliberately not
+  `deleted_at` — keep it.
+- **Status vs status code** — `status` is a workflow-state discriminator
+  (staged/resolved/draft/active/frozen…). If a column stores an **HTTP status
+  integer**, name it `status_code` (as `idempotency_keys.status_code` does) so it
+  never reads as workflow state.
 - **Colour** — one spelling: **`colour`** (matches members/businesses/pets/groups).
   Never add a new `color` column. (Existing `color` outliers: `tasks`,
   `home_projects`, `schedule_blocks`, `carnets`, + JSON keys.)
