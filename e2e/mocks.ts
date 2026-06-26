@@ -677,6 +677,18 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
       return
     }
 
+    // todos?date=<sec> is DAY-SCOPED: the server returns ONLY todos pinned to that day
+    // (WHERE day = ?), not the standing globals the board glance (no date) mixes in. The
+    // fixture's todos are all global (day null), so a date-scoped query (e.g. the Demain
+    // card's embedded TodoSection) is correctly empty → it hides. Honour the param so the
+    // mock matches server semantics instead of returning globals for every todos query.
+    if (path === 'todos' && url.searchParams.has('date')) {
+      const day = Number(url.searchParams.get('date'))
+      const todos = TODOS.todos.filter((td) => td.day === day)
+      await route.fulfill({ status: 200, contentType: 'application/json', body: serve({ todos }) })
+      return
+    }
+
     // Board read reflects this session's writes (cleared notes, list checks +
     // clears), so an optimistic UI's refetch confirms instead of reverting. A
     // checked row STAYS on the list with checked_at set; a cleared row is gone.
