@@ -1,9 +1,9 @@
 import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { localDayStart, addLocalDays, localDayOfWeek } from '../_lib/ids'
+import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, occurrenceOn } from '../_lib/recur'
 import { householdCars } from '../_lib/carPrefs'
-import { carBusySpansForDay, membersOutAt, type ScheduleBlock, type CarDayOverride } from '../_lib/carResolve'
+import { carBusySpansForDay, membersOutAt, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow, type CarDayOverride } from '../_lib/carResolve'
 import { carStatusAt, rideConflicts, rideSpans, type CarSpan, type Ride } from '../_lib/carAvail'
 
 // « L'auto » read model — the resolved car picture, shared by the board glance card
@@ -91,21 +91,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const [blocksRes, overridesRes, ridesRes] = await Promise.all([
     ctx.env.DB.prepare(
-      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, colour AS color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
+      'SELECT id, member_id, label, start_min, end_min, holds_car, colour AS color, recur_json, anchor_day FROM schedule_blocks WHERE household_id = ?',
     )
       .bind(hh)
-      .all<{
-        id: string
-        member_id: string
-        label: string | null
-        start_min: number
-        end_min: number
-        weekdays: string
-        holds_car: number
-        color: string | null
-        week_interval: number
-        anchor_day: number | null
-      }>(),
+      .all<ScheduleBlockRow>(),
     ctx.env.DB.prepare(
       'SELECT car_id, day, free, holder_id, start_min, end_min, label FROM car_day WHERE household_id = ? AND day >= ? AND day < ?',
     )
@@ -132,27 +121,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .all<RideRow>(),
   ])
 
-  const blocks: ScheduleBlock[] = blocksRes.results.map((r) => {
-    let weekdays: number[] = []
-    try {
-      const v = JSON.parse(r.weekdays)
-      if (Array.isArray(v)) weekdays = v.filter((n): n is number => Number.isInteger(n))
-    } catch {
-      weekdays = []
-    }
-    return {
-      id: r.id,
-      memberId: r.member_id,
-      label: r.label,
-      startMin: r.start_min,
-      endMin: r.end_min,
-      weekdays,
-      holdsCar: r.holds_car === 1,
-      color: r.color,
-      weekInterval: r.week_interval ?? 1,
-      anchorDay: r.anchor_day ?? null,
-    }
-  })
+  const blocks: ScheduleBlock[] = blocksRes.results.map(parseScheduleBlockRow)
 
   const overrides: CarDayOverride[] = overridesRes.results.map((r) => ({
     carId: r.car_id,
@@ -187,8 +156,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const days: DayOut[] = []
   for (let day = from; day < to; day = addLocalDays(day, 1)) {
     const nextDay = addLocalDays(day, 1)
-    const weekday = localDayOfWeek(new Date(day * 1000))
-    const spans = carBusySpansForDay(day, weekday, blocks, overrideFor(day))
+    const spans = carBusySpansForDay(day, blocks, overrideFor(day))
     const dayRides = ridesOnDay(day, nextDay)
     const rideModels: Ride[] = dayRides.map(({ row, at }) => ({ id: row.id, at, carId: row.car_id }))
     const conflictIds = new Set(rideConflicts(spans, rideModels).map((c) => c.ride.id))
@@ -227,7 +195,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     : []
   const statusSpans = todayDay ? [...todayDay.spans, ...rideSpans(todayRides, today, dayEnd)] : []
   const status = todayDay ? carStatusAt(statusSpans, now, dayEnd) : { free: true as const }
-  const membersOut = todayInRange ? membersOutAt(today, localDayOfWeek(new Date(today * 1000)), blocks, now) : []
+  const membersOut = todayInRange ? membersOutAt(today, blocks, now) : []
 
   return ok({
     cars,

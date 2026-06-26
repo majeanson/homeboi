@@ -1,6 +1,7 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart, localDayOfWeek } from '../_lib/ids'
+import { parseRecur } from '../_lib/recur'
 
 // Work / recurring-schedule blocks for « L'auto » (migration 0069). The quiet weekly
 // backdrop that shapes when the shared car is spoken for — one member's recurring
@@ -21,24 +22,19 @@ interface BlockRow {
   label: string | null
   start_min: number
   end_min: number
-  weekdays: string
   holds_car: number
   color: string | null
-  week_interval: number
+  recur_json: string | null // a weekly Recur {freq,interval,weekdays} (DB-4, migration 0090)
   anchor_day: number | null
 }
 
-// Client-facing camelCase shape (matches _lib/carResolve.ScheduleBlock). A NEW
-// endpoint, so we return clean camelCase + a parsed weekday array rather than raw
-// snake_case rows — nothing else reads these rows as snake_case.
+// Client-facing camelCase shape. Recurrence is now STORED as `recur_json` (DB-4), but
+// the API CONTRACT is unchanged — we parse the rule back into the `weekdays` /
+// `weekInterval` keys the /voiture editor already speaks, so the frontend needs no
+// change. (A new endpoint, so clean camelCase rather than raw snake_case rows.)
 const toClient = (r: BlockRow) => {
-  let weekdays: number[] = []
-  try {
-    const v = JSON.parse(r.weekdays)
-    if (Array.isArray(v)) weekdays = v.filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= 6)
-  } catch {
-    weekdays = []
-  }
+  const recur = parseRecur(r.recur_json)
+  const weekdays = (recur?.weekdays ?? []).filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= 6)
   return {
     id: r.id,
     memberId: r.member_id,
@@ -48,10 +44,15 @@ const toClient = (r: BlockRow) => {
     weekdays,
     holdsCar: r.holds_car === 1,
     color: r.color,
-    weekInterval: r.week_interval ?? 1,
+    weekInterval: recur?.interval ?? 1,
     anchorDay: r.anchor_day ?? null,
   }
 }
+
+// Build the stored weekly recurrence rule (DB-4) from the client's weekdays + interval
+// — byte-identical to what a recurring event stores, so _lib/recur serves both.
+const recurJson = (weekdays: number[], interval: number): string =>
+  JSON.stringify({ freq: 'weekly', interval, weekdays })
 
 // Repeat-every-N-weeks: 1 = every week (the default), capped at 8 (a two-month
 // rota is the practical ceiling for a household shift). Garbage → 1.
@@ -106,7 +107,7 @@ const isHex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-fA-
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, colour AS color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ? ORDER BY start_min',
+    'SELECT id, member_id, label, start_min, end_min, holds_car, colour AS color, recur_json, anchor_day FROM schedule_blocks WHERE household_id = ? ORDER BY start_min',
   )
     .bind(actor.householdId)
     .all<BlockRow>()
@@ -124,7 +125,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const id = newId()
   const { interval, anchor } = resolveRecurrence(body)
   await ctx.env.DB.prepare(
-    'INSERT INTO schedule_blocks (id, household_id, member_id, label, start_min, end_min, weekdays, holds_car, colour, week_interval, anchor_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO schedule_blocks (id, household_id, member_id, label, start_min, end_min, holds_car, colour, recur_json, anchor_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -133,10 +134,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
       body?.label?.trim().slice(0, 60) || null,
       startMin,
       endMin,
-      JSON.stringify(cleanWeekdays(body?.weekdays)),
       body?.holdsCar === false ? 0 : 1,
       isHex(body?.color) ? body!.color!.toLowerCase() : null,
-      interval,
+      recurJson(cleanWeekdays(body?.weekdays), interval),
       anchor,
       nowSec(),
     )
@@ -155,17 +155,16 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
   const { interval, anchor } = resolveRecurrence(body)
   const res = await ctx.env.DB.prepare(
-    'UPDATE schedule_blocks SET member_id = ?, label = ?, start_min = ?, end_min = ?, weekdays = ?, holds_car = ?, colour = ?, week_interval = ?, anchor_day = ? WHERE id = ? AND household_id = ?',
+    'UPDATE schedule_blocks SET member_id = ?, label = ?, start_min = ?, end_min = ?, holds_car = ?, colour = ?, recur_json = ?, anchor_day = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       memberId,
       body?.label?.trim().slice(0, 60) || null,
       startMin,
       endMin,
-      JSON.stringify(cleanWeekdays(body?.weekdays)),
       body?.holdsCar === false ? 0 : 1,
       isHex(body?.color) ? body!.color!.toLowerCase() : null,
-      interval,
+      recurJson(cleanWeekdays(body?.weekdays), interval),
       anchor,
       id,
       actor.householdId,

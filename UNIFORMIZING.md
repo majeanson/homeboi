@@ -264,15 +264,19 @@ trio (notes/family_notes/postbox/drawings) is the most expressive — make it th
   syntax verified directly against local D1; typecheck + 797 tests + build green.
 
 ### DB-4 🟡→CONVENTION Recurrence schema split
-- [~] `events`/`tasks`/`home_projects` use `recur_json {freq,interval,weekdays}`; `schedule_blocks` uses separate
-  `week_interval`+`anchor_day` columns, so `_lib/recur` can't be reused for it. **Forward rule:** new recurring
-  entities use `recur_json`. Converging `schedule_blocks` is a real refactor (backfill + `carResolve` rewrite) —
-  only if you're already in that engine. Note: the fortnight math is already shared via `recur.ts`/`weekActive`.
-  > **DEFERRED 2026-06-26 (Marc's call).** On inspection this is a *behavioural* engine refactor, not a rename:
-  > the fortnight math is **already shared** (`weekActive` mirrors `_lib/recur`), so the only delta is storage
-  > shape — and delivering real value means rewriting `carResolve` to drive off `recur.expandRange` + touching the
-  > `/voiture` editor + the schedule API. Low marginal value, real regression surface. **Do it inside the future
-  > P2-2 `DerivedOccurrence` work (Phase 3)** where the rewrite is actually warranted. Phase 2 closes 4/5.
+- [x] ✅ **DONE 2026-06-26 (migration 0090, with P2-2).** `events`/`tasks`/`home_projects` used
+  `recur_json {freq,interval,weekdays}`; `schedule_blocks` used separate `weekdays`+`week_interval` columns +
+  a parallel `weekActive` copy of the fortnight math. **Converged:** folded `weekdays`+`week_interval` into a
+  single weekly `recur_json` (byte-identical to events) + kept `anchor_day` as the recur anchor; **deleted
+  carResolve's `weekActive`** — the resolver now drives off `_lib/recur.occurrenceOn` (one engine for every
+  recurring entity). Extracted the **shared `parseScheduleBlockRow`** (killed 4 hand-rolled row→ScheduleBlock
+  copies + a latent `this-week.ts` raw-cast bug). **API contract preserved:** `/api/schedule` still speaks
+  `weekdays`/`weekInterval`/`anchorDay` (the handler parses ⇄ builds `recur_json`), so the `/voiture` editor is
+  untouched — zero frontend churn. Rewrote the carResolve test (the old fixtures cheated by passing a `weekday`
+  separate from `dayStart`; recurrence now derives the weekday from the day, so the tests use genuine Wed/Thu/Sun
+  dates). typecheck + 799 tests + build green.
+  > The original deferral ("behavioural rewrite, real regression surface") was right that it's non-trivial — done
+  > carefully as its own gated commit with the engine test rewritten and the API contract held byte-stable.
 
 ### DB-5 🟡 Member-attribution fragmentation
 - [ ] Same "who" concept appears as soft-ref (`added_by`/`suggested_by`/`member_id`), hard-ish ref
@@ -609,7 +613,7 @@ The sweep **verified** these are fully adopted with no meaningful outliers:
 8. **DB-3** `sort_order`/`sort` → `position` (+ drop the `home_pins` redundancy) — smallest rename, proves the painless-migration assumption.
 9. **DB-2** `color` → `colour` (cols + JSON keys).
 10. **DB-1** media columns → `media_kind`/`media_key`(+`scene_key`) (rename only, **not** the polymorphic table).
-11. **DB-4** converge `schedule_blocks` recurrence onto `recur_json` — **DEFERRED to P2-2** (Marc's call 2026-06-26): it's a behavioural `carResolve` rewrite, not a rename; do it with P2-2 `DerivedOccurrence`.
+11. **DB-4** converge `schedule_blocks` recurrence onto `recur_json` — ✅ **DONE 2026-06-26 (migration 0090)** with P2-2: `weekdays`+`week_interval` → one weekly `recur_json`, carResolve drives off `_lib/recur` (deleted `weekActive`), shared `parseScheduleBlockRow`, API contract held byte-stable.
 12. **DB-7** small items (idempotency `status` comment, `carnets.archived_at` align) while in the migrations.
 
 ### Phase 3 — Behavioural extractions (the real generalization payoff, on the now-clean schema)

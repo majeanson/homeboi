@@ -1,13 +1,18 @@
 import type { CarSpan } from './carAvail'
 import type { DerivedOccurrence } from './derived'
-import { localTimeOnDay, localDayOfWeek, localDayStart, addLocalDays } from './ids'
+import { parseRecur, occurrenceOn, type Recur } from './recur'
+import { localTimeOnDay, localDayStart, addLocalDays } from './ids'
 
 // Bridge from « L'auto »'s stored schedule (the weekly schedule_blocks template +
 // per-date car_day overrides) to the concrete CarSpan[] the carAvail engine works
-// on. Pure (no DB, no clock): the caller passes the local-midnight `dayStart` + the
-// local `weekday` (both from ids.ts helpers). Minute-of-day → instant goes through
-// localTimeOnDay so a work block keeps its WALL time across a DST change instead of
-// drifting an hour twice a year.
+// on. Pure (no DB, no clock): the caller passes the local-midnight `dayStart`.
+// Minute-of-day → instant goes through localTimeOnDay so a work block keeps its WALL
+// time across a DST change instead of drifting an hour twice a year.
+//
+// Recurrence rides the ONE engine `_lib/recur` (DB-4): a block stores a weekly
+// `recur` rule (freq/interval/weekdays) + an `anchorAt` (the fortnight-phase ref),
+// exactly like a recurring event — so "every other Saturday" reuses the same
+// week-bucket math events use, with no parallel `weekActive` here.
 
 export interface ScheduleBlock {
   id: string
@@ -15,27 +20,52 @@ export interface ScheduleBlock {
   label?: string | null
   startMin: number // minutes from local midnight
   endMin: number
-  weekdays: number[] // 0=Sun … 6=Sat
   holdsCar: boolean
   color?: string | null
-  weekInterval?: number // repeat every N weeks (1 = every week, the default). #28
-  anchorDay?: number | null // local-midnight ref week the interval phases from (null = weekly)
+  recur: Recur // weekly recurrence (freq:'weekly', interval, weekdays 0=Sun…6=Sat) — the _lib/recur engine
+  anchorAt: number // local-midnight fortnight-phase ref (0 = every-week; phase irrelevant at interval 1)
 }
 
-const DAY = 86400
+// One raw schedule_blocks row (post-DB-4: recurrence as `recur_json` + `anchor_day`),
+// shared by every reader (car/board/month/this-week) so the row→ScheduleBlock parse
+// lives in ONE place instead of four hand-rolled copies.
+export interface ScheduleBlockRow {
+  id: string
+  member_id: string
+  label: string | null
+  start_min: number
+  end_min: number
+  holds_car: number
+  color: string | null
+  recur_json: string | null
+  anchor_day: number | null
+}
 
-// Is `dayStart`'s LOCAL week an "on" week for an every-N-weeks block? interval ≤ 1
-// (or a missing anchor) means "every week". Otherwise count whole weeks from the
-// START of each local week (so every weekday in the same fortnight shares one
-// bucket) and test the modulus — the SAME math _lib/recur uses for biweekly events,
-// kept in sync deliberately. Both args are local midnights, so round() absorbs the
-// ± DST hour their difference can carry.
-function weekActive(dayStart: number, interval: number | undefined, anchorDay: number | null | undefined): boolean {
-  const n = Math.max(1, Math.round(interval ?? 1))
-  if (n === 1 || anchorDay == null) return true
-  const weekStart = (sec: number) => sec - localDayOfWeek(new Date(sec * 1000)) * DAY
-  const weeks = Math.round((weekStart(dayStart) - weekStart(anchorDay)) / (7 * DAY))
-  return (((weeks % n) + n) % n) === 0
+// Parse a stored row into a ScheduleBlock. A missing/corrupt rule falls back to an
+// empty weekly rule (no weekdays → the block never fires, the safe default), so a bad
+// row can never crash the resolver. anchor_day NULL → anchorAt 0 (every-week phase).
+export function parseScheduleBlockRow(r: ScheduleBlockRow): ScheduleBlock {
+  const recur = parseRecur(r.recur_json) ?? { freq: 'weekly', weekdays: [] }
+  return {
+    id: r.id,
+    memberId: r.member_id,
+    label: r.label,
+    startMin: r.start_min,
+    endMin: r.end_min,
+    holdsCar: r.holds_car === 1,
+    color: r.color,
+    recur,
+    anchorAt: r.anchor_day ?? 0,
+  }
+}
+
+// Is a block active on the LOCAL day starting at `day`? Drives off `_lib/recur`'s
+// `occurrenceOn` (weekday + fortnight phase, DST-safe) — but a schedule block with no
+// weekday never fires (recur would otherwise fall back to the anchor's weekday), so
+// guard that invariant first.
+function blockActiveOn(b: ScheduleBlock, day: number): boolean {
+  if (!b.recur.weekdays?.length) return false
+  return occurrenceOn(day, b.anchorAt, b.recur) !== null
 }
 
 export interface CarDayOverride {
@@ -54,10 +84,9 @@ const at = (dayStart: number, min: number): number => localTimeOnDay(dayStart, m
 
 // The car's BUSY spans for ONE local day. An override for the car/day REPLACES the
 // template (a single window, or nothing when the car stays home); otherwise the
-// template applies — every holds_car block whose weekdays include this weekday.
+// template applies — every holds_car block active (weekday + fortnight) on this day.
 export function carBusySpansForDay(
   dayStart: number,
-  weekday: number,
   blocks: ScheduleBlock[],
   override?: CarDayOverride | null,
 ): CarSpan[] {
@@ -76,10 +105,7 @@ export function carBusySpansForDay(
     return []
   }
   return blocks
-    .filter(
-      (b) =>
-        b.holdsCar && b.weekdays.includes(weekday) && b.endMin > b.startMin && weekActive(dayStart, b.weekInterval, b.anchorDay),
-    )
+    .filter((b) => b.holdsCar && b.endMin > b.startMin && blockActiveOn(b, dayStart))
     .map((b) => ({
       start: at(dayStart, b.startMin),
       end: at(dayStart, b.endMin),
@@ -91,11 +117,10 @@ export function carBusySpansForDay(
 // Presence — the member ids who are OUT at instant `t` (ANY block, car-holding or
 // not, covering t). Powers the derived "who's home" glance (#30) for free off the
 // same schedule. Deduped (a member with two overlapping blocks counts once).
-export function membersOutAt(dayStart: number, weekday: number, blocks: ScheduleBlock[], t: number): string[] {
+export function membersOutAt(dayStart: number, blocks: ScheduleBlock[], t: number): string[] {
   const out = new Set<string>()
   for (const b of blocks) {
-    if (!b.weekdays.includes(weekday) || b.endMin <= b.startMin) continue
-    if (!weekActive(dayStart, b.weekInterval, b.anchorDay)) continue
+    if (b.endMin <= b.startMin || !blockActiveOn(b, dayStart)) continue
     if (t >= at(dayStart, b.startMin) && t < at(dayStart, b.endMin)) out.add(b.memberId)
   }
   return [...out]
@@ -123,10 +148,8 @@ export interface WorkOccurrence extends DerivedOccurrence {
 export function workOccurrencesInRange(blocks: ScheduleBlock[], rangeStart: number, rangeEnd: number): WorkOccurrence[] {
   const out: WorkOccurrence[] = []
   for (let day = localDayStart(new Date(rangeStart * 1000)); day < rangeEnd; day = addLocalDays(day, 1)) {
-    const weekday = localDayOfWeek(new Date(day * 1000))
     for (const b of blocks) {
-      if (!b.weekdays.includes(weekday) || b.endMin <= b.startMin) continue
-      if (!weekActive(day, b.weekInterval, b.anchorDay)) continue
+      if (b.endMin <= b.startMin || !blockActiveOn(b, day)) continue
       const startAt = at(day, b.startMin)
       const endAt = at(day, b.endMin)
       if (endAt <= rangeStart || startAt >= rangeEnd) continue

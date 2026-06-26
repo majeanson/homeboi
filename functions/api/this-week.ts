@@ -3,7 +3,7 @@ import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
-import { workOccurrencesInRange, type ScheduleBlock } from '../_lib/carResolve'
+import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlockRow } from '../_lib/carResolve'
 
 // "Cette semaine ensemble" — a calm, READ-ONLY weekly ritual surface (Réglages).
 // Two halves off existing data: the week AHEAD (what's coming — meals, who works
@@ -34,10 +34,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all<{ id: string; display_name: string; avatar_kind: string | null; avatar_ref: string | null; colour: string | null }>(),
     ctx.env.DB.prepare(
-      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, colour AS color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
+      'SELECT id, member_id, label, start_min, end_min, holds_car, colour AS color, recur_json, anchor_day FROM schedule_blocks WHERE household_id = ?',
     )
       .bind(hh)
-      .all<ScheduleBlock>(),
+      .all<ScheduleBlockRow>(),
     // Week ahead — meals planned.
     ctx.env.DB.prepare(
       'SELECT date, slot, title FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, position, created_at, id',
@@ -131,7 +131,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .sort((a, b) => a.at - b.at)
     .map((b) => ({ name: b.name, at: b.at, age: b.age }))
 
-  const work = workOccurrencesInRange(blocks.results, today, weekEnd)
+  const work = workOccurrencesInRange(blocks.results.map(parseScheduleBlockRow), today, weekEnd)
     .sort((a, b) => a.at - b.at)
     .map((o) => ({ at: o.at, label: o.label, who: nameOf(o.memberId), face: faceOf(o.memberId) }))
 

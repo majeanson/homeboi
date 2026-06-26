@@ -4,7 +4,7 @@ import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
 import { isSoon as isSoonAt } from '../_lib/reminder'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
-import { workOccurrencesInRange, type ScheduleBlock } from '../_lib/carResolve'
+import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
 
 interface Ev {
   id: string
@@ -161,21 +161,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // windows. Derived onto the day below (never event rows), like birthdays. Tiny
     // table (a few rows/household), so it rides the board poll cheaply.
     ctx.env.DB.prepare(
-      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, colour AS color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
+      'SELECT id, member_id, label, start_min, end_min, holds_car, colour AS color, recur_json, anchor_day FROM schedule_blocks WHERE household_id = ?',
     )
       .bind(hh)
-      .all<{
-        id: string
-        member_id: string
-        label: string | null
-        start_min: number
-        end_min: number
-        weekdays: string
-        holds_car: number
-        color: string | null
-        week_interval: number
-        anchor_day: number | null
-      }>(),
+      .all<ScheduleBlockRow>(),
   ])
 
   // "Up next" beyond tomorrow (rest of the week) — tomorrow has its own card, so
@@ -462,38 +451,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // the board agenda, derived (never event rows) like birthdays. Only today's: the
   // weekly rota would flood À venir, so the calendar (month/day page) is where the
   // full forward schedule lives; here it's just "who's out today". Read-only.
-  const scheduleBlocks: ScheduleBlock[] = (scheduleRes.results as {
-    id: string
-    member_id: string
-    label: string | null
-    start_min: number
-    end_min: number
-    weekdays: string
-    holds_car: number
-    color: string | null
-    week_interval: number
-    anchor_day: number | null
-  }[]).map((r) => {
-    let weekdays: number[] = []
-    try {
-      const v = JSON.parse(r.weekdays)
-      if (Array.isArray(v)) weekdays = v.filter((n): n is number => Number.isInteger(n))
-    } catch {
-      weekdays = []
-    }
-    return {
-      id: r.id,
-      memberId: r.member_id,
-      label: r.label,
-      startMin: r.start_min,
-      endMin: r.end_min,
-      weekdays,
-      holdsCar: r.holds_car === 1,
-      color: r.color,
-      weekInterval: r.week_interval ?? 1,
-      anchorDay: r.anchor_day ?? null,
-    }
-  })
+  const scheduleBlocks: ScheduleBlock[] = scheduleRes.results.map(parseScheduleBlockRow)
   const work = workOccurrencesInRange(scheduleBlocks, today, tomorrow).map((o) => ({
     id: o.id,
     label: o.label,

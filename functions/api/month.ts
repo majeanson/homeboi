@@ -3,7 +3,7 @@ import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
-import { workOccurrencesInRange, type ScheduleBlock } from '../_lib/carResolve'
+import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
 
 // Everything dated in the household, for a calendar-month window. /api/board is
 // the 7-day glance; the month view zooms out, so it needs its own read across an
@@ -88,10 +88,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // the window (never event rows). A calendar is where the full recurring rota
     // belongs, so unlike the board these span the whole [from, to).
     ctx.env.DB.prepare(
-      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, colour AS color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
+      'SELECT id, member_id, label, start_min, end_min, holds_car, colour AS color, recur_json, anchor_day FROM schedule_blocks WHERE household_id = ?',
     )
       .bind(hh)
-      .all<{ id: string; member_id: string; label: string | null; start_min: number; end_min: number; weekdays: string; holds_car: number; color: string | null; week_interval: number; anchor_day: number | null }>(),
+      .all<ScheduleBlockRow>(),
     // "Projets & Entretien" (home_projects, #home-projects) — DATED rows only;
     // recurring expand across the window, one-off land on their day. Like chores,
     // they ride the same calendar. Undated rows (at IS NULL) have no cell.
@@ -170,16 +170,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   // Derived « L'auto » work windows — read-only (the client renders a clock + routes
   // the tap to /voiture, not an event editor). A span, so `end` rides along.
-  const scheduleBlocks: ScheduleBlock[] = (scheduleRes.results).map((r) => {
-    let weekdays: number[] = []
-    try {
-      const v = JSON.parse(r.weekdays)
-      if (Array.isArray(v)) weekdays = v.filter((n): n is number => Number.isInteger(n))
-    } catch {
-      weekdays = []
-    }
-    return { id: r.id, memberId: r.member_id, label: r.label, startMin: r.start_min, endMin: r.end_min, weekdays, holdsCar: r.holds_car === 1, color: r.color, weekInterval: r.week_interval ?? 1, anchorDay: r.anchor_day ?? null }
-  })
+  const scheduleBlocks: ScheduleBlock[] = scheduleRes.results.map(parseScheduleBlockRow)
   for (const o of workOccurrencesInRange(scheduleBlocks, from, to)) {
     events.push({ id: o.id, title: o.label ?? '', at: o.at, end: o.endAt, all_day: 0, member_id: o.memberId, day: dayOf(o.at), work: true, color: o.color, holds_car: o.holdsCar ? 1 : 0 })
   }
