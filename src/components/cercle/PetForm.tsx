@@ -26,8 +26,9 @@ import { StatusMessage } from '../StatusMessage'
 import { RowActions } from '../RowActions'
 import { Avatar } from '../Avatar'
 import { Icon } from '../Icon'
+import { THING_DEFAULTS } from '../../lib/things'
 
-const PET_COLOUR = '#C7873F' // the pet amber (mirrors PET_ACCENT in lib/cercle)
+const PET_COLOUR = THING_DEFAULTS.pet.colour // the pet amber — one source in lib/things
 
 // « Le cercle » → Pets: add / edit one animal — a ContactForm cousin (no relationships
 // or vCard) with the care fields a household needs at a glance: species/breed,

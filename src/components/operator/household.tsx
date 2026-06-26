@@ -8,6 +8,7 @@ import { useConfirm } from '../../lib/confirm'
 import { useOpenPersonSheet } from '../../lib/personSheet'
 import { HOUSEHOLD_KEY, CERCLE_KEY, MEMBERS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { isGuest } from '../../lib/device'
+import { colourFor } from '../../lib/things'
 import { petOwners, isHouseholdPet, personKey, type Pet, type ContactLink } from '../../lib/cercle'
 import { PALETTE } from '../../lib/colors'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
@@ -162,7 +163,7 @@ function HouseholdPets() {
         <ul className="member-cards">
           {mine.map((pet) => (
             <li key={pet.id} className="member-card surface">
-              <Avatar kind={pet.photoKey ? 'photo' : null} photo={pet.photoKey} colour={pet.colour ?? '#C7873F'} name={pet.name} size={64} />
+              <Avatar kind={pet.photoKey ? 'photo' : null} photo={pet.photoKey} colour={colourFor('pet', pet.colour)} name={pet.name} size={64} />
               <span className="member-card__name">{pet.name}</span>
               {pet.species ? <span className="tag mono">{pet.species}</span> : null}
               <div className="member-card__actions">

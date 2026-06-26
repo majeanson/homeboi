@@ -5,6 +5,7 @@
 // useEntityDetail().open(). Colours/icons reuse the one source (lib/cats), dates
 // the shared formatters (lib/format), images imgUrl()/recipeImg().
 import { CATS } from '../../lib/cats'
+import { colourFor } from '../../lib/things'
 import { imgUrl } from '../../lib/image'
 import { type Contact, type Person, type Pet, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, fullName } from '../../lib/cercle'
 import { type Business, BUSINESS_COLOUR } from '../../lib/businesses'
@@ -162,7 +163,7 @@ export function buildPet(
 ): DetailModel {
   const { t, lang } = ctx
   const p = t.cercle.pet
-  const accent = pet.colour ?? '#C7873F'
+  const accent = colourFor('pet', pet.colour)
   const bday = formatBirthday(pet.birthday, lang)
   const days = daysUntilBirthday(pet.birthday)
   const when = bday ? [bday, days != null ? t.cercle.inDaysN(days) : null].filter(Boolean).join(' · ') : undefined

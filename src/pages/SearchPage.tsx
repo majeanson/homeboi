@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { fold } from '../lib/normalize'
 import { CATS } from '../lib/cats'
+import { colourFor } from '../lib/things'
 import { CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY } from '../lib/queryKeys'
 import { type Contact, type Pet } from '../lib/cercle'
 import { type FamilyNote } from '../lib/familyNotes'
@@ -365,7 +366,7 @@ export function SearchPage() {
                 {res!.pets.map((p) => (
                   <Link key={p.id} to={`/cercle/pet/${p.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">
-                      <Avatar kind={p.photoKey ? 'photo' : null} photo={p.photoKey} colour={p.colour ?? '#C7873F'} name={p.name} size={34} />
+                      <Avatar kind={p.photoKey ? 'photo' : null} photo={p.photoKey} colour={colourFor('pet', p.colour)} name={p.name} size={34} />
                     </span>
                     <span className="search__main">
                       <span className="search__title">{p.name}</span>

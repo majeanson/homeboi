@@ -6,6 +6,7 @@ import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
 import { useConfirm } from '../../lib/confirm'
 import { CERCLE_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { THING_DEFAULTS } from '../../lib/things'
 import {
   fullName,
   genderedRelLabel,
@@ -252,7 +253,7 @@ export function IntakeReview({ help }: { help?: HelpMode }) {
         renderItem={(item) =>
           item.kind === 'pet' ? (
             <>
-              <Avatar kind={item.pet.photoKey ? 'photo' : null} photo={item.pet.photoKey} colour="#C7873F" name={item.pet.name} size={28} />
+              <Avatar kind={item.pet.photoKey ? 'photo' : null} photo={item.pet.photoKey} colour={THING_DEFAULTS.pet.colour} name={item.pet.name} size={28} />
               <span className="review__name">{item.pet.name}</span>
               <span className="review__sub mono">{item.pet.species || t.intake.petFallback}</span>
             </>

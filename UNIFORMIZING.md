@@ -432,9 +432,15 @@ Resolution is mostly centralized (`pictoFor` 350-entry grocery table, `aisleFor`
 tints, carnet `KIND_EMOJI`, `PIN_EMOJI`) — **but fallbacks are scattered and drift**: pet default `#C7873F`
 hardcoded in `SearchPage`, business/work/recipe-tag colours each have their own fallback in different files. A
 palette change means hunting multiple files.
-- [ ] Centralize `THING_DEFAULTS: Record<ThingKind,{icon,colour}>` + `colourFor/iconFor/emojiFor(thing)` (delegating
-  to `pictoFor` for grocery items, `CATS` for categories). Rewrite the hardcoded fallbacks to call it. Keep
-  `pictoFor` as-is (it's excellent and domain-specific).
+- [x] ✅ **Registry created (`lib/things.ts`).** `THING_DEFAULTS: Record<ThingKind, {colour}>` + `colourFor(kind,
+  explicit?)`, seeded for all kinds (member/pet/chore/project/routine/business/group/car/note). **Adopted fully for
+  the worst drift — the pet amber `#C7873F`**, which was copy-pasted across 6 files (detail/adapters, SearchPage,
+  IntakeReview, household, + two local `PET_COLOUR` consts in PetForm/FamilyBuilder, with comments aspiring to a
+  `PET_ACCENT` that never existed) → now one source. `pictoFor`/`CATS` left as-is (richer domain resolvers).
+- [ ] **Follow-up (broader sweep):** migrate the remaining `x.colour ?? '#…'` fallbacks to `colourFor(kind, …)` —
+  sage `#88A36F` (chores/projects/routines ×8), teal `#2A8F85` (businesses/groups ×5), slate `#6b7a8f` (car ×3),
+  butter `#FBD66B` (notes), member `#888`. ~20 sites, each needs its kind classified — its own commit. The registry
+  is ready; this is mechanical adoption.
 
 ### P2-7 🟢 (med value / low risk, **Phase 1 only**) `SEARCHABLE_INDEX` — the searchable-entity contract
 `/search` matches ~13 kinds client-side via `fold()`, but each kind's indexed fields are chosen ad-hoc inline in

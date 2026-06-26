@@ -22,9 +22,10 @@ import {
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon } from '../Icon'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
+import { THING_DEFAULTS } from '../../lib/things'
 
 const ACCENT = '#2A8F85' // cercle turquoise
-const PET_COLOUR = '#C7873F' // the pet amber (mirrors PetForm / PET_ACCENT)
+const PET_COLOUR = THING_DEFAULTS.pet.colour // the pet amber — one source in lib/things
 type Mode = 'bands' | 'matrix'
 type Slot = FamilyBand | 'tray'
 
