@@ -121,11 +121,24 @@ Same class defined twice (cascade-order-dependent, fragile):
   into purpose files placed correctly in the cascade. Large, do carefully with visual QA. **Medium-term.**
 
 ### CSS-4 🟡 Ad-hoc button-like elements bypassing the `.btn` family
-- [ ] **DEFERRED 2026-06-26 (needs visual QA).** `.board-focus__all`, `.disclosure__summary`, `.kitchen__note-add`,
-  `.kitchen__slot`, `.routine-card__run` each hand-roll padding/radius. Extending `.btn` with `--text` (link-style)
-  + `--dashed` (editable-slot) variants and adopting them **restyles 5 interactive elements** — a real
-  visual-regression surface (tap target, padding, focus) that must be eyeballed on a running app, not blind-shipped
-  from a green typecheck. Pair with the cross-file CSS-2 merges in a dedicated `/dev/kit` + e2e-screenshot pass.
+- [~] **SKIP 2026-06-26 — premise reviewed and rejected (don't fold onto `.btn`).** Read all five sites; the
+  proposed "extend `.btn` with `--text` + `--dashed`" doesn't fit and would make the cascade *more* fragile, not
+  less:
+  - **`.routine-card__run` is neither** — it's a **filled, per-tint button** (`color:#fff`,
+    `background:color-mix(var(--tint) 78%…)`, `box-shadow`), closest to `.btn--primary` but keyed off the card's
+    `var(--tint)` not `var(--accent)`. No `--text`/`--dashed` variant applies.
+  - **The two "text" buttons diverge from each other** — `.board-focus__all` (underline, `--ink-soft`, `padding:4px
+    6px`) vs `.disclosure__summary` (no underline, `--ink-faint`, `font-size:.85rem`, `padding:.25rem .1rem`, plus
+    `__caret`/`__count` children). A single `.btn--text` couldn't serve both without per-site overrides.
+  - **`.btn` base is a solid 44px bold pill** with `:hover{background:var(--paper)}` + `:active{transform+shadow}`.
+    Any of these flat/dashed elements folded onto `.btn--*` must override ~8 of the 13 base declarations **and**
+    cancel the hover-background + press-transform — the classic inherit-then-override-everything anti-pattern. Net:
+    more CSS, more cascade-order fragility, and 5 restyled interactive tap targets for **zero** user-visible gain.
+  - **The one genuine micro-dup** is the dashed-pill *slot* family — `.kitchen__note-add` / `.kitchen__slot` /
+    `.kitchen__slot-add` (audit named 2; there are 3) share `border:1px dashed var(--line)` + transparent +
+    `radius-pill` + `cursor:pointer`. If ever consolidated it's its own small `.slot`/editable-slot base (common
+    decls grouped, per-class diffs kept — `.is-set`, ellipsis label, colour/min-height), **not** a `.btn` variant.
+    Low value, skipped for now. These elements *deliberately* don't read as the app's solid `.btn`.
 
 ### CSS-5 🟢 Convention-only
 - [ ] BEM drift (`__`/`-`/camelCase mixed) — standardize on `.block__el--mod` for *new* CSS; document in core.css.
