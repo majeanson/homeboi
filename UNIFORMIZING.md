@@ -509,11 +509,14 @@ Do these **soon, while there's one row to migrate** (and a thin app to update). 
   `useHouseholdListSetting`; skip if you're not touching settings anyway.
 
 ### D.2 ✅ Promote regardless — was never really a data question
-- [ ] **`attachmentsFor(kind,id)` / `deleteAttachments(kind,id)` helper** (the worthwhile slice of the
-  media-attachments idea). Backed by the **existing per-row columns** — no new table. Centralizes the currently
-  hand-rolled, leak-prone delete paths (recipe step images, care-log media, drawing media+scene) into one audited
-  helper. Low risk, fixes real orphan-blob leaks. This is the part of the "media_attachments" proposal that was
-  always worth it.
+- [~] **`attachmentsFor(kind,id)` / `deleteAttachments(kind,id)` helper** — **SKIPPED after verification: the
+  "real orphan-blob leaks" premise is false.** Audited *every* R2-blob path (recipes step-images + original-source,
+  care_log media_json, drawings media+scene, routines card narration+photo arrays, notes/family_notes media+scene,
+  pets/contacts/businesses/contact_photos/carnets/home_pins media_key, photos prune+delete) — **all already free
+  correctly** on both replace-PATCH and DELETE. So this is pure dedup of ~13 currently-correct, co-located,
+  idiomatic free-paths; a kind-registry would ADD indirection (you'd have to consult the registry to know what a
+  delete frees) and risks breaking a working path. Not worth the churn at one household. *(Optional tiny win left
+  on the table: a variadic `deleteR2Blobs(bucket, ...keys)` to fold the `media_key`+`scene_key` pairs — marginal.)*
 
 ### D.3 ❌ Still rejected — household count doesn't change the cost
 The cost here is permanent indirection or runtime value, not migration:
@@ -582,7 +585,7 @@ The sweep **verified** these are fully adopted with no meaningful outliers:
 ### Phase 3 — Behavioural extractions (the real generalization payoff, on the now-clean schema)
 13. **P2-1** `createDeviceStore` factory (isolated; do first here).
 14. **P2-2** `<BoardCard>` + `DerivedOccurrence` (reads cleaner after DB-4).
-15. **D.2** `attachmentsFor`/`deleteAttachments` helper (fixes orphan-blob leaks; uses existing columns).
+15. ~~**D.2** `attachmentsFor`/`deleteAttachments` helper~~ — **SKIPPED**: verified no orphan-blob leaks exist (all 13 paths already free correctly); pure-dedup churn not worth the indirection/risk. See D.2 above.
 16. **P2-3** `useItemList` behavioural hook (after DB renames so it targets final columns).
 17. **P2-5** `useHouseholdListSetting` + `useColorOverride` — **bundle DB-6** `household_preferences` split here (1-row move).
 18. **P2-6** `things.ts` colour/icon/emoji registry (after DB-2 so it keys on `colour`).
