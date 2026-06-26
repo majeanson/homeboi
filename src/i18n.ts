@@ -1468,6 +1468,11 @@ export const FR = {
     // Label given to a permanent TV (a read-only 'display' device) in the devices list.
     castDisplayLabel: 'Téléviseur du salon',
     castGenerate: 'Générer le lien TV',
+    // The short /tv/<code> link — the one to actually type on a TV remote.
+    castShortReady: 'Lien court — tape-le dans le navigateur du téléviseur (facile à la télécommande) :',
+    castShortLink: 'Lien TV court',
+    castShortHint: 'Tape ce lien une fois sur la télé, puis garde-le en favori. Pour le révoquer : Réglages ▸ Tablettes.',
+    castFullLink: 'Lien complet (à copier-coller) :',
     castReady: 'Lien TV prêt — ouvre-le dans le navigateur du téléviseur, ou diffuse-le depuis Chrome :',
     castStep1: 'Ouvre ce lien dans Google Chrome sur l’ordinateur.',
     castStep2: 'Menu ⋮ ▸ Caster… ▸ choisis le Chromecast.',
@@ -3521,6 +3526,11 @@ export const EN: typeof FR = {
     // Label given to a permanent TV (a read-only 'display' device) in the devices list.
     castDisplayLabel: 'Living-room TV',
     castGenerate: 'Generate TV link',
+    // The short /tv/<code> link — the one to actually type on a TV remote.
+    castShortReady: 'Short link — type it in the TV’s browser (easy on a remote):',
+    castShortLink: 'Short TV link',
+    castShortHint: 'Type this once on the TV, then bookmark it. To revoke: Réglages ▸ Tablettes.',
+    castFullLink: 'Full link (to copy-paste):',
     castReady: 'TV link ready — open it in the TV’s browser, or cast it from Chrome:',
     castStep1: 'Open this link in Google Chrome on the computer.',
     castStep2: 'Menu ⋮ ▸ Cast… ▸ pick the Chromecast.',

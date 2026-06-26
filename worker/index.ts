@@ -13,9 +13,10 @@
 // / ctx.params, all of which the adapter provides.
 
 import type { Env } from '../functions/_lib/env'
-import { verifyCsrf, currentGuest } from '../functions/_lib/auth'
+import { verifyCsrf, currentGuest, issueDeviceToken } from '../functions/_lib/auth'
 import { forbidden, serverError, notFound } from '../functions/_lib/json'
 import { resolveActor } from '../functions/_lib/household'
+import { resolveTvCode } from '../functions/_lib/tvLink'
 import { matchRoute, guestKindAllows, type RouteMod } from './routes'
 
 // Re-export the Durable Object class so the Workers runtime can find it (a DO
@@ -75,6 +76,29 @@ export default {
     }
 
     const path = url.pathname.replace(/^\/+/, '')
+
+    // /tv/<code> — the easy living-room TV link. A short, hand-typeable code (minted with
+    // a display device, Réglages ▸ Partage ▸ Au salon) is traded here for a FRESH read-only
+    // display token and 302'd to the real /cast page — so a TV never needs the long
+    // ?display=<token> URL typed by hand. The token is re-minted on the fly (stateless HMAC)
+    // and stays revocable by deviceId, so revoking the TV kills its /tv link too. Unknown or
+    // revoked code → a small honest 404 rather than the SPA shell.
+    if (path.startsWith('tv/')) {
+      const code = decodeURIComponent(path.slice('tv/'.length).replace(/\/+$/, ''))
+      const tv = await resolveTvCode(env, code)
+      if (!tv) {
+        return new Response('Lien TV introuvable ou révoqué.', {
+          status: 404,
+          headers: { 'content-type': 'text/plain; charset=utf-8' },
+        })
+      }
+      const token = await issueDeviceToken(env, tv.deviceId, tv.householdId)
+      const dest = new URL('/cast', url.origin)
+      if (tv.scene === 'ambient') dest.searchParams.set('scene', 'ambient')
+      dest.searchParams.set('display', token)
+      dest.searchParams.set('hh', tv.householdId)
+      return Response.redirect(dest.toString(), 302)
+    }
 
     // Everything that isn't an API call is the SPA. The assets binding serves a
     // real file when one matches, else index.html (SPA fallback) for client routes.

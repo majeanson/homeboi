@@ -12,6 +12,20 @@ export function newId(len = 12): string {
   return out
 }
 
+// Short, TV-typeable code for a /tv/<code> living-room link. Lowercase + digits,
+// minus look-alikes (0/o/1/l/i), so it's unambiguous on a TV on-screen keyboard.
+// 4 chars over a 31-symbol alphabet ≈ 923k combinations — deliberately tiny for
+// dead-easy typing on a TV remote; acceptable because the link is read-only board
+// access and revocable anytime (Réglages ▸ Tablettes). Uniqueness is enforced by a
+// DB index (caller retries on the rare collision).
+const SHORT_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz'
+export function newShortCode(len = 4): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(len))
+  let out = ''
+  for (let i = 0; i < len; i++) out += SHORT_ALPHABET[bytes[i] % SHORT_ALPHABET.length]
+  return out
+}
+
 // 6-digit pairing code. Human-typed once, short-lived — collision space is
 // fine because pending codes expire in minutes and are scoped by lookup.
 export function newPairingCode(): string {

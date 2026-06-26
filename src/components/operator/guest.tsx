@@ -461,6 +461,8 @@ function CastTvSection({ help }: { help?: HelpMode }) {
   // TV can stash the device token); the shareable link is derived from both.
   const [token, setToken] = useState<string | null>(null)
   const [hh, setHh] = useState('')
+  // A display scene also gets a short, hand-typeable /tv/<code> link (the easy TV path).
+  const [shortCode, setShortCode] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [casting, setCasting] = useState(false)
   // Show the one-tap cast button only where the Web Sender can actually run (Chrome
@@ -469,6 +471,8 @@ function CastTvSection({ help }: { help?: HelpMode }) {
   if (ro) return null
   const cfg = CAST_SCENES[scene]
   const link = token ? cfg.link(window.location.origin, token, hh) : null
+  // The short TV link — the path we lead with, since a TV remote can't type the long one.
+  const shortLink = shortCode ? `${window.location.origin}/tv/${shortCode}` : null
 
   // Mint the scene's credential. A display scene creates a PERMANENT revocable device
   // (pair/devices mintDisplay) and returns its token + householdId; welcome mints a 24 h
@@ -478,12 +482,13 @@ function CastTvSection({ help }: { help?: HelpMode }) {
   async function mint(): Promise<{ token: string; hh: string }> {
     if (cfg.cred === 'display') {
       const label = `${t.operator.castDisplayLabel} — ${scene === 'ambient' ? t.operator.castSceneAmbient : t.operator.castSceneBoard}`
-      const res = await api<{ token: string; householdId: string }>('pair/devices', {
+      const res = await api<{ token: string; householdId: string; shortCode?: string }>('pair/devices', {
         method: 'POST',
-        body: { mintDisplay: true, label },
+        body: { mintDisplay: true, label, scene },
       })
       setToken(res.token)
       setHh(res.householdId)
+      setShortCode(res.shortCode ?? null)
       return { token: res.token, hh: res.householdId }
     }
     const res = await api<{ guestToken: string }>('guest/start', {
@@ -492,6 +497,7 @@ function CastTvSection({ help }: { help?: HelpMode }) {
     })
     setToken(res.guestToken)
     setHh('')
+    setShortCode(null)
     return { token: res.guestToken, hh: '' }
   }
 
@@ -499,6 +505,7 @@ function CastTvSection({ help }: { help?: HelpMode }) {
     setScene(s)
     setToken(null) // a token minted for the old scene's link no longer matches it
     setHh('')
+    setShortCode(null)
     setCopied(false)
     setErr(null)
   }
@@ -534,10 +541,10 @@ function CastTvSection({ help }: { help?: HelpMode }) {
     }
   }
 
-  async function copy() {
-    if (!link) return
+  async function copy(value: string | null) {
+    if (!value) return
     try {
-      await navigator.clipboard.writeText(link)
+      await navigator.clipboard.writeText(value)
       setCopied(true)
     } catch {
       /* clipboard blocked — the link is shown for manual copy */
@@ -570,7 +577,28 @@ function CastTvSection({ help }: { help?: HelpMode }) {
       {err && <StatusMessage tone="error">{err}</StatusMessage>}
       {link && (
         <div className="operator__guest-link">
-          <p className="operator__hint mono">{t.operator.castReady}</p>
+          {/* Lead with the short /tv/<code> link — the only one typeable on a TV remote. */}
+          {shortLink && (
+            <>
+              <p className="operator__hint mono">{t.operator.castShortReady}</p>
+              <input
+                className="input mono"
+                readOnly
+                value={shortLink}
+                onFocus={(e) => e.target.select()}
+                aria-label={t.operator.castShortLink}
+              />
+              <div className="operator__inline-form">
+                <button type="button" className="btn btn--primary" onClick={() => void copy(shortLink)}>
+                  <InlineIcon name="link-bold" /> {copied ? t.guest.copied : t.guest.copy}
+                </button>
+              </div>
+              {/* Scan off the wall tablet, or just type the short link on the TV. */}
+              <QrCode value={shortLink} />
+              <p className="operator__seg-hint mono">{t.operator.castShortHint}</p>
+            </>
+          )}
+          <p className="operator__hint mono">{shortLink ? t.operator.castFullLink : t.operator.castReady}</p>
           <input
             className="input mono"
             readOnly
@@ -579,12 +607,12 @@ function CastTvSection({ help }: { help?: HelpMode }) {
             aria-label={t.operator.castTitle}
           />
           <div className="operator__inline-form">
-            <button type="button" className="btn" onClick={copy}>
+            <button type="button" className="btn" onClick={() => void copy(link)}>
               <InlineIcon name="link-bold" /> {copied ? t.guest.copied : t.guest.copy}
             </button>
           </div>
-          {/* Scan it off the wall tablet to open on the TV/computer, or copy the link. */}
-          <QrCode value={link} />
+          {/* No short link (welcome scene): the long link is the one to scan/copy. */}
+          {!shortLink && <QrCode value={link} />}
           <ol className="operator__hint mono">
             <li>{t.operator.castStep1}</li>
             <li>{t.operator.castStep2}</li>
