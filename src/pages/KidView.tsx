@@ -16,6 +16,7 @@ import { timeOfDay } from '../lib/timeofday'
 import { todRank, isRoutineTod, TOD_ICON, TOD_TINT } from '../lib/routineTod'
 import { ROUTINES_KEY } from '../lib/queryKeys'
 import { RoutinePlayer, type PlayerRoutine } from '../components/RoutinePlayer'
+import { colourFor } from '../lib/things'
 
 // The pre-reader surface: a face/routine PICKER, then the calm picture-story RUN.
 // The run itself lives in the shared RoutinePlayer (so a parent's phone + the
@@ -132,7 +133,7 @@ export function KidView() {
               const done = total > 0 && doneCount >= total
               // A familiar-voice hint when the parent recorded any card (feature #17 A).
               const hasVoice = (r.cardsNarration ?? []).some((k) => !!k)
-              const tint = r.color ?? '#88A36F'
+              const tint = colourFor('routine', r.color)
               return (
                 <button
                   key={r.id}

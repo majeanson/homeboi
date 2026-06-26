@@ -13,6 +13,7 @@ import { ListRow } from '../ListRow'
 import { OperatorSection } from './OperatorSection'
 import { ChoreForm } from '../forms/ChoreForm'
 import { RoutineForm } from '../forms/RoutineForm'
+import { colourFor } from '../../lib/things'
 import { recurLabel } from '../../lib/recurLabel'
 import { CHORES_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
 import { type Chore, type Routine } from './types'
@@ -82,7 +83,7 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
   return (
     <li>
       <ListRow
-        leading={<span className="operator__avatar" style={{ background: chore.color ?? '#88A36F' }} aria-hidden="true" />}
+        leading={<span className="operator__avatar" style={{ background: colourFor('chore', chore.color) }} aria-hidden="true" />}
         title={chore.title}
         subtitle={label || undefined}
         actions={

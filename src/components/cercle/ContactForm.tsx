@@ -8,6 +8,7 @@ import { resizeImage, AVATAR_MAX } from '../../lib/image'
 import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { CERCLE_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { colourFor } from '../../lib/things'
 import {
   type Contact,
   type ContactLink,
@@ -545,7 +546,7 @@ export function ContactForm({
           <div className="cf__groups-chips">
             {groupList.map((g) => (
               <Chip key={g.id} selected={memberOf.has(g.id)} onClick={() => toggleGroup(g)}>
-                <span className="cercle-group__dot" style={{ background: g.colour ?? '#2A8F85' }} />
+                <span className="cercle-group__dot" style={{ background: colourFor('group', g.colour) }} />
                 {g.name}
               </Chip>
             ))}

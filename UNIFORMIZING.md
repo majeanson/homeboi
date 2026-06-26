@@ -483,10 +483,16 @@ palette change means hunting multiple files.
   the worst drift — the pet amber `#C7873F`**, which was copy-pasted across 6 files (detail/adapters, SearchPage,
   IntakeReview, household, + two local `PET_COLOUR` consts in PetForm/FamilyBuilder, with comments aspiring to a
   `PET_ACCENT` that never existed) → now one source. `pictoFor`/`CATS` left as-is (richer domain resolvers).
-- [ ] **Follow-up (broader sweep):** migrate the remaining `x.colour ?? '#…'` fallbacks to `colourFor(kind, …)` —
-  sage `#88A36F` (chores/projects/routines ×8), teal `#2A8F85` (businesses/groups ×5), slate `#6b7a8f` (car ×3),
-  butter `#FBD66B` (notes), member `#888`. ~20 sites, each needs its kind classified — its own commit. The registry
-  is ready; this is mechanical adoption.
+- [x] ✅ **Follow-up DONE 2026-06-26.** Migrated **16 zero-visual-change sites** to `colourFor(kind, …)` across 13
+  files: routine `#88a36f` (KidView, RoutinePlayer), chore `#88a36f` (ChoreLedger, ChoreForm, chores, ThisWeek),
+  project `#88a36f` (HomeProjectForm, homeProjects, ThisWeek), car `#6b7a8f` (VoiturePage ×2, AutoCard), group
+  `#2a8f85` (ContactForm, cercle), note `#fbd66b` (Notes). Each literal **exactly matched** its registered kind
+  default, so zero pixels moved. typecheck + 799 tests + build green.
+  > **Left (would NOT be zero-change):** the `?? '#888'` member-avatar fallbacks (VoiturePage:314, AutoCard:143,
+  > schedule.tsx:101) — the registry's `member` default is `#7a8b6f` (the backend seed), so migrating would shift
+  > a neutral grey to sage-grey: a real visual change, not a mechanical swap. The `#888888` neutral discs in
+  > `HouseholdListSection` aren't a kind default. And `adapters.ts`'s two `#2A8F85` accents are the cercle *person*
+  > accent — no clean registered kind (member is sage-grey, not teal). These need a decision, not a sweep.
 
 ### P2-7 🟢 (med value / low risk, **Phase 1 only**) `SEARCHABLE_INDEX` — the searchable-entity contract
 `/search` matches ~13 kinds client-side via `fold()`, but each kind's indexed fields are chosen ad-hoc inline in

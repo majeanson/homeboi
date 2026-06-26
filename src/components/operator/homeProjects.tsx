@@ -13,6 +13,7 @@ import { formatDayMaybeYear } from '../../lib/format'
 import { formatMoney } from '../../lib/money'
 import { InlineIcon } from '../Icon'
 import { ListRow } from '../ListRow'
+import { colourFor } from '../../lib/things'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
 import { SubTabs } from '../SubTabs'
@@ -154,7 +155,7 @@ function HomeProjectRow({ project, kind, onRemove }: { project: HomeProject; kin
   return (
     <li>
       <ListRow
-        leading={<span className="operator__avatar" style={{ background: project.color ?? '#88A36F' }} aria-hidden="true" />}
+        leading={<span className="operator__avatar" style={{ background: colourFor('project', project.color) }} aria-hidden="true" />}
         title={project.title}
         subtitle={subtitle || undefined}
         actions={

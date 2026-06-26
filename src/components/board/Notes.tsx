@@ -15,6 +15,7 @@ import { DrawPad } from '../DrawPad'
 import { DrawEditChoice } from '../DrawEditChoice'
 import { ZoomableImg } from '../ZoomableImg'
 import { colorOf as memberColorOf, type BoardData, type Member, type NoteRow } from './types'
+import { colourFor } from '../../lib/things'
 
 // Fridge notes on the Aujourd'hui board: little hand-written cards a parent can
 // clear with a tap. Tinted by who left it (pick-your-face). Optimistically
@@ -146,7 +147,7 @@ export function Notes({
       </div>
       <div className="notes__grid">
         {shown.map((n) => {
-          const tint = colorOf(n.member_id) ?? '#FBD66B'
+          const tint = colourFor('note', colorOf(n.member_id))
           const css = { '--note-tint': tint } as React.CSSProperties
           const media = n.media_kind && n.media_key ? n.media_kind : null
           // Attribution for a « boîte aux lettres » message (#postbox) — « — Papi ».

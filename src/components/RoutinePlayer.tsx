@@ -10,6 +10,7 @@ import { api } from '../lib/api'
 import { useOptimisticMutation } from '../lib/optimistic'
 import { ROUTINES_KEY } from '../lib/queryKeys'
 import { chime, clock } from '../lib/cookTimers'
+import { colourFor } from '../lib/things'
 
 // The RUN of one routine — the calm "right now / then" picture story extracted
 // from KidView so it can play on EVERY surface, not just the locked toddler
@@ -184,7 +185,7 @@ export function RoutinePlayer({
     setTimes({})
   }
 
-  const tint = routine.color ?? '#88A36F'
+  const tint = colourFor('routine', routine.color)
   const allDone = routine.cards.length > 0 && routine.doneIdx.length >= routine.cards.length
   // Calm ON (default): finish and STOP on a calm "sweet dreams". Calm OFF: never
   // dead-end — fall through to the last card, still re-tappable.

@@ -8,6 +8,7 @@ import { useARegler, frictionRow } from '../../lib/aRegler'
 import { Avatar } from '../Avatar'
 import { EmptyState } from '../EmptyState'
 import { Icon } from '../Icon'
+import { colourFor } from '../../lib/things'
 
 // "Cette semaine ensemble" — a calm, READ-ONLY weekly ritual surface (Réglages).
 // The week AHEAD (meals, who's at work, birthdays, events, projects) and the week
@@ -179,7 +180,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
                     <h4 className="tweek__h mono"><Icon name="broom-bold" size={14} /> {t.operator.thisWeekChores}</h4>
                     {behind!.chores.map((c, i) => (
                       <div key={i} className="tweek__row tweek__row--faces">
-                        <span className="tweek__spine" style={{ background: c.choreColor ?? '#88A36F' }} aria-hidden="true" />
+                        <span className="tweek__spine" style={{ background: colourFor('chore', c.choreColor) }} aria-hidden="true" />
                         <span className="tweek__chore">{c.choreTitle}</span>
                         <span className="ledger__helpers">{c.helpers.map((h, j) => faceChip(h, j))}</span>
                       </div>
@@ -202,7 +203,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
                     <h4 className="tweek__h mono"><Icon name="paint-brush-bold" size={14} /> {t.operator.thisWeekProjects}</h4>
                     {behind!.projects.map((p, i) => (
                       <div key={i} className="tweek__row">
-                        <span className="tweek__spine" style={{ background: p.color ?? '#88A36F' }} aria-hidden="true" />
+                        <span className="tweek__spine" style={{ background: colourFor('project', p.color) }} aria-hidden="true" />
                         <span className="tweek__chore">{p.title}</span>
                       </div>
                     ))}

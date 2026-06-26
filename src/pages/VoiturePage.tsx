@@ -17,6 +17,7 @@ import { Avatar } from '../components/Avatar'
 import { Icon } from '../components/Icon'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useNavigate } from 'react-router-dom'
+import { colourFor } from '../lib/things'
 
 // « L'auto » week scene (/voiture) — the FAST weekly editor + glance. The weekly
 // schedule template pre-fills every day, so a normal week needs zero taps; tapping a
@@ -46,7 +47,7 @@ export function VoiturePage() {
   const write = useWrite()
   const { name: carName, color: carColorOf, primary } = useCars()
   const carId = primary?.id ?? 'car'
-  const carColor = carColorOf(primary?.id) ?? '#6b7a8f'
+  const carColor = colourFor('car', carColorOf(primary?.id))
   const { data: membersData } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), ...live })
   const members = membersData?.members ?? []
   const nameOf = (id: string | null | undefined) => (id ? members.find((m) => m.id === id)?.display_name : undefined)
@@ -116,7 +117,7 @@ export function VoiturePage() {
         <div className="scene__body voiture__kid-body">
           {firstRide ? (
             <div className="voiture__kid-card">
-              <span className="voiture__kid-face" style={{ background: colorOf(driverId) ?? '#6b7a8f' }}>
+              <span className="voiture__kid-face" style={{ background: colourFor('car', colorOf(driverId)) }}>
                 {firstRide.contactName || nameOf(driverId) ? (
                   (firstRide.contactName ?? nameOf(driverId) ?? '').slice(0, 1)
                 ) : (

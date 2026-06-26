@@ -11,6 +11,7 @@ import { homeProjectTemplates } from '../../lib/routineTemplates'
 import { parseMoney } from '../../lib/money'
 import { HOME_PROJECTS_KEY, MONTH_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import type { HomeProject } from '../operator/types'
+import { colourFor } from '../../lib/things'
 
 // The "Projet / Entretien" (home_projects) form — title (with kind presets), free
 // notes, an optional target budget, a colour, an optional date + recurrence + calm
@@ -38,7 +39,7 @@ export function HomeProjectForm({
   const [title, setTitle] = useState(value?.title ?? '')
   const [notes, setNotes] = useState(value?.notes ?? '')
   const [budget, setBudget] = useState(value?.budget_cents != null ? String(value.budget_cents / 100) : '')
-  const [color, setColor] = useState(value?.color ?? '#88A36F')
+  const [color, setColor] = useState(colourFor('project', value?.color))
   // Optional date — the target date (a one-off plan) AND the recurrence anchor.
   // Empty = undated → the item rests in Réglages and never surfaces on the board.
   const [date, setDate] = useState(anchorSecToDate(value?.at))

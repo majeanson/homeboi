@@ -5,6 +5,7 @@ import { OperatorSection } from './operator/OperatorSection'
 import { api } from '../lib/api'
 import { Avatar } from './Avatar'
 import { EmptyState } from './EmptyState'
+import { colourFor } from '../lib/things'
 
 // "Qui a fait quoi cette semaine ?" — the calm, READ-ONLY chore fairness ledger.
 // It settles "it's not my turn" by SHOWING the recent shared record, not scoring
@@ -71,7 +72,7 @@ export function ChoreLedger({ help }: { help?: HelpMode }) {
                         shows; purely decorative, never a status. */}
                     <span
                       className="ledger__spine"
-                      style={{ background: row.choreColor ?? '#88A36F' }}
+                      style={{ background: colourFor('chore', row.choreColor) }}
                       aria-hidden="true"
                     />
                     <div className="ledger__body">

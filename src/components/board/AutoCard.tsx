@@ -11,6 +11,7 @@ import { MEMBERS_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 import { Avatar } from '../Avatar'
 import { BoardCard } from './BoardCard'
+import { colourFor } from '../../lib/things'
 
 // The board "L'auto" glance card — a calm strip near the day, in every parent view
 // (like CercleBirthdays). Answers "où est l'auto, et est-elle libre ?" at a glance.
@@ -54,7 +55,7 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
 
   const hhmm = (at: number) => formatTime(at, lang)
   const carLabel = carName(primary?.id) ?? t.auto.car
-  const tint = carColor(primary?.id) ?? '#6b7a8f'
+  const tint = colourFor('car', carColor(primary?.id))
 
   // The status line. For TODAY it is day-AWARE + time-AWARE: the live "right now"
   // status the server folds rides into (committed → "le reste de la journée", never a
