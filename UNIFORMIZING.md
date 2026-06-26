@@ -54,10 +54,22 @@ All three already use `useModal` (behaviour is unified), but duplicate the **scr
 and own a parallel CSS family. Fold the outer chrome onto `<Modal>`, keep the inner layout CSS
 (mirrors how `EmptyFridgeSheet` does `<Modal className="fridge-modal">`).
 
-- [ ] `components/RecipeForm.tsx` (~L750, `.recipe-modal`) → `<Modal className="recipe-modal">`
-- [ ] `components/RecipeSheet.tsx` (~L183, `.recipe-modal`) → `<Modal className="recipe-modal">`
+> ⚠️ **RE-SCOPED 2026-06-26 after review — the FE-2 premise was stale.** `.recipe-modal` is no longer a
+> centered modal: `recipes.css` L67-90 makes it a **full-screen scene route** (`position:fixed; top:0;
+> height:100dvh`, `.kb-open` keyboard-pinning via `--vvt/--vvh`, "No backdrop — the card IS the screen").
+> Folding it onto `<Modal>` (a 460px centered `.kit-modal` dialog) would *reverse* a deliberate design and
+> break keyboard pinning. Verdict below.
+
+- [~] `components/RecipeForm.tsx` `.recipe-modal` → **N/A — it's a full-screen scene, not a modal.** The real
+  uniformization here is a shared *scene* wrapper (ties to [STRUCT-1](#struct-1) `EditScene`), NOT `<Modal>`.
+- [~] `components/RecipeSheet.tsx` `.recipe-modal` → **N/A — same (full-screen scene).**
 - [ ] `components/RecipeReadReview.tsx` (~L147, `.read-review` + manual `createPortal`) → `<Modal className="read-review">`
-- [ ] Same fix retires the `RecipeFormPage.tsx` hand-rolled `<h2>` header outlier (see [STRUCT-1](#struct-1)).
+  — **the one genuine centered overlay.** Deferred: needs `recipes.css` `.read-review__*` rewritten to nest under
+  `.kit-modal` (drop the outer `position:fixed`/scrim/`56rem`-card rules, move `__bar`/`__body`/`__foot` inside the
+  kit-modal card, restore width via the `.read-review` override, pass Modal `title`, delete local portal/`useModal`).
+  Modest value, real visual risk — own commit with visual QA.
+- [~] `RecipeFormPage.tsx` hand-rolled `<h2>` → **no change**: the page is a thin route wrapper with no `<h2>` of its
+  own; the STRUCT-1 `<h2>` lives inside RecipeForm's `.recipe-modal__bar` (a scene), so it rides the scene-wrapper work.
 
 ### FE-3 🟡 `KidExitGate` bespoke modal
 - [ ] `components/KidExitGate.tsx` (~L113–161, `.kid-exit-overlay`/`.kid-exit-modal`) — security-gate styling is
@@ -77,9 +89,15 @@ and own a parallel CSS family. Fold the outer chrome onto `<Modal>`, keep the in
 
 ### <a id="css-1"></a>CSS-1 🟡 Hardcoded values that should be tokens
 - [x] **`border-radius: 999px`** — ~64 instances → `var(--radius-pill)`. Mechanical, safe. ✅ (64 replaced, 16 files)
-- [ ] **`#fff` / `#000`** — ~55 instances across 12 files (sheets/pages/today/board/handoff…) → semantic tokens.
-  Several **break night / high-contrast mode** (e.g. `handoff.css:220` `background:#fff;color:#000`). This is a
-  correctness bug, not just a nit. May need new `--surface-inverse` / `--ink-inverse` tokens for overlays.
+- [~] **`#fff` / `#000`** — **REVIEWED 2026-06-26 → mostly a false positive; no churn.** Of ~61 occurrences:
+  (a) `handoff.css:209-243` is inside `@media print` — white-on-black is *correct for paper*, not a night bug
+  (the audit's flagged "correctness bug" was wrong). (b) 34 are intentional **white-on-colour** (avatars, sage/
+  accent badges, scrim-overlaid photo labels) — correct in both themes, leave. (c) the "SURFACE-BG" image/drawing/
+  QR containers (`.qrcode__img` must be white to scan; `.drawpad__canvas`/`.note-card__draw` hold dark ink strokes
+  that vanish on a dark surface; flyer/logo containers assume a light backing) **must stay light** — flipping them
+  to `var(--card)` (dark in night) is a REGRESSION. (d) the rest already use `var(--token, #fff)` fallbacks. The only
+  nit, `today.css:203` using `--card`'s hex `#fffcf5` as a text colour, was left (a theme-flip would harm contrast).
+  **No `--surface-inverse`/`--ink-inverse` needed.** Net: keep the radius/touch-target wins (done); skip the colours.
 - [x] **`min-height: 44px`** (touch target, ~7×) → add `--touch-target: 44px`. ✅ (token added; 9 min-h/min-w replaced)
 - [ ] Repeated `rgba(0,0,0,0.04/0.08/0.3)` hairline/overlay literals (~20×) → `--overlay-faint/-light/-dark`
   (+ warm-ink `rgba(44,39,34,…)` variants).
