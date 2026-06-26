@@ -7,8 +7,9 @@ import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { Chip } from './Chip'
-import { Icon, InlineIcon } from './Icon'
+import { Icon } from './Icon'
 import { SceneHead } from './SceneHead'
+import { SubTabs } from './SubTabs'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { existingListId, stageDeal } from '../lib/picks'
@@ -148,26 +149,16 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
 
         {/* Mode switch (search vs browse-a-store) — a segmented control, not chips,
             so it doesn't read as another filter row above the actual filters. */}
-        <div className="subtabs deal-tabs" role="tablist" aria-label={t.shop.browseTitle}>
-          <button
-            type="button"
-            role="tab"
-            className={`subtabs__opt${mode === 'item' ? ' is-on' : ''}`}
-            onClick={() => setMode('item')}
-            aria-selected={mode === 'item'}
-          >
-            <InlineIcon name="magnifying-glass-bold" /> {t.shop.byItem}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={`subtabs__opt${mode === 'store' ? ' is-on' : ''}`}
-            onClick={() => setMode('store')}
-            aria-selected={mode === 'store'}
-          >
-            <InlineIcon name="storefront-bold" /> {t.shop.byStore}
-          </button>
-        </div>
+        <SubTabs
+          className="deal-tabs"
+          ariaLabel={t.shop.browseTitle}
+          value={mode}
+          onSelect={setMode}
+          options={[
+            { key: 'item', label: t.shop.byItem, icon: 'magnifying-glass-bold' },
+            { key: 'store', label: t.shop.byStore, icon: 'storefront-bold' },
+          ]}
+        />
 
         {mode === 'item' && (
           <>

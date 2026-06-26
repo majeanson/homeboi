@@ -38,10 +38,13 @@ These are the items with the best ratio of consistency-gain to regression-risk. 
 Five components re-implement the `role="tablist"` + `.subtabs` button structure instead of
 the shared `SubTabs` (COMPONENTS.md already flags deal/flyer/recipe-book as migratable).
 
-- [ ] `components/DealsBrowser.tsx` (~L150, `.subtabs deal-tabs`) → `<SubTabs className="deal-tabs">`
-- [ ] `components/FlyerViewer.tsx` (~L419, `.subtabs flyer-tabs`) → `<SubTabs className="flyer-tabs">`
-- [ ] `components/kitchen/RecipesTab.tsx` (~L328, `.subtabs subtabs--mini`) → `<SubTabs size="mini">`
-- [ ] `components/cercle/FamilyBuilder.tsx` (~L410, `.cercle-viewswitch`) → `<SubTabs>` if the API fits
+- [x] `components/DealsBrowser.tsx` (~L150, `.subtabs deal-tabs`) → `<SubTabs className="deal-tabs">` ✅
+- [x] `components/FlyerViewer.tsx` (~L419, `.subtabs flyer-tabs`) → `<SubTabs className="flyer-tabs">` ✅
+- [ ] `components/kitchen/RecipesTab.tsx` (~L328, `.subtabs subtabs--mini`) → `<SubTabs size="mini">` — needs help-key
+  mapping (single `'collections'` key) + the sibling book button; do with a CSS check (own commit).
+- [ ] `components/cercle/FamilyBuilder.tsx` (~L410, `.cercle-viewswitch`) → `<SubTabs>` if the API fits — **kept distinct
+  for now**: `.cercle-viewswitch__btn`/`.is-active` is a deliberately different (boxed, not pill) style; adopting SubTabs
+  restyles it. Revisit if we want it to match the pill family.
 - [ ] `components/CookMode.tsx` (~L514 `.cook__siblings`, ~L602 `.cook__split-tabs`) — **review first**: these
   carry cook-specific semantics (multi-recipe siblings, split-view). Either add a SubTabs variant or
   consciously keep them distinct and note why.
@@ -127,14 +130,17 @@ The sweep found ~50 direct `api()` write calls. **Triage required — several ar
 ### <a id="lib-2"></a>LIB-2 🔴 Inline query keys (cache-drift risk)
 Keys spelled as inline arrays in many files; should be the canonical constants in `lib/queryKeys.ts`.
 
-- [ ] `['members']` — **11 sites** (AddSheet, AutoCard, DrawPad, FormScene, HeartButton, ProfilePicker, Operator,
+- [x] `['members']` — **11 sites** (AddSheet, AutoCard, DrawPad, FormScene, HeartButton, ProfilePicker, Operator,
   VoiturePage, DrawingGalleryPage, idleDebug, schedule) → `MEMBERS_KEY`
-- [ ] `['photos']` ×7 → `PHOTOS_KEY`; `['events']` ×5 → `EVENTS_KEY`; `['chores']` ×5 → `CHORES_KEY`;
+- [x] `['photos']` ×7 → `PHOTOS_KEY`; `['events']` ×5 → `EVENTS_KEY`; `['chores']` ×5 → `CHORES_KEY`;
   `['weather']` ×3 → `WEATHER_KEY`; `['devices']` ×2; `['flyers']` ×2; `['ai-errors']` ×2
-- [ ] **`['board']` used inline** where `BOARD_KEY` exists (DayPlanPage, Kitchen, useRecipeShop, DealsBrowser) —
+- [x] **`['board']` used inline** where `BOARD_KEY` exists (DayPlanPage, Kitchen, useRecipeShop, DealsBrowser) —
   mixing constant + literal in the same app is the exact drift the convention forbids.
-- [ ] Centralize the parameterized guest-window keys: `['guest-window', preview ?? 'self', …]` (WelcomePage,
+- [x] Centralize the parameterized guest-window keys: `['guest-window', preview ?? 'self', …]` (WelcomePage,
   HandoffPage, FamilyWindowPage, IntakeForm, Postbox) into a `guestWindowKey(preview, sub?)` helper.
+
+> ✅ **LIB-2 DONE 2026-06-26** (commit 889753e) — 8 new key constants + `guestWindowKey()` in `lib/queryKeys.ts`,
+> ~42 src files de-inlined.
 
 ### LIB-3 🟢 Duplicate small utilities (verify then consolidate)
 - [ ] Sweep `lib/` for near-duplicate <50-LOC utils: member display-name resolvers, local-day/date helpers,
@@ -159,13 +165,13 @@ routes.ts ↔ handlers fully matched; R2/realtime/idempotency consistent. Findin
 
 ### BE-1 🔴 DELETE statements missing defensive `household_id` scope
 Safe today (ids come from scoped SELECTs) but lacks defense-in-depth; one refactor away from a leak.
-- [ ] `functions/api/photos.ts:44`, `postbox.ts:72`, `intake.ts:62` (the loop-cleanup deletes) →
-  add `AND household_id = ?`. The main deletes in those files already scope correctly.
+- [x] `functions/api/photos.ts:44`, `postbox.ts:72`, `intake.ts:62` (the loop-cleanup deletes) →
+  add `AND household_id = ?`. The main deletes in those files already scope correctly. ✅ (889753e)
 
 ### <a id="be-2"></a>BE-2 🟡 Duplicated `keyish` R2-key validator
-- [ ] Identical `/^[A-Za-z0-9_-]{1,64}$/` validator redefined in `drawings.ts:27`, `family-notes.ts:33`,
+- [x] Identical `/^[A-Za-z0-9_-]{1,64}$/` validator redefined in `drawings.ts:27`, `family-notes.ts:33`,
   `notes.ts:33`, `guest/postbox-submit.ts`. Extract `isValidR2Key()` into `_lib/validate.ts` (beside `hexColor()`)
-  and import everywhere media keys are accepted.
+  and import everywhere media keys are accepted. ✅ (889753e — also found+folded `routines.ts`, `recipes.ts`)
 
 ### BE-3 🟢 Minor consistency
 - [ ] Redundant `if (ctx.env.PHOTOS)` guards before `deleteR2Blob()` in `care-log.ts:208` / `home-pins.ts:131`

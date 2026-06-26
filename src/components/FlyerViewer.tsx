@@ -6,6 +6,7 @@ import { useLang, useT } from '../i18n'
 import { isGuest } from '../lib/device'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
+import { SubTabs } from './SubTabs'
 import { type Deal, type FlyerSummary } from '../lib/deals'
 import { FLYERS_KEY } from '../lib/queryKeys'
 import { useModal } from '../lib/useModal'
@@ -417,26 +418,16 @@ export function FlyerViewer({
       </div>
 
       {state === 'ok' && (
-        <div className="subtabs flyer-tabs" role="tablist" aria-label={title ?? t.shop.proofTitle}>
-          <button
-            type="button"
-            role="tab"
-            className={`subtabs__opt${view === 'plan' ? ' is-on' : ''}`}
-            onClick={() => setView('plan')}
-            aria-selected={view === 'plan'}
-          >
-            <InlineIcon name="map-pin-bold" /> {t.shop.flyerTabMap}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={`subtabs__opt${view === 'offres' ? ' is-on' : ''}`}
-            onClick={() => setView('offres')}
-            aria-selected={view === 'offres'}
-          >
-            <InlineIcon name="tag-bold" /> {t.shop.flyerTabOffers}
-          </button>
-        </div>
+        <SubTabs
+          className="flyer-tabs"
+          ariaLabel={title ?? t.shop.proofTitle}
+          value={view}
+          onSelect={setView}
+          options={[
+            { key: 'plan', label: t.shop.flyerTabMap, icon: 'map-pin-bold' },
+            { key: 'offres', label: t.shop.flyerTabOffers, icon: 'tag-bold' },
+          ]}
+        />
       )}
 
       {view === 'plan' && directions && (
