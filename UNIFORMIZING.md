@@ -121,9 +121,11 @@ Same class defined twice (cascade-order-dependent, fragile):
   into purpose files placed correctly in the cascade. Large, do carefully with visual QA. **Medium-term.**
 
 ### CSS-4 🟡 Ad-hoc button-like elements bypassing the `.btn` family
-- [ ] `.board-focus__all`, `.disclosure__summary`, `.kitchen__note-add`, `.kitchen__slot`, `.routine-card__run`
-  each hand-roll padding/radius. Extend `.btn` with `--text` (link-style) and `--dashed` (editable-slot) variants,
-  then adopt. Improves tap-target consistency.
+- [ ] **DEFERRED 2026-06-26 (needs visual QA).** `.board-focus__all`, `.disclosure__summary`, `.kitchen__note-add`,
+  `.kitchen__slot`, `.routine-card__run` each hand-roll padding/radius. Extending `.btn` with `--text` (link-style)
+  + `--dashed` (editable-slot) variants and adopting them **restyles 5 interactive elements** — a real
+  visual-regression surface (tap target, padding, focus) that must be eyeballed on a running app, not blind-shipped
+  from a green typecheck. Pair with the cross-file CSS-2 merges in a dedicated `/dev/kit` + e2e-screenshot pass.
 
 ### CSS-5 🟢 Convention-only
 - [ ] BEM drift (`__`/`-`/camelCase mixed) — standardize on `.block__el--mod` for *new* CSS; document in core.css.
@@ -167,8 +169,13 @@ Keys spelled as inline arrays in many files; should be the canonical constants i
 > ~42 src files de-inlined.
 
 ### LIB-3 🟢 Duplicate small utilities (verify then consolidate)
-- [ ] Sweep `lib/` for near-duplicate <50-LOC utils: member display-name resolvers, local-day/date helpers,
-  R2/img-url builders, slot-label functions. (Prior audits consolidated several — confirm none regressed.)
+- [x] ✅ **VERIFIED CLEAN 2026-06-26 — no action.** Each named category resolves to a SINGLE source: `imgUrl`
+  (`lib/image.ts`), the local-day trio `localDayStart`/`addLocalDays`/`localDayOfWeek` (`lib/localDay.ts`),
+  `slotLabel` (`lib/mealSlots.ts`). Member display-name "resolvers" are tiny per-component closures
+  (`members.find(...)?.display_name`), not exported dups worth extracting. A sweep of every `lib/` export found
+  only ONE name collision — `TOD_ICON` in `cats.ts` vs `routineTod.ts` — and they hold **intentionally different**
+  icon sets (general time-of-day vs kid-routine), so they're a name clash, NOT a duplicate; consolidating would be
+  wrong. Prior audits' consolidations confirmed un-regressed.
 
 ### LIB-4 🟡 Media upload not always via `uploadMedia()`/`useMediaUpload()`
 - [x] ✅ **DONE 2026-06-26 — 2 of 4 were already migrated (audit stale).** `ContactPhotos.tsx` already uses
