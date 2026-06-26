@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useT, useLang } from '../../i18n'
 import { useCarnets, warrantyExpiries } from '../../lib/carnets'
 import { formatDay } from '../../lib/format'
-import { Icon } from '../Icon'
+import { BoardCard } from './BoardCard'
 
 // The board « Les carnets » glance — the « long jeu » heads-up a calendar can't give:
 // a cared-for thing entering (or past) its replacement window. Reads the SAME
@@ -24,14 +24,7 @@ export function CarnetsCard() {
   if (soon.length === 0 && warranties.length === 0) return null
 
   return (
-    <div className="carnets-card">
-      <div className="sec-label">
-        <span className="sec-label__ico" aria-hidden="true">
-          <Icon name="book-open-bold" size={16} />
-        </span>
-        <b>{c.title}</b>
-        <span className="ln" />
-      </div>
+    <BoardCard className="carnets-card" icon="book-open-bold" label={c.title}>
       <ul className="carnets-card__list">
         {soon.map((s) => (
           <li key={s.carnetId} className="carnets-card__row">
@@ -52,6 +45,6 @@ export function CarnetsCard() {
           </li>
         ))}
       </ul>
-    </div>
+    </BoardCard>
   )
 }

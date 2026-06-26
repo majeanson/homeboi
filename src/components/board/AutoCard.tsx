@@ -1,5 +1,4 @@
 import { type CSSProperties } from 'react'
-import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -11,6 +10,7 @@ import { type Member } from '../../lib/members'
 import { MEMBERS_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 import { Avatar } from '../Avatar'
+import { BoardCard } from './BoardCard'
 
 // The board "L'auto" glance card — a calm strip near the day, in every parent view
 // (like CercleBirthdays). Answers "où est l'auto, et est-elle libre ?" at a glance.
@@ -102,21 +102,16 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
   }
 
   return (
-    <Link
+    // Same header anatomy as every board section (icon disc + label + rule), via the
+    // shared BoardCard shell, so « L'auto » reads as a peer of the other cards.
+    <BoardCard
       to="/voiture"
       className="auto-card"
       style={{ ['--car-tint']: tint } as CSSProperties}
-      aria-label={t.auto.title}
+      ariaLabel={t.auto.title}
+      icon="car-bold"
+      label={carLabel}
     >
-      {/* Same header anatomy as every board section (icon disc + label + rule), so
-          « L'auto » reads as a peer of the other cards — neutral, no bespoke tint. */}
-      <div className="sec-label">
-        <span className="sec-label__ico" aria-hidden="true">
-          <Icon name="car-bold" size={16} />
-        </span>
-        <b>{carLabel}</b>
-        <span className="ln" />
-      </div>
       <div className={`auto-card__status${busy ? ' auto-card__status--busy' : ''}`}>
         {holder && (
           <Avatar kind={holder.avatar_kind} photo={holder.avatar_ref} colour={holder.colour} name={holder.display_name} size={22} />
@@ -160,6 +155,6 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
           })}
         </ul>
       )}
-    </Link>
+    </BoardCard>
   )
 }

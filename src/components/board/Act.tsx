@@ -4,6 +4,7 @@ import { isGuest } from '../../lib/device'
 import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
 import { type HelpMode } from '../../lib/helpMode'
+import { SecLabel } from './BoardCard'
 
 // Pip section header: an optional category glyph + label + rule + a quiet count
 // (never a score). Each Section is a bento tile in the board grid. `icon` + `tint`
@@ -37,28 +38,10 @@ export function Section({
   helpKey?: string
   children: React.ReactNode
 }) {
-  const t = useT()
   const style = tint ? ({ '--sec-tint': tint } as React.CSSProperties) : undefined
-  const helpable = !!help && !!helpKey && help.active
   return (
     <div className={'bento' + (tint ? ' bento--tinted' : '') + (now ? ' bento--now' : '')} style={style}>
-      <div className="sec-label">
-        {icon && (
-          <span className="sec-label__ico" aria-hidden="true">
-            <Icon name={icon} size={16} />
-          </span>
-        )}
-        {helpable ? (
-          <button type="button" className="help-title" onClick={help!.pick(helpKey!, () => {})} title={t.help.learnMore}>
-            <b>{label}</b>
-          </button>
-        ) : (
-          <b>{label}</b>
-        )}
-        <span className="ln" />
-        {count ? <span className="ct">{count}</span> : null}
-      </div>
-      {help && helpKey ? help.bubbleFor(helpKey) : null}
+      <SecLabel label={label} count={count} icon={icon} help={help} helpKey={helpKey} />
       {children}
     </div>
   )

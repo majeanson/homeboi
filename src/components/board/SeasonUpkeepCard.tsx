@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { HOME_PROJECTS_KEY } from '../../lib/queryKeys'
 import { currentSeason, SEASON_EMOJI, isThisSeason } from '../../lib/season'
 import type { HomeProject } from '../operator/types'
+import { BoardCard } from './BoardCard'
 
 // The board « Cette saison » glance — recurring upkeep (home_projects 'upkeep') whose
 // next occurrence falls before the season turns over: "🔥 changer le filtre", "🍂
@@ -23,12 +24,7 @@ export function SeasonUpkeepCard() {
   if (items.length === 0) return null
 
   return (
-    <div className="carnets-card">
-      <div className="sec-label">
-        <span className="sec-label__ico" aria-hidden="true">{SEASON_EMOJI[s]}</span>
-        <b>{t.season[s]}</b>
-        <span className="ln" />
-      </div>
+    <BoardCard className="carnets-card" iconNode={SEASON_EMOJI[s]} label={t.season[s]}>
       <ul className="carnets-card__list">
         {items.map((p) =>
           p.carnet_id ? (
@@ -44,6 +40,6 @@ export function SeasonUpkeepCard() {
           ),
         )}
       </ul>
-    </div>
+    </BoardCard>
   )
 }

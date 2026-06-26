@@ -412,7 +412,18 @@ useState+useWrite+undo; useState+`api()`+invalidate): `recipeTags`, `recipePills
 Two related drifts:
 - **Card shell:** `ARegler`, `AutoCard`, `CarnetsCard`, season card, `CercleBirthdays`, etc. each hand-roll the
   same `<div class="card">` + `.sec-label` header + empty-hide. `useBoardCards` already generalizes *layout*; the
-  *card contract* isn't. → [ ] Extract `<BoardCard icon label tint empty>` and adopt.
+  *card contract* isn't. → [x] ✅ **DONE 2026-06-26 (card-shell half).** Extracted **`<SecLabel>`** (the ONE
+  `.sec-label` header: glyph disc — `icon` Phosphor OR `iconNode` emoji — + label + rule + optional `count` +
+  help-mode-aware title) and **`<BoardCard>`** (the standalone shell: `SecLabel` + content, `to` → `<Link>` else
+  `<div>`, caller keeps its `className`/`style`) in `components/board/BoardCard.tsx`. Adopted in `AutoCard`,
+  `CarnetsCard`, `SeasonUpkeepCard`; `Section` (Act.tsx) now renders `<SecLabel>` too, so the header can't drift.
+  Registered in DevKit + COMPONENTS.md. typecheck + 797 tests + build green.
+  > **Audit premise corrected:** there is **no single `<div class="card">`** shared across these — the wrappers are
+  > deliberately distinct CSS (`auto-card` full-width strip, `carnets-card`, `bento` grid), so only the *header* +
+  > shell are shared, not one card class. **`ARegler` is NOT a sec-label card** — its `card` variant is a hero-tile
+  > (`.now-card--regler` with `.blob`/`.label`/`.what`/`.icn`, matching the supper/weather heroes), so it's left
+  > out by design. `CercleBirthdays` is not a component (birthdays surface through the event system). Empty-hide
+  > stays at each call site (the rules differ and read clearer inline). *(DerivedOccurrence half still open — below.)*
 - **Derived shape:** `birthdayOccurrences()`, `carResolve.workOccurrencesInRange()`, `carnetLife` all produce
   "a date + label + metadata" in **different** shapes, re-wrapped per consumer. → [ ] Define one
   `DerivedOccurrence {id, at, label, kind, …}` (stable `kind:source:…` id) that board/month/day consume uniformly.

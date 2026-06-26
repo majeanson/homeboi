@@ -35,6 +35,7 @@ import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
 import { Act, Section as BoardSection } from '../components/board/Act'
+import { BoardCard } from '../components/board/BoardCard'
 import { Fil } from '../components/board/Fil'
 import { TodoSection } from '../components/todos/TodoSection'
 import { RecurPicker, type RecurValue } from '../components/RecurPicker'
@@ -995,6 +996,33 @@ export function DevKit() {
           <Demo label="tap-to-peek: whole row (onOpen) + split (onOpen + check)">
             <Act cat="event" title="Rendez-vous dentiste" when="14:00" who="Camille" onOpen={() => {}} />
             <Act cat="chore" title="Sortir les poubelles" who="Marc" onCheck={() => {}} onOpen={() => {}} />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'BoardCard · SecLabel',
+      file: 'components/board/BoardCard.tsx',
+      kw: 'board card sec-label header shell auto carnets season standalone band glance',
+      // The shared standalone board-card shell (auto/carnets/season). Same `.sec-label`
+      // header as Section, different wrapper (a navigating Link or a plain div). The
+      // emoji disc shows the iconNode path (the « Cette saison » card uses it).
+      render: () => (
+        <>
+          <Demo label="Phosphor icon + plain div shell">
+            <BoardCard className="carnets-card" icon="book-open-bold" label="Les carnets">
+              <ul className="carnets-card__list">
+                <li className="carnets-card__row"><span className="carnets-card__name">Toiture</span><span className="carnets-card__when mono">2031</span></li>
+              </ul>
+            </BoardCard>
+          </Demo>
+          <Demo label="emoji disc (iconNode) + count">
+            <BoardCard className="carnets-card" iconNode="🍂" label="Cet automne" count={2}>
+              <ul className="carnets-card__list">
+                <li className="carnets-card__row"><span className="carnets-card__name">Nettoyer les gouttières</span></li>
+              </ul>
+            </BoardCard>
           </Demo>
         </>
       ),
