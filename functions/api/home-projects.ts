@@ -78,7 +78,7 @@ interface ProjectRow {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, kind, title, notes, budget_cents, color, at, recur_json, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all<ProjectRow>()
@@ -114,7 +114,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const at = atSec(body?.at)
   const carnetId = await validCarnetId(ctx.env.DB, actor.householdId, body?.carnetId)
   await ctx.env.DB.prepare(
-    'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, color, at, recur_json, lead_seconds, carnet_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, colour, at, recur_json, lead_seconds, carnet_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -180,7 +180,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       binds.push(budgetCents(body.budgetCents))
     }
     if (body.color !== undefined) {
-      sets.push('color = ?')
+      sets.push('colour = ?')
       binds.push(hexColor(body.color, '#88a36f'))
     }
     if (body.at !== undefined) {

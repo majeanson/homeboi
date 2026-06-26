@@ -40,7 +40,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
     `SELECT tp.task_id, tp.role, tp.contributed_at,
             tp.member_id AS member_id,
-            t.title AS chore_title, t.color AS chore_color,
+            t.title AS chore_title, t.colour AS chore_color,
             m.display_name AS name, m.avatar_kind, m.avatar_ref, m.colour
        FROM task_participants tp
        JOIN tasks t ON t.id = tp.task_id AND t.household_id = ?

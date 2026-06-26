@@ -141,7 +141,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // result (every slot reset to its default) clears the column back to NULL.
   if (body && 'mealColors' in body) {
     const colors = cleanColors(body.mealColors)
-    await ctx.env.DB.prepare('UPDATE households SET meal_slot_colors = ?, updated_at = ? WHERE id = ?')
+    await ctx.env.DB.prepare('UPDATE households SET meal_slot_colours = ?, updated_at = ? WHERE id = ?')
       .bind(Object.keys(colors).length ? JSON.stringify(colors) : null, nowSec(), actor.householdId)
       .run()
   }
@@ -159,7 +159,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // empty result (every tool reset to default) clears the column back to NULL.
   if (body && 'measureColors' in body) {
     const colors = cleanMeasureColors(body.measureColors)
-    await ctx.env.DB.prepare('UPDATE households SET measure_colors = ?, updated_at = ? WHERE id = ?')
+    await ctx.env.DB.prepare('UPDATE households SET measure_colours = ?, updated_at = ? WHERE id = ?')
       .bind(Object.keys(colors).length ? JSON.stringify(colors) : null, nowSec(), actor.householdId)
       .run()
   }

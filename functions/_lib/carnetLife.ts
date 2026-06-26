@@ -72,7 +72,7 @@ interface CarnetLifeRow {
 export async function fetchCarnetLifeItems(db: D1Database, householdId: string): Promise<CarnetLifeItem[]> {
   const res = await db
     .prepare(
-      `SELECT id, name, kind, color, installed_at, lifespan_months
+      `SELECT id, name, kind, colour AS color, installed_at, lifespan_months
          FROM carnets
         WHERE household_id = ? AND archived_at IS NULL
           AND installed_at IS NOT NULL AND lifespan_months IS NOT NULL AND lifespan_months > 0`,

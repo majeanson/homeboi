@@ -59,7 +59,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh, from - DAY, to + DAY)
       .all<{ id: string; text: string; member_id: string | null; date: number }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, color, rotation_json, current_idx, last_done_at, recur_json, recur_start, created_at FROM tasks WHERE household_id = ?',
+      'SELECT id, title, colour AS color, rotation_json, current_idx, last_done_at, recur_json, recur_start, created_at FROM tasks WHERE household_id = ?',
     )
       .bind(hh)
       .all<{
@@ -88,7 +88,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // the window (never event rows). A calendar is where the full recurring rota
     // belongs, so unlike the board these span the whole [from, to).
     ctx.env.DB.prepare(
-      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
+      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, colour AS color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
     )
       .bind(hh)
       .all<{ id: string; member_id: string; label: string | null; start_min: number; end_min: number; weekdays: string; holds_car: number; color: string | null; week_interval: number; anchor_day: number | null }>(),
@@ -96,7 +96,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // recurring expand across the window, one-off land on their day. Like chores,
     // they ride the same calendar. Undated rows (at IS NULL) have no cell.
     ctx.env.DB.prepare(
-      'SELECT id, kind, title, color, at, recur_json FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+      'SELECT id, kind, title, colour AS color, at, recur_json FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
     )
       .bind(hh)
       .all<{ id: string; kind: string; title: string; color: string | null; at: number; recur_json: string | null }>(),

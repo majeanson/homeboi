@@ -32,7 +32,7 @@ const leadSeconds = (v: unknown): number | null => {
 // Aujourd'hui / À venir; created_at is the recurrence anchor.
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, color, recur_json, recur_start, lead_seconds FROM tasks WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, recur_start, lead_seconds FROM tasks WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all()
@@ -53,7 +53,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const id = newId()
   const color = hexColor(body?.color, '#88a36f')
   await ctx.env.DB.prepare(
-    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, color, recur_json, recur_start, lead_seconds, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)',
+    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, recur_json, recur_start, lead_seconds, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -119,7 +119,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       binds.push(JSON.stringify(Array.isArray(body.rotation) ? body.rotation.filter(isString) : []))
     }
     if (body.color !== undefined) {
-      sets.push('color = ?')
+      sets.push('colour = ?')
       binds.push(hexColor(body.color, '#88a36f'))
     }
     if (body.recur !== undefined) {

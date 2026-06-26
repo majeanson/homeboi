@@ -34,7 +34,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all<{ id: string; display_name: string; avatar_kind: string | null; avatar_ref: string | null; colour: string | null }>(),
     ctx.env.DB.prepare(
-      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
+      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, colour AS color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
     )
       .bind(hh)
       .all<ScheduleBlock>(),
@@ -58,14 +58,14 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json: string }>(),
     // Projects: upcoming (dated in range) AND advanced this week (last_done_at in window).
     ctx.env.DB.prepare(
-      'SELECT title, at, last_done_at, color FROM home_projects WHERE household_id = ? AND ((at >= ? AND at < ?) OR (last_done_at >= ? AND last_done_at < ?))',
+      'SELECT title, at, last_done_at, colour AS color FROM home_projects WHERE household_id = ? AND ((at >= ? AND at < ?) OR (last_done_at >= ? AND last_done_at < ?))',
     )
       .bind(hh, today, weekEnd, weekStart, today)
       .all<{ title: string; at: number | null; last_done_at: number | null; color: string | null }>(),
     // Week behind — chores done (the append-only attribution log; faces, no count).
     ctx.env.DB.prepare(
       `SELECT tp.task_id, tp.role, tp.contributed_at, tp.member_id,
-              t.title AS chore_title, t.color AS chore_color,
+              t.title AS chore_title, t.colour AS chore_color,
               m.display_name AS name, m.avatar_kind, m.avatar_ref, m.colour
          FROM task_participants tp
          JOIN tasks t ON t.id = tp.task_id AND t.household_id = ?

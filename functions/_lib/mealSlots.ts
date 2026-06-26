@@ -45,7 +45,7 @@ const parseJson = (raw: string | null | undefined): unknown => {
 }
 
 export async function householdMealSlotPrefs(env: Env, householdId: string): Promise<MealSlotPrefs> {
-  const row = await env.DB.prepare('SELECT meal_slot_colors, meal_slot_hidden FROM households WHERE id = ?')
+  const row = await env.DB.prepare('SELECT meal_slot_colours AS meal_slot_colors, meal_slot_hidden FROM households WHERE id = ?')
     .bind(householdId)
     .first<{ meal_slot_colors: string | null; meal_slot_hidden: string | null }>()
   return {

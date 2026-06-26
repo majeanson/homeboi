@@ -91,7 +91,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const [blocksRes, overridesRes, ridesRes] = await Promise.all([
     ctx.env.DB.prepare(
-      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
+      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, colour AS color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
     )
       .bind(hh)
       .all<{

@@ -39,7 +39,7 @@ const parseJson = (raw: string | null | undefined): unknown => {
 }
 
 export async function householdMeasureColors(env: Env, householdId: string): Promise<Record<string, string>> {
-  const row = await env.DB.prepare('SELECT measure_colors FROM households WHERE id = ?')
+  const row = await env.DB.prepare('SELECT measure_colours AS measure_colors FROM households WHERE id = ?')
     .bind(householdId)
     .first<{ measure_colors: string | null }>()
   return cleanMeasureColors(parseJson(row?.measure_colors))

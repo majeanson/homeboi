@@ -96,7 +96,7 @@ function mapRow(r: CarnetRow) {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    `SELECT id, parent_id, kind, name, media_key, color, facts_json, installed_at, lifespan_months, link_id, notes, position AS sort
+    `SELECT id, parent_id, kind, name, media_key, colour AS color, facts_json, installed_at, lifespan_months, link_id, notes, position AS sort
        FROM carnets WHERE household_id = ? AND archived_at IS NULL
       ORDER BY position, created_at`,
   )
@@ -150,7 +150,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   await ctx.env.DB.prepare(
     `INSERT INTO carnets
-       (id, household_id, parent_id, kind, name, media_key, color, facts_json, installed_at, lifespan_months, link_id, notes, position, created_at, updated_at)
+       (id, household_id, parent_id, kind, name, media_key, colour, facts_json, installed_at, lifespan_months, link_id, notes, position, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
@@ -212,7 +212,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
   if (body.kind !== undefined) setIf(true, 'kind', kindOf(body.kind))
   setIf('mediaKey' in body, 'media_key', str(body.mediaKey))
-  if (body.color !== undefined) setIf(true, 'color', hexColor(body.color, '#88a36f'))
+  if (body.color !== undefined) setIf(true, 'colour', hexColor(body.color, '#88a36f'))
   setIf('facts' in body, 'facts_json', factsJson(body.facts))
   setIf('installedAt' in body, 'installed_at', atSec(body.installedAt))
   setIf('lifespanMonths' in body, 'lifespan_months', months(body.lifespanMonths))

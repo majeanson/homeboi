@@ -242,9 +242,13 @@ trio (notes/family_notes/postbox/drawings) is the most expressive — make it th
   just for tidiness — high risk, low user value.
 
 ### DB-2 🟡→CONVENTION `color` vs `colour` (10+ tables)
-- [ ] New columns: `colour`. Existing `color` outliers (`tasks`, `home_projects`, `schedule_blocks`, `carnets` +
-  JSON keys `meal_slot_colors`/`recipe_tag_colors_json`/`measure_colors`) — **leave unless** you're already
-  rewriting that table's read/write path; a rename touches SQL + every reader. Track here, fix opportunistically.
+- [x] ✅ **DONE (mig 0087).** New columns use `colour`. Renamed every `color` outlier — scalar columns
+  `tasks.color`, `home_projects.color`, `schedule_blocks.color`, `carnets.color` + the household JSON-pref columns
+  `meal_slot_colors`/`recipe_tag_colors_json`/`measure_colors` → `colour(s)`. All backend SQL readers updated;
+  SELECTs alias `colour AS color` (and the JSON columns back to their old names) so every TS row interface + API
+  JSON key stays byte-identical — zero frontend churn. (Out of scope, left: the `color?` keys *inside* the
+  reserve_locations / cars JSON arrays, and the `avatar_kind='color'` discriminator value — neither is a column.)
+  typecheck + 797 tests + build green.
 
 ### DB-3 🟡→CONVENTION `position` vs `sort_order` vs `sort`
 - [x] ✅ **DONE (mig 0086).** Audit corrected on inspection: the ordering outliers were `members.sort_order`,

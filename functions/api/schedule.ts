@@ -106,7 +106,7 @@ const isHex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-fA-
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ? ORDER BY start_min',
+    'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, colour AS color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ? ORDER BY start_min',
   )
     .bind(actor.householdId)
     .all<BlockRow>()
@@ -124,7 +124,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const id = newId()
   const { interval, anchor } = resolveRecurrence(body)
   await ctx.env.DB.prepare(
-    'INSERT INTO schedule_blocks (id, household_id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO schedule_blocks (id, household_id, member_id, label, start_min, end_min, weekdays, holds_car, colour, week_interval, anchor_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -155,7 +155,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
   const { interval, anchor } = resolveRecurrence(body)
   const res = await ctx.env.DB.prepare(
-    'UPDATE schedule_blocks SET member_id = ?, label = ?, start_min = ?, end_min = ?, weekdays = ?, holds_car = ?, color = ?, week_interval = ?, anchor_day = ? WHERE id = ? AND household_id = ?',
+    'UPDATE schedule_blocks SET member_id = ?, label = ?, start_min = ?, end_min = ?, weekdays = ?, holds_car = ?, colour = ?, week_interval = ?, anchor_day = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       memberId,

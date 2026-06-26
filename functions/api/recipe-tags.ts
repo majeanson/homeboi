@@ -56,7 +56,7 @@ const cleanColor = (v: unknown): string | null => (isStr(v) && /^#[0-9a-fA-F]{6}
 // The per-tag colour map {lowercase tag: "#rrggbb"} (migration 0037). Keys are
 // lowercased and values shape-checked; junk entries are dropped on read.
 async function readColors(env: { DB: D1Database }, householdId: string): Promise<Record<string, string>> {
-  const row = await env.DB.prepare('SELECT recipe_tag_colors_json FROM households WHERE id = ?')
+  const row = await env.DB.prepare('SELECT recipe_tag_colours_json AS recipe_tag_colors_json FROM households WHERE id = ?')
     .bind(householdId)
     .first<{ recipe_tag_colors_json: string | null }>()
   let raw: unknown
@@ -75,7 +75,7 @@ async function readColors(env: { DB: D1Database }, householdId: string): Promise
 }
 
 const writeColors = (env: { DB: D1Database }, householdId: string, colors: Record<string, string>, ts: number) =>
-  env.DB.prepare('UPDATE households SET recipe_tag_colors_json = ?, updated_at = ? WHERE id = ?').bind(
+  env.DB.prepare('UPDATE households SET recipe_tag_colours_json = ?, updated_at = ? WHERE id = ?').bind(
     JSON.stringify(colors),
     ts,
     householdId,

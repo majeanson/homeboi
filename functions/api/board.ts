@@ -140,7 +140,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, rotation_json, current_idx, last_done_at, color, recur_json, recur_start, lead_seconds, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
+      'SELECT id, title, rotation_json, current_idx, last_done_at, colour AS color, recur_json, recur_start, lead_seconds, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
     )
       .bind(hh)
       .all(),
@@ -161,7 +161,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // windows. Derived onto the day below (never event rows), like birthdays. Tiny
     // table (a few rows/household), so it rides the board poll cheaply.
     ctx.env.DB.prepare(
-      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
+      'SELECT id, member_id, label, start_min, end_min, weekdays, holds_car, colour AS color, week_interval, anchor_day FROM schedule_blocks WHERE household_id = ?',
     )
       .bind(hh)
       .all<{
@@ -398,7 +398,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // board (sets last_done_at), so "done this cycle" mirrors a chore. No rotation
   // (who/team empty); the row's own colour + title emoji distinguish it.
   const homeRows = await ctx.env.DB.prepare(
-    'SELECT id, title, color, at, recur_json, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+    'SELECT id, title, colour AS color, at, recur_json, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
   )
     .bind(hh)
     .all<{
