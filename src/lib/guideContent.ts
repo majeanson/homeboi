@@ -846,8 +846,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Business : tes services & rendez-vous', en: 'Business: your services & rendez-vous' },
         detail: {
-          fr: 'Un 4e onglet, « Business » : ton carnet de commerces et services — vétérinaire, hôpital, dentiste, plombier, garderie, le gars qui répare la maison… Ajoute-le avec sa catégorie, son téléphone, son courriel, son adresse, des notes et même la photo de sa carte d’affaires. Touche-le pour l’appeler, lui écrire ou ouvrir l’itinéraire d’un coup. C’est volontairement à part de la famille et des amis : un business n’entre jamais dans tes liens, tes familles ni l’arbre. Et quand tu crées un rendez-vous, tu peux le relier à un business (ou à une personne) — « rendez-vous chez le vét » montre alors avec qui, sur le babillard et dans la journée.',
-          en: 'A 4th tab, “Business”: your directory of businesses and services — vet, hospital, dentist, plumber, daycare, the person who fixes the house… Add it with its category, phone, email, address, notes and even a photo of its business card. Tap it to call, write or open directions in one go. It’s deliberately separate from family and friends: a business never enters your links, families or the tree. And when you create a rendez-vous, you can link it to a business (or a person) — “vet appointment” then shows who it’s with, on the board and in the day.',
+          fr: 'Un 4e onglet, « Business » : ton carnet de commerces et services — vétérinaire, hôpital, dentiste, plombier, garderie, le gars qui répare la maison… Ajoute-le avec sa catégorie, son téléphone, son courriel, son adresse, des notes et même la photo de sa carte d’affaires. Touche-le pour l’appeler, lui écrire ou ouvrir l’itinéraire d’un coup. C’est volontairement à part de la famille et des amis : un business n’entre jamais dans tes liens, tes familles ni l’arbre. Et quand tu crées un rendez-vous, tu peux le relier à un business (ou à une personne) — « rendez-vous chez le vét » montre alors avec qui, sur le babillard et dans la journée. Si tu l’as inscrit comme installateur dans le carnet d’une chose, sa fiche affiche aussi « A servi : 🔥 Chauffe-eau » — tu retrouves qui a fait quoi.',
+          en: 'A 4th tab, “Business”: your directory of businesses and services — vet, hospital, dentist, plumber, daycare, the person who fixes the house… Add it with its category, phone, email, address, notes and even a photo of its business card. Tap it to call, write or open directions in one go. It’s deliberately separate from family and friends: a business never enters your links, families or the tree. And when you create a rendez-vous, you can link it to a business (or a person) — “vet appointment” then shows who it’s with, on the board and in the day. If you logged it as the installer in a thing’s carnet, its card also shows “Serviced: 🔥 Water heater” — so you can see who did what.',
         },
         why: {
           fr: 'Les numéros utiles et les rendez-vous au même endroit que le reste de la maison — sans mêler ça à la famille.',
@@ -1478,10 +1478,10 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'L’historique', en: 'The history' },
         detail: {
-          fr: 'Chaque entretien ou installation s’ajoute à l’historique avec la date, le coût, l’installateur (un business du cercle) et la facture ou le manuel en photo. Nouveau chauffe-eau ? Une entrée « Installation » avec sa facture, et c’est gardé pour toujours.',
-          en: 'Each service or install adds to the history with the date, the cost, the installer (a cercle business) and the invoice or manual as a photo. New water heater? One “Install” entry with its invoice, kept forever.',
+          fr: 'Chaque entretien ou installation s’ajoute à l’historique avec la date, le coût, l’installateur (un business du cercle) et la facture ou le manuel joint — photo OU PDF. Touche un document pour le lire : une photo s’agrandit, un PDF s’ouvre dans une fenêtre de lecture. Nouveau chauffe-eau ? Une entrée « Installation » avec sa facture, gardée pour toujours.',
+          en: 'Each service or install adds to the history with the date, the cost, the installer (a cercle business) and the invoice or manual attached — photo OR PDF. Tap a document to read it: a photo zooms, a PDF opens in a reading window. New water heater? One “Install” entry with its invoice, kept forever.',
         },
-        why: { fr: 'Quand tu rappelles le plombier, tu sais déjà tout.', en: 'When you call the plumber back, you already know everything.' },
+        why: { fr: 'Quand tu rappelles le plombier, tu sais déjà tout — et tu retrouves la facture en un geste.', en: 'When you call the plumber back, you already know everything — and the invoice is one tap away.' },
       },
       {
         label: { fr: 'Le long jeu', en: 'The long game' },
@@ -1491,10 +1491,24 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Les garanties', en: 'Warranties' },
+        detail: {
+          fr: 'Note « garantie jusqu’au… » dans l’identité d’une chose : Babillard te fait un signe quelques mois avant qu’elle se termine — le temps de t’en servir ou de la prolonger. Rien à programmer, c’est déduit tout seul.',
+          en: 'Note a “warranty until…” on a thing’s identity: Babillard nudges you a few months before it lapses — time to use it or extend it. Nothing to schedule; it’s worked out for you.',
+        },
+      },
+      {
+        label: { fr: 'Cette saison', en: 'This season' },
+        detail: {
+          fr: 'L’entretien qui revient se regroupe par saison : une carte « Cet hiver / Ce printemps… » sur le babillard et un aperçu dans Réglages ▸ Corvées ▸ Entretien montrent ce qui s’en vient avant que la saison tourne — calfeutrer les fenêtres, vider les gouttières, changer le filtre.',
+          en: 'Recurring upkeep groups by season: a “This winter / This spring…” card on the board and a glance in Settings ▸ Chores ▸ Upkeep show what’s coming before the season turns — caulk the windows, clear the gutters, change the filter.',
+        },
+      },
+      {
         label: { fr: 'En cas de pépin', en: 'In a pinch' },
         detail: {
-          fr: 'Une maison garde aussi son « plan de secours » : où est la valve d’eau, le panneau électrique, la clé de rechange, comment marche le thermostat. Et ça s’affiche tout seul, en lecture seule, dans le lien gardien(ne) — la maison expliquée à qui passe la soirée.',
-          en: 'A house also keeps its “in a pinch” map: where’s the water shutoff, the breaker panel, the spare key, how the thermostat works. And it shows up, read-only, in the babysitter link — the house explained to whoever’s over for the evening.',
+          fr: 'Une maison garde aussi son « plan de secours » : où est la valve d’eau, le panneau électrique, la clé de rechange. Les repères « comment ça marche » (partir le lave-vaisselle, le thermostat) ont leur propre section. Tout ça s’affiche tout seul, en lecture seule, dans le lien gardien(ne) — la maison expliquée à qui passe la soirée.',
+          en: 'A house also keeps its “in a pinch” map: where’s the water shutoff, the breaker panel, the spare key. The “how things work” notes (run the dishwasher, the thermostat) get their own section. All of it shows up, read-only, in the babysitter link — the house explained to whoever’s over for the evening.',
         },
       },
       {
@@ -3151,8 +3165,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Chaque genre, sa vue', en: 'Each kind, its view' },
         detail: {
-          fr: 'Démo (tout le babillard), Gardienne (journée + routines + à savoir + wifi), Accueil (wifi + poubelles + règles), Famille (dates des enfants + anniversaires + photos) ou Fiche famille (un proche remplit ses infos et te les renvoie) — chacun avec sa durée.',
-          en: 'Demo (the whole board), Sitter (day + routines + things-to-know + wifi), Welcome (wifi + bin day + rules), Family (kids’ dates + birthdays + photos) or Family details (a relative fills in their info and sends it back) — each with its own duration.',
+          fr: 'Démo (tout le babillard), Gardienne (journée + routines + à savoir + le plan de secours de la maison « en cas de pépin » et « comment ça marche » + wifi), Accueil (wifi + poubelles + règles), Famille (dates des enfants + anniversaires + photos) ou Fiche famille (un proche remplit ses infos et te les renvoie) — chacun avec sa durée.',
+          en: 'Demo (the whole board), Sitter (day + routines + things-to-know + the house’s “in a pinch” map & “how things work” + wifi), Welcome (wifi + bin day + rules), Family (kids’ dates + birthdays + photos) or Family details (a relative fills in their info and sends it back) — each with its own duration.',
         },
         why: {
           fr: 'Un lien par besoin : le visiteur ne voit que ce qui le concerne.',
