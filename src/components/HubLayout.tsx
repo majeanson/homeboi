@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
@@ -60,6 +61,26 @@ export function HubLayout() {
   const loc = useLocation()
   const nav = useNavigate()
   const qc = useQueryClient()
+  // Animate tab switches with the View Transitions API. React Router's `viewTransition`
+  // prop is a no-op under <BrowserRouter> (it only fires inside the data-router
+  // pipeline), so we wrap the navigation ourselves: snapshot → flushSync the route
+  // change inside startViewTransition → cross-fade (CSS in hub.css names .hub__body).
+  // Plain left-clicks only; modified clicks (new tab) fall through. Skipped when the
+  // API is missing or the user prefers reduced motion — then it's a normal instant nav.
+  const vtNavigate = useCallback(
+    (to: string) => {
+      const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown }
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      if (!doc.startViewTransition || reduce) {
+        nav(to)
+        return
+      }
+      doc.startViewTransition(() => {
+        flushSync(() => nav(to))
+      })
+    },
+    [nav],
+  )
   const [addOpen, setAddOpen] = useState(false)
   // Kiosk-only: collapse the left section rail to reclaim its width for the body
   // (a parent who wants the whole wall for the agenda/list). Persisted so the
@@ -334,7 +355,16 @@ export function HubLayout() {
           <NavLink
             key={tab.to}
             to={tab.to}
-            viewTransition
+            onClick={(e) => {
+              // Take over a plain left-click so the switch runs through the View
+              // Transition (the RR `viewTransition` prop doesn't fire under
+              // <BrowserRouter>). Let modified clicks (new tab / open in window) and
+              // same-tab taps fall through to default behaviour.
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+              if (loc.pathname === tab.to) return
+              e.preventDefault()
+              vtNavigate(tab.to)
+            }}
             className={({ isActive }) => `hubnav__btn${isActive ? ' is-active' : ''}`}
           >
             {({ isActive }) => (
