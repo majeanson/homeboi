@@ -16,8 +16,11 @@ const CAST_APP_ID: string = '9C2BB708'
 
 // The custom channel the receiver listens on (must match cast-receiver.html NS).
 const NS = 'urn:x-cast:com.babillard.cast'
-// The official Cast Web Sender bootstrap (loads chrome.cast + cast.framework).
-const SENDER_SRC = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js'
+// The official Cast Web Sender bootstrap. The `?loadCastFramework=1` query param is
+// REQUIRED — without it the script only exposes the low-level `chrome.cast` API, NOT
+// the `cast.framework` (CAF) layer we use below, so init() would throw and every cast
+// attempt fails with a generic "couldn't start" (the bug this fixes).
+const SENDER_SRC = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1'
 
 // A cheap synchronous heuristic for "could this browser cast at all?" — used to decide
 // whether to even SHOW the « Diffuser » button (the real check is loadSender() below).
