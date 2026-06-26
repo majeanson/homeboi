@@ -90,15 +90,15 @@ function mapRow(r: CarnetRow) {
     lifespanMonths: r.lifespan_months,
     linkId: r.link_id,
     notes: r.notes,
-    sort: r.sort,
+    sort: r.sort, // API keeps `sort`; DB column renamed to `position` (DB-3, SELECT aliases `position AS sort`)
   }
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    `SELECT id, parent_id, kind, name, media_key, color, facts_json, installed_at, lifespan_months, link_id, notes, sort
+    `SELECT id, parent_id, kind, name, media_key, color, facts_json, installed_at, lifespan_months, link_id, notes, position AS sort
        FROM carnets WHERE household_id = ? AND archived_at IS NULL
-      ORDER BY sort, created_at`,
+      ORDER BY position, created_at`,
   )
     .bind(actor.householdId)
     .all<CarnetRow>()
@@ -150,7 +150,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   await ctx.env.DB.prepare(
     `INSERT INTO carnets
-       (id, household_id, parent_id, kind, name, media_key, color, facts_json, installed_at, lifespan_months, link_id, notes, sort, created_at, updated_at)
+       (id, household_id, parent_id, kind, name, media_key, color, facts_json, installed_at, lifespan_months, link_id, notes, position, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
@@ -218,7 +218,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   setIf('lifespanMonths' in body, 'lifespan_months', months(body.lifespanMonths))
   setIf('linkId' in body, 'link_id', str(body.linkId))
   setIf('notes' in body, 'notes', str(body.notes)?.slice(0, TEXT_CAP) ?? null)
-  if (typeof body.sort === 'number' && Number.isFinite(body.sort)) setIf(true, 'sort', Math.floor(body.sort))
+  if (typeof body.sort === 'number' && Number.isFinite(body.sort)) setIf(true, 'position', Math.floor(body.sort))
 
   if (!sets.length) return ok({ ok: true })
   sets.push('updated_at = ?')

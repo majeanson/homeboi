@@ -37,8 +37,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const carnet = new URL(ctx.request.url).searchParams.get('carnet')
   if (!carnet) return ok({ pins: [] })
   const rows = await ctx.env.DB.prepare(
-    `SELECT id, carnet_id, kind, label, detail, media_key, sort
-       FROM home_pins WHERE household_id = ? AND carnet_id = ? ORDER BY sort, created_at`,
+    `SELECT id, carnet_id, kind, label, detail, media_key, position AS sort
+       FROM home_pins WHERE household_id = ? AND carnet_id = ? ORDER BY position, created_at`,
   )
     .bind(actor.householdId, carnet)
     .all<PinRow>()
@@ -76,7 +76,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const id = newId()
   const ts = nowSec()
   await ctx.env.DB.prepare(
-    `INSERT INTO home_pins (id, household_id, carnet_id, kind, label, detail, media_key, sort, created_at, updated_at)
+    `INSERT INTO home_pins (id, household_id, carnet_id, kind, label, detail, media_key, position, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(id, actor.householdId, body.carnetId, kindOf(body?.kind), label, str(body?.detail)?.slice(0, TEXT_CAP) ?? null, str(body?.mediaKey), ts, ts, ts)
@@ -108,7 +108,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (body.kind !== undefined) setIf(true, 'kind', kindOf(body.kind))
   setIf('detail' in body, 'detail', str(body.detail)?.slice(0, TEXT_CAP) ?? null)
   setIf('mediaKey' in body, 'media_key', str(body.mediaKey))
-  if (typeof body.sort === 'number' && Number.isFinite(body.sort)) setIf(true, 'sort', Math.floor(body.sort))
+  if (typeof body.sort === 'number' && Number.isFinite(body.sort)) setIf(true, 'position', Math.floor(body.sort))
 
   if (!sets.length) return ok({ ok: true })
   sets.push('updated_at = ?')

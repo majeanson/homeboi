@@ -98,7 +98,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const [members, oneOff, recurring, meals, routines, contacts] = await Promise.all([
     ctx.env.DB.prepare(
-      'SELECT id, display_name, is_child, notes FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+      'SELECT id, display_name, is_child, notes FROM members WHERE household_id = ? ORDER BY position, created_at',
     )
       .bind(hh)
       .all<{ id: string; display_name: string; is_child: number; notes: string | null }>(),
@@ -186,7 +186,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     `SELECT p.kind, p.label, p.detail, p.media_key, c.name AS home
        FROM home_pins p JOIN carnets c ON c.id = p.carnet_id AND c.household_id = p.household_id
       WHERE p.household_id = ? AND c.kind IN ('home', 'zone') AND c.archived_at IS NULL
-      ORDER BY c.sort, p.sort`,
+      ORDER BY c.position, p.position`,
   )
     .bind(hh)
     .all<{ kind: string; label: string; detail: string | null; media_key: string | null; home: string }>()
@@ -233,7 +233,7 @@ async function familyWindow(env: Env, hh: string, householdName: string) {
   const bdayEnd = addLocalDays(today, 35) // a little further for birthdays
 
   const members = await env.DB.prepare(
-    'SELECT id, display_name, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+    'SELECT id, display_name, is_child FROM members WHERE household_id = ? ORDER BY position, created_at',
   )
     .bind(hh)
     .all<{ id: string; display_name: string; is_child: number }>()

@@ -247,9 +247,12 @@ trio (notes/family_notes/postbox/drawings) is the most expressive — make it th
   rewriting that table's read/write path; a rename touches SQL + every reader. Track here, fix opportunistically.
 
 ### DB-3 🟡→CONVENTION `position` vs `sort_order` vs `sort`
-- [ ] `members.sort_order`, `routines.sort_order` are the legacy outliers (everything since uses `position`).
-  `home_pins` has BOTH `sort` and `position` — **one is redundant, clarify/drop** (the only clear bug here).
-  Otherwise forward-rule only.
+- [x] ✅ **DONE (mig 0086).** Audit corrected on inspection: the ordering outliers were `members.sort_order`,
+  `contact_groups.sort_order`, `carnets.sort`, and `home_pins.sort` (NOT `routines` — it has no ordering column;
+  and `home_pins` has only `sort`, not a redundant `sort`+`position` pair). All four renamed to `position` via one
+  forward migration + every backend SQL reader updated. API JSON contracts preserved (members SELECT aliases
+  `position AS sort_order`; carnets/home_pins keep their `sort` JSON field, aliased from the column). `RENAME COLUMN`
+  syntax verified directly against local D1; typecheck + 797 tests + build green.
 
 ### DB-4 🟡→CONVENTION Recurrence schema split
 - [ ] `events`/`tasks`/`home_projects` use `recur_json {freq,interval,weekdays}`; `schedule_blocks` uses separate

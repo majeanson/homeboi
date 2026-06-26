@@ -27,7 +27,7 @@ export async function resolveMemberByName(
   const needle = fold(cleaned)
   if (needle.length < 2) return null // a one-letter scrap is too ambiguous to assign
   const { results } = await env.DB.prepare(
-    'SELECT id, display_name FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+    'SELECT id, display_name FROM members WHERE household_id = ? ORDER BY position, created_at',
   )
     .bind(householdId)
     .all<{ id: string; display_name: string }>()

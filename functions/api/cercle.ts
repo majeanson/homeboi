@@ -132,7 +132,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // links its own faces to each other + to contacts. Returned alongside so the SPA
   // merges them into one "people" set (src/lib/cercle.ts buildPeople).
   const members = await ctx.env.DB.prepare(
-    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child, email, phone, birthday, notes, gender FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child, email, phone, birthday, notes, gender FROM members WHERE household_id = ? ORDER BY position, created_at',
   )
     .bind(actor.householdId)
     .all<MemberRow>()
@@ -140,7 +140,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Named people groups (phase 3). Two queries: groups then their members, merged
   // in JS. Avoids NULL-row duplication from a LEFT JOIN when groups are empty.
   const groups = await ctx.env.DB.prepare(
-    'SELECT id, name, kind, colour FROM contact_groups WHERE household_id = ? ORDER BY sort_order, created_at',
+    'SELECT id, name, kind, colour FROM contact_groups WHERE household_id = ? ORDER BY position, created_at',
   )
     .bind(actor.householdId)
     .all<GroupRow>()

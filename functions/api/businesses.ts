@@ -55,7 +55,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
        FROM care_log cl
        JOIN carnets c ON c.id = cl.carnet_id AND c.household_id = cl.household_id
       WHERE cl.household_id = ? AND cl.business_id IS NOT NULL AND c.archived_at IS NULL
-      ORDER BY c.sort, c.created_at`,
+      ORDER BY c.position, c.created_at`,
   )
     .bind(actor.householdId)
     .all<{ bid: string; cid: string; cname: string; ckind: string }>()

@@ -29,7 +29,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const [members, blocks, mealsAhead, oneOff, recurring, projects, ledgerRows, routineRows] = await Promise.all([
     ctx.env.DB.prepare(
-      'SELECT id, display_name, avatar_kind, avatar_ref, colour FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+      'SELECT id, display_name, avatar_kind, avatar_ref, colour FROM members WHERE household_id = ? ORDER BY position, created_at',
     )
       .bind(hh)
       .all<{ id: string; display_name: string; avatar_kind: string | null; avatar_ref: string | null; colour: string | null }>(),

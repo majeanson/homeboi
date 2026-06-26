@@ -42,7 +42,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // columns (email/phone/birthday/notes/gender) ride along in snake_case, which is
   // exactly what operator/types.ts and household.tsx expect.
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child, sort_order, email, phone, birthday, notes, gender FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+    // `position AS sort_order` keeps the raw snake_case row shape the whole frontend
+    // (and operator/types.ts) consumes byte-identical after the DB-3 column rename.
+    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child, position AS sort_order, email, phone, birthday, notes, gender FROM members WHERE household_id = ? ORDER BY position, created_at',
   )
     .bind(actor.householdId)
     .all<MemberRow>()

@@ -72,7 +72,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes, leftoversRes, scheduleRes] = await Promise.all([
     ctx.env.DB.prepare(
-      'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY sort_order, created_at',
+      'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY position, created_at',
     )
       .bind(hh)
       .all(),
