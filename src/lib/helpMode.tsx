@@ -17,17 +17,17 @@ export interface HelpEntry {
   point?: number
 }
 
-export function useHelpMode(
-  content: Record<string, HelpEntry>,
-  label: (key: string) => string,
+export function useHelpMode<K extends string>(
+  content: Record<K, HelpEntry>,
+  label: (key: K) => string,
   // Optional: when this value changes, help mode resets (e.g. pass a sheet's `open`
   // so reopening starts fresh, or a scene's route id). Omit for always-mounted surfaces.
   resetKey?: unknown,
-) {
+): HelpMode<K> {
   const { tutorial } = useHelp()
   const { lang } = useLang()
   const [active, setActive] = useState(false)
-  const [key, setKey] = useState<string | null>(null)
+  const [key, setKey] = useState<K | null>(null)
 
   useEffect(() => {
     setActive(false)
@@ -44,7 +44,7 @@ export function useHelpMode(
   }
   // Wrap a control's handler: in help mode, explain instead of run. Returns the
   // onClick to use directly — `onClick={pick('save', doSave)}`.
-  const pick = (k: string, run: () => void) => () => {
+  const pick = (k: K, run: () => void) => () => {
     if (active) {
       setKey(k)
       return
@@ -53,7 +53,7 @@ export function useHelpMode(
   }
 
   const entry = key ? content[key] : null
-  const bubbleFor = (k: string): ReactNode =>
+  const bubbleFor = (k: K): ReactNode =>
     key === k && entry ? (
       <HelpBubble
         title={label(k)}
@@ -85,22 +85,40 @@ export function useHelpMode(
 
 // The shape useHelpMode returns — so a page can thread its help mode down into the
 // child components that own the headings it wants to make explainable.
-export type HelpMode = ReturnType<typeof useHelpMode>
+//
+// Generic over the surface's registry keys `K` (P2-9): `useHelpMode(BOARD_HELP, …)`
+// infers `K = keyof BOARD_HELP` (the registries use `satisfies`, so that's the literal
+// union), which makes `pick`/`bubbleFor`/`HelpTitle k=` reject an UNREGISTERED key at
+// `tsc` — the orphan "? target with no entry renders nothing" bug can no longer ship
+// from a surface file. `pick`/`bubbleFor` are declared as METHODS (not arrow props) on
+// purpose: method params are bivariant, so a narrow `HelpMode<'a'|'b'>` stays assignable
+// to a child's loose `help?: HelpMode` (= `HelpMode<string>`) prop — threading is
+// unaffected. `K` defaults to `string`, so threaded children keep working unchanged.
+export interface HelpMode<K extends string = string> {
+  available: boolean
+  active: boolean
+  toggle: () => void
+  reset: () => void
+  pick(k: K, run: () => void): () => void
+  bubble: ReactNode
+  bubbleFor(k: K): ReactNode
+  hint: boolean
+}
 
 // A section heading that becomes tappable ONLY while help mode is armed: a tap then
 // EXPLAINS the whole concept in place (a HelpBubble) instead of doing nothing, the
 // way a control tile does. Outside help mode (or when no `help` is passed) it's an
 // ordinary heading — identical DOM — so it never adds dead buttons or tab stops.
 // Render the matching `help.bubbleFor(k)` just below the heading's container.
-export function HelpTitle({
+export function HelpTitle<K extends string>({
   help,
   k,
   as: Tag = 'h2',
   className,
   children,
 }: {
-  help?: HelpMode
-  k: string
+  help?: HelpMode<K>
+  k: K
   as?: 'h2' | 'h3'
   className?: string
   children: ReactNode

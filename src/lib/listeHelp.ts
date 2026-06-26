@@ -7,7 +7,7 @@ import { type HelpEntry } from './helpMode'
 // GUIDE card/point so "→ Voir le guide" lands on the right line. See lib/helpMode
 // + the Liste.tsx wiring. (The list itself has no sub-section headings — it's one
 // list — so the help targets here are its buttons, not titles.)
-export const LISTE_HELP: Record<string, HelpEntry> = {
+export const LISTE_HELP = {
   flyer: {
     card: 'liste',
     point: 3,
@@ -40,4 +40,4 @@ export const LISTE_HELP: Record<string, HelpEntry> = {
       en: 'Switch to cashier mode: a grid of your items on deal. Tap the one being scanned to show its price proof.',
     },
   },
-}
+} satisfies Record<string, HelpEntry>

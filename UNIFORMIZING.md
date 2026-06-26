@@ -462,9 +462,13 @@ palette change means hunting multiple files.
 ### <a id="p2-9"></a>P2-9 🟡 (med value / low risk) Help/explainer: kill the orphan-bug class + curb drift
 The guide/help **system** is already excellent — `GUIDE`/`CONCEPT_THEMES`/`FEATURE_MAP_TILES` is one taxonomy that
 tours (`guideWhat`), `SectionIntro`, and `FeatureMap` all reuse. Two real gaps remain:
-- [ ] **Orphan check:** `ADD_HELP`/`CERCLE_HELP` keys and `data-tour` anchors are untyped strings; a "?" target with
-  no entry renders nothing (memory records this shipping more than once). Add a typed registry / build-time assertion
-  so an unregistered target fails `tsc`. Consider one `data-help="<key>"` namespace shared with tour anchors.
+- [x] ✅ **Orphan check DONE.** `useHelpMode<K extends string>(content: Record<K, HelpEntry>, …)` is now generic over
+  its registry keys, and all 7 help registries (`ADD_HELP`/`CERCLE_HELP`/`BOARD_HELP`/`KITCHEN_TAB_HELP`/`LISTE_HELP`/
+  `OPERATOR_HELP`/`ROUTINES_HELP`) use `satisfies Record<string, HelpEntry>` so `keyof` is the literal union. An
+  unregistered key in `pick`/`bubbleFor`/`HelpTitle k=` now **fails `tsc`** (verified via `@ts-expect-error`), killing
+  the "? target renders nothing" orphan class at the surface level. `HelpMode<K = string>` uses **method-syntax** so a
+  narrow `HelpMode<keys>` stays assignable to a child's loose `help?: HelpMode` prop — threading unaffected, zero churn
+  at the ~20 thread sites. (`data-tour` anchors are still untyped strings — a separate, smaller follow-up.)
 - [ ] **Drift:** `ADD_HELP`/`CERCLE_HELP` carry their **own** one-liners separate from `GUIDE.what`, so they can
   diverge. Low priority: have help bubbles pull the summary from the guide entry (like tours already do via
   `guideWhat`). The big "one FeatureExplainer registry feeding guide+help+tour+intro" is **deferred** — high churn,

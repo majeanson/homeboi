@@ -9,7 +9,7 @@ import { type HelpEntry } from './helpMode'
 // one page-level help instance covers the whole tab (see Kitchen.tsx + lib/helpMode
 // HelpTitle). Keys must be distinct from the sub-tab keys so a heading's bubble and
 // a tab's bubble never both fire for the same key.
-export const KITCHEN_TAB_HELP: Record<string, HelpEntry> = {
+export const KITCHEN_TAB_HELP = {
   // ── the sub-tab nav ──
   meals: {
     card: 'kitchen',
@@ -94,4 +94,4 @@ export const KITCHEN_TAB_HELP: Record<string, HelpEntry> = {
       en: '“Aa” lists your recipes alphabetically; “Collections” groups them by tag (Soups, Desserts…). It only re-arranges, it doesn’t filter.',
     },
   },
-}
+} satisfies Record<string, HelpEntry>

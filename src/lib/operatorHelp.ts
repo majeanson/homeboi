@@ -5,7 +5,7 @@ import { type HelpEntry } from './helpMode'
 // learn what that section does in place, instead of acting on it. Each entry points
 // at the matching GUIDE card/point so "→ Voir le guide" lands on the right line.
 // Resets when the active tab changes (tab is passed as resetKey to useHelpMode).
-export const OPERATOR_HELP: Record<string, HelpEntry> = {
+export const OPERATOR_HELP = {
   boardLayout: {
     card: 'board',
     point: 5,
@@ -252,4 +252,4 @@ export const OPERATOR_HELP: Record<string, HelpEntry> = {
       en: `All your circle groups, even the ones the directory hides (a "family" group made up entirely of the household). Delete any group here — the people stay in the circle.`,
     },
   },
-}
+} satisfies Record<string, HelpEntry>

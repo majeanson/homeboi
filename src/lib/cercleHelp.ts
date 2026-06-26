@@ -5,7 +5,7 @@ import type { HelpEntry } from './helpMode'
 // "→ Voir le guide" link into the existing `cercle` GUIDE card (point = the sub-point
 // to open). Keyed by control id; the title comes from the control's own label
 // (labelFn in Cercle.tsx). Same engine as Kitchen's KITCHEN_TAB_HELP. FR-CA first.
-export const CERCLE_HELP: Record<string, HelpEntry> = {
+export const CERCLE_HELP = {
   // Primary Social / Famille split (guide point 9).
   family: { card: 'cercle', point: 9, body: { fr: 'Ta Maisonnée, tes familles et leurs notes partagées.', en: 'Your Household, your families and their shared notes.' } },
   social: { card: 'cercle', point: 9, body: { fr: 'Tes amis, collègues et autres groupes — et les personnes sans groupe.', en: 'Your friends, coworkers and other groups — and people in no group.' } },
@@ -33,4 +33,4 @@ export const CERCLE_HELP: Record<string, HelpEntry> = {
   editGroup: { card: 'cercle', point: 6, body: { fr: 'Renomme le groupe, ou change son type et sa couleur.', en: 'Rename the group, or change its kind and colour.' } },
   deleteGroup: { card: 'cercle', point: 6, body: { fr: 'Supprime le groupe ; les personnes restent dans le cercle.', en: 'Delete the group; the people stay in the circle.' } },
   others: { card: 'cercle', point: 1, body: { fr: 'Les personnes qui ne sont dans aucun groupe ni famille.', en: 'People who aren’t in any group or family.' } },
-}
+} satisfies Record<string, HelpEntry>

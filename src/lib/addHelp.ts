@@ -10,7 +10,7 @@ export interface AddHelp {
   point?: number // optional 0-based sub-point in that card to open + highlight
 }
 
-export const ADD_HELP: Record<string, AddHelp> = {
+export const ADD_HELP = {
   capture: {
     card: 'capture',
     point: 0,
@@ -201,4 +201,4 @@ export const ADD_HELP: Record<string, AddHelp> = {
     card: 'cercle',
     body: { fr: 'Ajoute un animal de la maisonnée : nom, photo, et les infos utiles (vétérinaire, soins).', en: 'Add a household pet: name, photo, and the useful info (vet, care).' },
   },
-}
+} satisfies Record<string, AddHelp>

@@ -20,14 +20,16 @@ export function BoardViewToggle({
   onChange: (v: BoardView) => void
   t: Dict
   // Optional help-mode wrapper (lib/helpMode): when armed, a tap explains the view
-  // instead of switching to it. Returns the onClick to use. Omit for normal use.
-  pick?: (key: string, run: () => void) => () => void
+  // instead of switching to it. Returns the onClick to use. Omit for normal use. The
+  // key param is the two BOARD_HELP keys this toggle owns (a subset of the board's
+  // help keys), so the surface's narrowed `help.pick` stays contravariantly assignable.
+  pick?: (key: 'view-bento' | 'view-month', run: () => void) => () => void
   // When help mode is armed, highlight the options as "tap me to learn".
   armed?: boolean
 }) {
-  const opts: { v: BoardView; icon: IconName; label: string }[] = [
-    { v: 'bento', icon: 'calendar-blank-bold', label: t.boardView.bento },
-    { v: 'month', icon: 'calendar-dots-bold', label: t.boardView.month },
+  const opts: { v: BoardView; k: 'view-bento' | 'view-month'; icon: IconName; label: string }[] = [
+    { v: 'bento', k: 'view-bento', icon: 'calendar-blank-bold', label: t.boardView.bento },
+    { v: 'month', k: 'view-month', icon: 'calendar-dots-bold', label: t.boardView.month },
   ]
   return (
     <div className={'boardview' + (armed ? ' help-armed' : '')} role="group" aria-label={t.boardView.label} data-tour="board-views">
@@ -39,7 +41,7 @@ export function BoardViewToggle({
           aria-pressed={view === o.v}
           aria-label={o.label}
           title={o.label}
-          onClick={pick ? pick('view-' + o.v, () => onChange(o.v)) : () => onChange(o.v)}
+          onClick={pick ? pick(o.k, () => onChange(o.v)) : () => onChange(o.v)}
         >
           <Icon name={o.icon} size={18} />
           <span className="boardview__label">{o.label}</span>

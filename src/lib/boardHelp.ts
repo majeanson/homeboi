@@ -5,7 +5,7 @@ import { type HelpEntry } from './helpMode'
 // "→ Voir le guide" link lands on the exact line. The per-person lens (face picker)
 // and the « Moments » recap have their own help entries elsewhere. See lib/helpMode +
 // the board wiring in Board.tsx.
-export const BOARD_HELP: Record<string, HelpEntry> = {
+export const BOARD_HELP = {
   'view-bento': {
     card: 'board',
     point: 5,
@@ -58,4 +58,4 @@ export const BOARD_HELP: Record<string, HelpEntry> = {
       en: 'Coming up: what’s ahead this week, with “in X days” when it’s close.',
     },
   },
-}
+} satisfies Record<string, HelpEntry>
