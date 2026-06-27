@@ -11,7 +11,16 @@
 
    Token names below preserve Babillard's existing semantic vars (--accent,
    --surface, --line…) so every component keeps working, and ADD the full Pip
-   palette so new surfaces can use it directly. */
+   palette so new surfaces can use it directly.
+
+   CLASS NAMING (CSS-5) — for NEW CSS, use BEM: `.block`, `.block__element`,
+   `.block--modifier` / `.block__element--modifier`. State flips that aren't a
+   variant stay as the established `.is-on` / `.is-active` / `.is-flagged` helper
+   classes (not `--on`). Existing files mix `__`, single-`-`, and camelCase from
+   before this rule — don't retro-rename a working class just to conform (it churns
+   selectors for zero gain); converge a family only when already rewriting it. The
+   calm-tenet names are off-limits regardless: never coin a `.streak`/`.points`/
+   `.badge` class. */
 
 :root {
   /* ---- Pip brand palette (riso inks on warm paper) ---- */

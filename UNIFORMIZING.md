@@ -51,9 +51,13 @@ the shared `SubTabs` (COMPONENTS.md already flags deal/flyer/recipe-book as migr
 - [ ] `components/cercle/FamilyBuilder.tsx` (~L410, `.cercle-viewswitch`) → `<SubTabs>` if the API fits — **kept distinct
   for now**: `.cercle-viewswitch__btn`/`.is-active` is a deliberately different (boxed, not pill) style; adopting SubTabs
   restyles it. Revisit if we want it to match the pill family.
-- [ ] `components/CookMode.tsx` (~L514 `.cook__siblings`, ~L602 `.cook__split-tabs`) — **review first**: these
-  carry cook-specific semantics (multi-recipe siblings, split-view). Either add a SubTabs variant or
-  consciously keep them distinct and note why.
+- [~] **Reviewed 2026-06-26 — keep distinct (same call as FamilyBuilder above); no code change.** Both `.cook__sibling`
+  and `.cook__split-tab` are styled for CookMode's **immersive full-screen surface** (large targets, follows the
+  audience profile), not the app's light `.subtabs` pill chrome — adopting `<SubTabs>` would either restyle them or
+  force overriding the entire `.subtabs` base for the cook context (the inherit-then-override anti-pattern CSS-4
+  rejected), for zero user gain. `.cook__split-tabs` *additionally* can't map cleanly: it sets `data-tab` on the
+  parent `.cook__split` so CSS shows **both panes on a tablet and flips between them only on a narrow phone** — a
+  responsive both-panes-or-flip behaviour `<SubTabs>` doesn't model. Bespoke is correct here.
 
 ### <a id="fe-2"></a>FE-2 🔴 Recipe overlays hand-roll their scrim/card instead of `<Modal>`
 All three already use `useModal` (behaviour is unified), but duplicate the **scrim+card markup**
@@ -114,8 +118,18 @@ and own a parallel CSS family. Fold the outer chrome onto `<Modal>`, keep the in
   nit, `today.css:203` using `--card`'s hex `#fffcf5` as a text colour, was left (a theme-flip would harm contrast).
   **No `--surface-inverse`/`--ink-inverse` needed.** Net: keep the radius/touch-target wins (done); skip the colours.
 - [x] **`min-height: 44px`** (touch target, ~7×) → add `--touch-target: 44px`. ✅ (token added; 9 min-h/min-w replaced)
-- [ ] Repeated `rgba(0,0,0,0.04/0.08/0.3)` hairline/overlay literals (~20×) → `--overlay-faint/-light/-dark`
-  (+ warm-ink `rgba(44,39,34,…)` variants).
+- [~] **Premise reviewed and rejected 2026-06-26 — no clean 3-token consolidation; no code change.** The "~20×
+  repeated literals → `--overlay-faint/-light/-dark`" framing didn't survive inspection. The black-alpha literals are
+  **31, spanning 17 distinct alphas (0.03–0.62)**, and break down as: (a) **7 are dead `var(--token, rgba(…))`
+  fallbacks** for `--line`/`--ink-wash`, which ARE defined, so the rgba never renders (same as the `var(--accent, #…)`
+  finding above — harmless dead text, left); (b) **~10 are per-context box/text-shadows** (`0 8px 30px rgba(…,0.3)`
+  etc.) — a shadow is not an "overlay/hairline", and the alphas are deliberately tuned per use, so a `--shadow-*`
+  family would need many values and change nothing; (c) the rest are **scrims** (0.55/0.6/0.62 — each tuned) and
+  **gradient stops internal to one gradient** (flyer shimmer), meaningless to tokenize singly. The warm-ink
+  `rgba(44,39,34,…)` are **intentionally theme-FIXED** dark washes/shadows (4 alphas) — `44,39,34` is day `--ink`, but
+  night `--ink` is light `#ece6d8`, so mapping them onto `var(--ink)` would flip them light and **break night**. Net:
+  any single semantic token either changes pixels (the theme-aware redefinition CSS-1 already rejected) or is
+  value-by-value aliasing with no real consolidation. Left as-is.
 
 ### CSS-2 🟡 Duplicate / fragmented class definitions
 Same class defined twice (cascade-order-dependent, fragile):
@@ -181,7 +195,10 @@ Same class defined twice (cascade-order-dependent, fragile):
     Low value, skipped for now. These elements *deliberately* don't read as the app's solid `.btn`.
 
 ### CSS-5 🟢 Convention-only
-- [ ] BEM drift (`__`/`-`/camelCase mixed) — standardize on `.block__el--mod` for *new* CSS; document in core.css.
+- [x] ✅ **BEM convention documented 2026-06-26.** Wrote the naming rule into `core.css`'s header block: new CSS uses
+  `.block__element--modifier`; state flips stay as the established `.is-on`/`.is-active`/`.is-flagged` helpers (not
+  `--on`); existing mixed-style families are **not** retro-renamed (selector churn for zero gain) — converge only when
+  already rewriting; calm-tenet names (`.streak`/`.points`/`.badge`) stay off-limits. Convention-only, no restyle.
 - [x] ✅ **Undefined-token fallbacks DONE 2026-06-26.** `--surface-2` + `--hairline` were referenced but **never
   defined** anywhere, so all ~8 callers used drifting hardcoded black-alphas (`rgba(0,0,0,0.02–0.08)`) — invisible/wrong
   on a dark night card. **Defined both as theme-aware tokens** in core.css (`color-mix(in srgb, var(--ink) 5%/8%,
