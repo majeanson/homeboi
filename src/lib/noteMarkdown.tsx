@@ -211,57 +211,6 @@ export function firstLine(md: string): string {
   return plainText(md).split('\n').find((l) => l.trim()) ?? ''
 }
 
-export type FormatKind = 'bold' | 'italic' | 'strike' | 'heading' | 'bullet' | 'numbered' | 'check' | 'quote'
-const WRAP: Partial<Record<FormatKind, string>> = { bold: '**', italic: '*', strike: '~~' }
-const PREFIX: Partial<Record<FormatKind, string>> = { heading: '## ', bullet: '- ', numbered: '1. ', check: '- [ ] ', quote: '> ' }
-// Any leading block marker, so switching list type / toggling never stacks them.
-const ANY_PREFIX = /^(#{1,6}\s+|>\s?|[-*]\s+\[[ xX]\]\s+|[-*]\s+|\d+\.\s+)/
-
-interface FormatResult {
-  value: string
-  selStart: number
-  selEnd: number
-}
-
-// Apply a toolbar action to the textarea selection, returning the new value + where to
-// put the cursor/selection back. Wrap kinds toggle the **/*/~~ around the selection;
-// line kinds toggle a block prefix on every line the selection touches.
-export function applyFormat(value: string, selStart: number, selEnd: number, kind: FormatKind): FormatResult {
-  const wrap = WRAP[kind]
-  if (wrap) {
-    const sel = value.slice(selStart, selEnd)
-    const before = value.slice(0, selStart)
-    const after = value.slice(selEnd)
-    // Toggle off if the selection is already exactly wrapped.
-    if (sel.length >= 2 * wrap.length && sel.startsWith(wrap) && sel.endsWith(wrap)) {
-      const inner = sel.slice(wrap.length, sel.length - wrap.length)
-      return { value: before + inner + after, selStart, selEnd: selStart + inner.length }
-    }
-    if (!sel) {
-      const pos = selStart + wrap.length
-      return { value: before + wrap + wrap + after, selStart: pos, selEnd: pos }
-    }
-    return { value: before + wrap + sel + wrap + after, selStart: selStart + wrap.length, selEnd: selEnd + wrap.length }
-  }
-
-  const pfx = PREFIX[kind]!
-  const lineStart = value.lastIndexOf('\n', selStart - 1) + 1
-  let lineEnd = value.indexOf('\n', selEnd)
-  if (lineEnd === -1) lineEnd = value.length
-  const block = value.slice(lineStart, lineEnd)
-  const blockLines = block.split('\n')
-  // If every non-empty line already carries THIS prefix, toggle it off; else (re)apply it.
-  const allHave = blockLines.every((l) => !l.trim() || l.startsWith(pfx))
-  const next = blockLines
-    .map((l) => {
-      if (!l.trim()) return l
-      const stripped = l.replace(ANY_PREFIX, '')
-      return allHave ? stripped : pfx + stripped
-    })
-    .join('\n')
-  return { value: value.slice(0, lineStart) + next + value.slice(lineEnd), selStart: lineStart, selEnd: lineStart + next.length }
-}
-
 // Flip one checklist line's box (for the tappable read view). No-op if that line isn't
 // a checklist item.
 export function toggleCheckAt(md: string, lineIndex: number): string {

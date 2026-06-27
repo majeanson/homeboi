@@ -8,27 +8,40 @@ import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, type NoteScope } from '../../lib/familyNotes'
-import { applyFormat, renderNoteBody, type FormatKind } from '../../lib/noteMarkdown'
+import {
+  blockKindOf,
+  convertLine,
+  htmlToMd,
+  type LineKind,
+  makeLine,
+  mdToHtml,
+  toggleCheckbox,
+} from '../../lib/noteHtml'
 import { Icon, type IconName } from '../Icon'
 import { DrawPad } from '../DrawPad'
 
 // Full-screen iOS-Notes-style editor for « Le cercle » → Notes, reused for BOTH a new
 // note and modifying an existing one (#richnotes). Mirrors DrawPad's shell: a portal to
-// <body>, `useModal` for Esc/scroll-lock/focus-trap, and a flex column sized to the
-// viewport. The body is lightweight Markdown (see lib/noteMarkdown) — a toolbar wraps /
-// line-prefixes the textarea selection, and an « Aperçu » toggle renders it.
+// <body> + `useModal` (Esc/scroll-lock/focus-trap), flex column sized to the viewport.
 //
-// AUTO-SAVE (iOS-style): closing — back arrow, Esc, or the OS back gesture — commits the
-// current { title, body, attachment } via useWrite (so a text note still queues offline);
-// a brand-new note left entirely empty is discarded, and clearing an existing note to
-// empty deletes it. There is no Cancel.
+// ALWAYS WYSIWYG: the body is a contentEditable that is always rendered formatted — the
+// user never sees raw Markdown. It uses a FLAT line-block model (lib/noteHtml): each
+// visual line is one top-level element, so every toolbar button is a single pure element
+// transform (unit-tested in noteHtml.test) and renders identically every time. Storage
+// stays Markdown (so the row list + search keep working); we convert on seed (mdToHtml)
+// and read back on save (htmlToMd). Inline bold/italic/strike use the browser's native
+// execCommand; block kinds (heading/bullet/numbered/checklist/quote) and the tappable
+// checkbox use the tested pure transforms.
 //
-// One optional ATTACHMENT per note (the existing single-media invariant): a photo
-// (uploadMedia) or a drawing (DrawPad → png + editable scene). Audio memos stay a
-// quick-add on the list, not editable here. R2 unbound (503) → the media controls hide.
+// AUTO-SAVE (iOS-style): closing — back arrow, Esc, OS back gesture — commits the current
+// { title, body, attachment }; a brand-new empty note is discarded, an emptied existing
+// note is deleted. No Cancel. One optional photo/drawing attachment (uploadMedia / DrawPad);
+// audio memos stay a quick-add. R2 unbound (503) → the attach controls hide.
 type AttachKind = 'image' | 'drawing'
-
-type Fmt = { kind: FormatKind; label: string } & ({ glyph: string; mod?: string } | { icon: IconName })
+type Fmt = { kind: string; label: string; inline?: boolean; block?: LineKind } & (
+  | { glyph: string; mod?: string }
+  | { icon: IconName }
+)
 
 export function NoteEditor({
   open,
@@ -51,29 +64,35 @@ export function NoteEditor({
   const online = useOnline()
 
   const rootRef = useRef<HTMLDivElement>(null)
-  const taRef = useRef<HTMLTextAreaElement>(null)
+  const editorRef = useRef<HTMLDivElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
   const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
   const [mediaKind, setMediaKind] = useState<AttachKind | null>(null)
   const [mediaKey, setMediaKey] = useState<string | null>(null)
   const [sceneKey, setSceneKey] = useState<string | null>(null)
-  const [preview, setPreview] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [mediaOff, setMediaOff] = useState(false) // R2 unbound → hide attach controls
+  const [mediaOff, setMediaOff] = useState(false)
   const [drawOpen, setDrawOpen] = useState(false)
+  const [active, setActive] = useState<Record<string, boolean>>({})
 
-  // Seed from the note each time the editor opens (or the target note changes).
+  // Seed from the note each time the editor opens (or the target note changes). The
+  // contentEditable is uncontrolled — we set its HTML ONCE here and never from a render,
+  // so the caret is never disturbed by React updates.
   useEffect(() => {
     if (!open) return
     setTitle(note?.title ?? '')
-    setBody(note?.text ?? '')
     const mk = note && (note.media_kind === 'image' || note.media_kind === 'drawing') ? note.media_kind : null
     setMediaKind(mk)
     setMediaKey(mk ? note!.media_key : null)
     setSceneKey(mk === 'drawing' ? (note?.scene_key ?? null) : null)
-    setPreview(false)
+    const md = note?.text ?? ''
+    const root = editorRef.current
+    if (root) {
+      root.innerHTML = mdToHtml(md)
+      root.setAttribute('data-empty', md.trim() ? 'false' : 'true')
+    }
+    setActive({})
   }, [open, note])
 
   // Commit on close (auto-save). Held in a ref so the stable handleClose passed to
@@ -81,7 +100,7 @@ export function NoteEditor({
   const commitRef = useRef<() => void>(() => {})
   commitRef.current = () => {
     const ti = title.trim()
-    const bo = body.trim()
+    const bo = editorRef.current ? htmlToMd(editorRef.current).trim() : (note?.text ?? '').trim()
     const empty = !ti && !bo && !mediaKey
     if (!note) {
       if (empty) return // discard a brand-new, untouched note
@@ -112,18 +131,126 @@ export function NoteEditor({
 
   useModal(rootRef, handleClose, { open })
 
+  // Keep toolbar active-state in sync as the caret moves.
+  useEffect(() => {
+    if (!open) return
+    const h = () => updateActive()
+    document.addEventListener('selectionchange', h)
+    return () => document.removeEventListener('selectionchange', h)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
   if (!open) return null
 
-  // Apply a toolbar action to the textarea selection, then restore the cursor.
-  function format(kind: FormatKind) {
-    const ta = taRef.current
-    if (!ta) return
-    const r = applyFormat(body, ta.selectionStart, ta.selectionEnd, kind)
-    setBody(r.value)
-    requestAnimationFrame(() => {
-      ta.focus()
-      ta.setSelectionRange(r.selStart, r.selEnd)
+  // ── contentEditable helpers (flat line-block model) ───────────────────────────────
+  function topLevelOf(node: Node | null): HTMLElement | null {
+    const root = editorRef.current
+    if (!root || !node) return null
+    let el: HTMLElement | null = node.nodeType === 1 ? (node as HTMLElement) : node.parentElement
+    while (el && el.parentElement && el.parentElement !== root) el = el.parentElement
+    return el && el.parentElement === root ? el : null
+  }
+  function selectedBlocks(): HTMLElement[] {
+    const sel = window.getSelection()
+    const root = editorRef.current
+    if (!sel || sel.rangeCount === 0 || !root) return []
+    const a = topLevelOf(sel.anchorNode)
+    const f = topLevelOf(sel.focusNode)
+    if (!a) return []
+    if (!f || a === f) return [a]
+    const kids = Array.from(root.children) as HTMLElement[]
+    let i = kids.indexOf(a)
+    let j = kids.indexOf(f)
+    if (i < 0 || j < 0) return [a]
+    if (i > j) [i, j] = [j, i]
+    return kids.slice(i, j + 1)
+  }
+  function caretToEnd(el: HTMLElement) {
+    const sel = window.getSelection()
+    if (!sel) return
+    const r = document.createRange()
+    r.selectNodeContents(el)
+    r.collapse(false)
+    sel.removeAllRanges()
+    sel.addRange(r)
+  }
+  function updateActive() {
+    const a: Record<string, boolean> = {}
+    try {
+      a.bold = document.queryCommandState('bold')
+      a.italic = document.queryCommandState('italic')
+      a.strike = document.queryCommandState('strikeThrough')
+    } catch {
+      /* queryCommandState unsupported — leave inline states off */
+    }
+    const blocks = selectedBlocks()
+    const k = blocks.length ? blockKindOf(blocks[0]) : 'plain'
+    a.heading = k === 'heading'
+    a.bullet = k === 'bullet'
+    a.numbered = k === 'numbered'
+    a.check = k === 'check'
+    a.quote = k === 'quote'
+    setActive(a)
+  }
+  function afterInput() {
+    const root = editorRef.current
+    if (!root) return
+    root.setAttribute('data-empty', htmlToMd(root).trim() ? 'false' : 'true')
+    updateActive()
+  }
+  function inlineCmd(cmd: string) {
+    editorRef.current?.focus()
+    try {
+      document.execCommand(cmd, false)
+    } catch {
+      /* execCommand unsupported — inline formatting unavailable, the rest still works */
+    }
+    afterInput()
+  }
+  function blockCmd(kind: LineKind) {
+    const root = editorRef.current
+    if (!root) return
+    root.focus()
+    const blocks = selectedBlocks()
+    if (!blocks.length) return
+    // Toggle: if every selected line already IS this kind, turn them back to plain.
+    const target: LineKind = blocks.every((b) => blockKindOf(b) === kind) ? 'plain' : kind
+    let last: HTMLElement | null = null
+    blocks.forEach((b) => {
+      const nb = convertLine(b, target)
+      b.replaceWith(nb)
+      last = nb
     })
+    if (last) caretToEnd(last)
+    afterInput()
+  }
+  function onEditorKeyDown(e: React.KeyboardEvent) {
+    if (e.key !== 'Enter' || e.shiftKey) return
+    const cur = selectedBlocks()[0]
+    if (!cur) return
+    const k = blockKindOf(cur)
+    if (k === 'bullet' || k === 'numbered' || k === 'check') {
+      // Intuitive list behaviour: Enter continues the list; Enter on an empty item ends it.
+      e.preventDefault()
+      if (!(cur.textContent ?? '').trim()) {
+        const plain = makeLine('plain', '')
+        cur.replaceWith(plain)
+        caretToEnd(plain)
+      } else {
+        const nl = makeLine(k, '')
+        cur.after(nl)
+        caretToEnd(nl)
+      }
+      afterInput()
+    }
+  }
+  function onEditorClick(e: React.MouseEvent) {
+    const cb = (e.target as HTMLElement).closest?.('.ne-cb')
+    if (cb) {
+      e.preventDefault()
+      const line = cb.closest('.ne-check')
+      if (line && toggleCheckbox(line)) afterInput()
+    }
   }
 
   async function onPhotoFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -142,12 +269,10 @@ export function NoteEditor({
       setBusy(false)
     }
   }
-
   async function onDrawSave(png: Blob, scene: string) {
     setDrawOpen(false)
     setBusy(true)
     try {
-      // PNG + JSON scene ride note-media as-is (no resize — keep transparency / the raw scene).
       const key = await uploadMedia('note-media', png, { resize: false, filename: 'drawing.png' })
       let sk: string | null = null
       if (scene) {
@@ -166,7 +291,6 @@ export function NoteEditor({
       setBusy(false)
     }
   }
-
   function removeMedia() {
     setMediaKind(null)
     setMediaKey(null)
@@ -174,15 +298,19 @@ export function NoteEditor({
   }
 
   const FORMATS: Fmt[] = [
-    { kind: 'bold', glyph: 'B', mod: 'b', label: fn.fmtBold },
-    { kind: 'italic', glyph: 'I', mod: 'i', label: fn.fmtItalic },
-    { kind: 'strike', glyph: 'S', mod: 's', label: fn.fmtStrike },
-    { kind: 'heading', glyph: 'H', mod: 'h', label: fn.fmtHeading },
-    { kind: 'bullet', glyph: '•', label: fn.fmtBullet },
-    { kind: 'numbered', glyph: '1.', label: fn.fmtNumbered },
-    { kind: 'check', icon: 'check-square-bold', label: fn.fmtCheck },
-    { kind: 'quote', glyph: '❝', label: fn.fmtQuote },
+    { kind: 'bold', inline: true, glyph: 'B', mod: 'b', label: fn.fmtBold },
+    { kind: 'italic', inline: true, glyph: 'I', mod: 'i', label: fn.fmtItalic },
+    { kind: 'strike', inline: true, glyph: 'S', mod: 's', label: fn.fmtStrike },
+    { kind: 'heading', block: 'heading', glyph: 'H', mod: 'h', label: fn.fmtHeading },
+    { kind: 'bullet', block: 'bullet', glyph: '•', label: fn.fmtBullet },
+    { kind: 'numbered', block: 'numbered', glyph: '1.', label: fn.fmtNumbered },
+    { kind: 'check', block: 'check', icon: 'check-square-bold', label: fn.fmtCheck },
+    { kind: 'quote', block: 'quote', glyph: '❝', label: fn.fmtQuote },
   ]
+  const runFmt = (f: Fmt) => {
+    if (f.inline) inlineCmd(f.kind === 'bold' ? 'bold' : f.kind === 'italic' ? 'italic' : 'strikeThrough')
+    else if (f.block) blockCmd(f.block)
+  }
 
   return createPortal(
     <div ref={rootRef} className="note-editor" role="dialog" aria-modal="true" aria-label={note ? fn.editorEdit : fn.editorNew}>
@@ -191,9 +319,6 @@ export function NoteEditor({
           <Icon name="caret-left-bold" size={20} />
         </button>
         <span className="note-editor__heading">{note ? fn.editorEdit : fn.editorNew}</span>
-        <button type="button" className={'note-editor__toggle' + (preview ? ' is-on' : '')} onClick={() => setPreview((p) => !p)} aria-pressed={preview}>
-          {preview ? fn.writeTab : fn.preview}
-        </button>
       </header>
 
       <input
@@ -206,30 +331,39 @@ export function NoteEditor({
         autoFocus={!note}
       />
 
-      {!preview && (
-        <div className="note-editor__toolbar" role="group" aria-label={fn.format}>
-          {FORMATS.map((f) => (
-            <button key={f.kind} type="button" className="note-editor__fmt" onClick={() => format(f.kind)} aria-label={f.label} title={f.label}>
-              {'icon' in f ? <Icon name={f.icon} size={18} /> : <span className={'note-editor__glyph' + (f.mod ? ' note-editor__glyph--' + f.mod : '')} aria-hidden="true">{f.glyph}</span>}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="note-editor__toolbar" role="group" aria-label={fn.format}>
+        {FORMATS.map((f) => (
+          <button
+            key={f.kind}
+            type="button"
+            className={'note-editor__fmt' + (active[f.kind] ? ' is-on' : '')}
+            // Keep the editor's selection — a button mousedown must not steal focus.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => runFmt(f)}
+            aria-label={f.label}
+            aria-pressed={!!active[f.kind]}
+            title={f.label}
+          >
+            {'icon' in f ? <Icon name={f.icon} size={18} /> : <span className={'note-editor__glyph' + (f.mod ? ' note-editor__glyph--' + f.mod : '')} aria-hidden="true">{f.glyph}</span>}
+          </button>
+        ))}
+      </div>
 
       <div className="note-editor__stage">
-        {preview ? (
-          <div className="note-editor__previewbody note-md">{body.trim() ? renderNoteBody(body) : <p className="note-editor__empty mono">{fn.empty}</p>}</div>
-        ) : (
-          <textarea
-            ref={taRef}
-            className="note-editor__body"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder={fn.placeholder}
-            aria-label={fn.editorNew}
-            maxLength={2000}
-          />
-        )}
+        <div
+          ref={editorRef}
+          className="note-editor__body note-md"
+          contentEditable
+          suppressContentEditableWarning
+          role="textbox"
+          aria-multiline="true"
+          aria-label={fn.editorNew}
+          data-placeholder={fn.placeholder}
+          data-empty="true"
+          onInput={afterInput}
+          onKeyDown={onEditorKeyDown}
+          onClick={onEditorClick}
+        />
       </div>
 
       {!mediaOff && (
