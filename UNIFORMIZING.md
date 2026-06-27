@@ -82,9 +82,14 @@ and own a parallel CSS family. Fold the outer chrome onto `<Modal>`, keep the in
   own; the STRUCT-1 `<h2>` lives inside RecipeForm's `.recipe-modal__bar` (a scene), so it rides the scene-wrapper work.
 
 ### FE-3 🟡 `KidExitGate` bespoke modal
-- [ ] `components/KidExitGate.tsx` (~L113–161, `.kid-exit-overlay`/`.kid-exit-modal`) — security-gate styling is
-  intentionally distinct, but the scrim/focus/Esc behaviour duplicates `useModal`. Wrap in `<Modal>` keeping
-  the custom CSS, OR leave as-is and document the exception. Low priority, security-sensitive.
+- [x] ✅ `components/KidExitGate.tsx` **DONE 2026-06-26.** Wrapped in `<Modal open={gateOpen} className="kid-exit-modal"
+  title={exitTitle}>` — dropped the hand-rolled `.kid-exit-overlay` scrim + `.kid-exit-modal` card surface + the local
+  `useModal`/`modalRef`; the gate now rides Modal's shared backdrop/✕/focus-trap/Esc. **Security unchanged** — the
+  one-way door is the 3s hold + the arithmetic answer (untouched); Modal only swaps the presentation chrome (Esc/✕ just
+  *cancel*, never unlock). Passed `className="kid-exit-modal"` so the card keeps its class → the inner
+  `__q/__input/__wrong/__actions` CSS **and the e2e gate test** (`interactions.spec.ts:150`, which locates
+  `.kid-exit-modal`) still hold. CSS: removed the overlay + dead `__title` rule, kept a one-line
+  `.kit-modal.kid-exit-modal { width: min(360px,100%) }` override. typecheck + **gate e2e passes** + build green.
 
 ### FE-4 🟢 Already-correct (no action — recorded so we don't re-audit)
 - ✅ **Icon discipline is clean** — control affordances all use the Phosphor `<Icon>` set (`pencil-simple-bold`,

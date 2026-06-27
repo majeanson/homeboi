@@ -564,29 +564,13 @@
   }
 }
 
-.kid-exit-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 95;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: color-mix(in srgb, var(--ink) 45%, transparent);
-  backdrop-filter: blur(2px);
-}
-.kid-exit-modal {
+/* The gate rides the shared <Modal> (.kit-modal) chrome — backdrop, ✕ close,
+   focus-trap, Esc — so the overlay/scrim + card surface are no longer hand-rolled
+   (kit-modal already gives the solid elevated card every other dialog uses, with its
+   own title). Only the narrower width is gate-specific; the inner __q/__input/__wrong/
+   __actions below are unchanged. */
+.kit-modal.kid-exit-modal {
   width: min(360px, 100%);
-  /* --bg is not a defined token (it resolved to nothing → a see-through modal).
-     Use the elevated card surface every other dialog uses, so the gate is solid. */
-  background: var(--card);
-  color: var(--ink);
-  border-radius: var(--radius-lg, 18px);
-  box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.25));
-  padding: 22px;
-}
-.kid-exit-modal__title {
-  margin: 0 0 14px;
-  font-size: 1.15rem;
 }
 .kid-exit-modal__q {
   display: flex;

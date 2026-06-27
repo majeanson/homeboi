@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
-import { useModal } from '../lib/useModal'
+import { Modal } from './Modal'
 import { Icon } from './Icon'
 
 // The adult escape hatch from the toddler lens, built as a PARENTAL GATE so the
@@ -41,8 +41,6 @@ export function KidExitGate() {
   const [answer, setAnswer] = useState('')
   const [wrong, setWrong] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const modalRef = useRef<HTMLDivElement>(null)
-  useModal(modalRef, () => setGateOpen(false), { open: gateOpen })
 
   // Clear a pending hold timer if we unmount mid-press, so it can't fire
   // setGateOpen on a gone component.
@@ -110,55 +108,42 @@ export function KidExitGate() {
         <span className="kid-exit-switch__fill" aria-hidden="true" />
       </button>
 
-      {gateOpen && (
-        <div
-          className="kid-exit-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setGateOpen(false)
-          }}
-        >
-          <div
-            ref={modalRef}
-            className="kid-exit-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label={t.audience.exitTitle}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="kid-exit-modal__title">{t.audience.exitTitle}</h2>
-            <form onSubmit={submit}>
-              <label className="kid-exit-modal__q">
-                <span>
-                  {t.audience.exitPrompt} {sum.a} + {sum.b}&nbsp;?
-                </span>
-                {/* No autoFocus — house rule: the keyboard only ever opens on an
-                    explicit tap, never when a dialog mounts. */}
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  className="kid-exit-modal__input"
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  aria-label={t.audience.exitAnswer}
-                />
-              </label>
-              {wrong && (
-                <p className="kid-exit-modal__wrong" role="alert">
-                  {t.audience.exitWrong}
-                </p>
-              )}
-              <div className="kid-exit-modal__actions">
-                <button type="button" className="btn btn--ghost" onClick={() => setGateOpen(false)}>
-                  {t.audience.exitCancel}
-                </button>
-                <button type="submit" className="btn btn--primary">
-                  {t.audience.exitConfirm}
-                </button>
-              </div>
-            </form>
+      {/* The math gate rides the shared <Modal> chrome (backdrop, ✕ close, focus-trap,
+          Esc). Security is unchanged — it lives in the 3s hold + the arithmetic answer
+          below, not the presentation. `className="kid-exit-modal"` keeps the card's
+          class so the inner __q/__input/__actions styling (+ the e2e gate test) hold. */}
+      <Modal open={gateOpen} onClose={() => setGateOpen(false)} className="kid-exit-modal" title={t.audience.exitTitle}>
+        <form onSubmit={submit}>
+          <label className="kid-exit-modal__q">
+            <span>
+              {t.audience.exitPrompt} {sum.a} + {sum.b}&nbsp;?
+            </span>
+            {/* No autoFocus — house rule: the keyboard only ever opens on an
+                explicit tap, never when a dialog mounts. */}
+            <input
+              type="number"
+              inputMode="numeric"
+              className="kid-exit-modal__input"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              aria-label={t.audience.exitAnswer}
+            />
+          </label>
+          {wrong && (
+            <p className="kid-exit-modal__wrong" role="alert">
+              {t.audience.exitWrong}
+            </p>
+          )}
+          <div className="kid-exit-modal__actions">
+            <button type="button" className="btn btn--ghost" onClick={() => setGateOpen(false)}>
+              {t.audience.exitCancel}
+            </button>
+            <button type="submit" className="btn btn--primary">
+              {t.audience.exitConfirm}
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </>
   )
 }
