@@ -1,0 +1,775 @@
+/* The week-action results band — AI/book/use-it-up suggestion cards + the shop
+   panel stack here, one under the next. Each action scrolls this into view (so a
+   tap is never an off-screen no-op); scroll-margin gives it a little headroom. */
+.kitchen__results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  scroll-margin-top: 0.75rem;
+}
+.kitchen__results:empty {
+  display: none;
+}
+.kitchen__results > * {
+  margin: 0;
+}
+/* The "shop this week" confirm panel reuses the staples panel styling. */
+.kitchen__shop {
+  margin: 0;
+}
+.kitchen__suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 1.15rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+}
+.kitchen__suggestion-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.kitchen__suggestion-sub {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+.kitchen__suggestion-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.kitchen__week {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  /* minmax(0,1fr), not the default auto column: an auto track sizes to its widest
+     content (a long meal title / slot chip) and overflows. This caps the column
+     to the container so the day cards' own min-width:0 + ellipsis take over. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+}
+.kitchen__day {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 0.95rem;
+  /* Grid item: cap at the track so a long meal title / nowrap slot chip ellipsizes
+     and wraps inside the card instead of stretching it past the viewport. */
+  min-width: 0;
+  /* A soft inset rail at the left edge separates each day cleanly and reads as a
+     countdown spine: neutral most days, sky on weekends, accent on today. */
+  box-shadow: var(--shadow-sm), inset 4px 0 0 var(--line-strong);
+  /* Wrap so the "💡 suggéré par" note drops below the meal on a narrow phone
+     instead of overrunning the row. */
+  flex-wrap: wrap;
+}
+.kitchen__day.is-weekend {
+  box-shadow: var(--shadow-sm), inset 4px 0 0 var(--sky);
+}
+.kitchen__day.is-today {
+  background: var(--terracotta-wash);
+  box-shadow: var(--shadow-sm), inset 4px 0 0 var(--terracotta-deep), inset 0 0 0 1.5px var(--terracotta);
+}
+/* Calendar-style date badge: weekday over a big day number, the row's left
+   anchor. A small relative tag ("Aujourd'hui"/"Demain") sits above when set. */
+.kitchen__day-date {
+  flex: none;
+  width: 2.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  line-height: 1.04;
+  text-align: center;
+}
+.kitchen__day-rel {
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--terracotta-deep);
+}
+.kitchen__day-dow {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.kitchen__day-num {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.kitchen__day.is-today .kitchen__day-num {
+  color: var(--terracotta-deep);
+}
+.kitchen__day.is-weekend .kitchen__day-dow {
+  color: var(--sky-deep);
+}
+.kitchen__day-meal {
+  /* min-width is a real floor, not 0: the title is the headline and must never
+     collapse to a sliver. Without it, the unstyled 📖 link + "💡 suggéré par"
+     chip (which don't shrink) would eat the row and squeeze this to < 1ch wide,
+     stacking the title one letter per line. With a 7rem floor it keeps a
+     readable column and instead forces those adornments to wrap below. */
+  flex: 1 1 auto;
+  min-width: 7rem;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  cursor: pointer;
+  padding: 0.2rem 0;
+  /* Last-resort guard for one absurdly long unspaced word — normal multi-word
+     titles now wrap at spaces within the 7rem+ column above. */
+  overflow-wrap: anywhere;
+}
+/* The 📖 recipe link (.kitchen__day-recipe-link, cook.css) and the "💡 suggéré
+   par X" note (.kitchen__day-sugg, core.css) are both flex: none / own-line so
+   they no longer compete with the title for row width. */
+.kitchen__day-empty {
+  color: var(--ink-soft);
+}
+/* The lighter slots (déjeuner / dîner / collation) under the souper — a compact
+   row of chips, each its planned title or just the picture + label. Full-width
+   so they sit on their own line below the souper on any screen. */
+.kitchen__slots {
+  flex-basis: 100%;
+  min-width: 0;
+  display: flex;
+  /* Stack the side slots full-width — each is now a list with per-item controls,
+     too wide to sit three-across on a phone. */
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+/* The day's free-text note — a memo line under the slots. Full-width so it sits
+   on its own row; a quiet dashed "+ note" when empty, a tinted chip when set. */
+.kitchen__note {
+  flex-basis: 100%;
+  margin-top: 0.3rem;
+}
+.kitchen__note-add {
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-faint);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.8rem;
+  min-height: 2.4rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.kitchen__note-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  text-align: left;
+  border: 0;
+  background: var(--marigold-wash);
+  color: var(--ink);
+  border-radius: 0.7rem;
+  padding: 0.4rem 0.7rem;
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.kitchen__note-text {
+  overflow-wrap: anywhere;
+}
+.kitchen__note-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.kitchen__note-edit .input {
+  flex: 1;
+  min-width: 9rem;
+}
+.kitchen__slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.8rem;
+  min-height: 2.6rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  max-width: 100%;
+  /* Let the chip shrink so its label can ellipsize instead of overrunning. */
+  min-width: 0;
+}
+.kitchen__slot.is-set {
+  border-style: solid;
+  color: var(--ink);
+  background: var(--paper-deep);
+}
+.kitchen__slot-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kitchen__slot-edit {
+  flex-basis: 100%;
+  display: flex;
+  gap: 0.5rem;
+}
+/* A side slot in edit mode now stacks its title row + the recipe picker. */
+.kitchen__slot-edit-wrap {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+/* A set side slot + its little "open the linked recipe" button, kept together. */
+.kitchen__slot-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: 100%;
+  min-width: 0;
+}
+.kitchen__slot-recipe-link {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.05rem;
+  line-height: 1;
+  border-radius: var(--radius-pill);
+}
+.kitchen__day-edit {
+  flex: 1;
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* The week's three actions (shop the week / AI ideas / ideas from the book) live
+   INSIDE the ＋ Add sheet as icon tiles now (see .sheet__group in sheets.css) —
+   the old floating .kitchen__fab-rail was removed so the parent view has one
+   floating affordance, not four. */
+
+/* ── Meals as lists per slot (N per slot, migration 0033) ─────────────────── */
+/* Everything in a day after the date badge stacks vertically in a width-capped
+   column, so the per-meal control rows never push the card past the viewport. */
+/* The day row is a calm read-only glance: the souper headline + a compact "Gérer"
+   button share the top line, and the lighter slots wrap as colour chips below at
+   FULL card width — so the meal info is never clipped behind the button. Only the
+   Gérer pill opens that day's editing sheet (no more giant whole-row button). */
+.kitchen__day-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.15rem 0;
+}
+.kitchen__day-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.kitchen__day-sum-main {
+  flex: 1;
+  min-width: 0;
+  /* Column: the grip+icon+title line on top, the "Restants" tag below it — so the
+     tag never sits to the right of the title and steals its width. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.kitchen__day-sum-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.kitchen__day-sum-titles {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.kitchen__day-sum-empty {
+  color: var(--ink-soft);
+}
+
+/* ── Drag-to-move (src/lib/dnd.tsx) ──────────────────────────────────────────
+   Touch-friendly pointer DnD: a grip starts the drag, a ghost trails the finger,
+   the hovered drop zone lights up, the source dims. Shared by the week grid
+   (souper → another day) and the day sheet (a meal → another slot). */
+.dnd-grip {
+  /* The handle must own the gesture so the page/sheet doesn't scroll mid-drag. */
+  touch-action: none;
+  cursor: grab;
+  color: var(--ink-faint);
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  flex: none;
+  user-select: none;
+}
+.dnd-grip:active {
+  cursor: grabbing;
+}
+/* The whole souper headline is the grid's drag handle (no separate row of UI on
+   the calm glance) — claim the gesture and read as movable. */
+.kitchen__day-drag {
+  touch-action: none;
+  cursor: grab;
+}
+.kitchen__day-drag:active {
+  cursor: grabbing;
+}
+.is-dragging {
+  opacity: 0.4;
+}
+/* The hovered, droppable zone — a calm dashed accent ring + faint wash, never a
+   loud fill. */
+.dnd-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -3px;
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.dnd-ghost {
+  position: fixed;
+  z-index: 1200;
+  /* Sit just above-left of the finger so the label clears the fingertip. */
+  transform: translate(-50%, calc(-100% - 0.6rem));
+  pointer-events: none;
+  max-width: 60vw;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.55rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dnd-ghost {
+    box-shadow: none;
+  }
+}
+/* The lighter slots wrap as colour chips (.meal-chip, shared — see misc.css) so
+   nothing is ever hidden; this is just their row. */
+.kitchen__day-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+/* The day note: a muted memo that always reads in full — it wraps onto as many
+   lines as it needs rather than ellipsizing, so nothing is ever hidden. */
+.kitchen__day-sum-meta {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+/* The edit cue — a small icon-only button that never shrinks, so the meal info to
+   its left keeps the rest of the width. The ONLY tap target that opens the sheet. */
+.kitchen__day-manage {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 0;
+  cursor: pointer;
+}
+.kitchen__day.is-today .kitchen__day-manage {
+  border-color: var(--terracotta);
+  color: var(--terracotta-deep);
+}
+/* Day editor (DayPlanPage scene) — one labelled block per slot + the note,
+   lightly divided. Shared `.day-mng__*` selectors; they live inside `.scene__body`
+   now (were the DayManageSheet bottom sheet). */
+.day-mng__sec {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+}
+.day-mng__sec:first-of-type {
+  border-top: 0;
+}
+.day-mng__sec-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0;
+  min-width: 0;
+}
+/* Slot header line: the slot name on the left, its "＋ Ajouter" on the right —
+   so the add affordance never takes a row of its own under the meals. */
+.day-mng__sec-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+/* Each side slot is now a small stack: an icon+label header, the list of planned
+   meals, and an add control (was a single inline chip). */
+.kitchen__slot-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+  width: 100%;
+  min-width: 0;
+}
+.kitchen__slot-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.kitchen__slot-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  align-self: flex-start;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink-faint);
+  border-radius: var(--radius-pill);
+  padding: 0.3rem 0.7rem;
+  min-height: 2.4rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+/* The planned meals in one slot — a stacked list of rows with per-item controls. */
+.kitchen__meal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex-basis: 100%;
+  /* Let rows clip long/unbreakable titles instead of forcing the card wider. */
+  min-width: 0;
+  width: 100%;
+}
+/* Grid (not flex) so the title column can shrink to 0 — minmax(0,1fr) truncates a
+   long/unbreakable title instead of pushing the fixed control cluster off-card. */
+.kitchen__meal-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--paper-deep);
+  border-radius: 0.6rem;
+  padding: 0.3rem 0.5rem;
+  min-width: 0;
+}
+/* The title body is now a button (tap to rename in place) — reset the chrome and
+   stack the title over its "Restants" badge so the badge never eats title width. */
+.kitchen__meal-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.kitchen__meal-headline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.kitchen__meal-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* "Restants" badge — a quiet terracotta pill flagging a planned-leftover meal
+   wherever a meal title shows (meal rows, the week-grid glance). */
+.kitchen__meal-tag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  color: var(--terracotta-deep);
+  background: var(--terracotta-wash);
+  white-space: nowrap;
+}
+/* (The Restants recent-meal quick-pick chips moved into EntityCombobox — its
+   dropdown now surfaces today's meals as suggestions; the old folded strip and
+   its `.kitchen__leftovers-recent*` classes were removed.) */
+.kitchen__meal-ctl {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+.kitchen__meal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: 0.4rem;
+}
+.kitchen__meal-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.kitchen__meal-remove {
+  color: var(--ink-faint);
+  font-size: 0.95rem;
+}
+.kitchen__meal-clearall {
+  margin-top: 0.15rem;
+}
+.kitchen__day-add-more {
+  color: var(--ink-faint);
+}
+.kitchen__add-cancel {
+  align-self: flex-start;
+}
+/* "Vider la journée" — the day's destructive clear. Pinned last and full-width,
+   reading red so it never reads as a quiet, easy-to-miss control. */
+.kitchen__clear-day {
+  flex-basis: 100%;
+  align-self: stretch;
+  justify-content: center;
+  margin-top: 0.8rem;
+  border-color: color-mix(in srgb, var(--danger, #c0392b) 40%, transparent);
+  color: var(--danger, #c0392b);
+}
+.kitchen__clear-day:hover,
+.kitchen__clear-day:focus-visible {
+  border-color: var(--danger, #c0392b);
+  background: color-mix(in srgb, var(--danger, #c0392b) 10%, transparent);
+  color: var(--danger, #c0392b);
+}
+/* The meal -> grocery staple confirm step (B3). Breaks the day row into a
+   column: dish + chips + the two save actions. */
+.kitchen__staples {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.kitchen__staples-q {
+  color: var(--ink);
+}
+.kitchen__staples-hint {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  margin: -0.25rem 0 0;
+}
+.kitchen__staples-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+/* These are a CHOICE list now (all unchecked by default — you tick what you want),
+   so every ingredient name must be FULLY readable, not ellipsized. Let long names
+   wrap inside the chip; the checkbox glyph stays pinned at the start (flex: none on
+   the Icon) and the text left-aligns so a wrapped second line reads cleanly. */
+.kitchen__staples-chips .chip {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  justify-content: flex-start;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+  /* Chips ARE the navigation in the kitchen (day picker, recipe menu, tags,
+     ideas) — keep them a comfortable thumb height, not a 32px sliver. */
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  text-decoration: none; /* a chip is a chip whether it's a <button> or a <Link> */
+  cursor: pointer;
+}
+.chip.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface);
+}
+.kitchen__staples-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.kitchen__low-add,
+.kitchen__soon-add,
+.kitchen__reserve-add,
+.kitchen__low,
+.kitchen__soon {
+  margin-top: 0.75rem;
+}
+.kitchen__low-add,
+.kitchen__soon-add,
+.kitchen__reserve-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  /* input + mic + add: let the field take the slack and wrap on a narrow phone
+     so the third control never pushes "Ajouter" off the row. */
+  flex-wrap: wrap;
+}
+.kitchen__low-add .input,
+.kitchen__soon-add .input,
+.kitchen__reserve-add .input {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+.kitchen__low,
+.kitchen__soon {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.kitchen__low-note {
+  color: var(--ink-soft);
+  margin-left: auto;
+}
+/* A check-list row (CheckRow): a dedicated check button, then the INERT title
+   takes the slack, then the uniform ✏️/🗑️ pair at the end. The title is no
+   longer a tap target — only the check fires the action. An editing row swaps to
+   the inline rename form, full width. */
+.kitchen__pantry-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+/* CheckRow's inline rename is now a full-width EditField (was operator__inline-form). */
+.checkrow__edit {
+  flex: 1 1 auto;
+}
+/* The check is its own ≥40px button (square glyph), not the whole row. */
+.checkrow__check {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.3rem;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+}
+.checkrow__check:hover .board__check,
+.checkrow__check:active .board__check {
+  color: var(--accent);
+}
+.checkrow__check:active {
+  transform: translateY(1px);
+}
+/* The inert title area — fills the row, plain text (no pointer cursor). */
+.checkrow__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: left;
+  cursor: default;
+}
+.checkrow__title {
+  min-width: 0;
+}
+/* La réserve: a storage-location picker rides in the add/edit row; keep it from
+   eating the whole width so the item field and "Ajouter" stay usable on a phone. */
+.kitchen__reserve-loc {
+  flex: 0 1 9rem;
+  min-width: 6rem;
+}
+/* Items group under a small coloured location header (tinted with the spot's own
+   colour), then an "Autres" bucket for anything whose location was removed. */
+.kitchen__reserve-group {
+  margin-top: 0.9rem;
+}
+.kitchen__reserve-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: fit-content;
+}
+.kitchen__reserve-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  flex: none;
+}
+

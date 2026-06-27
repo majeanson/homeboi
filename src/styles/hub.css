@@ -278,7 +278,7 @@
    bar) has no content below it to pull up, so viewportVars' block:'start' pin
    can't lift it clear of the keyboard and it stays buried. Reserve the
    keyboard's height as trailing scroll slack so ANY focused field can scroll
-   above it. Mirrors the .auth login form (pages.css). --kb is 0 with no
+   above it. Mirrors the .auth login form (pages/onboarding.css). --kb is 0 with no
    keyboard, so this only bites while typing; the FAB/nav are hidden meanwhile
    (above), so replacing their padding-bottom costs nothing. Both surfaces: a
    wall tablet has an OSK too. Specificity ties the per-surface rules above and

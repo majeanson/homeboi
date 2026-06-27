@@ -1,0 +1,261 @@
+/* --- Kid view (pre-reader: big targets, calm, deterministic) -------------- */
+/* The bare `.kid` rule is canonical in kid.css (display:flex; flex-direction:
+   column; min-height:100%). A copy here was fully inert — kid.css imports later
+   so its min-height:100% won, and the other two props were identical — so it's
+   removed to kill the cross-file collision. Only the `.kid__*` helpers remain. */
+.kid__main,
+.kid__pick {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+}
+/* With the recipe picker present the view becomes a scrollable feed (supper row,
+   then the shelf of recipes / day choices) — top-aligned so a long list never
+   pushes the first tiles off the top behind centering. */
+.kid__main--feed {
+  justify-content: flex-start;
+  gap: 2rem;
+}
+.kid-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+}
+/* A real, finger-sized button (was bare text) — a toddler's back tap shouldn't be
+   smaller than everything else on the picture-first surface (NFR-KID-1). */
+.kid-pick__back {
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: 1.15rem;
+  min-height: 56px;
+  padding: 0.6rem 1.5rem;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+}
+.kid__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 48rem;
+}
+.kid__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  /* >= 64px target, way bigger here — a toddler taps the whole card */
+  min-height: 9rem;
+  padding: 1.5rem 1rem;
+  border: 2px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  cursor: pointer;
+  position: relative;
+  transition: opacity 0.18s ease;
+}
+.kid__card-icon {
+  font-size: 3.2rem;
+  line-height: 1;
+}
+.kid__card-label {
+  font-size: 1.15rem;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+.kid__card.is-done {
+  /* Deterministic, identical every time: a calm fade + a check. No confetti,
+     no jackpot animation, no sound that escalates (NFR-CALM-2). */
+  opacity: 0.4;
+}
+.kid__card-done {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.7rem;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+.kid__alldone {
+  text-align: center;
+}
+.kid__alldone-mark {
+  font-size: 5rem;
+  color: var(--accent);
+}
+.kid__alldone-text {
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+/* A centered, even grid (was a wrapping flex row) so a wall tablet lays the
+   routine cards out in tidy columns that use its width — they don't bunch up
+   left on a wide screen, and each card keeps a comfortable size. */
+.kid__faces {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 60rem;
+  justify-items: center;
+}
+/* A spacious routine card (was a round face): whose it is, a real photo/emoji
+   preview of the steps, and a calm status. There are usually only a few
+   routines, so each gets room to show what's inside. */
+.kid__face {
+  position: relative;
+  width: 100%;
+  max-width: 17rem;
+  min-height: 12rem;
+  border: 0;
+  border-radius: 24px;
+  padding: 1.1rem 1rem 0.9rem;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  box-shadow: var(--shadow-md);
+  transition:
+    transform var(--dur-base) var(--ease-soft),
+    opacity var(--dur-base) var(--ease-soft);
+}
+.kid__face:hover,
+.kid__face:focus-visible {
+  transform: translateY(-4px) scale(1.02);
+}
+/* A finished routine reads softer — calm, deterministic, resets daily. */
+.kid__face.is-done {
+  opacity: 0.62;
+}
+.kid__face-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  /* A long, unbreakable routine/child name wraps within the card instead of
+     stretching it past the toddler grid. */
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+/* Who it's for: a small avatar + name, shown only on a shared device. */
+.kid__routine-who {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
+}
+.kid__routine-ava {
+  width: 2.3rem;
+  height: 2.3rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+.kid__routine-ava--initial {
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+/* The step preview strip: each step as its photo (feature #17 C) or emoji. */
+.kid__routine-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+.kid__routine-slot {
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  line-height: 1;
+  overflow: hidden;
+}
+/* A step already done today reads softer in the preview too. */
+.kid__routine-slot.is-done {
+  opacity: 0.4;
+}
+.kid__routine-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.kid__routine-emoji {
+  line-height: 1;
+}
+.kid__routine-more {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  padding: 0 0.2rem;
+}
+/* Status row: a familiar-voice hint + a calm done / how-far cue. */
+.kid__routine-status {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: auto;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.kid__routine-voice {
+  display: inline-flex;
+  color: var(--ink-soft);
+}
+.kid__routine-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 700;
+  color: var(--sage, #6b8a52);
+}
+.kid__routine-prog {
+  font-weight: 700;
+}
+/* The routine's moment badge (🌅/☀️/🌙) riding the card's top corner — a
+   pre-reader spots "the moon one" without reading. */
+.kid__face-tod {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 1.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+}
+.kid__pick-title {
+  margin-bottom: 2rem;
+}
+.kid__footer {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+.kid__exit {
+  color: var(--ink-soft);
+  text-decoration: none;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+.kid__none {
+  text-align: center;
+}
+

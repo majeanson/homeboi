@@ -1,0 +1,312 @@
+/* --- Hub: tab bar + the Parent/Toddler audience switch -------------------- */
+.tabbar {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.4rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.tabbar__tab {
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+.tabbar__tab:hover {
+  background: var(--surface);
+}
+.tabbar__tab.is-active {
+  color: var(--ink);
+  background: var(--surface);
+  border-bottom-color: var(--accent);
+}
+.audience-switch {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.audience-switch__opt {
+  padding: 0.4rem 0.7rem;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+.audience-switch__opt.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* --- Kiosk scale ---------------------------------------------------------- */
+/* The hub is a wall tablet read and tapped from across the kitchen — an app
+   surface, not a web page. Everything a finger lands on gets a big, confident
+   target here; the compact sizing stays for the operator/home/login admin
+   surfaces (phone/laptop). The toddler tiles (.bigtile) are already oversized
+   per NFR-KID-1 and are intentionally untouched. Scoped under .hub so the two
+   worlds don't fight. */
+.hub {
+  font-size: 1.05rem;
+}
+.hub .btn {
+  min-height: 3.25rem;
+  padding: 0.7rem 1.3rem;
+  font-size: 1.05rem;
+  border-radius: 12px;
+}
+.hub .input {
+  min-height: 3.25rem;
+  padding: 0.7rem 1rem;
+  font-size: 1.05rem;
+  border-radius: 12px;
+}
+.hub .topbar {
+  padding: 0.85rem 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.hub .topbar__brand {
+  font-size: 1.3rem;
+}
+.hub .topbar__actions {
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.hub .topbar__actions .btn {
+  min-width: 3.25rem;
+  font-size: 1.25rem;
+}
+
+/* App-style tab bar: full-width segments, each a fat tap target, active one
+   filled (the clearest app convention) rather than a thin web underline. */
+.hub .tabbar {
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+.hub .tabbar__tab {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.5rem;
+  font-size: 1.05rem;
+  border-radius: 12px;
+  border-bottom: none;
+}
+.hub .tabbar__tab.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.hub .audience-switch__opt {
+  min-height: 3rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 1rem;
+}
+
+/* Board: rows tickable from a step back; a bigger check to aim at. */
+.hub .board__list-item {
+  min-height: 3.25rem;
+  padding: 0.5rem 0.4rem;
+  font-size: 1.2rem;
+}
+.hub .board__check {
+  font-size: 1.8rem;
+}
+/* Check-list rows on the wall tablet: a roomy check target + larger title. The
+   square glyph keeps its .hub .board__check size (it still lives inside). */
+.hub .checkrow__check {
+  min-width: 3.25rem;
+  min-height: 3.25rem;
+}
+.hub .checkrow__title {
+  font-size: 1.2rem;
+}
+.hub .board__chore {
+  min-height: 3.25rem;
+}
+.hub .board__events li {
+  font-size: 1.2rem;
+}
+
+/* Kitchen day rows + staple chips, finger-first. */
+.hub .kitchen__day {
+  min-height: 3.5rem;
+}
+.hub .kitchen__day-sum-main {
+  font-size: 1.25rem;
+}
+.hub .kitchen__day-sum-meta {
+  font-size: 0.95rem;
+}
+.hub .kitchen__day-manage {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+.hub .chip {
+  min-height: 2.9rem;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}
+
+/* --- Toddler big tiles (shared toddler primitive, see BigTiles.tsx) ------- */
+.bigtiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 52rem;
+}
+.bigtile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 10rem;
+  padding: 1.4rem 1rem 1.2rem;
+  /* Cut-paper card: a pale wash of the tile's tint over the card stock, a chunkier
+     tint border, and a soft printed shadow — so a grid reads as cheerful riso
+     cards, not a wall of identical white boxes. --tile-tint is set per tile in
+     BigTiles (member colour, else a cycled palette); color-mix keeps the wash and
+     border theme-aware (they re-mix against --card, which darkens at night). */
+  --tint: var(--tile-tint, var(--marigold));
+  border: 2.5px solid color-mix(in srgb, var(--tint) 52%, var(--card));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--tint) 13%, var(--card));
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  position: relative;
+  transition:
+    opacity 0.18s ease,
+    transform 0.08s ease;
+}
+/* The emoji sits on a round "sticker" badge — a cream disc with an inset shade —
+   so each picture reads as a deliberate object, not a floating glyph. */
+.bigtile__icon {
+  width: 5.2rem;
+  height: 5.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow:
+    inset 0 2px 5px rgba(72, 54, 30, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+  font-size: 2.9rem;
+  line-height: 1;
+}
+/* When the tile carries a real photo (a recipe), the picture fills the sticker
+   disc edge-to-edge instead of an emoji floating on cream. */
+.bigtile__icon--photo {
+  overflow: hidden;
+}
+.bigtile__icon--photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.bigtile__label {
+  font-family: var(--display);
+  /* Bigger + heavier than before — a pre-reader leans on shape recognition, and
+     this is the one bit of text on the tile, so it must carry across the room. */
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--ink);
+  /* Long meal/recipe names must stay readable, not clip — wrap and balance. */
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.bigtile__sub {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.bigtile.is-done {
+  /* Deterministic, identical every time — a calm fade, no jackpot (NFR-CALM-2). */
+  opacity: 0.4;
+}
+.bigtile__check {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.7rem;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+/* Hear-first: an action tile's FIRST tap speaks the proposition and arms the
+   tile (a 👆 cue + a warm ring); a SECOND tap commits. So a toddler always
+   hears "Jeudi : Spaghetti" before anything happens — a wandering finger never
+   chooses by accident. The ring is deterministic + motion-safe (NFR-CALM-2). */
+.bigtile.is-armed {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent),
+    var(--shadow-md);
+}
+.bigtile__again {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.6rem;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bigtile.is-armed .bigtile__again {
+    animation: bigtile-nudge 1s ease-in-out infinite;
+  }
+  @keyframes bigtile-nudge {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+}
+/* Sayable: plain kid-surface text turned into a tap-to-hear button without
+   changing how it looks (NFR-KID-2 — any word is hearable). */
+.sayable {
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+.bigtiles__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 2rem;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  text-align: center;
+  /* It's a <button> now (tapping speaks the message, NFR-KID-2) — undo the
+     button chrome so it keeps reading as a quiet empty state. */
+  width: 100%;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+.bigtiles__empty-mark {
+  font-size: 3.2rem;
+  line-height: 1;
+  color: var(--sage);
+}
+.board__chore-helped {
+  display: block;
+  color: var(--ink-soft);
+  margin-top: 0.2rem;
+}
+

@@ -52,7 +52,7 @@
   color: var(--warn);
 }
 
-/* ── ChipGroup (the chip itself is .chip, in pages.css) ─────────────────── */
+/* ── ChipGroup (the chip itself is .chip, in pages/kitchen.css) ──────────── */
 .chip-group {
   display: flex;
   flex-wrap: wrap;

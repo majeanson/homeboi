@@ -3,7 +3,23 @@
    earlier ones winning specificity ties, so never reorder this list. Vite
    inlines these at build — runtime cost is zero. */
 @import './styles/core.css';
-@import './styles/pages.css';
+/* `pages.css` (the 3.7k-line kitchen sink, CSS-3) split into contiguous per-topic
+   slices for navigability. These eleven were the original file top-to-bottom, so
+   importing them in THIS order reproduces the exact same cascade — the reassembly
+   is byte-identical to the old single file. Order is load-bearing (early chunks
+   win specificity ties against later app chunks): never reorder, and append a new
+   pages slice only at the end of this block. */
+@import './styles/pages/routines-overview.css';
+@import './styles/pages/kitchen.css';
+@import './styles/pages/kid-routines.css';
+@import './styles/pages/onboarding.css';
+@import './styles/pages/operator.css';
+@import './styles/pages/fields.css';
+@import './styles/pages/hub.css';
+@import './styles/pages/aujourdhui.css';
+@import './styles/pages/recipe-tags.css';
+@import './styles/pages/guide.css';
+@import './styles/pages/scenes.css';
 @import './styles/almanac.css';
 @import './styles/today.css';
 @import './styles/hub.css';

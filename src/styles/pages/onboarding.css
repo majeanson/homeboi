@@ -1,0 +1,111 @@
+/* --- Pair ----------------------------------------------------------------- */
+/* Onboarding (Login + Pair): center the content so a short form/code doesn't
+   cling to the top of a tall, empty page, and give the form/code a warm card so
+   it reads as a held object rather than fields floating on paper. */
+.auth {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 70vh;
+  gap: 1rem;
+  /* On-screen keyboard: stop vertically centering (which buries the lower fields
+     + submit under the OSK) and reserve its height as scrollable slack so the
+     "Créer la maisonnée" button can be scrolled into view. --kb is 0 when no
+     keyboard, so this is inert otherwise. (viewportVars.ts feeds --kb.) */
+  padding-bottom: var(--kb, 0px);
+}
+.auth:has(input:focus) {
+  justify-content: flex-start;
+}
+.auth__card {
+  max-width: 24rem;
+  background: var(--card);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--line);
+}
+.auth__hint {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0;
+}
+/* A quiet per-field note (password rules, invite-code provenance). */
+.field__hint {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+/* The hint flips green once the constraint is met (signup password length). */
+.field__hint--ok {
+  color: var(--sage, #6b8a52);
+}
+/* The shared 401 prompt: primary door for this surface, the other underneath. */
+.pairprompt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+/* Shell-level "pairing lost" recovery (HubLayout) — survives the kid lock. */
+.pair-lost {
+  padding-top: 3rem;
+  text-align: center;
+}
+.pair-lost__actions {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+/* The cross-link under an auth card (login ⇄ signup). */
+.auth__alt {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+.auth__alt a {
+  color: inherit;
+  font-weight: 600;
+}
+.pair__code-block {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding: 1.75rem 1.5rem;
+  background: var(--marigold-wash);
+  border: 1.5px solid color-mix(in srgb, var(--marigold) 40%, var(--card));
+  border-radius: var(--radius-lg);
+}
+.pair__code {
+  font-family: var(--mono);
+  font-size: 3.5rem;
+  letter-spacing: 0.5rem;
+  font-weight: 700;
+  margin: 0.75rem 0;
+  color: var(--marigold-deep);
+}
+.pair__waiting {
+  color: var(--ink-soft);
+}
+.pair__ok {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.3rem;
+  color: var(--ink);
+  margin-top: 1.5rem;
+}
+.pair__ok-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--sage);
+  color: #fff;
+  font-size: 1.1rem;
+}
+

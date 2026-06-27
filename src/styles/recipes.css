@@ -562,7 +562,7 @@
 }
 
 /* (The shared recipe/leftover picker list — `.recipe-picker*` — was replaced by
-   EntityCombobox's dropdown; see `.combobox*` in pages.css.) */
+   EntityCombobox's dropdown; see `.combobox*` in pages/fields.css.) */
 
 /* The meal-slot chooser when planning a recipe (recipe sheet, ideas pool). */
 .slot-picker {

@@ -1,0 +1,162 @@
+/* ---- Parent Routines overview: a card per routine (was a bare text list that
+   left the wall empty). Member colour tints the card; the step pictos preview the
+   run so a parent recognizes it at a glance. ------------------------------------ */
+.routines-parent {
+  max-width: 60rem;
+  margin: 0 auto;
+}
+.routines-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+.routine-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem 1.1rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: color-mix(in srgb, var(--tint) 8%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--tint) 28%, var(--card));
+  box-shadow: var(--shadow-sm);
+}
+.routine-card__spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+}
+.routine-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+/* The moment cue on the parent overview — matches the Réglages chip. */
+.routine-card__tod {
+  margin-left: auto;
+  flex: none;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+/* Single-column phones: the nowrap badge would shove into the name — let the
+   head wrap and give the badge its own line instead of clipping. */
+@media (max-width: 420px) {
+  .routine-card__head {
+    flex-wrap: wrap;
+  }
+  .routine-card__tod {
+    margin-left: 0;
+  }
+}
+.routine-card__av {
+  flex: none;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.routine-card__av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.routine-card__title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.routine-card__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+.routine-card__who {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.routine-card__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+.routine-card__step {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 10px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  box-shadow: inset 0 1px 3px rgba(72, 54, 30, 0.1);
+  overflow: hidden;
+}
+/* A step's photo (feature #17 C) fills its tile, replacing the emoji. */
+.routine-card__step-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.routine-card__more {
+  align-self: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.routine-card__steps--empty {
+  color: var(--ink-faint);
+}
+.routine-card__count {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+/* The card foot: the quiet step count on the left, the ▶ "Faire" run action on the
+   right — a routine can now be done from any surface, not only the toddler kiosk. */
+.routine-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+.routine-card__run {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  background: color-mix(in srgb, var(--tint) 78%, #000 4%);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.routine-card__run:active {
+  transform: scale(0.96);
+}
+.kitchen__head-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

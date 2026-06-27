@@ -1,0 +1,271 @@
+/* ========================================================================== */
+/* Réglages ▸ Guide — the in-app manual. Collapsible concept cards grouped into  */
+/* "sections" and "concepts", with a search filter. Calm, paper-toned, mobile-   */
+/* and tablet-friendly (single readable column).                                 */
+/* ========================================================================== */
+.guide__search {
+  width: 100%;
+  font-size: 1rem;
+  padding: 0.7rem 0.9rem;
+  margin: 0 0 1.25rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+}
+/* The feature map: a calm grid of theme tiles — "everything Babillard does" at a
+   glance. Shared (components/FeatureMap): the Guide, the Board WelcomeCard, and
+   DevKit all render it. Jumps/links to a theme depending on the caller. */
+.feature-map {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+  margin: 0 0 1.75rem;
+}
+.feature-map__tile {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.feature-map__tile:hover {
+  border-color: var(--line-strong);
+}
+.feature-map__ic {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--marigold-deep);
+}
+.feature-map__label {
+  line-height: 1.2;
+}
+/* An in-text cross-reference to another Guide card ([[card:id|label]]). Calm:
+   reads as a link (accent + dotted underline) without shouting. */
+.guide-link {
+  color: var(--marigold-deep, var(--accent));
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+.guide-link:hover,
+.guide-link:focus-visible {
+  text-decoration-style: solid;
+}
+.guide__group {
+  margin-bottom: 1.75rem;
+  scroll-margin-top: 0.75rem;
+}
+.guide__group-title {
+  font-size: 1.05rem;
+  margin: 0 0 0.6rem;
+}
+/* A themed sub-cluster inside the (large) concepts group, so it reads as a map
+   rather than a flat wall. */
+.guide__theme {
+  margin: 0 0 1.25rem;
+  scroll-margin-top: 0.75rem;
+}
+.guide__theme-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-soft, var(--ink));
+  margin: 0 0 0.5rem;
+}
+.guide__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+/* The overview card sits above the groups — a touch more breathing room sets it
+   apart as the manual's entry point. */
+.guide__cards--lead {
+  margin-bottom: 1.75rem;
+}
+.guide__card {
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.guide__card[open] {
+  border-color: var(--line-strong);
+}
+/* The card a contextual "?" deep-linked to — a brief accent ring so the eye
+   lands on it after the scroll. */
+.guide__card.is-target {
+  border-color: var(--accent, var(--marigold-deep));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, var(--marigold-deep)) 28%, transparent);
+}
+.guide__summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+.guide__summary::-webkit-details-marker {
+  display: none;
+}
+.guide__icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent, var(--ink));
+  margin-top: 0.1rem;
+}
+.guide__heads {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+/* The card's open/close affordance: a chevron pushed to the right edge of the
+   summary that rotates a half-turn when the card opens. Shows the "this expands"
+   cue visually instead of describing it in the page copy. */
+.guide__chevron {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  margin-top: 0.1rem;
+  transition: transform 0.18s ease;
+}
+.guide__card[open] > .guide__summary .guide__chevron {
+  transform: rotate(180deg);
+  color: var(--accent, var(--ink));
+}
+.guide__title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+.guide__what {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+.guide__points {
+  margin: 0;
+  padding: 0 1rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+/* Each point is its own nested <details>: a clickable title that expands to
+   reveal the one-sentence detail. Calm, no marker chrome — a caret we draw. */
+.guide__point {
+  border-top: 1px solid var(--line);
+}
+/* The sub-point a contextual "?" deep-linked to: a gentle accent wash + ring so
+   the eye lands on the exact line after the scroll. Fades once, then settles. */
+.guide__point.is-target {
+  border-radius: var(--radius-sm, 8px);
+  background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 12%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent, var(--marigold-deep)) 34%, transparent);
+  padding: 0 0.5rem;
+  animation: guide-point-pulse 1.6s var(--ease-out, ease) 1;
+}
+@keyframes guide-point-pulse {
+  0% {
+    background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 30%, transparent);
+  }
+  100% {
+    background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 12%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide__point.is-target {
+    animation: none;
+  }
+}
+.guide__point-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  list-style: none;
+}
+.guide__point-title::-webkit-details-marker {
+  display: none;
+}
+/* A small caret that rotates open — drawn before the label so it never needs an
+   emoji. Uses the accent so the "tap me" affordance reads at a glance. */
+.guide__point-title::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid var(--accent, var(--ink-soft));
+  border-bottom: 2px solid var(--accent, var(--ink-soft));
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.guide__point[open] > .guide__point-title::before {
+  transform: rotate(45deg);
+}
+.guide__point-detail {
+  margin: 0;
+  padding: 0 0 0.6rem 0.95rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+/* The WHY line: same indent as the detail, but lighter and italic so it reads as
+   a quiet aside — "what" first, "why" second. A small ↗ marks it without needing
+   a per-string label or an emoji. */
+.guide__point-why {
+  margin: 0;
+  padding: 0 0 0.7rem 0.95rem;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+.guide__point-why::before {
+  content: '↗';
+  margin-right: 0.35rem;
+  font-style: normal;
+  color: var(--accent, var(--ink-soft));
+}
+/* A direct "go there" link on a Settings-tab card — jumps Réglages to that tab. */
+.guide__goto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  margin-top: 0.7rem;
+  padding: 0.5rem 0.85rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--accent, var(--ink));
+  font-weight: 600;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+.guide__goto:hover {
+  border-color: var(--accent, var(--line-strong));
+  background: color-mix(in srgb, var(--accent, var(--ink)) 8%, var(--paper));
+}
+

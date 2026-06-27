@@ -1,0 +1,261 @@
+/* --- EditField: the ONE add/edit text box (src/components/EditField.tsx) ----
+   The clear ✕ and the mic live INSIDE a bordered box that looks like an input,
+   so a row reads as "field + at most one or two compact actions" instead of the
+   old tall stack of full-width buttons. Secondary actions demote to a quiet chip
+   row below. Touch targets stay ≥40px for a wall tablet / toddler thumb. */
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex-basis: 100%;
+  min-width: 0;
+}
+.edit-field__row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+/* The box owns the border + focus ring; the input inside is borderless so the
+   clear/mic buttons sit flush with the text as one field. */
+.edit-field__box {
+  flex: 1 1 10rem;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  min-height: var(--touch-target);
+  padding-right: 0.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+.edit-field__box:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.edit-field__input.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.edit-field__input.input:focus {
+  outline: none;
+}
+/* Inside a narrow board card (.bento, ~300px column on a wall), the add-row input takes
+   a FULL line so its placeholder is never clipped (« Ajouter à compléter », not
+   « Ajouter à comp… ») — the submit button wraps neatly beneath it. Wider hosts
+   (settings forms) keep the inline box + button. */
+.bento .edit-field__box {
+  flex-basis: 100%;
+}
+/* The inline clear ✕ / icon submit / trash — a quiet 40px icon button, mirroring
+   the row-actions affordance so the whole app shares one look. */
+.edit-field__icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+.edit-field__icon-btn:hover,
+.edit-field__icon-btn:focus-visible {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.edit-field__icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.edit-field__icon-btn--danger:hover,
+.edit-field__icon-btn--danger:focus-visible {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+.edit-field__submit {
+  flex: none;
+}
+/* The mic, dropped inside the box: strip its button chrome so it reads as a field
+   affordance (like the clear ✕), keeping only the listening pulse. */
+.edit-field__box .capture__voice {
+  min-height: 40px;
+  width: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+/* ↑/↓ reorder, reused from the deck editor's mini stack. */
+.edit-field__reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: none;
+}
+.edit-field__mini {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--ink-soft);
+  cursor: pointer;
+  line-height: 1;
+}
+.edit-field__mini:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+/* A thin wrapped row of secondary actions (Choisir une recette, Restants…) —
+   quiet chips under the field, never the old full-width stacked buttons. */
+.edit-field__secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ── EntityCombobox: the unified "search + pick + free-text" field. ──────────
+   Reuses the .edit-field box shell above; this adds the dropdown that unfolds
+   under it (in-flow, so it never clips inside an overflow-hidden sheet/scene). */
+.combobox__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.combobox__caret {
+  color: var(--ink-faint);
+}
+.combobox__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-height: 15rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+}
+.combobox__group {
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  margin: 0.3rem 0 0.1rem;
+  padding-inline: 0.3rem;
+}
+/* First group heading shouldn't push a gap above the list's own padding. */
+.combobox__list > li:first-child .combobox__group {
+  margin-top: 0;
+}
+.combobox__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+/* Keyboard-active and hover share one highlight, so arrow-keys and the pointer
+   point at the same row. */
+.combobox__row.is-active,
+.combobox__row:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.combobox__row:active {
+  transform: translateY(1px);
+}
+.combobox__row-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.combobox__badge {
+  flex: none;
+  color: var(--ink-faint);
+  font-size: 0.74rem;
+}
+.combobox__badge.is-ready {
+  color: var(--sage-deep);
+}
+.combobox__empty {
+  color: var(--ink-faint);
+  margin: 0.2rem 0;
+}
+
+.operator__check {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.operator__chore-form,
+.operator__routine-form {
+  flex-direction: column;
+  align-items: stretch;
+}
+.operator__rotation {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+/* « L'auto » Transport block (EventForm): tight, muted captions over each toggle
+   row (car · passengers) so the grouping reads without shouting. */
+.event-transport__label {
+  margin: 0.5rem 0 0.3rem;
+  opacity: 0.7;
+  font-size: 0.85em;
+}
+.event-transport__label:first-child {
+  margin-top: 0;
+}
+/* « À apporter » inline list builder (EventForm): type items → chips → « Créer la
+   liste ». A calm stacked column; the typed items are removable tag chips. */
+.event-bring__build {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+.event-bring__add {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.event-bring__add .input {
+  flex: 1;
+  min-width: 0;
+}
+.event-bring__build .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.event-bring__build .tags .tag {
+  cursor: pointer;
+}
+.operator__cards {
+  min-width: 100%;
+}
+

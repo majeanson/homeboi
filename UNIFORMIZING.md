@@ -143,13 +143,17 @@ Same class defined twice (cascade-order-dependent, fragile):
     column}` was **fully inert** (kid.css imports later → its `min-height:100%` won; the other two props identical).
     **Removed** (provably zero-visual-change), comment added pointing to kid.css as canonical. typecheck + build green.
 
-### CSS-3 🟡 `pages.css` is a 3.7k-line kitchen sink (423 classes, 19% of all CSS)
-- [~] **DELIBERATELY DEFERRED 2026-06-26 — out of scope for the one-item-per-commit backlog.** Splitting a 3.7k-line
-  file (+ `sheets.css` 2.4k / `board.css` 1.9k) means moving hundreds of rules across files where **`@import` order IS
-  the cascade** — every move risks a silent specificity/order regression across surfaces that a green typecheck/test
-  can't catch. This is a **dedicated project** with its own visual-QA pass (a screenshot diff before/after each
-  extracted chunk), **not** a backlog quick-win — bundling it into this pass would be reckless. Left as a tracked
-  medium-term task; do it on its own when there's appetite for the QA. No code change.
+### CSS-3 🟢 `pages.css` is a 3.7k-line kitchen sink (423 classes, 19% of all CSS)
+- [x] ✅ **DONE 2026-06-26.** Split `pages.css` (3709 lines) into **eleven contiguous per-topic slices** under
+  `src/styles/pages/` (`routines-overview`, `kitchen`, `kid-routines`, `onboarding`, `operator`, `fields`, `hub`,
+  `aujourdhui`, `recipe-tags`, `guide`, `scenes`) and replaced the single `@import` with the eleven in original
+  top-to-bottom order. **The risk the deferral feared — silent cascade regression — is eliminated by construction,
+  not just QA'd:** the slices are *contiguous* and imported *in order*, so their concatenation is **byte-identical**
+  to the old file (verified by md5: reassembly === original), and Vite inlines `@import` in place, so the produced
+  bundle is the same bytes in the same order. Each cut sits between rules (preceding line is `}` or blank → every
+  slice parses standalone). Verified: md5-identical reassembly, `npm run build` green, representative screenshots
+  (board/kitchen/settings @wall + a toddler frame) unchanged. `sheets.css` (2.4k) / `board.css` (1.9k) are still
+  single files — same method applies if/when they're split; not done here.
 
 ### CSS-4 🟡 Ad-hoc button-like elements bypassing the `.btn` family
 - [~] **SKIP 2026-06-26 — premise reviewed and rejected (don't fold onto `.btn`).** Read all five sites; the

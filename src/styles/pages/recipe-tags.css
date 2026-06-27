@@ -1,0 +1,245 @@
+/* Reglages -> Recettes: the recipe-tag manager (pill presets + tags in use). */
+.operator__sub {
+  margin: 1.2rem 0 0.2rem;
+  font-size: 1.02rem;
+}
+.operator__hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.tag-admin__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.tag-admin__list {
+  margin-bottom: 0;
+}
+.tag-admin__row {
+  display: flex;
+  align-items: center;
+  /* Stay one row: the count's margin-right:auto already pins ✏️/🗑️ to the right,
+     so wrapping only ever dropped the pair to a lonely second line for longer tag
+     names. nowrap keeps every used-tag row identical. */
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+.tag-admin__name {
+  pointer-events: none;
+  /* Keep the pill whole (it can't ellipsis cleanly when its text is centred); a
+     tag is ≤24 chars so the row fits without shrinking it. */
+  flex: 0 0 auto;
+}
+.tag-admin__count {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  margin-right: auto;
+  white-space: nowrap;
+}
+.tag-admin__rename {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+  min-width: 0;
+}
+.tag-admin__rename .input {
+  flex: 1;
+  min-width: 8rem;
+}
+
+/* Preset pill = tag name (tap to recolour) + an × to drop it, tinted by the tag's
+   colour. The chip styling lives on the wrapper; the two buttons are bare so the
+   tint shows through. */
+.tag-admin__pill {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+.tag-admin__pill.is-editing {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* Drag handle to reorder the pills — the order drives the recipe book's tag chips
+   and the #11 collection sections. Dimmed while its own pill is being dragged. */
+.tag-admin__pill-grip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 0.05rem 0 0.5rem;
+}
+.tag-admin__pill.is-dragging {
+  opacity: 0.45;
+}
+.tag-admin__pill-name,
+.tag-admin__pill-x {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+}
+.tag-admin__pill-name {
+  padding: 0 0.4rem;
+}
+.tag-admin__pill-x {
+  padding: 0 0.6rem 0 0.4rem;
+  opacity: 0.7;
+}
+.tag-admin__pill-x:active {
+  opacity: 1;
+}
+/* Used-tag row gains a paint button before ✏️/🗑️; the colour picker drops below. */
+.tag-admin__row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.tag-admin__color-btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: var(--radius-pill);
+  min-width: 38px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.tag-admin__color-btn.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.tag-admin__coloredit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.2rem 0 0.4rem;
+}
+.tag-admin__color-clear {
+  flex: 0 0 auto;
+}
+
+/* Réglages ▸ Recettes — recipe-tab PILLS config (migration 0045). An ordered list
+   of built-in + custom pills: drag to reorder, an eye to show/hide, and a custom
+   pill editor (label + colour + attribute rules). */
+.pill-admin__list {
+  margin-bottom: 0.8rem;
+}
+.pill-admin__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.3rem 0;
+}
+.pill-admin__row.is-hidden .pill-admin__chip,
+.pill-admin__row.is-hidden .pill-admin__rules {
+  opacity: 0.4;
+}
+.pill-admin__row.is-dragging {
+  opacity: 0.45;
+}
+.pill-admin__grip {
+  flex: 0 0 auto;
+}
+.pill-admin__chip {
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+.pill-admin__rules {
+  flex: 1 1 8rem;
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+.pill-admin__eye {
+  flex: 0 0 auto;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-faint);
+  border-radius: var(--radius-pill);
+  min-width: 38px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.pill-admin__eye.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* Custom-pill editor card. */
+.pill-admin__editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.9rem;
+  border-radius: var(--radius-md);
+  margin-top: 0.6rem;
+}
+.pill-admin__rules-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.pill-admin__rule {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.pill-admin__rule .input {
+  flex: 1 1 7rem;
+  min-width: 0;
+}
+/* A tag rule's multi-select: tap chips to OR several tags into one rule. Drops to
+   its own full-width line below the field picker and wraps. */
+.pill-admin__tagpick {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.pill-admin__tagopt {
+  cursor: pointer;
+}
+.pill-admin__op {
+  flex: 0 0 4.5rem;
+}
+.pill-admin__num {
+  flex: 0 0 5rem;
+}
+.pill-admin__unit {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.pill-admin__rule-x {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+}
+.pill-admin__addrule {
+  align-self: flex-start;
+}
+.pill-admin__editor-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
