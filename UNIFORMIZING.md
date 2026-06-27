@@ -144,8 +144,12 @@ Same class defined twice (cascade-order-dependent, fragile):
     **Removed** (provably zero-visual-change), comment added pointing to kid.css as canonical. typecheck + build green.
 
 ### CSS-3 🟡 `pages.css` is a 3.7k-line kitchen sink (423 classes, 19% of all CSS)
-- [ ] Extract shared layout/component patterns out of `pages.css` (and split `sheets.css` 2.4k / `board.css` 1.9k)
-  into purpose files placed correctly in the cascade. Large, do carefully with visual QA. **Medium-term.**
+- [~] **DELIBERATELY DEFERRED 2026-06-26 — out of scope for the one-item-per-commit backlog.** Splitting a 3.7k-line
+  file (+ `sheets.css` 2.4k / `board.css` 1.9k) means moving hundreds of rules across files where **`@import` order IS
+  the cascade** — every move risks a silent specificity/order regression across surfaces that a green typecheck/test
+  can't catch. This is a **dedicated project** with its own visual-QA pass (a screenshot diff before/after each
+  extracted chunk), **not** a backlog quick-win — bundling it into this pass would be reckless. Left as a tracked
+  medium-term task; do it on its own when there's appetite for the QA. No code change.
 
 ### CSS-4 🟡 Ad-hoc button-like elements bypassing the `.btn` family
 - [~] **SKIP 2026-06-26 — premise reviewed and rejected (don't fold onto `.btn`).** Read all five sites; the
@@ -409,17 +413,26 @@ Same string defined in many domain namespaces — change-one-forget-the-other ri
 > `cercle.acceptSuggestion`, `cercle.pet.weightAdd`, `kid.backCollections`, `undo.action`='Undo'≠Cancel, `tour.*`).
 
 ### I18N-2 🟢 Structure
-- [ ] Mixed flat keys vs nested objects across ~30 domains. Optional: document the nesting convention; not worth
-  a churn pass.
+- [~] **NO CHURN 2026-06-26 (convention-only, as the audit itself flagged).** The flat-vs-nested key mix across ~30
+  domains is cosmetic — `i18n.ts`'s `typeof FR` parity contract already makes EN structurally mirror FR or `tsc`
+  fails, so the "structure" can't silently drift regardless of nesting style. Forward rule (recorded here, not worth a
+  churn pass): **nest** when a domain has a cluster of related sub-keys (`recipes.fridge.*`), keep **flat** for a
+  handful of top-level strings. No code change.
 - ✅ No meaningful hard-coded user-facing strings found — `useT()` adoption is essentially complete.
 
 ### <a id="struct-1"></a>STRUCT-1 🟡 Two full-screen-scene patterns + one outlier
 - **`FormScene`** (create flows, injects member roster): EventFormPage, ChoreFormPage, HomeProjectFormPage,
   RoutineFormPage. **`SceneHead` + manual `<div class="scene">`** (15+ standalone/edit scenes). Both fine, but
   the split is undocumented and `RecipeFormPage` is a third, hand-rolled-modal outlier.
-- [ ] Migrate `RecipeFormPage` off its hand-rolled `<h2>` header onto `SceneHead`/`Modal` (ties to [FE-2](#fe-2)).
-- [ ] Document when to use `FormScene` vs `SceneHead` (consider an `EditScene` sibling that wraps the manual
-  `.scene` layout so the 15 sites stop hand-rolling it).
+- [~] `RecipeFormPage` `<h2>` → **N/A (confirmed with FE-2).** `RecipeFormPage` is a thin route wrapper with no `<h2>`
+  of its own; the header lives inside `RecipeForm`'s `.recipe-modal__bar` (a full-screen scene, per the FE-2 re-scope),
+  so there's nothing to migrate here.
+- [x] ✅ **Documented 2026-06-26.** Wrote the **FormScene vs SceneHead vs manual-scene** decision into `COMPONENTS.md`
+  (the `FormScene` row): use `FormScene` for operator create-forms needing the roster + auth bounce; use a manual
+  `.scene` + `SceneHead` + `.scene__body` (with `useSceneClose`/`useEscapeKey`) for any other full-screen route. The
+  **`EditScene` sibling is deferred as over-abstraction** — the ~5-line shell already reuses `SceneHead`/`useSceneClose`
+  and varies per page (header actions, body class, whether `close` is needed in the body), so a wrapper fitting all
+  ~15 sites would be prop-heavy for a tiny saving. Revisit only if the pattern stabilises. No code change.
 
 ### STRUCT-2 🟢 Already-uniform (recorded)
 - ✅ All 6 hub tabs use `HubHead` + `useT()` + `queryHooks` + same loading/`PairPrompt` handling.
