@@ -286,19 +286,6 @@ export function MonthView({
             (d === selected ? ' is-on' : '')
           return (
             <button key={d} type="button" role="gridcell" aria-selected={d === selected} className={cls} onClick={() => setSelected(d)}>
-              {/* « Voyage » bands — a thin strip per covering trip, rounded on its
-                  first/last day; the title shows on the start cell. Adjacent cells
-                  read as one continuous band across the week. */}
-              {(tripsByDay.get(d) ?? []).map((tr) => (
-                <span
-                  key={tr.id}
-                  className={'monthv__band' + (tr.isStart ? ' is-start' : '') + (tr.isEnd ? ' is-end' : '')}
-                  style={{ background: tr.colour }}
-                  aria-hidden="true"
-                >
-                  {tr.isStart && <span className="monthv__band-label">{tr.title}</span>}
-                </span>
-              ))}
               <span className="monthv__num">{localYMD(d).day}</span>
               {dots.length > 0 && (
                 <span className="monthv__dots" aria-hidden="true">
@@ -335,6 +322,23 @@ export function MonthView({
                   {dots.length > 4 && <span className="monthv__more mono">+{dots.length - 4}</span>}
                 </span>
               )}
+              {/* « Voyage » bands — thin strips pinned to the cell BOTTOM (absolute, so
+                  they never push the number/dots), one per covering trip, rounded on the
+                  trip's first/last day. */}
+              {(() => {
+                const bands = tripsByDay.get(d) ?? []
+                return bands.length > 0 ? (
+                  <span className="monthv__bands" aria-hidden="true">
+                    {bands.slice(0, 3).map((tr) => (
+                      <span
+                        key={tr.id}
+                        className={'monthv__band' + (tr.isStart ? ' is-start' : '') + (tr.isEnd ? ' is-end' : '')}
+                        style={{ background: tr.colour }}
+                      />
+                    ))}
+                  </span>
+                ) : null
+              })()}
             </button>
           )
         })}
@@ -420,7 +424,7 @@ export function MonthView({
                 }
               />
             ))}
-            {sel!.events.map((e) =>
+            {(sel?.events ?? []).map((e) =>
               e.work ? (
                 // A derived « L'auto » work window — read-only; tapping opens the car
                 // week view (where the schedule is tuned), never an event editor.
@@ -452,7 +456,7 @@ export function MonthView({
                 />
               ),
             )}
-            {sel!.chores.map((c) => (
+            {(sel?.chores ?? []).map((c) => (
               <Act
                 key={c.id}
                 cat="chore"
@@ -466,7 +470,7 @@ export function MonthView({
             ))}
             {/* Projets & Entretien landing on this day — read-only peek (managed in
                 Réglages); tap opens the same chore-style detail. */}
-            {sel!.home.map((h) => (
+            {(sel?.home ?? []).map((h) => (
               <Act
                 key={h.id}
                 cat="chore"
@@ -490,7 +494,7 @@ export function MonthView({
                 onOpen={() => nav(momentHref(selected))}
               />
             ))}
-            {sel!.notes.map((n) => (
+            {(sel?.notes ?? []).map((n) => (
               <DayNote key={n.id} note={n} members={members} />
             ))}
           </>
