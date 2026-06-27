@@ -36,9 +36,14 @@ interface MNote { id: string; text: string; member_id: string | null; day: numbe
 interface MTodo { id: string; title: string; member_id: string | null; day: number; section: string | null }
 // "Projets & Entretien" (home_projects) dated occurrence — chore-like on the calendar.
 interface MHome { id: string; kind: string; title: string; color: string | null; day: number }
-export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[] }
+// « Voyage » — a multi-day trip; drawn as a BAND across its days (not a per-day dot).
+interface MTrip { id: string; title: string; colour: string; start_at: number; end_at: number }
+export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[]; trips?: MTrip[] }
 
 interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[]; home: MHome[] }
+// One day's slice of a trip band: the trip + whether this cell is its first/last
+// visible day (rounded ends + the title shows on the start).
+interface TripSpan { id: string; title: string; colour: string; isStart: boolean; isEnd: boolean }
 
 // Intl gives a lowercase French month/weekday ("juin", "lun") — calendars want it
 // capitalized.
@@ -172,6 +177,24 @@ export function MonthView({
     return m
   }, [data])
 
+  // Trip bands by day: each trip paints a strip across every visible day it covers,
+  // rounded on its first/last day. Clamped to [from, to) so a trip running past the
+  // grid edge still bands the days that ARE shown. A day can carry several bands
+  // (overlapping trips) — they stack.
+  const tripsByDay = useMemo(() => {
+    const m = new Map<number, TripSpan[]>()
+    for (const tr of data?.trips ?? []) {
+      const first = Math.max(tr.start_at, from)
+      const last = Math.min(tr.end_at, to - DAY)
+      for (let d = first; d <= last; d = addLocalDays(d, 1)) {
+        const arr = m.get(d) ?? []
+        arr.push({ id: tr.id, title: tr.title, colour: tr.colour, isStart: d === tr.start_at, isEnd: d === tr.end_at })
+        m.set(d, arr)
+      }
+    }
+    return m
+  }, [data, from, to])
+
   const mealPrefs = useMealPrefs()
   const slotLabel = (slot: string) => slotLabelFor(slot, t)
   const cookLine = (id: string | null) => {
@@ -215,7 +238,9 @@ export function MonthView({
   const selMeals = sel ? sel.meals.filter((m) => mealPrefs.isVisible(m.slot)) : []
   // Todos just marked done are held out of the panel (and the count) at once.
   const selTodos = sel ? sel.todos.filter((td) => !pendingTodo.has(td.id)) : []
-  const selCount = sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.notes.length : 0
+  // Trips covering the selected day — shown atop the panel as a tap into the trip.
+  const selTrips = tripsByDay.get(selected) ?? []
+  const selCount = (sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.notes.length : 0) + selTrips.length
   const atToday = offset === 0 && selected === todayDay
   // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
   // time — the household's wall month/weekday, no UTC flag.
@@ -261,6 +286,19 @@ export function MonthView({
             (d === selected ? ' is-on' : '')
           return (
             <button key={d} type="button" role="gridcell" aria-selected={d === selected} className={cls} onClick={() => setSelected(d)}>
+              {/* « Voyage » bands — a thin strip per covering trip, rounded on its
+                  first/last day; the title shows on the start cell. Adjacent cells
+                  read as one continuous band across the week. */}
+              {(tripsByDay.get(d) ?? []).map((tr) => (
+                <span
+                  key={tr.id}
+                  className={'monthv__band' + (tr.isStart ? ' is-start' : '') + (tr.isEnd ? ' is-end' : '')}
+                  style={{ background: tr.colour }}
+                  aria-hidden="true"
+                >
+                  {tr.isStart && <span className="monthv__band-label">{tr.title}</span>}
+                </span>
+              ))}
               <span className="monthv__num">{localYMD(d).day}</span>
               {dots.length > 0 && (
                 <span className="monthv__dots" aria-hidden="true">
@@ -327,6 +365,9 @@ export function MonthView({
         <span className="monthv__legend-item">
           <span className="monthv__dot monthv__dot--note" style={{ color: 'var(--ink-soft)' }} /> {t.monthView.legendNotes}
         </span>
+        <span className="monthv__legend-item">
+          <span className="monthv__legend-band" style={{ background: 'var(--ink-soft)' }} /> {t.voyage.legendTrips}
+        </span>
       </div>
 
       <div className="monthv__day">
@@ -352,6 +393,17 @@ export function MonthView({
           <EmptyState>{t.monthView.empty}</EmptyState>
         ) : (
           <>
+            {/* « Voyage » covering this day — atop the list, tapping into the trip
+                (its itinerary for this day is one tap away). */}
+            {selTrips.map((tr) => (
+              <Act
+                key={tr.id}
+                cat="event"
+                title={`${t.voyage.title} · ${tr.title}`}
+                color={tr.colour}
+                onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
+              />
+            ))}
             {/* Same order, same cards as the bento day: meals, then events, then
                 chores, then the day note — so nothing dated is represented here
                 differently than on the day view. */}

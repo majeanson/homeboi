@@ -27,11 +27,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Bad/missing window → empty calendar rather than a 400; the view just shows
   // empty cells, mirroring how the board tolerates a thin frame.
   if (!Number.isFinite(from) || !Number.isFinite(to) || from <= 0 || to <= from) {
-    return ok({ events: [], meals: [], chores: [], dayNotes: [], todos: [], homeProjects: [] })
+    return ok({ events: [], meals: [], chores: [], dayNotes: [], todos: [], homeProjects: [], trips: [] })
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes] = await Promise.all([
+  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes, tripsRes] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
@@ -100,6 +100,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<{ id: string; kind: string; title: string; color: string | null; at: number; recur_json: string | null }>(),
+    // « Voyage » — trips overlapping the window. A trip is a multi-day BAND (the
+    // client draws a bar across its days), not a per-day dot; the day page reads the
+    // same rows to show its "Voyage — Jour N" header. Dated trips only (an undated
+    // trip has no calendar position). Overlap: start < to AND end >= from.
+    ctx.env.DB.prepare(
+      'SELECT id, title, colour, start_at, end_at FROM trips WHERE household_id = ? AND deleted_at IS NULL AND start_at IS NOT NULL AND end_at IS NOT NULL AND start_at < ? AND end_at >= ?',
+    )
+      .bind(hh, to, from)
+      .all<{ id: string; title: string; colour: string; start_at: number; end_at: number }>(),
   ])
 
   const inRange = (day: number) => day >= from && day < to
@@ -246,5 +255,14 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   }
 
-  return ok({ events, meals, chores, dayNotes, todos, homeProjects })
+  // Trips ride through as-is (the client clamps the band to the visible window).
+  const trips = tripsRes.results.map((tr) => ({
+    id: tr.id,
+    title: tr.title,
+    colour: tr.colour,
+    start_at: tr.start_at,
+    end_at: tr.end_at,
+  }))
+
+  return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips })
 })

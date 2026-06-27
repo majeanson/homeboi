@@ -77,5 +77,7 @@
 /* « Les carnets » (cared-for things) — uniquely-named .carnet-/.carnets- classes,
    position immaterial. */
 @import './styles/carnets.css';
+/* « Voyage » — the trip notebook scene (Itinéraire/Infos/Bagages/Documents) + cards. */
+@import './styles/voyage.css';
 /* Dev-only component gallery (/dev/kit) — last so it never affects app cascade. */
 @import './styles/devkit.css';

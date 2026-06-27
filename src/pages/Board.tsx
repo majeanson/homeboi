@@ -9,6 +9,7 @@ import { SectionIntro } from '../components/SectionIntro'
 import { WelcomeCard } from '../components/WelcomeCard'
 import { AutoCard } from '../components/board/AutoCard'
 import { CarnetsCard } from '../components/board/CarnetsCard'
+import { VoyageCard } from '../components/board/VoyageCard'
 import { SeasonUpkeepCard } from '../components/board/SeasonUpkeepCard'
 import { MomentPeek } from '../components/board/MomentPeek'
 import { ARegler } from '../components/board/ARegler'
@@ -1196,6 +1197,8 @@ export function Board() {
               {upcomingHome.map((c) => homeAct(c, true))}
                 </Section>
               ) : null
+              // « Prochain voyage » — the next upcoming trip; hides itself when none.
+              nodes.voyage = <VoyageCard />
               // « Les carnets » — the long-jeu heads-up; hides itself when nothing's near.
               nodes.carnets = <CarnetsCard />
               // « Cette saison » — recurring upkeep due before the season turns; self-hides.

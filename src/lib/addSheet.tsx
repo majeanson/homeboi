@@ -70,6 +70,10 @@ export type AddSheetMode =
   // Add a pet (PersonKind 'pet') — a full-screen scene route (/cercle/pet/new),
   // like the person form, so the care form rides above the mobile keyboard.
   | 'pet'
+  // « Voyage » — start a new trip notebook. Navigate-only to /voyage/new (the create
+  // form, then its scene). Operator-grade, like an event. Lets the planning rendez-vous
+  // begin a trip straight from the board ＋.
+  | 'voyage'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
 // action → the sheet skips the chooser and opens that form directly. Liste's ＋
@@ -87,7 +91,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // optional « Trajet » (car + passengers) / « À apporter » (bring-list) / recurrence,
   // so we no longer split it into three tiles. `ride`/`activity` stay as deep-links
   // (FORM_ROUTES, e.g. the L'auto card's quick "+ trajet") but aren't board ＋ tiles.
-  board: ['capture', 'event', 'chores-pick', 'todo', 'routine', 'plan-today', 'plan-tomorrow', 'departure'],
+  board: ['capture', 'event', 'chores-pick', 'todo', 'routine', 'voyage', 'plan-today', 'plan-tomorrow', 'departure'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`
@@ -111,7 +115,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
 // see functions/api/routines.ts). So the Routines-tab ＋ manage picker (new + edit
 // existing) works on a parent-audience kiosk, matching the backend. Everything
 // else here (event/chore add forms, capture, list, kitchen adds) is unchanged.
-export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'activity', 'chore', 'chores-pick', 'routine'])
+export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'activity', 'chore', 'chores-pick', 'routine', 'voyage'])
 
 // The operator forms are full-screen SCENE routes now, not in-sheet forms: a
 // tall multi-field form (a routine's name + member chips + template + card deck)
@@ -127,6 +131,7 @@ export const FORM_ROUTES: Partial<Record<AddSheetMode, string>> = {
   activity: '/event/new?activity=1',
   chore: '/chore/new',
   routine: '/routine/new',
+  voyage: '/voyage/new',
 }
 
 export const AddSheetContext = createContext<{ open: (mode?: AddSheetMode, modes?: AddSheetMode[]) => void }>({

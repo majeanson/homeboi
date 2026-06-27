@@ -25,6 +25,7 @@ import { PetForm } from '../components/cercle/PetForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
+import { TripNoteCard } from '../components/voyage/TripNoteCard'
 import { CercleConstellation } from '../components/cercle/CercleConstellation'
 import { personKey } from '../lib/cercle'
 import { SeekGame } from '../components/jouer/SeekGame'
@@ -652,6 +653,38 @@ export function DevKit() {
         // otherwise — behind the shared ReviewChecklist (same flow as the .vcf import).
         <Demo label="Smart-complete a family group, with review-then-apply">
           <CompleteFamilies people={DEMO_PEOPLE} storedLinks={[]} groups={[DEMO_FAMILY_GROUP]} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Voyage',
+      name: 'TripNoteCard',
+      file: 'components/voyage/TripNoteCard.tsx',
+      kw: 'voyage trip note itinéraire info catégorie média carnet de voyage card',
+      render: () => (
+        // One « Voyage » info/itinerary entry — category glyph + label + text (+ media:
+        // a voice memo plays inline, a drawing/photo zooms). Same render across Infos,
+        // Itinéraire and Documents. Here a text + a member-scoped note, with a 🗑️.
+        <Demo label="a trip note (category + label + text), member-scoped">
+          <TripNoteCard
+            note={{
+              id: 'demo',
+              trip_id: 'demo',
+              category: 'hotel',
+              label: 'Hôtel Le Bonne Entente',
+              text: 'Réservation #4471 — arrivée après 15 h, stationnement inclus.',
+              media_kind: null,
+              media_key: null,
+              scene_key: null,
+              member_id: null,
+              date: null,
+              position: 0,
+              created_at: 0,
+              updated_at: null,
+            }}
+            who="Les enfants"
+            onDelete={() => {}}
+          />
         </Demo>
       ),
     },

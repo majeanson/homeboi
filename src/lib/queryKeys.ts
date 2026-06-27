@@ -65,6 +65,14 @@ export const SCHEDULE_KEY = ['schedule']
 // window under ['car', from] (a prefix of CAR_KEY). Invalidated by a ride, an
 // horaire, or a car_day override so every car surface re-resolves at once.
 export const CAR_KEY = ['car']
+// « Voyage » — trips (/api/trips): read by the trip scene, the board "Prochain
+// voyage" card, AND the month band, so the key is shared. A trip's content reads
+// per-trip prefix keys: its notes/itinerary under ['trip-notes', <id>] and its
+// per-member packing under ['trip-packing', <id>] — a bare-prefix invalidation
+// (TRIP_NOTES_KEY / TRIP_PACKING_KEY) refreshes the open trip.
+export const TRIPS_KEY = ['trips']
+export const TRIP_NOTES_KEY = ['trip-notes']
+export const TRIP_PACKING_KEY = ['trip-packing']
 // Household members (/api/members): the roster read across the board, capture,
 // forms, and Réglages — shared so a member edit invalidates one key everywhere.
 export const MEMBERS_KEY = ['members']

@@ -54,6 +54,9 @@ interface DayItemsData {
   // "Projets & Entretien" (home_projects) landing on this day — read-only here
   // (managed in Réglages ▸ Corvées). null homeProjects = older payload → [].
   homeProjects?: { id: string; kind: string; title: string; color: string | null }[]
+  // « Voyage » bands overlapping this day — surfaces a "Voyage — Jour N" header that
+  // taps into the trip's itinerary for this exact day. null trips = older payload → [].
+  trips?: { id: string; title: string; colour: string; start_at: number; end_at: number }[]
 }
 
 // /kitchen/day/:date — one day's full meal-planning editor, as a full-screen
@@ -114,6 +117,10 @@ function DayPlanInner() {
   const dayEvents = dayItemsQ.data?.events ?? []
   const dayChores = dayItemsQ.data?.chores ?? []
   const dayHome = dayItemsQ.data?.homeProjects ?? []
+  const dayTrips = dayItemsQ.data?.trips ?? []
+  // Which day of the trip this is (1-based). Both dates are local-midnight; round
+  // absorbs a DST ±1 h. Used for the "Voyage — Jour N" header.
+  const tripDayNum = (startAt: number) => Math.round((date - startAt) / 86400) + 1
   // Full editable rows (recur_json, lead_seconds, rotation…) so a day row taps open
   // to its inline form pre-filled. The /api/month occurrence carries only display
   // fields; we resolve the series by its base id (recurring ids are `base#at`).
@@ -429,6 +436,19 @@ function DayPlanInner() {
             )}
           </div>
         )}
+        {/* « Voyage » — this day sits inside a trip. A calm header that taps into the
+            trip's itinerary for this exact day, so the right info is one tap away. */}
+        {dayTrips.map((tr) => (
+          <Act
+            key={tr.id}
+            cat="event"
+            title={`${t.voyage.title} · ${tr.title}`}
+            when={t.voyage.dayN(tripDayNum(tr.start_at))}
+            color={tr.colour}
+            onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
+          />
+        ))}
+
         <DayEditor
           date={date}
           recipes={recipes}

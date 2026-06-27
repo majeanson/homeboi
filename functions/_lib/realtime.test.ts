@@ -20,6 +20,13 @@ describe('keysForPath', () => {
     expect(keysForPath('events')).toEqual([['events'], ['board'], ['month']])
   })
 
+  it('maps trips to trips + board + month; trip-notes + packing to their keys; doc-media silent', () => {
+    expect(keysForPath('trips')).toEqual([['trips'], ['board'], ['month']])
+    expect(keysForPath('trip-notes')).toEqual([['trip-notes'], ['month'], ['board']])
+    expect(keysForPath('trip-packing')).toEqual([['trip-packing']])
+    expect(keysForPath('trip-doc-media')).toEqual([])
+  })
+
   it('maps the meal plan to meals + board', () => {
     expect(keysForPath('meals')).toEqual([['meals'], ['board']])
     expect(keysForPath('meal-leftovers')).toEqual([['leftovers'], ['board']])

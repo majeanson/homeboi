@@ -123,7 +123,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     key: 'getting-around',
     icon: 'key-bold',
     label: { fr: 'Se déplacer', en: 'Getting around' },
-    ids: ['auto', 'carnets'],
+    ids: ['voyage', 'auto', 'carnets'],
   },
   {
     key: 'ai-calm',
@@ -1468,6 +1468,48 @@ export const GUIDE: GuideEntry[] = [
     // Surfaces the same card at the top of Réglages ▸ Corvées (where the Projets /
     // Entretien sub-tabs live) and offers a "go there" link from the main Guide.
     tab: 'chores',
+  },
+  {
+    id: 'voyage',
+    icon: 'map-pin-bold',
+    group: 'concepts',
+    title: { fr: 'Voyage', en: 'Trip' },
+    what: {
+      fr: 'Un carnet de voyage pour la famille : tout au même endroit, du rendez-vous de planification jusqu’au retour. Un itinéraire jour par jour qui apparaît sur ton calendrier, des infos par catégorie (vols, hôtel, auto, à apporter…), une liste de bagages par personne, et tes documents (réservations, passeports) disponibles même hors-ligne.',
+      en: 'A family trip notebook: everything in one place, from the planning meeting to the trip home. A day-by-day itinerary that shows on your calendar, info by category (flights, hotel, car, what to bring…), a packing list per person, and your documents (reservations, passports) available even offline.',
+    },
+    points: [
+      {
+        label: { fr: 'Noter, comme une note du frigo', en: 'Jot it, like a fridge note' },
+        detail: {
+          fr: 'Chaque info se note avec le même petit bloc-notes que les notes du frigo : écris, dicte à la voix, dessine ou prends une photo. Choisis une catégorie (Vols, Hébergement, Transport…) et, au besoin, à qui ça s’adresse (les enfants, les parents).',
+          en: 'Each info is jotted with the same little notepad as a fridge note: type, dictate by voice, draw or snap a photo. Pick a category (Flights, Lodging, Transport…) and, if you like, who it’s for (the kids, the parents).',
+        },
+        why: { fr: 'Au rendez-vous de planification, tu captes tout vite, sans nouveau système à apprendre.', en: 'At the planning meeting you capture everything fast, with no new system to learn.' },
+      },
+      {
+        label: { fr: 'Jour par jour, sur le calendrier', en: 'Day by day, on the calendar' },
+        detail: {
+          fr: 'Donne les dates du voyage : il s’affiche comme une bande sur le calendrier, et chaque journée du voyage te laisse ajouter son programme. Ouvre une journée sur le calendrier et l’info de ce jour-là est juste là.',
+          en: 'Give the trip dates: it shows as a band across the calendar, and each trip day lets you add its plan. Open a day on the calendar and that day’s info is right there.',
+        },
+      },
+      {
+        label: { fr: 'Bagages par personne', en: 'Packing per person' },
+        detail: {
+          fr: 'Une liste partagée plus une liste par membre : coche en faisant la valise, et l’item s’en va. Pas de pointage, pas de « 3 sur 10 » — juste une liste qui se vide.',
+          en: 'A shared list plus one per member: check items off as you pack and they’re gone. No tally, no “3 of 10” — just a list that empties.',
+        },
+      },
+      {
+        label: { fr: 'Documents, même hors-ligne', en: 'Documents, even offline' },
+        detail: {
+          fr: 'Ajoute tes réservations, billets et passeports en photo ou en PDF. Touche « Préparer pour hors-ligne » avant de partir : ils restent lisibles en voyage, même sans réseau.',
+          en: 'Add your reservations, tickets and passports as a photo or PDF. Tap “Save for offline” before you leave: they stay readable on the road, even with no network.',
+        },
+        why: { fr: 'À l’aéroport ou à l’hôtel, ta réservation s’ouvre sans dépendre du wifi.', en: 'At the airport or hotel, your reservation opens without depending on wifi.' },
+      },
+    ],
   },
   {
     id: 'carnets',

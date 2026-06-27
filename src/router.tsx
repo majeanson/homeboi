@@ -66,6 +66,9 @@ const IntakeForm = lazy(() => import('./pages/IntakeForm').then((m) => ({ defaul
 // operator accepts it into a board fridge note. See lib/device GuestKind.
 const Postbox = lazy(() => import('./pages/Postbox').then((m) => ({ default: m.Postbox })))
 const VoiturePage = lazy(() => import('./pages/VoiturePage').then((m) => ({ default: m.VoiturePage })))
+// « Voyage » — the trip notebook (Carnet de voyage): a full-screen scene with the
+// Itinéraire / Infos / Bagages / Documents sub-tabs. Standalone (no hub chrome).
+const VoyagePage = lazy(() => import('./pages/VoyagePage').then((m) => ({ default: m.VoyagePage })))
 // « Diffuser au salon » — the living-room TV board: the real board, read-only +
 // scaled, shown on a TV via Chromecast. Standalone (no hub chrome).
 const CastPage = lazy(() => import('./pages/CastPage').then((m) => ({ default: m.CastPage })))
@@ -172,6 +175,9 @@ export function AppRoutes() {
         <Route path="/courrier" element={<Postbox />} />
         {/* #28 — « L'auto » week view (single-car + carpool + work schedules). */}
         <Route path="/voiture" element={<VoiturePage />} />
+        {/* « Voyage » — the trip notebook. `new` before `:id` so it isn't an id. */}
+        <Route path="/voyage/new" element={<VoyagePage />} />
+        <Route path="/voyage/:id" element={<VoyagePage />} />
         {/* « Diffuser au salon » — the read-only living-room TV board (cast to a TV). */}
         <Route path="/cast" element={<CastPage />} />
         {/* « Moments » — pick a window (tonight / tomorrow / date / week) → its recap

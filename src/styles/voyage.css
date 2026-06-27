@@ -1,0 +1,171 @@
+/* « Voyage » — the trip notebook scene + its board card. Calm and card-light, reusing
+   the app tokens (--surface, --line, --ink, --radius-*). The sub-tab bodies sit under
+   the shared .subtabs row; rows reuse .sec-label, .kitchen__pantry, .edit-field. */
+
+/* — the create / edit form — */
+.voyage-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 560px;
+}
+.voyage-form__label {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
+.voyage-form__dates {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.voyage-form__date {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 140px;
+}
+.voyage-form__submit {
+  margin-top: 14px;
+  align-self: flex-start;
+}
+.voyage-form__hint {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+  margin-top: 6px;
+}
+
+/* — a trip note (info / itinerary / document) card — */
+.trip-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+}
+.trip-note__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.trip-note__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  margin-bottom: 2px;
+}
+.trip-note__label {
+  color: var(--ink);
+}
+.trip-note__who {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+  margin-left: auto;
+}
+.trip-note__text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.trip-note__audio {
+  margin-top: 8px;
+  width: 100%;
+  max-width: 320px;
+  height: 36px;
+}
+.trip-note__img {
+  margin-top: 8px;
+  max-width: min(100%, 260px);
+  border-radius: var(--radius-sm);
+}
+
+/* — the composer block (text + the shared memo controls) — */
+.trip-note-add {
+  margin: 6px 0 14px;
+}
+.trip-note-add .memo-row {
+  margin-top: 6px;
+}
+
+/* — Infos tab — */
+.voyage-infos__who,
+.voyage-packing__who {
+  margin: 8px 0;
+}
+.voyage-infos__list {
+  margin-top: 10px;
+}
+
+/* — Itinéraire tab — */
+.voyage-itin__day {
+  margin-bottom: 18px;
+}
+.voyage-itin__date {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+  margin-left: 8px;
+}
+
+/* — Bagages tab — */
+.voyage-packing__group {
+  margin-bottom: 14px;
+}
+.voyage-packing__empty {
+  color: var(--ink-faint);
+  padding: 12px 4px;
+}
+
+/* — Documents tab — */
+.voyage-docs__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.voyage-docs__hint {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+  margin: 0 0 10px;
+}
+.voyage-docs__strip {
+  margin-top: 4px;
+}
+
+/* — scene footer (edit) — */
+.voyage__foot {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* — the board « Prochain voyage » card — */
+.voyage-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.voyage-card__open {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  padding: 4px 2px;
+}
+.voyage-card__name {
+  color: var(--ink);
+  font-weight: 600;
+}
+.voyage-card__when {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}

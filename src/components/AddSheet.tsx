@@ -112,6 +112,8 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   group: { cat: 'cercle', icon: 'tag-bold' },
   business: { cat: 'cercle', icon: 'storefront-bold' },
   pet: { cat: 'cercle', icon: 'smiley-bold' },
+  // « Voyage » — start a trip notebook (navigate-only to /voyage/new).
+  voyage: { cat: 'event', icon: 'map-pin-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -614,6 +616,7 @@ export function AddSheet({
       group: t.cercle.addGroup,
       business: t.cercle.business.add,
       pet: t.cercle.pet.add,
+      voyage: t.voyage.captureTile,
     }
     return labels[m]
   }

@@ -63,6 +63,7 @@ const SILENT_PATHS = new Set<string>([
   'recipe-vision',
   'suggest-meal',
   'transcribe',
+  'trip-doc-media', // trip document/photo/audio blob; the trip_notes write carries the path
   'routine-audio',
   'weather',
   'photos',
@@ -87,6 +88,13 @@ const PATH_KEYS: Record<string, string[][]> = {
   'home-pins': [['home-pins']],
   // Calendar events show on the board, the events list, and the month grid.
   events: [['events'], ['board'], ['month']],
+  // « Voyage » (trips): a trip spans the month band + the board "Prochain voyage"
+  // card; its notes/itinerary + per-member packing feed the trip scene (prefix keys
+  // ['trip-notes', <id>] / ['trip-packing', <id>] invalidate via the bare prefix).
+  // A note with a date also shows on the day page, which reads ['month'].
+  trips: [['trips'], ['board'], ['month']],
+  'trip-notes': [['trip-notes'], ['month'], ['board']],
+  'trip-packing': [['trip-packing']],
   // Meal plan: the kitchen week grid + the board's "ce soir".
   meals: [['meals'], ['board']],
   'meal-leftovers': [['leftovers'], ['board']],

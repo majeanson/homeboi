@@ -84,6 +84,10 @@ import * as thisWeek from '../functions/api/this-week'
 import * as todos from '../functions/api/todos'
 import * as todoTemplates from '../functions/api/todo-templates'
 import * as transcribe from '../functions/api/transcribe'
+import * as trips from '../functions/api/trips'
+import * as tripNotes from '../functions/api/trip-notes'
+import * as tripPacking from '../functions/api/trip-packing'
+import * as tripDocMedia from '../functions/api/trip-doc-media'
 import * as useSoon from '../functions/api/use-soon'
 import * as weather from '../functions/api/weather'
 import * as wonder from '../functions/api/wonder'
@@ -190,6 +194,10 @@ const TABLE: Record<string, RouteMod> = {
   todos,
   'todo-templates': todoTemplates,
   transcribe,
+  trips,
+  'trip-notes': tripNotes,
+  'trip-packing': tripPacking,
+  'trip-doc-media': tripDocMedia,
   'use-soon': useSoon,
   weather,
   wonder,
