@@ -1,7 +1,6 @@
-import { useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useMemo, useState } from 'react'
 import { useT } from '../i18n'
-import { useModal } from '../lib/useModal'
+import { Modal } from './Modal'
 import { findMeasures, measuresDisagree } from '../lib/measure'
 import { isSectionHeading, SECTION_PREFIX } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
@@ -77,8 +76,6 @@ export function RecipeReadReview({
   onCancel: () => void
 }) {
   const t = useT()
-  const ref = useRef<HTMLDivElement>(null)
-  useModal(ref, onCancel)
 
   const [title, setTitle] = useState(draft.title ?? '')
   const [ingredients, setIngredients] = useState<string[]>(draft.ingredients.length ? draft.ingredients : [])
@@ -144,17 +141,8 @@ export function RecipeReadReview({
     )
   }
 
-  return createPortal(
-    <div ref={ref} className="read-review" role="dialog" aria-modal="true" aria-label={t.recipes.reviewTitle}>
-      <div className="read-review__scrim" onClick={onCancel} aria-hidden="true" />
-      <div className="read-review__card surface">
-        <div className="read-review__bar">
-          <h2>{t.recipes.reviewTitle}</h2>
-          <button type="button" className="btn btn--ghost mono" onClick={onCancel} aria-label={t.common.cancel}>
-            <Icon name="x-bold" size={18} />
-          </button>
-        </div>
-
+  return (
+    <Modal open onClose={onCancel} className="read-review" title={t.recipes.reviewTitle}>
         <p className="read-review__hint mono">
           {flaggedCount > 0 ? t.recipes.reviewHint : t.recipes.reviewHintClean}
         </p>
@@ -240,8 +228,6 @@ export function RecipeReadReview({
             <InlineIcon name="check-bold" /> {busy ? t.recipes.reviewSaving : t.recipes.reviewConfirmBtn}
           </button>
         </div>
-      </div>
-    </div>,
-    document.body,
+    </Modal>
   )
 }

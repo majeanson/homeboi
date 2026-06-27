@@ -934,41 +934,26 @@
 /* --- Verify-against-the-photo panel (RecipeReadReview) --------------------- */
 /* Sits ABOVE the recipe modal (z-index 80) so the cook checks the read against the
    source card before it lands in the form. */
-.read-review {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(0px, 2vw, 1rem);
-}
-.read-review__scrim {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--ink) 45%, transparent);
-}
-.read-review__card {
-  position: relative;
-  width: 100%;
+/* The OCR read-review rides the shared <Modal> (.kit-modal) chrome — backdrop, ✕
+   close, focus-trap, Esc — so the scrim/card/bar are no longer hand-rolled. It only
+   overrides the modal here for its own shape: a WIDE two-pane (photo | fields) card,
+   and a pinned header/hint/footer with the body scrolling (kit-modal's default is a
+   whole-card scroll, which would let the confirm footer scroll away). */
+.kit-modal.read-review {
+  width: min(96vw, 56rem);
   max-width: 56rem;
-  max-height: 100%;
+  max-height: 86dvh;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-lg, 16px);
-  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
-.read-review__bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.8rem 1rem;
-  border-bottom: 1px solid var(--line);
-}
-.read-review__bar h2 {
+/* Style Modal's title as the old top bar (the ✕ floats over it via kit-modal__close). */
+.read-review .kit-modal__title {
   margin: 0;
+  padding: 0.8rem 1rem;
+  padding-right: 2.6rem;
+  border-bottom: 1px solid var(--line);
   font-size: 1.15rem;
 }
 .read-review__hint {

@@ -69,11 +69,15 @@ and own a parallel CSS family. Fold the outer chrome onto `<Modal>`, keep the in
 - [~] `components/RecipeForm.tsx` `.recipe-modal` → **N/A — it's a full-screen scene, not a modal.** The real
   uniformization here is a shared *scene* wrapper (ties to [STRUCT-1](#struct-1) `EditScene`), NOT `<Modal>`.
 - [~] `components/RecipeSheet.tsx` `.recipe-modal` → **N/A — same (full-screen scene).**
-- [ ] `components/RecipeReadReview.tsx` (~L147, `.read-review` + manual `createPortal`) → `<Modal className="read-review">`
-  — **the one genuine centered overlay.** Deferred: needs `recipes.css` `.read-review__*` rewritten to nest under
-  `.kit-modal` (drop the outer `position:fixed`/scrim/`56rem`-card rules, move `__bar`/`__body`/`__foot` inside the
-  kit-modal card, restore width via the `.read-review` override, pass Modal `title`, delete local portal/`useModal`).
-  Modest value, real visual risk — own commit with visual QA.
+- [x] ✅ `components/RecipeReadReview.tsx` → `<Modal className="read-review">` **DONE 2026-06-26.** Dropped the
+  hand-rolled `createPortal` + `.read-review__scrim` + `.read-review__card` + `.read-review__bar` + local `useModal`;
+  the dialog now rides `<Modal>`'s shared chrome (backdrop, ✕ close, focus-trap, Esc) with `title={reviewTitle}`. CSS:
+  removed the outer `position:fixed`/scrim/56rem-card/bar rules; added a `.kit-modal.read-review` override that
+  restores the WIDE two-pane width + the pinned header/hint/footer + scrolling-body model (kit-modal's default is a
+  whole-card scroll, which would let the confirm footer scroll away), and styles `kit-modal__title` to match the old
+  bar. `__hint`/`__body`/`__foot` kept (each carries its own padding, so the `padding:0` card is correct). typecheck +
+  build green. ⚠️ **Not in the screenshot suite** (appears only mid OCR-import with low-confidence words) — structure
+  reproduced 1:1; worth a manual eyeball on the next photo import.
 - [~] `RecipeFormPage.tsx` hand-rolled `<h2>` → **no change**: the page is a thin route wrapper with no `<h2>` of its
   own; the STRUCT-1 `<h2>` lives inside RecipeForm's `.recipe-modal__bar` (a scene), so it rides the scene-wrapper work.
 
