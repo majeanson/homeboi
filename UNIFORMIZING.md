@@ -182,7 +182,12 @@ The sweep found ~50 direct `api()` write calls. **Triage required — several ar
 - [ ] **Should migrate to `useWrite()`** (user-meaningful writes that deserve offline queueing + invalidation):
   - `components/operator/IntakeReview.tsx` (~9 calls: upsert/merge/dismiss)
   - `lib/ghost.ts` `patchGhost`/`deleteGhost` (called from QuickAddPage, operator/shopping)
-  - `lib/drawingGallery.ts` `patchDrawing`/`deleteDrawing`
+  - [x] ✅ `lib/drawingGallery.ts` **PARTIAL DONE 2026-06-26** (audit names were stale — the real fns are
+    `useSaveToGallery`/`useUpdateInGallery`/`useDeleteFromGallery`). Migrated **`useDeleteFromGallery` → `useWrite`**
+    (optimistic removal from `GALLERY_KEY` + queue-offline + reconcile). **Left on `api()` by design:** the save +
+    update writes are atomically coupled to an R2 blob upload (`uploadDrawing`) that must succeed first and itself
+    can't be queued — routing the trailing POST/PATCH through the outbox would split a 2-step op across online/offline
+    (a queued row with no blobs). Commented in-file. typecheck + 799 tests + build green.
   - [x] ✅ `lib/loves.ts` (recipe ❤ toggle) **DONE 2026-06-26** — `useWrite` + an optimistic flip of the active
     profile's love (`optimistic` writes `LOVES_KEY`, `affectedKeys:[LOVES_KEY]` reconciles); the heart now updates
     instantly and survives offline instead of only invalidating online. typecheck + 799 tests green.

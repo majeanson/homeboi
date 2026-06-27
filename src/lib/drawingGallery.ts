@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
+import { useWrite } from './write'
 import { uploadMedia } from './uploadMedia'
 import { imgUrl } from './image'
 import { BOARD_KEY } from './queryKeys'
@@ -43,6 +44,11 @@ async function uploadDrawing(png: Blob, scene: string): Promise<{ media_key: str
   return { media_key, scene_key }
 }
 
+// NB on the save/update writes below: they stay on `api()` ON PURPOSE. Each is
+// atomically coupled to an R2 blob upload (uploadDrawing) that must succeed FIRST
+// and itself can't be queued — so routing the trailing POST/PATCH through the
+// offline outbox would split a 2-step op across online/offline (a queued row with
+// no blobs). The DELETE has no such coupling, so it goes through useWrite (below).
 export function useSaveToGallery() {
   const qc = useQueryClient()
   // Keep a NEW drawing (its own blobs → independent of any fridge note). Returns the
@@ -65,10 +71,20 @@ export function useUpdateInGallery() {
 }
 
 export function useDeleteFromGallery() {
-  const qc = useQueryClient()
+  const write = useWrite()
+  // Delete is just `{ id }` (no R2 upload), so route it through the offline outbox:
+  // optimistically drop the row from the gallery cache (instant + survives offline),
+  // queue the write when offline, and reconcile GALLERY_KEY on the next poll/replay.
   return async (id: string) => {
-    await api('drawings', { method: 'DELETE', body: { id } })
-    qc.invalidateQueries({ queryKey: GALLERY_KEY })
+    await write('drawings', {
+      method: 'DELETE',
+      body: { id },
+      affectedKeys: [GALLERY_KEY],
+      optimistic: (qc) =>
+        qc.setQueryData<{ drawings: GalleryDrawing[] }>(GALLERY_KEY, (d) =>
+          d ? { drawings: d.drawings.filter((g) => g.id !== id) } : d,
+        ),
+    }).catch(() => {})
   }
 }
 
