@@ -169,9 +169,18 @@ Same class defined twice (cascade-order-dependent, fragile):
 
 ### CSS-5 🟢 Convention-only
 - [ ] BEM drift (`__`/`-`/camelCase mixed) — standardize on `.block__el--mod` for *new* CSS; document in core.css.
-- [ ] `var(--x, <fallback>)` with wrong/undefined fallbacks (`--surface-2`, `--hairline` referenced but undefined;
-  `var(--accent, #2a8f85)` fallback is the *deep* colour). Either define the token or drop the fallback.
-- [ ] Add a `--text-xs…--text-lg` size scale; replace scattered `0.78/0.82/0.85/0.9rem`.
+- [x] ✅ **Undefined-token fallbacks DONE 2026-06-26.** `--surface-2` + `--hairline` were referenced but **never
+  defined** anywhere, so all ~8 callers used drifting hardcoded black-alphas (`rgba(0,0,0,0.02–0.08)`) — invisible/wrong
+  on a dark night card. **Defined both as theme-aware tokens** in core.css (`color-mix(in srgb, var(--ink) 5%/8%,
+  transparent)`): day ≈ the prior black-alpha, night now a correct subtle light lift. Made the token authoritative at
+  every site (dropped the redundant fallbacks across photos/detail/carnets/intake/sheets) and fixed the **one semantic
+  outlier** — `sheets.css` `.list-sort__seg`-track wanted an *opaque* panel, so it's pinned to `var(--card)` directly,
+  not the overlay token. typecheck + build green; night-tint shift gated by the e2e screenshot suite.
+  - [~] **`var(--accent, #…)` "wrong fallback" — premise moot, no action.** `--accent` IS always defined
+    (core.css:54 + per-theme), so every `var(--accent, #2a8f85)` fallback is **dead text** that never renders — not a
+    "wrong colour." Harmless; an optional cosmetic cleanup (drop ~10 dead fallbacks), not a bug. Left.
+- [ ] Add a `--text-xs…--text-lg` size scale; replace scattered `0.78/0.82/0.85/0.9rem`. **Deferred** — larger
+  app-wide sweep, optional, low value; do as its own pass if ever touching typography broadly.
 
 ---
 

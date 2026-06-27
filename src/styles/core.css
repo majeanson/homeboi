@@ -51,6 +51,12 @@
   --surface: var(--card);
   --line: #e8dac0;
   --line-strong: #dcc8a6;
+  /* A faint surface tint + a hairline, both theme-aware. Previously UNDEFINED, so the
+     ~8 callers fell back to drifting hardcoded black-alphas (rgba(0,0,0,0.02–0.08)) that
+     read invisible/wrong on a dark night card. Derived from --ink so they adapt: a
+     subtle dark wash in day, a subtle light lift at night. */
+  --surface-2: color-mix(in srgb, var(--ink) 5%, transparent);
+  --hairline: color-mix(in srgb, var(--ink) 8%, transparent);
   --accent: var(--marigold); /* PRIMARY is marigold */
   --accent-soft: var(--marigold-wash);
   --accent-ink: #3a2a12; /* warm-dark text on marigold */

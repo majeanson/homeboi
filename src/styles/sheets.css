@@ -774,7 +774,7 @@ body.is-recording .add-fab {
    shop the week / AI ideas / book ideas — sit apart from the add chooser). The
    tiles reuse .cat-grid/.cat-pick; this just captions and separates them. */
 .sheet__group {
-  border-top: 1px solid var(--hairline, rgba(0, 0, 0, 0.08));
+  border-top: 1px solid var(--hairline);
   margin-top: 4px;
   padding-top: 12px;
 }
@@ -1032,7 +1032,9 @@ body.is-recording .add-fab {
   gap: 2px;
   margin: 6px 0 10px;
   padding: 3px;
-  background: var(--surface-2, var(--card));
+  /* An opaque segmented-control track (NOT the faint --surface-2 overlay) — keep it on
+     the card colour so the inset pill reads solid. */
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
 }
