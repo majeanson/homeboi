@@ -16,8 +16,8 @@ describe('keysForPath', () => {
     expect(keysForPath('chores-ledger')).toEqual([['chores'], ['board'], ['month']])
   })
 
-  it('maps events to events + board + month', () => {
-    expect(keysForPath('events')).toEqual([['events'], ['board'], ['month']])
+  it('maps events to events + board + month + a-regler (driverless ride heads-up)', () => {
+    expect(keysForPath('events')).toEqual([['events'], ['board'], ['month'], ['a-regler']])
   })
 
   it('maps trips to trips + board + month; trip-notes + packing to their keys; doc-media silent', () => {
@@ -27,8 +27,8 @@ describe('keysForPath', () => {
     expect(keysForPath('trip-doc-media')).toEqual([])
   })
 
-  it('maps the meal plan to meals + board', () => {
-    expect(keysForPath('meals')).toEqual([['meals'], ['board']])
+  it('maps the meal plan to meals + board + a-regler (empty/low supper heads-up)', () => {
+    expect(keysForPath('meals')).toEqual([['meals'], ['board'], ['a-regler']])
     expect(keysForPath('meal-leftovers')).toEqual([['leftovers'], ['board']])
   })
 
@@ -46,13 +46,13 @@ describe('keysForPath', () => {
   })
 
   it('maps recipe endpoints to the recipe keys', () => {
-    expect(keysForPath('recipes')).toEqual([['recipes']])
+    expect(keysForPath('recipes')).toEqual([['recipes'], ['a-regler']])
     expect(keysForPath('recipe-tags')).toEqual([['recipes'], ['recipe-tags']])
     expect(keysForPath('recipe-to-list')).toEqual([['board'], ['list']])
   })
 
   it('maps capture to every target it can route a note to', () => {
-    expect(keysForPath('capture')).toEqual([['board'], ['meals'], ['pantry'], ['leftovers']])
+    expect(keysForPath('capture')).toEqual([['board'], ['meals'], ['pantry'], ['leftovers'], ['a-regler']])
   })
 
   it('broadcasts NOTHING for endpoints that change no shared cache', () => {
@@ -83,10 +83,10 @@ describe('keysForPath', () => {
 
   it('normalizes leading slash, api/ prefix, query string and trailing slash', () => {
     expect(keysForPath('/api/list')).toEqual([['board'], ['ghosts'], ['list-history']])
-    expect(keysForPath('api/meals?date=123')).toEqual([['meals'], ['board']])
+    expect(keysForPath('api/meals?date=123')).toEqual([['meals'], ['board'], ['a-regler']])
     expect(keysForPath('chores/')).toEqual([['chores'], ['board'], ['month']])
     // A full URL pathname (what route.ts passes) works too.
-    expect(keysForPath('/api/events')).toEqual([['events'], ['board'], ['month']])
+    expect(keysForPath('/api/events')).toEqual([['events'], ['board'], ['month'], ['a-regler']])
   })
 
   it('never throws and returns [] on empty input', () => {

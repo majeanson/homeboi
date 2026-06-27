@@ -20,6 +20,7 @@ import {
   tagOptions,
   tagColor,
 } from '../lib/recipes'
+import { A_REGLER_KEY } from '../lib/queryKeys'
 import { wash, tintInk, edge } from '../lib/colors'
 import { SECTION_PREFIX, dropDanglingHeadings, isSectionHeading } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
@@ -553,6 +554,9 @@ export function RecipeForm({
     qc.invalidateQueries({ queryKey: RECIPES_KEY })
     // A freshly typed tag becomes part of the pill offer next time.
     qc.invalidateQueries({ queryKey: RECIPE_TAGS_KEY })
+    // A recipe's ingredients feed the « À régler » meal-low scan (a planned supper
+    // needing a running-low item), so refresh the card instead of waiting its 5-min poll.
+    qc.invalidateQueries({ queryKey: A_REGLER_KEY })
     onSaved()
   }
 

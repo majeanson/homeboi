@@ -3,6 +3,23 @@ import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react
 import { api, ApiError } from './api'
 import { enqueue, onOutboxChange, outboxCount } from './outbox'
 import { isGuest } from './device'
+import { A_REGLER_KEY } from './queryKeys'
+
+// « À régler » (the board heads-up card, functions/api/a-regler) is a cross-domain
+// scan DERIVED from events (driverless rides), meals (empty/low suppers), pantry
+// (running-low items), recipes (a supper's ingredients), and people (birthdays with
+// no gift idea). A write to any of those changes what the card shows, so we always
+// invalidate it alongside the call site's own keys — centralized here so every
+// current AND future write site stays in sync without each having to remember
+// A_REGLER_KEY (the card otherwise lagged up to its 5-min poll). Mirrors the
+// server-side keysForPath map in functions/_lib/realtime.ts — keep the two in step.
+const A_REGLER_PATHS = new Set(['events', 'meals', 'pantry', 'recipes', 'cercle', 'members', 'capture'])
+
+// The affected keys for this write, plus A_REGLER_KEY when the path feeds the card.
+function withAReglerKeys(path: string, keys: QueryKey[]): QueryKey[] {
+  const seg = (path || '').split('?')[0].replace(/^\/+/, '').split('/')[0]
+  return A_REGLER_PATHS.has(seg) ? [...keys, A_REGLER_KEY] : keys
+}
 
 // The offline-aware write helper (NFR-OFFLINE-1). Replaces the scattered
 // `api(…,{method}).catch().finally(invalidate)` pattern with one path that:
@@ -42,7 +59,7 @@ export async function writeWith<T = unknown>(
   spec: WriteSpec = {},
 ): Promise<WriteResult<T>> {
   const method = spec.method ?? 'POST'
-  const affectedKeys = spec.affectedKeys ?? []
+  const affectedKeys = withAReglerKeys(path, spec.affectedKeys ?? [])
 
   // Read-only guest session: refuse every write at the single chokepoint. We do
   // NOT apply the optimistic change, hit the network, or queue to the outbox — so

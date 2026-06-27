@@ -86,8 +86,9 @@ const PATH_KEYS: Record<string, string[][]> = {
   carnets: [['carnets'], ['board']],
   'care-log': [['carnets'], ['care-log'], ['board']],
   'home-pins': [['home-pins']],
-  // Calendar events show on the board, the events list, and the month grid.
-  events: [['events'], ['board'], ['month']],
+  // Calendar events show on the board, the events list, and the month grid; a
+  // driverless ride also feeds the « À régler » heads-up (functions/api/a-regler).
+  events: [['events'], ['board'], ['month'], ['a-regler']],
   // « Voyage » (trips): a trip spans the month band + the board "Prochain voyage"
   // card; its notes/itinerary + per-member packing feed the trip scene (prefix keys
   // ['trip-notes', <id>] / ['trip-packing', <id>] invalidate via the bare prefix).
@@ -95,8 +96,9 @@ const PATH_KEYS: Record<string, string[][]> = {
   trips: [['trips'], ['board'], ['month']],
   'trip-notes': [['trip-notes'], ['month'], ['board']],
   'trip-packing': [['trip-packing']],
-  // Meal plan: the kitchen week grid + the board's "ce soir".
-  meals: [['meals'], ['board']],
+  // Meal plan: the kitchen week grid + the board's "ce soir"; an empty/low-ingredient
+  // supper feeds the « À régler » heads-up.
+  meals: [['meals'], ['board'], ['a-regler']],
   'meal-leftovers': [['leftovers'], ['board']],
   'meal-ideas': [['meal-ideas']],
   'meal-staples': [['meals']],
@@ -106,8 +108,8 @@ const PATH_KEYS: Record<string, string[][]> = {
   notes: [['board']],
   // Accepting a « boîte aux lettres » message inserts a board note — nudge the board.
   postbox: [['board']],
-  // Garde-manger flags.
-  pantry: [['pantry']],
+  // Garde-manger flags; a running-low item feeds the « À régler » meal-low scan.
+  pantry: [['pantry'], ['a-regler']],
   'use-soon': [['use-soon']],
   reserve: [['reserve']],
   // Household settings (postal, store filter, meal-slot colours, reserve locns)
@@ -118,7 +120,8 @@ const PATH_KEYS: Record<string, string[][]> = {
   household: [['household'], ['board'], ['health']],
   // Members appear on the board (faces), in Réglages, and as people in Le cercle
   // (their relationship edits re-derive the circle's families).
-  members: [['members'], ['board'], ['cercle']],
+  // (a birthday edit also feeds the « À régler » gift-idea heads-up).
+  members: [['members'], ['board'], ['cercle'], ['a-regler']],
   // Kid routines render on the board and the routines tab.
   routines: [['routines'], ['board']],
   // À compléter (todos): the board glance + day page read ['todos']; the board's own
@@ -127,19 +130,21 @@ const PATH_KEYS: Record<string, string[][]> = {
   // Templates only feed Réglages + the picker chips.
   todos: [['todos'], ['board'], ['month']],
   'todo-templates': [['todo-templates']],
-  // Recipe book.
-  recipes: [['recipes']],
+  // Recipe book; a recipe's ingredients feed the « À régler » meal-low scan.
+  recipes: [['recipes'], ['a-regler']],
   'recipe-tags': [['recipes'], ['recipe-tags']],
   'recipe-to-list': [['board'], ['list']],
   // Flyer deals ride the board's list surface.
   deals: [['board']],
   // Opt-in purchase tracking strip + the board.
   ghost: [['ghosts'], ['board']],
-  // Capture routes a note to any of these targets, so refetch the lot.
-  capture: [['board'], ['meals'], ['pantry'], ['leftovers']],
+  // Capture routes a note to any of these targets, so refetch the lot (a new event /
+  // meal / pantry-low item can all change the « À régler » heads-up).
+  capture: [['board'], ['meals'], ['pantry'], ['leftovers'], ['a-regler']],
   // Le cercle (people directory): a contact or relationship edit refreshes the
-  // tab; a birthday edit also re-derives the board's "Anniversaires à venir".
-  cercle: [['cercle'], ['board']],
+  // tab; a birthday edit also re-derives the board's "Anniversaires à venir" and the
+  // « À régler » gift-idea heads-up.
+  cercle: [['cercle'], ['board'], ['a-regler']],
   'cercle-links': [['cercle']],
   // Named-group membership + a contact's photo gallery both live under the cercle
   // cache (the photos query key is prefixed ['cercle', …]), so one nudge refreshes them.
