@@ -4,6 +4,7 @@ import { EmptyState } from '../components/EmptyState'
 import { Chip } from '../components/Chip'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
+import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
 import { useT } from '../i18n'
 import { Loading } from '../components/Fallback'
@@ -26,6 +27,7 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 export function PriceMatchPage() {
   const t = useT()
   const qc = useQueryClient()
+  const write = useWrite()
   const { itemId = '' } = useParams()
   const close = useSceneClose('/liste')
 
@@ -40,8 +42,9 @@ export function PriceMatchPage() {
   // Pick this price for the line: attach the deal to its grocery item (server
   // state → shows on the row + flows to the cashier on any device).
   async function choose(deal: Deal) {
-    await api('list', { method: 'PATCH', body: { id: itemId, deal } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: BOARD_KEY })
+    // Offline-aware (in-store signal is flaky): queue + replay, then reconcile the
+    // board cache the list reads from.
+    await write('list', { method: 'PATCH', body: { id: itemId, deal }, affectedKeys: [BOARD_KEY] }).catch(() => {})
   }
   // Cache the expensive Flipp lookup per query, per day — flyers change ~weekly,
   // so a day-scoped key serves re-opens instantly and refreshes tomorrow.
@@ -87,8 +90,7 @@ export function PriceMatchPage() {
   async function addToList(name: string) {
     setAdded(name)
     if (existingListId(qc, name)) return // already on the list — no duplicate
-    await api('list', { method: 'POST', body: { text: name } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: BOARD_KEY })
+    await write('list', { method: 'POST', body: { text: name }, affectedKeys: [BOARD_KEY] }).catch(() => {})
   }
 
   // Distinct stores for the filter; the shown list respects the active store.

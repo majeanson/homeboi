@@ -179,9 +179,16 @@ The sweep found ~50 direct `api()` write calls. **Triage required — several ar
 > outbox (optimistic + queue-offline + invalidate). A tiny *device/household preference* PATCH (AI on/off, measure
 > colours) that's meaningless offline and self-correcting may stay `api()` — migrating buys nothing.
 
-- [ ] **Should migrate to `useWrite()`** (user-meaningful writes that deserve offline queueing + invalidation):
-  - `components/operator/IntakeReview.tsx` (~9 calls: upsert/merge/dismiss)
-  - `lib/ghost.ts` `patchGhost`/`deleteGhost` (called from QuickAddPage, operator/shopping)
+- [x] ✅ **LIB-1 TRIAGE COMPLETE 2026-06-26.** Migrated every genuine *user-content* write (loves, gallery-delete,
+  AddSheet ×3, PriceMatchPage ×2 — see below); the rest resolve to `api()`-OK under the decided rule, each documented:
+  - [~] `components/operator/IntakeReview.tsx` (~9 calls) — **stays `api()` (operator online review).** Accept/merge/
+    dismiss of *quarantined guest submissions* is an inherently-online desk workflow (you're reviewing content that
+    just arrived over the network); offline-queueing an operator merge is near-zero value and the per-call optimistic
+    shapes are non-trivial. On the "self-correcting, online" side of the rule.
+  - [~] `lib/ghost.ts` `patchGhost`/`deleteGhost` — **stays `api()` (operator settings-management).** These are
+    module-level (non-hook) fns driving Réglages ▸ Magasinage staple/cadence management + a QuickAdd suggestion-mute;
+    operator-only, online, self-correcting via invalidate. Migrating would force a hooks conversion across 5 call
+    sites for a household-config write that sits on the `api()`-OK side of the rule.
   - [x] ✅ `lib/drawingGallery.ts` **PARTIAL DONE 2026-06-26** (audit names were stale — the real fns are
     `useSaveToGallery`/`useUpdateInGallery`/`useDeleteFromGallery`). Migrated **`useDeleteFromGallery` → `useWrite`**
     (optimistic removal from `GALLERY_KEY` + queue-offline + reconcile). **Left on `api()` by design:** the save +
@@ -198,8 +205,14 @@ The sweep found ~50 direct `api()` write calls. **Triage required — several ar
     own todo/reserve adds so the ＋ capture spine queues + replays offline uniformly. **Left on `api()` by design:** the
     `capture` POST (AI routing) returns the server's classification the UI displays — an online-only AI round-trip,
     not a queueable write. typecheck + targeted e2e (list/pantry/leftover add) + build green.
-  - `pages/SharePage.tsx` (2), `pages/PriceMatchPage.tsx` (2),
-    `components/cercle/ContactPhotos.tsx` (photo POSTs — see also LIB-4; R2-coupled like drawings → likely stays `api()`)
+  - [x] ✅ `pages/PriceMatchPage.tsx` (2) **DONE 2026-06-26** — the in-store price-match `list` PATCH (attach a deal)
+    + POST (add an item) → `useWrite` with `affectedKeys:[BOARD_KEY]`. In-store signal is flaky, so these genuinely
+    benefit from queue + replay. typecheck + e2e (pricematch sheet) + build green.
+  - [~] `pages/SharePage.tsx` (2) — **stays `api()` by design.** One is R2-coupled (the shared photo → fridge note
+    needs the `note-media` upload's `media_key` first, like drawings — non-queueable two-step); the other is the
+    `capture` AI-routing POST (online-only round-trip). Neither is a queueable content write.
+  - [~] `components/cercle/ContactPhotos.tsx` — **stays `api()` (R2-coupled photo POSTs)**, same reasoning as the
+    drawing/share media writes (the blob upload must succeed first and can't be queued). See also LIB-4.
 
 ### <a id="lib-2"></a>LIB-2 🔴 Inline query keys (cache-drift risk)
 Keys spelled as inline arrays in many files; should be the canonical constants in `lib/queryKeys.ts`.
