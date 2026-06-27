@@ -174,15 +174,22 @@ The sweep found ~50 direct `api()` write calls. **Triage required — several ar
 - **Genuinely exempt (leave, but add a one-line comment noting why):** auth flows (`Login.tsx`,
   `auth.tsx` logout) and anything that runs before/around the session can't go through the household outbox;
   fire-and-forget telemetry (`aiErrorToast.tsx` posting an AI-error journal) shouldn't be queued/retried offline.
+> **Rule decided 2026-06-26: user content → `useWrite()`; device/household toggles → `api()` OK.** A write that
+> creates/edits/deletes *household content a person would expect to survive a flaky connection* goes through the
+> outbox (optimistic + queue-offline + invalidate). A tiny *device/household preference* PATCH (AI on/off, measure
+> colours) that's meaningless offline and self-correcting may stay `api()` — migrating buys nothing.
+
 - [ ] **Should migrate to `useWrite()`** (user-meaningful writes that deserve offline queueing + invalidation):
   - `components/operator/IntakeReview.tsx` (~9 calls: upsert/merge/dismiss)
   - `lib/ghost.ts` `patchGhost`/`deleteGhost` (called from QuickAddPage, operator/shopping)
   - `lib/drawingGallery.ts` `patchDrawing`/`deleteDrawing`
-  - `lib/loves.ts` (recipe ❤ toggle), `lib/measurePrefs.ts` (household PATCH), `lib/ai.ts` (AI toggle PATCH)
+  - [x] ✅ `lib/loves.ts` (recipe ❤ toggle) **DONE 2026-06-26** — `useWrite` + an optimistic flip of the active
+    profile's love (`optimistic` writes `LOVES_KEY`, `affectedKeys:[LOVES_KEY]` reconciles); the heart now updates
+    instantly and survives offline instead of only invalidating online. typecheck + 799 tests green.
+  - `lib/measurePrefs.ts` (household PATCH), `lib/ai.ts` (AI toggle PATCH) — **per the rule above these are
+    device/household toggles → may stay `api()`** (tiny, online-only-ish, self-correcting).
   - `components/AddSheet.tsx` (3), `pages/SharePage.tsx` (2), `pages/PriceMatchPage.tsx` (2),
     `components/cercle/ContactPhotos.tsx` (photo POSTs — see also LIB-4)
-  - **Decide per call**: settings PATCHes (ai/measure) are debatable — they're tiny and online-only-ish.
-    Document the rule "user content → useWrite; device/household toggles → api() OK" once decided.
 
 ### <a id="lib-2"></a>LIB-2 🔴 Inline query keys (cache-drift risk)
 Keys spelled as inline arrays in many files; should be the canonical constants in `lib/queryKeys.ts`.
