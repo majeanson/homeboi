@@ -94,7 +94,7 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
 
 ### P1 — quick, high-value (mostly a11y + polish)
 
-- [x] **Touch targets below 44px** — the check disc keeps its calm 30px visual but its **tap target is now 44px** via an invisible `::before` (`today.css` `.act .check::before`); the view-toggle bumped **32→40px** + 36→40px on phone (`board.css` `.boardview__opt`).
+- [x] **Touch targets below 44px** — the check disc keeps its calm 30px visual but its **tap target is now 44px** via an invisible `::before` (`today.css` `.act .check::before`); the view-toggle bumped **32→40px** + 36→40px on phone (`board/views.css` `.boardview__opt`).
 - [x] **« Prochainement » button aria-label** — added (was built from spans, no label). _(PhotoFrame/WonderBand shuffle buttons already have labels.)_
 - [x] **`:focus-visible` on `.act`** rows — accent ring on `.act`/`.act__hit`/`.act__checkbtn` (+ `.boardview__opt`); pointer taps don't trigger it, so the calm look holds (`today.css`).
 - [x] **Long-title overflow** — `.act .title` now `min-width:0; overflow-wrap:anywhere`, so a long/unbroken title wraps inside its box instead of shoving the time/who off the row.

@@ -1,0 +1,247 @@
+/* --- List action bar + chosen state -------------------------------------- */
+.list-row__proof.is-picked {
+  background: var(--sage, #88a36f);
+  border-color: var(--sage, #88a36f);
+  color: #fff;
+  opacity: 1;
+}
+/* Add-a-line bar at the top of the grocery list — type or speak it. */
+.list-add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0 0 1rem;
+  flex-wrap: wrap;
+}
+.list-add .input {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+/* Voice feedback line under the add form: a calm hint while listening, or a
+   soft error so the mic never fails silently. */
+.list-add__voicemsg {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+.list-add__voicemsg--err {
+  color: var(--danger, #b4413c);
+}
+/* A checked line stays IN PLACE but reads as "got it": struck title, dimmed
+   picture (the sage-filled check comes from .act.done .check). Targeted to the
+   list so other "done" rows elsewhere keep their own treatment. */
+.list-row__main.done .title {
+  text-decoration: line-through;
+  color: var(--ink-faint);
+}
+.list-row__main.done .list-row__deal {
+  opacity: 0.6;
+}
+
+/* The shopping list holds perfectly still: no staggered entrance rise, no
+   check-fill ease, no press-nudge. Ticking items off (often on a phone mid-aisle,
+   or while the live poll refetches) must never shift or animate a row under your
+   finger — a moving target is the opposite of a calm checklist. Loaded after
+   today.css, so these tie-and-win over the shared .act / .stagger motion. */
+.list-rows > * {
+  animation: none;
+}
+.list-row__main.act,
+.list-row__toggle.check {
+  transition: none;
+}
+.list-row__main.act:active {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+/* "Vider" (clear checked) sits quietly to the right under the list — a small,
+   secondary control, not a full-width bar. Restocking past items and browsing
+   flyers moved into the ＋ Add sheet, so the page is the list and its add bar. */
+.list-clear {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+/* The ⚡ Quick add scene — re-add candidates inside a .scene__body.qa. Tap one to
+   add it and the page stays open (an "Added N" counter ticks up), so a week's
+   staples go on in a few taps; the scene body scrolls, chips are >= 48px taps. */
+.qa__count {
+  color: var(--accent);
+}
+.qa__search {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0.75rem;
+}
+.qa__search .input {
+  flex: 1 1 auto;
+  width: 100%;
+}
+/* Small Aa toggle: re-sorts the candidate list alphabetically. >= 44px tap. */
+.qa__sort {
+  flex: 0 0 auto;
+  min-width: var(--touch-target);
+  padding: 0 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.qa__sort:hover {
+  border-color: var(--accent);
+}
+.qa__sort.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+}
+.qa__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+/* Group header in Quick-add (#27): a quiet divider — "Toujours" (standing staples)
+   then "Déjà acheté · suggéré". First one has no top margin. */
+.qa__grouphead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0.5rem 2px 0.1rem;
+  color: var(--ink-soft);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.qa__grouphead:first-child {
+  margin-top: 0;
+}
+.qa__chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.qa__chip:hover {
+  border-color: var(--accent);
+}
+.qa__chip.is-added {
+  background: var(--sage-wash, var(--paper-deep));
+  border-color: var(--sage, var(--line));
+  color: var(--ink-soft);
+  cursor: default;
+}
+.qa__chip--new {
+  border-style: dashed;
+  color: var(--ink-soft);
+}
+.qa__pic {
+  flex: 0 0 auto;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.qa__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qa__tag {
+  flex: 0 0 auto;
+  padding: 0.05rem 0.45rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.qa__tag--due {
+  background: var(--marigold-wash, var(--paper-deep));
+  color: var(--marigold-deep, var(--ink));
+}
+.qa__tag--soon {
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+}
+.qa__act {
+  flex: 0 0 auto;
+  font-size: 1.2rem;
+  color: var(--accent);
+}
+.qa__chip.is-added .qa__act {
+  color: var(--sage, var(--accent));
+}
+/* Swipe-to-delete wrapper for a Quick-add candidate — the same clip-window +
+   red delete pane as La liste's rows (useSwipeToDelete), but sized to the chip
+   (radius-md) so the pane lines up under it. The chip itself is the sliding
+   foreground (.list-row__main); the free-text "Add" chip stays a plain button. */
+.qa__row {
+  border-radius: var(--radius-md);
+}
+.qa__row .list-row__del {
+  border-radius: var(--radius-md);
+}
+.list-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+/* The two "fill the list" shortcuts are now small symbol-only buttons (browse
+   flyers / quick-add) — sit them side by side at their natural width, not stretched. */
+.list-actions .btn {
+  flex: 0 0 auto;
+}
+/* …but the browse/quick-add pair splits the full width 50/50 (half a button, half
+   the other), each carrying a short label beside its glyph. */
+.list-actions--split {
+  flex-wrap: nowrap;
+}
+.list-actions--split .btn {
+  flex: 1 1 0;
+  min-width: 0; /* let the label ellipsis-truncate rather than overflow the half */
+}
+.deal__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.deal__choose {
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--sage, #88a36f);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.deal__choose.is-chosen {
+  background: var(--ink-soft);
+}
+.deal--chosen {
+  box-shadow: inset 0 0 0 2px var(--sage, #88a36f);
+}
+

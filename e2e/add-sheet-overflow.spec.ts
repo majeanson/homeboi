@@ -5,7 +5,7 @@ import { mockApi, seedState } from './mocks'
 // the regression where a wide row in the board ＋ sheet let you pan sideways once
 // you scrolled down (the sheet had overflow-y:auto but no overflow-x, so the cross
 // axis computed to auto). The operator forms are full-screen scenes now, so the
-// remaining widest content is the chooser tile grid. See .sheet in styles/sheets.css.
+// remaining widest content is the chooser tile grid. See .sheet in styles/sheets/capture.css.
 
 async function boot(page: Page) {
   await page.setViewportSize({ width: 390, height: 844 })

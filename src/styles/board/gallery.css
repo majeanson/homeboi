@@ -1,0 +1,157 @@
+/* ---- Drawing gallery (/drawings): the lasting "Mes dessins" collection -------- */
+.drawgallery__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.drawgallery__add {
+  align-self: flex-start;
+}
+.drawgallery__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.8rem;
+}
+/* Toddler: fewer, bigger tiles — easy to admire + tap. */
+.drawgallery__grid--kid {
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 1rem;
+}
+.drawgallery__item {
+  position: relative;
+}
+.drawgallery__open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.drawgallery__open img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #fffdf7;
+  border-radius: 0.7rem;
+  box-shadow: var(--shadow-sm);
+}
+.drawgallery__open:active {
+  transform: scale(0.98);
+}
+/* Guest view of a kept drawing: the same tile look, but the image is a zoom target
+   (ZoomableImg) rather than the open-the-pad button. */
+.drawgallery__img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #fffdf7;
+  border-radius: 0.7rem;
+  box-shadow: var(--shadow-sm);
+}
+.drawgallery__del {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: inline-flex;
+  padding: 0.3rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  color: var(--ink-soft);
+  cursor: pointer;
+  line-height: 0;
+  box-shadow: var(--shadow-sm);
+}
+/* "Épingler au babillard" — bottom-left, mirroring the delete corner. */
+.drawgallery__pin {
+  position: absolute;
+  bottom: 0.3rem;
+  left: 0.3rem;
+  display: inline-flex;
+  padding: 0.3rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  color: var(--ink-soft);
+  cursor: pointer;
+  line-height: 0;
+  box-shadow: var(--shadow-sm);
+}
+.drawgallery__pin.is-done {
+  color: var(--paper);
+  background: var(--berry-deep, var(--accent, #4a8a5a));
+}
+/* Credit line under each kept drawing: who drew it + when. Calm — a quiet caption,
+   never counts. Wraps gracefully on a narrow tile. */
+.drawgallery__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.5rem;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.drawgallery__by {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.drawgallery__by .avatar {
+  flex: none;
+}
+.drawgallery__date {
+  margin-left: auto;
+}
+/* The "Dessiner" + "La galerie" actions inside the Grille drawings strip: a small
+   trailing cluster that rides to the END of the row beside the drawings on a wide
+   tablet (margin-left:auto), and wraps neatly under them on a phone — never
+   claiming its own centered row, never stretching to the tallest card. */
+.notes__action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-self: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+/* A touch more room between the drawing/photo cards (and the trailing door). */
+.notes--drawings .notes__grid {
+  gap: 0.8rem;
+}
+/* Inside the full-width drawings band, drawings TILE side by side at a calm size
+   (wrapping to the next line), rather than each claiming a full-wall-width row the
+   way a lone shared photo does in the notes strip above. */
+.notes--drawings .note-card--visual {
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 18rem;
+}
+.notes--drawings .note-card--visual .note-card__draw {
+  width: auto;
+  max-width: 16rem;
+  max-height: 16rem;
+}
+/* On a phone the drawings strip's actions (« Dessiner » + « La galerie ») get their
+   own tidy full-width row — two equal, comfortable buttons — instead of small chips
+   stranded in the corner by `margin-left:auto`. When there are no drawings yet, they
+   ARE the strip, so they should sit square, not float. */
+@media (max-width: 680px) {
+  .notes--drawings .notes__action {
+    margin-left: 0;
+    width: 100%;
+    align-self: stretch;
+  }
+  .notes--drawings .notes__action > .chip {
+    flex: 1 1 0;
+    justify-content: center;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.95rem;
+  }
+}
+

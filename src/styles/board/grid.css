@@ -1,0 +1,212 @@
+/* ---- Board: full-width "whiteboard" bento grid ---------------------------- */
+.board-wall {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 2rem;
+  position: relative;
+}
+/* Fresh household (zero members): one gentle pointer to Réglages instead of a
+   wall of empty sections. */
+.board-welcome {
+  background: var(--marigold-wash);
+  border-radius: var(--radius-lg, 18px);
+  padding: 12px 16px;
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+}
+.board-welcome a {
+  color: inherit;
+  font-weight: 600;
+}
+/* Focus stamp: the board is narrowed to one picked face (+ shared Maisonnée).
+   A quiet line that says whose view this is, with a one-tap way back to everyone. */
+.board-focus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  margin: 0 0 0.6rem;
+  border-radius: var(--radius-pill);
+  background: var(--ink-wash, rgba(0, 0, 0, 0.04));
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+.board-focus b {
+  font-weight: 700;
+}
+.board-focus__all {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 4px 6px;
+  color: var(--ink-soft);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Kiosk idle heads-up: 30 s before the picked face drifts back to Maisonnée.
+   Lives in the HubLayout shell (any tab), so it floats as a quiet pill. */
+.board-idle {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}
+.board-idle--shell {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 14px;
+  margin: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 6px 16px;
+  box-shadow: var(--shadow-md);
+  z-index: 40;
+}
+/* Mobile: the bottom tab bar owns that edge — sit above it. */
+.hub[data-surface='mobile'] .board-idle--shell {
+  bottom: 92px;
+}
+/* TRUE MASONRY via CSS multi-column, NOT a real grid. The day sections vary
+   wildly in height — Aujourd'hui is tall + unpredictable, Demain / Restants /
+   À venir are short — and a real grid row is as tall as its tallest tile, so a
+   short tile stranded a dead gap below it down to the tallest sibling's bottom.
+   Multi-column lets each later tile rise into the nearest gap instead. ~300px
+   columns: as many as the wall fits, one on a phone; column-fill: balance keeps
+   them roughly even. Source order is by importance (Aujourd'hui → Demain →
+   today's standing lists → À venir → photo). */
+.board-grid {
+  columns: 300px;
+  column-gap: 1rem;
+}
+/* Each tile is never split across a column break, and carries its own bottom
+   rhythm (multi-column has no grid `gap`). */
+.board-grid > .bento,
+.board-grid > .photo-frame {
+  break-inside: avoid;
+  margin: 0 0 1rem;
+}
+/* Each section is a calm bento tile. */
+.board-grid > .bento {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem 1.1rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--dur-slow) var(--ease-out);
+}
+/* Time-aware emphasis (lib/momentFocus): the card that matters at this hour gets a soft
+   lift + a faint accent top-edge in its own category tint. No motion, no reshuffle — just
+   a gentle "look here now". */
+.board-grid > .bento.bento--now {
+  box-shadow: var(--shadow-md), inset 0 3px 0 0 color-mix(in srgb, var(--sec-tint, var(--marigold)) 55%, transparent);
+}
+/* The photo frame closes the board as a full-width band beneath the columns —
+   give it a breath of top margin so it sits apart from the bento tiles above. */
+.board-grid > .photo-frame {
+  column-span: all;
+  margin-top: 1.25rem;
+}
+/* « L'auto » rides inside the grid (just above the drawings/photos) as a full-width
+   band, so it reads as its own strip rather than squeezing into a column. */
+.board-grid > .auto-card {
+  column-span: all;
+  margin: 1rem 0 1rem;
+}
+/* The family-drawings strip is a full-width band like « L'auto » / the photos.
+   Span all columns so a tall drawing card is never flowed into — and split across
+   — a multi-column break (which clipped a drawing mid-image on the wall, leaving a
+   stray ✕). Its own flex grid then tiles the drawings cleanly within the band. */
+.board-grid > .notes--drawings {
+  column-span: all;
+  margin: 1rem 0;
+}
+@media (max-width: 680px) {
+  .board-wall {
+    padding: 1rem 0.9rem 1.5rem;
+  }
+  .board-grid {
+    column-gap: 0.75rem;
+  }
+  .board-grid > .bento,
+  .board-grid > .photo-frame {
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* Toddler heroes row (meals + weather) above the kid sections. */
+.today-kid__heroes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.today-kid__heroes .today-hero {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
+/* Mobile glance: the prominent quick-capture bar atop the board (opens AddSheet).
+   The phone's primary action, sat where the thumb lands first. */
+.qcap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast);
+}
+.qcap:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-press);
+}
+.qcap__icon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--marigold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qcap__text {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-faint);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.qcap__mic {
+  flex: none;
+  font-size: 1.1rem;
+  opacity: 0.7;
+}
+
+/* Kiosk dashboard: scale the "Aujourd'hui" header up for across-the-room reading.
+   Same board, same data — just an official wall-display weight. */
+.hub[data-surface='kiosk'] .board-wall {
+  padding: 1rem 1.75rem 1.5rem;
+}
+.hub[data-surface='kiosk'] .board-wall .greet {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+}
+.hub[data-surface='kiosk'] .board-wall .subgreet {
+  font-size: clamp(1rem, 1.6vw, 1.4rem);
+}
+

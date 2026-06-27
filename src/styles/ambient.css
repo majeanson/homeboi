@@ -2,7 +2,7 @@
 /* Ambient screensaver (backlog #3) — the kiosk's idle face: a big clock + date  */
 /* over the slow photo frame. A calm, near-dark surface that reads day or night  */
 /* and across the room. Tap anything to wake (handled in HubLayout). Loaded after */
-/* photos.css/board.css so `.ambient .photo-frame` wins. Honours the calm tenets: */
+/* photos.css/the board/* slices so `.ambient .photo-frame` wins. Honours the calm tenets: */
 /* opacity-only reveal, no motion beyond the slow photo cross-fade.              */
 /* ========================================================================== */
 .ambient {

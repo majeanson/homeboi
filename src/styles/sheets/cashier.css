@@ -1,0 +1,292 @@
+/* --- Cashier mode (review + big stepper) ---------------------------------- */
+.cashier {
+  position: fixed;
+  /* Visual-viewport pinned (like .sheet / .pm-overlay), NOT inset:0 — on iOS
+     Safari a plain fixed inset:0 portal extends under the bottom toolbar, so the
+     present-phase ← / → / ✓ controls (and the review CTA before it moved up to
+     the bar) land behind the browser chrome and can't be tapped. Sizing to the
+     VISIBLE viewport keeps the whole flow's controls on-screen. */
+  left: 0;
+  right: 0;
+  /* Full dvh by default; pin to the visual viewport (--vvt/--vvh) ONLY while the
+     keyboard is up. Unconditional binding stranded the scene at a stale offset after
+     the iPad "Hide Keyboard" button dismissed without blurring — same bug + fix as
+     .scene / .recipe-modal. See src/lib/viewportVars.ts. */
+  top: 0;
+  height: 100dvh;
+  z-index: 50;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+}
+.kb-open .cashier {
+  top: var(--vvt, 0px);
+  height: var(--vvh, 100dvh);
+}
+.cashier__bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1.5px solid var(--line);
+}
+.cashier__title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+  /* Yield space to the present CTA + ✕ on a narrow phone instead of pushing them
+     off the bar. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cashier__reset {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+/* Grid: every picked deal as a tile, tap the one being scanned right now. */
+.cashier__grid-wrap {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  max-width: 60rem;
+  margin: 0 auto;
+  width: 100%;
+  /* Centre a short grid in the viewport instead of stranding a couple of tiles at
+     the top of a tall wall tablet (no dead space below); a long grid top-aligns and
+     scrolls (safe center). */
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+}
+.cashier__hint {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: clamp(14px, 2vw, 18px);
+  color: var(--ink-soft);
+}
+.cashier__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* 2-up on a phone, more on the wide wall sheet — auto-fill keeps the tiles a
+     generous, glanceable size (and a comfortable tap target) on any surface. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  gap: 14px;
+}
+.cashier__tile {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  gap: 4px;
+  padding: 16px 12px;
+  border: 0;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  cursor: pointer;
+  /* Comfortable thumb target on a wall tablet / for a toddler-proof tap. */
+  min-height: 96px;
+}
+.cashier__tile.is-shown {
+  opacity: 0.5;
+}
+.cashier__tile-img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  flex: 0 0 auto;
+  margin-bottom: 2px;
+}
+/* The grocery item — the thing you match against what's on the belt: loud + clear. */
+.cashier__tile-for {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.cashier__tile-name {
+  font-size: 12px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+/* The price, big enough to read at arm's length while the cashier waits. */
+.cashier__tile-price {
+  margin-top: 2px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ink);
+}
+.cashier__tile-store {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.cashier__tile-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--sage, #88a36f);
+  color: #fff;
+}
+/* Present (the big proof peek) */
+.cashier__stage {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  /* Stretch + small padding so the proof uses the whole screen (phone-first), not a
+     small card adrift in big margins. */
+  align-items: stretch;
+  justify-content: center;
+  padding: 10px 12px;
+}
+.bigcard {
+  width: 100%;
+  /* Fills a wall tablet instead of stranding a thin column in the middle. */
+  max-width: min(96vw, 56rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2.4vh, 20px);
+}
+/* Picture | facts side-by-side on a wide tablet (no dead margins); stacked on a
+   phone. */
+@media (min-width: 760px) {
+  .bigcard {
+    flex-direction: row;
+    justify-content: center;
+    gap: 40px;
+  }
+  .bigcard__info {
+    align-items: flex-start;
+    text-align: left;
+  }
+  /* Beside the facts on a wide tablet the picture can be large — it fills its half. */
+  .bigcard__img {
+    width: min(44vw, 460px);
+    height: min(58vh, 460px);
+  }
+}
+.bigcard__media {
+  flex: 0 1 auto;
+  display: flex;
+}
+.bigcard__img {
+  /* Stacked on a phone: keep the picture modest so the hero PRICE stays high on the
+     screen, not pushed below the fold. */
+  width: min(74vw, 320px);
+  height: min(34vh, 320px);
+  object-fit: contain;
+  background: #fff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.bigcard__info {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 34rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+.bigcard__store {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(22px, 3.4vw, 34px);
+  color: var(--ink);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.bigcard__logo {
+  width: 1.4em;
+  height: 1.4em;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  flex: 0 0 auto;
+}
+.bigcard__for {
+  font-size: clamp(15px, 2vw, 20px);
+  color: var(--ink-soft);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.bigcard__for strong {
+  color: var(--ink);
+  font-weight: 800;
+}
+.bigcard__name {
+  font-size: clamp(18px, 2.6vw, 28px);
+  font-weight: 700;
+  color: var(--ink);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.bigcard__price {
+  font-family: var(--display);
+  font-weight: 800;
+  /* The hero — huge on a phone, capped on a wall. */
+  font-size: clamp(80px, 24vw, 144px);
+  line-height: 0.92;
+  color: var(--ink);
+}
+/* Validity is high-level info (a cashier checks the deal is still good before
+   adjusting), so it's a LOUD marigold pill, second only to the price — never fine
+   print. Dark text on marigold reads in day AND night. */
+.bigcard__valid {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+  padding: 14px 28px;
+  border-radius: var(--radius-pill);
+  background: var(--marigold);
+  color: #3a2f12;
+  font-weight: 800;
+  font-size: clamp(24px, 7vw, 40px);
+  line-height: 1;
+}
+.bigcard__flyer {
+  margin-top: 8px;
+  padding: 14px 24px;
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+}

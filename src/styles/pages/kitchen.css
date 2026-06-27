@@ -268,7 +268,7 @@
 }
 
 /* The week's three actions (shop the week / AI ideas / ideas from the book) live
-   INSIDE the ＋ Add sheet as icon tiles now (see .sheet__group in sheets.css) —
+   INSIDE the ＋ Add sheet as icon tiles now (see .sheet__group in sheets/help.css) —
    the old floating .kitchen__fab-rail was removed so the parent view has one
    floating affordance, not four. */
 

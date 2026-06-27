@@ -1,6 +1,6 @@
 /* ============================================================================
    Ghost list — predictive grocery suggestions. The on-list strip is gone (its
-   re-adds folded into the ⚡ Quick add panel, see .qa in sheets.css); what's left
+   re-adds folded into the ⚡ Quick add panel, see .qa in sheets/list-actions.css); what's left
    here is the Settings → Liste fantôme admin. Mobile-first: rows wrap, tap
    targets are >= 44px, nothing overflows a narrow phone.
    ========================================================================== */

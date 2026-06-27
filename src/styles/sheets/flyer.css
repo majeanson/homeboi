@@ -1,0 +1,422 @@
+/* --- Full-flyer viewer ---------------------------------------------------- */
+/* Sits above the proof sheet. A vertical scroll of reconstructed pages, each a
+   white sheet with clippings absolutely placed by their flyer coordinates. */
+.flyer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+}
+.flyer-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1.5px solid var(--line);
+  background: var(--paper);
+}
+/* Branded header band: store logo (or monogram) + name + validity dates — our own
+   stand-in for reebee's rendered flyer banner, which the data feed doesn't carry. */
+.flyer-bar__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.flyer-bar__logo {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  object-fit: contain;
+  background: #fff;
+  border: 1.5px solid var(--line-strong);
+  padding: 3px;
+}
+.flyer-bar__logo--mono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+}
+.flyer-bar__title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Meta row under the header: the data-quality note + a link out to the full
+   official flyer. Wraps on narrow phones so neither gets clipped. */
+.flyer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 8px;
+  padding: 5px 16px;
+  border-bottom: 1px solid var(--line);
+}
+/* Data-quality note: green when it's an official (image) flyer, muted when it's
+   an SFML reconstruction (so the cashier knows the difference). */
+.flyer-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.flyer-note--official {
+  color: #2f7d4f;
+}
+.flyer-note--recon {
+  color: var(--ink-soft);
+}
+/* Open the real, full flyer (dense scanned pages) on Flipp's site. A clear, calm
+   tap target — sized for a thumb, never competing with the deals below. */
+.flyer-full-link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--accent-ink, #fff);
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.flyer-full-link:active {
+  transform: scale(0.97);
+}
+.flyer-full-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* "Télécharger hors-ligne" — a quieter outline pill so it sits beside the primary
+   full-flyer link without competing. Turns sage when the flyer is cached. */
+.flyer-dl {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.flyer-dl:disabled {
+  cursor: default;
+}
+.flyer-dl.is-done {
+  color: var(--sage-deep, #2f7d4f);
+  border-color: var(--sage-deep, #2f7d4f);
+}
+.flyer-dl:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.flyer-dl:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Flyer validity span under the merchant name — the dates the cashier checks. */
+.flyer-bar__dates {
+  font-family: var(--mono, monospace);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border-radius: var(--radius-pill);
+  padding: 1px 9px;
+}
+.flyer-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 12px;
+  max-width: 46rem;
+  margin: 0 auto;
+  width: 100%;
+}
+/* Flyer view toggle (Offres grid vs Plan map) — the segmented control, sized to
+   the flyer column rather than spanning the full-screen overlay. */
+.flyer-tabs {
+  max-width: 46rem;
+  width: calc(100% - 24px);
+  margin: 6px auto 4px;
+}
+
+/* Offres — a masonry of clippings packed tight (no flyer-coordinate gaps). Each
+   clipping already carries its own price/name, so a bare image cell is complete.
+   Columns flow vertically, so cells of different heights nest without white rows. */
+.flyer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.flyer-grid__cell {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  cursor: pointer;
+  font: inherit;
+  display: block;
+}
+.flyer-grid__cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+/* Clipping images stream in under the burst of a whole flyer opening; an unloaded
+   cell would otherwise paint as a stark blank box (reads as broken). The cell shows a
+   soft shimmer placeholder ("loading") while its img is data-loaded='0'; the real
+   bitmap fades in over it on load. Shimmer is :has()-driven — where unsupported it
+   simply degrades to the plain cell background, and the fade still applies. */
+/* Hidden until loaded (data-loaded='1'); '0' = loading, 'x' = failed after retries —
+   both keep the bitmap hidden so a broken clipping never shows a broken-image icon. */
+.flyer-grid__cell img,
+.flyer-item img {
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+.flyer-grid__cell img[data-loaded='1'],
+.flyer-item img[data-loaded='1'] {
+  opacity: 1;
+}
+/* Loading: soft animated shimmer so the cell reads as "loading", not broken. */
+.flyer-grid__cell:has(img[data-loaded='0']),
+.flyer-item:has(img[data-loaded='0']) {
+  background: linear-gradient(
+    100deg,
+    rgba(0, 0, 0, 0.04) 30%,
+    rgba(0, 0, 0, 0.08) 50%,
+    rgba(0, 0, 0, 0.04) 70%
+  );
+  background-size: 200% 100%;
+  animation: flyer-img-shimmer 1.3s ease-in-out infinite;
+}
+/* Failed after retries: a calm static tint, no animation, no broken icon. */
+.flyer-grid__cell:has(img[data-loaded='x']),
+.flyer-item:has(img[data-loaded='x']) {
+  background: rgba(0, 0, 0, 0.05);
+}
+@keyframes flyer-img-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flyer-grid__cell img,
+  .flyer-item img {
+    transition: none;
+  }
+  .flyer-grid__cell:has(img[data-loaded='0']),
+  .flyer-item:has(img[data-loaded='0']) {
+    animation: none;
+    background: rgba(0, 0, 0, 0.05);
+  }
+}
+.flyer-grid__cell:focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: 1px;
+}
+.flyer-grid__cell.is-hit {
+  outline: 3px solid var(--marigold);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 4px var(--marigold-wash);
+}
+.flyer-page-wrap {
+  margin: 0 auto 16px;
+}
+.flyer-page-label {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin: 0 0 4px 2px;
+}
+.flyer-page {
+  position: relative;
+  width: 100%;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.flyer-item {
+  position: absolute;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  display: block;
+}
+.flyer-item:focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: 1px;
+}
+.flyer-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.flyer-item.is-hit {
+  outline: 3px solid var(--marigold);
+  outline-offset: 1px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px var(--marigold-wash);
+  z-index: 2;
+}
+.flyer-item__pin {
+  position: absolute;
+  top: -10px;
+  left: -8px;
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+  pointer-events: none;
+}
+.flyer-dir {
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 9px 18px;
+  background: var(--marigold-wash);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  border: 0;
+  border-bottom: 1.5px solid var(--line);
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+/* Selected-item detail card — slides up over the flyer; "details there". */
+.flyer-detail {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1.5px solid var(--line);
+  background: var(--paper);
+  box-shadow: 0 -6px 18px rgba(44, 39, 34, 0.12);
+}
+.flyer-detail__info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.flyer-detail__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.flyer-detail__nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.flyer-detail__step {
+  flex: 0 0 auto;
+  min-width: 40px;
+  height: 36px;
+  font-size: 22px;
+  line-height: 1;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.flyer-detail__step:active {
+  background: var(--line);
+}
+.flyer-detail__count {
+  flex: 0 0 auto;
+  min-width: 38px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.flyer-detail__img {
+  flex: 0 0 auto;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: var(--radius-sm);
+}
+.flyer-detail__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.flyer-detail__name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.flyer-detail__meta {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.flyer-detail__price {
+  flex: 0 0 auto;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--ink);
+}
+.flyer-detail__close {
+  flex: 0 0 auto;
+}
+

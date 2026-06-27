@@ -1,0 +1,232 @@
+/* ---- Fridge notes (Aujourd'hui) ------------------------------------------- */
+/* Little hand-written cards a parent clears with a tap; tinted by who left it.
+   Toddler mode reads them aloud instead of clearing. Mobile-first: they wrap. */
+.notes {
+  margin: 0 0 0.75rem;
+}
+.notes__head {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 0.5rem;
+}
+.notes__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.note-card {
+  --note-tint: var(--marigold);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-hand, inherit);
+  font-size: 1.15rem;
+  line-height: 1.2;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--note-tint) 22%, var(--card));
+  border-radius: 4px 12px 10px 14px; /* torn-paper asymmetry */
+  box-shadow: var(--shadow-sm);
+  padding: 0.7rem 0.9rem;
+  max-width: 22rem;
+  transform: rotate(-1deg);
+}
+.note-card:nth-child(even) {
+  transform: rotate(1.2deg);
+}
+.note-card__text {
+  overflow-wrap: anywhere;
+}
+.note-card__clear {
+  flex: none;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  opacity: 0.6;
+}
+.note-card:active {
+  transform: scale(0.97);
+}
+/* The day note is read-only on the parent board (a div, not a clearable button):
+   no pointer cursor, no press-shrink. Toddler keeps the button (tap to hear). */
+.day-note div.note-card {
+  cursor: default;
+}
+.day-note div.note-card:active {
+  transform: rotate(-1deg);
+}
+/* Toddler: bigger, no clear glyph, read-aloud. */
+.notes--kid .note-card {
+  font-size: 1.4rem;
+  padding: 1rem 1.2rem;
+  max-width: none;
+}
+
+/* --- Media memos (#38 voice / #14 drawing): a note that carries an attachment - */
+.note-card--media {
+  cursor: default;
+  align-items: flex-start;
+}
+.note-card__mediabtn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.note-card__memo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 1.05rem;
+  padding: 0.4rem 0.8rem 0.4rem 0.55rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--note-tint) 30%, var(--card));
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+}
+/* The ▶ glyph sits in its own little disc so the memo reads as "press to hear". */
+.note-card__memo svg {
+  flex: none;
+  padding: 0.25rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--note-tint) 55%, white);
+  box-sizing: content-box;
+}
+.note-card__mediabtn:active .note-card__memo {
+  transform: scale(0.96);
+}
+/* Drawing / photo: a taped-up polaroid — white mat, a touch heavier at the foot. */
+.note-card__draw {
+  display: block;
+  max-width: 9rem;
+  max-height: 9rem;
+  border-radius: 4px;
+  background: #fffdf7;
+  padding: 0.3rem 0.3rem 0.7rem;
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  /* contain (not cover) so a drawing made at any aspect ratio — whoever's device
+     drew it — shows whole, never cropped. The full-width rule below keeps this. */
+  object-fit: contain;
+}
+/* A drawing or shared photo deserves to be seen — span the full notes row and
+   show it at a readable size. object-fit: contain preserves the full canvas. */
+.note-card--visual {
+  flex: 1 1 100%;
+  max-width: none;
+  transform: none;
+}
+.note-card--visual:nth-child(even) {
+  transform: none;
+}
+.note-card--visual .note-card__draw {
+  max-width: 100%;
+  width: 100%;
+  max-height: 22rem;
+  object-fit: contain;
+  background: #fffdf7;
+}
+.note-card__media {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+/* An optional caption under an image/voice memo (e.g. text shared with a photo). */
+.note-card__cap {
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+/* Attribution on a « boîte aux lettres » message (#postbox) — « — Papi ». A quiet
+   signature under the note's body; never on an ordinary household note. */
+.note-card__from {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  font-style: italic;
+  opacity: 0.7;
+  overflow-wrap: anywhere;
+}
+.note-card__clear--btn {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.3rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+  opacity: 0.55;
+}
+/* A drawing IS the tap target to re-open + add to it (shared family doodle, #14).
+   The button wraps the image full-width; a ✏️ badge in the corner is the cue. */
+.note-card__mediabtn {
+  position: relative;
+}
+.note-card__edit-badge {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  display: inline-flex;
+  padding: 0.25rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-sm);
+  line-height: 0;
+  pointer-events: none; /* the surrounding button owns the tap */
+}
+/* When the image is its own zoom target, the badge becomes the real "edit / add to
+   it" button — sits above the image and owns its own tap. */
+.note-card__edit-badge--btn {
+  border: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 1;
+}
+/* "Garder dans Mes dessins" — bottom-left, clear of the edit (top-left) + clear
+   (top-right) badges. The "vice versa" of pinning a gallery drawing to the fridge. */
+.note-card__keep-badge {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 0.4rem;
+  display: inline-flex;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-sm);
+  line-height: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.note-card__keep-badge.is-done {
+  color: var(--paper);
+  background: var(--berry-deep, var(--accent, #4a8a5a));
+}
+
+/* --- The Record / Draw row under the Note rapide text capture (AddSheet) ------ */
+.memo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+.memo-row__rec {
+  color: var(--terracotta-deep, #c2563a);
+}
+.memo-row__dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #c2563a;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+

@@ -1,0 +1,411 @@
+/* ---- Board: weather tip, tomorrow chip, view toggle & alt views ---------- */
+/* The view toggle + profile chip ride on their own right-aligned row under the
+   header, so the time-of-day avatar can sit in the top-right corner like every
+   other tab. Pulled up tight against the header to stay compact. */
+.board-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin: -8px 0 14px;
+}
+/* Today's date rides in the controls row (beside the view selector), not on its
+   own line under the greeting. mr:auto keeps it left while the chip + toggle stay
+   right-aligned under the avatar. */
+.board-controls__date {
+  margin-right: auto;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+.weather-tip {
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.tomorrow-wx {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+
+/* The little segmented view switch (bento · next · lanes). */
+.boardview {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+}
+.boardview__opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  height: 40px; /* was 32px — toward the 44px touch target (AUJOURDHUI §5) */
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.boardview__opt:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.boardview__label {
+  white-space: nowrap;
+}
+.boardview__opt.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+/* On a tight phone the labels would crowd the header — fall back to icon-only
+   there (the labels stay for tablets/kiosk where the discoverability matters). */
+@media (max-width: 520px) {
+  .boardview__opt {
+    width: 40px;
+    padding: 0;
+  }
+  .boardview__label {
+    display: none;
+  }
+}
+
+/* "Now & Next" focus view. */
+.nownext {
+  max-width: 46rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+/* The tinted cards read their accent from a `--tint` custom property (set inline
+   from the event/meal colour). Moving the alpha into color-mix keeps the maths in
+   CSS and stays valid even if `--tint` is unset or a CSS var — unlike the old
+   `hex + '55'` string, which silently produced no border. 33% ≈ the old 0x55. */
+.nownext__focus {
+  background: var(--card);
+  border: 2px solid color-mix(in srgb, var(--tint, var(--line)) 33%, transparent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: clamp(1.5rem, 5vw, 3rem);
+  text-align: center;
+}
+/* No accent on the empty card — keep the plain full-strength hairline. */
+.nownext__focus--empty {
+  border-color: var(--line);
+}
+.nownext__when {
+  font-size: clamp(1rem, 2.5vw, 1.6rem);
+  color: var(--ink-soft);
+}
+.nownext__title {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: clamp(2rem, 8vw, 5rem);
+  line-height: 1.05;
+  margin: 0.25rem 0;
+}
+.nownext__who {
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  color: var(--ink-soft);
+}
+.nownext__focus--empty .nownext__title {
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  color: var(--ink-faint);
+}
+.nownext__then {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  color: var(--ink-soft);
+}
+.nownext__then-when {
+  font-weight: 700;
+}
+.nownext__then-title {
+  font-size: 1.15rem;
+}
+/* "Préparer le repas" — a calm, tappable CTA to jump into cook mode for the next
+   meal due. Reads as a card (matches .nownext__focus), spined with the souper
+   colour so it belongs to the day's meals. */
+.nownext__cook {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  align-self: center;
+  background: var(--card);
+  border: 2px solid color-mix(in srgb, var(--tint, var(--line)) 33%, transparent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 0.85rem 1.4rem;
+  cursor: pointer;
+  font-family: var(--sans);
+  color: var(--ink);
+  transition: border-color var(--dur-fast);
+}
+.nownext__cook:hover {
+  border-color: var(--ink-faint);
+}
+/* Leftover note: not a button — nothing to cook, nothing to tap. Dashed, calm,
+   no pointer/hover so it reads as a glance, not an action. */
+.nownext__cook--leftover {
+  cursor: default;
+  border-style: dashed;
+  box-shadow: none;
+}
+.nownext__cook--leftover:hover {
+  border-color: color-mix(in srgb, var(--tint, var(--line)) 33%, transparent);
+}
+.nownext__cook-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.nownext__cook-meal {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+/* Who's cooking — a quiet third line under the meal, dotted in their colour. */
+.nownext__cook-who {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.nownext__cook-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.nownext__allday {
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
+/* « Avant de partir » door at the foot of the Maintenant view — centred, with a
+   breath of space above the glance footers. */
+.nownext__depart {
+  display: flex;
+  align-self: center;
+  margin: 0.5rem auto 0;
+}
+
+/* The status band: « À régler » + « Moments » as hero-style cards, sitting directly
+   under the supper/weather heroes (Grille) or above the calendar (Mois). A flex row
+   that mirrors .board-heroes so the two heads-up cards read as peers of the day's
+   glance cards — they stretch to equal height and stack on a phone. */
+.board-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0 0 22px;
+}
+.board-status:empty {
+  display: none;
+}
+.board-status > .now-card {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+/* Quick actions under « Prochainement » — cook the next planned meal · « Avant de
+   partir » (the pre-departure glance). Reused from the retired « Maintenant » view as
+   calm pills (the shared .btn--ghost look); they wrap on a phone. */
+.board-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.1rem 0 0.5rem;
+}
+.board-actions .btn {
+  font-size: 0.9rem;
+}
+.board-action--cook b {
+  font-weight: 700;
+}
+.board-action--cook {
+  color: var(--marigold-deep);
+}
+
+/* « À régler » — a QUIET one-line heads-up chip: it sits above every board view, so
+   it whispers (a hairline marigold tint, not a filled banner). The full list lives in
+   « Cette semaine ». */
+.a-regler {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-pill);
+  background: rgb(242 160 61 / 0.07);
+  box-shadow: inset 0 0 0 1px rgb(242 160 61 / 0.28);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.a-regler__title {
+  flex: none;
+  color: var(--ink-soft);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.a-regler__lead {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.a-regler__lead span,
+.a-regler__lead {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.a-regler__count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+/* The EXPANDED friction rows (full list) — used by « Cette semaine » and any inline
+   list, NOT the compact board chip above. */
+.a-regler__row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.92rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.a-regler__more {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+/* « À régler » in « Cette semaine » is prevalent enough to stand on its own — give it
+   a distinct marigold heads-up card (the same warm identity as the board's À régler hero)
+   instead of bare links jammed above the week columns. */
+.tweek__regler {
+  margin-bottom: 1.3rem;
+  padding: 0.85rem 1rem 0.6rem;
+  background: var(--marigold-wash);
+  border: 1px solid color-mix(in srgb, var(--marigold-deep) 22%, transparent);
+  border-radius: var(--radius-lg, 18px);
+}
+.tweek__regler > .tweek__col-h {
+  margin: 0 0 0.5rem;
+  color: var(--marigold-deep);
+}
+.tweek__regler .a-regler__row {
+  padding: 0.34rem 0;
+}
+/* The day's meals as a centred row of colour-coded slot chips (.meal-chip, shared
+   — see misc.css), with a quiet label. Wraps on a narrow phone. */
+.nownext__meals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.nownext__meals-label {
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+}
+/* Today's chores stacked as the same colour-spined Act cards used in the lanes
+   view, with a quiet label — no longer a bare line of text. */
+.nownext__chores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.nownext__chores .nownext__meals-label {
+  text-align: center;
+  margin-bottom: 0.1rem;
+}
+
+/* Per-person "lanes": columns of each member's day. */
+.lanes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.lane__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 0.4rem;
+}
+.lane__dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  flex: none;
+}
+/* Lane entries are compact rows, not waist-high cards. The base .act stacks a
+   big icon tile over a 19px title that wraps token-by-token in a narrow column
+   ("Dîner · / Restants / pâtes / croquettes"). Here we shrink the tile, tighten
+   the padding and drop the title size so the slot · meal · who reads on one or
+   two lines — a lane of a few items scans as a short column, not a tall stack. */
+.lane .act {
+  margin-bottom: 0.4rem;
+  padding: 8px 10px;
+  gap: 9px;
+  border-radius: var(--radius-md, 12px);
+}
+.lane .act .tile {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+.lane .act__emoji {
+  font-size: 20px;
+}
+.lane .act .title {
+  font-size: 15px;
+  line-height: 1.15;
+}
+.lane .act .when,
+.lane .act .who {
+  font-size: 11.5px;
+}
+/* All lanes share padding + radius so the "mine" accent has room to breathe
+   and rounds cleanly instead of hugging the text with sharp corners. */
+.lane {
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--radius-lg);
+}
+.lane--mine {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.lane__head--shared {
+  color: var(--ink-soft);
+}
+

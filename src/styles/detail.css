@@ -3,7 +3,7 @@
    this sits after today.css so .act__checkbtn (a real <button> now) can override
    the default button chrome while the .act .check disc rules still win. */
 
-/* The peek renders inside the shared .sheet shell (sheets.css). */
+/* The peek renders inside the shared .sheet shell (sheets/capture.css). */
 .detail-sheet__body {
   display: flex;
   flex-direction: column;

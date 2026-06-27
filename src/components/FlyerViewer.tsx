@@ -73,7 +73,7 @@ const proxied = (url: string | null | undefined): string =>
 // A flyer's clippings load eagerly and all at once (not lazy) — a slower start, but
 // the page fills in completely instead of popping in as you scroll. The browser caps
 // itself at ~6 concurrent connections, so "eager" queues rather than truly flooding.
-// data-state drives a calm placeholder (sheets.css): 'loading' shows a soft shimmer so
+// data-state drives a calm placeholder (sheets/flyer.css): 'loading' shows a soft shimmer so
 // the grid never reads as broken blank boxes; the real bitmap fades in on load. On a
 // genuine failure we retry the SAME url ONCE (a remount via key, cache-friendly — no
 // cache-buster that would re-hit the upstream every time), then settle to a static

@@ -1,0 +1,383 @@
+/* While typing, the sheet's LAST fields (the souper "Ajouter un autre" input,
+   the day note) sit at the bottom of the sheet's own scroller with nothing
+   below them. The sheet itself is lifted clear of the keyboard (bottom:--kb),
+   but block:'start' (viewportVars) still can't raise those fields to a
+   comfortable reading line — they cling to the bottom edge, right on the
+   keyboard. Reserve trailing scroll slack so any focused field can scroll up.
+   Only while .kb-open, so a keyboard-less sheet keeps its tight bottom.
+   The slack is half the VISIBLE height, with a 260px floor: a small phone's
+   keyboard can shrink --vvh so far that 50% isn't enough headroom to raise a
+   near-bottom field clear of the keyboard — the floor guarantees it always can. */
+.kb-open .sheet {
+  padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px) + max(260px, var(--vvh, 100dvh) * 0.5));
+}
+.grab {
+  width: 44px;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--line-strong);
+  margin: 0 auto 14px;
+}
+/* The explicit close affordance: floated top-right and sticky so it stays put
+   while a tall sheet scrolls. Its own pill background keeps it legible over any
+   content that scrolls beneath it. */
+.sheet__close {
+  position: sticky;
+  top: 0;
+  float: right;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: -2px -8px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.sheet__close:active {
+  transform: scale(0.94);
+}
+/* The "?" contextual-help toggle, beside the sheet's ✕ (floats to its left). Armed
+   → tapping any tile explains it in place instead of running it. */
+.sheet__help {
+  /* Its OWN line, right-aligned (margin-left:auto), NOT floated: a float reserves
+     space that the .cat-grid below — a grid is its own formatting context — clears
+     by shortening its top-right, which squished the right quick-add tile in row 1.
+     Block-level flex keeps it on a dedicated line so the tile grid stays full-width
+     underneath, while still centering the "?" glyph. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  margin: -2px 0 4px auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  color: var(--ink-soft);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.sheet__help.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: none;
+}
+.sheet__help:active {
+  transform: scale(0.94);
+}
+/* Generic "?" help-mode toggle for scene/section headers (HelpToggle default class).
+   Round, quiet chrome; highlighted when armed. The ＋ sheet styles its own via
+   `.sheet__help`; everything else uses this. */
+.help-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink-soft);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.help-toggle.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+}
+.help-toggle:active {
+  transform: scale(0.94);
+}
+/* The shared "tap a button to learn what it does" hint (HelpHint). */
+.help-hint {
+  margin: 0 0 12px;
+  text-align: center;
+  color: var(--ink-soft);
+}
+/* In-place help box (HelpBubble): a calm card with a "→ Voir le guide" link out. */
+.help-bubble {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--paper-deep);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+.help-bubble__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.help-bubble__title {
+  font-family: var(--display);
+  font-size: 1.05rem;
+}
+.help-bubble__x {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  line-height: 0;
+  padding: 2px;
+}
+.help-bubble__body {
+  margin: 6px 0 10px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.help-bubble__guide {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--sky-deep, #5891ac);
+  text-decoration: none;
+}
+.help-bubble__guide:hover,
+.help-bubble__guide:focus-visible {
+  text-decoration: underline;
+}
+/* While help mode is ARMED, gently ring the controls a tap will EXPLAIN (not run),
+   so the "tap a button to learn what it does" hint is visually grounded. Targets the
+   pickable controls of each surface that adopts help mode (the ＋ sheet tiles, the
+   board view toggle, the kitchen sub-tabs). Reduced-motion → a static ring. */
+@keyframes help-armed-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+}
+.help-armed .cat-pick,
+.help-armed .boardview__opt,
+.help-armed .subtabs__opt,
+.help-armed .help-title,
+.help-armed .help-pick {
+  animation: help-armed-pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .help-armed .cat-pick,
+  .help-armed .boardview__opt,
+  .help-armed .subtabs__opt,
+  .help-armed .help-title,
+  .help-armed .help-pick {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+}
+/* A heading turned tappable in help mode (HelpTitle). Reads as the plain heading —
+   inherits its font/colour, no box — and only earns a "tap to learn" affordance
+   (dashed underline + the shared armed pulse above) while armed, since the button
+   is rendered only then. */
+.help-title {
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 2px 4px;
+  border-radius: 8px;
+  cursor: help;
+  text-decoration: underline dashed;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 4px;
+}
+/* A non-heading button opted into help mode via the `help-pick` class: no base
+   styling of its own, it just joins the armed pulse so the "tap to learn" hint is
+   grounded on it too (the flyer search, Vider les cochés, the cashier). */
+.help-pick {
+  border-radius: 10px;
+}
+/* A bare right-aligned home for a section's "?" toggle, for hub tabs whose header
+   has no control group to sit it beside (La liste). */
+.hub-helprow {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 8px;
+}
+.sheet h3 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 24px;
+  margin: 0 0 4px;
+}
+.sheet__hint {
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+.sheet__field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  padding: 13px 16px;
+  margin-bottom: 14px;
+}
+.sheet__field input {
+  border: 0;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+}
+.sheet__field input::placeholder {
+  color: var(--ink-faint);
+}
+/* Four modes in a balanced 2×2 (was 3+1, which stranded the fourth on its own
+   row) — and the wider cards are easier to tap. */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 6px 0 18px;
+}
+.cat-pick {
+  background: var(--card);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 12px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-family: var(--sans);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--dur-fast);
+}
+.cat-pick .ct {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cat-pick span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.cat-pick.sel {
+  border-color: var(--marigold);
+  background: var(--marigold-wash);
+}
+/* The kitchen's contextual chooser has three actions — one even row, so the
+   2×2 default doesn't strand the third tile alone (same trap the comment above
+   describes for the old 3+1). */
+.cat-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+/* A labelled subgroup of tiles inside the sheet (the kitchen week's actions —
+   shop the week / AI ideas / book ideas — sit apart from the add chooser). The
+   tiles reuse .cat-grid/.cat-pick; this just captions and separates them. */
+.sheet__group {
+  border-top: 1px solid var(--hairline);
+  margin-top: 4px;
+  padding-top: 12px;
+}
+.sheet__group-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  margin: 0 0 2px;
+}
+.cat-pick:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+/* Wrapper around the picked tile's form/panel. When a tile is chosen its form
+   renders below the chooser grid; the mode-change effect scrolls this into view and
+   focuses it so it's obvious (it can otherwise sit below the fold on a phone). The
+   scroll-into-view IS the cue, so the programmatic focus draws no outline; a little
+   scroll-margin leaves breathing room above so it doesn't butt against the chooser. */
+.addsheet__panel {
+  scroll-margin-top: 12px;
+  scroll-margin-bottom: 12px;
+}
+.addsheet__panel:focus,
+.addsheet__panel:focus-visible {
+  outline: none;
+}
+/* "Planifier un repas" day picker — a wrap of day chips; tapping one opens that
+   day's full Gérer sheet on the kitchen page. */
+.addsheet__days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+/* "Cuisiner" picker — a column of today's cookable meals rendered as the shared
+   Act row (board/Act): colour spine, recipe photo/slot glyph, slot · recipe sub,
+   a caret, and the next-due meal's "Prochain" badge. The list just stacks them;
+   the flex gap replaces Act's own board-context bottom margin. */
+.addsheet__cooklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.addsheet__cooklist .act {
+  margin-bottom: 0;
+}
+.addsheet__cook-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 6px;
+}
+/* "Cuisiner ensemble" picker actions — Annuler · Commencer, the start CTA leading. */
+.addsheet__cook-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.addsheet__cook-actions .btn--primary {
+  flex: 1;
+  justify-content: center;
+}
+/* The meal planner's day + slot selects, side by side above the title field. */
+.sheet__row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sheet__row .input {
+  flex: 1;
+  min-width: 0;
+}
+.sheet .btn {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.05rem;
+}
+

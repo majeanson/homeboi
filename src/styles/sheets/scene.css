@@ -1,0 +1,196 @@
+/* --- Full-screen routed scene -------------------------------------------- */
+/* A scene is a ROUTE, not an overlay: circulaires, cashier, recipe, cook. It
+   owns the whole viewport (no scrim, nothing stacked behind), so it's a plain
+   column — sticky head + one scroll body — pinned to the VISIBLE viewport so its
+   content rides above the on-screen keyboard like the sheets do. Native back /
+   the ✕ leave it; there's no swipe-to-dismiss to fake (the real back-swipe is
+   the gesture now). */
+.scene {
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* Full dynamic viewport by default — `dvh` already tracks browser chrome. We pin
+     to the VISUAL viewport (--vvt/--vvh) ONLY while the keyboard is up (`.kb-open`),
+     to keep the focused field / footer above it. Binding unconditionally let a stale
+     --vvt/--vvh — left over after the iPad "Hide Keyboard" button dismisses the
+     keyboard WITHOUT blurring (no focusout, so only the viewport `resize` recomputes,
+     and it can leave a scrolled offsetTop) — push the scene down / shrink it, blanking
+     part of the page. Mirrors the .recipe-modal fix. See src/lib/viewportVars.ts. */
+  top: 0;
+  height: 100dvh;
+  z-index: 1;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+}
+/* Keyboard up: pin to the visible band so the focused field clears it. */
+.kb-open .scene {
+  top: var(--vvt, 0px);
+  height: var(--vvh, 100dvh);
+}
+.scene__head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 22px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.scene__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 22px calc(28px + env(safe-area-inset-bottom, 0px));
+  max-width: 46rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* --- Price-match / deals scene title ------------------------------------- */
+/* The price-match proof, the list-item edit, and quick-add are now full-screen
+   .scene routes (see above) — no more bottom sheets. Only the shared scene title
+   style remains, reused by those deals scenes and DealsBrowser. */
+.pm-sheet__title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 24px;
+  margin: 2px 0 0;
+}
+/* SceneHead: the title block (left) + the action cluster (right, help "?" +
+   close ✕). min-width:0 lets a long title/subtitle ellipsize instead of shoving
+   the close button off-screen. */
+.scene__head-titles {
+  min-width: 0;
+}
+.scene__head-sub {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.scene__head-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.deal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.deal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  padding: 10px 12px;
+}
+.deal__img {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.deal__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.deal__merchant {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.deal__name {
+  font-size: 14px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.deal__dates {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.deal__price {
+  flex: 0 0 auto;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.deal__now {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--ink);
+}
+.deal__was {
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}
+.deal__unit {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sage-deep, var(--ink));
+}
+.deal__unit--none {
+  font-weight: 500;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.deal__unit--approx {
+  color: var(--ink-soft);
+}
+.deal--best {
+  box-shadow: inset 0 0 0 2px var(--marigold);
+}
+.deal__best {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--marigold);
+  color: #3a2f12;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.deal__disclaimer {
+  margin: 16px 0 0;
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.deal__flyer-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--marigold-wash);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.deal__flyer-btn:active {
+  transform: scale(0.96);
+}
+

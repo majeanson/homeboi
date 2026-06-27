@@ -1,0 +1,371 @@
+/* --- List row + price-match proof ---------------------------------------- */
+/* The list item is a flex pair: the big check-off button, plus a small proof
+   button. They sit side by side so neither nests inside the other.
+   It's also a clip window for swipe-to-delete: the card (.list-row__main) is the
+   sliding foreground and the red delete pane sits behind it, revealed as the
+   finger drags the card left (useSwipeToDelete). */
+.list-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+/* Row spacing moves from the card's own margin to the column gap, so the clip
+   window hugs the card exactly — no red strip peeking out below it at rest. */
+.list-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* A small breath between the add bar and the first list item, so the input
+     doesn't sit flush against the list. */
+  margin-top: 10px;
+}
+.list-row > .list-row__main.act {
+  margin-bottom: 0;
+}
+/* The delete pane behind the card. Inert (aria-hidden) — the swipe drives it;
+   the edit page keeps a real Delete control for non-touch.
+   Hidden (opacity:0) at rest and revealed ONLY while a swipe is armed
+   (`.list-row--swiping`, set by useSwipeToDelete when the axis locks
+   horizontal). Relying on the card's opaque background to mask it was not
+   enough: on a fast vertical scroll the compositor briefly shows the pane
+   through the (promoted) card layer, flashing every row red. With nothing
+   painted here at rest, there's no red to flash. */
+.list-row__del {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-right: 22px;
+  border-radius: var(--radius-lg);
+  background: var(--clay, #b3463a);
+  color: #fff;
+  font-weight: 700;
+  opacity: 0;
+}
+.list-row--swiping .list-row__del {
+  opacity: 1;
+}
+.list-row__del-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+/* The sliding foreground rides above the pane and follows the finger.
+   `will-change: transform` is set INLINE by useSwipeToDelete only for the
+   duration of an active swipe, never statically — permanently promoting every
+   row to its own compositor layer caused the layer-thrash that flashed the red
+   pane on fast scrolls. */
+.list-row > .list-row__main {
+  z-index: 1;
+  /* The browser owns the vertical axis: a vertical scroll is handled natively and
+     never waits on (or is misread by) the swipe handler, so it can't flash the red
+     delete pane. Only horizontal pans are delivered to useSwipeToDelete. */
+  touch-action: pan-y;
+}
+/* The row is one card holding three INDEPENDENT tap targets — picture (→ deals),
+   name (→ edit sheet), and the check (→ toggle). So the card itself is an inert
+   container; only the inner buttons take taps. */
+.list-row__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: default;
+}
+.list-row__img,
+.list-row__name,
+.list-row__toggle {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.list-row__img {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+/* The reorder grip (⠿) on each list row: a calm, comfortable tablet tap target at
+   the row's left, before the picture. .dnd-grip carries the gesture (touch-action:
+   none) + cursor; this just centres it and gives it room on a wall tablet. */
+.list-row__grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-width: 30px;
+}
+/* Drag-and-drop drop feedback. The whole-row dashed outline (shared .dnd-over) is
+   too vague here — "somewhere on this row" — so for list rows we drop it and show a
+   precise INSERTION LINE in the gap instead, plus a faint wash + slight lift on the
+   target row so the eye lands there. The line tells you exactly where it'll go. */
+.list-row.dnd-over {
+  outline: none;
+  background: transparent;
+}
+.list-row.dnd-over .list-row__main {
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.list-row__drop {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+  z-index: 3;
+  pointer-events: none;
+}
+/* A small nub at the leading edge so the line reads as an insertion caret, not a
+   border. Sits just left of the bar. */
+.list-row__drop::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+/* Centre the line in the ~10px gap between rows (margin-top: 10px). */
+.list-row__drop--top {
+  top: -6px;
+}
+.list-row__drop--bottom {
+  bottom: -6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .list-row.dnd-over .list-row__main {
+    transform: none;
+  }
+}
+
+/* The sort bar: the Mon ordre/Par allée toggle, plus (in Mon ordre) a one-tap
+   "Ranger par allée" that seeds the hand order from the aisle walk. Wraps on a
+   narrow phone so neither control squashes. */
+.list-sortbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+.list-sortbar .list-sort {
+  margin: 0;
+}
+.list-sortbar__apply {
+  flex: none;
+}
+/* List sort toggle (Mon ordre / Par allée) — a small segmented pill above the list,
+   the same idiom as the cercle/recipe view switches. Per-device, quiet. */
+.list-sort {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  margin: 6px 0 10px;
+  padding: 3px;
+  /* An opaque segmented-control track (NOT the faint --surface-2 overlay) — keep it on
+     the card colour so the inset pill reads solid. */
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+.list-sort__seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.list-sort__seg.is-on {
+  background: var(--sky-wash);
+  color: var(--sky-deep);
+}
+/* Aisle group header inside the list ("Par allée"). Calm: a small emoji + name,
+   never a count. */
+.list-aisle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 16px 0 2px;
+  padding: 0 2px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.list-aisle:first-child {
+  margin-top: 2px;
+}
+.list-aisle__emoji {
+  font-size: 1rem;
+}
+/* Réglages ▸ Magasinage — the aisle-order rows (reordered via DragPill / ⠿). */
+.aisle-order__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.aisle-order__pos {
+  min-width: 1.5rem;
+  text-align: right;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+.aisle-order__emoji {
+  font-size: 1.2rem;
+}
+.aisle-order__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.aisle-order__row--pinned {
+  opacity: 0.5;
+}
+/* A small muted aisle tag under a list row's name (shown in Mon ordre). */
+.list-row__aisle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+/* The shared aisle <select> (edit sheet, quick-add, detail peek). It's a plain
+   .input; cap its width so it doesn't stretch edge-to-edge in roomy contexts. */
+.aisle-pick {
+  max-width: 22rem;
+}
+/* Compact aisle select on a quick-add row — a secondary control beside the big add
+   button, narrow so the label keeps the room. */
+.qa__aisle {
+  flex: none;
+  width: auto;
+  max-width: 8.5rem;
+  align-self: center;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.4rem;
+}
+/* The check is now the ONLY check-off target (the rest of the row edits / opens
+   deals), so give it a comfortable tap area — a 42px circle, not the old 30px.
+   Loaded after today.css, so this ties-and-wins over `.act .check`. */
+.list-row__toggle.check {
+  width: 42px;
+  height: 42px;
+}
+.list-row__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* The item's own picture in the tile slot (emoji, not a Phosphor glyph). */
+.list-row__pic {
+  font-size: 24px;
+  line-height: 1;
+}
+/* The price-tag affordance: a quiet, self-contained button — bordered, not a
+   solid marigold block, so it reads as its own control rather than a tab clipped
+   onto the row. Fills sage only once a deal is actually picked. */
+.list-row__proof {
+  flex: 0 0 auto;
+  width: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: transparent;
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.list-row__proof:active {
+  transform: scale(0.94);
+}
+
+/* --- List item edit sheet ------------------------------------------------- */
+/* Rides on .pm-overlay/.pm-sheet (keyboard-safe). Rename, manage flyer-search
+   synonyms, unlink a deal, or delete the line. */
+.li-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.5rem;
+}
+.li-edit__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.li-edit__label {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.li-edit__hint {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+.li-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.li-term {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.3rem 0.3rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+.li-term__x {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink-faint);
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+.li-edit__row {
+  justify-content: flex-start;
+}
+.li-edit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+.li-edit__danger {
+  color: var(--clay, #b3463a);
+}
+

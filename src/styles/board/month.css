@@ -1,0 +1,458 @@
+/* ---- Month view: a calm six-week calendar of everything dated -------------
+   The fourth board take (after bento · next · lanes): zoom out from the day to
+   the whole month. Cells carry colour-coded dots (event = member/sky, meal =
+   terracotta, chore = sage, note = marigold); tapping a day opens its full list
+   below. Phone shows dots only — the words live in the detail panel; the wall
+   tablet gets roomier cells read from across the room. */
+.monthv {
+  max-width: 60rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.monthv__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.monthv__title {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  font-weight: 700;
+  color: var(--ink);
+}
+.monthv__nav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.monthv__today {
+  flex: none;
+  height: 36px;
+  padding: 0 0.9rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.monthv__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.monthv__dow {
+  text-align: center;
+  padding: 0.2rem 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.monthv__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  aspect-ratio: 1 / 1;
+  min-height: var(--touch-target);
+  padding: 0.3rem 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 12px);
+  background: var(--card);
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+.monthv__cell.is-out {
+  opacity: 0.4;
+}
+.monthv__cell.is-today {
+  border-color: var(--accent);
+}
+.monthv__cell.is-on {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.monthv__num {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.monthv__cell.is-today .monthv__num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink, var(--ink));
+}
+.monthv__dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.monthv__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+/* Shape-coded by category so each kind reads apart at a glance. Events stay the
+   plain filled circle; chore = diamond; note = ring. Meals aren't dots — they
+   render their slot ICON (.monthv__dot-icon) — so there's no --meal dot. Only
+   border-radius/transform/border differ here (never the box size), so these hold
+   across the responsive dot sizes below. */
+.monthv__dot--chore {
+  border-radius: 1px;
+  transform: rotate(45deg) scale(0.86); /* diamond, scaled so its diagonal ≈ a dot */
+}
+.monthv__dot--note {
+  /* Hollow ring drawn from `color` (inset shadow keeps the box size exact). */
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+/* A meal's slot icon sits inline with the dots, a touch larger so it reads as a
+   glyph; it carries its slot colour via the Icon's `color`. */
+.monthv__dot-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* The shape key under the grid — small + muted; neutral swatches (it explains the
+   SHAPE, colour is carried per-item in the cells). */
+.monthv__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 0.85rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+}
+.monthv__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+}
+.monthv__more {
+  font-size: 0.6rem;
+  color: var(--ink-faint);
+  line-height: 1;
+}
+.monthv__day {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+}
+.monthv__day-h {
+  font-size: 1rem;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+/* "Planifier cette journée →" — the calendar's link into the full day page. */
+.monthv__open-day {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* Day page: the weather glance strip above the meal planner (today/tomorrow only). */
+.day-plan__wx {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 4px;
+}
+.day-plan__wx .tomorrow-wx {
+  margin-bottom: 0;
+}
+/* Day page: the events/chores agenda sections below the meal planner. */
+.day-plan__sections {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.day-plan__sections .sec-label {
+  margin-top: 10px;
+}
+.day-plan__add {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* « Moments » view: the per-day action buttons (« Avant de partir » + « Ouvrir la
+   journée ») sat cramped against each other and the checklist above. Give them a
+   breath of top margin and a gap so each reads as its own tap target. */
+.moments__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.moments__actions .day-plan__add {
+  margin: 0;
+}
+.day-plan__act-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.day-plan__act-row > .act { flex: 1; min-width: 0; }
+.day-plan__act-share { flex-shrink: 0; padding: 4px 6px; }
+@media (max-width: 520px) {
+  .monthv__grid {
+    gap: 2px;
+  }
+  .monthv__cell {
+    min-height: 38px;
+    padding: 0.2rem 0.1rem;
+    border-radius: 8px;
+  }
+  .monthv__num {
+    font-size: 0.8rem;
+  }
+  .monthv__dot {
+    width: 5px;
+    height: 5px;
+  }
+}
+@media (min-width: 900px) {
+  .monthv__cell {
+    min-height: 72px;
+  }
+  .monthv__num {
+    font-size: 1.05rem;
+  }
+  .monthv__dot {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* « Prochainement » — the next still-to-come timed event today, surfaced as a calm,
+   tappable headline at the top of the Grille « Aujourd'hui » section. This is the one
+   glance the retired « Maintenant » view gave: a departure-board "what's next". Sky
+   tint (schedule/time), distinct from the marigold greeting above and the meal heroes;
+   the kicker + time sit on one line with the title as the headline beneath. */
+.board-nextup {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.7rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.85rem;
+  margin-bottom: 0.5rem;
+  border: 0;
+  border-left: 4px solid var(--sky-deep);
+  border-radius: var(--radius-md, 12px);
+  background: var(--sky-wash);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.board-nextup:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md, var(--shadow-sm));
+}
+.board-nextup:active {
+  transform: translateY(0);
+}
+.board-nextup__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sky-deep);
+}
+.board-nextup__when {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+.board-nextup__title {
+  flex: 1 1 100%;
+  font-family: var(--display);
+  font-size: 1.15rem;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+/* ── « Le fil du jour » — the day-ribbon ─────────────────────────────────────────
+   Today's timed events as a SHAPE: in time order, spaced by how far apart they are
+   (a soft time axis via an inline margin-top from lib/dayRibbon), past ones dimmed,
+   with a calm « maintenant » divider between what's behind us and what's ahead. The
+   rows are the board's own `.act` cards (reused), so this only styles the spacing,
+   the past-fade, and the now-marker. */
+.fil__list {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+}
+/* A just-passed item stays readable but recedes, so the eye lands on what's still
+   to come (calm: faded, never struck or hidden). */
+.fil__row--past {
+  opacity: 0.55;
+}
+/* The « maintenant » marker: a soft sky rule with the current time in the middle —
+   "──── Maintenant · 14:32 ────". A position cue, never an alarm. */
+.fil__now {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.7rem 0;
+}
+.fil__now::before,
+.fil__now::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--sky-deep);
+  opacity: 0.4;
+}
+.fil__now-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--sky-deep);
+}
+.fil__now-label::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--sky-deep);
+  box-shadow: 0 0 0 4px var(--sky-wash);
+}
+/* A calm « libre » divider in an open stretch — quiet, dashed, faded. Breathing room,
+   never a gap to fill (NFR-CALM). */
+.fil__free {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.7rem 0;
+}
+.fil__free-label {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 0.1rem 0.7rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-pill);
+}
+
+/* ── Wide-kiosk wall layout ───────────────────────────────────────────────────────
+   On a big wall the `columns:300px` masonry spreads thin across many columns and the
+   glance goes diffuse (AUJOURDHUI §5/§9). Cap it to ~3 columns and centre it so the
+   board stays a focused block, not a 4K-wide spread. (A true fixed "now-lane + rail"
+   via grid-template-areas was set aside: it fights the per-device card reorder. Capping
+   + centring the masonry kills the diffuse spread while keeping reorder intact.) */
+.hub[data-surface='kiosk'] .board-grid {
+  column-width: 340px;
+  columns: 340px 3;
+  max-width: 1180px;
+  margin-inline: auto;
+}
+/* Intermediate tablet width (the 520–680px transition + just above): two calm columns
+   rather than one cramped or three squeezed (AUJOURDHUI §5 P2 untested widths). */
+@media (min-width: 600px) and (max-width: 900px) {
+  .board-grid {
+    columns: 2;
+    column-gap: 0.85rem;
+  }
+}
+
+/* ── « Living canvas » — ambient board backdrop (lib/canvas + lib/season) ──────────
+   A faint, non-interactive layer behind the board that drifts with the season + weather
+   + (via :root[data-daypart]) the time of day. Sits BEHIND the content: the board's own
+   children are lifted to z-index 1 so the canvas (z 0) never covers a card or text. Low
+   opacity → never touches readability. Per-device opt-out; reduced-motion drops the snow. */
+/* Lift the board's in-flow content above the canvas (z 0). EXCLUDE the always-mounted
+   overlays the board mounts as direct children — the ProfilePicker's `.scrim` + `.sheet`
+   are `position: fixed` (pinned to the viewport, hidden off-screen until opened); forcing
+   them `relative` dropped the closed "Qui es-tu ?" sheet back into flow at the bottom of
+   the board, so it sat there permanently. They carry their own stacking (sheets/scene.css). */
+.board-wall > :not(.board-canvas):not(.scrim):not(.sheet),
+.today-kid > :not(.board-canvas):not(.scrim):not(.sheet) {
+  position: relative;
+  z-index: 1;
+}
+.today-kid { position: relative; }
+.board-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* Seasonal wash — a soft single-hue glow from the top corner, barely there. */
+.board-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 85% at 100% 0%, var(--canvas-tint, transparent), transparent 62%);
+  transition: background var(--dur-slow) var(--ease-out);
+}
+.board-canvas[data-season='winter'] { --canvas-tint: rgba(123, 176, 201, 0.16); }
+.board-canvas[data-season='spring'] { --canvas-tint: rgba(136, 163, 111, 0.16); }
+.board-canvas[data-season='summer'] { --canvas-tint: rgba(242, 160, 61, 0.14); }
+.board-canvas[data-season='autumn'] { --canvas-tint: rgba(224, 114, 78, 0.15); }
+/* Gentle snow when it's actually snowing — soft cool-white dots drifting down slowly. */
+.board-canvas__snow { position: absolute; inset: 0; }
+.board-canvas__flake {
+  position: absolute;
+  top: -2%;
+  border-radius: 50%;
+  background: rgba(228, 240, 248, 0.85);
+  box-shadow: 0 0 3px rgba(120, 150, 170, 0.45);
+  animation-name: board-flake;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes board-flake {
+  0%   { transform: translateY(-2vh) translateX(0); opacity: 0; }
+  12%  { opacity: 0.85; }
+  88%  { opacity: 0.85; }
+  100% { transform: translateY(100vh) translateX(2.5vw); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .board-canvas__snow { display: none; }
+}

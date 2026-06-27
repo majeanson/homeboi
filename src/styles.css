@@ -24,11 +24,28 @@
 @import './styles/today.css';
 @import './styles/hub.css';
 @import './styles/kid.css';
-@import './styles/sheets.css';
+/* `sheets.css` (CSS-3, same as pages.css) split into contiguous per-topic slices —
+   concatenation is byte-identical to the old file, so order reproduces the exact
+   cascade. Never reorder; append a new sheets slice only at the end of this block. */
+@import './styles/sheets/capture.css';
+@import './styles/sheets/help.css';
+@import './styles/sheets/list.css';
+@import './styles/sheets/scene.css';
+@import './styles/sheets/flyer.css';
+@import './styles/sheets/list-actions.css';
+@import './styles/sheets/cashier.css';
 @import './styles/ghost.css';
 @import './styles/photos.css';
-@import './styles/board.css';
-/* Ambient screensaver — after board.css/photos.css so `.ambient .photo-frame` wins. */
+/* `board.css` split into contiguous per-topic slices (byte-identical concatenation,
+   so order = cascade). Stays after photos.css (ambient relies on that). Never
+   reorder; append a new board slice only at the end of this block. */
+@import './styles/board/grid.css';
+@import './styles/board/views.css';
+@import './styles/board/notes.css';
+@import './styles/board/drawpad.css';
+@import './styles/board/gallery.css';
+@import './styles/board/month.css';
+/* Ambient screensaver — after the board/* slices + photos.css so `.ambient .photo-frame` wins. */
 @import './styles/ambient.css';
 @import './styles/profile.css';
 @import './styles/misc.css';

@@ -1,0 +1,474 @@
+/* ========================================================================== */
+/* Pip Add bottom-sheet — the capture spine (＋ FAB → slide-up sheet).          */
+/* ========================================================================== */
+.add-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 24;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--marigold);
+  color: var(--on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast);
+}
+.add-fab:active {
+  transform: translate(1px, 1px) scale(0.96);
+  box-shadow: var(--shadow-press);
+}
+/* While a voice memo is recording (MemoControls sets body.is-recording), hide the
+   ＋ FAB: it floats bottom-right OVER the Stop / Draw / Photo controls, and quick-add
+   is meaningless mid-record. Same intent as `.kb-open` dropping it while typing. */
+body.is-recording .add-fab {
+  display: none;
+}
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(44, 39, 34, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-base);
+}
+.scrim.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Undo toast: a calm pill above the FAB. Tap Undo to cancel a deferred write (or
+   reverse a just-applied one); it auto-commits and disappears after a few seconds.
+   When more than one action is undoable, a "Récents (N)" toggle expands the pill
+   into a small vertical stack — each row independently undoable. Bounded + on-device
+   (lib/undoStack): a glanceable history, never an audit log. */
+.undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 12px 10px 18px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-lg);
+}
+/* On a phone the hub has a fixed bottom tab bar (z-index 30, ~74px); the toast
+   (z-index 40) would otherwise sit ON it and swallow taps meant for the centre
+   tabs. Lift it clear of the bar — same trick as the ＋ FAB. (Kiosk keeps the low
+   default: its nav is a left column, nothing below.) */
+.undo-toast[data-surface='mobile'] {
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+}
+/* No write pending — the toast lingers ONLY as a quiet opener for the session
+   "Récents" log, so the history stays reachable from here (not just Réglages).
+   Smaller + dimmer than a live toast so it never pulls the eye (calm by design);
+   brightens on hover/focus. */
+.undo-toast--log {
+  padding: 4px 8px;
+  opacity: 0.6;
+}
+.undo-toast--log:hover,
+.undo-toast--log:focus-within {
+  opacity: 1;
+}
+/* Expanded: a rounded card holding the stack of rows + a collapse control. */
+.undo-toast--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 8px;
+  border-radius: 18px;
+}
+.undo-toast__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 50vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.undo-toast__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 12px;
+}
+.undo-toast__row + .undo-toast__row {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.undo-toast__msg {
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.undo-toast__row .undo-toast__msg {
+  flex: 1 1 auto;
+}
+/* Relative time in the expanded session log (#38) — a quiet muted stamp, never
+   competing with the message or the Undo button. */
+.undo-toast__ago {
+  flex: 0 0 auto;
+  font-size: 0.74rem;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+.undo-toast__btn {
+  flex: 0 0 auto;
+  border: none;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--paper);
+  font: inherit;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.undo-toast__btn:active {
+  transform: scale(0.96);
+}
+/* "Récents (N)" / "Masquer" toggle — quieter than the Undo button. Generous tap
+   target so it works on a wall tablet and in Toddler mode. */
+.undo-toast__more {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--paper);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.84rem;
+  opacity: 0.82;
+  padding: 6px 8px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.undo-toast--stack .undo-toast__more {
+  align-self: center;
+}
+.undo-toast__more:active {
+  transform: scale(0.96);
+}
+/* Expanded-log footer: Masquer on the left, "Tout effacer" on the right. */
+.undo-toast__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.undo-toast__clear {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--paper);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.84rem;
+  opacity: 0.7;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.undo-toast__clear:active {
+  transform: scale(0.96);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .undo-toast {
+    animation: undo-rise 0.22s var(--ease-out) both;
+  }
+  @keyframes undo-rise {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 12px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+}
+
+/* The calm "Récents" review panel (#38, components/RecentsPanel) — a plain list
+   inside the shared Modal: what happened, when, and a late "Annuler" for anything
+   still in its hold window. On-paper styling (not the dark toast), no counts/ranks
+   — just a quiet record. */
+.recents__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recents__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px;
+  min-height: var(--touch-target);
+}
+.recents__row + .recents__row {
+  border-top: 1px solid var(--line);
+}
+.recents__msg {
+  flex: 1 1 auto;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.recents__ago {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.recents__undo {
+  flex: 0 0 auto;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.82rem;
+  min-height: 36px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.recents__undo:active {
+  transform: scale(0.97);
+}
+.recents__note {
+  margin: 14px 2px 0;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+/* AI-failure notice (lib/aiErrorToast). Unlike the undo pill this does NOT
+   auto-dismiss — it waits for an explicit "Accepter", which logs the error to the
+   journal (Réglages). A card, not a pill, because it carries a real message; sits
+   a little higher than the undo toast so the two never sit on top of each other.
+   Calm even here: muted warm-red, no siren colours, nothing blinking. */
+.ai-error-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 42;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: calc(100vw - 32px);
+  max-width: 30rem;
+  padding: 12px 14px 12px 16px;
+  background: var(--ink);
+  color: var(--paper);
+  border-left: 4px solid #d9776b;
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+}
+.ai-error-toast__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ai-error-toast__title {
+  font-size: 0.95rem;
+  color: #f0b8b0;
+}
+.ai-error-toast__feature {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+.ai-error-toast__msg {
+  font-size: 0.88rem;
+  /* Let a long model message wrap to a couple of lines, then clamp. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ai-error-toast__more {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+.ai-error-toast__btn {
+  flex: 0 0 auto;
+  align-self: stretch;
+  border: none;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--paper);
+  font: inherit;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ai-error-toast__btn:active {
+  transform: scale(0.96);
+}
+.ai-error-toast__btn:disabled {
+  opacity: 0.6;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ai-error-toast {
+    animation: undo-rise 0.22s var(--ease-out) both;
+  }
+}
+
+/* The acknowledged-error journal in Réglages (operator/aiErrors). A plain stack
+   of rows — feature + when on top, the raw message below — readable, not pretty. */
+.ai-log {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ai-log__row {
+  padding: 10px 12px;
+  background: var(--paper-2, rgba(0, 0, 0, 0.03));
+  border-left: 3px solid #d9776b;
+  border-radius: 8px;
+}
+.ai-log__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+.ai-log__when {
+  flex: 0 0 auto;
+}
+.ai-log__msg {
+  margin-top: 4px;
+  font-size: 0.88rem;
+  word-break: break-word;
+}
+
+/* Live AI self-test results (operator). One row per model, green/red rail by
+   verdict — reads like the error log it sits above, but positive when it works. */
+.ai-test {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ai-test__row {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--paper-2, rgba(0, 0, 0, 0.03));
+  border-left: 3px solid var(--line, #ccc);
+  border-radius: 0 8px 8px 0;
+}
+.ai-test__row.is-ok {
+  border-left-color: #6b8a52;
+}
+.ai-test__row.is-fail {
+  border-left-color: #d9776b;
+}
+.ai-test__icon {
+  flex: none;
+  margin-top: 2px;
+}
+.ai-test__row.is-ok .ai-test__icon {
+  color: #6b8a52;
+}
+.ai-test__row.is-fail .ai-test__icon {
+  color: #d9776b;
+}
+.ai-test__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ai-test__label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-weight: 600;
+}
+.ai-test__verdict {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.ai-test__detail {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  word-break: break-word;
+}
+.ai-test__model {
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* Lifted above the on-screen keyboard (--kb from viewportVars.ts) so the
+     sheet's inputs and buttons never sink behind it; 0 when no keyboard. */
+  bottom: var(--kb, 0px);
+  z-index: 31;
+  max-width: 40rem;
+  margin: 0 auto;
+  max-height: 88vh;
+  max-height: calc(var(--vvh, 100dvh) - 24px);
+  overflow-y: auto;
+  /* A bottom sheet is a VERTICAL surface — never let it pan sideways. Without an
+     explicit value the cross axis computes to `auto` (CSS: `visible` beside a
+     non-visible axis becomes `auto`), so any child that's a hair too wide — a
+     chore form's chip/rotation row at an awkward width — turns the whole sheet
+     into a left-right scroller. Clip it; the inner rows all wrap. */
+  overflow-x: hidden;
+  /* Keep a scroll-to-the-end flick inside the sheet — don't chain it to the
+     page behind (no background drift, no iOS rubber-band peek). */
+  overscroll-behavior: contain;
+  background: var(--paper);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-lg);
+  padding: 14px 22px calc(30px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(110%);
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.sheet.show {
+  transform: translateY(0);
+}

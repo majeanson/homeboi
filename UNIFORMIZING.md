@@ -152,8 +152,13 @@ Same class defined twice (cascade-order-dependent, fragile):
   to the old file (verified by md5: reassembly === original), and Vite inlines `@import` in place, so the produced
   bundle is the same bytes in the same order. Each cut sits between rules (preceding line is `}` or blank → every
   slice parses standalone). Verified: md5-identical reassembly, `npm run build` green, representative screenshots
-  (board/kitchen/settings @wall + a toddler frame) unchanged. `sheets.css` (2.4k) / `board.css` (1.9k) are still
-  single files — same method applies if/when they're split; not done here.
+  (board/kitchen/settings @wall + a toddler frame) unchanged.
+- [x] ✅ **`sheets.css` + `board.css` split too (2026-06-26), same byte-identical method.** `sheets.css` (2385 lines)
+  → `src/styles/sheets/{capture,help,list,scene,flyer,list-actions,cashier}.css`; `board.css` (1933 lines) →
+  `src/styles/board/{grid,views,notes,drawpad,gallery,month}.css`. Both reassemble md5-identical to the originals;
+  `npm run build` green; `board.css` stays imported after `photos.css` (ambient relies on it). Navigation comments
+  that named the old files (`kitchen/ghost/detail/ambient/month.css`, `FlyerViewer.tsx`, COMPONENTS/AUJOURDHUI) were
+  repointed to the owning slice. The three big CSS kitchen sinks are now all split.
 
 ### CSS-4 🟡 Ad-hoc button-like elements bypassing the `.btn` family
 - [~] **SKIP 2026-06-26 — premise reviewed and rejected (don't fold onto `.btn`).** Read all five sites; the
@@ -182,7 +187,7 @@ Same class defined twice (cascade-order-dependent, fragile):
   on a dark night card. **Defined both as theme-aware tokens** in core.css (`color-mix(in srgb, var(--ink) 5%/8%,
   transparent)`): day ≈ the prior black-alpha, night now a correct subtle light lift. Made the token authoritative at
   every site (dropped the redundant fallbacks across photos/detail/carnets/intake/sheets) and fixed the **one semantic
-  outlier** — `sheets.css` `.list-sort__seg`-track wanted an *opaque* panel, so it's pinned to `var(--card)` directly,
+  outlier** — `sheets/list.css` `.list-sort__seg`-track wanted an *opaque* panel, so it's pinned to `var(--card)` directly,
   not the overlay token. typecheck + build green; night-tint shift gated by the e2e screenshot suite.
   - [~] **`var(--accent, #…)` "wrong fallback" — premise moot, no action.** `--accent` IS always defined
     (core.css:54 + per-theme), so every `var(--accent, #2a8f85)` fallback is **dead text** that never renders — not a
