@@ -635,9 +635,15 @@ tours (`guideWhat`), `SectionIntro`, and `FeatureMap` all reuse. Two real gaps r
 ### P2-10 🟢 Add-system: capture spine is well-generalized; two small folds
 The ＋ capture spine (`SECTION_MODES`/`NAV_TARGET`/`MODE_DRESS`/`FORM_ROUTES`, one `<AddSheet>` mounted in
 `HubLayout`, `/share` + `QuickAddPage` as companions on the same endpoints) is a **model generalization**. Minor:
-- [ ] Fold the bespoke **kitchen-week actions** (currently injected via `kitchenActions` context + a hard-coded
-  second grid in AddSheet) into a declarative `SECTION_ACTIONS` registry sibling to `SECTION_MODES` (keep the
-  state-dependent flags). Low.
+- [x] ✅ **DONE 2026-06-26.** Folded the hard-coded 5-tile kitchen-week grid in AddSheet into a declarative
+  `KITCHEN_ACTIONS` catalog (module-level, sibling to the existing `MODE_DRESS`/`CHORE_KINDS` dress catalogs): each
+  entry is `{ key, icon, iconColour, wash, label(t), show(flags,help,ai), disabled?, title? }` and the render is a
+  `.filter(show).map(...)`. ~75 lines of repetitive JSX → ~16. The AI tile's special-casing (gated on `aiEnabled`, +
+  `disabled`/`title`) encodes as the optional `disabled`/`title` fns — behaviour byte-identical. **Bonus:** the
+  duplicate `actionLabel` help-title map is now *derived* from the catalog, which also **fixes a latent orphan** —
+  `emptyFridge` was missing from `actionLabel`, so its help bubble fell through to `modeLabel`; it now gets its real
+  title. typecheck + e2e (shop-the-week) + build green. (Left in AddSheet rather than `lib/addSheet`: the catalog
+  carries view deps — `IconName`, colours, `t`-labels — that belong with the render, beside the other dress catalogs.)
 - [ ] (Optional, low priority) Share the inline-add submit handlers (`submitList`/`submitPantry`/`submitReserve`/…)
   via an `ADD_HANDLERS[mode] = {endpoint, formatBody, affectedKeys}` map — also de-forks ReserveSection's inline
   add. Medium risk (form variations), defer unless touching that code.

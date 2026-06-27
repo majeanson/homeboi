@@ -18,7 +18,7 @@ import { useCookableMeals } from '../lib/nextMeal'
 import { recipeImg } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
-import { useKitchenActions, noKitchenActions } from '../lib/kitchenActions'
+import { useKitchenActions, noKitchenActions, type KitchenAction, type KitchenActionFlags } from '../lib/kitchenActions'
 import { BOARD_KEY, MEMBERS_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { type TodoTemplate, type TemplatesData } from '../lib/todos'
 import { imgUrl } from '../lib/image'
@@ -143,6 +143,33 @@ const CHORE_KINDS: { key: 'chore' | 'upkeep' | 'plan'; icon: IconName; to: strin
   { key: 'chore', icon: 'hand-heart-bold', to: '/chore/new' },
   { key: 'upkeep', icon: 'gear-six-bold', to: '/home-project/new?kind=upkeep' },
   { key: 'plan', icon: 'paint-brush-bold', to: '/home-project/new?kind=plan' },
+]
+
+// The kitchen-week action tiles (P2-10) — a declarative catalog sibling to
+// MODE_DRESS/CHORE_KINDS so adding an action is one entry, not another hand-rolled
+// tile in the sheet render. `show`/`disabled`/`title` are pure functions of the live
+// flags (+ help mode + AI-enabled); the render loop wires run/help/close. The key
+// doubles as the run key AND the ADD_HELP help key (both already true inline).
+type KitchenActionTile = {
+  key: KitchenAction
+  icon: IconName
+  iconColour: string
+  wash: string
+  label: (t: ReturnType<typeof useT>) => string
+  show: (f: KitchenActionFlags, helpActive: boolean, aiEnabled: boolean) => boolean
+  disabled?: (f: KitchenActionFlags, helpActive: boolean) => boolean
+  title?: (f: KitchenActionFlags, t: ReturnType<typeof useT>) => string | undefined
+}
+const KITCHEN_ACTIONS: KitchenActionTile[] = [
+  { key: 'shop', icon: 'shopping-bag-bold', iconColour: '#6B8A52', wash: 'var(--sage-wash)', label: (t) => t.kitchen.shopWeek, show: (f) => f.canShop },
+  // AI ideas — shown when AI is on (or in help mode so it can be explained); a runtime
+  // 503 / busy keeps it disabled with the "AI off" hint.
+  { key: 'ai', icon: 'sparkle-bold', iconColour: '#D9842A', wash: 'var(--marigold-wash)', label: (t) => t.kitchen.aiIdeas, show: (_f, help, ai) => ai || help, disabled: (f, help) => !help && (!f.canAiSuggest || f.aiBusy), title: (f, t) => (f.canAiSuggest ? undefined : t.kitchen.suggestAiOff) },
+  { key: 'book', icon: 'book-open-bold', iconColour: '#C2563A', wash: 'var(--terracotta-wash)', label: (t) => t.kitchen.bookIdeas, show: (f) => f.hasRecipes },
+  { key: 'useup', icon: 'carrot-bold', iconColour: '#6B8A52', wash: 'var(--sage-wash)', label: (t) => t.kitchen.useUpIdeas, show: (f) => f.canUseUp },
+  // « Vide-frigo » (#5) — invent a recipe from what's about to spoil; shown when AI can
+  // reach something to use up (or in help mode so it can be explained).
+  { key: 'emptyFridge', icon: 'cooking-pot-bold', iconColour: '#6B8A52', wash: 'var(--sage-wash)', label: (t) => t.kitchen.fridge.tile, show: (f, help) => f.canEmptyFridge || help },
 ]
 
 export function AddSheet({
@@ -592,12 +619,9 @@ export function AddSheet({
   }
 
   // The HelpBubble title for a help key — a mode label, or a kitchen-action label.
-  const actionLabel: Record<string, string> = {
-    shop: t.kitchen.shopWeek,
-    ai: t.kitchen.aiIdeas,
-    book: t.kitchen.bookIdeas,
-    useup: t.kitchen.useUpIdeas,
-  }
+  // Derived from the one KITCHEN_ACTIONS catalog so labels can't drift (and so
+  // emptyFridge, previously omitted here, now gets its title instead of falling through).
+  const actionLabel: Record<string, string> = Object.fromEntries(KITCHEN_ACTIONS.map((a) => [a.key, a.label(t)]))
   const helpTitle = (key: string) => actionLabel[key] ?? modeLabel(key as AddSheetMode)
   // Contextual "?" help mode (shared hook): arm it, then tapping any tile explains
   // it in place instead of running it. Resets each time the sheet (re)opens.
@@ -689,75 +713,21 @@ export function AddSheet({
           <div className="sheet__group">
             <p className="sheet__group-label mono">{t.kitchen.week}</p>
             <div className="cat-grid">
-              {kitchenActions.flags.canShop && (
+              {KITCHEN_ACTIONS.filter((a) => a.show(kitchenActions.flags, help.active, aiEnabled)).map((a) => (
                 <button
+                  key={a.key}
                   type="button"
                   className="cat-pick"
-                  onClick={help.pick('shop', () => { kitchenActions.run('shop'); close() })}
+                  disabled={a.disabled ? a.disabled(kitchenActions.flags, help.active) : undefined}
+                  title={a.title ? a.title(kitchenActions.flags, t) : undefined}
+                  onClick={help.pick(a.key, () => { kitchenActions.run(a.key); close() })}
                 >
-                  <span className="ct" style={{ background: 'var(--sage-wash)' }}>
-                    <Icon name="shopping-bag-bold" size={22} color="#6B8A52" />
+                  <span className="ct" style={{ background: a.wash }}>
+                    <Icon name={a.icon} size={22} color={a.iconColour} />
                   </span>
-                  <span>{t.kitchen.shopWeek}</span>
+                  <span>{a.label(t)}</span>
                 </button>
-              )}
-              {/* AI ideas — hidden entirely when AI is off (help mode still shows it
-                  so the tile can be explained). Runtime 503 keeps the disabled state. */}
-              {(aiEnabled || help.active) && (
-                <button
-                  type="button"
-                  className="cat-pick"
-                  disabled={!help.active && (!kitchenActions.flags.canAiSuggest || kitchenActions.flags.aiBusy)}
-                  title={kitchenActions.flags.canAiSuggest ? undefined : t.kitchen.suggestAiOff}
-                  onClick={help.pick('ai', () => { kitchenActions.run('ai'); close() })}
-                >
-                  <span className="ct" style={{ background: 'var(--marigold-wash)' }}>
-                    <Icon name="sparkle-bold" size={22} color="#D9842A" />
-                  </span>
-                  <span>{t.kitchen.aiIdeas}</span>
-                </button>
-              )}
-              {kitchenActions.flags.hasRecipes && (
-                <button
-                  type="button"
-                  className="cat-pick"
-                  onClick={help.pick('book', () => { kitchenActions.run('book'); close() })}
-                >
-                  <span className="ct" style={{ background: 'var(--terracotta-wash)' }}>
-                    <Icon name="book-open-bold" size={22} color="#C2563A" />
-                  </span>
-                  <span>{t.kitchen.bookIdeas}</span>
-                </button>
-              )}
-              {/* "Use it up" — a recipe that finishes what you flagged à utiliser
-                  bientôt. Only earns a tile when ≥1 recipe actually uses a soon item. */}
-              {kitchenActions.flags.canUseUp && (
-                <button
-                  type="button"
-                  className="cat-pick"
-                  onClick={help.pick('useup', () => { kitchenActions.run('useup'); close() })}
-                >
-                  <span className="ct" style={{ background: 'var(--sage-wash)' }}>
-                    <Icon name="carrot-bold" size={22} color="#6B8A52" />
-                  </span>
-                  <span>{t.kitchen.useUpIdeas}</span>
-                </button>
-              )}
-              {/* « Vide-frigo » (#5) — invent a recipe from what's about to spoil (the
-                  use-soon + réserve items). Hidden when AI is off OR nothing's about to
-                  spoil; help mode still shows it so the tile can be explained. */}
-              {(kitchenActions.flags.canEmptyFridge || help.active) && (
-                <button
-                  type="button"
-                  className="cat-pick"
-                  onClick={help.pick('emptyFridge', () => { kitchenActions.run('emptyFridge'); close() })}
-                >
-                  <span className="ct" style={{ background: 'var(--sage-wash)' }}>
-                    <Icon name="cooking-pot-bold" size={22} color="#6B8A52" />
-                  </span>
-                  <span>{t.kitchen.fridge.tile}</span>
-                </button>
-              )}
+              ))}
             </div>
           </div>
         )}
