@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
 import { useSurface, type Surface } from '../lib/surface'
@@ -1722,15 +1722,17 @@ export function DevKit() {
     },
   ]
 
+  // Filter inline, NOT via useMemo. `entries` is rebuilt every render and each
+  // entry's `render` closure captures the current interactive-specimen state
+  // (readReviewOpen, sheetOpen, the detail-sheet open flag, …). Memoizing `shown`
+  // on a hand-kept dep list silently froze those closures whenever the dep list
+  // missed a flag — clicking "open" on such a specimen did nothing. Filtering ≤~60
+  // entries by substring is microseconds, so just recompute every render and the
+  // closures always reflect live state.
   const q = query.trim().toLowerCase()
-  const shown = useMemo(
-    () =>
-      !q
-        ? entries
-        : entries.filter((e) => (e.name + ' ' + e.file + ' ' + e.cat + ' ' + (e.kw ?? '')).toLowerCase().includes(q)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [q, text1, text2, text3, color, cards, recur, chipOn, tags, modalOpen, lang, audience, surface, theme],
-  )
+  const shown = !q
+    ? entries
+    : entries.filter((e) => (e.name + ' ' + e.file + ' ' + e.cat + ' ' + (e.kw ?? '')).toLowerCase().includes(q))
 
   // Group the (filtered) entries by category, preserving first-seen order.
   const cats: string[] = []
