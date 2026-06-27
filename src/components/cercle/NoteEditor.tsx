@@ -66,6 +66,10 @@ export function NoteEditor({
   const rootRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<HTMLDivElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
+  // The last caret/selection that lived INSIDE the body. A toolbar button must not steal
+  // or reset the caret, but if focus drifted (the title input, or a never-touched new
+  // note) we restore from here so every button "just works". See ensureSelection().
+  const lastRangeRef = useRef<Range | null>(null)
 
   const [title, setTitle] = useState('')
   const [mediaKind, setMediaKind] = useState<AttachKind | null>(null)
@@ -131,10 +135,14 @@ export function NoteEditor({
 
   useModal(rootRef, handleClose, { open })
 
-  // Keep toolbar active-state in sync as the caret moves.
+  // Keep toolbar active-state in sync as the caret moves, and remember the latest caret
+  // that was inside the body so a toolbar press can restore it if focus drifted.
   useEffect(() => {
     if (!open) return
-    const h = () => updateActive()
+    const h = () => {
+      saveSelection()
+      updateActive()
+    }
     document.addEventListener('selectionchange', h)
     return () => document.removeEventListener('selectionchange', h)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,6 +182,43 @@ export function NoteEditor({
     sel.removeAllRanges()
     sel.addRange(r)
   }
+  // Is the live selection anchored inside the body? (vs. the title input / nowhere.)
+  function selectionInEditor(): boolean {
+    const sel = window.getSelection()
+    const root = editorRef.current
+    if (!sel || sel.rangeCount === 0 || !root) return false
+    return !!sel.anchorNode && root.contains(sel.anchorNode)
+  }
+  // Snapshot the caret whenever it's inside the body, so a toolbar press can put it back.
+  function saveSelection() {
+    const sel = window.getSelection()
+    if (sel && sel.rangeCount && selectionInEditor()) lastRangeRef.current = sel.getRangeAt(0).cloneRange()
+  }
+  // Guarantee a caret lives inside the body before running any command — the heart of
+  // both fixes. If the selection is already in the body we leave it EXACTLY where it is
+  // (so a mid-sentence bold/italic toggle keeps its collapsed caret instead of jumping to
+  // the start on a re-focus). Otherwise we restore the last in-body caret, or drop one at
+  // the end of the last line — so clicking any button from a fresh/empty note just works.
+  function ensureSelection(): boolean {
+    const root = editorRef.current
+    if (!root) return false
+    if (selectionInEditor()) return true
+    const sel = window.getSelection()
+    if (!sel) return false
+    const last = lastRangeRef.current
+    if (last && root.contains(last.startContainer)) {
+      root.focus()
+      sel.removeAllRanges()
+      sel.addRange(last)
+      return true
+    }
+    root.focus()
+    const blocks = Array.from(root.children) as HTMLElement[]
+    const target = blocks[blocks.length - 1]
+    if (!target) return false
+    caretToEnd(target)
+    return true
+  }
   function updateActive() {
     const a: Record<string, boolean> = {}
     try {
@@ -199,8 +244,11 @@ export function NoteEditor({
     updateActive()
   }
   function inlineCmd(cmd: string) {
-    editorRef.current?.focus()
+    if (!ensureSelection()) return
     try {
+      // Force tag-based output (<b>/<i>/<s>) not inline styles, so strike/bold always
+      // round-trip through htmlToMd — a styled <span> would serialize to nothing.
+      document.execCommand('styleWithCSS', false, 'false')
       document.execCommand(cmd, false)
     } catch {
       /* execCommand unsupported — inline formatting unavailable, the rest still works */
@@ -210,7 +258,7 @@ export function NoteEditor({
   function blockCmd(kind: LineKind) {
     const root = editorRef.current
     if (!root) return
-    root.focus()
+    if (!ensureSelection()) return
     const blocks = selectedBlocks()
     if (!blocks.length) return
     // Toggle: if every selected line already IS this kind, turn them back to plain.

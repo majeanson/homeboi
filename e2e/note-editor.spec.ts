@@ -102,6 +102,29 @@ test('Enter continues a list and an empty item ends it', async ({ page }) => {
   await expect(body.locator('.ne-bullet')).toHaveCount(2)
 })
 
+test('a button works on a fresh note without first tapping the body', async ({ page }) => {
+  // Bug: on a new note the title input is auto-focused, so the body has no caret. A
+  // toolbar press must still land — it drops a caret on the empty line.
+  const body = await openEditor(page)
+  await page.getByRole('button', { name: 'Liste à puces' }).click()
+  await expect(body.locator('.ne-bullet')).toHaveCount(1)
+  await page.keyboard.type('milk')
+  await expect(body.locator('.ne-bullet')).toHaveText('milk')
+})
+
+test('inline format toggles off mid-sentence (start/stop bold while typing)', async ({ page }) => {
+  const body = await openEditor(page)
+  await body.click()
+  await page.keyboard.type('ab')
+  await page.getByRole('button', { name: 'Gras' }).click() // start bold (collapsed caret)
+  await page.keyboard.type('cd')
+  await page.getByRole('button', { name: 'Gras' }).click() // stop bold
+  await page.keyboard.type('ef')
+  // Only the middle run is bold; the caret never jumped to the start on re-focus.
+  await expect(body.locator('b, strong')).toHaveText('cd')
+  await expect(body).toHaveText('abcdef')
+})
+
 test('the body never shows raw Markdown characters', async ({ page }) => {
   const body = await openEditor(page)
   await body.click()
