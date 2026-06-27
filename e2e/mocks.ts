@@ -531,7 +531,24 @@ const IMG_SVG =
 // `fresh: true` empties members + board — the just-signed-up household.
 // `longText: true` stuffs every text-ish field with a long phrase + an unbreakable
 // long word — a layout stress test for truncation / overflow / word-break.
-export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthorized?: boolean; fresh?: boolean; longText?: boolean } = {}) {
+export async function mockApi(
+  page: Page,
+  opts: {
+    signedIn?: boolean
+    unauthorized?: boolean
+    fresh?: boolean
+    longText?: boolean
+    // Hold every data response this many ms so a page's <Loading/> frame is
+    // capturable before data lands (auth/me + health stay instant so the shell
+    // still boots signed-in).
+    delay?: number
+    // Fail every data GET (beyond the 401 `unauthorized` case): '500' returns a
+    // server error, 'network' aborts the request (a dropped connection). auth/me +
+    // health stay healthy so we land on the signed-in surface and see ITS degraded
+    // state, not the recovery/login flow.
+    error?: '500' | 'network'
+  } = {},
+) {
   const signedIn = opts.signedIn ?? true
   // Deep-replace user-content strings with a worst-case value: a real long phrase
   // (wrap stress) plus an unbreakable word (word-break / overflow stress).
@@ -577,6 +594,22 @@ export async function mockApi(page: Page, opts: { signedIn?: boolean; unauthoriz
     const url = new URL(route.request().url())
     const path = url.pathname.replace(/^\/api\//, '')
     const method = route.request().method()
+
+    // Loading lever: hold data responses so the <Loading/> frame is capturable.
+    if (opts.delay && path !== 'auth/me' && path !== 'health') {
+      await new Promise((r) => setTimeout(r, opts.delay))
+    }
+
+    // Error lever (beyond 401): fail every data GET. auth/me + health stay healthy so
+    // the signed-in shell still boots and we capture ITS degraded state, not login.
+    if (opts.error && method === 'GET' && path !== 'auth/me' && path !== 'health') {
+      if (opts.error === 'network') {
+        await route.abort('failed')
+        return
+      }
+      await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Erreur serveur' }) })
+      return
+    }
 
     if (opts.unauthorized && path !== 'auth/me' && path !== 'health') {
       await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Non autorisé' }) })
