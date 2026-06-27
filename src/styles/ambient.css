@@ -67,6 +67,19 @@
   inset: 0;
   background: radial-gradient(120% 120% at 50% 45%, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.62));
 }
+/* Calm-at-night: a screensaver is the kiosk's at-rest face, and at night it lights
+   a dark room. So when it's actually night — by the household's night THEME, or by
+   the day-part drift (dusk→night) even on the day palette — deepen the veil so bright
+   family photos/drawings recede to a soft, dim backdrop instead of a glaring wall.
+   With nothing to show the surface is already near-black (#0d0e12); this only bites
+   when a photo/drawing mosaic is up. Text gets MORE legible, not less. */
+:root[data-theme='night'] .ambient__veil,
+:root[data-daypart='dusk'] .ambient__veil,
+:root[data-daypart='twilight'] .ambient__veil,
+:root[data-daypart='deep-twilight'] .ambient__veil,
+:root[data-daypart='night'] .ambient__veil {
+  background: radial-gradient(120% 120% at 50% 45%, rgba(0, 0, 0, 0.46), rgba(0, 0, 0, 0.84));
+}
 
 .ambient__center {
   position: relative;
