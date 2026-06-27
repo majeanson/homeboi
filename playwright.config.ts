@@ -15,8 +15,10 @@ export default defineConfig({
   // (a genuine failure fails both attempts).
   retries: process.env.CI ? 0 : 1,
   // Cap workers: the first hit on each lazy route triggers a Vite transform, and
-  // too much parallel cold-compile starves navigations. 4 is a good balance.
-  workers: process.env.CI ? 1 : 4,
+  // too much parallel cold-compile starves navigations (mitigated by vite.config
+  // `server.warmup`, which pre-transforms the routes at boot). 4 is a good balance;
+  // override with PW_WORKERS=2 for a flaky full-suite run on a constrained box.
+  workers: process.env.CI ? 1 : Number(process.env.PW_WORKERS) || 4,
   timeout: 45_000,
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'e2e/report' }]],
   outputDir: 'e2e/test-results',

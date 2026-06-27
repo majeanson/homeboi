@@ -168,6 +168,17 @@ export default defineConfig({
   },
   plugins: [react(), serviceWorker()],
   server: {
+    // Pre-transform the lazy route modules at dev-server start. The app code-splits
+    // ~40 pages via React.lazy; the FIRST hit on each cold-compiles in Vite, and
+    // under the e2e suite's parallel workers that cold-compile can stall a
+    // concurrent navigation → "failed to fetch dynamically imported module" /
+    // ERR_CONNECTION_REFUSED flakes mid-run. Warming the page modules at boot races
+    // them transformed before the tests hit them (non-blocking for server-ready;
+    // also makes interactive first-navigation snappier). Pages pull their own
+    // imports, so listing the route entries covers the split boundaries.
+    warmup: {
+      clientFiles: ['./src/main.tsx', './src/pages/**/*.tsx'],
+    },
     proxy: {
       // Defaults to the local wrangler instance. Override with BABILLARD_API_PROXY
       // to point the frontend dev loop at a deployed Worker (e.g. real-data e2e
