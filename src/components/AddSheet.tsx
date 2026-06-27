@@ -433,9 +433,10 @@ export function AddSheet({
     if (!value || busy) return
     setBusy(true)
     try {
-      await api('list', { method: 'POST', body: { text: value } })
+      // Offline-aware (like the todo/reserve adds below): queues + replays offline,
+      // then affectedKeys reconcile the board + the quick-add ghosts/history panel.
+      await write('list', { method: 'POST', body: { text: value }, affectedKeys: [BOARD_KEY, ['ghosts'], ['list-history']] })
       setListText('')
-      for (const key of [BOARD_KEY, ['ghosts'], ['list-history']]) qc.invalidateQueries({ queryKey: key })
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
@@ -496,9 +497,8 @@ export function AddSheet({
     if (!value || busy) return
     setBusy(true)
     try {
-      await api('pantry', { method: 'POST', body: { item: value } })
+      await write('pantry', { method: 'POST', body: { item: value }, affectedKeys: [PANTRY_KEY] })
       setPantryText('')
-      qc.invalidateQueries({ queryKey: PANTRY_KEY })
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
@@ -537,9 +537,8 @@ export function AddSheet({
     if (!value || busy) return
     setBusy(true)
     try {
-      await api('meal-leftovers', { method: 'POST', body: { title: value, recipeId, sourceMealId } })
+      await write('meal-leftovers', { method: 'POST', body: { title: value, recipeId, sourceMealId }, affectedKeys: [LEFTOVERS_KEY] })
       setLeftoverText('')
-      qc.invalidateQueries({ queryKey: LEFTOVERS_KEY })
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e

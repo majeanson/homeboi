@@ -193,8 +193,13 @@ The sweep found ~50 direct `api()` write calls. **Triage required — several ar
     instantly and survives offline instead of only invalidating online. typecheck + 799 tests green.
   - `lib/measurePrefs.ts` (household PATCH), `lib/ai.ts` (AI toggle PATCH) — **per the rule above these are
     device/household toggles → may stay `api()`** (tiny, online-only-ish, self-correcting).
-  - `components/AddSheet.tsx` (3), `pages/SharePage.tsx` (2), `pages/PriceMatchPage.tsx` (2),
-    `components/cercle/ContactPhotos.tsx` (photo POSTs — see also LIB-4)
+  - [x] ✅ `components/AddSheet.tsx` (3) **DONE 2026-06-26** — migrated the `list` / `pantry` / `meal-leftovers`
+    content adds from bare `api()` to `useWrite` (`affectedKeys` replaces the manual invalidate), matching the file's
+    own todo/reserve adds so the ＋ capture spine queues + replays offline uniformly. **Left on `api()` by design:** the
+    `capture` POST (AI routing) returns the server's classification the UI displays — an online-only AI round-trip,
+    not a queueable write. typecheck + targeted e2e (list/pantry/leftover add) + build green.
+  - `pages/SharePage.tsx` (2), `pages/PriceMatchPage.tsx` (2),
+    `components/cercle/ContactPhotos.tsx` (photo POSTs — see also LIB-4; R2-coupled like drawings → likely stays `api()`)
 
 ### <a id="lib-2"></a>LIB-2 🔴 Inline query keys (cache-drift risk)
 Keys spelled as inline arrays in many files; should be the canonical constants in `lib/queryKeys.ts`.
