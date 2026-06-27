@@ -58,7 +58,10 @@ function VoyageInner() {
   const close = useSceneClose('/board')
   useEscapeKey(close)
   const { id } = useParams()
-  const isNew = id === 'new'
+  // The /voyage/new route is STATIC (no :id segment), so useParams().id is undefined
+  // there — `!id` is what marks "create". (`=== 'new'` is kept defensively in case the
+  // URL is ever reached via the :id route.)
+  const isNew = !id || id === 'new'
   const [editing, setEditing] = useState(false)
 
   const tripsQ = useTrips()
