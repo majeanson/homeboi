@@ -20,13 +20,15 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
   const t = useT()
   const write = useWrite()
   const recordUndo = useRecordUndo()
-  const [cat, setCat] = useState<TripCategory>('flight')
+  // `cat === null` = no bucket picked → « voir toutes les notes » (every category,
+  // each card showing its own glyph). Tapping the active chip again deselects it.
+  const [cat, setCat] = useState<TripCategory | null>('flight')
   const [who, setWho] = useState<string | null>(null)
   const affectedKey = [...TRIP_NOTES_KEY, trip.id]
   const memberName = (id: string | null) => (id ? faces.find((f) => f.id === id)?.name ?? '' : '')
 
   const infoNotes = notes.filter((n) => n.date == null)
-  const inCat = infoNotes.filter((n) => n.category === cat)
+  const shown = cat == null ? infoNotes : infoNotes.filter((n) => n.category === cat)
 
   async function del(n: TripNote) {
     await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
@@ -54,37 +56,55 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
     <div className="voyage-infos">
       <ChipGroup label={t.voyage.categories}>
         {TRIP_CATEGORIES.map((c) => (
-          <Chip key={c.key} icon={c.icon} selected={cat === c.key} onClick={() => setCat(c.key)}>
+          <Chip
+            key={c.key}
+            icon={c.icon}
+            selected={cat === c.key}
+            onClick={() => setCat((prev) => (prev === c.key ? null : c.key))}
+          >
             {t.voyage.cat[c.key]}
           </Chip>
         ))}
       </ChipGroup>
 
-      {/* Whose info — optional member scope. Maisonnée = whole trip. */}
-      {faces.length > 0 && (
-        <MemberSwitcher
-          faces={faces}
-          value={who}
-          onChange={setWho}
-          allLabel={t.voyage.everyone}
-          ariaLabel={t.voyage.forWhom}
-          className="voyage-infos__who"
-        />
+      {/* A bucket must be picked to add into; with none picked we just show all notes. */}
+      {cat != null ? (
+        <>
+          {/* Whose info — optional member scope. Maisonnée = whole trip. */}
+          {faces.length > 0 && (
+            <MemberSwitcher
+              faces={faces}
+              value={who}
+              onChange={setWho}
+              allLabel={t.voyage.everyone}
+              ariaLabel={t.voyage.forWhom}
+              className="voyage-infos__who"
+            />
+          )}
+
+          <TripNoteAdd
+            tripId={trip.id}
+            category={cat}
+            memberId={who}
+            placeholder={t.voyage.addInfoIn(t.voyage.cat[cat])}
+          />
+        </>
+      ) : (
+        <p className="voyage-infos__allhint mono">{t.voyage.allCatsHint}</p>
       )}
 
-      <TripNoteAdd
-        tripId={trip.id}
-        category={cat}
-        memberId={who}
-        placeholder={t.voyage.addInfoIn(t.voyage.cat[cat])}
-      />
-
       <div className="voyage-infos__list">
-        {inCat.length === 0 ? (
+        {shown.length === 0 ? (
           <EmptyState tone="calm">{t.voyage.noInfo}</EmptyState>
         ) : (
-          inCat.map((n) => (
-            <TripNoteCard key={n.id} note={n} who={memberName(n.member_id)} showCategory={false} onDelete={() => del(n)} />
+          shown.map((n) => (
+            <TripNoteCard
+              key={n.id}
+              note={n}
+              who={memberName(n.member_id)}
+              showCategory={cat == null}
+              onDelete={() => del(n)}
+            />
           ))
         )}
       </div>

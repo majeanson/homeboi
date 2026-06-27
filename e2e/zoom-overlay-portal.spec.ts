@@ -14,7 +14,7 @@ test('cercle drawing zoom overlay portals to body and closes', async ({ page }) 
   await page.route('**/api/family-notes**', async (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
-      notes: [{ id: 'fn1', member_id: null, author_member_id: 'm1', text: '', media_kind: 'drawing', media_key: 'nm_fn1', scene_key: null, created_at: 1, updated_at: null }],
+      notes: [{ id: 'fn1', member_id: null, author_member_id: 'm1', title: '', text: '', media_kind: 'drawing', media_key: 'nm_fn1', scene_key: null, created_at: 1, updated_at: null }],
     }) })
   })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })

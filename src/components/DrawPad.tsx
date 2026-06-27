@@ -367,6 +367,16 @@ export function DrawPad({
   // Mirror of viewRef.z (×100) purely for the UI badge / reset button. The drawing
   // itself reads viewRef directly so a pinch never waits on React.
   const [zoomPct, setZoomPct] = useState(100)
+  // Two toddler "stay in the drawing" locks (a child just wants to draw, not drive
+  // the chrome). ZOOM lock: a second finger no longer pinch-zooms — it's ignored, so
+  // the first finger keeps drawing and the page can't end up stuck at 4×. EXIT lock:
+  // the bottom action row (Annuler / Garder / Partager / Épingler…) is disabled so a
+  // stray tap can't leave the drawing. Both are toggled from the toolbar (out of the
+  // toddler's main draw zone) and a parent flips them back. zoomLock needs a ref —
+  // the pointer handlers read it from inside the open-effect's stale closure.
+  const [zoomLock, setZoomLock] = useState(false)
+  const [exitLock, setExitLock] = useState(false)
+  const zoomLockRef = useRef(false)
 
   useEffect(() => void (modeRef.current = mode), [mode])
   useEffect(() => void (colorRef.current = color), [color])
@@ -376,6 +386,7 @@ export function DrawPad({
   useEffect(() => void (symmetryRef.current = symmetry), [symmetry])
   useEffect(() => void (fillRef.current = fill), [fill])
   useEffect(() => void (shapeTypeRef.current = shapeType), [shapeType])
+  useEffect(() => void (zoomLockRef.current = zoomLock), [zoomLock])
   useEffect(() => {
     tplRef.current = { kind: tpl, ch: traceCh, shape }
     render(padRef.current?.toData() ?? [])
@@ -786,6 +797,10 @@ export function DrawPad({
       pointersRef.current.set(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top })
       canvas.setPointerCapture?.(e.pointerId)
       if (pointersRef.current.size >= 2) {
+        // Zoom locked (toddler): ignore the extra finger entirely so the first one
+        // keeps drawing — no pinch, the page can't be zoomed away. The pointer stays
+        // tracked (harmless) and is dropped on its own up.
+        if (zoomLockRef.current) return
         if (gestureRef.current === 'draw') cancelDrawForPinch()
         gestureRef.current = 'pinch'
         activePointerRef.current = null
@@ -822,6 +837,7 @@ export function DrawPad({
     // Desktop: wheel zooms toward the cursor (no pinch on a trackpad/mouse).
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
+      if (zoomLockRef.current) return // zoom locked: swallow the wheel, don't zoom
       const rect = rectRef.current ?? canvas.getBoundingClientRect()
       const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1
       applyView(zoomAt(viewRef.current, factor, e.clientX - rect.left, e.clientY - rect.top, cssW(), cssH()))
@@ -894,6 +910,10 @@ export function DrawPad({
       pinchRef.current = null
       penDragRef.current = null
       setZoomPct(100)
+      // Re-open starts unlocked — the locks are a per-session, parent-set choice.
+      zoomLockRef.current = false
+      setZoomLock(false)
+      setExitLock(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -991,6 +1011,13 @@ export function DrawPad({
   function pickColor(c: string) {
     setColor(c)
     if (!COLORS.includes(c) && c !== PAPER) setRecent((r) => [c, ...r.filter((x) => x !== c)].slice(0, 6))
+  }
+  // Locking the zoom also snaps back to a fitted 1× page, so a child isn't left
+  // stranded mid-zoom with no way to pinch back out.
+  function toggleZoomLock() {
+    const next = !zoomLock
+    setZoomLock(next)
+    if (next) applyView({ ...IDENTITY })
   }
 
   if (!open) return null
@@ -1160,6 +1187,18 @@ export function DrawPad({
           <button type="button" className="drawpad__tool" onClick={undo} aria-label={t.memo.undo}><Icon name="arrow-counter-clockwise-bold" size={18} /></button>
           <button type="button" className="drawpad__tool" onClick={redo} aria-label={t.memo.redo}><Icon name="repeat-bold" size={18} /></button>
           <button type="button" className="drawpad__tool" onClick={clear} aria-label={t.memo.clear}><Icon name="trash-bold" size={18} /></button>
+          {/* Two toddler "stay in the drawing" locks. Zoom lock: a 2nd finger can no
+              longer pinch the page away. Exit lock: the bottom action row can't be
+              tapped to leave. Placed up here (away from the draw zone) so a parent
+              sets them and a child can't easily flip them back. */}
+          <button type="button" className={'drawpad__tool drawpad__lock' + (zoomLock ? ' is-on' : '')} onClick={toggleZoomLock} aria-label={zoomLock ? t.memo.unlockZoom : t.memo.lockZoom} aria-pressed={zoomLock}>
+            <Icon name={zoomLock ? 'lock-bold' : 'lock-open-bold'} size={18} />
+            <span className="drawpad__lockbadge"><Icon name="magnifying-glass-bold" size={10} /></span>
+          </button>
+          <button type="button" className={'drawpad__tool drawpad__lock' + (exitLock ? ' is-on' : '')} onClick={() => setExitLock((v) => !v)} aria-label={exitLock ? t.memo.unlockExit : t.memo.lockExit} aria-pressed={exitLock}>
+            <Icon name={exitLock ? 'lock-bold' : 'lock-open-bold'} size={18} />
+            <span className="drawpad__lockbadge"><Icon name="door-bold" size={10} /></span>
+          </button>
         </div>
       </div>
 
@@ -1295,20 +1334,22 @@ export function DrawPad({
       <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={onPhotoFile} aria-hidden="true" tabIndex={-1} />
       {pickPhotoOnOpen && hasPhoto && <p className="drawpad__photohint mono" aria-hidden="true">{t.memo.photoHint}</p>}
 
-      <div className="drawpad__actions">
-        <button type="button" className="btn btn--ghost" onClick={onCancel}>{t.common.cancel}</button>
+      {/* Exit lock (toddler): the whole action row is dimmed + disabled so a stray
+          tap can't leave the drawing. A parent flips the lock in the toolbar. */}
+      <div className={'drawpad__actions' + (exitLock ? ' is-locked' : '')}>
+        <button type="button" className="btn btn--ghost" onClick={onCancel} disabled={exitLock}>{t.common.cancel}</button>
         <div className="drawpad__actions-end">
           {/* Keep (save to « Mes dessins ») — available to toddlers too, so a child
               can keep their own art. Share + Make-routine stay parent-only (an
               external share / the parent routine builder aren't toddler actions). */}
           {onKeep && (
-            <button type="button" className="btn btn--ghost" onClick={keep} disabled={busy}><Icon name="push-pin-bold" size={18} /> {t.memo.keep}</button>
+            <button type="button" className="btn btn--ghost" onClick={keep} disabled={busy || exitLock}><Icon name="push-pin-bold" size={18} /> {t.memo.keep}</button>
           )}
-          {!toddler && <button type="button" className="btn btn--ghost" onClick={share} disabled={busy}>{t.memo.share}</button>}
+          {!toddler && <button type="button" className="btn btn--ghost" onClick={share} disabled={busy || exitLock}>{t.memo.share}</button>}
           {!toddler && onMakeRoutine && (
-            <button type="button" className="btn btn--ghost" onClick={makeRoutine} disabled={busy}><Icon name="baby-bold" size={18} /> {t.memo.routine}</button>
+            <button type="button" className="btn btn--ghost" onClick={makeRoutine} disabled={busy || exitLock}><Icon name="baby-bold" size={18} /> {t.memo.routine}</button>
           )}
-          <button type="button" className="btn btn--primary" onClick={save} disabled={busy}><Icon name="check-bold" size={18} /> {t.memo.save}</button>
+          <button type="button" className="btn btn--primary" onClick={save} disabled={busy || exitLock}><Icon name="check-bold" size={18} /> {t.memo.save}</button>
         </div>
       </div>
     </div>,

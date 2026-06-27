@@ -24,6 +24,7 @@ import { BusinessForm } from '../components/cercle/BusinessForm'
 import { PetForm } from '../components/cercle/PetForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
+import { NoteEditor } from '../components/cercle/NoteEditor'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
 import { TripNoteCard } from '../components/voyage/TripNoteCard'
 import { CercleConstellation } from '../components/cercle/CercleConstellation'
@@ -235,6 +236,38 @@ function FridgeSheetDemo() {
         onClose={() => setOpen(false)}
         soonItems={['épinards', 'crème', 'champignons']}
         reserveItems={['pâte feuilletée']}
+      />
+    </>
+  )
+}
+
+// The full-screen rich note editor (#richnotes), reused for new + modify. Opens over
+// the page; auto-saves on close. Seeded here with a sample Markdown body so the toolbar
+// and « Aperçu » preview are explorable.
+function NoteEditorDemo() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button type="button" className="btn btn--primary" onClick={() => setOpen(true)}>
+        <Icon name="file-text-bold" size={18} /> Ouvrir l’éditeur de note
+      </button>
+      <NoteEditor
+        open={open}
+        note={{
+          id: 'demo',
+          member_id: null,
+          author_member_id: null,
+          title: 'Liste de mémé',
+          text: '**Gras**, *italique*, ~~barré~~\n\n## Épicerie\n- lait\n- [ ] œufs\n- [x] beurre\n\n> à rapporter demain',
+          media_kind: null,
+          media_key: null,
+          scene_key: null,
+          created_at: 0,
+          updated_at: null,
+        }}
+        scope="family"
+        memberId={null}
+        onClose={() => setOpen(false)}
       />
     </>
   )
@@ -712,6 +745,20 @@ export function DevKit() {
         // photo. Reads the live family-notes query (empty here) + a face row to scope by.
         <Demo label="Quick notes scoped to Moi / Maisonnée, with media">
           <CercleNotes members={DEMO_MEMBERS} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'NoteEditor',
+      file: 'components/cercle/NoteEditor.tsx',
+      kw: 'note editor rich text markdown bold italic strike heading bullet numbered checklist quote title full screen cercle famille attachment',
+      render: () => (
+        // Full-screen iOS-Notes-style editor (#richnotes): optional title + Markdown body
+        // (bold/italic/strike, headings, bullets/numbered/checklists, quote) + one photo/
+        // drawing attachment. Reused for new + modify; auto-saves on close.
+        <Demo label="Full-screen rich note editor (title + Markdown + attachment)">
+          <NoteEditorDemo />
         </Demo>
       ),
     },

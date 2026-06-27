@@ -6,6 +6,7 @@ const note = (id: string, memberId: string | null): FamilyNote => ({
   id,
   member_id: memberId,
   author_member_id: null,
+  title: '',
   text: id,
   media_kind: null,
   media_key: null,

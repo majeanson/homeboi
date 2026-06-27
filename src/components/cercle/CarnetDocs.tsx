@@ -15,22 +15,39 @@ import { Icon, InlineIcon } from '../Icon'
 //
 // Reused read-only in the carnet scene (historique + en cas de pépin) and editable
 // (with `onRemove`) in the CareLogForm/HomePinForm previews.
+//
+// `variant='list'` swaps the square thumbnails for full-width rows that also show
+// each doc's NAME (`labelFor`) — the convenient, glanceable way to check a stack of
+// trip documents on a phone, where anonymous little squares are hard to tell apart.
 export function CarnetDocs({
   keys,
   onRemove,
   className,
+  variant = 'grid',
+  labelFor,
 }: {
   keys: string[]
   onRemove?: (key: string) => void
   className?: string
+  variant?: 'grid' | 'list'
+  /** Optional display name per key (e.g. a trip doc's file name) — list variant only. */
+  labelFor?: (key: string) => string | undefined
 }) {
   const t = useT()
   const [openSrc, setOpenSrc] = useState<string | null>(null)
   if (keys.length === 0) return null
   return (
-    <span className={'carnet-docs' + (className ? ` ${className}` : '')}>
+    <span className={'carnet-docs carnet-docs--' + variant + (className ? ` ${className}` : '')}>
       {keys.map((k) => (
-        <DocTile key={k} docKey={k} onOpenPdf={setOpenSrc} onRemove={onRemove} removeLabel={t.common.delete} />
+        <DocTile
+          key={k}
+          docKey={k}
+          variant={variant}
+          label={labelFor?.(k)}
+          onOpenPdf={setOpenSrc}
+          onRemove={onRemove}
+          removeLabel={t.common.delete}
+        />
       ))}
 
       {/* The PDF read sheet — an iframe that renders the document inline, plus a
@@ -51,34 +68,54 @@ export function CarnetDocs({
 
 function DocTile({
   docKey,
+  variant,
+  label,
   onOpenPdf,
   onRemove,
   removeLabel,
 }: {
   docKey: string
+  variant: 'grid' | 'list'
+  label?: string
   onOpenPdf: (src: string) => void
   onRemove?: (key: string) => void
   removeLabel: string
 }) {
   const [isPdf, setIsPdf] = useState(isPdfKey(docKey))
   const src = imgUrl(docKey)
-  return (
-    <span className={'carnet-docs__doc' + (isPdf ? ' carnet-docs__doc--pdf' : '')}>
-      {isPdf ? (
-        <button type="button" className="carnet-docs__pdf" onClick={() => onOpenPdf(src)} aria-label="PDF" title="PDF">
-          <Icon name="file-text-bold" size={20} />
-          <span className="carnet-docs__pdf-tag mono">PDF</span>
-        </button>
-      ) : (
-        // A suffix-less PDF (uploaded before extFromType) fails as an image → flip to
-        // the PDF tile so it becomes readable instead of a blank square.
-        <ZoomableImg src={src} alt="" onError={() => setIsPdf(true)} />
-      )}
-      {onRemove && (
-        <button type="button" className="carnet-docs__rm" aria-label={removeLabel} onClick={() => onRemove(docKey)}>
-          <Icon name="x-bold" size={12} />
-        </button>
-      )}
-    </span>
+
+  // The tap-to-open thumbnail: a PDF opens the read sheet; an image zooms full-screen
+  // (pinch/pan). A suffix-less PDF (uploaded before extFromType) fails as an image →
+  // flip to the PDF tile so it becomes readable instead of a blank square.
+  const thumb = isPdf ? (
+    <button type="button" className="carnet-docs__pdf" onClick={() => onOpenPdf(src)} aria-label="PDF" title="PDF">
+      <Icon name="file-text-bold" size={20} />
+      <span className="carnet-docs__pdf-tag mono">PDF</span>
+    </button>
+  ) : (
+    <ZoomableImg src={src} alt={label ?? ''} onError={() => setIsPdf(true)} />
   )
+
+  const rm = onRemove && (
+    <button type="button" className="carnet-docs__rm" aria-label={removeLabel} onClick={() => onRemove(docKey)}>
+      <Icon name="x-bold" size={12} />
+    </button>
+  )
+
+  // List row: the same tappable thumbnail, but with the file name beside it so a
+  // stack of trip docs is legible at a glance on a phone.
+  if (variant === 'list') {
+    return (
+      <span className={'carnet-docs__row' + (isPdf ? ' carnet-docs__row--pdf' : '')}>
+        <span className="carnet-docs__thumb">{thumb}</span>
+        <span className="carnet-docs__meta">
+          <span className="carnet-docs__name">{label || (isPdf ? 'PDF' : '—')}</span>
+          {isPdf && <span className="carnet-docs__type mono">PDF</span>}
+        </span>
+        {rm}
+      </span>
+    )
+  }
+
+  return <span className={'carnet-docs__doc' + (isPdf ? ' carnet-docs__doc--pdf' : '')}>{thumb}{rm}</span>
 }

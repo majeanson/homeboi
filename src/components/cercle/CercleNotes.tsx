@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
 import { formatDay } from '../../lib/format'
-import { api, ApiError, isStatus } from '../../lib/api'
+import { api } from '../../lib/api'
 import { live } from '../../lib/query'
 import { useWrite } from '../../lib/write'
 import { useProfile } from '../../lib/profile'
@@ -20,20 +20,22 @@ import { EditField } from '../EditField'
 import { Modal } from '../Modal'
 import { MemoControls } from '../MemoControls'
 import { ZoomableImg } from '../ZoomableImg'
-import { DrawPad } from '../DrawPad'
-import { DrawEditChoice } from '../DrawEditChoice'
-import { useDrawEdit } from '../../lib/drawEdit'
+import { NoteEditor } from './NoteEditor'
+import { plainText, renderNoteBody, toggleCheckAt } from '../../lib/noteMarkdown'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
-// « Le cercle » → Famille → "Notes & recommandations". iOS-Notes-style quick notes
-// scoped to ONE household member (the "Moi" list) or the whole Maisonnée (family-wide).
-// A picked face (defaulting to the device profile) sees THEIR personal notes PLUS the
-// Maisonnée notes always; "Maisonnée" sees only the family-wide notes (decision 3).
-// The scope is resolved PURELY from the picked face — the same subtle face row as the
-// board's "Aujourd'hui" header (the shared MemberSwitcher): a member → a personal note,
-// Maisonnée → a family-wide one. No separate Moi/Maisonnée toggle (one control, not two).
-// Media (audio/drawing/photo) reuses MemoControls + /api/note-media — durable, never
-// touches the board notes.
+// « Le cercle » → Famille → "Notes & recommandations". iOS-Notes-style notes scoped to
+// ONE household member (the "Moi" list) or the whole Maisonnée (family-wide). A picked
+// face (defaulting to the device profile) sees THEIR personal notes PLUS the Maisonnée
+// notes always; "Maisonnée" sees only the family-wide notes (decision 3). The scope is
+// resolved PURELY from the picked face — the same subtle face row as the board's
+// "Aujourd'hui" header (the shared MemberSwitcher).
+//
+// A note now has an optional TITLE and a rich Markdown BODY (#richnotes): "Nouvelle note"
+// and the row pencil open the full-screen NoteEditor (one editor, reused for add + edit)
+// with bold/italic/strike, headings, bullets/numbered/checklists, quote, and one optional
+// photo/drawing attachment. Quick media memos (audio/draw/photo) still ride MemoControls +
+// /api/note-media; an audio memo is renamed with a tiny dialog (its caption = the title).
 export function CercleNotes({
   members,
   help,
@@ -45,7 +47,6 @@ export function CercleNotes({
   const t = useT()
   const { lang } = useLang()
   const write = useWrite()
-  const qc = useQueryClient()
   const { memberId: profileId } = useProfile()
   const { surface } = useSurface()
   const ro = isGuest()
@@ -57,19 +58,18 @@ export function CercleNotes({
   const [face, setFace] = useState<string | null>(profileId)
   const effScope: NoteScope = face ? 'self' : 'family'
 
-  const [text, setText] = useState('')
-  // iOS-Notes-style live search across the visible list (text + author name).
+  // iOS-Notes-style live search across the visible list (title + body + author name).
   const [query, setQuery] = useState('')
-  // A long note is read inline by EXPANDING it in place (tap the body to open/close),
-  // and edited in a full-width memo dialog — not the cramped in-row box. The two are
-  // separate: tapping reads; the pencil edits.
+  // A long note is read inline by EXPANDING it in place (tap the body to open/close);
+  // it is edited in the full-screen NoteEditor. The two are separate: tapping reads.
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editText, setEditText] = useState('')
-  // Re-opening a drawing note (#14): the shared chooser (modify / copy / calquer) + the
-  // pad load props it resolves to. `draw.isNew` = copy/trace (→ a new note in this list).
-  const draw = useDrawEdit<FamilyNote>()
-  const [drawHidden, setDrawHidden] = useState(false)
+  // The full-screen editor (new + edit). editorNote null = compose a new note.
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editorNote, setEditorNote] = useState<FamilyNote | null>(null)
+  // Tiny rename dialog for an AUDIO memo (its caption is stored as the title); every
+  // other note kind is edited in the full editor.
+  const [renameId, setRenameId] = useState<string | null>(null)
+  const [renameVal, setRenameVal] = useState('')
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const { data } = useQuery({
@@ -84,7 +84,7 @@ export function CercleNotes({
   const nameOf = (id: string | null) => members.find((m) => m.id === id)?.displayName ?? null
 
   // Newest first (iOS Notes orders by most-recent), then narrow by the search box.
-  // Search matches the note text OR its author's name so "find Léa's note" works.
+  // Search matches the title, body, OR author name so "find Léa's note" works.
   const visible = useMemo(() => {
     const base = visibleNotes(all, face)
       .slice()
@@ -93,6 +93,7 @@ export function CercleNotes({
     if (!q) return base
     return base.filter(
       (n) =>
+        n.title.toLowerCase().includes(q) ||
         n.text.toLowerCase().includes(q) ||
         (members.find((m) => m.id === n.author_member_id)?.displayName.toLowerCase().includes(q) ?? false),
     )
@@ -104,26 +105,13 @@ export function CercleNotes({
     [face],
   )
 
-  function submitText(v: string) {
-    const body = { text: v.trim(), ...scopeBody(effScope) }
-    if (!body.text) return
-    setText('')
-    void write('family-notes', {
-      method: 'POST',
-      body,
-      affectedKeys: [FAMILY_NOTES_KEY],
-    }).catch(() => {})
+  const openNew = () => {
+    setEditorNote(null)
+    setEditorOpen(true)
   }
-
-  function saveEdit(n: FamilyNote, v: string) {
-    setEditingId(null)
-    const next = v.trim()
-    if (next === n.text) return
-    void write('family-notes', {
-      method: 'PATCH',
-      body: { id: n.id, text: next },
-      affectedKeys: [FAMILY_NOTES_KEY],
-    }).catch(() => {})
+  const openEdit = (n: FamilyNote) => {
+    setEditorNote(n)
+    setEditorOpen(true)
   }
 
   function remove(n: FamilyNote) {
@@ -132,40 +120,17 @@ export function CercleNotes({
     )
   }
 
-  // Re-draw a drawing note (mirror board Notes.saveDrawing): upload the PNG + editable
-  // scene, then either PATCH the row in place (modify) or POST a fresh note in the same
-  // scope (copy / calquer — the original stays). Media can't be queued offline → api()
-  // direct; invalidate so the new/edited note shows at once.
-  async function saveDrawing(png: Blob, scene: string, note: FamilyNote, isNew: boolean) {
-    try {
-      const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: png })
-      let sceneKey: string | undefined
-      if (scene) {
-        try {
-          const r = await api<{ key: string }>('note-media', {
-            method: 'POST',
-            body: new Blob([scene], { type: 'application/json' }),
-          })
-          sceneKey = r.key
-        } catch {
-          /* scene optional */
-        }
-      }
-      if (isNew) {
-        // Keep the copy in the same list as the original (member_id NULL = Maisonnée).
-        await api('family-notes', {
-          method: 'POST',
-          body: { media_kind: 'drawing', media_key: key, scene_key: sceneKey, text: '', scope: note.member_id ? 'self' : 'family', member_id: note.member_id },
-        })
-      } else {
-        await api('family-notes', { method: 'PATCH', body: { id: note.id, media_key: key, scene_key: sceneKey } })
-      }
-    } catch (e) {
-      if (isStatus(e, 503)) setDrawHidden(true)
-      else if (!(e instanceof ApiError)) throw e
-    } finally {
-      qc.invalidateQueries({ queryKey: FAMILY_NOTES_KEY })
-    }
+  // Rename an audio memo — its caption is the note's title.
+  function saveRename(id: string, v: string) {
+    setRenameId(null)
+    void write('family-notes', { method: 'PATCH', body: { id, title: v.trim() }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(() => {})
+  }
+
+  // Tick / untick one checklist item from the read view → rewrite the body line + PATCH.
+  function toggleCheck(n: FamilyNote, lineIndex: number) {
+    const next = toggleCheckAt(n.text, lineIndex)
+    if (next === n.text) return
+    void write('family-notes', { method: 'PATCH', body: { id: n.id, text: next }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(() => {})
   }
 
   function playClip(key: string) {
@@ -193,11 +158,9 @@ export function CercleNotes({
 
       {/* Whose notes — Maisonnée + each member. The SAME pick-a-face control as the
           board's "Aujourd'hui" header, surface-for-surface: the always-in-view face ROW
-          on a kiosk wall, and the collapsed tap-to-open chip on mobile (FaceSelect),
-          where the row would crowd the page. Seeded from the device profile, but this
-          picks LOCALLY (it doesn't move the device profile). This one control also
-          decides the new note's scope: a face → a personal note, Maisonnée → family-wide
-          (no separate Moi/Maisonnée toggle). */}
+          on a kiosk wall, and the collapsed tap-to-open chip on mobile (FaceSelect).
+          Seeded from the device profile, but this picks LOCALLY. This one control also
+          decides the new note's scope: a face → a personal note, Maisonnée → family-wide. */}
       {(() => {
         const faces = members.map((m) => ({
           id: m.id,
@@ -214,35 +177,19 @@ export function CercleNotes({
         )
       })()}
 
-      {/* Composer — text + media. The note's scope follows the picked face above, so
-          there's no scope toggle here. Hidden for guests. */}
+      {/* Composer — "Nouvelle note" opens the full editor (the new note's scope follows the
+          picked face above). Quick media memos sit below. Hidden for guests. */}
       {!ro && (
         <div className="cercle-notes__composer card">
-          <EditField
-            value={text}
-            onChange={setText}
-            onSubmit={submitText}
-            multiline
-            maxLength={2000}
-            placeholder={fn.placeholder}
-            ariaLabel={fn.addHint}
-            submitLabel={t.common.add}
-            submitLeadingIcon="plus-bold"
-          />
-          {!drawHidden && (
-            <MemoControls
-              onDone={() => {}}
-              endpoint="family-notes"
-              affectedKey={FAMILY_NOTES_KEY}
-              extraBody={scopeBody(effScope)}
-            />
-          )}
+          <button type="button" className="cercle-notes__new" onClick={openNew}>
+            <Icon name="plus-bold" size={18} /> {fn.newNote}
+          </button>
+          <MemoControls onDone={() => {}} endpoint="family-notes" affectedKey={FAMILY_NOTES_KEY} extraBody={scopeBody(effScope)} />
         </div>
       )}
 
       {/* Search — iOS-Notes style: one always-there field so any note is a couple of
-          keystrokes away (text or author name). Shown whenever there's something to
-          search, and kept while a query is active so the clear button stays reachable. */}
+          keystrokes away (title, body or author name). */}
       {(shown.length > 0 || query.trim() !== '') && (
         <div className="cnote-search">
           <InlineIcon name="magnifying-glass-bold" size={16} />
@@ -271,25 +218,27 @@ export function CercleNotes({
             const media = n.media_kind && n.media_key ? n.media_kind : null
             const scopeChip = n.member_id === null ? fn.forFamily : (nameOf(n.member_id) ?? fn.scopeSelf)
             const when = formatDay(n.created_at, lang)
-
-            // iOS row anatomy: a bold first-line title, then a quieter "date · preview"
-            // line. Media notes title themselves (Dessin / Photo / Mémo vocal).
-            const firstLine = n.text.split('\n').find((l) => l.trim()) ?? ''
-            const rest = n.text.slice(firstLine.length).replace(/\n+/g, ' ').trim()
             const mediaLabel = media === 'audio' ? fn.memo : media === 'image' ? fn.photo : media === 'drawing' ? fn.drawing : ''
-            const title = firstLine || mediaLabel || fn.title
-            const preview = firstLine ? rest || (media ? mediaLabel : '') : media ? '' : rest
 
-            // A text note with more than its first line (or a long single line) can be
-            // read in place: tapping the body expands the row to show the full text
-            // wrapped, tapping again collapses it. Short notes stay one inert line.
-            const isText = !media
-            const expandable = isText && (rest.length > 0 || firstLine.length > 48)
+            // iOS row anatomy: a bold title line, then a quieter "date · preview" line.
+            // Title = the explicit title, else the body's first line, else the media kind.
+            const bodyText = plainText(n.text)
+            const explicitTitle = n.title.trim()
+            const derivedFirst = bodyText.split('\n').find((l) => l.trim()) ?? ''
+            const title = explicitTitle || derivedFirst || mediaLabel || fn.untitled
+            // Preview = the body minus whatever already shows as the title line.
+            const rest = (explicitTitle
+              ? bodyText
+              : bodyText.slice(derivedFirst ? bodyText.indexOf(derivedFirst) + derivedFirst.length : 0)
+            )
+              .replace(/\n+/g, ' ')
+              .trim()
+            const preview = rest
+
+            // A note with body beyond its title can be read in place (tap to expand);
+            // audio plays instead. Media thumbnails always show alongside.
+            const expandable = media !== 'audio' && (rest.length > 0 || (!explicitTitle && derivedFirst.length > 48))
             const expanded = expandedId === n.id
-            const openEdit = () => {
-              setEditingId(n.id)
-              setEditText(n.text)
-            }
 
             return (
               <li key={n.id} className={'cnote' + (expanded ? ' cnote--expanded' : '')} style={css}>
@@ -302,10 +251,8 @@ export function CercleNotes({
                   </span>
                 )}
 
-                {/* The body: tapping a text note expands/collapses it (to read long
-                    notes in place); an audio note plays it; a visual note's body is
-                    inert (its thumbnail handles the zoom). Editing is the pencil, not
-                    the tap, so reading and editing never get confused. */}
+                {/* The body: tapping a text note expands/collapses it (to read long notes
+                    in place); an audio note plays it. Editing is the pencil, not the tap. */}
                 {media === 'audio' ? (
                   <button type="button" className="cnote__main" onClick={() => playClip(n.media_key!)} aria-label={fn.memo}>
                     <span className="cnote__title">{title}</span>
@@ -338,21 +285,14 @@ export function CercleNotes({
 
                 {!ro && (
                   <span className="cnote__actions">
-                    {media === 'drawing' && (
-                      <button type="button" className="cnote__act" onClick={() => draw.begin(n)} aria-label={fn.edit}>
+                    {/* One pencil per note: an audio memo renames (caption = title); every
+                        other note opens the full editor (title + body + attachment). */}
+                    {media === 'audio' ? (
+                      <button type="button" className="cnote__act" onClick={() => { setRenameId(n.id); setRenameVal(n.title) }} aria-label={fn.rename}>
                         <Icon name="pencil-simple-bold" size={15} />
                       </button>
-                    )}
-                    {/* Pencil opens the full-width memo editor: a text note edits its
-                        body, an audio/photo note edits its NAME (the caption shown as
-                        the title) so a "Mémo vocal" can become "Liste de mémé". */}
-                    {(isText || media === 'audio' || media === 'image') && (
-                      <button
-                        type="button"
-                        className="cnote__act"
-                        onClick={openEdit}
-                        aria-label={media ? fn.rename : fn.edit}
-                      >
+                    ) : (
+                      <button type="button" className="cnote__act" onClick={() => openEdit(n)} aria-label={fn.edit}>
                         <Icon name="pencil-simple-bold" size={15} />
                       </button>
                     )}
@@ -362,58 +302,40 @@ export function CercleNotes({
                   </span>
                 )}
 
-                {/* Expanded: the whole note, wrapped, spanning the row's full width. */}
-                {expanded && <p className="cnote__full">{n.text}</p>}
+                {/* Expanded: the whole note rendered from Markdown, checklists tappable. */}
+                {expanded && (
+                  <div className="cnote__full note-md">{renderNoteBody(n.text, { onToggleCheck: (i) => toggleCheck(n, i) })}</div>
+                )}
               </li>
             )
           })}
         </ul>
       )}
 
-      {/* Full-width memo editor — a roomy dialog, not the cramped in-row box, so a
-          long personal note has space to breathe (mic + clear come along via
-          EditField). A text note edits its body; an audio/photo note edits its name. */}
+      {/* Tiny rename dialog for an audio memo (its caption is the title). */}
       {(() => {
-        const note = editingId ? all.find((n) => n.id === editingId) : null
+        const note = renameId ? all.find((n) => n.id === renameId) : null
         if (!note) return null
-        const m = note.media_kind && note.media_key ? note.media_kind : null
-        const isRename = m === 'audio' || m === 'image'
         return (
-          <Modal open onClose={() => setEditingId(null)} title={isRename ? fn.rename : fn.edit} className="cnote-memo">
+          <Modal open onClose={() => setRenameId(null)} title={fn.rename} className="cnote-memo">
             <EditField
-              value={editText}
-              onChange={setEditText}
-              onSubmit={(v) => saveEdit(note, v)}
-              onCancel={() => setEditingId(null)}
-              multiline={!isRename}
-              maxLength={2000}
+              value={renameVal}
+              onChange={setRenameVal}
+              onSubmit={(v) => saveRename(note.id, v)}
+              onCancel={() => setRenameId(null)}
               autoFocus
-              placeholder={isRename ? fn.rename : fn.placeholder}
+              placeholder={fn.rename}
               submitLabel={t.common.save}
               submitLeadingIcon="check-bold"
               submitVariant="primary"
-              ariaLabel={isRename ? fn.rename : fn.edit}
+              ariaLabel={fn.rename}
             />
           </Modal>
         )
       })()}
 
-      {/* Ask how to continue a drawing note before opening the pad (#14): modify in
-          place, an independent copy, or a faded calque. */}
-      <DrawEditChoice open={draw.chooserOpen} onCancel={draw.cancelChoice} onPick={draw.pick} />
-      {draw.editing && (
-        <DrawPad
-          open
-          {...draw.padProps!}
-          onCancel={draw.close}
-          onSave={(png, scene) => {
-            const note = draw.editing!
-            const isNew = draw.isNew
-            draw.close()
-            void saveDrawing(png, scene, note, isNew)
-          }}
-        />
-      )}
+      {/* The full-screen editor — one component, reused for new + modify. */}
+      <NoteEditor open={editorOpen} note={editorNote} scope={effScope} memberId={face} onClose={() => setEditorOpen(false)} />
     </section>
   )
 }

@@ -95,6 +95,11 @@
 .voyage-packing__who {
   margin: 8px 0;
 }
+.voyage-infos__allhint {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+  margin: 8px 0 2px;
+}
 .voyage-infos__list {
   margin-top: 10px;
 }

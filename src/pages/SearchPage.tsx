@@ -10,6 +10,7 @@ import { colourFor } from '../lib/things'
 import { CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY } from '../lib/queryKeys'
 import { type Contact, type Pet } from '../lib/cercle'
 import { type FamilyNote } from '../lib/familyNotes'
+import { firstLine, plainText } from '../lib/noteMarkdown'
 import { type Business, BUSINESS_COLOUR } from '../lib/businesses'
 import { type Routine } from '../components/operator/types'
 import { type TodosData } from '../lib/todos'
@@ -177,7 +178,7 @@ export function SearchPage() {
     })
     const events = allEvents.filter((e) => fold(e.title).includes(needle)).slice(0, CAP)
     const listItems = (board?.list ?? []).filter((li) => fold(li.text).includes(needle)).slice(0, CAP)
-    const notes = familyNotes.filter((n) => n.text && fold(n.text).includes(needle)).slice(0, CAP)
+    const notes = familyNotes.filter((n) => fold(`${n.title} ${plainText(n.text)}`).includes(needle)).slice(0, CAP)
     // Le cercle animals — match on name/species/breed + the care free-text.
     const petHits = pets
       .filter((p) => fold(`${p.name} ${p.species ?? ''} ${p.breed ?? ''} ${p.notes ?? ''}`).includes(needle))
@@ -495,12 +496,12 @@ export function SearchPage() {
             {res!.notes.length > 0 && (
               <Section label={t.search.notes}>
                 {res!.notes.map((n) => (
-                  <Link key={n.id} to="/cercle?section=family&view=list" className="search__row">
+                  <Link key={n.id} to="/cercle?section=notes" className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <InlineIcon name="file-text-bold" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{n.text}</span>
+                      <span className="search__title">{n.title.trim() || firstLine(n.text) || t.cercle.familyNotes.untitled}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>

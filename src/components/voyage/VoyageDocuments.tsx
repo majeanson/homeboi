@@ -30,6 +30,7 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
 
   const docs = notes.filter((n) => n.category === 'document' && n.media_key)
   const docKeys = docs.map((n) => n.media_key as string)
+  const docLabel = (key: string) => docs.find((d) => d.media_key === key)?.label ?? undefined
 
   async function onFiles(files: FileList | null) {
     if (!files || files.length === 0) return
@@ -103,7 +104,13 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
       {docs.length === 0 ? (
         <EmptyState tone="calm">{t.voyage.noDocs}</EmptyState>
       ) : (
-        <CarnetDocs keys={docKeys} onRemove={(k) => void removeDoc(k)} className="voyage-docs__strip" />
+        <CarnetDocs
+          keys={docKeys}
+          variant="list"
+          labelFor={docLabel}
+          onRemove={(k) => void removeDoc(k)}
+          className="voyage-docs__strip"
+        />
       )}
     </div>
   )

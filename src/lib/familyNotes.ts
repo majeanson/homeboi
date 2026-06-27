@@ -8,7 +8,8 @@ export interface FamilyNote {
   id: string
   member_id: string | null // scope: NULL = Maisonnée (family-wide)
   author_member_id: string | null // who wrote it (pick-your-face attribution)
-  text: string
+  title: string // optional explicit heading (iOS-Notes style); '' = derive from body
+  text: string // body, stored as lightweight Markdown (see lib/noteMarkdown)
   media_kind: FamilyNoteMedia | null
   media_key: string | null
   scene_key: string | null

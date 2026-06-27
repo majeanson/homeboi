@@ -198,6 +198,37 @@
   gap: 0.6rem;
   padding: 0.8rem 0.9rem max(0.8rem, env(safe-area-inset-bottom));
 }
+/* Exit lock (toddler): the whole action row dims + goes non-interactive so a stray
+   tap can't leave the drawing. The unlock toggle lives up in the toolbar, not here. */
+.drawpad__actions.is-locked {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* The two toddler "stay in the drawing" locks (zoom · exit) — a padlock that opens
+   when off / closes when on, with a tiny badge (magnifier / door) marking which is
+   which. `is-on` gets a warm highlight so a parent sees at a glance what's guarded. */
+.drawpad__lock {
+  position: relative;
+  border-radius: 0.55rem;
+}
+.drawpad__lock.is-on {
+  background: color-mix(in srgb, var(--marigold) 30%, var(--card));
+  color: var(--ink);
+}
+.drawpad__lockbadge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: inline-flex;
+  padding: 1px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink-soft);
+}
+.drawpad__lock.is-on .drawpad__lockbadge {
+  color: var(--ink);
+}
 
 /* ---- DrawPad extras: stickers packs · text · custom colour · templates ------- */
 /* Sticker mode is a column: a row of pack icons over the chosen pack's emoji set. */
