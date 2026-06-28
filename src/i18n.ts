@@ -260,6 +260,9 @@ export const FR = {
     drawText: 'Mots',
     drawShape: 'Formes',
     fillTool: 'Remplir',
+    flatten: 'Aplatir',
+    draftRestored: 'Brouillon récupéré',
+    draftDiscard: 'Repartir à zéro',
     textPlaceholder: 'Écris un mot',
     symmetry: 'Miroir',
     shapeTools: {
@@ -2497,6 +2500,9 @@ export const EN: typeof FR = {
     drawText: 'Text',
     drawShape: 'Shapes',
     fillTool: 'Fill',
+    flatten: 'Flatten',
+    draftRestored: 'Draft recovered',
+    draftDiscard: 'Start fresh',
     textPlaceholder: 'Type a word',
     symmetry: 'Mirror',
     shapeTools: {

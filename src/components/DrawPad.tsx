@@ -44,10 +44,17 @@ const COLORS = [
   '#2b2b2b', '#C2563A', '#E8632E', '#D9842A', '#F2B705', '#6B8A52',
   '#3FA796', '#5891AC', '#3D6BB5', '#7E5BB0', '#95527A', '#E4739B',
 ]
+// `pen` is the constant marker width per size (CSS px). The freehand pen used to
+// render through signature_pad's VELOCITY-variable width (min→max), so a stroke's
+// thin live preview fattened the instant you lifted — slowing down at the end of a
+// stroke pushed it toward `max`. The pad now draws the pen at one fixed width
+// (min === max === pen), so what you see while dragging is exactly what commits —
+// no "grows on release". (`min`/`max` are kept for old saved scenes whose stored
+// PointGroups still carry their own variable widths.)
 const SIZES = [
-  { key: 's', min: 1, max: 2.5, dot: 1.6, ui: 8, cell: 16, font: 30 },
-  { key: 'm', min: 2.5, max: 5, dot: 3.5, ui: 13, cell: 26, font: 48 },
-  { key: 'l', min: 6, max: 11, dot: 8, ui: 19, cell: 40, font: 72 },
+  { key: 's', min: 1, max: 2.5, dot: 1.6, pen: 3, ui: 8, cell: 16, font: 30 },
+  { key: 'm', min: 2.5, max: 5, dot: 3.5, pen: 6, ui: 13, cell: 26, font: 48 },
+  { key: 'l', min: 6, max: 11, dot: 8, pen: 12, ui: 19, cell: 40, font: 72 },
 ] as const
 const PACKS: { key: string; icon: string; items: string[] }[] = [
   { key: 'faces', icon: '😀', items: ['😀', '😄', '😍', '🤩', '😎', '😇', '🥳', '😴', '🤗', '😜'] },
@@ -83,19 +90,57 @@ const SHAPE_TYPES = ['line', 'rect', 'oval', 'tri', 'star', 'heart'] as const
 type ShapeType = (typeof SHAPE_TYPES)[number]
 const SHAPE_GLYPH: Record<ShapeType, string> = { line: '╱', rect: '▭', oval: '◯', tri: '△', star: '★', heart: '♥' }
 
-type Mode = 'pen' | 'sticker' | 'pixel' | 'text' | 'shape'
+type Mode = 'pen' | 'sticker' | 'pixel' | 'text' | 'shape' | 'fill'
 type Stamp = { x: number; y: number; text: string; font: number }
 type Shape = { type: ShapeType; x0: number; y0: number; x1: number; y1: number; color: string; size: number }
 type PixelChange = { key: string; prev: string | undefined }
-type Op = { kind: 'stroke'; n: number } | { kind: 'stamp'; n: number } | { kind: 'shape'; n: number } | { kind: 'pixel'; changes: PixelChange[] }
+// A paint-bucket fill: a seed point (content coords) + colour, REPLAYED over the
+// rendered raster each render rather than baked to a flat bitmap, so it stays in
+// the editable scene (#1) and survives re-opening. See `applyFills`.
+type Fill = { x: number; y: number; color: string }
+type Op =
+  | { kind: 'stroke'; n: number }
+  | { kind: 'stamp'; n: number }
+  | { kind: 'shape'; n: number }
+  | { kind: 'pixel'; changes: PixelChange[] }
+  | { kind: 'fill'; n: number }
+  | { kind: 'snapshot'; before: LayerSnapshot; after: LayerSnapshot } // Aplatir / Effacer
 type Redo =
   | { kind: 'stroke'; strokes: PointGroup[] }
   | { kind: 'stamp'; stamps: Stamp[] }
   | { kind: 'shape'; shapes: Shape[] }
   | { kind: 'pixel'; changes: { key: string; prev: string | undefined; next: string | undefined }[] }
+  | { kind: 'fill'; fills: Fill[] }
+  | { kind: 'snapshot'; before: LayerSnapshot; after: LayerSnapshot }
 // The editable, persisted drawing (#1) — everything needed to rebuild the layers.
-type Scene = { v: 1; strokes: PointGroup[]; stamps: Stamp[]; pixels: [string, string][]; shapes: Shape[]; template: { kind: TemplateKind; ch: string; shape: ColoringShape } }
+// `base` is an optional baked-in raster (a `data:` PNG) produced by "Aplatir"
+// (flatten): the layers above are merged into one frozen image so a fill can't
+// re-flood and new strokes land cleanly on top. It rides under the (now empty or
+// fresh) vector layers, exactly like an `initial` base image but stored in-scene.
+type Scene = { v: 1; strokes: PointGroup[]; stamps: Stamp[]; pixels: [string, string][]; shapes: Shape[]; fills?: Fill[]; base?: string; template: { kind: TemplateKind; ch: string; shape: ColoringShape } }
 const SCENE_MAX = 1_500_000 // chars — skip persisting an unusually heavy scene
+// A full in-memory snapshot of every layer, used to make whole-canvas ops (Aplatir,
+// Effacer) undoable: undo restores `before`, redo restores `after`. The base is the
+// live HTMLImageElement (already decoded), so undo/redo is synchronous — no reload.
+type LayerSnapshot = {
+  base: HTMLImageElement | null
+  hadPhoto: boolean
+  alpha: number
+  strokes: PointGroup[]
+  stamps: Stamp[]
+  shapes: Shape[]
+  fills: Fill[]
+  pixels: [string, string][]
+}
+// localStorage draft so closing the pad (Annuler, an accidental nav, a crash) never
+// loses an in-progress drawing — the scene is auto-saved a beat after you stop and
+// recovered on the next open of the same target. One slot at a time (pruned).
+const DRAFT_PREFIX = 'bb:drawpad:'
+// Cap the undo history so a long session (the "15 min of drawing" case) can't grow
+// the stack without bound — snapshot ops in particular retain a full layer copy + an
+// image, so an uncapped stack is a real memory risk. Oldest steps fall off the bottom
+// (you can still undo the most recent HISTORY_MAX actions); drawn content is untouched.
+const HISTORY_MAX = 120
 
 // ── Template painters (faint, drawn under the drawing). CSS-px space. ──
 function tplLines(ctx: CanvasRenderingContext2D, w: number, h: number) {
@@ -231,6 +276,48 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape) {
   ctx.restore()
 }
 
+// ── Paint-bucket flood fill (raster) ───────────────────────────────────────────
+// A `#rrggbb` (or rgb-ish) colour → [r,g,b]. PAPER and the swatches are all 6-digit
+// hex; anything unparseable falls back to black so a fill is never invisible.
+function hexToRgb(hex: string): [number, number, number] {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim())
+  if (!m) return [0, 0, 0]
+  return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
+}
+// Classic 4-neighbour flood fill on a raw RGBA buffer (device pixels), from the
+// seed pixel outward, replacing the contiguous run of near-same-colour pixels with
+// `col`. A `seen` bitmap (not just the colour test) bounds it so a fill colour that
+// sits within tolerance of the target can't loop forever. Tolerance is generous
+// enough to cross a stroke's anti-aliased skirt yet stop at the solid ink — same
+// "leaks through a gap in the outline" behaviour as Paint's bucket.
+// `seen`/`gen` is a reusable visited buffer (one allocation per applyFills pass, not
+// per fill): a cell counts as visited this fill when seen[p] === gen, so no clearing
+// between fills. Keeps a big drawing's flood fills from churning the GC every render.
+function floodFillRaster(data: Uint8ClampedArray, W: number, H: number, sx: number, sy: number, col: [number, number, number], seen: Uint8Array, gen: number) {
+  if (sx < 0 || sy < 0 || sx >= W || sy >= H) return
+  const start = (sy * W + sx) * 4
+  const tr = data[start], tg = data[start + 1], tb = data[start + 2]
+  const [fr, fg, fb] = col
+  // Already the fill colour at the seed → nothing to do.
+  if ((tr - fr) ** 2 + (tg - fg) ** 2 + (tb - fb) ** 2 <= 4) return
+  const TOL = 48 * 48 // squared RGB distance treated as "same region"
+  const stack = [sy * W + sx]
+  while (stack.length) {
+    const p = stack.pop()!
+    if (seen[p] === gen) continue
+    seen[p] = gen
+    const i = p * 4
+    const dr = data[i] - tr, dg = data[i + 1] - tg, db = data[i + 2] - tb
+    if (dr * dr + dg * dg + db * db > TOL) continue
+    data[i] = fr; data[i + 1] = fg; data[i + 2] = fb; data[i + 3] = 255
+    const x = p % W, y = (p - x) / W
+    if (x > 0) stack.push(p - 1)
+    if (x < W - 1) stack.push(p + 1)
+    if (y > 0) stack.push(p - W)
+    if (y < H - 1) stack.push(p + W)
+  }
+}
+
 export function DrawPad({
   open,
   onCancel,
@@ -304,6 +391,7 @@ export function DrawPad({
   const pixelsRef = useRef<Map<string, string>>(new Map())
   const stampsRef = useRef<Stamp[]>([])
   const shapesRef = useRef<Shape[]>([])
+  const fillsRef = useRef<Fill[]>([])
   const previewRef = useRef<Shape | null>(null)
   // Offscreen snapshot of the committed canvas, captured once at the start of a
   // live shape drag. While dragging we blit this + draw the preview on top, so a
@@ -346,6 +434,11 @@ export function DrawPad({
   // detached; we collect points here and commit a PointGroup so the COMMITTED stroke
   // still renders with signature_pad's native variable width via fromData.
   const penDragRef = useRef<{ points: { x: number; y: number; pressure: number; time: number }[] } | null>(null)
+  // Tap-to-place tools (sticker / text / fill) commit on pointer-UP, not down, so
+  // starting a two-finger pinch-zoom can't drop a stray stamp/fill where the first
+  // finger landed (the old "rainbow emoji bottom-right" bug). A pinch or a drag past
+  // TAP_SLOP cancels the pending tap.
+  const tapRef = useRef<{ x: number; y: number; mode: Mode } | null>(null)
 
   const [mode, setMode] = useState<Mode>('pen')
   const [color, setColor] = useState<string>(COLORS[0])
@@ -377,6 +470,20 @@ export function DrawPad({
   const [zoomLock, setZoomLock] = useState(false)
   const [exitLock, setExitLock] = useState(false)
   const zoomLockRef = useRef(false)
+  // Draft auto-save plumbing. `committedRef` flips on Save/Garder/Routine so the
+  // teardown drops the draft instead of re-saving committed work as a "draft".
+  const draftTimerRef = useRef<number | null>(null)
+  const committedRef = useRef(false)
+  const [showDraftHint, setShowDraftHint] = useState(false)
+  // Stable per-target draft slot. Use the URL *pathname* (not the whole signed URL)
+  // so a re-signed scene URL still recovers the same draft; a brand-new pad keys to
+  // 'new'. One slot per drawing target.
+  const draftKey = useMemo(() => {
+    const raw = initialSceneUrl || initial || ''
+    let id = 'new'
+    if (raw) { try { id = new URL(raw, location.href).pathname } catch { id = raw } }
+    return DRAFT_PREFIX + id
+  }, [initial, initialSceneUrl])
 
   useEffect(() => void (modeRef.current = mode), [mode])
   useEffect(() => void (colorRef.current = color), [color])
@@ -441,7 +548,7 @@ export function DrawPad({
     ctx.setTransform(r * v.z, 0, 0, r * v.z, r * v.ox, r * v.oy)
   }
 
-  function render(strokes: PointGroup[]) {
+  function render(strokes: PointGroup[], skipTemplate = false) {
     const pad = padRef.current
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
@@ -466,10 +573,12 @@ export function DrawPad({
     const h = canvas.height / ratio()
     ctx.save()
     const tp = tplRef.current
-    if (tp.kind === 'lines') tplLines(ctx, w, h)
-    else if (tp.kind === 'dots') tplDots(ctx, w, h)
-    else if (tp.kind === 'trace') tplTrace(ctx, w, h, tp.ch)
-    else if (tp.kind === 'coloring') tplColoring(ctx, w, h, tp.shape)
+    if (!skipTemplate) {
+      if (tp.kind === 'lines') tplLines(ctx, w, h)
+      else if (tp.kind === 'dots') tplDots(ctx, w, h)
+      else if (tp.kind === 'trace') tplTrace(ctx, w, h, tp.ch)
+      else if (tp.kind === 'coloring') tplColoring(ctx, w, h, tp.shape)
+    }
     const img = baseImgRef.current
     if (img && img.width && img.height) {
       const s = Math.min(w / img.width, h / img.height)
@@ -490,10 +599,120 @@ export function DrawPad({
     pad.fromData(strokes, { clear: false })
     for (const s of shapesRef.current) drawShape(ctx, s)
     if (previewRef.current) drawShape(ctx, previewRef.current)
+    // Paint-bucket fills sit ABOVE the ink (so a fill stops at the strokes/shapes
+    // bounding it, leaving their outline visible) and below the stamps. They're
+    // replayed against the just-drawn raster, in order, so a later fill sees an
+    // earlier one — matching how Paint's bucket stacks.
+    applyFills(ctx)
     ctx.save()
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     for (const st of stampsRef.current) { ctx.font = `${st.font}px sans-serif`; ctx.fillText(st.text, st.x, st.y) }
     ctx.restore()
+    if (!skipTemplate) scheduleDraftSave() // a real paint changed something → checkpoint the draft
+  }
+  // Replay every bucket fill onto the current canvas in ONE read/modify/write pass.
+  // getImageData/putImageData work in device pixels (transform-independent), so the
+  // content-space seed is mapped through the live viewport first. No-op when empty,
+  // so a fill-free drawing pays nothing.
+  function applyFills(ctx: CanvasRenderingContext2D) {
+    const fills = fillsRef.current
+    const canvas = canvasRef.current
+    if (!fills.length || !canvas) return
+    const W = canvas.width, H = canvas.height
+    // getImageData throws on a cross-origin-tainted canvas; swallow so a base image
+    // without CORS just can't be bucket-filled rather than breaking every render.
+    let img: ImageData
+    try { img = ctx.getImageData(0, 0, W, H) } catch { return }
+    const r = ratio()
+    const v = viewRef.current
+    const seen = new Uint8Array(W * H) // one reusable visited buffer for the whole pass
+    let gen = 0
+    for (const f of fills) {
+      if (++gen > 255) { seen.fill(0); gen = 1 } // Uint8 generation wrap (≥255 fills)
+      const dx = Math.round(r * (v.z * f.x + v.ox))
+      const dy = Math.round(r * (v.z * f.y + v.oy))
+      floodFillRaster(img.data, W, H, dx, dy, hexToRgb(f.color), seen, gen)
+    }
+    ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.putImageData(img, 0, 0)
+    ctx.restore()
+  }
+  function addFill(x: number, y: number) {
+    const items: Fill[] = [{ x, y, color: colorRef.current }]
+    if (symmetryRef.current) items.push({ x: cssW() - x, y, color: colorRef.current })
+    fillsRef.current.push(...items)
+    pushOp({ kind: 'fill', n: items.length })
+    redoRef.current = []
+    render(padRef.current?.toData() ?? [])
+  }
+  // Push an undo step, capping the stack from the bottom so a long session can't grow
+  // it without bound. Dropping the oldest steps never touches drawn content.
+  function pushOp(op: Op) {
+    const h = historyRef.current
+    h.push(op)
+    if (h.length > HISTORY_MAX) h.splice(0, h.length - HISTORY_MAX)
+  }
+  // Deep-copy the pad's current strokes so a snapshot can't be mutated by later edits.
+  function grabStrokes(): PointGroup[] {
+    return (padRef.current?.toData() ?? []).map((g) => ({ ...g, points: g.points.map((p) => ({ ...p })) }))
+  }
+  // Capture every layer right now (for an undoable whole-canvas op).
+  function snapNow(): LayerSnapshot {
+    return {
+      base: baseImgRef.current, hadPhoto: hasPhoto, alpha: photoAlphaRef.current,
+      strokes: grabStrokes(), stamps: [...stampsRef.current], shapes: [...shapesRef.current],
+      fills: [...fillsRef.current], pixels: [...pixelsRef.current],
+    }
+  }
+  // Restore a full snapshot (undo/redo of Aplatir / Effacer). Synchronous — the base
+  // is an already-decoded image element.
+  function applySnapshot(s: LayerSnapshot) {
+    baseImgRef.current = s.base
+    photoAlphaRef.current = s.alpha
+    setHasPhoto(s.hadPhoto)
+    setPhotoAlpha(s.alpha)
+    pixelsRef.current = new Map(s.pixels)
+    stampsRef.current = [...s.stamps]
+    shapesRef.current = [...s.shapes]
+    fillsRef.current = [...s.fills]
+    render(s.strokes.map((g) => ({ ...g, points: [...g.points] })))
+  }
+
+  // ── Draft auto-save (localStorage) ──────────────────────────────────────────
+  function pruneDrafts(keep: string) {
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i)
+        if (k && k.startsWith(DRAFT_PREFIX) && k !== keep) localStorage.removeItem(k)
+      }
+    } catch { /* storage disabled */ }
+  }
+  function writeDraftNow() {
+    if (draftTimerRef.current != null) { clearTimeout(draftTimerRef.current); draftTimerRef.current = null }
+    // Only brand-new pads keep a recoverable draft (see the recovery guard); editing a
+    // saved drawing leaves the server copy as the source of truth.
+    if (initial || initialSceneUrl) return
+    try {
+      if (!hasContent()) { localStorage.removeItem(draftKey); return }
+      const json = sceneJson()
+      if (!json) return // too heavy to persist (rare) — leave the prior draft alone
+      pruneDrafts(draftKey)
+      localStorage.setItem(draftKey, `{"scene":${json},"ts":${Date.now()}}`)
+    } catch { /* quota / disabled — best-effort */ }
+  }
+  // Debounced: the timer RESETS on each paint, so a serialize happens once ~0.8 s after
+  // you STOP — never mid-stroke (a big scene is costly to JSON.stringify, so coalescing
+  // matters). Only brand-new pads draft (edits keep the server copy as source of truth).
+  function scheduleDraftSave() {
+    if (committedRef.current) return // saved already → don't resurrect committed work
+    if (initial || initialSceneUrl) return // edit pad → no draft
+    if (draftTimerRef.current != null) clearTimeout(draftTimerRef.current)
+    draftTimerRef.current = window.setTimeout(() => { draftTimerRef.current = null; writeDraftNow() }, 800)
+  }
+  function clearDraft() {
+    if (draftTimerRef.current != null) { clearTimeout(draftTimerRef.current); draftTimerRef.current = null }
+    try { localStorage.removeItem(draftKey) } catch { /* ignore */ }
   }
   // Coalesce rapid paints (pixel drag) to one full redraw per frame.
   function scheduleRender() {
@@ -534,7 +753,8 @@ export function DrawPad({
 
   // Live freehand pen: blit the frozen snapshot + draw the in-progress polyline on
   // top (O(1) per frame, like the shape preview). The committed stroke re-renders via
-  // signature_pad on pointer-up, so the final line keeps its native variable width.
+  // signature_pad on pointer-up at the SAME constant width (`s.pen`), so the live line
+  // is exactly the committed line — no width jump when you lift.
   function drawPenStroke(ctx: CanvasRenderingContext2D, pts: { x: number; y: number }[], color: string) {
     if (!pts.length) return
     const s = SIZES[sizeRef.current]
@@ -543,9 +763,9 @@ export function DrawPad({
     ctx.fillStyle = color
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
-    ctx.lineWidth = Math.max(2, s.max * 0.85)
+    ctx.lineWidth = s.pen
     if (pts.length === 1) {
-      ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, s.dot, 0, Math.PI * 2); ctx.fill()
+      ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, s.pen / 2, 0, Math.PI * 2); ctx.fill()
     } else {
       ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y)
       for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y)
@@ -571,16 +791,18 @@ export function DrawPad({
     if (rafRef.current != null) return
     rafRef.current = requestAnimationFrame(() => { rafRef.current = null; renderPenPreview() })
   }
-  // Build a signature_pad PointGroup from collected content-space points, so the
-  // committed pen stroke renders with the pad's native velocity-variable width.
+  // Build a signature_pad PointGroup from collected content-space points. minWidth ===
+  // maxWidth === s.pen makes signature_pad draw a CONSTANT-width marker (no velocity
+  // taper), so the committed stroke matches the live preview pixel-for-pixel and never
+  // fattens on release.
   function makePenGroup(pts: { x: number; y: number; pressure: number; time: number }[]): PointGroup {
     const s = SIZES[sizeRef.current]
     return {
       points: pts.map((p) => ({ x: p.x, y: p.y, pressure: p.pressure, time: p.time })),
       penColor: colorRef.current,
-      dotSize: s.dot,
-      minWidth: s.min,
-      maxWidth: s.max,
+      dotSize: s.pen / 2,
+      minWidth: s.pen,
+      maxWidth: s.pen,
       velocityFilterWeight: 0.7,
       compositeOperation: 'source-over',
     } as PointGroup
@@ -613,7 +835,7 @@ export function DrawPad({
       data.push(makePenGroup(drag.points.map((p) => ({ ...p, x: w - p.x }))))
       n = 2
     }
-    historyRef.current.push({ kind: 'stroke', n })
+    pushOp({ kind: 'stroke', n })
     redoRef.current = []
     render(data)
   }
@@ -625,7 +847,7 @@ export function DrawPad({
   }
   function pushStamps(items: Stamp[]) {
     stampsRef.current.push(...items)
-    historyRef.current.push({ kind: 'stamp', n: items.length })
+    pushOp({ kind: 'stamp', n: items.length })
     redoRef.current = []
     render(padRef.current?.toData() ?? [])
   }
@@ -683,7 +905,7 @@ export function DrawPad({
       if (fillVal === undefined) map.delete(key); else map.set(key, fillVal)
       stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1])
     }
-    if (changes.length) { historyRef.current.push({ kind: 'pixel', changes }); redoRef.current = [] }
+    if (changes.length) { pushOp({ kind: 'pixel', changes }); redoRef.current = [] }
     render(padRef.current?.toData() ?? [])
   }
   function commitShape(s: Shape) {
@@ -693,7 +915,7 @@ export function DrawPad({
       items.push({ ...s, x0: w - s.x0, x1: w - s.x1 })
     }
     shapesRef.current.push(...items)
-    historyRef.current.push({ kind: 'shape', n: items.length })
+    pushOp({ kind: 'shape', n: items.length })
     redoRef.current = []
     previewRef.current = null
     render(padRef.current?.toData() ?? [])
@@ -701,6 +923,7 @@ export function DrawPad({
 
   useEffect(() => {
     if (!open || !canvasRef.current) return
+    committedRef.current = false // fresh session: until a Save lands, work is a draft
     const canvas = canvasRef.current
     const s = SIZES[sizeRef.current]
     const pad = new SignaturePad(canvas, { backgroundColor: PAPER, penColor: colorRef.current, minWidth: s.min, maxWidth: s.max, dotSize: s.dot })
@@ -712,10 +935,11 @@ export function DrawPad({
 
     // ── one finger draws, two fingers pinch-zoom + pan ──────────────────────────
     const beginDraw = (e: PointerEvent) => {
+      committedRef.current = false // a new mark after a Save/Garder → draft it again
       const m = modeRef.current
       const c = contentAt(e)
-      if (m === 'sticker') { stampAt(c.x, c.y, stickerRef.current); return }
-      if (m === 'text') { stampAt(c.x, c.y, textRef.current.trim()); return }
+      // Tap tools wait for pointer-up (a clean tap), so a pinch start can't drop one.
+      if (m === 'sticker' || m === 'text' || m === 'fill') { tapRef.current = { x: c.x, y: c.y, mode: m }; return }
       if (m === 'shape') { captureSnapshot(); shapeDragRef.current = { active: true, x0: c.x, y0: c.y }; return }
       if (m === 'pixel') {
         if (fillRef.current) { floodFill(c.x, c.y); return }
@@ -731,6 +955,12 @@ export function DrawPad({
     const continueDraw = (e: PointerEvent) => {
       const m = modeRef.current
       const c = contentAt(e)
+      // A pending tap that drags too far is a pan, not a tap → cancel it (no stamp).
+      if (tapRef.current) {
+        const dx = c.x - tapRef.current.x, dy = c.y - tapRef.current.y
+        if (dx * dx + dy * dy > 12 * 12) tapRef.current = null
+        return
+      }
       if (m === 'pixel' && dragRef.current.active && !fillRef.current) { paintPixel(c.x, c.y); return }
       if (m === 'shape' && shapeDragRef.current?.active) {
         const d = shapeDragRef.current
@@ -745,10 +975,20 @@ export function DrawPad({
     }
     const endDraw = (e: PointerEvent) => {
       const m = modeRef.current
+      // A completed single-finger tap places the sticker / text / fill.
+      if (tapRef.current) {
+        const tap = tapRef.current
+        tapRef.current = null
+        const c = contentAt(e)
+        if (tap.mode === 'sticker') stampAt(c.x, c.y, stickerRef.current)
+        else if (tap.mode === 'text') stampAt(c.x, c.y, textRef.current.trim())
+        else if (tap.mode === 'fill') addFill(c.x, c.y)
+        return
+      }
       if (m === 'pixel' && dragRef.current.active) {
         const { changes } = dragRef.current
         dragRef.current = { active: false, changes: [], last: null }
-        if (changes.length) { historyRef.current.push({ kind: 'pixel', changes }); redoRef.current = [] }
+        if (changes.length) { pushOp({ kind: 'pixel', changes }); redoRef.current = [] }
       } else if (m === 'shape' && shapeDragRef.current?.active) {
         const d = shapeDragRef.current
         const c = contentAt(e)
@@ -767,10 +1007,11 @@ export function DrawPad({
       if (modeRef.current === 'pixel' && dragRef.current.active) {
         const { changes } = dragRef.current
         dragRef.current = { active: false, changes: [], last: null }
-        if (changes.length) { historyRef.current.push({ kind: 'pixel', changes }); redoRef.current = [] }
+        if (changes.length) { pushOp({ kind: 'pixel', changes }); redoRef.current = [] }
       }
       shapeDragRef.current = null
       penDragRef.current = null
+      tapRef.current = null // a pinch started — drop any pending sticker/text/fill tap
       previewRef.current = null
       render(pad.toData())
     }
@@ -792,6 +1033,7 @@ export function DrawPad({
     }
 
     const onDown = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return // ignore right/middle click
       rectRef.current = rectRef.current ?? canvas.getBoundingClientRect()
       const rect = rectRef.current
       pointersRef.current.set(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top })
@@ -819,6 +1061,7 @@ export function DrawPad({
       if (gestureRef.current === 'draw' && e.pointerId === activePointerRef.current) continueDraw(e)
     }
     const onUp = (e: PointerEvent) => {
+      canvas.releasePointerCapture?.(e.pointerId) // explicit release (also auto on up)
       const wasActive = e.pointerId === activePointerRef.current
       pointersRef.current.delete(e.pointerId)
       if (gestureRef.current === 'draw' && wasActive) {
@@ -879,6 +1122,9 @@ export function DrawPad({
     ro?.observe(canvas)
     window.addEventListener('resize', resize)
     return () => {
+      // Persist (or drop) the draft BEFORE the canvas is torn down — closing the pad
+      // any way (Annuler, nav-away, unmount) must not lose an in-progress drawing.
+      if (committedRef.current) clearDraft(); else writeDraftNow()
       ro?.disconnect()
       window.removeEventListener('resize', resize)
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
@@ -896,6 +1142,8 @@ export function DrawPad({
       pixelsRef.current = new Map()
       stampsRef.current = []
       shapesRef.current = []
+      fillsRef.current = []
+      setShowDraftHint(false)
       previewRef.current = null
       snapshotRef.current = null
       shapeDragRef.current = null
@@ -938,6 +1186,37 @@ export function DrawPad({
       }
       img.src = initial
     }
+    // Rebuild every editable layer from a Scene (the stored scene, or a recovered
+    // draft). Returns false on a non-v1 object so the fetch path can fall back.
+    const loadSceneObject = (s: Scene): boolean => {
+      if (s?.v !== 1) return false
+      stampsRef.current = Array.isArray(s.stamps) ? s.stamps : []
+      shapesRef.current = Array.isArray(s.shapes) ? s.shapes : []
+      fillsRef.current = Array.isArray(s.fills) ? s.fills : []
+      pixelsRef.current = new Map(Array.isArray(s.pixels) ? s.pixels : [])
+      if (s.template?.kind) { setTpl(s.template.kind); setTraceCh(s.template.ch || 'Aa'); setShape(s.template.shape || 'star'); tplRef.current = s.template }
+      const strokes = Array.isArray(s.strokes) ? s.strokes : []
+      // A flattened (baked) base, if any, loads as the opaque bottom layer.
+      if (typeof s.base === 'string' && s.base.startsWith('data:')) {
+        const bi = new Image()
+        bi.onload = () => { if (!cancelled) { baseImgRef.current = bi; photoAlphaRef.current = 1; render(strokes) } }
+        bi.src = s.base
+      }
+      render(strokes)
+      return true
+    }
+    // Draft recovery — only for a brand-new pad (no source drawing). There it's an
+    // unambiguous win: an interrupted fresh drawing comes back, and "Repartir à zéro"
+    // cleanly blanks it. For editing a SAVED drawing the stored scene is the source of
+    // truth (and "start fresh" would have to mean "reload the original", not blank), so
+    // we don't auto-restore over it. Photo-trace entry flows want a clean stage too.
+    if (!filigrane && !pickPhotoOnOpen && !initial && !initialSceneUrl) {
+      try {
+        const raw = localStorage.getItem(draftKey)
+        const draft = raw ? (JSON.parse(raw)?.scene as Scene | undefined) : undefined
+        if (draft && loadSceneObject(draft)) { setShowDraftHint(true); return () => { cancelled = true } }
+      } catch { /* unreadable draft → fall through to the normal load */ }
+    }
     // Calquer: ignore the editable scene; the original rides as a faded tracing layer.
     if (filigrane) { loadBase(true); return () => { cancelled = true } }
     if (initialSceneUrl) {
@@ -945,13 +1224,7 @@ export function DrawPad({
         .then((r) => r.text())
         .then((txt) => {
           if (cancelled) return
-          const s = JSON.parse(txt) as Scene
-          if (s?.v !== 1) throw new Error('bad scene')
-          stampsRef.current = Array.isArray(s.stamps) ? s.stamps : []
-          shapesRef.current = Array.isArray(s.shapes) ? s.shapes : []
-          pixelsRef.current = new Map(Array.isArray(s.pixels) ? s.pixels : [])
-          if (s.template?.kind) { setTpl(s.template.kind); setTraceCh(s.template.ch || 'Aa'); setShape(s.template.shape || 'star'); tplRef.current = s.template }
-          render(Array.isArray(s.strokes) ? s.strokes : [])
+          if (!loadSceneObject(JSON.parse(txt) as Scene)) throw new Error('bad scene')
         })
         .catch(() => { if (!cancelled) loadBase() }) // unreadable scene → flat base image
     } else {
@@ -959,7 +1232,7 @@ export function DrawPad({
     }
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initial, initialSceneUrl, filigrane])
+  }, [open, initial, initialSceneUrl, filigrane, pickPhotoOnOpen, draftKey])
 
   // signature_pad NEVER handles input itself (it can't map a zoomed coordinate); the
   // pad's pointer handlers drive every tool, including the pen. Keep it detached.
@@ -1035,6 +1308,12 @@ export function DrawPad({
     } else if (op.kind === 'shape') {
       redoRef.current.push({ kind: 'shape', shapes: shapesRef.current.splice(shapesRef.current.length - op.n, op.n) })
       render(padRef.current?.toData() ?? [])
+    } else if (op.kind === 'fill') {
+      redoRef.current.push({ kind: 'fill', fills: fillsRef.current.splice(fillsRef.current.length - op.n, op.n) })
+      render(padRef.current?.toData() ?? [])
+    } else if (op.kind === 'snapshot') {
+      redoRef.current.push(op)
+      applySnapshot(op.before)
     } else {
       const map = pixelsRef.current
       const changes = op.changes.map((c) => ({ key: c.key, prev: c.prev, next: map.get(c.key) }))
@@ -1049,38 +1328,86 @@ export function DrawPad({
     if (op.kind === 'stroke') {
       const data = padRef.current?.toData() ?? []
       data.push(...op.strokes)
-      historyRef.current.push({ kind: 'stroke', n: op.strokes.length })
+      pushOp({ kind: 'stroke', n: op.strokes.length })
       render(data)
     } else if (op.kind === 'stamp') {
       stampsRef.current.push(...op.stamps)
-      historyRef.current.push({ kind: 'stamp', n: op.stamps.length })
+      pushOp({ kind: 'stamp', n: op.stamps.length })
       render(padRef.current?.toData() ?? [])
     } else if (op.kind === 'shape') {
       shapesRef.current.push(...op.shapes)
-      historyRef.current.push({ kind: 'shape', n: op.shapes.length })
+      pushOp({ kind: 'shape', n: op.shapes.length })
       render(padRef.current?.toData() ?? [])
+    } else if (op.kind === 'fill') {
+      fillsRef.current.push(...op.fills)
+      pushOp({ kind: 'fill', n: op.fills.length })
+      render(padRef.current?.toData() ?? [])
+    } else if (op.kind === 'snapshot') {
+      pushOp(op)
+      applySnapshot(op.after)
     } else {
       const map = pixelsRef.current
       for (const c of op.changes) { if (c.next === undefined) map.delete(c.key); else map.set(c.key, c.next) }
-      historyRef.current.push({ kind: 'pixel', changes: op.changes.map((c) => ({ key: c.key, prev: c.prev })) })
+      pushOp({ kind: 'pixel', changes: op.changes.map((c) => ({ key: c.key, prev: c.prev })) })
       render(padRef.current?.toData() ?? [])
     }
   }
+  // Effacer is now UNDOABLE: it records a snapshot op (the deleted layers) so a
+  // mis-tap of the trash is one Annuler away — like every other delete in the pad.
+  // The base image (a watermark / flattened layer) is kept, matching prior behaviour.
   const clear = () => {
-    pixelsRef.current.clear(); stampsRef.current = []; shapesRef.current = []; historyRef.current = []; redoRef.current = []
+    const before = snapNow()
+    const had = before.strokes.length || before.stamps.length || before.shapes.length || before.fills.length || before.pixels.length
+    pixelsRef.current = new Map(); stampsRef.current = []; shapesRef.current = []; fillsRef.current = []
+    if (had) {
+      const after: LayerSnapshot = { base: before.base, hadPhoto: before.hadPhoto, alpha: before.alpha, strokes: [], stamps: [], shapes: [], fills: [], pixels: [] }
+      pushOp({ kind: 'snapshot', before, after })
+      redoRef.current = []
+    }
     // Snap back to a fitted, un-zoomed blank page.
     viewRef.current = { ...IDENTITY }
     setZoomPct(100)
     render([])
   }
+  // Aplatir (flatten): merge every layer into one frozen raster base, then start fresh
+  // layers on top. This is the way around the live-fill limitation — once baked, a
+  // fill can't re-flood and new strokes sit cleanly above it. Undoable (one snapshot).
+  const flatten = () => {
+    const pad = padRef.current, canvas = canvasRef.current
+    if (!pad || !canvas) return
+    if (!hasContent() && !baseImgRef.current) return
+    const before = snapNow()
+    // Bake at 1× and WITHOUT the faint template guide (it stays a guide, not ink).
+    viewRef.current = { ...IDENTITY }
+    setZoomPct(100)
+    render(pad.toData(), true)
+    let url: string
+    try { url = canvas.toDataURL('image/png') } catch { render(pad.toData()); return } // tainted base → can't bake
+    const img = new Image()
+    img.onload = () => {
+      baseImgRef.current = img
+      photoAlphaRef.current = 1
+      setHasPhoto(false)
+      pixelsRef.current = new Map(); stampsRef.current = []; shapesRef.current = []; fillsRef.current = []
+      const after: LayerSnapshot = { base: img, hadPhoto: false, alpha: 1, strokes: [], stamps: [], shapes: [], fills: [], pixels: [] }
+      pushOp({ kind: 'snapshot', before, after })
+      redoRef.current = []
+      render([])
+    }
+    img.src = url
+  }
 
   const hasContent = () =>
-    !!padRef.current && (!padRef.current.isEmpty() || stampsRef.current.length > 0 || pixelsRef.current.size > 0 || shapesRef.current.length > 0)
+    !!padRef.current && (!padRef.current.isEmpty() || stampsRef.current.length > 0 || pixelsRef.current.size > 0 || shapesRef.current.length > 0 || fillsRef.current.length > 0)
   const isEmpty = () => !hasContent() && !baseImgRef.current && tpl === 'none'
 
   function sceneJson(): string {
     try {
-      const scene: Scene = { v: 1, strokes: padRef.current?.toData() ?? [], stamps: stampsRef.current, pixels: [...pixelsRef.current], shapes: shapesRef.current, template: tplRef.current }
+      // Only a flattened (`data:`) base belongs in the scene; a watermark photo (a
+      // transient `blob:` guide) and an `initial` http base are NOT re-stored here.
+      const baseSrc = baseImgRef.current?.src
+      const base = baseSrc?.startsWith('data:') ? baseSrc : undefined
+      const scene: Scene = { v: 1, strokes: padRef.current?.toData() ?? [], stamps: stampsRef.current, pixels: [...pixelsRef.current], shapes: shapesRef.current, fills: fillsRef.current, base, template: tplRef.current }
       const json = JSON.stringify(scene)
       return json.length > SCENE_MAX ? '' : json
     } catch {
@@ -1113,6 +1440,8 @@ export function DrawPad({
   }
   const save = () => {
     if (isEmpty()) return onCancel()
+    committedRef.current = true // saved → the teardown drops the draft, not re-saves it
+    clearDraft()
     setBusy(true)
     const scene = sceneJson()
     exportBlob((blob) => { setBusy(false); if (blob) onSave(blob, scene) })
@@ -1131,17 +1460,22 @@ export function DrawPad({
   }
   const makeRoutine = () => {
     if (!onMakeRoutine || isEmpty() || busy) return
+    committedRef.current = true
+    clearDraft()
     const scene = sceneJson()
     exportBlob((blob) => { if (blob) onMakeRoutine(blob, scene) })
   }
   const keep = () => {
     if (!onKeep || isEmpty() || busy) return
+    committedRef.current = true
+    clearDraft()
     const scene = sceneJson()
     exportBlob((blob) => { if (blob) onKeep(blob, scene) })
   }
 
   const MODES: { key: Mode; icon: Parameters<typeof Icon>[0]['name']; label: string }[] = [
     { key: 'pen', icon: 'paint-brush-bold', label: t.memo.drawPen },
+    { key: 'fill', icon: 'paint-bucket-bold', label: t.memo.fillTool },
     { key: 'shape', icon: 'star-fill', label: t.memo.drawShape },
     { key: 'sticker', icon: 'smiley-bold', label: t.memo.drawSticker },
     { key: 'pixel', icon: 'square-bold', label: t.memo.drawPixel },
@@ -1187,6 +1521,9 @@ export function DrawPad({
           <button type="button" className="drawpad__tool" onClick={undo} aria-label={t.memo.undo}><Icon name="arrow-counter-clockwise-bold" size={18} /></button>
           <button type="button" className="drawpad__tool" onClick={redo} aria-label={t.memo.redo}><Icon name="repeat-bold" size={18} /></button>
           <button type="button" className="drawpad__tool" onClick={clear} aria-label={t.memo.clear}><Icon name="trash-bold" size={18} /></button>
+          {/* Aplatir — bake every layer into one frozen base so a fill can't re-flood
+              and new marks land on top. Undoable. */}
+          <button type="button" className="drawpad__tool" onClick={flatten} aria-label={t.memo.flatten}><Icon name="stack-bold" size={18} /></button>
           {/* Two toddler "stay in the drawing" locks. Zoom lock: a 2nd finger can no
               longer pinch the page away. Exit lock: the bottom action row can't be
               tapped to leave. Placed up here (away from the draw zone) so a parent
@@ -1308,6 +1645,17 @@ export function DrawPad({
             <button key={label} type="button" className={'chip' + (Math.abs(photoAlpha - v) < 0.03 ? ' is-on' : '')} onClick={() => setPhotoAlpha(v)} aria-pressed={Math.abs(photoAlpha - v) < 0.03}>{t.memo[label]}</button>
           ))}
           <button type="button" className="chip drawpad__photoremove" onClick={removePhoto}><Icon name="trash-bold" size={14} /> {t.memo.photoRemove}</button>
+        </div>
+      )}
+
+      {/* Draft recovered — an unsaved drawing was restored after the pad was closed.
+          One tap to start fresh instead, or dismiss the note. */}
+      {showDraftHint && (
+        <div className="drawpad__draft" role="status">
+          <Icon name="arrow-counter-clockwise-bold" size={15} />
+          <span>{t.memo.draftRestored}</span>
+          <button type="button" className="chip" onClick={() => { clear(); setShowDraftHint(false) }}>{t.memo.draftDiscard}</button>
+          <button type="button" className="drawpad__draftx" onClick={() => setShowDraftHint(false)} aria-label={t.common.close}><Icon name="x-bold" size={14} /></button>
         </div>
       )}
 

@@ -359,6 +359,32 @@
   gap: 0.25rem;
   margin-left: auto;
 }
+/* Draft recovered banner — a quiet note that an unsaved drawing was restored. */
+.drawpad__draft {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0.9rem 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  font-size: 0.9rem;
+}
+.drawpad__draft .chip {
+  margin-left: auto;
+}
+.drawpad__draftx {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  color: var(--text-soft, inherit);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
 /* Centred call-to-action over the empty stage when opened via "Sur une photo". */
 .drawpad__photoprompt {
   position: absolute;
