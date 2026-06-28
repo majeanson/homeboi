@@ -1389,19 +1389,28 @@ export function DrawPad({
       render()
     }
   }
-  // Effacer is now UNDOABLE: it records a snapshot op (the deleted layers) so a
-  // mis-tap of the trash is one Annuler away — like every other delete in the pad.
-  // The base image (a watermark / flattened layer) is kept, matching prior behaviour.
+  // Effacer wipes EVERY content layer and is UNDOABLE (one snapshot op, so a mis-tap of
+  // the trash is one Annuler away). The ONLY thing it keeps is a watermark / "Calquer"
+  // tracing photo (it has its own remove control, and you usually want to redraw over
+  // it); strokes, stickers, shapes, fills, pixels, a flattened base, AND an opened-for-
+  // edit base all go. (Bug history: the perfect-freehand switch moved strokes off
+  // signature_pad into strokesRef — clear() must reset it explicitly or pen strokes get
+  // "stuck" through the trash. The template guide is intentionally NOT cleared — it has
+  // its own picker and a coloring page should survive a "start over".)
   const clear = () => {
     const before = snapNow()
-    // A flattened (baked) drawing lives in the base image — clearing must remove it too,
-    // or "Effacer" looks like it did nothing. A watermark / initial photo guide is kept.
-    const flatBase = before.base?.src?.startsWith('data:') ?? false
-    const had = before.strokes.length || before.stamps.length || before.shapes.length || before.fills.length || before.pixels.length || flatBase
-    pixelsRef.current = new Map(); stampsRef.current = []; shapesRef.current = []; fillsRef.current = []
-    if (flatBase) baseImgRef.current = null
+    const keepBase = before.hadPhoto // only an explicit tracing photo survives the trash
+    const dropBase = !!before.base && !keepBase
+    const had = before.strokes.length || before.stamps.length || before.shapes.length || before.fills.length || before.pixels.length || dropBase
+    strokesRef.current = []
+    stampsRef.current = []
+    shapesRef.current = []
+    fillsRef.current = []
+    pixelsRef.current = new Map()
+    previewRef.current = null
+    if (dropBase) { baseImgRef.current = null; photoAlphaRef.current = 1 }
     if (had) {
-      const after: LayerSnapshot = { base: flatBase ? null : before.base, hadPhoto: before.hadPhoto, alpha: before.alpha, strokes: [], stamps: [], shapes: [], fills: [], pixels: [] }
+      const after: LayerSnapshot = { base: keepBase ? before.base : null, hadPhoto: before.hadPhoto, alpha: before.alpha, strokes: [], stamps: [], shapes: [], fills: [], pixels: [] }
       pushOp({ kind: 'snapshot', before, after })
       redoRef.current = []
     }
@@ -1429,7 +1438,9 @@ export function DrawPad({
       baseImgRef.current = img
       photoAlphaRef.current = 1
       setHasPhoto(false)
-      pixelsRef.current = new Map(); stampsRef.current = []; shapesRef.current = []; fillsRef.current = []
+      // Clear EVERY vector layer — they're now baked into the base. Missing strokesRef
+      // here double-draws the strokes (baked + still live).
+      strokesRef.current = []; pixelsRef.current = new Map(); stampsRef.current = []; shapesRef.current = []; fillsRef.current = []
       const after: LayerSnapshot = { base: img, hadPhoto: false, alpha: 1, strokes: [], stamps: [], shapes: [], fills: [], pixels: [] }
       pushOp({ kind: 'snapshot', before, after })
       redoRef.current = []
