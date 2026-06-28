@@ -293,7 +293,7 @@ function strokeOutline(st: Stroke): number[][] {
   if (hit) return hit
   const out = getStroke(st.pts.map((p) => [p.x, p.y, p.p]), {
     size: st.size,
-    thinning: 0.45,
+    thinning: 0.3, // gentle width variance — thin parts stay solid, not a lighter shade
     smoothing: 0.55,
     streamline: 0.55,
     simulatePressure: true,
@@ -350,37 +350,60 @@ function hexToRgb(hex: string): [number, number, number] {
   if (!m) return [0, 0, 0]
   return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
 }
-// Classic 4-neighbour flood fill on a raw RGBA buffer (device pixels), from the
-// seed pixel outward, replacing the contiguous run of near-same-colour pixels with
-// `col`. A `seen` bitmap (not just the colour test) bounds it so a fill colour that
-// sits within tolerance of the target can't loop forever. Tolerance is generous
-// enough to cross a stroke's anti-aliased skirt yet stop at the solid ink — same
-// "leaks through a gap in the outline" behaviour as Paint's bucket.
-// `seen`/`gen` is a reusable visited buffer (one allocation per applyFills pass, not
-// per fill): a cell counts as visited this fill when seen[p] === gen, so no clearing
-// between fills. Keeps a big drawing's flood fills from churning the GC every render.
-function floodFillRaster(data: Uint8ClampedArray, W: number, H: number, sx: number, sy: number, col: [number, number, number], seen: Uint8Array, gen: number) {
+// Flood fill on a raw RGBA buffer (device pixels). CRUCIAL: it READS the target colour
+// and region boundaries from `ref` (a frozen copy of the INK-ONLY raster) but WRITES the
+// fill into `out`. Reading from `ref` means every fill is bounded by the strokes/shapes
+// ONLY — never by another fill's colour — so filling one shape can't recolour another
+// (the "other colours change" bug came from reading the cumulative, already-filled raster).
+// `seen`/`gen` is a reusable visited buffer (one allocation per applyFills pass): a cell
+// counts as visited this fill when seen[p] === gen, so no clearing between fills.
+// After flooding, the region is DILATED by `dilate` device px: the flood stops at a
+// stroke's anti-aliased skirt, leaving a thin paper rim ("white lines around strokes");
+// dilation pushes the fill into that rim and slightly under the stroke. Because the ink
+// is redrawn ON TOP afterwards, the under-stroke overpaint is hidden — the halo vanishes.
+function floodFillRaster(out: Uint8ClampedArray, ref: Uint8ClampedArray, W: number, H: number, sx: number, sy: number, col: [number, number, number], seen: Uint8Array, gen: number, dilate: number) {
   if (sx < 0 || sy < 0 || sx >= W || sy >= H) return
   const start = (sy * W + sx) * 4
-  const tr = data[start], tg = data[start + 1], tb = data[start + 2]
+  const tr = ref[start], tg = ref[start + 1], tb = ref[start + 2]
   const [fr, fg, fb] = col
-  // Already the fill colour at the seed → nothing to do.
-  if ((tr - fr) ** 2 + (tg - fg) ** 2 + (tb - fb) ** 2 <= 4) return
   const TOL = 48 * 48 // squared RGB distance treated as "same region"
+  const region: number[] = []
   const stack = [sy * W + sx]
   while (stack.length) {
     const p = stack.pop()!
     if (seen[p] === gen) continue
     seen[p] = gen
     const i = p * 4
-    const dr = data[i] - tr, dg = data[i + 1] - tg, db = data[i + 2] - tb
+    const dr = ref[i] - tr, dg = ref[i + 1] - tg, db = ref[i + 2] - tb
     if (dr * dr + dg * dg + db * db > TOL) continue
-    data[i] = fr; data[i + 1] = fg; data[i + 2] = fb; data[i + 3] = 255
+    out[i] = fr; out[i + 1] = fg; out[i + 2] = fb; out[i + 3] = 255
+    region.push(p)
     const x = p % W, y = (p - x) / W
     if (x > 0) stack.push(p - 1)
     if (x < W - 1) stack.push(p + 1)
     if (y > 0) stack.push(p - W)
     if (y < H - 1) stack.push(p + W)
+  }
+  // Dilate the filled region (8-neighbour, `dilate` passes) to swallow the AA rim. This
+  // overwrites whatever is there (stroke edges) — fine, the ink is repainted on top.
+  let frontier = region
+  for (let d = 0; d < dilate && frontier.length; d++) {
+    const next: number[] = []
+    for (const p of frontier) {
+      const x = p % W, y = (p - x) / W
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        if (!ox && !oy) continue
+        const nx = x + ox, ny = y + oy
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue
+        const q = ny * W + nx
+        if (seen[q] === gen) continue
+        seen[q] = gen
+        const j = q * 4
+        out[j] = fr; out[j + 1] = fg; out[j + 2] = fb; out[j + 3] = 255
+        next.push(q)
+      }
+    }
+    frontier = next
   }
 }
 
@@ -689,13 +712,17 @@ export function DrawPad({
     try { img = ctx.getImageData(0, 0, W, H) } catch { return }
     const r = ratio()
     const v = viewRef.current
+    // Freeze the ink-only raster: every fill reads its target + boundaries from this, so
+    // fills are independent of each other (filling one shape can't recolour another).
+    const ref = new Uint8ClampedArray(img.data)
     const seen = new Uint8Array(W * H) // one reusable visited buffer for the whole pass
+    const dilate = Math.max(2, Math.round(1.5 * r)) // device px — covers the AA halo
     let gen = 0
     for (const f of fills) {
       if (++gen > 255) { seen.fill(0); gen = 1 } // Uint8 generation wrap (≥255 fills)
       const dx = Math.round(r * (v.z * f.x + v.ox))
       const dy = Math.round(r * (v.z * f.y + v.oy))
-      floodFillRaster(img.data, W, H, dx, dy, hexToRgb(f.color), seen, gen)
+      floodFillRaster(img.data, ref, W, H, dx, dy, hexToRgb(f.color), seen, gen, dilate)
     }
     ctx.save()
     ctx.setTransform(1, 0, 0, 1, 0, 0)
