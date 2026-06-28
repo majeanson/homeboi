@@ -291,7 +291,7 @@ export function Postbox() {
         </div>
       </div>
 
-      <DrawPad open={draw} onCancel={() => setDraw(false)} onSave={(png, scene) => void onDrawSave(png, scene)} />
+      <DrawPad open={draw} draftId="postbox" onCancel={() => setDraw(false)} onSave={(png, scene) => void onDrawSave(png, scene)} />
     </div>
   )
 }

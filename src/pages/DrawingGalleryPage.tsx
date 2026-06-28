@@ -146,6 +146,7 @@ export function DrawingGalleryPage() {
         <DrawPad
           open
           toddler={toddler}
+          draftId="gallery"
           {...(draw.editing ? draw.padProps! : {})}
           onCancel={() => { setAdding(false); draw.close() }}
           onSave={(png, scene) => {

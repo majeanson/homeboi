@@ -546,6 +546,7 @@ function PhotoControl({
           photo. Scene JSON is ignored — a card photo stores only the R2 image key. */}
       <DrawPad
         open={drawing}
+        draftId="routine-card"
         onCancel={() => setDrawing(false)}
         onSave={(png) => {
           setDrawing(false)

@@ -315,6 +315,7 @@ export function Notes({
       {creating && (
         <DrawPad
           open
+          draftId="board-note"
           onCancel={() => setCreating(false)}
           onSave={(png, scene) => {
             setCreating(false)

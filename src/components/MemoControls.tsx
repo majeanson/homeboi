@@ -150,6 +150,7 @@ export function MemoControls({
       </div>
       <DrawPad
         open={draw || drawPhoto}
+        draftId="memo"
         pickPhotoOnOpen={drawPhoto}
         onCancel={() => { setDraw(false); setDrawPhoto(false) }}
         onSave={(png, scene) => {
