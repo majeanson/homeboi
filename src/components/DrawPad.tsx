@@ -98,7 +98,7 @@ type Pt = { x: number; y: number; p: number }
 type Stroke = { pts: Pt[]; color: string; size: number }
 // A paint-bucket fill: a seed point (content coords) + colour, REPLAYED over the
 // rendered raster each render rather than baked to a flat bitmap, so it stays in
-// the editable scene (#1) and survives re-opening. See `applyFills`.
+// the editable scene (#1) and survives re-opening. See `buildFillLayer`.
 type Fill = { x: number; y: number; color: string }
 type Op =
   | { kind: 'stroke'; n: number }
@@ -355,7 +355,7 @@ function hexToRgb(hex: string): [number, number, number] {
 // fill into `out`. Reading from `ref` means every fill is bounded by the strokes/shapes
 // ONLY — never by another fill's colour — so filling one shape can't recolour another
 // (the "other colours change" bug came from reading the cumulative, already-filled raster).
-// `seen`/`gen` is a reusable visited buffer (one allocation per applyFills pass): a cell
+// `seen`/`gen` is a reusable visited buffer (one allocation per buildFillLayer pass): a cell
 // counts as visited this fill when seen[p] === gen, so no clearing between fills.
 // After flooding, the region is DILATED by `dilate` device px: the flood stops at a
 // stroke's anti-aliased skirt, leaving a thin paper rim ("white lines around strokes");
@@ -497,6 +497,11 @@ export function DrawPad({
   // signature_pad's fromData (the source of both the lag and the per-frame stroke
   // shimmer on previous lines).
   const snapshotRef = useRef<HTMLCanvasElement | null>(null)
+  // Cached CONTENT-SPACE bucket-fill raster + the reusable boundary scratch canvas it's
+  // built from. Composited (scaled) under the content each render; rebuilt only when
+  // content/fills change, not on a pure zoom/pan. See buildFillLayer().
+  const fillLayerRef = useRef<HTMLCanvasElement | null>(null)
+  const boundaryRef = useRef<HTMLCanvasElement | null>(null)
   const historyRef = useRef<Op[]>([])
   const redoRef = useRef<Redo[]>([])
   const rafRef = useRef<number | null>(null)
@@ -647,10 +652,19 @@ export function DrawPad({
     ctx.setTransform(r * v.z, 0, 0, r * v.z, r * v.ox, r * v.oy)
   }
 
+  // Draw the base image (watermark photo at its fade, or an opaque flattened/legacy base)
+  // centred-fit in CSS-px space. Shared by render() and the fill-boundary build.
+  function drawBase(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    const img = baseImgRef.current
+    if (!img || !img.width || !img.height) return
+    const s = Math.min(w / img.width, h / img.height)
+    ctx.globalAlpha = photoAlphaRef.current
+    ctx.drawImage(img, (w - img.width * s) / 2, (h - img.height * s) / 2, img.width * s, img.height * s)
+    ctx.globalAlpha = 1
+  }
   // Draw the content layers that sit ABOVE the fills: pixel cells, freehand strokes
-  // (perfect-freehand), shapes, and the live shape preview. Called twice when there are
-  // fills (once to bound them, once ON TOP) — so the fill's anti-alias dilation can't eat
-  // into a pixel cell or a stroke, and content stays above the fill.
+  // (perfect-freehand), shapes, and the live shape preview. Drawn over the fill layer so a
+  // fill never hides a stroke/pixel, and used (at identity) to build the fill boundary.
   function drawContent(ctx: CanvasRenderingContext2D) {
     for (const [key, col] of pixelsRef.current) {
       const [coords, cellStr] = key.split(':')
@@ -663,10 +677,53 @@ export function DrawPad({
     for (const s of shapesRef.current) drawShape(ctx, s)
     if (previewRef.current) drawShape(ctx, previewRef.current)
   }
-  function render(skipTemplate = false) {
+  // Bake the bucket fills into a CONTENT-SPACE offscreen layer (un-zoomed, device-res).
+  // Rebuilt only when content/fills change — NOT on a pure zoom/pan, where render() just
+  // re-composites the cached layer (so a pinch never re-floods, and a fill whose seed is
+  // panned off-viewport can't vanish: the layer covers the whole page). The flood boundary
+  // is built here from base + content + the COLORING outline only — the lines/dots/trace
+  // writing guides are deliberately excluded so they don't slice a fill into bands.
+  function buildFillLayer() {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    if (!fillsRef.current.length) { fillLayerRef.current = null; return }
+    const W = canvas.width, H = canvas.height
+    const r = ratio(), w = W / r, h = H / r
+    // Boundary raster (content space, identity): PAPER + base + content + coloring outline.
+    const bnd = boundaryRef.current ?? (boundaryRef.current = document.createElement('canvas'))
+    bnd.width = W; bnd.height = H
+    const bctx = bnd.getContext('2d')
+    if (!bctx) return
+    bctx.setTransform(1, 0, 0, 1, 0, 0)
+    bctx.fillStyle = PAPER; bctx.fillRect(0, 0, W, H)
+    bctx.setTransform(r, 0, 0, r, 0, 0) // content → device, no viewport
+    drawBase(bctx, w, h)
+    if (tplRef.current.kind === 'coloring') tplColoring(bctx, w, h, tplRef.current.shape) // intended boundary
+    drawContent(bctx)
+    let ref: Uint8ClampedArray
+    try { ref = bctx.getImageData(0, 0, W, H).data } catch { fillLayerRef.current = null; return } // tainted base
+    // Flood each seed at IDENTITY into a transparent output buffer (opaque only in regions).
+    const out = new Uint8ClampedArray(W * H * 4)
+    const seen = new Uint8Array(W * H)
+    const dilate = Math.max(2, Math.round(1.5 * r))
+    let gen = 0
+    for (const f of fillsRef.current) {
+      if (++gen > 255) { seen.fill(0); gen = 1 }
+      const dx = Math.min(W - 1, Math.max(0, Math.round(r * f.x)))
+      const dy = Math.min(H - 1, Math.max(0, Math.round(r * f.y)))
+      floodFillRaster(out, ref, W, H, dx, dy, hexToRgb(f.color), seen, gen, dilate)
+    }
+    const fl = fillLayerRef.current ?? (fillLayerRef.current = document.createElement('canvas'))
+    fl.width = W; fl.height = H
+    fl.getContext('2d')?.putImageData(new ImageData(out, W, H), 0, 0)
+  }
+  function render(skipTemplate = false, reuseFills = false) {
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
+    // A pure viewport change (pinch/wheel/pan) reuses the cached fill layer; any content
+    // change rebuilds it. First render with fills also builds it (no cache yet).
+    if (!reuseFills || (fillsRef.current.length && !fillLayerRef.current)) buildFillLayer()
     // Clear to PAPER at IDENTITY (covers the whole device canvas), then apply the
     // zoom/pan viewport so every content layer is drawn in stable content coords.
     ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -683,25 +740,12 @@ export function DrawPad({
       else if (tp.kind === 'trace') tplTrace(ctx, w, h, tp.ch)
       else if (tp.kind === 'coloring') tplColoring(ctx, w, h, tp.shape)
     }
-    const img = baseImgRef.current
-    if (img && img.width && img.height) {
-      const s = Math.min(w / img.width, h / img.height)
-      // #14b — a user watermark photo draws at the chosen fade; an old flat base PNG
-      // (photoAlphaRef stays 1) is unaffected. globalAlpha is restored by ctx.restore().
-      ctx.globalAlpha = photoAlphaRef.current
-      ctx.drawImage(img, (w - img.width * s) / 2, (h - img.height * s) / 2, img.width * s, img.height * s)
-      ctx.globalAlpha = 1
-    }
+    drawBase(ctx, w, h)
     ctx.restore()
+    // Fills sit UNDER the content: composite the cached content-space layer through the
+    // viewport (drawImage scales the W×H device-res layer into the w×h content rect).
+    if (fillLayerRef.current) ctx.drawImage(fillLayerRef.current, 0, 0, w, h)
     drawContent(ctx)
-    // Paint-bucket fills: flood the content-bounded raster, then redraw the content ON
-    // TOP, so a fill stops at the outlines yet NEVER hides a stroke/pixel — you can draw
-    // over a filled area and the new mark stays visible (fixes "drawing hides under fill").
-    // No fills → none of this runs (a fill-free drawing pays nothing).
-    if (fillsRef.current.length) {
-      applyFills(ctx)
-      drawContent(ctx)
-    }
     drawStamps(ctx)
     if (!skipTemplate) scheduleDraftSave() // a real paint changed something → checkpoint the draft
   }
@@ -713,38 +757,6 @@ export function DrawPad({
     ctx.save()
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     for (const st of stampsRef.current) { ctx.font = `${st.font}px sans-serif`; ctx.fillText(st.text, st.x, st.y) }
-    ctx.restore()
-  }
-  // Replay every bucket fill onto the current canvas in ONE read/modify/write pass.
-  // getImageData/putImageData work in device pixels (transform-independent), so the
-  // content-space seed is mapped through the live viewport first. No-op when empty,
-  // so a fill-free drawing pays nothing.
-  function applyFills(ctx: CanvasRenderingContext2D) {
-    const fills = fillsRef.current
-    const canvas = canvasRef.current
-    if (!fills.length || !canvas) return
-    const W = canvas.width, H = canvas.height
-    // getImageData throws on a cross-origin-tainted canvas; swallow so a base image
-    // without CORS just can't be bucket-filled rather than breaking every render.
-    let img: ImageData
-    try { img = ctx.getImageData(0, 0, W, H) } catch { return }
-    const r = ratio()
-    const v = viewRef.current
-    // Freeze the ink-only raster: every fill reads its target + boundaries from this, so
-    // fills are independent of each other (filling one shape can't recolour another).
-    const ref = new Uint8ClampedArray(img.data)
-    const seen = new Uint8Array(W * H) // one reusable visited buffer for the whole pass
-    const dilate = Math.max(2, Math.round(1.5 * r)) // device px — covers the AA halo
-    let gen = 0
-    for (const f of fills) {
-      if (++gen > 255) { seen.fill(0); gen = 1 } // Uint8 generation wrap (≥255 fills)
-      const dx = Math.round(r * (v.z * f.x + v.ox))
-      const dy = Math.round(r * (v.z * f.y + v.oy))
-      floodFillRaster(img.data, ref, W, H, dx, dy, hexToRgb(f.color), seen, gen, dilate)
-    }
-    ctx.save()
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
-    ctx.putImageData(img, 0, 0)
     ctx.restore()
   }
   function addFill(x: number, y: number) {
@@ -939,7 +951,7 @@ export function DrawPad({
   function applyView(next: Viewport) {
     viewRef.current = next
     setZoomPct(Math.round(next.z * 100))
-    render()
+    render(false, true) // pure viewport change → re-composite the cached fill layer, don't re-flood
   }
   function pushStamps(items: Stamp[]) {
     stampsRef.current.push(...items)
@@ -1237,6 +1249,8 @@ export function DrawPad({
       setShowDraftHint(false)
       previewRef.current = null
       snapshotRef.current = null
+      fillLayerRef.current = null
+      boundaryRef.current = null
       shapeDragRef.current = null
       // Reset the deferred-tap + pixel-drag gesture state too: the component stays
       // MOUNTED across open toggles (returns null when closed), so a tap/drag left
