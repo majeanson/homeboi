@@ -638,9 +638,18 @@ export function DrawPad({
     ctx.setTransform(r * v.z, 0, 0, r * v.z, r * v.ox, r * v.oy)
   }
 
-  // Draw the ink layer: freehand strokes (perfect-freehand) + shapes + the live shape
-  // preview. Called twice when there are fills (once to bound them, once on top).
-  function drawInk(ctx: CanvasRenderingContext2D) {
+  // Draw the content layers that sit ABOVE the fills: pixel cells, freehand strokes
+  // (perfect-freehand), shapes, and the live shape preview. Called twice when there are
+  // fills (once to bound them, once ON TOP) — so the fill's anti-alias dilation can't eat
+  // into a pixel cell or a stroke, and content stays above the fill.
+  function drawContent(ctx: CanvasRenderingContext2D) {
+    for (const [key, col] of pixelsRef.current) {
+      const [coords, cellStr] = key.split(':')
+      const [cx, cy] = coords.split(',').map(Number)
+      const cell = Number(cellStr)
+      ctx.fillStyle = col
+      ctx.fillRect(cx * cell, cy * cell, cell, cell)
+    }
     for (const st of strokesRef.current) drawFreehand(ctx, st)
     for (const s of shapesRef.current) drawShape(ctx, s)
     if (previewRef.current) drawShape(ctx, previewRef.current)
@@ -674,22 +683,15 @@ export function DrawPad({
       ctx.drawImage(img, (w - img.width * s) / 2, (h - img.height * s) / 2, img.width * s, img.height * s)
       ctx.globalAlpha = 1
     }
-    for (const [key, col] of pixelsRef.current) {
-      const [coords, cellStr] = key.split(':')
-      const [cx, cy] = coords.split(',').map(Number)
-      const cell = Number(cellStr)
-      ctx.fillStyle = col
-      ctx.fillRect(cx * cell, cy * cell, cell, cell)
-    }
     ctx.restore()
-    drawInk(ctx)
-    // Paint-bucket fills: flood the ink-bounded raster, then redraw the ink ON TOP, so
-    // a fill stops at the outlines yet NEVER hides a stroke — you can draw over a filled
-    // area and the new mark stays visible (fixes the "drawing hides under fill" feel).
+    drawContent(ctx)
+    // Paint-bucket fills: flood the content-bounded raster, then redraw the content ON
+    // TOP, so a fill stops at the outlines yet NEVER hides a stroke/pixel — you can draw
+    // over a filled area and the new mark stays visible (fixes "drawing hides under fill").
     // No fills → none of this runs (a fill-free drawing pays nothing).
     if (fillsRef.current.length) {
       applyFills(ctx)
-      drawInk(ctx)
+      drawContent(ctx)
     }
     ctx.save()
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
@@ -1290,12 +1292,13 @@ export function DrawPad({
   function loadPhotoUrl(url: string, revoke: boolean) {
     const img = new Image()
     img.onload = () => {
+      if (revoke) URL.revokeObjectURL(url)
+      if (!canvasRef.current) return // pad closed before the photo decoded — drop it
       baseImgRef.current = img
       setHasPhoto(true)
       photoAlphaRef.current = 0.4
       setPhotoAlpha(0.4)
       render()
-      if (revoke) URL.revokeObjectURL(url)
     }
     img.onerror = () => { if (revoke) URL.revokeObjectURL(url) }
     img.src = url
@@ -1435,6 +1438,7 @@ export function DrawPad({
     try { url = canvas.toDataURL('image/png') } catch { render(); return } // tainted base → can't bake
     const img = new Image()
     img.onload = () => {
+      if (!canvasRef.current) return // pad closed before the bake decoded — drop it
       baseImgRef.current = img
       photoAlphaRef.current = 1
       setHasPhoto(false)
