@@ -42,7 +42,7 @@
   align-items: center;
   gap: 0.4rem;
   margin: 0.4rem 0 0.2rem;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   font-weight: 700;
   color: var(--ink-soft);
   /* A long, unbreakable group name must break and wrap rather than push the row's
@@ -433,7 +433,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-soft);
 }
@@ -860,7 +860,7 @@
   gap: 0.35rem;
 }
 .lc__suggestion-text {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink);
 }
 .lc__suggestion-actions {
@@ -950,7 +950,7 @@
   opacity: 0.4;
 }
 .cercle-fam__chip-name {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 .cercle-fam__chip-x {
@@ -1049,6 +1049,38 @@
   background: var(--card);
   color: var(--ink);
   box-shadow: var(--shadow-sm);
+}
+
+/* « Notre monde » launch — the DISTINCT scene-jump affordance in the view row's
+   trailing slot. Deliberately NOT styled like a Liste/Liens/Arbre segment (no pill
+   group, a tinted outline instead) so it reads as "open the full-screen map" rather
+   than a 4th in-page tab; the ↗ glyph signals the context jump. */
+.cercle-worldlaunch {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 35%, var(--line));
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 9%, transparent);
+  color: var(--teal-deep, #2a8f85);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.cercle-worldlaunch:hover {
+  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 16%, transparent);
+}
+/* On a phone the view row is tight (3 segments + this + the "?"): drop the word and
+   keep the sparkle + ↗ (the button stays aria-labelled « Voir notre monde ») so the
+   row never overflows. The label returns when there's room. */
+@media (max-width: 30rem) {
+  .cercle-worldlaunch__label {
+    display: none;
+  }
 }
 
 /* --- Business tab (BusinessesTab) ------------------------------------------- */
@@ -1220,7 +1252,7 @@
   border: 0;
   background: none;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   color: var(--ink);
   outline: none;
 }
@@ -1338,7 +1370,7 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--ink);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   line-height: 1.5;
 }
 .cnote__meta {
@@ -1553,7 +1585,7 @@
 .review__sub {
   flex: 0 1 auto;
   color: var(--ink-soft);
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1775,7 +1807,7 @@
 /* Shared Markdown render — used by the note rows' expanded view AND the editor preview. */
 .note-md {
   color: var(--ink);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
@@ -1890,7 +1922,7 @@
   border-radius: var(--radius-pill);
   background: var(--card);
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   cursor: pointer;
 }
 .note-editor__toggle.is-on {

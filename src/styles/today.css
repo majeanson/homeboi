@@ -154,7 +154,7 @@
 .section-intro__what {
   margin: 8px 0 0;
   color: var(--ink);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   line-height: 1.4;
 }
 .section-intro__points {
@@ -258,7 +258,7 @@
 .welcome-card__intro {
   margin: 8px 0 10px;
   color: var(--ink);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   line-height: 1.4;
 }
 .welcome-card__steps {
@@ -279,7 +279,7 @@
   background: var(--paper);
   color: var(--ink);
   text-decoration: none;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
 }
 .welcome-card__step a:hover {
   border-color: var(--line-strong);
@@ -531,7 +531,7 @@
   cursor: pointer;
   padding: 0.34rem 0.72rem;
   border-radius: var(--radius-pill);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--berry-deep);
   background: color-mix(in srgb, var(--berry) 16%, var(--card));
@@ -644,7 +644,7 @@
   padding: 0.25rem 0.45rem;
   border-radius: var(--radius-sm);
   line-height: 1.15;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   background: rgb(0 0 0 / 0.06);
 }
 .now-card__hour-when {
@@ -1044,4 +1044,27 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* ---- Board header running clock (glanceability) -------------------------- */
+/* A quiet, ambient time readout that rides in the .board-controls row beside
+   the date. Calm/secondary by design — it answers "what time is it?" from
+   across the room without competing with the greeting hero. Minute-granularity
+   tick lives in the <BoardClock/> subcomponent (Board.tsx). */
+.board-controls__clock {
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+/* Kiosk: the wall tablet is read from across the room, so the clock grows into
+   a glanceable (still calm, still secondary) readout. */
+.hub[data-surface='kiosk'] .board-controls__clock {
+  font-size: var(--text-xl);
+}
+/* Mobile: compact — a phone is held close, so keep it discreet beside the date. */
+.hub[data-surface='mobile'] .board-controls__clock {
+  font-size: var(--text-md);
 }

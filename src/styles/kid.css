@@ -308,7 +308,7 @@
 }
 /* A quiet total on the end recap (a parent's glance). */
 .tdl-total {
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
   font-weight: 700;
   color: var(--ink-soft);
 }
@@ -377,7 +377,7 @@
   place-items: center;
 }
 .tdl-countdown__hint {
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   font-weight: 700;
   color: var(--ink-soft);
 }
@@ -576,7 +576,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
 }
 .kid-exit-modal__input {
   font-size: 1.4rem;
@@ -590,7 +590,7 @@
 .kid-exit-modal__wrong {
   margin: 10px 0 0;
   color: var(--danger, #c2563a);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
 }
 .kid-exit-modal__actions {
   display: flex;
@@ -796,7 +796,7 @@
 .play-menu__title {
   font-family: var(--display);
   font-weight: 800;
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   text-align: center;
 }
 .play-menu__doors {
@@ -874,7 +874,7 @@
 .seek-deck__label {
   font-family: var(--display);
   font-weight: 800;
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
 }
 .seek__bar {
   display: flex;
@@ -892,7 +892,7 @@
   color: var(--ink);
   font-family: var(--display);
   font-weight: 800;
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   cursor: pointer;
 }
 .seek__board {

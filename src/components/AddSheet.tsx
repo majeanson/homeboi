@@ -5,6 +5,7 @@ import { useLang, useT } from '../i18n'
 import { api, ApiError } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { useWrite } from '../lib/write'
+import { useRecordUndo } from '../lib/toast'
 import { useAuth } from '../lib/auth'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { useReserveLocations } from '../lib/reservePrefs'
@@ -69,6 +70,30 @@ const TYPE_DRESS: { type: CaptureType; cat: CatKey; icon: IconName }[] = [
   { type: 'pantry-low', cat: 'pantry', icon: 'carrot-bold' },
   { type: 'note', cat: 'routine', icon: CATS.routine.icon },
 ]
+
+// One row a capture routing inserted (mirrors the Cleanup shape that
+// functions/api/capture returns as `routed.cleanup`): the table + id, so a
+// correction (re-route) or a calm undo can drop exactly what was created.
+type Cleanup = { table: string; id: string }
+
+// Each cleanup table → its own DELETE endpoint (every one already takes { id }).
+// Lets the compensating undo remove the row(s) a routing created by REUSING each
+// resource's existing delete — no new server handler. Mirrors capture.ts's
+// CLEANUP_TABLES allowlist (keep the two in step).
+const CAPTURE_UNDO_EP: Record<string, string> = {
+  events: 'events',
+  tasks: 'chores',
+  list_items: 'list',
+  pantry_low: 'pantry',
+  meals: 'meals',
+  meal_leftovers: 'meal-leftovers',
+  notes: 'notes',
+}
+
+// The caches a capture can land in (board glance, meal grid, pantry, leftovers
+// pool) — invalidated after a capture AND after an undo-delete so the live poll
+// reconciles. Mirrors the fan-out the typed capture submit always did.
+const CAPTURE_KEYS = [BOARD_KEY, MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY]
 
 const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   capture: { cat: 'list', icon: 'sparkle-bold' },
@@ -190,6 +215,9 @@ export function AddSheet({
   const { lang } = useLang()
   const qc = useQueryClient()
   const write = useWrite()
+  // Compensating undo (the row is already live server-side): records a "routed to
+  // X" entry in the shared Récents toast whose onUndo deletes what was created.
+  const recordUndo = useRecordUndo()
   const nav = useNavigate()
   const { signedIn } = useAuth()
   // AI on/off (binding present AND household hasn't switched it off). When off, the
@@ -246,7 +274,12 @@ export function AddSheet({
   // — quick capture (board) —
   const [text, setText] = useState('')
   const captureVoice = useVoiceInput(setText)
-  const [routed, setRouted] = useState<{ label: string; degraded: boolean } | null>(null)
+  // The last route's result, kept so we can (a) confirm "Ajouté : X", (b) offer the
+  // re-route tiles, and (c) re-file with the ORIGINAL text + the rows to undo — the
+  // input is cleared after a successful route, so a correction sources from here.
+  const [routed, setRouted] = useState<{ text: string; label: string; degraded: boolean; cleanup: Cleanup[] } | null>(
+    null,
+  )
 
   // — list item (Liste) — its own state + mic so a board draft never posts to
   // the grocery list by accident.
@@ -383,6 +416,15 @@ export function AddSheet({
     if (m === 'share') return canShare && listItems.length > 0
     return true
   })
+  // CHANGE 1 — fast path to the capture box. On a section whose chooser offers quick
+  // capture (the board), surface the capture box ABOVE the tiles so the highest-
+  // frequency intent — type-or-speak a note — is reachable WITHOUT first tapping its
+  // tile (3 taps → 2). The calm blank-slate chooser is preserved: no override form is
+  // pre-selected, the other tiles stay below as explicit overrides, and the now-
+  // redundant capture tile drops out of the grid. A single-mode or kiosk-fallback
+  // sheet (tiles.length === 1) keeps capture in its panel exactly as before.
+  const captureAtTop = tiles.length > 1 && tiles.includes('capture')
+  const gridTiles = captureAtTop ? tiles.filter((m) => m !== 'capture') : tiles
 
   async function autoPick() {
     if (autoBusy) return
@@ -430,22 +472,51 @@ export function AddSheet({
   }, [onClose])
 
 
-  // Quick capture. forceType (from the degraded fallback) skips the AI router.
+  // Compensating undo for a capture: the row(s) are already live, so delete each
+  // via its own resource endpoint (CAPTURE_UNDO_EP). Offline-aware (useWrite) and
+  // idempotent — a row already gone (e.g. it was re-routed) just no-ops.
+  async function undoCapture(cleanup: Cleanup[]) {
+    for (const row of cleanup) {
+      const ep = CAPTURE_UNDO_EP[row.table]
+      if (!ep) continue
+      try {
+        await write(ep, { method: 'DELETE', body: { id: row.id }, affectedKeys: CAPTURE_KEYS })
+      } catch {
+        /* already gone or a server reject — nothing to take back */
+      }
+    }
+  }
+
+  // Quick capture. forceType (a re-route correction tile, or the degraded
+  // type-picker) skips the AI router. A re-route re-files the text we already
+  // captured (the input was cleared on the first success) and hands the server the
+  // PREVIOUS routing's rows to delete (`undo`), so a correction MOVES the capture
+  // instead of duplicating it (functions/api/capture applyCleanup).
   async function submit(e?: React.FormEvent, forceType?: CaptureType) {
     e?.preventDefault()
-    const value = text.trim()
+    const value = (forceType ? routed?.text ?? text : text).trim()
     if (!value || busy) return
     setBusy(true)
+    const prevCleanup = forceType ? routed?.cleanup : undefined
     setRouted(null)
     try {
-      const res = await api<{ type: string; degraded: boolean; routed: { kind: string; label: string } }>('capture', {
-        method: 'POST',
-        body: { text: value, forceType },
-      })
+      const res = await api<{ type: string; degraded: boolean; routed: { kind: string; label: string; cleanup?: Cleanup[] } }>(
+        'capture',
+        { method: 'POST', body: { text: value, forceType, undo: prevCleanup } },
+      )
       const degraded = res.degraded && !forceType
-      setRouted({ label: res.routed?.label ?? value, degraded })
+      const label = res.routed?.label ?? value
+      const cleanup = res.routed?.cleanup ?? []
+      setRouted({ text: value, label, degraded, cleanup })
       if (!degraded) setText('')
-      for (const key of [BOARD_KEY, ['meals'], ['pantry'], ['leftovers']]) qc.invalidateQueries({ queryKey: key })
+      for (const key of CAPTURE_KEYS) qc.invalidateQueries({ queryKey: key })
+      // Calm undo on every REAL route (not the degraded fallback note, which is
+      // awaiting a re-route): the created row is live, so record a compensating
+      // entry that deletes it. A re-route records a fresh entry for the new row;
+      // any prior entry's delete then no-ops (the server already dropped that row).
+      if (!degraded && cleanup.length) {
+        recordUndo({ message: `${t.capture.routed} ${label}`, onUndo: () => void undoCapture(cleanup) })
+      }
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
     } finally {
@@ -649,6 +720,59 @@ export function AddSheet({
           ? t.list.addTitle
           : t.common.add
 
+  // The quick-capture form. Rendered EITHER at the top of the board chooser
+  // (captureAtTop — the fast path) OR, for a chooser-less / kiosk-fallback sheet, in
+  // the picked-mode panel below. One definition, two placements (no duplicate form).
+  const captureForm = (
+    <>
+      <form onSubmit={submit}>
+        <div className="sheet__field">
+          <Icon name="pencil-simple-bold" size={20} color="var(--ink-faint)" />
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={captureVoice.listening ? t.capture.listening : t.capture.placeholder}
+            aria-label={t.common.add}
+          />
+          <VoiceButton voice={captureVoice} label={t.capture.voice} />
+        </div>
+
+        {/* CHANGE 2 — confirmation + one-tap correction after EVERY route (not only
+            the degraded fallback). The AI can mis-route, so re-filing the saved
+            capture to another type in one tap beats deleting + retyping. The degraded
+            line already says "pick the type"; a normal route reads "Non, plutôt…".
+            Re-routing hands the server the previous rows as `undo` (see submit), so a
+            correction MOVES the capture instead of duplicating it. */}
+        {routed && (
+          <>
+            <p className="capture__routed mono">
+              {routed.degraded ? t.capture.degraded : `${t.capture.routed} ${routed.label}`}
+            </p>
+            {!routed.degraded && <p className="sheet__group-label mono">{t.capture.reroute}</p>}
+            <div className="cat-grid">
+              {TYPE_DRESS.map((ty) => (
+                <button key={ty.type} type="button" className="cat-pick" onClick={() => submit(undefined, ty.type)}>
+                  <span className="ct" style={{ background: CATS[ty.cat].wash }}>
+                    <Icon name={ty.icon} size={22} color={CATS[ty.cat].deep} />
+                  </span>
+                  <span>{t.capture.types[ty.type]}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        <button type="submit" className="btn btn--primary" disabled={!text.trim() || busy}>
+          <Icon name="plus-bold" size={20} />
+          {t.common.add}
+        </button>
+      </form>
+      {/* Or leave a memo instead of typing: a voice clip (#38) or a quick
+          drawing (#14). Both file a fridge note with an R2 attachment. */}
+      <MemoControls onDone={close} />
+    </>
+  )
+
   return (
     <Sheet open={open} onClose={close} ariaLabel={title} className={help.active ? 'help-armed' : undefined}>
       {/* Contextual help toggle: arm it, then tap any tile to learn what it does
@@ -660,13 +784,19 @@ export function AddSheet({
         {help.hint && <HelpHint />}
         {help.bubble}
 
+        {/* Fast path: the capture box rides ABOVE the chooser on the board, so the
+            quick note is one type-and-Add away (the tile for it is dropped below). */}
+        {captureAtTop && <div className="addsheet__lead">{captureForm}</div>}
+
         {/* The section's chooser — only when there's a real choice to make.
             The recipe tile is navigate-only: the recipe builder is a full
             overlay that lives on the kitchen page, not in this sheet. Liste's
-            auto-pick tile drops out when the list is empty (nothing to price). */}
-        {tiles.length > 1 && (
-          <div className={'cat-grid' + (tiles.length === 3 ? ' cat-grid--3' : '')}>
-            {tiles.map((m) => (
+            auto-pick tile drops out when the list is empty (nothing to price).
+            On the board the capture tile is hoisted out (captureAtTop) — the rest
+            stay here as explicit overrides. */}
+        {tiles.length > 1 && gridTiles.length > 0 && (
+          <div className={'cat-grid' + (gridTiles.length === 3 ? ' cat-grid--3' : '')}>
+            {gridTiles.map((m) => (
               <button
                 key={m}
                 type="button"
@@ -740,55 +870,9 @@ export function AddSheet({
             tabIndex -1 makes the wrapper programmatically focusable without being a
             tab stop; outline is suppressed in CSS — the scroll-into-view is the cue. */}
         <div ref={panelRef} tabIndex={-1} className="addsheet__panel">
-        {mode === 'capture' && (
-          <>
-          <form onSubmit={submit}>
-            <div className="sheet__field">
-              <Icon name="pencil-simple-bold" size={20} color="var(--ink-faint)" />
-              <input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={captureVoice.listening ? t.capture.listening : t.capture.placeholder}
-                aria-label={t.common.add}
-              />
-              <VoiceButton voice={captureVoice} label={t.capture.voice} />
-            </div>
-
-            {/* Fallback only: AI off → let the human re-route the saved note. */}
-            {routed?.degraded && (
-              <div className="cat-grid">
-                {TYPE_DRESS.map((ty) => (
-                  <button
-                    key={ty.type}
-                    type="button"
-                    className="cat-pick"
-                    onClick={() => submit(undefined, ty.type)}
-                  >
-                    <span className="ct" style={{ background: CATS[ty.cat].wash }}>
-                      <Icon name={ty.icon} size={22} color={CATS[ty.cat].deep} />
-                    </span>
-                    <span>{t.capture.types[ty.type]}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {routed && (
-              <p className="capture__routed mono">
-                {routed.degraded ? t.capture.degraded : `${t.capture.routed} ${routed.label}`}
-              </p>
-            )}
-
-            <button type="submit" className="btn btn--primary" disabled={!text.trim() || busy}>
-              <Icon name="plus-bold" size={20} />
-              {t.common.add}
-            </button>
-          </form>
-          {/* Or leave a memo instead of typing: a voice clip (#38) or a quick
-              drawing (#14). Both file a fridge note with an R2 attachment. */}
-          <MemoControls onDone={close} />
-          </>
-        )}
+        {/* When the capture box is hoisted to the top (board), it isn't repeated
+            here; a chooser-less / kiosk-fallback sheet still shows it in-panel. */}
+        {!captureAtTop && mode === 'capture' && captureForm}
 
         {mode === 'list-item' && (
           <form onSubmit={submitList}>

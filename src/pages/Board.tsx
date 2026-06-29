@@ -37,7 +37,7 @@ import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
-import { Act, Section, SubHead } from '../components/board/Act'
+import { Act, Section } from '../components/board/Act'
 import { Fil } from '../components/board/Fil'
 import { DayTimeline } from '../components/jouer/DayTimeline'
 import { PhotoFrame } from '../components/board/PhotoFrame'
@@ -89,6 +89,26 @@ const greetName = (name: string) => {
   const parts = name.split(/[\s-]+/).filter(Boolean)
   if (parts.length > 1) return parts.map((p) => p[0]!.toUpperCase()).join('')
   return name.slice(0, 9) + '…'
+}
+
+// A quiet running clock for the active board header (glanceability): a wall
+// tablet whose content is all time-relative ("ce soir", struck-through past
+// meals) should still answer "what time is it?" from across the room. Calm by
+// design — minute granularity, no second hand, locale time (FR-CA 24 h) via the
+// shared `formatTime`. Kept as its own subcomponent so the per-minute tick
+// re-renders only this label, never the whole board.
+function BoardClock() {
+  const { lang } = useLang()
+  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000))
+  useEffect(() => {
+    const id = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 60_000)
+    return () => clearInterval(id)
+  }, [])
+  return (
+    <span className="board-controls__clock mono" aria-hidden="true">
+      {formatTime(nowSec, lang)}
+    </span>
+  )
 }
 
 export function Board() {
@@ -847,6 +867,7 @@ export function Board() {
           views, all on one row under the avatar (the date rides beside the view
           selector rather than on its own line under the greeting). */}
       <div className="board-controls">
+        <BoardClock />
         <span className="board-controls__date mono">{formatDay(Math.floor(Date.now() / 1000), lang)}</span>
         {surface === 'mobile' && (
           <button
@@ -965,7 +986,12 @@ export function Board() {
               // to place; when on, the « Aujourd'hui » card below drops these same events +
               // chores so nothing renders twice.
               nodes.fil = filShown ? (
-                <Section label={t.board.fil} icon="clock-bold" tint="var(--sky)" help={help} helpKey="fil" now={filNow}>
+                // Tint groups by meaning, not per-card novelty (NFR-CALM, fewer competing
+                // hues on the wall): « Le fil du jour » IS today's timeline, so it shares
+                // the warm marigold "today" family with « Aujourd'hui » below rather than
+                // asserting its own sky accent. Warm = today, cool sky = later (Demain / À
+                // venir), earthy = the task lists.
+                <Section label={t.board.fil} icon="clock-bold" tint="var(--marigold)" help={help} helpKey="fil" now={filNow}>
                   <Fil
                     timed={[
                       ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, node: eventAct(e) })),
@@ -1006,7 +1032,12 @@ export function Board() {
             {/* Quick actions, reused from the retired « Maintenant » view: jump straight
                 to cooking the next planned meal (hidden for a leftover — nothing to
                 cook) and a one-tap door to « Avant de partir » (the pre-departure
-                checklist + corvées + L'auto). Calm pills, not banners. */}
+                checklist + corvées + L'auto). Calm pills, not banners.
+                NFR-CALM: the whole row is suppressed on a genuinely clear day — an empty
+                agenda has nothing to cook and no reason to prompt "before you leave", so
+                the glance card stays a thing to READ, not an operate surface. The depart
+                pill was previously rendered unconditionally; it now rides the same gate. */}
+            {!dayClear && (
             <div className="board-actions">
               {cook.meal && !cook.meal.is_leftover && (
                 <button
@@ -1026,11 +1057,12 @@ export function Board() {
                 <InlineIcon name="key-bold" size={16} /> {t.departure.title}
               </button>
             </div>
+            )}
             {/* When « Le fil du jour » is on screen it carries today's events + chores, so
                 the day list shows only meals + home work here (no double render). The calm
                 "Rien de prévu" only stands in when the fil is OFF and nothing's planned. */}
             {!dayClear && !filShown && todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
-              <EmptyState tone="calm">{t.board.todayClear}</EmptyState>
+              <EmptyState tone="calm" guide={{ card: 'board' }}>{t.board.todayClear}</EmptyState>
             ) : (
               <>
                 {/* Today's other meals (déjeuner/dîner/collation) — supper is the
@@ -1068,76 +1100,78 @@ export function Board() {
               </>
             )}
 
-            {/* « Demain » is BUNCHED into the same card as today (one tile, two groups)
-                via a quiet sub-divider — the second-most-important glance (what's
-                coming + prep-ahead). Hidden ENTIRELY when tomorrow holds nothing. */}
-            {hasTomorrow && (
-              <>
-            <SubHead label={t.board.tomorrow} icon="sun-horizon-bold" />
-            {tomorrowWx && (
-              <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
-                <span aria-hidden="true" style={{ display: 'inline-flex' }}>
-                  <Icon
-                    name={weatherIcon({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
-                    size={17}
-                    color={weatherTint({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
-                  />
-                </span>{' '}
-                {tomorrowWx.highC}° / {tomorrowWx.lowC}°
-              </div>
-            )}
-            {/* Tomorrow's prep note, surfaced TODAY — "sortir le poulet", "faire
-                tremper les haricots" — while there's still time to act on it. */}
-            {data.tomorrowNote && (
-              <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} />
-            )}
-            {showTomorrowSupper && data.tomorrowMeal && (
-              <Act
-                cat="meal"
-                icon={SLOT_ICON_NAME.supper}
-                when={slotLabel('supper')}
-                title={data.tomorrowMeal.title}
-                who={cookLine(data.tomorrowMeal)}
-                color={supperColor}
-                onOpen={() =>
-                  detail.open(buildMeal(data.tomorrowMeal!, detailCtx, {
-                    color: supperColor,
-                    slotLabel: slotLabel('supper'),
-                    daySec: tomorrowDay,
-                    onLeftover: ro ? undefined : () => saveAsLeftover(data.tomorrowMeal!.id, data.tomorrowMeal!.title),
-                    onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, 'supper', tomorrowDay),
-                  }))
-                }
-              />
-            )}
-            {otherTomorrowMeals.map((m) => (
-              <Act
-                key={m.id}
-                cat="meal"
-                icon={SLOT_ICON_NAME[m.slot as MealSlot]}
-                when={slotLabel(m.slot)}
-                title={m.title}
-                who={cookLine(m)}
-                color={mealPrefs.color(m.slot)}
-                onOpen={() =>
-                  detail.open(buildMeal(m, detailCtx, {
-                    color: mealPrefs.color(m.slot),
-                    slotLabel: slotLabel(m.slot),
-                    daySec: tomorrowDay,
-                    onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
-                    onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, tomorrowDay),
-                  }))
-                }
-              />
-            ))}
-            {tomorrowEvents.map(eventAct)}
-            {/* À compléter pinned to tomorrow — its named sections collapse so a long
-                checklist stays a compact glance here; check/add stay functional. */}
-            <TodoSection day={tomorrowTodoDay} title={t.todos.title} members={data.members} bento={false} hideWhenEmpty />
-              </>
-            )}
                 </Section>
               )
+              // « Demain » — split out of the « Aujourd'hui » card into its OWN bento (it
+              // used to be bunched in as a sub-group, which made the today tile by far the
+              // tallest, busiest thing on the wall). Its own card keeps each glance to one
+              // job and gives the masonry a cleaner unit. Cool sky tint = "later" (shared
+              // with « À venir »), set apart from the warm marigold "today" family above.
+              // Self-hides entirely when tomorrow holds nothing (the hasTomorrow gate).
+              nodes.tomorrow = hasTomorrow ? (
+                <Section label={t.board.tomorrow} icon="sun-horizon-bold" tint="var(--sky)">
+                  {tomorrowWx && (
+                    <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
+                      <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                        <Icon
+                          name={weatherIcon({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
+                          size={17}
+                          color={weatherTint({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
+                        />
+                      </span>{' '}
+                      {tomorrowWx.highC}° / {tomorrowWx.lowC}°
+                    </div>
+                  )}
+                  {/* Tomorrow's prep note, surfaced TODAY — "sortir le poulet", "faire
+                      tremper les haricots" — while there's still time to act on it. */}
+                  {data.tomorrowNote && (
+                    <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} />
+                  )}
+                  {showTomorrowSupper && data.tomorrowMeal && (
+                    <Act
+                      cat="meal"
+                      icon={SLOT_ICON_NAME.supper}
+                      when={slotLabel('supper')}
+                      title={data.tomorrowMeal.title}
+                      who={cookLine(data.tomorrowMeal)}
+                      color={supperColor}
+                      onOpen={() =>
+                        detail.open(buildMeal(data.tomorrowMeal!, detailCtx, {
+                          color: supperColor,
+                          slotLabel: slotLabel('supper'),
+                          daySec: tomorrowDay,
+                          onLeftover: ro ? undefined : () => saveAsLeftover(data.tomorrowMeal!.id, data.tomorrowMeal!.title),
+                          onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, 'supper', tomorrowDay),
+                        }))
+                      }
+                    />
+                  )}
+                  {otherTomorrowMeals.map((m) => (
+                    <Act
+                      key={m.id}
+                      cat="meal"
+                      icon={SLOT_ICON_NAME[m.slot as MealSlot]}
+                      when={slotLabel(m.slot)}
+                      title={m.title}
+                      who={cookLine(m)}
+                      color={mealPrefs.color(m.slot)}
+                      onOpen={() =>
+                        detail.open(buildMeal(m, detailCtx, {
+                          color: mealPrefs.color(m.slot),
+                          slotLabel: slotLabel(m.slot),
+                          daySec: tomorrowDay,
+                          onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+                          onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, tomorrowDay),
+                        }))
+                      }
+                    />
+                  ))}
+                  {tomorrowEvents.map(eventAct)}
+                  {/* À compléter pinned to tomorrow — its named sections collapse so a long
+                      checklist stays a compact glance here; check/add stay functional. */}
+                  <TodoSection day={tomorrowTodoDay} title={t.todos.title} members={data.members} bento={false} hideWhenEmpty />
+                </Section>
+              ) : null
               // « À finir » — leftovers + à-faire bunched (null when both empty).
               // The two sub-headers ("Restants à finir" / "À faire") only earn their
               // keep when BOTH groups show — they're dividers. With one group the
@@ -1168,8 +1202,12 @@ export function Board() {
               // under the « À faire » header; the reusable checklists (« À compléter »,
               // todos table + departure templates) ride below via the embedded TodoSection's
               // own header — two clearly-labelled groups in one card. The help "?" on the
-              // title explains the distinction. Always on (TodoSection is the add surface).
-              nodes.todos = (
+              // title explains the distinction.
+              // NFR-CALM: suppressed on a genuinely clear day (dayClear already requires
+              // todayTodos + openTodos empty), so the reassuring all-clear hero isn't
+              // contradicted by an empty card that can only ever offer an add affordance —
+              // a card that can't "stay empty". The ＋ FAB remains the add path on such days.
+              nodes.todos = dayClear ? null : (
                 <Section label={t.board.todos} icon="check-bold" tint="var(--terracotta)" help={help} helpKey="todos">
                   {todayTodos.map(todoAct)}
                   <TodoSection title={t.todos.title} members={data.members} bento={false} />

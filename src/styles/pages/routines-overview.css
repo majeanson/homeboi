@@ -38,7 +38,7 @@
 .routine-card__tod {
   margin-left: auto;
   flex: none;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-soft);
   background: var(--card);
   border: 1px solid var(--line);
@@ -68,7 +68,7 @@
   color: #fff;
   font-family: var(--display);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
 }
 .routine-card__av img {
   width: 100%;
@@ -88,7 +88,7 @@
 }
 .routine-card__who {
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 .routine-card__steps {
   display: flex;
@@ -119,14 +119,14 @@
 .routine-card__more {
   align-self: center;
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 .routine-card__steps--empty {
   color: var(--ink-faint);
 }
 .routine-card__count {
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 /* The card foot: the quiet step count on the left, the ▶ "Faire" run action on the
    right — a routine can now be done from any surface, not only the toddler kiosk. */
@@ -144,7 +144,7 @@
   border: 0;
   border-radius: var(--radius-pill);
   padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   cursor: pointer;
   color: #fff;

@@ -155,7 +155,7 @@
 .recipe-title-input {
   font-family: var(--display);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
 }
 .recipe-fill-label {
   color: var(--ink-faint);
@@ -260,7 +260,7 @@
 .recipe-step__photo-btn {
   min-height: 36px;
   padding: 0.35rem 0.6rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 .recipe-step__photo-del {
   color: var(--ink-faint);
@@ -399,7 +399,7 @@
   border: none;
   color: var(--ink-soft);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   padding: 0.2rem 0.3rem;
 }
 /* The servings stepper and the quick batch presets sit on one wrapping row. */
@@ -482,7 +482,7 @@
 }
 .meal-plan-pick__label {
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 .meal-plan-pick__days {
   display: flex;
@@ -507,7 +507,7 @@
 }
 .recipe-list-pick__label {
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 .recipe-list-pick__all {
   flex: none;
@@ -732,7 +732,7 @@
 .recipe-original__meta {
   margin: 0.2rem 0 0;
   color: var(--ink-soft);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
 }
 .recipe-original__h {
   margin: 1.1rem 0 0.4rem;
@@ -754,7 +754,7 @@
 /* Sub-section heading inside the sheet and the Original view. */
 .recipe-subsec-h {
   margin: 0.9rem 0 0.4rem;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--terracotta-deep);
@@ -825,7 +825,7 @@
   gap: 0.2rem;
   flex: 1 1 6.5rem;
   min-width: 0;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-soft);
 }
 .recipe-time__field {
@@ -839,7 +839,7 @@
 }
 .recipe-time__unit {
   color: var(--ink-faint);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 /* Sheet: the "⏱ Préparation 20 min · Cuisson 45 min" line. */
 .recipe-view__times {

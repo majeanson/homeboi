@@ -44,7 +44,7 @@
 }
 .note-card__clear {
   flex: none;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-soft);
   opacity: 0.6;
 }
@@ -140,7 +140,7 @@
 }
 /* An optional caption under an image/voice memo (e.g. text shared with a photo). */
 .note-card__cap {
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   overflow-wrap: anywhere;
 }
 /* Attribution on a « boîte aux lettres » message (#postbox) — « — Papi ». A quiet

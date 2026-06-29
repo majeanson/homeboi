@@ -46,7 +46,7 @@
   background: var(--accent);
   color: var(--accent-ink);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   cursor: pointer;
 }
 .monthv__grid {
@@ -272,6 +272,17 @@
 .day-plan__trip > .act + .act {
   margin-inline-start: 14px;
 }
+/* Child itinerary rows reuse the trip's own colour (month.ts aliases tr.colour →
+   p.colour), so the indent alone left a child colour-indistinguishable from its
+   parent band. Demote the child's colour weight one notch — a washed spine + softer
+   tile — so the parent/child hierarchy reads at a glance. Same calm language as
+   `.act--past` (today.css), one step lighter, never a new colour. */
+.day-plan__trip > .act + .act .spine {
+  opacity: 0.4;
+}
+.day-plan__trip > .act + .act .tile {
+  opacity: 0.6;
+}
 @media (max-width: 520px) {
   .monthv__grid {
     gap: 2px;
@@ -341,7 +352,7 @@
   color: var(--sky-deep);
 }
 .board-nextup__when {
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   color: var(--ink-soft);
 }
 .board-nextup__title {

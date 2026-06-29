@@ -52,7 +52,7 @@
 .board-idle {
   text-align: center;
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   margin: 0 0 1rem;
 }
 .board-idle--shell {
@@ -187,14 +187,14 @@
   flex: 1;
   min-width: 0;
   color: var(--ink-faint);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .qcap__mic {
   flex: none;
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
   opacity: 0.7;
 }
 

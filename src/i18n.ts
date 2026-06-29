@@ -104,6 +104,7 @@ export const FR = {
     privacyTitle: 'Tout reste chez Cloudflare',
     privacyBody: 'Le peu d’IA tourne en réseau. L’horaire de ta famille ne sort pas vers un tiers (Loi 25).',
     ctaStart: 'Commencer',
+    ctaReturning: 'J’ai déjà un compte',
     ctaSignup: 'Créer ma maisonnée',
     // Skeleton welcome: a small "what it's for" strip + a short calm promise.
     whatHeading: 'Ça sert à quoi ?',
@@ -425,6 +426,7 @@ export const FR = {
     autoCard: 'L’auto',
     fil: 'Le fil du jour',
     today: 'Aujourd’hui',
+    tomorrow: 'Demain',
     toFinish: 'À finir',
     todos: 'À faire',
     upcoming: 'À venir',
@@ -1498,6 +1500,12 @@ export const FR = {
     renameDevice: 'Renommer la tablette',
     colorLabel: 'Couleur',
     sections: 'Sections',
+    // Group labels that segment the section strip into calm clusters (findability).
+    grpHome: 'Famille & partage',
+    grpDaily: 'Au quotidien',
+    grpKitchen: 'Cuisine & listes',
+    grpDevices: 'Appareils & affichage',
+    grpHelp: 'Aide & système',
     kioskNotice:
       'Tablette jumelée : tu peux ajuster la plupart des réglages ici. La maisonnée et le jumelage des tablettes demandent le compte opérateur (connexion sur un téléphone).',
     kioskSignIn: 'Se connecter comme opérateur',
@@ -2346,6 +2354,7 @@ export const EN: typeof FR = {
     privacyTitle: 'It all stays on Cloudflare',
     privacyBody: 'The little AI there is runs in-network. Your family’s schedule never leaves to a third party (Loi 25).',
     ctaStart: 'Get started',
+    ctaReturning: 'I already have an account',
     ctaSignup: 'Create my household',
     // Skeleton welcome: a small "what it's for" strip + a short calm promise.
     whatHeading: 'What’s it for?',
@@ -2653,6 +2662,7 @@ export const EN: typeof FR = {
     autoCard: 'The car',
     fil: 'Day timeline',
     today: 'Today',
+    tomorrow: 'Tomorrow',
     toFinish: 'To finish',
     todos: 'To do',
     upcoming: 'Coming up',
@@ -3696,6 +3706,12 @@ export const EN: typeof FR = {
     renameDevice: 'Rename tablet',
     colorLabel: 'Colour',
     sections: 'Sections',
+    // Group labels that segment the section strip into calm clusters (findability).
+    grpHome: 'Family & sharing',
+    grpDaily: 'Daily life',
+    grpKitchen: 'Kitchen & lists',
+    grpDevices: 'Devices & display',
+    grpHelp: 'Help & system',
     kioskNotice:
       'Paired tablet: you can change most settings here. Members and tablet pairing need the operator account (sign in on a phone).',
     kioskSignIn: 'Sign in as operator',

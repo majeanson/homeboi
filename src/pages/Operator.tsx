@@ -69,6 +69,22 @@ const SECTIONS = [
   { id: 'ai', key: 'aiTab' as const },
   { id: 'ai-log', key: 'aiLog' as const },
 ]
+
+// The 21 sections are a lot to scan as one undifferentiated strip, so they're
+// chunked into a handful of labelled clusters (findability, NFR-CALM). This ONLY
+// groups the nav visually — every section stays its own tab in the SAME single
+// `.operator__tabs` strip (kept as one scrollable segmented control), so deep
+// links (/settings?tab=<id>) and every existing tab id are untouched. A small
+// non-interactive label is rendered before each cluster's tabs; a cluster whose
+// tabs are all hidden on a kiosk (Membres/Tablettes/Partage) simply renders no
+// label. Order here defines the on-screen order of the tabs.
+const GROUPS = [
+  { key: 'grpHome' as const, ids: ['household', 'cercle', 'guest', 'photos', 'week'] },
+  { key: 'grpDaily' as const, ids: ['agenda', 'chores', 'routines', 'todos', 'auto'] },
+  { key: 'grpKitchen' as const, ids: ['shopping', 'recipes', 'meals', 'reserve', 'ghost'] },
+  { key: 'grpDevices' as const, ids: ['devices', 'display', 'calm'] },
+  { key: 'grpHelp' as const, ids: ['guide', 'ai', 'ai-log'] },
+]
 // Operator hub. Reached two ways: the signed-in operator (phone/laptop, full
 // access) OR a parent-mode kiosk (a paired wall tablet — device token, no cookie),
 // which gets in to change most settings but NOT member admin or device pairing
@@ -140,6 +156,15 @@ export function Operator() {
     sections[0].id,
     sections.map((s) => s.id),
   )
+  // Chunk the (kiosk-filtered) sections into labelled clusters in GROUPS order,
+  // dropping any cluster left empty by the kiosk filter. Any section not assigned
+  // to a group still shows (label-less, at the end) so a future tab can't vanish.
+  const byId = new Map(sections.map((s) => [s.id, s]))
+  const groupedNav = GROUPS.map((g) => ({
+    key: g.key,
+    items: g.ids.map((id) => byId.get(id)).filter((s): s is (typeof sections)[number] => !!s),
+  })).filter((g) => g.items.length > 0)
+  const ungrouped = sections.filter((s) => !GROUPS.some((g) => g.ids.includes(s.id)))
   const operatorHelp = useHelpMode(OPERATOR_HELP, (k: string) => {
     const labels: Record<string, string> = {
       reserveLocations: t.operator.reserveTitle,
@@ -235,8 +260,31 @@ export function Operator() {
 
       {!signedIn && <p className="operator__kiosk-note mono">{t.operator.kioskNotice}</p>}
 
+      {/* One scrollable segmented strip, but chunked into labelled clusters so 21
+          sections stay scannable (findability). The group label is a quiet,
+          non-interactive divider — every section is still its own role="tab", so
+          deep links and tab ids are unchanged. */}
       <nav className="operator__tabs mono" role="tablist" aria-label={t.operator.sections}>
-        {sections.map((s) => (
+        {groupedNav.map((g, gi) => (
+          <div className="operator__group" key={g.key}>
+            <span className={`operator__group-label${gi === 0 ? ' operator__group-label--lead' : ''}`} aria-hidden="true">
+              {t.operator[g.key]}
+            </span>
+            {g.items.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                role="tab"
+                aria-selected={tab === s.id}
+                className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
+                onClick={() => setTab(s.id)}
+              >
+                {t.operator[s.key]}
+              </button>
+            ))}
+          </div>
+        ))}
+        {ungrouped.map((s) => (
           <button
             key={s.id}
             type="button"

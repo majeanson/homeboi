@@ -222,7 +222,7 @@
 }
 .pill-admin__unit {
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 .pill-admin__rule-x {
   flex: 0 0 auto;

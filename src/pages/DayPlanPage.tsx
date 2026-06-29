@@ -464,7 +464,9 @@ function DayPlanInner() {
                   title={p.label || p.text || t.voyage.cat[p.category as TripCategory]}
                   who={p.label && p.text ? p.text : undefined}
                   color={p.colour}
-                  onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
+                  // Deep-link to this exact day: `&jour=N` (1-based day-of-trip) lands on
+                  // that day's section inside the itinerary instead of its top.
+                  onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire&jour=${tripDayNum(tr.start_at)}`)}
                 />
               ))}
           </div>

@@ -47,7 +47,7 @@ export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[];
 interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[]; home: MHome[] }
 // One day's slice of a trip band: the trip + whether this cell is its first/last
 // visible day (rounded ends + the title shows on the start).
-interface TripSpan { id: string; title: string; colour: string; isStart: boolean; isEnd: boolean }
+interface TripSpan { id: string; title: string; colour: string; isStart: boolean; isEnd: boolean; start_at: number }
 
 // Intl gives a lowercase French month/weekday ("juin", "lun") — calendars want it
 // capitalized.
@@ -192,7 +192,7 @@ export function MonthView({
       const last = Math.min(tr.end_at, to - DAY)
       for (let d = first; d <= last; d = addLocalDays(d, 1)) {
         const arr = m.get(d) ?? []
-        arr.push({ id: tr.id, title: tr.title, colour: tr.colour, isStart: d === tr.start_at, isEnd: d === tr.end_at })
+        arr.push({ id: tr.id, title: tr.title, colour: tr.colour, isStart: d === tr.start_at, isEnd: d === tr.end_at, start_at: tr.start_at })
         m.set(d, arr)
       }
     }
@@ -246,7 +246,10 @@ export function MonthView({
   const selTrips = tripsByDay.get(selected) ?? []
   // The dated itinerary entries for the selected day, grouped under their trip below.
   const selTripPlans = (data?.tripPlans ?? []).filter((p) => p.day === selected)
-  const selCount = (sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.notes.length : 0) + selTrips.length
+  const selCount =
+    (sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.notes.length : 0) +
+    selTrips.length +
+    selTripPlans.length
   const atToday = offset === 0 && selected === todayDay
   // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
   // time — the household's wall month/weekday, no UTC flag.
@@ -411,6 +414,9 @@ export function MonthView({
                 <Act
                   cat="event"
                   title={`${t.voyage.title} · ${tr.title}`}
+                  // « Jour N » — 1-based day-of-trip for the selected date, mirroring
+                  // DayPlanPage's tripDayNum (both dates are local-midnight; round absorbs DST).
+                  when={t.voyage.dayN(Math.round((selected - tr.start_at) / DAY) + 1)}
                   color={tr.colour}
                   onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
                 />
@@ -424,7 +430,11 @@ export function MonthView({
                       title={p.label || p.text || t.voyage.cat[p.category as TripCategory]}
                       who={p.label && p.text ? p.text : undefined}
                       color={p.colour}
-                      onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
+                      // Deep-link to this exact day: `&jour=N` (1-based day-of-trip) lands on
+                      // that day's section inside the itinerary instead of its top.
+                      onActivate={() =>
+                        nav(`/voyage/${tr.id}?vue=itineraire&jour=${Math.round((selected - tr.start_at) / DAY) + 1}`)
+                      }
                     />
                   ))}
               </div>

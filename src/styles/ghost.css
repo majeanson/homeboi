@@ -54,7 +54,7 @@
   border-top: 1px dashed var(--line);
 }
 .ghost-admin__candidates > p {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-soft);
   margin: 0 0 0.5rem;
 }

@@ -1,7 +1,12 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
+import { useAuth } from '../lib/auth'
+import { api } from '../lib/api'
+import { useMeals } from '../lib/queryHooks'
+import { DEVICES_KEY } from '../lib/queryKeys'
 import { Icon, type IconName } from './Icon'
 import { FeatureMap } from './FeatureMap'
 
@@ -12,8 +17,10 @@ import { FeatureMap } from './FeatureMap'
 // shown in the toddler lens. Replaces the old one-line "add your family" hint.
 //
 // Persistence mirrors SectionIntro's shape: one localStorage key holds {dismissed,
-// done[]} so we never nag again. "add the family" auto-completes from the live
-// member list; the other two check off when the parent taps through to do them.
+// done[]} so the card never nags once it's been dismissed. Every STEP, though, is
+// DATA-DRIVEN — a step ticks only when the underlying thing actually exists (a
+// member, a planned meal, a paired tablet), never just because the parent tapped
+// the link and bounced. (`done[]` survives only for the dismissed-record shape.)
 const KEY = 'babillard-welcome'
 type State = { dismissed: boolean; done: string[] }
 
@@ -57,21 +64,33 @@ const STEPS: { id: 'members' | 'meals' | 'pair'; tab: string; icon: IconName }[]
 export function WelcomeCard({ members }: { members: { id: string }[] }) {
   const t = useT()
   const { audience } = useAudience()
+  const { signedIn } = useAuth()
   const nav = useNavigate()
   const [state, setState] = useState(read)
 
+  // Real-progress sources (reuse the shared hook + key — no new endpoints):
+  // • meals: the planned-meal week (≥1 planned meal ⇒ "choose the meals" is done).
+  // • pair: the operator's paired-device list. Operator-scoped, so it's gated to a
+  //   signed-in session; on a kiosk (no session) it stays unfetched and the step
+  //   simply waits — it can only be done from operator Réglages anyway.
+  const plannedMeals = useMeals().data?.days.length ?? 0
+  const pairedDevices =
+    useQuery({
+      queryKey: DEVICES_KEY,
+      queryFn: () => api<{ devices: { id: string }[] }>('pair/devices'),
+      enabled: signedIn,
+    }).data?.devices.length ?? 0
+
   if (audience === 'toddler' || state.dismissed) return null
 
-  // "add the family" auto-checks from live data; the rest check on tap-through.
-  const isDone = (id: string) => state.done.includes(id) || (id === 'members' && members.length > 0)
+  // Every step is data-driven: it ticks only when the real thing exists, so tapping
+  // a link and backing out can never false-complete a step (it just won't be done).
+  const isDone = (id: string) =>
+    (id === 'members' && members.length > 0) ||
+    (id === 'meals' && plannedMeals > 0) ||
+    (id === 'pair' && pairedDevices > 0)
   if (STEPS.every((s) => isDone(s.id))) return null
 
-  const markDone = (id: string) =>
-    setState((s) => {
-      const next = { ...s, done: s.done.includes(id) ? s.done : [...s.done, id] }
-      persist(next)
-      return next
-    })
   const dismiss = () =>
     setState((s) => {
       const next = { ...s, dismissed: true }
@@ -97,7 +116,7 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
           const done = isDone(s.id)
           return (
             <li key={s.id} className={'welcome-card__step' + (done ? ' is-done' : '')}>
-              <Link to={`/settings?tab=${s.tab}`} onClick={() => markDone(s.id)}>
+              <Link to={`/settings?tab=${s.tab}`}>
                 <span className="welcome-card__step-ic">
                   <Icon name={done ? 'check-bold' : s.icon} size={18} />
                 </span>

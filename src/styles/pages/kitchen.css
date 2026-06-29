@@ -168,7 +168,7 @@
   padding: 0.35rem 0.8rem;
   min-height: 2.4rem;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   cursor: pointer;
 }
 .kitchen__note-chip {
@@ -183,7 +183,7 @@
   border-radius: 0.7rem;
   padding: 0.4rem 0.7rem;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   cursor: pointer;
 }
 .kitchen__note-text {
@@ -370,7 +370,7 @@
   border-radius: 0.55rem;
   background: var(--accent);
   color: var(--accent-ink);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -392,7 +392,7 @@
 /* The day note: a muted memo that always reads in full — it wraps onto as many
    lines as it needs rather than ellipsizing, so nothing is ever hidden. */
 .kitchen__day-sum-meta {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-faint);
   overflow-wrap: anywhere;
   max-width: 100%;
@@ -435,7 +435,7 @@
   align-items: center;
   gap: 0.4rem;
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   margin: 0;
   min-width: 0;
@@ -463,7 +463,7 @@
   align-items: center;
   gap: 0.35rem;
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 .kitchen__slot-add {
@@ -478,7 +478,7 @@
   padding: 0.3rem 0.7rem;
   min-height: 2.4rem;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   cursor: pointer;
 }
 /* The planned meals in one slot — a stacked list of rows with per-item controls. */
@@ -576,7 +576,7 @@
 }
 .kitchen__meal-remove {
   color: var(--ink-faint);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
 }
 .kitchen__meal-clearall {
   margin-top: 0.15rem;
@@ -616,7 +616,7 @@
 }
 .kitchen__staples-hint {
   color: var(--ink-soft);
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   margin: -0.25rem 0 0;
 }
 .kitchen__staples-chips {
@@ -640,7 +640,7 @@
   justify-content: center;
   gap: 0.3rem;
   font-family: var(--mono);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   padding: 0.4rem 0.75rem;
   /* Chips ARE the navigation in the kitchen (day picker, recipe menu, tags,
      ideas) — keep them a comfortable thumb height, not a 32px sliver. */
@@ -762,7 +762,7 @@
   margin: 0 0 0.4rem;
   padding: 0.25rem 0.6rem;
   border-radius: var(--radius-pill);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   width: fit-content;
 }

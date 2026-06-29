@@ -44,13 +44,18 @@ export function Home() {
           <h1 className="home__title">{t.home.title}</h1>
           <p className="home__lead">{t.home.lead}</p>
           <div className="home__cta">
-            <Link to="/setup" className="btn btn--primary">
-              {t.home.ctaStart}
-            </Link>
-            {/* The new-family shortcut: skip the device-role fork and go straight
-                to creating the household (the role gets set on signup anyway). */}
-            <Link to="/signup" className="btn btn--ghost">
+            {/* A first-time family has NO account yet, so the PRIMARY path creates
+                the household (→ /signup). Routing them to /setup → /login first was
+                a dead-end (nothing to log into). The role gets set on signup. */}
+            <Link to="/signup" className="btn btn--primary">
               {t.home.ctaSignup}
+            </Link>
+            {/* Returning user / setting up a second device: the device-role fork
+                (→ /setup → login or pair) stays one tap away as the secondary. Labelled
+                "J'ai déjà un compte" so it reads as the path for someone who's NOT new,
+                rather than a second "start" competing with the primary create CTA. */}
+            <Link to="/setup" className="btn btn--ghost">
+              {t.home.ctaReturning}
             </Link>
           </div>
         </section>

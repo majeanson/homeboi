@@ -28,14 +28,14 @@
 .auth__hint {
   text-align: center;
   color: var(--ink-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   margin: 0.25rem 0 0;
 }
 /* A quiet per-field note (password rules, invite-code provenance). */
 .field__hint {
   display: block;
   color: var(--ink-faint);
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   margin-top: 4px;
 }
 /* The hint flips green once the constraint is met (signup password length). */
@@ -106,6 +106,6 @@
   border-radius: 50%;
   background: var(--sage);
   color: #fff;
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
 }
 

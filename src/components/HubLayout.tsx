@@ -120,11 +120,6 @@ export function HubLayout() {
   // kitchen). Unknown paths fall back to the board's generic capture sheet.
   const section = loc.pathname.split('/')[1] || 'board'
   const sectionModes = SECTION_MODES[section] ?? SECTION_MODES.board
-  // The kitchen's three sub-tabs live in ?tab= (Kitchen page, useTabParam) —
-  // default 'meals'. The ＋ FAB reads it so it adds what THIS tab is about:
-  // Recettes → straight to the recipe builder, Garde-manger → the low-stock form,
-  // Repas → the meal-planner chooser (default).
-  const kitchenTab = section === 'kitchen' ? new URLSearchParams(loc.search).get('tab') || 'meals' : null
 
   // A PAIRED device getting 401s means its token was revoked (re-paired, device
   // removed in Réglages, DB reset) — latch a recovery screen at the shell level.
@@ -404,13 +399,16 @@ export function HubLayout() {
             setAddModes(null)
             setAddOpen(true)
           }}
+          // The FAB always opens the section's blank-slate chooser/sheet, so its
+          // accessible name matches that sheet's TITLE per section (see AddSheet
+          // `title`) — not a specific sub-form. (It used to promise the pantry
+          // low-stock form on the kitchen Garde-manger tab while actually opening
+          // the kitchen chooser — an aria/behaviour mismatch, now removed.)
           aria-label={
             section === 'kitchen'
-              ? kitchenTab === 'pantry'
-                ? t.kitchen.lowAdd
-                : t.kitchen.addTitle
+              ? t.kitchen.addTitle
               : section === 'routines'
-                ? t.routines.add
+                ? t.nav.routines
                 : section === 'cercle'
                   ? t.cercle.addTitle
                   : section === 'liste'

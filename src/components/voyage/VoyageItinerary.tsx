@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useT, useLang } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { TRIP_NOTES_KEY } from '../../lib/queryKeys'
@@ -22,6 +24,18 @@ export function VoyageItinerary({ trip, notes }: { trip: Trip; notes: TripNote[]
   const affectedKey = [...TRIP_NOTES_KEY, trip.id]
   const days = tripDays(trip.start_at, trip.end_at)
 
+  // Deep-link from a calendar day / day-page itinerary row: `?jour=N` (1-based
+  // day-of-trip) scrolls that day's section into view, so tapping "Musée, 14h" on
+  // the 12th lands on day 12 rather than the top of a long multi-day itinerary.
+  const [params] = useSearchParams()
+  const jour = Number(params.get('jour'))
+  const rootRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!jour || jour < 1) return
+    const el = rootRef.current?.querySelector<HTMLElement>(`[data-jour="${jour}"]`)
+    el?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [jour, days.length])
+
   if (days.length === 0) {
     return <EmptyState tone="calm">{t.voyage.setDatesForItinerary}</EmptyState>
   }
@@ -31,11 +45,11 @@ export function VoyageItinerary({ trip, notes }: { trip: Trip; notes: TripNote[]
   }
 
   return (
-    <div className="voyage-itin">
+    <div className="voyage-itin" ref={rootRef}>
       {days.map((d, i) => {
         const dayNotes = notes.filter((n) => n.date === d)
         return (
-          <section key={d} className="voyage-itin__day">
+          <section key={d} className="voyage-itin__day" data-jour={i + 1}>
             <div className="sec-label">
               <b>{t.voyage.dayN(i + 1)}</b>
               <span className="voyage-itin__date mono">{cap(formatDayLong(d, lang))}</span>

@@ -209,7 +209,7 @@
   border: 2px solid var(--line);
   border-radius: 0.5rem;
   background: var(--surface);
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
   line-height: 1;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
@@ -328,7 +328,7 @@
   gap: 0.3rem;
   list-style: none;
   cursor: pointer;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-soft);
   padding: 0.1rem 0;
   -webkit-tap-highlight-color: transparent;
@@ -444,7 +444,7 @@
   border: 1px solid var(--line);
   background: var(--card);
   color: var(--ink);
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
   padding: 8px 16px;
   border-radius: var(--radius-pill);
   cursor: pointer;
@@ -513,7 +513,7 @@
   gap: 0.25rem;
 }
 .cook__timer-label {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-soft);
   white-space: nowrap;
   max-width: 13rem;
@@ -557,7 +557,7 @@
 .cook__voicehint {
   margin: 0;
   padding: 0.5rem 1rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-soft);
   text-align: center;
   background: var(--terracotta-wash, #f3e7e2);
@@ -571,7 +571,7 @@
   margin-top: 0.45rem;
 }
 .cook__full-timers .cook__timer-chip {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   padding: 4px 11px;
 }
 .cook__nav {
@@ -752,7 +752,7 @@
 .recipe-collections-hint {
   margin: -0.4rem 0 0.8rem;
   color: var(--ink-faint);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 /* A collection section: tag heading + its own recipe grid. */
 .recipe-group + .recipe-group {
@@ -762,7 +762,7 @@
   display: flex;
   align-items: baseline;
   gap: 0.45rem;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   color: var(--ink-soft);
   margin: 0 0 0.6rem;
 }
@@ -772,7 +772,7 @@
 }
 .kitchen__use-soon-hint {
   color: var(--ink-faint);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   margin: 0 0 0.6rem;
 }
 /* Tag filter chips over the recipe grid; scrolls sideways on a narrow phone. */
@@ -1147,12 +1147,12 @@
 }
 .measure-colors__preview-label {
   color: var(--ink-soft);
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .measure-colors__preview-line {
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
 }
 
 /* #43 "Cuisiner ensemble" is now CookMode itself (tabbed via .cook__siblings,

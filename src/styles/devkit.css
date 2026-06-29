@@ -106,7 +106,7 @@
 }
 .devkit__hint {
   margin: 0 0 0.9rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 /* Each specimen sits in its own bordered cell so its real shadow/border read
    against a neutral ground, and duplicates line up for comparison. */
@@ -168,7 +168,7 @@
   max-width: 26rem;
 }
 .devkit__count {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-faint);
   background: var(--paper-deep);
   border-radius: var(--radius-pill);

@@ -140,7 +140,7 @@
   font-size: 1.25rem;
 }
 .hub .kitchen__day-sum-meta {
-  font-size: 0.95rem;
+  font-size: var(--text-md);
 }
 .hub .kitchen__day-manage {
   width: 2.6rem;
@@ -214,7 +214,7 @@
   font-family: var(--display);
   /* Bigger + heavier than before — a pre-reader leans on shape recognition, and
      this is the one bit of text on the tile, so it must carry across the room. */
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   font-weight: 700;
   line-height: 1.15;
   text-align: center;
@@ -253,7 +253,7 @@
   position: absolute;
   top: 0.45rem;
   left: 0.6rem;
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   line-height: 1;
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -289,7 +289,7 @@
   gap: 0.6rem;
   padding: 2rem;
   color: var(--ink-soft);
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
   text-align: center;
   /* It's a <button> now (tapping speaks the message, NFR-KID-2) — undo the
      button chrome so it keeps reading as a quiet empty state. */
@@ -308,5 +308,14 @@
   display: block;
   color: var(--ink-soft);
   margin-top: 0.2rem;
+}
+
+/* --- Focus-visible ring (a11y) — see core.css for the rationale ----------- */
+/* The hub tab bar is a primary nav target on every surface; keyboard / guest /
+   desktop-operator users get the same 2px --focus-ring. Offset clears the 12px
+   radius (and the marigold fill of the active tab). Additive only. */
+.tabbar__tab:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 

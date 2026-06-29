@@ -33,7 +33,7 @@
   color: var(--ink);
   text-align: left;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
 }
 .feature-map__tile:hover {
   border-color: var(--line-strong);
@@ -238,7 +238,7 @@
   margin: 0;
   padding: 0 0 0.7rem 0.95rem;
   color: var(--ink-faint);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-style: italic;
   line-height: 1.45;
 }

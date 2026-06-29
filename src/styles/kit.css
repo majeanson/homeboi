@@ -36,7 +36,7 @@
 /* ── StatusMessage ──────────────────────────────────────────────────────── */
 .status-msg {
   margin: 0.4rem 0 0;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   line-height: 1.4;
   display: flex;
   align-items: baseline;
@@ -60,7 +60,7 @@
   gap: 0.4rem;
 }
 .chip-group__label {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-soft);
   white-space: nowrap;
 }
@@ -193,8 +193,11 @@
   right: 0.6rem;
   display: inline-grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  /* Full 44px hit area (the system --touch-target), not a sub-target 40px — the
+     ✕ glyph stays its visual size, the grid just centres it in a roomier box so
+     a thumb / toddler tap lands. */
+  width: var(--touch-target);
+  height: var(--touch-target);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -329,7 +332,7 @@
   background: none;
   color: var(--ink-faint);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   cursor: pointer;
 }
 .disclosure__summary:hover,
@@ -357,4 +360,12 @@
 }
 .disclosure__body {
   margin-top: 0.4rem;
+}
+
+/* --- Focus-visible ring (a11y) — same treatment as core.css's tappables ---- */
+/* .listrow--nav is the shared "tap a row to navigate" primitive; keyboard / guest
+   users get the consistent 2px --focus-ring. Additive to its :active press. */
+.listrow--nav:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

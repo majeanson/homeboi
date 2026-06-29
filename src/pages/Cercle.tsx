@@ -77,12 +77,11 @@ interface CercleData {
 }
 
 type View = 'list' | 'links' | 'tree'
-// « Monde » rides the same segmented control as a 4th tab, but it's a full-screen
-// scene (it navigates to /cercle/monde) rather than an in-page view the body switches
-// on — so it's a tab key, not a `View`.
-type ViewTab = View | 'monde'
-const VIEW_TABS: readonly ViewTab[] = ['list', 'links', 'tree', 'monde']
-const VIEW_ICON: Record<ViewTab, IconName> = { list: 'user-bold', links: 'users-three-bold', tree: 'tree-bold', monde: 'sparkle-bold' }
+const VIEW_TABS: readonly View[] = ['list', 'links', 'tree']
+const VIEW_ICON: Record<View, IconName> = { list: 'user-bold', links: 'users-three-bold', tree: 'tree-bold' }
+// « Notre monde » is deliberately NOT a 4th view segment: it's a full-screen scene
+// (/cercle/monde), so it's surfaced as its own DISTINCT launch affordance beside the
+// segmented control (a context jump, not an in-page swap). See `viewSwitch`.
 // The primary split: Famille (Maisonnée + families) vs Social (friends/work/other
 // groups + ungrouped people) vs Notes (the durable quick-notes board, CercleNotes).
 // The list body partitions People by the first two; Notes owns its whole body; the
@@ -196,6 +195,7 @@ function CercleParent() {
       list: t.cercle.view.list,
       links: t.cercle.view.links,
       tree: t.cercle.view.tree,
+      monde: t.cercle.world.title,
       search: t.cercle.search,
       birthdays: t.cercle.birthdaysSoon,
       household: t.cercle.memberBadge,
@@ -555,24 +555,42 @@ function CercleParent() {
 
   const viewSwitch = (
     <>
-      {/* The Liste · Liens · Arbre · Monde sub-tabs reuse the app-wide segmented
-          control (SubTabs / .subtabs, same as La cuisine's Repas · Garde-manger ·
-          Recettes). « Monde » is the big-picture overview map — a full-screen scene,
-          so picking it navigates to /cercle/monde rather than swapping the in-page
-          view (so it never reads as the active segment). */}
-      <SubTabs<ViewTab>
+      {/* Liste · Liens · Arbre — the in-page view segmented control (SubTabs /
+          .subtabs, same family as La cuisine's Repas · Garde-manger · Recettes). All
+          three swap the body in place. « Notre monde » is deliberately NOT a 4th
+          segment: it opens a full-screen scene (/cercle/monde), so it sits in the
+          row's trailing slot as a DISTINCT launch button (sparkle + ↗) that reads as
+          a context jump — keeping the segmented control honest (every segment swaps
+          in-page, none navigates away). */}
+      <SubTabs<View>
         options={VIEW_TABS.map((v) => ({
           key: v,
           label: t.cercle.view[v],
           icon: VIEW_ICON[v],
         }))}
         value={view}
-        onSelect={(v) => (v === 'monde' ? nav('/cercle/monde') : setView(v))}
+        onSelect={setView}
         pick={help.pick}
         armed={help.active}
         ariaLabel={t.nav.cercle}
         tour="cercle-views"
-        trailing={help.available && <HelpToggle active={help.active} onToggle={help.toggle} />}
+        trailing={
+          <>
+            <button
+              type="button"
+              className="cercle-worldlaunch"
+              onClick={help.pick('monde', () => nav('/cercle/monde'))}
+              aria-label={t.cercle.world.open}
+              title={t.cercle.world.openHint}
+              data-tour="cercle-world"
+            >
+              <InlineIcon name="sparkle-bold" size={15} />
+              <span className="cercle-worldlaunch__label">{t.cercle.world.title}</span>
+              <InlineIcon name="arrow-up-right-bold" size={13} />
+            </button>
+            {help.available && <HelpToggle active={help.active} onToggle={help.toggle} />}
+          </>
+        }
       />
       {help.hint && <HelpHint />}
       {help.bubbleFor('list')}
@@ -640,8 +658,8 @@ function CercleParent() {
         <>
           {sectionSwitch}
 
-          {/* « Notre monde » lives as the 4th view segment (Liste · Liens · Arbre ·
-              Monde) inside `viewSwitch` below — see the Famille/Social branch. */}
+          {/* « Notre monde » is reached from the distinct launch button in the view
+              row's trailing slot (a full-screen scene, /cercle/monde) — see `viewSwitch`. */}
 
           {section === 'notes' ? (
             /* The notes board owns its whole tab body — no people list, no view

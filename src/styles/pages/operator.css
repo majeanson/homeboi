@@ -32,9 +32,41 @@
   padding: 0.75rem 1rem;
   border-left: 3px solid var(--accent);
   border-radius: 0.5rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   line-height: 1.5;
   opacity: 0.85;
+}
+/* Section-strip clustering. The 21 tabs live in ONE scrollable segmented strip
+   (.operator__tabs, styled in misc.css: flex / nowrap / overflow-x), but they're
+   chunked into a few labelled clusters so the strip stays scannable instead of
+   reading as 21 undifferentiated pills (findability; NFR-CALM — no counts/badges).
+   Each .operator__group is one inline cluster (label + its tabs); the clusters sit
+   side by side and scroll horizontally as before. */
+.operator__group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: none;
+}
+/* The quiet, non-interactive cluster heading. A hairline before each cluster (bar
+   the first) marks the seam between groups without shouting. */
+.operator__group-label {
+  flex: none;
+  align-self: center;
+  white-space: nowrap;
+  padding: 0 0.5rem 0 0.7rem;
+  margin-left: 0.25rem;
+  border-left: 1px solid var(--line);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.operator__group-label--lead {
+  border-left: 0;
+  margin-left: 0;
+  padding-left: 0.25rem;
 }
 .operator__section {
   padding: 1.25rem;
@@ -57,7 +89,7 @@
   color: var(--ink-soft);
 }
 .operator__field-hint {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-faint);
 }
 .operator__household-name .input {
@@ -324,8 +356,10 @@
 .row-actions__btn {
   display: inline-grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  /* Hit area meets the system --touch-target (44px); the glyph stays its size,
+     centred in the roomier box. The edit/delete pair is a primary row target. */
+  width: var(--touch-target);
+  height: var(--touch-target);
   padding: 0;
   border: 0;
   border-radius: var(--radius-sm);

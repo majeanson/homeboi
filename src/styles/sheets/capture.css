@@ -240,12 +240,12 @@ body.is-recording .add-fab {
 }
 .recents__msg {
   flex: 1 1 auto;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   color: var(--ink);
 }
 .recents__ago {
   flex: 0 0 auto;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-faint);
   white-space: nowrap;
 }
@@ -269,7 +269,7 @@ body.is-recording .add-fab {
 .recents__note {
   margin: 14px 2px 0;
   color: var(--ink-faint);
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   line-height: 1.45;
 }
 
@@ -303,7 +303,7 @@ body.is-recording .add-fab {
   min-width: 0;
 }
 .ai-error-toast__title {
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   color: #f0b8b0;
 }
 .ai-error-toast__feature {
@@ -431,7 +431,7 @@ body.is-recording .add-fab {
   color: var(--ink-soft);
 }
 .ai-test__detail {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-soft);
   word-break: break-word;
 }
@@ -471,4 +471,14 @@ body.is-recording .add-fab {
 }
 .sheet.show {
   transform: translateY(0);
+}
+
+/* Fast-path capture hoisted above the board chooser (AddSheet captureAtTop): the
+   quick-note box sits first, then a hairline separates it from the override tiles
+   below, so the highest-frequency intent is type-and-Add without an extra tap while
+   the calm blank-slate chooser stays visible underneath. */
+.addsheet__lead {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }

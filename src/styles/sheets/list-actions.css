@@ -21,7 +21,7 @@
    soft error so the mic never fails silently. */
 .list-add__voicemsg {
   margin: 0.4rem 0 0;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-faint);
 }
 .list-add__voicemsg--err {
@@ -90,7 +90,7 @@
   background: var(--paper);
   color: var(--ink-soft);
   font-family: var(--sans);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   font-weight: 600;
   cursor: pointer;
 }

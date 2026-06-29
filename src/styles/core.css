@@ -85,6 +85,30 @@
   --font-display: var(--display);
   --font-body: var(--sans);
 
+  /* ---- type scale (UNIFORMIZING.md:212) ----
+     One tokenized rem ladder for the sizes that already cluster across the system,
+     so type stops drifting between near-identical one-offs (0.78/0.82/0.85/0.95…).
+     Values are the EXISTING most-common sizes — adopting a token must not shift a
+     pixel. xs/sm/md are the "small label → body/control" band; lg/xl/2xl are
+     emphasis → display. The broad 44-file sweep is deferred (UNIFORMIZING.md:212);
+     core.css + kit.css are converted here to establish the tokens. Off-ladder
+     one-offs (0.72/0.74/0.8/0.82/0.88/0.92rem, px chrome) stay literal until the
+     sweep decides their tier — don't force-fit. */
+  --text-xs: 0.78rem; /* small hints / zone titles / chip-group labels */
+  --text-sm: 0.85rem; /* secondary text, field labels, compact buttons */
+  --text-md: 0.95rem; /* default body / control label */
+  --text-lg: 1.1rem; /* emphasis / lead */
+  --text-xl: 1.5rem; /* small display (tonight meal) */
+  --text-2xl: 2.4rem; /* large display (board clock) */
+
+  /* ---- focus ring (a11y) ----
+     A dedicated focus-visible colour rather than --accent: marigold on the cream
+     day surfaces lands ~1.8:1 (below the 3:1 non-text-contrast minimum), so it
+     would be a near-invisible ring. --ink is the on-surface text colour, defined
+     per-theme, so it's guaranteed-readable in day AND night, on cream or on a
+     marigold-filled active tab. */
+  --focus-ring: var(--ink);
+
   /* ---- radii (soft, pebble-like) ---- */
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -438,7 +462,7 @@ button {
   color: var(--ink);
   font: inherit;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   cursor: pointer;
   text-decoration: none;
   transition:
@@ -499,7 +523,7 @@ button {
 .btn--sm {
   min-height: 38px;
   padding: 0.3rem 0.8rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   box-shadow: none;
 }
 /* The destructive confirm button (in-app confirm dialog). Warn ink with white
@@ -640,7 +664,7 @@ textarea.input {
   gap: 0.3rem;
 }
 .field__label {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-soft);
 }
 
@@ -656,7 +680,7 @@ textarea.input {
   letter-spacing: -0.02em;
 }
 .home__lead {
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
   color: var(--ink-soft);
   max-width: 46ch;
 }
@@ -682,7 +706,7 @@ textarea.input {
 .home__value p {
   margin: 0;
   color: var(--ink-soft);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
 }
 /* Skeleton welcome blocks: wordmark, "what it's for" tiles, the calm promise. */
 .home__wordmark {
@@ -734,7 +758,7 @@ textarea.input {
 }
 .home__section-label {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
 }
 .home__promise {
   list-style: none;
@@ -825,7 +849,7 @@ textarea.input {
   gap: 0.9rem;
 }
 .home__fine {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--ink-faint);
   max-width: 46ch;
   margin: 0;
@@ -884,7 +908,7 @@ textarea.input {
 }
 .setup__choice-body {
   color: var(--ink-soft);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
 }
 /* --- Capture bar ---------------------------------------------------------- */
 .capture {
@@ -933,7 +957,7 @@ textarea.input {
 /* Calm hint under the capture bar when offline — the AI router can't run. */
 .capture__offline {
   margin: 0.4rem 0 0;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--ink-soft);
 }
 .capture__ack {
@@ -983,7 +1007,7 @@ textarea.input {
   padding: 1rem 1.25rem 3rem;
 }
 .board__clock {
-  font-size: 2.4rem;
+  font-size: var(--text-2xl);
   font-weight: 600;
   letter-spacing: -0.02em;
   text-align: center;
@@ -1006,7 +1030,7 @@ textarea.input {
   border-color: var(--accent);
 }
 .board__zone-title {
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-soft);
@@ -1044,7 +1068,7 @@ textarea.input {
   margin-left: auto;
 }
 .board__tonight-meal {
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   font-weight: 600;
   margin: 0;
 }
@@ -1069,7 +1093,7 @@ textarea.input {
   color: var(--accent);
 }
 .board__check {
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
   color: var(--ink-soft);
 }
 .board__chore {
@@ -1155,7 +1179,7 @@ textarea.input {
   color: var(--ink-soft);
   font-family: var(--display);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   cursor: pointer;
 }
 .subtabs__opt.is-on {
@@ -1163,7 +1187,7 @@ textarea.input {
   color: var(--accent-ink);
 }
 .kitchen__day-empty {
-  font-size: 0.95rem;
+  font-size: var(--text-md);
   opacity: 0.7;
 }
 /* "💡 Léa" — a kid suggested this supper into an empty slot. Quiet, so it reads as
@@ -1176,7 +1200,7 @@ textarea.input {
   flex: 0 0 100%;
   min-width: 0;
   max-width: max-content;
-  font-size: 0.78rem;
+  font-size: var(--text-xs);
   color: var(--terracotta-deep);
   background: var(--terracotta-wash);
   padding: 0.15rem 0.5rem;
@@ -1184,4 +1208,19 @@ textarea.input {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* --- Focus-visible rings (a11y) ------------------------------------------- */
+/* Keyboard / switch / desktop-operator + guest users need a visible focus cue on
+   every core tappable, not just .input. One consistent ring across the system:
+   2px solid --focus-ring, offset 2px so it clears the pill / rounded corners and
+   reads even on a marigold-filled active control. Additive — the :active press
+   feedback (translate + shadow) is untouched; this only paints for keyboard
+   focus. Kit / hub primitives carry the same rule in their own files. */
+.btn:focus-visible,
+.tag--btn:focus-visible,
+.subtabs__opt:focus-visible,
+.board__list-item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

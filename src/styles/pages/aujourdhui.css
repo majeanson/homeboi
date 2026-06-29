@@ -43,7 +43,7 @@
 .today-kid__h {
   text-align: center;
   color: var(--ink-soft);
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
   margin: 0 0 0.75rem;
 }
 .today-hero {
