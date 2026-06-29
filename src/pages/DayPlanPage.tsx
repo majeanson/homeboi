@@ -17,6 +17,7 @@ import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
+import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage'
 import { DetailProvider, useEntityDetail } from '../components/detail/DetailProvider'
 import { buildMeal } from '../components/detail/adapters'
 import { isMealSlot } from '../lib/mealSlots'
@@ -57,6 +58,10 @@ interface DayItemsData {
   // « Voyage » bands overlapping this day — surfaces a "Voyage — Jour N" header that
   // taps into the trip's itinerary for this exact day. null trips = older payload → [].
   trips?: { id: string; title: string; colour: string; start_at: number; end_at: number }[]
+  // The DATED itinerary entries the operator wrote inside a trip, for THIS day — shown
+  // under the trip header so the actual plans (not just "you're travelling") are here.
+  // null = older payload → []. `media_kind`-only notes fall back to their category label.
+  tripPlans?: { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string }[]
 }
 
 // /kitchen/day/:date — one day's full meal-planning editor, as a full-screen
@@ -118,6 +123,7 @@ function DayPlanInner() {
   const dayChores = dayItemsQ.data?.chores ?? []
   const dayHome = dayItemsQ.data?.homeProjects ?? []
   const dayTrips = dayItemsQ.data?.trips ?? []
+  const dayTripPlans = dayItemsQ.data?.tripPlans ?? []
   // Which day of the trip this is (1-based). Both dates are local-midnight; round
   // absorbs a DST ±1 h. Used for the "Voyage — Jour N" header.
   const tripDayNum = (startAt: number) => Math.round((date - startAt) / 86400) + 1
@@ -437,16 +443,31 @@ function DayPlanInner() {
           </div>
         )}
         {/* « Voyage » — this day sits inside a trip. A calm header that taps into the
-            trip's itinerary for this exact day, so the right info is one tap away. */}
+            trip's itinerary for this exact day, followed by the actual plans entered
+            for the day (the dated itinerary notes), so the right info is right here. */}
         {dayTrips.map((tr) => (
-          <Act
-            key={tr.id}
-            cat="event"
-            title={`${t.voyage.title} · ${tr.title}`}
-            when={t.voyage.dayN(tripDayNum(tr.start_at))}
-            color={tr.colour}
-            onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
-          />
+          <div key={tr.id} className="day-plan__trip">
+            <Act
+              cat="event"
+              title={`${t.voyage.title} · ${tr.title}`}
+              when={t.voyage.dayN(tripDayNum(tr.start_at))}
+              color={tr.colour}
+              onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
+            />
+            {dayTripPlans
+              .filter((p) => p.trip_id === tr.id)
+              .map((p) => (
+                <Act
+                  key={p.id}
+                  cat="event"
+                  icon={tripCategoryIcon(p.category as TripCategory)}
+                  title={p.label || p.text || t.voyage.cat[p.category as TripCategory]}
+                  who={p.label && p.text ? p.text : undefined}
+                  color={p.colour}
+                  onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
+                />
+              ))}
+          </div>
         ))}
 
         <DayEditor

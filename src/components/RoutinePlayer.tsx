@@ -126,22 +126,45 @@ export function RoutinePlayer({
   // first step aloud), then → through each step, ✓ on the last. Each → laps the
   // step's time; the clock keeps running between steps. Count-up, no score; the end
   // shows the total. (Distinct from a step's own tap-to-start countdown below.)
+  // WALL-CLOCK anchored, NOT a counter that freezes when the app is backgrounded:
+  // `startAt` is the unix second the current step began; `elapsed` is DERIVED from
+  // the clock on every render. A browser suspends setInterval in a backgrounded
+  // tab, so a `+1`-per-tick counter would stall while you're away and resume behind
+  // real time ("the timer hasn't moved"). Deriving from Date.now() means leaving and
+  // reopening shows the real time spent — the same discipline the Countdown ring uses.
+  const nowSec = () => Math.floor(Date.now() / 1000)
   const [running, setRunning] = useState(false)
-  const [elapsed, setElapsed] = useState(0)
+  const [startAt, setStartAt] = useState(0)
+  // A bare re-render pulse each second while running (elapsed is derived, not stored).
+  const [, tick] = useState(0)
   // How long each step took (card index → seconds), built up as steps finish so
   // the end can show a total. Session-local — a gentle "look how you did", not data
   // we persist; a reload starts it fresh.
   const [times, setTimes] = useState<Record<number, number>>({})
+  const elapsed = running ? Math.max(0, nowSec() - startAt) : 0
   useEffect(() => {
     if (!running) return
-    const id = setInterval(() => setElapsed((e) => e + 1), 1000)
+    const id = setInterval(() => tick((x) => x + 1), 1000)
     return () => clearInterval(id)
+  }, [running])
+  // Backgrounding suspends the interval; on return recompute immediately (this also
+  // re-renders the child Countdown ring so it snaps to its real remaining at once)
+  // rather than wait up to a second for the first resumed tick.
+  useEffect(() => {
+    if (!running) return
+    const refresh = () => tick((x) => x + 1)
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    return () => {
+      document.removeEventListener('visibilitychange', refresh)
+      window.removeEventListener('focus', refresh)
+    }
   }, [running])
   // Switching to another routine (KidView picker, or a deep-link change) resets the
   // stopwatch + tally.
   useEffect(() => {
     setRunning(false)
-    setElapsed(0)
+    setStartAt(0)
     setTimes({})
   }, [routine.id])
 
@@ -152,7 +175,7 @@ export function RoutinePlayer({
     playNarration(routine.cardsNarration?.[idx], text, speak)
   }
   function startStep(idx: number) {
-    setElapsed(0)
+    setStartAt(nowSec())
     setRunning(true)
     readAloud(idx)
   }
@@ -162,7 +185,7 @@ export function RoutinePlayer({
   function advance(idx: number) {
     const taken = elapsed
     const isLast = idx >= routine.cards.length - 1
-    setElapsed(0)
+    setStartAt(nowSec()) // re-anchor the lap for the next step; the clock keeps running
     if (!routine.doneIdx.includes(idx)) setTimes((m) => ({ ...m, [idx]: taken }))
     toggle.mutate({ routineId: routine.id, cardIdx: idx, done: true })
     if (isLast) {
@@ -181,7 +204,7 @@ export function RoutinePlayer({
     if (ro) return
     resetRun.mutate({ routineId: routine.id })
     setRunning(false)
-    setElapsed(0)
+    setStartAt(0)
     setTimes({})
   }
 

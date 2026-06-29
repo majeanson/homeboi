@@ -261,6 +261,17 @@
 }
 .day-plan__act-row > .act { flex: 1; min-width: 0; }
 .day-plan__act-share { flex-shrink: 0; padding: 4px 6px; }
+/* « Voyage » day: the trip card + its dated itinerary entries for the day. The
+   entries indent under the trip so they read as "the plans for this trip's day",
+   not loose agenda rows. */
+.day-plan__trip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.day-plan__trip > .act + .act {
+  margin-inline-start: 14px;
+}
 @media (max-width: 520px) {
   .monthv__grid {
     gap: 2px;

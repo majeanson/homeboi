@@ -27,11 +27,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Bad/missing window → empty calendar rather than a 400; the view just shows
   // empty cells, mirroring how the board tolerates a thin frame.
   if (!Number.isFinite(from) || !Number.isFinite(to) || from <= 0 || to <= from) {
-    return ok({ events: [], meals: [], chores: [], dayNotes: [], todos: [], homeProjects: [], trips: [] })
+    return ok({ events: [], meals: [], chores: [], dayNotes: [], todos: [], homeProjects: [], trips: [], tripPlans: [] })
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes, tripsRes] = await Promise.all([
+  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes, tripsRes, tripPlansRes] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
@@ -109,6 +109,19 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh, to, from)
       .all<{ id: string; title: string; colour: string; start_at: number; end_at: number }>(),
+    // « Voyage » itinerary — the DATED day-by-day notes the operator entered inside a
+    // trip (the Itinéraire composer writes category 'activity' with a local-midnight
+    // date). The trip BAND alone said "you're travelling"; these are the actual plans
+    // for the day, so the calendar day cell + day page can surface them under the trip
+    // card. Atemporal trip info (Infos/documents/contacts, date NULL) stays in the
+    // trip scene only — it has no calendar position. Join trips so a soft-deleted
+    // trip's orphan notes don't leak. ±DAY widen + re-bucket like meals/day_notes
+    // (date is local midnight, DST-aware).
+    ctx.env.DB.prepare(
+      'SELECT tn.id, tn.trip_id, tn.category, tn.label, tn.text, tn.media_kind, tn.date, tr.colour AS colour FROM trip_notes tn JOIN trips tr ON tr.id = tn.trip_id AND tr.deleted_at IS NULL WHERE tn.household_id = ? AND tn.deleted_at IS NULL AND tn.date IS NOT NULL AND tn.date >= ? AND tn.date < ? ORDER BY tn.date, tn.position, tn.created_at',
+    )
+      .bind(hh, from - DAY, to + DAY)
+      .all<{ id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; date: number; colour: string }>(),
   ])
 
   const inRange = (day: number) => day >= from && day < to
@@ -264,5 +277,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
     end_at: tr.end_at,
   }))
 
-  return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips })
+  // The trip's per-day itinerary entries, bucketed onto their local day (so they sit
+  // under the trip card on that exact calendar day / day page). `colour` rides along
+  // for tinting; the client groups by `trip_id` when a day has several trips.
+  const tripPlans: { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string; day: number }[] = []
+  for (const n of tripPlansRes.results) {
+    const day = dayOf(n.date)
+    if (inRange(day))
+      tripPlans.push({ id: n.id, trip_id: n.trip_id, category: n.category, label: n.label, text: n.text, media_kind: n.media_kind, colour: n.colour, day })
+  }
+
+  return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans })
 })

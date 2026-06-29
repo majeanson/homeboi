@@ -18,6 +18,7 @@ import { useTagColors } from '../../lib/queryHooks'
 import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
 import { Act } from './Act'
+import { tripCategoryIcon, type TripCategory } from '../voyage/voyage'
 import { AutoCardView } from './AutoCard'
 import { DayNote } from './DayNote'
 import { useEntityDetail } from '../detail/DetailProvider'
@@ -38,7 +39,10 @@ interface MTodo { id: string; title: string; member_id: string | null; day: numb
 interface MHome { id: string; kind: string; title: string; color: string | null; day: number }
 // « Voyage » — a multi-day trip; drawn as a BAND across its days (not a per-day dot).
 interface MTrip { id: string; title: string; colour: string; start_at: number; end_at: number }
-export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[]; trips?: MTrip[] }
+// A dated itinerary entry inside a trip — the plans the operator wrote for the day,
+// shown under the trip card on that exact day (not just the global trip band).
+interface MTripPlan { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string; day: number }
+export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[]; trips?: MTrip[]; tripPlans?: MTripPlan[] }
 
 interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[]; home: MHome[] }
 // One day's slice of a trip band: the trip + whether this cell is its first/last
@@ -240,6 +244,8 @@ export function MonthView({
   const selTodos = sel ? sel.todos.filter((td) => !pendingTodo.has(td.id)) : []
   // Trips covering the selected day — shown atop the panel as a tap into the trip.
   const selTrips = tripsByDay.get(selected) ?? []
+  // The dated itinerary entries for the selected day, grouped under their trip below.
+  const selTripPlans = (data?.tripPlans ?? []).filter((p) => p.day === selected)
   const selCount = (sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.notes.length : 0) + selTrips.length
   const atToday = offset === 0 && selected === todayDay
   // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
@@ -397,16 +403,31 @@ export function MonthView({
           <EmptyState>{t.monthView.empty}</EmptyState>
         ) : (
           <>
-            {/* « Voyage » covering this day — atop the list, tapping into the trip
-                (its itinerary for this day is one tap away). */}
+            {/* « Voyage » covering this day — atop the list, tapping into the trip,
+                followed by the dated itinerary entries written for the day (the actual
+                plans, not just the global trip band). */}
             {selTrips.map((tr) => (
-              <Act
-                key={tr.id}
-                cat="event"
-                title={`${t.voyage.title} · ${tr.title}`}
-                color={tr.colour}
-                onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
-              />
+              <div key={tr.id} className="day-plan__trip">
+                <Act
+                  cat="event"
+                  title={`${t.voyage.title} · ${tr.title}`}
+                  color={tr.colour}
+                  onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
+                />
+                {selTripPlans
+                  .filter((p) => p.trip_id === tr.id)
+                  .map((p) => (
+                    <Act
+                      key={p.id}
+                      cat="event"
+                      icon={tripCategoryIcon(p.category as TripCategory)}
+                      title={p.label || p.text || t.voyage.cat[p.category as TripCategory]}
+                      who={p.label && p.text ? p.text : undefined}
+                      color={p.colour}
+                      onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
+                    />
+                  ))}
+              </div>
             ))}
             {/* Same order, same cards as the bento day: meals, then events, then
                 chores, then the day note — so nothing dated is represented here
