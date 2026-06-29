@@ -36,37 +36,60 @@
   line-height: 1.5;
   opacity: 0.85;
 }
-/* Section-strip clustering. The 21 tabs live in ONE scrollable segmented strip
-   (.operator__tabs, styled in misc.css: flex / nowrap / overflow-x), but they're
-   chunked into a few labelled clusters so the strip stays scannable instead of
-   reading as 21 undifferentiated pills (findability; NFR-CALM — no counts/badges).
-   Each .operator__group is one inline cluster (label + its tabs); the clusters sit
-   side by side and scroll horizontally as before. */
+/* Settings nav layout. The 21 sections are chunked into a few labelled clusters
+   (findability; NFR-CALM — no counts/badges), laid out as a grouped vertical list
+   instead of the old horizontal scroll strip. .operator__body wraps the nav + the
+   panel: a single column on a phone (nav above the panel), a sticky sidebar + panel
+   on a wide screen (the media query below). .operator__tabs / .operator__tab are
+   styled in misc.css. */
+.operator__body {
+  display: flex;
+  flex-direction: column;
+}
+/* One cluster: a quiet heading above its tabs. */
 .operator__group {
   display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex: none;
+  flex-direction: column;
+  gap: 0.35rem;
 }
-/* The quiet, non-interactive cluster heading. A hairline before each cluster (bar
-   the first) marks the seam between groups without shouting. */
 .operator__group-label {
-  flex: none;
-  align-self: center;
-  white-space: nowrap;
-  padding: 0 0.5rem 0 0.7rem;
-  margin-left: 0.25rem;
-  border-left: 1px solid var(--line);
+  padding: 0 0.4rem;
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink-faint);
 }
-.operator__group-label--lead {
-  border-left: 0;
-  margin-left: 0;
-  padding-left: 0.25rem;
+/* A group's tabs: wrap as chips on a phone; the sidebar flips them to a vertical
+   list (media query below). */
+.operator__group-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+/* Wide screen (kiosk/landscape): nav becomes a sticky sidebar, panel takes the rest.
+   The .operator__tabs sticky + .operator__tab full-width overrides live in misc.css
+   so they out-cascade the base rules there. */
+@media (min-width: 60rem) {
+  .operator {
+    max-width: 72rem;
+  }
+  .operator__body {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .operator__tabs {
+    flex: 0 0 14rem;
+  }
+  .operator__group-tabs {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .operator__panel {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }
 .operator__section {
   padding: 1.25rem;

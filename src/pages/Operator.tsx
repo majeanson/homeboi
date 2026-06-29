@@ -260,45 +260,57 @@ export function Operator() {
 
       {!signedIn && <p className="operator__kiosk-note mono">{t.operator.kioskNotice}</p>}
 
-      {/* One scrollable segmented strip, but chunked into labelled clusters so 21
-          sections stay scannable (findability). The group label is a quiet,
-          non-interactive divider — every section is still its own role="tab", so
-          deep links and tab ids are unchanged. */}
-      <nav className="operator__tabs mono" role="tablist" aria-label={t.operator.sections}>
-        {groupedNav.map((g, gi) => (
-          <div className="operator__group" key={g.key}>
-            <span className={`operator__group-label${gi === 0 ? ' operator__group-label--lead' : ''}`} aria-hidden="true">
-              {t.operator[g.key]}
-            </span>
-            {g.items.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                role="tab"
-                aria-selected={tab === s.id}
-                className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
-                onClick={() => setTab(s.id)}
-              >
-                {t.operator[s.key]}
-              </button>
-            ))}
-          </div>
-        ))}
-        {ungrouped.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === s.id}
-            className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
-            onClick={() => setTab(s.id)}
-          >
-            {t.operator[s.key]}
-          </button>
-        ))}
-      </nav>
+      {/* Grouped navigation: a sticky vertical sidebar on a wide screen (kiosk/
+          desktop), and on a phone the groups stack with their tabs wrapping as chips
+          under each heading. Replaces the old single horizontal scroll strip (21
+          pills you had to swipe through). Chunked into labelled clusters for
+          scannability; every section is still its own role="tab" (deep links + tab
+          ids unchanged) and ALL tabs stay rendered + tappable — no collapse — so a
+          deep-link or a jump to any section always lands. */}
+      <div className="operator__body">
+        <nav className="operator__tabs mono" role="tablist" aria-label={t.operator.sections}>
+          {groupedNav.map((g) => (
+            <div className="operator__group" key={g.key}>
+              <span className="operator__group-label" aria-hidden="true">
+                {t.operator[g.key]}
+              </span>
+              <div className="operator__group-tabs">
+                {g.items.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === s.id}
+                    className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
+                    onClick={() => setTab(s.id)}
+                  >
+                    {t.operator[s.key]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          {ungrouped.length > 0 && (
+            <div className="operator__group">
+              <div className="operator__group-tabs">
+                {ungrouped.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === s.id}
+                    className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
+                    onClick={() => setTab(s.id)}
+                  >
+                    {t.operator[s.key]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </nav>
 
-      <div className="operator__panel" role="tabpanel">
+        <div className="operator__panel" role="tabpanel">
         {/* Each tab carries its own how-it-works inline (the per-tab cards that
             used to live only under Guide). The Guide tab documents itself. */}
         {tab !== 'guide' && <SectionGuide tab={tab} />}
@@ -369,6 +381,7 @@ export function Operator() {
           </>
         )}
         {tab === 'guide' && <GuideSection />}
+        </div>
       </div>
     </main>
   )
