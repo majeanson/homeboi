@@ -104,13 +104,14 @@ for (const d of DEVICES) {
   // to the VISIBLE surface (.sheet.show overlay / .scene route) so it never matches
   // the always-mounted, off-screen <AddSheet> (a plain .sheet) sitting behind. ---
   const SHEETS: { name: string; path: string; field: string; go: (p: Page) => Promise<void> }[] = [
-    // The board/liste ＋ opens a chooser (no form) — pick the text-add tile inside
-    // the dialog to reveal the capture / list-item input.
+    // The board ＋ hoists its capture box to the top (input visible immediately, no
+    // tile to pick); the liste ＋ opens a chooser — pick the text-add tile to reveal
+    // its input.
     { name: 'liste-addsheet', path: '/liste', field: '.sheet.show input', go: async (p) => { await p.locator('.add-fab').click(); await p.getByRole('dialog').getByRole('button', { name: 'Ajouter à la liste' }).first().click() } },
     { name: 'liste-item-sheet', path: '/liste', field: '.scene input', go: async (p) => void (await p.getByText('Pain', { exact: true }).first().click()) },
     { name: 'quickadd', path: '/liste', field: '.scene input', go: async (p) => { await p.locator('.add-fab').click(); await p.getByRole('dialog').getByRole('button', { name: /Ajout rapide/ }).first().click() } },
     { name: 'deals-browser', path: '/liste', field: '.scene input', go: async (p) => { await p.locator('.add-fab').click(); await p.getByRole('dialog').getByRole('button', { name: /Parcourir les circulaires/ }).click() } },
-    { name: 'board-addsheet', path: '/board', field: '.sheet.show input', go: async (p) => { await p.locator('.add-fab').click(); await p.getByRole('dialog').getByRole('button', { name: 'Note rapide' }).first().click() } },
+    { name: 'board-addsheet', path: '/board', field: '.sheet.show input', go: async (p) => { await p.locator('.add-fab').click() } },
     { name: 'kitchen-addsheet', path: '/kitchen', field: '.sheet.show input', go: async (p) => { await p.locator('.add-fab').click(); await p.locator('.cat-pick').filter({ hasText: 'Restants' }).click() } },
   ]
   for (const s of SHEETS) {

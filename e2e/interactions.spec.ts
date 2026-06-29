@@ -401,9 +401,8 @@ test.describe('add sheet', () => {
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    // The board ＋ opens a blank-slate chooser (nothing pre-selected); pick the
-    // quick-note tile to reveal the capture form.
-    await page.locator('.cat-pick', { hasText: 'Note rapide' }).click()
+    // The board ＋ hoists the quick-capture box to the TOP of the sheet (fast path),
+    // so the note is one type-and-Add away — no "Note rapide" tile to pick first.
     await page.locator('.sheet__field input').fill('Acheter du lait')
     await expectApi(page, 'POST', 'capture', () =>
       page.locator('.sheet form button[type="submit"]').click(),

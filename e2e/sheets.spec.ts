@@ -36,9 +36,8 @@ for (const theme of ['day', 'night'] as Theme[]) {
   test(`sheet-add-capture${sfx}`, async ({ page }) => {
     await boot(page, '/board', theme)
     await page.locator('.add-fab').click()
-    // The board ＋ opens a blank chooser now — pick the "Note rapide" tile to reveal
-    // the capture input.
-    await page.getByRole('dialog').getByRole('button', { name: 'Note rapide' }).first().click()
+    // The board ＋ hoists the quick-capture box to the top of the sheet, so the
+    // capture input is visible immediately (no "Note rapide" tile to pick first).
     await page.locator('.sheet__field input').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `sheet-add-capture-phone${sfx}`)
@@ -98,13 +97,14 @@ for (const theme of ['day', 'night'] as Theme[]) {
 test('scene-add-event', async ({ page }) => {
   await boot(page, '/board')
   await page.locator('.add-fab').click()
-  // The board ＋ opens a blank chooser of tiles (capture / event / chore / …).
-  await page.locator('.cat-pick').first().waitFor({ state: 'visible' })
-  // The event tile is navigate-only now — it leaves the sheet for the
-  // full-screen /event/new scene (tall forms strand under the keyboard).
+  // The board ＋ hoists capture to the top; the chooser below holds the override
+  // tiles (event / chore / …). Pick the event tile BY NAME (capture is no longer a
+  // tile, so positional .nth() would land on the wrong one). It's navigate-only —
+  // it leaves the sheet for the full-screen /event/new scene.
+  await page.locator('.cat-pick', { hasText: 'Rendez-vous' }).waitFor({ state: 'visible' })
   await Promise.all([
     page.waitForURL(/\/event\/new/),
-    page.locator('.cat-pick').nth(1).click(),
+    page.locator('.cat-pick', { hasText: 'Rendez-vous' }).click(),
   ])
   await page.locator('.scene input[type="date"]').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
