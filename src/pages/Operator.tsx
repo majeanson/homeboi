@@ -46,45 +46,40 @@ import type { Member, Device, Chore, Routine, EventRow } from '../components/ope
 // (see lib/tabParam). The sections themselves live in src/components/operator/* —
 // this page is just the shell: auth gate, queries, tab state, and the
 // invalidation fan-out the sections call after a write.
+// Réglages is now 9 task-oriented tabs (down from 21 thin ones): related sections
+// stack as sub-sections under one tab, grouped by the mindset you're in when you
+// change them. Order here = the sidebar order. The `id` is the tab's stable deep-link
+// key (?tab=<id>); the 12 retired ids live on as aliases (TAB_ALIAS) so every old
+// /settings?tab=… link still lands on the right tab.
 const SECTIONS = [
   { id: 'guide', key: 'guide' as const },
-  { id: 'household', key: 'members' as const },
-  { id: 'cercle', key: 'cercleTab' as const },
-  { id: 'agenda', key: 'events' as const },
-  { id: 'auto', key: 'autoTab' as const },
-  { id: 'chores', key: 'chores' as const },
-  { id: 'routines', key: 'routines' as const },
-  { id: 'todos', key: 'todosTab' as const },
-  { id: 'shopping', key: 'shopping' as const },
-  { id: 'recipes', key: 'recipesTab' as const },
-  { id: 'meals', key: 'mealsTab' as const },
-  { id: 'reserve', key: 'reserveTab' as const },
-  { id: 'ghost', key: 'ghost' as const },
-  { id: 'devices', key: 'devices' as const },
-  { id: 'guest', key: 'guestTab' as const },
-  { id: 'photos', key: 'photos' as const },
-  { id: 'week', key: 'thisWeekTab' as const },
-  { id: 'display', key: 'display' as const },
-  { id: 'calm', key: 'calmTitle' as const },
-  { id: 'ai', key: 'aiTab' as const },
-  { id: 'ai-log', key: 'aiLog' as const },
+  { id: 'household', key: 'secMaisonnee' as const }, // members + cercle
+  { id: 'devices', key: 'secAccess' as const }, //     tablets + guest links (operator-only)
+  { id: 'agenda', key: 'secAgenda' as const }, //      events + car/schedule
+  { id: 'chores', key: 'secTasks' as const }, //       chores + routines + à-compléter
+  { id: 'recipes', key: 'secKitchen' as const }, //    recipes + measure pills + meals + réserve
+  { id: 'shopping', key: 'secShopping' as const }, //  list config + aisles + stores + history + ghost
+  { id: 'display', key: 'secBoard' as const }, //      display + layout + ambient + photos + voice + calm
+  { id: 'ai', key: 'secSystem' as const }, //          cette semaine + recap + AI + diagnostics
 ]
 
-// The 21 sections are a lot to scan as one undifferentiated strip, so they're
-// chunked into a handful of labelled clusters (findability, NFR-CALM). This ONLY
-// groups the nav visually — every section stays its own tab in the SAME single
-// `.operator__tabs` strip (kept as one scrollable segmented control), so deep
-// links (/settings?tab=<id>) and every existing tab id are untouched. A small
-// non-interactive label is rendered before each cluster's tabs; a cluster whose
-// tabs are all hidden on a kiosk (Membres/Tablettes/Partage) simply renders no
-// label. Order here defines the on-screen order of the tabs.
-const GROUPS = [
-  { key: 'grpHome' as const, ids: ['household', 'cercle', 'guest', 'photos', 'week'] },
-  { key: 'grpDaily' as const, ids: ['agenda', 'chores', 'routines', 'todos', 'auto'] },
-  { key: 'grpKitchen' as const, ids: ['shopping', 'recipes', 'meals', 'reserve', 'ghost'] },
-  { key: 'grpDevices' as const, ids: ['devices', 'display', 'calm'] },
-  { key: 'grpHelp' as const, ids: ['guide', 'ai', 'ai-log'] },
-]
+// Retired tab id → the merged tab that now hosts it, so a deep link to an old
+// section (/settings?tab=routines) still opens the right tab. The valid-tab set
+// passed to useTabParam includes these keys; resolveTab() folds them to the host.
+const TAB_ALIAS: Record<string, string> = {
+  cercle: 'household',
+  guest: 'devices',
+  auto: 'agenda',
+  routines: 'chores',
+  todos: 'chores',
+  meals: 'recipes',
+  reserve: 'recipes',
+  ghost: 'shopping',
+  calm: 'display',
+  photos: 'display',
+  week: 'ai',
+  'ai-log': 'ai',
+}
 // Operator hub. Reached two ways: the signed-in operator (phone/laptop, full
 // access) OR a parent-mode kiosk (a paired wall tablet — device token, no cookie),
 // which gets in to change most settings but NOT member admin or device pairing
@@ -148,23 +143,18 @@ export function Operator() {
   const fullAccess = signedIn || loading
   // Guest issuance is operator-only (the server's guest/start is 'operator'
   // scope), so a kiosk never sees that tab either — same as Membres + Tablettes.
-  const sections = fullAccess
-    ? SECTIONS
-    : SECTIONS.filter((s) => s.id !== 'household' && s.id !== 'devices' && s.id !== 'guest')
-  const [tab, setTab] = useTabParam(
-    'tab',
-    sections[0].id,
-    sections.map((s) => s.id),
-  )
-  // Chunk the (kiosk-filtered) sections into labelled clusters in GROUPS order,
-  // dropping any cluster left empty by the kiosk filter. Any section not assigned
-  // to a group still shows (label-less, at the end) so a future tab can't vanish.
-  const byId = new Map(sections.map((s) => [s.id, s]))
-  const groupedNav = GROUPS.map((g) => ({
-    key: g.key,
-    items: g.ids.map((id) => byId.get(id)).filter((s): s is (typeof sections)[number] => !!s),
-  })).filter((g) => g.items.length > 0)
-  const ungrouped = sections.filter((s) => !GROUPS.some((g) => g.ids.includes(s.id)))
+  // A kiosk can't admin members or pair devices/issue guest links. Those live in two
+  // operator-only tabs now — « La maisonnée » (id 'household': members + cercle) and
+  // « Accès & appareils » (id 'devices': tablets + guest) — both dropped wholesale for
+  // a kiosk and kept out of the valid set so a deep link can't bypass the gate.
+  const sections = fullAccess ? SECTIONS : SECTIONS.filter((s) => s.id !== 'household' && s.id !== 'devices')
+  const sectionIds = sections.map((s) => s.id)
+  // The valid set also accepts every retired alias id, so an old deep link parses;
+  // resolveTab folds an alias to its host (and a host that's hidden on this device —
+  // e.g. ?tab=guest on a kiosk — back to the default tab).
+  const [rawTab, setTab] = useTabParam('tab', sectionIds[0], [...sectionIds, ...Object.keys(TAB_ALIAS)])
+  const aliased = TAB_ALIAS[rawTab] ?? rawTab
+  const tab = sectionIds.includes(aliased) ? aliased : sectionIds[0]
   const operatorHelp = useHelpMode(OPERATOR_HELP, (k: string) => {
     const labels: Record<string, string> = {
       reserveLocations: t.operator.reserveTitle,
@@ -260,118 +250,112 @@ export function Operator() {
 
       {!signedIn && <p className="operator__kiosk-note mono">{t.operator.kioskNotice}</p>}
 
-      {/* Grouped navigation: a sticky vertical sidebar on a wide screen (kiosk/
-          desktop), and on a phone the groups stack with their tabs wrapping as chips
-          under each heading. Replaces the old single horizontal scroll strip (21
-          pills you had to swipe through). Chunked into labelled clusters for
-          scannability; every section is still its own role="tab" (deep links + tab
-          ids unchanged) and ALL tabs stay rendered + tappable — no collapse — so a
-          deep-link or a jump to any section always lands. */}
+      {/* Settings navigation: a sticky vertical sidebar on a wide screen (kiosk/
+          desktop, its own scroll region), and a wrapping row of chips on a phone.
+          Now just 9 task-oriented tabs (was 21), so no group headers needed — each
+          tab is its own role="tab". Deep links resolve through TAB_ALIAS, so every
+          old ?tab=<id> still lands on its host tab. */}
       <div className="operator__body">
         <nav className="operator__tabs mono" role="tablist" aria-label={t.operator.sections}>
-          {groupedNav.map((g) => (
-            <div className="operator__group" key={g.key}>
-              <span className="operator__group-label" aria-hidden="true">
-                {t.operator[g.key]}
-              </span>
-              <div className="operator__group-tabs">
-                {g.items.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={tab === s.id}
-                    className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
-                    onClick={() => setTab(s.id)}
-                  >
-                    {t.operator[s.key]}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {sections.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === s.id}
+              className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
+              onClick={() => setTab(s.id)}
+            >
+              {t.operator[s.key]}
+            </button>
           ))}
-          {ungrouped.length > 0 && (
-            <div className="operator__group">
-              <div className="operator__group-tabs">
-                {ungrouped.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={tab === s.id}
-                    className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
-                    onClick={() => setTab(s.id)}
-                  >
-                    {t.operator[s.key]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </nav>
 
         <div className="operator__panel" role="tabpanel">
         {/* Each tab carries its own how-it-works inline (the per-tab cards that
             used to live only under Guide). The Guide tab documents itself. */}
         {tab !== 'guide' && <SectionGuide tab={tab} />}
-        {tab === 'household' && <MembersSection members={members} onChange={load} />}
-        {tab === 'cercle' && <CercleGroupsSection help={operatorHelp} />}
-        {tab === 'agenda' && <EventsSection events={events} members={members} onChange={load} />}
-        {tab === 'chores' && <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} />}
-        {tab === 'routines' && <RoutinesSection routines={routines} onChange={load} />}
-        {tab === 'todos' && <TodoTemplatesSection help={operatorHelp} />}
+
+        {/* « La maisonnée » — your people: members + the cercle (family/friends)
+            groups. Operator-only (the whole tab is dropped for a kiosk). */}
+        {tab === 'household' && (
+          <>
+            <MembersSection members={members} onChange={load} />
+            <CercleGroupsSection help={operatorHelp} />
+          </>
+        )}
+
+        {/* « Accès & appareils » — tablets + guest links. Whole tab is operator-only
+            (dropped from `sections` for a kiosk). */}
+        {tab === 'devices' && (
+          <>
+            <ClaimTablet onClaimed={load} />
+            <DevicesSection devices={devices} onChange={load} />
+            <GuestSection help={operatorHelp} />
+          </>
+        )}
+
+        {/* « Agenda & auto » — the calendar and the family car/work windows. */}
+        {tab === 'agenda' && (
+          <>
+            <EventsSection events={events} members={members} onChange={load} />
+            <CarsSection help={operatorHelp} />
+            <ScheduleSection help={operatorHelp} />
+          </>
+        )}
+
+        {/* « Corvées & routines » — the recurring tasks + checklists. */}
+        {tab === 'chores' && (
+          <>
+            <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} />
+            <RoutinesSection routines={routines} onChange={load} />
+            <TodoTemplatesSection help={operatorHelp} />
+          </>
+        )}
+
+        {/* « La cuisine » — recipes, the measure pills (a recipe feature, moved here
+            from Affichage), meal slots, and la réserve. */}
+        {tab === 'recipes' && (
+          <>
+            <RecipeTagsSection help={operatorHelp} />
+            <RecipePillsSection help={operatorHelp} />
+            <MeasureColorsSection help={operatorHelp} />
+            <MealSlotsSection help={operatorHelp} />
+            <ReserveLocationsSection help={operatorHelp} />
+          </>
+        )}
+
+        {/* « Magasinage » — the list config, aisles, stores, history + ghost. */}
         {tab === 'shopping' && (
           <>
             <ShopSection help={operatorHelp} />
             <AisleOrderSection />
             <StoreFilterSection help={operatorHelp} />
             <HistorySection help={operatorHelp} />
+            <GhostSection help={operatorHelp} />
           </>
         )}
-        {tab === 'recipes' && (
-          <>
-            <RecipeTagsSection help={operatorHelp} />
-            <RecipePillsSection help={operatorHelp} />
-          </>
-        )}
-        {tab === 'meals' && <MealSlotsSection help={operatorHelp} />}
-        {tab === 'reserve' && <ReserveLocationsSection help={operatorHelp} />}
-        {tab === 'auto' && (
-          <>
-            <CarsSection help={operatorHelp} />
-            <ScheduleSection help={operatorHelp} />
-          </>
-        )}
-        {tab === 'ghost' && <GhostSection help={operatorHelp} />}
-        {tab === 'devices' && (
-          <>
-            <ClaimTablet onClaimed={load} />
-            <DevicesSection devices={devices} onChange={load} />
-          </>
-        )}
-        {tab === 'guest' && <GuestSection help={operatorHelp} />}
-        {tab === 'photos' && <PhotosSection help={operatorHelp} />}
-        {/* "Cette semaine ensemble" — the weekly ritual; the AI 2-liner recap folds
-            in below it so the reflection lives in one place. */}
-        {tab === 'week' && (
-          <>
-            <ThisWeekTogetherSection help={operatorHelp} />
-            <RecapSection help={operatorHelp} />
-          </>
-        )}
+
+        {/* « Le babillard » — how this screen looks & behaves: display, board card
+            layout, screensaver, the photo wall (moved here), voice, and calm mode. */}
         {tab === 'display' && (
           <>
             <DisplaySection help={operatorHelp} />
             <BoardLayoutSection help={operatorHelp} />
             <AmbientSettingsSection help={operatorHelp} />
-            <MeasureColorsSection help={operatorHelp} />
+            <PhotosSection help={operatorHelp} />
             <VoiceSection help={operatorHelp} />
+            <CalmSection help={operatorHelp} />
           </>
         )}
-        {tab === 'calm' && <CalmSection help={operatorHelp} />}
-        {tab === 'ai' && <AiSection help={operatorHelp} />}
-        {tab === 'ai-log' && (
+
+        {/* « IA & système » — the weekly together-recap (AI-written) leads, then the
+            AI on/off + settings, then the diagnostics. */}
+        {tab === 'ai' && (
           <>
+            <ThisWeekTogetherSection help={operatorHelp} />
+            <RecapSection help={operatorHelp} />
+            <AiSection help={operatorHelp} />
             <BuildInfoSection />
             <IdleDebugSection help={operatorHelp} />
             <MicSelfTest help={operatorHelp} />
@@ -380,6 +364,7 @@ export function Operator() {
             {aiEnabled && <AiErrorLogSection help={operatorHelp} />}
           </>
         )}
+
         {tab === 'guide' && <GuideSection />}
         </div>
       </div>

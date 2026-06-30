@@ -173,7 +173,7 @@ test('scene-add-routine', async ({ page }) => {
 // scene from the agenda tab's "Ajouter un rendez-vous" button, where the form lives.
 test('settings-recur-weekly', async ({ page }) => {
   await boot(page, '/settings')
-  await page.getByRole('tab', { name: 'Rendez-vous' }).click() // agenda
+  await page.getByRole('tab', { name: 'Agenda & auto' }).click() // agenda
   await page.getByRole('button', { name: 'Ajouter un rendez-vous' }).click() // → /event/new scene
   await page.locator('.recur select').first().waitFor({ state: 'visible' })
   await page.locator('.recur select').first().selectOption('weekly')
@@ -188,7 +188,7 @@ test('settings-recur-weekly', async ({ page }) => {
 // add form).
 test('settings-deck-palette', async ({ page }) => {
   await boot(page, '/settings')
-  await page.getByRole('tab', { name: 'Routines (mode enfant)' }).click() // routines
+  await page.getByRole('tab', { name: 'Corvées & routines' }).click() // routines
   await page.getByRole('button', { name: 'Créer une routine' }).click() // → /routine/new scene
   await page.locator('.deck__add').waitFor({ state: 'visible' })
   await page.locator('.deck__add').click() // add a blank card
@@ -201,7 +201,7 @@ test('settings-deck-palette', async ({ page }) => {
 // Rename-a-tag inline form (Réglages ▸ Recettes ▸ used-tags). recipes = nth(5).
 test('settings-tag-rename', async ({ page }) => {
   await boot(page, '/settings')
-  await page.getByRole('tab', { name: 'Recettes' }).click() // recipes (tags)
+  await page.getByRole('tab', { name: 'La cuisine' }).click() // recipes (tags)
   await page.locator('.tag-admin__row').first().waitFor({ state: 'visible' })
   // Each row ends in the uniform RowActions pair (✏️ Renommer / 🗑️ Retirer); the
   // row also carries a 🖌 colour button before them, so target the rename by its

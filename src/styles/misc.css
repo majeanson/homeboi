@@ -155,15 +155,14 @@
 /* The section nav. Held in ONE rounded strip (not 11 separate outlined pills, which
    read as a filter cloud): the shared container + a single filled selection say
    "pick a section" — the same segmented-control language as the board/kitchen. */
-/* Grouped settings nav (the layout/grouping wrappers live in operator.css). The
-   old single horizontal scroll strip of 21 pills was replaced: on a phone the groups
-   stack and their tabs WRAP as chips under each heading (no horizontal swipe, every
-   section in view); on a wide screen the whole nav becomes a sticky vertical sidebar
-   beside the panel (see the min-width override below + operator.css). */
+/* Settings nav (9 task-oriented tabs; layout wrappers in operator.css). The old
+   single horizontal scroll strip of 21 pills is gone: on a phone the tabs WRAP as
+   chips (no horizontal swipe, every section in view); on a wide screen the whole nav
+   becomes a sticky vertical sidebar beside the panel (min-width override below). */
 .operator__tabs {
   display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.3rem;
   margin: 1rem 0 1.5rem;
   padding: 0.55rem 0.6rem;
   background: var(--paper-deep);
@@ -192,9 +191,18 @@
    they win the cascade over the base rules above (operator.css imports earlier). */
 @media (min-width: 60rem) {
   .operator__tabs {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0.15rem;
     position: sticky;
     top: 1rem;
     margin-top: 0;
+    /* The sidebar is its OWN scroll region: capped to the viewport, the LIST scrolls
+       on its own when it's taller than the screen, while the panel scrolls with the
+       page. So a long section nav never drags the panel, and vice-versa. */
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
   .operator__tab {
     width: 100%;

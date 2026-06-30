@@ -10,10 +10,12 @@ import { mockApi, seedState } from './mocks'
 
 const PHONE = { width: 390, height: 844 }
 
-// French tab labels (t.operator.*) for the two operator-only sections.
+// French tab labels (t.operator.*) for the two operator-only tabs + an everyday one.
+// « La maisonnée » (members + cercle) and « Accès & appareils » (tablets + guest) are
+// both operator-only and hidden on a kiosk.
 const MEMBERS_TAB = 'La maisonnée'
-const DEVICES_TAB = 'Tablettes jumelées'
-const CHORES_TAB = 'Corvées'
+const DEVICES_TAB = 'Accès & appareils'
+const CHORES_TAB = 'Corvées & routines'
 
 async function bootSettings(page: Page, tab: string, opts: { operator: boolean }) {
   await page.emulateMedia({ reducedMotion: 'reduce' })

@@ -112,7 +112,7 @@ test.describe('navigation', () => {
     // one-tap peek is gone). Parent → Enfant from the Display tab's switch.
     await APP('/settings')(page)
     await settle(page, '.operator__tabs')
-    await page.getByRole('tab', { name: 'Affichage' }).click()
+    await page.getByRole('tab', { name: 'Le babillard' }).click()
     // The Affichage tab now has several .audience-switch groups (contrast,
     // text-scale, view, tutorial); scope to the parent/kid/guest "view" group and
     // click its "Enfant" option rather than a global .nth(1).
@@ -183,11 +183,11 @@ test.describe('settings tabs', () => {
     await settle(page, '.operator__tabs')
     const tabs = page.getByRole('tab')
     const n = await tabs.count()
-    // 21 sections: Guide (first/default), Maisonnée, Le cercle, Rendez-vous,
-    // Corvées, Routines, À compléter, Magasinage, Recettes, Repas, Réserve, Liste
-    // fantôme, Tablettes, Invité (Guest), Photos, Cette semaine, Bilan, Affichage,
-    // Mode calme, IA (the AI on/off switch), and the AI/Debug journal tab (ai-log).
-    expect(n).toBe(21)
+    // 9 task-oriented tabs (down from 21 thin ones): Guide (first/default), La
+    // maisonnée, Accès & appareils, Agenda & auto, Corvées & routines, La cuisine,
+    // Magasinage, Le babillard, IA & système. Each merged tab stacks its old
+    // sections as sub-sections (so every section is still reachable).
+    expect(n).toBe(9)
     for (let i = 0; i < n; i++) {
       await tabs.nth(i).click()
       await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true')
@@ -203,7 +203,7 @@ test.describe('toggles', () => {
     await APP('/settings')(page)
     await settle(page, '.operator__tabs')
     // By name, not index — adding a settings tab must not shift these tests.
-    await page.getByRole('tab', { name: 'Affichage' }).click()
+    await page.getByRole('tab', { name: 'Le babillard' }).click()
   }
 
   test('theme toggle flips the persisted theme', async ({ page }) => {
@@ -246,8 +246,10 @@ test.describe('toggles', () => {
   test('calm toggle flips and persists the opt-out', async ({ page }) => {
     await APP('/settings')(page)
     await settle(page, '.operator__tabs')
-    await page.getByRole('tab', { name: 'Mode calme' }).click()
-    const btn = page.locator('.operator__panel button[aria-pressed]')
+    // Calm mode lives under « Le babillard » now (with display/layout/ambient/…), so
+    // scope to the calm section — the panel has several aria-pressed toggles.
+    await page.getByRole('tab', { name: 'Le babillard' }).click()
+    const btn = page.locator('.operator__section', { hasText: 'Mode calme' }).locator('button[aria-pressed]')
     await expect(btn).toHaveAttribute('aria-pressed', 'true')
     await btn.click()
     await expect(btn).toHaveAttribute('aria-pressed', 'false')
@@ -292,11 +294,13 @@ test.describe('settings forms', () => {
   })
 
   test('add an event', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Rendez-vous' }).click()
+    await page.getByRole('tab', { name: 'Agenda & auto' }).click()
     // Adding now opens the full-screen event scene (the panel's inline form is
     // EDIT-only): "Ajouter un rendez-vous" navigates to /event/new with the same
     // EventForm — a scene, not a sheet, so its fields ride above the keyboard.
-    await page.locator('.operator__add').click()
+    // .first(): the agenda tab now stacks events + car + schedule, each with its own
+    // .operator__add — the event one is first.
+    await page.locator('.operator__add').first().click()
     await page.waitForURL(/\/event\/new/)
     const form = page.locator('.scene form.operator__inline-form')
     await form.locator('input.input').first().fill('Réunion parents')
@@ -308,7 +312,9 @@ test.describe('settings forms', () => {
     await page.getByRole('tab', { name: 'Corvées' }).click()
     // Adding a chore opens the full-screen /chore/new scene (Réglages rows are
     // edit/remove only).
-    await page.locator('.operator__add').click()
+    // .first(): the « Corvées & routines » tab stacks chores + routines + todos, each
+    // with its own .operator__add — the chore one is first.
+    await page.locator('.operator__add').first().click()
     await page.waitForURL(/\/chore\/new/)
     const form = page.locator('.scene .operator__chore-form')
     await form.locator('input.input').first().fill('Balayer la cuisine')
@@ -316,10 +322,10 @@ test.describe('settings forms', () => {
   })
 
   test('add a kid routine', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Routines (mode enfant)' }).click()
-    // The routine builder is the full-screen /routine/new scene now (panel rows
-    // are edit/remove).
-    await page.locator('.operator__add').click()
+    // Routines live under « Corvées & routines » now, below the chores section — so
+    // scope the add to the routines section (the first .operator__add is the chore's).
+    await page.getByRole('tab', { name: 'Corvées & routines' }).click()
+    await page.locator('.operator__section', { hasText: 'Routines (mode enfant)' }).locator('.operator__add').click()
     await page.waitForURL(/\/routine\/new/)
     const form = page.locator('.scene .operator__routine-form')
     await form.locator('.picker-chips').first().locator('.chip').first().click() // pick a child
@@ -336,14 +342,15 @@ test.describe('settings forms', () => {
   })
 
   test('add a ghost-list staple', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Liste fantôme' }).click()
-    const form = page.locator('.operator__panel form.operator__inline-form')
+    // Ghost tracking lives under « Magasinage » now — scope to its section.
+    await page.getByRole('tab', { name: 'Magasinage' }).click()
+    const form = page.locator('.operator__section', { hasText: 'Liste fantôme' }).locator('form.operator__inline-form')
     await form.locator('input.input').first().fill('Savon à vaisselle')
     await expectApi(page, 'PATCH', 'ghost', () => form.locator('button[type="submit"]').click())
   })
 
   test('a frequent buy is offered for tracking — one deliberate tap tracks it', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Liste fantôme' }).click()
+    await page.getByRole('tab', { name: 'Magasinage' }).click()
     // Tracking is conscious: candidates sit apart from the tracked rows, and
     // nothing enters the set until this tap.
     const chip = page.locator('.ghost-admin__candidate-chips .chip').first()
@@ -376,15 +383,15 @@ test.describe('settings forms', () => {
   })
 
   test('claim a tablet with a 6-digit code', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Tablettes jumelées' }).click()
+    await page.getByRole('tab', { name: 'Accès & appareils' }).click()
     const form = page.locator('.operator__claim form')
     await form.locator('input.input').first().fill('123456')
     await expectApi(page, 'POST', 'pair/claim', () => form.locator('button[type="submit"]').click())
   })
 
   test('generate the weekly recap', async ({ page }) => {
-    // The AI recap now lives at the bottom of the "Cette semaine" ritual tab.
-    await page.getByRole('tab', { name: 'Cette semaine' }).click()
+    // « Cette semaine » + its AI recap now live under the « IA & système » tab.
+    await page.getByRole('tab', { name: 'IA & système' }).click()
     await expectApi(page, 'GET', 'recap', () => page.getByRole('button', { name: 'Générer le bilan' }).click())
     await expect(page.locator('.operator__panel')).toContainText('Belle semaine')
   })

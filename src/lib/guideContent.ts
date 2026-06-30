@@ -87,8 +87,8 @@ export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] =
     id: 'settings',
     label: { fr: 'Les réglages, onglet par onglet', en: 'Settings, tab by tab' },
     blurb: {
-      fr: 'Chaque onglet de Réglages, et exactement ce que tu peux y faire. Le poste de pilotage du parent.',
-      en: 'Every Settings tab, and exactly what you can do in it. The parent’s control panel.',
+      fr: 'Une carte par onglet de Réglages, dans le même ordre que la barre — la maisonnée, l’accès, l’agenda, les corvées, la cuisine, le magasinage, le babillard, l’IA. Le poste de pilotage du parent.',
+      en: 'One card per Settings tab, in the same order as the bar — the household, access, agenda, chores, kitchen, shopping, board, AI. The parent’s control panel.',
     },
   },
 ]
@@ -1372,9 +1372,10 @@ export const GUIDE: GuideEntry[] = [
         },
       },
     ],
-    // Surfaces the same card inline at the top of Réglages ▸ À compléter (where the
-    // departure templates live) and offers a "go there" link from the main Guide.
-    tab: 'todos',
+    // The "À compléter" templates now live under Réglages ▸ Corvées & routines; this
+    // tab id powers the "go there" link from the main Guide (the consolidated
+    // set-chores card is what SectionGuide shows inline on that tab).
+    tab: 'chores',
   },
   {
     id: 'activities',
@@ -1465,8 +1466,9 @@ export const GUIDE: GuideEntry[] = [
         },
       },
     ],
-    // Surfaces the same card at the top of Réglages ▸ Corvées (where the Projets /
-    // Entretien sub-tabs live) and offers a "go there" link from the main Guide.
+    // Powers a "go there" link from the main Guide to Réglages ▸ Corvées & routines
+    // (where the Projets / Entretien sub-tabs live). The consolidated set-chores card
+    // is what SectionGuide shows inline on that tab.
     tab: 'chores',
   },
   {
@@ -2801,10 +2803,10 @@ export const GUIDE: GuideEntry[] = [
     icon: 'users-three-bold',
     group: 'settings',
     tab: 'household',
-    title: { fr: 'Maisonnée', en: 'Household' },
+    title: { fr: 'La maisonnée', en: 'The household' },
     what: {
-      fr: 'Qui fait partie de la famille. C’est ce qui peuple les visages, les couleurs et les agendas partout dans l’app.',
-      en: 'Who’s in the family. This populates the faces, colours and agendas everywhere in the app.',
+      fr: 'Qui fait partie de la famille, et le cercle autour d’elle. C’est ce qui peuple les visages, les couleurs et les agendas partout dans l’app.',
+      en: 'Who’s in the family, and the circle around it. This populates the faces, colours and agendas everywhere in the app.',
     },
     points: [
       {
@@ -2851,6 +2853,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'One consistent visual cue for who owns what, without reading.',
         },
       },
+      {
+        label: { fr: 'Le cercle et les groupes', en: 'The circle and groups' },
+        detail: {
+          fr: 'Sous les membres, « Le cercle » garde la famille élargie et les amis (grands-parents, gardienne, voisins) et les regroupe en familles. Voir [[card:cercle|Le cercle]] pour le détail; tu peux y défaire un groupe sans perdre les personnes.',
+          en: 'Below the members, “The circle” keeps extended family and friends (grandparents, sitter, neighbours) and clusters them into families. See [[card:cercle|The circle]] for the detail; you can break a group here without losing the people.',
+        },
+        why: {
+          fr: 'La maisonnée, c’est le noyau qui a des corvées et des routines; le cercle, c’est tout le monde autour qu’on relie à un événement ou une fête.',
+          en: 'The household is the core that gets chores and routines; the circle is everyone around it you can attach to an event or a birthday.',
+        },
+      },
     ],
   },
   {
@@ -2858,10 +2871,10 @@ export const GUIDE: GuideEntry[] = [
     icon: 'calendar-dots-bold',
     group: 'settings',
     tab: 'agenda',
-    title: { fr: 'Agenda', en: 'Agenda' },
+    title: { fr: 'Agenda & auto', en: 'Agenda & car' },
     what: {
-      fr: 'Les rendez-vous et événements de la famille. Ce qui s’affiche dans « Aujourd’hui / À venir » sur le babillard.',
-      en: 'The family’s appointments and events. What shows under “Today / Upcoming” on the board.',
+      fr: 'Les rendez-vous et événements de la famille, plus l’auto partagée et les horaires de travail. Ce qui s’affiche dans « Aujourd’hui / À venir » sur le babillard.',
+      en: 'The family’s appointments and events, plus the shared car and work schedules. What shows under “Today / Upcoming” on the board.',
     },
     points: [
       {
@@ -2897,6 +2910,24 @@ export const GUIDE: GuideEntry[] = [
           en: 'So you enter a repeating thing once (Tuesday swim class) instead of retyping it every week.',
         },
       },
+      {
+        label: { fr: 'L’auto partagée', en: 'The shared car' },
+        detail: {
+          fr: 'Donne un nom et une couleur à l’auto que la maisonnée se partage; les trajets s’y rattachent et un membre du cercle peut conduire en covoiturage. Voir [[card:auto|L’auto]] pour tout le détail.',
+          en: 'Name and colour the car the household shares; rides attach to it and a circle member can drive as a carpool. See [[card:auto|The car]] for the full detail.',
+        },
+        why: {
+          fr: 'Un seul endroit pour savoir qui a l’auto et quand elle est libre — fini les cinq fils de textos.',
+          en: 'One place to know who has the car and when it’s free — no more five text threads.',
+        },
+      },
+      {
+        label: { fr: 'Les horaires de travail', en: 'Work schedules' },
+        detail: {
+          fr: 'Entre une fois les heures récurrentes de chacun (travail, garderie) et coche « prend l’auto » au besoin; ça dit à [[card:auto|L’auto]] quand la voiture n’est pas là et façonne chaque journée tout seul.',
+          en: 'Enter everyone’s recurring hours once (work, daycare) and tick “takes the car” where it applies; it tells [[card:auto|The car]] when the vehicle is away and shapes each day on its own.',
+        },
+      },
     ],
   },
   {
@@ -2904,10 +2935,10 @@ export const GUIDE: GuideEntry[] = [
     icon: 'broom-bold',
     group: 'settings',
     tab: 'chores',
-    title: { fr: 'Corvées', en: 'Chores' },
+    title: { fr: 'Corvées & routines', en: 'Chores & routines' },
     what: {
-      fr: 'Les tâches de la maison et leur horaire. Elles tournent et s’affichent sur le babillard avec « c’est le tour de… ».',
-      en: 'The house tasks and their schedule. They rotate and show on the board with “whose turn it is…”.',
+      fr: 'Les tâches de la maison et leur horaire, les routines en images des enfants, et les listes « À compléter ». Les corvées tournent et s’affichent sur le babillard avec « c’est le tour de… ».',
+      en: 'The house tasks and their schedule, the kids’ picture routines, and the “To complete” lists. Chores rotate and show on the board with “whose turn it is…”.',
     },
     points: [
       {
@@ -2954,24 +2985,11 @@ export const GUIDE: GuideEntry[] = [
           en: 'To see the house got run without turning it into a contest — true to calm, never a scoreboard.',
         },
       },
-    ],
-  },
-  {
-    id: 'set-routines',
-    icon: 'smiley-bold',
-    group: 'settings',
-    tab: 'routines',
-    title: { fr: 'Routines (réglage)', en: 'Routines (setup)' },
-    what: {
-      fr: 'Là où tu montes les routines en images des enfants : les étapes, à qui elles appartiennent, et le moment de la journée.',
-      en: 'Where you build the kids’ picture routines: the steps, who they belong to, and the time of day.',
-    },
-    points: [
       {
-        label: { fr: 'Créer une routine', en: 'Create a routine' },
+        label: { fr: 'Créer une routine d’enfant', en: 'Create a kid routine' },
         detail: {
-          fr: 'Nomme-la, assigne-la à un enfant, et ajoute des étapes (chacune avec une image).',
-          en: 'Name it, assign it to a child, and add steps (each with a picture).',
+          fr: 'Sous « Routines », nomme-la, assigne-la à un enfant, et ajoute des étapes (chacune avec une image).',
+          en: 'Under “Routines”, name it, assign it to a child, and add steps (each with a picture).',
         },
       },
       {
@@ -2992,6 +3010,20 @@ export const GUIDE: GuideEntry[] = [
           en: 'In the Routines tab, in kid view — read aloud, one card at a time.',
         },
       },
+      {
+        label: { fr: 'Listes « À compléter »', en: '“To complete” lists' },
+        detail: {
+          fr: 'Prépare ici tes listes à cocher réutilisables (sac de piscine, « Avant de partir »). Voir [[card:todos|À faire & à compléter]] : préparées une fois, elles s’ajoutent au babillard d’un seul geste.',
+          en: 'Build your reusable check-off lists here (pool bag, “Before leaving”). See [[card:todos|To do & to complete]]: set up once, they drop onto the board in one tap.',
+        },
+      },
+      {
+        label: { fr: 'Projets & entretien', en: 'Plans & maintenance' },
+        detail: {
+          fr: 'Sous les corvées, deux listes pour les plus gros sujets de la maison : les Projets (un jour, sans date) et l’Entretien qui revient. Voir [[card:home-projects|Projets & entretien]].',
+          en: 'Under chores, two lists for the bigger home topics: Plans (someday, no date) and recurring Maintenance. See [[card:home-projects|Plans & maintenance]].',
+        },
+      },
     ],
   },
   {
@@ -3001,8 +3033,8 @@ export const GUIDE: GuideEntry[] = [
     tab: 'shopping',
     title: { fr: 'Magasinage', en: 'Shopping' },
     what: {
-      fr: 'Tout ce qui alimente les rabais et l’ajout rapide : ton code postal, les magasins à garder, et l’historique d’achats.',
-      en: 'Everything feeding deals and quick-add: your postal code, which stores to keep, and the purchase history.',
+      fr: 'Tout ce qui alimente la liste et les rabais : ton code postal, les magasins à garder, l’ordre des allées, l’historique d’achats, et le suivi fantôme opt-in.',
+      en: 'Everything feeding the list and deals: your postal code, which stores to keep, the aisle order, the purchase history, and opt-in ghost tracking.',
     },
     points: [
       {
@@ -3038,6 +3070,46 @@ export const GUIDE: GuideEntry[] = [
           en: 'To keep the suggestions clean and useful rather than cluttered.',
         },
       },
+      {
+        label: { fr: 'Ordre des allées', en: 'Aisle order' },
+        detail: {
+          fr: 'Glisse les rayons (fruits, laitier, congelé…) dans l’ordre où tu parcours TON magasin. La liste « Par allée » suit alors ton trajet réel.',
+          en: 'Drag the aisles (produce, dairy, frozen…) into the order you walk YOUR store. The list’s “By aisle” view then follows your real path.',
+        },
+        why: {
+          fr: 'Pour magasiner d’un bout à l’autre sans revenir sur tes pas.',
+          en: 'So you shop end to end without doubling back.',
+        },
+      },
+      {
+        label: { fr: 'Suivre un article (fantôme)', en: 'Track an item (ghost)' },
+        detail: {
+          fr: 'Le suivi d’achats opt-in : les achats fréquents apparaissent en suggestions ＋ « le suivre ? ». Un tap, jamais automatique — le suivi reste ton choix (voir [[card:ghost|Suivi fantôme]]).',
+          en: 'Opt-in purchase tracking: frequent buys show as ＋ “track it?” suggestions. One tap, never automatic — tracking stays your choice (see [[card:ghost|Ghost tracking]]).',
+        },
+      },
+      {
+        label: { fr: 'Fréquence (jours)', en: 'Cadence (days)' },
+        detail: {
+          fr: 'Règle « tous les N jours » pour chaque article suivi.',
+          en: 'Set “every N days” per tracked item.',
+        },
+        why: {
+          fr: 'Pour qu’il revienne sur la liste juste quand tu en rachètes d’habitude.',
+          en: 'So it returns to the list right around when you’d normally rebuy it.',
+        },
+      },
+      {
+        label: { fr: 'Mettre en sourdine / retirer', en: 'Mute / remove' },
+        detail: {
+          fr: 'Mets un article en sourdine sans le supprimer, ou retire ceux que tu as ajoutés à la main.',
+          en: 'Mute an item without deleting it, or remove the ones you added by hand.',
+        },
+        why: {
+          fr: 'Pour faire taire une suggestion encombrante sans perdre son historique.',
+          en: 'To silence a noisy suggestion without losing its history.',
+        },
+      },
     ],
   },
   {
@@ -3045,10 +3117,10 @@ export const GUIDE: GuideEntry[] = [
     icon: 'tag-bold',
     group: 'settings',
     tab: 'recipes',
-    title: { fr: 'Recettes (étiquettes)', en: 'Recipes (tags)' },
+    title: { fr: 'La cuisine', en: 'The kitchen' },
     what: {
-      fr: 'La couche d’étiquettes de tes recettes : les pastilles proposées dans le formulaire, et le ménage des étiquettes déjà utilisées.',
-      en: 'The tag layer for your recipes: the pills offered in the form, and the cleanup of tags already in use.',
+      fr: 'Les réglages de cuisine : les étiquettes de recettes, la couleur des cuillères et tasses, la couleur et l’affichage de chaque repas, et la réserve.',
+      en: 'The kitchen settings: recipe tags, the colour of spoons and cups, each meal’s colour and display, and the reserve.',
     },
     points: [
       {
@@ -3080,24 +3152,11 @@ export const GUIDE: GuideEntry[] = [
           en: 'Removes it from every recipe at once (with confirmation).',
         },
       },
-    ],
-  },
-  {
-    id: 'set-meals',
-    icon: 'fork-knife-bold',
-    group: 'settings',
-    tab: 'meals',
-    title: { fr: 'Repas (couleurs et affichage)', en: 'Meals (colours and display)' },
-    what: {
-      fr: 'Le look de chaque repas de la journée — déjeuner, dîner, collation, souper. Donne-lui une couleur, et choisis lesquels tu veux voir.',
-      en: 'The look of each meal of the day — breakfast, lunch, snack, supper. Give it a colour, and pick which ones you want to see.',
-    },
-    points: [
       {
         label: { fr: 'Une couleur par repas', en: 'A colour per meal' },
         detail: {
-          fr: 'Touche une pastille pour donner sa couleur à un repas. « Couleur par défaut » la remet comme avant.',
-          en: 'Tap a dot to give a meal its colour. “Default colour” puts it back as it was.',
+          fr: 'Touche une pastille pour donner sa couleur à un repas (déjeuner, dîner, souper, collation). « Couleur par défaut » la remet comme avant.',
+          en: 'Tap a dot to give a meal (breakfast, lunch, supper, snack) its colour. “Default colour” puts it back as it was.',
         },
         why: {
           fr: 'La couleur suit le repas PARTOUT — babillard, calendrier du mois, cuisine — alors un coup d’œil dit « ça, c’est le souper ».',
@@ -3107,72 +3166,30 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Afficher / masquer un repas', en: 'Show / hide a meal' },
         detail: {
-          fr: 'Le bouton Affiché/Masqué enlève un repas du babillard et de l’aperçu de la cuisine (ex. ne garder que le souper).',
-          en: 'The Shown/Hidden button drops a meal from the board and the kitchen glance (e.g. keep only supper).',
+          fr: 'Le bouton Affiché/Masqué enlève un repas du babillard et de l’aperçu de la cuisine (ex. ne garder que le souper). Un repas masqué se planifie quand même via « Gérer » une journée.',
+          en: 'The Shown/Hidden button drops a meal from the board and the kitchen glance (e.g. keep only supper). A hidden meal can still be planned via a day’s “Gérer”.',
         },
         why: {
-          fr: 'Pour un babillard calme qui ne montre que ce qui compte pour toi — par défaut, tous les repas sont affichés.',
-          en: 'For a calm board that shows only what matters to you — by default, every meal is shown.',
+          fr: 'Pour un babillard calme qui ne montre que ce qui compte pour toi — par défaut, tous les repas sont affichés. Couleurs et choix sont partagés par tous les appareils.',
+          en: 'For a calm board that shows only what matters to you — by default every meal is shown. Colours and choices are shared across every device.',
         },
       },
       {
-        label: { fr: 'Planifier reste toujours possible', en: 'You can still plan everything' },
+        label: { fr: 'Cuillères et tasses en couleur', en: 'Spoons and cups in colour' },
         detail: {
-          fr: 'Un repas masqué se planifie quand même : ouvre une journée dans La cuisine avec « Gérer » — tous les repas y sont.',
-          en: 'A hidden meal can still be planned: open a day in the Kitchen with “Gérer” — every meal is there.',
-        },
-      },
-      {
-        label: { fr: 'Pour toute la maisonnée', en: 'For the whole household' },
-        detail: {
-          fr: 'Couleurs et choix sont partagés par tous les appareils — la tablette murale et chaque téléphone voient la même chose.',
-          en: 'Colours and choices are shared across every device — the wall tablet and each phone see the same thing.',
-        },
-      },
-    ],
-  },
-  {
-    id: 'set-ghost',
-    icon: 'ghost-bold',
-    group: 'settings',
-    tab: 'ghost',
-    title: { fr: 'Suggestions (ghost)', en: 'Suggestions (ghost)' },
-    what: {
-      fr: 'Le réglage du suivi d’achats opt-in : tu choisis quoi suivre et à quelle fréquence. C’est ici qu’on monte ce qui ressort plus tard, marqué « dû / bientôt », dans le panneau d’ajout rapide de La liste (voir Suivi fantôme).',
-      en: 'The opt-in purchase-tracking setup: you choose what to track and how often. This is where you build what later resurfaces, marked “due / soon”, in the quick-add panel on La liste (see Ghost tracking).',
-    },
-    points: [
-      {
-        label: { fr: 'Suivre un article', en: 'Track an item' },
-        detail: {
-          fr: 'Les achats fréquents apparaissent en suggestions ＋ « le suivre ? ».',
-          en: 'Frequent buys show as ＋ “track it?” suggestions.',
+          fr: 'Donne à chaque cuillère et tasse la couleur de tes vrais ustensiles. Toutes les pastilles de mesure et les ronds de recettes suivent, partout.',
+          en: 'Give each spoon and cup the colour of your real tools. Every measure pill and recipe scoop follows, everywhere.',
         },
         why: {
-          fr: 'Un tap, jamais automatique — le suivi reste ton choix.',
-          en: 'One tap, never automatic — tracking stays your choice.',
+          fr: 'Pour qu’un enfant trouve « la cuillère verte » en cuisinant, par la couleur plutôt que par les chiffres.',
+          en: 'So a child grabs “the green spoon” while cooking, by colour rather than numbers.',
         },
       },
       {
-        label: { fr: 'Fréquence (jours)', en: 'Cadence (days)' },
+        label: { fr: 'La réserve', en: 'The reserve' },
         detail: {
-          fr: 'Règle « tous les N jours » pour chaque article.',
-          en: 'Set “every N days” per item.',
-        },
-        why: {
-          fr: 'Pour qu’il revienne sur la liste juste quand tu en rachètes d’habitude.',
-          en: 'So it returns to the list right around when you’d normally rebuy it.',
-        },
-      },
-      {
-        label: { fr: 'Mettre en sourdine / retirer', en: 'Mute / remove' },
-        detail: {
-          fr: 'Mets un article en sourdine sans le supprimer, ou retire ceux que tu as ajoutés à la main.',
-          en: 'Mute an item without deleting it, or remove the ones you added by hand.',
-        },
-        why: {
-          fr: 'Pour faire taire une suggestion encombrante sans perdre son historique.',
-          en: 'To silence a noisy suggestion without losing its history.',
+          fr: 'Nomme et colore les endroits de ta réserve (congélateur, garde-manger…) où les articles sont regroupés. Voir [[card:reserve|La réserve]].',
+          en: 'Name and colour your reserve spots (freezer, pantry…) where items are grouped. See [[card:reserve|The reserve]].',
         },
       },
     ],
@@ -3182,10 +3199,10 @@ export const GUIDE: GuideEntry[] = [
     icon: 'device-tablet-bold',
     group: 'settings',
     tab: 'devices',
-    title: { fr: 'Appareils', en: 'Devices' },
+    title: { fr: 'Accès & appareils', en: 'Access & devices' },
     what: {
-      fr: 'Approuve les tablettes jumelées et retire-les. C’est ici que tu donnes (ou reprends) l’accès au babillard.',
-      en: 'Approve paired tablets and remove them. This is where you grant (or revoke) board access.',
+      fr: 'Les tablettes jumelées et les liens de partage temporaires (gardienne, accueil, famille). C’est ici que tu donnes — ou reprends — l’accès au babillard.',
+      en: 'The paired tablets and the temporary share links (sitter, welcome, family). This is where you grant — or revoke — board access.',
     },
     points: [
       {
@@ -3206,31 +3223,18 @@ export const GUIDE: GuideEntry[] = [
           en: 'So you can pull access from a lost, sold or handed-on tablet whenever you want.',
         },
       },
-    ],
-  },
-  {
-    id: 'set-guest',
-    icon: 'key-bold',
-    group: 'settings',
-    tab: 'guest',
-    title: { fr: 'Partage', en: 'Sharing' },
-    what: {
-      fr: 'Crée des liens temporaires en lecture seule — Démo, Gardienne, Accueil ou Famille — plus la « Fiche famille » qu’un proche remplit et te renvoie, et règle les « Infos à partager » (wifi, règles, poubelles) qui les alimentent.',
-      en: 'Mint temporary read-only links — Demo, Sitter, Welcome or Family — plus the “Family details” form a relative fills and sends back, and set the “Info to share” (wifi, rules, bin day) that feeds them.',
-    },
-    points: [
       {
-        label: { fr: 'Choisir le genre', en: 'Pick the kind' },
+        label: { fr: 'Choisir le genre de lien', en: 'Pick the link kind' },
         detail: {
-          fr: 'Voir [[card:share-access|Partager un accès]] pour le détail des six genres.',
-          en: 'See [[card:share-access|Share access]] for the detail of the six kinds.',
+          fr: 'Crée un lien temporaire en lecture seule — Démo, Gardienne, Accueil ou Famille — plus la « Fiche famille » qu’un proche remplit et te renvoie. Voir [[card:share-access|Partager un accès]] pour le détail des genres.',
+          en: 'Mint a temporary read-only link — Demo, Sitter, Welcome or Family — plus the “Family details” form a relative fills and sends back. See [[card:share-access|Share access]] for the detail of the kinds.',
         },
       },
       {
         label: { fr: 'Chaque genre, sa vue', en: 'Each kind, its view' },
         detail: {
-          fr: 'Démo (tout le babillard), Gardienne (journée + routines + à savoir + le plan de secours de la maison « en cas de pépin » et « comment ça marche » + wifi), Accueil (wifi + poubelles + règles), Famille (dates des enfants + anniversaires + photos) ou Fiche famille (un proche remplit ses infos et te les renvoie) — chacun avec sa durée.',
-          en: 'Demo (the whole board), Sitter (day + routines + things-to-know + the house’s “in a pinch” map & “how things work” + wifi), Welcome (wifi + bin day + rules), Family (kids’ dates + birthdays + photos) or Family details (a relative fills in their info and sends it back) — each with its own duration.',
+          fr: 'Démo (tout le babillard), Gardienne (journée + routines + à savoir + le plan de secours « en cas de pépin » + wifi), Accueil (wifi + poubelles + règles), Famille (dates des enfants + anniversaires + photos) ou Fiche famille (un proche remplit ses infos et te les renvoie) — chacun avec sa durée.',
+          en: 'Demo (the whole board), Sitter (day + routines + things-to-know + the house’s “in a pinch” map + wifi), Welcome (wifi + bin day + rules), Family (kids’ dates + birthdays + photos) or Family details (a relative fills in their info and sends it back) — each with its own duration.',
         },
         why: {
           fr: 'Un lien par besoin : le visiteur ne voit que ce qui le concerne.',
@@ -3269,60 +3273,14 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
-    id: 'set-photos',
-    icon: 'image-square-bold',
+    id: 'set-ai',
+    icon: 'sparkle-bold',
     group: 'settings',
-    tab: 'photos',
-    title: { fr: 'Photos', en: 'Photos' },
+    tab: 'ai',
+    title: { fr: 'IA & système', en: 'AI & system' },
     what: {
-      fr: 'Les photos de famille qui dérivent doucement sur le babillard. Téléverse-les depuis ton téléphone.',
-      en: 'The family photos that gently drift across the board. Upload them from your phone.',
-    },
-    points: [
-      {
-        label: { fr: 'Ajouter plusieurs photos', en: 'Add several photos' },
-        detail: {
-          fr: 'Choisis-en une ou plusieurs d’un coup (un compteur « 2/5 » suit le lot).',
-          en: 'Pick one or many at once (a “2/5” counter tracks the batch).',
-        },
-        why: {
-          fr: 'Elles sont redimensionnées petites avant l’envoi, pour charger vite et rester gratuites.',
-          en: 'They’re resized small before upload, to load fast and stay free.',
-        },
-      },
-      {
-        label: { fr: 'Retirer', en: 'Remove' },
-        detail: {
-          fr: 'Le [[icon:x-bold]] sur une vignette l’enlève.',
-          en: 'The [[icon:x-bold]] on a thumbnail removes it.',
-        },
-        why: {
-          fr: 'Le nombre total est plafonné côté serveur, alors ça reste gratuit.',
-          en: 'The total is capped server-side, so it stays free.',
-        },
-      },
-      {
-        label: { fr: 'Peut être absent', en: 'May be hidden' },
-        detail: {
-          fr: 'Si le stockage photo (R2) n’est pas branché, cet onglet se cache tout seul.',
-          en: 'If photo storage (R2) isn’t wired up, this tab hides itself.',
-        },
-        why: {
-          fr: 'Pour ne pas te montrer une fonction qui ne marcherait pas sur ce déploiement.',
-          en: 'So it doesn’t show you a feature that wouldn’t work on this deployment.',
-        },
-      },
-    ],
-  },
-  {
-    id: 'set-recap',
-    icon: 'pencil-simple-bold',
-    group: 'settings',
-    tab: 'week',
-    title: { fr: 'Cette semaine ensemble', en: 'This week together' },
-    what: {
-      fr: 'Un coup d’œil calme sur la semaine : ce qui s’en vient (repas, qui travaille, anniversaires, projets) et ce qu’on a fait ensemble (corvées, routines, projets) — par visages, jamais par pointage. Un petit bilan IA s’ajoute au bas, sur demande.',
-      en: 'A calm look at the week: what’s coming (meals, who works, birthdays, projects) and what we did together (chores, routines, projects) — by faces, never a score. A small AI recap sits at the bottom, on demand.',
+      fr: '« Cette semaine » par visages, le bilan IA sur demande, l’interrupteur marche/arrêt de l’IA, et les outils de mise au point (journal d’entretien, mode veille).',
+      en: '“This week” by faces, the AI recap on demand, the household AI on/off switch, and the troubleshooting tools (maintenance log, idle mode).',
     },
     points: [
       {
@@ -3350,12 +3308,56 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Peut être absent', en: 'May be hidden' },
         detail: {
-          fr: 'Si l’IA est hors ligne, l’onglet disparaît.',
-          en: 'If AI is offline, the tab disappears.',
+          fr: 'Si l’IA est hors ligne, l’onglet « Cette semaine » disparaît.',
+          en: 'If AI is offline, the “This week” tab disappears.',
         },
         why: {
           fr: 'Plutôt que d’afficher un bouton mort qui ne ferait rien.',
           en: 'Rather than show a dead button that would do nothing.',
+        },
+      },
+      {
+        label: { fr: 'Allumer / éteindre l’IA', en: 'Turn AI on / off' },
+        detail: {
+          fr: 'L’interrupteur marche/arrêt de l’IA pour toute la maisonnée. Coupé, l’IA ne tourne plus nulle part et toutes les fonctions IA se cachent — tout le reste continue de marcher.',
+          en: 'The household-wide AI on/off switch. Off, AI stops running everywhere and every AI feature hides — everything else keeps working.',
+        },
+        why: {
+          fr: 'Pour garder le contrôle : rien ne part vers un modèle si tu n’y tiens pas.',
+          en: 'To stay in control: nothing goes to a model unless you want it to.',
+        },
+      },
+      {
+        label: { fr: 'Mode inactif (test)', en: 'Idle mode (test)' },
+        detail: {
+          fr: 'Accélère ou force le retour à « Maisonnée » d’un kiosque pour le voir à l’œuvre.',
+          en: 'Speed up or force a kiosk’s drift back to “Household” to watch it work.',
+        },
+        why: {
+          fr: 'Le vrai délai est de 3 minutes — impossible à vérifier sans un raccourci.',
+          en: 'The real delay is 3 minutes — impossible to check without a shortcut.',
+        },
+      },
+      {
+        label: { fr: 'Journal d’entretien de l’IA', en: 'AI maintenance log' },
+        detail: {
+          fr: 'Voir ce qui a brisé et quand. Le bouton « Tester l’IA » vérifie en direct si les modèles répondent.',
+          en: 'See what broke and when. The “Test AI” button live-checks whether the models respond.',
+        },
+        why: {
+          fr: 'Pour comprendre une fonction IA qui ne répond plus, au lieu de deviner.',
+          en: 'To make sense of an AI feature that stopped responding, instead of guessing.',
+        },
+      },
+      {
+        label: { fr: 'Pas une métrique', en: 'Not a metric' },
+        detail: {
+          fr: 'Touche « Effacer » quand tu l’as lu, et c’est vide.',
+          en: 'Tap “Clear” once you’ve read it, and it’s empty.',
+        },
+        why: {
+          fr: 'Aucun compteur à surveiller — c’est un carnet d’entretien, pas un tableau de bord.',
+          en: 'No counter to watch — it’s a maintenance log, not a dashboard.',
         },
       },
     ],
@@ -3365,10 +3367,10 @@ export const GUIDE: GuideEntry[] = [
     icon: 'paint-brush-bold',
     group: 'settings',
     tab: 'display',
-    title: { fr: 'Affichage', en: 'Display' },
+    title: { fr: 'Le babillard', en: 'The board' },
     what: {
-      fr: 'L’apparence de cet appareil : le thème jour/nuit, la langue, la vue parent/enfant et l’accessibilité.',
-      en: 'How this device looks: the day/night theme, the language, the parent/kid view and accessibility.',
+      fr: 'L’apparence de cet appareil et du babillard : thème jour/nuit, langue, vue parent/enfant, accessibilité, disposition des cartes, mode veille, voix de lecture, photos de famille et mode calme.',
+      en: 'How this device and the board look: day/night theme, language, parent/kid view, accessibility, card layout, idle mode, reading voice, family photos and calm mode.',
     },
     points: [
       {
@@ -3437,24 +3439,62 @@ export const GUIDE: GuideEntry[] = [
           en: 'A calm, pretty wall when nobody’s using it — plus the option to return to “Household” so it never stays stuck on one face.',
         },
       },
-    ],
-  },
-  {
-    id: 'set-calm',
-    icon: 'tree-bold',
-    group: 'settings',
-    tab: 'calm',
-    title: { fr: 'Mode calme', en: 'Calm mode' },
-    what: {
-      fr: 'Le seul réglage « anti-friction » : adoucir le « refaire » de la routine d’enfant. Activé par défaut.',
-      en: 'The one “anti-friction” toggle: soften the kid routine’s “redo”. On by default.',
-    },
-    points: [
       {
-        label: { fr: 'Ce que ça change', en: 'What it changes' },
+        label: { fr: 'Disposition du babillard', en: 'Board layout' },
         detail: {
-          fr: 'Quand c’est activé, la routine ne pousse pas l’enfant à tout recommencer; elle se termine.',
-          en: 'When on, the routine doesn’t push the child to start over; it just ends.',
+          fr: 'Choisis quelles cartes du babillard afficher (Le fil du jour, L’auto, À faire, À venir, Dessins…) et glisse-les dans l’ordre voulu. Propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
+          en: 'Choose which board cards show (The day’s timeline, The car, To do, Coming up, Drawings…) and drag them into the order you want. Specific to THIS device — the wall tablet and your phone keep their own layout.',
+        },
+        why: {
+          fr: 'Pour que le babillard montre ce qui compte pour TOI sur CET écran — la tablette glanceable, ton téléphone plus court.',
+          en: 'So the board shows what matters to YOU on THIS screen — the tablet glanceable, your phone shorter.',
+        },
+      },
+      {
+        label: { fr: 'Voix de lecture', en: 'Reading voice' },
+        detail: {
+          fr: 'Choisis la voix de lecture à voix haute pour chaque langue (Français / Anglais) et la vitesse, et entends un extrait. « Langue de lecture » force tout en une langue ou suit l’app.',
+          en: 'Pick the read-aloud voice for each language (French / English) and the speed, and hear a sample. “Reading language” forces everything to one language or follows the app.',
+        },
+        why: {
+          fr: 'Pour qu’un tout-petit qui écoute entende les mots bien prononcés, dans la bonne langue.',
+          en: 'So a little one listening hears the words pronounced properly, in the right language.',
+        },
+      },
+      {
+        label: { fr: 'Photos de famille', en: 'Family photos' },
+        detail: {
+          fr: 'Téléverse une ou plusieurs photos d’un coup (un compteur « 2/5 » suit le lot); elles dérivent doucement sur le babillard et en mode veille.',
+          en: 'Upload one or many photos at once (a “2/5” counter tracks the batch); they gently drift across the board and during idle mode.',
+        },
+        why: {
+          fr: 'Elles sont redimensionnées petites avant l’envoi, pour charger vite et rester gratuites.',
+          en: 'They’re resized small before upload, to load fast and stay free.',
+        },
+      },
+      {
+        label: { fr: 'Retirer une photo', en: 'Remove a photo' },
+        detail: {
+          fr: 'Le [[icon:x-bold]] sur une vignette l’enlève. Le nombre total est plafonné côté serveur, alors ça reste gratuit.',
+          en: 'The [[icon:x-bold]] on a thumbnail removes it. The total is capped server-side, so it stays free.',
+        },
+      },
+      {
+        label: { fr: 'Les photos peuvent être absentes', en: 'Photos may be hidden' },
+        detail: {
+          fr: 'Si le stockage photo (R2) n’est pas branché, les contrôles de photos se cachent tout seuls.',
+          en: 'If photo storage (R2) isn’t wired up, the photo controls hide themselves.',
+        },
+        why: {
+          fr: 'Pour ne pas te montrer une fonction qui ne marcherait pas sur ce déploiement.',
+          en: 'So it doesn’t show you a feature that wouldn’t work on this deployment.',
+        },
+      },
+      {
+        label: { fr: 'Mode calme — ce que ça change', en: 'Calm mode — what it changes' },
+        detail: {
+          fr: 'Le seul réglage « anti-friction » (activé par défaut) : quand c’est activé, la routine d’enfant ne pousse pas à tout recommencer; elle se termine.',
+          en: 'The one “anti-friction” toggle (on by default): when on, the kid routine doesn’t push the child to start over; it just ends.',
         },
         why: {
           fr: 'Pour finir sur du calme, sans relancer un enfant déjà prêt à passer à autre chose.',
@@ -3462,60 +3502,10 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Ce que ça ne touche pas', en: 'What it never touches' },
+        label: { fr: 'Mode calme — ce que ça ne touche pas', en: 'Calm mode — what it never touches' },
         detail: {
-          fr: 'Pas de points, pas de notifications, pas d’inventaire : ces garanties sont verrouillées.',
-          en: 'No points, no notifications, no inventory: those guarantees are locked.',
-        },
-        why: {
-          fr: 'Ce réglage adoucit une seule friction; il ne déverrouille jamais le calme structurel.',
-          en: 'This toggle softens one friction; it never unlocks the structural calm.',
-        },
-      },
-    ],
-  },
-  {
-    id: 'set-ailog',
-    icon: 'first-aid-kit-bold',
-    group: 'settings',
-    tab: 'ai-log',
-    title: { fr: 'Debug', en: 'Debug' },
-    what: {
-      fr: 'Les outils de mise au point : le journal d’entretien de l’IA, plus de quoi tester le mode inactif du kiosque sans attendre.',
-      en: 'The troubleshooting tools: the AI maintenance log, plus a way to test the kiosk idle mode without waiting.',
-    },
-    points: [
-      {
-        label: { fr: 'Mode inactif', en: 'Idle mode' },
-        detail: {
-          fr: 'Accélère ou force le retour à « Maisonnée » d’un kiosque pour le voir à l’œuvre.',
-          en: 'Speed up or force a kiosk’s drift back to “Household” to watch it work.',
-        },
-        why: {
-          fr: 'Le vrai délai est de 3 minutes — impossible à vérifier sans un raccourci.',
-          en: 'The real delay is 3 minutes — impossible to check without a shortcut.',
-        },
-      },
-      {
-        label: { fr: 'À quoi ça sert', en: 'What it’s for' },
-        detail: {
-          fr: 'Voir ce qui a brisé et quand.',
-          en: 'See what broke and when.',
-        },
-        why: {
-          fr: 'Pour comprendre une fonction IA qui ne répond plus, au lieu de deviner.',
-          en: 'To make sense of an AI feature that stopped responding, instead of guessing.',
-        },
-      },
-      {
-        label: { fr: 'Pas une métrique', en: 'Not a metric' },
-        detail: {
-          fr: 'Touche « Effacer » quand tu l’as lu, et c’est vide.',
-          en: 'Tap “Clear” once you’ve read it, and it’s empty.',
-        },
-        why: {
-          fr: 'Aucun compteur à surveiller — c’est un carnet d’entretien, pas un tableau de bord.',
-          en: 'No counter to watch — it’s a maintenance log, not a dashboard.',
+          fr: 'Pas de points, pas de notifications, pas d’inventaire : ces garanties sont verrouillées. Ce réglage adoucit une seule friction; il ne déverrouille jamais le calme structurel.',
+          en: 'No points, no notifications, no inventory: those guarantees are locked. This toggle softens one friction; it never unlocks the structural calm.',
         },
       },
     ],
@@ -3525,7 +3515,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'auto',
     icon: 'key-bold',
     group: 'concepts',
-    tab: 'auto',
+    tab: 'agenda',
     title: { fr: 'L’auto', en: 'The car' },
     what: {
       fr: 'Une seule auto pour la maisonnée ? L’auto sait quand elle est prise, quand elle est libre, et qui reconduit qui — sans cinq fils de textos.',

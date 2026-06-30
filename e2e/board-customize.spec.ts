@@ -46,7 +46,7 @@ test.describe('board layout customization', () => {
   async function openLayout(page: Page) {
     await page.goto('/settings')
     await page.locator('.operator__tabs').waitFor({ state: 'visible', timeout: 15_000 })
-    await page.getByRole('tab', { name: 'Affichage' }).click()
+    await page.getByRole('tab', { name: 'Le babillard' }).click()
     // Two lists now (the fixed band + the reorderable grid) — wait for the first.
     await page.locator('.board-layout').first().waitFor({ state: 'visible' })
   }

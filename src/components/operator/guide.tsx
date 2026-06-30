@@ -161,6 +161,49 @@ const themeInnerRank = (id: string) => {
   return th ? th.ids.indexOf(id) : 0
 }
 
+// The "settings" group mirrors the Réglages sidebar, so the manual reads in the same
+// order as the app's tabs (household → devices → agenda → chores → recipes → shopping
+// → display → ai). One consolidated card per host tab; this is the display order.
+const SETTINGS_ORDER = [
+  'set-household',
+  'set-devices',
+  'set-agenda',
+  'set-chores',
+  'set-recipes',
+  'set-shopping',
+  'set-display',
+  'set-ai',
+]
+const settingsRank = (id: string) => {
+  const i = SETTINGS_ORDER.indexOf(id)
+  return i === -1 ? SETTINGS_ORDER.length : i
+}
+
+// The Réglages restructure folded 15 thin settings cards into 8 consolidated ones,
+// but the contextual "?" deep-links in operatorHelp.ts / addHelp.ts still point at the
+// OLD card ids + point indices. This map redirects an old id to the card it merged
+// into, and shifts the point by the block's base offset, so every "→ Voir le guide"
+// still lands on the exact card AND sub-point. (Surviving cards kept their original
+// points at their original indices; merged points were appended after them.)
+const SETTINGS_CARD_ALIAS: Record<string, { id: string; base: number }> = {
+  'set-guest': { id: 'set-devices', base: 2 },
+  'set-routines': { id: 'set-chores', base: 4 },
+  'set-meals': { id: 'set-recipes', base: 3 },
+  'set-ghost': { id: 'set-shopping', base: 4 },
+  'set-photos': { id: 'set-display', base: 8 },
+  'set-calm': { id: 'set-display', base: 11 },
+  'set-recap': { id: 'set-ai', base: 0 },
+  'set-ailog': { id: 'set-ai', base: 4 },
+}
+const parseGuidePoint = (p: string | null) => (p != null && p !== '' ? Number(p) : null)
+// Resolve a (?card, ?point) deep-link through the alias map above.
+const resolveGuideCard = (card: string | null, point: number | null): { id: string | null; point: number | null } => {
+  if (!card) return { id: null, point }
+  const alias = SETTINGS_CARD_ALIAS[card]
+  if (alias) return { id: alias.id, point: alias.base + (point ?? 0) }
+  return { id: card, point }
+}
+
 // Réglages ▸ Guide — the whole how-it-works manual in one place. Each concept is
 // a collapsible card (native <details>, so it stays accessible and calm), and
 // inside it every point is *itself* a collapsible: a clickable title that opens
@@ -188,21 +231,24 @@ export function GuideSection() {
   // param (replace) so a refresh/back doesn't re-force it and the parent can
   // collapse it again. The effect (not initial state) is the real driver — it
   // also handles the case where the Guide tab is already mounted.
-  const [openId, setOpenId] = useState<string | null>(() => params.get('card'))
+  // ?card / ?point are resolved through SETTINGS_CARD_ALIAS so a deep-link to an old
+  // (pre-consolidation) settings card still lands on the consolidated one + right point.
+  const [openId, setOpenId] = useState<string | null>(
+    () => resolveGuideCard(params.get('card'), parseGuidePoint(params.get('point'))).id,
+  )
   // A contextual "?" can also target a sub-POINT within the card (?point=<index>) —
   // the HelpBubble's "→ Voir le guide" link does this. We open + highlight + scroll
   // to that point, not just the card.
-  const [targetPoint, setTargetPoint] = useState<number | null>(() => {
-    const p = params.get('point')
-    return p != null && p !== '' ? Number(p) : null
-  })
+  const [targetPoint, setTargetPoint] = useState<number | null>(
+    () => resolveGuideCard(params.get('card'), parseGuidePoint(params.get('point'))).point,
+  )
   const targetRef = useRef<HTMLDetailsElement | null>(null)
   useEffect(() => {
     const card = params.get('card')
     if (!card) return
-    setOpenId(card)
-    const p = params.get('point')
-    setTargetPoint(p != null && p !== '' ? Number(p) : null)
+    const resolved = resolveGuideCard(card, parseGuidePoint(params.get('point')))
+    setOpenId(resolved.id)
+    setTargetPoint(resolved.point)
     const next = new URLSearchParams(params)
     next.delete('card')
     next.delete('point')
@@ -344,12 +390,15 @@ export function GuideSection() {
           )
         }
 
-        // sections / settings keep their file order; both are feature-map jump
-        // targets (guide-th-sections / guide-th-settings).
+        // sections keeps its file order (already matches the six tabs); settings is
+        // sorted to mirror the Réglages sidebar (SETTINGS_ORDER). Both are feature-map
+        // jump targets (guide-th-sections / guide-th-settings).
+        const ordered =
+          group.id === 'settings' ? [...entries].sort((a, b) => settingsRank(a.id) - settingsRank(b.id)) : entries
         return (
           <div key={group.id} id={`guide-th-${group.id}`} className="guide__group">
             <h3 className="guide__group-title">{group.label[lang]}</h3>
-            <div className="guide__cards">{entries.map(renderCard)}</div>
+            <div className="guide__cards">{ordered.map(renderCard)}</div>
           </div>
         )
       })}

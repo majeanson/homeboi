@@ -36,40 +36,17 @@
   line-height: 1.5;
   opacity: 0.85;
 }
-/* Settings nav layout. The 21 sections are chunked into a few labelled clusters
-   (findability; NFR-CALM — no counts/badges), laid out as a grouped vertical list
-   instead of the old horizontal scroll strip. .operator__body wraps the nav + the
-   panel: a single column on a phone (nav above the panel), a sticky sidebar + panel
-   on a wide screen (the media query below). .operator__tabs / .operator__tab are
-   styled in misc.css. */
+/* Settings nav layout. Just 9 task-oriented tabs (down from 21), so no group
+   headers — a flat list. .operator__body wraps the nav + the panel: a single column
+   on a phone (nav of wrapping chips above the panel), a sticky sidebar + panel on a
+   wide screen (media query below). .operator__tabs / .operator__tab are in misc.css. */
 .operator__body {
   display: flex;
   flex-direction: column;
 }
-/* One cluster: a quiet heading above its tabs. */
-.operator__group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.operator__group-label {
-  padding: 0 0.4rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-/* A group's tabs: wrap as chips on a phone; the sidebar flips them to a vertical
-   list (media query below). */
-.operator__group-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
 /* Wide screen (kiosk/landscape): nav becomes a sticky sidebar, panel takes the rest.
-   The .operator__tabs sticky + .operator__tab full-width overrides live in misc.css
-   so they out-cascade the base rules there. */
+   The .operator__tabs sidebar (column + sticky + own scroll) and .operator__tab
+   full-width overrides live in misc.css so they out-cascade the base rules there. */
 @media (min-width: 60rem) {
   .operator {
     max-width: 72rem;
@@ -81,10 +58,6 @@
   }
   .operator__tabs {
     flex: 0 0 14rem;
-  }
-  .operator__group-tabs {
-    flex-direction: column;
-    gap: 0.15rem;
   }
   .operator__panel {
     flex: 1 1 auto;
