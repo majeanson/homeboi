@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment, type ReactNode } from 'react'
+import { useEffect, useRef, useState, Fragment, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -35,6 +35,7 @@ import { live } from '../lib/query'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook, type HourOutlook } from '../lib/weather'
 import { formatDay, formatDayMaybeYear, formatTime } from '../lib/format'
 import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
+import { useNow, isPastSec, mealSlotPast } from '../lib/itemLife'
 import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
@@ -70,15 +71,9 @@ import { isGuest } from '../lib/device'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { BOARD_HELP } from '../lib/boardHelp'
 
-// Cut-off minute-of-day after which each meal slot is considered "past". Once the
-// clock passes this threshold the board strikes through that slot's row so it's
-// visually clear it's already been — breakfast at 10:30, lunch at 14:00, etc.
-const SLOT_PAST_MIN: Partial<Record<string, number>> = {
-  breakfast: 10 * 60 + 30,
-  lunch: 14 * 60,
-  snack: 17 * 60,
-  supper: 21 * 60,
-}
+// The meal-slot "past" thresholds + the shared past/now rule now live in lib/itemLife
+// (SLOT_PAST_MIN / mealSlotPast / isPastSec / useNow), so every timed board item — meals,
+// rendez-vous, work — crosses out by ONE rule on ONE clock.
 
 // Keep the greeting on one line beside the help dot + section icon: a long
 // display name collapses so "Bonne soirée, …" never wraps or overflows. A
@@ -150,6 +145,21 @@ export function Board() {
     }
     return titles[k] ?? k
   })
+  // The shared minute clock (lib/itemLife): re-renders the board every minute so past
+  // strike-throughs, « Bientôt » chips and the day-part drift advance on their own, not
+  // only when a poll lands. Used by every time-derived value below.
+  const nowMs = useNow()
+  // Re-bucket today→tomorrow at LOCAL midnight even on a left-on wall tablet. The server
+  // buckets the payload by local day, so the client can't re-split its arrays itself; when
+  // the local day flips, refetch. The minute clock drives the check.
+  const dayRef = useRef(todayLocalDay())
+  useEffect(() => {
+    const d = todayLocalDay()
+    if (d !== dayRef.current) {
+      dayRef.current = d
+      qc.invalidateQueries({ queryKey: BOARD_KEY })
+    }
+  }, [nowMs, qc])
   // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
   // out of the rendered board at once so the live poll can't resurrect them before
   // the write commits — same guard as Liste's pendingClear. Tapping Annuler means
@@ -367,7 +377,7 @@ export function Board() {
     }))
 
   if (audience === 'toddler') {
-    const tod = timeOfDay(Date.now())
+    const tod = timeOfDay(nowMs)
 
     const mealHero = (meal: MealRow | null, key: 'tonight' | 'tomorrow') =>
       meal ? (
@@ -567,7 +577,7 @@ export function Board() {
   // Parent board, Pip "Today" layout: a handwritten tag + greeting, an "Up next"
   // now-card (tonight's supper), then a gentle grouped timeline of colour-coded
   // activity cards. Same data + writes as before — just the calm Pip surface.
-  const tod = timeOfDay(Date.now())
+  const tod = timeOfDay(nowMs)
   // LOCAL midnight of "today" — the calendar's day key, matching the server's
   // local-day bucketing (lib/monthgrid + /api/month). UTC midnight flipped a day
   // ahead every evening (~8 PM Eastern), so "today" highlighted tomorrow's cell.
@@ -576,9 +586,9 @@ export function Board() {
   // recipeFor lets a tapped meal show its recipe photo + ingredient glance.
   const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [], recipeFor, tagColors }
   const tomorrowDay = addLocalDays(todayDay, 1)
-  // Current minute-of-day used to strike through meals whose slot time has passed.
-  const nowMinOfDay = new Date().getHours() * 60 + new Date().getMinutes()
-  const isSlotPast = (slot: string) => nowMinOfDay > (SLOT_PAST_MIN[slot] ?? Infinity)
+  // Whether a meal slot's time has passed → the shared rule (lib/itemLife), so a meal
+  // crosses out on the SAME clock as a rendez-vous (souper is the headline → never past).
+  const isSlotPast = (slot: string) => mealSlotPast(slot, nowMs)
   const eventWhen = (e: EventRow) =>
     e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.start_at, lang)
   // À venir hint: append "· dans X jours" (demain / aujourd'hui) when an upcoming
@@ -598,6 +608,10 @@ export function Board() {
       color={memberColor(e.member_id) ?? undefined}
       mine={!!profileId && e.member_id === profileId}
       soon={e.soon}
+      // A TIMED rendez-vous crosses out once its time has passed (the same line-crossed
+      // treatment meals get) — all-day events + birthdays have no time, so never strike.
+      // For a future day (Demain / À venir) start_at is ahead of now, so this is false.
+      past={isPastSec(e.all_day ? null : e.start_at, nowMs)}
       onOpen={() => detail.open(buildEvent(e, detailCtx))}
     />
   )

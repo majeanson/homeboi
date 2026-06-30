@@ -374,10 +374,15 @@
   margin: 0.3rem 0 0;
   padding: 0;
 }
-/* A just-passed item stays readable but recedes, so the eye lands on what's still
-   to come (calm: faded, never struck or hidden). */
+/* A just-passed item is LINE-CROSSED — struck-through + receded — the same canonical
+   "past" treatment as `.act--past` (today.css), so a passed rendez-vous, meal or work
+   window reads identically on the timeline and in the Aujourd'hui list (one past look). */
 .fil__row--past {
-  opacity: 0.55;
+  opacity: 0.7;
+}
+.fil__row--past .title {
+  text-decoration: line-through;
+  color: var(--ink-soft);
 }
 /* The « maintenant » marker: a soft sky rule with the current time in the middle —
    "──── Maintenant · 14:32 ────". A position cue, never an alarm. */
