@@ -22,23 +22,33 @@
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 18px;
-  /* Wrap on a narrow phone so the right-hand cluster (profile chip + view toggle
-     + avatar) drops below the greeting instead of forcing horizontal overflow. */
-  flex-wrap: wrap;
+}
+/* The greeting column takes the slack and is allowed to shrink past its content
+   (min-width:0) so a long « Bon après-midi, … » truncates with an ellipsis
+   instead of pushing the right-hand actions onto their own row. */
+.app-head__main {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .greet {
   font-family: var(--display);
   font-weight: 800;
   font-size: 32px;
+  /* Truncate rather than wrap/overflow when space is tight (mobile). */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
   line-height: 1.05;
   letter-spacing: -0.01em;
 }
-/* Title + its contextual "?" on one baseline-aligned row. */
+/* Title row. min-width:0 lets the greeting truncate (the "?" now lives in the
+   right-hand actions cluster, so this row only carries the title). */
 .app-head__titlerow {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  min-width: 0;
 }
 .app-head__date {
   color: var(--ink-soft);

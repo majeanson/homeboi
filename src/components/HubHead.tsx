@@ -31,7 +31,7 @@ export function HubHead({
   const { audience } = useAudience()
   return (
     <div className="app-head">
-      <div>
+      <div className="app-head__main">
         <div className="app-head__titlerow">
           <h1 className="greet">{title}</h1>
         </div>
