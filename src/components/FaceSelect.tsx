@@ -35,6 +35,9 @@ export function FaceSelect({
 }) {
   const [open, setOpen] = useState(false)
   const sel = faces.find((f) => f.id === value) ?? null
+  // Any face (other than the one shown on the chip) carrying a presence dot → mark the
+  // collapsed chip too, so a waiting mot is discoverable without opening the sheet.
+  const anyDot = faces.some((f) => f.dot && f.id !== value)
 
   function pick(id: string | null) {
     onChange(id)
@@ -55,6 +58,7 @@ export function FaceSelect({
             <Icon name="users-three-bold" size={18} />
           </span>
         )}
+        {anyDot && <span className="face-dot" aria-hidden="true" />}
         <span className="profile-chip__name">{sel ? sel.name : allLabel}</span>
         <Icon name="caret-down-bold" size={12} />
       </button>
@@ -75,6 +79,7 @@ export function FaceSelect({
                 <span className="profile-face__av" style={{ background: f.photoUrl ? undefined : f.colour ?? undefined }}>
                   {f.photoUrl ? <img src={f.photoUrl} alt="" /> : (f.name?.[0] ?? '?').toUpperCase()}
                 </span>
+                {f.dot && <span className="face-dot" aria-hidden="true" />}
                 <span className="profile-face__name">{f.name}</span>
               </button>
             )

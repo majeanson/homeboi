@@ -13,6 +13,7 @@ import { VoyageCard } from '../components/board/VoyageCard'
 import { SeasonUpkeepCard } from '../components/board/SeasonUpkeepCard'
 import { MomentPeek } from '../components/board/MomentPeek'
 import { ARegler } from '../components/board/ARegler'
+import { MotsCard } from '../components/mots/MotsCard'
 import { DayHeroes } from '../components/board/DayHeroes'
 import { Icon, InlineIcon } from '../components/Icon'
 import { TOD_ICON } from '../lib/cats'
@@ -863,6 +864,9 @@ export function Board() {
           </span>
         </div>
       )}
+      {/* « Laisse un mot » — the recipient's waiting mots (a heads-up that self-hides when
+          there's nothing for the picked face). Guests never see another face's mots. */}
+      {!ro && isCardVisible(boardCards, 'mots') && <MotsCard />}
       {isCardVisible(boardCards, 'aRegler') && (
         <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} variant="card" />
       )}
@@ -878,32 +882,12 @@ export function Board() {
       {/* Time-of-day icon sits top-right as the section's identity (and, in
           tutorial mode, the Guide link); the view toggle + profile chip drop to
           their own row below so the avatar never reads as part of the filter. */}
+      {/* The greeting is plain text so it can truncate cleanly when space is
+          tight (mobile). The picked face is NOT echoed here — the profile chip
+          (mobile) / member switcher (kiosk) on the row below already shows it,
+          so repeating it crowded the header. Maisonnée (no face) → generic greet. */}
       <HubHead
-        title={
-          me ? (
-            // Echo the picked face's photo/colour beside the greeting — the same
-            // disc the profile chip shows below, so "this is your board" reads warm
-            // at a glance. Decorative (the name is already in the text). Maisonnée
-            // (no face) keeps the plain greeting — no disc.
-            <span className="greet-with-face">
-              {(() => {
-                const photo = me.avatar_kind === 'photo' && me.avatar_ref ? imgUrl(me.avatar_ref) : null
-                return (
-                  <span
-                    className="profile-chip__av greet__face"
-                    style={{ background: photo ? undefined : me.colour }}
-                    aria-hidden="true"
-                  >
-                    {photo ? <img src={photo} alt="" /> : (me.display_name?.[0] ?? '?').toUpperCase()}
-                  </span>
-                )
-              })()}
-              {`${t.today[tod]}, ${greetName(me.display_name)}`}
-            </span>
-          ) : (
-            t.today[tod]
-          )
-        }
+        title={me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]}
         icon={TOD_ICON[tod]}
         iconColor="var(--marigold-deep)"
         background="var(--marigold-wash)"
@@ -1150,8 +1134,11 @@ export function Board() {
                     }
                   />
                 ))}
-                {/* Events + chores move to « Le fil du jour » when it's shown (see filShown). */}
-                {!filShown && todayEvents.map(eventAct)}
+                {/* Events + chores move to « Le fil du jour » when it's shown (see filShown).
+                    The next-up event is already surfaced as the « Prochainement » headline
+                    above, so drop it from the list here — otherwise it reads twice (Marc's
+                    redundant-display note). */}
+                {!filShown && todayEvents.filter((e) => e.id !== nextUpToday?.id).map(eventAct)}
                 {/* Recurring chores due today — tap to check off (advances the turn). */}
                 {!filShown && todayChores.map((c) => choreAct(c))}
                 {/* Projets & Entretien due today — tap to check off (stamps done). */}

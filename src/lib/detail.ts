@@ -18,6 +18,7 @@ type DetailKind =
   | 'todo'
   | 'leftover'
   | 'note'
+  | 'mot' // « Laisse un mot » — a member-to-member message (text / voice / drawing / photo)
   | 'recipe'
   | 'routine'
   | 'contact'

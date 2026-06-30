@@ -28,6 +28,7 @@ import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
 import { MemoControls } from './MemoControls'
+import { MotComposer } from './mots/MotComposer'
 import { EntityCombobox, type ComboOption } from './EntityCombobox'
 import { Chip } from './Chip'
 import { mealOptions } from './kitchen/comboOptions'
@@ -140,6 +141,9 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   carnet: { cat: 'cercle', icon: 'book-open-bold' },
   // « Voyage » — start a trip notebook (navigate-only to /voyage/new).
   voyage: { cat: 'event', icon: 'map-pin-bold' },
+  // « Laisse un mot » — a little letter for a household face (the rose 'cercle' family
+  // reads as "a personal message"); opens an in-sheet composer.
+  mot: { cat: 'cercle', icon: 'envelope-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -691,6 +695,7 @@ export function AddSheet({
       pet: t.cercle.pet.add,
       carnet: t.carnets.add,
       voyage: t.voyage.captureTile,
+      mot: t.mots.tile,
     }
     return labels[m]
   }
@@ -943,6 +948,11 @@ export function AddSheet({
             />
           </div>
         )}
+
+        {/* « Laisse un mot » — pick a recipient face (or Maisonnée), then type or record a
+            voice/drawing/photo memo for them. Its own composer (recipient + EditField +
+            MemoControls); closes the sheet on send. */}
+        {mode === 'mot' && <MotComposer onDone={close} />}
 
         {mode === 'pantry' && (
           <form onSubmit={submitPantry}>

@@ -179,16 +179,42 @@
   font-size: var(--text-md);
 }
 
-/* The board greeting echoes the picked face: the profile-chip disc, sized up a
-   touch to sit beside the greeting title (reuses .profile-chip__av + its img
-   rule above). Decorative — the name is already in the greeting text. */
-.greet-with-face {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+/* « Laisse un mot » — a calm presence dot on a face that has a mot waiting. A BOOLEAN
+   accent like the board's « Bientôt » chip — never a count (NFR-CALM). Sits at the
+   avatar's top-right, outside the avatar's overflow clip (so it's a sibling, not a child). */
+.mswitch__opt,
+.profile-face,
+.profile-chip {
+  position: relative;
 }
-.greet__face {
-  width: 40px;
-  height: 40px;
-  flex: none;
+.face-dot {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--marigold-deep, #d9842a);
+  box-shadow: 0 0 0 2px var(--card);
+  pointer-events: none;
+}
+.mswitch__opt .face-dot {
+  top: 3px;
+  left: 30px;
+}
+.profile-chip .face-dot {
+  top: 1px;
+  left: 30px;
+}
+.profile-face .face-dot {
+  top: 8px;
+  right: 8px;
+}
+
+/* « Laisse un mot » composer (board ＋ « Mot » panel) — recipient picker over the field. */
+.mot-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.mot-composer__face {
+  display: flex;
 }

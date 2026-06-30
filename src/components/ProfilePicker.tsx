@@ -3,6 +3,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useProfile } from '../lib/profile'
 import { imgUrl } from '../lib/image'
+import { useFaceHasWaiting } from '../lib/mots'
 import { type Member } from '../lib/members'
 import { MEMBERS_KEY } from '../lib/queryKeys'
 import { Icon } from './Icon'
@@ -18,6 +19,8 @@ export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () =>
   const { memberId, setMemberId } = useProfile()
   const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: open })
   const members = data?.members ?? []
+  // « un mot t'attend » presence dot per face — boolean only (NFR-CALM).
+  const hasWaiting = useFaceHasWaiting()
 
   function pick(id: string | null) {
     setMemberId(id)
@@ -44,6 +47,7 @@ export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () =>
                 <span className="profile-face__av" style={{ background: photo ? undefined : m.colour }}>
                   {photo ? <img src={photo} alt="" /> : (m.display_name?.[0] ?? '?').toUpperCase()}
                 </span>
+                {hasWaiting(m.id) && <span className="face-dot" aria-hidden="true" />}
                 <span className="profile-face__name">{m.display_name}</span>
               </button>
             )

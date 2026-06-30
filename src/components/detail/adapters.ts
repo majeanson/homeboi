@@ -13,6 +13,7 @@ import { KIND_EMOJI, type CarnetKind } from '../../lib/carnets'
 import { formatDay, formatDayMaybeYear, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { recipeImg, recipeTotalMin, tagColor, type Recipe } from '../../lib/recipes'
+import { type Mot } from '../../lib/mots'
 import { SLOT_ICON_NAME, isMealSlot } from '../../lib/mealSlots'
 import type { Lang } from '../../i18n'
 import type { IconName } from '../Icon'
@@ -198,6 +199,43 @@ export function buildPet(
     accent,
     photo: pet.photoKey ? imgUrl(pet.photoKey) : null,
     when,
+    blocks,
+    actions,
+  }
+}
+
+// — « Laisse un mot » — a member-to-member message: the sender's face, who it's for, and
+// the body (a typed line, a played voice clip, or a tapped-to-zoom drawing/photo). Keep
+// («  Garder ») + Supprimer are `run` actions the caller (MotsCard) owns — opening the peek
+// is also where the recipient's opened_at gets stamped (at the call site, not here). —
+export function buildMot(
+  m: Mot,
+  ctx: DetailCtx,
+  opts?: { saved?: boolean; onToggleSave?: () => void; onDelete?: () => void },
+): DetailModel {
+  const { t, lang, members } = ctx
+  const fn = t.mots
+  const icon: IconName =
+    m.media_kind === 'audio' ? 'microphone-bold' : m.media_kind === 'drawing' ? 'paint-brush-bold' : m.media_kind === 'image' ? 'image-square-bold' : 'envelope-bold'
+  const firstLine = m.text.split('\n').find((l) => l.trim())?.trim()
+  const mediaLabel = m.media_kind === 'audio' ? fn.memo : m.media_kind === 'drawing' ? fn.drawing : m.media_kind === 'image' ? fn.photo : ''
+  const blocks: DetailBlock[] = []
+  if (m.text.trim()) blocks.push({ kind: 'text', text: m.text.trim() })
+  if (m.media_key && (m.media_kind === 'drawing' || m.media_kind === 'image')) blocks.push({ kind: 'image', src: imgUrl(m.media_key) })
+  if (m.media_key && m.media_kind === 'audio') blocks.push({ kind: 'audio', src: imgUrl(m.media_key) })
+
+  const actions: DetailAction[] = []
+  if (opts?.onToggleSave)
+    actions.push({ key: 'keep', label: opts.saved ? fn.kept : fn.keep, icon: 'push-pin-bold', run: opts.onToggleSave })
+  if (opts?.onDelete) actions.push({ key: 'delete', label: fn.delete, icon: 'trash-bold', tone: 'danger', run: opts.onDelete })
+
+  return {
+    kind: 'mot',
+    title: firstLine || mediaLabel || fn.untitled,
+    icon,
+    accent: colorOf(members, m.author_member_id) ?? CATS.cercle.color,
+    when: `${formatDay(m.created_at, lang)} · ${m.member_id === null ? fn.forMaisonnee : fn.forYou}`,
+    who: whoOf(members, m.author_member_id, fn.from),
     blocks,
     actions,
   }

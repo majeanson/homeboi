@@ -17,7 +17,7 @@ import { createDeviceStore } from './createDeviceStore'
 //     These show/hide AND reorder.
 // The bunched Aujourd'hui+Demain is one card ('today'); « À finir » bundles leftovers +
 // à-faire; « À compléter » is the persistent checklist.
-export type BandCardId = 'notes' | 'heroes' | 'aRegler' | 'moments'
+export type BandCardId = 'notes' | 'heroes' | 'mots' | 'aRegler' | 'moments'
 export type GridCardId = 'autoCard' | 'fil' | 'today' | 'tomorrow' | 'toFinish' | 'todos' | 'upcoming' | 'voyage' | 'carnets' | 'seasonUpkeep' | 'drawings' | 'photos'
 export type BoardCardId = BandCardId | GridCardId
 
@@ -31,7 +31,7 @@ export interface BoardCardPrefs {
 
 // The fixed top band, in render order (fridge notes ride above the heroes). Show/hide
 // only.
-const BAND_CARD_IDS: BandCardId[] = ['notes', 'heroes', 'aRegler', 'moments']
+const BAND_CARD_IDS: BandCardId[] = ['notes', 'heroes', 'mots', 'aRegler', 'moments']
 
 // Default GRID order = today's importance: car → the day's shape (« Le fil du jour ») →
 // the day list → standing lists → upcoming → media. Everything visible. This is also the
@@ -49,6 +49,7 @@ const DEFAULTS: BoardCardPrefs = { order: DEFAULT_GRID_ORDER, hidden: [] }
 export const BAND_CARD_META: { id: BandCardId; icon: IconName }[] = [
   { id: 'notes', icon: 'push-pin-bold' },
   { id: 'heroes', icon: 'sun-bold' },
+  { id: 'mots', icon: 'envelope-bold' },
   { id: 'aRegler', icon: 'warning-bold' },
   { id: 'moments', icon: 'moon-stars-bold' },
 ]

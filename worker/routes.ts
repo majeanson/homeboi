@@ -54,6 +54,7 @@ import * as mealIdeas from '../functions/api/meal-ideas'
 import * as mealLeftovers from '../functions/api/meal-leftovers'
 import * as mealStaples from '../functions/api/meal-staples'
 import * as month from '../functions/api/month'
+import * as mots from '../functions/api/mots'
 import * as members from '../functions/api/members'
 import * as membersAvatar from '../functions/api/members/avatar'
 import * as notes from '../functions/api/notes'
@@ -163,6 +164,7 @@ const TABLE: Record<string, RouteMod> = {
   'meal-leftovers': mealLeftovers,
   'meal-staples': mealStaples,
   month,
+  mots,
   members,
   'members/avatar': membersAvatar,
   notes,

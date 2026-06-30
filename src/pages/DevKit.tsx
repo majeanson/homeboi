@@ -25,6 +25,7 @@ import { PetForm } from '../components/cercle/PetForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { NoteEditor } from '../components/cercle/NoteEditor'
+import { MotComposer } from '../components/mots/MotComposer'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
 import { TripNoteCard } from '../components/voyage/TripNoteCard'
 import { CercleConstellation } from '../components/cercle/CercleConstellation'
@@ -839,6 +840,20 @@ export function DevKit() {
         // drawing attachment. Reused for new + modify; auto-saves on close.
         <Demo label="Full-screen rich note editor (title + Markdown + attachment)">
           <NoteEditorDemo />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'MotComposer',
+      file: 'components/mots/MotComposer.tsx',
+      kw: 'mot laisse un mot message answering machine fridge member to member recipient voice drawing photo text mots inbox board card face dot',
+      render: () => (
+        // « Laisse un mot » composer (board ＋ « Mot » panel): pick a recipient face (or the
+        // whole Maisonnée), then type or record a voice/drawing/photo memo. The waiting mots
+        // surface in the board's « Mots » band card (MotsCard) with a per-face presence dot.
+        <Demo label="Leave-a-note composer (recipient + text/voice/draw/photo)">
+          <MotComposer onDone={() => {}} />
         </Demo>
       ),
     },

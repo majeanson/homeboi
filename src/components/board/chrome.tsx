@@ -1,5 +1,6 @@
 import { useProfile } from '../../lib/profile'
 import { imgUrl } from '../../lib/image'
+import { useFaceHasWaiting } from '../../lib/mots'
 import { type BoardView } from '../../lib/boardview'
 import { Icon, type IconName } from '../Icon'
 import { MemberSwitcher as FaceSwitcher } from '../MemberSwitcher'
@@ -59,6 +60,8 @@ export function BoardViewToggle({
 // board's snake_case members to its normalized face shape.
 export function MemberSwitcher({ members, t }: { members: Member[]; t: Dict }) {
   const { memberId, setMemberId } = useProfile()
+  // A calm presence dot on a face that has « un mot t'attend » — boolean, never a count.
+  const hasWaiting = useFaceHasWaiting()
   return (
     <FaceSwitcher
       faces={members.map((m) => ({
@@ -66,6 +69,7 @@ export function MemberSwitcher({ members, t }: { members: Member[]; t: Dict }) {
         name: m.display_name,
         colour: m.colour,
         photoUrl: m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null,
+        dot: hasWaiting(m.id),
       }))}
       value={memberId}
       onChange={setMemberId}

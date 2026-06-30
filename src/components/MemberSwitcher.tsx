@@ -19,6 +19,9 @@ export interface MemberFace {
   colour: string | null
   // A resolved image URL (e.g. imgUrl(avatar_ref)) or null for the coloured initial.
   photoUrl?: string | null
+  // A calm presence accent on the face (e.g. « un mot t'attend ») — a BOOLEAN dot, like the
+  // board's "Bientôt" chip. Never a count (NFR-CALM). Optional; absent → no dot.
+  dot?: boolean
 }
 
 export function MemberSwitcher({
@@ -68,6 +71,7 @@ export function MemberSwitcher({
             <span className="mswitch__av" style={{ background: f.photoUrl ? undefined : f.colour ?? undefined }}>
               {f.photoUrl ? <img src={f.photoUrl} alt="" /> : (f.name?.[0] ?? '?').toUpperCase()}
             </span>
+            {f.dot && <span className="face-dot" aria-hidden="true" />}
             <span className="mswitch__name">{f.name}</span>
           </button>
         )

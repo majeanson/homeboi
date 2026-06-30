@@ -106,6 +106,9 @@ const PATH_KEYS: Record<string, string[][]> = {
   'day-notes': [['day-notes'], ['board']],
   // Board-only sticky notes.
   notes: [['board']],
+  // « Laisse un mot » — a member-to-member mot rides its own inbox card AND the per-face
+  // dot on the board's face row, so nudge both ['mots'] and the board.
+  mots: [['mots'], ['board']],
   // Accepting a « boîte aux lettres » message inserts a board note — nudge the board.
   postbox: [['board']],
   // Garde-manger flags; a running-low item feeds the « À régler » meal-low scan.
