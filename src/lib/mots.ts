@@ -20,6 +20,15 @@ export interface Mot {
   updated_at: number | null
   opened_at: number | null // NULL = still waiting (drives the calm heads-up + the face dot)
   saved_at: number | null // NULL = not kept; set = a « Gardé » keepsake
+  surface_at: number | null // NULL = surface now; else hidden until this unix second (scheduled)
+  reply_to: string | null // the parent mot this answers; NULL = top-level
+}
+
+// A scheduled mot stays hidden until its surface_at moment (NULL = surface now). Pure so the
+// gate is unit-tested; applied once in useMots so the inbox, « Déjà vus » and the face dot
+// all honour it together.
+export function isSurfaced(m: Mot, nowSec: number): boolean {
+  return m.surface_at == null || m.surface_at <= nowSec
 }
 
 // The viewing filter (mirrors familyNotes.visibleNotes): a picked face sees THEIR mots
@@ -53,10 +62,14 @@ export function waitingRecipientIds(mots: Mot[]): Set<string> {
   return ids
 }
 
-// Shared read of the mots cache (board card + face dots both read it live).
-export function useMots() {
+// Shared read of the mots cache (board card + face dots both read it live). SCHEDULED mots
+// are gated HERE — the single chokepoint — so a not-yet-surfaced mot is absent from the
+// inbox, the « Déjà vus » group AND the face dot at once. The live poll re-renders this, so
+// a scheduled mot appears within a poll interval of its surface_at (calm: no push).
+export function useMots(): Mot[] {
   const { data } = useQuery({ queryKey: MOTS_KEY, queryFn: () => api<{ mots: Mot[] }>('mots'), ...live })
-  return data?.mots ?? []
+  const now = Date.now() / 1000
+  return (data?.mots ?? []).filter((m) => isSurfaced(m, now))
 }
 
 // Does this specific face have a mot waiting for them? Used by the face-row dot.

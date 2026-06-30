@@ -33,13 +33,17 @@ interface MotRow {
   updated_at: number | null
   opened_at: number | null
   saved_at: number | null
+  surface_at: number | null
+  reply_to: string | null
 }
 
 const TEXT_CAP = 2000
 
 export const onRequestGet = authed(async (ctx, actor) => {
+  // Returns ALL live mots (incl. not-yet-surfaced scheduled ones); the client gates display
+  // by surface_at (one chokepoint in lib/mots, leaving room for a future sender outbox).
   const rows = await ctx.env.DB.prepare(
-    'SELECT id, member_id, author_member_id, text, media_kind, media_key, scene_key, created_at, updated_at, opened_at, saved_at FROM mots WHERE household_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
+    'SELECT id, member_id, author_member_id, text, media_kind, media_key, scene_key, created_at, updated_at, opened_at, saved_at, surface_at, reply_to FROM mots WHERE household_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
   )
     .bind(actor.householdId)
     .all<MotRow>()
@@ -53,6 +57,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
     media_kind?: string
     media_key?: string
     scene_key?: string
+    surface_at?: number | null
+    reply_to?: string | null
   }>(ctx.request)
   const text = body?.text?.trim() ?? ''
   // A mot is a written line and/or a media memo: an audio clip (#38), a drawing (#14),
@@ -79,9 +85,24 @@ export const onRequestPost = authed(async (ctx, actor) => {
     recipientId = wanted
   }
 
+  // Schedule: a positive unix second in the (near) future; anything else → surface now (null).
+  const surfaceAt =
+    typeof body?.surface_at === 'number' && Number.isFinite(body.surface_at) && body.surface_at > nowSec()
+      ? Math.floor(body.surface_at)
+      : null
+  // Reply: validate the parent mot is a live mot in this household (else drop the link).
+  let replyTo: string | null = null
+  const wantReply = body?.reply_to?.trim()
+  if (wantReply) {
+    const p = await ctx.env.DB.prepare('SELECT 1 FROM mots WHERE id = ? AND household_id = ? AND deleted_at IS NULL')
+      .bind(wantReply, actor.householdId)
+      .first<{ 1: number }>()
+    if (p) replyTo = wantReply
+  }
+
   const id = newId()
   await ctx.env.DB.prepare(
-    'INSERT INTO mots (id, household_id, member_id, author_member_id, text, media_kind, media_key, scene_key, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO mots (id, household_id, member_id, author_member_id, text, media_kind, media_key, scene_key, surface_at, reply_to, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -92,6 +113,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
       kind,
       mediaKey,
       sceneKey,
+      surfaceAt,
+      replyTo,
       nowSec(),
     )
     .run()

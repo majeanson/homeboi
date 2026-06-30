@@ -218,3 +218,26 @@
 .mot-composer__face {
   display: flex;
 }
+/* « En réponse à … » — the reply context line (recipient locked to the original sender). */
+.mot-composer__reply {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--ink-soft, var(--muted));
+}
+/* Schedule (« Plus tard ») — the toggle + the revealed date/time inputs. */
+.mot-composer__sched {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.mot-composer__when {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+}
+.mot-composer__when .input {
+  flex: 1 1 0;
+  min-width: 0;
+}

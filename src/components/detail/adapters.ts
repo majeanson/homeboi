@@ -211,7 +211,7 @@ export function buildPet(
 export function buildMot(
   m: Mot,
   ctx: DetailCtx,
-  opts?: { saved?: boolean; onToggleSave?: () => void; onDelete?: () => void },
+  opts?: { saved?: boolean; parentQuote?: string | null; onToggleSave?: () => void; onDelete?: () => void; onReply?: () => void },
 ): DetailModel {
   const { t, lang, members } = ctx
   const fn = t.mots
@@ -220,11 +220,15 @@ export function buildMot(
   const firstLine = m.text.split('\n').find((l) => l.trim())?.trim()
   const mediaLabel = m.media_kind === 'audio' ? fn.memo : m.media_kind === 'drawing' ? fn.drawing : m.media_kind === 'image' ? fn.photo : ''
   const blocks: DetailBlock[] = []
+  // A reply quotes the mot it answers, up top, so the thread reads in context.
+  if (opts?.parentQuote?.trim()) blocks.push({ kind: 'text', text: `↩ ${opts.parentQuote.trim()}`, hand: true })
   if (m.text.trim()) blocks.push({ kind: 'text', text: m.text.trim() })
   if (m.media_key && (m.media_kind === 'drawing' || m.media_kind === 'image')) blocks.push({ kind: 'image', src: imgUrl(m.media_key) })
   if (m.media_key && m.media_kind === 'audio') blocks.push({ kind: 'audio', src: imgUrl(m.media_key) })
 
   const actions: DetailAction[] = []
+  // Reply leads (the warm action); keep + delete follow.
+  if (opts?.onReply) actions.push({ key: 'reply', label: fn.reply, icon: 'arrow-left-bold', primary: true, run: opts.onReply })
   if (opts?.onToggleSave)
     actions.push({ key: 'keep', label: opts.saved ? fn.kept : fn.keep, icon: 'push-pin-bold', run: opts.onToggleSave })
   if (opts?.onDelete) actions.push({ key: 'delete', label: fn.delete, icon: 'trash-bold', tone: 'danger', run: opts.onDelete })

@@ -1412,6 +1412,12 @@ export const FR = {
     delete: 'Supprimer le mot',
     deleted: 'Mot supprimé',
     deleteSavedConfirm: 'Supprimer ce mot gardé ?',
+    // Schedule (« Plus tard ») + reply.
+    later: 'Plus tard',
+    when: 'Quand',
+    reply: 'Répondre',
+    inReplyTo: 'En réponse',
+    replyTo: (name: string) => `Réponse à ${name}`,
   },
   routines: {
     tag: 'Le rythme du jour',
@@ -3665,6 +3671,12 @@ export const EN: typeof FR = {
     delete: 'Delete note',
     deleted: 'Note deleted',
     deleteSavedConfirm: 'Delete this kept note?',
+    // Schedule (“Later”) + reply.
+    later: 'Later',
+    when: 'When',
+    reply: 'Reply',
+    inReplyTo: 'In reply',
+    replyTo: (name: string) => `Reply to ${name}`,
   },
   routines: {
     tag: "The day’s rhythm",
