@@ -1,7 +1,9 @@
 /* ---- Board: full-width "whiteboard" bento grid ---------------------------- */
+/* Full-bleed: the board fills the whole hub body (no centred max-width cap). The
+   masonry below (`columns: 300px`) just flows more columns as the viewport widens;
+   the edge padding keeps a breath of margin so cards never touch the frame. */
 .board-wall {
-  max-width: 1500px;
-  margin: 0 auto;
+  margin: 0;
   padding: 1.25rem 1.25rem 2rem;
   position: relative;
 }

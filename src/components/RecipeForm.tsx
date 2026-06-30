@@ -131,6 +131,19 @@ export function RecipeForm({
   // several lines.
   const [editStep, setEditStep] = useState<number | null>(null)
 
+  // Multi-row inputs (ingredients / section titles) advance like a phone "next"
+  // key: Enter commits the row (state already holds it on each keystroke) and moves
+  // focus to the next row, appending an empty one when you Enter off the last filled
+  // row. Refs are keyed by kind + index; `focusLine` defers the focus to AFTER the
+  // render that creates a freshly-appended row (the input doesn't exist yet on Enter).
+  const lineInputs = useRef<Partial<Record<LineKind, (HTMLInputElement | null)[]>>>({})
+  const [focusLine, setFocusLine] = useState<{ kind: LineKind; i: number } | null>(null)
+  useEffect(() => {
+    if (!focusLine) return
+    lineInputs.current[focusLine.kind]?.[focusLine.i]?.focus()
+    setFocusLine(null)
+  }, [focusLine])
+
   // The pill offer: household presets (Réglages → Recettes) or the built-in
   // starters, plus every tag already used on a recipe — a tag typed once
   // ("Collation") is a one-tap pill from then on.
@@ -595,18 +608,32 @@ export function RecipeForm({
         return (
           <div key={i} className={'recipe-line' + (sec ? ' recipe-line--sec' : '')}>
             <input
+              ref={(el) => {
+                const arr = lineInputs.current[kind] ?? (lineInputs.current[kind] = [])
+                arr[i] = el
+              }}
               className="input"
               value={shown}
+              // iOS shows a "next" return key; Enter then jumps to the next row.
+              enterKeyHint="next"
               onChange={(e) => updateLine(kind, i, sec ? SECTION_PREFIX + e.target.value : e.target.value)}
               placeholder={sec ? t.recipes.sectionPlaceholder : placeholder}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  if (i === lines(kind).length - 1 && shown.trim()) addLine(kind)
-                } else if (e.key === 'Backspace' && !shown && lines(kind).length > 1) {
-                  e.preventDefault()
-                  removeLine(kind, i)
+                  const last = lines(kind).length - 1
+                  if (i < last) {
+                    // Jump to the next existing row (the value is already committed).
+                    lineInputs.current[kind]?.[i + 1]?.focus()
+                  } else if (shown.trim()) {
+                    // Off the last filled row: append one and focus it next render.
+                    addLine(kind)
+                    setFocusLine({ kind, i: i + 1 })
+                  }
                 }
+                // No Backspace-to-delete: clearing a row to retype it shouldn't make
+                // it vanish on one extra keypress. Row removal stays explicit via the
+                // per-row ✕ button (recipe-line__del).
               }}
               onPaste={(e) => {
                 if (!sec && pasteLines(kind, i, e.clipboardData.getData('text'))) e.preventDefault()

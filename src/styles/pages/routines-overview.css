@@ -2,8 +2,10 @@
    left the wall empty). Member colour tints the card; the step pictos preview the
    run so a parent recognizes it at a glance. ------------------------------------ */
 .routines-parent {
-  max-width: 60rem;
-  margin: 0 auto;
+  /* Full-bleed: the routine-card grid (auto-fill) flows more cards per row on a
+     wide screen (was capped 60rem). The shared .today-feed cap is lifted for this
+     page in hub.css. */
+  margin: 0;
 }
 .routines-grid {
   display: grid;

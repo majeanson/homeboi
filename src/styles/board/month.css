@@ -5,8 +5,8 @@
    below. Phone shows dots only — the words live in the detail panel; the wall
    tablet gets roomier cells read from across the room. */
 .monthv {
-  max-width: 60rem;
-  margin: 0 auto;
+  /* Full-bleed: the six-week grid claims the whole board width (was capped 60rem). */
+  margin: 0;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -437,16 +437,15 @@
 }
 
 /* ── Wide-kiosk wall layout ───────────────────────────────────────────────────────
-   On a big wall the `columns:300px` masonry spreads thin across many columns and the
-   glance goes diffuse (AUJOURDHUI §5/§9). Cap it to ~3 columns and centre it so the
-   board stays a focused block, not a 4K-wide spread. (A true fixed "now-lane + rail"
-   via grid-template-areas was set aside: it fights the per-device card reorder. Capping
-   + centring the masonry kills the diffuse spread while keeping reorder intact.) */
+   Full-bleed by request: the board fills the whole wall, no centred cap. Keep the
+   roomier 340px column width (cards read from across the room) but let the masonry
+   flow as many columns as the wall fits rather than capping at ~3/1180px. (The old
+   cap deliberately narrowed the wall to keep the glance from going "diffuse" on a
+   4K spread — AUJOURDHUI §5/§9. If that diffuse feel returns on a very large
+   display, restore a max-width here.) */
 .hub[data-surface='kiosk'] .board-grid {
   column-width: 340px;
-  columns: 340px 3;
-  max-width: 1180px;
-  margin-inline: auto;
+  columns: 340px;
 }
 /* Intermediate tablet width (the 520–680px transition + just above): two calm columns
    rather than one cramped or three squeezed (AUJOURDHUI §5 P2 untested widths). */

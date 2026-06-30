@@ -658,3 +658,20 @@
   border-color: var(--card);
   outline: 2.5px solid var(--ink);
 }
+
+/* ---- Full-bleed hub pages -------------------------------------------------- */
+/* `.today-feed` is the shared hub-page column (today.css), deliberately capped to a
+   calm reading width (38rem phone / 52rem kiosk). Three of the four pages that use
+   it are card/grid layouts that read better filling the wall — Kitchen (week meal
+   grid), Routines (auto-fill card grid) and Le cercle (member-card directory) — so
+   lift the cap for them. La liste keeps the cap on purpose: a single shopping list
+   reads calmer narrow than stretched edge-to-edge.
+   These selectors carry three classes (`.hub` + `.today-feed` + the page class), so
+   they tie the `.hub[data-surface='kiosk'] .today-feed` rule on specificity and win
+   on source order — hub.css is @imported right after today.css (styles.css). */
+.hub .today-feed.kitchen,
+.hub .today-feed.routines-parent,
+.hub .today-feed.cercle {
+  max-width: none;
+  margin-inline: 0;
+}
