@@ -353,8 +353,8 @@ export function EventForm({
         {/* Build a NEW list inline — only when none is picked (picking one IS the list). */}
         {bringTemplateId == null && (
           <div className="event-bring__build">
-            {/* A plain input + button (NOT EditField — it renders its own <form>, which
-                can't nest inside this event <form>). Enter adds an item too. */}
+            {/* A plain input + button — a transient "bring" line, not worth EditField's
+                clear/mic/actions chrome here. Enter adds an item too. */}
             <div className="event-bring__add">
               <input
                 className="input"

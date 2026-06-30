@@ -131,9 +131,9 @@ export function EditField({
     commit()
   }
 
-  // In div mode there is no native form submit; route Enter → commit ourselves
-  // and stop the keystroke bubbling up to the host composite <form> (which would
-  // otherwise submit it on the FIRST keypress). Multiline keeps Enter = newline.
+  // In div mode there is no native form submit; route Enter → commit ourselves.
+  // preventDefault() also cancels the host composite <form>'s implicit submit (which
+  // would otherwise fire on the FIRST Enter). Multiline keeps Enter = newline.
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (isForm || multiline) return
     if (e.key === 'Enter') {

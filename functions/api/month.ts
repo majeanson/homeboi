@@ -118,7 +118,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // trip's orphan notes don't leak. ±DAY widen + re-bucket like meals/day_notes
     // (date is local midnight, DST-aware).
     ctx.env.DB.prepare(
-      'SELECT tn.id, tn.trip_id, tn.category, tn.label, tn.text, tn.media_kind, tn.date, tr.colour AS colour FROM trip_notes tn JOIN trips tr ON tr.id = tn.trip_id AND tr.deleted_at IS NULL WHERE tn.household_id = ? AND tn.deleted_at IS NULL AND tn.date IS NOT NULL AND tn.date >= ? AND tn.date < ? ORDER BY tn.date, tn.position, tn.created_at',
+      // category = 'activity' matches the only dated-note writer (the Itinéraire
+      // composer). Other categories are atemporal (date NULL) and excluded above, but
+      // pinning it keeps the calendar's title fallback (t.voyage.cat[category]) total.
+      "SELECT tn.id, tn.trip_id, tn.category, tn.label, tn.text, tn.media_kind, tn.date, tr.colour AS colour FROM trip_notes tn JOIN trips tr ON tr.id = tn.trip_id AND tr.deleted_at IS NULL WHERE tn.household_id = ? AND tn.deleted_at IS NULL AND tn.category = 'activity' AND tn.date IS NOT NULL AND tn.date >= ? AND tn.date < ? ORDER BY tn.date, tn.position, tn.created_at",
     )
       .bind(hh, from - DAY, to + DAY)
       .all<{ id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; date: number; colour: string }>(),
