@@ -73,6 +73,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     id?: string
     packed?: boolean
     text?: string
+    member_id?: string | null
     tripId?: string
     clearChecked?: boolean
     ids?: unknown
@@ -113,6 +114,22 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (typeof body?.text === 'string' && body.text.trim()) {
     await ctx.env.DB.prepare('UPDATE trip_packing SET text = ?, updated_at = ? WHERE id = ? AND household_id = ?')
       .bind(body.text.trim().slice(0, TEXT_CAP), ts, id, actor.householdId)
+      .run()
+  }
+  // Move an item between bags (a kid's ⇄ the shared list). member_id is the same soft
+  // scope POST validates; `null`/'' = the shared list. Present-key gate so other
+  // PATCHes (packed/text) don't accidentally clear the scope.
+  if ('member_id' in (body ?? {})) {
+    let memberId: string | null = null
+    const wanted = body?.member_id?.trim()
+    if (wanted) {
+      const m = await ctx.env.DB.prepare('SELECT 1 FROM members WHERE id = ? AND household_id = ?')
+        .bind(wanted, actor.householdId)
+        .first<{ 1: number }>()
+      memberId = m ? wanted : null
+    }
+    await ctx.env.DB.prepare('UPDATE trip_packing SET member_id = ?, updated_at = ? WHERE id = ? AND household_id = ?')
+      .bind(memberId, ts, id, actor.householdId)
       .run()
   }
   return ok({ ok: true })

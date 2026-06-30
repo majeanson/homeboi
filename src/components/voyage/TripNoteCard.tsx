@@ -1,20 +1,25 @@
+import { useState } from 'react'
 import { useT } from '../../i18n'
 import { imgUrl } from '../../lib/image'
 import { ZoomableImg } from '../ZoomableImg'
 import { RowActions } from '../RowActions'
+import { EditField } from '../EditField'
 import { InlineIcon } from '../Icon'
 import { tripCategoryIcon, type TripNote } from './voyage'
 
 // One « Voyage » info/itinerary entry: an optional category glyph + label, the text,
 // and any attached media (a voice memo plays inline; a drawing/photo zooms). Mirrors
 // how a fridge/family note renders its media — text-only when there's no blob. The
-// 🗑️ (and optional ✏️ for a text edit) come from the shared RowActions.
+// 🗑️ (and ✏️ when `onSave` is given) come from the shared RowActions; ✏️ flips the
+// card into an inline EditField (PATCH text) — the same rename gesture every other
+// list here uses (MealPool/ReserveSection/PackingList), so a typo'd flight number is
+// a fix-in-place, not a delete-and-retype.
 export function TripNoteCard({
   note,
   who,
   showCategory = true,
   onDelete,
-  onEdit,
+  onSave,
 }: {
   note: TripNote
   /** Resolved member name for a member-scoped note ("kids/parents stuff"). */
@@ -22,10 +27,23 @@ export function TripNoteCard({
   /** Hide the category glyph when the list is already grouped by category. */
   showCategory?: boolean
   onDelete?: () => void
-  onEdit?: () => void
+  /** Provided → a ✏️ that inline-edits the note's text (PATCH). */
+  onSave?: (text: string) => void
 }) {
   const t = useT()
+  const [editing, setEditing] = useState(false)
   const src = note.media_key ? imgUrl(note.media_key) : null
+
+  if (editing && onSave) {
+    return (
+      <div className="trip-note trip-note--editing">
+        <div className="trip-note__body">
+          <TripNoteEdit note={note} onSave={onSave} onClose={() => setEditing(false)} />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="trip-note">
       <div className="trip-note__body">
@@ -44,9 +62,45 @@ export function TripNoteCard({
           <ZoomableImg src={src} alt={note.label ?? ''} className="trip-note__img" />
         )}
       </div>
-      {(onDelete || onEdit) && (
-        <RowActions onEdit={onEdit} onDelete={onDelete} deleteLabel={t.common.delete} editLabel={t.common.edit} />
+      {(onDelete || onSave) && (
+        <RowActions
+          onEdit={onSave ? () => setEditing(true) : undefined}
+          onDelete={onDelete}
+          deleteLabel={t.common.delete}
+          editLabel={t.common.edit}
+        />
       )}
     </div>
+  )
+}
+
+// The inline rename for a trip note's text. Fresh draft per open (keyed on remount
+// by the editing flag), Enter / Save commits, Échap / Annuler closes — the same
+// EditField inline-edit shape ReserveSection uses for its rows.
+function TripNoteEdit({
+  note,
+  onSave,
+  onClose,
+}: {
+  note: TripNote
+  onSave: (text: string) => void
+  onClose: () => void
+}) {
+  const t = useT()
+  const [text, setText] = useState(note.text)
+  return (
+    <EditField
+      value={text}
+      onChange={setText}
+      onSubmit={() => {
+        const v = text.trim()
+        if (v) onSave(v)
+        onClose()
+      }}
+      submitLabel={t.common.save}
+      ariaLabel={t.common.edit}
+      autoFocus
+      onCancel={onClose}
+    />
   )
 }

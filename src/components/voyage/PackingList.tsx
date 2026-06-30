@@ -51,12 +51,14 @@ export function PackingList({ trip, items, faces }: { trip: Trip; items: Packing
       write('trip-packing', { method: 'PATCH', body: { id: item.id, packed: true }, affectedKeys: [packingKey] }),
     )
   }
-  function rename(item: PackingItem, v: string) {
+  // Rename AND move between bags in one save: text always, member_id only when it
+  // changed (the shared list is null). Mirrors La réserve's "rename + relocate".
+  function saveItem(item: PackingItem, v: string, memberId: string | null) {
     const value = v.trim()
     if (!value) return
-    void write('trip-packing', { method: 'PATCH', body: { id: item.id, text: value }, affectedKeys: [packingKey] }).catch(
-      () => {},
-    )
+    const body: { id: string; text: string; member_id?: string | null } = { id: item.id, text: value }
+    if (memberId !== item.member_id) body.member_id = memberId
+    void write('trip-packing', { method: 'PATCH', body, affectedKeys: [packingKey] }).catch(() => {})
   }
 
   return (
@@ -96,7 +98,15 @@ export function PackingList({ trip, items, faces }: { trip: Trip; items: Packing
                   item={item.text}
                   onCheck={() => check(item)}
                   checkLabel={t.voyage.markPacked}
-                  onRename={(v) => rename(item, v)}
+                  editLabel={t.common.edit}
+                  renderEdit={(close) => (
+                    <PackingEditForm
+                      item={item}
+                      faces={faces}
+                      onSave={(v, mid) => saveItem(item, v, mid)}
+                      onClose={close}
+                    />
+                  )}
                 />
               ))}
             </ul>
@@ -104,5 +114,55 @@ export function PackingList({ trip, items, faces }: { trip: Trip; items: Packing
         ))
       )}
     </div>
+  )
+}
+
+// La réserve's "rename + relocate" shape, applied to bags: rename the item AND move
+// it to another member's bag (or the shared list) via a face <select>. Supplied to
+// CheckRow through renderEdit (the default rename form can't carry the select).
+function PackingEditForm({
+  item,
+  faces,
+  onSave,
+  onClose,
+}: {
+  item: PackingItem
+  faces: MemberFace[]
+  onSave: (text: string, memberId: string | null) => void
+  onClose: () => void
+}) {
+  const t = useT()
+  const [text, setText] = useState(item.text)
+  const [mid, setMid] = useState<string>(item.member_id ?? '')
+  return (
+    <EditField
+      value={text}
+      onChange={setText}
+      onSubmit={() => {
+        onSave(text, mid || null)
+        onClose()
+      }}
+      submitLabel={t.common.save}
+      ariaLabel={t.common.edit}
+      autoFocus
+      onCancel={onClose}
+      trailing={
+        faces.length > 0 ? (
+          <select
+            className="input voyage-packing__move"
+            value={mid}
+            onChange={(e) => setMid(e.target.value)}
+            aria-label={t.voyage.whosBag}
+          >
+            <option value="">{t.voyage.sharedList}</option>
+            {faces.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        ) : undefined
+      }
+    />
   )
 }

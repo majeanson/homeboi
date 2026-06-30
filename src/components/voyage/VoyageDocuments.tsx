@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
+import { useConfirm } from '../../lib/confirm'
 import { useOnline } from '../../lib/online'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
@@ -21,6 +22,7 @@ import type { Trip, TripNote } from './voyage'
 export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[] }) {
   const t = useT()
   const write = useWrite()
+  const confirm = useConfirm()
   const online = useOnline()
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [busy, setBusy] = useState(false)
@@ -63,6 +65,13 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
   async function removeDoc(key: string) {
     const n = docs.find((d) => d.media_key === key)
     if (!n) return
+    // A heavy delete (a boarding pass / passport scan), not a light one: confirm
+    // instead of an undo toast — DELETE frees the R2 blob server-side, so the file
+    // can't be brought back the way a text note can. (Uniform-CRUD: confirm for
+    // destructive media, undo for light text.)
+    const label = n.label?.trim() || t.voyage.thisDocument
+    if (!(await confirm({ message: t.voyage.deleteDocConfirm(label), tone: 'danger', confirmLabel: t.common.delete })))
+      return
     await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
   }
 
@@ -102,7 +111,9 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
       {!online && <p className="voyage-docs__hint mono">{t.voyage.uploadOnlineOnly}</p>}
 
       {docs.length === 0 ? (
-        <EmptyState tone="calm">{t.voyage.noDocs}</EmptyState>
+        <EmptyState tone="calm" guide={{ card: 'voyage' }}>
+          {t.voyage.noDocs}
+        </EmptyState>
       ) : (
         <CarnetDocs
           keys={docKeys}

@@ -131,7 +131,7 @@ function VoyageInner() {
             { key: 'documents', label: t.voyage.tabDocuments, icon: 'file-text-bold' },
           ]}
         />
-        {vue === 'itineraire' && <VoyageItinerary trip={trip} notes={notes} />}
+        {vue === 'itineraire' && <VoyageItinerary trip={trip} notes={notes} faces={tripFaces} />}
         {vue === 'infos' && <VoyageInfos trip={trip} notes={notes} faces={tripFaces} />}
         {vue === 'bagages' && <PackingList trip={trip} items={packing} faces={tripFaces} />}
         {vue === 'documents' && <VoyageDocuments trip={trip} notes={notes} />}

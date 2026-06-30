@@ -70,6 +70,10 @@ export type AddSheetMode =
   // Add a pet (PersonKind 'pet') — a full-screen scene route (/cercle/pet/new),
   // like the person form, so the care form rides above the mobile keyboard.
   | 'pet'
+  // Add a carnet (the house / the car / a thing we care for) — opens the CarnetForm
+  // modal on /cercle via ?add=carnet. Mirrors `business`: the Carnets tab no longer
+  // carries its own add button; the ＋ FAB is the single entry, like the others.
+  | 'carnet'
   // « Voyage » — start a new trip notebook. Navigate-only to /voyage/new (the create
   // form, then its scene). Operator-grade, like an event. Lets the planning rendez-vous
   // begin a trip straight from the board ＋.
@@ -105,7 +109,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // business — all navigate-only tiles (the page opens connect/group/business from a
   // ?param). Every cercle subtab (Famille/Social/Notes/Business) offers the full set,
   // so e.g. "create a business" is reachable from the ＋ on any of them.
-  cercle: ['person', 'family', 'connect', 'group', 'business', 'pet'],
+  cercle: ['person', 'family', 'connect', 'group', 'business', 'pet', 'carnet'],
 }
 
 // The operator-grade forms a kiosk that isn't signed in never sees as ＋ tiles.

@@ -100,8 +100,15 @@
 
 /* — Infos tab — */
 .voyage-infos__who,
-.voyage-packing__who {
+.voyage-packing__who,
+.voyage-itin__who {
   margin: 8px 0;
+}
+/* The "move to another bag" picker rides in the edit row — keep it from eating the
+   whole width so the item field + Save stay usable on a phone (like La réserve). */
+.voyage-packing__move {
+  flex: 0 1 9rem;
+  min-width: 6rem;
 }
 .voyage-infos__allhint {
   color: var(--ink-faint);

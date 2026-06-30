@@ -75,9 +75,6 @@
   font-size: 1.4rem;
   line-height: 1;
 }
-.cercle-carnets__add {
-  margin-top: 0.5rem;
-}
 /* "needs a look" dot on a top-level carnet row */
 .cercle-carnets__flag {
   width: 0.6rem;

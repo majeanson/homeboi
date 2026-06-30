@@ -774,9 +774,9 @@ export function DevKit() {
       kw: 'voyage trip note itinéraire info catégorie média carnet de voyage card',
       render: () => (
         // One « Voyage » info/itinerary entry — category glyph + label + text (+ media:
-        // a voice memo plays inline, a drawing/photo zooms). Same render across Infos,
-        // Itinéraire and Documents. Here a text + a member-scoped note, with a 🗑️.
-        <Demo label="a trip note (category + label + text), member-scoped">
+        // a voice memo plays inline, a drawing/photo zooms). Same render across Infos and
+        // Itinéraire. `onSave` adds an inline ✏️ edit (PATCH text); `onDelete` a 🗑️.
+        <Demo label="a trip note (category + label + text), member-scoped, edit + delete">
           <TripNoteCard
             note={{
               id: 'demo',
@@ -794,6 +794,7 @@ export function DevKit() {
               updated_at: null,
             }}
             who="Les enfants"
+            onSave={() => {}}
             onDelete={() => {}}
           />
         </Demo>

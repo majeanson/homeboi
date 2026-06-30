@@ -30,6 +30,10 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
   const infoNotes = notes.filter((n) => n.date == null)
   const shown = cat == null ? infoNotes : infoNotes.filter((n) => n.category === cat)
 
+  function save(n: TripNote, text: string) {
+    void write('trip-notes', { method: 'PATCH', body: { id: n.id, text }, affectedKeys: [affectedKey] }).catch(() => {})
+  }
+
   async function del(n: TripNote) {
     await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
     recordUndo({
@@ -95,7 +99,9 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
 
       <div className="voyage-infos__list">
         {shown.length === 0 ? (
-          <EmptyState tone="calm">{t.voyage.noInfo}</EmptyState>
+          <EmptyState tone="calm" guide={{ card: 'voyage' }}>
+            {t.voyage.noInfo}
+          </EmptyState>
         ) : (
           shown.map((n) => (
             <TripNoteCard
@@ -103,6 +109,7 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
               note={n}
               who={memberName(n.member_id)}
               showCategory={cat == null}
+              onSave={(text) => save(n, text)}
               onDelete={() => del(n)}
             />
           ))

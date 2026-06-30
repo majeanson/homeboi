@@ -32,6 +32,7 @@ import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { BusinessesTab } from '../components/cercle/BusinessesTab'
 import { CarnetsTab } from '../components/cercle/CarnetsTab'
+import { CarnetForm } from '../components/cercle/CarnetForm'
 import { BusinessForm } from '../components/cercle/BusinessForm'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
 import { SubTabs } from '../components/SubTabs'
@@ -179,6 +180,10 @@ function CercleParent() {
   // The ＋ "Nouveau commerce" tile opens the BusinessForm here (page-level, like the
   // group/connect modals) so it works from ANY cercle subtab, not just Business.
   const [addingBusiness, setAddingBusiness] = useState(false)
+  // The ＋ "Nouveau carnet" tile opens the CarnetForm here too (page-level, works from
+  // any subtab), so the Carnets tab no longer needs its own add button — same single-
+  // entry pattern as the business modal.
+  const [addingCarnet, setAddingCarnet] = useState(false)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   // The "Relier deux personnes" connector, opened (optionally seeded with one side)
   // from the ＋ chooser, a person's peek, or a family group header.
@@ -217,6 +222,7 @@ function CercleParent() {
     if (params.get('connect') === '1') setConnect({})
     else if (params.get('add') === 'group') setAddingGroup(true)
     else if (params.get('add') === 'business') setAddingBusiness(true)
+    else if (params.get('add') === 'carnet') setAddingCarnet(true)
     else return
     const next = new URLSearchParams(params)
     next.delete('connect')
@@ -644,6 +650,12 @@ function CercleParent() {
           so a new business is reachable from any cercle subtab, not just Business. */}
       <Modal open={addingBusiness} onClose={() => setAddingBusiness(false)} title={t.cercle.business.add}>
         <BusinessForm onSaved={() => setAddingBusiness(false)} onCancel={() => setAddingBusiness(false)} />
+      </Modal>
+
+      {/* Add a carnet (the house / the car / a thing) — opened from the ＋ chooser
+          (?add=carnet), reachable from any cercle subtab, like the business modal. */}
+      <Modal open={addingCarnet} onClose={() => setAddingCarnet(false)} title={t.carnets.add}>
+        <CarnetForm defaultKind="home" onSaved={() => setAddingCarnet(false)} onCancel={() => setAddingCarnet(false)} />
       </Modal>
 
       {people.length === 0 ? (

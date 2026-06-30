@@ -29,11 +29,12 @@ import { setGuestToken, clearGuestToken, clearGuestKind, isGuestPreview, setGues
 import { connectRealtime } from './lib/realtime'
 import './styles.css'
 
-// Realtime push (#20) is SCAFFOLDED, not yet enabled. Flip this on only after the
-// RealtimeHub Durable Object is deployed + verified DO-eligible (see wrangler.toml
-// + OFFLINE/realtime notes). While false, connectRealtime is never called, so an
-// undeployed DO can't even attempt the socket. It's wired here (not a dead file)
-// so enabling is a one-line flip — and connectRealtime is fail-safe regardless.
+// Realtime push (#20) is ENABLED: the RealtimeHub Durable Object is deployed, so an
+// open board refreshes the moment another device writes (lib/realtime + the route.ts
+// broadcast hook). Polling stays the fallback — if the DO is unbound or the socket
+// drops, /api/live 503s and Query's polling still owns correctness. Flip to false to
+// force the poll-only path (connectRealtime is then never called); it's fail-safe
+// either way, so this is the single switch.
 const REALTIME_ENABLED = true
 
 // `?guest=<token>` boots a babysitter / guest session: stash the read-only token

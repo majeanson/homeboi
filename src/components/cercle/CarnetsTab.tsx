@@ -1,26 +1,23 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { imgUrl } from '../../lib/image'
 import { faint } from '../../lib/colors'
-import { isGuest } from '../../lib/device'
 import { useCarnets, carnetEmoji, type Carnet } from '../../lib/carnets'
 import { InlineIcon } from '../Icon'
 import { EmptyState } from '../EmptyState'
-import { Modal } from '../Modal'
-import { CarnetForm } from './CarnetForm'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
 // « Le cercle » → Les carnets tab: the household's cared-for things (houses, cars).
 // A directory of TOP-LEVEL carnets; tapping one opens its full carnet scene. Mirrors
 // the Business tab's isolation (its own query, never the people graph), but a carnet
-// navigates to a scene (it has a history + children) rather than a peek.
+// navigates to a scene (it has a history + children) rather than a peek. Adding a
+// carnet is the ＋ FAB's job now (the cercle chooser's "Nouveau carnet" tile opens
+// the CarnetForm on /cercle via ?add=carnet), so this tab carries no add button of
+// its own — the same single-entry pattern as the Business tab.
 export function CarnetsTab({ help }: { help?: HelpMode }) {
   const t = useT()
   const nav = useNavigate()
-  const ro = isGuest()
   const c = t.carnets
-  const [adding, setAdding] = useState(false)
 
   const { data } = useCarnets()
   const tops = (data?.carnets ?? []).filter((x) => !x.parentId)
@@ -63,15 +60,6 @@ export function CarnetsTab({ help }: { help?: HelpMode }) {
         })
       )}
 
-      {!ro && (
-        <button type="button" className="btn btn--ghost cercle-carnets__add" onClick={() => setAdding(true)}>
-          <InlineIcon name="plus-bold" size={16} /> {c.add}
-        </button>
-      )}
-
-      <Modal open={adding} onClose={() => setAdding(false)} title={c.add}>
-        <CarnetForm defaultKind="home" onSaved={() => setAdding(false)} onCancel={() => setAdding(false)} />
-      </Modal>
     </section>
   )
 }

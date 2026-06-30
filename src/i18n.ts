@@ -485,6 +485,7 @@ export const FR = {
     dayN: (n: number) => `Jour ${n}`,
     addDayPlan: 'Ajouter au programme de la journée…',
     setDatesForItinerary: 'Ajoute les dates du voyage pour bâtir l’itinéraire jour par jour.',
+    planRemoved: 'Activité retirée',
     // infos
     categories: 'Catégories',
     cat: {
@@ -521,6 +522,8 @@ export const FR = {
     uploadOnlineOnly: 'Ajoute des documents en ligne ; ils resteront accessibles hors-ligne.',
     prepareOffline: 'Préparer pour hors-ligne',
     offlineReady: 'Disponible hors-ligne',
+    thisDocument: 'ce document',
+    deleteDocConfirm: (name: string) => `Supprimer ${name} ? Le fichier ne pourra pas être récupéré.`,
     // board card + month band
     nextTrip: 'Prochain voyage',
     ongoing: 'En cours',
@@ -2735,6 +2738,7 @@ export const EN: typeof FR = {
     dayN: (n: number) => `Day ${n}`,
     addDayPlan: 'Add to this day’s plan…',
     setDatesForItinerary: 'Add the trip dates to build a day-by-day itinerary.',
+    planRemoved: 'Activity removed',
     categories: 'Categories',
     cat: {
       flight: 'Flights',
@@ -2768,6 +2772,8 @@ export const EN: typeof FR = {
     uploadOnlineOnly: 'Add documents while online; they stay available offline.',
     prepareOffline: 'Save for offline',
     offlineReady: 'Available offline',
+    thisDocument: 'this document',
+    deleteDocConfirm: (name: string) => `Delete ${name}? The file can’t be recovered.`,
     nextTrip: 'Next trip',
     ongoing: 'Under way',
     inDays: (n: number) => (n === 1 ? 'Tomorrow' : `In ${n} days`),
