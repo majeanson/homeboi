@@ -14,8 +14,8 @@ import { isValidR2Key } from '../_lib/validate'
 //
 //   GET    /api/family-notes  -> all live household notes (both scopes), newest first
 //   POST   /api/family-notes  -> add { title?, text?, scope, member_id?, media_kind?, media_key?, scene_key? }
-//   PATCH  /api/family-notes  -> edit { id, title?, text?, media_kind?, media_key?, scene_key? }
-//                               (title/body edit + add/replace/remove the photo|drawing)
+//   PATCH  /api/family-notes  -> edit { id, title?, text?, scope?, member_id?, media_kind?, media_key?, scene_key? }
+//                               (title/body edit + re-scope Moi↔Maisonnée + add/replace/remove the photo|drawing)
 //   DELETE /api/family-notes  -> soft-clear one { id } (sets deleted_at; frees media)
 //
 // Scope is chosen on the composer (Moi / Maisonnée toggle) and sent EXPLICITLY, so
@@ -107,9 +107,12 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
 export const onRequestPatch = authed(async (ctx, actor) => {
   // Edit a note in place (iOS Notes are editable): change the TITLE and/or the Markdown
-  // BODY, and/or add / replace / remove the single photo|drawing ATTACHMENT. Scope is
-  // NOT editable here — delete + recreate to move a note between Moi and Maisonnée.
-  //   { id, title?, text?, media_kind?, media_key?, scene_key? }
+  // BODY, RE-SCOPE it between Moi and Maisonnée, and/or add / replace / remove the single
+  // photo|drawing ATTACHMENT.
+  //   { id, title?, text?, scope?, member_id?, media_kind?, media_key?, scene_key? }
+  // scope ∈ 'self' | 'family' (present means "move this note"): 'family' -> member_id NULL
+  // (Maisonnée); 'self' -> the picked member (validated to this household). author_member_id
+  // is left intact — re-scoping changes WHO it's FOR, not who wrote it.
   // media_kind ∈ 'image' | 'drawing' | null. Present (incl. null) means "change the
   // attachment": null clears it, 'image'/'drawing' sets/replaces it (media_key required,
   // scene_key only meaningful for a drawing). Superseded/cleared blobs are freed. Audio
@@ -118,6 +121,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     id?: string
     title?: string
     text?: string
+    scope?: string
+    member_id?: string | null
     media_kind?: string | null
     media_key?: string
     scene_key?: string
@@ -126,11 +131,26 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!id) return badRequest('id requis.')
   const hasTitle = typeof body?.title === 'string'
   const hasText = typeof body?.text === 'string'
+  const hasScope = 'scope' in (body ?? {}) || 'member_id' in (body ?? {})
   const hasMediaField = 'media_kind' in (body ?? {})
   // Legacy re-draw: an older caller PATCHes { id, media_key } without media_kind to swap
   // a drawing's blob in place. Treat that as a media change keeping the existing kind.
   const legacyRedraw = !hasMediaField && !!body?.media_key?.trim()
-  if (!hasTitle && !hasText && !hasMediaField && !legacyRedraw) return badRequest('Rien à modifier.')
+  if (!hasTitle && !hasText && !hasScope && !hasMediaField && !legacyRedraw) return badRequest('Rien à modifier.')
+
+  // Re-scope resolution — mirrors POST: 'family' -> NULL, 'self' -> a validated member.
+  let scopeMemberId: string | null = null
+  if (hasScope) {
+    if (body?.scope !== 'family') {
+      const wanted = body?.member_id?.trim()
+      if (wanted) {
+        const m = await ctx.env.DB.prepare('SELECT 1 FROM members WHERE id = ? AND household_id = ?')
+          .bind(wanted, actor.householdId)
+          .first<{ 1: number }>()
+        scopeMemberId = m ? wanted : null
+      }
+    }
+  }
 
   const row = await ctx.env.DB.prepare(
     'SELECT media_kind, media_key, scene_key FROM family_notes WHERE id = ? AND household_id = ? AND deleted_at IS NULL',
@@ -166,11 +186,13 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
 
   await ctx.env.DB.prepare(
-    'UPDATE family_notes SET title = COALESCE(?, title), text = COALESCE(?, text), media_kind = ?, media_key = ?, scene_key = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+    'UPDATE family_notes SET title = COALESCE(?, title), text = COALESCE(?, text), member_id = CASE WHEN ? = 1 THEN ? ELSE member_id END, media_kind = ?, media_key = ?, scene_key = ?, updated_at = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       hasTitle ? body!.title!.trim().slice(0, TITLE_CAP) : null,
       hasText ? body!.text!.trim().slice(0, TEXT_CAP) : null,
+      hasScope ? 1 : 0,
+      scopeMemberId,
       mediaKind,
       mediaKey,
       sceneKey,

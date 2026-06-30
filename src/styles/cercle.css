@@ -1953,6 +1953,17 @@
   font-size: 1.15rem;
   font-weight: 700;
 }
+.note-editor__scope {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.55rem 0.8rem 0;
+}
+.note-editor__scopelabel {
+  font-size: 0.82rem;
+  color: var(--ink-soft, var(--muted));
+}
 .note-editor__toolbar {
   display: flex;
   align-items: center;

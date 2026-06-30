@@ -335,7 +335,7 @@ export function CercleNotes({
       })()}
 
       {/* The full-screen editor — one component, reused for new + modify. */}
-      <NoteEditor open={editorOpen} note={editorNote} scope={effScope} memberId={face} onClose={() => setEditorOpen(false)} />
+      <NoteEditor open={editorOpen} note={editorNote} scope={effScope} memberId={face} members={members} onClose={() => setEditorOpen(false)} />
     </section>
   )
 }

@@ -275,6 +275,7 @@ function NoteEditorDemo() {
         }}
         scope="family"
         memberId={null}
+        members={[]}
         onClose={() => setOpen(false)}
       />
     </>

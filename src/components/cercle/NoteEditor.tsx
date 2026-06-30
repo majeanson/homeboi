@@ -8,6 +8,8 @@ import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, type NoteScope } from '../../lib/familyNotes'
+import type { Member } from '../../lib/cercle'
+import { FaceSelect } from '../FaceSelect'
 import {
   blockKindOf,
   convertLine,
@@ -34,9 +36,14 @@ import { DrawPad } from '../DrawPad'
 // checkbox use the tested pure transforms.
 //
 // AUTO-SAVE (iOS-style): closing — back arrow, Esc, OS back gesture — commits the current
-// { title, body, attachment }; a brand-new empty note is discarded, an emptied existing
-// note is deleted. No Cancel. One optional photo/drawing attachment (uploadMedia / DrawPad);
-// audio memos stay a quick-add. R2 unbound (503) → the attach controls hide.
+// { title, body, scope, attachment }; a brand-new empty note is discarded, an emptied
+// existing note is deleted. No Cancel. One optional photo/drawing attachment (uploadMedia /
+// DrawPad); audio memos stay a quick-add. R2 unbound (503) → the attach controls hide.
+//
+// "POUR QUI" (re-scope): a face picker lets you choose who the note is FOR — a member
+// (a personal "Moi" note) or the whole Maisonnée — seeded from the picked face for a new
+// note and from the note's own scope when editing. Changing it moves the note between
+// lists on save (POST/PATCH carry scope + member_id); the author is never rewritten.
 type AttachKind = 'image' | 'drawing'
 type Fmt = { kind: string; label: string; inline?: boolean; block?: LineKind } & (
   | { glyph: string; mod?: string }
@@ -48,14 +55,17 @@ export function NoteEditor({
   note,
   scope,
   memberId,
+  members,
   onClose,
 }: {
   open: boolean
   /** null = compose a new note; otherwise edit this one in place. */
   note: FamilyNote | null
-  /** Scope for a NEW note (follows the picked face); ignored when editing. */
+  /** Initial scope for a NEW note (follows the picked face); the "Pour qui" picker can change it. */
   scope: NoteScope
   memberId: string | null
+  /** Household faces for the "Pour qui" picker. */
+  members: Member[]
   onClose: () => void
 }) {
   const t = useT()
@@ -72,6 +82,8 @@ export function NoteEditor({
   const lastRangeRef = useRef<Range | null>(null)
 
   const [title, setTitle] = useState('')
+  // "Pour qui" — who the note is FOR: a member id (personal "Moi" note) or null = Maisonnée.
+  const [forMember, setForMember] = useState<string | null>(null)
   const [mediaKind, setMediaKind] = useState<AttachKind | null>(null)
   const [mediaKey, setMediaKey] = useState<string | null>(null)
   const [sceneKey, setSceneKey] = useState<string | null>(null)
@@ -86,6 +98,8 @@ export function NoteEditor({
   useEffect(() => {
     if (!open) return
     setTitle(note?.title ?? '')
+    // Editing → the note's own scope; new note → the picked face (scope/memberId props).
+    setForMember(note ? note.member_id : scope === 'self' ? memberId : null)
     const mk = note && (note.media_kind === 'image' || note.media_kind === 'drawing') ? note.media_kind : null
     setMediaKind(mk)
     setMediaKey(mk ? note!.media_key : null)
@@ -97,7 +111,7 @@ export function NoteEditor({
       root.setAttribute('data-empty', md.trim() ? 'false' : 'true')
     }
     setActive({})
-  }, [open, note])
+  }, [open, note, scope, memberId])
 
   // Commit on close (auto-save). Held in a ref so the stable handleClose passed to
   // useModal always runs the latest state without re-subscribing the Esc handler.
@@ -106,11 +120,13 @@ export function NoteEditor({
     const ti = title.trim()
     const bo = editorRef.current ? htmlToMd(editorRef.current).trim() : (note?.text ?? '').trim()
     const empty = !ti && !bo && !mediaKey
+    // The "Pour qui" pick → wire scope: a member id = a personal note, null = Maisonnée.
+    const effScope: NoteScope = forMember ? 'self' : 'family'
     if (!note) {
       if (empty) return // discard a brand-new, untouched note
       void write('family-notes', {
         method: 'POST',
-        body: { title: ti, text: bo, scope, member_id: scope === 'self' ? memberId : null, media_kind: mediaKind, media_key: mediaKey, scene_key: sceneKey },
+        body: { title: ti, text: bo, scope: effScope, member_id: forMember, media_kind: mediaKind, media_key: mediaKey, scene_key: sceneKey },
         affectedKeys: [FAMILY_NOTES_KEY],
       }).catch(() => {})
       return
@@ -121,7 +137,7 @@ export function NoteEditor({
     }
     void write('family-notes', {
       method: 'PATCH',
-      body: { id: note.id, title: ti, text: bo, media_kind: mediaKind, media_key: mediaKey, scene_key: sceneKey },
+      body: { id: note.id, title: ti, text: bo, scope: effScope, member_id: forMember, media_kind: mediaKind, media_key: mediaKey, scene_key: sceneKey },
       affectedKeys: [FAMILY_NOTES_KEY],
     }).catch(() => {})
   }
@@ -378,6 +394,23 @@ export function NoteEditor({
         maxLength={120}
         autoFocus={!note}
       />
+
+      {/* "Pour qui" — re-scope the note to a member ("Moi") or the whole Maisonnée. */}
+      <div className="note-editor__scope">
+        <span className="note-editor__scopelabel mono">{fn.forWhom}</span>
+        <FaceSelect
+          faces={members.map((m) => ({
+            id: m.id,
+            name: m.displayName,
+            colour: m.colour,
+            photoUrl: m.avatarKind === 'photo' && m.avatarRef ? imgUrl(m.avatarRef) : null,
+          }))}
+          value={forMember}
+          onChange={setForMember}
+          allLabel={fn.scopeFamily}
+          ariaLabel={fn.forWhom}
+        />
+      </div>
 
       <div className="note-editor__toolbar" role="group" aria-label={fn.format}>
         {FORMATS.map((f) => (
