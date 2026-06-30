@@ -214,6 +214,9 @@ export const FR = {
     quickEmpty: 'Rien à proposer pour l’instant.',
     quickAlways: 'Toujours',
     quickOthers: 'Déjà acheté · suggéré',
+    // Observation, not instruction — "souvent racheté" frames the group as a gentle
+    // offer (never "à racheter", which would read as a buy-nudge). No count shown.
+    quickOften: 'Souvent racheté',
     addNew: (s: string) => `Ajouter « ${s} »`,
     addedN: (n: number) => `${n} ajouté${n > 1 ? 's' : ''}`,
     quickRemoved: (s: string) => `« ${s} » retiré des suggestions`,
@@ -396,6 +399,18 @@ export const FR = {
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'Tout est calme',
     allClearSub: 'Rien de prévu aujourd’hui — profitez-en.',
+    // The all-clear reassurance drifts gently by daypart or notable weather — same
+    // calm tone, never a prompt, never a count. Keyed by daypart + weather bucket.
+    allClearMoods: {
+      morning: 'La matinée est à vous.',
+      afternoon: 'L’après-midi file tout en douceur.',
+      evening: 'La soirée est tranquille — soufflez un peu.',
+      cloud: 'Ciel gris, agenda léger.',
+      fog: 'Brume dehors, rien à l’horaire.',
+      rain: 'Belle journée pour rester au chaud.',
+      snow: 'Ça neige dehors, tout est calme dedans.',
+      storm: 'Ça brasse dehors — ici, c’est tranquille.',
+    },
     tomorrowClear: 'Rien de prévu demain.',
     laneClear: 'Libre',
     kidAllClear: 'Rien de prévu. Belle journée !',
@@ -747,6 +762,7 @@ export const FR = {
     moveUp: 'Monter',
     moveDown: 'Descendre',
     dragDay: 'Glisser vers un autre jour',
+    dragDayHint: 'Garde le doigt sur un souper, puis glisse-le sur un autre jour pour le déplacer.',
     dragMeal: 'Glisser vers un autre repas',
     clearText: 'Effacer le texte',
     note: 'Note du jour',
@@ -987,7 +1003,7 @@ export const FR = {
     cookDensity: { compact: 'Compact', normal: 'Normal', large: 'Grand' },
     stepIngsShow: 'Ingrédients par étape affichés — touche pour masquer',
     stepIngsHide: 'Ingrédients par étape masqués — touche pour afficher',
-    // Per-step recipe photos (feature #17 B — upload UI TODO).
+    // Per-step recipe photos (feature #17 B).
     stepPhotoAdd: 'Ajouter une photo',
     stepPhotoChange: 'Changer la photo',
     stepPhotoRemove: 'Retirer la photo',
@@ -1376,6 +1392,9 @@ export const FR = {
     newRoutine: 'Nouvelle routine',
     editExisting: 'Modifier une routine',
     editTitle: 'Modifier la routine',
+    // Parent-surface empty (distinct from the toddler `kid.none`, which points at
+    // the réglages — here the create button is right in the tab).
+    parentEmpty: 'Aucune routine pour l’instant.',
     stepsN: (n: number) => `${n} étape${n > 1 ? 's' : ''}`,
     empty: 'Aucune carte',
     todLabel: 'Moment :',
@@ -1500,6 +1519,7 @@ export const FR = {
     renameDevice: 'Renommer la tablette',
     colorLabel: 'Couleur',
     sections: 'Sections',
+    jumpAria: 'Sections de cet onglet',
     // Group labels that segment the section strip into calm clusters (findability).
     secMaisonnee: 'La maisonnée',
     secAccess: 'Accès & appareils',
@@ -2465,6 +2485,7 @@ export const EN: typeof FR = {
     quickEmpty: 'Nothing to suggest yet.',
     quickAlways: 'Always',
     quickOthers: 'Bought before · suggested',
+    quickOften: 'Often restocked',
     addNew: (s: string) => `Add “${s}”`,
     addedN: (n: number) => `${n} added`,
     quickRemoved: (s: string) => `Removed “${s}” from suggestions`,
@@ -2640,6 +2661,16 @@ export const EN: typeof FR = {
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'All calm',
     allClearSub: 'Nothing planned today — enjoy it.',
+    allClearMoods: {
+      morning: 'The morning is yours.',
+      afternoon: 'The afternoon is drifting by gently.',
+      evening: 'The evening is quiet — take a breather.',
+      cloud: 'Grey skies, light schedule.',
+      fog: 'Foggy out, nothing on the agenda.',
+      rain: 'A good day to stay cozy.',
+      snow: 'Snow outside, calm inside.',
+      storm: 'Wild out there — calm in here.',
+    },
     tomorrowClear: 'Nothing planned for tomorrow.',
     laneClear: 'Free',
     kidAllClear: 'Nothing planned. Have a nice day!',
@@ -2967,6 +2998,7 @@ export const EN: typeof FR = {
     moveUp: 'Move up',
     moveDown: 'Move down',
     dragDay: 'Drag to another day',
+    dragDayHint: 'Press and hold a supper, then drag it onto another day to move it.',
     dragMeal: 'Drag to another slot',
     note: 'Day note',
     notePlaceholder: 'A note for this day…',
@@ -3205,7 +3237,7 @@ export const EN: typeof FR = {
     cookDensity: { compact: 'Compact', normal: 'Normal', large: 'Large' },
     stepIngsShow: 'Per-step ingredients shown — tap to hide',
     stepIngsHide: 'Per-step ingredients hidden — tap to show',
-    // Per-step recipe photos (feature #17 B — upload UI TODO).
+    // Per-step recipe photos (feature #17 B).
     stepPhotoAdd: 'Add a photo',
     stepPhotoChange: 'Change photo',
     stepPhotoRemove: 'Remove photo',
@@ -3585,6 +3617,7 @@ export const EN: typeof FR = {
     newRoutine: 'New routine',
     editExisting: 'Edit a routine',
     editTitle: 'Edit routine',
+    parentEmpty: 'No routines yet.',
     stepsN: (n: number) => `${n} step${n === 1 ? '' : 's'}`,
     empty: 'No cards',
     todLabel: 'Moment:',
@@ -3709,6 +3742,7 @@ export const EN: typeof FR = {
     renameDevice: 'Rename tablet',
     colorLabel: 'Colour',
     sections: 'Sections',
+    jumpAria: 'Sections in this tab',
     // Group labels that segment the section strip into calm clusters (findability).
     secMaisonnee: 'Household',
     secAccess: 'Access & devices',

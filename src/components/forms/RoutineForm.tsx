@@ -8,6 +8,7 @@ import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod, type RoutineTod } from 
 import { alignSide } from '../../lib/parallelArray'
 import { InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
+import { EditField } from '../EditField'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
 
@@ -100,8 +101,8 @@ export function RoutineForm({
       setName(icon ? `${icon} ${tpl.name}` : tpl.name)
     }
   }
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
+  async function submit(e?: React.FormEvent) {
+    e?.preventDefault()
     if ((!editing && !memberIds.length) || !name.trim() || busy) return
     // Zip the deck with its parallel clip keys BEFORE filtering, so dropping an
     // empty card drops its clip slot too — cards and cardsNarration stay aligned
@@ -195,7 +196,15 @@ export function RoutineForm({
         </div>
       )}
 
-      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t.operator.routineName} />
+      <EditField
+        as="div"
+        value={name}
+        onChange={setName}
+        onSubmit={() => submit()}
+        submitIcon={null}
+        placeholder={t.operator.routineName}
+        ariaLabel={t.operator.routineName}
+      />
 
       {/* The moment of day: orders the kid view (morning shows Matin first). */}
       <div className="picker-chips mono">

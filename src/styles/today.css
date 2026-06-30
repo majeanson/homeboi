@@ -497,6 +497,24 @@
   font-size: 1.35rem;
   margin-top: 4px;
 }
+/* The hero glyph breathes very slowly so the most-seen calm state feels alive,
+   not frozen — transform-only (kiosk-screenshot-safe, like pip-rise). Gated; the
+   global reduce killswitch below also disables it. */
+@media (prefers-reduced-motion: no-preference) {
+  .now-card--clear .icn {
+    transform-origin: center;
+    animation: clear-breathe 6s var(--ease-soft, ease-in-out) infinite;
+  }
+  @keyframes clear-breathe {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.06);
+    }
+  }
+}
 .now-card--regler .what,
 .now-card--moment .what {
   font-size: 1.15rem;

@@ -46,6 +46,14 @@
   border-radius: var(--radius-md);
   margin-bottom: 8px;
 }
+/* Gentle arrival fade for trip-note rows — the same calm ambient-in as the cercle
+   notes; keyed rows stay mounted across polls, so it plays on mount / add only.
+   Opacity-only + gated. */
+@media (prefers-reduced-motion: no-preference) {
+  .trip-note {
+    animation: ambient-in var(--dur-slow, 0.45s) var(--ease-out, ease) both;
+  }
+}
 .trip-note__body {
   flex: 1 1 auto;
   min-width: 0;

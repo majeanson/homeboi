@@ -3,6 +3,7 @@ import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
 import { ColorPicker } from '../ColorPicker'
 import { Chip } from '../Chip'
+import { EditField } from '../EditField'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
@@ -76,8 +77,8 @@ export function ChoreForm({
   function toggleRot(id: string) {
     setRotation((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]))
   }
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
+  async function submit(e?: React.FormEvent) {
+    e?.preventDefault()
     if (!title.trim() || busy) return
     setBusy(true)
     setErr(false)
@@ -124,7 +125,15 @@ export function ChoreForm({
           </Chip>
         ))}
       </div>
-      <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t.operator.addChore} />
+      <EditField
+        as="div"
+        value={title}
+        onChange={setTitle}
+        onSubmit={() => submit()}
+        submitIcon={null}
+        placeholder={t.operator.addChore}
+        ariaLabel={t.operator.addChore}
+      />
       <div className="operator__rotation mono">
         {members.map((m) => (
           <button

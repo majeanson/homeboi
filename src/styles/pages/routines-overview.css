@@ -157,6 +157,42 @@
 .routine-card__run:active {
   transform: scale(0.96);
 }
+/* Run + edit sit together on the right of the foot. */
+.routine-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+/* The quiet ✎ edit affordance — a peer of Run, but understated so the card stays
+   calm: a ghost icon that tints to the member colour on the card. */
+.routine-card__edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--tint) 30%, var(--card));
+  border-radius: var(--radius-pill);
+  padding: 0.4rem;
+  color: var(--ink-soft);
+  background: var(--card);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.routine-card__edit:active {
+  transform: scale(0.96);
+}
+/* Empty parent overview: the calm line + a warm "create your first routine" CTA. */
+.routines-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.5rem 1rem;
+}
+.routines-empty__new {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
 .kitchen__head-actions {
   display: flex;
   gap: 0.5rem;

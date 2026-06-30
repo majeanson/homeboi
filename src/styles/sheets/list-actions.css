@@ -125,6 +125,11 @@
 .qa__grouphead:first-child {
   margin-top: 0;
 }
+/* "Souvent racheté": tracked-but-not-due re-buys — the quietest group, dimmed so
+   it reads as a gentle offer, never a prompt. */
+.qa__grouphead--often {
+  color: var(--ink-faint);
+}
 .qa__chip {
   display: flex;
   align-items: center;

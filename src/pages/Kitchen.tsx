@@ -513,6 +513,12 @@ export function Kitchen() {
               </div>
             )}
           </div>
+          {/* First-run nudge: the souper headline is press-and-hold to reschedule,
+              invisible on touch. Only while learning (tabHelp.available = tutorial)
+              and only when there's a souper to drag. */}
+          {tabHelp.available && mealPrefs.isVisible('supper') && week.some((w) => mealsFor(w.date, 'supper').length > 0) && (
+            <p className="kitchen__week-hint mono">{t.kitchen.dragDayHint}</p>
+          )}
           <ul className="kitchen__week">
             {week.map(({ date }) => {
               const dow = new Date(date * 1000).getDay()
@@ -534,6 +540,13 @@ export function Kitchen() {
               const sideRows = SIDE_SLOTS.filter((s) => mealPrefs.isVisible(s))
                 .map((s) => ({ slot: s, titles: mealsFor(date, s).map((m) => m.title).join(', ') }))
                 .filter((r) => r.titles)
+              // Standardized drop cue (same as La liste): a precise insertion line on
+              // the edge the drag is heading toward, instead of the vague whole-cell
+              // ring. Zones are keyed by date (epoch-day), so the direction test is a
+              // date compare — "coming from an earlier day → land below".
+              const fromDate = dayDnd.activeId != null ? Number(dayDnd.activeId) : null
+              const overHere = dayDnd.over === String(date) && fromDate !== null && fromDate !== date
+              const dropEdge = overHere ? (fromDate! < date ? 'bottom' : 'top') : null
               return (
               <li
                 key={date}
@@ -542,9 +555,10 @@ export function Kitchen() {
                   'surface kitchen__day' +
                   (isToday ? ' is-today' : '') +
                   (dow === 0 || dow === 6 ? ' is-weekend' : '') +
-                  (dayDnd.over === String(date) ? ' dnd-over' : '')
+                  (overHere ? ' is-droptarget' : '')
                 }
               >
+                {dropEdge && <span className={`dnd-drop dnd-drop--${dropEdge}`} aria-hidden="true" />}
                 {/* Calendar-style date badge — weekday + day number, the row's left
                     anchor. Today/tomorrow get a relative tag; today's whole card
                     lights up so "you are here" reads at a glance in the countdown. */}

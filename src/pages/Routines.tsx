@@ -6,6 +6,7 @@ import { useAudience } from '../lib/audience'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildRoutine } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
+import { isGuest } from '../lib/device'
 import { live } from '../lib/query'
 import { ROUTINES_KEY } from '../lib/queryKeys'
 import { Loading, PairPrompt } from '../components/Fallback'
@@ -22,8 +23,11 @@ import { KidView } from './KidView'
 // The Routines tab, two lenses on the same data:
 //   - toddler: the picture-card run (the original KidView), where the kid taps
 //     and hears each step.
-//   - parent: a read overview of who has which routine; building/editing still
-//     lives in Réglages for now (the form there is unchanged).
+//   - parent: an overview of who has which routine, with create + edit right in
+//     the tab. Building/editing open the full-screen builder SCENE (/routine/new,
+//     /routine/:id) — a deliberate choice over a height-capped modal, since the
+//     name + member chips + picture-card deck would strand inputs under the mobile
+//     keyboard (see FormScene). The ＋ FAB and each card's ✎ both land there.
 export function Routines() {
   const { audience } = useAudience()
   if (audience === 'toddler') return <KidView />
@@ -95,7 +99,20 @@ function RoutinesParent() {
           even for a brand-new household with no routines yet (#32). */}
       <div data-tour="routines-grid">
       {routines.length === 0 ? (
-        <EmptyState guide={{ card: 'routines' }}>{t.kid.none}</EmptyState>
+        <div className="routines-empty">
+          <EmptyState guide={{ card: 'routines' }}>{t.routines.parentEmpty}</EmptyState>
+          {/* The warm in-tab create path — no more "make one in the réglages".
+              Opens the builder scene; hidden for a read-only guest. */}
+          {!isGuest() && (
+            <button
+              type="button"
+              className="btn btn--primary routines-empty__new"
+              onClick={() => navigate('/routine/new')}
+            >
+              <InlineIcon name="plus-bold" /> {t.routines.newRoutine}
+            </button>
+          )}
+        </div>
       ) : (
         <div className="routines-grid">
           {routines.map((r) => {
@@ -176,24 +193,43 @@ function RoutinesParent() {
                 )}
                 <div className="routine-card__foot">
                   <span className="routine-card__count mono">{t.routines.stepsN(r.cards.length)}</span>
-                  {/* ▶ Run the routine — the player now works on every surface, so a
-                      parent can do the routine WITH the kid from their phone, timers
-                      and all. In help mode the tap explains the card instead. */}
-                  {r.cards.length > 0 && (
-                    <button
-                      type="button"
-                      className="routine-card__run mono"
-                      onClick={(e) => {
-                        // Don't also open the card's peek (the div's onClick); then
-                        // navigate — or, in help mode, explain via the shared target.
-                        e.stopPropagation()
-                        help.pick('card', () => navigate(`/routine/${r.id}/run`))()
-                      }}
-                      aria-label={t.routines.doRoutine}
-                    >
-                      <InlineIcon name="play-bold" /> {t.routines.doRoutine}
-                    </button>
-                  )}
+                  <div className="routine-card__actions">
+                    {/* ✎ Edit in one tap — editing is a first-class card action here,
+                        not buried two taps deep in the peek. Opens the builder scene
+                        (kept off the read-only guest). In help mode, explains. */}
+                    {!isGuest() && (
+                      <button
+                        type="button"
+                        className="routine-card__edit"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          help.pick('card', () => navigate(`/routine/${r.id}`))()
+                        }}
+                        aria-label={t.routines.editTitle}
+                        title={t.routines.editTitle}
+                      >
+                        <InlineIcon name="pencil-simple-bold" />
+                      </button>
+                    )}
+                    {/* ▶ Run the routine — the player now works on every surface, so a
+                        parent can do the routine WITH the kid from their phone, timers
+                        and all. In help mode the tap explains the card instead. */}
+                    {r.cards.length > 0 && (
+                      <button
+                        type="button"
+                        className="routine-card__run mono"
+                        onClick={(e) => {
+                          // Don't also open the card's peek (the div's onClick); then
+                          // navigate — or, in help mode, explain via the shared target.
+                          e.stopPropagation()
+                          help.pick('card', () => navigate(`/routine/${r.id}/run`))()
+                        }}
+                        aria-label={t.routines.doRoutine}
+                      >
+                        <InlineIcon name="play-bold" /> {t.routines.doRoutine}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )

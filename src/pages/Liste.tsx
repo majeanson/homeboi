@@ -148,7 +148,7 @@ function ListItemRow({
     <div className={zoneClass} data-dnd-zone={draggable ? zoneId : undefined}>
       {/* The precise drop indicator: a calm accent line in the gap where the row
           will land, on the edge the drag is heading toward. */}
-      {dropEdge && <span className={`list-row__drop list-row__drop--${dropEdge}`} aria-hidden="true" />}
+      {dropEdge && <span className={`dnd-drop dnd-drop--${dropEdge}`} aria-hidden="true" />}
       {/* The delete pane revealed behind the row as it slides left under the
           finger. Inert/aria-hidden — the swipe drives it; the edit sheet keeps an
           actual Delete button for non-touch. */}

@@ -73,6 +73,11 @@ export interface EditFieldProps {
   /** Hide the whole field. Defaults to the read-only guest session, so a guest
    *  never sees an add/edit box. Pass `false` to force-show in a guest context. */
   readOnly?: boolean
+  /** Render as a `<form>` (default; owns native submit) or a plain `<div>` to
+   *  embed inside a larger composite `<form>` — nesting `<form>` is invalid HTML.
+   *  In 'div' mode Enter commits via onKeyDown and the submit buttons become
+   *  `type="button"`, so the host form keeps its single bottom submit. */
+  as?: 'form' | 'div'
 }
 
 export function EditField({
@@ -104,11 +109,13 @@ export function EditField({
   children,
   className,
   readOnly,
+  as = 'form',
 }: EditFieldProps) {
   const t = useT()
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
   // After the hooks (rules-of-hooks): a guest sees no add/edit box at all.
   const hidden = readOnly ?? isGuest()
+  const isForm = as === 'form'
 
   const commit = () => {
     if (!onSubmit || disabled || busy) return
@@ -124,13 +131,27 @@ export function EditField({
     commit()
   }
 
+  // In div mode there is no native form submit; route Enter → commit ourselves
+  // and stop the keystroke bubbling up to the host composite <form> (which would
+  // otherwise submit it on the FIRST keypress). Multiline keeps Enter = newline.
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (isForm || multiline) return
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      commit()
+    }
+  }
+
   // Commit on focus-out only when the focus is actually leaving the field — not
-  // when it hops to the cancel button or a secondary action in the SAME form
+  // when it hops to the cancel button or a secondary action in the SAME field
   // (which would commit-then-cancel). relatedTarget is the element gaining focus.
+  // Scope on `.edit-field` (the root in BOTH modes), never `form`: in div mode
+  // `closest('form')` resolves to the OUTER composite form, so a blur to any
+  // sibling host field would wrongly suppress the commit.
   const handleBlur = (e: React.FocusEvent) => {
     if (!commitOnBlur) return
     const next = e.relatedTarget as Node | null
-    if (next && e.currentTarget.closest('form')?.contains(next)) return
+    if (next && e.currentTarget.closest('.edit-field')?.contains(next)) return
     commit()
   }
 
@@ -144,8 +165,9 @@ export function EditField({
 
   if (hidden) return null
 
-  return (
-    <form className={'edit-field' + (className ? ` ${className}` : '')} onSubmit={handleSubmit}>
+  const rootClass = 'edit-field' + (className ? ` ${className}` : '')
+  const body = (
+    <>
       <div className="edit-field__row">
         {leading}
         <div className="edit-field__box">
@@ -169,6 +191,7 @@ export function EditField({
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
               placeholder={placeholder}
               aria-label={ariaLabel ?? placeholder}
               autoFocus={autoFocus}
@@ -192,7 +215,8 @@ export function EditField({
 
         {submitLabel && (
           <button
-            type="submit"
+            type={isForm ? 'submit' : 'button'}
+            onClick={isForm ? undefined : commit}
             className={`btn btn--${submitVariant} edit-field__submit`}
             disabled={submitDisabled}
           >
@@ -202,7 +226,8 @@ export function EditField({
         )}
         {showIconSubmit && (
           <button
-            type="submit"
+            type={isForm ? 'submit' : 'button'}
+            onClick={isForm ? undefined : commit}
             className="edit-field__icon-btn edit-field__submit"
             disabled={submitDisabled}
             aria-label={submitLabel ?? t.common.save}
@@ -263,6 +288,16 @@ export function EditField({
       {secondaryActions && <div className="edit-field__secondary">{secondaryActions}</div>}
       {voice && <VoiceStatus voice={voice} />}
       {children}
+    </>
+  )
+
+  // <form> owns native submit (Enter/button); <div> embeds inside a host form
+  // and commits via onKeyDown / button onClick instead (no nested <form>).
+  return isForm ? (
+    <form className={rootClass} onSubmit={handleSubmit}>
+      {body}
     </form>
+  ) : (
+    <div className={rootClass}>{body}</div>
   )
 }

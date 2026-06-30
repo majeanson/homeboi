@@ -79,6 +79,14 @@ import { WonderBand } from '../components/board/ApodFrame'
 import { PanZoom } from '../components/PanZoom'
 import { EntityDetailSheet } from '../components/detail/EntityDetailSheet'
 import { type DetailModel } from '../lib/detail'
+import { PhotoMosaic } from '../components/PhotoMosaic'
+import { SharePreviewBar } from '../components/SharePreviewBar'
+import { CardDeckEditor } from '../components/CardDeckEditor'
+import { type DeckCard } from '../lib/routineTemplates'
+import { HelpBubble } from '../components/HelpBubble'
+import { OfflineBanner } from '../components/OfflineBanner'
+import { ErrorBoundary } from '../components/ErrorBoundary'
+import { HeartButton } from '../components/HeartButton'
 
 // A tiny inline placeholder image for the image-bearing specimens (DealCard,
 // ZoomableImg) — no network asset needed in the gallery.
@@ -319,6 +327,67 @@ function AxisToggle<T extends string>({
   )
 }
 
+// HelpBubble owns no visibility — the consumer does — so the specimen tracks `open`
+// and offers a button to bring it back after the ✕ (it has onClose but no internal
+// show/hide). Shown with a `card` so the "→ Voir le guide" deep-link renders.
+function HelpBubbleDemo() {
+  const [open, setOpen] = useState(true)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'flex-start' }}>
+      {open ? (
+        <HelpBubble
+          title="Capture rapide"
+          body="Tape ou dicte une note — l'IA la range au bon endroit."
+          card="capture"
+          onClose={() => setOpen(false)}
+        />
+      ) : (
+        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setOpen(true)}>
+          Revoir la bulle
+        </button>
+      )}
+    </div>
+  )
+}
+
+// A component that throws on render, to show the ErrorBoundary fallback. Armed by a
+// button so the throw is contained; « Réinitialiser » bumps a key to remount a clean
+// boundary. (Don't click the fallback's own Recharger/Aller au babillard — those act
+// on the whole gallery. In Vite dev the error overlay also pops; dismiss it, the
+// boundary fallback is underneath.)
+function Boom(): ReactNode {
+  throw new Error('Démo : un composant a planté.')
+}
+function BoundaryDemo() {
+  const [armed, setArmed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  if (!armed) {
+    return (
+      <button type="button" className="btn btn--sm btn--danger" onClick={() => setArmed(true)}>
+        Déclencher l'erreur
+      </button>
+    )
+  }
+  return (
+    <div style={{ maxHeight: 360, overflow: 'auto' }}>
+      <ErrorBoundary key={attempt}>
+        <Boom />
+      </ErrorBoundary>
+      <button
+        type="button"
+        className="btn btn--sm btn--ghost"
+        style={{ marginTop: '0.6rem' }}
+        onClick={() => {
+          setArmed(false)
+          setAttempt((a) => a + 1)
+        }}
+      >
+        Réinitialiser
+      </button>
+    </div>
+  )
+}
+
 export function DevKit() {
   const t = useT()
   const { lang, setLang } = useLang()
@@ -351,6 +420,15 @@ export function DevKit() {
   const [listPickOpen, setListPickOpen] = useState(false)
   const voice = useVoiceInput(setText3, { continuous: true, split: true })
   const [dragPills, setDragPills] = useState(['Rapide', 'Végé', 'Souper', 'Dessert'])
+  // CardDeckEditor specimen: a 3-card deck + parallel clip/photo arrays (#17 A/C),
+  // kept length-locked to the deck by the editor itself (alignSide).
+  const [deck, setDeck] = useState<DeckCard[]>([
+    { icon: '🪥', label: 'Brosser les dents', seconds: 120 },
+    { icon: '👕', label: "S'habiller" },
+    { icon: '🛏️', label: 'Au lit' },
+  ])
+  const [deckClips, setDeckClips] = useState<string[]>(['', '', ''])
+  const [deckPhotos, setDeckPhotos] = useState<string[]>(['', '', ''])
   const dragPillDnd = usePointerDnd({
     onDrop: (from, to) =>
       setDragPills((ps) => {
@@ -1797,6 +1875,92 @@ export function DevKit() {
             ]}
             labels={{ title: 'Liste (démo)', name: 'Nom', add: 'Ajouter un emplacement…', empty: 'Vide' }}
           />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'PhotoMosaic',
+      file: 'components/PhotoMosaic.tsx',
+      kw: 'screensaver mosaïque photos dessins veille ambient mur souvenirs',
+      render: () => (
+        <Demo label="Mosaïque de veille — photos de famille + dessins gardés, une tuile se fond ~toutes les 4,5 s. Vide si aucune photo/dessin (ou R2 off).">
+          <div style={{ position: 'relative', height: '60vh' }}>
+            <PhotoMosaic />
+          </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'HeartButton',
+      file: 'components/HeartButton.tsx',
+      kw: 'favoris coeur cœur aimer recette loves visages',
+      render: () => (
+        <Demo label="« Favoris » ❤ d'une recette (#21) — montre QUELS visages l'aiment (jamais un compte). Le bouton n'apparaît qu'avec un visage choisi ; en « Maisonnée » c'est en lecture seule. (Démo : id factice.)">
+          <HeartButton recipeId="devkit-demo-recipe" />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'CardDeckEditor',
+      file: 'components/CardDeckEditor.tsx',
+      kw: 'routine deck cartes images emoji minuterie voix photo glisser',
+      render: () => (
+        <Demo label="Éditeur du jeu de cartes-images d'une routine — emoji + mot par carte, glisser le grip ⠿ / ↑↓ pour réordonner, ⏱ minuterie, 🎙️ clip de voix (#17 A), 📷 photo (#17 C).">
+          <CardDeckEditor
+            cards={deck}
+            onChange={setDeck}
+            narration={deckClips}
+            onNarrationChange={setDeckClips}
+            photo={deckPhotos}
+            onPhotoChange={setDeckPhotos}
+          />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'SharePreviewBar',
+      file: 'components/SharePreviewBar.tsx',
+      kw: 'partage aperçu preview bannière opérateur handoff',
+      render: () => (
+        <Demo label="Bannière d'aperçu d'une scène partagée (vue opérateur) — le seul retour vers Réglages (un vrai invité ne la voit pas). « Fermer l'aperçu » quitte la galerie.">
+          <SharePreviewBar />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'HelpBubble',
+      file: 'components/HelpBubble.tsx',
+      kw: 'aide bulle help mode guide contextuel',
+      render: () => (
+        <Demo label="Petite bulle d'aide en place — titre + une ligne calme + lien « Voir le guide » (le ✕ la ferme ; le bouton la ramène).">
+          <HelpBubbleDemo />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'OfflineBanner',
+      file: 'components/OfflineBanner.tsx',
+      kw: 'hors ligne offline réseau outbox cache',
+      render: () => (
+        <Demo label="Barre « Hors ligne » — visible UNIQUEMENT quand l'appareil est vraiment hors ligne (DevTools ▸ Network ▸ Offline). Porte l'estampille « Données du… » + le nombre d'écritures en attente.">
+          <OfflineBanner />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'ErrorBoundary',
+      file: 'components/ErrorBoundary.tsx',
+      kw: 'erreur boundary filet sécurité plantage fallback récupérable',
+      render: () => (
+        <Demo label="Filet de sécurité de l'app — un throw de rendu devient un écran calme et récupérable. Touche pour déclencher un throw contenu, puis « Réinitialiser » (pas les boutons du fallback, qui rechargent toute la galerie).">
+          <BoundaryDemo />
         </Demo>
       ),
     },

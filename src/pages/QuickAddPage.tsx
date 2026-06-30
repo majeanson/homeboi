@@ -58,7 +58,10 @@ export function QuickAddPage() {
   // deterministic always-on group for the household's never-forget items, distinct
   // from the predicted/past ones below.
   const alwaysItems = shown.filter((i) => i.always)
-  const restItems = shown.filter((i) => !i.always)
+  // Tracked-but-not-due re-buys ride in their own quiet "Souvent racheté" group,
+  // between the staples and the plain history — a gentle offer, never a count.
+  const oftenItems = shown.filter((i) => i.often && !i.always)
+  const restItems = shown.filter((i) => !i.always && !i.often)
   // Offer a free-text add only when what's typed isn't already a known item.
   const canAddTyped = fq.length > 0 && !items.some((i) => fold(i.label) === fq)
 
@@ -195,6 +198,17 @@ export function QuickAddPage() {
             <p className="qa__grouphead mono">{t.list.quickOthers}</p>
           )}
           {restItems.map(renderChip)}
+          {/* "Souvent racheté" — tracked recurring items not due yet. Quietest group
+              (dimmed header), no per-row tag/count; swipe a chip to dismiss (mutes
+              the prediction). Pull-only, lives in this scene the user opened. */}
+          {oftenItems.length > 0 && (
+            <>
+              <p className="qa__grouphead qa__grouphead--often mono">
+                <InlineIcon name="repeat-bold" size={13} /> {t.list.quickOften}
+              </p>
+              {oftenItems.map(renderChip)}
+            </>
+          )}
           {shown.length === 0 && !canAddTyped && <EmptyState>{t.list.quickEmpty}</EmptyState>}
         </div>
       </div>

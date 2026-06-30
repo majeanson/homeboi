@@ -103,8 +103,11 @@
 }
 /* Drag-and-drop drop feedback. The whole-row dashed outline (shared .dnd-over) is
    too vague here — "somewhere on this row" — so for list rows we drop it and show a
-   precise INSERTION LINE in the gap instead, plus a faint wash + slight lift on the
-   target row so the eye lands there. The line tells you exactly where it'll go. */
+   precise INSERTION LINE in the gap instead (the shared .dnd-drop family, defined in
+   kitchen.css and reused by the week grid), plus a faint wash + slight lift on the
+   target row so the eye lands there. The default --dnd-drop-gap (6px) centres the
+   line in the row's ~10px gap, so the cue is pixel-unchanged from when it was the
+   list-row__drop family. */
 .list-row.dnd-over {
   outline: none;
   background: transparent;
@@ -113,36 +116,6 @@
   background: color-mix(in srgb, var(--accent) 8%, var(--card));
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
-}
-.list-row__drop {
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  height: 3px;
-  border-radius: 3px;
-  background: var(--accent);
-  z-index: 3;
-  pointer-events: none;
-}
-/* A small nub at the leading edge so the line reads as an insertion caret, not a
-   border. Sits just left of the bar. */
-.list-row__drop::before {
-  content: '';
-  position: absolute;
-  left: -3px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  transform: translateY(-50%);
-}
-/* Centre the line in the ~10px gap between rows (margin-top: 10px). */
-.list-row__drop--top {
-  top: -6px;
-}
-.list-row__drop--bottom {
-  bottom: -6px;
 }
 @media (prefers-reduced-motion: reduce) {
   .list-row.dnd-over .list-row__main {

@@ -40,7 +40,7 @@ export function CarnetsTab({ help }: { help?: HelpMode }) {
       <p className="cercle-business__hint mono">{c.hint}</p>
 
       {tops.length === 0 ? (
-        <EmptyState>{c.empty}</EmptyState>
+        <EmptyState guide={{ card: 'carnets' }}>{c.empty}</EmptyState>
       ) : (
         tops.map((x) => {
           const photo = x.mediaKey ? imgUrl(x.mediaKey) : null

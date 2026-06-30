@@ -178,3 +178,17 @@
   font-weight: 700;
   font-size: var(--text-md);
 }
+
+/* The board greeting echoes the picked face: the profile-chip disc, sized up a
+   touch to sit beside the greeting title (reuses .profile-chip__av + its img
+   rule above). Decorative — the name is already in the greeting text. */
+.greet-with-face {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.greet__face {
+  width: 40px;
+  height: 40px;
+  flex: none;
+}

@@ -121,7 +121,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.todos.templatesTitle} help={help} helpKey="todoTemplates">
       {templates.length === 0 ? (
-        <EmptyState>{t.todos.noTemplates}</EmptyState>
+        <EmptyState guide={{ card: 'todos' }}>{t.todos.noTemplates}</EmptyState>
       ) : (
         <ul className="operator__list">
           {templates.map((tpl) => {

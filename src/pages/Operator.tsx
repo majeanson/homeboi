@@ -35,6 +35,7 @@ import { BuildInfoSection } from '../components/operator/buildInfo'
 import { MicSelfTest } from '../components/operator/micTest'
 import { GuideSection } from '../components/operator/guide'
 import { SectionGuide } from '../components/operator/sectionGuide'
+import { OperatorJump } from '../components/operator/OperatorJump'
 import { useHelpMode } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
@@ -189,6 +190,53 @@ export function Operator() {
     return labels[k] ?? k
   }, tab)
 
+  // Within-tab jump chips for the fat tabs (3+ stacked sections). Labels reuse each
+  // section's own title key so a chip matches the heading it lands on. ai's last chip
+  // (the AI error log) is conditional on AI being on, mirroring its render below.
+  const jumpNav: Record<string, { id: string; label: string }[]> = {
+    agenda: [
+      { id: 'sec-events', label: t.operator.events },
+      { id: 'sec-cars', label: t.operator.carsTitle },
+      { id: 'sec-schedule', label: t.operator.schedTitle },
+    ],
+    chores: [
+      { id: 'sec-chores', label: t.operator.chores },
+      { id: 'sec-routines', label: t.operator.routines },
+      { id: 'sec-todos', label: t.todos.templatesTitle },
+    ],
+    recipes: [
+      { id: 'sec-tags', label: t.operator.tagsTitle },
+      { id: 'sec-pills', label: t.operator.pillsTitle },
+      { id: 'sec-measure', label: t.operator.measureColorsTitle },
+      { id: 'sec-meals', label: t.operator.mealColors },
+      { id: 'sec-reserve', label: t.operator.reserveTitle },
+    ],
+    shopping: [
+      { id: 'sec-shop', label: t.operator.shopping },
+      { id: 'sec-aisles', label: t.operator.aisleOrder },
+      { id: 'sec-stores', label: t.operator.storeFilter },
+      { id: 'sec-history', label: t.operator.history },
+      { id: 'sec-ghost', label: t.operator.ghost },
+    ],
+    display: [
+      { id: 'sec-display', label: t.operator.display },
+      { id: 'sec-layout', label: t.operator.boardLayout },
+      { id: 'sec-ambient', label: t.operator.ambientTitle },
+      { id: 'sec-photos', label: t.operator.photos },
+      { id: 'sec-voice', label: t.operator.voiceTitle },
+      { id: 'sec-calm', label: t.operator.calmTitle },
+    ],
+    ai: [
+      { id: 'sec-thisweek', label: t.operator.thisWeekTitle },
+      { id: 'sec-recap', label: t.operator.recapTitle },
+      { id: 'sec-ai', label: t.operator.aiTitle },
+      { id: 'sec-build', label: t.operator.buildTitle },
+      { id: 'sec-idle', label: t.operator.debugIdleTitle },
+      { id: 'sec-mic', label: t.operator.micTestTitle },
+      ...(aiEnabled ? [{ id: 'sec-ailog', label: t.operator.aiLogTitle }] : []),
+    ],
+  }
+
   if (loading || !canEnter) return <p className="loading mono">{t.common.loading}</p>
 
   return (
@@ -276,6 +324,9 @@ export function Operator() {
             used to live only under Guide). The Guide tab documents itself. */}
         {tab !== 'guide' && <SectionGuide tab={tab} />}
 
+        {/* Quiet within-tab jump chips for the fat tabs (3+ stacked sections). */}
+        {jumpNav[tab] && <OperatorJump items={jumpNav[tab]} ariaLabel={t.operator.jumpAria} />}
+
         {/* « La maisonnée » — your people: members + the cercle (family/friends)
             groups. Operator-only (the whole tab is dropped for a kiosk). */}
         {tab === 'household' && (
@@ -298,18 +349,30 @@ export function Operator() {
         {/* « Agenda & auto » — the calendar and the family car/work windows. */}
         {tab === 'agenda' && (
           <>
-            <EventsSection events={events} members={members} onChange={load} />
-            <CarsSection help={operatorHelp} />
-            <ScheduleSection help={operatorHelp} />
+            <div id="sec-events" className="operator__anchor">
+              <EventsSection events={events} members={members} onChange={load} />
+            </div>
+            <div id="sec-cars" className="operator__anchor">
+              <CarsSection help={operatorHelp} />
+            </div>
+            <div id="sec-schedule" className="operator__anchor">
+              <ScheduleSection help={operatorHelp} />
+            </div>
           </>
         )}
 
         {/* « Corvées & routines » — the recurring tasks + checklists. */}
         {tab === 'chores' && (
           <>
-            <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} />
-            <RoutinesSection routines={routines} onChange={load} />
-            <TodoTemplatesSection help={operatorHelp} />
+            <div id="sec-chores" className="operator__anchor">
+              <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} />
+            </div>
+            <div id="sec-routines" className="operator__anchor">
+              <RoutinesSection routines={routines} onChange={load} />
+            </div>
+            <div id="sec-todos" className="operator__anchor">
+              <TodoTemplatesSection help={operatorHelp} />
+            </div>
           </>
         )}
 
@@ -317,22 +380,42 @@ export function Operator() {
             from Affichage), meal slots, and la réserve. */}
         {tab === 'recipes' && (
           <>
-            <RecipeTagsSection help={operatorHelp} />
-            <RecipePillsSection help={operatorHelp} />
-            <MeasureColorsSection help={operatorHelp} />
-            <MealSlotsSection help={operatorHelp} />
-            <ReserveLocationsSection help={operatorHelp} />
+            <div id="sec-tags" className="operator__anchor">
+              <RecipeTagsSection help={operatorHelp} />
+            </div>
+            <div id="sec-pills" className="operator__anchor">
+              <RecipePillsSection help={operatorHelp} />
+            </div>
+            <div id="sec-measure" className="operator__anchor">
+              <MeasureColorsSection help={operatorHelp} />
+            </div>
+            <div id="sec-meals" className="operator__anchor">
+              <MealSlotsSection help={operatorHelp} />
+            </div>
+            <div id="sec-reserve" className="operator__anchor">
+              <ReserveLocationsSection help={operatorHelp} />
+            </div>
           </>
         )}
 
         {/* « Magasinage » — the list config, aisles, stores, history + ghost. */}
         {tab === 'shopping' && (
           <>
-            <ShopSection help={operatorHelp} />
-            <AisleOrderSection />
-            <StoreFilterSection help={operatorHelp} />
-            <HistorySection help={operatorHelp} />
-            <GhostSection help={operatorHelp} />
+            <div id="sec-shop" className="operator__anchor">
+              <ShopSection help={operatorHelp} />
+            </div>
+            <div id="sec-aisles" className="operator__anchor">
+              <AisleOrderSection />
+            </div>
+            <div id="sec-stores" className="operator__anchor">
+              <StoreFilterSection help={operatorHelp} />
+            </div>
+            <div id="sec-history" className="operator__anchor">
+              <HistorySection help={operatorHelp} />
+            </div>
+            <div id="sec-ghost" className="operator__anchor">
+              <GhostSection help={operatorHelp} />
+            </div>
           </>
         )}
 
@@ -340,12 +423,24 @@ export function Operator() {
             layout, screensaver, the photo wall (moved here), voice, and calm mode. */}
         {tab === 'display' && (
           <>
-            <DisplaySection help={operatorHelp} />
-            <BoardLayoutSection help={operatorHelp} />
-            <AmbientSettingsSection help={operatorHelp} />
-            <PhotosSection help={operatorHelp} />
-            <VoiceSection help={operatorHelp} />
-            <CalmSection help={operatorHelp} />
+            <div id="sec-display" className="operator__anchor">
+              <DisplaySection help={operatorHelp} />
+            </div>
+            <div id="sec-layout" className="operator__anchor">
+              <BoardLayoutSection help={operatorHelp} />
+            </div>
+            <div id="sec-ambient" className="operator__anchor">
+              <AmbientSettingsSection help={operatorHelp} />
+            </div>
+            <div id="sec-photos" className="operator__anchor">
+              <PhotosSection help={operatorHelp} />
+            </div>
+            <div id="sec-voice" className="operator__anchor">
+              <VoiceSection help={operatorHelp} />
+            </div>
+            <div id="sec-calm" className="operator__anchor">
+              <CalmSection help={operatorHelp} />
+            </div>
           </>
         )}
 
@@ -353,15 +448,31 @@ export function Operator() {
             AI on/off + settings, then the diagnostics. */}
         {tab === 'ai' && (
           <>
-            <ThisWeekTogetherSection help={operatorHelp} />
-            <RecapSection help={operatorHelp} />
-            <AiSection help={operatorHelp} />
-            <BuildInfoSection />
-            <IdleDebugSection help={operatorHelp} />
-            <MicSelfTest help={operatorHelp} />
+            <div id="sec-thisweek" className="operator__anchor">
+              <ThisWeekTogetherSection help={operatorHelp} />
+            </div>
+            <div id="sec-recap" className="operator__anchor">
+              <RecapSection help={operatorHelp} />
+            </div>
+            <div id="sec-ai" className="operator__anchor">
+              <AiSection help={operatorHelp} />
+            </div>
+            <div id="sec-build" className="operator__anchor">
+              <BuildInfoSection />
+            </div>
+            <div id="sec-idle" className="operator__anchor">
+              <IdleDebugSection help={operatorHelp} />
+            </div>
+            <div id="sec-mic" className="operator__anchor">
+              <MicSelfTest help={operatorHelp} />
+            </div>
             {/* The AI error log is an AI feature — hide it when AI is switched off
                 (the mic test + idle debug above aren't AI, so they stay). */}
-            {aiEnabled && <AiErrorLogSection help={operatorHelp} />}
+            {aiEnabled && (
+              <div id="sec-ailog" className="operator__anchor">
+                <AiErrorLogSection help={operatorHelp} />
+              </div>
+            )}
           </>
         )}
 

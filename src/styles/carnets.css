@@ -310,6 +310,20 @@
   object-fit: cover;
   border-radius: 8px;
 }
+/* While an R2 doc thumbnail loads, the cell reads as "loading" via the shared
+   flyer-img-shimmer keyframe (the ZoomableImg sets data-loaded). Calm, gated; a
+   failed load (data-loaded='x') settles to a static tint. The keyframe is global
+   (defined in flyer.css). */
+@media (prefers-reduced-motion: no-preference) {
+  .carnet-docs__thumb:has(img[data-loaded='0']) {
+    background: linear-gradient(100deg, rgba(0, 0, 0, 0.04) 30%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0.04) 70%);
+    background-size: 200% 100%;
+    animation: flyer-img-shimmer 1.3s ease-in-out infinite;
+  }
+}
+.carnet-docs__thumb:has(img[data-loaded='x']) {
+  background: rgba(0, 0, 0, 0.05);
+}
 .carnet-docs__meta {
   flex: 1 1 auto;
   min-width: 0;

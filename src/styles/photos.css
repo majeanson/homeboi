@@ -276,3 +276,18 @@
 .sky-tonight--kid .sky-tonight__phase {
   font-size: 1.3rem;
 }
+
+/* Clear-day focal frame: on a genuinely empty agenda the daily-wonder photo
+   becomes the board's calm centerpiece — same .photo-frame shell, just a touch
+   taller. A single fixed height bump (not max-height) keeps a portrait/landscape
+   shuffle from reflowing the page mid-glance, same rationale as .photo-frame img.
+   Append-only; the photo-fade motion is already gated above. */
+.board-focal-wonder {
+  margin: 0 0 22px;
+}
+.board-focal-wonder .photo-frame {
+  margin: 0;
+}
+.board-focal-wonder .photo-frame img {
+  height: 56vh;
+}

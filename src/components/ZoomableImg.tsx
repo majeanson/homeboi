@@ -24,9 +24,29 @@ export function ZoomableImg({
   onError?: React.ReactEventHandler<HTMLImageElement>
 }) {
   const [open, setOpen] = useState(false)
+  // Loading state, surfaced as a `data-loaded` attribute. Purely additive — no CSS
+  // targets it unless a wrapper opts in (e.g. carnet docs / cercle photos show a calm
+  // flyer-img-shimmer skeleton via `:has(img[data-loaded='0'])` until the R2 blob
+  // loads). A cache-first hit can finish before onLoad attaches, so the ref reveals it.
+  const [loaded, setLoaded] = useState<'0' | '1' | 'x'>('0')
   return (
     <>
-      <img src={src} alt={alt} className={className} onClick={() => setOpen(true)} onError={onError} style={{ cursor: 'zoom-in' }} />
+      <img
+        ref={(el) => {
+          if (el?.complete && el.naturalWidth > 0) setLoaded('1')
+        }}
+        src={src}
+        alt={alt}
+        className={className}
+        data-loaded={loaded}
+        onClick={() => setOpen(true)}
+        onLoad={() => setLoaded('1')}
+        onError={(e) => {
+          setLoaded('x')
+          onError?.(e)
+        }}
+        style={{ cursor: 'zoom-in' }}
+      />
       {open && <ZoomOverlay src={src} alt={alt} onClose={() => setOpen(false)} />}
     </>
   )

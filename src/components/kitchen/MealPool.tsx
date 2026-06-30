@@ -6,6 +6,7 @@ import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { isGuest } from '../../lib/device'
 import { type MealSlot } from '../../lib/mealSlots'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
+import { EmptyState } from '../EmptyState'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon } from '../Icon'
 import { EditField } from '../EditField'
@@ -51,6 +52,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
   helpKey,
   labels,
   noMatchLabel,
+  guide,
 }: {
   items: T[]
   queryKey: QueryKey
@@ -65,6 +67,9 @@ export function MealPool<T extends { id: string; title: string }, O>({
   helpKey: string
   labels: MealPoolLabels
   noMatchLabel?: string
+  // Optional first-run guide deep-link on the empty state (e.g. « À finir » → the
+  // leftovers card). Undefined → a plain empty line (the add field above instructs).
+  guide?: { card: string; point?: number }
 }) {
   const t = useT()
   const write = useWrite()
@@ -145,7 +150,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
       )}
 
       {visible.length === 0 ? (
-        <p className="kitchen__ideas-empty mono">{labels.empty}</p>
+        <EmptyState guide={guide}>{labels.empty}</EmptyState>
       ) : (
         <ul className="kitchen__ideas-list">
           {visible.map((item) => (

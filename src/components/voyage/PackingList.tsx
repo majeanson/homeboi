@@ -4,6 +4,7 @@ import { useWrite } from '../../lib/write'
 import { TRIP_PACKING_KEY } from '../../lib/queryKeys'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { EditField } from '../EditField'
+import { EmptyState } from '../EmptyState'
 import { CheckRow } from '../CheckRow'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import type { PackingItem, Trip } from './voyage'
@@ -80,7 +81,7 @@ export function PackingList({ trip, items, faces }: { trip: Trip; items: Packing
       />
 
       {groups.length === 0 ? (
-        <p className="voyage-packing__empty mono">{t.voyage.bagEmpty}</p>
+        <EmptyState tone="calm">{t.voyage.bagEmpty}</EmptyState>
       ) : (
         groups.map((g) => (
           <section key={g.id ?? 'shared'} className="voyage-packing__group">

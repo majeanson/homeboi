@@ -42,7 +42,7 @@ import { Fil } from '../components/board/Fil'
 import { DayTimeline } from '../components/jouer/DayTimeline'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { BoardCanvas } from '../components/board/BoardCanvas'
-import { WonderFrame, useWonder } from '../components/board/ApodFrame'
+import { WonderBand, WonderFrame, useWonder } from '../components/board/ApodFrame'
 import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
@@ -824,6 +824,29 @@ export function Board() {
   // Both band cards are per-device show/hide-able (« Disposition du babillard »), on top
   // of their own render conditions. When both are hidden the `.board-status:empty` rule
   // collapses the band.
+  // The all-clear hero breathes a little instead of always showing the same sun:
+  // the icon follows today's sky (clear→sun, evening-clear→moon, rain/snow/cloud…
+  // via the shared weatherIcon helper) and the reassurance line drifts by daypart
+  // or notable weather. Tint stays sage-deep so the hero keeps its calm identity —
+  // we vary the *meaning*, not the colour. Reuses weatherIcon (lib/weather); no map.
+  const clearIcon = weather
+    ? weatherIcon({ bucket: weather.bucket, isDay: tod !== 'evening', tempC: weather.tempC })
+    : tod === 'evening'
+      ? 'moon-stars-bold'
+      : 'sun-bold'
+  const clearMoods = t.board.allClearMoods
+  const clearSub =
+    weather?.bucket === 'storm'
+      ? clearMoods.storm
+      : weather?.bucket === 'snow'
+        ? clearMoods.snow
+        : weather?.bucket === 'rain' || weather?.bucket === 'drizzle'
+          ? clearMoods.rain
+          : weather?.bucket === 'fog'
+            ? clearMoods.fog
+            : weather?.bucket === 'cloud'
+              ? clearMoods.cloud
+              : clearMoods[tod] // 'clear' or no weather → drift by daypart
   const statusBand = (
     <div className="board-status">
       {/* A calm "all-clear" hero on a genuinely empty day — so a light day reads as
@@ -834,9 +857,9 @@ export function Board() {
           <span className="blob" aria-hidden="true" />
           <div className="label">{t.board.today}</div>
           <div className="what">{t.board.allClearTitle}</div>
-          <div className="who">{t.board.allClearSub}</div>
+          <div className="who">{clearSub}</div>
           <span className="icn" aria-hidden="true">
-            <Icon name="sun-bold" size={38} color="var(--sage-deep)" />
+            <Icon name={clearIcon} size={38} color="var(--sage-deep)" />
           </span>
         </div>
       )}
@@ -856,7 +879,31 @@ export function Board() {
           tutorial mode, the Guide link); the view toggle + profile chip drop to
           their own row below so the avatar never reads as part of the filter. */}
       <HubHead
-        title={me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]}
+        title={
+          me ? (
+            // Echo the picked face's photo/colour beside the greeting — the same
+            // disc the profile chip shows below, so "this is your board" reads warm
+            // at a glance. Decorative (the name is already in the text). Maisonnée
+            // (no face) keeps the plain greeting — no disc.
+            <span className="greet-with-face">
+              {(() => {
+                const photo = me.avatar_kind === 'photo' && me.avatar_ref ? imgUrl(me.avatar_ref) : null
+                return (
+                  <span
+                    className="profile-chip__av greet__face"
+                    style={{ background: photo ? undefined : me.colour }}
+                    aria-hidden="true"
+                  >
+                    {photo ? <img src={photo} alt="" /> : (me.display_name?.[0] ?? '?').toUpperCase()}
+                  </span>
+                )
+              })()}
+              {`${t.today[tod]}, ${greetName(me.display_name)}`}
+            </span>
+          ) : (
+            t.today[tod]
+          )
+        }
         icon={TOD_ICON[tod]}
         iconColor="var(--marigold-deep)"
         background="var(--marigold-wash)"
@@ -964,7 +1011,7 @@ export function Board() {
               cookLine={cookLine}
               weather={weather}
               hours={wxHours}
-              wonder={wonder}
+              wonder={dayClear && audience === 'parent' ? null : wonder}
               onShuffleWonder={shuffleWonder}
               supperNow={focus === 'supper'}
             />
@@ -972,6 +1019,18 @@ export function Board() {
 
           {/* Heads-up cards (À régler + Moments) directly under the heroes. */}
           {statusBand}
+
+          {/* On a genuinely clear day the daily-wonder photo RELOCATES from the
+              weather backdrop to this calm focal element — same band, a bigger
+              frame, its source kicker intact (DayHeroes above is passed wonder=null
+              in this exact case so the photo shows in ONE place, not two). Auto-hides
+              when the feed/R2 is down or the device opted out (wonder === null).
+              NFR-CALM: ambient, no data, no counts. Toddler keeps its own WonderFrame. */}
+          {dayClear && audience === 'parent' && wonder && (
+            <div className="board-focal-wonder">
+              <WonderBand wonder={wonder} onShuffle={shuffleWonder} />
+            </div>
+          )}
 
           <div className="board-grid">
             {/* Data-driven card registry: each Grille card is keyed, then rendered in

@@ -12,6 +12,7 @@ import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
+import { EditField } from '../EditField'
 import { Disclosure } from '../Disclosure'
 import { InlineIcon } from '../Icon'
 import { useCars } from '../../lib/carPrefs'
@@ -170,8 +171,8 @@ export function EventForm({
   const [err, setErr] = useState(false)
   const write = useWrite()
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
+  async function submit(e?: React.FormEvent) {
+    e?.preventDefault()
     if (!title.trim() || !date || busy) return
     const startAt = Math.floor(new Date(`${date}T${time || '00:00'}`).getTime() / 1000)
     if (!Number.isFinite(startAt)) return
@@ -211,11 +212,14 @@ export function EventForm({
 
   return (
     <form className="operator__inline-form" onSubmit={submit}>
-      <input
-        className="input"
+      <EditField
+        as="div"
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={setTitle}
+        onSubmit={() => submit()}
+        submitIcon={null}
         placeholder={t.operator.eventWhat}
+        ariaLabel={t.operator.eventWhat}
       />
       <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       <input

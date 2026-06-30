@@ -109,7 +109,7 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
         </div>
       )}
       {rows.length === 0 && !adding ? (
-        <EmptyState>{emptyLabel}</EmptyState>
+        <EmptyState guide={{ card: 'home-projects' }}>{emptyLabel}</EmptyState>
       ) : (
         <ul className="operator__list">
           {rows.map((p) => (

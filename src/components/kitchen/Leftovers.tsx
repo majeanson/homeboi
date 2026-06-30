@@ -79,6 +79,7 @@ export function Leftovers({
       week={week}
       help={help}
       helpKey="leftovers"
+      guide={{ card: 'leftovers' }}
       labels={{
         heading: t.kitchen.leftovers,
         addAria: t.kitchen.leftoversAdd,

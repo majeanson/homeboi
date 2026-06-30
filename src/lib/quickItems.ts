@@ -20,6 +20,10 @@ export interface QuickItem {
   searchTerms: string[]
   status?: 'due' | 'soon'
   always?: boolean // #27: a standing staple — shown first in a "Toujours" group
+  // A tracked item that isn't near renewal yet (a 'later' ghost) — surfaced as a
+  // quiet, opt-in "Souvent racheté" group. CALM: no count/cadence is ever shown,
+  // only the label; buying still never enrolls anything (the strip only OFFERS).
+  often?: boolean
   // Source keys, carried so the Quick-add page can swipe-remove a suggestion the
   // same way Réglages does (history prune / ghost mute / unpin). A candidate folds
   // several sources under one label, so it can carry more than one.
@@ -71,12 +75,19 @@ export function useQuickItems(): QuickItem[] {
   for (const g of ghosts) {
     const f = fold(g.label)
     if (!f || openTexts.has(f)) continue
+    // 'later' keeps no due/soon tag (it's not near renewal) — instead it flags the
+    // quiet "Souvent racheté" group. A tracked recurring item belongs there, not in
+    // the plain "Déjà acheté" history rest.
+    const later = g.status === 'later'
+    // Direct comparison (not `later ? …`) so TS narrows the else branch to 'due'|'soon'.
     const status = g.status === 'later' ? undefined : g.status
     const ex = quickByLabel.get(f)
     if (ex) {
       ex.status = status
       ex.ghostKey = g.key
-    } else quickByLabel.set(f, { key: f, label: g.label, count: g.count, searchTerms: [], status, ghostKey: g.key })
+      if (later) ex.often = true
+    } else
+      quickByLabel.set(f, { key: f, label: g.label, count: g.count, searchTerms: [], status, ghostKey: g.key, often: later })
   }
   // #27: standing staples take precedence — mark the "Toujours" group. If a staple
   // also shows up via history/ghost, fold them into one (keep the learned synonyms),

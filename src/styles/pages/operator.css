@@ -453,3 +453,38 @@
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.15);
 }
 
+
+/* ── Within-tab jump-nav (OperatorJump) ───────────────────────────────────────
+   A quiet chip row at the top of the fat tabs (display/ai/recipes/shopping/agenda/
+   chores) that scrolls to an anchored section. Reuses the app-wide .chip. On a
+   phone it sticks under the chrome so a 7-section tab stays navigable while you
+   scroll; on a wide kiosk it's a static row above the panel. No counts (calm). */
+.operator__jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--paper);
+  padding: 0.5rem 0;
+}
+.operator__jump-chip {
+  cursor: pointer;
+}
+/* Each jump target clears the sticky chip row when scrolled to. The fat tabs carry
+   6–7 chips that wrap to 2–3 rows on a phone, so the clearance must cover the
+   worst-case wrapped height (≈3 rows) or the jumped-to heading hides behind the
+   sticky nav. A little breathing room above the heading on shorter navs is fine. */
+.operator__anchor {
+  scroll-margin-top: 9.5rem;
+}
+@media (min-width: 60rem) {
+  /* On the wide sidebar layout the panel scrolls within the row; un-stick the chips
+     so they ride above the panel as a plain row. */
+  .operator__jump {
+    position: static;
+    padding: 0;
+  }
+}
