@@ -58,12 +58,13 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
 
   // Instantiate a template → a batch of real, independent todos (the departure
-  // checklist made concrete). A COMPOSED template (one that includes other lists)
-  // flattens to a SECTIONED list: each included sub-list's items land under that
-  // sub-list's title as their `section`; loose items have no section. The same
-  // label from two sub-lists is kept in both (attributed to each source). Items
-  // keep their order via `position` (they share one created_at, so position breaks
-  // the tie). Cycle-safe + capped. Mirrors expandSectioned in src/lib/todos.ts.
+  // checklist made concrete). We always want the TOP parent and all its todos: a
+  // COMPOSED template (one that includes other lists, at any depth) flattens to a
+  // SINGLE section titled after the top list — every label, loose or pulled from a
+  // nested sub-list, lands under that one `section` (deduped across the whole result).
+  // A plain list (no refs) has no section. Items keep their order via `position`
+  // (they share one created_at, so position breaks the tie). Cycle-safe + capped.
+  // Mirrors expandSectioned in src/lib/todos.ts.
   if (body?.templateId) {
     const rows = await ctx.env.DB.prepare('SELECT id, title, items_json FROM todo_templates WHERE household_id = ?')
       .bind(actor.householdId)
@@ -190,37 +191,15 @@ function flattenList(tpls: Tpls, id: string, max: number): string[] {
   return out.slice(0, max)
 }
 
-// The instantiated, SECTIONED result: loose items → section null (deduped among
-// loose); a ref → the referenced list's flattened labels under that list's title.
-// The same label from two different sub-lists is kept in BOTH sections.
+// The instantiated, SECTIONED result. We always want the TOP parent and all its
+// todos: a COMPOSED list (one containing any sub-list ref, at any depth) flattens to
+// a SINGLE section titled after the top list — every label, loose or from a nested
+// sub-list, under that one `section` (deduped across the whole result). A plain list
+// (no refs) is headless (section null). Intermediate sub-list titles are not shown.
 function expandSectioned(tpls: Tpls, id: string, max = MAX_EXPAND): { label: string; section: string | null }[] {
   const root = tpls.get(id)
   if (!root) return []
-  const out: { label: string; section: string | null }[] = []
-  const looseSeen = new Set<string>()
-  const pushLoose = (raw: string) => {
-    const s = raw.trim()
-    if (!s) return
-    const k = normLabel(s)
-    if (looseSeen.has(k)) return
-    looseSeen.add(k)
-    out.push({ label: s, section: null })
-  }
-  for (const it of root.items) {
-    if (out.length >= max) break
-    if (typeof it === 'string') {
-      pushLoose(it)
-    } else if (it && typeof it.ref === 'string' && it.ref.trim()) {
-      const refId = it.ref.trim()
-      const ref = tpls.get(refId)
-      if (!ref) continue
-      for (const label of flattenList(tpls, refId, max - out.length)) {
-        if (out.length >= max) break
-        out.push({ label, section: ref.title })
-      }
-    } else if (it && typeof it.label === 'string') {
-      pushLoose(it.label)
-    }
-  }
-  return out
+  const composed = root.items.some((it) => typeof it === 'object' && typeof it.ref === 'string' && it.ref.trim() !== '')
+  const section = composed ? root.title : null
+  return flattenList(tpls, id, max).map((label) => ({ label, section }))
 }

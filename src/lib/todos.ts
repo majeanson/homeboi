@@ -116,11 +116,12 @@ export function expandTemplate(templates: TodoTemplate[], id: string, max = MAX_
   return out.slice(0, max)
 }
 
-// The instantiated, SECTIONED result of a (possibly composed) list. Each direct
-// item of the list: a loose label → section null (deduped among loose); a ref →
-// the referenced list's fully-flattened labels, ALL under that list's title as the
-// section. The same label coming from two different sub-lists is kept in BOTH
-// sections (each top-level ref flattens independently). A dangling ref is skipped.
+// The instantiated, SECTIONED result of a (possibly composed) list. We always want
+// the TOP parent and all its todos: a COMPOSED list (one containing any sub-list ref,
+// at any depth) flattens to a SINGLE section titled after the top list — every label,
+// loose or pulled from a nested sub-list, lands under that one header (deduped across
+// the whole result). A PLAIN list (no refs) stays headless (section null). Intermediate
+// sub-list titles are not shown — only the top parent groups the board's expand/collapse.
 export function expandSectioned(
   templates: TodoTemplate[],
   id: string,
@@ -129,25 +130,9 @@ export function expandSectioned(
   const byId = new Map(templates.map((t) => [t.id, t]))
   const root = byId.get(id)
   if (!root) return []
-  const out: { label: string; section: string | null }[] = []
-  const looseSeen = new Set<string>()
-  for (const it of root.items) {
-    if (out.length >= max) break
-    if (it.kind === 'item') {
-      const k = norm(it.label)
-      if (!k || looseSeen.has(k)) continue
-      looseSeen.add(k)
-      out.push({ label: it.label, section: null })
-    } else {
-      const ref = byId.get(it.refId)
-      if (!ref) continue
-      for (const label of expandTemplate(templates, it.refId, max - out.length)) {
-        if (out.length >= max) break
-        out.push({ label, section: ref.title })
-      }
-    }
-  }
-  return out
+  const composed = root.items.some((it) => it.kind === 'ref')
+  const section = composed ? root.title : null
+  return expandTemplate(templates, id, max).map((label) => ({ label, section }))
 }
 
 // Would including `candidateId` inside `hostId` create a cycle? True if the

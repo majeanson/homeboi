@@ -112,23 +112,18 @@ describe('expandSectioned (the instantiated, sectioned result)', () => {
   const B = tpl('B', 'Chez grand-papa', [item('Patate'), item('Pyjama')])
   const E = tpl('E', 'E', [item('Lait'), ref('A'), ref('B')])
 
-  it('loose items go headless; each ref becomes a titled section', () => {
+  it('a composed list flattens loose + every sub-list under ONE top-parent section', () => {
     expect(expandSectioned([A, B, E], 'E')).toEqual([
-      { label: 'Lait', section: null },
-      { label: 'Patate', section: 'Avant de partir' },
-      { label: 'Passeports', section: 'Avant de partir' },
-      { label: 'Patate', section: 'Chez grand-papa' },
-      { label: 'Pyjama', section: 'Chez grand-papa' },
+      { label: 'Lait', section: 'E' },
+      { label: 'Patate', section: 'E' },
+      { label: 'Passeports', section: 'E' },
+      { label: 'Pyjama', section: 'E' },
     ])
   })
 
-  it('keeps the same label from two lists, attributed to each source section', () => {
+  it('dedups the same label across sub-lists within the one top-parent group', () => {
     const out = expandSectioned([A, B, E], 'E')
-    const patates = out.filter((r) => r.label === 'Patate')
-    expect(patates).toEqual([
-      { label: 'Patate', section: 'Avant de partir' },
-      { label: 'Patate', section: 'Chez grand-papa' },
-    ])
+    expect(out.filter((r) => r.label === 'Patate')).toEqual([{ label: 'Patate', section: 'E' }])
   })
 
   it('a plain (un-composed) list instantiates flat + headless', () => {
@@ -138,13 +133,13 @@ describe('expandSectioned (the instantiated, sectioned result)', () => {
     ])
   })
 
-  it('flattens a nested ref under its top-level section (D pulls in A)', () => {
+  it('a deeply nested list still groups under the TOP parent, not an intermediate sub-list', () => {
     const a = tpl('A', 'A', [item('a1')])
     const d = tpl('D', 'Sortie', [ref('A'), item('d1')])
-    const e = tpl('E', 'E', [ref('D')])
+    const e = tpl('E', 'Valise', [ref('D')])
     expect(expandSectioned([a, d, e], 'E')).toEqual([
-      { label: 'a1', section: 'Sortie' },
-      { label: 'd1', section: 'Sortie' },
+      { label: 'a1', section: 'Valise' },
+      { label: 'd1', section: 'Valise' },
     ])
   })
 })
