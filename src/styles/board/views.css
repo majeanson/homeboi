@@ -227,14 +227,20 @@
   flex: 1 1 16rem;
   margin: 0;
 }
-/* « Mots » rides the status band as a .bento LIST card (not a hero .now-card). Give it the
-   same flex width basis as its now-card peers so the row shares width evenly — but top-align
-   it (align-self) so a short card (e.g. just a collapsed « Ce que j'ai laissé » outbox) sizes
-   to its own content instead of stretching to the tallest sibling and reading as an empty
-   square. */
+/* « Mots » rides the status band as a .bento LIST card (not a hero .now-card). The card
+   CHROME (fill, radius, padding, shadow) normally comes from `.board-grid > .bento` — but here
+   the card lives in `.board-status`, so without this it rendered as a bare `bento--tinted`
+   OUTLINE (a hollow tinted rectangle) instead of a filled card. Mirror the grid tile's chrome
+   so it reads as a solid card like its peers; keep the flex width basis + top-align so a short
+   card sizes to its content instead of stretching to the tallest sibling. */
 .board-status > .bento {
   flex: 1 1 16rem;
   align-self: flex-start;
+  margin: 0;
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem 1.1rem;
+  box-shadow: var(--shadow-sm);
 }
 
 /* Quick actions under « Prochainement » — cook the next planned meal · « Avant de
