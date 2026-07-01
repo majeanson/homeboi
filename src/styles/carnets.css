@@ -346,20 +346,29 @@
   height: 28px;
 }
 
-/* The PDF read sheet — a roomy dialog with the document rendered inline. */
+/* The PDF read sheet — a roomy dialog with the document rendered inline. A bounded
+   flex COLUMN so the iframe flexes to fill and the « Ouvrir en plein écran » button
+   stays a pinned, always-visible footer (before, a fixed-height iframe pushed it
+   below the fold on a phone — you had to scroll the dialog to reach it). */
 .carnet-docsheet {
   width: min(880px, 96vw);
   max-width: 96vw;
+  height: min(86dvh, 820px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* the iframe owns the scroll now, not the dialog */
 }
 .carnet-docsheet__frame {
   width: 100%;
-  height: min(72vh, 900px);
+  flex: 1 1 auto; /* fill the space between the title and the pinned button */
+  min-height: 0; /* let it shrink on a short screen so the button never gets pushed off */
   border: 1px solid var(--line, #0001);
   border-radius: 10px;
   background: #fff;
 }
 .carnet-docsheet__open {
   margin-top: 0.6rem;
+  flex: 0 0 auto; /* always visible — never shrinks or scrolls away */
 }
 
 /* — Board glance card — */
