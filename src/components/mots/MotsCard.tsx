@@ -163,14 +163,19 @@ export function MotsCard() {
     <Section label={fn.cardTitle} icon="envelope-bold" tint={CATS.cercle.color}>
       {waiting.map((m) => row(m))}
       {seen.length > 0 && (
-        <Disclosure label={fn.seenGroup}>
+        // Open by default when there are no waiting rows above it — otherwise the card is just
+        // a header + a collapsed caret (an empty-looking box). With waiting rows present it
+        // stays collapsed (secondary, calm).
+        <Disclosure label={fn.seenGroup} defaultOpen={waiting.length === 0}>
           {seen.map((m) => row(m, true))}
         </Disclosure>
       )}
       {/* « Ce que j'ai laissé » — the sender's own outbox: did they see it yet, and pull back or
-          move a « Plus tard » before it lands. Presence + per-item status, never a tally. */}
+          move a « Plus tard » before it lands. Presence + per-item status, never a tally.
+          Opens by default when it's the ONLY content, so the card shows its rows instead of
+          reading as an empty box; it collapses when waiting/seen mots lead the card. */}
       {sent.length > 0 && (
-        <Disclosure label={fn.sentGroup}>
+        <Disclosure label={fn.sentGroup} defaultOpen={waiting.length === 0 && seen.length === 0}>
           {sent.map(sentRow)}
         </Disclosure>
       )}
