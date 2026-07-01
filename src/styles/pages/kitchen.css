@@ -615,7 +615,9 @@
   align-items: center;
   justify-content: center;
   min-width: 2rem;
-  min-height: 2rem;
+  /* 44px tall touch target (the calm icon stays small); width stays compact so the
+     up-to-6-button cluster doesn't overflow a 320px row. */
+  min-height: 2.75rem;
   border: 0;
   background: transparent;
   color: var(--ink-soft);

@@ -3,7 +3,7 @@ import { useT } from '../../i18n'
 import { Avatar } from '../Avatar'
 import { EmptyState } from '../EmptyState'
 import { PanZoom } from '../PanZoom'
-import { type Person, type ContactLink, type FamilyGrouping, linkEndpoints, discColour } from '../../lib/cercle'
+import { type Person, type ContactLink, type FamilyGrouping, linkEndpoints, discColour, UnionFind } from '../../lib/cercle'
 
 // « Le cercle » — the WHOLE social web at once (used for the Social section, where the
 // single-focus ego view would only show one person's circle and the generational
@@ -61,20 +61,12 @@ export function CercleWeb({
     }
 
     // Connected components over those ties — each is one "circle of friends".
-    const parent = new Map<string, string>()
-    people.forEach((p) => parent.set(p.key, p.key))
-    const find = (x: string): string => {
-      const p = parent.get(x)
-      if (p === undefined || p === x) return x
-      const r = find(p)
-      parent.set(x, r)
-      return r
-    }
-    const union = (a: string, b: string) => parent.set(find(a), find(b))
-    for (const e of edges) union(e.a, e.b)
+    const uf = new UnionFind()
+    people.forEach((p) => uf.add(p.key))
+    for (const e of edges) uf.union(e.a, e.b)
     const comps = new Map<string, Person[]>()
     for (const p of people) {
-      const root = find(p.key)
+      const root = uf.find(p.key)
       if (!comps.has(root)) comps.set(root, [])
       comps.get(root)!.push(p)
     }

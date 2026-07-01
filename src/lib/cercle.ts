@@ -568,6 +568,61 @@ export interface FamilyGroup {
   colorIndex: number // assigned in detection order; reserved for a future graph tint
 }
 
+// THE shared Union-Find (disjoint-set) over string keys — the connected-components
+// primitive that detectFamilyGroups, closedLinks, CercleWeb and CercleTree all used to
+// hand-roll. Path-compressed find + union-by-rank; `union` lazily adds unknown keys so
+// the sibling-closure case can union without pre-seeding, and `has`/`add` let the graph
+// cases seed exactly the people that exist. Pure, no React.
+export class UnionFind {
+  private parent = new Map<string, string>()
+  private rank = new Map<string, number>()
+  add(x: string): void {
+    if (!this.parent.has(x)) {
+      this.parent.set(x, x)
+      this.rank.set(x, 0)
+    }
+  }
+  has(x: string): boolean {
+    return this.parent.has(x)
+  }
+  find(x: string): string {
+    const p = this.parent.get(x)
+    if (p === undefined) {
+      this.add(x)
+      return x
+    }
+    if (p === x) return x
+    const r = this.find(p)
+    this.parent.set(x, r)
+    return r
+  }
+  union(a: string, b: string): void {
+    this.add(a)
+    this.add(b)
+    const ra = this.find(a)
+    const rb = this.find(b)
+    if (ra === rb) return
+    const rka = this.rank.get(ra) ?? 0
+    const rkb = this.rank.get(rb) ?? 0
+    if (rka < rkb) this.parent.set(ra, rb)
+    else if (rka > rkb) this.parent.set(rb, ra)
+    else {
+      this.parent.set(rb, ra)
+      this.rank.set(ra, rka + 1)
+    }
+  }
+  // Group every known key by its root component.
+  components(): Map<string, string[]> {
+    const comp = new Map<string, string[]>()
+    for (const key of this.parent.keys()) {
+      const r = this.find(key)
+      if (!comp.has(r)) comp.set(r, [])
+      comp.get(r)!.push(key)
+    }
+    return comp
+  }
+}
+
 // Detect family groups with Union-Find over the FAMILY edges. People (contacts AND
 // members) connected by a family relationship land in the same group; pure,
 // deterministic, no React. Operates on composite `Person.key` so a contact id and a
@@ -577,45 +632,18 @@ export function detectFamilyGroups(
   links: ContactLink[],
   familyWord: (lastOrFirst: string) => string,
 ): FamilyGroup[] {
-  const parent = new Map<string, string>()
-  const rank = new Map<string, number>()
-  people.forEach((p) => {
-    parent.set(p.key, p.key)
-    rank.set(p.key, 0)
-  })
-
-  function find(x: string): string {
-    const p = parent.get(x)
-    if (p !== undefined && p !== x) {
-      const root = find(p)
-      parent.set(x, root)
-      return root
-    }
-    return x
-  }
-  function union(x: string, y: string) {
-    const rx = find(x)
-    const ry = find(y)
-    if (rx === ry) return
-    const rkx = rank.get(rx) ?? 0
-    const rky = rank.get(ry) ?? 0
-    if (rkx < rky) parent.set(rx, ry)
-    else if (rkx > rky) parent.set(ry, rx)
-    else {
-      parent.set(ry, rx)
-      rank.set(rx, rkx + 1)
-    }
-  }
+  const uf = new UnionFind()
+  people.forEach((p) => uf.add(p.key))
 
   links.forEach((l) => {
     if (!FAMILY_REL_TYPES.has(l.type)) return
     const { aKey, bKey } = linkEndpoints(l)
-    if (parent.has(aKey) && parent.has(bKey)) union(aKey, bKey)
+    if (uf.has(aKey) && uf.has(bKey)) uf.union(aKey, bKey)
   })
 
   const byRoot = new Map<string, Set<string>>()
   people.forEach((p) => {
-    const root = find(p.key)
+    const root = uf.find(p.key)
     if (!byRoot.has(root)) byRoot.set(root, new Set())
     byRoot.get(root)!.add(p.key)
   })
@@ -1393,26 +1421,9 @@ export function closedLinks(people: Person[], links: ContactLink[]): ContactLink
 
   // Sibling closure first: union-find over sibling edges → everyone in a component
   // is a sibling of everyone else (symmetric + transitive).
-  const parent = new Map<string, string>()
-  const find = (x: string): string => {
-    const p = parent.get(x)
-    if (p === undefined || p === x) return x
-    const r = find(p)
-    parent.set(x, r)
-    return r
-  }
-  const union = (x: string, y: string) => {
-    if (!parent.has(x)) parent.set(x, x)
-    if (!parent.has(y)) parent.set(y, y)
-    parent.set(find(x), find(y))
-  }
-  for (const e of list) if (e.t === 'sibling') union(e.a, e.b)
-  const comp = new Map<string, string[]>()
-  for (const key of parent.keys()) {
-    const r = find(key)
-    if (!comp.has(r)) comp.set(r, [])
-    comp.get(r)!.push(key)
-  }
+  const sib = new UnionFind()
+  for (const e of list) if (e.t === 'sibling') sib.union(e.a, e.b)
+  const comp = sib.components()
   for (const members of comp.values())
     for (let i = 0; i < members.length; i++)
       for (let j = i + 1; j < members.length; j++) add(members[i], members[j], 'sibling', null)

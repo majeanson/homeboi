@@ -200,6 +200,7 @@ function BlockForm({
             key={m.id}
             type="button"
             className={`btn btn--ghost${memberId === m.id ? ' is-active' : ''}`}
+            aria-pressed={memberId === m.id}
             onClick={() => setMemberId(m.id)}
           >
             {m.display_name}
@@ -232,6 +233,7 @@ function BlockForm({
             key={n}
             type="button"
             className={`btn btn--ghost${interval === n ? ' is-active' : ''}`}
+            aria-pressed={interval === n}
             onClick={() => setInterval(n)}
           >
             {n === 1 ? t.operator.schedEveryWeek : t.operator.schedEveryNWeeks(n)}

@@ -8,10 +8,22 @@ describe('guestKindAllows', () => {
   const sensitive = ['board', 'cercle', 'list', 'household', 'members', 'meals', 'recipes', 'notes']
   const curatedOk = ['guest/window', 'guest/whoami', 'img/abc123', 'img']
 
-  it('showcase reads everything', () => {
-    for (const p of [...sensitive, ...curatedOk, 'anything']) {
+  it('showcase reads the hub (incl. carnets/trips) but is denied the two sensitive carnet endpoints', () => {
+    for (const p of [...sensitive, ...curatedOk, 'anything', 'carnets', 'trips']) {
       expect(guestKindAllows('showcase', p)).toBe(true)
     }
+    // The house map (spare-key/alarm locations) + service-invoice amounts stay OUT of the Démo view.
+    expect(guestKindAllows('showcase', 'home-pins')).toBe(false)
+    expect(guestKindAllows('showcase', 'care-log')).toBe(false)
+  })
+
+  it('showcase is read-only: denied every guest write/mint path (default-deny for writes)', () => {
+    for (const p of ['guest/start', 'guest/intake-submit', 'guest/intake-media', 'guest/postbox-submit', 'guest/postbox-media']) {
+      expect(guestKindAllows('showcase', p)).toBe(false)
+    }
+    // …but still reaches its own read-side guest endpoints.
+    expect(guestKindAllows('showcase', 'guest/whoami')).toBe(true)
+    expect(guestKindAllows('showcase', 'guest/window')).toBe(true)
   })
 
   for (const kind of ['sitter', 'welcome', 'family'] as const) {

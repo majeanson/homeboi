@@ -7,7 +7,7 @@ import { type Weather, type DayOutlook, weatherIcon, weatherTint, weatherTip } f
 import { useBoardData } from '../lib/queryHooks'
 import { nameOf } from '../components/board/types'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
-import { formatDayLong } from '../lib/format'
+import { formatDayLong, capitalize } from '../lib/format'
 import { MONTH_KEY, WEATHER_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
 import { TodoSection } from '../components/todos/TodoSection'
@@ -25,7 +25,6 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 // calendar uses), and — for today — the WEATHER dressing tip and the « L'auto »
 // glance. Navigate-only: nothing is written on entry; tick a checklist item and it
 // syncs everywhere. Reuses board data + shared components — no new endpoint.
-const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
 interface DepMonth {
   events: { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; birthday?: boolean; bring_template_id?: string | null; day: number }[]

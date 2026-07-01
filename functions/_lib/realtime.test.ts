@@ -48,7 +48,25 @@ describe('keysForPath', () => {
   it('maps recipe endpoints to the recipe keys', () => {
     expect(keysForPath('recipes')).toEqual([['recipes'], ['a-regler']])
     expect(keysForPath('recipe-tags')).toEqual([['recipes'], ['recipe-tags']])
-    expect(keysForPath('recipe-to-list')).toEqual([['board'], ['list']])
+    // The shared list lives under ['board']; there is no separate ['list'] cache.
+    expect(keysForPath('recipe-to-list')).toEqual([['board']])
+    expect(keysForPath('recipe-loves')).toEqual([['recipe-loves']])
+  })
+
+  // Regression guard: these endpoints each own a dedicated client query key, so a
+  // realtime push must nudge THAT key — not silently fall to the [['board']] default
+  // (which would downgrade cross-device refresh to poll latency for their own tab).
+  it('maps keyed cercle/auto/gallery endpoints to their own key, not the board default', () => {
+    expect(keysForPath('pets')).toEqual([['cercle']])
+    expect(keysForPath('businesses')).toEqual([['businesses']])
+    expect(keysForPath('family-notes')).toEqual([['family-notes']])
+    expect(keysForPath('schedule')).toEqual([['schedule'], ['board']])
+    expect(keysForPath('car-day')).toEqual([['car'], ['board']])
+    expect(keysForPath('drawings')).toEqual([['drawings']])
+    // None of them should be the bare board default.
+    for (const p of ['pets', 'businesses', 'family-notes', 'schedule', 'car-day', 'drawings', 'recipe-loves']) {
+      expect(keysForPath(p)).not.toEqual([['board']])
+    }
   })
 
   it('maps capture to every target it can route a note to', () => {

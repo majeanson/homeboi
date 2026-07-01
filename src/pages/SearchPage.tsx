@@ -1,18 +1,19 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useIsFetching } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { fold } from '../lib/normalize'
 import { CATS } from '../lib/cats'
 import { colourFor } from '../lib/things'
-import { CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY } from '../lib/queryKeys'
+import { CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY, CARNETS_KEY, HOME_PROJECTS_KEY } from '../lib/queryKeys'
+import { type Carnet } from '../lib/carnets'
 import { type Contact, type Pet } from '../lib/cercle'
 import { type FamilyNote } from '../lib/familyNotes'
 import { firstLine, plainText } from '../lib/noteMarkdown'
 import { type Business, BUSINESS_COLOUR } from '../lib/businesses'
-import { type Routine } from '../components/operator/types'
+import { type Routine, type HomeProject } from '../components/operator/types'
 import { type TodosData } from '../lib/todos'
 import { type ReserveData, RESERVE_KEY } from '../components/kitchen/types'
 import { useCars } from '../lib/carPrefs'
@@ -155,6 +156,11 @@ export function SearchPage() {
   const reserve = useQuery({ queryKey: RESERVE_KEY, queryFn: () => api<ReserveData>('reserve') }).data?.reserve ?? []
   // « L'auto » — the household car(s); a name match jumps to the /voiture week view.
   const cars = useCars().cars
+  // « Les carnets » (cared-for things: house/car/appliances) — name/notes match jumps
+  // to the carnet scene. Home projects (Projets & Entretien) — a title/notes match jumps
+  // to its carnet (if linked) or Réglages ▸ Corvées. Both were missing from search.
+  const carnets = useQuery({ queryKey: CARNETS_KEY, queryFn: () => api<{ carnets: Carnet[] }>('carnets') }).data?.carnets ?? []
+  const homeProjects = useQuery({ queryKey: HOME_PROJECTS_KEY, queryFn: () => api<{ projects: HomeProject[] }>('home-projects') }).data?.projects ?? []
   // The board's fridge memos (#38/#14/#13) — distinct from the cercle family notes
   // above. Already in the board payload; only text notes surface (media-only carry none).
   const boardNotes = board?.notes ?? []
@@ -203,6 +209,9 @@ export function SearchPage() {
     const carHits = cars.filter((c) => fold(c.name).includes(needle)).slice(0, CAP)
     // The board's fridge memos — text notes only (media-only notes carry no text).
     const fridgeNotes = boardNotes.filter((n) => n.text && fold(n.text).includes(needle)).slice(0, CAP)
+    // « Les carnets » + home projects — name/title + notes.
+    const carnetHits = carnets.filter((x) => fold(`${x.name} ${x.notes ?? ''}`).includes(needle)).slice(0, CAP)
+    const projectHits = homeProjects.filter((p) => fold(`${p.title} ${p.notes ?? ''}`).includes(needle)).slice(0, CAP)
     // The Guide / in-app help. Match a card on its title + one-liner + every
     // sub-point (label, detail, why) in the active language, tokens stripped to
     // the words a reader sees. A title/summary hit links to the whole card; when
@@ -231,8 +240,8 @@ export function SearchPage() {
         to: usePoint ? `/settings?tab=guide&card=${e.id}&point=${pointIdx}` : `/settings?tab=guide&card=${e.id}`,
       })
     }
-    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, events, listItems, notes, fridgeNotes, guide }
-  }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, board, familyNotes, boardNotes, lang])
+    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, events, listItems, notes, fridgeNotes, guide }
+  }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, carnets, homeProjects, board, familyNotes, boardNotes, lang])
 
   const total = res
     ? res.recipes.length +
@@ -243,12 +252,17 @@ export function SearchPage() {
       res.todos.length +
       res.pantry.length +
       res.cars.length +
+      res.carnets.length +
+      res.projects.length +
       res.events.length +
       res.listItems.length +
       res.notes.length +
       res.fridgeNotes.length +
       res.guide.length
     : 0
+  // Are any queries still in flight? Used to distinguish a cold-load "searching" from a
+  // genuine "no results" (so a deep-link doesn't flash "aucun résultat" before data lands).
+  const fetching = useIsFetching()
 
   return (
     <div className="scene search" aria-label={t.search.title}>
@@ -325,7 +339,13 @@ export function SearchPage() {
         {!needle ? (
           <p className="search__hint mono">{t.search.hint}</p>
         ) : total === 0 ? (
-          <EmptyState>{t.search.noResults}</EmptyState>
+          // A cold deep-link (/search?q=… with no warm cache) has its queries in flight —
+          // say "searching" rather than the misleading "no results" until they settle.
+          fetching > 0 ? (
+            <p className="search__hint mono">{t.search.searching}</p>
+          ) : (
+            <EmptyState>{t.search.noResults}</EmptyState>
+          )
         ) : (
           <>
             {res!.recipes.length > 0 && (
@@ -389,6 +409,42 @@ export function SearchPage() {
                     <span className="search__main">
                       <span className="search__title">{b.name}</span>
                       {b.category && <span className="search__sub mono">{b.category}</span>}
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.carnets.length > 0 && (
+              <Section label={t.search.carnets}>
+                {res!.carnets.map((x) => (
+                  <Link key={x.id} to={`/cercle/carnet/${x.id}`} className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: x.color ?? undefined }}>
+                      <InlineIcon name="book-open-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{x.name}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.projects.length > 0 && (
+              <Section label={t.search.homeProjects}>
+                {res!.projects.map((p) => (
+                  <Link
+                    key={p.id}
+                    to={p.carnet_id ? `/cercle/carnet/${p.carnet_id}` : '/settings?tab=chores'}
+                    className="search__row"
+                  >
+                    <span className="search__pic" aria-hidden="true" style={{ color: p.color ?? undefined }}>
+                      <InlineIcon name="calendar-blank-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{p.title}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>

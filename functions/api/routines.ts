@@ -248,12 +248,15 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     }
     // Clips: a fresh array re-aligns to the deck; otherwise re-pad the existing
     // one to the (possibly new) deck length so a card add/remove never desyncs.
-    if (body.cardsNarration !== undefined) {
+    // Same free-the-dropped-blob discipline as photos below — clearing/swapping/
+    // removing a card's voice clip must free its R2 audio, or it leaks.
+    const prevNarration = normalizeKeys(owns.cards_narration_json, parseJsonArray<Card>(owns.cards_json).length)
+    let nextNarration: string[] | null = null
+    if (body.cardsNarration !== undefined) nextNarration = normalizeKeys(body.cardsNarration, deckLen)
+    else if (newCards) nextNarration = normalizeKeys(owns.cards_narration_json, deckLen)
+    if (nextNarration) {
       sets.push('cards_narration_json = ?')
-      binds.push(JSON.stringify(normalizeKeys(body.cardsNarration, deckLen)))
-    } else if (newCards) {
-      sets.push('cards_narration_json = ?')
-      binds.push(JSON.stringify(normalizeKeys(owns.cards_narration_json, deckLen)))
+      binds.push(JSON.stringify(nextNarration))
     }
     // Photos: same alignment discipline as the clips above (feature #17 C). We
     // resolve the new key list now (when the edit touches it) so any photo no
@@ -281,6 +284,11 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     if (ctx.env.PHOTOS && nextPhotos) {
       const kept = new Set(nextPhotos)
       for (const k of prevPhotos) if (k && !kept.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
+    }
+    // Same for narration clips — free any voice clip this edit dropped.
+    if (ctx.env.PHOTOS && nextNarration) {
+      const kept = new Set(nextNarration)
+      for (const k of prevNarration) if (k && !kept.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
     }
     return ok({ ok: true })
   }

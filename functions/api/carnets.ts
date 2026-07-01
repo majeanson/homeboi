@@ -95,6 +95,23 @@ function mapRow(r: CarnetRow) {
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
+  // ?archived=1 → the ARCHIVED roots (for the restore list): archived carnets whose
+  // parent is not itself archived, so a subtree shows once at its top, not per child.
+  const url = new URL(ctx.request.url)
+  if (url.searchParams.get('archived') === '1') {
+    const arch = await ctx.env.DB.prepare(
+      `SELECT c.id, c.parent_id, c.kind, c.name, c.media_key, c.colour AS color, c.facts_json,
+              c.installed_at, c.lifespan_months, c.link_id, c.notes, c.position AS sort
+         FROM carnets c
+         LEFT JOIN carnets p ON c.parent_id = p.id
+        WHERE c.household_id = ? AND c.archived_at IS NOT NULL
+          AND (c.parent_id IS NULL OR p.archived_at IS NULL)
+        ORDER BY c.position, c.created_at`,
+    )
+      .bind(actor.householdId)
+      .all<CarnetRow>()
+    return ok({ carnets: arch.results.map(mapRow), soon: [] })
+  }
   const rows = await ctx.env.DB.prepare(
     `SELECT id, parent_id, kind, name, media_key, colour AS color, facts_json, installed_at, lifespan_months, link_id, notes, position AS sort
        FROM carnets WHERE household_id = ? AND archived_at IS NULL
@@ -187,8 +204,34 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     linkId?: string | null
     notes?: string | null
     sort?: number
+    restore?: boolean
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
+
+  // Un-archive (restore) a carnet AND its descendants — the inverse of the reversible
+  // DELETE archive, so « Les carnets » keeps its sanctioned-exception promise instead of
+  // the archive being a one-way delete. Clears archived_at across the whole subtree.
+  if (body.restore === true) {
+    const subtree = await ctx.env.DB.prepare(
+      `WITH RECURSIVE sub(id) AS (
+         SELECT id FROM carnets WHERE id = ? AND household_id = ?
+         UNION ALL
+         SELECT c.id FROM carnets c JOIN sub ON c.parent_id = sub.id
+       )
+       SELECT id FROM sub`,
+    )
+      .bind(body.id, actor.householdId)
+      .all<{ id: string }>()
+    const ids = subtree.results.map((r) => r.id)
+    if (!ids.length) return notFound('Carnet introuvable.')
+    const ph = ids.map(() => '?').join(', ')
+    await ctx.env.DB.prepare(
+      `UPDATE carnets SET archived_at = NULL, updated_at = ? WHERE household_id = ? AND id IN (${ph})`,
+    )
+      .bind(nowSec(), actor.householdId, ...ids)
+      .run()
+    return ok({ ok: true })
+  }
 
   // Grab the current photo so replacing it can free the old R2 blob (best-effort),
   // like care-log / home-pins / businesses do.

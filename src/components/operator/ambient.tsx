@@ -1,7 +1,8 @@
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
-import { Icon, type IconName } from '../Icon'
+import { Icon } from '../Icon'
+import { Toggle } from '../Toggle'
 import { useAmbient, setAmbient, type AmbientSettings } from '../../lib/ambient'
 import { forceIdle } from '../../lib/idleDebug'
 
@@ -11,16 +12,6 @@ import { forceIdle } from '../../lib/idleDebug'
 // change re-arms HubLayout's idle timers live. Calm: every behaviour is opt-out.
 const IDLE_OPTS = [1, 2, 3, 5, 10, 15, 30]
 const HOME_OPTS = [1, 2, 3, 5, 10]
-
-// A calm on/off pill — highlighted (filled) when on, plain when off, with its own
-// glyph + label. Used for the master toggles and each "show X" screensaver element.
-function Toggle({ on, icon, label, onClick }: { on: boolean; icon: IconName; label: string; onClick: () => void }) {
-  return (
-    <button type="button" className={`btn${on ? ' btn--primary' : ''}`} aria-pressed={on} onClick={onClick}>
-      <Icon name={icon} size={16} /> {label}
-    </button>
-  )
-}
 
 export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
   const t = useT()

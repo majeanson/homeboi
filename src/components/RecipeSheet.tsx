@@ -155,7 +155,7 @@ export function RecipeSheet({
     if (!items.length) return
     setAdded(true)
     setListPrompt(null)
-    await write('recipe-to-list', { method: 'POST', body: { items }, affectedKeys: [BOARD_KEY, ['list']] }).catch(() =>
+    await write('recipe-to-list', { method: 'POST', body: { items }, affectedKeys: [BOARD_KEY] }).catch(() =>
       setAdded(false),
     )
   }

@@ -5,7 +5,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
 import { useConfirm } from '../../lib/confirm'
-import { BOARD_KEY } from '../../lib/queryKeys'
+import { BOARD_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
 import { imgUrl } from '../../lib/image'
 import { ZoomableImg } from '../ZoomableImg'
 import { StatusMessage } from '../StatusMessage'
@@ -43,6 +43,20 @@ export function PostboxReview({ help }: { help?: HelpMode }) {
   })
   const messages = data?.messages ?? []
 
+  // The server tints an accepted note to a member when the sender's typed name matches
+  // that member's name exactly (functions/api/postbox.ts). Mirror that match here so the
+  // operator SEES which face a message will be attributed to — a sender can't silently
+  // impersonate a member; the operator is shown "will be shown as X" before accepting.
+  const { data: memData } = useQuery({
+    queryKey: MEMBERS_KEY,
+    queryFn: () => api<{ members: { id: string; display_name: string }[] }>('members'),
+  })
+  const matchFace = (senderName: string) => {
+    const n = senderName.trim().toLowerCase()
+    if (!n) return null
+    return (memData?.members ?? []).find((m) => (m.display_name ?? '').trim().toLowerCase() === n) ?? null
+  }
+
   async function review(m: PendingMsg, status: 'accepted' | 'dismissed') {
     if (busy) return
     if (status === 'dismissed') {
@@ -78,6 +92,11 @@ export function PostboxReview({ help }: { help?: HelpMode }) {
           <div key={m.id} className="postbox-review__row">
             <div className="postbox-review__body">
               <span className="postbox-review__from">{m.senderName || t.postbox.someone}</span>
+              {matchFace(m.senderName) && (
+                <span className="postbox-review__tint mono">
+                  <Icon name="warning-bold" size={13} /> {t.postbox.willTintAs(matchFace(m.senderName)!.display_name)}
+                </span>
+              )}
               {/* The message, by kind: a written word, a voice clip to play, or an image. */}
               {m.mediaKind === 'audio' && m.mediaKey ? (
                 <button

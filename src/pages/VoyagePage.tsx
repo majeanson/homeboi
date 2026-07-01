@@ -7,10 +7,11 @@ import { useT, useLang } from '../i18n'
 import { live } from '../lib/query'
 import { imgUrl } from '../lib/image'
 import { isGuest } from '../lib/device'
-import { formatDayLong } from '../lib/format'
+import { formatDayLong, capitalize as cap } from '../lib/format'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useTabParam } from '../lib/tabParam'
-import { MEMBERS_KEY, TRIPS_KEY } from '../lib/queryKeys'
+import { MEMBERS_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
+import { useConfirm } from '../lib/confirm'
 import type { Member } from '../lib/members'
 import { PairPrompt } from '../components/Fallback'
 import { SceneHead } from '../components/SceneHead'
@@ -40,7 +41,6 @@ export function VoyagePage() {
 }
 
 const VUES = ['itineraire', 'infos', 'bagages', 'documents'] as const
-const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
 // `<input type="date">` ⇄ local-midnight unix seconds, the same browser-local
 // convention EventForm uses (single-TZ household → matches the server's day buckets).
@@ -162,6 +162,7 @@ function VoyageForm({ trip, faces, onClose }: { trip?: Trip; faces: MemberFace[]
   const t = useT()
   const nav = useNavigate()
   const write = useWrite()
+  const confirm = useConfirm()
   useEscapeKey(onClose)
   const editing = !!trip
   const [title, setTitle] = useState(trip?.title ?? '')
@@ -195,6 +196,20 @@ function VoyageForm({ trip, faces, onClose }: { trip?: Trip; faces: MemberFace[]
         if (newId) nav(`/voyage/${newId}`, { replace: true })
         else onClose() // offline: queued; it appears on replay
       }
+    } catch {
+      setBusy(false)
+    }
+  }
+
+  // Delete the whole trip (cascades its notes/itinerary/packing + frees the cover
+  // blob server-side). A HEAVY, unrecoverable delete → confirm, not the undo toast.
+  async function del() {
+    if (!trip || busy) return
+    if (!(await confirm({ message: t.voyage.deleteTripConfirm, tone: 'danger', confirmLabel: t.common.delete }))) return
+    setBusy(true)
+    try {
+      await write('trips', { method: 'DELETE', body: { id: trip.id }, affectedKeys: [TRIPS_KEY, BOARD_KEY, MONTH_KEY] })
+      nav('/board')
     } catch {
       setBusy(false)
     }
@@ -246,6 +261,11 @@ function VoyageForm({ trip, faces, onClose }: { trip?: Trip; faces: MemberFace[]
         <button type="button" className="btn btn--primary voyage-form__submit" onClick={() => void save()} disabled={busy || !title.trim()}>
           <Icon name={editing ? 'check-bold' : 'plus-bold'} size={18} /> {editing ? t.common.save : t.voyage.createTrip}
         </button>
+        {editing && (
+          <button type="button" className="btn btn--ghost voyage-form__delete" onClick={() => void del()} disabled={busy}>
+            <Icon name="trash-bold" size={16} /> {t.voyage.deleteTrip}
+          </button>
+        )}
         {!editing && <p className="voyage-form__hint mono">{t.voyage.createHint}</p>}
       </div>
     </div>

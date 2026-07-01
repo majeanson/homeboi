@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { normKey } from '../../lib/cookable'
 import { ingredientName } from '../../lib/ingredient'
 import { withoutHeadings } from '../../lib/recipeSections'
@@ -19,7 +18,7 @@ export function useRecipeShop(
   recipeFor: (meal: MealRow) => Recipe | undefined,
   listItems: string[],
 ) {
-  const qc = useQueryClient()
+  const write = useWrite()
   const [shopPrompt, setShopPrompt] = useState<{ item: string; on: boolean }[] | null>(null)
   const [shopBusy, setShopBusy] = useState(false)
 
@@ -68,9 +67,9 @@ export function useRecipeShop(
     }
     setShopBusy(true)
     try {
-      await api('recipe-to-list', { method: 'POST', body: { items } })
-      qc.invalidateQueries({ queryKey: BOARD_KEY })
-      qc.invalidateQueries({ queryKey: ['list'] })
+      // useWrite so a "shop this week" done offline (the wall tablet) queues + replays;
+      // the shared list lives under BOARD_KEY (no separate ['list'] cache).
+      await write('recipe-to-list', { method: 'POST', body: { items }, affectedKeys: [BOARD_KEY] })
     } catch {
       /* a failed add isn't worth an error wall — the list just won't grow */
     } finally {

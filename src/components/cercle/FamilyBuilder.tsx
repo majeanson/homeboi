@@ -316,9 +316,13 @@ export function FamilyBuilder({
   const relGroups = useMemo(() => relationshipPickerGroups(false), [])
 
   // One draggable face chip (bands mode) — the whole chip is the drag handle
-  // (touch-action:none via the class); the ✕ removes from the family.
-  const Chip = ({ p }: { p: Person }) => (
+  // (touch-action:none via the class); the ✕ removes from the family. A render
+  // FUNCTION (inlined at the call site), NOT a component defined in the body — the
+  // latter is a fresh type every render, which remounts the whole chip subtree and
+  // churns its drag/focus state.
+  const renderChip = (p: Person) => (
     <span
+      key={p.key}
       className={'cercle-fam__chip' + (dnd.activeId === p.key ? ' is-dragging' : '')}
       onPointerDown={(e) => dnd.start(p.key, p.name, e)}
     >
@@ -337,9 +341,9 @@ export function FamilyBuilder({
   )
 
   // A pet chip — like a face chip but never draggable (pets stay out of the bands);
-  // the ✕ takes it back out of the family.
-  const PetChip = ({ p }: { p: Person }) => (
-    <span className="cercle-fam__chip">
+  // the ✕ takes it back out of the family. Also a render function (see renderChip).
+  const renderPetChip = (p: Person) => (
+    <span key={p.key} className="cercle-fam__chip">
       <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={32} />
       <span className="cercle-fam__chip-name">{p.firstName}</span>
       <button type="button" className="cercle-fam__chip-x" aria-label={t.common.delete} onClick={() => removeFromRoster(p.key)}>
@@ -434,7 +438,7 @@ export function FamilyBuilder({
               >
                 <span className="cercle-fam__zone-label mono">{t.cercle.familyTray}</span>
                 <div className="cercle-fam__chips">
-                  {tray.map((k) => byKey.get(k)).map((p) => p && <Chip key={p.key} p={p} />)}
+                  {tray.map((k) => byKey.get(k)).map((p) => p && renderChip(p))}
                   {tray.length === 0 && <span className="cercle-fam__zone-empty mono">—</span>}
                 </div>
               </div>
@@ -449,7 +453,7 @@ export function FamilyBuilder({
                   >
                     <span className="cercle-fam__zone-label mono">{t.cercle.familyBand[b]}</span>
                     <div className="cercle-fam__chips">
-                      {here.map((k) => byKey.get(k)).map((p) => p && <Chip key={p.key} p={p} />)}
+                      {here.map((k) => byKey.get(k)).map((p) => p && renderChip(p))}
                       {here.length === 0 && <span className="cercle-fam__zone-empty mono">{t.cercle.familyDropHere}</span>}
                     </div>
                   </div>
@@ -557,7 +561,7 @@ export function FamilyBuilder({
           </div>
           {petRoster.length > 0 && (
             <div className="cercle-fam__chips">
-              {petRoster.map((k) => byKey.get(k)).map((p) => p && <PetChip key={p.key} p={p} />)}
+              {petRoster.map((k) => byKey.get(k)).map((p) => p && renderPetChip(p))}
             </div>
           )}
           <p className="cercle-fam__hint mono">{t.cercle.familyPetsHint}</p>

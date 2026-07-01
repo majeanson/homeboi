@@ -3,6 +3,11 @@ import { authed } from '../../_lib/route'
 import { newId, nowSec } from '../../_lib/ids'
 import { isValidR2Key } from '../../_lib/validate'
 
+// Cap pending quarantine rows per household — a stateless, broadly-shareable link has
+// no early revoke, so this bounds row/R2 flooding from a leaked link. Well above any
+// honest use; drains as the operator reviews.
+const MAX_PENDING = 200
+
 // The ONE message a 'postbox' link writes — « La boîte aux lettres » (#postbox,
 // migration 0085). A relative names themselves and leaves a word / voice clip /
 // drawing / photo. It's QUARANTINED as a `pending` row the operator later turns into
@@ -39,6 +44,15 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // Self-identify is required (the operator chose an open link many relatives share).
   if (!senderName) return badRequest('Ton nom est requis.')
   if (!text && !(kind && mediaKey)) return badRequest('Message vide.')
+
+  const pending = await ctx.env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM postbox_submissions WHERE household_id = ? AND status = 'pending'",
+  )
+    .bind(actor.householdId)
+    .first<{ n: number }>()
+  if ((pending?.n ?? 0) >= MAX_PENDING) {
+    return forbidden('Trop de messages en attente. Réessaie plus tard.')
+  }
 
   await ctx.env.DB.prepare(
     'INSERT INTO postbox_submissions (id, household_id, guest_id, sender_name, text, media_kind, media_key, scene_key, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',

@@ -349,7 +349,9 @@ export function RoutinePlayer({
               {!ro &&
                 (running ? (
                   <div className="tdl-timer">
-                    <span className="tdl-clock mono" aria-live="polite">
+                    {/* A glanceable count-up, not a status message — announcing it every
+                        second floods a screen reader, so keep it out of the live region. */}
+                    <span className="tdl-clock mono" aria-live="off">
                       {clock(elapsed)}
                     </span>
                     <button

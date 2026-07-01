@@ -11,6 +11,7 @@ import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
 import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
+import { useWrite } from '../lib/write'
 import { useAi } from '../lib/ai'
 import { withoutHeadings } from '../lib/recipeSections'
 import { live } from '../lib/query'
@@ -66,6 +67,7 @@ const SUGGEST_DRESS: Record<SuggestSource, { icon: IconName; color: string }> = 
 export function Kitchen() {
   const t = useT()
   const qc = useQueryClient()
+  const write = useWrite()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
@@ -341,11 +343,12 @@ export function Kitchen() {
   // Keep a suggestion (AI text, or a real recipe link) into the ideas pool. Takes
   // the specific card now that several can be on screen at once.
   async function keepSuggestion(s: MealSuggestion) {
-    await api('meal-ideas', {
+    // useWrite so keeping an idea offline queues + replays (matches MealPool.planIdea).
+    await write('meal-ideas', {
       method: 'POST',
       body: { title: s.title, recipeId: s.recipe?.id ?? null, suggestedBy: profileId },
+      affectedKeys: [MEAL_IDEAS_KEY],
     }).catch(() => {})
-    qc.invalidateQueries({ queryKey: MEAL_IDEAS_KEY })
   }
 
   if (unauth) return <PairPrompt />

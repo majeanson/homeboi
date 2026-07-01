@@ -11,6 +11,11 @@ import type { GuestKind } from './auth'
 // whole handler table (those modules are CF-typed and don't load in a node test).
 export function guestKindAllows(kind: GuestKind, apiPath: string): boolean {
   if (kind === 'showcase') {
+    // Read-ONLY of the hub: deny every guest write/mint path at the allowlist level too
+    // (not just via authed()), so showcase keeps the default-deny property for writes —
+    // it can't reach intake/postbox submit+media or guest/start. Only the read-side
+    // guest endpoints (whoami/window) and the hub reads are allowed.
+    if (apiPath.startsWith('guest/') && apiPath !== 'guest/whoami' && apiPath !== 'guest/window') return false
     // « Les carnets »: the house map (`home-pins` — spare-key / alarm / shutoff
     // locations) and the service-history invoice amounts (`care-log` `cost_cents`) are
     // materially more sensitive than the calendar/list data a public Démo link is meant

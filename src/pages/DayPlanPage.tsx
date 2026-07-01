@@ -9,7 +9,7 @@ import { useLang, useT } from '../i18n'
 import { live } from '../lib/query'
 import { useProfile } from '../lib/profile'
 import { useRecordUndo } from '../lib/toast'
-import { formatDayLong, formatTime } from '../lib/format'
+import { formatDayLong, formatTime, capitalize } from '../lib/format'
 import { addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
@@ -44,7 +44,6 @@ import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CHORES_KEY, WEATHER_KEY } from '../li
 
 // Intl lowercases the French weekday ("lundi 14 juin"); the scene title wants it
 // capitalized.
-const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
 // The slice of /api/month this page needs: the day's events (one-off + expanded
 // recurring) and recurring-chore occurrences. Meals/notes come from their own

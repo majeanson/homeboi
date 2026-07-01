@@ -86,4 +86,44 @@ describe('sanitizeIntake', () => {
     })
     expect(intakeMediaKeys(out!).sort()).toEqual(['ik_b', 'ik_rex', 'ik_self'])
   })
+
+  // SERVER-SIDE scope enforcement: a name-only link (all optional bits off) must drop
+  // household/pets/address/photo/contact/bday from a crafted payload, not just in the UI.
+  it('enforces the field-scope bitmask server-side (drops out-of-scope sections)', () => {
+    const nameOnly = { bday: false, contact: false, addr: false, household: false, pets: false, photo: false }
+    const raw = {
+      self: {
+        firstName: 'A',
+        birthday: '1990-01-02',
+        email: 'a@x.com',
+        phone: '555',
+        address: { city: 'MTL' },
+        photoKey: 'ik_self',
+      },
+      household: [{ firstName: 'B' }],
+      pets: [{ name: 'Rex' }],
+      links: [{ aIndex: 0, bIndex: 1, type: 'sibling' }],
+    }
+    const out = sanitizeIntake(raw, nameOnly)!
+    expect(out.self.firstName).toBe('A') // name always kept
+    expect(out.self.birthday).toBeNull()
+    expect(out.self.email).toBe('')
+    expect(out.self.phone).toBe('')
+    expect(out.self.address).toBeNull()
+    expect(out.self.photoKey).toBeNull()
+    expect(out.household).toHaveLength(0)
+    expect(out.pets).toHaveLength(0)
+    expect(out.links).toHaveLength(0) // link referenced a now-absent household member
+  })
+
+  it('keeps in-scope sections when the bitmask allows them', () => {
+    const full = { bday: true, contact: true, addr: true, household: true, pets: true, photo: true }
+    const out = sanitizeIntake(
+      { self: { firstName: 'A', email: 'a@x.com', photoKey: 'ik_self' }, household: [{ firstName: 'B' }] },
+      full,
+    )!
+    expect(out.self.email).toBe('a@x.com')
+    expect(out.self.photoKey).toBe('ik_self')
+    expect(out.household).toHaveLength(1)
+  })
 })

@@ -10,15 +10,11 @@
 // splitting/merging), so the whole thing is unit-testable and renders the same 100% of
 // the time. Lists look like lists via CSS (bullets / counters / checkboxes).
 
+import { HEAD_RE, CHECK_RE, BULLET_RE, NUMBER_RE, QUOTE_RE } from './noteGrammar'
+
 export type LineKind = 'heading' | 'bullet' | 'numbered' | 'check' | 'quote' | 'plain'
 
 const CB = '<span class="ne-cb" contenteditable="false"></span>'
-
-const HEAD_RE = /^(#{1,6})\s+(.*)$/
-const CHECK_RE = /^[-*]\s+\[([ xX])\]\s+(.*)$/
-const BULLET_RE = /^[-*]\s+(.*)$/
-const NUMBER_RE = /^\d+\.\s+(.*)$/
-const QUOTE_RE = /^>\s?(.*)$/
 
 const escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 

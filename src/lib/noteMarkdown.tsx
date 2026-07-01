@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import { Icon } from '../components/Icon'
+import { HEAD_RE, CHECK_RE, BULLET_RE, NUMBER_RE, QUOTE_RE } from './noteGrammar'
 
 // Lightweight Markdown for « Le cercle » → Notes (the iOS-Notes-style rich body).
 // The body is stored as plain Markdown in family_notes.text, so there is no schema
@@ -46,12 +47,6 @@ function parseInline(text: string, keyBase: string): ReactNode[] {
   out.push(...parseInline(text.slice(b.index + b.len), keyBase + 'r'))
   return out
 }
-
-const CHECK_RE = /^[-*]\s+\[([ xX])\]\s+(.*)$/
-const BULLET_RE = /^[-*]\s+(.*)$/
-const NUMBER_RE = /^\d+\.\s+(.*)$/
-const HEAD_RE = /^(#{1,6})\s+(.*)$/
-const QUOTE_RE = /^>\s?(.*)$/
 
 export function renderNoteBody(md: string, opts: { onToggleCheck?: (lineIndex: number) => void } = {}): ReactNode {
   const lines = (md ?? '').replace(/\r\n/g, '\n').split('\n')

@@ -5,7 +5,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
-import { FLYERS_KEY } from '../../lib/queryKeys'
+import { FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 import { isGuest } from '../../lib/device'
@@ -273,8 +273,8 @@ export function HistorySection({ help }: { help?: HelpMode }) {
   // suggestion panel reflects the cleanup without a reload.
   function refresh() {
     load()
-    qc.invalidateQueries({ queryKey: ['list-history'] })
-    qc.invalidateQueries({ queryKey: ['ghosts'] })
+    qc.invalidateQueries({ queryKey: HISTORY_KEY })
+    qc.invalidateQueries({ queryKey: GHOSTS_KEY })
   }
   const mark = (key: string, on: boolean) =>
     setBusy((b) => {

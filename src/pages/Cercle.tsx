@@ -607,22 +607,22 @@ function CercleParent() {
   )
 
   // Primary Famille / Social / Notes split — the dominant control above the view switch.
+  // Uses the shared SubTabs (the `.subtabs` family) rather than a hand-rolled tablist:
+  // one calm pill row that scrolls cleanly on a phone, with help-mode wired via pick/armed.
   const sectionSwitch = (
     <>
-      <div className="cercle-sectionswitch" role="tablist" aria-label={t.nav.cercle}>
-        {(['family', 'social', 'notes', 'business', 'carnets'] as Section[]).map((s) => (
-          <button
-            key={s}
-            type="button"
-            role="tab"
-            aria-selected={section === s}
-            className={'cercle-sectionswitch__btn' + (section === s ? ' is-active' : '')}
-            onClick={help.pick(s, () => setSection(s))}
-          >
-            <InlineIcon name={SECTION_ICON[s]} size={16} /> {t.cercle.section[s]}
-          </button>
-        ))}
-      </div>
+      <SubTabs
+        options={(['family', 'social', 'notes', 'business', 'carnets'] as Section[]).map((s) => ({
+          key: s,
+          label: t.cercle.section[s],
+          icon: SECTION_ICON[s],
+        }))}
+        value={section}
+        onSelect={(s) => setSection(s)}
+        ariaLabel={t.nav.cercle}
+        pick={help.pick}
+        armed={help.active}
+      />
       {help.bubbleFor('social')}
       {help.bubbleFor('family')}
       {help.bubbleFor('notes')}

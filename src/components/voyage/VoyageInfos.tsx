@@ -3,6 +3,7 @@ import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { TRIP_NOTES_KEY } from '../../lib/queryKeys'
 import { useRecordUndo } from '../../lib/toast'
+import { useConfirm } from '../../lib/confirm'
 import { EmptyState } from '../EmptyState'
 import { Chip, ChipGroup } from '../Chip'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
@@ -20,6 +21,7 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
   const t = useT()
   const write = useWrite()
   const recordUndo = useRecordUndo()
+  const confirm = useConfirm()
   // `cat === null` = no bucket picked → « voir toutes les notes » (every category,
   // each card showing its own glyph). Tapping the active chip again deselects it.
   const [cat, setCat] = useState<TripCategory | null>('flight')
@@ -35,6 +37,16 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
   }
 
   async function del(n: TripNote) {
+    // A media-bearing note (audio/drawing/photo): the DELETE frees its R2 blob
+    // server-side, so a compensating undo re-POST would resurrect a row pointing at
+    // a freed blob (broken audio/image). Confirm — no undo — like Documents does.
+    // Text-only notes keep the forgiving undo toast.
+    if (n.media_kind != null) {
+      if (!(await confirm({ message: t.voyage.deleteMediaNoteConfirm, tone: 'danger', confirmLabel: t.common.delete })))
+        return
+      await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+      return
+    }
     await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
     recordUndo({
       message: t.voyage.infoRemoved,

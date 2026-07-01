@@ -6,7 +6,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { live } from './query'
-import { BOARD_KEY } from './queryKeys'
+import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from './queryKeys'
 import { fetchGhosts } from './ghost'
 import { parseTerms } from './picks'
 
@@ -46,9 +46,6 @@ interface HistoryItem {
 
 // Accent/case-insensitive matching ("creme" finds "Crème").
 const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim()
-
-const GHOSTS_KEY = ['ghosts']
-const HISTORY_KEY = ['list-history']
 
 export function useQuickItems(): QuickItem[] {
   // Reuses the shared ['board'] cache (no extra fetch); ghosts/history are quiet

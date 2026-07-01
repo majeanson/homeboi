@@ -27,7 +27,7 @@ import { pickListFrom, parseDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
-import { BOARD_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { LISTE_HELP } from '../lib/listeHelp'
 
@@ -68,8 +68,6 @@ interface ListMember {
 // members (to draw "who added it" faces). The shared ['board'] cache still holds
 // the full payload for the Board page.
 type BoardListData = { list: ListRow[]; members?: ListMember[] }
-const GHOSTS_KEY = ['ghosts']
-const HISTORY_KEY = ['list-history']
 // Per-DEVICE list sort choice (not a household setting — a phone may want aisle
 // order while the wall keeps the hand-dragged one). 'mine' = the dragged order,
 // 'aisle' = grouped/sorted by the household's aisle order.

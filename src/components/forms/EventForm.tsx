@@ -132,9 +132,12 @@ export function EventForm({
   const [bringInput, setBringInput] = useState('')
   const [bringDraft, setBringDraft] = useState<string[]>([])
   const [bringBusy, setBringBusy] = useState(false)
-  async function createBringList() {
+  // Returns the created (or already-selected) template id, so submit() can auto-create
+  // an un-saved draft and attach it — nothing typed is silently dropped. Online-only
+  // (needs the new id synchronously to auto-select; useWrite would return null queued).
+  async function createBringList(): Promise<string | null> {
     const items = bringDraft.map((s) => s.trim()).filter(Boolean)
-    if (!items.length || bringBusy) return
+    if (!items.length || bringBusy) return bringTemplateId
     setBringBusy(true)
     try {
       const res = await api<{ id: string }>('todo-templates', {
@@ -145,8 +148,10 @@ export function EventForm({
       setBringDraft([])
       setBringInput('')
       await qc.invalidateQueries({ queryKey: TODO_TEMPLATES_KEY })
+      return res.id
     } catch {
       /* keep the draft so nothing typed is lost */
+      return null
     } finally {
       setBringBusy(false)
     }
@@ -176,6 +181,9 @@ export function EventForm({
     if (!title.trim() || !date || busy) return
     const startAt = Math.floor(new Date(`${date}T${time || '00:00'}`).getTime() / 1000)
     if (!Number.isFinite(startAt)) return
+    // If the user typed « À apporter » items but never tapped « Créer la liste »,
+    // auto-create the list now and attach it — so nothing typed is silently lost.
+    const effectiveBring = bringDraft.length && !bringTemplateId ? await createBringList() : bringTemplateId
     // Weekly with no weekday picked → the server defaults to the anchor's (UTC)
     // weekday. We don't compute it here: local getDay() could disagree with the
     // server's UTC expansion and recur on the wrong day.
@@ -191,7 +199,7 @@ export function EventForm({
       leadSeconds: lead,
       carId,
       passengers,
-      bringTemplateId,
+      bringTemplateId: effectiveBring,
     }
     setBusy(true)
     setErr(false)
@@ -221,13 +229,19 @@ export function EventForm({
         placeholder={t.operator.eventWhat}
         ariaLabel={t.operator.eventWhat}
       />
-      <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      <input
+        className="input"
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        aria-label={t.operator.eventDateLabel}
+      />
       <input
         className="input"
         type="time"
         value={time}
         onChange={(e) => setTime(e.target.value)}
-        aria-label={t.operator.eventAllDay}
+        aria-label={t.operator.eventTimeLabel}
       />
       <div className="operator__rotation mono">
         {members.map((m) => (
@@ -235,6 +249,7 @@ export function EventForm({
             key={m.id}
             type="button"
             className={`btn btn--ghost${memberId === m.id && !contactId && !businessId ? ' is-active' : ''}`}
+            aria-pressed={memberId === m.id && !contactId && !businessId}
             onClick={() => {
               clearWho()
               setMemberId(memberId === m.id ? null : m.id)
@@ -299,6 +314,7 @@ export function EventForm({
                     key={c.id}
                     type="button"
                     className={`btn btn--ghost${carId === c.id ? ' is-active' : ''}`}
+                    aria-pressed={carId === c.id}
                     style={carId === c.id && c.color ? { borderColor: c.color, color: c.color } : undefined}
                     onClick={() => setCarId(carId === c.id ? null : c.id)}
                   >
@@ -317,6 +333,7 @@ export function EventForm({
                     key={m.id}
                     type="button"
                     className={`btn btn--ghost${passengers.includes(m.id) ? ' is-active' : ''}`}
+                    aria-pressed={passengers.includes(m.id)}
                     onClick={() => togglePassenger(m.id)}
                   >
                     {m.display_name}
@@ -343,6 +360,7 @@ export function EventForm({
                 key={tp.id}
                 type="button"
                 className={`btn btn--ghost${bringTemplateId === tp.id ? ' is-active' : ''}`}
+                aria-pressed={bringTemplateId === tp.id}
                 onClick={() => setBringTemplateId(bringTemplateId === tp.id ? null : tp.id)}
               >
                 {tp.title}

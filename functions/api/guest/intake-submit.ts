@@ -1,7 +1,13 @@
 import { ok, badRequest, forbidden, readJson } from '../../_lib/json'
 import { authed } from '../../_lib/route'
 import { newId, nowSec } from '../../_lib/ids'
-import { sanitizeIntake } from '../../_lib/intake'
+import { sanitizeIntake, decodeIntakeScope } from '../../_lib/intake'
+
+// A stateless guest link (no DB row, no revoke-before-TTL) can be shared broadly, so
+// cap the pending quarantine rows per household to bound row/R2 flooding from a leaked
+// link. Well above any honest use (an operator reviews + clears these); once hit, new
+// submissions are refused until the queue drains.
+const MAX_PENDING = 200
 
 // The ONE write a guest link is allowed to make — and only the 'intake' kind, the
 // relative-facing family-info form. Two gates already converge before this runs:
@@ -18,8 +24,20 @@ export const onRequestPost = authed(async (ctx, actor) => {
     return forbidden('Ce lien ne permet pas d’envoyer un formulaire.')
   }
 
-  const submission = sanitizeIntake(await readJson(ctx.request))
+  // Enforce the link's field-scope bitmask SERVER-SIDE (not just in the UI): a
+  // name-only link can't smuggle household/pets/address/photos via a crafted POST.
+  const scope = decodeIntakeScope(actor.guestFields)
+  const submission = sanitizeIntake(await readJson(ctx.request), scope)
   if (!submission) return badRequest('Formulaire incomplet (le prénom est requis).')
+
+  const pending = await ctx.env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM intake_submissions WHERE household_id = ? AND status = 'pending'",
+  )
+    .bind(actor.householdId)
+    .first<{ n: number }>()
+  if ((pending?.n ?? 0) >= MAX_PENDING) {
+    return forbidden('Trop de formulaires en attente. Réessaie plus tard.')
+  }
 
   await ctx.env.DB.prepare(
     'INSERT INTO intake_submissions (id, household_id, guest_id, target_key, payload, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',

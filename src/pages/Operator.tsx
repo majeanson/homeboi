@@ -39,7 +39,7 @@ import { OperatorJump } from '../components/operator/OperatorJump'
 import { useHelpMode } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
-import { MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, EVENTS_KEY, BOARD_KEY } from '../lib/queryKeys'
+import { MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, EVENTS_KEY, BOARD_KEY, CERCLE_KEY } from '../lib/queryKeys'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
 
 // Réglages is one panel per tab; this list drives the tab strip. Deep links
@@ -124,8 +124,10 @@ export function Operator() {
   // Child sections call this after a write. Invalidate the settings reads plus
   // ['board'] so member/chore/routine/event edits surface on the wall at once
   // (the ['routines'] key is shared with the Routines/KidView pages too).
+  // CERCLE_KEY too: a member is a person in Le cercle, so a rename/recolour/delete
+  // must refresh the circle (which reads /api/cercle, not /api/members).
   const load = useCallback(() => {
-    for (const key of [MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, ['routines'], EVENTS_KEY, ['health'], BOARD_KEY]) {
+    for (const key of [MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, ['routines'], EVENTS_KEY, ['health'], BOARD_KEY, CERCLE_KEY]) {
       qc.invalidateQueries({ queryKey: key })
     }
   }, [qc])
@@ -304,13 +306,35 @@ export function Operator() {
           tab is its own role="tab". Deep links resolve through TAB_ALIAS, so every
           old ?tab=<id> still lands on its host tab. */}
       <div className="operator__body">
-        <nav className="operator__tabs mono" role="tablist" aria-label={t.operator.sections}>
+        <nav
+          className="operator__tabs mono"
+          role="tablist"
+          aria-label={t.operator.sections}
+          onKeyDown={(e) => {
+            // Roving arrow-key navigation between tabs (ArrowLeft/Right on the phone
+            // row, Up/Down on the wide sidebar) + Home/End, per the WAI-ARIA tablist.
+            const i = sectionIds.indexOf(tab)
+            let n = i
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') n = (i + 1) % sectionIds.length
+            else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') n = (i - 1 + sectionIds.length) % sectionIds.length
+            else if (e.key === 'Home') n = 0
+            else if (e.key === 'End') n = sectionIds.length - 1
+            else return
+            e.preventDefault()
+            const id = sectionIds[n]
+            setTab(id)
+            document.getElementById(`op-tab-${id}`)?.focus()
+          }}
+        >
           {sections.map((s) => (
             <button
               key={s.id}
+              id={`op-tab-${s.id}`}
               type="button"
               role="tab"
               aria-selected={tab === s.id}
+              aria-controls="operator-panel"
+              tabIndex={tab === s.id ? 0 : -1}
               className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
               onClick={() => setTab(s.id)}
             >
@@ -319,7 +343,7 @@ export function Operator() {
           ))}
         </nav>
 
-        <div className="operator__panel" role="tabpanel">
+        <div className="operator__panel" role="tabpanel" id="operator-panel" aria-labelledby={`op-tab-${tab}`} tabIndex={0}>
         {/* Each tab carries its own how-it-works inline (the per-tab cards that
             used to live only under Guide). The Guide tab documents itself. */}
         {tab !== 'guide' && <SectionGuide tab={tab} />}

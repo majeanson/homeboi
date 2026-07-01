@@ -136,7 +136,12 @@ const PATH_KEYS: Record<string, string[][]> = {
   // Recipe book; a recipe's ingredients feed the « À régler » meal-low scan.
   recipes: [['recipes'], ['a-regler']],
   'recipe-tags': [['recipes'], ['recipe-tags']],
-  'recipe-to-list': [['board'], ['list']],
+  // Adding a recipe's ingredients to the shared list only touches the board glance
+  // (the list lives under ['board'] — there is no separate ['list'] cache).
+  'recipe-to-list': [['board']],
+  // Family « favorites » hearts (#21): a heart toggle re-renders every surface that
+  // shows hearts (recipe list/view + planned meals), all under ['recipe-loves'].
+  'recipe-loves': [['recipe-loves']],
   // Flyer deals ride the board's list surface.
   deals: [['board']],
   // Opt-in purchase tracking strip + the board.
@@ -153,6 +158,20 @@ const PATH_KEYS: Record<string, string[][]> = {
   // cache (the photos query key is prefixed ['cercle', …]), so one nudge refreshes them.
   'cercle-groups': [['cercle']],
   'cercle-photos': [['cercle']],
+  // Pets are people in the circle (folded into unifyCircle) — a pet edit re-derives
+  // the directory, so mirror the client's [CERCLE_KEY].
+  pets: [['cercle']],
+  // Le cercle → Business: the services directory has its own cache (BUSINESSES_KEY).
+  businesses: [['businesses']],
+  // Le cercle → Notes: durable per-member / family-wide notes (FAMILY_NOTES_KEY).
+  'family-notes': [['family-notes']],
+  // « L'auto »: the weekly work-schedule template + per-day override both re-resolve
+  // the car surfaces and the board glance (mirrors the client's [SCHEDULE_KEY/CAR_KEY,
+  // BOARD_KEY]). /api/car itself is a GET-only resolved read model (no write path).
+  schedule: [['schedule'], ['board']],
+  'car-day': [['car'], ['board']],
+  // The kept-drawings gallery (GALLERY_KEY = ['drawings']).
+  drawings: [['drawings']],
 }
 
 // Normalize an API path: strip a leading "api/" / slashes and any query string,

@@ -10,7 +10,9 @@ import { useAuth } from '../lib/auth'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { useReserveLocations } from '../lib/reservePrefs'
 import { useVoiceInput } from '../lib/useVoiceInput'
+import { useOnline } from '../lib/online'
 import { VoiceButton } from './VoiceButton'
+import { StatusMessage } from './StatusMessage'
 import { formatWeekday, formatRelativeWeekday } from '../lib/format'
 import { OPERATOR_MODES, FORM_ROUTES, type AddSheetMode } from '../lib/addSheet'
 import { CATS, type CatKey } from '../lib/cats'
@@ -20,7 +22,7 @@ import { recipeImg } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions, type KitchenAction, type KitchenActionFlags } from '../lib/kitchenActions'
-import { BOARD_KEY, MEMBERS_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, MEMBERS_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
 import { type TodoTemplate, type TemplatesData } from '../lib/todos'
 import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
@@ -286,6 +288,11 @@ export function AddSheet({
   const [routed, setRouted] = useState<{ text: string; label: string; degraded: boolean; cleanup: Cleanup[] } | null>(
     null,
   )
+  // Capture needs a live round-trip (the AI type + reroute cleanup), so unlike the
+  // list/todo adds it can't queue offline. Surface a failure instead of swallowing it,
+  // so an offline/5xx capture isn't silently eaten (the one hole in "never lost").
+  const [captureErr, setCaptureErr] = useState(false)
+  const online = useOnline()
 
   // — list item (Liste) — its own state + mic so a board draft never posts to
   // the grocery list by accident.
@@ -502,6 +509,13 @@ export function AddSheet({
     e?.preventDefault()
     const value = (forceType ? routed?.text ?? text : text).trim()
     if (!value || busy) return
+    setCaptureErr(false)
+    // Capture can't be queued (it needs the sync AI response), so if we're offline
+    // tell the user instead of silently no-op'ing — the typed text stays in the box.
+    if (!online) {
+      setCaptureErr(true)
+      return
+    }
     setBusy(true)
     const prevCleanup = forceType ? routed?.cleanup : undefined
     setRouted(null)
@@ -525,6 +539,8 @@ export function AddSheet({
       }
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
+      // A real 4xx/5xx (not just offline): surface it so the tap isn't silently lost.
+      setCaptureErr(true)
     } finally {
       setBusy(false)
     }
@@ -541,7 +557,7 @@ export function AddSheet({
     try {
       // Offline-aware (like the todo/reserve adds below): queues + replays offline,
       // then affectedKeys reconcile the board + the quick-add ghosts/history panel.
-      await write('list', { method: 'POST', body: { text: value }, affectedKeys: [BOARD_KEY, ['ghosts'], ['list-history']] })
+      await write('list', { method: 'POST', body: { text: value }, affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY] })
       setListText('')
       close()
     } catch (e) {
@@ -744,6 +760,8 @@ export function AddSheet({
           />
           <VoiceButton voice={captureVoice} label={t.capture.voice} />
         </div>
+
+        {captureErr && <StatusMessage tone="error">{online ? t.capture.failed : t.capture.offline}</StatusMessage>}
 
         {/* CHANGE 2 — confirmation + one-tap correction after EVERY route (not only
             the degraded fallback). The AI can mis-route, so re-filing the saved

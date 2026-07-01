@@ -3,6 +3,12 @@ import { daysUntilLocal } from './localDay'
 
 const LOCALE: Record<Lang, string> = { fr: 'fr-CA', en: 'en-CA' }
 
+// Capitalize the first letter (e.g. a locale day name "lundi" → "Lundi"). Shared so
+// the departure/moment/itinerary/day surfaces don't each re-declare it.
+export function capitalize(s: string): string {
+  return s ? s[0].toUpperCase() + s.slice(1) : s
+}
+
 // Unix seconds -> "15 h 30" / "3:30 PM". Intl handles the locale spacing.
 export function formatTime(unixSec: number, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { hour: 'numeric', minute: '2-digit' }).format(unixSec * 1000)

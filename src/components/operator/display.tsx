@@ -35,6 +35,7 @@ import { computeDayPart } from '../../lib/timeofday'
 import { MEASURE_SWATCHES, swatchColor, useMeasureColorsEditor } from '../../lib/measurePrefs'
 import { IngredientLine } from '../IngredientLine'
 import { InlineIcon } from '../Icon'
+import { Toggle } from '../Toggle'
 import {
   getRate,
   getVoicePref,
@@ -136,59 +137,47 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
         {!ro && (
           <div className="operator__seg">
             <span className="operator__seg-label mono">{t.operator.ambientLabel}</span>
-            <button
-              type="button"
-              className={`btn${ambient ? ' btn--primary' : ''}`}
+            <Toggle
+              on={ambient}
+              icon={ambient ? 'sun-horizon-bold' : 'sun-bold'}
+              label={ambient ? t.operator.ambientOn : t.operator.ambientOff}
               onClick={toggleAmbient}
-              aria-pressed={ambient}
-            >
-              <InlineIcon name={ambient ? 'sun-horizon-bold' : 'sun-bold'} size={16} />{' '}
-              {ambient ? t.operator.ambientOn : t.operator.ambientOff}
-            </button>
+            />
           </div>
         )}
         {!ro && (
           <div className="operator__seg">
             <span className="operator__seg-label mono">{t.operator.apodLabel}</span>
-            <button
-              type="button"
-              className={`btn${apod ? ' btn--primary' : ''}`}
+            <Toggle
+              on={apod}
+              icon="moon-stars-bold"
+              label={apod ? t.operator.apodOn : t.operator.apodOff}
               onClick={() => setApodEnabled(!apod)}
-              aria-pressed={apod}
-            >
-              <InlineIcon name="moon-stars-bold" size={16} />{' '}
-              {apod ? t.operator.apodOn : t.operator.apodOff}
-            </button>
+            />
             <p className="operator__seg-hint mono">{t.operator.apodHint}</p>
           </div>
         )}
         {!ro && (
           <div className="operator__seg">
             <span className="operator__seg-label mono">{t.operator.canvasLabel}</span>
-            <button
-              type="button"
-              className={`btn${canvas ? ' btn--primary' : ''}`}
+            <Toggle
+              on={canvas}
+              icon={canvas ? 'sun-horizon-bold' : 'sun-bold'}
+              label={canvas ? t.operator.canvasOn : t.operator.canvasOff}
               onClick={() => setCanvasEnabled(!canvas)}
-              aria-pressed={canvas}
-            >
-              <InlineIcon name={canvas ? 'sun-horizon-bold' : 'sun-bold'} size={16} />{' '}
-              {canvas ? t.operator.canvasOn : t.operator.canvasOff}
-            </button>
+            />
             <p className="operator__seg-hint mono">{t.operator.canvasHint}</p>
           </div>
         )}
         {!ro && (
           <div className="operator__seg">
             <span className="operator__seg-label mono">{t.operator.keepAwakeLabel}</span>
-            <button
-              type="button"
-              className={`btn${keepAwake ? ' btn--primary' : ''}`}
+            <Toggle
+              on={keepAwake}
+              icon="device-tablet-bold"
+              label={keepAwake ? t.operator.keepAwakeOn : t.operator.keepAwakeOff}
               onClick={() => setKeepAwake(!keepAwake)}
-              aria-pressed={keepAwake}
-            >
-              <InlineIcon name="device-tablet-bold" size={16} />{' '}
-              {keepAwake ? t.operator.keepAwakeOn : t.operator.keepAwakeOff}
-            </button>
+            />
             <p className="operator__seg-hint mono">{t.operator.keepAwakeHint}</p>
           </div>
         )}

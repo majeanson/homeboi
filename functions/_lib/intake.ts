@@ -155,10 +155,37 @@ function pet(v: unknown, count: number): IntakePetInput | null {
   return { name, species: str(p.species, CAP.species), photoKey: mediaKey(p.photoKey), ownerIndex }
 }
 
+// Redact a person's fields to those the link's scope actually asked for. The name
+// (first/last/nickname/notes) is always allowed; the optional sections are gated.
+function redactPerson(p: IntakePersonInput, scope: IntakeScope): IntakePersonInput {
+  return {
+    ...p,
+    birthday: scope.bday ? p.birthday : null,
+    email: scope.contact ? p.email : '',
+    phone: scope.contact ? p.phone : '',
+    address: scope.addr ? p.address : null,
+    photoKey: scope.photo ? p.photoKey : null,
+  }
+}
+
+// SERVER-SIDE enforcement of the field-scope bitmask (the UI already hides the
+// out-of-scope sections; this makes a crafted POST honour the link's scope too, so
+// a name-only link can't smuggle household/pets/address/photos). Dropping the
+// household also drops any link referencing a now-absent member.
+function applyScope(s: IntakeSubmission, scope: IntakeScope): IntakeSubmission {
+  const self = redactPerson(s.self, scope)
+  const household = scope.household ? s.household.map((p) => redactPerson(p, scope)) : []
+  const pets = scope.pets ? s.pets.map((p) => ({ ...p, photoKey: scope.photo ? p.photoKey : null })) : []
+  const count = 1 + household.length // self + (kept) household
+  const links = s.links.filter((l) => l.aIndex < count && l.bIndex < count)
+  return { self, household, links, pets }
+}
+
 // Returns a clean IntakeSubmission, or null if the payload is unusable (no named
 // self). Drops malformed household/pet entries + out-of-range / unknown-type links
-// rather than failing the whole submission.
-export function sanitizeIntake(raw: unknown): IntakeSubmission | null {
+// rather than failing the whole submission. When `scope` is passed (the link's
+// field bitmask, from the signed token), out-of-scope sections are dropped too.
+export function sanitizeIntake(raw: unknown, scope?: IntakeScope): IntakeSubmission | null {
   if (typeof raw !== 'object' || raw === null) return null
   const r = raw as Record<string, unknown>
 
@@ -191,7 +218,8 @@ export function sanitizeIntake(raw: unknown): IntakeSubmission | null {
     .map((p) => pet(p, count))
     .filter((p): p is IntakePetInput => p !== null)
 
-  return { self, household, links, pets }
+  const clean = { self, household, links, pets }
+  return scope ? applyScope(clean, scope) : clean
 }
 
 // All staged R2 media keys a submission references (self + household + pets). Used

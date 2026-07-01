@@ -9,7 +9,7 @@ import { useT } from '../i18n'
 import { pictoFor } from '../lib/picto'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
-import { BOARD_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
 import { patchGhost } from '../lib/ghost'
 import { useQuickItems, type QuickItem } from '../lib/quickItems'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
@@ -18,9 +18,6 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // Accent/case-blind matching so "creme" filters to "Crème".
 const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').trim()
-
-const GHOSTS_KEY = ['ghosts']
-const HISTORY_KEY = ['list-history']
 
 // /liste/quick — the ⚡ Quick add screen as a full-screen route (was a bottom
 // sheet, flaky to scroll): past/predicted items to restock a week in a few taps.

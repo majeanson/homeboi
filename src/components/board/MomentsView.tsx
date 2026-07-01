@@ -7,7 +7,7 @@ import { useAudience } from '../../lib/audience'
 import { useSpeak } from '../../lib/speak'
 import { moonPhase } from '../../lib/moonPhase'
 import { live } from '../../lib/query'
-import { formatDayLong, formatDayMaybeYear, formatTime } from '../../lib/format'
+import { formatDayLong, formatDayMaybeYear, formatTime, capitalize } from '../../lib/format'
 import { addLocalDays, todayLocalDay, localDayStart, localYMD } from '../../lib/localDay'
 import { CATS } from '../../lib/cats'
 import { PairPrompt } from '../Fallback'
@@ -72,7 +72,6 @@ interface MomentData {
 
 // Intl lowercases the French weekday; day labels want it capitalized (matches
 // DayPlanPage).
-const capitalize = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 const ymdInput = (daySec: number) => {
   const { year, month, day } = localYMD(daySec)
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`

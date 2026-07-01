@@ -411,7 +411,14 @@ export function RecipesTab({
         </div>
       )}
       {recipes.length === 0 ? (
-        <EmptyState guide={{ card: 'recipes' }}>{t.recipes.empty}</EmptyState>
+        <>
+          <EmptyState guide={{ card: 'recipes' }}>{t.recipes.empty}</EmptyState>
+          {/* A first-time book has no recipes and (before) no visible way to add one —
+              create is otherwise ＋-FAB-only. Offer a direct CTA into the recipe editor. */}
+          <button type="button" className="btn btn--primary recipes__add-first" onClick={() => nav('/kitchen/recipe/new')}>
+            <InlineIcon name="plus-bold" size={16} /> {t.recipes.addFirst}
+          </button>
+        </>
       ) : (
         <>
           {/* #11 "Aa vs Collections" view toggle now lives up beside the search;

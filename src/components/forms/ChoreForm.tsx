@@ -140,6 +140,7 @@ export function ChoreForm({
             key={m.id}
             type="button"
             className={`btn btn--ghost${rotation.includes(m.id) ? ' is-active' : ''}`}
+            aria-pressed={rotation.includes(m.id)}
             onClick={() => toggleRot(m.id)}
           >
             {rotation.includes(m.id) ? `${rotation.indexOf(m.id) + 1}. ` : ''}

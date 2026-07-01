@@ -3,8 +3,9 @@ import { useSearchParams } from 'react-router-dom'
 import { useT, useLang } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
+import { useConfirm } from '../../lib/confirm'
 import { TRIP_NOTES_KEY } from '../../lib/queryKeys'
-import { formatDayLong } from '../../lib/format'
+import { formatDayLong, capitalize as cap } from '../../lib/format'
 import { EmptyState } from '../EmptyState'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { TripNoteAdd } from './TripNoteAdd'
@@ -22,13 +23,13 @@ import { tripDays, type Trip, type TripNote } from './voyage'
 // ("the kids' museum visit") — the same optional member scope Infos + Bagages carry;
 // each day's composer inherits it. Deleting an entry is held behind the undo toast
 // (a compensating re-POST), matching VoyageInfos.
-const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
 export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: TripNote[]; faces: MemberFace[] }) {
   const t = useT()
   const { lang } = useLang()
   const write = useWrite()
   const recordUndo = useRecordUndo()
+  const confirm = useConfirm()
   const [who, setWho] = useState<string | null>(null)
   const affectedKey = [...TRIP_NOTES_KEY, trip.id]
   const days = tripDays(trip.start_at, trip.end_at)
@@ -59,6 +60,15 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
   }
 
   async function del(n: TripNote) {
+    // Media-bearing note (audio/drawing/photo): the DELETE frees its R2 blob, so an
+    // undo re-POST would point at a freed blob. Confirm — no undo — like Documents.
+    // Text-only entries keep the forgiving undo toast.
+    if (n.media_kind != null) {
+      if (!(await confirm({ message: t.voyage.deleteMediaNoteConfirm, tone: 'danger', confirmLabel: t.common.delete })))
+        return
+      await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+      return
+    }
     await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
     recordUndo({
       message: t.voyage.planRemoved,

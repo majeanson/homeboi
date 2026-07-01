@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from './EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
+import { useWrite } from '../lib/write'
 import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
@@ -53,6 +54,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
+  const write = useWrite()
   // Two ways to browse: by article (search) or by magasin (open a store's flyer).
   // Held in the URL (?view=) so the chosen tab survives a remount and is shareable.
   const [mode, setMode] = useTabParam('view', 'item', ['item', 'store'] as const)
@@ -118,8 +120,9 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
     const line = lineName(name)
     // Don't duplicate a line that's already on the list (matched by name or synonym).
     if (existingListId(qc, line)) return
-    await api('list', { method: 'POST', body: { text: line } }).catch(() => {})
-    qc.invalidateQueries({ queryKey: BOARD_KEY })
+    // useWrite so a deal added to the list offline queues + replays (the list is the
+    // canonical offline-safe surface); it lives under BOARD_KEY.
+    await write('list', { method: 'POST', body: { text: line }, affectedKeys: [BOARD_KEY] }).catch(() => {})
   }
 
   // Add a deal to the list in one tap — it attaches the deal to its grocery line

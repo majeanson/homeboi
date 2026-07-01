@@ -39,7 +39,10 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       await write('members', {
         method: 'POST',
         body: { name: name.trim(), isChild, color },
-        affectedKeys: [MEMBERS_KEY, BOARD_KEY],
+        // CERCLE_KEY: a member is also a person in Le cercle (unifyCircle enriches
+      // them; a delete mutates contact_links) — refresh the circle so a rename/
+      // recolour/delete doesn't leave a stale name/colour or a dangling edge.
+      affectedKeys: [MEMBERS_KEY, BOARD_KEY, CERCLE_KEY],
       })
       setName('')
       setIsChild(false)
@@ -62,9 +65,11 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       tone: 'danger',
     })
     if (!okay) return
-    await write('members', { method: 'DELETE', body: { id: m.id }, affectedKeys: [MEMBERS_KEY, BOARD_KEY] }).catch(
-      () => {},
-    )
+    await write('members', {
+      method: 'DELETE',
+      body: { id: m.id },
+      affectedKeys: [MEMBERS_KEY, BOARD_KEY, CERCLE_KEY],
+    }).catch(() => {})
     onChange()
   }
 
@@ -268,7 +273,10 @@ function MemberCard({
     await write('members', {
       method: 'PATCH',
       body: { id: member.id, clearPhoto: true },
-      affectedKeys: [MEMBERS_KEY, BOARD_KEY],
+      // CERCLE_KEY: a member is also a person in Le cercle (unifyCircle enriches
+      // them; a delete mutates contact_links) — refresh the circle so a rename/
+      // recolour/delete doesn't leave a stale name/colour or a dangling edge.
+      affectedKeys: [MEMBERS_KEY, BOARD_KEY, CERCLE_KEY],
     }).catch(() => {})
     onChange()
   }
@@ -278,7 +286,10 @@ function MemberCard({
     await write('members', {
       method: 'PATCH',
       body: { id: member.id, name: name.trim(), isChild, colour: color },
-      affectedKeys: [MEMBERS_KEY, BOARD_KEY],
+      // CERCLE_KEY: a member is also a person in Le cercle (unifyCircle enriches
+      // them; a delete mutates contact_links) — refresh the circle so a rename/
+      // recolour/delete doesn't leave a stale name/colour or a dangling edge.
+      affectedKeys: [MEMBERS_KEY, BOARD_KEY, CERCLE_KEY],
     }).catch(() => {})
     setBusy(false)
     setEditing(false)

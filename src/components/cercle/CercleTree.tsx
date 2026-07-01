@@ -3,7 +3,7 @@ import { useT } from '../../i18n'
 import { Avatar } from '../Avatar'
 import { EmptyState } from '../EmptyState'
 import { PanZoom } from '../PanZoom'
-import { type Person, type ContactLink, type FamilyGrouping, generationOf, linkEndpoints, isFamilyRel, discColour } from '../../lib/cercle'
+import { type Person, type ContactLink, type FamilyGrouping, generationOf, linkEndpoints, isFamilyRel, discColour, UnionFind } from '../../lib/cercle'
 // (byKey lookups aren't needed here — the layout works off positions + placed[].)
 
 // « Le cercle » — Arbre (family tree). A generation-banded layout: people are
@@ -48,26 +48,16 @@ export function CercleTree({
     // Split the placed people into connected components over the family edges (the
     // same edge set generationOf walked) — Union-Find. Each component is one
     // disconnected family that gets its own independent band layout.
-    const parent = new Map<string, string>()
-    const find = (x: string): string => {
-      const p = parent.get(x)
-      if (p === undefined || p === x) return x
-      const r = find(p)
-      parent.set(x, r)
-      return r
-    }
-    const union = (a: string, b: string) => {
-      parent.set(find(a), find(b))
-    }
-    placed.forEach((p) => parent.set(p.key, p.key))
+    const uf = new UnionFind()
+    placed.forEach((p) => uf.add(p.key))
     for (const l of links) {
       if (!isFamilyRel(l.type)) continue
       const { aKey, bKey } = linkEndpoints(l)
-      if (placedKeys.has(aKey) && placedKeys.has(bKey)) union(aKey, bKey)
+      if (placedKeys.has(aKey) && placedKeys.has(bKey)) uf.union(aKey, bKey)
     }
     const comps = new Map<string, Person[]>()
     for (const p of placed) {
-      const root = find(p.key)
+      const root = uf.find(p.key)
       if (!comps.has(root)) comps.set(root, [])
       comps.get(root)!.push(p)
     }

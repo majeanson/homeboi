@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { LinkComposer } from './LinkComposer'
+import { GroupForm, type GroupFormValue } from './GroupForm'
 import { api } from '../../lib/api'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
 import { useConfirm } from '../../lib/confirm'
@@ -15,7 +16,6 @@ import {
   type ContactAddress,
   type ContactGroup,
   type ContactGroupRaw,
-  type GroupKind,
   type Member,
   buildGroups,
   unifyCircle,
@@ -209,8 +209,6 @@ export function ContactForm({
     () => new Set(value ? groupList.filter((g) => g.memberKeys.has(personKey('contact', value.id))).map((g) => g.id) : []),
   )
   const [creatingGroup, setCreatingGroup] = useState(false)
-  const [newGroupName, setNewGroupName] = useState('')
-  const [newGroupKind, setNewGroupKind] = useState<GroupKind>('other')
 
   async function toggleGroup(g: ContactGroup) {
     if (!value) return
@@ -230,12 +228,11 @@ export function ContactForm({
 
   // Create a group AND drop this person into it in one go (so the form is a
   // self-sufficient place to organize people, not just a chooser of existing groups).
-  async function createGroupAndAdd() {
-    const name = newGroupName.trim()
-    if (!name || !value) return
+  async function createGroupAndAdd(v: GroupFormValue) {
+    if (!value) return
     const res = await write<{ id: string }>('cercle-groups', {
       method: 'POST',
-      body: { name, kind: newGroupKind },
+      body: { name: v.name, kind: v.kind, colour: v.colour },
       affectedKeys: [CERCLE_KEY],
     })
     const gid = res.queued ? null : res.data?.id ?? null
@@ -247,7 +244,6 @@ export function ContactForm({
       })
       setMemberOf((prev) => new Set(prev).add(gid))
     }
-    setNewGroupName('')
     setCreatingGroup(false)
   }
 
@@ -557,31 +553,7 @@ export function ContactForm({
             )}
           </div>
           {creatingGroup && (
-            <div className="cercle-new-group">
-              <input
-                className="cf__input"
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                placeholder={t.cercle.groupName}
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && createGroupAndAdd()}
-              />
-              <select className="cf__input" value={newGroupKind} onChange={(e) => setNewGroupKind(e.target.value as GroupKind)}>
-                {(['family', 'friends', 'work', 'other'] as GroupKind[]).map((k) => (
-                  <option key={k} value={k}>
-                    {t.cercle.groupKinds[k]}
-                  </option>
-                ))}
-              </select>
-              <div className="lc__actions">
-                <button type="button" className="btn btn--primary btn--sm" disabled={!newGroupName.trim()} onClick={createGroupAndAdd}>
-                  <InlineIcon name="check-bold" size={13} /> {t.cercle.addGroup}
-                </button>
-                <button type="button" className="btn btn--ghost btn--sm" onClick={() => setCreatingGroup(false)}>
-                  {t.common.cancel}
-                </button>
-              </div>
-            </div>
+            <GroupForm submitLabel={t.cercle.addGroup} onSubmit={createGroupAndAdd} onCancel={() => setCreatingGroup(false)} />
           )}
         </div>
       )}

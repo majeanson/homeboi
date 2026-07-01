@@ -55,6 +55,7 @@ import { StatusMessage } from '../components/StatusMessage'
 import { Chip, ChipGroup } from '../components/Chip'
 import { QrCode } from '../components/QrCode'
 import { Disclosure } from '../components/Disclosure'
+import { Toggle } from '../components/Toggle'
 import { FeatureMap } from '../components/FeatureMap'
 import { SubTabs } from '../components/SubTabs'
 import { SectionHeader } from '../components/SectionHeader'
@@ -204,6 +205,19 @@ function Demo({ label, children }: { label: string; children: ReactNode }) {
       <div className="devkit__demo-label mono">{label}</div>
       <div className="devkit__demo-body">{children}</div>
     </div>
+  )
+}
+
+// Self-contained Toggle specimen (the calm on/off pill needs its own on/off state).
+function ToggleSpec() {
+  const [on, setOn] = useState(true)
+  return (
+    <Toggle
+      on={on}
+      icon={on ? 'sun-horizon-bold' : 'sun-bold'}
+      label={on ? 'Activé' : 'Désactivé'}
+      onClick={() => setOn((v) => !v)}
+    />
   )
 }
 
@@ -1012,6 +1026,17 @@ export function DevKit() {
               ))}
             </ChipGroup>
           </Disclosure>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Fondations',
+      name: 'Toggle',
+      file: 'components/Toggle.tsx',
+      kw: 'toggle switch on off pill bouton bascule activé désactivé aria-pressed réglages affichage',
+      render: () => (
+        <Demo label="the calm on/off pill — filled when on, aria-pressed reflects state (ambient + display settings)">
+          <ToggleSpec />
         </Demo>
       ),
     },

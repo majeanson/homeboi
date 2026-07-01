@@ -46,7 +46,7 @@ export function RecipeListPicker({ recipe, onClose }: { recipe: Recipe; onClose:
   async function confirm() {
     if (!picked.length) return
     onClose()
-    await write('recipe-to-list', { method: 'POST', body: { items: picked }, affectedKeys: [BOARD_KEY, ['list']] }).catch(
+    await write('recipe-to-list', { method: 'POST', body: { items: picked }, affectedKeys: [BOARD_KEY] }).catch(
       () => {},
     )
   }

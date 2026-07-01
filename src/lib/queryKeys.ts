@@ -31,6 +31,13 @@ export const TODO_TEMPLATES_KEY = ['todo-templates']
 // « À régler » — the cross-domain heads-up scan (functions/api/a-regler). Read by
 // the board card AND the « Cette semaine » block, so the key is shared.
 export const A_REGLER_KEY = ['a-regler']
+// Opt-in purchase-tracking predictions (/api/ghost — « souvent racheté »). Read by
+// La liste, the Quick-add page, and the AddSheet quick-add; written when an item is
+// added/bought. Shared so a list add refreshes the prediction strip everywhere.
+export const GHOSTS_KEY = ['ghosts']
+// Shopping-list purchase history (the « déjà acheté » log). Read by La liste, Quick-add,
+// and Réglages ▸ Magasinage. Shared so a purchase/clear refreshes all three.
+export const HISTORY_KEY = ['list-history']
 // Projets & Entretien (home_projects): the longer-horizon home work under Corvées.
 // Read by the Réglages Corvées sub-tabs (Projets/Entretien) AND surfaced on the
 // board + month (dated upkeep), so the key is shared — an edit invalidates it and

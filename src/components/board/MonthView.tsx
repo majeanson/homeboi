@@ -8,7 +8,7 @@ import { useUndoToast } from '../../lib/toast'
 import { TODOS_KEY, MONTH_KEY, CAR_KEY } from '../../lib/queryKeys'
 import { type CarModel } from '../../lib/car'
 import { CATS } from '../../lib/cats'
-import { formatTime, formatMonthYear, formatDayLong, weekdayShort } from '../../lib/format'
+import { formatTime, formatMonthYear, formatDayLong, weekdayShort, capitalize as cap } from '../../lib/format'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
 import { localYMD, addLocalDays } from '../../lib/localDay'
 import { SLOT_ICON_NAME, isMealSlot, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
@@ -51,7 +51,6 @@ interface TripSpan { id: string; title: string; colour: string; isStart: boolean
 
 // Intl gives a lowercase French month/weekday ("juin", "lun") — calendars want it
 // capitalized.
-const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
 // A calendar marker: a colour AND a category, so the cell can tell each kind
 // apart instead of a wall of identical circles. Events/chores/notes are shape-coded

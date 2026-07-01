@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { api } from '../lib/api'
 import { BOARD_KEY, ROUTINES_KEY } from '../lib/queryKeys'
-import { formatTime, formatDayLong } from '../lib/format'
+import { formatTime, formatDayLong, capitalize as cap } from '../lib/format'
 import { useAmbient } from '../lib/ambient'
 import { timeOfDay } from '../lib/timeofday'
 import { todRank, TOD_ICON, TOD_TINT, isRoutineTod } from '../lib/routineTod'
@@ -38,7 +38,6 @@ interface RoutineRow {
   cards: { icon?: string }[]
 }
 
-const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
 export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => void }) {
   const a = useAmbient()

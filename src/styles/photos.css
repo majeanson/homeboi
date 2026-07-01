@@ -49,11 +49,23 @@
   width: 28px;
   height: 28px;
   border: none;
+  /* keeps the calm 28px disc but see ::before for the 44px tap target */
   border-radius: var(--radius-pill);
   background: rgba(27, 23, 18, 0.6);
   color: #fff;
   cursor: pointer;
   line-height: 1;
+}
+/* Expand the tap target to 44px without growing the visual disc (calm), so the
+   corner delete meets the touch-target rule on a wall tablet. */
+.photo-grid__del::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 /* The wall board's calm family-photo frame. */

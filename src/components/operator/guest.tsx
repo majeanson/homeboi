@@ -240,6 +240,8 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           </select>
         </label>
         <p className="operator__hint mono">{t.guest[KINDS.find((k) => k.kind === kind)!.hintKey]}</p>
+        {/* showcase is the read-EVERYTHING Démo link — warn before it's shared publicly. */}
+        {kind === 'showcase' && <StatusMessage tone="info">{t.guest.kindShowcaseWarn}</StatusMessage>}
 
         {/* Per-person intake: pick WHO the form is for, or leave blank for an open
             "add yourself" link the whole family can use. */}

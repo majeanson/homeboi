@@ -1,11 +1,19 @@
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
+import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
 import { faint } from '../../lib/colors'
 import { useCarnets, carnetEmoji, type Carnet } from '../../lib/carnets'
-import { InlineIcon } from '../Icon'
+import { CARNETS_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { Icon, InlineIcon } from '../Icon'
+import { Disclosure } from '../Disclosure'
 import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+
+const ARCHIVED_CARNETS_KEY = [...CARNETS_KEY, 'archived']
 
 // « Le cercle » → Les carnets tab: the household's cared-for things (houses, cars).
 // A directory of TOP-LEVEL carnets; tapping one opens its full carnet scene. Mirrors
@@ -19,9 +27,27 @@ export function CarnetsTab({ help }: { help?: HelpMode }) {
   const nav = useNavigate()
   const c = t.carnets
 
+  const write = useWrite()
+  const ro = isGuest()
   const { data } = useCarnets()
   const tops = (data?.carnets ?? []).filter((x) => !x.parentId)
   const soonIds = new Set((data?.soon ?? []).map((s) => s.carnetId))
+
+  // Archived carnets (the reversible-archive roots) — only fetched for an operator, so
+  // a kiosk/guest never adds the extra read. Restoring clears archived_at on its subtree.
+  const { data: archData } = useQuery({
+    queryKey: ARCHIVED_CARNETS_KEY,
+    queryFn: () => api<{ carnets: Carnet[] }>('carnets?archived=1'),
+    enabled: !ro,
+  })
+  const archived = archData?.carnets ?? []
+  async function restore(x: Carnet) {
+    await write('carnets', {
+      method: 'PATCH',
+      body: { id: x.id, restore: true },
+      affectedKeys: [CARNETS_KEY, ARCHIVED_CARNETS_KEY, BOARD_KEY],
+    }).catch(() => {})
+  }
 
   // A top-level carnet's subtree counts as "needs a look" if it OR any of its
   // children is in the lifecycle "soon" set.
@@ -60,6 +86,26 @@ export function CarnetsTab({ help }: { help?: HelpMode }) {
         })
       )}
 
+      {/* Reversible archive: a restore list so « supprimer » (which archives) isn't a
+          one-way delete. Collapsed by default (calm); only shown when something's here. */}
+      {!ro && archived.length > 0 && (
+        <Disclosure label={c.archivedTitle} count={archived.length}>
+          {archived.map((x) => (
+            <div key={x.id} className="cercle-row">
+              <span className="cercle-business__av" aria-hidden="true" style={{ background: faint(x.color) }}>
+                <span className="cercle-carnets__emoji">{carnetEmoji(x)}</span>
+              </span>
+              <span className="cercle-row__main">
+                <span className="cercle-row__name">{x.name}</span>
+                <span className="cercle-row__sub mono">{c.kind[x.kind]}</span>
+              </span>
+              <button type="button" className="btn btn--sm btn--ghost" onClick={() => void restore(x)}>
+                <Icon name="arrow-counter-clockwise-bold" size={15} /> {c.restore}
+              </button>
+            </div>
+          ))}
+        </Disclosure>
+      )}
     </section>
   )
 }
