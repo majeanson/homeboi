@@ -211,7 +211,17 @@ export function buildPet(
 export function buildMot(
   m: Mot,
   ctx: DetailCtx,
-  opts?: { saved?: boolean; parentQuote?: string | null; onToggleSave?: () => void; onDelete?: () => void; onReply?: () => void },
+  opts?: {
+    saved?: boolean
+    parentQuote?: string | null
+    onToggleSave?: () => void
+    onDelete?: () => void
+    onReply?: () => void
+    // Sender-outbox extras: reschedule a « Plus tard » that hasn't landed, and show its
+    // programmed time as the « when » line instead of the created date.
+    onReschedule?: () => void
+    whenOverride?: string
+  },
 ): DetailModel {
   const { t, lang, members } = ctx
   const fn = t.mots
@@ -227,8 +237,10 @@ export function buildMot(
   if (m.media_key && m.media_kind === 'audio') blocks.push({ kind: 'audio', src: imgUrl(m.media_key) })
 
   const actions: DetailAction[] = []
-  // Reply leads (the warm action); keep + delete follow.
+  // Reply leads (the warm action); reschedule (sender only) then keep + delete follow.
   if (opts?.onReply) actions.push({ key: 'reply', label: fn.reply, icon: 'arrow-left-bold', primary: true, run: opts.onReply })
+  if (opts?.onReschedule)
+    actions.push({ key: 'reschedule', label: fn.reschedule, icon: 'clock-bold', run: opts.onReschedule })
   if (opts?.onToggleSave)
     actions.push({ key: 'keep', label: opts.saved ? fn.kept : fn.keep, icon: 'push-pin-bold', run: opts.onToggleSave })
   if (opts?.onDelete) actions.push({ key: 'delete', label: fn.delete, icon: 'trash-bold', tone: 'danger', run: opts.onDelete })
@@ -238,7 +250,7 @@ export function buildMot(
     title: firstLine || mediaLabel || fn.untitled,
     icon,
     accent: colorOf(members, m.author_member_id) ?? CATS.cercle.color,
-    when: `${formatDay(m.created_at, lang)} · ${m.member_id === null ? fn.forMaisonnee : fn.forYou}`,
+    when: opts?.whenOverride ?? `${formatDay(m.created_at, lang)} · ${m.member_id === null ? fn.forMaisonnee : fn.forYou}`,
     who: whoOf(members, m.author_member_id, fn.from),
     blocks,
     actions,

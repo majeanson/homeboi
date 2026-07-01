@@ -4,6 +4,7 @@ import { useT } from '../../i18n'
 import { api, ApiError } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useSurface } from '../../lib/surface'
+import { useProfile } from '../../lib/profile'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { imgUrl } from '../../lib/image'
 import { type Member } from '../../lib/members'
@@ -14,6 +15,7 @@ import { MemberSwitcher } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
 import { EditField } from '../EditField'
 import { MemoControls } from '../MemoControls'
+import { ScheduleFields, todayDateStr, presetWhen } from './ScheduleFields'
 
 // « Laisse un mot » composer — the board ＋ FAB « Mot » panel (#mots), AND the reply sheet.
 // Pick a recipient face (or the whole Maisonnée), then type a line OR record a voice clip /
@@ -26,18 +28,12 @@ import { MemoControls } from '../MemoControls'
 // Media memos reuse MemoControls (carrying recipient_id + surface_at + reply_to); a text mot
 // goes through useWrite so it queues offline.
 
-// Today's date as YYYY-MM-DD for the native <input type="date"> seed (mirrors EventForm).
-function todayDateStr(): string {
-  const d = new Date()
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
-}
-
 export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => void }) {
   const t = useT()
   const fn = t.mots
   const write = useWrite()
   const { surface } = useSurface()
+  const { memberId: profileId } = useProfile()
   // A reply is addressed back to the original sender; otherwise default Maisonnée.
   const [recipient, setRecipient] = useState<string | null>(replyTo ? replyTo.author_member_id : null)
   const [text, setText] = useState('')
@@ -50,6 +46,19 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
   const [timeStr, setTimeStr] = useState('08:00')
   const surfaceAt =
     scheduled && dateStr ? Math.floor(new Date(`${dateStr}T${timeStr || '00:00'}`).getTime() / 1000) : null
+
+  // « Me le rappeler » — the calmest reminder: a scheduled mot addressed to MYSELF, waiting on
+  // my own face (no push, no badge). One tap sets recipient = me + opens the schedule at
+  // tomorrow morning. Only when a face is picked and we're not already locked into a reply.
+  const canRemindMe = !replyTo && !!profileId
+  function remindMe() {
+    if (!profileId) return
+    setRecipient(profileId)
+    setScheduled(true)
+    const w = presetWhen('tomorrowAm')
+    setDateStr(w.date)
+    setTimeStr(w.time)
+  }
 
   const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') })
   const members = data?.members ?? []
@@ -97,6 +106,13 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
               <FaceSelect faces={faces} value={recipient} onChange={setRecipient} allLabel={fn.toMaisonnee} ariaLabel={fn.toWhom} />
             </div>
           )}
+          {/* « Me le rappeler » — a one-tap self-reminder: addresses the mot to my own face and
+              schedules it for tomorrow morning. Calm alternative to a notification. */}
+          {canRemindMe && (
+            <button type="button" className="btn btn--sm btn--ghost mono mot-composer__remind" onClick={remindMe}>
+              <Icon name="hourglass-high-bold" size={15} /> {fn.remindMe}
+            </button>
+          )}
         </>
       )}
 
@@ -126,12 +142,7 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
         >
           <Icon name="clock-bold" size={16} /> {fn.later}
         </button>
-        {scheduled && (
-          <div className="mot-composer__when">
-            <input className="input" type="date" value={dateStr} min={todayDateStr()} onChange={(e) => setDateStr(e.target.value)} aria-label={fn.when} />
-            <input className="input" type="time" value={timeStr} onChange={(e) => setTimeStr(e.target.value)} aria-label={fn.when} />
-          </div>
-        )}
+        {scheduled && <ScheduleFields date={dateStr} time={timeStr} onDate={setDateStr} onTime={setTimeStr} />}
       </div>
 
       <MemoControls onDone={onDone} endpoint="mots" affectedKey={MOTS_KEY} extraBody={extraBody} />

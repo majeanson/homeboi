@@ -40,6 +40,7 @@ import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
+import { Disclosure } from '../components/Disclosure'
 import { Fil } from '../components/board/Fil'
 import { DayTimeline } from '../components/jouer/DayTimeline'
 import { PhotoFrame } from '../components/board/PhotoFrame'
@@ -1066,6 +1067,41 @@ export function Board() {
                 </Section>
               ) : null
               // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda.
+              // One meal row (déjeuner/dîner/collation — souper is the « Ce soir » hero above),
+              // extracted so a past-slot meal can fold into « Déjà passé » with the same anatomy.
+              const mealAct = (m: (typeof otherMeals)[number]) => (
+                <Act
+                  key={m.id}
+                  cat="meal"
+                  icon={SLOT_ICON_NAME[m.slot as MealSlot]}
+                  when={slotLabel(m.slot)}
+                  title={m.title}
+                  who={cookLine(m)}
+                  color={mealPrefs.color(m.slot)}
+                  mine={!!profileId && m.cook_member_id === profileId}
+                  past={isSlotPast(m.slot)}
+                  onOpen={() =>
+                    detail.open(buildMeal(m, detailCtx, {
+                      color: mealPrefs.color(m.slot),
+                      slotLabel: slotLabel(m.slot),
+                      daySec: todayDay,
+                      onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+                      onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, todayDay),
+                    }))
+                  }
+                />
+              )
+              // Today's line-crossed items fold into a calm « Déjà passé aujourd'hui »
+              // Disclosure so the card stays on now + next (the lifecycle keeps them as a quiet
+              // record until midnight — see lib/itemLife). Only TIMED things fold: past-slot
+              // meals + timed events whose moment has gone. Chores/todos/home + all-day events
+              // are untimed → they never strike, so they always stay in the live list.
+              const shownEvents = !filShown ? todayEvents.filter((e) => e.id !== nextUpToday?.id) : []
+              const evtPast = (e: EventRow) => isPastSec(e.all_day ? null : e.start_at, nowMs)
+              const liveMeals = otherMeals.filter((m) => !isSlotPast(m.slot))
+              const pastMeals = otherMeals.filter((m) => isSlotPast(m.slot))
+              const liveEvents = shownEvents.filter((e) => !evtPast(e))
+              const pastEls = [...pastMeals.map(mealAct), ...shownEvents.filter(evtPast).map(eventAct)]
               nodes.today = (
                 <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)" help={help} helpKey="today" now={todayNow}>
             {/* « Prochainement » — the next timed thing today as a calm tappable
@@ -1122,41 +1158,21 @@ export function Board() {
               <EmptyState tone="calm" guide={{ card: 'board' }}>{t.board.todayClear}</EmptyState>
             ) : (
               <>
-                {/* Today's other meals (déjeuner/dîner/collation) — supper is the
-                    "Ce soir" hero above, so the rest of the day's table shows here.
-                    Each carries its slot food icon so the slots read apart at a
-                    glance, like La cuisine. */}
-                {otherMeals.map((m) => (
-                  <Act
-                    key={m.id}
-                    cat="meal"
-                    icon={SLOT_ICON_NAME[m.slot as MealSlot]}
-                    when={slotLabel(m.slot)}
-                    title={m.title}
-                    who={cookLine(m)}
-                    color={mealPrefs.color(m.slot)}
-                    mine={!!profileId && m.cook_member_id === profileId}
-                    past={isSlotPast(m.slot)}
-                    onOpen={() =>
-                      detail.open(buildMeal(m, detailCtx, {
-                        color: mealPrefs.color(m.slot),
-                        slotLabel: slotLabel(m.slot),
-                        daySec: todayDay,
-                        onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
-                        onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, todayDay),
-                      }))
-                    }
-                  />
-                ))}
+                {/* Today's still-to-come meals (déjeuner/dîner/collation) — supper is the
+                    "Ce soir" hero above. A past-slot meal folds into « Déjà passé » below.
+                    Each carries its slot food icon so the slots read apart, like La cuisine. */}
+                {liveMeals.map(mealAct)}
                 {/* Events + chores move to « Le fil du jour » when it's shown (see filShown).
-                    The next-up event is already surfaced as the « Prochainement » headline
-                    above, so drop it from the list here — otherwise it reads twice (Marc's
-                    redundant-display note). */}
-                {!filShown && todayEvents.filter((e) => e.id !== nextUpToday?.id).map(eventAct)}
-                {/* Recurring chores due today — tap to check off (advances the turn). */}
+                    The next-up event is the « Prochainement » headline above, so it's already
+                    dropped (evtPast/shownEvents). Timed events past their moment fold below. */}
+                {liveEvents.map(eventAct)}
+                {/* Recurring chores due today — tap to check off (advances the turn). Untimed,
+                    so they never fold — they leave by being done, not by a passing minute. */}
                 {!filShown && todayChores.map((c) => choreAct(c))}
                 {/* Projets & Entretien due today — tap to check off (stamps done). */}
                 {todayHome.map((c) => homeAct(c))}
+                {/* The day's line-crossed record, collapsed (reuses the « Déjà vus » pattern). */}
+                {pastEls.length > 0 && <Disclosure label={t.board.pastToday}>{pastEls}</Disclosure>}
               </>
             )}
 

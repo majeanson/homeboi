@@ -26,6 +26,7 @@ import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { NoteEditor } from '../components/cercle/NoteEditor'
 import { MotComposer } from '../components/mots/MotComposer'
+import { ScheduleFields, todayDateStr } from '../components/mots/ScheduleFields'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
 import { TripNoteCard } from '../components/voyage/TripNoteCard'
 import { CercleConstellation } from '../components/cercle/CercleConstellation'
@@ -253,6 +254,14 @@ function FridgeSheetDemo() {
 // The full-screen rich note editor (#richnotes), reused for new + modify. Opens over
 // the page; auto-saves on close. Seeded here with a sample Markdown body so the toolbar
 // and « Aperçu » preview are explorable.
+// The « Plus tard » schedule picker (calm presets + native date/time), shared by the mot
+// composer and the sender-outbox reschedule sheet. Controlled → a tiny state host here.
+function ScheduleFieldsDemo() {
+  const [date, setDate] = useState(todayDateStr)
+  const [time, setTime] = useState('19:00')
+  return <ScheduleFields date={date} time={time} onDate={setDate} onTime={setTime} />
+}
+
 function NoteEditorDemo() {
   const [open, setOpen] = useState(false)
   return (
@@ -854,6 +863,19 @@ export function DevKit() {
         // surface in the board's « Mots » band card (MotsCard) with a per-face presence dot.
         <Demo label="Leave-a-note composer (recipient + text/voice/draw/photo)">
           <MotComposer onDone={() => {}} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'ScheduleFields',
+      file: 'components/mots/ScheduleFields.tsx',
+      kw: 'mot plus tard later schedule surface_at date time preset ce soir demain matin week-end reschedule reminder me le rappeler',
+      render: () => (
+        // The « Plus tard » schedule picker: calm one-tap presets over the native date/time
+        // inputs. Shared by MotComposer (« Plus tard ») + the outbox reschedule sheet.
+        <Demo label="Schedule presets + date/time (« Plus tard »)">
+          <ScheduleFieldsDemo />
         </Demo>
       ),
     },

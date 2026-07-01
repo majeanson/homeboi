@@ -396,6 +396,9 @@ export const FR = {
     welcomeCta: 'Ajouter les personnes',
     idleSoon: 'Retour à la maisonnée dans un instant…',
     todayClear: 'Rien de prévu. Tout est calme.',
+    // The collapsed group that folds today's line-crossed (past) items so the board
+    // stays on now + next; the day's record stays a tap away until midnight.
+    pastToday: 'Déjà passé aujourd’hui',
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'Tout est calme',
     allClearSub: 'Rien de prévu aujourd’hui — profitez-en.',
@@ -1418,6 +1421,19 @@ export const FR = {
     reply: 'Répondre',
     inReplyTo: 'En réponse',
     replyTo: (name: string) => `Réponse à ${name}`,
+    // Schedule presets (« Plus tard » quick chips) + self-mot.
+    preset: { tonight: 'Ce soir', tomorrowAm: 'Demain matin', weekend: 'Ce week-end' },
+    remindMe: 'Me le rappeler',
+    // Sender outbox (« Ce que j'ai laissé ») — status of what I sent, never a household tally.
+    sentGroup: 'Ce que j’ai laissé',
+    to: (name: string) => `Pour ${name}`,
+    statusWaiting: 'En attente',
+    statusSeen: 'Vu',
+    scheduledFor: (when: string) => `Programmé · ${when}`,
+    reschedule: 'Reprogrammer',
+    rescheduleTitle: 'Reprogrammer le mot',
+    sendNow: 'Envoyer maintenant',
+    cancelSend: 'Annuler l’envoi',
   },
   routines: {
     tag: 'Le rythme du jour',
@@ -2692,6 +2708,9 @@ export const EN: typeof FR = {
     welcomeCta: 'Add the people',
     idleSoon: 'Back to the household view in a moment…',
     todayClear: 'Nothing planned. All calm.',
+    // The collapsed group that folds today's line-crossed (past) items so the board
+    // stays on now + next; the day's record stays a tap away until midnight.
+    pastToday: 'Already done today',
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'All calm',
     allClearSub: 'Nothing planned today — enjoy it.',
@@ -3677,6 +3696,19 @@ export const EN: typeof FR = {
     reply: 'Reply',
     inReplyTo: 'In reply',
     replyTo: (name: string) => `Reply to ${name}`,
+    // Schedule presets (“Later” quick chips) + self-mot.
+    preset: { tonight: 'Tonight', tomorrowAm: 'Tomorrow morning', weekend: 'This weekend' },
+    remindMe: 'Remind me',
+    // Sender outbox (“What I left”) — status of what I sent, never a household tally.
+    sentGroup: 'What I left',
+    to: (name: string) => `For ${name}`,
+    statusWaiting: 'Waiting',
+    statusSeen: 'Seen',
+    scheduledFor: (when: string) => `Scheduled · ${when}`,
+    reschedule: 'Reschedule',
+    rescheduleTitle: 'Reschedule note',
+    sendNow: 'Send now',
+    cancelSend: 'Cancel send',
   },
   routines: {
     tag: "The day’s rhythm",

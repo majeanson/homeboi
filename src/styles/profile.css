@@ -232,12 +232,28 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+/* The revealed schedule block: calm preset chips above the native date/time inputs
+   (shared by the composer AND the outbox reschedule sheet — see ScheduleFields). */
 .mot-composer__when {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
-  flex: 1 1 auto;
+  flex: 1 1 100%;
 }
-.mot-composer__when .input {
+.mot-composer__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.mot-composer__whenrow {
+  display: flex;
+  gap: 0.5rem;
+}
+.mot-composer__whenrow .input {
   flex: 1 1 0;
   min-width: 0;
+}
+/* « Me le rappeler » — the self-mot shortcut under the recipient picker. */
+.mot-composer__remind {
+  align-self: flex-start;
 }

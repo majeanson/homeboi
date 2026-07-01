@@ -8,13 +8,15 @@ import { useConfirm } from '../../lib/confirm'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { type Member } from '../../lib/members'
 import { MEMBERS_KEY, MOTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
-import { useMots, waitingMots, visibleMots, type Mot } from '../../lib/mots'
+import { useMots, useAllMots, waitingMots, visibleMots, sentMots, isScheduled, type Mot } from '../../lib/mots'
+import { formatDay, formatTime } from '../../lib/format'
 import { CATS } from '../../lib/cats'
 import { type IconName } from '../Icon'
 import { Act, Section } from '../board/Act'
 import { Disclosure } from '../Disclosure'
 import { Modal } from '../Modal'
 import { MotComposer } from './MotComposer'
+import { RescheduleBody } from './RescheduleBody'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildMot, type DetailCtx } from '../detail/adapters'
 
@@ -39,8 +41,14 @@ export function MotsCard() {
   const removal = useDeferredRemoval(MOTS_KEY)
   // The reply composer (a Modal) — set to the mot being answered.
   const [replyTo, setReplyTo] = useState<Mot | null>(null)
+  // The reschedule sheet (a Modal) — set to the sent mot whose « Plus tard » is being moved.
+  const [reschedule, setReschedule] = useState<Mot | null>(null)
 
   const mots = useMots()
+  // The RAW list feeds the sender outbox only — it must show a still-scheduled mot (which the
+  // surface-gated `mots` hides). Both hooks share the one MOTS_KEY query.
+  const allMots = useAllMots()
+  const nowSec = Date.now() / 1000
   const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') })
   const members = data?.members ?? []
   const ctx: DetailCtx = { t, lang, members }
@@ -50,11 +58,25 @@ export function MotsCard() {
   const seen = removal
     .visible(visibleMots(mots, profileId).filter((m) => m.opened_at != null))
     .sort((a, b) => Number(!!b.saved_at) - Number(!!a.saved_at))
-  if (waiting.length === 0 && seen.length === 0) return null
+  // « Ce que j'ai laissé » — the picked face's own outbox (incl. still-scheduled mots).
+  const sent = removal.visible(sentMots(allMots, profileId))
+  if (waiting.length === 0 && seen.length === 0 && sent.length === 0) return null
 
   const nameOf = (id: string | null) => members.find((m) => m.id === id)?.display_name ?? null
   const sub = (m: Mot) =>
     [nameOf(m.author_member_id), m.member_id === null ? fn.forMaisonnee : fn.forYou].filter(Boolean).join(' · ')
+  // A programmed « Plus tard » reads its target moment; a landed one is just seen/waiting.
+  const whenLabel = (sec: number) => `${formatDay(sec, lang)} ${formatTime(sec, lang)}`
+  // The outbox subtitle: who it's for + its status (scheduled / seen / still waiting).
+  const sentSub = (m: Mot) => {
+    const to = m.member_id === null ? fn.forMaisonnee : fn.to(nameOf(m.member_id) ?? '?')
+    const status = isScheduled(m, nowSec)
+      ? fn.scheduledFor(whenLabel(m.surface_at!))
+      : m.opened_at
+        ? fn.statusSeen
+        : fn.statusWaiting
+    return [to, status].join(' · ')
+  }
   const labelOf = (m: Mot) =>
     m.text.split('\n').find((l) => l.trim())?.trim() ||
     (m.media_kind === 'audio' ? fn.memo : m.media_kind === 'drawing' ? fn.drawing : m.media_kind === 'image' ? fn.photo : fn.untitled)
@@ -95,6 +117,22 @@ export function MotsCard() {
       void write('mots', { method: 'PATCH', body: { id: m.id, opened: true }, affectedKeys: [MOTS_KEY, BOARD_KEY] }).catch(() => {})
   }
 
+  // Open one of MY sent mots (the outbox) — a preview + sender actions. Never stamps opened_at
+  // (the sender looking at their own outbox is NOT the recipient hearing it); a still-scheduled
+  // one offers « Reprogrammer » and its programmed moment as the « when » line.
+  function openSent(m: Mot) {
+    const scheduled = isScheduled(m, nowSec)
+    detail.open(
+      buildMot(m, ctx, {
+        saved: !!m.saved_at,
+        parentQuote: quoteOf(m),
+        onReschedule: scheduled ? () => setReschedule(m) : undefined,
+        onDelete: () => remove(m),
+        whenOverride: scheduled ? fn.scheduledFor(whenLabel(m.surface_at!)) : undefined,
+      }),
+    )
+  }
+
   const row = (m: Mot, kept = false) => (
     <Act
       key={m.id}
@@ -108,6 +146,19 @@ export function MotsCard() {
     />
   )
 
+  // An outbox row: tinted by the RECIPIENT (who it's going to), a clock glyph while scheduled.
+  const sentRow = (m: Mot) => (
+    <Act
+      key={'sent-' + m.id}
+      cat="cercle"
+      color={members.find((x) => x.id === m.member_id)?.colour ?? undefined}
+      icon={isScheduled(m, nowSec) ? 'clock-bold' : mediaGlyph(m.media_kind)}
+      title={labelOf(m)}
+      who={sentSub(m)}
+      onOpen={() => openSent(m)}
+    />
+  )
+
   return (
     <Section label={fn.cardTitle} icon="envelope-bold" tint={CATS.cercle.color}>
       {waiting.map((m) => row(m))}
@@ -116,9 +167,20 @@ export function MotsCard() {
           {seen.map((m) => row(m, true))}
         </Disclosure>
       )}
+      {/* « Ce que j'ai laissé » — the sender's own outbox: did they see it yet, and pull back or
+          move a « Plus tard » before it lands. Presence + per-item status, never a tally. */}
+      {sent.length > 0 && (
+        <Disclosure label={fn.sentGroup}>
+          {sent.map(sentRow)}
+        </Disclosure>
+      )}
       {/* Reply composer — opened from a mot's peek; recipient locked to the original sender. */}
       <Modal open={!!replyTo} onClose={() => setReplyTo(null)} title={fn.reply} className="cnote-memo">
         {replyTo && <MotComposer replyTo={replyTo} onDone={() => setReplyTo(null)} />}
+      </Modal>
+      {/* Reschedule sheet — move a sent, still-scheduled mot (or send it now). */}
+      <Modal open={!!reschedule} onClose={() => setReschedule(null)} title={fn.rescheduleTitle} className="cnote-memo">
+        {reschedule && <RescheduleBody mot={reschedule} onDone={() => setReschedule(null)} />}
       </Modal>
     </Section>
   )

@@ -31,6 +31,13 @@ export function isSurfaced(m: Mot, nowSec: number): boolean {
   return m.surface_at == null || m.surface_at <= nowSec
 }
 
+// Still waiting in the future — a « Plus tard » mot whose moment hasn't come. The inverse of
+// isSurfaced (a surfaced mot is never "scheduled" anymore). Used by the sender outbox to badge
+// a mot as programmed and to offer cancel / reschedule before it lands.
+export function isScheduled(m: Mot, nowSec: number): boolean {
+  return m.surface_at != null && m.surface_at > nowSec
+}
+
 // The viewing filter (mirrors familyNotes.visibleNotes): a picked face sees THEIR mots
 // PLUS the Maisonnée ones always; "Maisonnée" (face null) sees only the family-wide mots.
 // Newest first (the inbox reads most-recent, like the notes list).
@@ -49,6 +56,16 @@ export function savedMots(mots: Mot[], face: string | null): Mot[] {
   return visibleMots(mots, face).filter((m) => m.saved_at != null)
 }
 
+// The SENDER's outbox — mots this face authored, newest first, INCLUDING not-yet-surfaced
+// scheduled ones (the sender should see + be able to pull back a « Plus tard » before it
+// lands). Read off the RAW list (useAllMots), never the surface-gated one. Calm: this is the
+// only place opened_at is read as a "was it seen?" status, and only for what YOU sent —
+// still presence, never a household-wide unread tally.
+export function sentMots(mots: Mot[], authorId: string | null): Mot[] {
+  if (!authorId) return []
+  return mots.filter((m) => m.author_member_id === authorId).slice().sort((a, b) => b.created_at - a.created_at)
+}
+
 // Member ids with ≥1 unopened mot addressed TO THEM — feeds the per-face presence DOT.
 // Maisonnée mots (recipient null) are DELIBERATELY excluded: they're already discoverable
 // on the at-rest board (the « Mots » card shows family-wide mots to everyone), so dotting
@@ -62,14 +79,21 @@ export function waitingRecipientIds(mots: Mot[]): Set<string> {
   return ids
 }
 
+// The RAW mots cache — every live mot, INCLUDING not-yet-surfaced scheduled ones. Only the
+// sender outbox (which must show + cancel a « Plus tard ») reads this; everything the
+// RECIPIENT sees goes through useMots below, which gates the schedule.
+export function useAllMots(): Mot[] {
+  const { data } = useQuery({ queryKey: MOTS_KEY, queryFn: () => api<{ mots: Mot[] }>('mots'), ...live })
+  return data?.mots ?? []
+}
+
 // Shared read of the mots cache (board card + face dots both read it live). SCHEDULED mots
 // are gated HERE — the single chokepoint — so a not-yet-surfaced mot is absent from the
 // inbox, the « Déjà vus » group AND the face dot at once. The live poll re-renders this, so
 // a scheduled mot appears within a poll interval of its surface_at (calm: no push).
 export function useMots(): Mot[] {
-  const { data } = useQuery({ queryKey: MOTS_KEY, queryFn: () => api<{ mots: Mot[] }>('mots'), ...live })
   const now = Date.now() / 1000
-  return (data?.mots ?? []).filter((m) => isSurfaced(m, now))
+  return useAllMots().filter((m) => isSurfaced(m, now))
 }
 
 // Does this specific face have a mot waiting for them? Used by the face-row dot.

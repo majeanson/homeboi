@@ -15,7 +15,8 @@ import { isValidR2Key } from '../_lib/validate'
 //
 //   GET    /api/mots  -> all live mots (both scopes, opened + unopened); the client filters
 //   POST   /api/mots  -> leave { recipient_id?, text?, media_kind?, media_key?, scene_key? }
-//   PATCH  /api/mots  -> { id, opened?:true, saved?:bool, text? } (stamp opened / keep / edit)
+//   PATCH  /api/mots  -> { id, opened?:true, saved?:bool, text?, surface_at? } (stamp opened /
+//                          keep / edit text / reschedule — or send now via surface_at:null)
 //   DELETE /api/mots  -> soft-clear one { id } (sets deleted_at; frees media)
 //
 // member_id = the RECIPIENT (NULL = Maisonnée), chosen EXPLICITLY in the composer.
@@ -122,17 +123,23 @@ export const onRequestPost = authed(async (ctx, actor) => {
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
-  // Stamp the mot OPENED (the recipient heard/read it), KEEP it as a keepsake (saved), and/or
-  // edit a still-unopened text mot. Opening is idempotent (first open wins). The author is
+  // Stamp the mot OPENED (the recipient heard/read it), KEEP it as a keepsake (saved), edit a
+  // still-unopened text mot, and/or RESCHEDULE it (the sender moves a « Plus tard » — or sends
+  // it now with surface_at:null). Opening is idempotent (first open wins). The author is
   // never rewritten; re-scoping a mot isn't supported (it's addressed at send time).
-  //   { id, opened?: true, saved?: boolean, text? }
-  const body = await readJson<{ id?: string; opened?: boolean; saved?: boolean; text?: string }>(ctx.request)
+  //   { id, opened?: true, saved?: boolean, text?, surface_at?: number | null }
+  const body = await readJson<{ id?: string; opened?: boolean; saved?: boolean; text?: string; surface_at?: number | null }>(
+    ctx.request,
+  )
   const id = body?.id?.trim()
   if (!id) return badRequest('id requis.')
   const hasOpened = body?.opened === true
   const hasSaved = typeof body?.saved === 'boolean'
   const hasText = typeof body?.text === 'string'
-  if (!hasOpened && !hasSaved && !hasText) return badRequest('Rien à modifier.')
+  // Reschedule is opt-in by the key's PRESENCE (null is a valid value = "surface now"), so a
+  // plain open/keep PATCH never clears a schedule by omission.
+  const hasSurface = body != null && Object.prototype.hasOwnProperty.call(body, 'surface_at')
+  if (!hasOpened && !hasSaved && !hasText && !hasSurface) return badRequest('Rien à modifier.')
 
   const row = await ctx.env.DB.prepare('SELECT id FROM mots WHERE id = ? AND household_id = ? AND deleted_at IS NULL')
     .bind(id, actor.householdId)
@@ -140,8 +147,14 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!row) return notFound('Mot introuvable.')
 
   const now = nowSec()
+  // Same rule as POST: only a finite second strictly in the future schedules; anything else
+  // (a past time, or an explicit null) surfaces the mot now.
+  const surfaceAt =
+    typeof body?.surface_at === 'number' && Number.isFinite(body.surface_at) && body.surface_at > now
+      ? Math.floor(body.surface_at)
+      : null
   await ctx.env.DB.prepare(
-    'UPDATE mots SET opened_at = CASE WHEN ? = 1 THEN COALESCE(opened_at, ?) ELSE opened_at END, saved_at = CASE WHEN ? = 1 THEN ? ELSE saved_at END, text = COALESCE(?, text), updated_at = ? WHERE id = ? AND household_id = ?',
+    'UPDATE mots SET opened_at = CASE WHEN ? = 1 THEN COALESCE(opened_at, ?) ELSE opened_at END, saved_at = CASE WHEN ? = 1 THEN ? ELSE saved_at END, text = COALESCE(?, text), surface_at = CASE WHEN ? = 1 THEN ? ELSE surface_at END, updated_at = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       hasOpened ? 1 : 0,
@@ -149,6 +162,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       hasSaved ? 1 : 0,
       hasSaved && body!.saved ? now : null,
       hasText ? body!.text!.trim().slice(0, TEXT_CAP) : null,
+      hasSurface ? 1 : 0,
+      surfaceAt,
       now,
       id,
       actor.householdId,

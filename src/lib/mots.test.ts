@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isSurfaced, visibleMots, waitingMots, savedMots, waitingRecipientIds, type Mot } from './mots'
+import { isSurfaced, isScheduled, visibleMots, waitingMots, savedMots, sentMots, waitingRecipientIds, type Mot } from './mots'
 
 // A minimal Mot factory — only the fields the pure helpers read.
 function mot(p: Partial<Mot>): Mot {
@@ -43,6 +43,30 @@ describe('mots helpers', () => {
     })
     it('Maisonnée (null face) sees only family-wide mots', () => {
       expect(visibleMots(all, null).map((m) => m.id)).toEqual(['house'])
+    })
+  })
+
+  describe('isScheduled (sender outbox badge — inverse of surfaced)', () => {
+    it('a future surface_at is scheduled; a past one or null is not', () => {
+      expect(isScheduled(mot({ surface_at: 200 }), 100)).toBe(true)
+      expect(isScheduled(mot({ surface_at: 200 }), 200)).toBe(false) // surfaced now, not scheduled
+      expect(isScheduled(mot({ surface_at: 200 }), 300)).toBe(false)
+      expect(isScheduled(mot({}), 100)).toBe(false) // unscheduled
+    })
+  })
+
+  describe('sentMots (sender outbox)', () => {
+    const all = [
+      mot({ id: 'a', author_member_id: 'A', member_id: 'B', created_at: 1 }),
+      mot({ id: 'b', author_member_id: 'A', member_id: null, created_at: 3, surface_at: 999 }), // scheduled, still included
+      mot({ id: 'c', author_member_id: 'C', member_id: 'A', created_at: 2 }), // someone else's
+      mot({ id: 'd', author_member_id: 'A', member_id: 'B', created_at: 2, opened_at: 5 }), // seen, still included
+    ]
+    it('returns mots I authored, newest first, incl. scheduled + seen', () => {
+      expect(sentMots(all, 'A').map((m) => m.id)).toEqual(['b', 'd', 'a'])
+    })
+    it('a null author (Maisonnée at rest) has no outbox', () => {
+      expect(sentMots(all, null)).toEqual([])
     })
   })
 
