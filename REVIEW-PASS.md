@@ -45,10 +45,11 @@
    `DealsBrowser` list-add, `useRecipeShop`, `RoutinePlayer` progress, `keepSuggestion`, + a
    household-settings PATCH inconsistency. Everything else (AI / auth / blob uploads) is correctly
    online-only. _(Full list in §8.)_
-2. **Query keys spelled outside `lib/queryKeys.ts`.** `['ghosts']`/`['list-history']` (5+ copies),
-   a **dead `['list']` invalidate** (×3, points at nothing), `['routines']`/`['carnets']`/
-   `['drawings']` literals, `INTAKE_KEY`/`POSTBOX_KEY`/`THIS_WEEK_KEY`/`ContactPhotos` page-local.
-   Centralize — a key spelled twice drifts into two caches.
+2. **Query keys spelled outside `lib/queryKeys.ts`.** ✅ **Mostly closed** — `['ghosts']`/
+   `['list-history']` centralized (Batch E); the dead `['list']` invalidate removed (Batch A);
+   **`['routines']`→`ROUTINES_KEY`, `['carnets']`→`CARNETS_KEY`, `['health']`→`HEALTH_KEY`
+   centralized 2026-07-02** (0db44cb). _Remaining (page-local, acceptable as single-source-per-page):_
+   `GALLERY_KEY=['drawings']`, `INTAKE_KEY`/`POSTBOX_KEY`/`THIS_WEEK_KEY`/`ContactPhotos`.
 3. **a11y: incomplete tablist + missing `aria-pressed`.** The Réglages nav **and** the cercle
    section nav are `role="tablist"` without `id`/`aria-controls`/roving-tabindex/arrow keys;
    toggle-chip pickers (ChoreForm rotation, schedule, EventForm who/car/passenger) signal selection
@@ -93,8 +94,11 @@ and two e2e specs (aisle-sort, capture-offline).
   (ephemeral / rarely-offline — documented, not necessarily fixed).
 - **e2e backfill (the big remaining gap):** carnet-restore, guest intake/postbox flows, the carnet
   scene, **Voyage entirely**, capture AI-off degrade+reroute, idle wake/drift — each needs new mock
-  scaffolding + a runnable pass. Also **3 pre-existing e2e failures on `main`** (`board-customize` ×2,
-  `meals` slot-icon) that fail on clean HEAD, independent of this pass — worth a look.
+  scaffolding + a runnable pass. ✅ **The 3 pre-existing failures are FIXED** (2026-07-02, d80cbe5 +
+  288c146): `board-customize` ×2 + `meals` slot-icon were time-of-day-flaky (board lifecycle folds
+  "past" mock items vs the real clock) → a surgical `page.clock.setFixedTime(BASE)` on just the two
+  timed-item tests, plus a stale band-count (4→5, Mots joined the band). A new `e2e/onboarding.spec.ts`
+  locks the seed→explore→clear→setup sequence (stateful `/api/seed` stub). Full suite green.
 
 The **section blocks below (§1–§8)** are the live backlog — ~119 findings, tagged P1/P2/P3.
 
