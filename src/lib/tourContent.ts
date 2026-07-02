@@ -23,6 +23,19 @@ function guideWhat(id: string): Bi {
   return card.what
 }
 
+// The "what the ＋ adds here" enumeration from a section's Guide card ("Le bouton
+// ＋ ici" point), reused verbatim as the section tour's add-step body — so the tour
+// lists every add-action a section offers and stays in lockstep with the Guide (one
+// source, no drift). Located by its ＋ marker (not a brittle index), and it throws
+// at module load if the point is missing, so a rename can't ship a blank add-step.
+function guidePlusActions(id: string): Bi {
+  const card = GUIDE.find((e) => e.id === id)
+  if (!card) throw new Error(`tourContent: no Guide card "${id}"`)
+  const point = card.points.find((p) => p.label.fr.includes('＋'))
+  if (!point) throw new Error(`tourContent: no "＋" add-actions point in Guide card "${id}"`)
+  return point.detail
+}
+
 type TourStep = {
   // A `data-tour` key to spotlight; omit for a centred card.
   target?: string
@@ -126,11 +139,8 @@ export const TOURS: Tour[] = [
       {
         target: 'add-fab',
         icon: 'plus-bold',
-        title: { fr: 'Ajoute ici', en: 'Add here' },
-        body: {
-          fr: 'Le ＋ ajoute au babillard : un rendez-vous, une corvée, une routine, un à-compléter — ou « Avant de partir ».',
-          en: 'The ＋ adds to the board: an event, a chore, a routine, a to-do — or “Before you go”.',
-        },
+        title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
+        body: guidePlusActions('board'),
       },
     ],
   },
@@ -151,11 +161,8 @@ export const TOURS: Tour[] = [
       {
         target: 'add-fab',
         icon: 'plus-bold',
-        title: { fr: 'Ajoute ici', en: 'Add here' },
-        body: {
-          fr: 'Le ＋ : cuisiner, planifier un repas, ajouter une recette — ou « Le livre illustré » à feuilleter avec les petits.',
-          en: 'The ＋: cook, plan a meal, add a recipe — or “The picture book” to flip through with the little ones.',
-        },
+        title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
+        body: guidePlusActions('kitchen'),
       },
     ],
   },
@@ -176,11 +183,8 @@ export const TOURS: Tour[] = [
       {
         target: 'add-fab',
         icon: 'plus-bold',
-        title: { fr: 'Monte une routine', en: 'Build a routine' },
-        body: {
-          fr: 'Le ＋ ouvre le gestionnaire : crée une nouvelle routine ou modifie une existante.',
-          en: 'The ＋ opens the manager: create a new routine or edit an existing one.',
-        },
+        title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
+        body: guidePlusActions('routines'),
       },
     ],
   },
@@ -201,11 +205,8 @@ export const TOURS: Tour[] = [
       {
         target: 'add-fab',
         icon: 'plus-bold',
-        title: { fr: 'Ajoute du monde', en: 'Add people' },
-        body: {
-          fr: 'Le ＋ : une personne, une famille entière, relier deux personnes, ou un groupe.',
-          en: 'The ＋: a person, a whole family, connect two people, or a group.',
-        },
+        title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
+        body: guidePlusActions('cercle'),
       },
     ],
   },
@@ -226,11 +227,8 @@ export const TOURS: Tour[] = [
       {
         target: 'add-fab',
         icon: 'plus-bold',
-        title: { fr: 'Plus d’options', en: 'More options' },
-        body: {
-          fr: 'Le ＋ : ajout rapide des habitués, les circulaires, ou partager la liste.',
-          en: 'The ＋: quick-add your regulars, the flyers, or share the list.',
-        },
+        title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
+        body: guidePlusActions('liste'),
       },
     ],
   },
