@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useAuth } from '../lib/auth'
+import { useTour } from '../lib/tour'
 import { api } from '../lib/api'
 import { useMeals } from '../lib/queryHooks'
 import { DEVICES_KEY } from '../lib/queryKeys'
@@ -66,6 +67,7 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   const t = useT()
   const { audience } = useAudience()
   const { signedIn } = useAuth()
+  const { start } = useTour()
   const nav = useNavigate()
   const [state, setState] = useState(read)
 
@@ -82,7 +84,11 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
       enabled: signedIn,
     }).data?.devices.length ?? 0
 
-  if (audience === 'toddler' || state.dismissed) return null
+  // Operator-only: this is the household SETUP checklist, and every step + link
+  // targets Réglages (operator surface). A kiosk (device token, not signed in)
+  // can't act on it, and its "pair a tablet" step could never tick there — so it
+  // simply doesn't show. The operator sees it on their own signed-in device.
+  if (audience === 'toddler' || !signedIn || state.dismissed) return null
 
   // Every step is data-driven: it ticks only when the real thing exists, so tapping
   // a link and backing out can never false-complete a step (it just won't be done).
@@ -133,6 +139,13 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
           not the Guide — discovery by doing. The Guide stays the explanation layer
           (each section's "?" + Réglages ▸ Guide). */}
       <FeatureMap onSelect={(k) => nav(featureMapRoute(k))} label={t.welcome.discover} />
+      {/* A VISIBLE way back to the guided tour: skipping it is one tap, and the only
+          other recovery is buried in Réglages ▸ Guide. This keeps it a tap away while
+          the newcomer is still on the board. */}
+      <button type="button" className="welcome-card__replay" onClick={() => start('essentials')}>
+        <Icon name="play-bold" size={14} />
+        <span>{t.welcome.replayTour}</span>
+      </button>
     </aside>
   )
 }

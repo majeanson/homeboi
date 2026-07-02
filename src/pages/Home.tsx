@@ -40,7 +40,13 @@ export function Home() {
   const t = useT()
   return (
     <div className="page">
-      <TopBar />
+      {/* Explicit top-right "Log in" (the conventional spot) for a returning
+          operator — direct to /login, distinct from the hero's device-setup path. */}
+      <TopBar>
+        <Link to="/login" className="btn btn--ghost">
+          {t.home.login}
+        </Link>
+      </TopBar>
       <main className="home">
         <section className="home__hero">
           <p className="home__wordmark">

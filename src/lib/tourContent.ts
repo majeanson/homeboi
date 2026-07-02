@@ -87,6 +87,14 @@ export const TOURS: Tour[] = [
         body: guideWhat('capture'),
       },
       {
+        icon: 'sparkle-bold',
+        title: { fr: 'Un « ? » quand tu bloques', en: 'A “?” when you’re stuck' },
+        body: {
+          fr: 'En haut de chaque section, la pastille colorée porte un petit « ? ». Touche-le, puis touche ce qui t’intrigue : l’app t’explique juste là, à sa place. Il s’efface une fois que tu connais l’app.',
+          en: 'At the top of every section, the coloured disc carries a small “?”. Tap it, then tap whatever puzzles you: the app explains it right there, in place. It fades once you know the app.',
+        },
+      },
+      {
         icon: 'gear-six-bold',
         title: { fr: 'C’est tout !', en: 'That’s it!' },
         body: {

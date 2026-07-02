@@ -358,6 +358,23 @@
   color: var(--ink-faint);
   margin: 0 0 0.6rem;
 }
+/* A quiet "replay the guided tour" link under the discovery map (onboarding P3). */
+.welcome-card__replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.9rem 0 0;
+  padding: 0.35rem 0;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.welcome-card__replay:hover,
+.welcome-card__replay:focus-visible {
+  color: var(--marigold-deep);
+}
 .greet .accent {
   color: var(--marigold-deep);
 }

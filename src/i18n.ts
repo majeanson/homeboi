@@ -109,6 +109,7 @@ export const FR = {
     ctaStart: 'Commencer',
     ctaReturning: 'J’ai déjà un compte',
     ctaSignup: 'Créer ma maisonnée',
+    login: 'Se connecter',
     // Skeleton welcome: a small "what it's for" strip + a short calm promise.
     whatHeading: 'Ça sert à quoi ?',
     forSupper: 'Le souper',
@@ -145,6 +146,7 @@ export const FR = {
     pair: 'Jumeler une tablette (optionnel)',
     later: 'Plus tard',
     discover: 'Tout ce que Babillard fait',
+    replayTour: 'Revoir la visite guidée',
   },
   sample: {
     title: 'Des exemples pour explorer',
@@ -2464,6 +2466,7 @@ export const EN: typeof FR = {
     ctaStart: 'Get started',
     ctaReturning: 'I already have an account',
     ctaSignup: 'Create my household',
+    login: 'Log in',
     // Skeleton welcome: a small "what it's for" strip + a short calm promise.
     whatHeading: 'What’s it for?',
     forSupper: 'Supper',
@@ -2500,6 +2503,7 @@ export const EN: typeof FR = {
     pair: 'Pair a tablet (optional)',
     later: 'Later',
     discover: 'Everything Babillard does',
+    replayTour: 'Replay the guided tour',
   },
   sample: {
     title: 'Sample data to explore',
