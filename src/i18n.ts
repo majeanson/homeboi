@@ -812,6 +812,7 @@ export const FR = {
     useUpIdeas: 'À écouler',
     suggestOpen: 'Voir',
     suggestKeep: 'Garder',
+    suggestKept: 'Gardé',
     suggestMore: 'Une autre',
     // « Vide-frigo » (#5) — invent a recipe from what's about to spoil.
     fridge: {
@@ -3132,6 +3133,7 @@ export const EN: typeof FR = {
     useUpIdeas: 'Use it up',
     suggestOpen: 'Open',
     suggestKeep: 'Keep',
+    suggestKept: 'Kept',
     suggestMore: 'Another',
     // « Vide-frigo » (#5) — invent a recipe from what's about to spoil.
     fridge: {

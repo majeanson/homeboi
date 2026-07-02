@@ -342,13 +342,27 @@ export function Kitchen() {
 
   // Keep a suggestion (AI text, or a real recipe link) into the ideas pool. Takes
   // the specific card now that several can be on screen at once.
+  // Which suggestions have been kept this session (by source:title) — so the button
+  // reads « Gardé ✓ » and a second tap can't insert the same idea twice.
+  const [keptIdeas, setKeptIdeas] = useState<Set<string>>(() => new Set())
+  const ideaKey = (s: MealSuggestion) => `${s.source}:${s.title}`
   async function keepSuggestion(s: MealSuggestion) {
+    const key = ideaKey(s)
+    if (keptIdeas.has(key)) return // guard the double-tap → no duplicate meal-idea row
+    setKeptIdeas((prev) => new Set(prev).add(key))
     // useWrite so keeping an idea offline queues + replays (matches MealPool.planIdea).
     await write('meal-ideas', {
       method: 'POST',
       body: { title: s.title, recipeId: s.recipe?.id ?? null, suggestedBy: profileId },
       affectedKeys: [MEAL_IDEAS_KEY],
-    }).catch(() => {})
+    }).catch(() => {
+      // Roll back the "kept" mark on failure so the user can retry.
+      setKeptIdeas((prev) => {
+        const n = new Set(prev)
+        n.delete(key)
+        return n
+      })
+    })
   }
 
   if (unauth) return <PairPrompt />
@@ -457,8 +471,21 @@ export function Kitchen() {
                         <InlineIcon name="book-open-bold" /> {t.kitchen.suggestOpen}
                       </button>
                     )}
-                    <button type="button" className="btn btn--ghost mono" onClick={() => keepSuggestion(s)}>
-                      <InlineIcon name="plus-bold" /> {t.kitchen.suggestKeep}
+                    <button
+                      type="button"
+                      className="btn btn--ghost mono"
+                      onClick={() => keepSuggestion(s)}
+                      disabled={keptIdeas.has(ideaKey(s))}
+                    >
+                      {keptIdeas.has(ideaKey(s)) ? (
+                        <>
+                          <InlineIcon name="check-bold" /> {t.kitchen.suggestKept}
+                        </>
+                      ) : (
+                        <>
+                          <InlineIcon name="plus-bold" /> {t.kitchen.suggestKeep}
+                        </>
+                      )}
                     </button>
                     <button
                       type="button"
