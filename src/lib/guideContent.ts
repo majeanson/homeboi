@@ -48,6 +48,12 @@ export type GuideEntry = {
   // Guide can offer a direct "go there" link (/settings?tab=<tab>). Must match a
   // SECTION id in pages/Operator.tsx.
   tab?: string
+  // A full route path this card opens ("→ Ouvrir dans l'app") — generalizes `tab`
+  // to any hub tab or scene (e.g. '/board', '/voyage/new', '/drawings'), so a
+  // concept/section card can send you straight to the live feature, not just a
+  // Réglages tab. When both are set, `route` wins. The feature-discovery map's
+  // tiles reuse this same target via CONCEPT_THEMES.route.
+  route?: string
   // An optional guided tour (lib/tourContent TOURS id) this card can replay. Given
   // → the card hosts a "replay" button that (re)starts that tour, so a tour is
   // permanently re-doable from the Guide, not just on first run. 'essentials' on the
@@ -99,36 +105,68 @@ export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] =
 // truth for the themed map — reused by the in-app Guide (sub-clustering + jump
 // grid), the Board first-run WelcomeCard, and the DevKit gallery (FeatureMap).
 // Keep it here (next to GUIDE) so the map and the cards never drift apart.
-export type ConceptTheme = { key: string; icon: IconName; label: Bi; ids: string[] }
+// `route` = where the theme's tile opens in the LIVE app (the feature-map is a
+// launcher now, not just a Guide-scroller). `ids` must list every `group:'concepts'`
+// card in the theme — an id in no theme is invisible to the jump-grid (a bug we
+// closed for home-projects/cast-tv). New concept card ⇒ add its id to a theme here.
+export type ConceptTheme = { key: string; icon: IconName; label: Bi; ids: string[]; route: string }
 export const CONCEPT_THEMES: ConceptTheme[] = [
   {
     key: 'everyday',
     icon: 'plus-bold',
     label: { fr: 'Au quotidien', en: 'Everyday' },
-    ids: ['capture', 'type-or-choose', 'favorites', 'todos', 'activities', 'reminders', 'moment', 'undo'],
+    route: '/board',
+    ids: [
+      'capture',
+      'type-or-choose',
+      'mots',
+      'favorites',
+      'todos',
+      'activities',
+      'home-projects',
+      'reminders',
+      'moment',
+      'drawings',
+      'undo',
+    ],
   },
   {
     key: 'kitchen-shop',
     icon: 'carrot-bold',
     label: { fr: 'Cuisine & épicerie', en: 'Kitchen & groceries' },
+    route: '/kitchen',
     ids: ['recipes', 'cookmode', 'leftovers', 'reserve', 'deals', 'flyers', 'cashier', 'ghost'],
   },
   {
     key: 'devices',
     icon: 'device-tablet-bold',
     label: { fr: 'Appareils & affichage', en: 'Devices & display' },
-    ids: ['surface', 'audience', 'pairing', 'screensaver', 'apod', 'share', 'share-access', 'offline', 'account'],
+    route: '/settings?tab=devices',
+    ids: [
+      'surface',
+      'audience',
+      'pairing',
+      'screensaver',
+      'apod',
+      'share',
+      'share-access',
+      'cast-tv',
+      'offline',
+      'account',
+    ],
   },
   {
     key: 'getting-around',
     icon: 'key-bold',
     label: { fr: 'Se déplacer', en: 'Getting around' },
+    route: '/voiture',
     ids: ['voyage', 'auto', 'carnets'],
   },
   {
     key: 'ai-calm',
     icon: 'sparkle-bold',
     label: { fr: 'Intelligence & calme', en: 'AI & calm' },
+    route: '/settings?tab=ai',
     ids: ['ai', 'a-regler', 'calm'],
   },
 ]
@@ -136,12 +174,21 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
 // The jump-grid tiles: the six sections + each concept theme + settings, in the
 // order they appear in the Guide. Each `key` matches a scroll anchor the Guide
 // renders (guide-th-<key>: 'sections' | <theme.key> | 'settings').
-export type FeatureMapTile = { key: string; icon: IconName; label: Bi }
+// `route` = where the tile opens in the LIVE app. The Guide's own map still
+// scrolls to the theme block (in-Guide); the Board WelcomeCard + the landing use
+// `route` to send you into the feature (alive now that a fresh account is seeded).
+export type FeatureMapTile = { key: string; icon: IconName; label: Bi; route: string }
 export const FEATURE_MAP_TILES: FeatureMapTile[] = [
-  { key: 'sections', icon: 'sun-bold', label: { fr: 'Les six sections', en: 'The six sections' } },
-  ...CONCEPT_THEMES.map((th) => ({ key: th.key, icon: th.icon, label: th.label })),
-  { key: 'settings', icon: 'gear-six-bold', label: { fr: 'Réglages', en: 'Settings' } },
+  { key: 'sections', icon: 'sun-bold', label: { fr: 'Les six sections', en: 'The six sections' }, route: '/board' },
+  ...CONCEPT_THEMES.map((th) => ({ key: th.key, icon: th.icon, label: th.label, route: th.route })),
+  { key: 'settings', icon: 'gear-six-bold', label: { fr: 'Réglages', en: 'Settings' }, route: '/settings' },
 ]
+
+// Resolve a feature-map tile key → its live route (for callers that navigate
+// instead of scrolling the Guide). Falls back to the board for an unknown key.
+export function featureMapRoute(key: string): string {
+  return FEATURE_MAP_TILES.find((t) => t.key === key)?.route ?? '/board'
+}
 
 export const GUIDE: GuideEntry[] = [
   // ── Pour commencer (the overview + replay) ────────────────────────────────
@@ -233,6 +280,13 @@ export const GUIDE: GuideEntry[] = [
       en: 'The household glance screen: the time, today’s agenda, tonight’s supper, the chores and what’s to do, gathered on one wall — so everyone sees the day at a glance, without asking or touching a thing.',
     },
     points: [
+      {
+        label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
+        detail: {
+          fr: 'Au babillard, le ＋ (en bas) ajoute : une note rapide (écrite ou parlée), un rendez-vous, une corvée, un à-faire, une routine, un mot à laisser, un voyage, planifier le repas d’aujourd’hui ou de demain, et « Avant de partir ».',
+          en: 'On the board, ＋ (bottom) adds: a quick note (typed or spoken), an appointment, a chore, a to-do, a routine, a note to leave, a trip, plan today’s or tomorrow’s meal, and “Before you go”.',
+        },
+      },
       {
         label: { fr: 'Pensé pour la tablette', en: 'Built for the tablet' },
         detail: {
@@ -445,6 +499,13 @@ export const GUIDE: GuideEntry[] = [
     },
     points: [
       {
+        label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
+        detail: {
+          fr: 'Dans La cuisine, le ＋ ajoute : cuisiner une recette, ajouter une recette, le livre illustré, planifier un repas, des restants, un aliment qui achève, ou un article de la réserve.',
+          en: 'In the Kitchen, ＋ adds: cook a recipe, add a recipe, the illustrated book, plan a meal, leftovers, a running-low item, or a réserve item.',
+        },
+      },
+      {
         label: { fr: 'Planifier la semaine', en: 'Plan the week' },
         detail: {
           fr: 'Mets un repas dans une case et il apparaît sur le babillard la bonne journée. Pas obligé de tout remplir.',
@@ -612,6 +673,13 @@ export const GUIDE: GuideEntry[] = [
     },
     points: [
       {
+        label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
+        detail: {
+          fr: 'Dans Routines, le ＋ ouvre le gestionnaire : créer une nouvelle routine, ou toucher une routine existante pour la modifier (les cartes, les images, les minuteries).',
+          en: 'In Routines, ＋ opens the manager: create a new routine, or tap an existing one to edit it (its cards, pictures, timers).',
+        },
+      },
+      {
         label: { fr: 'Une étape à la fois', en: 'One step at a time' },
         detail: {
           fr: 'Une grande carte « c’est l’heure de… », puis « ensuite ». L’enfant touche pour avancer.',
@@ -752,6 +820,13 @@ export const GUIDE: GuideEntry[] = [
       en: 'The directory of the people close to you: family and friends, with a photo, birthday, email and phone — to see who’s who at a glance.',
     },
     points: [
+      {
+        label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
+        detail: {
+          fr: 'Dans Le cercle, le ＋ ajoute : une personne, bâtir une famille, relier deux personnes, un groupe, un business (vétérinaire, plombier…), un animal, ou un carnet (maison, auto…).',
+          en: 'In the Circle, ＋ adds: a person, build a family, connect two people, a group, a business (vet, plumber…), a pet, or a carnet (home, car…).',
+        },
+      },
       {
         label: { fr: 'Ta Maisonnée, ta famille', en: 'Your Household, your family' },
         detail: {
@@ -911,6 +986,13 @@ export const GUIDE: GuideEntry[] = [
       en: 'One single shared, active list (groceries, usually). Everyone sees it and adds to it, on every device.',
     },
     points: [
+      {
+        label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
+        detail: {
+          fr: 'Dans La liste, le ＋ ajoute : un article à la liste, l’ajout rapide (plusieurs d’un coup), parcourir les circulaires, « choisir les meilleurs » rabais, ou partager la liste.',
+          en: 'In the List, ＋ adds: an item, quick-add (several at once), browse the flyers, “pick the best” deals, or share the list.',
+        },
+      },
       {
         label: { fr: 'Cocher en place', en: 'Check in place' },
         detail: {
@@ -1311,6 +1393,78 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    id: 'mots',
+    icon: 'envelope-bold',
+    group: 'concepts',
+    route: '/board',
+    title: { fr: 'Laisse un mot', en: 'Leave a note' },
+    what: {
+      fr: 'Un petit message qu’un membre laisse à un autre — écrit, une note vocale, un dessin ou une photo — et qui l’attend, fermé, sur son visage jusqu’à ce qu’il l’ouvre.',
+      en: 'A little message one member leaves for another — typed, a voice memo, a drawing or a photo — that waits, unopened, on their face until they open it.',
+    },
+    points: [
+      {
+        label: { fr: 'Déposer un mot', en: 'Leave a note' },
+        detail: {
+          fr: 'Touche le ＋ au babillard → « Laisse un mot », choisis à qui, puis écris ou enregistre. Tu peux même te le programmer à toi-même (« Me le rappeler »).',
+          en: 'Tap ＋ on the board → “Leave a note”, choose who it’s for, then type or record. You can even schedule one to yourself (“Remind me”).',
+        },
+      },
+      {
+        label: { fr: 'Il attend, sans presser', en: 'It waits, no pressure' },
+        detail: {
+          fr: 'Le mot reste fermé sur le visage du destinataire — pas de pastille de compte, pas de « non lus » qui s’accumulent. On l’ouvre quand on passe.',
+          en: 'The note stays closed on the recipient’s face — no unread count, no pile of “unread” building up. You open it when you pass by.',
+        },
+        why: {
+          fr: 'Un mot sur le frigo, pas une notification — calme par choix.',
+          en: 'A note on the fridge, not a notification — calm by choice.',
+        },
+      },
+      {
+        label: { fr: 'Différent de la boîte aux lettres', en: 'Different from the mailbox' },
+        detail: {
+          fr: '« Laisse un mot » reste entre les membres de la maisonnée. La boîte aux lettres, elle, reçoit les mots des proches de l’extérieur (voir « Partager un accès »).',
+          en: '“Leave a note” stays between household members. The mailbox instead receives notes from relatives outside (see “Share access”).',
+        },
+      },
+    ],
+  },
+  {
+    id: 'drawings',
+    icon: 'paint-brush-bold',
+    group: 'concepts',
+    route: '/drawings',
+    title: { fr: 'Dessiner & la galerie', en: 'Drawing & the gallery' },
+    what: {
+      fr: 'Un espace pour dessiner du doigt — un mot illustré, un bonhomme, une carte — qu’on garde dans « Mes dessins » et qu’on peut afficher au babillard.',
+      en: 'A space to draw with a finger — an illustrated note, a doodle, a card — kept in “My drawings” and shown on the board.',
+    },
+    points: [
+      {
+        label: { fr: 'Le crayon, le seau, aplatir', en: 'Pen, fill bucket, flatten' },
+        detail: {
+          fr: 'Un vrai crayon (trait lisse), un seau pour remplir une zone (l’encre reste par-dessus), et « Aplatir » pour figer le fond. Tout s’annule.',
+          en: 'A real pen (smooth stroke), a bucket to fill an area (ink stays on top), and “Flatten” to fix the background. Everything undoes.',
+        },
+      },
+      {
+        label: { fr: 'Garder, rouvrir, calquer', en: 'Keep, reopen, trace' },
+        detail: {
+          fr: 'Un dessin gardé va dans la galerie « Mes dessins ». En le rouvrant, tu peux le modifier, en faire une copie, ou le calquer.',
+          en: 'A kept drawing goes to the “My drawings” gallery. Reopening it, you can modify it, copy it, or trace over it.',
+        },
+      },
+      {
+        label: { fr: 'Au babillard ou en veille', en: 'On the board or the screensaver' },
+        detail: {
+          fr: 'Un dessin peut devenir une note du frigo, et la galerie peut défiler dans le mode veille comme un cadre photo.',
+          en: 'A drawing can become a fridge note, and the gallery can drift in the screensaver like a photo frame.',
+        },
+      },
+    ],
+  },
+  {
     id: 'favorites',
     icon: 'heart-bold',
     group: 'concepts',
@@ -1458,6 +1612,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'home-projects',
     icon: 'broom-bold',
     group: 'concepts',
+    route: '/settings?tab=chores',
     title: { fr: 'Projets & entretien', en: 'Plans & maintenance' },
     what: {
       fr: 'Sous les corvées, deux listes pour les plus gros sujets de la maison : les Projets (rénover, budgéter — « nouvelle cuisine ») et l’Entretien qui revient (filtre, gouttières, vérifier les arbres). Une corvée, c’est aujourd’hui; un projet, c’est l’horizon.',
@@ -1497,6 +1652,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'voyage',
     icon: 'map-pin-bold',
     group: 'concepts',
+    route: '/voyage/new',
     title: { fr: 'Voyage', en: 'Trip' },
     what: {
       fr: 'Un carnet de voyage pour la famille : tout au même endroit, du rendez-vous de planification jusqu’au retour. Un itinéraire jour par jour qui apparaît sur ton calendrier, des infos par catégorie (vols, hôtel, auto, à apporter…), une liste de bagages par personne, et tes documents (réservations, passeports) disponibles même hors-ligne.',
@@ -1539,6 +1695,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'carnets',
     icon: 'book-open-bold',
     group: 'concepts',
+    route: '/cercle?section=carnets',
     title: { fr: 'Les carnets', en: 'The carnets' },
     what: {
       fr: 'Dans Le cercle, tes choses dont on prend soin — la maison, l’auto… et le chauffe-eau ou la toiture à l’intérieur d’une maison. Chacune garde son carnet, comme un carnet d’entretien d’auto : son identité, ses factures, son entretien qui revient, et « le long jeu » (quand la remplacer).',
@@ -1838,6 +1995,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'cast-tv',
     icon: 'link-bold',
     group: 'concepts',
+    route: '/settings?tab=devices',
     title: { fr: 'Le babillard au salon (téléviseur)', en: 'The board in the living room (TV)' },
     what: {
       fr: 'Affiche le babillard en lecture seule sur la télé du salon — un écran d’appoint calme, sans toucher à ton compte. Tu le mets en place une fois dans Réglages ▸ Partage ▸ « Au salon ».',
@@ -3537,7 +3695,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'auto',
     icon: 'key-bold',
     group: 'concepts',
-    tab: 'agenda',
+    route: '/voiture',
     title: { fr: 'L’auto', en: 'The car' },
     what: {
       fr: 'Une seule auto pour la maisonnée ? L’auto sait quand elle est prise, quand elle est libre, et qui reconduit qui — sans cinq fils de textos.',

@@ -90,11 +90,13 @@ export function GuideCard({
             </details>
           )
         })}
-        {/* For a Settings-tab card surfaced in the Guide: a direct "go there"
-            link that switches Réglages straight to that tab (?tab=<id>). Off
-            when the card is shown inline on the tab it documents. */}
-        {showGoTo && entry.tab && (
-          <Link className="guide__goto" to={`/settings?tab=${entry.tab}`}>
+        {/* A direct "go there" link into the LIVE feature. `route` (any hub tab or
+            scene, e.g. /board, /voyage/new, /drawings) wins; else a Settings-tab
+            card falls back to /settings?tab=<id>. Off when the card is shown inline
+            on the tab it documents. So a concept card now opens the real feature,
+            not just its explanation — the Guide became a launcher too. */}
+        {showGoTo && (entry.route || entry.tab) && (
+          <Link className="guide__goto" to={entry.route ?? `/settings?tab=${entry.tab}`}>
             <span>{t.operator.guideGoTo}</span>
             <Icon name="arrow-right-bold" size={18} />
           </Link>

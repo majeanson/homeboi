@@ -9,6 +9,7 @@ import { useMeals } from '../lib/queryHooks'
 import { DEVICES_KEY } from '../lib/queryKeys'
 import { Icon, type IconName } from './Icon'
 import { FeatureMap } from './FeatureMap'
+import { featureMapRoute } from '../lib/guideContent'
 
 // The Board first-run card for a brand-new household: a short setup checklist
 // (add the family → set the meals → pair a tablet) plus the shared FeatureMap so
@@ -128,7 +129,10 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
         })}
       </ol>
       <h3 className="welcome-card__discover">{t.welcome.discover}</h3>
-      <FeatureMap onSelect={(k) => nav(`/settings?tab=guide&theme=${k}`)} label={t.welcome.discover} />
+      {/* Tiles open the LIVE section now (alive, since a fresh account is seeded),
+          not the Guide — discovery by doing. The Guide stays the explanation layer
+          (each section's "?" + Réglages ▸ Guide). */}
+      <FeatureMap onSelect={(k) => nav(featureMapRoute(k))} label={t.welcome.discover} />
     </aside>
   )
 }

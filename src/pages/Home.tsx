@@ -10,9 +10,15 @@ import { useT } from '../i18n'
 // honest promise. Pip design throughout (Phosphor icons, paper tones). No
 // floating CTA, no shadow lifts, no hype — the app's calm tenet starts here.
 
-// "Everything it does", grouped by theme — the SAME taxonomy as the in-app Guide
-// (Réglages ▸ Comment ça marche), so the marketing front door and the manual tell
-// one story, not two. Each card: a pip glyph + accent, a title, a concrete line.
+// The marketing front door: five evocative cards, one per hub SECTION (souper,
+// agenda, routines, cercle, tablette) — deliberately a curated subset, NOT the
+// full cross-cutting taxonomy (CONCEPT_THEMES/FEATURE_MAP_TILES in lib/guideContent,
+// which the in-app Guide + FeatureMap use). A logged-out visitor needs concrete,
+// evocative hooks ("le souper de ce soir"), not the app's internal theme buckets;
+// and these tiles can't deep-link into a live feature (the visitor isn't signed
+// in). The shared taxonomy remains the single source for in-app discovery; this
+// landing intentionally speaks a warmer, section-shaped dialect of the same story.
+// Each card: a pip glyph + accent, a title, a concrete line.
 const FEATURES: {
   icon: IconName
   title: 'featSupper' | 'featAgenda' | 'featRoutines' | 'featCercle' | 'featTablet'
