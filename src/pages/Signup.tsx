@@ -6,6 +6,7 @@ import { StatusMessage } from '../components/StatusMessage'
 import { InlineIcon } from '../components/Icon'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
+import { HEALTH_KEY } from '../lib/queryKeys'
 import { useAuth } from '../lib/auth'
 import { useSurface } from '../lib/surface'
 
@@ -27,7 +28,7 @@ export function Signup() {
   const [error, setError] = useState<'exists' | 'badInvite' | 'error' | null>(null)
 
   // Public liveness read — `invite: true` means this installation wants the code.
-  const { data: health } = useQuery({ queryKey: ['health'], queryFn: () => api<{ invite?: boolean }>('health') })
+  const { data: health } = useQuery({ queryKey: HEALTH_KEY, queryFn: () => api<{ invite?: boolean }>('health') })
   const inviteRequired = !!health?.invite
 
   const ready = householdName.trim().length > 0 && email.trim().length > 0 && password.length >= 8
@@ -52,10 +53,11 @@ export function Signup() {
       // family started on the wall tablet (Pair's signup link), keep the kiosk
       // role they already chose instead of stamping the phone layout on a wall.
       if (!(chosen && surface === 'kiosk')) setSurface('mobile')
-      // Land on the board, where the first-run WelcomeCard greets a brand-new
-      // household with the setup checklist (add the family → meals → pair) AND
-      // the feature map — a friendlier door than dropping straight into a
-      // settings tab. (The essentials tour also auto-runs here.)
+      // Land on the board. Signup seeds a demo family, so the board is alive and the
+      // « Des exemples pour explorer » banner greets the newcomer first (explore →
+      // « Vider et commencer »); the setup checklist (WelcomeCard) takes over once the
+      // demo is cleared. The essentials tour also auto-runs here. Friendlier than
+      // dropping straight into a settings tab.
       nav('/board')
     } catch (err) {
       setError(isStatus(err, 409) ? 'exists' : isStatus(err, 403) ? 'badInvite' : 'error')

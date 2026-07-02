@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useWrite } from '../../lib/write'
+import { ROUTINES_KEY } from '../../lib/queryKeys'
 import { useLang, useT } from '../../i18n'
 import { CardDeckEditor } from '../CardDeckEditor'
 import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
@@ -141,7 +142,7 @@ export function RoutineForm({
             cardsPhoto: photoPayload,
             timeOfDay: tod ?? null,
           },
-          affectedKeys: [['routines']],
+          affectedKeys: [ROUTINES_KEY],
         })
       } else {
         await write('routines', {
@@ -154,7 +155,7 @@ export function RoutineForm({
             cardsPhoto: photoPayload,
             timeOfDay: tod ?? undefined,
           },
-          affectedKeys: [['routines']],
+          affectedKeys: [ROUTINES_KEY],
         })
         setName('')
         setCards([])

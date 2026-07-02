@@ -39,7 +39,7 @@ import { OperatorJump } from '../components/operator/OperatorJump'
 import { useHelpMode } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
-import { MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, EVENTS_KEY, BOARD_KEY, CERCLE_KEY } from '../lib/queryKeys'
+import { MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, EVENTS_KEY, BOARD_KEY, CERCLE_KEY, ROUTINES_KEY, HEALTH_KEY } from '../lib/queryKeys'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
 
 // Réglages is one panel per tab; this list drives the tab strip. Deep links
@@ -106,7 +106,7 @@ export function Operator() {
   const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: canEnter })
   const devicesQ = useQuery({ queryKey: DEVICES_KEY, queryFn: () => api<{ devices: Device[] }>('pair/devices'), enabled: signedIn })
   const choresQ = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: Chore[] }>('chores'), enabled: canEnter })
-  const routinesQ = useQuery({ queryKey: ['routines'], queryFn: () => api<{ routines: Routine[] }>('routines'), enabled: canEnter })
+  const routinesQ = useQuery({ queryKey: ROUTINES_KEY, queryFn: () => api<{ routines: Routine[] }>('routines'), enabled: canEnter })
   const eventsQ = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventRow[] }>('events'), enabled: canEnter })
 
   const members = membersQ.data?.members ?? []
@@ -127,7 +127,7 @@ export function Operator() {
   // CERCLE_KEY too: a member is a person in Le cercle, so a rename/recolour/delete
   // must refresh the circle (which reads /api/cercle, not /api/members).
   const load = useCallback(() => {
-    for (const key of [MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, ['routines'], EVENTS_KEY, ['health'], BOARD_KEY, CERCLE_KEY]) {
+    for (const key of [MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, ROUTINES_KEY, EVENTS_KEY, HEALTH_KEY, BOARD_KEY, CERCLE_KEY]) {
       qc.invalidateQueries({ queryKey: key })
     }
   }, [qc])

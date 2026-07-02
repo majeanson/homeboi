@@ -9,7 +9,7 @@ import { StatusMessage } from '../StatusMessage'
 import { anchorSecToDate, dateToAnchorSec, recurOf, todayAnchorDate } from '../../lib/recurLabel'
 import { homeProjectTemplates } from '../../lib/routineTemplates'
 import { parseMoney } from '../../lib/money'
-import { HOME_PROJECTS_KEY, MONTH_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { HOME_PROJECTS_KEY, MONTH_KEY, BOARD_KEY, CARNETS_KEY } from '../../lib/queryKeys'
 import type { HomeProject } from '../operator/types'
 import { colourFor } from '../../lib/things'
 
@@ -73,7 +73,7 @@ export function HomeProjectForm({
       await write('home-projects', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...fields } : fields,
-        affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY, ['carnets']],
+        affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY, CARNETS_KEY],
       })
       if (!value) {
         // Create: clear for the next one. Edit: the section closes via onSaved().

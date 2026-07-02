@@ -15,7 +15,7 @@ import { ChoreForm } from '../forms/ChoreForm'
 import { RoutineForm } from '../forms/RoutineForm'
 import { colourFor } from '../../lib/things'
 import { recurLabel } from '../../lib/recurLabel'
-import { CHORES_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
+import { CHORES_KEY, MEMBERS_KEY, ROUTINES_KEY } from '../../lib/queryKeys'
 import { type Chore, type Routine } from './types'
 
 export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange: () => void }) {
@@ -111,11 +111,11 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
   function remove(r: Routine) {
     if (editing === r.id) setEditing(null)
     undoableRemove({
-      queryKey: ['routines'],
+      queryKey: ROUTINES_KEY,
       listProp: 'routines',
       id: r.id,
       label: r.name,
-      commit: () => write('routines', { method: 'DELETE', body: { id: r.id }, affectedKeys: [['routines']] }),
+      commit: () => write('routines', { method: 'DELETE', body: { id: r.id }, affectedKeys: [ROUTINES_KEY] }),
       after: onChange,
     })
   }
@@ -131,9 +131,9 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
       write('routines', {
         method: 'PATCH',
         body: { routineId: r.id, timeOfDay: tod },
-        affectedKeys: [['routines']],
+        affectedKeys: [ROUTINES_KEY],
         optimistic: (qc: QueryClient) =>
-          qc.setQueryData<{ routines: Routine[] }>(['routines'], (d) =>
+          qc.setQueryData<{ routines: Routine[] }>(ROUTINES_KEY, (d) =>
             d ? { routines: d.routines.map((x) => (x.id === r.id ? { ...x, timeOfDay: tod } : x)) } : d,
           ),
       }).catch(() => {})
