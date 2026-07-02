@@ -1,46 +1,52 @@
 # Babillard
 
-> Working name. A household command-center for a cheap wall tablet: today's
-> agenda, shared lists, chore rotation, and "supper tonight," all glanceable
-> from across the kitchen. A pre-reader can run their own morning routine on
-> it. The kitchen module (Garde-manger) plans meals and fills the grocery
-> list by itself.
+> Working name. A calm household command-center for a cheap always-on wall
+> tablet: today's agenda, shared lists, chore rotation, "supper tonight," kid
+> routines, and a kitchen/recipe planner — all glanceable from across the
+> kitchen. A pre-reader can run their own morning routine on it.
 >
 > Built to be **useful at home first**, showcase-able second, and **calm by
-> design** — no streaks, no points to hoard, no notifications pulling you
-> back. The day's list empties and stays empty.
+> design** — no streaks, no points to hoard, no notifications pulling you back.
+> The day's list empties and stays empty. UI copy is bilingual, **FR-CA
+> (Québécois) first**.
 
 ---
 
 ## Status
 
-**Functional prototype.** SPA + Pages Functions + D1 schema + the one AI
-feature (capture intent-router). Build + typecheck + tests are green. Not yet
-wired to a real D1 instance or deployed.
+**Live.** A single Cloudflare Worker (static SPA assets + `/api/*`) on D1,
+Workers AI, R2, and a Durable Object for realtime. Deployed to production;
+CI (typecheck → test → build) gates `db:migrate:prod` + deploy on every push
+to `main`.
 
 The planning that drove it lives in [`bmad/`](./bmad/): the
 [brief](./bmad/01-brief.md), [PRD](./bmad/02-prd.md), and
-[architecture](./bmad/03-architecture.md).
+[architecture](./bmad/03-architecture.md). Day-to-day contributor guidance —
+architecture, conventions, and the "build by reuse" rules — is in
+[`CLAUDE.md`](./CLAUDE.md); deploy steps are in [`DEPLOY.md`](./DEPLOY.md).
 
-## What works in the prototype
+## The five hub tabs
 
-- **Capture spine** — type or speak a note; Workers AI classifies it into
-  `event / task / list-item / pantry-low / meal / note` and routes it to the
-  right table. Voice uses the browser's on-device speech (zero Neurons). With
-  AI unset it degrades to a manual type-picker, never losing the words.
-- **The board** (`/board`) — kiosk surface: clock, today's agenda, "ce soir"
-  (supper + cook), the shared list (tap to tick), chore rotation (tap done),
-  upcoming. Polls every 20s; keeps the last frame and flips a "showing cache"
-  stamp on a failed poll.
-- **Garde-manger** (`/kitchen`) — 7-day supper plan, a "running low" list (no
-  inventory), and the on-demand "qu'est-ce qu'on mange?" AI suggestion.
-- **Kid view** (`/kid`) — big picture-card routines, read aloud on-device,
-  deterministic done-state (no variable reward), empties when finished.
-- **Device pairing** (`/pair` + `/settings`) — the tablet gets a 6-digit code;
-  the operator approves it from their phone; the tablet stores a device token
-  and opens the board. Revocable per device.
-- **Operator hub** (`/settings`) — members, paired devices, chores +
-  rotation, kid routines, pairing approval. Kiosk actors are refused here.
+| Tab | Route | What it is |
+| --- | --- | --- |
+| **Le babillard** | `/board` | Kiosk glance surface: clock, agenda, "ce soir" (supper), the list, chores, upcoming. Renders parent **and** toddler lenses off one dataset. |
+| **La cuisine** | `/kitchen` | Garde-manger: 7-day supper plan, recipes, "running low," meal suggestions, deals/flyers. |
+| **Routines** | `/routines` | Kid picture-card routines, read aloud on-device (absorbed the old `/kid` view). |
+| **La liste** | `/liste` | The single active shared list — check in place, "clear checked" logs + removes. |
+| **Réglages** | `/settings` | Operator hub: members, devices, chores/rotation, routines, display, sharing. Operator-only. |
+
+Also: **Le cercle** (family/contacts directory + carnets), **La boîte aux
+lettres** / share-links (time-boxed guest, babysitter, relative-inbox), and a
+**capture spine** (type-or-speak a note → Workers AI routes it to the right
+table).
+
+## Two orthogonal presentation axes
+
+- **Surface** — `kiosk` (wall tablet, glanceable, shared) vs `mobile` (phone).
+  The device *role*, chosen at setup.
+- **Audience** — `parent` (reader, detail peeks) vs `toddler` (pre-reader,
+  hear-first tiles). Neither is a permission boundary — auth still gates writes
+  server-side.
 
 ## Run it locally
 
@@ -51,54 +57,57 @@ npm install
 npx wrangler d1 create babillard
 #   -> set database_id in wrangler.toml [[d1_databases]]
 
-# 2. Apply the schema locally.
+# 2. Apply the schema to local D1.
 npm run db:migrate:local
 
-# 3. Set a session secret for local dev.
-cp .dev.vars.example .dev.vars   # then put a >=32-char value in SESSION_SECRET
+# 3. Set a session secret for local dev (>=32 chars).
+cp .dev.vars.example .dev.vars   # then set SESSION_SECRET
 
-# 4. Full-stack dev (SPA + Functions + local D1):
-npm run build           # produces dist/ for wrangler to serve
-npm run pages:dev       # http://localhost:8788
+# 4. Full-stack dev (SPA + Worker + local D1):
+npm run cf:dev          # http://localhost:8787
 ```
 
-Frontend-only fast loop: `npm run dev` (Vite on 5173, proxies `/api` →
-wrangler on 8788, so run `pages:dev` alongside).
+Frontend-only fast loop: `npm run dev` (Vite on 5173, HMR; proxies `/api` →
+the Worker on 8787, so run `cf:dev` alongside).
 
 ### The device-pairing flow, end to end
 
-1. Open `/login` on your laptop, sign in with any email (prototype: no
-   password). A household is created on first login.
+1. Open `/login` on your laptop and sign in. A household is created on first
+   login.
 2. On the "tablet" (a second browser/window), open `/pair` → **Get a code**.
    It shows a 6-digit code and starts polling.
-3. Back on the laptop, go to `/settings` → **Approve a tablet**, type the
+3. Back on the laptop, go to `/settings` → approve the tablet by typing the
    code. The tablet's next poll collects its device token and opens `/board`.
-4. Revoke it any time from `/settings` → Paired tablets.
+4. Revoke it any time from `/settings` → paired devices.
 
-### Notes / known prototype edges
+### Optional bindings degrade gracefully
 
-- **AI is optional.** Locally, `wrangler pages dev` may need `wrangler login`
-  to reach Workers AI; without it the capture bar uses the manual type-picker
-  and `/kitchen`'s suggestion button hides. Everything else works. (See
-  project memory on the wrangler 4.x remote-proxy trap.)
-- **Login is email-only** for the prototype. The HMAC cookie + CSRF machinery
-  is real; swapping in a magic-link flow (Resend) is a local change.
-- **Single host.** Host→tenant routing has a table but isn't exercised; the
-  household is resolved from the credential (operator cookie or device token).
+`DB` and `SESSION_SECRET` are required; **`AI`, `PHOTOS` (R2),
+`REALTIME_HUB` (the Durable Object), and `LOGIN_PASSWORD` are optional**. AI
+unset → capture falls back to a manual type-picker; R2 unset → photo / voice-
+clip / step-photo features hide; DO unset → `/api/live` 503s and clients poll.
+Locally without `wrangler login`, Workers AI is unavailable — that's the
+expected degraded path, not a bug.
 
 ## Scripts
 
 | Script | Does |
 | --- | --- |
-| `npm run dev` | Vite frontend-only dev server |
-| `npm run build` | `tsc -b` (typecheck SPA + Functions) then `vite build` |
-| `npm run pages:dev` | Full-stack: serves `dist/` + Functions + local D1 |
-| `npm test` | Vitest: whenparse, AI graceful-degrade, calm-tenet schema guard |
+| `npm run dev` | Vite frontend-only dev server (:5173, `/api` proxied to :8787) |
+| `npm run cf:dev` | Full stack: wrangler dev (:8787) — SPA + Worker + local D1 |
+| `npm run build` | `tsc -b` (typecheck SPA + Worker + Functions) then `vite build` → `dist/` |
+| `npm run typecheck` | `tsc -b --noEmit` |
+| `npm test` | Vitest (pure-logic unit tests, incl. the calm-tenet schema guard) |
+| `npm run e2e` | Playwright (boots its own Vite, stubs every `/api/*`) |
 | `npm run db:migrate:local` / `:prod` | Apply D1 migrations |
+| `npm run deploy` | build + `wrangler deploy` |
 
 ## Stack
 
-React 19 + Vite (SPA) → Cloudflare Pages. Pages Functions for `/api/*`, D1 for
-state, Workers AI for the capture router. Mirrors the
-[marc-portal](../portal) stack so patterns carry over and it can slot into the
-portal showcase. No state lib, no CSS framework — boring tech on purpose.
+React 19 + Vite (SPA) served by **one Cloudflare Worker** that also dispatches
+`/api/*` to handlers under `functions/api/` (unchanged Pages-Functions code,
+adapted at the Worker boundary). **D1** for state, **Workers AI** for the
+capture router + suggestions, **R2** for media blobs, a **Durable Object**
+(`RealtimeHub`) for realtime nudges. Query cache is persisted to IndexedDB and
+offline writes are queued + replayed. No state lib, no CSS framework — boring
+tech on purpose.

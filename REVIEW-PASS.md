@@ -6,11 +6,11 @@
 > from a full code map (routes, the six hub tabs, their sub-modules, and the single
 > taxonomy in `src/lib/guideContent.ts`).
 >
-> **How to use it.** Pick the next unchecked section in the [order below](#the-order-do-them-in-this-sequence).
-> Run the [Review lens](#the-review-lens-apply-to-every-section) against it, record findings in
-> that section's block, then act on the quick wins and leave the rest as checked backlog.
-> Cross-links are mapped so **finishing one section also closes the things it shares with
-> its neighbours** — do a section *and its feeders together*, then move on.
+> **How to use it.** All 8 sections have been reviewed; the batch of confirmed bugs +
+> security + a11y + reuse fixes shipped 2026-07-01. What remains is the ~119 section-level
+> findings in the blocks below (§1–§8), tagged P1/P2/P3 — pick one, fix it, tick its box.
+> Cross-links are mapped in the [ledger](#cross-link-ledger-do-once-shared-work) so fixing a
+> seam once closes it for both sections.
 >
 > **Non-negotiables (every change).** Read `CLAUDE.md` → _Build by reuse_ first: reuse a
 > primitive / lib helper / CSS family before creating one. The calm-tenet test
@@ -28,15 +28,17 @@
 
 ---
 
-## Combined review & implement-phase queue (2026-07-01 — all 8 sections reviewed)
+## Combined review synthesis (2026-07-01 — all 8 sections reviewed)
 
-> Every section (§1–§8) has been audited by fan-out reviewers against the [lens](#the-review-lens-apply-to-every-section).
-> This is the synthesis Marc asked for before we start implementing. **Headline: the codebase
-> is mature and reuse-disciplined — no architectural rot.** Findings are seams, a11y, e2e, and a
-> handful of real-but-contained bugs. The recurring themes below matter more than any single
-> finding, because fixing each one **once** closes it across many sections.
+> Every section (§1–§8) was audited by fan-out reviewers. **Headline: the codebase is mature
+> and reuse-disciplined — no architectural rot.** Findings are seams, a11y, e2e, and a handful
+> of real-but-contained bugs. The **first implementation batch shipped** (below); the recurring
+> themes here are what still matters — fixing each one **once** closes it across many sections.
 
 ### Cross-cutting themes (each recurred in 3+ sections — fix once, everywhere)
+
+> _Themes 1, 3, and part of 6 were substantially addressed in the shipped batch; 2, 4, 5
+> (latent), 7 and the rest of 6 remain live. Section blocks carry the exact open items._
 
 1. **`useWrite()` bypass — now RESOLVED to a short list.** ~90% migrated; the server broadcasts
    realtime on every write regardless, so a bypass loses **only** offline queue/replay. Real gaps:
@@ -66,140 +68,46 @@
 7. **Cold-load false empty-states.** Search, Photos, and RecipeTags render "aucun résultat"/empty
    before their queries settle (no `isLoading` guard).
 
-### Confirmed real bugs — the priority queue (start here)
+### ✅ Shipped 2026-07-01 — the review pass (commit "Whole-app review pass + fixes (Batches A–H)")
 
-| # | Bug | § | Fix size |
-| - | --- | - | -------- |
-| 1 | ✅ **DONE (Batch A)** — Member CRUD now invalidates `CERCLE_KEY` (household.tsx ×4 + Operator load) | §5 | 1 line |
-| 2 | ✅ **DONE (Batch B)** — Voyage media notes now delete via confirm-not-undo (VoyageInfos + VoyageItinerary); routines PATCH frees dropped narration blobs | §7 | small |
-| 3 | ✅ **DONE (Batch A)** — Realtime `keysForPath` now maps the 6 drifted endpoints + regression test | §8 | small |
-| 4 | ✅ **DONE (Batch B)** — routines PATCH now frees dropped narration blobs (mirrors the photo cleanup) | §2 | small |
-| 5 | ✅ **DONE (Batch G)** — confirm-gated trip-delete in the edit scene (VoyagePage) → `/board` | §7 | small |
-| 6 | ✅ **DONE (Batch G)** — carnet restore: backend `?archived=1` list + PATCH `restore:true` (subtree) + a collapsed restore list in CarnetsTab | §3 | feature |
-| 7 | ✅ **DONE (Batch G)** — capture gates on `useOnline` + surfaces a failure (`capture.offline`/`failed`); text kept | §6 | small |
-| 8 | ✅ **DONE (Batch G)** — EventForm auto-creates an un-saved bring-list draft on submit so nothing typed is lost | §6 | small |
+All 8 confirmed bugs and the two P1 security findings were fixed and committed in batches A–H.
+For the record: #1 member CRUD→`CERCLE_KEY`, #2 Voyage media-note confirm-not-undo, #3 realtime
+`keysForPath` drift, #4 routines narration-blob free, #5 trip-delete, #6 carnet restore, #7 capture
+offline feedback, #8 EventForm bring-list draft guard; plus the security batch (server-enforced
+intake field-scope bitmask, pending-submission cap, `showcase` default-deny + issuer warning,
+PostboxReview matched-face), the a11y sweep (Réglages tablist + roving nav, `aria-pressed` on the
+toggle pickers), the reuse batch (shared `Toggle`, centralized `GHOSTS_KEY`/`HISTORY_KEY`, shared
+`capitalize`/`UnionFind`, unified Markdown grammar, `ContactForm`→`GroupForm`), the offline-write
+batch (`DealsBrowser`/`useRecipeShop`/`keepSuggestion`→`useWrite`), Search over carnets+home-projects,
+and two e2e specs (aisle-sort, capture-offline).
 
-### Security cluster (§4 — the babysitter/relative link model) — treat as its own batch
+### Still deferred from the pass (real backlog, with rationale)
 
-- **P1:** field-scope bitmask not enforced server-side; no rate-limit/revoke on stateless guest
-  writes. **P2:** `showcase` over-shares + is the default kind; tint-hijack unwarned in review;
-  `media_key` not ownership-checked; `/api/live` bypasses the allowlist. The core boundary is
-  robust — these harden the "one link shared to many" edges.
+- **NoteEditor immediate-upload orphan** — an in-editor media replace leaves an un-saved R2 blob;
+  needs deferred-upload-on-save or a client cleanup endpoint (not a mechanical swap).
+- **Postbox forks `MemoControls`** — reuse needs a "staging mode" on the shared component (guest
+  stages-then-sends vs board posts-immediately); a design change, not a swap.
+- **Security hardening left:** full token **revocation** (a `guests` table changes the stateless
+  model), `staged_media` ownership check, `/api/live` per-kind allowlist gating.
+- **Conscious `useWrite` deviations:** `RoutinePlayer` step-progress + the household-settings PATCHes
+  (ephemeral / rarely-offline — documented, not necessarily fixed).
+- **e2e backfill (the big remaining gap):** carnet-restore, guest intake/postbox flows, the carnet
+  scene, **Voyage entirely**, capture AI-off degrade+reroute, idle wake/drift — each needs new mock
+  scaffolding + a runnable pass. Also **3 pre-existing e2e failures on `main`** (`board-customize` ×2,
+  `meals` slot-icon) that fail on clean HEAD, independent of this pass — worth a look.
 
-### Suggested implementation batching (each batch = one focused sitting)
-
-- **A — one-line correctness:** ✅ **DONE 2026-07-01** — #1 CERCLE_KEY, #3 keysForPath drift (+
-  regression test), deleted the dead `['list']` invalidate (×3 client + server), `💡`→`sparkle-
-  bold`. Typecheck clean, 865 unit tests green. _(not yet committed.)_
-- **B — media-undo-blob rule:** ✅ **DONE 2026-07-01** — #2 Voyage Infos/Itinéraire media notes →
-  `useConfirm` (no undo, freed-blob-safe); #4 routines PATCH frees dropped narration blobs. New FR/EN
-  key `voyage.deleteMediaNoteConfirm`. Typecheck + 865 tests green. _(NoteEditor immediate-upload
-  orphan is a separate P3 latent — deferred to Batch E.)_
-- **C — security (§4):** ✅ **DONE 2026-07-01** — server-enforces the field-scope bitmask
-  (`sanitizeIntake(raw, scope)` + `decodeIntakeScope(actor.guestFields)`, tested); per-household
-  **pending-submission cap** (200) on intake + postbox; `showcase` is now **write-aware/default-deny**
-  for every guest write path (+ test) and shows an **inline warning** in the issuer; **PostboxReview
-  surfaces the matched face** so tint-hijack is visible before accept. Typecheck + 868 tests green.
-  _(Deferred: full token **revocation** — a `guests` table changes the stateless model; `staged_media`
-  ownership check; `/api/live` per-kind gating.)_
-- **D — a11y sweep:** ✅ **DONE 2026-07-01** — Réglages tablist fully wired (id/aria-controls/
-  aria-labelledby + roving tabindex + Arrow/Home/End nav); `aria-pressed` on every toggle picker
-  (ChoreForm rotation, schedule member+interval, EventForm member/car/passenger/bring); dropped the
-  per-second `aria-live` on the routine stopwatch; EventForm date/time now labelled correctly;
-  44px tap targets (meal-row height, photo-delete via `::before`). Typecheck + 868 tests green.
-  _(cercle section nav → migrate to keyboard-aware `SubTabs` handled in Batch E.)_
-- **E — reuse/dedup:** ✅ **DONE 2026-07-01 (6 of 8; 2 deferred with rationale)** — shared **`Toggle`**
-  primitive (+ DevKit + COMPONENTS.md), migrated ambient + display's toggles onto it; centralized
-  **`GHOSTS_KEY`/`HISTORY_KEY`**; shared **`capitalize`** (deduped 7 copies); **FamilyBuilder** inline
-  components → render functions; shared **`UnionFind`** class in `cercle.ts` replacing the 4 hand-rolled
-  copies (detectFamilyGroups/closedLinks/CercleWeb/CercleTree — 62 cercle tests green); unified the
-  **Markdown block grammar** in `lib/noteGrammar.ts` (noteMarkdown + noteHtml, 35 note tests green);
-  **`ContactForm` now reuses `GroupForm`** for inline group-create (gains colour support). Typecheck +
-  868 tests + build green.
-  _(**Deferred — NOT mechanical refactors:** **Postbox→`MemoControls`** — the flows genuinely differ
-  (MemoControls posts a *complete* note immediately with gallery/routine extras; Postbox *stages* media
-  for a compose-then-send guest submission with a sender name), so reusing it needs a "staging mode"
-  added to a shared board/cercle component on a guest path with zero e2e — a design change, not a swap.
-  **NoteEditor immediate-upload orphan** — needs deferred-upload-on-save or a new client cleanup
-  endpoint to free an un-saved R2 blob. Both deserve isolated, runnable passes.)_
-- **F — offline `useWrite` migration:** ✅ **DONE 2026-07-01** — the real offline gaps migrated:
-  `DealsBrowser` deal→list add, `useRecipeShop` shop-the-week, `Kitchen.keepSuggestion`. Typecheck +
-  868 tests green. _(RoutinePlayer step-progress + the household-settings PATCHes left as documented
-  conscious deviations — ephemeral/rarely-offline; see §8 verdict.)_
-- **G — missing features / CTAs:** ✅ **CORE DONE 2026-07-01** — **#5** confirm-gated trip-delete
-  (VoyagePage edit scene); **#6** carnet **restore** (backend `?archived=1` list + PATCH `restore:true`
-  subtree unarchive + a collapsed restore list in CarnetsTab — the reversible-archive promise is now
-  real); **#7** capture **offline feedback** (`useOnline` gate + `StatusMessage`, text kept); **#8**
-  EventForm **bring-list draft guard** (auto-creates an un-saved draft on submit); **Search now covers
-  carnets + home-projects** (§7 P2) with deep-links + a cold-load **"searching"** guard (no more false
-  "aucun résultat"); **empty recipe-book CTA** ("Ajouter une recette"). Typecheck + 868 tests + build
-  green. _(ToddlerCookBook empty left — effectively unreachable: KidKitchen only shows the book door
-  when content exists.)_
-- **H — e2e backfill:** ✅ **STARTED 2026-07-01 — 2 specs written AND RUN GREEN** (not shipped
-  blind): **`e2e/aisle-sort.spec.ts`** (2 tests — closes the §1 **P1** zero-coverage gap: Mon ordre
-  tags vs Par allée grouping + per-device persistence) and **`e2e/capture-offline.spec.ts`** (the #7
-  never-lost guarantee: offline → error surfaced + text kept). Both verified with `npx playwright test`.
-  Full suite: **524 pass**, my 2 new green; **3 pre-existing failures** (`board-customize` ×2, `meals`
-  slot-icon) that **fail identically on clean `HEAD`** — NOT caused by this pass (verified via stash).
-  _(Still open — each needs new **mock scaffolding**, a separate runnable pass: carnet-restore +
-  guest intake/postbox flows (mocks have no `carnets`/guest-token support), the carnet scene, Voyage
-  (+ trip mocks), capture AI-off degrade+reroute, idle wake/drift. Pre-existing board failures also
-  worth a look — they're on `main` independent of this work.)_
-
-_(Board §0 keeps its own backlog in [`AUJOURDHUI.md`](./AUJOURDHUI.md) — reconcile its `[ ] Unified
-event form` e2e box when Batch H lands.)_
+The **section blocks below (§1–§8)** are the live backlog — ~119 findings, tagged P1/P2/P3.
 
 ---
 
-## The review lens (apply to EVERY section)
+## Reading the section blocks
 
-For each section, walk this fixed checklist so coverage is consistent and comparable.
-
-1. **Completeness — what's missing?** Does the section deliver the whole job a household
-   expects, or does it dead-end? (empty-state that teaches, edit/undo parity on every row,
-   the obvious next action present.)
-2. **Overlap / redundancy — is anything built twice?** Two surfaces doing one job, a
-   forked component where a primitive exists, a query key spelled twice. (Cross-check
-   `COMPONENTS.md`/`UNIFORMIZING.md`.)
-3. **UI/UX pass.**
-   - **Mobile** (phone, 320–430px): no horizontal overflow, tap targets ≥44px, sheets not modals.
-   - **Kiosk** (wall tablet, glanceable across a room).
-   - **Toddler lens** (pre-reader): does this section render hear-first, and is it reachable/safe?
-   - Empty / loading / error / offline states all present and calm.
-4. **Cross-cutting conventions respected?** writes via `useWrite()`, reads via `api()`,
-   server state in TanStack Query with a **shared** key from `lib/queryKeys.ts`, surface/
-   audience via the contexts (not width branches), deletes on a live-polled list via
-   `useDeferredRemoval`.
-5. **Calm.** No count/rank/streak creeping in; finite lists that empty and stay empty;
-   friction added only where the product wants it.
-6. **a11y + i18n.** `aria-label` on icon-only controls, `:focus-visible`, focus restore on
-   sheet close; FR/EN parity (EN has every FR key), Québécois register.
-7. **Cross-links closed?** Everything this section shares with a neighbour (see its block)
-   handled in the same sitting, so we don't reopen it later.
-8. **e2e coverage.** Is there a Playwright frame/flow? Note the gap; don't necessarily fill
-   it now.
-
-**Finding tags** used in the blocks below: `[ ]` todo · `[~]` in progress · `[x]` done ·
-severity **P1** (quick, high-value / a11y) · **P2** (small design pass) · **P3** (bigger /
-judgement call).
-
----
-
-## The order (do them in this sequence)
-
-Ordered so each section's **feeders** are reviewed with it — closing shared data once.
-
-| # | Section | Why here | Feeds / shares with |
-| - | ------- | -------- | ------------------- |
-| 0 | **Board** — *already done* → [`AUJOURDHUI.md`](./AUJOURDHUI.md) | The main window; its backlog is separate. | (consumes everything) |
-| 1 | **Kitchen ↔ Liste** (one shopping spine) | The biggest shared-data pair: meal plan → shopping list → aisles/ghost. Review together. | Board ("Ce soir"), Settings ▸ Cuisine + Magasinage, Routines (recipe→routine) |
-| 2 | **Routines** | Small surface; shares config + read-aloud with §1 and Settings. | Kitchen (recipe→routine), Settings ▸ Corvées, voice |
-| 3 | **Le cercle** (+ carnets, pets, businesses) | Owns people/faces that everything else references. | Settings ▸ Maisonnée, Board faces + birthdays + carnets, Search, share-links |
-| 4 | **Share-links & inbound** (guest / handoff / welcome / family / intake / postbox) | The privacy boundary + the review flows; leans on §3. | Le cercle, Board notes, Settings review panels |
-| 5 | **Settings / Réglages** (nine sections) | The config hub — each sub-section reviewed **beside the surface it drives** (much already touched by §1–§4). | Every section |
-| 6 | **Capture / ＋ Add sheet & the add-form scenes** | Cross-cutting entry point that writes into §0–§3. | Board, Kitchen, Routines, cercle |
-| 7 | **Cross-cutting scenes** (Cook/Cashier/Cast/Search/Moment/Departure/Voyage) | Full-screen projections that ride on the above. | reads from §1–§3 |
-| 8 | **Ambient / idle / theming / offline / PWA** | System-wide behaviours, best reviewed last once surfaces are settled. | Board, all kiosks |
+**Finding tags** used below: `[ ]` todo · `[~]` in progress · `[x]` done · severity
+**P1** (quick, high-value / a11y) · **P2** (small design pass) · **P3** (bigger / judgement
+call). Sections are ordered so each one's **feeders** sit next to it (Kitchen↔Liste,
+Routines, Le cercle, Share-links, Settings, Capture, Scenes, Ambient/offline). **Board is
+excluded** — its own backlog lives in [`AUJOURDHUI.md`](./AUJOURDHUI.md). Each block opens
+with a one-line current-state + verdict, then P1/P2/P3 findings and "strengths to keep".
 
 ---
 
@@ -1029,97 +937,3 @@ it first, and tick it here so the other section's pass doesn't reopen it.
 | Capture modes land in the correct section + lossless AI-degrade | ＋ Add → Board/Kitchen/Routines/cercle | [x] AI-degrade airtight (row always inserted, reroute=MOVE); every intent lands. **But offline/5xx capture is silently lost** (skips outbox + swallows errors, §6 P2) |
 | Global Search reaches every entity type | Search → all | [~] reaches people/pets/businesses/recipes/notes/list/events/routines/todos/pantry/cars ✓; **misses carnets + home-projects + drawings** (§7 P2); business/note hits land on the list not the item |
 | Read-aloud/voice config consistent | Settings ▸ Voix → Routines/Liste/Kitchen toddler | [x] verified — `VoiceSection` (per-lang voice + rate) drives the shared `useSpeak`; recorded clip overrides TTS per card; recipe has a per-recipe `lang`, routines read in global lang (asymmetry noted, acceptable) |
-
----
-
-## Log
-
-- **2026-07-01** — Plan created from a full code map. Board excluded (own doc). Nothing
-  reviewed yet; §1 (Kitchen ↔ Liste) is next.
-- **2026-07-01** — §1 (Kitchen ↔ Liste) review **DONE**: four-reviewer audit of the
-  shopping spine recorded in §1 (4 P1, 11 P2, 8 P3) + cross-link ledger updated. Verdict:
-  mature/well-factored; issues are seams (a recurring `useWrite` bypass, un-shared/dead
-  query keys), tap targets, a toddler cook-mode leak, and several e2e blind spots (aisle
-  sort, cook stepper, AI cards, toddler kitchen). Nothing structural. Fixes not yet
-  applied — next: knock out the P1 quick wins, then §2 (Routines).
-- **2026-07-01** — §2 (Routines) review **DONE**: two reviewers (2 P1, 6 P2, 7 P3). Verdict:
-  mature; shared `RoutinePlayer`, robust wall-clock timer, genuine calm toggle. One real
-  defect — R2 narration-blob leak on PATCH edit (both reviewers agreed). Plus a double edit
-  surface (inline `<li>` vs full-screen scene), no in-tab delete, and e2e gaps (step-editor
-  array alignment / countdown timer). Marc's directive: review ALL sections first, then one
-  combined pass, then implement. Continuing to §3 (Le cercle).
-- **2026-07-01** — §3 (Le cercle) review **DONE**: four reviewers (1 P1, 11 P2, ~10 P3).
-  Verdict: mature/reuse-disciplined, no closure-engine or API-mapping bug. Headline: carnet
-  **archive has no restore path** (sanctioned exception unimplemented → effectively permanent
-  delete). Plus reuse forks (inline group-create, dup Markdown grammar, hand-rolled section
-  nav + Union-Find ×4), the 3-Member-shape face seam, note-editor keyboard-viewport miss, and
-  section-wide screenshots-only e2e. Continuing to §4 (Share-links & inbound).
-- **2026-07-01** — §4 (Share-links & inbound) review **DONE**: two security-weighted reviewers
-  (2 P1-SEC, 9 P2, 4 P3). Core boundary is robust (structural write-block + default-deny
-  allowlist + signed kind + server-side tint + clean XSS). **First real security findings of
-  the pass:** UI-only field-scope bitmask, no rate-limit/revoke on stateless guest writes,
-  over-sharing `showcase` default, tint-hijack unwarned, `/api/live` allowlist bypass. Also:
-  Postbox forks `MemoControls`, no "link expired" state, zero guest-flow e2e. These jump the
-  implement-phase queue. Continuing to §5 (Settings).
-- **2026-07-01** — §5 (Settings) review **DONE**: three reviewers over the un-covered remainder
-  (1 P1, 9 P2, ~9 P3). Verdict: mature/reuse-disciplined; rotation-recurrence engine + calm
-  ledger + AI-off gating + photo R2 all correct & (mostly) tested. **Confirmed the §3 member→
-  `CERCLE_KEY` stale-data bug.** Recurring themes: incomplete tablist ARIA + missing
-  `aria-pressed`, a duplicated on/off `Toggle`, sub-44px photo-delete, schedule-delete without
-  undo, screenshots-only config e2e. Continuing to §6 (Capture / ＋ Add).
-- **2026-07-01** — §6 (Capture / ＋ Add) review **DONE**: two reviewers (0 P1, 5 P2, 3 P3).
-  Verdict: AI-degrade airtight + classifier hardened + strong reuse. Real gaps: **capture skips
-  the outbox + swallows errors** (offline = silently lost, the one hole in "never lost"), inline
-  bring-list draft can be silently discarded, EventForm date/time mislabel, and thin e2e on the
-  degrade + event-form paths (`AUJOURDHUI.md:131` only half-closed). Recurring `aria-pressed`
-  toggle-chip gap (shared with §5). Continuing to §7 (cross-cutting scenes).
-- **2026-07-01** — §7 (cross-cutting scenes) review **DONE**: two reviewers (2 P1, 4 P2, 3 P3);
-  Cook/Cashier/Cast/flyers already in §1/§4. Verdict: mostly solid; Moment `?scope=` round-trip
-  correct + covered, Search reaches the cercle graph. **Two real Voyage bugs:** the confirmed
-  freed-blob resurrection on undo-after-delete of a media note (live in 2 files), and no trip-
-  delete UI (dead endpoint). Plus Search carnets/home-projects gap + false-empty on cold load,
-  and Voyage's total e2e absence. Continuing to §8 (ambient/idle/offline/PWA) — the last section.
-- **2026-07-01** — §8 (ambient/idle/offline/PWA) review **DONE**: two reviewers (0 P1, 6 P2,
-  5 P3). Verdict: resilience layer mature + fail-safe; realtime correctly optional over polling.
-  Delivered the app-wide **`useWrite`-bypass verdict** (~90% clean; ~4 real gaps + a settings
-  inconsistency; everything else legitimately online-only). New: realtime `keysForPath` drift
-  (6 endpoints), wake-tap doesn't reset idle, day-part restart gap, `RealtimeHub` not
-  hibernatable (free-tier cost), screensaver-on-mobile vs "kiosk-only" copy. **All 8 sections
-  now reviewed** — next: the combined cross-section pass, then implementation.
-- **2026-07-01** — Combined cross-section pass written (top of doc): recurring themes,
-  confirmed-bug queue, security cluster, implement batches A–H.
-- **2026-07-01** — **Batch A implemented** (bugs #1 + #3 + two cleanups): member CRUD →
-  `CERCLE_KEY` (household.tsx ×4 + Operator `load`); realtime `keysForPath` maps the 6 drifted
-  endpoints + regression test; dead `['list']` invalidate removed (3 client sites + server);
-  `💡`→`sparkle-bold`. `npm run typecheck` clean, `npm test` 865/865 green. **Not yet committed**
-  (awaiting Marc's go). Next candidate: Batch B (media-undo-blob rule).
-- **2026-07-01** — Marc: "keep going, do all batches thoroughly." **Batches B–G implemented**
-  (still uncommitted; verified `typecheck` + `868 tests` + full `build` green after each):
-  - **B** — Voyage Infos/Itinéraire media notes → `useConfirm` (no undo, freed-blob-safe);
-    routines PATCH frees dropped narration blobs. New key `voyage.deleteMediaNoteConfirm`.
-  - **C** — server-enforce the intake field-scope bitmask (+ 2 tests); pending-submission cap
-    (200) on intake+postbox; `showcase` write-aware/default-deny (+ test) + issuer warning;
-    PostboxReview shows the matched face (tint-hijack visible).
-  - **D** — Réglages tablist fully wired + roving arrow-key nav; `aria-pressed` on all toggle
-    pickers; dropped per-second `aria-live`; EventForm date/time labels; 44px tap targets.
-  - **E (core)** — shared `Toggle` (+ DevKit + COMPONENTS.md); centralized `GHOSTS_KEY`/
-    `HISTORY_KEY`; shared `capitalize` (deduped 7 copies); FamilyBuilder inline-component hoist.
-  - **F** — offline `useWrite` for DealsBrowser / useRecipeShop / keepSuggestion.
-  - **G** — #5 trip-delete, #6 carnet restore (backend + UI), #7 capture offline feedback,
-    #8 bring-list draft guard.
-  All 8 confirmed bugs fixed; the two P1 security findings fixed. Deferred + documented: E's
-  larger refactors (Postbox→MemoControls, ContactForm→GroupForm, Markdown-grammar unify,
-  unionFind, cercle-nav→SubTabs, NoteEditor orphan), G's Search carnets/home-projects + empty
-  CTAs, and all of **H (e2e)** — new specs need a runnable pass to avoid a red CI. **Nothing
-  committed yet** — the whole review + fixes live in the working tree awaiting Marc's go.- **2026-07-01** — Marc: "continue with E, G, then H." **Completed the deferred items** (still
-  uncommitted; typecheck + 868 unit tests + build green throughout):
-  - **E (finished)** — shared **`UnionFind`** in `cercle.ts` replacing 4 hand-rolled copies (62
-    cercle tests green); unified the **Markdown block grammar** (`lib/noteGrammar.ts`; 35 note tests
-    green); **`ContactForm`→`GroupForm`** (inline group-create gains colour). Two items **deferred
-    with rationale** (not mechanical): Postbox→MemoControls (flows differ — needs a staging mode) +
-    NoteEditor immediate-upload orphan (needs deferred-upload / a cleanup endpoint).
-  - **G (finished)** — **Search** now covers carnets + home-projects + a cold-load "searching"
-    guard; **empty recipe-book CTA**.
-  - **H (started, verified)** — 2 Playwright specs authored **and run green** (aisle-sort, capture-
-    offline). Full e2e: 524 pass; 3 pre-existing failures confirmed unrelated (fail on clean HEAD).
-  **Everything remains in the working tree, uncommitted, awaiting Marc's go.**

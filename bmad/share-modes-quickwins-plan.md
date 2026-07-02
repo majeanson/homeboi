@@ -1,6 +1,7 @@
 # Share-modes — four quick wins (executable plan)
 
-> Pick-up plan for a fresh session. Builds on the typed share-modes feature already
+> **✅ SHIPPED** — all four wins landed (see memory `babillard-share-modes-quickwins.md`).
+> Kept as the design record. Builds on the typed share-modes feature already
 > shipped (commits `4ec3495`/`0661796`, on `main`). Background: see memory
 > `babillard-share-modes.md`. Everything here is **reuse-first**; none need a migration.
 >

@@ -1,7 +1,8 @@
 # 07 · « Les carnets » — cared-for members (home + auto + …)
 
-> Drafted 2026-06-25, **re-optimized** after Marc's feedback. **Not committed / not built.**
-> Supersedes the earlier "L'échelle" framing. Grew out of idea-set A of
+> **✅ SHIPPED** (migration 0082, « Les carnets »). This is the original design
+> note; kept as the rationale record. Drafted 2026-06-25, **re-optimized** after
+> Marc's feedback. Supersedes the earlier "L'échelle" framing. Grew out of idea-set A of
 > `06-lifestyle-ideas.md`. Reuse-first: a generic, entity-scoped care spine built on the
 > already-shipped `home_projects` (mig 0074) + L'auto `cars` (migs 0067–0070).
 
