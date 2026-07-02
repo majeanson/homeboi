@@ -45,6 +45,12 @@ export interface Env {
   // Plaintext vars from wrangler.toml.
   APP_NAME?: string
   DEFAULT_LANG?: string
+
+  // OPTIONAL dev signal. Set to 'development' ONLY in .dev.vars (local); absent in
+  // prod. `wrangler dev` presents the custom-domain host to the Worker even locally
+  // (from the custom_domain route), so the hostname can't tell dev from prod — this
+  // var is how worker/index.ts knows to skip the force-HTTPS redirect in local dev.
+  ENVIRONMENT?: string
 }
 
 // Pages Functions context, narrowed to our Env. `data` carries values the

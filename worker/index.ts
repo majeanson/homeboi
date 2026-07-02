@@ -69,7 +69,15 @@ export default {
     // anything else; localhost (wrangler/vite dev) stays untouched. Cloudflare's
     // "Always Use HTTPS" does this at the edge too — this is in-code defence so the
     // guarantee ships with the Worker regardless of dashboard state.
-    const isLocal = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+    //
+    // `wrangler dev` presents the custom-domain host (custom_domain route) to the
+    // Worker even locally, for BOTH url.hostname AND the Host header — so a hostname
+    // check alone reads dev as prod and bounces every /api + client-route to a
+    // TLS-less https, hanging local dev. ENVIRONMENT=development (set only in
+    // .dev.vars, unset in prod) is the reliable dev signal; in prod the redirect
+    // still fires. (Edge "Always Use HTTPS" remains the real enforcement.)
+    const isDev = env.ENVIRONMENT === 'development'
+    const isLocal = isDev || url.hostname === 'localhost' || url.hostname === '127.0.0.1'
     if (url.protocol === 'http:' && !isLocal) {
       url.protocol = 'https:'
       return Response.redirect(url.toString(), 301)

@@ -1,5 +1,11 @@
 # Shape of .dev.vars (gitignored — never commit the real file).
-# Copy to .dev.vars and fill in. For local dev `wrangler pages dev` loads these.
+# Copy to .dev.vars and fill in. For local dev `wrangler dev` loads these.
+
+# Marks this as local dev. REQUIRED for `wrangler dev` to work: the custom_domain
+# route makes the Worker see the prod host even locally, so without this the
+# force-HTTPS redirect in worker/index.ts bounces /api to a TLS-less https and dev
+# hangs. Unset in prod (there the redirect must fire). Keep it exactly this value.
+ENVIRONMENT=development
 
 # HMAC key for the operator session cookie + device tokens. MUST be >= 32 chars.
 # Generate one: `openssl rand -hex 32`
