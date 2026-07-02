@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useAuth } from '../lib/auth'
 import { useOnline } from '../lib/online'
 import { useConfirm } from '../lib/confirm'
+import { useSampleStatus } from '../lib/sample'
 import { api } from '../lib/api'
-import { SAMPLE_KEY } from '../lib/queryKeys'
 import { Icon } from './Icon'
 
 // The board banner for a freshly-seeded household (onboarding Phase 1). A new
@@ -45,35 +45,34 @@ export function SampleBanner() {
   const [dismissed, setDismissed] = useState(isDismissed)
   const [busy, setBusy] = useState(false)
 
-  // Only the operator manages sample data; the query is gated to a signed-in
-  // session so a kiosk doesn't poll it. count>0 ⇒ the demo is still present.
-  const count =
-    useQuery({
-      queryKey: SAMPLE_KEY,
-      queryFn: () => api<{ count: number }>('seed'),
-      enabled: signedIn,
-    }).data?.count ?? 0
+  // Only the operator manages sample data (the shared hook gates its query to a
+  // signed-in session). hasSample ⇒ the demo is still present ⇒ we're in the
+  // "explore" act and this banner is the board's ONE onboarding card.
+  const { hasSample } = useSampleStatus()
 
-  if (audience === 'toddler' || !signedIn || dismissed || count === 0) return null
+  if (audience === 'toddler' || !signedIn || dismissed || !hasSample) return null
 
   const keep = () => {
     persistDismissed()
     setDismissed(true)
   }
 
+  // Clearing is the GRADUATION step, not a scary delete: it removes only the demo
+  // (is_sample rows), then the empty board reveals the real setup checklist. Frame
+  // the confirm positively + reassure it's reloadable.
   const clear = async () => {
     if (busy) return
     const okay = await confirm({
       message: t.sample.clearConfirm,
-      confirmLabel: t.sample.clear,
-      tone: 'danger',
+      confirmLabel: t.sample.clearStart,
     })
     if (!okay) return
     setBusy(true)
     try {
       await api('seed', { method: 'DELETE' })
       // A clear touches most tables — refetch everything so every card empties at
-      // once (and the banner's own count → 0, which unmounts it).
+      // once (and the shared sample count → 0, which unmounts this banner AND lets
+      // the WelcomeCard setup checklist take over).
       await qc.invalidateQueries()
     } finally {
       setBusy(false)
@@ -90,17 +89,19 @@ export function SampleBanner() {
         <span className="sample-banner__hint">{t.sample.hint}</span>
       </div>
       <div className="sample-banner__actions">
+        {/* Secondary: keep exploring, dismiss the banner (graduate later from Réglages). */}
         <button type="button" className="btn btn--ghost btn--sm" onClick={keep}>
-          {t.sample.keep}
+          {t.sample.later}
         </button>
+        {/* Primary + positive: the guided next step — clear the demo and start for real. */}
         <button
           type="button"
-          className="btn btn--danger btn--sm"
+          className="btn btn--primary btn--sm"
           onClick={clear}
           disabled={busy || !online}
           title={!online ? t.offline.unavailable : undefined}
         >
-          {busy ? t.sample.clearing : t.sample.clear}
+          {busy ? t.sample.clearing : t.sample.clearStart}
         </button>
       </div>
     </aside>

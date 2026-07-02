@@ -5,6 +5,7 @@ import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useAuth } from '../lib/auth'
 import { useTour } from '../lib/tour'
+import { useSampleStatus } from '../lib/sample'
 import { api } from '../lib/api'
 import { useMeals } from '../lib/queryHooks'
 import { DEVICES_KEY } from '../lib/queryKeys'
@@ -68,6 +69,7 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   const { audience } = useAudience()
   const { signedIn } = useAuth()
   const { start } = useTour()
+  const { hasSample, pending: samplePending } = useSampleStatus()
   const nav = useNavigate()
   const [state, setState] = useState(read)
 
@@ -89,6 +91,12 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   // can't act on it, and its "pair a tablet" step could never tick there — so it
   // simply doesn't show. The operator sees it on their own signed-in device.
   if (audience === 'toddler' || !signedIn || state.dismissed) return null
+  // Onboarding is SEQUENTIAL: while the seeded demo family is still present, the
+  // board shows only the explore banner (SampleBanner) — this setup checklist
+  // ("add your family") would be noise then, and its member/meal steps read as
+  // already-done off the demo rows. It appears once the demo is cleared, on a real
+  // empty household. `pending` guards the first paint so it never flashes then hides.
+  if (hasSample || samplePending) return null
 
   // Every step is data-driven: it ticks only when the real thing exists, so tapping
   // a link and backing out can never false-complete a step (it just won't be done).

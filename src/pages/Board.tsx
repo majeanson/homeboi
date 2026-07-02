@@ -5,7 +5,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
-import { SectionIntro } from '../components/SectionIntro'
 import { WelcomeCard } from '../components/WelcomeCard'
 import { SampleBanner } from '../components/SampleBanner'
 import { AutoCard } from '../components/board/AutoCard'
@@ -945,7 +944,10 @@ export function Board() {
       {help.hint && <HelpHint />}
       {help.bubble}
 
-      <SectionIntro card="board" />
+      {/* No board SectionIntro: the board is the home screen — the first-run tour
+          already walks through it, and stacking a "what is the board" card here on
+          top of the demo-explore banner (or the setup checklist) was part of the
+          onboarding pile-up. The other tabs keep their first-visit intro. */}
 
       {/* Shared kiosk: a one-tap face row to switch between Maisonnée (everyone)
           and an individual member — so anyone at the wall tablet can quickly act
