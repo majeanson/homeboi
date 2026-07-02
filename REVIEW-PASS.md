@@ -50,10 +50,12 @@
    **`['routines']`→`ROUTINES_KEY`, `['carnets']`→`CARNETS_KEY`, `['health']`→`HEALTH_KEY`
    centralized 2026-07-02** (0db44cb). _Remaining (page-local, acceptable as single-source-per-page):_
    `GALLERY_KEY=['drawings']`, `INTAKE_KEY`/`POSTBOX_KEY`/`THIS_WEEK_KEY`/`ContactPhotos`.
-3. **a11y: incomplete tablist + missing `aria-pressed`.** The Réglages nav **and** the cercle
-   section nav are `role="tablist"` without `id`/`aria-controls`/roving-tabindex/arrow keys;
-   toggle-chip pickers (ChoreForm rotation, schedule, EventForm who/car/passenger) signal selection
-   by class only; a per-second `aria-live` stopwatch over-announces. One a11y sweep clears all.
+3. **a11y: incomplete tablist + missing `aria-pressed`.** ✅ **Closed.** Réglages tablist +
+   `aria-pressed` on the toggle-chip pickers + the dropped per-second `aria-live` all shipped in
+   Batch D. The shared **`SubTabs`** control (La cuisine / Le cercle / flyer+deal browsers) gained
+   **roving tabindex + ←/→/Home/End nav** 2026-07-02 — so the cercle section nav (and every other
+   SubTabs surface) is keyboard-navigable in one fix; regression-tested (`nav-tabs.spec.ts`).
+   _(Remaining nicety: `aria-controls`/panel `id` linking — deferred; panels are caller-managed.)_
 4. **e2e is screenshots-only almost everywhere.** Behavioural coverage is missing for: aisle-sort,
    cook stepper, toddler kitchen, guest/intake/postbox flows, the carnet scene, **Voyage entirely**,
    Search, capture-degrade+reroute, and idle/offline/realtime. The correctness-critical *logic*

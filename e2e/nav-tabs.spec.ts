@@ -73,3 +73,23 @@ test('round-trip through all tabs swaps content with no render loop', async ({ p
   }
   loop.assertNone()
 })
+
+// The in-page SubTabs (La cuisine's Repas · Garde-manger · Recettes, Le cercle's
+// section switch, etc.) are a WAI-ARIA tablist: ONE tab stop (roving tabindex) and
+// ←/→/Home/End move + select. Locks the a11y keyboard nav added to the shared control.
+test('SubTabs are keyboard-navigable (roving tabindex + arrow keys)', async ({ page }) => {
+  await boot(page)
+  await page.goto('/kitchen')
+  const tablist = page.locator('[data-tour="kitchen-tabs"]')
+  await expect(tablist).toBeVisible({ timeout: 15_000 })
+  // Roving tabindex: exactly one tab is in the tab order (the selected one).
+  await expect(tablist.locator('.subtabs__opt[tabindex="0"]')).toHaveCount(1)
+  await expect(tablist.locator('.subtabs__opt[aria-selected="true"]')).toHaveText(/Repas/)
+  // ArrowRight moves + selects the next tab; End jumps to the last.
+  await tablist.locator('.subtabs__opt[aria-selected="true"]').focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(tablist.locator('.subtabs__opt[aria-selected="true"]')).toHaveText(/Garde-manger/)
+  await page.keyboard.press('End')
+  await expect(tablist.locator('.subtabs__opt[aria-selected="true"]')).toHaveText(/Recettes/)
+  await expect(tablist.locator('.subtabs__opt[tabindex="0"]')).toHaveCount(1)
+})

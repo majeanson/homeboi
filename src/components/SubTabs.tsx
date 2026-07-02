@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { InlineIcon, type IconName } from './Icon'
 
 // SubTabs — the app-wide segmented "one job at a time" sub-tab control (the
@@ -51,15 +51,45 @@ export function SubTabs<K extends string>({
 }) {
   const group =
     'subtabs' + (size === 'mini' ? ' subtabs--mini' : '') + (className ? ' ' + className : '')
+
+  // WAI-ARIA tablist keyboard nav (a11y): the tablist is ONE tab stop (roving
+  // tabindex — only the selected tab is tabbable), and ←/→/Home/End move + select
+  // (automatic activation, fine here — the panels are cheap in-page switches). This
+  // matches the Réglages nav; without it a keyboard/AT user couldn't move between
+  // tabs. Help-mode taps still explain (via `pick`) on click; arrows just navigate.
+  const tablistRef = useRef<HTMLDivElement>(null)
+  function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const idx = options.findIndex((o) => o.key === value)
+    if (idx < 0) return
+    let next = idx
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (idx + 1) % options.length
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (idx - 1 + options.length) % options.length
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = options.length - 1
+    else return
+    e.preventDefault()
+    if (next !== idx) onSelect(options[next].key)
+    // Move focus to the target tab (stable, keyed by o.key — safe to focus at once).
+    tablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus()
+  }
+
   return (
     <div className={'subtabs-row' + (armed ? ' help-armed' : '')}>
-      <div className={group} role="tablist" aria-label={ariaLabel} data-tour={tour}>
+      <div
+        ref={tablistRef}
+        className={group}
+        role="tablist"
+        aria-label={ariaLabel}
+        data-tour={tour}
+        onKeyDown={onKeyDown}
+      >
         {options.map((o) => (
           <button
             key={o.key}
             type="button"
             role="tab"
             aria-selected={value === o.key}
+            tabIndex={value === o.key ? 0 : -1}
             className={'subtabs__opt' + (value === o.key ? ' is-on' : '')}
             onClick={pick ? pick(o.key, () => onSelect(o.key)) : () => onSelect(o.key)}
           >
