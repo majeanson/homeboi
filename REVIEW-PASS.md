@@ -61,8 +61,9 @@
    Search, capture-degrade+reroute, and idle/offline/realtime. The correctness-critical *logic*
    (recur, closure, idempotency, vcard) is well unit-tested — it's the *flows* that are blind.
 5. **The media-undo-blob rule.** Undo-after-delete of a media row resurrects a row pointing at a
-   freed R2 blob. **CONFIRMED live in Voyage Infos/Itinéraire (§7 P1);** latent in `NoteEditor`
-   in-editor replace (§3). The rule the correct code already follows (Documents / gallery /
+   freed R2 blob. **CONFIRMED live in Voyage Infos/Itinéraire (§7 P1);** ~~latent in `NoteEditor`
+   in-editor replace (§3)~~ — **NoteEditor fixed 2026-07-02** (session-key cleanup via
+   `DELETE /api/note-media`; see the shipped-log entry below). The rule the correct code already follows (Documents / gallery /
    care-log): **a media-bearing row deletes via `useConfirm` (no undo), text-only rows can undo.**
 6. **Forked-instead-of-reused primitives.** Postbox forks `MemoControls`; `ContactForm` forks
    `GroupForm`; the on/off `Toggle` is hand-rolled ~8× (ambient/display); two Markdown grammars;
@@ -86,8 +87,14 @@ and two e2e specs (aisle-sort, capture-offline).
 
 ### Still deferred from the pass (real backlog, with rationale)
 
-- **NoteEditor immediate-upload orphan** — an in-editor media replace leaves an un-saved R2 blob;
-  needs deferred-upload-on-save or a client cleanup endpoint (not a mechanical swap).
+- ~~**NoteEditor immediate-upload orphan**~~ — ✅ **Shipped 2026-07-02.** Went the *client
+  cleanup endpoint* route (not deferred-upload): the editor now tracks every key it uploaded
+  this session (`sessionKeysRef`) and, on close, frees any the saved note won't reference via
+  the new **`DELETE /api/note-media`** (authed, `nm_`/`ns_`-prefix-scoped, best-effort). Covers
+  replace, remove, re-draw (png+scene), and discard; the note's own persisted keys stay owned
+  by the server-side PATCH/DELETE. Chose this over deferred-upload to keep the resized-preview +
+  lazy R2-off UX intact — and freeing-by-key is symmetric with the app's read-by-key capability
+  model (`api/img/[key]` is unauthenticated by design).
 - **Postbox forks `MemoControls`** — reuse needs a "staging mode" on the shared component (guest
   stages-then-sends vs board posts-immediately); a design change, not a swap.
 - **Security hardening left:** full token **revocation** (a `guests` table changes the stateless

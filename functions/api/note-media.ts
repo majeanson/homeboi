@@ -1,6 +1,7 @@
-import { badRequest, ok, serviceUnavailable } from '../_lib/json'
+import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { uploadR2Media } from '../_lib/r2'
+import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
+import { isValidR2Key } from '../_lib/validate'
 
 // Upload a fridge-note attachment (#38 audio memo / #14 drawn note). Bytes go to
 // R2 (the shared PHOTOS bucket + free tier) under an opaque `nm_<id>` key, served
@@ -35,4 +36,26 @@ export const onRequestPost = authed(async (ctx) => {
   })
   if ('error' in up) return up.error
   return ok({ key: up.key, kind })
+})
+
+// Free an ABANDONED note-media upload — a blob that was uploaded here but never
+// written into a row (the composer replaced/removed the attachment, or discarded
+// the whole note before saving). Nothing else frees it: the row-delete cleanups in
+// notes.ts / family-notes.ts only free keys a saved row references, so an in-editor
+// replace/discard would otherwise orphan the blob in R2 forever (a slow storage leak).
+//
+// The opaque key IS the capability (see api/img/[key] — reads are unauthenticated by
+// design), so freeing by key is symmetric with reading by key; we still require an
+// authed household member (guests are blocked from any non-GET by `authed()`) and
+// restrict the blast radius to note-media's own `nm_`/`ns_` prefixes so this can only
+// ever delete a note attachment, never an avatar / recipe photo whose key leaked here.
+// Best-effort + idempotent: a bad/foreign/unknown key is a no-op 200, never an error.
+export const onRequestDelete = authed(async (ctx) => {
+  if (!ctx.env.PHOTOS) return ok({ ok: true }) // R2 unbound → nothing to free
+  const body = await readJson<{ key?: string }>(ctx.request)
+  const key = body?.key?.trim()
+  if (!isValidR2Key(key)) return badRequest('key invalide.')
+  if (!key!.startsWith('nm_') && !key!.startsWith('ns_')) return badRequest('key hors périmètre.')
+  await deleteR2Blob(ctx.env.PHOTOS, key)
+  return ok({ ok: true })
 })

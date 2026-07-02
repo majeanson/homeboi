@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
+import { api } from '../../lib/api'
 import { useOnline } from '../../lib/online'
 import { useModal } from '../../lib/useModal'
 import { imgUrl } from '../../lib/image'
@@ -76,6 +77,11 @@ export function NoteEditor({
   const rootRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<HTMLDivElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
+  // Every R2 key we UPLOADED during this editing session. On close we free any that
+  // the saved note won't reference — an in-editor replace/remove/discard would
+  // otherwise orphan the superseded blob in R2 (it was never written into a row, so
+  // no server-side row-delete ever frees it). Reset each time the editor (re)opens.
+  const sessionKeysRef = useRef<Set<string>>(new Set())
   // The last caret/selection that lived INSIDE the body. A toolbar button must not steal
   // or reset the caret, but if focus drifted (the title input, or a never-touched new
   // note) we restore from here so every button "just works". See ensureSelection().
@@ -104,6 +110,7 @@ export function NoteEditor({
     setMediaKind(mk)
     setMediaKey(mk ? note!.media_key : null)
     setSceneKey(mk === 'drawing' ? (note?.scene_key ?? null) : null)
+    sessionKeysRef.current = new Set() // fresh editing session — nothing uploaded yet
     const md = note?.text ?? ''
     const root = editorRef.current
     if (root) {
@@ -122,6 +129,20 @@ export function NoteEditor({
     const empty = !ti && !bo && !mediaKey
     // The "Pour qui" pick → wire scope: a member id = a personal note, null = Maisonnée.
     const effScope: NoteScope = forMember ? 'self' : 'family'
+
+    // Free any blob we uploaded this session that the saved note won't reference —
+    // a replace/remove/discard leaves the superseded upload orphaned in R2 (it was
+    // never written into a row, so no server-side row-delete frees it). The note's
+    // OWN persisted keys aren't in this set, so the server still owns those (it frees
+    // them on PATCH/DELETE). Best-effort, fire-and-forget — a leak beats a failed save.
+    const keptKeys = new Set<string>()
+    if (!empty && mediaKind && mediaKey) {
+      keptKeys.add(mediaKey)
+      if (sceneKey) keptKeys.add(sceneKey)
+    }
+    sessionKeysRef.current.forEach((k) => {
+      if (!keptKeys.has(k)) void api('note-media', { method: 'DELETE', body: { key: k } }).catch(() => {})
+    })
     if (!note) {
       if (empty) return // discard a brand-new, untouched note
       void write('family-notes', {
@@ -324,6 +345,7 @@ export function NoteEditor({
     setBusy(true)
     try {
       const key = await uploadMedia('note-media', file, { resize: true })
+      sessionKeysRef.current.add(key) // track for cleanup if later replaced/removed/discarded
       setMediaKind('image')
       setMediaKey(key)
       setSceneKey(null)
@@ -338,10 +360,12 @@ export function NoteEditor({
     setBusy(true)
     try {
       const key = await uploadMedia('note-media', png, { resize: false, filename: 'drawing.png' })
+      sessionKeysRef.current.add(key) // track for cleanup if later replaced/removed/discarded
       let sk: string | null = null
       if (scene) {
         try {
           sk = await uploadMedia('note-media', new Blob([scene], { type: 'application/json' }), { resize: false })
+          sessionKeysRef.current.add(sk)
         } catch {
           /* scene optional — the PNG stands alone */
         }
