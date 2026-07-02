@@ -136,3 +136,94 @@ test('the body never shows raw Markdown characters', async ({ page }) => {
   await expect(body).toHaveText('Bold me')
   expect(await body.innerText()).not.toContain('*')
 })
+
+// ── Media-attachment orphan cleanup (REVIEW-PASS theme 5) ────────────────────────
+// The editor uploads a photo/drawing to R2 the instant it's attached, but the blob
+// isn't "owned" until a saved row references it. So an in-editor REPLACE / REMOVE, or
+// DISCARDING a new note that had an attachment, would orphan the uploaded blob forever
+// (no row-delete ever frees it). On close the editor frees every key it uploaded this
+// session that the saved note won't reference, via DELETE /api/note-media. These specs
+// drive that end-to-end: distinct keys per upload + capture the cleanup DELETEs.
+
+// 1×1 transparent PNG — resizeImage degrades to "upload as-is" if it can't decode, so
+// the exact bytes don't matter; the upload (→ a key) is what we exercise.
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64',
+)
+
+// Serve an INCREMENTING key per upload (nm_e2e_1, _2, …) and record every cleanup
+// DELETE'd key, so a test can assert exactly which blobs got freed. Overrides the
+// shared mock's fixed-key note-media stub (last route registered wins).
+async function stubNoteMedia(page: import('@playwright/test').Page) {
+  const deleted: string[] = []
+  let n = 0
+  await page.route('**/api/note-media**', async (route) => {
+    const m = route.request().method()
+    if (m === 'POST') {
+      n += 1
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ key: `nm_e2e_${n}`, kind: 'image' }) })
+    }
+    if (m === 'DELETE') {
+      try {
+        const key = JSON.parse(route.request().postData() || '{}').key
+        if (key) deleted.push(key)
+      } catch {
+        /* no body */
+      }
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+  })
+  return deleted
+}
+
+async function attachPhoto(page: import('@playwright/test').Page, name: string) {
+  await page.locator('.note-editor input[type="file"]').setInputFiles({ name, mimeType: 'image/png', buffer: PNG })
+  await expect(page.locator('.note-editor__attach')).toBeVisible() // upload done, key tracked
+}
+
+test('removing an attached photo then discarding the note frees the uploaded blob', async ({ page }) => {
+  const deleted = await stubNoteMedia(page)
+  await openEditor(page)
+  await attachPhoto(page, 'a.png') // → nm_e2e_1
+
+  await page.getByRole('button', { name: 'Retirer' }).click()
+  await expect(page.locator('.note-editor__attach')).toHaveCount(0)
+
+  // Empty title + body + no attachment → the note is discarded; the orphaned upload
+  // must be freed on close (nothing else ever would).
+  const del = page.waitForRequest((r) => r.url().includes('/api/note-media') && r.method() === 'DELETE')
+  await page.getByRole('button', { name: 'Terminé' }).click()
+  await del
+  expect(deleted).toEqual(['nm_e2e_1'])
+})
+
+test('replacing a photo then saving frees only the superseded blob, not the kept one', async ({ page }) => {
+  const deleted = await stubNoteMedia(page)
+  await openEditor(page)
+  await attachPhoto(page, 'first.png') // → nm_e2e_1
+  await attachPhoto(page, 'second.png') // → nm_e2e_2 (replaces; _1 now abandoned)
+
+  // A title makes the note non-empty so it saves (POST) with the CURRENT key (_2).
+  await page.getByRole('textbox', { name: 'Titre (facultatif)' }).fill('Photo note')
+
+  const del = page.waitForRequest((r) => r.url().includes('/api/note-media') && r.method() === 'DELETE')
+  await page.getByRole('button', { name: 'Terminé' }).click()
+  await del
+  expect(deleted).toEqual(['nm_e2e_1']) // _2 is referenced by the saved note → kept
+})
+
+test('attaching a photo and saving frees nothing', async ({ page }) => {
+  const deleted = await stubNoteMedia(page)
+  await openEditor(page)
+  await attachPhoto(page, 'keep.png') // → nm_e2e_1
+  await page.getByRole('textbox', { name: 'Titre (facultatif)' }).fill('Keep me')
+
+  // Cleanup (if any) is dispatched before the write, so once the POST is observed
+  // no DELETE is pending — the saved blob must not be freed.
+  const post = page.waitForRequest((r) => r.url().includes('/api/family-notes') && r.method() === 'POST')
+  await page.getByRole('button', { name: 'Terminé' }).click()
+  await post
+  expect(deleted).toEqual([])
+})
