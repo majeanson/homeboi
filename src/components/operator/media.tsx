@@ -54,7 +54,7 @@ export function RecapSection({ help }: { help?: HelpMode }) {
 export function PhotosSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
-  const { data } = useQuery({
+  const { data, isPending } = useQuery({
     queryKey: PHOTOS_KEY,
     queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
   })
@@ -110,7 +110,8 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.operator.photos} help={help} helpKey="photos">
       {photos.length === 0 ? (
-        <EmptyState>{t.operator.noPhotos}</EmptyState>
+        // Guard the cold load: don't flash "no photos" before the query settles.
+        isPending ? null : <EmptyState>{t.operator.noPhotos}</EmptyState>
       ) : (
         <div className="photo-grid">
           {photos.map((p) => (

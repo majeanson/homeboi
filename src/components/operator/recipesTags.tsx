@@ -186,7 +186,8 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
       <HelpTitle as="h3" className="operator__sub" help={help} k="tagUsed">{t.operator.tagUsed}</HelpTitle>
       {help?.bubbleFor('tagUsed')}
       {used.length === 0 ? (
-        <EmptyState>{t.operator.tagNoneUsed}</EmptyState>
+        // Guard the cold load: don't flash "no tags in use" before the query settles.
+        tagsQ.isPending ? null : <EmptyState>{t.operator.tagNoneUsed}</EmptyState>
       ) : (
         <ul className="operator__list tag-admin__list">
           {used.map(({ tag, count }) => {

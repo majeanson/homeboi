@@ -221,9 +221,10 @@ not structural. Four reviewers; findings deduped below.
   (no count) but "which faces" is incomplete on a 5+ member household.
 - [ ] **`MealIdeas` empty state has no guide deep-link** (`MealIdeas.tsx:73`) while
   `Leftovers` does — minor parity.
-- [ ] **`RecipeTags`/`RecipePills` have no loading/error state** — flash of "aucune
-  étiquette" empty while in flight, and a failed fetch silently shows defaults
-  (`recipesTags.tsx:188/38`, `recipePills.tsx:44`).
+- [x] **`RecipeTags` "in use" strip flashed empty on cold load** — ✅ **Fixed 2026-07-02**
+  (Phase 0): guarded on `tagsQ.isPending` (`recipesTags.tsx:188`). _(Correction: **`RecipePills` is
+  NOT a false-empty** — it falls back to `DEFAULT_PILLS` on cold load, `recipePills.tsx:50`, so the
+  original "flash of aucune" claim was inaccurate. A failed fetch still silently shows defaults.)_
 
 **Strengths to keep.** Deferred-removal on the live-polled list is correct (check = mark,
 not removal; clear/delete held behind undo + refetch — no flash-back). Deal↔item reuse
@@ -640,9 +641,9 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
   RealtimeHub `invalidate` on another device mid-undo-window could resurrect a row deleted in
   Réglages (the shell's own queries aren't live, so it's safe there). The row snapshot mitigates
   but doesn't prevent.
-- [ ] **First-paint flashes:** Photos has no `isLoading` guard so the "noPhotos" empty-state flashes
-  before the grid (`media.tsx:61`); `ThisWeek` has no error state (a failed fetch reads as an empty
-  week, `:94`).
+- [~] **First-paint flashes:** ✅ Photos guarded on `isPending` 2026-07-02 (Phase 0, `media.tsx:112`)
+  so "noPhotos" no longer flashes before the grid. _Still open:_ `ThisWeek` has no error state (a
+  failed fetch reads as an empty week, `:94`).
 - [ ] **`AiStatusTest` ("Tester l'IA") shows even when the household turned AI off** (`aiErrors.tsx:
   35`) — it probes the binding, not the household switch; add a clarifying hint.
 - [ ] **Reuse candidates:** `OperatorJump` not registered in DevKit; `ItemReorder` (`todos.tsx:260`)
@@ -786,9 +787,9 @@ absence.
   `home_projects`/drawings. Searching a car VIN or a home-project note returns nothing. _(This is
   the definitive answer to §3's "verify Search ingests everything": people/pets/businesses ✓,
   carnets/home-projects ✗.)_
-- [ ] **Search shows a false "aucun résultat" on cold load** — `total` is computed from arrays
-  defaulting to `[]` with no `isLoading` guard (`SearchPage.tsx:237`), so a direct `/search?q=x`
-  renders the empty state while 8+ queries are in-flight, then pops results in. Guard on fetching.
+- [x] **Search cold-load false "aucun résultat"** — ✅ **Already fixed** (verified 2026-07-02):
+  `SearchPage.tsx:265` computes `fetching = useIsFetching()` and shows `t.search.searching` until the
+  queries settle (`:341-348`), only then `noResults`. This box was stale; kept for the record.
 - [ ] **Undated trips + dead cover-photo.** `VoyageCard`/`MonthView` only list trips with
   start+end (`VoyageCard.tsx:18`), and there's no trip-list surface, so an undated trip is
   unreachable after you close the scene. And `Trip.media_key` is read (`VoyageDocuments.tsx:80`) +
