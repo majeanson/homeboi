@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { mockApi, seedState, BASE } from './mocks'
 
 // Board customization + lens coverage — the §6 e2e gaps from AUJOURDHUI.md that the
 // static screenshot frames never exercise: the « Disposition du babillard » toggle UI
@@ -9,6 +9,10 @@ import { mockApi, seedState } from './mocks'
 
 async function board(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
+  // Freeze to the mock epoch so today's timed items (the Garderie event) stay live
+  // and visible — the board lifecycle folds "past" items into a collapsed disclosure
+  // vs the real clock, which made the face-lens assertion time-of-day-flaky.
+  await page.clock.setFixedTime(new Date(BASE * 1000))
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
   await page.goto('/board')
@@ -79,6 +83,7 @@ test.describe('board layout customization', () => {
 
   test('a fixed top-band card (Moments) is hide-able too — the settings are exhaustive', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.clock.setFixedTime(new Date(BASE * 1000))
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
     // The Moments hero is in the top band by default.
@@ -87,8 +92,9 @@ test.describe('board layout customization', () => {
     await expect(page.locator('.now-card--moment')).toBeVisible()
     // Hide it from the band group (show/hide only — no drag grip on these rows).
     await openLayout(page)
-    // The band group lists every fixed card: Notes, Ce soir + météo, À régler, Moments.
-    await expect(page.locator('.board-layout__row--fixed')).toHaveCount(4)
+    // The band group lists every fixed card: Notes, Ce soir + météo, Mots, À régler,
+    // Moments (Mots — « Laisse un mot » — joined the band after this spec was written).
+    await expect(page.locator('.board-layout__row--fixed')).toHaveCount(5)
     const row = page.locator('.board-layout__row--fixed', { hasText: 'Moments' })
     await expect(row.locator('.dnd-grip')).toHaveCount(0) // band rows don't drag
     await row.locator('.board-layout__toggle').click()
@@ -111,7 +117,10 @@ test('picking a face re-renders the board, hiding another member’s items', asy
   await page.locator('.profile-face', { hasText: 'Papa' }).click()
   await expect(page.locator('.greet')).toContainText('Papa')
   // The board re-renders under the lens: an event that's neither Papa's nor shared
-  // (Garderie = Léa's) drops out, while a shared, unassigned row stays.
+  // (Garderie = Léa's) drops out, while a shared, unassigned row stays. (Match by
+  // text, not `.act`: under Papa only the one shared timed event remains, so « Le fil
+  // du jour » collapses and it surfaces as the Prochainement headline — still visible,
+  // just not a plain Act row.)
   await expect(page.locator('.act', { hasText: 'Garderie' })).toHaveCount(0)
-  await expect(page.locator('.act', { hasText: 'Rappel: facture' })).toBeVisible()
+  await expect(page.getByText('Rappel: facture')).toBeVisible()
 })

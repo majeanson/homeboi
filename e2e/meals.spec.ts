@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { mockApi, seedState, BASE } from './mocks'
 
 // N meals per slot + time ordering + the food slot icons. Frontend-only against
 // mocked /api/* (the mock returns {ok:true} for writes, so we assert the request
@@ -7,6 +7,10 @@ import { mockApi, seedState } from './mocks'
 
 async function boot(page: Page, path = '/kitchen') {
   await page.emulateMedia({ reducedMotion: 'reduce' })
+  // Freeze the clock to the mock's data epoch so today's timed items (the breakfast
+  // meal) read as live, not folded into the collapsed « Déjà passé » disclosure by
+  // the board lifecycle — otherwise the slot-icon assertion is time-of-day-flaky.
+  await page.clock.setFixedTime(new Date(BASE * 1000))
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto(path)
