@@ -7,12 +7,13 @@ import { mockApi, seedState, BASE } from './mocks'
 // the board re-rendering under a picked face (the face lens, beyond the greeting).
 // Same frontend-only harness as interactions.spec.ts: Vite + stubbed /api/**.
 
-async function board(page: Page) {
+async function board(page: Page, freezeClock = false) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  // Freeze to the mock epoch so today's timed items (the Garderie event) stay live
-  // and visible — the board lifecycle folds "past" items into a collapsed disclosure
-  // vs the real clock, which made the face-lens assertion time-of-day-flaky.
-  await page.clock.setFixedTime(new Date(BASE * 1000))
+  // Only the face-lens test freezes the clock (to the mock epoch) so the timed
+  // Garderie event stays live and visible — the board lifecycle folds "past" items
+  // into a collapsed disclosure vs the real clock. Kept OFF for the Moments-chip
+  // tests, whose "lead window (Ce soir by day)" IS time-of-day dependent.
+  if (freezeClock) await page.clock.setFixedTime(new Date(BASE * 1000))
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
   await page.goto('/board')
@@ -83,7 +84,6 @@ test.describe('board layout customization', () => {
 
   test('a fixed top-band card (Moments) is hide-able too — the settings are exhaustive', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    await page.clock.setFixedTime(new Date(BASE * 1000))
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
     // The Moments hero is in the top band by default.
@@ -108,7 +108,7 @@ test.describe('board layout customization', () => {
 // ───────────────────────────── face lens ───────────────────────────────
 
 test('picking a face re-renders the board, hiding another member’s items', async ({ page }) => {
-  await board(page)
+  await board(page, true) // freeze clock so the timed Garderie event stays live under the lens
   // Maisonnée (everyone): Garderie (Léa, m3) shows in Aujourd'hui.
   await expect(page.locator('.act', { hasText: 'Garderie' })).toBeVisible()
   // Pick Papa (m2) via the mobile profile chip → face picker sheet.

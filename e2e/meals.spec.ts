@@ -5,12 +5,13 @@ import { mockApi, seedState, BASE } from './mocks'
 // mocked /api/* (the mock returns {ok:true} for writes, so we assert the request
 // fired — the established expectApi pattern).
 
-async function boot(page: Page, path = '/kitchen') {
+async function boot(page: Page, path = '/kitchen', freezeClock = false) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  // Freeze the clock to the mock's data epoch so today's timed items (the breakfast
-  // meal) read as live, not folded into the collapsed « Déjà passé » disclosure by
-  // the board lifecycle — otherwise the slot-icon assertion is time-of-day-flaky.
-  await page.clock.setFixedTime(new Date(BASE * 1000))
+  // Only the board slot-icon test freezes the clock (to the mock epoch) so today's
+  // breakfast meal reads as live, not folded into the collapsed « Déjà passé »
+  // disclosure by the board lifecycle. Kept OFF elsewhere so a frozen night-time
+  // doesn't perturb time-of-day-dependent UI in the other tests.
+  if (freezeClock) await page.clock.setFixedTime(new Date(BASE * 1000))
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto(path)
@@ -88,7 +89,8 @@ test('the board "Ce soir" lists every supper', async ({ page }) => {
 })
 
 test('meals carry their slot food icon, never the carrot', async ({ page }) => {
-  await boot(page, '/board')
+  await boot(page, '/board', true) // freeze clock so the morning breakfast meal stays live
+
   // Today's breakfast (Crêpes) on the bento board is an Act tile with the egg icon.
   await expect(page.locator('.act .tile[data-icon="egg-bold"]').first()).toBeVisible()
   // No meal tile falls back to the generic carrot.

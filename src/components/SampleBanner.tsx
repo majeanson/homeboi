@@ -65,6 +65,9 @@ export function SampleBanner() {
     const okay = await confirm({
       message: t.sample.clearConfirm,
       confirmLabel: t.sample.clearStart,
+      // Positive tone (not danger): clearing the demo is the guided next step, not a
+      // scary delete — it only removes is_sample rows and is reloadable from Réglages.
+      tone: 'default',
     })
     if (!okay) return
     setBusy(true)
