@@ -13,12 +13,24 @@
 import type { Env } from './env'
 import { newId, nowSec, localDayStart, addLocalDays, localTimeOnDay } from './ids'
 
-// The exact set of tables « clear » sweeps, in FK-safe DELETE order: children
-// (rows that reference a member or recipe) FIRST, then recipes, then members LAST.
-// Several tables carry a FK to members(id) / recipes(id) that IS enforced, so
-// deleting members before the meals/events/notes/routines/todos that reference them
-// fails — order matters. (Seeding inserts in the reverse: members + recipes first.)
+// The exact set of tables « clear » sweeps, in FK-safe DELETE order: a child (any
+// row that references another seeded row) is deleted BEFORE its parent, because D1
+// enforces REFERENCES FKs. members + recipes are the most-referenced, so they sit
+// LAST; carnets/businesses/contacts/trips are parents of their content rows, so
+// those content rows come first. (Seeding inserts in the reverse: parents first.)
 const SAMPLE_TABLES = [
+  // deepest children (reference members/recipes/carnets/…)
+  'contact_links', // polymorphic edges (no DB FK, but conceptually first)
+  'recipe_loves', // → recipes, members
+  'mots', // → members
+  'care_log', // → carnets
+  'home_projects', // soft-ref carnets
+  'carnets', // flat (all parent_id NULL) → after its care_log/pins
+  'pets', // soft-ref businesses
+  'contacts', // → members (member_id)
+  'businesses',
+  'trips',
+  // original core
   'events',
   'meals', // → recipes, so before recipes
   'list_items',
@@ -27,7 +39,7 @@ const SAMPLE_TABLES = [
   'pantry_low',
   'routines',
   'todos',
-  'recipes', // referenced by meals → after meals
+  'recipes', // referenced by meals + recipe_loves → after them
   'members', // referenced by everyone → last
 ] as const
 
@@ -103,12 +115,33 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
     'Garnir les coquilles de poulet, tomate et laitue.',
   ]
 
+  // ── Extended demo: Le cercle (extended family + tree), a pet + its vet, a home
+  // carnet with its upkeep, recipe hearts, a « mot », a trip — so a curious user
+  // finds every section alive, not just the board. ids up front so the edges /
+  // hearts / carnet-content below can reference them. All media-free.
+  const diane = newId() // grandmother (contact)
+  const robert = newId() // grandfather (contact)
+  const moustache = newId() // the cat (pet)
+  const vetBiz = newId() // the vet (business)
+  const maison = newId() // the home carnet
+
   // Days, DST-aware, anchored to today.
   const d0 = localDayStart(new Date(ts * 1000))
   const d1 = addLocalDays(d0, 1)
   const d3 = addLocalDays(d0, 3)
   const d5 = addLocalDays(d0, 5)
+  const d10 = addLocalDays(d0, 10)
+  const d12 = addLocalDays(d0, 12)
   const at = (day: number, hours: number) => localTimeOnDay(day, hours * 3600)
+
+  // Cercle relationship edges (polymorphic: kind ∈ member|contact|pet; no DB FK).
+  // A small 3-generation tree — grandparents → Maman → the kids — plus Léa owns the
+  // cat. reverse_type from lib/cercleRelations INVERSES.
+  const link = (aId: string, aKind: string, bId: string, bKind: string, type: string, rev: string) =>
+    P(
+      `INSERT INTO contact_links (id, household_id, person_a_id, person_a_kind, person_b_id, person_b_kind, type, reverse_type, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(newId(), h, aId, aKind, bId, bKind, type, rev, ts, ts, S)
 
   // Routine cards (emoji icons; no narration/photo R2 keys → both arrays empty).
   const matinCards = [
@@ -270,6 +303,77 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       `INSERT INTO todos (id, household_id, title, day, member_id, position, created_at, updated_at, is_sample)
        VALUES (?, ?, ?, NULL, ?, 1, ?, ?, ?)`,
     ).bind(newId(), h, 'Boîte à lunch des enfants', maman, ts, ts, S),
+
+    // ── Extended demo (parents before children for the FK batch) ──────────────
+
+    // businesses — the vet (referenced by the pet below, soft ref).
+    P(
+      `INSERT INTO businesses (id, household_id, name, category, phone, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(vetBiz, h, 'Clinique vétérinaire du coin', 'Vétérinaire', '514-555-0199', ts, ts, S),
+
+    // contacts — extended family (grandparents). member_id NULL (they're not faces).
+    P(
+      `INSERT INTO contacts (id, household_id, first_name, last_name, nickname, birthday, gender, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(diane, h, 'Diane', 'Tremblay', 'Mamie', '1958-03-15', 'f', ts, ts, S),
+    P(
+      `INSERT INTO contacts (id, household_id, first_name, last_name, nickname, birthday, gender, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(robert, h, 'Robert', 'Tremblay', 'Papi', '1955-07-22', 'm', ts, ts, S),
+
+    // pets — the cat, with its vet (soft ref).
+    P(
+      `INSERT INTO pets (id, household_id, name, species, colour, birthday, vet_business_id, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(moustache, h, 'Moustache', 'Chat', '#8a8a8a', '2020-05-01', vetBiz, ts, ts, S),
+
+    // carnets — the home carnet (flat: parent_id NULL, so the clear sweep's single
+    // DELETE never hits the self-ref FK). Its content (care_log + upkeep) follows.
+    P(
+      `INSERT INTO carnets (id, household_id, kind, name, colour, created_at, updated_at, is_sample)
+       VALUES (?, ?, 'home', ?, ?, ?, ?, ?)`,
+    ).bind(maison, h, 'La maison', '#8a6f5c', ts, ts, S),
+    // care_log — a past service on the home (→ carnets, so after it).
+    P(
+      `INSERT INTO care_log (id, household_id, carnet_id, at, kind, title, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, 'service', ?, ?, ?, ?)`,
+    ).bind(newId(), h, maison, addLocalDays(d0, -14), 'Changé le filtre de la fournaise', ts, ts, S),
+    // home_projects — a dated upkeep tied to the home carnet (surfaces on the board).
+    P(
+      `INSERT INTO home_projects (id, household_id, kind, title, colour, at, carnet_id, created_at, updated_at, is_sample)
+       VALUES (?, ?, 'upkeep', ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(newId(), h, 'Nettoyer les gouttières', '#8a6f5c', d5, maison, ts, ts, S),
+
+    // cercle edges — a 3-generation tree + Léa owns the cat (no DB FK; polymorphic).
+    link(robert, 'contact', diane, 'contact', 'spouse', 'spouse'),
+    link(diane, 'contact', maman, 'member', 'parent', 'child'),
+    link(maman, 'member', lea, 'member', 'parent', 'child'),
+    link(maman, 'member', noah, 'member', 'parent', 'child'),
+    link(papa, 'member', lea, 'member', 'parent', 'child'),
+    link(papa, 'member', noah, 'member', 'parent', 'child'),
+    link(lea, 'member', moustache, 'pet', 'owner', 'pet'),
+
+    // recipe hearts (#21) — who loves the spaghetti (faces, never a count). Composite
+    // PK, no id column; → recipes + members, so after both (inserted first).
+    P(
+      `INSERT OR IGNORE INTO recipe_loves (household_id, recipe_id, member_id, created_at, is_sample) VALUES (?, ?, ?, ?, ?)`,
+    ).bind(h, rSpag, maman, ts, S),
+    P(
+      `INSERT OR IGNORE INTO recipe_loves (household_id, recipe_id, member_id, created_at, is_sample) VALUES (?, ?, ?, ?, ?)`,
+    ).bind(h, rSpag, papa, ts, S),
+
+    // a « mot » — Maman left a note waiting (unopened) on Léa's face. Media-free.
+    P(
+      `INSERT INTO mots (id, household_id, member_id, author_member_id, text, created_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(newId(), h, lea, maman, 'Je suis fière de toi ❤️', ts, S),
+
+    // a trip (« Voyage ») — a weekend at the lake, the whole household.
+    P(
+      `INSERT INTO trips (id, household_id, title, destination, start_at, end_at, members, colour, position, created_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+    ).bind(newId(), h, 'Chalet au lac', 'Lac Memphrémagog', d10, d12, JSON.stringify([maman, papa, lea, noah]), '#5891AC', ts, S),
   ]
 
   await env.DB.batch(stmts)
