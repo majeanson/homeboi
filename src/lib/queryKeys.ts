@@ -102,6 +102,10 @@ export const DEVICES_KEY = ['devices']
 export const FLYERS_KEY = ['flyers']
 // AI error journal (/api/ai-errors): read in Réglages Debug.
 export const AI_ERRORS_KEY = ['ai-errors']
+// Sample/demo data presence (/api/seed → { count }): read by the board banner
+// (« Exemples pour explorer ») AND the Réglages sample-data control, so the key is
+// shared — seeding or clearing invalidates it and both surfaces agree at once.
+export const SAMPLE_KEY = ['sample']
 // Unifies the per-kind guest-window read keys: WelcomePage/HandoffPage/
 // FamilyWindowPage use no sub, Postbox uses 'postbox', IntakeForm uses 'intake'.
 // `preview` is the operator's ?preview=<kind> override (null → 'self').

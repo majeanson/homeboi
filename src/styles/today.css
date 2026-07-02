@@ -221,6 +221,46 @@
 
 /* The Board first-run WelcomeCard — setup checklist + the shared feature map.
    Borrows the section-intro look (calm bordered card) with its own checklist. */
+/* The first-run sample-data strip (onboarding Phase 1): a calm, glanceable band
+   above the welcome checklist. Icon · text (title + hint) · keep/clear actions.
+   Wraps on a narrow phone so the actions drop below the text (mobile-friendly). */
+.sample-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 4px 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--marigold-deep, var(--ink-soft));
+  border-radius: 14px;
+  background: var(--paper-deep, transparent);
+}
+.sample-banner__icon {
+  display: inline-flex;
+  color: var(--marigold-deep, var(--ink-soft));
+}
+.sample-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.sample-banner__title {
+  font-weight: 600;
+}
+.sample-banner__hint {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.sample-banner__actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
 .welcome-card {
   margin: 4px 0 16px;
   padding: 14px 16px;

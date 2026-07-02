@@ -172,6 +172,24 @@ const PATH_KEYS: Record<string, string[][]> = {
   'car-day': [['car'], ['board']],
   // The kept-drawings gallery (GALLERY_KEY = ['drawings']).
   drawings: [['drawings']],
+  // Sample/demo data (onboarding Phase 1): a seed or « Vider les exemples » touches
+  // most tables at once, so nudge every board-facing cache so another open device
+  // (the wall kiosk) reflects the change instead of waiting for its next poll.
+  seed: [
+    ['board'],
+    ['members'],
+    ['meals'],
+    ['events'],
+    ['month'],
+    ['cercle'],
+    ['routines'],
+    ['todos'],
+    ['recipes'],
+    ['pantry'],
+    ['a-regler'],
+    ['ghosts'],
+    ['list-history'],
+  ],
 }
 
 // Normalize an API path: strip a leading "api/" / slashes and any query string,

@@ -79,6 +79,7 @@ import * as routineCardPhoto from '../functions/api/routine-card-photo'
 import * as routines from '../functions/api/routines'
 import * as car from '../functions/api/car'
 import * as schedule from '../functions/api/schedule'
+import * as seed from '../functions/api/seed'
 import * as carDay from '../functions/api/car-day'
 import * as suggestMeal from '../functions/api/suggest-meal'
 import * as thisWeek from '../functions/api/this-week'
@@ -190,6 +191,7 @@ const TABLE: Record<string, RouteMod> = {
   routines,
   car,
   schedule,
+  seed,
   'car-day': carDay,
   'suggest-meal': suggestMeal,
   'this-week': thisWeek,

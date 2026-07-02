@@ -7,6 +7,7 @@ import { PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { WelcomeCard } from '../components/WelcomeCard'
+import { SampleBanner } from '../components/SampleBanner'
 import { AutoCard } from '../components/board/AutoCard'
 import { CarnetsCard } from '../components/board/CarnetsCard'
 import { VoyageCard } from '../components/board/VoyageCard'
@@ -956,6 +957,11 @@ export function Board() {
       {/* No "Vue de <nom>" stamp: the profile chip / member switcher above
           already shows whose view this is (the selected face), so the label was
           redundant. Picking the face again (or Maisonnée) clears the filter. */}
+
+      {/* A freshly-seeded household: a calm strip flags the demo data + offers
+          keep/clear (operator only; auto-hides once cleared or dismissed). Sits
+          above the welcome checklist so the "these are examples" context reads first. */}
+      <SampleBanner />
 
       {/* A fresh household: the first-run setup checklist + the feature map, so a
           newcomer has a clear next step AND can see everything the app does. It

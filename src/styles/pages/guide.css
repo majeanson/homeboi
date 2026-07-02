@@ -69,6 +69,15 @@
   font-size: 1.05rem;
   margin: 0 0 0.6rem;
 }
+/* Sample-data control (onboarding Phase 1): a small managed block under the map. */
+.guide__sample {
+  margin: 1rem 0 0.5rem;
+}
+.guide__sample-line {
+  margin: 0 0 0.5rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
 /* A themed sub-cluster inside the (large) concepts group, so it reads as a map
    rather than a flat wall. */
 .guide__theme {

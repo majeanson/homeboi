@@ -73,6 +73,15 @@ describe('keysForPath', () => {
     expect(keysForPath('capture')).toEqual([['board'], ['meals'], ['pantry'], ['leftovers'], ['a-regler']])
   })
 
+  it('maps sample-data seed/clear to a broad board-facing superset (not the bare board default)', () => {
+    const keys = keysForPath('seed')
+    expect(keys).toContainEqual(['board'])
+    expect(keys).toContainEqual(['members'])
+    expect(keys).toContainEqual(['meals'])
+    expect(keys).toContainEqual(['routines'])
+    expect(keys).not.toEqual([['board']])
+  })
+
   it('broadcasts NOTHING for endpoints that change no shared cache', () => {
     for (const p of [
       'auth/login',

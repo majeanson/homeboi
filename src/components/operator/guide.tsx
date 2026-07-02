@@ -7,6 +7,7 @@ import { useTour } from '../../lib/tour'
 import { resetWelcome } from '../WelcomeCard'
 import { OperatorSection } from './OperatorSection'
 import { FeatureMap } from '../FeatureMap'
+import { SampleDataControls } from './sampleData'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
 
@@ -321,6 +322,9 @@ export function GuideSection() {
         <>
           <h3 className="guide__group-title">{t.operator.guideMap}</h3>
           <FeatureMap onSelect={jumpTo} label={t.operator.guideMap} />
+          {/* Manage the first-run demo data (onboarding Phase 1): clear the examples
+              or load them onto an empty household. Mirrors the board banner. */}
+          <SampleDataControls />
         </>
       )}
 

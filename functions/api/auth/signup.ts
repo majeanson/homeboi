@@ -3,6 +3,7 @@ import { badRequest, conflict, forbidden, readJson, serverError } from '../../_l
 import { issueSession, sessionCookies } from '../../_lib/auth'
 import { hashPassword, safeEqual } from '../../_lib/password'
 import { newId, nowSec } from '../../_lib/ids'
+import { seedSampleData } from '../../_lib/sampleData'
 
 // Self-serve signup: a new family creates its household + operator account in
 // one step (name the household, pick email + password) and lands signed in.
@@ -30,9 +31,9 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   const existing = await ctx.env.DB.prepare('SELECT email FROM operators WHERE email = ?').bind(email).first()
   if (existing) return conflict('Un compte existe déjà pour ce courriel — connecte-toi.')
 
+  const householdId = newId()
+  const ts = nowSec()
   try {
-    const householdId = newId()
-    const ts = nowSec()
     // Atomic batch; operators.email is the primary key, so two racing signups
     // for the same email can't both land — the loser surfaces as a conflict.
     await ctx.env.DB.batch([
@@ -45,6 +46,15 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     ])
   } catch {
     return conflict('Un compte existe déjà pour ce courriel — connecte-toi.')
+  }
+
+  // Seed the demo family so the board is alive on first login (onboarding Phase 1).
+  // Best-effort: a seed failure must never fail the signup — the operator can load
+  // examples later from Réglages, or just start empty.
+  try {
+    await seedSampleData(ctx.env, householdId, ts)
+  } catch {
+    /* non-fatal — an empty household is a valid start */
   }
 
   try {

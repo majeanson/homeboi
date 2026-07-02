@@ -191,6 +191,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Des exemples pour explorer', en: 'Sample data to explore' },
+        detail: {
+          fr: 'Un tout nouveau compte arrive avec une famille de démo (des membres, un plan de repas, des listes, des corvées, des routines) pour que le babillard soit vivant tout de suite. Un bandeau en haut du babillard te laisse la garder ou la vider ; « Vider les exemples » n’efface jamais ce que tu ajoutes toi-même. Tu peux aussi la recharger ou la vider ici même (ci-dessus).',
+          en: 'A brand-new account comes with a demo family (members, a meal plan, lists, chores, routines) so the board is alive from the start. A banner at the top of the board lets you keep it or clear it; “Clear the examples” never removes anything you add yourself. You can also reload or clear it right here (above).',
+        },
+        why: {
+          fr: 'Voir l’app remplie vaut mille explications — et elle se vide d’un geste quand tu es prêt·e à mettre tes vraies affaires.',
+          en: 'Seeing the app full beats a thousand explanations — and it clears in one tap when you’re ready for your real stuff.',
+        },
+      },
+      {
         label: { fr: 'Besoin d’aide : touche l’icône', en: 'Need help: tap the icon' },
         detail: {
           fr: 'En haut à droite de chaque section, la pastille colorée (le soleil, la carotte, etc.) porte un petit « ? » : touche-la pour ouvrir l’aide de cette section, ici dans le Guide.',
