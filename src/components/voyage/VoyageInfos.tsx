@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
-import { TRIP_NOTES_KEY } from '../../lib/queryKeys'
 import { useRecordUndo } from '../../lib/toast'
 import { useConfirm } from '../../lib/confirm'
 import { EmptyState } from '../EmptyState'
@@ -9,7 +8,7 @@ import { Chip, ChipGroup } from '../Chip'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { TripNoteAdd } from './TripNoteAdd'
 import { TripNoteCard } from './TripNoteCard'
-import { TRIP_CATEGORIES, type Trip, type TripCategory, type TripNote } from './voyage'
+import { TRIP_CATEGORIES, useVoyageApi, type Trip, type TripCategory, type TripNote } from './voyage'
 
 // « Voyage » → Infos — the categorized info the user types/speaks at the rendez-vous
 // (flights, hôtel, auto, contacts, divers…). A category chip row picks the active
@@ -22,18 +21,19 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
   const write = useWrite()
   const recordUndo = useRecordUndo()
   const confirm = useConfirm()
+  const voyageApi = useVoyageApi()
   // `cat === null` = no bucket picked → « voir toutes les notes » (every category,
   // each card showing its own glyph). Tapping the active chip again deselects it.
   const [cat, setCat] = useState<TripCategory | null>('flight')
   const [who, setWho] = useState<string | null>(null)
-  const affectedKey = [...TRIP_NOTES_KEY, trip.id]
+  const affectedKey = voyageApi.notesKey(trip.id)
   const memberName = (id: string | null) => (id ? faces.find((f) => f.id === id)?.name ?? '' : '')
 
   const infoNotes = notes.filter((n) => n.date == null)
   const shown = cat == null ? infoNotes : infoNotes.filter((n) => n.category === cat)
 
   function save(n: TripNote, text: string) {
-    void write('trip-notes', { method: 'PATCH', body: { id: n.id, text }, affectedKeys: [affectedKey] }).catch(() => {})
+    void write(voyageApi.notesEndpoint, { method: 'PATCH', body: { id: n.id, text }, affectedKeys: [affectedKey] }).catch(() => {})
   }
 
   async function del(n: TripNote) {
@@ -44,14 +44,14 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
     if (n.media_kind != null) {
       if (!(await confirm({ message: t.voyage.deleteMediaNoteConfirm, tone: 'danger', confirmLabel: t.common.delete })))
         return
-      await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+      await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
       return
     }
-    await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+    await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
     recordUndo({
       message: t.voyage.infoRemoved,
       onUndo: () =>
-        void write('trip-notes', {
+        void write(voyageApi.notesEndpoint, {
           method: 'POST',
           body: {
             tripId: trip.id,

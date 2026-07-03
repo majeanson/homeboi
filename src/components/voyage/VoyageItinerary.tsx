@@ -4,13 +4,12 @@ import { useT, useLang } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
 import { useConfirm } from '../../lib/confirm'
-import { TRIP_NOTES_KEY } from '../../lib/queryKeys'
 import { formatDayLong, capitalize as cap } from '../../lib/format'
 import { EmptyState } from '../EmptyState'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { TripNoteAdd } from './TripNoteAdd'
 import { TripNoteCard } from './TripNoteCard'
-import { tripDays, type Trip, type TripNote } from './voyage'
+import { tripDays, useVoyageApi, type Trip, type TripNote } from './voyage'
 
 // « Voyage » → Itinéraire — the day-by-day plan. One section per day the trip spans
 // (start_at..end_at inclusive); each shows that day's entries and a composer that
@@ -30,8 +29,9 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
   const write = useWrite()
   const recordUndo = useRecordUndo()
   const confirm = useConfirm()
+  const voyageApi = useVoyageApi()
   const [who, setWho] = useState<string | null>(null)
-  const affectedKey = [...TRIP_NOTES_KEY, trip.id]
+  const affectedKey = voyageApi.notesKey(trip.id)
   const days = tripDays(trip.start_at, trip.end_at)
   const memberName = (id: string | null) => (id ? faces.find((f) => f.id === id)?.name ?? '' : '')
 
@@ -56,7 +56,7 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
   }
 
   function save(n: TripNote, text: string) {
-    void write('trip-notes', { method: 'PATCH', body: { id: n.id, text }, affectedKeys: [affectedKey] }).catch(() => {})
+    void write(voyageApi.notesEndpoint, { method: 'PATCH', body: { id: n.id, text }, affectedKeys: [affectedKey] }).catch(() => {})
   }
 
   async function del(n: TripNote) {
@@ -66,14 +66,14 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
     if (n.media_kind != null) {
       if (!(await confirm({ message: t.voyage.deleteMediaNoteConfirm, tone: 'danger', confirmLabel: t.common.delete })))
         return
-      await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+      await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
       return
     }
-    await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+    await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
     recordUndo({
       message: t.voyage.planRemoved,
       onUndo: () =>
-        void write('trip-notes', {
+        void write(voyageApi.notesEndpoint, {
           method: 'POST',
           body: {
             tripId: trip.id,

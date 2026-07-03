@@ -5,6 +5,8 @@ import {
   verifyDeviceToken,
   verifyGuestToken,
   currentDevice,
+  issueSharedTripInvite,
+  verifySharedTripInvite,
 } from './auth'
 import type { Env } from './env'
 
@@ -62,5 +64,51 @@ describe('verifyDeviceToken (shared header + WS-query-param verify)', () => {
     // A token minted with no explicit kind normalizes to the showcase share-mode.
     expect(await verifyGuestToken(env, guest)).toEqual({ guestId: 'g1', householdId: 'hh1', kind: 'showcase', targetKey: null, fields: null })
     expect(await verifyDeviceToken(env, device)).toEqual({ deviceId: 'dev1', householdId: 'hh1' })
+  })
+})
+
+describe('shared-trip invite token (« Voyage partagé » join link)', () => {
+  it('roundtrips the shared trip id + nonce', async () => {
+    const env = envWith()
+    const token = await issueSharedTripInvite(env, 'st1', 'nonce1')
+    expect(await verifySharedTripInvite(env, token)).toEqual({ sharedTripId: 'st1', nonce: 'nonce1' })
+  })
+
+  it('returns whatever nonce the token carries — the handler, not verify, compares it', async () => {
+    const env = envWith()
+    // A link minted under an OLD nonce still verifies (valid HMAC + unexpired); the
+    // rotated-link rejection happens where the returned nonce is checked against the
+    // trip's live invite_nonce. verifySharedTripInvite just surfaces the payload nonce.
+    const stale = await issueSharedTripInvite(env, 'st1', 'old-nonce')
+    expect(await verifySharedTripInvite(env, stale)).toEqual({ sharedTripId: 'st1', nonce: 'old-nonce' })
+  })
+
+  it('rejects an expired invite → null', async () => {
+    const env = envWith()
+    const expired = await issueSharedTripInvite(env, 'st1', 'nonce1', -10)
+    expect(await verifySharedTripInvite(env, expired)).toBeNull()
+  })
+
+  it('rejects a tampered signature → null', async () => {
+    const env = envWith()
+    const token = await issueSharedTripInvite(env, 'st1', 'nonce1')
+    const [body] = token.split('.')
+    expect(await verifySharedTripInvite(env, `${body}.deadbeef`)).toBeNull()
+    // A token signed under a different secret also fails the HMAC check.
+    const other = await issueSharedTripInvite(envWith('other-secret-other-secret-other-x'), 'st1', 'nonce1')
+    expect(await verifySharedTripInvite(env, other)).toBeNull()
+  })
+
+  it('never cross-verifies with device / guest / session tokens', async () => {
+    const env = envWith()
+    const device = await issueDeviceToken(env, 'dev1', 'hh1')
+    const guest = await issueGuestToken(env, 'g1', 'hh1', 3600)
+    const invite = await issueSharedTripInvite(env, 'st1', 'nonce1')
+    // A device/guest token has no `st` (and carries `d`/`g`) → invite verify rejects it.
+    expect(await verifySharedTripInvite(env, device)).toBeNull()
+    expect(await verifySharedTripInvite(env, guest)).toBeNull()
+    // And an invite token (no `d`/`g`) never resolves as a device or guest credential.
+    expect(await verifyDeviceToken(env, invite)).toBeNull()
+    expect(await verifyGuestToken(env, invite)).toBeNull()
   })
 })

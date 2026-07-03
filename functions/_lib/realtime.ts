@@ -64,6 +64,8 @@ const SILENT_PATHS = new Set<string>([
   'suggest-meal',
   'transcribe',
   'trip-doc-media', // trip document/photo/audio blob; the trip_notes write carries the path
+  'shared-trip-media', // « Voyage partagé » blob; the shared_trip_notes write carries the path
+  'shared-trip-invite', // mint/rotate a join link; no polled cache changes (the link is returned inline)
   'routine-audio',
   'weather',
   'photos',
@@ -96,6 +98,17 @@ const PATH_KEYS: Record<string, string[][]> = {
   trips: [['trips'], ['board'], ['month']],
   'trip-notes': [['trip-notes'], ['month'], ['board']],
   'trip-packing': [['trip-packing']],
+  // « Voyage partagé » (shared trips, migration 0101). These writes fan out to the
+  // shared trip's `st:<id>` DO room via nudgeSharedTrip; the SAME keys ALSO ride the
+  // household hook here so the writer's OTHER devices refetch. MANDATORY entries — an
+  // unmapped shared-trip* write would default to [['board']] (see keysForPath), which
+  // is the wrong cache AND spams the board. Promote/dissolve/leave move rows into/out
+  // of the household `trips` store, so they touch trips + board + month too.
+  'shared-trip': [['shared-trips'], ['trips'], ['board'], ['month']],
+  'shared-trip-notes': [['shared-trip-notes']],
+  'shared-trip-packing': [['shared-trip-packing']],
+  'shared-trip-join': [['shared-trips']],
+  'shared-trip-leave': [['shared-trips'], ['trips'], ['board'], ['month']],
   // Meal plan: the kitchen week grid + the board's "ce soir"; an empty/low-ingredient
   // supper feeds the « À régler » heads-up.
   meals: [['meals'], ['board'], ['a-regler']],

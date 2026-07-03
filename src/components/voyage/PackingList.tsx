@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
-import { TRIP_PACKING_KEY } from '../../lib/queryKeys'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { EditField } from '../EditField'
 import { EmptyState } from '../EmptyState'
 import { CheckRow } from '../CheckRow'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
-import type { PackingItem, Trip } from './voyage'
+import { useVoyageApi, type PackingItem, type Trip } from './voyage'
 
 // « Voyage » → Bagages — per-member packing checklists. A face row picks whose list
 // you're adding to (Maisonnée = the shared "Partagé" list); below it every list with
@@ -18,9 +17,10 @@ import type { PackingItem, Trip } from './voyage'
 export function PackingList({ trip, items, faces }: { trip: Trip; items: PackingItem[]; faces: MemberFace[] }) {
   const t = useT()
   const write = useWrite()
+  const voyageApi = useVoyageApi()
   const [who, setWho] = useState<string | null>(null)
   const [text, setText] = useState('')
-  const packingKey = [...TRIP_PACKING_KEY, trip.id]
+  const packingKey = voyageApi.packingKey(trip.id)
   const { remove, visible } = useDeferredRemoval(packingKey)
 
   // Only unpacked rows show (checking packs + removes it). visible() hides rows whose
@@ -35,7 +35,7 @@ export function PackingList({ trip, items, faces }: { trip: Trip; items: Packing
     const value = v.trim()
     if (!value) return
     try {
-      await write('trip-packing', {
+      await write(voyageApi.packingEndpoint, {
         method: 'POST',
         body: { tripId: trip.id, text: value, member_id: who },
         affectedKeys: [packingKey],
@@ -48,7 +48,7 @@ export function PackingList({ trip, items, faces }: { trip: Trip; items: Packing
 
   function check(item: PackingItem) {
     remove([item.id], t.voyage.packed(item.text), () =>
-      write('trip-packing', { method: 'PATCH', body: { id: item.id, packed: true }, affectedKeys: [packingKey] }),
+      write(voyageApi.packingEndpoint, { method: 'PATCH', body: { id: item.id, packed: true }, affectedKeys: [packingKey] }),
     )
   }
   // Rename AND move between bags in one save: text always, member_id only when it
@@ -58,7 +58,7 @@ export function PackingList({ trip, items, faces }: { trip: Trip; items: Packing
     if (!value) return
     const body: { id: string; text: string; member_id?: string | null } = { id: item.id, text: value }
     if (memberId !== item.member_id) body.member_id = memberId
-    void write('trip-packing', { method: 'PATCH', body, affectedKeys: [packingKey] }).catch(() => {})
+    void write(voyageApi.packingEndpoint, { method: 'PATCH', body, affectedKeys: [packingKey] }).catch(() => {})
   }
 
   return (

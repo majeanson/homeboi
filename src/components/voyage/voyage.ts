@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { createContext, useContext } from 'react'
+import { useQuery, type QueryKey } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
 import { TRIPS_KEY, TRIP_NOTES_KEY, TRIP_PACKING_KEY } from '../../lib/queryKeys'
@@ -71,6 +72,36 @@ export const tripCategoryIcon = (c: TripCategory): IconName =>
 
 // The board/scene identity glyph for a trip (no suitcase in the set → a map pin).
 export const VOYAGE_ICON: IconName = 'map-pin-bold'
+
+// « Voyage partagé » seam — the SAME voyage components (TripNoteAdd / VoyageInfos /
+// VoyageItinerary / VoyageDocuments / PackingList) render both a private household
+// trip AND a cross-household shared trip. Rather than thread endpoint/query-key props
+// through every level, the write/upload call sites read them from this context. The
+// DEFAULT value below is the household wiring, so today — no provider mounted anywhere —
+// every component behaves byte-identically; the shared-trip page (plan « Voyage
+// partagé ») wraps its subtree in a <VoyageApiContext.Provider> supplying the
+// 'shared-trip-*' endpoints + keys.
+export interface VoyageApi {
+  notesEndpoint: string // 'trip-notes' (default) | 'shared-trip-notes'
+  packingEndpoint: string // 'trip-packing' | 'shared-trip-packing'
+  mediaEndpoint: string // 'trip-doc-media' | 'shared-trip-media'
+  notesKey: (tripId: string) => QueryKey // default [...TRIP_NOTES_KEY, tripId]
+  packingKey: (tripId: string) => QueryKey // default [...TRIP_PACKING_KEY, tripId]
+  shared: boolean // false by default
+}
+
+export const VoyageApiContext = createContext<VoyageApi>({
+  notesEndpoint: 'trip-notes',
+  packingEndpoint: 'trip-packing',
+  mediaEndpoint: 'trip-doc-media',
+  notesKey: (tripId) => [...TRIP_NOTES_KEY, tripId],
+  packingKey: (tripId) => [...TRIP_PACKING_KEY, tripId],
+  shared: false,
+})
+
+export function useVoyageApi(): VoyageApi {
+  return useContext(VoyageApiContext)
+}
 
 export function useTrips() {
   return useQuery({ queryKey: TRIPS_KEY, queryFn: () => api<{ trips: Trip[] }>('trips'), ...live })

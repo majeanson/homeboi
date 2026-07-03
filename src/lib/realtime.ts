@@ -171,6 +171,148 @@ function disconnectRealtime(): void {
   socket = null
 }
 
+// « Voyage partagé » (#shared-trip) — a page-scoped SECOND channel, alongside the
+// household singleton above. A shared trip is ONE trip live-edited by up to 6
+// households, so its DO room is the trip (worker/index.ts routes /api/live?st=<id>
+// to idFromName('st:'+id)) rather than a household. Each open shared-trip page opens
+// its own socket to that room while mounted; state is therefore PER shared-trip id
+// (a Map), not the module singleton — two open trips must not clobber one flag.
+//
+// Same shape as the household channel: same isInvalidate message handling, same
+// capped 2s→30s backoff (a 503/401/403 handshake keeps the cap so we never hammer),
+// same connected flag the poll gear reads (via isSharedTripRealtimeConnected). AUTH:
+// a shared trip is operator-only, so the session cookie always rides the same-origin
+// handshake — we never append ?t= here (unlike the household socket's device path).
+interface SharedTripChannel {
+  socket: WebSocket | null
+  connected: boolean
+  // true between connect and its cleanup; a close while true reconnects (mirrors
+  // `wantConnection`). refs counts live mounts so a shared page opened twice (e.g.
+  // StrictMode double-mount) tears down only when the last cleanup runs.
+  want: boolean
+  refs: number
+  reconnectTimer: ReturnType<typeof setTimeout> | null
+  reconnectDelay: number
+}
+
+const sharedChannels = new Map<string, SharedTripChannel>()
+
+// Is push live for THIS shared trip? The per-id analogue of isRealtimeConnected —
+// the shared page's poll config reads it to pick fast-poll vs slow-heartbeat.
+export function isSharedTripRealtimeConnected(sharedTripId: string): boolean {
+  return sharedChannels.get(sharedTripId)?.connected ?? false
+}
+
+function clearSharedReconnect(ch: SharedTripChannel): void {
+  if (ch.reconnectTimer) {
+    clearTimeout(ch.reconnectTimer)
+    ch.reconnectTimer = null
+  }
+}
+
+function scheduleSharedReconnect(id: string, ch: SharedTripChannel, queryClient: QueryClient): void {
+  if (!ch.want || ch.reconnectTimer || typeof window === 'undefined') return
+  ch.reconnectDelay = ch.reconnectDelay ? Math.min(ch.reconnectDelay * 2, RECONNECT_MAX_MS) : RECONNECT_MIN_MS
+  ch.reconnectTimer = setTimeout(() => {
+    ch.reconnectTimer = null
+    if (ch.want) openSharedSocket(id, ch, queryClient)
+  }, ch.reconnectDelay)
+}
+
+function openSharedSocket(id: string, ch: SharedTripChannel, queryClient: QueryClient): void {
+  if (ch.socket && (ch.socket.readyState === WebSocket.OPEN || ch.socket.readyState === WebSocket.CONNECTING)) return
+
+  try {
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    // NO ?t= — shared trips are operator-only, so the operator session cookie always
+    // carries the credential on the same-origin handshake (see connectRealtime's note
+    // on the device/guest ?t= path, which does NOT apply here).
+    const ws = new WebSocket(`${proto}://${window.location.host}/api/live?st=${encodeURIComponent(id)}`)
+    ch.socket = ws
+
+    ws.addEventListener('open', () => {
+      ch.connected = true
+      ch.reconnectDelay = 0 // a healthy connection resets the backoff
+    })
+
+    ws.addEventListener('message', (ev) => {
+      try {
+        const msg: unknown = JSON.parse(typeof ev.data === 'string' ? ev.data : '')
+        if (isInvalidate(msg)) {
+          for (const key of msg.keys) {
+            void queryClient.invalidateQueries({ queryKey: key })
+          }
+        }
+      } catch {
+        /* malformed frame — ignore; polling still covers freshness */
+      }
+    })
+
+    // On drop: flip connected=false so the shared page's poll snaps back to fast, do
+    // a one-time catch-up refetch of the shared-trip queries that a heartbeat-sized
+    // gap might have missed (guarded by `connected` so repeated reconnect failures
+    // don't restart it), and try to re-open.
+    const onDown = () => {
+      if (ch.socket === ws) ch.socket = null
+      if (ch.connected) {
+        ch.connected = false
+        void queryClient.refetchQueries({
+          predicate: (q) => Array.isArray(q.queryKey) && String(q.queryKey[0]).startsWith('shared-trip'),
+        })
+      }
+      scheduleSharedReconnect(id, ch, queryClient)
+    }
+    ws.addEventListener('error', onDown)
+    ws.addEventListener('close', onDown)
+  } catch {
+    ch.socket = null
+    ch.connected = false
+    scheduleSharedReconnect(id, ch, queryClient)
+  }
+}
+
+// Open the page-scoped shared-trip channel for `sharedTripId`. Returns a cleanup
+// function for a React useEffect: it closes the socket + cancels timers once the
+// last mount releases it (refcounted, so a StrictMode double-mount or two views of
+// the same trip share one socket). Idempotent per id and per returned cleanup.
+export function connectSharedTripRealtime(queryClient: QueryClient, sharedTripId: string): () => void {
+  if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return () => {}
+  // A guest never opens a shared-trip socket — shared trips are operator-only and the
+  // server 403s a guest at /api/live?st=. Mirror connectRealtime's guard so we don't
+  // spin the reconnect backoff against a guaranteed reject.
+  if (isGuest()) return () => {}
+
+  let ch = sharedChannels.get(sharedTripId)
+  if (!ch) {
+    ch = { socket: null, connected: false, want: true, refs: 0, reconnectTimer: null, reconnectDelay: 0 }
+    sharedChannels.set(sharedTripId, ch)
+  }
+  ch.want = true
+  ch.refs += 1
+  openSharedSocket(sharedTripId, ch, queryClient)
+
+  let released = false
+  return () => {
+    if (released) return // idempotent: a double-invoked cleanup is a no-op
+    released = true
+    const cur = sharedChannels.get(sharedTripId)
+    if (!cur) return
+    cur.refs -= 1
+    if (cur.refs > 0) return // another live mount still wants this channel
+    cur.want = false
+    clearSharedReconnect(cur)
+    cur.reconnectDelay = 0
+    cur.connected = false
+    try {
+      cur.socket?.close()
+    } catch {
+      /* noop */
+    }
+    cur.socket = null
+    sharedChannels.delete(sharedTripId)
+  }
+}
+
 // DONE(#20): token sessions can now connect. The X-Device-Token (kiosk) / guest
 // token rides as ?t= (above); worker/index.ts folds it back onto the request and
 // verifies it via the SHARED verifyDeviceToken/verifyGuestToken in auth.ts — the

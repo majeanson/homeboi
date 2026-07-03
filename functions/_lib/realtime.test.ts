@@ -27,6 +27,33 @@ describe('keysForPath', () => {
     expect(keysForPath('trip-doc-media')).toEqual([])
   })
 
+  it('maps « Voyage partagé » endpoints to their own keys; media + invite silent', () => {
+    expect(keysForPath('shared-trip')).toEqual([['shared-trips'], ['trips'], ['board'], ['month']])
+    expect(keysForPath('shared-trip-notes')).toEqual([['shared-trip-notes']])
+    expect(keysForPath('shared-trip-packing')).toEqual([['shared-trip-packing']])
+    expect(keysForPath('shared-trip-join')).toEqual([['shared-trips']])
+    expect(keysForPath('shared-trip-leave')).toEqual([['shared-trips'], ['trips'], ['board'], ['month']])
+    expect(keysForPath('shared-trip-media')).toEqual([])
+    expect(keysForPath('shared-trip-invite')).toEqual([])
+  })
+
+  // The default-to-[['board']] trap (keysForPath) would silently mis-route any
+  // unmapped shared-trip* write to the writer's board room — wrong cache + board spam.
+  // Pin that EVERY shared-trip* path is explicitly mapped (its own keys) or silent.
+  it('never lets a shared-trip* path fall through to the [[board]] default', () => {
+    for (const p of [
+      'shared-trip',
+      'shared-trip-notes',
+      'shared-trip-packing',
+      'shared-trip-join',
+      'shared-trip-leave',
+      'shared-trip-media',
+      'shared-trip-invite',
+    ]) {
+      expect(keysForPath(p)).not.toEqual([['board']])
+    }
+  })
+
   it('maps the meal plan to meals + board + a-regler (empty/low supper heads-up)', () => {
     expect(keysForPath('meals')).toEqual([['meals'], ['board'], ['a-regler']])
     expect(keysForPath('meal-leftovers')).toEqual([['leftovers'], ['board']])

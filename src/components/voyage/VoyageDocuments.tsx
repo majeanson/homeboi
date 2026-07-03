@@ -6,11 +6,10 @@ import { useOnline } from '../../lib/online'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { warmImageCache } from '../../lib/cacheWarm'
-import { TRIP_NOTES_KEY } from '../../lib/queryKeys'
 import { CarnetDocs } from '../cercle/CarnetDocs'
 import { EmptyState } from '../EmptyState'
 import { Icon } from '../Icon'
-import type { Trip, TripNote } from './voyage'
+import { useVoyageApi, type Trip, type TripNote } from './voyage'
 
 // « Voyage » → Documents — the reservations / boarding passes / passports a trip
 // needs ON HAND (image or PDF). Each is a trip_note with category 'document' carrying
@@ -22,13 +21,14 @@ import type { Trip, TripNote } from './voyage'
 export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[] }) {
   const t = useT()
   const write = useWrite()
+  const voyageApi = useVoyageApi()
   const confirm = useConfirm()
   const online = useOnline()
   const fileRef = useRef<HTMLInputElement | null>(null)
   const [busy, setBusy] = useState(false)
   const [off, setOff] = useState(false) // R2 unbound (503)
   const [warmed, setWarmed] = useState(false)
-  const affectedKey = [...TRIP_NOTES_KEY, trip.id]
+  const affectedKey = voyageApi.notesKey(trip.id)
 
   const docs = notes.filter((n) => n.category === 'document' && n.media_key)
   const docKeys = docs.map((n) => n.media_key as string)
@@ -42,8 +42,8 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
         const isPdf = file.type === 'application/pdf'
         try {
           // PDFs upload as-is (no image resize); photos resize down like any media.
-          const key = await uploadMedia('trip-doc-media', file, { resize: !isPdf })
-          await write('trip-notes', {
+          const key = await uploadMedia(voyageApi.mediaEndpoint, file, { resize: !isPdf })
+          await write(voyageApi.notesEndpoint, {
             method: 'POST',
             body: { tripId: trip.id, category: 'document', media_kind: 'image', media_key: key, label: file.name },
             affectedKeys: [affectedKey],
@@ -72,7 +72,7 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
     const label = n.label?.trim() || t.voyage.thisDocument
     if (!(await confirm({ message: t.voyage.deleteDocConfirm(label), tone: 'danger', confirmLabel: t.common.delete })))
       return
-    await write('trip-notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+    await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
   }
 
   async function prepareOffline() {

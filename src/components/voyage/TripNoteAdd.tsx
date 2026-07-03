@@ -2,10 +2,9 @@ import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useVoiceInput } from '../../lib/useVoiceInput'
-import { TRIP_NOTES_KEY } from '../../lib/queryKeys'
 import { EditField } from '../EditField'
 import { MemoControls } from '../MemoControls'
-import type { TripCategory } from './voyage'
+import { useVoyageApi, type TripCategory } from './voyage'
 
 // The « Voyage » capture composer — the SAME "type / speak / draw / photo" input the
 // fridge + family notes use, bound to a fixed slot: a category, an optional itinerary
@@ -28,8 +27,9 @@ export function TripNoteAdd({
 }) {
   const t = useT()
   const write = useWrite()
+  const voyageApi = useVoyageApi()
   const [text, setText] = useState('')
-  const affectedKey = [...TRIP_NOTES_KEY, tripId]
+  const affectedKey = voyageApi.notesKey(tripId)
   const extraBody = { tripId, category, date: date ?? null, member_id: memberId ?? null }
   const voice = useVoiceInput((v) => setText((prev) => (prev ? prev + ' ' + v : v)))
 
@@ -37,7 +37,7 @@ export function TripNoteAdd({
     const value = v.trim()
     if (!value) return
     try {
-      await write('trip-notes', { method: 'POST', body: { ...extraBody, text: value }, affectedKeys: [affectedKey] })
+      await write(voyageApi.notesEndpoint, { method: 'POST', body: { ...extraBody, text: value }, affectedKeys: [affectedKey] })
       setText('')
     } catch {
       /* keep the typed text so it can be retried (offline → it queued) */
@@ -58,7 +58,7 @@ export function TripNoteAdd({
       />
       {/* Voice memo / drawing / photo — the shared fridge-note controls, writing a
           media trip_note instead of a board note (endpoint + extraBody override). */}
-      <MemoControls endpoint="trip-notes" affectedKey={affectedKey} extraBody={extraBody} onDone={() => {}} />
+      <MemoControls endpoint={voyageApi.notesEndpoint} affectedKey={affectedKey} extraBody={extraBody} onDone={() => {}} />
     </div>
   )
 }

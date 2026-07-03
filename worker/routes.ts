@@ -88,6 +88,13 @@ import * as thisWeek from '../functions/api/this-week'
 import * as todos from '../functions/api/todos'
 import * as todoTemplates from '../functions/api/todo-templates'
 import * as transcribe from '../functions/api/transcribe'
+import * as sharedTrip from '../functions/api/shared-trip'
+import * as sharedTripInvite from '../functions/api/shared-trip-invite'
+import * as sharedTripJoin from '../functions/api/shared-trip-join'
+import * as sharedTripLeave from '../functions/api/shared-trip-leave'
+import * as sharedTripNotes from '../functions/api/shared-trip-notes'
+import * as sharedTripPacking from '../functions/api/shared-trip-packing'
+import * as sharedTripMedia from '../functions/api/shared-trip-media'
 import * as trips from '../functions/api/trips'
 import * as tripNotes from '../functions/api/trip-notes'
 import * as tripPacking from '../functions/api/trip-packing'
@@ -202,6 +209,13 @@ const TABLE: Record<string, RouteMod> = {
   todos,
   'todo-templates': todoTemplates,
   transcribe,
+  'shared-trip': sharedTrip,
+  'shared-trip-invite': sharedTripInvite,
+  'shared-trip-join': sharedTripJoin,
+  'shared-trip-leave': sharedTripLeave,
+  'shared-trip-notes': sharedTripNotes,
+  'shared-trip-packing': sharedTripPacking,
+  'shared-trip-media': sharedTripMedia,
   trips,
   'trip-notes': tripNotes,
   'trip-packing': tripPacking,

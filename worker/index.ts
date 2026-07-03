@@ -155,6 +155,42 @@ export default {
       // open a socket; a guest falls back to polling (the client won't even try — see
       // lib/realtime connectRealtime).
       if (actor.scope === 'guest') return forbidden('Realtime not available for this share link.')
+
+      // « Voyage partagé » (#shared-trip) — a SECOND, page-scoped socket that a
+      // shared-trip page opens as /api/live?st=<id>. The room is the SHARED TRIP,
+      // not a household, so operators from up to 6 different households land on ONE
+      // DO and see each other's edits live. SECURITY: the ?st= value is just an id,
+      // NOT a capability — it grants nothing on its own. The authorization is a LIVE
+      // shared_trip_members row (checked against D1 below), exactly like every
+      // /api/shared-trip* handler; a stray/rotated/guessed id 403s before any
+      // upgrade. The `st:` prefix keeps the DO namespace DISJOINT from household ids
+      // (idFromName('st:'+id) can never collide into a household's room). v1 is
+      // operator-only: a kiosk device doesn't watch shared trips, so we reject any
+      // non-operator scope here rather than membership-check a device.
+      const st = url.searchParams.get('st')
+      if (st) {
+        if (actor.scope !== 'operator') {
+          return forbidden('Shared trips are operator-only.')
+        }
+        if (!env.REALTIME_HUB) {
+          // DO not deployed/eligible — tell the client to stick with polling.
+          return new Response('Realtime unavailable.', { status: 503 })
+        }
+        // The one authorization check: a live grant (revoked_at IS NULL) to a live
+        // trip (deleted_at IS NULL) for THIS operator's household. Miss → 403.
+        const member = await env.DB.prepare(
+          'SELECT 1 FROM shared_trip_members m JOIN shared_trips t ON t.id = m.shared_trip_id ' +
+            'WHERE m.shared_trip_id = ?1 AND m.household_id = ?2 ' +
+            'AND m.revoked_at IS NULL AND t.deleted_at IS NULL',
+        )
+          .bind(st, actor.householdId)
+          .first()
+        if (!member) return forbidden('Not a member of this shared trip.')
+        const stId = env.REALTIME_HUB.idFromName('st:' + st)
+        const stStub = env.REALTIME_HUB.get(stId)
+        return stStub.fetch(request)
+      }
+
       if (!env.REALTIME_HUB) {
         // DO not deployed/eligible — tell the client to stick with polling.
         return new Response('Realtime unavailable.', { status: 503 })

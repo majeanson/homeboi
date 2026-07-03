@@ -87,6 +87,17 @@ export const CAR_KEY = ['car']
 export const TRIPS_KEY = ['trips']
 export const TRIP_NOTES_KEY = ['trip-notes']
 export const TRIP_PACKING_KEY = ['trip-packing']
+// « Voyage partagé » — ONE trip live-edited by up to 6 households (capability-scoped
+// shared_trips store, NOT the per-household trips). Read by the shared trip scene,
+// the board « Prochain voyage » card (merged with private trips), AND the join flow,
+// so the key is shared. A shared trip's content reads per-trip prefix keys: its
+// notes/itinerary under ['shared-trip-notes', <id>] and its per-household packing
+// bags under ['shared-trip-packing', <id>] — a bare-prefix invalidation refreshes
+// the open shared trip. These are also the keys the page-scoped st: realtime socket
+// (lib/realtime connectSharedTripRealtime) invalidates on another household's write.
+export const SHARED_TRIPS_KEY = ['shared-trips']
+export const SHARED_TRIP_NOTES_KEY = ['shared-trip-notes']
+export const SHARED_TRIP_PACKING_KEY = ['shared-trip-packing']
 // Household members (/api/members): the roster read across the board, capture,
 // forms, and Réglages — shared so a member edit invalidates one key everywhere.
 export const MEMBERS_KEY = ['members']

@@ -277,3 +277,42 @@ export async function currentGuest(
   // told apart). HMAC-only, no DB read — cheap enough to run on the dispatch path.
   return verifyGuestToken(env, request.headers.get(DEVICE_HEADER))
 }
+
+// ---- Shared-trip invite token (« Voyage partagé » join link) ---------------
+//
+// A stateless HMAC CAPABILITY that lets another operator JOIN a shared trip. Same
+// key + format as the device/guest tokens, but a distinct payload tag so the three
+// never cross-verify — { st: sharedTripId, n: inviteNonce, x: expSeconds }. Unlike a
+// guest token this is NOT a transport credential (it never rides X-Device-Token /
+// resolveActor); it's handed to shared-trip-join's GET/POST as `?j=` / `{ token }` and
+// verified there. There is NO invite DB row: the trip's `invite_nonce` column is the
+// revocation handle — « Réinitialiser le lien » rotates the nonce and every
+// outstanding link dies at once (nothing to sweep). TTL 14 days by default.
+export const SHARED_TRIP_INVITE_TTL = 60 * 60 * 24 * 14 // 14 days
+
+export async function issueSharedTripInvite(
+  env: Env,
+  sharedTripId: string,
+  nonce: string,
+  ttlSeconds: number = SHARED_TRIP_INVITE_TTL,
+): Promise<string> {
+  return signToken(env, { st: sharedTripId, n: nonce, x: nowSec() + ttlSeconds })
+}
+
+// Verify a RAW invite-token string (HMAC + expiry), returning its payload — NOT a
+// membership check (the caller compares the returned `nonce` against the trip's live
+// `invite_nonce` so a rotated link is rejected). The `st`-typed guard yields null for a
+// device (`d`) / guest (`g`) / session (`e`) token, and rejecting a payload that ALSO
+// carries any of those keys stops a crafted token from cross-verifying either way —
+// mirroring how verifyGuestToken guards with `g`. Expiry (`x`) is checked in verifyToken.
+export async function verifySharedTripInvite(
+  env: Env,
+  token: string | null,
+): Promise<{ sharedTripId: string; nonce: string } | null> {
+  const payload = await verifyToken<{ st?: string; n?: string; g?: string; d?: string; e?: string }>(env, token)
+  if (!payload) return null
+  // Must be an st-typed token AND carry none of the other credential tags.
+  if (typeof payload.st !== 'string' || typeof payload.n !== 'string') return null
+  if ('g' in payload || 'd' in payload || 'e' in payload) return null
+  return { sharedTripId: payload.st, nonce: payload.n }
+}
