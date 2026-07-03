@@ -94,9 +94,10 @@ const CAPTURE_UNDO_EP: Record<string, string> = {
 }
 
 // The caches a capture can land in (board glance, meal grid, pantry, leftovers
-// pool) — invalidated after a capture AND after an undo-delete so the live poll
-// reconciles. Mirrors the fan-out the typed capture submit always did.
-const CAPTURE_KEYS = [BOARD_KEY, MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY]
+// pool, AND the month/day calendar — a captured event/task is dated) — invalidated
+// after a capture AND after an undo-delete so the live poll reconciles. Mirrors the
+// fan-out the typed capture submit always did.
+const CAPTURE_KEYS = [BOARD_KEY, MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, MONTH_KEY]
 
 const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   capture: { cat: 'list', icon: 'sparkle-bold' },

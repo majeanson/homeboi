@@ -3,7 +3,7 @@ import { api } from './api'
 import { useWrite } from './write'
 import { uploadMedia } from './uploadMedia'
 import { imgUrl } from './image'
-import { BOARD_KEY } from './queryKeys'
+import { BOARD_KEY, DRAWINGS_KEY } from './queryKeys'
 import { useT } from '../i18n'
 import { useRecordUndo } from './toast'
 
@@ -20,7 +20,9 @@ export interface GalleryDrawing {
   created_at: number
 }
 
-const GALLERY_KEY = ['drawings']
+// Alias the shared key so the many call sites below read the same; the canonical
+// spelling lives in lib/queryKeys (DRAWINGS_KEY) so it can't drift into two caches.
+const GALLERY_KEY = DRAWINGS_KEY
 
 export function useGallery() {
   return useQuery({ queryKey: GALLERY_KEY, queryFn: () => api<{ drawings: GalleryDrawing[] }>('drawings') })

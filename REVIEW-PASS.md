@@ -128,15 +128,15 @@ remainder), by §line:
 - **303** (Routines step-editor e2e) — ✅ **closed 2026-07-02** (`routine-builder.spec.ts`): drives add/remove/reorder cards at `/routine/new` and asserts the POST body carries the deck in the edited order (the parallel-array alignment crux). Media (clip/photo upload) still not driven — needs a mock MediaRecorder/R2 stub.
 - **424** (Cercle e2e) — `note-editor.spec` real behaviour added; ✅ **group/business/carnet CREATE now covered 2026-07-02** (`cercle-crud.spec.ts`). Still specless: ReviewChecklist apply, group DELETE/edit, drag-to-group.
 - **442** (Cercle Union-Find) — unified into one `UnionFind` class; `relationsOf`/`relationTo` still live in `Cercle.tsx`, not moved to `cercle.ts`.
-- **459** (NoteEditor nits) — orphan-blob fixed; body `aria-label` still hardcoded `editorNew` in edit mode, audio-note edit still title-only, `firstLine` exported-only.
+- **459** (NoteEditor nits) — orphan-blob fixed; ✅ body `aria-label` now `note ? editorEdit : editorNew` (2026-07-02), matching the root + heading. Remaining: audio-note edit still title-only, `firstLine` exported-only.
 - **509** (guest rate-limit/revoke) — `MAX_PENDING=200` cap added; still stateless, no revoke, no per-token upload cap.
 - **518** (showcase over-share) — ✅ **mitigated 2026-07-02**: issuer no longer defaults to showcase (now `sitter`, showcase moved last + caution glyph); warning + 24 h TTL already shipped. Read-scope kept broad by design (showcase = the real Démo hub; narrowing 403s whole tabs) — a curated Démo needs per-tab hiding, tracked separately. Revoke still open (§509).
 - **559 / 822 / 931** (e2e — guest / Voyage / offline-layer) — postbox + guest-scenes specs added; intake submit→review→accept, ALL Voyage, and outbox/SW/WS/idle behaviour still uncovered.
 - **668** (Settings error states) — ✅ **closed 2026-07-02**: `ThisWeekTogetherSection` now reads `isError` and shows `t.common.loadFailed` instead of a false empty week (only when no cached frame). Photos already guarded `isPending`.
 - **729** (createBringList silent) — ✅ **closed 2026-07-02**: `EventForm.createBringList` catch now sets `bringErr` → `StatusMessage`; « Créer la liste » disabled + a « Indisponible hors-ligne » hint when `!useOnline()`.
-- **747** (capture keys) — shared GHOSTS/HISTORY keys done; `MONTH_KEY` still absent from `CAPTURE_KEYS`, event/task/meal titles still unclamped server-side.
+- **747** (capture keys) — shared GHOSTS/HISTORY keys done; ✅ `MONTH_KEY` now in `CAPTURE_KEYS` (2026-07-02) so a captured dated event/task refreshes the month/day calendar. Remaining: event/task/meal titles still unclamped server-side.
 - **808** (Search coverage) — carnets + home-projects ingested; drawings / care_log / home_pins still not.
-- **830** (cross-cut nits) — `capitalize` unified into `lib/format.ts`; `DeparturePage` empty still hand-rolled, `GALLERY_KEY` local literal, a gallery members query missing `...live`.
+- **830** (cross-cut nits) — `capitalize` unified into `lib/format.ts`; ✅ `GALLERY_KEY` centralized into `lib/queryKeys` as `DRAWINGS_KEY` + the gallery members query gained `...live` (2026-07-02). Remaining: `DeparturePage` empty still hand-rolled.
 - **880 / 927** (offline/ambient) — most writes on `useWrite` + shared `Toggle`; ✅ `RoutinePlayer` now routes its three routine PATCHes through `writeWith(qc, …)` so an offline tap queues (finding 329 closed too, 2026-07-02). Still open: `AmbientScreen` re-rolls its own clock.
 
 Everything else still `[ ]` below is genuinely open. **NOTE (2026-07-02):** finding **554** (mic-denied
@@ -460,9 +460,9 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   text, `CercleCarnetPage.tsx:374`) while care-log and pins both get `RowActions` — to edit/
   delete a carnet's upkeep row the user must leave to Réglages ▸ Corvées. Wire `RowActions` →
   `HomeProjectForm` + delete.
-- [ ] **[frm] `ConnectPeople` comboboxes omit `typeaheadOnly`** (`:104,137`) — every other
-  cercle combobox sets it; invites free-text that resolves to nothing (a dead input, though
-  save is gated on picked keys).
+- [x] **[frm] `ConnectPeople` comboboxes omit `typeaheadOnly`** — ✅ **Fixed 2026-07-02**:
+  both person-A/B comboboxes now set `typeaheadOnly`, matching every other cercle combobox
+  (no more free-text that resolves to nothing).
 - [ ] **e2e — the whole section is screenshots-only.** `cercle-visual`/`scenes` shoot
   section×view×theme×format but assert nothing and drive no interaction. **Zero** behavioural
   coverage for: group CRUD, the ＋ chooser (connect/group/business/carnet), drag-to-group +
@@ -692,8 +692,8 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
   `ScheduleSection.remove` now routes through `useDeferredRemoval(SCHEDULE_KEY)` (the
   correct pattern for this live-polled list — hides + holds behind the undo toast, no
   poll flash-back), matching every destructive sibling.
-- [ ] **Failed member add is silent** (`household.tsx:47` — catch keeps the name, no feedback),
-  unlike `ClaimTablet` which surfaces `err`. Add a `StatusMessage`.
+- [x] **Failed member add is silent** — ✅ **Fixed 2026-07-02**: `MembersSection.add` now
+  sets an `err` state on catch and renders a `StatusMessage` (still keeps the typed name).
 - [ ] **Pairing nits:** `ClaimTablet` success banner never clears (`devices.tsx:70`) and it writes
   via `api()` not `useWrite()` with no `useOnline()` gate/justifying comment (`:34`).
 - [ ] **Phone settings nav** is a wrapping chip row **plus** a second wrapping `OperatorJump` row,

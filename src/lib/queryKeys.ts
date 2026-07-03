@@ -10,6 +10,9 @@ export const BOARD_KEY = ['board']
 // sites agree on one key — invalidating MONTH_KEY prefix-matches every windowed read.
 export const MONTH_KEY = ['month']
 export const ROUTINES_KEY = ['routines']
+// The kept-drawing collection (« Mes dessins », #14). Cross-page: the gallery page,
+// the board paint badge, and lib/drawingGallery all key off it.
+export const DRAWINGS_KEY = ['drawings']
 // Deployment + household capabilities from /api/health (binding presence + the
 // effective AI on/off state). Read in Réglages, on Signup, AND by the shared
 // useAi() hook that hides every AI affordance — shared so the AI toggle's PATCH

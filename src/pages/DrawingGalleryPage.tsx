@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
+import { live } from '../lib/query'
 import { useAudience } from '../lib/audience'
 import { isGuest } from '../lib/device'
 import { imgUrl } from '../lib/image'
@@ -37,7 +38,7 @@ export function DrawingGalleryPage() {
   const { data } = useGallery()
   // Who drew it + when — the gallery should credit the author and the date, not just
   // show anonymous works. Members give us the face/name behind each drawing's member_id.
-  const { data: membersData } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') })
+  const { data: membersData } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), ...live })
   const members = membersData?.members ?? []
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
   const fmtDate = (sec: number) => new Date(sec * 1000).toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' })
