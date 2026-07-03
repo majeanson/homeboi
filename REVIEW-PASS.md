@@ -114,6 +114,37 @@ The **section blocks below (§1–§8)** are the live backlog — ~119 findings,
 
 ---
 
+## Triage reconciliation (2026-07-02)
+
+The per-section checkboxes had drifted: many findings were fixed in batches A–H (2026-07-01)
+and the 2026-07-02 work but never ticked. An 8-agent parallel sweep re-verified **every** open
+`[ ]` against current code. Result: **27 were already fixed** (now ticked `[x]`), **17 are
+partial**, the rest remain genuinely open. The 17 partials — what's LEFT on each (the actionable
+remainder), by §line:
+
+- **169** (Kitchen useWrite bypass) — `keepSuggestion`/`confirmShop` done; STILL bypass: `EmptyFridgeSheet.save`, `MealSlotsSection` (meals.tsx:49), `ShopSection` (shopping.tsx:34), `patchGhost` (QuickAddPage).
+- **211** (Kitchen e2e) — cook-stepper + Vide-frigo covered; suggestion cards / shop-the-week / config-PATCH / list drag-reorder still uncovered.
+- **233** (Kitchen empty CTA) — recipe-book CTA added; `ToddlerCookBook` still shows a "0 recettes" dead cover.
+- **303** (Routines step-editor e2e) — add-card + emoji palette covered (screenshot only); no remove/reorder/media/POST-alignment assertion.
+- **424** (Cercle e2e) — `note-editor.spec` real behaviour added; carnet/businesses/ReviewChecklist/group-CRUD still specless.
+- **442** (Cercle Union-Find) — unified into one `UnionFind` class; `relationsOf`/`relationTo` still live in `Cercle.tsx`, not moved to `cercle.ts`.
+- **459** (NoteEditor nits) — orphan-blob fixed; body `aria-label` still hardcoded `editorNew` in edit mode, audio-note edit still title-only, `firstLine` exported-only.
+- **509** (guest rate-limit/revoke) — `MAX_PENDING=200` cap added; still stateless, no revoke, no per-token upload cap.
+- **518** (showcase over-share) — issuer warning + 24 h TTL cap shipped; still the DEFAULT kind + still a broad denylist, not a curated subset.
+- **559 / 822 / 931** (e2e — guest / Voyage / offline-layer) — postbox + guest-scenes specs added; intake submit→review→accept, ALL Voyage, and outbox/SW/WS/idle behaviour still uncovered.
+- **668** (Settings error states) — Photos guards `isPending`; `ThisWeekTogetherSection` still reads no `isError` → failed fetch reads as an empty week.
+- **729** (createBringList silent) — comment added; catch still silent + « Créer la liste » not `useOnline`-gated.
+- **747** (capture keys) — shared GHOSTS/HISTORY keys done; `MONTH_KEY` still absent from `CAPTURE_KEYS`, event/task/meal titles still unclamped server-side.
+- **808** (Search coverage) — carnets + home-projects ingested; drawings / care_log / home_pins still not.
+- **830** (cross-cut nits) — `capitalize` unified into `lib/format.ts`; `DeparturePage` empty still hand-rolled, `GALLERY_KEY` local literal, a gallery members query missing `...live`.
+- **880 / 927** (offline/ambient) — most writes on `useWrite` + shared `Toggle`; `RoutinePlayer` still `api('routines')` (== finding 329), `AmbientScreen` re-rolls its own clock.
+
+Everything else still `[ ]` below is genuinely open. **NOTE (2026-07-02):** finding **554** (mic-denied
+silently swallowed) now lives in the shared `MemoControls` after the Postbox refactor, so it affects
+the board memo path too — a good small next fix.
+
+---
+
 ## Reading the section blocks
 
 **Finding tags** used below: `[ ]` todo · `[~]` in progress · `[x]` done · severity
@@ -154,7 +185,7 @@ not structural. Four reviewers; findings deduped below.
 
 - [x] **`💡` emoji literal instead of the Phosphor glyph.** ✅ Batch A — `MealRows.tsx:128` now
   uses `InlineIcon name="sparkle-bold"`, matching the guest branch.
-- [ ] **Aisle sort has ZERO e2e coverage.** No test touches `list-sort` / "Par allée" /
+- [x] **Aisle sort has ZERO e2e coverage.** No test touches `list-sort` / "Par allée" /
   `aisleFor` / `AislePicker` (grep across `e2e/**` = none). Core, logic-heavy feature
   (classifier + household order + per-item overrides) shipping untested at the UI level.
   Add an interactions spec (toggle, group headers, override). _(largest single gap in §1)_
@@ -179,10 +210,10 @@ not structural. Four reviewers; findings deduped below.
   read-only gate is `ro = isGuest()` **only, not audience** (`RecipeSheet.tsx:52`). A
   toddler tapping ✕ after cooking sees Edit/Delete/Plan/Share. Gate `ro` on
   `audience==='toddler'` too, or close toddler cook back to `/kitchen`.
-- [ ] **`keepSuggestion` gives no feedback and double-adds.** `Kitchen.tsx:343-349` POSTs to
+- [x] **`keepSuggestion` gives no feedback and double-adds.** `Kitchen.tsx:343-349` POSTs to
   `meal-ideas` but never clears/disables the card or toasts → tapping "Garder" twice inserts
   the idea twice. Clear-on-keep (+ the undo toast used elsewhere).
-- [ ] **Meal-row control cluster is sub-44px with up to 6 icon buttons.**
+- [x] **Meal-row control cluster is sub-44px with up to 6 icon buttons.**
   `MealRows.tsx:141-203` (heart/book/↑/↓/leftover/trash); `.kitchen__meal-btn` min is
   **32px** (`kitchen.css:613`), below the 44px rule and cramped at 320–430px. Bump to 44px
   and/or fold reorder/leftover behind `RowActions`.
@@ -274,17 +305,17 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
 
 ### Findings — P1 (quick, high-value / a11y)
 
-- [ ] **`ROUTINES_KEY` spelled as the literal `['routines']` at the hot write sites** —
+- [x] **`ROUTINES_KEY` spelled as the literal `['routines']` at the hot write sites** —
   `RoutineForm.tsx:144,157` + `chores.tsx:113,118,131,136` hardcode it while
   `queryKeys.ts:12` exports the constant (which `RoutineFormPage` imports correctly). Import
   the constant (the "key spelled twice drifts into two caches" hazard).
-- [ ] **Per-second `aria-live="polite"` stopwatch** (`RoutinePlayer.tsx:352`) makes a screen
+- [x] **Per-second `aria-live="polite"` stopwatch** (`RoutinePlayer.tsx:352`) makes a screen
   reader announce the elapsed time once a second — noisy. It's a glanceable count-up, not
   status → set `aria-live="off"`.
 
 ### Findings — P2 (small design pass)
 
-- [ ] **R2 voice-clip (narration) blob leaks on edit — media-cleanup asymmetry.**
+- [x] **R2 voice-clip (narration) blob leaks on edit — media-cleanup asymmetry.**
   `functions/api/routines.ts` PATCH frees dropped **photo** keys (`~:279-284`, `deleteR2Blob`)
   but has **no equivalent for narration clips** (`~:249-257` just re-aligns the array), so
   removing a card / clearing a clip / re-recording orphans the old audio blob. DELETE frees
@@ -371,7 +402,7 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
 
 ### Findings — P1 (quick, high-value / a11y)
 
-- [ ] **[crn] Carnet "archive" is reversible in the DB but has NO restore path anywhere.**
+- [x] **[crn] Carnet "archive" is reversible in the DB but has NO restore path anywhere.**
   DELETE sets `archived_at` (`functions/api/carnets.ts:240`), GET filters `archived_at IS
   NULL` (`:100`), and nothing ever clears it or lists archived rows — so `removeCarnet` is
   effectively a **permanent delete behind a confirm**, and the CLAUDE.md-sanctioned exception
@@ -381,7 +412,7 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
 
 ### Findings — P2 (small design pass)
 
-- [ ] **[dir] The 5-button section nav is hand-rolled and cramps on mobile.**
+- [x] **[dir] The 5-button section nav is hand-rolled and cramps on mobile.**
   `cercle-sectionswitch` (Famille/Social/Notes/Business/Carnets, `Cercle.tsx:610-625`) side-
   scrolls at 320–360px **and** carries `role="tablist"`/`role="tab"` with no roving tabindex /
   arrow keys / `aria-controls`. Migrate to the shared **`SubTabs`** (help- + keyboard-aware),
@@ -392,7 +423,7 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   `FaceSelect` from shape 1 (`Cercle.tsx:707`), the board from shape 2 — a field rename on
   either side silently breaks one caller. No live bug found; introduce a shared `Face` type /
   `facesFromMembers` adapter so the seam is explicit.
-- [ ] **[dir] Verify member edits invalidate `CERCLE_KEY`.** The cercle page's faces/colours
+- [x] **[dir] Verify member edits invalidate `CERCLE_KEY`.** The cercle page's faces/colours
   come from `/api/cercle`, not `MEMBERS_KEY`; if the member-PATCH write path (Settings ▸
   Maisonnée) doesn't list `CERCLE_KEY` in `affectedKeys` (or map it via realtime `keysForPath`),
   a renamed/recoloured face goes stale in the cercle until an unrelated poll. _(cross-link seam.)_
@@ -401,13 +432,13 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   (`cercle.css:1903`), unlike `.recipe-modal` — so on a phone with the keyboard up, the bottom
   attach buttons + lower body sit **behind** the keyboard. Directly violates the standing
   "editor above the keyboard" rule. Pin to `var(--vvh)` under `.kb-open`.
-- [ ] **[frm] `FamilyBuilder` defines `Chip`/`PetChip` components inside the render body**
+- [x] **[frm] `FamilyBuilder` defines `Chip`/`PetChip` components inside the render body**
   (`:320,341`) → a new component type every render → React remounts the whole chip subtree,
   churning DnD/focus. Hoist them or inline the JSX.
-- [ ] **[frm] `ContactForm` hand-rolls an inline group-create** (name + kind `<select>`, no
+- [x] **[frm] `ContactForm` hand-rolls an inline group-create** (name + kind `<select>`, no
   colour, `:559-585`) instead of reusing the shared **`GroupForm`** — the exact build-by-reuse
   failure mode.
-- [ ] **[nte] Two parallel Markdown implementations with copy-pasted regexes** —
+- [x] **[nte] Two parallel Markdown implementations with copy-pasted regexes** —
   `lib/noteMarkdown.tsx` (render) and `lib/noteHtml.ts` (editor) each re-declare identical
   `HEAD_RE/CHECK_RE/BULLET_RE/…` + inline bold/italic parsing. Render-vs-edit split is fine,
   but share the grammar constants in one module (a marker tweak in one silently breaks
@@ -460,7 +491,7 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   (`:227`); latent **orphaned-R2 blobs on in-editor replace/discard** (NoteEditor uploads
   immediately on pick — same class as the Voyage memo caveat); contentEditable body always
   labelled `fn.editorNew` even in edit mode (`:441`); audio-note edit is title-only.
-- [ ] **[crn] `HomeProjectForm`/`CareLogForm` invalidate `['carnets']` as an inline literal**
+- [x] **[crn] `HomeProjectForm`/`CareLogForm` invalidate `['carnets']` as an inline literal**
   (`:76`/`:94`) instead of importing `CARNETS_KEY`.
 - [ ] **[dir] EN gender-label maps omit `in_law`/`step_family`** (fall back to neutral) while FR
   includes « Belle-famille »/« Famille recomposée » (`cercle.ts:408/425`) — EN loses the nicety.
@@ -501,7 +532,7 @@ default kind. These deserve priority in the implement phase.
 
 ### Findings — P1 (SECURITY / high-value)
 
-- [ ] **🔒 Field-scope bitmask is NOT enforced server-side.** `guest/intake-submit.ts:21`
+- [x] **🔒 Field-scope bitmask is NOT enforced server-side.** `guest/intake-submit.ts:21`
   → `sanitizeIntake()` never reads `actor.guestFields`; the scope gates only the **UI**
   (`IntakeForm.tsx:143`) + greeting. A crafted POST can submit household/pets/address/photos on
   a name-only link. Bounded (quarantined, operator reviews) but the bitmask is currently
@@ -522,7 +553,7 @@ default kind. These deserve priority in the implement phase.
   pre-selected in the issuer (`guest.tsx:121`), offers 7-day TTL, no revoke. Footgun: an
   operator pastes a "Démo" link publicly and leaks the household. **Fix:** narrow showcase to a
   curated subset, and/or don't default to it + cap its TTL + inline warning.
-- [ ] **🔒 Tint-hijack / impersonation by exact-name match is unwarned in review.**
+- [x] **🔒 Tint-hijack / impersonation by exact-name match is unwarned in review.**
   `postbox.ts:99` tints an accepted note to a member when `sender_name` == a member's
   `display_name` (case-insensitive) and stamps `— <name>`; a sender can type an existing
   member's name to spoof that face. Operator-gated (the intended DB-5 tradeoff) but
@@ -564,11 +595,11 @@ default kind. These deserve priority in the implement phase.
 
 ### Findings — P3 (SECURITY hardening + nits)
 
-- [ ] **🔒 `/api/live` (realtime WS) bypasses the per-kind allowlist** (`worker/index.ts:116`) —
+- [x] **🔒 `/api/live` (realtime WS) bypasses the per-kind allowlist** (`worker/index.ts:116`) —
   a curated `sitter`/`family` guest can open the household socket and receive `invalidate` nudges
   naming keys across the whole household (write-activity **metadata/timing**, no row data — the
   refetch 403s), and hold a DO connection. Gate `/api/live` for curated guests.
-- [ ] **🔒 `showcase` allowlist is not write-aware** (`guestKindAllows('showcase','…intake-
+- [x] **🔒 `showcase` allowlist is not write-aware** (`guestKindAllows('showcase','…intake-
   submit')` returns true, `guestScope.ts:19`) — writes are stopped only by `authed()`, so the
   allowlist loses its default-deny property for showcase. And **`postbox-media` accepts any
   content-type** (`accept:()=>true`, `:37`) where `intake-media` guards `image/` — mirror the
@@ -627,17 +658,17 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
 
 ### Findings — P2 (small design pass)
 
-- [ ] **Settings tablist ARIA is incomplete** (`Operator.tsx:307-322`) — `role="tablist"`/`tab`/
+- [x] **Settings tablist ARIA is incomplete** (`Operator.tsx:307-322`) — `role="tablist"`/`tab`/
   `aria-selected` present but no `id`/`aria-controls`, the single `role="tabpanel"` has no
   `aria-labelledby`, and there's no roving-tabindex / arrow-key nav. SR users get "tab"
   semantics without the wiring.
-- [ ] **`aria-pressed` missing on toggle-button pickers** — rotation picker (`ChoreForm.tsx:139`),
+- [x] **`aria-pressed` missing on toggle-button pickers** — rotation picker (`ChoreForm.tsx:139`),
   schedule member + interval pickers (`schedule.tsx:199,232`) signal selection by class only, so
   a screen reader can't tell what's selected.
-- [ ] **The on/off "pill" `Toggle` is implemented twice** — a local `Toggle` in `ambient.tsx:17`
+- [x] **The on/off "pill" `Toggle` is implemented twice** — a local `Toggle` in `ambient.tsx:17`
   vs `display.tsx` hand-inlining the same pattern ~6× (`:139-194`). Extract one shared primitive
   (+ DevKit) and reuse — the build-beside-existing pattern.
-- [ ] **Photo-delete button is 28×28px** (`photos.css:49`), a corner overlay on a wall tablet —
+- [x] **Photo-delete button is 28×28px** (`photos.css:49`), a corner overlay on a wall tablet —
   the hardest place to hit a sub-44px target. Enlarge the hit-area.
 - [ ] **Schedule-block DELETE is a one-tap with no undo/confirm** (`schedule.tsx:81`) — the lone
   destructive one-tapper; every sibling (events/chores/home-projects) routes through
@@ -715,14 +746,14 @@ date/time **mislabel**, and thin/half-closed e2e on the load-bearing degrade + e
 
 ### Findings — P2 (small design pass)
 
-- [ ] **Capture skips `useWrite()` and swallows errors — the one hole in "never lost."**
+- [x] **Capture skips `useWrite()` and swallows errors — the one hole in "never lost."**
   `AddSheet.submit` calls `api('capture', …)` directly (`AddSheet.tsx:509`) and the catch
   swallows every `ApiError` with no toast (`:526`). Offline or on any 5xx the tap is a **silent
   no-op** — no outbox replay, no error surfaced (every other add here uses `write()`). Capture
   needs the sync response (type + reroute cleanup) so a full outbox may not fit — but at minimum
   gate the button on `useOnline()` **and** surface a failure notice so an offline capture isn't
   quietly eaten.
-- [ ] **Inline bring-list draft is silently discarded on submit.** If the operator types bring
+- [x] **Inline bring-list draft is silently discarded on submit.** If the operator types bring
   items but submits the event *without* clicking « Créer la liste », `bringDraft` is dropped and
   `bringTemplateId` stays null with no warning (`EventForm.tsx:135-153,354`). On submit, auto-
   create from the draft or block with a hint.
@@ -730,7 +761,7 @@ date/time **mislabel**, and thin/half-closed e2e on the load-bearing degrade + e
   no `StatusMessage`), and it POSTs via `api()` not `useWrite()` (online-only; semi-justified
   since it needs `res.id` synchronously to auto-select, which a queued `useWrite` returns null —
   but comment it + disable « Créer la liste » via `useOnline()`).
-- [ ] **EventForm date/time inputs are mislabelled.** The `<input type="date">` has **no**
+- [x] **EventForm date/time inputs are mislabelled.** The `<input type="date">` has **no**
   aria-label/visible label (`EventForm.tsx:224`); the time input's aria-label is `eventAllDay`
   ("Toute la journée") — wrong for a time field (`:230`). Contrast ChoreForm/HomeProjectForm,
   which wrap dates in a labelled `.recur__row`. Give the date a label + relabel the time.
@@ -749,7 +780,7 @@ date/time **mislabel**, and thin/half-closed e2e on the load-bearing degrade + e
   `MONTH_KEY` is **not** in `CAPTURE_KEYS`, so a captured event/meal won't reconcile an open
   month/day page until its poll; event/task/meal titles are **unclamped** (only the `note` path
   clamps to 280, `capture.ts:214`) — a long capture bloats the board payload.
-- [ ] **`aria-pressed` missing on the toggle chips** — EventForm member/car/passenger/template +
+- [x] **`aria-pressed` missing on the toggle chips** — EventForm member/car/passenger/template +
   ChoreForm rotation (`EventForm.tsx:234-351`) convey selection visually only. _(Recurring theme
   with §5's picker `aria-pressed` gap — batch them.)_
 - [ ] **Small consistency nits:** reroute 7-up grid overflow untested at 320px; dead i18n key
@@ -790,7 +821,7 @@ absence.
 
 ### Findings — P1 (real bug / high-value)
 
-- [ ] **Voyage Infos/Itinéraire media notes: undo-after-delete resurrects a row pointing at a
+- [x] **Voyage Infos/Itinéraire media notes: undo-after-delete resurrects a row pointing at a
   FREED R2 blob.** `VoyageInfos.del` (`VoyageInfos.tsx:37`) + `VoyageItinerary.del`
   (`VoyageItinerary.tsx:61`) DELETE then `recordUndo` with a re-POST carrying the same
   `media_key`/`scene_key`, but `trip-notes` DELETE **unconditionally frees** both blobs
@@ -798,7 +829,7 @@ absence.
   row → `media_key` 404s (broken audio/image). **Confirmed live in two files** (the memory'd
   caveat). Fix: for notes with `media_kind` set, use `useConfirm` (no undo) like Documents/gallery
   already do; keep the undo path only for text-only notes.
-- [ ] **No trip-delete affordance anywhere in the UI.** `trips.ts:143` implements DELETE (soft-
+- [x] **No trip-delete affordance anywhere in the UI.** `trips.ts:143` implements DELETE (soft-
   delete + cascade trip_notes/packing + free cover blob) but grep finds **zero callers** in `src/`
   — a trip can be created and edited but never removed. Dead endpoint + real dead-end. Add a
   confirm-gated operator delete to `VoyageForm`/the scene foot.
