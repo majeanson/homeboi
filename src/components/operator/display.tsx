@@ -476,6 +476,11 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
           const color = swatchColor(s, overrides)
           return (
             <label key={s.id} className="measure-colors__row">
+              {/* DELIBERATELY the free-form OS picker, NOT the shared ColorPicker (palette
+                  dots): a household matches these to its PHYSICAL colour-coded spoons/cups
+                  (leaf green, teal, golden yellow — see measureColors.ts defaults), none of
+                  which live in the member `PALETTE`. Constraining to the app palette would
+                  defeat the whole point (you couldn't match your real ¼ tsp spoon). */}
               <input
                 type="color"
                 className="measure-colors__pick"

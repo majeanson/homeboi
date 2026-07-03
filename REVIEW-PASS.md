@@ -190,10 +190,12 @@ not structural. Four reviewers; findings deduped below.
   until the next poll. `DayPlanPage` `planRecipe`/`clearMeal`/`clearSlotMeals`/`clearDay`/
   `saveSlot` pass only `[MEALS_KEY]` (whereas `renameMeal`/`saveMeal` include `BOARD_KEY`).
   Add `BOARD_KEY` to the today-affecting writes.
-- [ ] **`MeasureColorsSection` forks the colour UI.** Raw `<input type="color">` + onBlur
-  (`operator/display.tsx:490`) where every sibling uses the shared **`ColorPicker`** (no
-  palette dots, no theme-aware preview). Use `ColorPicker` unless the free-form picker is
-  deliberate.
+- [x] **`MeasureColorsSection` forks the colour UI.** — ✅ **Resolved 2026-07-02 as DELIBERATE**
+  (the finding's own "unless the free-form picker is deliberate" branch). The measure defaults
+  (`measureColors.ts`: leaf green / teal / golden yellow …) are matched to a household's PHYSICAL
+  colour-coded spoons/cups and are **not** in the member `PALETTE`; `ColorPicker` would make it
+  impossible to match a real spoon. Kept the free-form OS picker + added a code comment so it isn't
+  re-flagged. (Not a fork to fix — a genuinely distinct requirement.)
 - [ ] **`HistorySection` delete has no confirm and no undo** (`operator/shopping.tsx:287`) —
   one mis-tap erases a folded purchase-history entry, while tags/pills use `useConfirm` and
   the list uses the undo toast. Add a light undo.
