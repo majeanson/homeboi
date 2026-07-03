@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
-import { api, ApiError, isStatus } from '../lib/api'
+import { api } from '../lib/api'
 import { guestWindowKey } from '../lib/queryKeys'
-import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { imgUrl } from '../lib/image'
-import { DrawPad } from '../components/DrawPad'
 import { ZoomableImg } from '../components/ZoomableImg'
+import { MemoControls, type StagedMemo } from '../components/MemoControls'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
 import { Icon, InlineIcon } from '../components/Icon'
 import { StatusMessage } from '../components/StatusMessage'
@@ -17,23 +16,14 @@ import { StatusMessage } from '../components/StatusMessage'
 // drawing, or a photo. The submission is QUARANTINED server-side (migration 0085);
 // any media is staged in R2 and resolved at the operator's review, where accepting it
 // turns it into a board fridge note attributed to the sender. Phone-first, single
-// page, no account, no further access. Mirrors IntakeForm's shape; composes media
-// with the same DrawPad / MediaRecorder / uploadMedia primitives as MemoControls,
-// but holds ONE memo as a draft and sends it with the sender's name in one go.
-
-const MAX_REC_MS = 30_000
+// page, no account, no further access. Mirrors IntakeForm's shape; the Record/Draw/
+// Photo trio is the shared `MemoControls` in STAGE mode (`onStaged`), which hands back
+// the staged R2 key — this page holds it as ONE draft and sends it with the name.
 
 interface GreetingData {
   kind: 'postbox'
   householdName: string
 }
-
-// The one media attachment a message can carry (a message may be text-only too).
-type Draft =
-  | { kind: 'audio'; key: string }
-  | { kind: 'drawing'; key: string; sceneKey?: string }
-  | { kind: 'image'; key: string }
-  | null
 
 export function Postbox() {
   const t = useT()
@@ -46,102 +36,12 @@ export function Postbox() {
 
   const [senderName, setSenderName] = useState('')
   const [text, setText] = useState('')
-  const [draft, setDraft] = useState<Draft>(null)
-  // R2 unbound (a stage call 503s) → hide every media control; a written word still sends.
-  const [mediaOff, setMediaOff] = useState(false)
-  const [draw, setDraw] = useState(false)
-  const [recording, setRecording] = useState(false)
+  // The one media attachment a message can carry (a message may be text-only too),
+  // handed back by MemoControls' STAGE mode.
+  const [draft, setDraft] = useState<StagedMemo | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState(false)
-
-  const photoRef = useRef<HTMLInputElement>(null)
-  const recRef = useRef<MediaRecorder | null>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-
-  // Stage a blob to R2 via the postbox media endpoint; a 503 means R2 is unbound.
-  async function stage(blob: Blob): Promise<string | null> {
-    try {
-      const { key } = await api<{ key: string }>('guest/postbox-media', { method: 'POST', body: blob })
-      return key
-    } catch (e) {
-      if (isStatus(e, 503)) setMediaOff(true)
-      else if (!(e instanceof ApiError)) throw e
-      return null
-    }
-  }
-
-  function stopStream() {
-    try {
-      streamRef.current?.getTracks().forEach((tr) => tr.stop())
-    } catch {
-      /* already stopped */
-    }
-    streamRef.current = null
-  }
-
-  async function startRec() {
-    if (busy || recording) return
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
-      const rec = new MediaRecorder(stream)
-      const chunks: BlobPart[] = []
-      rec.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data)
-      }
-      rec.onstop = async () => {
-        stopStream()
-        setRecording(false)
-        const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' })
-        if (blob.size > 0) {
-          setBusy(true)
-          const key = await stage(blob)
-          if (key) setDraft({ kind: 'audio', key })
-          setBusy(false)
-        }
-      }
-      recRef.current = rec
-      rec.start()
-      setRecording(true)
-      window.setTimeout(() => {
-        if (recRef.current?.state === 'recording') recRef.current.stop()
-      }, MAX_REC_MS)
-    } catch {
-      /* mic denied / unavailable — leave the written word as-is */
-    }
-  }
-
-  function stopRec() {
-    if (recRef.current?.state === 'recording') recRef.current.stop()
-  }
-
-  async function onDrawSave(png: Blob, scene: string) {
-    setDraw(false)
-    setBusy(true)
-    const key = await stage(png)
-    let sceneKey: string | undefined
-    if (key && scene) {
-      const sk = await stage(new Blob([scene], { type: 'application/json' }))
-      sceneKey = sk ?? undefined
-    }
-    if (key) setDraft({ kind: 'drawing', key, sceneKey })
-    setBusy(false)
-  }
-
-  async function onPhoto(file?: File) {
-    if (!file) return
-    setBusy(true)
-    try {
-      const key = await uploadMedia('guest/postbox-media', file)
-      setDraft({ kind: 'image', key })
-    } catch (e) {
-      if (e instanceof MediaUnavailableError) setMediaOff(true)
-    } finally {
-      setBusy(false)
-      if (photoRef.current) photoRef.current.value = ''
-    }
-  }
 
   async function submit() {
     if (busy) return
@@ -173,17 +73,6 @@ export function Postbox() {
       setBusy(false)
     }
   }
-
-  // While recording, flag the body (mirrors MemoControls) so any floating chrome hides.
-  useEffect(() => {
-    if (!recording) return
-    document.body.classList.add('is-recording')
-    return () => document.body.classList.remove('is-recording')
-  }, [recording])
-
-  const canRecord =
-    typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined'
-  const showMedia = !mediaOff
 
   if (done) {
     return (
@@ -257,41 +146,30 @@ export function Postbox() {
             </div>
           )}
 
-          {/* Media controls — hidden once a memo is attached (one per message) and when
-              R2 is unbound. Mirrors MemoControls' Record / Draw / Photo trio. */}
-          {showMedia && !draft && (
-            <div className="memo-row">
-              {canRecord &&
-                (recording ? (
-                  <button type="button" className="btn memo-row__rec" onClick={stopRec}>
-                    <span className="memo-row__dot" aria-hidden="true" /> {t.memo.stop}
-                  </button>
-                ) : (
-                  <button type="button" className="btn" onClick={startRec} disabled={busy}>
-                    <Icon name="microphone-bold" size={18} /> {t.postbox.recordVoice}
-                  </button>
-                ))}
-              <button type="button" className="btn" onClick={() => setDraw(true)} disabled={busy || recording}>
-                <Icon name="pencil-simple-bold" size={18} /> {t.memo.draw}
-              </button>
-              <button type="button" className="btn" onClick={() => photoRef.current?.click()} disabled={busy || recording}>
-                <Icon name="camera-bold" size={18} /> {t.postbox.addPhoto}
-              </button>
-              <input ref={photoRef} type="file" accept="image/*" hidden onChange={(e) => void onPhoto(e.target.files?.[0])} />
-            </div>
+          {/* The shared Record / Draw / Photo trio in STAGE mode — hidden once a memo is
+              attached (one per message). `onStaged` hands back the R2 key we hold as the
+              draft; MemoControls hides itself if R2 is unbound (a written word still sends). */}
+          {!draft && (
+            <MemoControls
+              onDone={() => {}}
+              mediaEndpoint="guest/postbox-media"
+              onStaged={setDraft}
+              withPhoto
+              recordLabel={t.postbox.recordVoice}
+              photoLabel={t.postbox.addPhoto}
+              drawDraftId="postbox"
+            />
           )}
         </section>
 
         {err && <StatusMessage tone="error">{err}</StatusMessage>}
 
         <div className="intake__send">
-          <button type="button" className="btn btn--primary" disabled={busy || recording} onClick={submit}>
+          <button type="button" className="btn btn--primary" disabled={busy} onClick={submit}>
             <Icon name="arrow-right-bold" size={18} /> {busy ? t.postbox.sending : t.postbox.submit}
           </button>
         </div>
       </div>
-
-      <DrawPad open={draw} draftId="postbox" onCancel={() => setDraw(false)} onSave={(png, scene) => void onDrawSave(png, scene)} />
     </div>
   )
 }

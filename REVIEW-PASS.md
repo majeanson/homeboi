@@ -95,8 +95,8 @@ and two e2e specs (aisle-sort, capture-offline).
   by the server-side PATCH/DELETE. Chose this over deferred-upload to keep the resized-preview +
   lazy R2-off UX intact — and freeing-by-key is symmetric with the app's read-by-key capability
   model (`api/img/[key]` is unauthenticated by design).
-- **Postbox forks `MemoControls`** — reuse needs a "staging mode" on the shared component (guest
-  stages-then-sends vs board posts-immediately); a design change, not a swap.
+- ~~**Postbox forks `MemoControls`**~~ — ✅ **Shipped 2026-07-02.** Added a STAGE mode (`onStaged`)
+  to the shared component so the guest stages-then-sends path reuses it; see the closed finding below.
 - **Security hardening left:** full token **revocation** (a `guests` table changes the stateless
   model). (`staged_media` ownership check ✅ + `/api/live` per-kind gating ✅ shipped 2026-07-02 —
   a guest is now 403'd at the realtime upgrade, and the client skips the socket for guests/preview.)
@@ -538,10 +538,14 @@ default kind. These deserve priority in the implement phase.
   `FamilyWindowPage` now read `isError` and render it on a `guest/window` failure (with
   `retry: skip-on-401/403` so the expired state surfaces fast, not after 3 retries). Locked by
   `e2e/guest-scenes.spec.ts` (expired → GuestExpired on all three; valid → content).
-- [ ] **Postbox FORKS `MemoControls`** — `Postbox.tsx:83-144,262` re-implements the Record/Draw/
-  Photo trio + MediaRecorder + stage flow inline, though its own comment says it "composes …
-  the same primitives as MemoControls" (which has `endpoint`/`affectedKey`/`extraBody` props for
-  exactly this). The build-beside-existing anti-pattern; refactor onto `MemoControls`.
+- [x] **Postbox FORKS `MemoControls`** — ✅ **Fixed 2026-07-02.** `MemoControls` gained a **STAGE
+  mode** (`onStaged` hands back the uploaded R2 key instead of POSTing a note; `mediaEndpoint` +
+  `withPhoto` + `recordLabel`/`photoLabel`/`drawDraftId` props), so Postbox drops its inline
+  MediaRecorder + stage + Record/Draw/Photo trio + DrawPad (~130 lines) and renders
+  `<MemoControls mediaEndpoint="guest/postbox-media" onStaged={setDraft} withPhoto …>`, keeping only
+  its own name/text/draft-preview/submit. POST mode (board + CercleNotes) is byte-for-byte unchanged;
+  the shared upload now routes through the canonical `uploadMedia`. Locked by `e2e/postbox.spec.ts`
+  (text-only + photo-staged send) + the board fridge-note/drawings specs stay green.
 - [ ] **Operator can't edit incoming values before accepting** (`IntakeReview` merge-or-create
   only, `:280`; PostboxReview posts text as-is) — a typo'd relative name can't be fixed pre-merge.
 - [ ] **Mic-denied is silent** in Postbox (`:110` swallows `getUserMedia` rejection) — a relative
