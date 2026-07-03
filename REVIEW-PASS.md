@@ -481,9 +481,12 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   `cercle.ts:850` (`\d{1,4}`, ≤31-day window) vs server `_lib/birthdays.ts:33` (`\d{4}`) driving
   the board. Different regex/window for one concept → drift (a 1–3-digit stored year shows on
   the cercle page but is dropped by the board). Unify.
-- [~] **[dir] Four hand-rolled Union-Find copies** (`detectFamilyGroups`, `closedLinks`,
-  `CercleWeb`, `CercleTree`) — extract one `unionFind` helper. ✅ `relationsOf`/`relationTo`
-  moved to `lib/cercle.ts` (2026-07-02) — pure + now unit-testable. Remaining: the 4 UF copies.
+- [x] **[dir] Four hand-rolled Union-Find copies** — ✅ **already resolved** (verified against
+  code 2026-07-02): the shared `UnionFind` class (`cercle.ts:625`) is used by ALL four sites —
+  `detectFamilyGroups` (`:684`), `closedLinks`' sibling grouping (`:1474`), `CercleWeb` (`:64`),
+  `CercleTree` (`:51`). No hand-rolled `parent`-map find/union remains; the finding was stale
+  (the extraction shipped earlier, the box was never ticked). `relationsOf`/`relationTo` also
+  moved to `lib/cercle.ts` (2026-07-02).
 - [x] **[dir/crn] Cold non-401 fetch error reads as an empty circle/map, not an error**
   — ✅ **Fixed 2026-07-02**: added a shared `LoadError` fallback (`components/Fallback.tsx`,
   `role="alert"` + `t.common.loadFailed`) and both `Cercle.tsx` + `CercleWorldPage.tsx` now
