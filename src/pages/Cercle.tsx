@@ -61,10 +61,11 @@ import {
   isHouseholdPet,
   familyReachableKeys,
   closedLinks,
-  relPriority,
   daysUntilBirthday,
   formatBirthday,
   genderedRelLabel,
+  relationsOf,
+  relationTo,
 } from '../lib/cercle'
 
 const ACCENT = '#2A8F85' // the cercle tab's turquoise (matches CATS.cercle.deep + the nav)
@@ -106,53 +107,6 @@ export function Cercle() {
   const { audience } = useAudience()
   if (audience === 'toddler') return <CircleKidView />
   return <CercleParent />
-}
-
-// A person's relationships, resolved FROM THEIR perspective → display strings
-// ("Mère · Léa" = "[this person] est la mère de Léa"). Works over composite person
-// keys (contacts + members). The relation type describes the SUBJECT (the person
-// whose list this is), so it's gendered by the SUBJECT's gender — NOT the other
-// person's (a female subject who is a parent is "Mère", regardless of the child's sex).
-function relationsOf(key: string, links: ContactLink[], byKey: Map<string, Person>, lang: 'fr' | 'en'): string[] {
-  const subjectGender = byKey.get(key)?.gender ?? null
-  return links
-    .map((l) => {
-      const aKey = personKey(l.personAKind, l.personAId)
-      const bKey = personKey(l.personBKind, l.personBId)
-      if (aKey === key) return { rel: l.type, other: bKey }
-      if (bKey === key) return { rel: l.reverseType, other: aKey }
-      return null
-    })
-    .filter((x): x is { rel: ContactLink['type']; other: string } => !!x)
-    // Most salient tie first (immediate family → extended → social), so a one-line
-    // row surfaces "Enfant · Jérémie" over a derived cousin.
-    .sort((a, b) => relPriority(a.rel) - relPriority(b.rel))
-    .map((r) => `${genderedRelLabel(r.rel, subjectGender, lang)} · ${byKey.get(r.other)?.name ?? '—'}`)
-}
-
-// `fromKey`'s role TOWARD `toKey`, as ONE gendered label ("Fille", "Cousin", …) —
-// i.e. how the row person (from) relates to the focused person (to), gendered by the
-// row person. Used by the focus lens: with Marc focused, Léa's row reads "Fille"
-// (Léa is Marc's daughter). Reads the same closed link set as relationsOf, so derived
-// ties (grandparent, cousin…) resolve too. The most salient tie wins if several.
-function relationTo(
-  fromKey: string,
-  toKey: string,
-  links: ContactLink[],
-  byKey: Map<string, Person>,
-  lang: 'fr' | 'en',
-): string | null {
-  const fromGender = byKey.get(fromKey)?.gender ?? null
-  let best: RelationshipType | null = null
-  for (const l of links) {
-    const aKey = personKey(l.personAKind, l.personAId)
-    const bKey = personKey(l.personBKind, l.personBId)
-    let rel: RelationshipType | null = null
-    if (aKey === fromKey && bKey === toKey) rel = l.type
-    else if (bKey === fromKey && aKey === toKey) rel = l.reverseType
-    if (rel && (best === null || relPriority(rel) < relPriority(best))) best = rel
-  }
-  return best ? genderedRelLabel(best, fromGender, lang) : null
 }
 
 function CercleParent() {

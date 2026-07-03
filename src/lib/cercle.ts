@@ -434,6 +434,55 @@ export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | nul
   return relLabel(type, lang)
 }
 
+// A person's relationships, resolved FROM THEIR perspective → display strings
+// ("Mère · Léa" = "[this person] est la mère de Léa"). Works over composite person
+// keys (contacts + members). The relation type describes the SUBJECT (the person
+// whose list this is), so it's gendered by the SUBJECT's gender — NOT the other
+// person's (a female subject who is a parent is "Mère", regardless of the child's sex).
+// Pure (no React) — lives here beside the closure/label helpers it uses so the page
+// stays a view.
+export function relationsOf(key: string, links: ContactLink[], byKey: Map<string, Person>, lang: 'fr' | 'en'): string[] {
+  const subjectGender = byKey.get(key)?.gender ?? null
+  return links
+    .map((l) => {
+      const aKey = personKey(l.personAKind, l.personAId)
+      const bKey = personKey(l.personBKind, l.personBId)
+      if (aKey === key) return { rel: l.type, other: bKey }
+      if (bKey === key) return { rel: l.reverseType, other: aKey }
+      return null
+    })
+    .filter((x): x is { rel: ContactLink['type']; other: string } => !!x)
+    // Most salient tie first (immediate family → extended → social), so a one-line
+    // row surfaces "Enfant · Jérémie" over a derived cousin.
+    .sort((a, b) => relPriority(a.rel) - relPriority(b.rel))
+    .map((r) => `${genderedRelLabel(r.rel, subjectGender, lang)} · ${byKey.get(r.other)?.name ?? '—'}`)
+}
+
+// `fromKey`'s role TOWARD `toKey`, as ONE gendered label ("Fille", "Cousin", …) —
+// i.e. how the row person (from) relates to the focused person (to), gendered by the
+// row person. Used by the focus lens: with Marc focused, Léa's row reads "Fille"
+// (Léa is Marc's daughter). Reads the same closed link set as relationsOf, so derived
+// ties (grandparent, cousin…) resolve too. The most salient tie wins if several.
+export function relationTo(
+  fromKey: string,
+  toKey: string,
+  links: ContactLink[],
+  byKey: Map<string, Person>,
+  lang: 'fr' | 'en',
+): string | null {
+  const fromGender = byKey.get(fromKey)?.gender ?? null
+  let best: RelationshipType | null = null
+  for (const l of links) {
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    let rel: RelationshipType | null = null
+    if (aKey === fromKey && bKey === toKey) rel = l.type
+    else if (bKey === fromKey && aKey === toKey) rel = l.reverseType
+    if (rel && (best === null || relPriority(rel) < relPriority(best))) best = rel
+  }
+  return best ? genderedRelLabel(best, fromGender, lang) : null
+}
+
 // Relationship types grouped + ordered, for a sectioned picker (ALL groups,
 // including « Animaux »). Callers render via `relationshipPickerGroups`, which
 // shows/hides the pet group by context.
@@ -1348,7 +1397,8 @@ const REL_PRIORITY: Record<RelationshipType, number> = {
   neighbor: 8,
   other: 9,
 }
-export const relPriority = (t: RelationshipType): number => REL_PRIORITY[t]
+// Internal now (relationsOf/relationTo above are the only callers) — not exported.
+const relPriority = (t: RelationshipType): number => REL_PRIORITY[t]
 
 // Derive the FULL family relationship set from the minimal stored links, so a tie
 // added at ONE point propagates the way a real family does:
