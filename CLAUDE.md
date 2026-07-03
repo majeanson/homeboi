@@ -104,6 +104,9 @@ npm run typecheck      # tsc -b --noEmit
 npm test               # vitest run (pure-logic unit tests)
 npm run test:watch     # vitest watch
 npm run e2e            # Playwright (boots its own Vite, stubs every /api/* — no D1/secrets)
+npm run e2e:sw         # SW offline-shell e2e ONLY (own harness: vite build + preview the PROD
+                       #   bundle, since the service worker registers only in a PROD build).
+                       #   sw.spec.ts is testIgnore'd from the default `npm run e2e`.
 npm run deploy         # build + wrangler deploy → https://babillard.<account>.workers.dev
 ```
 
@@ -122,10 +125,13 @@ npm run db:migrate:prod    # apply to remote D1 (CI does this before deploy)
 ```
 
 CI (`.github/workflows/ci.yml`) runs typecheck → test → build on every push, which
-**gates** `db:migrate:prod` + deploy on `main`. E2E (Playwright) runs in **parallel**
-for signal but does **not** block the deploy, so main ships as soon as
-typecheck/test/build are green. **Trust CI as the baseline; don't run e2e locally by
-default — check the E2E job on the run page for visual/flow regressions.** Node 24.
+**gates** `db:migrate:prod` + deploy on `main`. E2E (`.github/workflows/e2e.yml`) is
+**decoupled**: it **chains off** the CI & Deploy workflow (`workflow_run`) and only runs
+once CI concluded successfully on `main` — so it gives signal *after* a green merge but
+never blocks the deploy (main ships as soon as typecheck/test/build are green). The E2E
+job runs `npm run e2e` then `npm run e2e:sw` (the SW harness). **Trust CI as the baseline;
+don't run e2e locally by default — check the E2E job on the run page for visual/flow
+regressions.** Node 24.
 
 > **Workflow: push straight to `main`.** No PR branches — commit and `git push origin
 main` directly. CI (typecheck/test/build) is the only gate; a red build is caught

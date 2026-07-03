@@ -80,6 +80,13 @@ wrapper). These need a live server round-trip, so queueing them adds no value.
 
 - `functions/_lib/idempotency.test.ts` — replay dedup, non-2xx stays retryable,
   per-household scoping.
+- **e2e** (`npm run e2e`): `offline-outbox.spec.ts` — a `/liste` write made offline
+  queues (offline-bar pending count, nothing on the wire) then replays on the `online`
+  event; `capture-offline.spec.ts` — an offline capture surfaces a failure and keeps the
+  typed text (the one write that can't queue, since it needs a live AI round-trip).
+- **e2e** (`npm run e2e:sw`, own build+preview harness): `sw.spec.ts` — the service
+  worker precaches the shell and reboots offline (the SW is a build artifact, so it needs
+  the PROD bundle, not the dev server).
 - Manual: `npm run cf:dev`, DevTools → Network "Offline" → check an item / mark a
   chore done (optimistic + banner count) → reload offline (state persists) → go
   online (outbox replays, rows persist) → repeat an action offline twice (no

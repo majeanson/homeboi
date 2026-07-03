@@ -28,6 +28,30 @@
 
 ---
 
+## ▶ Next steps (updated 2026-07-03)
+
+> Snapshot of the highest-value remaining work, so a fresh session has an entry point.
+> **In flight (another session):** a **forms IA-hardening** pass — shared `FormFooter` +
+> `MemberPicker` primitives (`522da34`), migrating every form (cercle forms, Chore/Event/
+> HomeProject/Routine) onto them + disclosure, and RecipeSheet→`SceneHead`. **Don't touch
+> `src/components/forms/*`, the cercle forms, `FormScene`, `RecipeSheet`, or `CookMode`
+> while that runs** — coordinate or pick from a different area.
+>
+> 1. **Carnets e2e scaffolding + carnet-restore/scene specs** — the last real e2e gap (§8 /
+>    theme-4). Blocked on: the e2e mocks have **no carnets/care-log fixtures** yet — build that
+>    first (mirror how `voyage.spec` added trips), then drive archive→restore and the carnet scene.
+> 2. **Capture AI-off degrade + reroute e2e** (§6) — the one capture path with no spec: assert a
+>    row is always inserted and an AI reroute MOVEs (never dupes) when AI is unavailable.
+> 3. **Routines §2 judgement calls (need Marc)** — nested-interactive parent-grid card (role=button
+>    div w/ nested buttons → non-button `<article>` + explicit peek control = changes keyboard peek);
+>    dead `BOARD_KEY` invalidate on routine save (wire a board glance *or* drop); two-timers-on-screen;
+>    parent-overview "done today" asymmetry; per-step countdown timer e2e (needs `page.clock`).
+>
+> **Larger, steer-first:** token revocation (needs a `guests` table — breaks the stateless-token
+> model); `showcase` over-share TTL/narrowing; operator edit-before-accept in Intake/Postbox review.
+
+---
+
 ## Combined review synthesis (2026-07-01 — all 8 sections reviewed)
 
 > Every section (§1–§8) was audited by fan-out reviewers. **Headline: the codebase is mature
@@ -102,9 +126,12 @@ and two e2e specs (aisle-sort, capture-offline).
   a guest is now 403'd at the realtime upgrade, and the client skips the socket for guests/preview.)
 - **Conscious `useWrite` deviations:** the household-settings PATCHes (rarely-offline — documented,
   not necessarily fixed). _(`RoutinePlayer` step-progress is no longer one — migrated 2026-07-02.)_
-- **e2e backfill (the big remaining gap):** carnet-restore, guest intake/postbox flows, the carnet
-  scene, **Voyage entirely**, capture AI-off degrade+reroute, idle wake/drift — each needs new mock
-  scaffolding + a runnable pass. ✅ **The 3 pre-existing failures are FIXED** (2026-07-02, d80cbe5 +
+- **e2e backfill (mostly closed now):** ✅ **DONE** — guest scenes (`guest-scenes.spec`), intake
+  both sides (`intake.spec`), postbox (`postbox.spec`), **Voyage** (`voyage.spec`, 7 tests), idle/
+  ambient (`idle-ambient.spec`), the offline **outbox** (`offline-outbox.spec`), **realtime-WS +
+  SW precache** (`realtime.spec` + `sw.spec`/`sw.config`, 2026-07-03 — §931 fully closed). **Still
+  uncovered:** carnet-restore + the carnet scene (needs carnets mock scaffolding — none yet), and
+  capture AI-off degrade+reroute. ✅ **The 3 pre-existing failures are FIXED** (2026-07-02, d80cbe5 +
   288c146): `board-customize` ×2 + `meals` slot-icon were time-of-day-flaky (board lifecycle folds
   "past" mock items vs the real clock) → a surgical `page.clock.setFixedTime(BASE)` on just the two
   timed-item tests, plus a stale band-count (4→5, Mots joined the band). A new `e2e/onboarding.spec.ts`
@@ -999,10 +1026,12 @@ real backlog is small:
   `AmbientScreen` re-rolls a clock instead of the shared `useNow` (`:51`); the screensaver dialog
   takes no focus on mount so its own `onKeyDown` wake is dead code (wake works via the window
   listener) — a sighted keyboard user keeps an invisible focus ring behind the z-200 overlay.
-- [ ] **e2e — no behavioural coverage of the whole layer.** Offline queue/replay/idempotency, the
-  SW, the WS fan-out, and idle **wake/drift/warn-chip** + day-part drift are unit-tested only
-  (OFFLINE.md relies on manual DevTools testing; `idleDebug` exists to make idle observable in
-  seconds but no spec drives it). The `RealtimeHub` WS has no integration test.
+- [x] **e2e — behavioural coverage of the whole layer** — ✅ **DONE 2026-07-03**: the offline
+  **outbox** queue→replay (`offline-outbox.spec`), the **SW** precache + offline reboot (`sw.spec`
+  + `sw.config`, on a `vite build`/`preview` harness since the SW is a PROD-only build artifact),
+  the **WS fan-out** invalidate→refetch (`realtime.spec`, mocking the DO via `page.routeWebSocket`),
+  and **idle** wake (`idle-ambient.spec`, driving `idleDebug`) all now have specs. _Only remaining
+  unit-only bits: the day-part drift and the idle warn-chip/drift edges — low-value to drive._
 
 **Strengths to keep.** Four-layer offline model is complete + fail-safe (queue→replay FIFO with
 stored idempotency key; server dedup on `(household,key)`, 2xx-only, 7-day prune; cache restored
@@ -1029,7 +1058,7 @@ it first, and tick it here so the other section's pass doesn't reopen it.
 | Birthdays (derived) on Board "À venir" | Le cercle → Board | [~] works but **two independent derivations** (client cercle `\d{1,4}`/≤31d vs server `\d{4}`) → drift (§3 P3) |
 | Carnets → Board `CarnetsCard` + Entretien rows | Le cercle → Board | [x] implemented correctly (shared `home_projects`, `useCarnets` off the board poll); carnet-scoped Entretien is add-only from the scene (§3 P2) |
 | Intake/postbox accept → cercle card / board note (name-match tint) | Share-links → cercle/Board | [x] quarantine solid, tint server-side; **tint-hijack unwarned in review** + field-bitmask not server-enforced (§4 P1/P2) |
-| Guest path allowlist honoured by every read-only projection | Share-links → Cast/Family/Handoff/Welcome | [x] projections honour it + can't write; **caveats:** `showcase` over-shares (§4 P2), `/api/live` bypasses the allowlist (§4 P3) |
+| Guest path allowlist honoured by every read-only projection | Share-links → Cast/Family/Handoff/Welcome | [x] projections honour it + can't write; `/api/live` guest-gating ✅ closed (fdc1211); **remaining caveat:** `showcase` over-shares (§4 P2) |
 | Capture modes land in the correct section + lossless AI-degrade | ＋ Add → Board/Kitchen/Routines/cercle | [x] AI-degrade airtight (row always inserted, reroute=MOVE); every intent lands. **But offline/5xx capture is silently lost** (skips outbox + swallows errors, §6 P2) |
 | Global Search reaches every entity type | Search → all | [x] ✅ 2026-07-02 — reaches people/pets/businesses/recipes/notes/list/events/routines/todos/pantry/cars/carnets/home-projects/**care-log/home-pins/drawings**; business + family-note hits deep-link to the item (not the list). `e2e/search.spec.ts` covers it |
 | Read-aloud/voice config consistent | Settings ▸ Voix → Routines/Liste/Kitchen toddler | [x] verified — `VoiceSection` (per-lang voice + rate) drives the shared `useSpeak`; recorded clip overrides TTS per card; recipe has a per-recipe `lang`, routines read in global lang (asymmetry noted, acceptable) |
