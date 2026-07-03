@@ -408,7 +408,7 @@ export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | nul
     const FEM_EN: Partial<Record<RelationshipType, string>> = {
       parent: 'Mother', child: 'Daughter', sibling: 'Sister', spouse: 'Wife',
       partner: 'Partner', grandparent: 'Grandmother', grandchild: 'Granddaughter',
-      aunt_uncle: 'Aunt', niece_nephew: 'Niece',
+      aunt_uncle: 'Aunt', niece_nephew: 'Niece', in_law: 'In-law', step_family: 'Step-family',
       best_friend: 'Best friend', friend: 'Friend', colleague: 'Colleague', neighbor: 'Neighbour', cousin: 'Cousin',
     }
     const map = lang === 'fr' ? FEM_FR : FEM_EN
@@ -425,7 +425,7 @@ export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | nul
     const MASC_EN: Partial<Record<RelationshipType, string>> = {
       parent: 'Father', child: 'Son', sibling: 'Brother', spouse: 'Husband',
       partner: 'Partner', grandparent: 'Grandfather', grandchild: 'Grandson',
-      aunt_uncle: 'Uncle', niece_nephew: 'Nephew',
+      aunt_uncle: 'Uncle', niece_nephew: 'Nephew', in_law: 'In-law', step_family: 'Step-family',
       best_friend: 'Best friend', friend: 'Friend', colleague: 'Colleague', neighbor: 'Neighbour', cousin: 'Cousin',
     }
     const map = lang === 'fr' ? MASC_FR : MASC_EN

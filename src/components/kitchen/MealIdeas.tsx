@@ -69,6 +69,7 @@ export function MealIdeas({
       week={week}
       help={help}
       helpKey="ideas"
+      guide={{ card: 'kitchen' }}
       noMatchLabel={t.recipes.noMatch}
       labels={{
         heading: t.kitchen.ideas,

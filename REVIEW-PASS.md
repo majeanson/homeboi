@@ -100,8 +100,8 @@ and two e2e specs (aisle-sort, capture-offline).
 - **Security hardening left:** full token **revocation** (a `guests` table changes the stateless
   model). (`staged_media` ownership check ✅ + `/api/live` per-kind gating ✅ shipped 2026-07-02 —
   a guest is now 403'd at the realtime upgrade, and the client skips the socket for guests/preview.)
-- **Conscious `useWrite` deviations:** `RoutinePlayer` step-progress + the household-settings PATCHes
-  (ephemeral / rarely-offline — documented, not necessarily fixed).
+- **Conscious `useWrite` deviations:** the household-settings PATCHes (rarely-offline — documented,
+  not necessarily fixed). _(`RoutinePlayer` step-progress is no longer one — migrated 2026-07-02.)_
 - **e2e backfill (the big remaining gap):** carnet-restore, guest intake/postbox flows, the carnet
   scene, **Voyage entirely**, capture AI-off degrade+reroute, idle wake/drift — each needs new mock
   scaffolding + a runnable pass. ✅ **The 3 pre-existing failures are FIXED** (2026-07-02, d80cbe5 +
@@ -132,12 +132,12 @@ remainder), by §line:
 - **509** (guest rate-limit/revoke) — `MAX_PENDING=200` cap added; still stateless, no revoke, no per-token upload cap.
 - **518** (showcase over-share) — issuer warning + 24 h TTL cap shipped; still the DEFAULT kind + still a broad denylist, not a curated subset.
 - **559 / 822 / 931** (e2e — guest / Voyage / offline-layer) — postbox + guest-scenes specs added; intake submit→review→accept, ALL Voyage, and outbox/SW/WS/idle behaviour still uncovered.
-- **668** (Settings error states) — Photos guards `isPending`; `ThisWeekTogetherSection` still reads no `isError` → failed fetch reads as an empty week.
-- **729** (createBringList silent) — comment added; catch still silent + « Créer la liste » not `useOnline`-gated.
+- **668** (Settings error states) — ✅ **closed 2026-07-02**: `ThisWeekTogetherSection` now reads `isError` and shows `t.common.loadFailed` instead of a false empty week (only when no cached frame). Photos already guarded `isPending`.
+- **729** (createBringList silent) — ✅ **closed 2026-07-02**: `EventForm.createBringList` catch now sets `bringErr` → `StatusMessage`; « Créer la liste » disabled + a « Indisponible hors-ligne » hint when `!useOnline()`.
 - **747** (capture keys) — shared GHOSTS/HISTORY keys done; `MONTH_KEY` still absent from `CAPTURE_KEYS`, event/task/meal titles still unclamped server-side.
 - **808** (Search coverage) — carnets + home-projects ingested; drawings / care_log / home_pins still not.
 - **830** (cross-cut nits) — `capitalize` unified into `lib/format.ts`; `DeparturePage` empty still hand-rolled, `GALLERY_KEY` local literal, a gallery members query missing `...live`.
-- **880 / 927** (offline/ambient) — most writes on `useWrite` + shared `Toggle`; `RoutinePlayer` still `api('routines')` (== finding 329), `AmbientScreen` re-rolls its own clock.
+- **880 / 927** (offline/ambient) — most writes on `useWrite` + shared `Toggle`; ✅ `RoutinePlayer` now routes its three routine PATCHes through `writeWith(qc, …)` so an offline tap queues (finding 329 closed too, 2026-07-02). Still open: `AmbientScreen` re-rolls its own clock.
 
 Everything else still `[ ]` below is genuinely open. **NOTE (2026-07-02):** finding **554** (mic-denied
 silently swallowed) now lives in the shared `MemoControls` after the Postbox refactor, so it affects
@@ -227,9 +227,9 @@ not structural. Four reviewers; findings deduped below.
   colour-coded spoons/cups and are **not** in the member `PALETTE`; `ColorPicker` would make it
   impossible to match a real spoon. Kept the free-form OS picker + added a code comment so it isn't
   re-flagged. (Not a fork to fix — a genuinely distinct requirement.)
-- [ ] **`HistorySection` delete has no confirm and no undo** (`operator/shopping.tsx:287`) —
-  one mis-tap erases a folded purchase-history entry, while tags/pills use `useConfirm` and
-  the list uses the undo toast. Add a light undo.
+- [x] **`HistorySection` delete has no confirm and no undo** — ✅ **Fixed 2026-07-02**:
+  `remove` (`operator/shopping.tsx`) now hides the row locally + holds the DELETE behind the
+  shared `useUndoToast` (deferred; onUndo reloads it back). Matches the list's undo idiom.
 - [ ] **`CashierPage` has no empty/error state** — a cold deep-link with an empty pick set
   flashes `Loading`→redirect to `/liste` with no message (`CashierPage.tsx:33`).
 - [ ] **Restock / réserve adds don't refresh predictions.** `PantryTab`/`ReserveSection`
@@ -257,8 +257,10 @@ not structural. Four reviewers; findings deduped below.
 - [ ] **Duplicate "which ingredients?" checklist.** `RecipeListPicker.tsx` (modal) and the
   inline `listPrompt` in `RecipeSheet.tsx:408-442` reimplement the same tick-list +
   select-all + `recipe-to-list` POST. Extract one shared checklist body.
-- [ ] **Adding recipe ingredients to La liste has no undo** (`RecipeListPicker.tsx:46`),
-  unlike every other list-add in the slice.
+- [x] **Adding recipe ingredients to La liste has no undo** — ✅ **Fixed 2026-07-02**:
+  `RecipeListPicker.confirm` now DEFERS the `recipe-to-list` POST behind `useUndoToast`
+  (mirrors `ReserveSection.addToList`) — the write only fires if you don't undo, so no
+  inverse is needed (the endpoint returns a count, not ids).
 - [ ] **`shopRecipe` silently no-ops** when a recipe has no non-heading ingredients
   (`Kitchen.tsx:84`) — the peek's "Ajouter à la liste" dead-taps with no feedback.
 - [ ] **Empty-state dead-ends:** empty recipe book has no direct "add a recipe" CTA (only a
@@ -266,8 +268,9 @@ not structural. Four reviewers; findings deduped below.
   recipes shows a cover reading "0 recettes" (`:84`), a dead book.
 - [ ] **Heart faces truncate at 4 with no "+" signal** (`HeartButton.tsx:32`) — calm-correct
   (no count) but "which faces" is incomplete on a 5+ member household.
-- [ ] **`MealIdeas` empty state has no guide deep-link** (`MealIdeas.tsx:73`) while
-  `Leftovers` does — minor parity.
+- [x] **`MealIdeas` empty state has no guide deep-link** — ✅ **Fixed 2026-07-02**:
+  passes `guide={{ card: 'kitchen' }}` to `MealPool` (the kitchen card explicitly covers
+  meal ideas), matching `Leftovers`' `guide={{ card: 'leftovers' }}`.
 - [x] **`RecipeTags` "in use" strip flashed empty on cold load** — ✅ **Fixed 2026-07-02**
   (Phase 0): guarded on `tagsQ.isPending` (`recipesTags.tsx:188`). _(Correction: **`RecipePills` is
   NOT a false-empty** — it falls back to `DEFAULT_PILLS` on cold load, `recipePills.tsx:50`, so the
@@ -357,9 +360,11 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
   emoji buttons also lack `aria-label` (`:198`).
 - [ ] **ToD chip render block copy-pasted twice** within `RoutinesSection` (guest badge vs
   button, `chores.tsx:178-206`).
-- [ ] **Player optimistic mutations use `api()` not `useWrite()`** (`RoutinePlayer.tsx:84,100,
-  113`) — toggling a step / starting a timer offline won't queue. Likely acceptable (progress
-  is ephemeral, resets at midnight) — flagged as a conscious deviation, not necessarily a fix.
+- [x] **Player optimistic mutations use `api()` not `useWrite()`** — ✅ **Fixed 2026-07-02**:
+  all three `RoutinePlayer` mutations (toggle / reset / timer) now call `writeWith(qc,
+  'routines', …)` inside the `useOptimisticMutation`, so a tap made offline queues to the
+  outbox and replays. The optimistic apply + guest guard are unchanged; a server 4xx still
+  rolls back via `onError`.
 
 **Strengths to keep.** Shared `RoutinePlayer` (mutation lives inside it, all mounts behave
 alike); wall-clock timer survives backgrounding + clamps garbage server-side; calm is a real
@@ -493,8 +498,10 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   labelled `fn.editorNew` even in edit mode (`:441`); audio-note edit is title-only.
 - [x] **[crn] `HomeProjectForm`/`CareLogForm` invalidate `['carnets']` as an inline literal**
   (`:76`/`:94`) instead of importing `CARNETS_KEY`.
-- [ ] **[dir] EN gender-label maps omit `in_law`/`step_family`** (fall back to neutral) while FR
-  includes « Belle-famille »/« Famille recomposée » (`cercle.ts:408/425`) — EN loses the nicety.
+- [x] **[dir] EN gender-label maps omit `in_law`/`step_family`** — ✅ **Fixed 2026-07-02**:
+  added `in_law: 'In-law'` / `step_family: 'Step-family'` to `FEM_EN`/`MASC_EN`
+  (`cercle.ts`), so the maps are symmetric with FR. (No visible behaviour change — both
+  fell to the same neutral via `relLabel` — but the maps no longer read as EN-incomplete.)
 
 **Strengths to keep.** Closure never invents a precise rung (generic `relative` fallback) and
 never guesses gender; a pet can never become a grandparent (`relationshipPickerGroups` + type
@@ -672,9 +679,10 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
   (+ DevKit) and reuse — the build-beside-existing pattern.
 - [x] **Photo-delete button is 28×28px** (`photos.css:49`), a corner overlay on a wall tablet —
   the hardest place to hit a sub-44px target. Enlarge the hit-area.
-- [ ] **Schedule-block DELETE is a one-tap with no undo/confirm** (`schedule.tsx:81`) — the lone
-  destructive one-tapper; every sibling (events/chores/home-projects) routes through
-  `undoableRemove`. Add parity.
+- [x] **Schedule-block DELETE is a one-tap with no undo/confirm** — ✅ **Fixed 2026-07-02**:
+  `ScheduleSection.remove` now routes through `useDeferredRemoval(SCHEDULE_KEY)` (the
+  correct pattern for this live-polled list — hides + holds behind the undo toast, no
+  poll flash-back), matching every destructive sibling.
 - [ ] **Failed member add is silent** (`household.tsx:47` — catch keeps the name, no feedback),
   unlike `ClaimTablet` which surfaces `err`. Add a `StatusMessage`.
 - [ ] **Pairing nits:** `ClaimTablet` success banner never clears (`devices.tsx:70`) and it writes
@@ -910,10 +918,10 @@ Excluding the legitimately online-only writes (**AI** needs a live response; **a
 device admin**; **blob/R2 uploads + their key-chained follow-up** — all correctly `api()`), the
 real backlog is small:
 
-- [ ] **Genuine offline gaps to migrate to `useWrite`:** `DealsBrowser.tsx:121` (deal→`list` add,
+- [~] **Genuine offline gaps to migrate to `useWrite`:** `DealsBrowser.tsx:121` (deal→`list` add,
   swallows offline failure), `useRecipeShop.ts:71` (recipe→list — the other two call sites use
-  `write()`), `RoutinePlayer.tsx:84/100/113` (toddler step progress on a **kiosk** — the offline
-  case), `Kitchen.tsx:344 keepSuggestion` (low value — AI source is online anyway).
+  `write()`), `Kitchen.tsx:344 keepSuggestion` (low value — AI source is online anyway).
+  ✅ `RoutinePlayer.tsx` (toddler step progress on a kiosk) migrated 2026-07-02.
 - [ ] **Household-settings inconsistency** (low value — rarely toggled offline): `ai.ts:46`,
   `measurePrefs.ts:90`, `operator/meals.tsx:49`, `operator/shopping.tsx:34` PATCH via `api()`
   while `householdListSetting.ts`, `aisles.tsx`, `household.tsx:212` use `write()`. Pick one.
