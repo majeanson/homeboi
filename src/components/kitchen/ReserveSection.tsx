@@ -9,7 +9,7 @@ import { CheckRow } from '../CheckRow'
 import { EditField } from '../EditField'
 import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
-import { BOARD_KEY } from '../../lib/queryKeys'
+import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
 import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 
 // La réserve: a reminder of items stashed in the freezer / back of the pantry so
@@ -72,7 +72,9 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
       message: t.undo.addedToList(r.item),
       onUndo: () => {},
       onCommit: () =>
-        void write('list', { method: 'POST', body: { text: r.item }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+        // Invalidate the quick-add prediction caches too (GHOSTS/HISTORY), like the
+        // canonical Liste.postAdd — else the newly-listed item lingers as a candidate.
+        void write('list', { method: 'POST', body: { text: r.item }, affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY] }).catch(() => {}),
     })
   }
 

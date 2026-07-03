@@ -6,7 +6,7 @@ import { useVoiceInput } from '../../lib/useVoiceInput'
 import { EditField } from '../EditField'
 import { CheckRow } from '../CheckRow'
 import { EmptyState } from '../EmptyState'
-import { BOARD_KEY } from '../../lib/queryKeys'
+import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 
@@ -72,8 +72,10 @@ export function PantryTab({
   // toast so a mis-tap costs nothing and never round-trips.
   function checkLowItem(l: LowRow) {
     lowRemoval.remove([l.id], t.undo.addedToList(l.item), async () => {
-      // Add to the shared list first, then drop the low flag.
-      await write('list', { method: 'POST', body: { text: l.item }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+      // Add to the shared list first, then drop the low flag. Invalidate the quick-add
+      // prediction caches too (GHOSTS/HISTORY), like the canonical Liste.postAdd — else
+      // the now-listed item lingers in the quick-add candidate set until the next poll.
+      await write('list', { method: 'POST', body: { text: l.item }, affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY] }).catch(() => {})
       await write('pantry', { method: 'DELETE', body: { id: l.id }, affectedKeys: [PANTRY_KEY] }).catch(() => {})
     })
   }
