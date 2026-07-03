@@ -2123,6 +2123,10 @@ export const FR = {
     allDay: 'Toute la journée',
     child: 'enfant',
     empty: 'Rien à afficher pour l’instant.',
+    // A revoked / expired guest link — distinct from an empty household so a
+    // relative sees "ce lien ne fonctionne plus", not a blank card.
+    expiredTitle: 'Ce lien n’est plus valide',
+    expiredLead: 'Il a peut-être expiré ou été désactivé. Demande un nouveau lien à la famille.',
     // Operator preview of a curated view + print
     preview: 'Aperçu',
     previewNote: 'Aperçu — voici exactement ce que verra le visiteur.',
@@ -4425,6 +4429,10 @@ export const EN: typeof FR = {
     allDay: 'All day',
     child: 'child',
     empty: 'Nothing to show yet.',
+    // A revoked / expired guest link — distinct from an empty household so a
+    // relative sees "this link no longer works", not a blank card.
+    expiredTitle: 'This link is no longer valid',
+    expiredLead: 'It may have expired or been turned off. Ask the family for a new link.',
     // Operator preview of a curated view + print
     preview: 'Preview',
     previewNote: 'Preview — exactly what the visitor will see.',

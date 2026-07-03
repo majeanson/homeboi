@@ -532,10 +532,11 @@ default kind. These deserve priority in the implement phase.
   scene) and `intake-submit` nulls unowned photoKeys via the pure `redactUnownedIntakeMedia()`
   (unit-tested). A crafted POST can no longer smuggle an arbitrary/guessed R2 key onto a real
   entity at accept.
-- [ ] **No distinct "this link expired" state on any guest scene.** `HandoffPage`/`WelcomePage`/
-  `FamilyWindowPage` destructure only `{data,isLoading}` (never `isError`), so an expired/
-  revoked token → 401 → generic empty `EmptyState`, indistinguishable from an empty household.
-  A relative sees a blank card, not "ce lien est expiré." Add a 401→expired branch.
+- [x] **No distinct "this link expired" state on any guest scene.** — ✅ **Fixed 2026-07-02.**
+  New shared `GuestExpired` component (DevKit + COMPONENTS.md); `HandoffPage`/`WelcomePage`/
+  `FamilyWindowPage` now read `isError` and render it on a `guest/window` failure (with
+  `retry: skip-on-401/403` so the expired state surfaces fast, not after 3 retries). Locked by
+  `e2e/guest-scenes.spec.ts` (expired → GuestExpired on all three; valid → content).
 - [ ] **Postbox FORKS `MemoControls`** — `Postbox.tsx:83-144,262` re-implements the Record/Draw/
   Photo trio + MediaRecorder + stage flow inline, though its own comment says it "composes …
   the same primitives as MemoControls" (which has `endpoint`/`affectedKey`/`extraBody` props for

@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
-import { api } from '../lib/api'
+import { api, isStatus } from '../lib/api'
 import { guestWindowKey } from '../lib/queryKeys'
 import { slotLabel } from '../lib/mealSlots'
 import { imgUrl } from '../lib/image'
 import { PIN_EMOJI, type HomePinKind } from '../lib/carnets'
 import { EmptyState } from '../components/EmptyState'
+import { GuestExpired } from '../components/GuestExpired'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
 
@@ -33,9 +34,11 @@ export function HandoffPage() {
   const { lang } = useLang()
   // ?preview=sitter lets the operator see the sitter card from Réglages ▸ Partage.
   const preview = useSharePreview()
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: guestWindowKey(preview),
     queryFn: () => api<WindowData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
+    // A revoked/expired token won't recover on retry — surface the expired state fast.
+    retry: (count, err) => !isStatus(err, 401) && !isStatus(err, 403) && count < 2,
   })
 
   const time = (start_at: number, all_day: number) =>
@@ -76,6 +79,8 @@ export function HandoffPage() {
       <div className="scene__body handoff__body">
         {isLoading && !data ? (
           <p className="loading mono">{t.common.loading}</p>
+        ) : isError && !data ? (
+          <GuestExpired />
         ) : (
           <>
             {/* Emergency first — the thing you reach for in a hurry. */}

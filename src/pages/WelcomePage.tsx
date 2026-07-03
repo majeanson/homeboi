@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
-import { api } from '../lib/api'
+import { api, isStatus } from '../lib/api'
 import { guestWindowKey } from '../lib/queryKeys'
 import { EmptyState } from '../components/EmptyState'
+import { GuestExpired } from '../components/GuestExpired'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
 import { WifiBlock } from './HandoffPage'
@@ -25,9 +26,12 @@ export function WelcomePage() {
   // ?kind= for a non-guest). Keep the cache key preview-aware so it never collides
   // with a real guest's window.
   const preview = useSharePreview()
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: guestWindowKey(preview),
     queryFn: () => api<WelcomeData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
+    // A revoked/expired token won't recover on retry — surface the expired state fast
+    // instead of spinning through the default 3 retries.
+    retry: (count, err) => !isStatus(err, 401) && !isStatus(err, 403) && count < 2,
   })
   const wifi = data?.wifi
   const has = !!(wifi?.ssid || data?.binDay || data?.houseRules)
@@ -52,6 +56,8 @@ export function WelcomePage() {
       <div className="scene__body welcome__body">
         {isLoading && !data ? (
           <p className="loading mono">{t.common.loading}</p>
+        ) : isError && !data ? (
+          <GuestExpired />
         ) : !has ? (
           <EmptyState>{t.shareMode.empty}</EmptyState>
         ) : (

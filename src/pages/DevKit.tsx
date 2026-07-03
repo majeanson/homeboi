@@ -51,6 +51,7 @@ import { type WeekDay } from '../components/kitchen/types'
 import { type Recipe } from '../lib/recipes'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { EmptyState } from '../components/EmptyState'
+import { GuestExpired } from '../components/GuestExpired'
 import { StatusMessage } from '../components/StatusMessage'
 import { Chip, ChipGroup } from '../components/Chip'
 import { QrCode } from '../components/QrCode'
@@ -1693,6 +1694,17 @@ export function DevKit() {
             <EmptyState guide={{ card: 'routines' }}>Aucune routine pour l’instant.</EmptyState>
           </Demo>
         </>
+      ),
+    },
+    {
+      cat: 'Feedback',
+      name: 'GuestExpired',
+      file: 'components/GuestExpired.tsx',
+      kw: 'guest expired revoked link share handoff welcome family expiré lien',
+      render: () => (
+        <Demo label="expired / revoked guest link">
+          <GuestExpired />
+        </Demo>
       ),
     },
     {
