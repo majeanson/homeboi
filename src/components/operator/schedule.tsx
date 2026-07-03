@@ -5,6 +5,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
 import { useWrite } from '../../lib/write'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { SCHEDULE_KEY, BOARD_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
 import { type Member } from '../../lib/members'
 import { isGuest } from '../../lib/device'
@@ -47,6 +48,7 @@ const hhmmToMin = (s: string): number | null => {
 export function ScheduleSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const write = useWrite()
+  const removal = useDeferredRemoval(SCHEDULE_KEY)
   const ro = isGuest()
   const { data: blocksData } = useQuery({
     queryKey: SCHEDULE_KEY,
@@ -58,7 +60,10 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
     queryFn: () => api<{ members: Member[] }>('members'),
     ...live,
   })
-  const blocks = blocksData?.blocks ?? []
+  // SCHEDULE_KEY is a live-polled query, so a delete must ride useDeferredRemoval:
+  // hide the row now + hold the DELETE behind the undo toast, or the next ~10 s poll
+  // resurrects it mid-undo (the flash-back glitch). `visible` drops the pending rows.
+  const blocks = removal.visible(blocksData?.blocks ?? [])
   const members = membersData?.members ?? []
   const [editing, setEditing] = useState<ScheduleBlock | null>(null)
   const [adding, setAdding] = useState(false)
@@ -78,8 +83,10 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
     setEditing(null)
     setAdding(false)
   }
-  async function remove(id: string) {
-    await write('schedule', { method: 'DELETE', body: { id }, affectedKeys: [SCHEDULE_KEY, BOARD_KEY] })
+  function remove(b: ScheduleBlock) {
+    removal.remove([b.id], t.undo.cleared(nameOf(b.memberId)), () =>
+      write('schedule', { method: 'DELETE', body: { id: b.id }, affectedKeys: [SCHEDULE_KEY, BOARD_KEY] }),
+    )
   }
 
   return (
@@ -115,7 +122,7 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
                       setAdding(false)
                       setEditing(b)
                     }}
-                    onDelete={() => remove(b.id)}
+                    onDelete={() => remove(b)}
                     editLabel={`${t.common.edit} — ${nameOf(b.memberId)}`}
                     deleteLabel={`${t.common.delete} — ${nameOf(b.memberId)}`}
                   />

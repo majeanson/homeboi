@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Modal } from './Modal'
 import { useT } from '../i18n'
 import { useWrite } from '../lib/write'
+import { useUndoToast } from '../lib/toast'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { withoutHeadings } from '../lib/recipeSections'
 import { ingredientName } from '../lib/ingredient'
@@ -18,6 +19,7 @@ import type { Recipe } from '../lib/recipes'
 export function RecipeListPicker({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
   const t = useT()
   const write = useWrite()
+  const undo = useUndoToast()
   // The recipe's buyable names, deduped, section markers dropped. (recipe-to-list
   // reduces a measured line to its name anyway — "500 g de bœuf haché" → "Bœuf
   // haché" — so we show that directly.)
@@ -43,12 +45,19 @@ export function RecipeListPicker({ recipe, onClose }: { recipe: Recipe; onClose:
   }
   const picked = names.filter((n) => on[n])
 
-  async function confirm() {
+  function confirm() {
     if (!picked.length) return
+    const items = picked // capture before we close + clear
     onClose()
-    await write('recipe-to-list', { method: 'POST', body: { items: picked }, affectedKeys: [BOARD_KEY] }).catch(
-      () => {},
-    )
+    // DEFERRED behind the undo toast, like every other list-add (mirrors
+    // ReserveSection.addToList): the POST only fires if you don't take it back within
+    // the window, so undo is conflict-free — no inverse to run since nothing landed.
+    undo({
+      message: t.undo.addedToList(recipe.title),
+      onUndo: () => {},
+      onCommit: () =>
+        void write('recipe-to-list', { method: 'POST', body: { items }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+    })
   }
 
   return (

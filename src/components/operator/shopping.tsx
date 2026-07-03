@@ -5,6 +5,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
+import { useUndoToast } from '../../lib/toast'
 import { FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
@@ -251,6 +252,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const write = useWrite()
+  const undo = useUndoToast()
   const [items, setItems] = useState<HistRow[] | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
@@ -284,11 +286,21 @@ export function HistorySection({ help }: { help?: HelpMode }) {
       return n
     })
 
-  async function remove(it: HistRow) {
-    mark(it.key, true)
-    await write('list', { method: 'DELETE', body: { historyKey: it.key } }).catch(() => {})
-    refresh()
-    mark(it.key, false)
+  // Removing a folded purchase-history entry is DEFERRED behind the undo toast, like
+  // every other destructive tap in the app — a mis-tap costs nothing and never
+  // round-trips. Hide the row now (local `items`, not a live-polled cache), hold the
+  // DELETE, and a tap of Annuler leaves it (onUndo reloads it back from the server,
+  // where it still lives until commit).
+  function remove(it: HistRow) {
+    setItems((prev) => (prev ? prev.filter((r) => r.key !== it.key) : prev))
+    undo({
+      message: t.undo.cleared(it.text),
+      onUndo: () => void load(),
+      onCommit: async () => {
+        await write('list', { method: 'DELETE', body: { historyKey: it.key } }).catch(() => {})
+        refresh()
+      },
+    })
   }
   async function rename(it: HistRow) {
     const text = draft.trim()
