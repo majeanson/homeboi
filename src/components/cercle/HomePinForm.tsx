@@ -6,6 +6,7 @@ import { useWrite } from '../../lib/write'
 import { HOME_PINS_KEY } from '../../lib/queryKeys'
 import { type HomePin, type HomePinKind, PIN_EMOJI } from '../../lib/carnets'
 import { StatusMessage } from '../StatusMessage'
+import { FormFooter } from '../FormFooter'
 import { Icon } from '../Icon'
 
 const PIN_KINDS: HomePinKind[] = ['where', 'howto', 'doc']
@@ -101,14 +102,7 @@ export function HomePinForm({
       </label>
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-      <button type="submit" className="btn" disabled={!label.trim() || busy}>
-        {value ? t.common.save : c.addPin}
-      </button>
-      {onCancel && (
-        <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
-          {t.common.cancel}
-        </button>
-      )}
+      <FormFooter saveLabel={value ? t.common.save : c.addPin} saveDisabled={!label.trim()} busy={busy} onCancel={onCancel} />
     </form>
   )
 }

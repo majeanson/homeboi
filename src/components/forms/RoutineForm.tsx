@@ -12,6 +12,9 @@ import { Chip } from '../Chip'
 import { EditField } from '../EditField'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
+import { FormFooter } from '../FormFooter'
+import { MemberPicker } from '../MemberPicker'
+import { toFace } from '../FormScene'
 
 // The complete kid-routine form — who it's for (one or several toddlers, each
 // gets their own copy), a name, a template starting point, and the picture-card
@@ -194,11 +197,12 @@ export function RoutineForm({
       {!editing && (
         <div className="picker-chips mono">
           <span className="picker-chips__label">{t.operator.forWho}</span>
-          {children.map((m) => (
-            <Chip key={m.id} selected={memberIds.includes(m.id)} onClick={() => toggleMember(m.id)}>
-              <InlineIcon name={memberIds.includes(m.id) ? 'check-square-bold' : 'square-bold'} /> {m.display_name}
-            </Chip>
-          ))}
+          <MemberPicker
+            faces={children.map(toFace)}
+            values={memberIds}
+            onToggle={toggleMember}
+            ariaLabel={t.operator.forWho}
+          />
         </div>
       )}
 
@@ -249,25 +253,16 @@ export function RoutineForm({
       />
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-      <button
-        type="submit"
-        className="btn btn--primary"
-        disabled={(!editing && !memberIds.length) || !name.trim() || busy}
-      >
-        {editing ? t.common.save : t.operator.addRoutine}
-      </button>
-      {onCancel && (
-        <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
-          {t.common.cancel}
-        </button>
-      )}
-      {/* Delete recedes quietly (btn--ghost) — the weight lives in the confirm
-          dialog the owner shows, per the .btn--danger note in core.css. */}
-      {editing && onDelete && (
-        <button type="button" className="btn btn--ghost mono" onClick={onDelete} disabled={busy}>
-          <InlineIcon name="trash-bold" /> {t.routines.delete}
-        </button>
-      )}
+      {/* Delete (edit mode only) recedes quietly to the footer's separated slot — the
+          weight lives in the confirm dialog the owner shows. */}
+      <FormFooter
+        saveLabel={editing ? t.common.save : t.operator.addRoutine}
+        saveDisabled={(!editing && !memberIds.length) || !name.trim()}
+        busy={busy}
+        onCancel={onCancel}
+        onDelete={editing && onDelete ? onDelete : undefined}
+        deleteLabel={t.routines.delete}
+      />
     </form>
   )
 }

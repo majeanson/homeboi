@@ -328,7 +328,7 @@ test.describe('settings forms', () => {
     await page.locator('.operator__section', { hasText: 'Routines (mode enfant)' }).locator('.operator__add').click()
     await page.waitForURL(/\/routine\/new/)
     const form = page.locator('.scene .operator__routine-form')
-    await form.locator('.picker-chips').first().locator('.chip').first().click() // pick a child
+    await form.locator('.mswitch__opt').first().click() // pick a child (for-who MemberPicker)
     await form.locator('input.input').first().fill('Routine du soir')
     await expectApi(page, 'POST', 'routines', () => form.locator('button[type="submit"]').click())
   })

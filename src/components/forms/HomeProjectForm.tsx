@@ -7,6 +7,7 @@ import { EditField } from '../EditField'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
+import { FormFooter } from '../FormFooter'
 import { anchorSecToDate, dateToAnchorSec, recurOf, todayAnchorDate } from '../../lib/recurLabel'
 import { homeProjectTemplates } from '../../lib/routineTemplates'
 import { parseMoney } from '../../lib/money'
@@ -142,14 +143,12 @@ export function HomeProjectForm({
       <RecurPicker value={recur} onChange={setRecur} />
       {(date || recur) && <LeadPicker value={lead} onChange={setLead} />}
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-      <button type="submit" className="btn" disabled={!title.trim() || busy}>
-        {value ? t.common.save : addLabel}
-      </button>
-      {onCancel && (
-        <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
-          {t.common.cancel}
-        </button>
-      )}
+      <FormFooter
+        saveLabel={value ? t.common.save : addLabel}
+        saveDisabled={!title.trim()}
+        busy={busy}
+        onCancel={onCancel}
+      />
     </form>
   )
 }

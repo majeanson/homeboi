@@ -12,6 +12,7 @@ import { type CareLog } from '../../lib/carnets'
 import { type Business } from '../../lib/businesses'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { StatusMessage } from '../StatusMessage'
+import { FormFooter } from '../FormFooter'
 import { CarnetDocs } from './CarnetDocs'
 import { Icon } from '../Icon'
 
@@ -154,14 +155,7 @@ export function CareLogForm({
       <CarnetDocs keys={mediaKeys} onRemove={(k) => setMediaKeys((prev) => prev.filter((x) => x !== k))} />
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-      <button type="submit" className="btn" disabled={!title.trim() || busy}>
-        {value ? t.common.save : c.addEntry}
-      </button>
-      {onCancel && (
-        <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
-          {t.common.cancel}
-        </button>
-      )}
+      <FormFooter saveLabel={value ? t.common.save : c.addEntry} saveDisabled={!title.trim()} busy={busy} onCancel={onCancel} />
     </form>
   )
 }

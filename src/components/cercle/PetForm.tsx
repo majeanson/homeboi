@@ -4,6 +4,7 @@ import { useT, useLang } from '../../i18n'
 import { api } from '../../lib/api'
 import { resizeImage, imgUrl } from '../../lib/image'
 import { live } from '../../lib/query'
+import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { CERCLE_KEY, BUSINESSES_KEY } from '../../lib/queryKeys'
 import { type Business } from '../../lib/businesses'
@@ -23,6 +24,8 @@ import { BirthdayPicker } from './BirthdayPicker'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { ColorPicker } from '../ColorPicker'
 import { StatusMessage } from '../StatusMessage'
+import { FormFooter } from '../FormFooter'
+import { Disclosure } from '../Disclosure'
 import { RowActions } from '../RowActions'
 import { Avatar } from '../Avatar'
 import { Icon } from '../Icon'
@@ -40,6 +43,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
   const t = useT()
   const { lang } = useLang()
   const write = useWrite()
+  const confirm = useConfirm()
   const p = t.cercle.pet
 
   const [name, setName] = useState(value?.name ?? '')
@@ -185,6 +189,23 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
     }
   }
 
+  // HEAVY delete (edit-only) — mirrors Cercle.deletePet(): a confirm dialog rather than
+  // the row list's undo toast, same endpoint + affected key so it lands identically.
+  async function remove() {
+    if (!value || busy) return
+    if (!(await confirm({ title: p.delete, message: value.name, tone: 'danger' }))) return
+    setBusy(true)
+    setErr(false)
+    try {
+      await write('pets', { method: 'DELETE', body: { id: value.id }, affectedKeys: [CERCLE_KEY] })
+      onSaved()
+    } catch {
+      setErr(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const photo = photoKey ? imgUrl(photoKey) : null
 
   return (
@@ -247,9 +268,39 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
       )}
       <p className="pet-form__owner-hint mono">{p.ownerHint}</p>
 
-      <input className="input" value={microchip} onChange={(e) => setMicrochip(e.target.value)} placeholder={p.microchip} aria-label={p.microchip} />
-      <textarea className="input" value={feeding} onChange={(e) => setFeeding(e.target.value)} placeholder={p.feeding} aria-label={p.feeding} rows={2} />
-      <textarea className="input" value={sitterNotes} onChange={(e) => setSitterNotes(e.target.value)} placeholder={p.sitterNotes} aria-label={p.sitterNotes} rows={2} />
+      {/* Secondary care details — microchip, feeding, sitter notes, and the dated weight
+          log — collapsed behind a « Détails / santé » disclosure so the identity fields
+          (name/species/breed/birthday/owner) lead and the form stays a calm glance
+          (NFR-CALM-1). Open by default when editing a pet that already carries any. */}
+      <Disclosure
+        label={t.cercle.pet.detailsHealth}
+        defaultOpen={!!(microchip.trim() || feeding.trim() || sitterNotes.trim() || weights.length > 0)}
+      >
+        <input className="input" value={microchip} onChange={(e) => setMicrochip(e.target.value)} placeholder={p.microchip} aria-label={p.microchip} />
+        <textarea className="input" value={feeding} onChange={(e) => setFeeding(e.target.value)} placeholder={p.feeding} aria-label={p.feeding} rows={2} />
+        <textarea className="input" value={sitterNotes} onChange={(e) => setSitterNotes(e.target.value)} placeholder={p.sitterNotes} aria-label={p.sitterNotes} rows={2} />
+
+        {/* Weight log — a dated health log (NOT an inventory count). Add a row, remove one. */}
+        <label className="cf__label">{p.weight}</label>
+        {weights.length > 0 && (
+          <ul className="pet-form__weights">
+            {weights.map((w, i) => (
+              <li key={i} className="pet-form__weight">
+                <span className="mono">{w.date}</span>
+                <span className="pet-form__weight-kg">{w.kg} {p.kg}</span>
+                <RowActions onDelete={() => setWeights((ws) => ws.filter((_, j) => j !== i))} />
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="pet-form__weight-add">
+          <input className="input" type="date" value={wDate} onChange={(e) => setWDate(e.target.value)} aria-label={p.weightDate} />
+          <input className="input" type="number" inputMode="decimal" step="0.1" min="0" value={wKg} onChange={(e) => setWKg(e.target.value)} placeholder={p.kg} aria-label={p.weightKg} />
+          <button type="button" className="btn btn--sm btn--ghost" onClick={addWeight} disabled={!wDate || !wKg}>
+            <Icon name="plus-bold" size={14} /> {p.weightAdd}
+          </button>
+        </div>
+      </Disclosure>
 
       {/* Vet — pick an existing Business (or type to filter). Stores vet_business_id. */}
       <label className="cf__label">{p.vet}</label>
@@ -274,27 +325,6 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
         </p>
       )}
 
-      {/* Weight log — a dated health log (NOT an inventory count). Add a row, remove one. */}
-      <label className="cf__label">{p.weight}</label>
-      {weights.length > 0 && (
-        <ul className="pet-form__weights">
-          {weights.map((w, i) => (
-            <li key={i} className="pet-form__weight">
-              <span className="mono">{w.date}</span>
-              <span className="pet-form__weight-kg">{w.kg} {p.kg}</span>
-              <RowActions onDelete={() => setWeights((ws) => ws.filter((_, j) => j !== i))} />
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="pet-form__weight-add">
-        <input className="input" type="date" value={wDate} onChange={(e) => setWDate(e.target.value)} aria-label={p.weightDate} />
-        <input className="input" type="number" inputMode="decimal" step="0.1" min="0" value={wKg} onChange={(e) => setWKg(e.target.value)} placeholder={p.kg} aria-label={p.weightKg} />
-        <button type="button" className="btn btn--sm btn--ghost" onClick={addWeight} disabled={!wDate || !wKg}>
-          <Icon name="plus-bold" size={14} /> {p.weightAdd}
-        </button>
-      </div>
-
       <label className="cf__label">{p.colour}</label>
       <ColorPicker value={colour} onChange={setColour} label={p.colour} />
 
@@ -313,14 +343,14 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
       </label>
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-      <button type="submit" className="btn" disabled={!name.trim() || busy}>
-        {value ? t.common.save : p.add}
-      </button>
-      {onCancel && (
-        <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
-          {t.common.cancel}
-        </button>
-      )}
+      <FormFooter
+        saveLabel={value ? t.common.save : p.add}
+        saveDisabled={!name.trim()}
+        busy={busy}
+        onCancel={onCancel}
+        onDelete={value ? remove : undefined}
+        deleteLabel={p.delete}
+      />
     </form>
   )
 }

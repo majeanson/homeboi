@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useT, useLang } from '../../i18n'
 import { api } from '../../lib/api'
 import { resizeImage, imgUrl } from '../../lib/image'
+import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { BUSINESSES_KEY } from '../../lib/queryKeys'
 import { type Business, BUSINESS_CATEGORIES, BUSINESS_COLOUR } from '../../lib/businesses'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { ColorPicker } from '../ColorPicker'
 import { StatusMessage } from '../StatusMessage'
+import { FormFooter } from '../FormFooter'
 import { Icon } from '../Icon'
 
 // « Le cercle » → Business: add / edit one service card (vet, plombier, hôpital…).
@@ -27,6 +29,7 @@ export function BusinessForm({
   const t = useT()
   const { lang } = useLang()
   const write = useWrite()
+  const confirm = useConfirm()
   const bz = t.cercle.business
 
   const [name, setName] = useState(value?.name ?? '')
@@ -121,6 +124,24 @@ export function BusinessForm({
     }
   }
 
+  // HEAVY delete (edit-only) — mirrors ContactForm.remove(): a confirm dialog for the
+  // destructive removal rather than the forgiving undo toast the row list uses. Same
+  // endpoint + affected key as BusinessesTab's row delete, so it lands identically.
+  async function remove() {
+    if (!value || busy) return
+    if (!(await confirm({ title: bz.delete, message: value.name, tone: 'danger' }))) return
+    setBusy(true)
+    setErr(false)
+    try {
+      await write('businesses', { method: 'DELETE', body: { id: value.id }, affectedKeys: [BUSINESSES_KEY] })
+      onSaved()
+    } catch {
+      setErr(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const photo = photoKey ? imgUrl(photoKey) : null
 
   return (
@@ -192,14 +213,14 @@ export function BusinessForm({
       </label>
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-      <button type="submit" className="btn" disabled={!name.trim() || busy}>
-        {value ? t.common.save : bz.add}
-      </button>
-      {onCancel && (
-        <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
-          {t.common.cancel}
-        </button>
-      )}
+      <FormFooter
+        saveLabel={value ? t.common.save : bz.add}
+        saveDisabled={!name.trim()}
+        busy={busy}
+        onCancel={onCancel}
+        onDelete={value ? remove : undefined}
+        deleteLabel={bz.delete}
+      />
     </form>
   )
 }

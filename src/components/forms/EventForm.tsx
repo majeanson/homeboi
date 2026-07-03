@@ -13,6 +13,9 @@ import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { EditField } from '../EditField'
+import { FormFooter } from '../FormFooter'
+import { MemberPicker } from '../MemberPicker'
+import { toFace } from '../FormScene'
 import { Disclosure } from '../Disclosure'
 import { InlineIcon } from '../Icon'
 import { useCars } from '../../lib/carPrefs'
@@ -334,19 +337,12 @@ export function EventForm({
           {members.length > 0 && (
             <>
               <p className="mono event-transport__label">{t.operator.eventPassengers}</p>
-              <div className="operator__rotation mono">
-                {members.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className={`btn btn--ghost${passengers.includes(m.id) ? ' is-active' : ''}`}
-                    aria-pressed={passengers.includes(m.id)}
-                    onClick={() => togglePassenger(m.id)}
-                  >
-                    {m.display_name}
-                  </button>
-                ))}
-              </div>
+              <MemberPicker
+                faces={members.map(toFace)}
+                values={passengers}
+                onToggle={togglePassenger}
+                ariaLabel={t.operator.eventPassengers}
+              />
             </>
           )}
         </Disclosure>
@@ -432,14 +428,12 @@ export function EventForm({
         )}
       </Disclosure>
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-      <button type="submit" className="btn" disabled={!title.trim() || !date || busy}>
-        {value ? t.common.save : t.operator.addEvent}
-      </button>
-      {onCancel && (
-        <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
-          {t.common.cancel}
-        </button>
-      )}
+      <FormFooter
+        saveLabel={value ? t.common.save : t.operator.addEvent}
+        saveDisabled={!title.trim() || !date}
+        busy={busy}
+        onCancel={onCancel}
+      />
     </form>
   )
 }

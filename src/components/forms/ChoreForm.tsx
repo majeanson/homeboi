@@ -7,6 +7,9 @@ import { EditField } from '../EditField'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
+import { FormFooter } from '../FormFooter'
+import { MemberPicker } from '../MemberPicker'
+import { toFace } from '../FormScene'
 import { anchorSecToDate, dateToAnchorSec, recurOf, todayAnchorDate } from '../../lib/recurLabel'
 import { choreTemplates } from '../../lib/routineTemplates'
 import { MONTH_KEY, CHORES_KEY, BOARD_KEY } from '../../lib/queryKeys'
@@ -134,20 +137,15 @@ export function ChoreForm({
         placeholder={t.operator.addChore}
         ariaLabel={t.operator.addChore}
       />
-      <div className="operator__rotation mono">
-        {members.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            className={`btn btn--ghost${rotation.includes(m.id) ? ' is-active' : ''}`}
-            aria-pressed={rotation.includes(m.id)}
-            onClick={() => toggleRot(m.id)}
-          >
-            {rotation.includes(m.id) ? `${rotation.indexOf(m.id) + 1}. ` : ''}
-            {m.display_name}
-          </button>
-        ))}
-      </div>
+      {/* The round-robin rotation: tap faces in turn order; the ordinal badge shows
+          who takes the first turn (the rotation is an ordered id array). */}
+      <MemberPicker
+        faces={members.map(toFace)}
+        values={rotation}
+        onToggle={toggleRot}
+        ariaLabel={t.operator.forWho}
+        ordinals
+      />
       <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
       <RecurPicker value={recur} onChange={setRecur} />
       {recur && (
@@ -160,14 +158,12 @@ export function ChoreForm({
         </>
       )}
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-      <button type="submit" className="btn" disabled={!title.trim() || busy}>
-        {value ? t.common.save : t.operator.addChore}
-      </button>
-      {onCancel && (
-        <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
-          {t.common.cancel}
-        </button>
-      )}
+      <FormFooter
+        saveLabel={value ? t.common.save : t.operator.addChore}
+        saveDisabled={!title.trim()}
+        busy={busy}
+        onCancel={onCancel}
+      />
     </form>
   )
 }

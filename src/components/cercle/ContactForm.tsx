@@ -26,6 +26,8 @@ import { parseVCard, type ParsedContact } from '../../lib/vcard'
 import { ContactPhotos } from './ContactPhotos'
 import { ContactFields, type ContactCoreValue } from './ContactFields'
 import { ReviewChecklist } from '../ReviewChecklist'
+import { FormFooter } from '../FormFooter'
+import { Disclosure } from '../Disclosure'
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
@@ -480,87 +482,98 @@ export function ContactForm({
         <textarea className="cf__input cf__textarea" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
       </label>
 
-      {/* #20: gift ideas — jot what to get them; it quietly surfaces next to their
-          birthday on the board as the day nears, so a March idea isn't lost by then. */}
-      <label className="cf__field">
-        <span className="cf__label">
-          <Icon name="cake-bold" size={14} /> {t.cercle.giftIdeas}
-        </span>
-        <textarea
-          className="cf__input cf__textarea"
-          value={giftIdeas}
-          onChange={(e) => setGiftIdeas(e.target.value)}
-          rows={2}
-          placeholder={t.cercle.giftIdeasHint}
-        />
-      </label>
-
-      {/* Tags */}
-      <div className="cf__field">
-        <span className="cf__label">{t.cercle.tags}</span>
-        {tags.length > 0 && (
-          <div className="cf__tags">
-            {tags.map((tag) => (
-              <Chip
-                key={tag}
-                className="cf__tag"
-                onRemove={() => setTags(tags.filter((x) => x !== tag))}
-                removeLabel={t.common.delete}
-              >
-                {tag}
-              </Chip>
-            ))}
-          </div>
-        )}
-        <div className="cf__tagadd">
-          <input
-            className="cf__input"
-            value={tagDraft}
-            onChange={(e) => setTagDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                addTag()
-              }
-            }}
-            placeholder={t.cercle.tags}
-          />
-          <button type="button" className="btn btn--sm" onClick={addTag}>
-            <Icon name="plus-bold" size={14} />
-          </button>
-        </div>
-      </div>
-
-      {/* Named groups — toggle this person in/out of an explicit group (Famille
-          Tremblay, Collègues…). Edit-only (needs an id to attach). The backend was
-          already complete; this finally exposes it. */}
-      {value && (
-        <div className="cf__field cf__groups">
+      {/* Secondary details — gift ideas, tags, named-group membership, and the per-person
+          photo gallery — collapsed behind a « Plus de détails » disclosure so the identity
+          (name/contact fields), member link, and notes lead and the form stays a calm
+          glance (NFR-CALM-1). Open by default when any secondary field already carries
+          content. Relationships stay OUTSIDE (below) so « Liens » remains prominent. */}
+      <Disclosure
+        label={t.cercle.moreDetails}
+        className="cf__more"
+        defaultOpen={!!(giftIdeas.trim() || tags.length > 0)}
+      >
+        {/* #20: gift ideas — jot what to get them; it quietly surfaces next to their
+            birthday on the board as the day nears, so a March idea isn't lost by then. */}
+        <label className="cf__field">
           <span className="cf__label">
-            <Icon name="users-three-bold" size={14} /> {t.cercle.groups}
+            <Icon name="cake-bold" size={14} /> {t.cercle.giftIdeas}
           </span>
-          <div className="cf__groups-chips">
-            {groupList.map((g) => (
-              <Chip key={g.id} selected={memberOf.has(g.id)} onClick={() => toggleGroup(g)}>
-                <span className="cercle-group__dot" style={{ background: colourFor('group', g.colour) }} />
-                {g.name}
-              </Chip>
-            ))}
-            {!creatingGroup && (
-              <Chip className="cf__group-add" onClick={() => setCreatingGroup(true)}>
-                <InlineIcon name="plus-bold" size={12} /> {t.cercle.addGroup}
-              </Chip>
+          <textarea
+            className="cf__input cf__textarea"
+            value={giftIdeas}
+            onChange={(e) => setGiftIdeas(e.target.value)}
+            rows={2}
+            placeholder={t.cercle.giftIdeasHint}
+          />
+        </label>
+
+        {/* Tags */}
+        <div className="cf__field">
+          <span className="cf__label">{t.cercle.tags}</span>
+          {tags.length > 0 && (
+            <div className="cf__tags">
+              {tags.map((tag) => (
+                <Chip
+                  key={tag}
+                  className="cf__tag"
+                  onRemove={() => setTags(tags.filter((x) => x !== tag))}
+                  removeLabel={t.common.delete}
+                >
+                  {tag}
+                </Chip>
+              ))}
+            </div>
+          )}
+          <div className="cf__tagadd">
+            <input
+              className="cf__input"
+              value={tagDraft}
+              onChange={(e) => setTagDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addTag()
+                }
+              }}
+              placeholder={t.cercle.tags}
+            />
+            <button type="button" className="btn btn--sm" onClick={addTag}>
+              <Icon name="plus-bold" size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Named groups — toggle this person in/out of an explicit group (Famille
+            Tremblay, Collègues…). Edit-only (needs an id to attach). The backend was
+            already complete; this finally exposes it. */}
+        {value && (
+          <div className="cf__field cf__groups">
+            <span className="cf__label">
+              <Icon name="users-three-bold" size={14} /> {t.cercle.groups}
+            </span>
+            <div className="cf__groups-chips">
+              {groupList.map((g) => (
+                <Chip key={g.id} selected={memberOf.has(g.id)} onClick={() => toggleGroup(g)}>
+                  <span className="cercle-group__dot" style={{ background: colourFor('group', g.colour) }} />
+                  {g.name}
+                </Chip>
+              ))}
+              {!creatingGroup && (
+                <Chip className="cf__group-add" onClick={() => setCreatingGroup(true)}>
+                  <InlineIcon name="plus-bold" size={12} /> {t.cercle.addGroup}
+                </Chip>
+              )}
+            </div>
+            {creatingGroup && (
+              <GroupForm submitLabel={t.cercle.addGroup} onSubmit={createGroupAndAdd} onCancel={() => setCreatingGroup(false)} />
             )}
           </div>
-          {creatingGroup && (
-            <GroupForm submitLabel={t.cercle.addGroup} onSubmit={createGroupAndAdd} onCancel={() => setCreatingGroup(false)} />
-          )}
-        </div>
-      )}
+        )}
 
-      {/* Per-person photo gallery (ID card, screenshot, snapshot together). Edit-only —
-          attachments hang off a saved contact id. */}
-      {value && <ContactPhotos contactId={value.id} memberPhoto={memberPhoto} />}
+        {/* Per-person photo gallery (ID card, screenshot, snapshot together). Edit-only —
+            attachments hang off a saved contact id. */}
+        {value && <ContactPhotos contactId={value.id} memberPhoto={memberPhoto} />}
+      </Disclosure>
 
       {/* Relationships sit ABOVE the save button so the form doesn't look like it
           ends mid-way. They need a saved person (an id) to link to: on EDIT the
@@ -577,16 +590,15 @@ export function ContactForm({
 
       {/* Save is the VERY LAST thing in the form; a saved person can also be removed
           (cascades their links + group memberships). */}
-      <div className="cf__save">
-        <button type="button" className="btn btn--primary" disabled={!firstName.trim() || saving || uploading} onClick={save}>
-          <Icon name="check-bold" size={18} /> {t.common.save}
-        </button>
-        {value && (
-          <button type="button" className="btn btn--ghost btn--danger" disabled={saving} onClick={remove}>
-            <Icon name="trash-bold" size={16} /> {t.cercle.deletePerson}
-          </button>
-        )}
-      </div>
+      <FormFooter
+        saveType="button"
+        onSave={save}
+        saveLabel={t.common.save}
+        saveDisabled={!firstName.trim() || uploading}
+        busy={saving}
+        onDelete={value ? remove : undefined}
+        deleteLabel={t.cercle.deletePerson}
+      />
     </div>
   )
 }

@@ -6,7 +6,9 @@ import { useAuth } from '../lib/auth'
 import { isGuest } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { MEMBERS_KEY } from '../lib/queryKeys'
+import { imgUrl } from '../lib/image'
 import { type IconName } from './Icon'
+import { type MemberFace } from './MemberSwitcher'
 import { SceneHead } from './SceneHead'
 
 // Shared shell for the operator add-forms (event / chore / routine). These used
@@ -25,6 +27,33 @@ export interface FormMember {
   id: string
   display_name: string
   is_child: number
+  // The face tint + optional photo avatar the /api/members row already carries, so
+  // the forms' face pickers (MemberPicker) render real colours/photos, not just a
+  // neutral initial. avatar_kind === 'photo' → avatar_ref is the R2 key.
+  colour: string | null
+  avatar_kind: string
+  avatar_ref: string
+}
+
+// Map a household member row (as /api/members returns it) to the shared MemberFace
+// shape the face pickers (MemberSwitcher / MemberPicker) consume — resolving the R2
+// photo URL HERE so those primitives stay presentational. Everything past
+// id/display_name is optional so a narrowed board-members shape (DayPlanPage's
+// board query, the chores cache) still maps: it just falls back to the coloured
+// initial. Shared by every operator form's member picker.
+export function toFace(m: {
+  id: string
+  display_name: string
+  colour?: string | null
+  avatar_kind?: string | null
+  avatar_ref?: string | null
+}): MemberFace {
+  return {
+    id: m.id,
+    name: m.display_name,
+    colour: m.colour ?? null,
+    photoUrl: m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null,
+  }
 }
 
 export function FormScene({

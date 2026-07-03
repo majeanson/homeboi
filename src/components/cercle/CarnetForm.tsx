@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { resizeImage, imgUrl } from '../../lib/image'
+import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { useCars } from '../../lib/carPrefs'
 import { CARNETS_KEY, BOARD_KEY } from '../../lib/queryKeys'
@@ -16,6 +17,8 @@ import {
 } from '../../lib/carnets'
 import { ColorPicker } from '../ColorPicker'
 import { StatusMessage } from '../StatusMessage'
+import { FormFooter } from '../FormFooter'
+import { Disclosure } from '../Disclosure'
 import { Icon } from '../Icon'
 
 // Add / edit ONE carnet's identity (a house, a car, a water heater, a room). A child
@@ -37,6 +40,7 @@ export function CarnetForm({
 }) {
   const t = useT()
   const write = useWrite()
+  const confirm = useConfirm()
   const c = t.carnets
 
   const [name, setName] = useState(value?.name ?? '')
@@ -108,6 +112,24 @@ export function CarnetForm({
     }
   }
 
+  // HEAVY delete (edit-only) — mirrors CercleCarnetPage.removeCarnet(): a confirm
+  // dialog (the carnet + its descendants cascade server-side), same endpoint +
+  // affected keys as the scene's own delete, so an in-form delete lands identically.
+  async function remove() {
+    if (!value || busy) return
+    if (!(await confirm({ message: c.deleteConfirm(value.name), confirmLabel: c.delete, tone: 'danger' }))) return
+    setBusy(true)
+    setErr(false)
+    try {
+      await write('carnets', { method: 'DELETE', body: { id: value.id }, affectedKeys: [CARNETS_KEY, BOARD_KEY] })
+      onSaved()
+    } catch {
+      setErr(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const photo = photoKey ? imgUrl(photoKey) : null
 
   return (
@@ -154,30 +176,39 @@ export function CarnetForm({
 
       <ColorPicker value={colour} onChange={setColour} label={c.colour} />
 
-      <label className="recur__row mono">
-        <span>{c.installed}</span>
-        <input className="input" type="date" value={installed} onChange={(e) => setInstalled(e.target.value)} aria-label={c.installed} />
-      </label>
+      {/* Secondary spec fields — installed date, lifespan, model, warranty — collapsed
+          behind a « Fiche technique » disclosure so the identity (name/kind/emoji/
+          colour) leads and the form stays a calm glance (NFR-CALM-1). Open by default
+          when editing a carnet that already carries any of them. */}
+      <Disclosure
+        label={t.carnets.techSheet}
+        defaultOpen={!!(installed || lifeYears || model.trim() || warranty)}
+      >
+        <label className="recur__row mono">
+          <span>{c.installed}</span>
+          <input className="input" type="date" value={installed} onChange={(e) => setInstalled(e.target.value)} aria-label={c.installed} />
+        </label>
 
-      <label className="recur__row mono">
-        <span>{c.lifespan}</span>
-        <input
-          className="input"
-          inputMode="numeric"
-          value={lifeYears}
-          onChange={(e) => setLifeYears(e.target.value)}
-          placeholder={c.lifespanPh}
-          aria-label={c.lifespan}
-          style={{ maxWidth: '6rem' }}
-        />
-      </label>
+        <label className="recur__row mono">
+          <span>{c.lifespan}</span>
+          <input
+            className="input"
+            inputMode="numeric"
+            value={lifeYears}
+            onChange={(e) => setLifeYears(e.target.value)}
+            placeholder={c.lifespanPh}
+            aria-label={c.lifespan}
+            style={{ maxWidth: '6rem' }}
+          />
+        </label>
 
-      <input className="input" value={model} onChange={(e) => setModel(e.target.value)} placeholder={c.model} aria-label={c.model} />
+        <input className="input" value={model} onChange={(e) => setModel(e.target.value)} placeholder={c.model} aria-label={c.model} />
 
-      <label className="recur__row mono">
-        <span>{c.warranty}</span>
-        <input className="input" type="date" value={warranty} onChange={(e) => setWarranty(e.target.value)} aria-label={c.warranty} />
-      </label>
+        <label className="recur__row mono">
+          <span>{c.warranty}</span>
+          <input className="input" type="date" value={warranty} onChange={(e) => setWarranty(e.target.value)} aria-label={c.warranty} />
+        </label>
+      </Disclosure>
 
       <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={c.notes} aria-label={c.notes} />
 
@@ -194,14 +225,14 @@ export function CarnetForm({
       </label>
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-      <button type="submit" className="btn" disabled={!name.trim() || busy}>
-        {value ? t.common.save : c.add}
-      </button>
-      {onCancel && (
-        <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
-          {t.common.cancel}
-        </button>
-      )}
+      <FormFooter
+        saveLabel={value ? t.common.save : c.add}
+        saveDisabled={!name.trim()}
+        busy={busy}
+        onCancel={onCancel}
+        onDelete={value ? remove : undefined}
+        deleteLabel={c.delete}
+      />
     </form>
   )
 }

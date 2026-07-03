@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
-import { InlineIcon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
+import { FormFooter } from '../FormFooter'
 import type { GroupKind } from '../../lib/cercle'
 
 export interface GroupFormValue {
@@ -53,14 +53,7 @@ export function GroupForm({
         ))}
       </select>
       <ColorPicker value={colour} onChange={setColour} label={t.cercle.groupColour} />
-      <div className="lc__actions">
-        <button type="button" className="btn btn--primary btn--sm" disabled={!name.trim()} onClick={submit}>
-          <InlineIcon name="check-bold" size={13} /> {submitLabel}
-        </button>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel}>
-          {t.common.cancel}
-        </button>
-      </div>
+      <FormFooter saveType="button" onSave={submit} saveLabel={submitLabel} saveDisabled={!name.trim()} onCancel={onCancel} />
     </div>
   )
 }
