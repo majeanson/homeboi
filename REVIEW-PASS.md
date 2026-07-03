@@ -129,8 +129,8 @@ remainder), by §line:
 - **424** (Cercle e2e) — `note-editor.spec` real behaviour added; ✅ **group/business/carnet CREATE now covered 2026-07-02** (`cercle-crud.spec.ts`). Still specless: ReviewChecklist apply, group DELETE/edit, drag-to-group.
 - **442** (Cercle Union-Find) — unified into one `UnionFind` class; `relationsOf`/`relationTo` still live in `Cercle.tsx`, not moved to `cercle.ts`.
 - **459** (NoteEditor nits) — orphan-blob fixed; ✅ body `aria-label` now `note ? editorEdit : editorNew` (2026-07-02), matching the root + heading. Remaining: audio-note edit still title-only, `firstLine` exported-only.
-- **509** (guest rate-limit/revoke) — `MAX_PENDING=200` cap added; still stateless, no revoke, no per-token upload cap.
-- **518** (showcase over-share) — ✅ **mitigated 2026-07-02**: issuer no longer defaults to showcase (now `sitter`, showcase moved last + caution glyph); warning + 24 h TTL already shipped. Read-scope kept broad by design (showcase = the real Démo hub; narrowing 403s whole tabs) — a curated Démo needs per-tab hiding, tracked separately. Revoke still open (§509).
+- **509** (guest rate-limit/revoke) — `MAX_PENDING=200` cap added; ✅ **per-token REVOKE shipped 2026-07-02** (migration 0098 `guests` row + `resolveActor` check + `guest-links` list/revoke endpoint + « Liens actifs » UI). Remaining: the per-token submission/upload rate-limit (a still-valid link can flood within its window).
+- **518** (showcase over-share) — ✅ **mitigated 2026-07-02**: issuer no longer defaults to showcase (now `sitter`, showcase moved last + caution glyph); warning + 24 h TTL already shipped. Read-scope kept broad by design (showcase = the real Démo hub; narrowing 403s whole tabs) — a curated Démo needs per-tab hiding, tracked separately. Revoke now shipped (§509) — a leaked showcase link CAN be killed early.
 - **559 / 822 / 931** (e2e — guest / Voyage / offline-layer) — postbox + guest-scenes specs added; intake submit→review→accept, ALL Voyage, and outbox/SW/WS/idle behaviour still uncovered.
 - **668** (Settings error states) — ✅ **closed 2026-07-02**: `ThisWeekTogetherSection` now reads `isError` and shows `t.common.loadFailed` instead of a false empty week (only when no cached frame). Photos already guarded `isPending`.
 - **729** (createBringList silent) — ✅ **closed 2026-07-02**: `EventForm.createBringList` catch now sets `bringErr` → `StatusMessage`; « Créer la liste » disabled + a « Indisponible hors-ligne » hint when `!useOnline()`.
@@ -551,12 +551,14 @@ default kind. These deserve priority in the implement phase.
   (`IntakeForm.tsx:143`) + greeting. A crafted POST can submit household/pets/address/photos on
   a name-only link. Bounded (quarantined, operator reviews) but the bitmask is currently
   cosmetic. **Fix:** pass `guestFields` into `sanitizeIntake` and drop out-of-scope sections.
-- [ ] **🔒 No rate-limit + no revoke on stateless guest writes.** `intake-submit`,
-  `postbox-submit`, and both `*-media` (3 MB each) have zero throttle; guest validity is "the
-  signed expiry alone, no DB row" (`household.ts:80`) → **no revoke-before-TTL**. A leaked/
-  broadly-shared link allows unbounded quarantine-row + R2 flooding until the 7-day sweep, and
-  the operator can't kill it early. **Fix:** a `guests` row (like `devices.revoked_at`) + a
-  per-token submission/upload cap. _(Same revoke gap makes `showcase` below worse.)_
+- [~] **🔒 No rate-limit + no revoke on stateless guest writes.** ✅ **Revoke shipped
+  2026-07-02:** migration `0098_guests` gives each minted link a row (keyed by its token id,
+  written by `guest/start.ts`); `resolveActor` LEFT JOINs it and rejects a token whose
+  `revoked_at` is set — killing the link's reads AND writes at once (a no-row legacy token
+  still works until its TTL, never regressed). New operator-only `guest-links` endpoint (GET
+  list live / POST revoke) + a « Liens actifs » list with « Révoquer » in Réglages ▸ Partage.
+  **Remaining:** the per-token submission/upload **rate-limit** (a still-valid link can flood
+  quarantine rows + R2 within its window — needs a per-token counter on submit/media).
 
 ### Findings — P2 (SECURITY + design)
 
@@ -568,7 +570,7 @@ default kind. These deserve priority in the implement phase.
   were already shipped. **Deliberately NOT narrowing the read-scope:** showcase renders the
   real read-only hub (that IS the Démo), so an allowlist would 403 whole tabs (Le cercle,
   photos) into `LoadError` — a curated Démo needs per-tab hiding for the showcase surface, a
-  larger UX change tracked separately. Remaining: token **revoke** (shared with §509).
+  larger UX change tracked separately. Token **revoke** shipped (§509) — a leaked showcase link can now be killed before its TTL.
 - [x] **🔒 Tint-hijack / impersonation by exact-name match is unwarned in review.**
   `postbox.ts:99` tints an accepted note to a member when `sender_name` == a member's
   `display_name` (case-insensitive) and stamps `— <name>`; a sender can type an existing

@@ -2055,6 +2055,11 @@ export const FR = {
     copy: 'Copier le lien',
     copied: 'Copié !',
     share: 'Partager',
+    activeLinks: 'Liens actifs',
+    activeLinksHint: 'Les liens que tu as créés et qui fonctionnent encore. Révoque-en un pour le fermer tout de suite.',
+    revoke: 'Révoquer',
+    revoked: 'Lien révoqué',
+    linkExpiresPrefix: 'Expire',
     limitation:
       'Note : l’accès s’éteint tout seul à la fin de la durée. Il ne peut pas être révoqué avant — garde les durées courtes.',
     banner: 'Accès invité — lecture seule. Tu peux regarder, mais pas modifier.',
@@ -4365,6 +4370,11 @@ export const EN: typeof FR = {
     copy: 'Copy link',
     copied: 'Copied!',
     share: 'Share',
+    activeLinks: 'Active links',
+    activeLinksHint: 'The links you created that still work. Revoke one to close it right away.',
+    revoke: 'Revoke',
+    revoked: 'Link revoked',
+    linkExpiresPrefix: 'Expires',
     limitation:
       'Note: access turns itself off when the time is up. It can’t be revoked before then — keep durations short.',
     banner: 'Guest access — read-only. You can look, but not change anything.',

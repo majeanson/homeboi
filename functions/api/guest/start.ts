@@ -10,9 +10,11 @@ import { newId, nowSec } from '../../_lib/ids'
 // which scopes what it can read (enforced by the allowlist in worker/index.ts).
 // The per-kind TTL window lives in _lib/shareModes (clampShareTtl).
 //
-// LIMITATION: revocation-before-TTL is out of scope. To kill all outstanding
-// tokens early you'd rotate SESSION_SECRET (which also logs everyone out). Keep
-// TTLs short for that reason. (See functions/_lib/auth.ts issueGuestToken.)
+// Each minted link is recorded in `guests` (keyed by its token id) so the operator
+// can REVOKE it before its TTL — resolveActor rejects a token whose row is revoked
+// (REVIEW-PASS §509). A token with no row (legacy, pre-0098) still works until it
+// expires. The insert is best-effort: a token stays valid even if the row write
+// fails (it just can't be revoked early) — never fail the mint over bookkeeping.
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ ttlSeconds?: number; kind?: string; targetKey?: string; fields?: number }>(ctx.request)
@@ -40,7 +42,20 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   const guestId = newId()
   const guestToken = await issueGuestToken(ctx.env, guestId, actor.householdId, ttlSeconds, kind, targetKey, fields)
-  const expiresAt = nowSec() + ttlSeconds
+  const now = nowSec()
+  const expiresAt = now + ttlSeconds
+
+  // Record the link so it can be listed + revoked (§509). Best-effort: the token is
+  // already valid regardless — a failed row write just means it can't be killed early.
+  try {
+    await ctx.env.DB.prepare(
+      'INSERT INTO guests (id, household_id, kind, target_key, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
+    )
+      .bind(guestId, actor.householdId, kind, targetKey, now, expiresAt)
+      .run()
+  } catch {
+    /* bookkeeping only — never fail the mint over it */
+  }
 
   return ok({ guestToken, guestId, kind, ttlSeconds, expiresAt, targetKey })
 }, 'operator')

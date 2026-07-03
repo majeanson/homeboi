@@ -36,6 +36,7 @@ import * as flyerImg from '../functions/api/flyer-img'
 import * as flyers from '../functions/api/flyers'
 import * as ghost from '../functions/api/ghost'
 import * as guestStart from '../functions/api/guest/start'
+import * as guestLinks from '../functions/api/guest-links'
 import * as guestWindow from '../functions/api/guest/window'
 import * as guestWhoami from '../functions/api/guest/whoami'
 import * as guestIntakeSubmit from '../functions/api/guest/intake-submit'
@@ -147,6 +148,7 @@ const TABLE: Record<string, RouteMod> = {
   flyers,
   ghost,
   'guest/start': guestStart,
+  'guest-links': guestLinks,
   'guest/window': guestWindow,
   'guest/whoami': guestWhoami,
   'guest/intake-submit': guestIntakeSubmit,

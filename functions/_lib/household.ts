@@ -77,15 +77,19 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
   }
 
   // Guest LAST — checked only after operator + device fail, so a real operator
-  // or kiosk is never downgraded to read-only. Stateless: validity is the signed
-  // expiry alone (no DB row), so there's no revoke-before-TTL. The household must
-  // still exist — a token for a deleted household resolves to nothing.
+  // or kiosk is never downgraded to read-only. The household must still exist — a
+  // token for a deleted household resolves to nothing — AND the link must not be
+  // revoked (§509): LEFT JOIN the guests row keyed by this token id. `revoked` reads
+  // NULL when there's no row (a legacy pre-0098 token — still honoured until its
+  // signed TTL) or the row isn't revoked; a set revoked_at kills the token early.
   const guest = await currentGuest(env, request)
   if (guest) {
-    const row = await env.DB.prepare('SELECT id FROM households WHERE id = ?')
-      .bind(guest.householdId)
-      .first<{ id: string }>()
-    if (row)
+    const row = await env.DB.prepare(
+      'SELECT h.id AS hid, g.revoked_at AS revoked FROM households h LEFT JOIN guests g ON g.id = ? WHERE h.id = ?',
+    )
+      .bind(guest.guestId, guest.householdId)
+      .first<{ hid: string; revoked: number | null }>()
+    if (row && row.revoked == null)
       return {
         householdId: guest.householdId,
         scope: 'guest',

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { useT } from '../../i18n'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useT, useLang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { IntakeReview } from './IntakeReview'
@@ -112,9 +112,14 @@ const DEFAULT_TTL: Record<GuestKind, number> = {
   postbox: 7 * 24 * H,
 }
 
+// The operator's still-live share-links, so a leaked/over-shared one can be REVOKED
+// before its TTL (§509). Shared key so minting a fresh link (generate) refreshes it.
+const GUEST_LINKS_KEY = ['guest-links']
+
 export function GuestSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const navigate = useNavigate()
+  const qc = useQueryClient()
   // Issuing a share link is operator-only — a read-only guest can't mint more, so
   // the whole section is hidden for them.
   const ro = isGuest()
@@ -187,6 +192,8 @@ export function GuestSection({ help }: { help?: HelpMode }) {
       })
       const path = KINDS.find((k) => k.kind === kind)?.path ?? '/board'
       setLink(`${window.location.origin}${path}?guest=${encodeURIComponent(res.guestToken)}`)
+      // The freshly-minted link now has a guests row — refresh the active-links list.
+      void qc.invalidateQueries({ queryKey: GUEST_LINKS_KEY })
     } catch (e) {
       setErr((e as Error).message)
     } finally {
@@ -361,6 +368,10 @@ export function GuestSection({ help }: { help?: HelpMode }) {
             <QrCode value={link} />
           </div>
         )}
+
+        {/* Every still-live link you've minted, each with a « Révoquer » so a leaked
+            or over-shared one can be killed before its TTL (§509). Hidden when empty. */}
+        {subTab === 'phone' && <ActiveLinksList />}
       </OperatorSection>
 
       {/* The two "things people sent us" buckets — both hidden until one arrives, so
@@ -372,6 +383,76 @@ export function GuestSection({ help }: { help?: HelpMode }) {
         </>
       )}
     </>
+  )
+}
+
+// One row per still-live minted link (guests table, §509) with « Révoquer ». A revoke
+// POSTs guest-links → resolveActor rejects the token at once (reads AND writes die),
+// then the list refetches. Hidden entirely when there are no live links (calm).
+interface GuestLinkRow {
+  id: string
+  kind: GuestKind
+  target_key: string | null
+  created_at: number
+  expires_at: number
+}
+
+function ActiveLinksList() {
+  const t = useT()
+  const { lang } = useLang()
+  const qc = useQueryClient()
+  const { data } = useQuery({ queryKey: GUEST_LINKS_KEY, queryFn: () => api<{ links: GuestLinkRow[] }>('guest-links') })
+  const links = data?.links ?? []
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [revoked, setRevoked] = useState(false)
+  if (links.length === 0) return null
+  const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
+  const kindLabel = (k: GuestKind) => t.guest[KINDS.find((x) => x.kind === k)?.labelKey ?? 'kindShowcase']
+  async function revoke(id: string) {
+    setBusyId(id)
+    try {
+      await api('guest-links', { method: 'POST', body: { revokeId: id } })
+      setRevoked(true)
+      await qc.invalidateQueries({ queryKey: GUEST_LINKS_KEY })
+    } catch {
+      /* the list refetch reconciles — leave the row */
+    } finally {
+      setBusyId(null)
+    }
+  }
+  return (
+    <div className="operator__guest-links">
+      <h4 className="mono">{t.guest.activeLinks}</h4>
+      <p className="operator__hint mono">{t.guest.activeLinksHint}</p>
+      <ul className="operator__list meal-slots">
+        {links.map((l) => (
+          <li key={l.id} className="meal-slots__row">
+            <span className="meal-slots__name">
+              <strong>{kindLabel(l.kind)}</strong>
+              <span className="mono meal-slots__label">
+                {' · '}
+                {t.guest.linkExpiresPrefix}{' '}
+                {new Date(l.expires_at * 1000).toLocaleString(loc, {
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            </span>
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              disabled={busyId === l.id}
+              onClick={() => revoke(l.id)}
+            >
+              <InlineIcon name="x-bold" /> {t.guest.revoke}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {revoked && <StatusMessage tone="success">{t.guest.revoked}</StatusMessage>}
+    </div>
   )
 }
 
