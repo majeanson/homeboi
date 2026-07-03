@@ -9,6 +9,37 @@ export const fold = (s: string): string =>
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
 
+// Every occurrence of `needle` inside `text`, matched through fold() (accent- and
+// case-insensitive) but returned as [start, end) index pairs into the ORIGINAL
+// string — so a highlighter can wrap « Réglages » when the user typed "reglages".
+// Folded per-character (a char may fold to 0 or more chars) with a folded→original
+// index map, since fold() can change string length.
+export function foldRanges(text: string, needle: string): [number, number][] {
+  const n = fold(needle)
+  if (!n) return []
+  let folded = ''
+  const map: number[] = []
+  for (let i = 0; i < text.length; i++) {
+    const f = fold(text[i])
+    for (let j = 0; j < f.length; j++) {
+      folded += f[j]
+      map.push(i)
+    }
+  }
+  const out: [number, number][] = []
+  let at = folded.indexOf(n)
+  while (at !== -1) {
+    let end = map[at + n.length - 1] + 1
+    // A decomposed (NFD) original carries combining marks AFTER their base char;
+    // they fold to '' so they have no folded index — pull any trailing ones into
+    // the range so a highlight never splits « à » from its accent.
+    while (end < text.length && fold(text[end]) === '') end++
+    out.push([map[at], end])
+    at = folded.indexOf(n, at + n.length)
+  }
+  return out
+}
+
 // Normalize a free-typed grocery item into a stable grouping KEY (accent- AND
 // quantity-insensitive), so "Œufs", "oeufs" and "2 douzaines d'œufs" share one
 // identity. A faithful client port of functions/_lib/normalize.ts (same steps), so a

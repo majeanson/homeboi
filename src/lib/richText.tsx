@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { InlineIcon, type IconName } from '../components/Icon'
+import { foldRanges } from './normalize'
 
 // Inline tokens in long-form prose (the Guide + the guided tour share this):
 //   [[icon:name]]     → the app's own Phosphor glyph, so a sentence that points
@@ -19,13 +20,37 @@ const TOKEN = /\[\[(icon|card):([^\]]+)\]\]/g
 export const stripTokens = (s: string) =>
   s.replace(TOKEN, (_m, kind: string, body: string) => (kind === 'card' ? (body.split('|')[1] ?? body) : ''))
 
-export function renderRich(text: string): ReactNode {
+// Wrap every fold-match of `needle` in a calm <mark class="hl"> — the Guide
+// search highlight. Accent/case-insensitive via foldRanges, so « Réglages »
+// lights up when the user typed "reglages".
+export function highlight(text: string, needle: string): ReactNode {
+  const ranges = foldRanges(text, needle)
+  if (ranges.length === 0) return text
+  const out: ReactNode[] = []
+  let last = 0
+  for (const [s, e] of ranges) {
+    if (s > last) out.push(<Fragment key={`t${last}`}>{text.slice(last, s)}</Fragment>)
+    out.push(
+      <mark key={`m${s}`} className="hl">
+        {text.slice(s, e)}
+      </mark>,
+    )
+    last = e
+  }
+  if (last < text.length) out.push(<Fragment key={`t${last}`}>{text.slice(last)}</Fragment>)
+  return out
+}
+
+export function renderRich(text: string, hl?: string): ReactNode {
+  // With a search needle, plain segments (and card-link labels) get their
+  // matches marked; tokens themselves are never touched.
+  const seg = (s: string): ReactNode => (hl ? highlight(s, hl) : s)
   const out: ReactNode[] = []
   let last = 0
   let m: RegExpExecArray | null
   TOKEN.lastIndex = 0
   while ((m = TOKEN.exec(text))) {
-    if (m.index > last) out.push(<Fragment key={last}>{text.slice(last, m.index)}</Fragment>)
+    if (m.index > last) out.push(<Fragment key={last}>{seg(text.slice(last, m.index))}</Fragment>)
     const kind = m[1]
     const body = m[2]
     if (kind === 'icon') {
@@ -43,12 +68,12 @@ export function renderRich(text: string): ReactNode {
           to={`/settings?tab=guide&card=${id}`}
           onClick={(e) => e.stopPropagation()}
         >
-          {label}
+          {seg(label)}
         </Link>,
       )
     }
     last = m.index + m[0].length
   }
-  if (last < text.length) out.push(<Fragment key={last}>{text.slice(last)}</Fragment>)
+  if (last < text.length) out.push(<Fragment key={last}>{seg(text.slice(last))}</Fragment>)
   return out
 }

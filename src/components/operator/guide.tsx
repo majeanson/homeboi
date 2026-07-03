@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type Ref } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { GUIDE, GUIDE_GROUPS, type GuideEntry, CONCEPT_THEMES } from '../../lib/guideContent'
-import { renderRich, stripTokens } from '../../lib/richText'
+import { renderRich, stripTokens, highlight as highlightText } from '../../lib/richText'
+import { fold } from '../../lib/normalize'
 import { useTour } from '../../lib/tour'
 import { resetWelcome } from '../WelcomeCard'
 import { OperatorSection } from './OperatorSection'
@@ -25,6 +26,7 @@ export function GuideCard({
   pointsOpen = false,
   showGoTo = true,
   targetPoint,
+  highlight: hl,
   onReplayTour,
   onResetOnboarding,
 }: {
@@ -34,6 +36,9 @@ export function GuideCard({
   cardRef?: Ref<HTMLDetailsElement>
   pointsOpen?: boolean
   showGoTo?: boolean
+  // The active search words — every fold-match in the title/what/points gets a
+  // calm <mark> so the reader sees WHY this card surfaced (lib/richText highlight).
+  highlight?: string
   // A specific sub-point to open + highlight + scroll to (contextual "?" deep-link).
   targetPoint?: number
   // Replay a guided tour by id (the card names it via entry.tour). Generalized so
@@ -60,8 +65,8 @@ export function GuideCard({
           <Icon name={entry.icon} size={26} />
         </span>
         <span className="guide__heads">
-          <span className="guide__title">{entry.title[lang]}</span>
-          <span className="guide__what">{renderRich(entry.what[lang])}</span>
+          <span className="guide__title">{hl ? highlightText(entry.title[lang], hl) : entry.title[lang]}</span>
+          <span className="guide__what">{renderRich(entry.what[lang], hl)}</span>
         </span>
         {/* A visible expand/collapse chevron — the affordance is shown, not
             spelled out in prose. Rotates with the card's open state (CSS). */}
@@ -82,11 +87,11 @@ export function GuideCard({
               className={`guide__point${isPt ? ' is-target' : ''}`}
               open={pointsOpen || isPt}
             >
-              <summary className="guide__point-title">{renderRich(p.label[lang])}</summary>
-              <p className="guide__point-detail">{renderRich(p.detail[lang])}</p>
+              <summary className="guide__point-title">{renderRich(p.label[lang], hl)}</summary>
+              <p className="guide__point-detail">{renderRich(p.detail[lang], hl)}</p>
               {/* The WHY, when the point earns one: a distinct, softer line so a
                   parent scans WHAT first, WHY second. */}
-              {p.why && <p className="guide__point-why">{renderRich(p.why[lang])}</p>}
+              {p.why && <p className="guide__point-why">{renderRich(p.why[lang], hl)}</p>}
             </details>
           )
         })}
@@ -212,8 +217,10 @@ const resolveGuideCard = (card: string | null, point: number | null): { id: stri
 // inside it every point is *itself* a collapsible: a clickable title that opens
 // to reveal the one-sentence detail. Icons reuse the app's shared Phosphor-bold
 // set (components/Icon), so the manual shows the very same glyphs as the live UI.
-// A search box filters across titles, the one-line "what", and every point, in
-// the current language. Content lives in lib/guideContent.ts; this is the view.
+// A search box matches across titles, the one-line "what", and every point
+// (label + detail + why) in the current language — accent-insensitive (fold),
+// ranked so a TITLE hit lands first, with every match <mark>ed in the results.
+// Content lives in lib/guideContent.ts; this is the view.
 export function GuideSection() {
   const t = useT()
   const { lang } = useLang()
@@ -271,20 +278,37 @@ export function GuideSection() {
     setParams(next, { replace: true })
   }, [params, setParams])
 
-  const q = query.trim().toLowerCase()
-  const matches = useMemo(() => {
-    if (!q) return GUIDE
-    const hit = (e: GuideEntry) =>
-      stripTokens([e.title[lang], e.what[lang], ...e.points.flatMap((p) => [p.label[lang], p.detail[lang]])].join(' '))
-        .toLowerCase()
-        .includes(q)
-    return GUIDE.filter(hit)
-  }, [q, lang])
+  const q = query.trim()
+  const needle = fold(q)
+  // Ranked search (accent-insensitive via fold, so "reglages" finds « Réglages »):
+  // a hit on the card TITLE outranks one on the one-line "what", which outranks a
+  // point title, which outranks the point prose (detail + why). While searching,
+  // the results render as ONE flat list in that order — the card you named comes
+  // first, not wherever the taxonomy happens to place it. Stable sort, so ties
+  // keep the manual's own order.
+  const ranked = useMemo(() => {
+    if (!needle) return null
+    const has = (s: string) => fold(stripTokens(s)).includes(needle)
+    const hits: { e: GuideEntry; rank: number }[] = []
+    for (const e of GUIDE) {
+      const rank = has(e.title[lang])
+        ? 0
+        : has(e.what[lang])
+          ? 1
+          : e.points.some((p) => has(p.label[lang]))
+            ? 2
+            : e.points.some((p) => has(`${p.detail[lang]} ${p.why?.[lang] ?? ''}`))
+              ? 3
+              : -1
+      if (rank !== -1) hits.push({ e, rank })
+    }
+    return hits.sort((a, b) => a.rank - b.rank).map((h) => h.e)
+  }, [needle, lang])
 
   // The overview ("start") card is the entry point — pulled out of the group
   // loop so it can sit at the top, open by default, with no group header or
   // blurb wrapped around it.
-  const startEntries = matches.filter((e) => e.group === 'start')
+  const startEntries = GUIDE.filter((e) => e.group === 'start')
 
   // One card renderer reused everywhere (lead, groups, concept sub-themes) so the
   // open/target/deep-link wiring stays identical no matter where the card sits.
@@ -297,6 +321,7 @@ export function GuideSection() {
       targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
       open={q.length > 0 || e.id === openId}
       pointsOpen={q.length > 0}
+      highlight={q.length > 0 ? q : undefined}
       onReplayTour={start}
       onResetOnboarding={resetOnboarding}
     />
@@ -330,11 +355,22 @@ export function GuideSection() {
         </>
       )}
 
-      {matches.length === 0 && <EmptyState>{t.operator.guideNone}</EmptyState>}
+      {/* Searching: ONE flat list, best match first (title hits lead — see the
+          rank memo above), every card open with its matches marked. The grouped
+          manual below only renders at rest. */}
+      {ranked &&
+        (ranked.length === 0 ? (
+          <EmptyState>{t.operator.guideNone}</EmptyState>
+        ) : (
+          <div className="guide__group">
+            <h3 className="guide__group-title">{t.search.resultsCount(ranked.length)}</h3>
+            <div className="guide__cards">{ranked.map(renderCard)}</div>
+          </div>
+        ))}
 
       {/* Overview card(s): expanded on arrival so a newcomer reads the summary at
           once, then the rest of the manual stays a calm, collapsed list below. */}
-      {startEntries.length > 0 && (
+      {!ranked && startEntries.length > 0 && (
         <div className="guide__cards guide__cards--lead">
           {startEntries.map((e) => (
             <GuideCard
@@ -361,8 +397,8 @@ export function GuideSection() {
           deep-link into a settings card (?card=set-display&point=…) actually
           resolves, opens and highlights here, instead of falling through to the
           top of the Guide. Each settings card keeps its "go there" link. */}
-      {GUIDE_GROUPS.filter((g) => g.id !== 'start').map((group) => {
-        const entries = matches.filter((e) => e.group === group.id)
+      {!ranked && GUIDE_GROUPS.filter((g) => g.id !== 'start').map((group) => {
+        const entries = GUIDE.filter((e) => e.group === group.id)
         if (entries.length === 0) return null
 
         // The concepts group is big — render it as themed sub-sections (one block

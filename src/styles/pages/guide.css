@@ -278,3 +278,13 @@
   background: color-mix(in srgb, var(--accent, var(--ink)) 8%, var(--paper));
 }
 
+/* Search-hit highlight (lib/richText highlight()): a calm accent wash — not the
+   browser's shouting yellow — that inherits the surrounding ink so it reads in
+   every theme and inside soft/italic lines alike. */
+mark.hl {
+  background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 24%, transparent);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 0.08em;
+}
+
