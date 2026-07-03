@@ -1,5 +1,6 @@
-import { ok, badRequest, forbidden, readJson } from '../../_lib/json'
+import { ok, badRequest, forbidden, readJson, tooManyRequests } from '../../_lib/json'
 import { authed } from '../../_lib/route'
+import { chargeGuestUse } from '../../_lib/guestRate'
 import { newId, nowSec } from '../../_lib/ids'
 import { isValidR2Key } from '../../_lib/validate'
 import { ownedStagedKeys } from '../../_lib/stagedMedia'
@@ -21,6 +22,11 @@ const MAX_PENDING = 200
 export const onRequestPost = authed(async (ctx, actor) => {
   if (!(actor.scope === 'guest' && actor.guestKind === 'postbox')) {
     return forbidden('Ce lien ne permet pas d’envoyer un message.')
+  }
+  // Per-token flood cap (§509): bound how much a single leaked link can drop before
+  // it's noticed + revoked. Charged first so a flood is refused before any work.
+  if (!(await chargeGuestUse(ctx.env, actor.guestId))) {
+    return tooManyRequests('Trop d’envois depuis ce lien. Réessaie plus tard.')
   }
 
   const body = await readJson<{

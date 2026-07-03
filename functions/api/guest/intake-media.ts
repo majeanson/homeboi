@@ -1,5 +1,6 @@
-import { ok, forbidden, serviceUnavailable } from '../../_lib/json'
+import { ok, forbidden, serviceUnavailable, tooManyRequests } from '../../_lib/json'
 import { authed } from '../../_lib/route'
+import { chargeGuestUse } from '../../_lib/guestRate'
 import { uploadR2Media } from '../../_lib/r2'
 import { insertStagedMedia } from '../../_lib/stagedMedia'
 
@@ -19,6 +20,11 @@ export const onRequestPost = authed(async (ctx, actor) => {
     return forbidden('Ce lien ne permet pas d’envoyer une photo.')
   }
   if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage indisponible ici.')
+  // Per-token flood cap (§509): charge BEFORE the R2 upload so a leaked link can't
+  // pump unbounded blobs into storage before it's noticed + revoked.
+  if (!(await chargeGuestUse(ctx.env, actor.guestId))) {
+    return tooManyRequests('Trop d’envois depuis ce lien. Réessaie plus tard.')
+  }
 
   const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, {
     prefix: 'ik', // intake key — distinct so the cleanup sweep can recognise its own

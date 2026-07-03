@@ -1,5 +1,6 @@
-import { ok, badRequest, forbidden, readJson } from '../../_lib/json'
+import { ok, badRequest, forbidden, readJson, tooManyRequests } from '../../_lib/json'
 import { authed } from '../../_lib/route'
+import { chargeGuestUse } from '../../_lib/guestRate'
 import { newId, nowSec } from '../../_lib/ids'
 import { sanitizeIntake, decodeIntakeScope, intakeMediaKeys, redactUnownedIntakeMedia } from '../../_lib/intake'
 import { ownedStagedKeys } from '../../_lib/stagedMedia'
@@ -23,6 +24,11 @@ const MAX_PENDING = 200
 export const onRequestPost = authed(async (ctx, actor) => {
   if (!(actor.scope === 'guest' && actor.guestKind === 'intake')) {
     return forbidden('Ce lien ne permet pas d’envoyer un formulaire.')
+  }
+  // Per-token flood cap (§509): bound how many rows/blobs ONE leaked link can create
+  // before it's noticed + revoked. Charged BEFORE any work so it can't be flooded.
+  if (!(await chargeGuestUse(ctx.env, actor.guestId))) {
+    return tooManyRequests('Trop d’envois depuis ce lien. Réessaie plus tard.')
   }
 
   // Enforce the link's field-scope bitmask SERVER-SIDE (not just in the UI): a

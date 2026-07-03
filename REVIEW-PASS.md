@@ -129,7 +129,7 @@ remainder), by §line:
 - **424** (Cercle e2e) — `note-editor.spec` real behaviour added; ✅ **group/business/carnet CREATE now covered 2026-07-02** (`cercle-crud.spec.ts`). Still specless: ReviewChecklist apply, group DELETE/edit, drag-to-group.
 - **442** (Cercle Union-Find) — unified into one `UnionFind` class; ✅ `relationsOf`/`relationTo` now moved to `lib/cercle.ts` (2026-07-02) so the page stays a view (`relPriority` dropped its now-internal `export`).
 - **459** (NoteEditor nits) — orphan-blob fixed; ✅ body `aria-label` now `note ? editorEdit : editorNew` (2026-07-02). **Correction:** `firstLine` is NOT exported-only — it's used in `SearchPage.tsx:560` (the original claim was inaccurate). Remaining: audio-note edit still title-only.
-- **509** (guest rate-limit/revoke) — `MAX_PENDING=200` cap added; ✅ **per-token REVOKE shipped 2026-07-02** (migration 0098 `guests` row + `resolveActor` check + `guest-links` list/revoke endpoint + « Liens actifs » UI). Remaining: the per-token submission/upload rate-limit (a still-valid link can flood within its window).
+- **509** (guest rate-limit/revoke) — ✅ **fully closed 2026-07-02**: per-token REVOKE (mig 0098 `guests` + `resolveActor` check + `guest-links` list/revoke + « Liens actifs » UI) AND per-token RATE-LIMIT (mig 0099 `use_count` + `chargeGuestUse` cap of 40, charged before any work in all 4 writable endpoints).
 - **518** (showcase over-share) — ✅ **mitigated 2026-07-02**: issuer no longer defaults to showcase (now `sitter`, showcase moved last + caution glyph); warning + 24 h TTL already shipped. Read-scope kept broad by design (showcase = the real Démo hub; narrowing 403s whole tabs) — a curated Démo needs per-tab hiding, tracked separately. Revoke now shipped (§509) — a leaked showcase link CAN be killed early.
 - **559 / 822 / 931** (e2e — guest / Voyage / offline-layer) — postbox + guest-scenes specs added; intake submit→review→accept, ALL Voyage, and outbox/SW/WS/idle behaviour still uncovered.
 - **668** (Settings error states) — ✅ **closed 2026-07-02**: `ThisWeekTogetherSection` now reads `isError` and shows `t.common.loadFailed` instead of a false empty week (only when no cached frame). Photos already guarded `isPending`.
@@ -551,14 +551,16 @@ default kind. These deserve priority in the implement phase.
   (`IntakeForm.tsx:143`) + greeting. A crafted POST can submit household/pets/address/photos on
   a name-only link. Bounded (quarantined, operator reviews) but the bitmask is currently
   cosmetic. **Fix:** pass `guestFields` into `sanitizeIntake` and drop out-of-scope sections.
-- [~] **🔒 No rate-limit + no revoke on stateless guest writes.** ✅ **Revoke shipped
-  2026-07-02:** migration `0098_guests` gives each minted link a row (keyed by its token id,
+- [x] **🔒 No rate-limit + no revoke on stateless guest writes.** — ✅ **Fully closed 2026-07-02.**
+  **Revoke:** migration `0098_guests` gives each minted link a row (keyed by its token id,
   written by `guest/start.ts`); `resolveActor` LEFT JOINs it and rejects a token whose
   `revoked_at` is set — killing the link's reads AND writes at once (a no-row legacy token
-  still works until its TTL, never regressed). New operator-only `guest-links` endpoint (GET
-  list live / POST revoke) + a « Liens actifs » list with « Révoquer » in Réglages ▸ Partage.
-  **Remaining:** the per-token submission/upload **rate-limit** (a still-valid link can flood
-  quarantine rows + R2 within its window — needs a per-token counter on submit/media).
+  still works until its TTL, never regressed). Operator-only `guest-links` endpoint (list/
+  revoke) + « Liens actifs » UI. **Rate-limit:** migration `0099` adds `guests.use_count`;
+  `chargeGuestUse` (`_lib/guestRate`) atomically bumps + caps it at **40** (429 over-cap),
+  charged BEFORE any work in all four writable endpoints (`intake`/`postbox` submit + media),
+  so one leaked link can't flood quarantine rows + R2 before it's noticed. Legacy tokens
+  stay uncapped (expire within their short TTL). Distinct from the per-household `MAX_PENDING`.
 
 ### Findings — P2 (SECURITY + design)
 

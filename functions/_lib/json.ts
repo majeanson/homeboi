@@ -15,6 +15,7 @@ export const unauthorized = (message = 'Not signed in.') => body({ error: messag
 export const forbidden = (message = 'Forbidden.') => body({ error: message }, 403)
 export const notFound = (message = 'Not found.') => body({ error: message }, 404)
 export const conflict = (message: string) => body({ error: message }, 409)
+export const tooManyRequests = (message: string) => body({ error: message }, 429)
 export const serviceUnavailable = (message: string) => body({ error: message }, 503)
 export const serverError = (message = 'Something broke.') => body({ error: message }, 500)
 

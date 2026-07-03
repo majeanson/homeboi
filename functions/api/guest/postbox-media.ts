@@ -1,5 +1,6 @@
-import { ok, badRequest, forbidden, serviceUnavailable } from '../../_lib/json'
+import { ok, badRequest, forbidden, serviceUnavailable, tooManyRequests } from '../../_lib/json'
 import { authed } from '../../_lib/route'
+import { chargeGuestUse } from '../../_lib/guestRate'
 import { uploadR2Media } from '../../_lib/r2'
 import { insertStagedMedia } from '../../_lib/stagedMedia'
 
@@ -19,6 +20,11 @@ export const onRequestPost = authed(async (ctx, actor) => {
     return forbidden('Ce lien ne permet pas d’envoyer un fichier.')
   }
   if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage indisponible ici.')
+  // Per-token flood cap (§509): charge BEFORE the R2 upload so a leaked link can't
+  // pump unbounded blobs into storage before it's noticed + revoked.
+  if (!(await chargeGuestUse(ctx.env, actor.guestId))) {
+    return tooManyRequests('Trop d’envois depuis ce lien. Réessaie plus tard.')
+  }
 
   const type = ctx.request.headers.get('content-type') ?? ''
   const kind = type.startsWith('audio/')
