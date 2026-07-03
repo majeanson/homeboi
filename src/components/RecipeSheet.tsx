@@ -22,6 +22,7 @@ import { MealPlanPicker } from './kitchen/MealPlanPicker'
 import { useModal } from '../lib/useModal'
 import { useConfirm } from '../lib/confirm'
 import { shareRecipe } from '../lib/shareRecipe'
+import { SceneHead } from './SceneHead'
 
 // Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method,
 // then a row of gentle actions —
@@ -187,24 +188,27 @@ export function RecipeSheet({
 
   return (
     <div ref={modalRef} className="recipe-modal" role="dialog" aria-modal="true" aria-label={recipe.title}>
-      <div className="recipe-modal__scrim" onClick={onClose} aria-hidden="true" />
+      {/* Shared scene header (like every other full-screen scene) instead of a
+          bespoke bar — a consistent title + Guide "?" + close ✕. The "Original"
+          mode toggle rides SceneHead's `action` slot. */}
       <div className="recipe-modal__card surface">
-        <div className="recipe-modal__bar">
-          <h2>{recipe.title}</h2>
-          <button
-            type="button"
-            className={'btn btn--ghost mono recipe-original-toggle' + (showOriginal ? ' is-on' : '')}
-            onClick={() => setShowOriginal((s) => !s)}
-            aria-pressed={showOriginal}
-            title={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
-            aria-label={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
-          >
-            <Icon name="scroll-bold" size={18} />
-          </button>
-          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.close}>
-            <Icon name="x-bold" size={18} />
-          </button>
-        </div>
+        <SceneHead
+          title={recipe.title}
+          card="recipes"
+          onClose={onClose}
+          action={
+            <button
+              type="button"
+              className={'btn btn--ghost mono recipe-original-toggle' + (showOriginal ? ' is-on' : '')}
+              onClick={() => setShowOriginal((s) => !s)}
+              aria-pressed={showOriginal}
+              title={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
+              aria-label={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
+            >
+              <Icon name="scroll-bold" size={18} />
+            </button>
+          }
+        />
 
         {showOriginal ? (
           <div className="recipe-modal__body recipe-original">

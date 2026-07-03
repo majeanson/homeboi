@@ -16,6 +16,7 @@ export function SceneHead({
   card,
   onClose,
   closeLabel,
+  action,
 }: {
   title: ReactNode
   // A quiet line under the title — the thing the scene is acting on (the list
@@ -27,6 +28,9 @@ export function SceneHead({
   card?: string
   onClose: () => void
   closeLabel?: string
+  // Optional trailing control in the head cluster (sits before the "?" + close), e.g.
+  // a scene-level mode toggle (the recipe view's "Original" toggle).
+  action?: ReactNode
 }) {
   const t = useT()
   return (
@@ -43,6 +47,7 @@ export function SceneHead({
         {subtitle != null && <span className="scene__head-sub mono">{subtitle}</span>}
       </div>
       <div className="scene__head-actions">
+        {action}
         {card && <HelpDot card={card} />}
         <button
           type="button"

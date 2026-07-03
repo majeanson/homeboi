@@ -87,7 +87,9 @@
   top: var(--vvt, 0px);
   height: var(--vvh, 100dvh);
 }
-/* No backdrop on a full-screen route — the card IS the screen. */
+/* No backdrop on a full-screen route — the card IS the screen. (Still rendered by
+   the recipe EDITOR, RecipeForm, which keeps the bespoke bar below; the recipe VIEW
+   now uses the shared SceneHead instead.) */
 .recipe-modal__scrim {
   display: none;
 }
@@ -101,6 +103,8 @@
   box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
+/* The recipe EDITOR's header bar (RecipeForm still uses it; the recipe VIEW moved to
+   SceneHead). */
 .recipe-modal__bar {
   display: flex;
   align-items: center;
