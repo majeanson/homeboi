@@ -376,7 +376,10 @@ test.describe('settings forms', () => {
   test('remove a bought-item history entry so quick-add stops suggesting it', async ({ page }) => {
     await page.getByRole('tab', { name: 'Magasinage' }).click()
     const [req] = await Promise.all([
-      page.waitForRequest(isApi('DELETE', 'list')),
+      // « Retirer » holds the DELETE behind the undo toast now (deferred removal),
+      // so it fires on commit after the 15 s hold (toast.tsx DEFAULT_UNDO_MS) — the
+      // wait must sit ABOVE that, like the expectApi helper above.
+      page.waitForRequest(isApi('DELETE', 'list'), { timeout: 20_000 }),
       page.locator('.ghost-admin__row', { hasText: 'Bananes' }).getByRole('button', { name: 'Retirer' }).click(),
     ])
     expect(JSON.parse(req.postData() || '{}')).toMatchObject({ historyKey: 'bananes' })
