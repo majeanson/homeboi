@@ -201,7 +201,13 @@ export const FR = {
     offline: 'Hors ligne — la capture a besoin d’une connexion. Ton texte est gardé, réessaie une fois en ligne.',
     failed: 'La capture n’a pas fonctionné. Ton texte est gardé, réessaie.',
     reroute: 'Non, plutôt…',
+    // The quiet "correction" toggle after a successful route — hides the re-file
+    // tiles behind one tap so the happy path stays just the confirmation line.
+    correct: 'Corriger',
     rerouteDone: 'Déplacé.',
+    // The board chooser's low-frequency long tail (voyage / planifier / départ /
+    // laisse un mot), tucked behind a calm disclosure so the everyday tiles lead.
+    more: 'Plus…',
   },
   list: {
     // The contextual ＋ sheet (Liste section).
@@ -2581,7 +2587,9 @@ export const EN: typeof FR = {
     offline: 'Offline — capture needs a connection. Your text is kept; try again once you’re online.',
     failed: 'Capture didn’t go through. Your text is kept — try again.',
     reroute: 'No, actually…',
+    correct: 'Fix it',
     rerouteDone: 'Moved.',
+    more: 'More…',
   },
   list: {
     // The contextual ＋ sheet (Liste section).

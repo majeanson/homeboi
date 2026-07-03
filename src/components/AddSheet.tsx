@@ -37,6 +37,7 @@ import { mealOptions } from './kitchen/comboOptions'
 import { ADD_HELP } from '../lib/addHelp'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { Sheet } from './Sheet'
+import { Disclosure } from './Disclosure'
 
 // Pip's "Add" bottom-sheet — CONTEXTUAL now. HubLayout hands in the current
 // section's modes (lib/addSheet SECTION_MODES): the board keeps the quick-note
@@ -171,6 +172,22 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   carnet: '/cercle?add=carnet',
   ...FORM_ROUTES,
 }
+
+// IA: a chooser tile either opens a field RIGHT HERE (event? no — todo, a memo, a
+// pantry line) or LEAVES the sheet for a full-screen route. The two look identical
+// as bare tiles, so a navigating tile earns a trailing chevron. "Navigates" = it's
+// in NAV_TARGET, OR it's one of the two day-planner shortcuts (they resolve their
+// /kitchen/day/<date> target at click time, not through the static table — see the
+// chooser onClick). In-sheet forms (todo/mot/pantry/reserve/meal/leftovers/cook and
+// the chores-pick sub-choice) deliberately get NO chevron.
+const navigatesAway = (m: AddSheetMode) => !!NAV_TARGET[m] || m === 'plan-today' || m === 'plan-tomorrow'
+
+// The board chooser's low-frequency long tail — collapsed behind a calm "Plus…"
+// <Disclosure> so the everyday tiles (event · Corvées · todo · routine) lead and
+// the sheet isn't a 9-tile wall. Only the board carries these five modes, so
+// filtering any other section's chooser by this set is a no-op (empty overflow →
+// no disclosure). Every tile stays reachable once expanded.
+const BOARD_MORE = new Set<AddSheetMode>(['voyage', 'plan-today', 'plan-tomorrow', 'departure', 'mot'])
 
 // The board ＋ « Corvées » sub-choice (rendered for mode === 'chores-pick'): a
 // chore vs the two home-project kinds. Each navigates to its full-screen form
@@ -439,6 +456,12 @@ export function AddSheet({
   // sheet (tiles.length === 1) keeps capture in its panel exactly as before.
   const captureAtTop = tiles.length > 1 && tiles.includes('capture')
   const gridTiles = captureAtTop ? tiles.filter((m) => m !== 'capture') : tiles
+  // IA: split the chooser into the everyday tiles (always shown) and the board's
+  // long tail (collapsed behind "Plus…"). BOARD_MORE only matches board modes, so
+  // every other section keeps its full grid (overflow comes back empty → no
+  // disclosure). Every tile stays reachable once the disclosure is expanded.
+  const primaryTiles = gridTiles.filter((m) => !BOARD_MORE.has(m))
+  const overflowTiles = gridTiles.filter((m) => BOARD_MORE.has(m))
 
   async function autoPick() {
     if (autoBusy) return
@@ -745,6 +768,23 @@ export function AddSheet({
           ? t.list.addTitle
           : t.common.add
 
+  // The 7 AI-router types as re-file tiles. Shown DIRECTLY when a capture came back
+  // degraded (AI off → picking a type is required work, not an optional tweak), and
+  // otherwise tucked behind the quiet "Corriger" disclosure below (a mis-route is
+  // rare, so the happy path stays just the confirmation line).
+  const rerouteTiles = (
+    <div className="cat-grid">
+      {TYPE_DRESS.map((ty) => (
+        <button key={ty.type} type="button" className="cat-pick" onClick={() => submit(undefined, ty.type)}>
+          <span className="ct" style={{ background: CATS[ty.cat].wash }}>
+            <Icon name={ty.icon} size={22} color={CATS[ty.cat].deep} />
+          </span>
+          <span>{t.capture.types[ty.type]}</span>
+        </button>
+      ))}
+    </div>
+  )
+
   // The quick-capture form. Rendered EITHER at the top of the board chooser
   // (captureAtTop — the fast path) OR, for a chooser-less / kiosk-fallback sheet, in
   // the picked-mode panel below. One definition, two placements (no duplicate form).
@@ -764,28 +804,25 @@ export function AddSheet({
 
         {captureErr && <StatusMessage tone="error">{online ? t.capture.failed : t.capture.offline}</StatusMessage>}
 
-        {/* CHANGE 2 — confirmation + one-tap correction after EVERY route (not only
-            the degraded fallback). The AI can mis-route, so re-filing the saved
-            capture to another type in one tap beats deleting + retyping. The degraded
-            line already says "pick the type"; a normal route reads "Non, plutôt…".
-            Re-routing hands the server the previous rows as `undo` (see submit), so a
-            correction MOVES the capture instead of duplicating it. */}
+        {/* CHANGE 2 (IA revisit) — after a route, lead with just the calm
+            confirmation line ("Ajouté : X"). Correction is a mis-route recovery, not
+            the happy path, so the 7 re-file tiles hide behind a quiet "Corriger"
+            <Disclosure> instead of appearing on every capture. The DEGRADED fallback
+            (AI off) is different: picking a type is REQUIRED, so those tiles stay
+            shown outright. Re-routing hands the server the previous rows as `undo`
+            (see submit), so a correction MOVES the capture instead of duplicating it. */}
         {routed && (
           <>
             <p className="capture__routed mono">
               {routed.degraded ? t.capture.degraded : `${t.capture.routed} ${routed.label}`}
             </p>
-            {!routed.degraded && <p className="sheet__group-label mono">{t.capture.reroute}</p>}
-            <div className="cat-grid">
-              {TYPE_DRESS.map((ty) => (
-                <button key={ty.type} type="button" className="cat-pick" onClick={() => submit(undefined, ty.type)}>
-                  <span className="ct" style={{ background: CATS[ty.cat].wash }}>
-                    <Icon name={ty.icon} size={22} color={CATS[ty.cat].deep} />
-                  </span>
-                  <span>{t.capture.types[ty.type]}</span>
-                </button>
-              ))}
-            </div>
+            {routed.degraded ? (
+              rerouteTiles
+            ) : (
+              <Disclosure label={t.capture.correct} className="capture__correct">
+                {rerouteTiles}
+              </Disclosure>
+            )}
           </>
         )}
 
@@ -798,6 +835,56 @@ export function AddSheet({
           drawing (#14). Both file a fridge note with an R2 attachment. */}
       <MemoControls onDone={close} />
     </>
+  )
+
+  // One chooser tile — reused by the primary grid AND the "Plus…" overflow
+  // disclosure so the two placements can't drift. A navigating tile (navigatesAway)
+  // carries a trailing chevron; an in-sheet-form tile does not.
+  const renderTile = (m: AddSheetMode) => (
+    <button
+      key={m}
+      type="button"
+      className={'cat-pick' + (mode === m ? ' sel' : '')}
+      disabled={!help.active && m === 'auto-pick' && autoBusy}
+      onClick={help.pick(m, () => {
+        if (m === 'auto-pick') {
+          autoPick()
+          return
+        }
+        if (m === 'share') {
+          void shareList()
+          return
+        }
+        // The day-planner shortcuts resolve their date at click time
+        // (today / tomorrow), then jump to that day's full planner.
+        if (m === 'plan-today' || m === 'plan-tomorrow') {
+          const base = todayLocalDay()
+          const d = m === 'plan-today' ? base : addLocalDays(base, 1)
+          close()
+          nav(`/kitchen/day/${d}`)
+          return
+        }
+        const target = NAV_TARGET[m]
+        if (target) {
+          close()
+          nav(target)
+          return
+        }
+        setMode(m)
+      })}
+      aria-pressed={mode === m}
+    >
+      <span className="ct" style={{ background: CATS[MODE_DRESS[m].cat].wash }}>
+        <Icon name={MODE_DRESS[m].icon} size={22} color={CATS[MODE_DRESS[m].cat].deep} />
+      </span>
+      <span>{m === 'auto-pick' && autoBusy ? t.shop.autoWorking : modeLabel(m)}</span>
+      {/* Trailing "leaves the sheet" cue — decorative, so aria-hidden + no tap. */}
+      {navigatesAway(m) && (
+        <span className="cat-pick__nav" aria-hidden="true">
+          <Icon name="arrow-up-right-bold" size={13} color="var(--ink-faint)" />
+        </span>
+      )}
+    </button>
   )
 
   return (
@@ -820,50 +907,22 @@ export function AddSheet({
             overlay that lives on the kitchen page, not in this sheet. Liste's
             auto-pick tile drops out when the list is empty (nothing to price).
             On the board the capture tile is hoisted out (captureAtTop) — the rest
-            stay here as explicit overrides. */}
-        {tiles.length > 1 && gridTiles.length > 0 && (
-          <div className={'cat-grid' + (gridTiles.length === 3 ? ' cat-grid--3' : '')}>
-            {gridTiles.map((m) => (
-              <button
-                key={m}
-                type="button"
-                className={'cat-pick' + (mode === m ? ' sel' : '')}
-                disabled={!help.active && m === 'auto-pick' && autoBusy}
-                onClick={help.pick(m, () => {
-                  if (m === 'auto-pick') {
-                    autoPick()
-                    return
-                  }
-                  if (m === 'share') {
-                    void shareList()
-                    return
-                  }
-                  // The day-planner shortcuts resolve their date at click time
-                  // (today / tomorrow), then jump to that day's full planner.
-                  if (m === 'plan-today' || m === 'plan-tomorrow') {
-                    const base = todayLocalDay()
-                    const d = m === 'plan-today' ? base : addLocalDays(base, 1)
-                    close()
-                    nav(`/kitchen/day/${d}`)
-                    return
-                  }
-                  const target = NAV_TARGET[m]
-                  if (target) {
-                    close()
-                    nav(target)
-                    return
-                  }
-                  setMode(m)
-                })}
-                aria-pressed={mode === m}
-              >
-                <span className="ct" style={{ background: CATS[MODE_DRESS[m].cat].wash }}>
-                  <Icon name={MODE_DRESS[m].icon} size={22} color={CATS[MODE_DRESS[m].cat].deep} />
-                </span>
-                <span>{m === 'auto-pick' && autoBusy ? t.shop.autoWorking : modeLabel(m)}</span>
-              </button>
-            ))}
+            stay here as explicit overrides. The everyday tiles show up front; the
+            board's long tail collapses into "Plus…" below (primary/overflow). */}
+        {tiles.length > 1 && primaryTiles.length > 0 && (
+          <div className={'cat-grid' + (primaryTiles.length === 3 ? ' cat-grid--3' : '')}>
+            {primaryTiles.map(renderTile)}
           </div>
+        )}
+
+        {/* Board long tail — voyage / plan today / plan tomorrow / départ / laisse
+            un mot. Collapsed by default (NFR-CALM-1: nothing fills the sheet unasked);
+            every tile is reachable once expanded. Non-board sections never populate
+            this, so the disclosure simply doesn't render for them. */}
+        {overflowTiles.length > 0 && (
+          <Disclosure label={t.capture.more} className="addsheet__more">
+            <div className="cat-grid">{overflowTiles.map(renderTile)}</div>
+          </Disclosure>
         )}
 
         {/* The kitchen week's actions — only on the Repas tab, where their result

@@ -437,8 +437,11 @@ test.describe('add sheet', () => {
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    // The board chooser appends two day-planner shortcuts after capture/event/
-    // chore/routine; "Planifier aujourd'hui" navigates to that day's planner scene.
+    // The board chooser keeps the everyday tiles up front and tucks the low-frequency
+    // long tail (voyage, the two day-planner shortcuts, départ, mot) behind a "Plus…"
+    // disclosure — expand it to reach "Planifier aujourd'hui".
+    await page.locator('.sheet .disclosure__summary', { hasText: 'Plus' }).click()
+    // "Planifier aujourd'hui" navigates to that day's planner scene.
     await expect(page.locator('.cat-pick', { hasText: 'Planifier aujourd’hui' })).toBeVisible()
     await Promise.all([
       page.waitForURL(/\/kitchen\/day\/\d+/),

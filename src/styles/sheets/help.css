@@ -253,6 +253,8 @@
   margin: 6px 0 18px;
 }
 .cat-pick {
+  /* anchor the trailing "leaves the sheet" chevron in the corner */
+  position: relative;
   background: var(--card);
   border: 2px solid transparent;
   border-radius: var(--radius-md);
@@ -265,6 +267,18 @@
   font-family: var(--sans);
   box-shadow: var(--shadow-sm);
   transition: border-color var(--dur-fast);
+}
+/* IA cue: a tile that LEAVES the sheet for a full-screen route (event / voyage /
+   départ / the day-planner shortcuts) wears a quiet chevron top-right, so "takes
+   you somewhere" reads apart from a tile that opens a field in place. Decorative
+   and non-interactive — the whole tile is the tap target. */
+.cat-pick__nav {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  opacity: 0.55;
+  pointer-events: none;
 }
 .cat-pick .ct {
   width: 40px;
@@ -288,6 +302,15 @@
    describes for the old 3+1). */
 .cat-grid--3 {
   grid-template-columns: repeat(3, 1fr);
+}
+/* The board chooser's "Plus…" overflow (the collapsed long tail). Its inner tile
+   grid already carries the chooser's own bottom spacing, so trim the disclosure
+   body's extra top gap and give the whole block a little breathing room below. */
+.addsheet__more {
+  margin-bottom: 10px;
+}
+.addsheet__more .cat-grid {
+  margin-top: 6px;
 }
 /* A labelled subgroup of tiles inside the sheet (the kitchen week's actions —
    shop the week / AI ideas / book ideas — sit apart from the add chooser). The
