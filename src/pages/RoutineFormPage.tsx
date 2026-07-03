@@ -5,6 +5,8 @@ import { RoutineForm, type RoutineInit } from '../components/forms/RoutineForm'
 import type { RoutineSeed } from '../lib/drawingToRoutine'
 import { Loading } from '../components/Fallback'
 import { api } from '../lib/api'
+import { useWrite } from '../lib/write'
+import { useConfirm } from '../lib/confirm'
 import { ROUTINES_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { CATS } from '../lib/cats'
 import { useT } from '../i18n'
@@ -17,6 +19,8 @@ import { useT } from '../i18n'
 export function RoutineFormPage() {
   const t = useT()
   const qc = useQueryClient()
+  const write = useWrite()
+  const confirm = useConfirm()
   const { id } = useParams()
   const location = useLocation()
   const editing = !!id
@@ -42,6 +46,23 @@ export function RoutineFormPage() {
         // Still loading the routine to edit → wait; loaded but gone (deleted from
         // another device) → bounce back to the tab rather than show a blank form.
         if (editing && !routine) return data ? <Navigate to="/routines" replace /> : <Loading />
+        // Delete from the same scene that edits it (no trip to Réglages ▸ Corvées).
+        // A weighty confirm (useConfirm), then a DELETE via useWrite so an offline
+        // tap queues to the outbox, then back to the tab.
+        const onDelete =
+          routine &&
+          (async () => {
+            const ok = await confirm({
+              message: t.routines.deleteConfirm(routine.name),
+              confirmLabel: t.routines.delete,
+              tone: 'danger',
+            })
+            if (!ok) return
+            await write('routines', { method: 'DELETE', body: { id: routine.id }, affectedKeys: [ROUTINES_KEY] })
+            qc.invalidateQueries({ queryKey: ROUTINES_KEY })
+            qc.invalidateQueries({ queryKey: BOARD_KEY })
+            close()
+          })
         return (
           <RoutineForm
             members={members}
@@ -52,6 +73,7 @@ export function RoutineFormPage() {
               qc.invalidateQueries({ queryKey: BOARD_KEY })
               close()
             }}
+            onDelete={onDelete || undefined}
           />
         )
       }}

@@ -46,6 +46,7 @@ export function RoutineForm({
   seed,
   onSaved,
   onCancel,
+  onDelete,
 }: {
   members: FormMember[]
   value?: RoutineInit | null
@@ -55,6 +56,10 @@ export function RoutineForm({
   seed?: { cards: DeckCard[]; cardsPhoto: string[]; name?: string } | null
   onSaved: () => void
   onCancel?: () => void
+  // Edit mode only: a delete affordance so a routine can be removed from the same
+  // scene that edits it (no trip to Réglages ▸ Corvées). The owner handles the
+  // confirm + write + navigation; the button just calls this when present.
+  onDelete?: () => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -254,6 +259,13 @@ export function RoutineForm({
       {onCancel && (
         <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
           {t.common.cancel}
+        </button>
+      )}
+      {/* Delete recedes quietly (btn--ghost) — the weight lives in the confirm
+          dialog the owner shows, per the .btn--danger note in core.css. */}
+      {editing && onDelete && (
+        <button type="button" className="btn btn--ghost mono" onClick={onDelete} disabled={busy}>
+          <InlineIcon name="trash-bold" /> {t.routines.delete}
         </button>
       )}
     </form>

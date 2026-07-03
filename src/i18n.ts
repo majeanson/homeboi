@@ -1479,6 +1479,8 @@ export const FR = {
     newRoutine: 'Nouvelle routine',
     editExisting: 'Modifier une routine',
     editTitle: 'Modifier la routine',
+    delete: 'Supprimer la routine',
+    deleteConfirm: (name: string) => `Supprimer la routine « ${name} » ? Ses cartes seront effacées.`,
     // Parent-surface empty (distinct from the toddler `kid.none`, which points at
     // the réglages — here the create button is right in the tab).
     parentEmpty: 'Aucune routine pour l’instant.',
@@ -3807,6 +3809,8 @@ export const EN: typeof FR = {
     newRoutine: 'New routine',
     editExisting: 'Edit a routine',
     editTitle: 'Edit routine',
+    delete: 'Delete routine',
+    deleteConfirm: (name: string) => `Delete the routine “${name}”? Its cards will be erased.`,
     parentEmpty: 'No routines yet.',
     stepsN: (n: number) => `${n} step${n === 1 ? '' : 's'}`,
     empty: 'No cards',

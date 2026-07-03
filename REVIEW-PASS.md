@@ -335,8 +335,11 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
   the Routines-tab picker — the inline `<li>` `RoutineForm` (the "worst sheet offender" under
   the mobile keyboard) is gone. `RoutineForm` stays alive (still the scene's form via
   `RoutineFormPage`); the unused import + `editing` state were dropped.
-- [ ] **No delete affordance in the Routines tab or edit scene** — deleting forces a trip to
-  Settings ▸ Corvées. Add a delete in the edit scene / detail peek.
+- [x] **No delete affordance in the Routines tab or edit scene** — ✅ **Fixed 2026-07-03**: the
+  `/routine/:id` edit scene now shows a quiet ghost « Supprimer la routine » (RoutineForm
+  `onDelete`, edit-mode only). `RoutineFormPage` owns it: a weighty `useConfirm` dialog →
+  `useWrite` DELETE (offline-queueable) → invalidate `ROUTINES_KEY`/`BOARD_KEY` → back to the
+  tab. Covered by `routine-builder.spec.ts` (deep-link → confirm → DELETE `{id}` → `/routines`).
 - [ ] **Nested interactive-in-interactive on the parent grid** — `<button>` edit + `<button>`
   run inside a `role="button"` card (`Routines.tsx:134-231`); works via `stopPropagation` but
   fragile for keyboard/AT. Make the card a non-button `<article>` with explicit controls.

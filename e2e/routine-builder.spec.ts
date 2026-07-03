@@ -67,3 +67,27 @@ test('reordering a card up is reflected in the POST order', async ({ page }) => 
   const body = await submitAndCapture(page, form)
   expect(body.cards.map((c) => c.label)).toEqual(['Bravo', 'Alpha'])
 })
+
+test('the edit scene can delete a routine (confirm → DELETE → back to the tab)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+
+  // Deep-link straight into edit mode for the mocked routine 'r1' (Matin).
+  await page.goto('/routine/r1')
+  const form = page.locator('.operator__routine-form')
+  await expect(form).toBeVisible()
+
+  // The delete affordance lives in the scene now (no trip to Réglages ▸ Corvées);
+  // tapping it opens the weighty confirm dialog rather than deleting outright.
+  await form.getByRole('button', { name: 'Supprimer la routine' }).click()
+  await expect(page.locator('.confirm')).toBeVisible()
+
+  // Confirming fires the DELETE and navigates back to /routines.
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('DELETE', 'routines'), { timeout: 20_000 }),
+    page.locator('.confirm .btn--danger').click(),
+  ])
+  expect(JSON.parse(req.postData() || '{}')).toMatchObject({ id: 'r1' })
+  await expect(page).toHaveURL(/\/routines$/)
+})
