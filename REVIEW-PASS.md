@@ -581,8 +581,10 @@ default kind. These deserve priority in the implement phase.
   (text-only + photo-staged send) + the board fridge-note/drawings specs stay green.
 - [ ] **Operator can't edit incoming values before accepting** (`IntakeReview` merge-or-create
   only, `:280`; PostboxReview posts text as-is) — a typo'd relative name can't be fixed pre-merge.
-- [ ] **Mic-denied is silent** in Postbox (`:110` swallows `getUserMedia` rejection) — a relative
-  who denies the mic sees the record button do nothing. Surface a `StatusMessage`.
+- [x] **Mic-denied is silent** — ✅ **Fixed 2026-07-02.** Now handled in the shared `MemoControls`
+  (which Postbox delegates to after the theme-6 refactor, so the board memo path gets it too): a
+  `getUserMedia` rejection sets `micDenied` → a `StatusMessage` (`t.memo.micDenied`, FR/EN), instead
+  of the silent swallow. A written note still works.
 - [ ] **Review-queue count in the section title** — `IntakeReview.tsx:226`/`PostboxReview.tsx:69`
   render `reviewPending(n)` ("N fiches à réviser"). Borderline against the "no unread counts"
   tenet; operator-only, passive, no nav badge/push, hidden at zero → borderline-acceptable.

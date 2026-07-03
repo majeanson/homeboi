@@ -5,6 +5,7 @@ import { api, ApiError, isStatus } from '../lib/api'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { Icon } from './Icon'
+import { StatusMessage } from './StatusMessage'
 import { DrawPad } from './DrawPad'
 import { useDrawingToRoutine } from '../lib/drawingToRoutine'
 import { useKeepInGalleryToast } from '../lib/drawingGallery'
@@ -74,6 +75,7 @@ export function MemoControls({
   const [draw, setDraw] = useState(false)
   const [drawPhoto, setDrawPhoto] = useState(false) // opened straight into the photo flow (#14b)
   const [hidden, setHidden] = useState(false) // R2 unbound (503) → no media notes here
+  const [micDenied, setMicDenied] = useState(false) // getUserMedia rejected → say so, don't fail silent
   const toRoutine = useDrawingToRoutine()
   // Keep into « Mes dessins » with a calm, undoable confirming toast (best-effort).
   const keepInGallery = useKeepInGalleryToast()
@@ -141,6 +143,7 @@ export function MemoControls({
 
   async function startRec() {
     if (busy || recording) return
+    setMicDenied(false)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
@@ -162,7 +165,9 @@ export function MemoControls({
         if (recRef.current?.state === 'recording') recRef.current.stop()
       }, MAX_REC_MS)
     } catch {
-      /* mic denied / unavailable — leave the text capture as-is */
+      // Mic denied / unavailable — say so (a written note still works) instead of the
+      // old silent swallow; this control is shared by the board memo + Postbox (#554).
+      setMicDenied(true)
     }
   }
 
@@ -205,6 +210,7 @@ export function MemoControls({
           </button>
         ) : null}
       </div>
+      {micDenied && <StatusMessage tone="error">{t.memo.micDenied}</StatusMessage>}
       <DrawPad
         open={draw || drawPhoto}
         draftId={drawDraftId}

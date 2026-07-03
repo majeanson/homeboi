@@ -263,6 +263,7 @@ export const FR = {
   memo: {
     record: 'Mémo vocal',
     stop: 'Arrêter',
+    micDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
     draw: 'Dessiner',
     drawTitle: 'Dessiner une note',
     editTitle: 'Continuer le dessin',
@@ -2623,6 +2624,7 @@ export const EN: typeof FR = {
   memo: {
     record: 'Voice memo',
     stop: 'Stop',
+    micDenied: 'Mic blocked. Allow the microphone in your browser.',
     draw: 'Draw',
     drawTitle: 'Draw a note',
     editTitle: 'Add to drawing',
