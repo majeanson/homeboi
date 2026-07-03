@@ -153,7 +153,18 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
     <OperatorSection title={t.operator.routines}>
       {routines.length === 0 && <EmptyState>{t.operator.noRoutines}</EmptyState>}
       <ul className="operator__list">
-        {routines.map((r) => (
+        {routines.map((r) => {
+          // The moment-of-day cue's inner label — one definition, rendered either as
+          // an inert guest badge or the operator's tap-to-cycle button below.
+          const todText = isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : t.routines.tod.any
+          const todContent = isRoutineTod(r.timeOfDay) ? (
+            <>
+              <InlineIcon name={TOD_ICON[r.timeOfDay]} color={TOD_TINT[r.timeOfDay]} /> {todText}
+            </>
+          ) : (
+            todText
+          )
+          return (
             <li key={r.id} className="operator__routine-row">
               <span>
                 {r.name}
@@ -164,14 +175,7 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
                   it reads as an inert badge (the cue is shown, but can't be cycled). */}
               {ro ? (
                 <span className="chip mono" title={t.routines.todLabel}>
-                  {isRoutineTod(r.timeOfDay) ? (
-                    <>
-                      <InlineIcon name={TOD_ICON[r.timeOfDay]} color={TOD_TINT[r.timeOfDay]} />{' '}
-                      {t.routines.tod[r.timeOfDay]}
-                    </>
-                  ) : (
-                    t.routines.tod.any
-                  )}
+                  {todContent}
                 </span>
               ) : (
                 <button
@@ -179,16 +183,9 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
                   className="chip mono"
                   onClick={() => cycleTod(r)}
                   title={t.routines.todLabel}
-                  aria-label={`${t.routines.todLabel} ${isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : t.routines.tod.any}`}
+                  aria-label={`${t.routines.todLabel} ${todText}`}
                 >
-                  {isRoutineTod(r.timeOfDay) ? (
-                    <>
-                      <InlineIcon name={TOD_ICON[r.timeOfDay]} color={TOD_TINT[r.timeOfDay]} />{' '}
-                      {t.routines.tod[r.timeOfDay]}
-                    </>
-                  ) : (
-                    t.routines.tod.any
-                  )}
+                  {todContent}
                 </button>
               )}
               {/* Edit opens the full-screen builder scene (/routine/:id), not an
@@ -202,7 +199,8 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
                 deleteLabel={t.operator.deleteRoutine}
               />
             </li>
-          ))}
+          )
+        })}
       </ul>
       {/* Building a routine is the same ＋ as everywhere; Réglages edits/removes
           the ones that exist (the rows above). Hidden for a read-only guest. */}

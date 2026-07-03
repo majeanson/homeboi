@@ -370,8 +370,9 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
   the ContactPhotos/NoteEditor pattern — one shared `aria-hidden`/`tabIndex=-1` input clicked by
   a real, focusable `<button>` (`pickBtn`). Palette emoji buttons now carry
   `aria-label={\`${t.operator.emojiPick} ${e}\`}` so each reads as a "choose ⟨icon⟩" action.
-- [ ] **ToD chip render block copy-pasted twice** within `RoutinesSection` (guest badge vs
-  button, `chores.tsx:178-206`).
+- [x] **ToD chip render block copy-pasted twice** within `RoutinesSection` — ✅ **Fixed
+  2026-07-03**: the cue's inner label is computed once per row (`todText`/`todContent`) and
+  rendered by both the inert guest badge and the operator's tap-to-cycle button.
 - [x] **Player optimistic mutations use `api()` not `useWrite()`** — ✅ **Fixed 2026-07-02**:
   all three `RoutinePlayer` mutations (toggle / reset / timer) now call `writeWith(qc,
   'routines', …)` inside the `useOptimisticMutation`, so a tap made offline queues to the
