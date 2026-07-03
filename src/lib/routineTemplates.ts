@@ -130,10 +130,5 @@ export function homeProjectTemplates(kind: 'plan' | 'upkeep', lang: Lang): DeckC
   return HOME_PROJECTS[kind].map((p) => ({ icon: p.icon, label: p.label[lang] }))
 }
 
-// A friendly, toddler-relevant emoji palette for the card switcher.
-export const DECK_EMOJIS = [
-  '🌅', '☀️', '🌙', '⭐', '🚽', '🪥', '🛁', '🚿', '🧼', '🧴',
-  '👕', '👚', '🧦', '👟', '🧥', '🥞', '🍎', '🍽️', '🥛', '🍌',
-  '📖', '📚', '🧸', '🎨', '⚽', '🧺', '🗑️', '🛏️', '🌱', '🐟',
-  '🧹', '🧽', '💧', '❤️', '😴', '🙂',
-]
+// (The card-switcher emoji palette moved to the shared EMOJI_SET in lib/emoji.ts,
+// rendered by EmojiPicker — one broad set for routine cards, carnets, everything.)

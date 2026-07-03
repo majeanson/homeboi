@@ -249,11 +249,21 @@ export function ContactForm({
     setCreatingGroup(false)
   }
 
-  const addTag = () => {
-    const v = tagDraft.trim()
+  const addTagValue = (raw: string) => {
+    const v = raw.trim()
     if (v && !tags.includes(v)) setTags([...tags, v])
     setTagDraft('')
   }
+  // Existing contact tags across the household (deduped, minus the ones already on
+  // this person) — so adding a tag SUGGESTS what's already in use instead of letting
+  // « ami » / « amis » synonyms drift apart (the reason RecipeForm's tag field is a
+  // combobox too). Free text still adds a brand-new tag.
+  const tagOptions = useMemo<ComboOption<string>[]>(() => {
+    const onThis = new Set(tags.map((x) => x.toLowerCase()))
+    const all = new Set<string>()
+    for (const c of contacts) for (const tg of c.tags ?? []) if (!onThis.has(tg.toLowerCase())) all.add(tg)
+    return [...all].sort().map((tg) => ({ id: tg, label: tg, data: tg }))
+  }, [contacts, tags])
 
   async function pickPhoto(file: File | undefined) {
     if (!file) return
@@ -524,23 +534,18 @@ export function ContactForm({
               ))}
             </div>
           )}
-          <div className="cf__tagadd">
-            <input
-              className="cf__input"
-              value={tagDraft}
-              onChange={(e) => setTagDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  addTag()
-                }
-              }}
-              placeholder={t.cercle.tags}
-            />
-            <button type="button" className="btn btn--sm" onClick={addTag}>
-              <Icon name="plus-bold" size={14} />
-            </button>
-          </div>
+          {/* Search existing tags + pick, or type a new one (the shared EntityCombobox —
+              the same "search + pick existing + free-text" field used for recipe tags). */}
+          <EntityCombobox<string>
+            value={tagDraft}
+            onChange={setTagDraft}
+            options={tagOptions}
+            onPick={(o) => addTagValue(o.data)}
+            onSubmit={(v) => addTagValue(v)}
+            submitIcon="plus-bold"
+            placeholder={t.cercle.tags}
+            ariaLabel={t.cercle.tags}
+          />
         </div>
 
         {/* Named groups — toggle this person in/out of an explicit group (Famille

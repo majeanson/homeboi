@@ -19,6 +19,7 @@ import { ColorPicker } from '../ColorPicker'
 import { StatusMessage } from '../StatusMessage'
 import { FormFooter } from '../FormFooter'
 import { Disclosure } from '../Disclosure'
+import { EmojiPicker } from '../EmojiPicker'
 import { Icon } from '../Icon'
 
 // Add / edit ONE carnet's identity (a house, a car, a water heater, a room). A child
@@ -161,18 +162,12 @@ export function CarnetForm({
         </label>
       )}
 
-      <label className="recur__row mono">
-        <span>{c.emoji}</span>
-        <input
-          className="input"
-          value={emoji}
-          onChange={(e) => setEmoji(e.target.value)}
-          placeholder={KIND_EMOJI[kind]}
-          aria-label={c.emoji}
-          maxLength={4}
-          style={{ maxWidth: '5rem' }}
-        />
-      </label>
+      {/* Tap-to-pick from the shared broad EmojiPicker instead of typing an emoji;
+          empty selection → the kind's default disc glyph (KIND_EMOJI). */}
+      <div className="cf__field">
+        <label className="cf__label">{c.emoji}</label>
+        <EmojiPicker value={emoji} onPick={setEmoji} ariaLabel={c.emoji} />
+      </div>
 
       <ColorPicker value={colour} onChange={setColour} label={c.colour} />
 

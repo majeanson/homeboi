@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { DECK_EMOJIS, type DeckCard } from '../lib/routineTemplates'
+import { type DeckCard } from '../lib/routineTemplates'
+import { EmojiPicker } from './EmojiPicker'
 import { useT } from '../i18n'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { useOnline } from '../lib/online'
@@ -193,22 +194,14 @@ export function CardDeckEditor({
               )}
             </div>
           {paletteFor === i && (
-            <div className="deck__palette">
-              {DECK_EMOJIS.map((e) => (
-                <button
-                  key={e}
-                  type="button"
-                  className="deck__palette-emoji"
-                  aria-label={`${t.operator.emojiPick} ${e}`}
-                  onClick={() => {
-                    update(i, { icon: e })
-                    setPaletteFor(null)
-                  }}
-                >
-                  {e}
-                </button>
-              ))}
-            </div>
+            <EmojiPicker
+              value={card.icon}
+              onPick={(e) => {
+                update(i, { icon: e })
+                setPaletteFor(null)
+              }}
+              ariaLabel={t.operator.emojiPick}
+            />
           )}
         </div>
       ))}

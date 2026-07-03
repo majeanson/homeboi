@@ -497,28 +497,8 @@
 .deck__card .edit-field__box {
   flex: 1 1 4rem;
 }
-.deck__palette {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px;
-  margin-top: 6px;
-  background: var(--paper-deep);
-  border-radius: var(--radius-md);
-}
-.deck__palette-emoji {
-  font-size: 24px;
-  width: 44px;
-  height: 44px;
-  border: 0;
-  background: var(--card);
-  border-radius: 11px;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-}
-.deck__palette-emoji:hover {
-  background: var(--marigold-wash);
-}
+/* The deck card-switcher palette is now the shared EmojiPicker (.emoji-picker in
+   pages/fields.css) — its bespoke .deck__palette* styles were removed. */
 .deck__add {
   align-self: flex-start;
   margin-top: 4px;

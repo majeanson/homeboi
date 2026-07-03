@@ -193,7 +193,7 @@ test('settings-deck-palette', async ({ page }) => {
   await page.locator('.deck__add').waitFor({ state: 'visible' })
   await page.locator('.deck__add').click() // add a blank card
   await page.locator('.deck__emoji').first().click() // open its palette
-  await page.locator('.deck__palette').waitFor({ state: 'visible' })
+  await page.locator('.emoji-picker').waitFor({ state: 'visible' }) // shared EmojiPicker now
   await page.waitForTimeout(250)
   await shoot(page, 'settings-deck-palette-phone', false)
 })
