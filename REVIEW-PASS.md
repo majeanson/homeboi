@@ -232,8 +232,10 @@ not structural. Four reviewers; findings deduped below.
 - [x] **`HistorySection` delete has no confirm and no undo** — ✅ **Fixed 2026-07-02**:
   `remove` (`operator/shopping.tsx`) now hides the row locally + holds the DELETE behind the
   shared `useUndoToast` (deferred; onUndo reloads it back). Matches the list's undo idiom.
-- [ ] **`CashierPage` has no empty/error state** — a cold deep-link with an empty pick set
-  flashes `Loading`→redirect to `/liste` with no message (`CashierPage.tsx:33`).
+- [x] **`CashierPage` has no empty/error state** — ✅ **Fixed 2026-07-02**: a `hadPicks`
+  ref distinguishes "emptied in-session → slip back to the list" (unchanged) from a cold
+  deep-link that was never non-empty → now renders a `SceneHead` + `EmptyState`
+  (`t.shop.cashierEmpty`, guide card `cashier`) instead of flashing Loading→blank→redirect.
 - [x] **Restock / réserve adds don't refresh predictions.** — ✅ **Fixed 2026-07-02**:
   `PantryTab.checkLowItem` + `ReserveSection.addToList` now pass
   `[BOARD_KEY, GHOSTS_KEY, HISTORY_KEY]`, matching the canonical `Liste.postAdd`, so a
@@ -263,8 +265,10 @@ not structural. Four reviewers; findings deduped below.
   `RecipeListPicker.confirm` now DEFERS the `recipe-to-list` POST behind `useUndoToast`
   (mirrors `ReserveSection.addToList`) — the write only fires if you don't undo, so no
   inverse is needed (the endpoint returns a count, not ids).
-- [ ] **`shopRecipe` silently no-ops** when a recipe has no non-heading ingredients
-  (`Kitchen.tsx:84`) — the peek's "Ajouter à la liste" dead-taps with no feedback.
+- [x] **`shopRecipe` silently no-ops** when a recipe has no non-heading ingredients
+  — ✅ **Fixed 2026-07-02**: the recipe peek now passes `onShop: undefined` (which
+  `buildRecipe` hides) when there are no buyable ingredients, so "Ajouter à la liste"
+  isn't offered at all rather than dead-tapping — mirrors the `onMakeRoutine` gate.
 - [ ] **Empty-state dead-ends:** empty recipe book has no direct "add a recipe" CTA (only a
   guide link, `RecipesTab.tsx:413` — create is ＋-FAB-only); `ToddlerCookBook` with zero
   recipes shows a cover reading "0 recettes" (`:84`), a dead book.

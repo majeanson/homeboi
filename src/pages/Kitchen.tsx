@@ -756,7 +756,10 @@ export function Kitchen() {
                   r,
                   { t, lang, members: [], tagColors },
                   {
-                    onShop: () => shopRecipe(r),
+                    // Only offer "Ajouter à la liste" when the recipe has buyable
+                    // (non-heading) ingredients — otherwise the peek action was a dead
+                    // tap (shopRecipe silently no-op'd). undefined → the action hides.
+                    onShop: withoutHeadings(r.ingredients ?? []).length ? () => shopRecipe(r) : undefined,
                     // Parent-only: a recipe can become a toddler picture routine (#19).
                     onMakeRoutine: audience === 'parent' ? () => makeRoutine(r) : undefined,
                   },
