@@ -135,8 +135,24 @@
 .recipe-actions {
   justify-content: flex-start;
 }
+/* The demoted "manage" cluster (Modifier · Supprimer): its own full-width row below
+   a divider, right-aligned + small, so destructive delete is separated from the
+   Cuisiner-led do-actions above rather than sitting as a same-weight peer. */
+.recipe-actions__manage {
+  flex: 1 1 100%;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+/* Keep these two at their natural width (the phone rule below stretches footer
+   buttons to fill; the manage pair should stay quiet, not grow). */
+.recipe-actions__manage .btn {
+  flex: 0 0 auto;
+}
 .recipe-del {
-  margin-left: auto;
   color: var(--warn);
 }
 

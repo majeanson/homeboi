@@ -98,13 +98,19 @@ test('ms: recipe sheet + cook mode', async ({ page }) => {
   await page.waitForTimeout(400)
   const card = page.locator('.recipe-card').first()
   if (await card.count()) {
-    // A card opens the detail peek; its Cuisiner action navigates to cook mode.
+    // A card opens the detail peek; the browse-path peek's one primary action opens
+    // the full recipe view (Cuisiner is no longer duplicated on the recipe peek — it
+    // lives in the recipe view + on the planned-meal peek). Cook mode is reached from
+    // the recipe view's Cuisiner.
     await card.click()
     await page.waitForTimeout(600)
     await shot(page, 'recipe-sheet')
-    const cook = page.locator('.detail-sheet__actions button').filter({ hasText: 'Cuisiner' })
-    if (await cook.count()) {
-      await cook.first().click()
+    const openRecipe = page.locator('.detail-sheet__actions a, .detail-sheet__actions button').filter({ hasText: 'Ouvrir la recette' })
+    if (await openRecipe.count()) {
+      await openRecipe.first().click()
+      await page.locator('.recipe-modal').waitFor({ state: 'visible', timeout: 15_000 })
+      await page.waitForTimeout(300)
+      await page.locator('.recipe-actions .btn--primary').first().click() // Cuisiner
       await page.waitForTimeout(600)
       await shot(page, 'cook-mode')
     }

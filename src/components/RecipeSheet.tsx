@@ -201,7 +201,7 @@ export function RecipeSheet({
           >
             <Icon name="scroll-bold" size={18} />
           </button>
-          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.back}>
+          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.close}>
             <Icon name="x-bold" size={18} />
           </button>
         </div>
@@ -453,10 +453,36 @@ export function RecipeSheet({
           <MealPlanPicker band slot={planSlot} onSlot={setPlanSlot} week={week} onPickDay={planOn} />
         )}
 
+        {/* Actions read as a hierarchy: Cuisiner (the one prominent primary) leads,
+            then the non-destructive "do" actions (plan · add · share); Modifier +
+            Supprimer are demoted to their own quiet row below a divider, so a
+            destructive delete is never a same-weight peer of "cook this" (mis-tap
+            magnet on a phone). */}
         <div className="recipe-modal__foot recipe-actions">
           {canCook && (
             <button type="button" className="btn btn--primary" onClick={() => onCook(factor)}>
               <InlineIcon name="cooking-pot-bold" /> {t.recipes.cook}
+            </button>
+          )}
+          {!ro && (
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              onClick={() => setPlanning((p) => !p)}
+              disabled={plannedDate != null}
+            >
+              {plannedDate != null ? t.recipes.planned : t.recipes.plan}
+            </button>
+          )}
+          {!ro && recipe.ingredients.length > 0 && (
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              onClick={() => (listPrompt ? setListPrompt(null) : openAddToList())}
+              disabled={added}
+              aria-expanded={!!listPrompt}
+            >
+              {added ? t.recipes.addedToList : t.recipes.addToList}
             </button>
           )}
           {/* Share the recipe as plain text via the platform sheet — a read action,
@@ -479,36 +505,15 @@ export function RecipeSheet({
               <InlineIcon name="arrow-up-right-bold" /> {t.recipes.shareRecipe}
             </button>
           )}
-          {!ro && recipe.ingredients.length > 0 && (
-            <button
-              type="button"
-              className="btn btn--ghost mono"
-              onClick={() => (listPrompt ? setListPrompt(null) : openAddToList())}
-              disabled={added}
-              aria-expanded={!!listPrompt}
-            >
-              {added ? t.recipes.addedToList : t.recipes.addToList}
-            </button>
-          )}
           {!ro && (
-            <button
-              type="button"
-              className="btn btn--ghost mono"
-              onClick={() => setPlanning((p) => !p)}
-              disabled={plannedDate != null}
-            >
-              {plannedDate != null ? t.recipes.planned : t.recipes.plan}
-            </button>
-          )}
-          {!ro && (
-            <button type="button" className="btn btn--ghost mono" onClick={onEdit}>
-              {t.common.edit}
-            </button>
-          )}
-          {!ro && (
-            <button type="button" className="btn btn--ghost mono recipe-del" onClick={del}>
-              {t.common.delete}
-            </button>
+            <div className="recipe-actions__manage">
+              <button type="button" className="btn btn--ghost btn--sm mono" onClick={onEdit}>
+                {t.common.edit}
+              </button>
+              <button type="button" className="btn btn--ghost btn--sm mono recipe-del" onClick={del}>
+                {t.common.delete}
+              </button>
+            </div>
           )}
         </div>
       </div>

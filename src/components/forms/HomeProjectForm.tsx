@@ -3,6 +3,7 @@ import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
 import { ColorPicker } from '../ColorPicker'
 import { Chip } from '../Chip'
+import { EditField } from '../EditField'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
@@ -50,8 +51,8 @@ export function HomeProjectForm({
   const [err, setErr] = useState(false)
   const write = useWrite()
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
+  async function submit(e?: React.FormEvent) {
+    e?.preventDefault()
     if (!title.trim() || busy) return
     setBusy(true)
     setErr(false)
@@ -104,7 +105,17 @@ export function HomeProjectForm({
           </Chip>
         ))}
       </div>
-      <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={addLabel} />
+      {/* Title reuses EditField (clear ✕ + mic + Enter-commit), matching its sibling
+          ChoreForm — this was the lone operator form still on a bare <input>. */}
+      <EditField
+        as="div"
+        value={title}
+        onChange={setTitle}
+        onSubmit={() => submit()}
+        submitIcon={null}
+        placeholder={addLabel}
+        ariaLabel={addLabel}
+      />
       <label className="recur__row mono">
         <span>{t.operator.home.budgetLabel}</span>
         <input

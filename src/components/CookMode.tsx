@@ -500,7 +500,7 @@ export function CookMode({
           )}
           {/* Sharing lives on the recipe view now (one home for it), not in the
               cook bar — keeps the at-the-stove chrome to cook controls + exit. */}
-          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.back}>
+          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.close}>
             <Icon name="x-bold" size={20} />
           </button>
         </div>

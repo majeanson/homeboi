@@ -416,9 +416,13 @@ export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => v
   if (r.tags?.length) blocks.push(tagChips(r.tags, ctx))
   const ing = preview(r.ingredients, 6)
   if (ing.length) blocks.push({ kind: 'list', label: t.detail.ingredients, items: ing })
+  // The recipe-card peek is the browse path: its one primary action opens the full
+  // recipe view, where Cuisiner lives (with the batch scaler that scales cook mode).
+  // "Cuisiner" is deliberately NOT repeated here — it stays on the planned-MEAL peek
+  // (buildMeal), the time-to-cook shortcut from the board, so cooking isn't a doubled
+  // decision on the browse path (peek → open recipe → Cuisiner again).
   const actions: DetailAction[] = [
     { key: 'open', label: t.detail.openRecipe, icon: 'book-open-bold', primary: true, href: `/kitchen/recipe/${r.id}` },
-    { key: 'cook', label: t.kitchen.cook, icon: 'cooking-pot-bold', href: `/kitchen/recipe/${r.id}/cook` },
   ]
   if (opts?.onShop)
     actions.push({ key: 'shop', label: t.detail.shopRecipe, icon: 'shopping-bag-bold', run: opts.onShop })
