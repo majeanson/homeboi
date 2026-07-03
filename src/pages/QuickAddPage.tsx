@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from '../components/EmptyState'
 import { useWrite } from '../lib/write'
 import { useUndoToast } from '../lib/toast'
@@ -10,7 +9,6 @@ import { pictoFor } from '../lib/picto'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
-import { patchGhost } from '../lib/ghost'
 import { useQuickItems, type QuickItem } from '../lib/quickItems'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { AislePicker } from '../components/AislePicker'
@@ -28,7 +26,6 @@ const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacrit
 export function QuickAddPage() {
   const t = useT()
   const write = useWrite()
-  const qc = useQueryClient()
   const undo = useUndoToast()
   const close = useSceneClose('/liste')
   useEscapeKey(close)
@@ -111,9 +108,13 @@ export function QuickAddPage() {
         if (ghostKey)
           // muted hides it from predictions; standing:false drops it from the
           // "Toujours" staple group. Both in one upsert covers every ghost source.
-          void patchGhost({ key: ghostKey, label: item.label, muted: true, standing: false })
-            .then(() => qc.invalidateQueries({ queryKey: GHOSTS_KEY }))
-            .catch(() => {})
+          // useWrite (not raw patchGhost) so muting a ghost offline queues + replays,
+          // matching the sibling list DELETE above; affectedKeys refetches the panel.
+          void write('ghost', {
+            method: 'PATCH',
+            body: { key: ghostKey, label: item.label, muted: true, standing: false },
+            affectedKeys: [GHOSTS_KEY],
+          }).catch(() => {})
       },
     })
   }

@@ -6,7 +6,7 @@ import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useUndoToast } from '../../lib/toast'
-import { FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
+import { FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 import { isGuest } from '../../lib/device'
@@ -20,6 +20,7 @@ import { StatusMessage } from '../StatusMessage'
 // price-match proof on the list knows where to search. Set once, used every trip.
 export function ShopSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const write = useWrite()
   const [postal, setPostal] = useState('')
   const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
 
@@ -32,11 +33,14 @@ export function ShopSection({ help }: { help?: HelpMode }) {
   async function save() {
     setStatus('idle')
     try {
-      const r = await api<{ postal: string | null }>('household', {
+      // useWrite so setting the postal code offline queues + replays. Online we
+      // adopt the server-normalized value back; a queued write has no data to read.
+      const res = await write<{ postal: string | null }>('household', {
         method: 'PATCH',
         body: { postal: postal.trim() },
+        affectedKeys: [HOUSEHOLD_KEY],
       })
-      setPostal(r.postal ?? '')
+      if (!res.queued) setPostal(res.data.postal ?? '')
       setStatus('saved')
     } catch {
       setStatus('bad')

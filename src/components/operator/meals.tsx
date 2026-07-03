@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
+import { useWrite } from '../../lib/write'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { SLOT_TIME_ORDER, SLOT_COLOR, SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
 import { wash } from '../../lib/colors'
@@ -22,7 +22,7 @@ import type { HouseholdSettings } from '../../lib/mealPrefs'
 // surfaces re-tint/re-filter live (they read the same key via useMealPrefs).
 export function MealSlotsSection({ help }: { help?: HelpMode }) {
   const t = useT()
-  const qc = useQueryClient()
+  const write = useWrite()
   // Only OVERRIDES live here (a slot absent = its default colour).
   const [colors, setColors] = useState<Record<string, string>>({})
   const [hidden, setHidden] = useState<Set<string>>(new Set())
@@ -46,17 +46,20 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
     async (nextColors: Record<string, string>, nextHidden: Set<string>) => {
       setStatus('idle')
       try {
-        await api('household', {
+        // useWrite so a colour/hide change made offline queues + replays (and
+        // invalidates HOUSEHOLD_KEY so the board/kitchen re-tint). A server 4xx still
+        // throws → 'bad'; a queued offline write resolves → 'saved' (it'll replay).
+        await write('household', {
           method: 'PATCH',
           body: { mealColors: nextColors, mealHidden: [...nextHidden] },
+          affectedKeys: [HOUSEHOLD_KEY],
         })
-        qc.invalidateQueries({ queryKey: HOUSEHOLD_KEY })
         setStatus('saved')
       } catch {
         setStatus('bad')
       }
     },
-    [qc],
+    [write],
   )
 
   function pickColor(slot: MealSlot, c: string) {
