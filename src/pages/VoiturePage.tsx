@@ -4,6 +4,7 @@ import { useLang, useT } from '../i18n'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { useWrite } from '../lib/write'
+import { useConfirm } from '../lib/confirm'
 import { CAR_KEY, BOARD_KEY, MEMBERS_KEY } from '../lib/queryKeys'
 import { useCarWeek, type CarDay, type CarRide, type CarModel } from '../lib/car'
 import { useCars } from '../lib/carPrefs'
@@ -45,6 +46,7 @@ export function VoiturePage() {
   useEscapeKey(close)
   const { audience } = useAudience()
   const write = useWrite()
+  const confirm = useConfirm()
   const { name: carName, color: carColorOf, primary } = useCars()
   const carId = primary?.id ?? 'car'
   const carColor = colourFor('car', carColorOf(primary?.id))
@@ -71,9 +73,13 @@ export function VoiturePage() {
     await write('car-day', { method: 'DELETE', body: { carId, day }, affectedKeys: [CAR_KEY, BOARD_KEY] })
     setEditDay(null)
   }
-  // Reset the whole visible week to the template (drop every override in it).
+  // Reset the whole visible week to the template (drop every override in it). This is a
+  // BULK, one-shot delete of several days at once — confirm first (a single day still
+  // clears without a prompt via clearDay, being one easily-redone override).
   async function resetWeek() {
     const days = (car?.days ?? []).filter((d) => d.override)
+    if (!days.length) return
+    if (!(await confirm({ message: t.auto.resetWeekConfirm, tone: 'danger', confirmLabel: t.auto.resetWeek }))) return
     for (const d of days) await write('car-day', { method: 'DELETE', body: { carId, day: d.day }, affectedKeys: [CAR_KEY, BOARD_KEY] })
   }
   // Copy last week's adjustments onto this week (only the days that were overridden).

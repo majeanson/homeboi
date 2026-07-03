@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
+import { useConfirm } from '../../lib/confirm'
 import { api, ApiError, isStatus } from '../../lib/api'
 import { BOARD_KEY } from '../../lib/queryKeys'
 import { useSpeak } from '../../lib/speak'
@@ -43,6 +44,7 @@ export function Notes({
 }) {
   const t = useT()
   const write = useWrite()
+  const confirm = useConfirm()
   const qc = useQueryClient()
   const speak = useSpeak()
   const toRoutine = useDrawingToRoutine()
@@ -118,7 +120,13 @@ export function Notes({
     if (id) setKept((s) => new Set(s).add(n.id))
   }
 
-  function dismiss(n: NoteRow) {
+  async function dismiss(n: NoteRow) {
+    // A media note frees its R2 blob on delete (the media-undo-blob rule: media rows
+    // confirm, they don't undo) — so a parent's ✕ on a drawing/photo/voice memo confirms
+    // first, guarding an accidental tap from silently losing the attachment. Plain text
+    // notes stay a quick, friction-free clear (they're transient by design, and toddler
+    // tap-to-clear only ever hits text notes — the media ✕ is parent-only).
+    if (n.media_key && !(await confirm({ message: t.notes.dismissMediaConfirm, tone: 'danger' }))) return
     // Optimistic: drop it from the cached board at once, then persist (queues
     // offline and replays on reconnect — deleting a note by id is idempotent).
     void write('notes', {

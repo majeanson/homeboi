@@ -263,6 +263,7 @@ export const FR = {
     drawing: 'Dessin',
     drawings: 'Dessins',
     photo: 'Photo',
+    dismissMediaConfirm: 'Retirer cette note ? Le média joint sera effacé.',
   },
   memo: {
     record: 'Mémo vocal',
@@ -740,6 +741,7 @@ export const FR = {
     whoHasCar: 'Qui a l’auto ?',
     copyLastWeek: '← Copier la semaine passée',
     resetWeek: 'Réinitialiser au modèle',
+    resetWeekConfirm: 'Réinitialiser toute la semaine au modèle ? Les ajustements de ces jours seront effacés.',
     prevWeek: 'Semaine précédente',
     nextWeek: 'Semaine suivante',
     thisWeek: 'Cette semaine',
@@ -2271,7 +2273,7 @@ export const FR = {
     byStore: 'Par magasin',
     share: 'Partager',
   },
-  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', delete: 'Supprimer', confirmTitle: 'Confirmer', saveFailed: 'Pas enregistré — réessaie.', loadFailed: 'Impossible de charger — réessaie.', close: 'Fermer', zoomIn: 'Agrandir', zoomOut: 'Réduire', zoomReset: 'Réinitialiser le zoom' },
+  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', delete: 'Supprimer', confirmTitle: 'Confirmer', deleteConfirm: 'Supprimer ?', saveFailed: 'Pas enregistré — réessaie.', loadFailed: 'Impossible de charger — réessaie.', close: 'Fermer', zoomIn: 'Agrandir', zoomOut: 'Réduire', zoomReset: 'Réinitialiser le zoom' },
   share: {
     title: 'Ajouter à Babillard',
     lead: 'Partagé depuis une autre app. Ajuste le texte au besoin, puis ajoute — l’app le classe (rendez-vous, liste, repas, note).',
@@ -2634,6 +2636,7 @@ export const EN: typeof FR = {
     drawing: 'Drawing',
     drawings: 'Drawings',
     photo: 'Photo',
+    dismissMediaConfirm: 'Remove this note? Its attached media will be deleted.',
   },
   memo: {
     record: 'Voice memo',
@@ -3077,6 +3080,7 @@ export const EN: typeof FR = {
     whoHasCar: 'Who has the car?',
     copyLastWeek: '← Copy last week',
     resetWeek: 'Reset to template',
+    resetWeekConfirm: 'Reset the whole week to the template? This week’s day adjustments will be cleared.',
     prevWeek: 'Previous week',
     nextWeek: 'Next week',
     thisWeek: 'This week',
@@ -4588,7 +4592,7 @@ export const EN: typeof FR = {
     byStore: 'By store',
     share: 'Share',
   },
-  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', delete: 'Delete', confirmTitle: 'Confirm', saveFailed: 'Not saved — try again.', loadFailed: "Couldn't load — try again.", close: 'Close', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom' },
+  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this?', saveFailed: 'Not saved — try again.', loadFailed: "Couldn't load — try again.", close: 'Close', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom' },
   share: {
     title: 'Add to Babillard',
     lead: 'Shared from another app. Tweak the text if needed, then add — the app sorts it (event, list, meal, note).',

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useWrite } from '../lib/write'
+import { useConfirm } from '../lib/confirm'
 import { isGuest } from '../lib/device'
 import { live } from '../lib/query'
 import { useT } from '../i18n'
@@ -24,6 +25,7 @@ export function ListEditPage() {
   const t = useT()
   const qc = useQueryClient()
   const write = useWrite()
+  const confirm = useConfirm()
   const { itemId = '' } = useParams()
   const close = useSceneClose('/liste')
   useEscapeKey(close)
@@ -94,6 +96,9 @@ export function ListEditPage() {
   }
 
   async function remove() {
+    // Deleting the line from the edit scene is permanent (no undo toast here, unlike the
+    // list row's own swipe) — confirm so a stray tap can't drop a grocery item silently.
+    if (!(await confirm({ message: t.common.deleteConfirm, tone: 'danger' }))) return
     setBusy(true)
     await write('list', { method: 'DELETE', body: { id: itemId }, affectedKeys: [BOARD_KEY] }).catch(() => {})
     close()

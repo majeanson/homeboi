@@ -5,6 +5,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
+import { useConfirm } from '../../lib/confirm'
 import { useUndoToast } from '../../lib/toast'
 import { FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { type FlyerSummary } from '../../lib/deals'
@@ -381,6 +382,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
 // one-tap "track it?" suggestions — the deliberate opt-in.
 export function GhostSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const confirm = useConfirm()
   const [items, setItems] = useState<GhostManageItem[]>([])
   const [candidates, setCandidates] = useState<GhostCandidate[]>([])
   const [label, setLabel] = useState('')
@@ -420,6 +422,8 @@ export function GhostSection({ help }: { help?: HelpMode }) {
     load()
   }
   async function remove(item: GhostManageItem) {
+    // Removing a tracked staple is permanent (no undo here) — confirm first.
+    if (!(await confirm({ message: t.common.deleteConfirm, tone: 'danger' }))) return
     await deleteGhost(item.key).catch(() => {})
     load()
   }
