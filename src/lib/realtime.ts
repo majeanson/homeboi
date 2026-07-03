@@ -18,7 +18,7 @@
 // whatever a heartbeat-sized gap might have missed, so freshness is never traded
 // for the savings. See `isRealtimeConnected()` + the `live` poll in query.ts.
 import type { QueryClient } from '@tanstack/react-query'
-import { getDeviceToken, getGuestToken } from './device'
+import { getDeviceToken, getGuestToken, isGuest } from './device'
 
 interface InvalidateMessage {
   type: 'invalidate'
@@ -143,6 +143,11 @@ function openSocket(queryClient: QueryClient): void {
 // fail-safe note at the top of the file.
 export function connectRealtime(queryClient: QueryClient): () => void {
   if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return () => {}
+  // A guest (curated share link) — or the operator's guest-scene PREVIEW — must not join
+  // the household realtime fan-out: guest scenes are read-only terminal snapshots that
+  // poll their one endpoint, and the server 403s a guest at /api/live anyway. Skip the
+  // socket entirely so we don't spin the reconnect backoff against a guaranteed reject.
+  if (isGuest()) return () => {}
   client = queryClient
   wantConnection = true
   openSocket(queryClient)

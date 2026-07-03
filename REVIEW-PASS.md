@@ -98,7 +98,8 @@ and two e2e specs (aisle-sort, capture-offline).
 - **Postbox forks `MemoControls`** — reuse needs a "staging mode" on the shared component (guest
   stages-then-sends vs board posts-immediately); a design change, not a swap.
 - **Security hardening left:** full token **revocation** (a `guests` table changes the stateless
-  model), `/api/live` per-kind allowlist gating. (`staged_media` ownership check ✅ shipped 2026-07-02.)
+  model). (`staged_media` ownership check ✅ + `/api/live` per-kind gating ✅ shipped 2026-07-02 —
+  a guest is now 403'd at the realtime upgrade, and the client skips the socket for guests/preview.)
 - **Conscious `useWrite` deviations:** `RoutinePlayer` step-progress + the household-settings PATCHes
   (ephemeral / rarely-offline — documented, not necessarily fixed).
 - **e2e backfill (the big remaining gap):** carnet-restore, guest intake/postbox flows, the carnet

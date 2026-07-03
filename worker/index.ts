@@ -147,6 +147,14 @@ export default {
       const actor = await resolveActor(env, authRequest)
       // 401 before any upgrade when the credential is missing/invalid/expired.
       if (!actor) return new Response('Not signed in.', { status: 401 })
+      // Per-kind scope boundary for the realtime fan-out: a curated GUEST link is a
+      // read-only terminal snapshot (sitter/welcome/family/showcase) that polls its own
+      // one endpoint — it must not join the household hub and receive invalidate nudges
+      // about activity it can't read. The normal path's `guestKindAllows` allowlist has
+      // no 'live' entry for any kind, so this mirrors it: only operator/kiosk devices
+      // open a socket; a guest falls back to polling (the client won't even try — see
+      // lib/realtime connectRealtime).
+      if (actor.scope === 'guest') return forbidden('Realtime not available for this share link.')
       if (!env.REALTIME_HUB) {
         // DO not deployed/eligible — tell the client to stick with polling.
         return new Response('Realtime unavailable.', { status: 503 })
