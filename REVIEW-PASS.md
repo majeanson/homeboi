@@ -631,10 +631,11 @@ default kind. These deserve priority in the implement phase.
   guard. `/api/img/<key>` is not household-scoped (accepted capability model — note only).
 - [ ] **Guest "done" state is client-only → duplicate pending rows on refresh/resubmit**
   (`IntakeForm.tsx:216`, `Postbox.tsx:188` — no submit idempotency).
-- [ ] **Nits:** `INTAKE_KEY`/`POSTBOX_KEY` are page-local literals not in `queryKeys.ts`; the
-  guest scenes hand-roll `scene__head` instead of `SceneHead` (deliberate — terminal scenes, no
-  close); WifiBlock prints the full password as button text (overflow at 320px); family/pin
-  photos `alt=""` (decorative — SR users get nothing).
+- [~] **Nits:** ✅ WifiBlock's tap-to-copy password button now wraps + breaks a long key
+  (`.handoff__wifi-pw`) so it never overflows the card at 320px (2026-07-03). Remaining:
+  `INTAKE_KEY`/`POSTBOX_KEY` page-local literals (hygiene); the guest scenes hand-roll
+  `scene__head` (deliberate — terminal scenes, no close); family/pin photos `alt=""`
+  (decorative — SR users get nothing).
 
 **Strengths to keep.** Two independent write-block layers (a slip in one caught by the other);
 signed-kind can't be widened via URL; quarantine integrity (pending rows never live; tint applied

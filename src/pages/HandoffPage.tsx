@@ -266,7 +266,7 @@ export function WifiBlock({ ssid, password }: { ssid: string; password: string |
         <InlineIcon name="wifi-high-bold" /> {t.shareMode.wifi} — <strong>{ssid}</strong>
       </p>
       {password && (
-        <button type="button" className="btn btn--ghost mono" onClick={copy} aria-label={t.shareMode.copy}>
+        <button type="button" className="btn btn--ghost mono handoff__wifi-pw" onClick={copy} aria-label={t.shareMode.copy}>
           {password} <InlineIcon name="link-bold" />
         </button>
       )}

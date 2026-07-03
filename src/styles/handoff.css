@@ -145,6 +145,15 @@
   gap: 0.3rem;
   align-items: flex-start;
 }
+/* The tap-to-copy password button wraps + breaks a long key so it never overflows the
+   card at 320px (REVIEW-PASS) — the .btn default nowrap/fixed-height would clip it. */
+.handoff__wifi-pw {
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
 .handoff__line {
   margin: 0;
   display: flex;
