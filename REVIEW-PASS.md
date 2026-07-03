@@ -37,15 +37,18 @@
 > `src/components/forms/*`, the cercle forms, `FormScene`, `RecipeSheet`, or `CookMode`
 > while that runs** — coordinate or pick from a different area.
 >
-> 1. **Carnets e2e scaffolding + carnet-restore/scene specs** — the last real e2e gap (§8 /
->    theme-4). Blocked on: the e2e mocks have **no carnets/care-log fixtures** yet — build that
->    first (mirror how `voyage.spec` added trips), then drive archive→restore and the carnet scene.
+> 1. ✅ **Carnets e2e — DONE 2026-07-03** (`e2e/carnet-restore.spec.ts` + `carnet-scene.spec.ts`):
+>    the two specs stub the carnets tree / care-log / home-pins per-test (voyage-style, no shared
+>    mock fixtures needed) and drive archive→restore + the scene (both segments, tree→child nav,
+>    history, confirm-then-DELETE). Only the **capture AI-off** e2e gap now remains (below).
 > 2. **Capture AI-off degrade + reroute e2e** (§6) — the one capture path with no spec: assert a
->    row is always inserted and an AI reroute MOVEs (never dupes) when AI is unavailable.
+>    row is always inserted and an AI reroute MOVEs (never dupes) when AI is unavailable. **Now the
+>    last real e2e gap (§8 / theme-4).**
 > 3. **Routines §2 judgement calls (need Marc)** — nested-interactive parent-grid card (role=button
 >    div w/ nested buttons → non-button `<article>` + explicit peek control = changes keyboard peek);
->    dead `BOARD_KEY` invalidate on routine save (wire a board glance *or* drop); two-timers-on-screen;
->    parent-overview "done today" asymmetry; per-step countdown timer e2e (needs `page.clock`).
+>    ~~dead `BOARD_KEY` invalidate on routine save~~ **dropped 2026-07-03** (`f2dcd6e` — the board
+>    payload carries no routines); two-timers-on-screen; parent-overview "done today" asymmetry;
+>    per-step countdown timer e2e (needs `page.clock`).
 >
 > **Larger, steer-first:** token revocation (needs a `guests` table — breaks the stateless-token
 > model); `showcase` over-share TTL/narrowing; operator edit-before-accept in Intake/Postbox review.
@@ -80,10 +83,11 @@
    **roving tabindex + ←/→/Home/End nav** 2026-07-02 — so the cercle section nav (and every other
    SubTabs surface) is keyboard-navigable in one fix; regression-tested (`nav-tabs.spec.ts`).
    _(Remaining nicety: `aria-controls`/panel `id` linking — deferred; panels are caller-managed.)_
-4. **e2e is screenshots-only almost everywhere.** Behavioural coverage is missing for: aisle-sort,
-   cook stepper, toddler kitchen, guest/intake/postbox flows, the carnet scene, **Voyage entirely**,
-   Search, capture-degrade+reroute, and idle/offline/realtime. The correctness-critical *logic*
-   (recur, closure, idempotency, vcard) is well unit-tested — it's the *flows* that are blind.
+4. **e2e is screenshots-only almost everywhere.** ✅ **Mostly closed** — behavioural specs now cover
+   guest/intake/postbox, Voyage, Search, idle/offline/realtime/SW, and the carnet scene + restore
+   (2026-07-03). **Only capture-degrade+reroute remains** (item 2 above). The correctness-critical
+   *logic* (recur, closure, idempotency, vcard) was already well unit-tested — it was the *flows*
+   that were blind.
 5. **The media-undo-blob rule.** Undo-after-delete of a media row resurrects a row pointing at a
    freed R2 blob. **CONFIRMED live in Voyage Infos/Itinéraire (§7 P1);** ~~latent in `NoteEditor`
    in-editor replace (§3)~~ — **NoteEditor fixed 2026-07-02** (session-key cleanup via
@@ -129,9 +133,10 @@ and two e2e specs (aisle-sort, capture-offline).
 - **e2e backfill (mostly closed now):** ✅ **DONE** — guest scenes (`guest-scenes.spec`), intake
   both sides (`intake.spec`), postbox (`postbox.spec`), **Voyage** (`voyage.spec`, 7 tests), idle/
   ambient (`idle-ambient.spec`), the offline **outbox** (`offline-outbox.spec`), **realtime-WS +
-  SW precache** (`realtime.spec` + `sw.spec`/`sw.config`, 2026-07-03 — §931 fully closed). **Still
-  uncovered:** carnet-restore + the carnet scene (needs carnets mock scaffolding — none yet), and
-  capture AI-off degrade+reroute. ✅ **The 3 pre-existing failures are FIXED** (2026-07-02, d80cbe5 +
+  SW precache** (`realtime.spec` + `sw.spec`/`sw.config`, 2026-07-03 — §931 fully closed), and
+  **carnet-restore + the carnet scene** (`carnet-restore.spec` + `carnet-scene.spec`, 7 tests,
+  2026-07-03 — per-test stubs, no shared mock fixtures needed). **Still uncovered:** capture AI-off
+  degrade+reroute (the last one). ✅ **The 3 pre-existing failures are FIXED** (2026-07-02, d80cbe5 +
   288c146): `board-customize` ×2 + `meals` slot-icon were time-of-day-flaky (board lifecycle folds
   "past" mock items vs the real clock) → a surgical `page.clock.setFixedTime(BASE)` on just the two
   timed-item tests, plus a stale band-count (4→5, Mots joined the band). A new `e2e/onboarding.spec.ts`
