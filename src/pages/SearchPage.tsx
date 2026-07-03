@@ -348,6 +348,9 @@ export function SearchPage() {
           )
         ) : (
           <>
+            {/* A concise, polite live count so a screen-reader user hears "3 résultats"
+                as the search settles — the grouped rows below give no such summary. */}
+            <p className="search__hint mono" role="status">{t.search.resultsCount(total)}</p>
             {res!.recipes.length > 0 && (
               <Section label={t.search.recipes}>
                 {res!.recipes.map((r) => (
