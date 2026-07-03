@@ -231,3 +231,14 @@ export function intakeMediaKeys(s: IntakeSubmission): string[] {
   for (const p of s.pets) if (p.photoKey) keys.push(p.photoKey)
   return keys
 }
+
+// Null out any photoKey the guest didn't actually stage (guest/intake-media) for this
+// household — the shape check (`mediaKey`) only proves the string LOOKS like a key, not
+// that this submission owns it, so a crafted POST could otherwise smuggle an arbitrary
+// R2 key onto a merged member/pet at accept. `owned` comes from a staged_media lookup;
+// keep it a pure transform so it stays unit-testable and the handler just supplies the set.
+export function redactUnownedIntakeMedia(s: IntakeSubmission, owned: Set<string>): IntakeSubmission {
+  const fix = <T extends { photoKey: string | null }>(p: T): T =>
+    p.photoKey && !owned.has(p.photoKey) ? { ...p, photoKey: null } : p
+  return { ...s, self: fix(s.self), household: s.household.map(fix), pets: s.pets.map(fix) }
+}

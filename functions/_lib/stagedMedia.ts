@@ -51,6 +51,34 @@ export async function deleteStagedMediaByKeys(
   }
 }
 
+// Ownership check at SUBMIT time: return the subset of `keys` genuinely staged for THIS
+// household + kind + guest. A guest submission's media_key/photoKey is otherwise only
+// shape-validated (isValidR2Key), so a crafted POST could name an arbitrary R2 key it
+// never uploaded and smuggle it onto a real entity at accept. Keys are ~71-bit opaque so
+// guessing is impractical, but this closes the gap structurally: a submitted key the
+// guest didn't stage here is simply dropped. Scoped to `guest_id` (the same value the
+// upload recorded) so one guest can't reference another guest's staged blob either.
+export async function ownedStagedKeys(
+  db: D1Database,
+  householdId: string,
+  kind: SubmissionKind,
+  guestId: string,
+  keys: string[],
+): Promise<Set<string>> {
+  const owned = new Set<string>()
+  for (const k of keys) {
+    if (!k) continue
+    const row = await db
+      .prepare(
+        "SELECT 1 AS ok FROM staged_media WHERE household_id = ? AND submission_kind = ? AND guest_id = ? AND media_key = ? AND status = 'staged' LIMIT 1",
+      )
+      .bind(householdId, kind, guestId, k)
+      .first<{ ok: number }>()
+    if (row) owned.add(k)
+  }
+  return owned
+}
+
 // The 7-day orphan sweep — best-effort, never blocks the operator's review read. Frees
 // staged blobs older than a week that NO still-pending submission references; the caller
 // passes the referenced-key set, since building it means reading the kind's own

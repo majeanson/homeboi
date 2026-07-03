@@ -98,7 +98,7 @@ and two e2e specs (aisle-sort, capture-offline).
 - **Postbox forks `MemoControls`** — reuse needs a "staging mode" on the shared component (guest
   stages-then-sends vs board posts-immediately); a design change, not a swap.
 - **Security hardening left:** full token **revocation** (a `guests` table changes the stateless
-  model), `staged_media` ownership check, `/api/live` per-kind allowlist gating.
+  model), `/api/live` per-kind allowlist gating. (`staged_media` ownership check ✅ shipped 2026-07-02.)
 - **Conscious `useWrite` deviations:** `RoutinePlayer` step-progress + the household-settings PATCHes
   (ephemeral / rarely-offline — documented, not necessarily fixed).
 - **e2e backfill (the big remaining gap):** carnet-restore, guest intake/postbox flows, the carnet
@@ -525,10 +525,13 @@ default kind. These deserve priority in the implement phase.
   member's name to spoof that face. Operator-gated (the intended DB-5 tradeoff) but
   `PostboxReview.tsx` shows the raw name with **no "will post as member X" cue**. Surface the
   matched face in the review row before accept.
-- [ ] **🔒 Submitted `media_key` is shape-validated, not ownership-checked** (`postbox-submit.
-  ts:36`, `intake.ts:101`) — never confirmed against `staged_media` for this household/guest.
-  Keys are ~71-bit opaque so guessing is impractical; add a `staged_media` existence check at
-  accept.
+- [x] **🔒 Submitted `media_key` is shape-validated, not ownership-checked** — ✅ **Fixed
+  2026-07-02.** New `ownedStagedKeys()` (`_lib/stagedMedia.ts`) confirms each submitted key is
+  genuinely `'staged'` for this household + kind + **guest** before it's accepted; `postbox-submit`
+  drops an unowned attachment (whole thing if the media blob itself is foreign, else just the
+  scene) and `intake-submit` nulls unowned photoKeys via the pure `redactUnownedIntakeMedia()`
+  (unit-tested). A crafted POST can no longer smuggle an arbitrary/guessed R2 key onto a real
+  entity at accept.
 - [ ] **No distinct "this link expired" state on any guest scene.** `HandoffPage`/`WelcomePage`/
   `FamilyWindowPage` destructure only `{data,isLoading}` (never `isError`), so an expired/
   revoked token → 401 → generic empty `EmptyState`, indistinguishable from an empty household.

@@ -1,7 +1,8 @@
 import { ok, badRequest, forbidden, readJson } from '../../_lib/json'
 import { authed } from '../../_lib/route'
 import { newId, nowSec } from '../../_lib/ids'
-import { sanitizeIntake, decodeIntakeScope } from '../../_lib/intake'
+import { sanitizeIntake, decodeIntakeScope, intakeMediaKeys, redactUnownedIntakeMedia } from '../../_lib/intake'
+import { ownedStagedKeys } from '../../_lib/stagedMedia'
 
 // A stateless guest link (no DB row, no revoke-before-TTL) can be shared broadly, so
 // cap the pending quarantine rows per household to bound row/R2 flooding from a leaked
@@ -27,8 +28,17 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // Enforce the link's field-scope bitmask SERVER-SIDE (not just in the UI): a
   // name-only link can't smuggle household/pets/address/photos via a crafted POST.
   const scope = decodeIntakeScope(actor.guestFields)
-  const submission = sanitizeIntake(await readJson(ctx.request), scope)
+  let submission = sanitizeIntake(await readJson(ctx.request), scope)
   if (!submission) return badRequest('Formulaire incomplet (le prénom est requis).')
+
+  // Ownership: each photoKey must be one THIS guest actually staged (guest/intake-media),
+  // not an arbitrary/guessed R2 path smuggled onto a merged member/pet at accept. Drop
+  // any the guest didn't stage here (the rest of the form still submits).
+  const mediaKeys = intakeMediaKeys(submission)
+  if (mediaKeys.length) {
+    const owned = await ownedStagedKeys(ctx.env.DB, actor.householdId, 'intake', actor.guestId ?? '', mediaKeys)
+    submission = redactUnownedIntakeMedia(submission, owned)
+  }
 
   const pending = await ctx.env.DB.prepare(
     "SELECT COUNT(*) AS n FROM intake_submissions WHERE household_id = ? AND status = 'pending'",

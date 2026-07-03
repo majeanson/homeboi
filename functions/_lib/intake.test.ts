@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeIntake, intakeMediaKeys } from './intake'
+import { sanitizeIntake, intakeMediaKeys, redactUnownedIntakeMedia } from './intake'
 
 // The defensive boundary for a relative's submitted form: a named self is required,
 // junk is dropped, and counts/lengths are bounded so a hostile blob can't land.
@@ -85,6 +85,27 @@ describe('sanitizeIntake', () => {
       pets: [{ name: 'Rex', photoKey: 'ik_rex' }],
     })
     expect(intakeMediaKeys(out!).sort()).toEqual(['ik_b', 'ik_rex', 'ik_self'])
+  })
+
+  it('redactUnownedIntakeMedia nulls photoKeys the guest never staged', () => {
+    const out = sanitizeIntake({
+      self: { firstName: 'A', photoKey: 'ik_self' },
+      household: [{ firstName: 'B', photoKey: 'ik_b' }],
+      pets: [{ name: 'Rex', photoKey: 'ik_rex' }],
+    })!
+    // Only self + pet keys are owned; the household key was a guessed/foreign path.
+    const owned = new Set(['ik_self', 'ik_rex'])
+    const clean = redactUnownedIntakeMedia(out, owned)
+    expect(clean.self.photoKey).toBe('ik_self')
+    expect(clean.pets[0].photoKey).toBe('ik_rex')
+    expect(clean.household[0].photoKey).toBeNull() // dropped — not owned
+  })
+
+  it('redactUnownedIntakeMedia drops everything when nothing is owned', () => {
+    const out = sanitizeIntake({ self: { firstName: 'A', photoKey: 'ik_self' } })!
+    const clean = redactUnownedIntakeMedia(out, new Set())
+    expect(clean.self.photoKey).toBeNull()
+    expect(intakeMediaKeys(clean)).toEqual([])
   })
 
   // SERVER-SIDE scope enforcement: a name-only link (all optional bits off) must drop

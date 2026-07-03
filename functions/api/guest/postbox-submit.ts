@@ -2,6 +2,7 @@ import { ok, badRequest, forbidden, readJson } from '../../_lib/json'
 import { authed } from '../../_lib/route'
 import { newId, nowSec } from '../../_lib/ids'
 import { isValidR2Key } from '../../_lib/validate'
+import { ownedStagedKeys } from '../../_lib/stagedMedia'
 
 // Cap pending quarantine rows per household — a stateless, broadly-shareable link has
 // no early revoke, so this bounds row/R2 flooding from a leaked link. Well above any
@@ -38,12 +39,34 @@ export const onRequestPost = authed(async (ctx, actor) => {
     body?.media_kind === 'audio' || body?.media_kind === 'drawing' || body?.media_kind === 'image'
       ? body.media_kind
       : null
-  const mediaKey = kind && isValidR2Key(body?.media_key?.trim()) ? body!.media_key!.trim() : null
-  const sceneKey = kind === 'drawing' && isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
+  let mediaKey = kind && isValidR2Key(body?.media_key?.trim()) ? body!.media_key!.trim() : null
+  let sceneKey = kind === 'drawing' && isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
+
+  // Ownership: a submitted key must be one THIS guest actually staged (guest/postbox-
+  // media), not an arbitrary/guessed R2 path. Drop anything unowned — the whole
+  // attachment if the media blob itself isn't ours (a scene without its drawing is
+  // meaningless), or just the scene if only it is unowned.
+  if (mediaKey || sceneKey) {
+    const owned = await ownedStagedKeys(
+      ctx.env.DB,
+      actor.householdId,
+      'postbox',
+      actor.guestId ?? '',
+      [mediaKey, sceneKey].filter((k): k is string => !!k),
+    )
+    if (mediaKey && !owned.has(mediaKey)) {
+      mediaKey = null
+      sceneKey = null
+    } else if (sceneKey && !owned.has(sceneKey)) {
+      sceneKey = null
+    }
+  }
+  // The attachment only counts if its media blob survived the ownership check.
+  const effKind = mediaKey ? kind : null
 
   // Self-identify is required (the operator chose an open link many relatives share).
   if (!senderName) return badRequest('Ton nom est requis.')
-  if (!text && !(kind && mediaKey)) return badRequest('Message vide.')
+  if (!text && !(effKind && mediaKey)) return badRequest('Message vide.')
 
   const pending = await ctx.env.DB.prepare(
     "SELECT COUNT(*) AS n FROM postbox_submissions WHERE household_id = ? AND status = 'pending'",
@@ -63,9 +86,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
       actor.guestId ?? '',
       senderName,
       text,
-      kind,
-      kind ? mediaKey : null,
-      kind === 'drawing' ? sceneKey : null,
+      effKind,
+      effKind ? mediaKey : null,
+      effKind === 'drawing' ? sceneKey : null,
       'pending',
       nowSec(),
     )
