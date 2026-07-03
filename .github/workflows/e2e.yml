@@ -43,6 +43,11 @@ jobs:
       # Playwright boots the Vite dev server itself (webServer config) and stubs
       # every /api/* call per-test — no wrangler/D1/secrets needed.
       - run: npm run e2e
+      # The service-worker offline shell can't be exercised against the DEV server
+      # (no SW there), so it runs under its own harness: `vite build` → `vite preview`
+      # serves the real PROD bundle, still with mocked /api/*. Separate step so a
+      # failure here is attributable and doesn't need the full matrix above.
+      - run: npm run e2e:sw
       # Always upload the HTML report + the surface×theme×format PNGs so a failure
       # (or just a visual review) is inspectable from the run page.
       - name: Upload Playwright report + screenshots

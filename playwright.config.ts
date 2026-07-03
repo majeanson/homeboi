@@ -6,6 +6,10 @@ import { defineConfig, devices } from '@playwright/test'
 // every surface × theme (day/night) × format (phone/wall) × language.
 export default defineConfig({
   testDir: './e2e',
+  // sw.spec.ts needs the built PROD bundle served by `vite preview` (the SW is a
+  // build artifact + registers only in a PROD build) — it runs under its own harness
+  // (e2e/sw.config.ts, `npm run e2e:sw`) and would fail against this DEV server.
+  testIgnore: '**/sw.spec.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   // CI runs serially (workers:1 below) and is the authoritative, strict run.

@@ -20,6 +20,7 @@ e2e/screenshots/
 e2e/report/
 e2e/test-results/
 e2e/test-results-realdata/
+e2e/test-results-sw/
 playwright-report/
 test-results/
 
