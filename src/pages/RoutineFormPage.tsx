@@ -7,7 +7,7 @@ import { Loading } from '../components/Fallback'
 import { api } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
-import { ROUTINES_KEY, BOARD_KEY } from '../lib/queryKeys'
+import { ROUTINES_KEY } from '../lib/queryKeys'
 import { CATS } from '../lib/cats'
 import { useT } from '../i18n'
 
@@ -60,7 +60,6 @@ export function RoutineFormPage() {
             if (!ok) return
             await write('routines', { method: 'DELETE', body: { id: routine.id }, affectedKeys: [ROUTINES_KEY] })
             qc.invalidateQueries({ queryKey: ROUTINES_KEY })
-            qc.invalidateQueries({ queryKey: BOARD_KEY })
             close()
           })
         return (
@@ -70,7 +69,6 @@ export function RoutineFormPage() {
             seed={editing ? null : seed}
             onSaved={() => {
               qc.invalidateQueries({ queryKey: ROUTINES_KEY })
-              qc.invalidateQueries({ queryKey: BOARD_KEY })
               close()
             }}
             onDelete={onDelete || undefined}
