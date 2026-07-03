@@ -192,12 +192,39 @@ export function SearchPage() {
   const hl = (s: string) => highlight(s, q.trim())
   const res = useMemo(() => {
     if (!needle) return null
-    const recipes = recipesData
-      .filter((r) => fold(`${r.title} ${(r.ingredients ?? []).join(' ')} ${(r.tags ?? []).join(' ')}`).includes(needle))
-      .slice(0, CAP)
-    const people = contacts
-      .filter((c) => fold(`${c.firstName} ${c.lastName} ${c.nickname ?? ''} ${(c.tags ?? []).join(' ')}`).includes(needle))
-      .slice(0, CAP)
+    // Ranked matching (the Guide-search idea, applied per section): being NAMED
+    // what you typed beats merely containing it. rank 0 = the name/title IS the
+    // query, 1 = the name/title contains it, 2 = only a secondary/body field does
+    // (ingredients, prose notes, details…). Each section sorts its hits by rank
+    // BEFORE the CAP (so a title hit never loses its spot to a body hit), and the
+    // sections themselves render best-hit-first below — a guide card titled
+    // « Voyage » outranks a memo that mentions a voyage in passing.
+    const rankOf = (primary: string, secondary: string) => {
+      const p = fold(primary)
+      if (p === needle) return 0
+      if (p.includes(needle)) return 1
+      return fold(secondary).includes(needle) ? 2 : -1
+    }
+    const pick = <T,>(xs: T[], primary: (x: T) => string, secondary: (x: T) => string = () => '') => {
+      const hits: { x: T; r: number }[] = []
+      for (const x of xs) {
+        const r = rankOf(primary(x), secondary(x))
+        if (r !== -1) hits.push({ x, r })
+      }
+      hits.sort((a, b) => a.r - b.r) // stable: ties keep source order
+      return { items: hits.slice(0, CAP).map((h) => h.x), best: hits.length ? hits[0].r : 99 }
+    }
+
+    const recipes = pick(
+      recipesData,
+      (r) => r.title,
+      (r) => `${(r.ingredients ?? []).join(' ')} ${(r.tags ?? []).join(' ')}`,
+    )
+    const people = pick(
+      contacts,
+      (c) => `${c.firstName} ${c.lastName} ${c.nickname ?? ''}`,
+      (c) => (c.tags ?? []).join(' '),
+    )
     // Events come across three board buckets; one event can sit in more than one —
     // dedupe by id before matching.
     const seen = new Set<string>()
@@ -206,58 +233,87 @@ export function SearchPage() {
       seen.add(e.id)
       return true
     })
-    const events = allEvents.filter((e) => fold(e.title).includes(needle)).slice(0, CAP)
-    const listItems = (board?.list ?? []).filter((li) => fold(li.text).includes(needle)).slice(0, CAP)
-    const notes = familyNotes.filter((n) => fold(`${n.title} ${plainText(n.text)}`).includes(needle)).slice(0, CAP)
+    const events = pick(allEvents, (e) => e.title)
+    const listItems = pick(board?.list ?? [], (li) => li.text)
+    const notes = pick(
+      familyNotes,
+      (n) => n.title,
+      (n) => plainText(n.text),
+    )
     // Le cercle animals — match on name/species/breed + the care free-text.
-    const petHits = pets
-      .filter((p) => fold(`${p.name} ${p.species ?? ''} ${p.breed ?? ''} ${p.notes ?? ''}`).includes(needle))
-      .slice(0, CAP)
+    const petHits = pick(
+      pets,
+      (p) => p.name,
+      (p) => `${p.species ?? ''} ${p.breed ?? ''} ${p.notes ?? ''}`,
+    )
     // Services / commerces (vet, plumber…) — name + category + contact details.
-    const bizHits = businesses
-      .filter((b) => fold(`${b.name} ${b.category ?? ''} ${b.phone ?? ''} ${b.address ?? ''} ${b.notes ?? ''}`).includes(needle))
-      .slice(0, CAP)
+    const bizHits = pick(
+      businesses,
+      (b) => b.name,
+      (b) => `${b.category ?? ''} ${b.phone ?? ''} ${b.address ?? ''} ${b.notes ?? ''}`,
+    )
     // Kid routines — the routine name plus every card label.
-    const routineHits = routines
-      .filter((r) => fold(`${r.name} ${(r.cards ?? []).map((c) => c.label).join(' ')}`).includes(needle))
-      .slice(0, CAP)
+    const routineHits = pick(
+      routines,
+      (r) => r.name,
+      (r) => (r.cards ?? []).map((c) => c.label).join(' '),
+    )
     // À compléter — open todos by title.
-    const todoHits = todos.filter((td) => fold(td.title).includes(needle)).slice(0, CAP)
-    // Garde-manger + La réserve — both keyed on the free-text item; tagged so the
-    // row can label which list it's from while linking to the same Pantry tab.
-    const pantryHits = [
-      ...low.filter((l) => fold(l.item).includes(needle)).map((l) => ({ id: l.id, item: l.item, reserve: false })),
-      ...reserve.filter((r) => fold(r.item).includes(needle)).map((r) => ({ id: r.id, item: r.item, reserve: true })),
-    ].slice(0, CAP)
+    const todoHits = pick(todos, (td) => td.title)
+    // Garde-manger + La réserve — one merged ranked pool, tagged so the row can
+    // label which list it's from while linking to the same Pantry tab.
+    const pantryHits = pick(
+      [
+        ...low.map((l) => ({ id: l.id, item: l.item, reserve: false })),
+        ...reserve.map((r) => ({ id: r.id, item: r.item, reserve: true })),
+      ],
+      (x) => x.item,
+    )
     // « L'auto » — the household car name(s).
-    const carHits = cars.filter((c) => fold(c.name).includes(needle)).slice(0, CAP)
+    const carHits = pick(cars, (c) => c.name)
     // The board's fridge memos — text notes only (media-only notes carry no text).
-    const fridgeNotes = boardNotes.filter((n) => n.text && fold(n.text).includes(needle)).slice(0, CAP)
+    // A memo has no NAME, so its body counts as a secondary hit: things actually
+    // named what you typed rank above a memo that merely says it.
+    const fridgeNotes = pick(
+      boardNotes.filter((n) => n.text),
+      () => '',
+      (n) => n.text!,
+    )
     // « Les carnets » + home projects — name/title + notes.
-    const carnetHits = carnets.filter((x) => fold(`${x.name} ${x.notes ?? ''}`).includes(needle)).slice(0, CAP)
-    const projectHits = homeProjects.filter((p) => fold(`${p.title} ${p.notes ?? ''}`).includes(needle)).slice(0, CAP)
+    const carnetHits = pick(
+      carnets,
+      (x) => x.name,
+      (x) => x.notes ?? '',
+    )
+    const projectHits = pick(
+      homeProjects,
+      (p) => p.title,
+      (p) => p.notes ?? '',
+    )
     // A carnet's service history — the entry title + its free-text note.
-    const careHits = careLog.filter((e) => fold(`${e.title} ${e.note ?? ''}`).includes(needle)).slice(0, CAP)
+    const careHits = pick(
+      careLog,
+      (e) => e.title,
+      (e) => e.note ?? '',
+    )
     // « En cas de pépin » map pins — the label + its detail (where the valve is, how
     // the thermostat works…).
-    const pinHits = homePins.filter((p) => fold(`${p.label} ${p.detail ?? ''}`).includes(needle)).slice(0, CAP)
+    const pinHits = pick(
+      homePins,
+      (p) => p.label,
+      (p) => p.detail ?? '',
+    )
     // Kept drawings — no text of their own, so match the author's name.
-    const drawingHits = drawings
-      .filter((d) => {
-        const author = d.member_id ? memberName.get(d.member_id) : null
-        return author ? fold(author).includes(needle) : false
-      })
-      .slice(0, CAP)
+    const drawingHits = pick(drawings, (d) => (d.member_id ? memberName.get(d.member_id) ?? '' : ''))
     // The Guide / in-app help. Match a card on its title + one-liner + every
     // sub-point (label, detail, why) in the active language, tokens stripped to
     // the words a reader sees. A title/summary hit links to the whole card; when
     // ONLY a sub-point matched, deep-link to that point so the answer lands open.
-    const guide: GuideHit[] = []
+    // Ranked like the rest: card title (0/1) over one-liner/point prose (2).
+    const guideAll: { g: GuideHit; r: number }[] = []
     for (const e of GUIDE) {
-      if (guide.length >= CAP) break
       const titleStr = e.title[lang]
       const whatStr = stripTokens(e.what[lang])
-      const cardHit = fold(`${titleStr} ${whatStr}`).includes(needle)
       let pointIdx = -1
       for (let i = 0; i < e.points.length; i++) {
         const p = e.points[i]
@@ -266,38 +322,46 @@ export function SearchPage() {
           break
         }
       }
-      if (!cardHit && pointIdx < 0) continue
-      const usePoint = !cardHit && pointIdx >= 0
-      guide.push({
-        id: e.id,
-        icon: e.icon,
-        title: titleStr,
-        sub: usePoint ? stripTokens(e.points[pointIdx].label[lang]) : whatStr,
-        to: usePoint ? `/settings?tab=guide&card=${e.id}&point=${pointIdx}` : `/settings?tab=guide&card=${e.id}`,
+      const tf = fold(titleStr)
+      const whatHit = fold(whatStr).includes(needle)
+      const r = tf === needle ? 0 : tf.includes(needle) ? 1 : whatHit || pointIdx >= 0 ? 2 : -1
+      if (r === -1) continue
+      const usePoint = r === 2 && !whatHit && pointIdx >= 0
+      guideAll.push({
+        r,
+        g: {
+          id: e.id,
+          icon: e.icon,
+          title: titleStr,
+          sub: usePoint ? stripTokens(e.points[pointIdx].label[lang]) : whatStr,
+          to: usePoint ? `/settings?tab=guide&card=${e.id}&point=${pointIdx}` : `/settings?tab=guide&card=${e.id}`,
+        },
       })
     }
+    guideAll.sort((a, b) => a.r - b.r)
+    const guide = { items: guideAll.slice(0, CAP).map((h) => h.g), best: guideAll.length ? guideAll[0].r : 99 }
     return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, events, listItems, notes, fridgeNotes, guide }
   }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, carnets, homeProjects, careLog, homePins, drawings, memberName, board, familyNotes, boardNotes, lang])
 
   const total = res
-    ? res.recipes.length +
-      res.people.length +
-      res.pets.length +
-      res.businesses.length +
-      res.routines.length +
-      res.todos.length +
-      res.pantry.length +
-      res.cars.length +
-      res.carnets.length +
-      res.projects.length +
-      res.care.length +
-      res.pins.length +
-      res.drawings.length +
-      res.events.length +
-      res.listItems.length +
-      res.notes.length +
-      res.fridgeNotes.length +
-      res.guide.length
+    ? res.recipes.items.length +
+      res.people.items.length +
+      res.pets.items.length +
+      res.businesses.items.length +
+      res.routines.items.length +
+      res.todos.items.length +
+      res.pantry.items.length +
+      res.cars.items.length +
+      res.carnets.items.length +
+      res.projects.items.length +
+      res.care.items.length +
+      res.pins.items.length +
+      res.drawings.items.length +
+      res.events.items.length +
+      res.listItems.items.length +
+      res.notes.items.length +
+      res.fridgeNotes.items.length +
+      res.guide.items.length
     : 0
   // Are any queries still in flight? Used to distinguish a cold-load "searching" from a
   // genuine "no results" (so a deep-link doesn't flash "aucun résultat" before data lands).
@@ -390,9 +454,17 @@ export function SearchPage() {
             {/* A concise, polite live count so a screen-reader user hears "3 résultats"
                 as the search settles — the grouped rows below give no such summary. */}
             <p className="search__hint mono" role="status">{t.search.resultsCount(total)}</p>
-            {res!.recipes.length > 0 && (
-              <Section label={t.search.recipes}>
-                {res!.recipes.map((r) => (
+            {/* Sections render best-hit-first: a section whose top row is NAMED
+                what you typed floats above sections that only contain it in a
+                body field (see the rank comment in the memo). Ties keep the
+                familiar fixed order (stable sort); an empty section's node is
+                `false` and renders nothing. */}
+            {[
+              {
+                best: res!.recipes.best,
+                node: res!.recipes.items.length > 0 && (
+              <Section key="recipes" label={t.search.recipes}>
+                {res!.recipes.items.map((r) => (
                   <Link key={r.id} to={`/kitchen/recipe/${r.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       {recipeImg(r.image) ? <img src={recipeImg(r.image)!} alt="" /> : pictoFor(r.title, '🍳')}
@@ -405,11 +477,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.people.length > 0 && (
-              <Section label={t.search.people}>
-                {res!.people.map((c) => (
+              {
+                best: res!.people.best,
+                node: res!.people.items.length > 0 && (
+              <Section key="people" label={t.search.people}>
+                {res!.people.items.map((c) => (
                   <Link key={c.id} to={`/cercle/person/${c.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <Avatar kind={c.photoKey ? 'photo' : null} photo={c.photoKey} colour={CATS.cercle.deep} name={c.firstName} size={34} />
@@ -422,11 +497,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.pets.length > 0 && (
-              <Section label={t.search.pets}>
-                {res!.pets.map((p) => (
+              {
+                best: res!.pets.best,
+                node: res!.pets.items.length > 0 && (
+              <Section key="pets" label={t.search.pets}>
+                {res!.pets.items.map((p) => (
                   <Link key={p.id} to={`/cercle/pet/${p.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <Avatar kind={p.photoKey ? 'photo' : null} photo={p.photoKey} colour={colourFor('pet', p.colour)} name={p.name} size={34} />
@@ -439,11 +517,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.businesses.length > 0 && (
-              <Section label={t.search.businesses}>
-                {res!.businesses.map((b) => (
+              {
+                best: res!.businesses.best,
+                node: res!.businesses.items.length > 0 && (
+              <Section key="businesses" label={t.search.businesses}>
+                {res!.businesses.items.map((b) => (
                   <Link key={b.id} to={`/cercle?section=business&item=${b.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: b.colour ?? BUSINESS_COLOUR }}>
                       <InlineIcon name="storefront-bold" />
@@ -456,11 +537,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.carnets.length > 0 && (
-              <Section label={t.search.carnets}>
-                {res!.carnets.map((x) => (
+              {
+                best: res!.carnets.best,
+                node: res!.carnets.items.length > 0 && (
+              <Section key="carnets" label={t.search.carnets}>
+                {res!.carnets.items.map((x) => (
                   <Link key={x.id} to={`/cercle/carnet/${x.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: x.color ?? undefined }}>
                       <InlineIcon name="book-open-bold" />
@@ -472,11 +556,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.projects.length > 0 && (
-              <Section label={t.search.homeProjects}>
-                {res!.projects.map((p) => (
+              {
+                best: res!.projects.best,
+                node: res!.projects.items.length > 0 && (
+              <Section key="projects" label={t.search.homeProjects}>
+                {res!.projects.items.map((p) => (
                   <Link
                     key={p.id}
                     to={p.carnet_id ? `/cercle/carnet/${p.carnet_id}` : '/settings?tab=chores'}
@@ -492,11 +579,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.care.length > 0 && (
-              <Section label={t.search.careLog}>
-                {res!.care.map((e) => (
+              {
+                best: res!.care.best,
+                node: res!.care.items.length > 0 && (
+              <Section key="care" label={t.search.careLog}>
+                {res!.care.items.map((e) => (
                   <Link key={e.id} to={`/cercle/carnet/${e.carnetId}?seg=carnet`} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.chore.deep }}>
                       <InlineIcon name="receipt-bold" />
@@ -509,11 +599,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.pins.length > 0 && (
-              <Section label={t.search.homePins}>
-                {res!.pins.map((p) => (
+              {
+                best: res!.pins.best,
+                node: res!.pins.items.length > 0 && (
+              <Section key="pins" label={t.search.homePins}>
+                {res!.pins.items.map((p) => (
                   <Link key={p.id} to={`/cercle/carnet/${p.carnetId}?seg=carnet`} className="search__row">
                     <span className="search__pic" aria-hidden="true">{PIN_EMOJI[p.kind]}</span>
                     <span className="search__main">
@@ -524,11 +617,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.drawings.length > 0 && (
-              <Section label={t.search.drawings}>
-                {res!.drawings.map((d) => (
+              {
+                best: res!.drawings.best,
+                node: res!.drawings.items.length > 0 && (
+              <Section key="drawings" label={t.search.drawings}>
+                {res!.drawings.items.map((d) => (
                   <Link key={d.id} to="/drawings" className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <img src={imgUrl(d.media_key)} alt="" />
@@ -540,11 +636,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.events.length > 0 && (
-              <Section label={t.search.events}>
-                {res!.events.map((e) => (
+              {
+                best: res!.events.best,
+                node: res!.events.items.length > 0 && (
+              <Section key="events" label={t.search.events}>
+                {res!.events.items.map((e) => (
                   <Link key={e.id} to={`/kitchen/day/${localDayStart(new Date(e.start_at * 1000))}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <InlineIcon name={e.birthday ? 'cake-bold' : 'calendar-blank-bold'} />
@@ -557,11 +656,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.routines.length > 0 && (
-              <Section label={t.search.routines}>
-                {res!.routines.map((r) => (
+              {
+                best: res!.routines.best,
+                node: res!.routines.items.length > 0 && (
+              <Section key="routines" label={t.search.routines}>
+                {res!.routines.items.map((r) => (
                   <Link key={r.id} to={`/routine/${r.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.routine.deep }}>
                       <InlineIcon name="smiley-bold" />
@@ -574,11 +676,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.todos.length > 0 && (
-              <Section label={t.search.todos}>
-                {res!.todos.map((td) => (
+              {
+                best: res!.todos.best,
+                node: res!.todos.items.length > 0 && (
+              <Section key="todos" label={t.search.todos}>
+                {res!.todos.items.map((td) => (
                   <Link key={td.id} to="/board" className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.chore.deep }}>
                       <InlineIcon name="check-square-bold" />
@@ -590,11 +695,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.listItems.length > 0 && (
-              <Section label={t.search.listItems}>
-                {res!.listItems.map((li) => (
+              {
+                best: res!.listItems.best,
+                node: res!.listItems.items.length > 0 && (
+              <Section key="listItems" label={t.search.listItems}>
+                {res!.listItems.items.map((li) => (
                   <Link key={li.id} to={`/liste/item/${li.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">{pictoFor(li.text, '🛒')}</span>
                     <span className="search__main">
@@ -604,11 +712,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.pantry.length > 0 && (
-              <Section label={t.search.pantry}>
-                {res!.pantry.map((it) => (
+              {
+                best: res!.pantry.best,
+                node: res!.pantry.items.length > 0 && (
+              <Section key="pantry" label={t.search.pantry}>
+                {res!.pantry.items.map((it) => (
                   <Link key={(it.reserve ? 'r:' : 'l:') + it.id} to="/kitchen?tab=pantry" className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.pantry.deep }}>
                       <InlineIcon name={it.reserve ? 'cloud-snow-bold' : 'carrot-bold'} />
@@ -621,11 +732,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.cars.length > 0 && (
-              <Section label={t.search.auto}>
-                {res!.cars.map((c) => (
+              {
+                best: res!.cars.best,
+                node: res!.cars.items.length > 0 && (
+              <Section key="cars" label={t.search.auto}>
+                {res!.cars.items.map((c) => (
                   <Link key={c.id} to="/voiture" className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: c.color ?? CATS.work.deep }}>
                       <InlineIcon name="car-bold" />
@@ -637,11 +751,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.notes.length > 0 && (
-              <Section label={t.search.notes}>
-                {res!.notes.map((n) => (
+              {
+                best: res!.notes.best,
+                node: res!.notes.items.length > 0 && (
+              <Section key="notes" label={t.search.notes}>
+                {res!.notes.items.map((n) => (
                   <Link key={n.id} to={`/cercle?section=notes&item=${n.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <InlineIcon name="file-text-bold" />
@@ -653,11 +770,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.fridgeNotes.length > 0 && (
-              <Section label={t.search.boardNotes}>
-                {res!.fridgeNotes.map((n) => (
+              {
+                best: res!.fridgeNotes.best,
+                node: res!.fridgeNotes.items.length > 0 && (
+              <Section key="fridgeNotes" label={t.search.boardNotes}>
+                {res!.fridgeNotes.items.map((n) => (
                   <Link key={n.id} to="/board" className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.list.deep }}>
                       <InlineIcon name="push-pin-bold" />
@@ -669,11 +789,14 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
 
-            {res!.guide.length > 0 && (
-              <Section label={t.search.help}>
-                {res!.guide.map((g) => (
+              {
+                best: res!.guide.best,
+                node: res!.guide.items.length > 0 && (
+              <Section key="guide" label={t.search.help}>
+                {res!.guide.items.map((g) => (
                   <Link key={g.id} to={g.to} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <InlineIcon name={g.icon} />
@@ -686,7 +809,11 @@ export function SearchPage() {
                   </Link>
                 ))}
               </Section>
-            )}
+                ),
+              },
+            ]
+              .sort((a, b) => a.best - b.best)
+              .map((s) => s.node)}
           </>
         )}
       </div>
