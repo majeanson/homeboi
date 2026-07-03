@@ -10,6 +10,7 @@ import { Avatar } from '../components/Avatar'
 import { Icon, InlineIcon } from '../components/Icon'
 import { Chip } from '../components/Chip'
 import { StatusMessage } from '../components/StatusMessage'
+import { FormFooter } from '../components/FormFooter'
 import type { RelationshipType } from '../lib/cercle'
 import {
   decodeIntakeScope,
@@ -366,11 +367,16 @@ export function IntakeForm() {
 
         {err && <StatusMessage tone="error">{err}</StatusMessage>}
 
-        <div className="intake__send">
-          <button type="button" className="btn btn--primary" disabled={busy || !self.firstName.trim()} onClick={submit}>
-            <Icon name="arrow-right-bold" size={18} /> {busy ? t.intake.sending : t.intake.submit}
-          </button>
-        </div>
+        {/* Guest "send" CTA via the shared FormFooter (no cancel/delete — a guest fills
+            and sends). Keeps the arrow glyph + the sending busy label. */}
+        <FormFooter
+          saveType="button"
+          onSave={submit}
+          saveLabel={busy ? t.intake.sending : t.intake.submit}
+          saveDisabled={!self.firstName.trim()}
+          busy={busy}
+          saveIcon="arrow-right-bold"
+        />
       </div>
     </div>
   )
