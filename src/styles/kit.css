@@ -322,6 +322,9 @@
    until tapped, so nothing populates the surface unasked. */
 .disclosure {
   margin-top: 0.5rem;
+  /* Own its own row: in a flex-wrap form (the cercle forms) a content-width block
+     would let the next field's label sit beside the collapsed summary. */
+  width: 100%;
 }
 .disclosure__summary {
   display: inline-flex;
