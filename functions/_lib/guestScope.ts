@@ -26,6 +26,10 @@ export function guestKindAllows(kind: GuestKind, apiPath: string): boolean {
   }
   if (apiPath === 'guest/whoami') return true // every kind learns its own kind
   if (apiPath === 'img' || apiPath.startsWith('img/')) return true // opaque-key media
+  // A public /partage share is capability-by-id (like an image), not household data — a
+  // phone still holding a sitter/welcome guest token must be able to open one. Read-only
+  // (GET); the endpoint isn't authed() at all, so this just clears the guest allowlist gate.
+  if (apiPath === 'share-public') return true
   // 'intake' is the one writable kind: the relative-facing form link. It may read its
   // greeting context (guest/window branches on kind) and POST its one submission —
   // and NOTHING else (not board/cercle/list). The write itself is let through by a

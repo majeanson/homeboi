@@ -81,6 +81,13 @@ describe('keysForPath', () => {
     expect(keysForPath('recipe-loves')).toEqual([['recipe-loves']])
   })
 
+  it('maps « Partager » to the shares ledger; the public reader is silent (GET-only)', () => {
+    expect(keysForPath('share')).toEqual([['shares']])
+    // share-public is unmapped/GET-only; keysForPath is only consulted for writes, but a
+    // stray call must not invent a broadcast — it falls to the safe board default.
+    expect(keysForPath('share-public')).toEqual([['board']])
+  })
+
   // Regression guard: these endpoints each own a dedicated client query key, so a
   // realtime push must nudge THAT key — not silently fall to the [['board']] default
   // (which would downgrade cross-device refresh to poll latency for their own tab).

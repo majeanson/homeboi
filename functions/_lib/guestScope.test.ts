@@ -26,6 +26,12 @@ describe('guestKindAllows', () => {
     expect(guestKindAllows('showcase', 'guest/window')).toBe(true)
   })
 
+  it('every guest kind may open a public /partage share (capability-by-id, read-only)', () => {
+    for (const kind of ['showcase', 'sitter', 'welcome', 'family', 'intake', 'postbox'] as const) {
+      expect(guestKindAllows(kind, 'share-public')).toBe(true)
+    }
+  })
+
   for (const kind of ['sitter', 'welcome', 'family'] as const) {
     it(`${kind} reaches only its curated endpoint + whoami + img`, () => {
       for (const p of curatedOk) expect(guestKindAllows(kind, p)).toBe(true)

@@ -150,6 +150,10 @@ const PATH_KEYS: Record<string, string[][]> = {
   // Templates only feed Réglages + the picker chips.
   todos: [['todos'], ['board'], ['month']],
   'todo-templates': [['todo-templates']],
+  // « Partager » — a snapshot share create/revoke only changes the sender's « Mes
+  // partages » ledger (Réglages ▸ Partage + the ShareModal), so nudge that one cache.
+  // (share-public is GET-only → silent by default; family-share stays on the old default.)
+  share: [['shares']],
   // Recipe book; a recipe's ingredients feed the « À régler » meal-low scan.
   recipes: [['recipes'], ['a-regler']],
   'recipe-tags': [['recipes'], ['recipe-tags']],
