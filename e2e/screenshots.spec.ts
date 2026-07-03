@@ -251,34 +251,40 @@ const OVERFLOW_CASES: { path: string; audience: Audience; ready: string }[] = [
   { path: '/pair', audience: 'parent', ready: '.page' },
 ]
 
-for (const lang of ['fr', 'en'] as Lang[]) {
-  for (const c of OVERFLOW_CASES) {
-    test(`no horizontal overflow: ${c.path}#${c.audience} [${lang}] @phone`, async ({ page }) => {
-      const isHome = c.path === '/'
-      await page.setViewportSize({ width: 390, height: 844 })
-      await mockApi(page, isHome ? { signedIn: false } : {})
-      await seedState(page, { theme: 'day', audience: c.audience, lang, surface: isHome ? undefined : 'mobile' })
-      await page.goto(c.path)
-      await settle(page, c.ready)
-      // Poll until the layout is stable. A REAL horizontal overflow persists and
-      // fails after the timeout; a transient one from the `display=swap` web-font
-      // swap (fallback glyphs are momentarily wider) clears within a few frames.
-      // The hub body scrolls internally, so check both it and the document. The
-      // .hubnav row is intentionally horizontal-scroll, so its children are
-      // (correctly) excluded — they live outside .hub__body and the doc flow.
-      await expect
-        .poll(
-          async () =>
-            page.evaluate(() => {
-              const doc = document.documentElement
-              const body = document.querySelector('.hub__body')
-              const docOver = doc.scrollWidth > doc.clientWidth + 1
-              const bodyOver = !!body && body.scrollWidth > body.clientWidth + 1
-              return docOver ? 'doc-overflow' : bodyOver ? 'body-overflow' : 'ok'
-            }),
-          { timeout: 6000, intervals: [150, 300, 500, 800] },
-        )
-        .toBe('ok')
-    })
+// Two phone widths: 390 (iPhone) and 360 (the common narrow Android / small phone).
+// 360 is the tightest width real users hit and where a snug row first overflows, so
+// it gets the same hard assertion as 390 rather than only a screenshot.
+const PHONE_WIDTHS = [360, 390]
+for (const width of PHONE_WIDTHS) {
+  for (const lang of ['fr', 'en'] as Lang[]) {
+    for (const c of OVERFLOW_CASES) {
+      test(`no horizontal overflow: ${c.path}#${c.audience} [${lang}] @phone-${width}`, async ({ page }) => {
+        const isHome = c.path === '/'
+        await page.setViewportSize({ width, height: 844 })
+        await mockApi(page, isHome ? { signedIn: false } : {})
+        await seedState(page, { theme: 'day', audience: c.audience, lang, surface: isHome ? undefined : 'mobile' })
+        await page.goto(c.path)
+        await settle(page, c.ready)
+        // Poll until the layout is stable. A REAL horizontal overflow persists and
+        // fails after the timeout; a transient one from the `display=swap` web-font
+        // swap (fallback glyphs are momentarily wider) clears within a few frames.
+        // The hub body scrolls internally, so check both it and the document. The
+        // .hubnav row is intentionally horizontal-scroll, so its children are
+        // (correctly) excluded — they live outside .hub__body and the doc flow.
+        await expect
+          .poll(
+            async () =>
+              page.evaluate(() => {
+                const doc = document.documentElement
+                const body = document.querySelector('.hub__body')
+                const docOver = doc.scrollWidth > doc.clientWidth + 1
+                const bodyOver = !!body && body.scrollWidth > body.clientWidth + 1
+                return docOver ? 'doc-overflow' : bodyOver ? 'body-overflow' : 'ok'
+              }),
+            { timeout: 6000, intervals: [150, 300, 500, 800] },
+          )
+          .toBe('ok')
+      })
+    }
   }
 }

@@ -29,6 +29,7 @@ const CASES: Case[] = [
 // [data-surface='mobile'] .hubnav), so a portrait wall tablet (834px) can strand a
 // control under the bar just like the phone — a distinct layout worth its own pass.
 const FORMATS = [
+  { name: 'phone-360', width: 360, height: 800 },
   { name: 'phone', width: 390, height: 844 },
   { name: 'tablet', width: 834, height: 1112 },
 ]
@@ -51,36 +52,61 @@ async function scrollToBottom(page: Page) {
   await page.waitForTimeout(300)
 }
 
-// Returns the list of interactive elements whose tappable area is occluded by the
-// fixed bottom nav (their visible center sits inside the nav's rectangle), after
-// scrolling to the bottom. An empty array = every control clears the footer.
+// Returns the list of interactive elements a phone user can't reach after scrolling
+// to the bottom, in two flavours (each label is prefixed so the failure says which):
+//   • "under-nav: …"  — the control's visible centre is painted over by the fixed
+//                        bottom nav.
+//   • "off-right: …"  — the control extends past the right viewport edge, so its tap
+//                        target is (partly) off-screen and the layout has overflowed.
+// An empty array = every control clears the footer AND sits within the width.
 async function occludedControls(page: Page): Promise<string[]> {
   return page.evaluate(() => {
-    const nav = document.querySelector('.hubnav') as HTMLElement | null
-    if (!nav) return []
-    const navBox = nav.getBoundingClientRect()
-    // Only a FIXED bottom bar can occlude page content. If the nav isn't pinned to
-    // the bottom (kiosk left column / narrow-width top row), there's nothing to test.
-    const fixed = getComputedStyle(nav).position === 'fixed' && navBox.top > window.innerHeight / 2
-    if (!fixed) return []
+    // A control legitimately sitting inside a horizontal scroller (subtabs, chip/tag
+    // rows, timer rail) is MEANT to run past the edge — you scroll to it. Only flag
+    // "off-right" when no ancestor is an actually-scrollable horizontal container.
+    const inHScroller = (el: Element): boolean => {
+      let p = el.parentElement
+      while (p && p !== document.body) {
+        const ox = getComputedStyle(p).overflowX
+        if ((ox === 'auto' || ox === 'scroll') && p.scrollWidth > p.clientWidth + 1) return true
+        p = p.parentElement
+      }
+      return false
+    }
+    const labelOf = (el: Element) =>
+      (el.textContent || (el as HTMLInputElement).placeholder || el.getAttribute('aria-label') || el.className || el.tagName).trim().slice(0, 60)
+
     const body = document.querySelector('.hub__body')
     if (!body) return []
     const controls = body.querySelectorAll('button, a, input, textarea, select, [role="button"]')
     const hidden: string[] = []
+
+    const nav = document.querySelector('.hubnav') as HTMLElement | null
+    const navBox = nav?.getBoundingClientRect()
+    // Only a FIXED bottom bar can occlude page content. If the nav isn't pinned to
+    // the bottom (kiosk left column / narrow-width top row), the under-nav check is off.
+    const barFixed = !!nav && !!navBox && getComputedStyle(nav).position === 'fixed' && navBox.top > window.innerHeight / 2
+
     controls.forEach((el) => {
       const r = el.getBoundingClientRect()
       if (r.width === 0 || r.height === 0) return // not rendered
-      const cy = r.top + r.height / 2
-      const cx = r.left + r.width / 2
-      // Center sits within the nav band AND inside the viewport → visually under it.
-      const underBar = cy > navBox.top && cy < window.innerHeight
-      if (!underBar) return
-      // Confirm the nav actually paints over this point (elementFromPoint is the nav
-      // or a descendant of it) — a control merely *near* the bar isn't a bug.
-      const hit = document.elementFromPoint(cx, cy)
-      if (hit && (nav === hit || nav.contains(hit))) {
-        const label = (el.textContent || (el as HTMLInputElement).placeholder || el.getAttribute('aria-label') || el.className || el.tagName).trim().slice(0, 60)
-        hidden.push(label)
+
+      // Off-right: any part of the control is past the right edge and it isn't inside
+      // a sideways scroller → its tap target is stranded off-screen (width overflow).
+      if (r.right > window.innerWidth + 1 && !inHScroller(el)) {
+        hidden.push(`off-right: ${labelOf(el)}`)
+      }
+
+      // Under-nav: centre sits within the fixed bar's band, and the nav actually
+      // paints over that point (elementFromPoint is the nav / a descendant) — a
+      // control merely *near* the bar isn't a bug.
+      if (barFixed && navBox) {
+        const cy = r.top + r.height / 2
+        const cx = r.left + r.width / 2
+        if (cy > navBox.top && cy < window.innerHeight) {
+          const hit = document.elementFromPoint(cx, cy)
+          if (hit && (nav === hit || nav.contains(hit))) hidden.push(`under-nav: ${labelOf(el)}`)
+        }
       }
     })
     return [...new Set(hidden)]

@@ -1165,6 +1165,16 @@ textarea.input {
   border-radius: var(--radius-pill);
   background: var(--paper-deep);
   border: 1px solid var(--line);
+  /* Graceful scroll when the segments can't all fit (e.g. Le cercle's five
+     icon+word sections on a 360px phone) — the tabs keep their full labels and the
+     row scrolls sideways instead of clipping the last one off-screen. A no-op when
+     they fit (the common 3-tab case): overflow-x:auto only scrolls on overflow. This
+     folds the old bespoke .cercle-sectionswitch behaviour into the shared primitive. */
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox — keep the pill clean */
+}
+.subtabs::-webkit-scrollbar {
+  display: none; /* WebKit/Blink — no scrollbar rail under the pill */
 }
 .subtabs__opt {
   flex: 1;
@@ -1181,6 +1191,11 @@ textarea.input {
   font-weight: 600;
   font-size: var(--text-md);
   cursor: pointer;
+  /* Keep each label on one line — a hyphenated label like « Garde-manger » was
+     breaking mid-word and making the whole pill row two lines tall. If nowrap ever
+     makes the segments exceed the width, the row scrolls (see .subtabs) rather than
+     wrapping. */
+  white-space: nowrap;
 }
 .subtabs__opt.is-on {
   background: var(--accent);
