@@ -424,9 +424,14 @@ export function Kitchen() {
               every action scrolls into view (requestScroll) so a tap is never a
               silent no-op when the page is scrolled down to the grid. Several cards
               can stack — press AI then Book and you see both answers at once. */}
-          <div className="kitchen__results" ref={resultsRef}>
+          {/* ONE polite live region for the whole results band — the waking line and
+              each suggestion card used to each carry role="status", so several live
+              regions announced over one another. aria-live on the container (atomic
+              defaults false → only the newly-added line/card is read) keeps them from
+              colliding while still announcing each answer as it lands. */}
+          <div className="kitchen__results" ref={resultsRef} aria-live="polite">
             {aiWaking && (
-              <p className="kitchen__ai-waking mono" role="status">
+              <p className="kitchen__ai-waking mono">
                 ⏳ {t.kitchen.aiWaking}
               </p>
             )}
@@ -436,7 +441,6 @@ export function Kitchen() {
                 <div
                   key={s.source}
                   className="kitchen__suggestion"
-                  role="status"
                   style={{ borderLeftColor: dress.color }}
                 >
                   <span className="kitchen__suggestion-text">

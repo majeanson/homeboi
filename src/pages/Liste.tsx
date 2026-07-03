@@ -566,7 +566,10 @@ export function Liste() {
             return (
               <Fragment key={item.id}>
                 {showHeader && (
-                  <div className="list-aisle" role="presentation">
+                  // A heading, not role="presentation" — in "Par allée" this groups the
+                  // rows below it by aisle, so a SR user needs the grouping cue (and can
+                  // jump between aisles by heading) instead of hitting an inert row.
+                  <div className="list-aisle" role="heading" aria-level={3}>
                     <span className="list-aisle__emoji" aria-hidden="true">
                       {aisleInfo.emoji}
                     </span>
