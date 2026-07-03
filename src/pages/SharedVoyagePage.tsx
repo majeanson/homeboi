@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
 import { ApiError, isUnauthorized } from '../lib/api'
 import { queryClient } from '../lib/query'
 import { useWrite } from '../lib/write'
+import { useConfirm } from '../lib/confirm'
 import { useT, useLang } from '../i18n'
 import { formatDayLong, capitalize as cap } from '../lib/format'
 import { isGuest } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useTabParam } from '../lib/tabParam'
-import { SHARED_TRIPS_KEY, SHARED_TRIP_NOTES_KEY, SHARED_TRIP_PACKING_KEY } from '../lib/queryKeys'
+import { SHARED_TRIPS_KEY, SHARED_TRIP_NOTES_KEY, SHARED_TRIP_PACKING_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { connectSharedTripRealtime } from '../lib/realtime'
 import { PairPrompt } from '../components/Fallback'
+import { StatusMessage } from '../components/StatusMessage'
 import { SceneHead } from '../components/SceneHead'
 import { SubTabs } from '../components/SubTabs'
 import { Chip } from '../components/Chip'
@@ -81,10 +82,12 @@ function SharedVoyageInner() {
   const close = useSceneClose('/board')
   useEscapeKey(close)
   const { id } = useParams()
-  const qc = useQueryClient()
   const nav = useNavigate()
+  const write = useWrite()
+  const confirm = useConfirm()
   const [editing, setEditing] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [actErr, setActErr] = useState<string | null>(null)
   const [vue, setVue] = useTabParam('vue', 'itineraire', VUES)
 
   const tripQ = useSharedTrip(id)
@@ -136,6 +139,51 @@ function SharedVoyageInner() {
 
   if (editing) return <SharedVoyageForm trip={trip} onClose={() => setEditing(false)} />
 
+  const isOwner = trip.myRole === 'owner'
+
+  // « Quitter le voyage » — drop our household's grant. Always visible in the scene
+  // foot (not buried in the share sheet): the way OUT must be as findable as the way
+  // in. Two quick confirms: the leave itself (danger — access is lost, a new invite
+  // link is needed to come back), then whether to export a private copy first.
+  async function leaveTrip() {
+    if (!(await confirm({ message: t.sharedVoyage.leaveConfirm, confirmLabel: t.sharedVoyage.leave, tone: 'danger' })))
+      return
+    const keep = await confirm({
+      message: t.sharedVoyage.keepCopyAsk,
+      confirmLabel: t.sharedVoyage.keepCopyYes,
+      cancelLabel: t.sharedVoyage.keepCopyNo,
+      tone: 'default',
+    })
+    try {
+      await write('shared-trip-leave', {
+        method: 'POST',
+        body: { sharedTripId: trip!.id, keepCopy: keep },
+        // keepCopy exports a private trip → refresh the household trip surfaces too.
+        affectedKeys: [SHARED_TRIPS_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY],
+      })
+      nav('/board')
+    } catch (e) {
+      setActErr((e as Error).message)
+    }
+  }
+
+  // « Dissoudre » — the owner's way out (v1 has no ownership transfer): tears the trip
+  // down for every household. Heavy + unrecoverable → danger confirm, never an undo.
+  async function dissolveTrip() {
+    if (!(await confirm({ message: t.sharedVoyage.dissolveConfirm, confirmLabel: t.sharedVoyage.dissolve, tone: 'danger' })))
+      return
+    try {
+      await write('shared-trip', {
+        method: 'DELETE',
+        body: { id: trip!.id },
+        affectedKeys: [SHARED_TRIPS_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY],
+      })
+      nav('/board')
+    } catch (e) {
+      setActErr((e as Error).message)
+    }
+  }
+
   // Pseudo-faces from the membership roster (id = household_id, no photo) — attribution
   // for notes (sharedNoteToTripNote maps author_household_id → member_id).
   const faces: MemberFace[] = trip.members.map((m) => ({ id: m.household_id, name: m.label, colour: m.colour, photoUrl: null }))
@@ -165,7 +213,11 @@ function SharedVoyageInner() {
           title={
             <>
               <Icon name={VOYAGE_ICON} size={20} style={{ display: 'inline-block', verticalAlign: '-0.2em' }} /> {trip.title}{' '}
-              <Chip icon="users-three-bold">{t.sharedVoyage.badge}</Chip>
+              {/* The badge IS the door to the share sheet — reachable without scrolling
+                  to the foot (the sheet holds the invite link + household roster). */}
+              <Chip icon="users-three-bold" onClick={() => setSharing(true)} ariaLabel={t.sharedVoyage.shareTitle} title={t.sharedVoyage.shareTitle}>
+                {t.sharedVoyage.badge}
+              </Chip>
             </>
           }
           subtitle={[trip.destination, tripDateLabel(trip, lang)].filter(Boolean).join(' · ') || undefined}
@@ -191,29 +243,34 @@ function SharedVoyageInner() {
           {vue === 'documents' && <VoyageDocuments trip={tripForChildren} notes={notes} />}
 
           {!isGuest() && (
-            <div className="voyage__foot voyage-share__foot">
-              <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(true)}>
-                <Icon name="pencil-simple-bold" size={15} /> {t.sharedVoyage.editTrip}
-              </button>
-              <button type="button" className="btn btn--primary mono" onClick={() => setSharing(true)}>
-                <Icon name="users-three-bold" size={15} /> {t.sharedVoyage.invite}
-              </button>
-            </div>
+            <>
+              {actErr && <StatusMessage tone="error">{actErr}</StatusMessage>}
+              <div className="voyage__foot voyage-share__foot">
+                <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(true)}>
+                  <Icon name="pencil-simple-bold" size={15} /> {t.sharedVoyage.editTrip}
+                </button>
+                {/* The membership lifecycle lives HERE, always visible — leaving must not
+                    hide behind « Inviter ». Members leave; the owner dissolves (v1 has no
+                    ownership transfer). */}
+                {isOwner ? (
+                  <button type="button" className="btn btn--ghost mono voyage-form__delete" onClick={() => void dissolveTrip()}>
+                    <Icon name="trash-bold" size={15} /> {t.sharedVoyage.dissolve}
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn--ghost mono voyage-form__delete" onClick={() => void leaveTrip()}>
+                    <Icon name="door-bold" size={15} /> {t.sharedVoyage.leave}
+                  </button>
+                )}
+                <button type="button" className="btn btn--primary mono" onClick={() => setSharing(true)}>
+                  <Icon name="users-three-bold" size={15} /> {t.sharedVoyage.invite}
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
 
-      <VoyageShareModal
-        open={sharing}
-        onClose={() => setSharing(false)}
-        trip={trip}
-        myHouseholdId={myHouseholdId}
-        onGone={() => {
-          setSharing(false)
-          qc.invalidateQueries({ queryKey: SHARED_TRIPS_KEY })
-          nav('/board')
-        }}
-      />
+      <VoyageShareModal open={sharing} onClose={() => setSharing(false)} trip={trip} myHouseholdId={myHouseholdId} />
     </VoyageApiContext.Provider>
   )
 }

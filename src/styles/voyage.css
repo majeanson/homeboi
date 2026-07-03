@@ -194,13 +194,6 @@
   align-items: center;
   margin-top: 12px;
 }
-.voyage-share__keep {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ink-soft);
-  font-size: 0.85rem;
-}
 /* The « Partagé » tag on a board card row — a small inline pill after the name. */
 .voyage-card__shared {
   margin-left: 6px;

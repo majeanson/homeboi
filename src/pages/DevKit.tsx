@@ -966,12 +966,13 @@ export function DevKit() {
       cat: 'Voyage',
       name: 'VoyageShareModal',
       file: 'components/voyage/VoyageShareModal.tsx',
-      kw: 'voyage partagé shared trip invite link qr member household owner leave dissolve reset lien',
+      kw: 'voyage partagé shared trip invite link qr member household owner reset lien',
       render: () => (
-        // « Voyage partagé » → « Inviter » — mint an invite link (+ QR), list member
-        // households + roles, and the membership lifecycle (reset link / leave / dissolve).
+        // « Voyage partagé » → the share sheet — mint an invite link (+ QR), list member
+        // households + roles, owner « Réinitialiser le lien ». Leave/dissolve live in the
+        // SharedVoyagePage foot, NOT here (the way out never hides behind « Inviter »).
         // Mirrors FamilyShareModal; reuses Modal + QrCode + Avatar + useConfirm.
-        <Demo label="invite a household — link + QR + roster + leave/dissolve">
+        <Demo label="invite a household — link + QR + roster">
           <button className="btn" onClick={() => setVoyageShareOpen(true)}>
             {t.sharedVoyage.invite}
           </button>
@@ -980,7 +981,6 @@ export function DevKit() {
             onClose={() => setVoyageShareOpen(false)}
             trip={DEMO_SHARED_TRIP}
             myHouseholdId={DEMO_MY_HOUSEHOLD}
-            onGone={() => setVoyageShareOpen(false)}
           />
         </Demo>
       ),

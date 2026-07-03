@@ -219,12 +219,33 @@ test('« Rejoindre » previews the invite then joins: POST {token} → the share
   expect(req.postDataJSON()).toMatchObject({ token: 'tok' })
 })
 
+test('a member leaves from the scene foot: leave confirm → keep-copy ask → POST shared-trip-leave → /board', async ({ page }) => {
+  // As a plain MEMBER (not the owner) the foot shows « Quitter le voyage »; the owner
+  // sees « Dissoudre » instead. Leaving asks two quick confirms: the danger leave, then
+  // whether to keep a private copy — answered « Garder une copie » here → keepCopy: true.
+  await stubShared(page, { trip: { ...SHARED_TRIP, myRole: 'member' } })
+  await page.goto('/voyage/partage/st1')
+
+  await page.getByRole('button', { name: 'Quitter le voyage' }).click()
+  // Confirm 1 (danger) — its CTA repeats the label, so scope to the dialog.
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Quitter le voyage' }).click()
+  // Confirm 2 (neutral) — keep a private copy?
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && apiPath(r) === '/api/shared-trip-leave', { timeout: 20_000 }),
+    page.waitForURL(/\/board/),
+    page.getByRole('alertdialog').getByRole('button', { name: 'Garder une copie' }).click(),
+  ])
+  expect(req.postDataJSON()).toMatchObject({ sharedTripId: 'st1', keepCopy: true })
+})
+
 test('« Inviter » mints a share link: the URL input + QR + copy button render', async ({ page }) => {
   const url = 'https://babillard.test/voyage/rejoindre?j=inv-tok'
   await stubShared(page, { inviteUrl: url })
   await page.goto('/voyage/partage/st1')
 
-  await page.getByRole('button', { name: 'Inviter' }).click()
+  // exact: the « Partagé » header chip (aria-label « Inviter une maisonnée ») also
+  // opens this sheet and would substring-match a loose 'Inviter'.
+  await page.getByRole('button', { name: 'Inviter', exact: true }).click()
   // The sheet opens on the "create the link" state; minting it (POST shared-trip-invite)
   // reveals the link input, the copy button and the scannable QR.
   await page.getByRole('button', { name: 'Créer le lien d’invitation' }).click()

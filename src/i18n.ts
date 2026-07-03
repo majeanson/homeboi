@@ -2269,8 +2269,11 @@ export const FR = {
     resetLink: 'Réinitialiser le lien',
     resetLinkConfirm: 'Réinitialiser le lien ? Les liens déjà envoyés cesseront de fonctionner.',
     leave: 'Quitter le voyage',
-    leaveConfirm: 'Quitter ce voyage partagé ? Tu n’y auras plus accès.',
-    keepCopy: 'Garder une copie dans mes voyages',
+    leaveConfirm:
+      'Quitter ce voyage partagé ? Tu n’y auras plus accès — il faudra un nouveau lien d’invitation pour y revenir.',
+    keepCopyAsk: 'Avant de partir : garder une copie privée de ce voyage dans tes voyages ?',
+    keepCopyYes: 'Garder une copie',
+    keepCopyNo: 'Non merci',
     dissolve: 'Dissoudre le voyage',
     dissolveConfirm:
       'Dissoudre ce voyage pour toutes les maisonnées ? Tout son contenu sera supprimé et personne n’y aura plus accès. On ne peut pas l’annuler.',
@@ -4681,8 +4684,10 @@ export const EN: typeof FR = {
     resetLink: 'Reset the link',
     resetLinkConfirm: 'Reset the link? Links you already sent will stop working.',
     leave: 'Leave the trip',
-    leaveConfirm: 'Leave this shared trip? You’ll lose access to it.',
-    keepCopy: 'Keep a copy in my trips',
+    leaveConfirm: 'Leave this shared trip? You’ll lose access — you’ll need a new invite link to come back.',
+    keepCopyAsk: 'Before you go: keep a private copy of this trip in your trips?',
+    keepCopyYes: 'Keep a copy',
+    keepCopyNo: 'No thanks',
     dissolve: 'Dissolve the trip',
     dissolveConfirm:
       'Dissolve this trip for every household? All of its content will be deleted and no one will have access. This can’t be undone.',
