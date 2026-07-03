@@ -6,6 +6,7 @@ import { useWrite } from '../lib/write'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor } from '../lib/recipes'
 import { isGuest } from '../lib/device'
+import { useAudience } from '../lib/audience'
 import { wash, tintInk, edge } from '../lib/colors'
 import { formatDuration } from '../lib/duration'
 import { scaleIngredients } from '../lib/scale'
@@ -47,9 +48,13 @@ export function RecipeSheet({
   const t = useT()
   const confirm = useConfirm()
   const write = useWrite()
-  // Read-only guest: the recipe stays fully readable + cookable (reads), but the
-  // write actions — add-to-list, plan-a-supper, edit, delete — are hidden.
-  const ro = isGuest()
+  const { audience } = useAudience()
+  // Read-only: the recipe stays fully readable + cookable (reads), but the write
+  // actions — add-to-list, plan-a-supper, edit, delete, share — are hidden. True for
+  // a guest AND for the toddler lens: a pre-reader who cooks from KidKitchen and taps
+  // ✕ lands back on this sheet, and the toddler one-way-door must never expose the
+  // parent's edit/delete/plan/share controls (NFR-KID: no escape hatch to admin).
+  const ro = isGuest() || audience === 'toddler'
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onClose)
   const [added, setAdded] = useState(false)
@@ -456,8 +461,10 @@ export function RecipeSheet({
           )}
           {/* Share the recipe as plain text via the platform sheet — a read action,
               so it's available to guests too. The one home for sharing (moved off
-              the cook-mode bar). Hidden where Web Share is unavailable. */}
-          {typeof navigator !== 'undefined' && !!navigator.share && (
+              the cook-mode bar). Hidden where Web Share is unavailable, and hidden for
+              the toddler lens (the OS share sheet is a chrome escape a pre-reader
+              shouldn't land in — the one-way door stays closed). */}
+          {typeof navigator !== 'undefined' && !!navigator.share && audience !== 'toddler' && (
             <button
               type="button"
               className="btn btn--ghost mono"

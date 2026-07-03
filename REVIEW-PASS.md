@@ -207,11 +207,11 @@ not structural. Four reviewers; findings deduped below.
   reach it offline — the recipe comes from an online Workers AI call) AND needs the new
   recipe id synchronously to route to `/cook`, which a queued write can't return (same class
   as `createBringList`).
-- [ ] **Toddler cook-mode exit leaks to the parent recipe sheet.** `KidKitchen` cooks via
-  `/kitchen/recipe/:id/cook`; `CookPage` closes to `RecipeViewPage`→`RecipeSheet`, whose
-  read-only gate is `ro = isGuest()` **only, not audience** (`RecipeSheet.tsx:52`). A
-  toddler tapping ✕ after cooking sees Edit/Delete/Plan/Share. Gate `ro` on
-  `audience==='toddler'` too, or close toddler cook back to `/kitchen`.
+- [x] **Toddler cook-mode exit leaks to the parent recipe sheet.** — ✅ **Fixed 2026-07-02**:
+  `RecipeSheet`'s gate is now `ro = isGuest() || audience === 'toddler'`, so a toddler
+  landing here after cooking no longer sees add-to-list / plan / edit / delete; the Share
+  button (a guest-allowed read action) is additionally hidden for `audience === 'toddler'`
+  (the OS share sheet is a chrome escape the one-way door must not open).
 - [x] **`keepSuggestion` gives no feedback and double-adds.** `Kitchen.tsx:343-349` POSTs to
   `meal-ideas` but never clears/disables the card or toasts → tapping "Garder" twice inserts
   the idea twice. Clear-on-keep (+ the undo toast used elsewhere).
@@ -219,10 +219,10 @@ not structural. Four reviewers; findings deduped below.
   `MealRows.tsx:141-203` (heart/book/↑/↓/leftover/trash); `.kitchen__meal-btn` min is
   **32px** (`kitchen.css:613`), below the 44px rule and cramped at 320–430px. Bump to 44px
   and/or fold reorder/leftover behind `RowActions`.
-- [ ] **Today's meal writes don't all invalidate `BOARD_KEY`** → "Ce soir" hero stays stale
-  until the next poll. `DayPlanPage` `planRecipe`/`clearMeal`/`clearSlotMeals`/`clearDay`/
-  `saveSlot` pass only `[MEALS_KEY]` (whereas `renameMeal`/`saveMeal` include `BOARD_KEY`).
-  Add `BOARD_KEY` to the today-affecting writes.
+- [x] **Today's meal writes don't all invalidate `BOARD_KEY`** — ✅ **Fixed 2026-07-02**:
+  `saveSlot`/`clearMeal`/`moveMeal`/`clearSlotMeals`/`clearDay`/`planRecipe` now pass
+  `[MEALS_KEY, BOARD_KEY]`, so the board's "Ce soir" hero refreshes at once instead of
+  lagging to the next poll (matching `renameMeal`/`planLeftover` which already did).
 - [x] **`MeasureColorsSection` forks the colour UI.** — ✅ **Resolved 2026-07-02 as DELIBERATE**
   (the finding's own "unless the free-form picker is deliberate" branch). The measure defaults
   (`measureColors.ts`: leaf green / teal / golden yellow …) are matched to a household's PHYSICAL
@@ -234,10 +234,10 @@ not structural. Four reviewers; findings deduped below.
   shared `useUndoToast` (deferred; onUndo reloads it back). Matches the list's undo idiom.
 - [ ] **`CashierPage` has no empty/error state** — a cold deep-link with an empty pick set
   flashes `Loading`→redirect to `/liste` with no message (`CashierPage.tsx:33`).
-- [ ] **Restock / réserve adds don't refresh predictions.** `PantryTab`/`ReserveSection`
-  add with `affectedKeys:[BOARD_KEY]` only; the canonical `Liste.postAdd` also invalidates
-  `[GHOSTS_KEY, HISTORY_KEY]`, so a low/reserve item lingers in the quick-add candidate set
-  until the next natural refetch.
+- [x] **Restock / réserve adds don't refresh predictions.** — ✅ **Fixed 2026-07-02**:
+  `PantryTab.checkLowItem` + `ReserveSection.addToList` now pass
+  `[BOARD_KEY, GHOSTS_KEY, HISTORY_KEY]`, matching the canonical `Liste.postAdd`, so a
+  low/reserve item drops out of the quick-add candidate set the moment it's listed.
 - [ ] **Guest handling inconsistent across config panels.** Most render a read-only legend;
   `MeasureColorsSection` returns `null` (whole section vanishes, `display.tsx:477`). Prefer
   a uniform read-only legend.
