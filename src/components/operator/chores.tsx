@@ -10,9 +10,10 @@ import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routin
 import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
 import { ListRow } from '../ListRow'
+import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
 import { ChoreForm } from '../forms/ChoreForm'
-import { RoutineForm } from '../forms/RoutineForm'
+import { useNavigate } from 'react-router-dom'
 import { colourFor } from '../../lib/things'
 import { recurLabel } from '../../lib/recurLabel'
 import { CHORES_KEY, MEMBERS_KEY, ROUTINES_KEY } from '../../lib/queryKeys'
@@ -105,11 +106,10 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
   const undoableRemove = useUndoableRemove()
   const recordUndo = useRecordUndo()
   const write = useWrite()
+  const navigate = useNavigate()
   // Read-only guest: hide the ToD cycle chip (a write) + the add-routine button.
   const ro = isGuest()
-  const [editing, setEditing] = useState<string | null>(null)
   function remove(r: Routine) {
-    if (editing === r.id) setEditing(null)
     undoableRemove({
       queryKey: ROUTINES_KEY,
       listProp: 'routines',
@@ -151,22 +151,9 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
 
   return (
     <OperatorSection title={t.operator.routines}>
+      {routines.length === 0 && <EmptyState>{t.operator.noRoutines}</EmptyState>}
       <ul className="operator__list">
-        {routines.map((r) =>
-          editing === r.id ? (
-            <li key={r.id} className="operator__routine-row--editing">
-              <RoutineForm
-                key={r.id}
-                members={[]}
-                value={r}
-                onSaved={() => {
-                  setEditing(null)
-                  onChange()
-                }}
-                onCancel={() => setEditing(null)}
-              />
-            </li>
-          ) : (
+        {routines.map((r) => (
             <li key={r.id} className="operator__routine-row">
               <span>
                 {r.name}
@@ -204,15 +191,18 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
                   )}
                 </button>
               )}
+              {/* Edit opens the full-screen builder scene (/routine/:id), not an
+                  inline form: the card deck was "the worst sheet offender" under the
+                  mobile keyboard, so both edit entry points (here + the Routines tab)
+                  route to the one ergonomic surface. */}
               <RowActions
-                onEdit={() => setEditing(r.id)}
+                onEdit={() => navigate(`/routine/${r.id}`)}
                 onDelete={() => remove(r)}
                 editLabel={t.operator.editRoutine}
                 deleteLabel={t.operator.deleteRoutine}
               />
             </li>
-          ),
-        )}
+          ))}
       </ul>
       {/* Building a routine is the same ＋ as everywhere; Réglages edits/removes
           the ones that exist (the rows above). Hidden for a read-only guest. */}

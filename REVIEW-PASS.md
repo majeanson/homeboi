@@ -131,7 +131,7 @@ remainder), by §line:
 - **459** (NoteEditor nits) — orphan-blob fixed; ✅ body `aria-label` now `note ? editorEdit : editorNew` (2026-07-02). **Correction:** `firstLine` is NOT exported-only — it's used in `SearchPage.tsx:560` (the original claim was inaccurate). Remaining: audio-note edit still title-only.
 - **509** (guest rate-limit/revoke) — ✅ **fully closed 2026-07-02**: per-token REVOKE (mig 0098 `guests` + `resolveActor` check + `guest-links` list/revoke + « Liens actifs » UI) AND per-token RATE-LIMIT (mig 0099 `use_count` + `chargeGuestUse` cap of 40, charged before any work in all 4 writable endpoints).
 - **518** (showcase over-share) — ✅ **mitigated 2026-07-02**: issuer no longer defaults to showcase (now `sitter`, showcase moved last + caution glyph); warning + 24 h TTL already shipped. Read-scope kept broad by design (showcase = the real Démo hub; narrowing 403s whole tabs) — a curated Démo needs per-tab hiding, tracked separately. Revoke now shipped (§509) — a leaked showcase link CAN be killed early.
-- **559 / 822 / 931** (e2e — guest / Voyage / offline-layer) — postbox + guest-scenes specs added; ✅ **§822 Voyage** now fully covered (`voyage.spec.ts`: create/view/add-note/pack/check/edit/delete, 7 tests) AND ✅ **§559 intake submit→review→accept** covered both sides (`intake.spec.ts`: guest fills+submits, operator reviews+accepts→merge, 2026-07-02). ✅ **§931 outbox** now covered too (`offline-outbox.spec.ts`: a `/liste` write made offline queues — offline-bar shows the pending count, nothing sent — then replays on the `online` event, 2026-07-02). ✅ **§931 idle/ambient** covered too (`idle-ambient.spec.ts`: the Debug `bb:idle-debug` force shows the screensaver + a tap wakes back to the board, 2026-07-03). Remaining under 931: SW precache + realtime-WS (each needs a different harness — the service worker isn't active in vite dev, WS needs the DO).
+- **559 / 822 / 931** (e2e — guest / Voyage / offline-layer) — postbox + guest-scenes specs added; ✅ **§822 Voyage** now fully covered (`voyage.spec.ts`: create/view/add-note/pack/check/edit/delete, 7 tests) AND ✅ **§559 intake submit→review→accept** covered both sides (`intake.spec.ts`: guest fills+submits, operator reviews+accepts→merge, 2026-07-02). ✅ **§931 outbox** now covered too (`offline-outbox.spec.ts`: a `/liste` write made offline queues — offline-bar shows the pending count, nothing sent — then replays on the `online` event, 2026-07-02). ✅ **§931 idle/ambient** covered too (`idle-ambient.spec.ts`: the Debug `bb:idle-debug` force shows the screensaver + a tap wakes back to the board, 2026-07-03). ✅ **§931 realtime-WS + SW precache** now covered too (2026-07-03) — the last two, each on its own harness: `realtime.spec.ts` mocks the `RealtimeHub` DO with `page.routeWebSocket` (no wrangler/D1) and drives an `{type:invalidate}` frame → La liste refetches the board inside the 60s realtime heartbeat (proving push, not poll), plus a malformed-frame robustness case; `sw.spec.ts` + `e2e/sw.config.ts` build + `vite preview` the real PROD bundle (the SW is a build artifact, registers only in PROD), assert the versioned precache holds the shell, then go offline + reload and confirm the board still boots. Wired into `e2e.yml` as `npm run e2e:sw`; `testIgnore`'d from the default config. **§931 e2e now fully closed.**
 - **668** (Settings error states) — ✅ **closed 2026-07-02**: `ThisWeekTogetherSection` now reads `isError` and shows `t.common.loadFailed` instead of a false empty week (only when no cached frame). Photos already guarded `isPending`.
 - **729** (createBringList silent) — ✅ **closed 2026-07-02**: `EventForm.createBringList` catch now sets `bringErr` → `StatusMessage`; « Créer la liste » disabled + a « Indisponible hors-ligne » hint when `!useOnline()`.
 - **747** (capture keys) — shared GHOSTS/HISTORY keys done; ✅ `MONTH_KEY` now in `CAPTURE_KEYS` (2026-07-02) so a captured dated event/task refreshes the month/day calendar. Remaining: event/task/meal titles still unclamped server-side.
@@ -330,11 +330,11 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
   removing a card / clearing a clip / re-recording orphans the old audio blob. DELETE frees
   both (`:371`). **Confirmed by both reviewers.** Mirror the photo cleanup for
   `cards_narration_json`.
-- [ ] **Double edit surface for one routine.** Réglages edits the deck **inline in a `<li>`**
-  (`chores.tsx:157`, `members={[]}`) while the Routines-tab picker edits it in the
-  **full-screen scene** (`RoutineFormPage`) — which exists *specifically because this deck
-  "was the worst sheet offender" under the keyboard*. The inline path re-introduces the exact
-  problem on mobile. Route the Réglages ✏️ to `/routine/:id` for one ergonomic path.
+- [x] **Double edit surface for one routine.** ✅ **Fixed 2026-07-03**: the Réglages ✏️ now
+  `navigate(\`/routine/${r.id}\`)` to the full-screen builder scene (`chores.tsx`), same as
+  the Routines-tab picker — the inline `<li>` `RoutineForm` (the "worst sheet offender" under
+  the mobile keyboard) is gone. `RoutineForm` stays alive (still the scene's form via
+  `RoutineFormPage`); the unused import + `editing` state were dropped.
 - [ ] **No delete affordance in the Routines tab or edit scene** — deleting forces a trip to
   Settings ▸ Corvées. Add a delete in the edit scene / detail peek.
 - [ ] **Nested interactive-in-interactive on the parent grid** — `<button>` edit + `<button>`
@@ -359,11 +359,14 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
   confusing on the toddler surface. Design decision on whether both belong.
 - [ ] **Parent overview shows no "done today"** (`Routines.tsx:194`) while the toddler picker
   shows `doneCount/total` (`KidView.tsx:206`) — information asymmetry (calm-by-omission?).
-- [ ] **`RoutinesSection` has no empty state** (`chores.tsx:154` — bare `<ul>` + add) where
-  every sibling uses `EmptyState`.
-- [ ] **Photo file input is `hidden`, not keyboard-reachable** (`CardDeckEditor.tsx:502`) — a
-  hidden input isn't focusable; use `sr-only` positioning or make the label a button. Palette
-  emoji buttons also lack `aria-label` (`:198`).
+- [x] **`RoutinesSection` has no empty state** — ✅ **Fixed 2026-07-03**: renders
+  `<EmptyState>{t.operator.noRoutines}</EmptyState>` when the list is empty, matching every
+  sibling section (new `noRoutines` FR/EN key).
+- [x] **Photo file input is `hidden`, not keyboard-reachable** — ✅ **Fixed 2026-07-03**: the
+  `<label>`-wrapped `hidden` input (label not focusable, input out of tab order) is replaced by
+  the ContactPhotos/NoteEditor pattern — one shared `aria-hidden`/`tabIndex=-1` input clicked by
+  a real, focusable `<button>` (`pickBtn`). Palette emoji buttons now carry
+  `aria-label={\`${t.operator.emojiPick} ${e}\`}` so each reads as a "choose ⟨icon⟩" action.
 - [ ] **ToD chip render block copy-pasted twice** within `RoutinesSection` (guest badge vs
   button, `chores.tsx:178-206`).
 - [x] **Player optimistic mutations use `api()` not `useWrite()`** — ✅ **Fixed 2026-07-02**:

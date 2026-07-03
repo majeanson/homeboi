@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { DECK_EMOJIS, type DeckCard } from '../lib/routineTemplates'
 import { useT } from '../i18n'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
@@ -199,6 +199,7 @@ export function CardDeckEditor({
                   key={e}
                   type="button"
                   className="deck__palette-emoji"
+                  aria-label={`${t.operator.emojiPick} ${e}`}
                   onClick={() => {
                     update(i, { icon: e })
                     setPaletteFor(null)
@@ -479,6 +480,28 @@ function PhotoControl({
     }
   }
 
+  // The file picker is a real <button> that clicks a hidden, out-of-tab-order
+  // <input type=file> (the ContactPhotos/NoteEditor pattern) — a bare <label> around
+  // a `hidden` input isn't keyboard-reachable (the label can't take focus and the
+  // hidden input is out of the tab order), so keyboard users couldn't attach a photo.
+  const fileRef = useRef<HTMLInputElement>(null)
+  const onPick = (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (f) void upload(f)
+    e.target.value = ''
+  }
+  const pickBtn = (
+    <button
+      type="button"
+      className={'deck__clip-btn' + (busy || !online ? ' is-disabled' : '')}
+      disabled={busy || !online}
+      onClick={() => fileRef.current?.click()}
+    >
+      <InlineIcon name={photoKey ? 'camera-bold' : 'image-square-bold'} size={15} />{' '}
+      {busy ? '…' : photoKey ? t.routines.cardPhotoChange : t.routines.cardPhotoAdd}
+    </button>
+  )
+
   // "Dessiner" — drawing offline can't upload (the card-photo POST needs the
   // server), so it follows the same online gate as the photo picker.
   const drawBtn = (
@@ -494,23 +517,21 @@ function PhotoControl({
 
   return (
     <div className="deck__photo">
+      {/* One shared picker input, kept out of the tab order (aria-hidden + tabIndex
+          -1): the visible, focusable control is pickBtn, which clicks it. */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        hidden
+        aria-hidden="true"
+        tabIndex={-1}
+        onChange={onPick}
+      />
       {photoKey ? (
         <>
           <img className="deck__photo-thumb" src={imgUrl(photoKey)} alt="" />
-          <label className={'deck__clip-btn' + (busy || !online ? ' is-disabled' : '')}>
-            <InlineIcon name="camera-bold" size={15} /> {busy ? '…' : t.routines.cardPhotoChange}
-            <input
-              type="file"
-              accept="image/*"
-              hidden
-              disabled={busy || !online}
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) void upload(f)
-                e.target.value = ''
-              }}
-            />
-          </label>
+          {pickBtn}
           {drawBtn}
           <button
             type="button"
@@ -523,20 +544,7 @@ function PhotoControl({
         </>
       ) : (
         <>
-          <label className={'deck__clip-btn' + (busy || !online ? ' is-disabled' : '')}>
-            <InlineIcon name="image-square-bold" size={15} /> {busy ? '…' : t.routines.cardPhotoAdd}
-            <input
-              type="file"
-              accept="image/*"
-              hidden
-              disabled={busy || !online}
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) void upload(f)
-                e.target.value = ''
-              }}
-            />
-          </label>
+          {pickBtn}
           {drawBtn}
         </>
       )}
