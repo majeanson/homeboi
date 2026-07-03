@@ -122,7 +122,7 @@ and the 2026-07-02 work but never ticked. An 8-agent parallel sweep re-verified 
 partial**, the rest remain genuinely open. The 17 partials — what's LEFT on each (the actionable
 remainder), by §line:
 
-- **169** (Kitchen useWrite bypass) — `keepSuggestion`/`confirmShop` done; STILL bypass: `EmptyFridgeSheet.save`, `MealSlotsSection` (meals.tsx:49), `ShopSection` (shopping.tsx:34), `patchGhost` (QuickAddPage).
+- **169** (Kitchen useWrite bypass) — ✅ **closed 2026-07-02**: migrated `patchGhost` (QuickAddPage), `MealSlotsSection`, `ShopSection`. Only `EmptyFridgeSheet.save` stays on `api()` — deliberate (AI-gated + needs a sync id, like `createBringList`).
 - **211** (Kitchen e2e) — cook-stepper + Vide-frigo covered; suggestion cards / shop-the-week / config-PATCH / list drag-reorder still uncovered.
 - **233** (Kitchen empty CTA) — recipe-book CTA added; `ToddlerCookBook` still shows a "0 recettes" dead cover.
 - **303** (Routines step-editor e2e) — add-card + emoji palette covered (screenshot only); no remove/reorder/media/POST-alignment assertion.
@@ -189,22 +189,24 @@ not structural. Four reviewers; findings deduped below.
   `aisleFor` / `AislePicker` (grep across `e2e/**` = none). Core, logic-heavy feature
   (classifier + household order + per-item overrides) shipping untested at the UI level.
   Add an interactions spec (toggle, group headers, override). _(largest single gap in §1)_
-- [ ] **Stacked live regions announce over each other.** `Kitchen.tsx:412,421` — the
-  AI-waking line and every suggestion card each carry `role="status"`; several simultaneous
-  live regions are noisy for SR users. Wrap in one live region.
-- [ ] **Aisle group header is `role="presentation"`** (`Liste.tsx:571`), so a SR user in
-  "Par allée" loses the aisle grouping cue. Give the row a heading role / `aria-label`.
+- [x] **Stacked live regions announce over each other.** — ✅ **Fixed 2026-07-02**: the
+  `.kitchen__results` container is now the single `aria-live="polite"` region (atomic
+  default false → only the newly-added line/card announces); dropped `role="status"` from
+  the waking line + each suggestion card.
+- [x] **Aisle group header is `role="presentation"`** — ✅ **Fixed 2026-07-02**: the
+  `.list-aisle` header is now `role="heading" aria-level={3}` (`Liste.tsx`), so a SR user in
+  "Par allée" gets the aisle grouping cue and can jump between aisles by heading.
 
 ### Findings — P2 (small design pass)
 
-- [ ] **Recurring `useWrite()` bypass — writes that silently drop offline.** Six spots call
-  `api()` for a write instead of `useWrite()` (loses the offline outbox + idempotency):
-  `keepSuggestion` (`Kitchen.tsx:344`), `useRecipeShop.confirmShop` (`useRecipeShop.ts:71`),
-  `EmptyFridgeSheet.save` (`:114`), `MealSlotsSection` (`operator/meals.tsx:49`),
-  `ShopSection` (`operator/shopping.tsx:34`), and the ghost-mute in `QuickAddPage`
-  (`patchGhost`→`api('ghost',PATCH)`, `:117`). Route them through `useWrite`. _(the
-  AI-adjacent online-only ones are lower-stakes, but `keepSuggestion` + meal-colour + shop
-  are plain writes that should queue.)_
+- [x] **Recurring `useWrite()` bypass — writes that silently drop offline.** — ✅ **Closed
+  2026-07-02.** `keepSuggestion` + `useRecipeShop.confirmShop` were already migrated; this
+  batch routed the rest through `useWrite`: `QuickAddPage` ghost-mute (was `patchGhost`→
+  `api('ghost',PATCH)`), `MealSlotsSection` + `ShopSection` (household PATCHes). **The lone
+  remaining `api()` is `EmptyFridgeSheet.save` — kept deliberately:** it's AI-gated (you can't
+  reach it offline — the recipe comes from an online Workers AI call) AND needs the new
+  recipe id synchronously to route to `/cook`, which a queued write can't return (same class
+  as `createBringList`).
 - [ ] **Toddler cook-mode exit leaks to the parent recipe sheet.** `KidKitchen` cooks via
   `/kitchen/recipe/:id/cook`; `CookPage` closes to `RecipeViewPage`→`RecipeSheet`, whose
   read-only gate is `ro = isGuest()` **only, not audience** (`RecipeSheet.tsx:52`). A
@@ -478,9 +480,10 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
 - [ ] **[dir] Four hand-rolled Union-Find copies** (`detectFamilyGroups`, `closedLinks`,
   `CercleWeb`, `CercleTree`) — extract one `unionFind` helper. And `relationsOf`/`relationTo`
   are pure but live in `Cercle.tsx:116/138` — move to `cercle.ts` for unit tests + reuse.
-- [ ] **[dir/crn] Cold non-401 fetch error reads as an empty circle/map, not an error**
-  (`Cercle.tsx:427`, `CercleWorldPage.tsx:100`) — only `isUnauthorized` is special-cased. Add a
-  retry StatusMessage.
+- [x] **[dir/crn] Cold non-401 fetch error reads as an empty circle/map, not an error**
+  — ✅ **Fixed 2026-07-02**: added a shared `LoadError` fallback (`components/Fallback.tsx`,
+  `role="alert"` + `t.common.loadFailed`) and both `Cercle.tsx` + `CercleWorldPage.tsx` now
+  return it on `error && !data` (a stale-but-good poll still renders — kept over the error).
 - [ ] **[dir/crn] `role="img"` world SVG with interactive `role="button"` descendants**
   (`CercleConstellation.tsx:260`) can collapse the subtree for AT, hiding the focusable islands/
   faces; and the per-island **people count** (`peopleN`, `:299`) is the one surfaced number —
@@ -918,13 +921,13 @@ Excluding the legitimately online-only writes (**AI** needs a live response; **a
 device admin**; **blob/R2 uploads + their key-chained follow-up** — all correctly `api()`), the
 real backlog is small:
 
-- [~] **Genuine offline gaps to migrate to `useWrite`:** `DealsBrowser.tsx:121` (deal→`list` add,
-  swallows offline failure), `useRecipeShop.ts:71` (recipe→list — the other two call sites use
-  `write()`), `Kitchen.tsx:344 keepSuggestion` (low value — AI source is online anyway).
-  ✅ `RoutinePlayer.tsx` (toddler step progress on a kiosk) migrated 2026-07-02.
-- [ ] **Household-settings inconsistency** (low value — rarely toggled offline): `ai.ts:46`,
-  `measurePrefs.ts:90`, `operator/meals.tsx:49`, `operator/shopping.tsx:34` PATCH via `api()`
-  while `householdListSetting.ts`, `aisles.tsx`, `household.tsx:212` use `write()`. Pick one.
+- [x] **Genuine offline gaps to migrate to `useWrite`:** — ✅ **all closed** as of 2026-07-02.
+  `DealsBrowser.addToList` + `stageDeal` (writeWith), `useRecipeShop.confirmShop`,
+  `Kitchen.keepSuggestion`, `RoutinePlayer` (3 PATCHes), and `QuickAddPage` ghost-mute all
+  route through `useWrite`/`writeWith` now.
+- [~] **Household-settings inconsistency** (low value — rarely toggled offline): ✅
+  `operator/meals.tsx` + `operator/shopping.tsx` migrated to `write()` (2026-07-02). Remaining
+  on `api()`: `ai.ts:46`, `measurePrefs.ts:90` — genuinely rarely-offline operator config.
 
 ### Findings — P2 (small design pass)
 

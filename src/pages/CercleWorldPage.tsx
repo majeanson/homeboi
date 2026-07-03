@@ -6,7 +6,7 @@ import { live } from '../lib/query'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { CERCLE_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
-import { Loading, PairPrompt } from '../components/Fallback'
+import { Loading, LoadError, PairPrompt } from '../components/Fallback'
 import { CercleConstellation } from '../components/cercle/CercleConstellation'
 import { useAudience } from '../lib/audience'
 import {
@@ -98,7 +98,9 @@ export function CercleWorldPage() {
   }, [people, links, namedGroups, householdKeys, householdName, t])
 
   if (isUnauthorized(error)) return <PairPrompt />
-  if (!data && !error) return <Loading />
+  // A non-401 failure with no cached frame surfaces as an error, not a blank world map.
+  if (error && !data) return <LoadError />
+  if (!data) return <Loading />
 
   return (
     <div className="scene scene--world" aria-label={t.cercle.world.title}>

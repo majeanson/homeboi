@@ -16,7 +16,7 @@ import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { isGuest } from '../lib/device'
 import { useOpenPersonSheet } from '../lib/personSheet'
 import { CERCLE_KEY, HOUSEHOLD_KEY, BUSINESSES_KEY } from '../lib/queryKeys'
-import { Loading, PairPrompt } from '../components/Fallback'
+import { Loading, LoadError, PairPrompt } from '../components/Fallback'
 import { EmptyState } from '../components/EmptyState'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
@@ -425,7 +425,11 @@ function CercleParent() {
   })
 
   if (isUnauthorized(error)) return <PairPrompt />
-  if (!data && !error) return <Loading />
+  // A non-401 failure with no cached frame must NOT fall through to render an empty
+  // circle (reads as "you know nobody") — surface it. A stale-but-good `data` from a
+  // prior poll still renders (kept over the error), the calm live-poll behaviour.
+  if (error && !data) return <LoadError />
+  if (!data) return <Loading />
 
   async function deletePet(pet: Pet) {
     if (!(await confirm({ title: t.cercle.pet.delete, message: pet.name, tone: 'danger' }))) return
