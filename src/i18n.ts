@@ -2249,7 +2249,7 @@ export const FR = {
     // VoyagePage — promouvoir un voyage privé vers l’espace partagé (un DÉPLACEMENT).
     shareLive: 'Partager en direct',
     promoteConfirm:
-      'Partager ce voyage en direct avec d’autres maisonnées ? Il quitte tes voyages privés pour un espace partagé que chaque maisonnée peut modifier. On ne peut pas revenir en arrière, et il disparaît du calendrier tant qu’il est partagé.',
+      'Partager ce voyage en direct avec d’autres maisonnées ? Il quitte tes voyages privés pour un espace partagé que chaque maisonnée peut modifier. On ne peut pas revenir en arrière. Il reste visible sur ton calendrier.',
     promote: 'Partager',
     // Le panneau « Inviter ».
     invite: 'Inviter',
@@ -4662,7 +4662,7 @@ export const EN: typeof FR = {
     badge: 'Shared',
     shareLive: 'Share live',
     promoteConfirm:
-      'Share this trip live with other households? It leaves your private trips for a shared space every household can edit. This can’t be undone, and it drops off your calendar while it’s shared.',
+      'Share this trip live with other households? It leaves your private trips for a shared space every household can edit. This can’t be undone. It stays visible on your calendar.',
     promote: 'Share',
     invite: 'Invite',
     shareTitle: 'Invite a household',

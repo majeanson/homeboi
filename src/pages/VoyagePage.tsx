@@ -112,9 +112,10 @@ function VoyageInner() {
   // « Partager en direct » — promote this private trip into the cross-household shared
   // store (« Voyage partagé »). A MOVE, not a copy: the private trip soft-deletes and
   // its blobs re-key to the share, so the confirm copy spells out that it's not undoable
-  // and drops off the calendar while shared. → the new shared scene.
+  // (it stays on the calendar — /api/month reads shared trips too). Neutral tone: a
+  // deliberate choice, not a delete. → the new shared scene.
   async function shareLive() {
-    if (!(await confirm({ message: t.sharedVoyage.promoteConfirm, tone: 'danger', confirmLabel: t.sharedVoyage.promote })))
+    if (!(await confirm({ message: t.sharedVoyage.promoteConfirm, tone: 'default', confirmLabel: t.sharedVoyage.promote })))
       return
     try {
       const res = await write<{ id?: string }>('shared-trip', {

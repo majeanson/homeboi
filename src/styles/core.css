@@ -539,6 +539,10 @@ button {
   box-shadow: var(--shadow-md);
 }
 .btn--danger:hover {
+  /* Re-assert the warn ground: the generic `.btn:hover` (higher specificity via the
+     pseudo-class) would otherwise flip the background to --paper under the white
+     text — an unreadable washed-out hover. Mirrors .btn--primary:hover. */
+  background: var(--warn);
   filter: brightness(0.96);
 }
 /* When viewportVars (lib/viewportVars.ts) scrolls a focused field to
