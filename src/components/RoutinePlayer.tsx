@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useCalm } from '../lib/calm'
 import { useSpeak, playNarration } from '../lib/speak'
 import { Icon, InlineIcon } from './Icon'
 import { tintInk, wash } from '../lib/colors'
 import { imgUrl } from '../lib/image'
-import { api } from '../lib/api'
+import { writeWith } from '../lib/write'
 import { useOptimisticMutation } from '../lib/optimistic'
 import { ROUTINES_KEY } from '../lib/queryKeys'
 import { chime, clock } from '../lib/cookTimers'
@@ -75,13 +76,17 @@ export function RoutinePlayer({
   const t = useT()
   const { calm } = useCalm()
   const speak = useSpeak()
+  const qc = useQueryClient()
 
   // Toggle one card done for today. Optimistic so the tap feels instant on a cheap
   // tablet; on failure the shared hook rolls back and resyncs. Owns the mutation
   // itself (not passed in) so both mount points get the same correct behaviour.
+  // Writes go through `writeWith` (not raw `api`) so a tap made offline queues to
+  // the outbox and replays on reconnect instead of silently dropping — a routine is
+  // exactly what a kid taps on a wall tablet with flaky wifi (NFR-OFFLINE-1).
   const toggle = useOptimisticMutation<RoutinesData, { routineId: string; cardIdx: number; done: boolean }>({
     queryKey: ROUTINES_KEY,
-    mutationFn: (v) => api('routines', { method: 'PATCH', body: v }),
+    mutationFn: (v) => writeWith(qc, 'routines', { method: 'PATCH', body: v }),
     apply: (old, v) => ({
       routines: old.routines.map((r) =>
         r.id === v.routineId
@@ -97,7 +102,7 @@ export function RoutinePlayer({
   // recap clears instantly; the backend deletes the day's run row.
   const resetRun = useOptimisticMutation<RoutinesData, { routineId: string }>({
     queryKey: ROUTINES_KEY,
-    mutationFn: (v) => api('routines', { method: 'PATCH', body: { ...v, reset: true } }),
+    mutationFn: (v) => writeWith(qc, 'routines', { method: 'PATCH', body: { ...v, reset: true } }),
     apply: (old, v) => ({
       // Recommencer wipes the whole day's run row server-side (doneIdx AND timers),
       // so clear both in the cache to match.
@@ -110,7 +115,7 @@ export function RoutinePlayer({
   // today's run row so reopening the app shows the timer at its real remaining.
   const setTimer = useOptimisticMutation<RoutinesData, { routineId: string; cardIdx: number; timer: TimerEntry | null }>({
     queryKey: ROUTINES_KEY,
-    mutationFn: (v) => api('routines', { method: 'PATCH', body: v }),
+    mutationFn: (v) => writeWith(qc, 'routines', { method: 'PATCH', body: v }),
     apply: (old, v) => ({
       routines: old.routines.map((r) => {
         if (r.id !== v.routineId) return r
