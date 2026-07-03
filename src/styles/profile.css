@@ -178,6 +178,28 @@
   font-weight: 700;
   font-size: var(--text-md);
 }
+/* Multi-select face row (MemberPicker): same faces as the switcher, several selected
+   at once (chore rotation / passengers / owners). `.mswitch__ord` is the 1-based
+   selection-order badge — inverted on the accent-filled selected face so it stays
+   legible. */
+.mswitch__ord {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 0.72rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mswitch__opt.is-on .mswitch__ord {
+  background: var(--accent-ink);
+  color: var(--accent);
+}
 
 /* « Laisse un mot » — a calm presence dot on a face that has a mot waiting. A BOOLEAN
    accent like the board's « Bientôt » chip — never a count (NFR-CALM). Sits at the

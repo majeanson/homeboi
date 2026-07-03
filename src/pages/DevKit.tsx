@@ -18,6 +18,8 @@ import { BoardLayoutSection } from '../components/operator/boardLayout'
 import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
 import { MemberSwitcher } from '../components/MemberSwitcher'
+import { MemberPicker } from '../components/MemberPicker'
+import { FormFooter } from '../components/FormFooter'
 import { FaceSelect } from '../components/FaceSelect'
 import { GroupForm } from '../components/cercle/GroupForm'
 import { BusinessForm } from '../components/cercle/BusinessForm'
@@ -437,6 +439,7 @@ export function DevKit() {
   const [subtab, setSubtab] = useState<'meals' | 'pantry' | 'recipes'>('meals')
   const [miniTab, setMiniTab] = useState<'aa' | 'coll'>('aa')
   const [face, setFace] = useState<string | null>(null)
+  const [picks, setPicks] = useState<string[]>([])
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
   const [drawChoiceOpen, setDrawChoiceOpen] = useState(false)
@@ -702,6 +705,45 @@ export function DevKit() {
             onChange={setFace}
             allLabel="Maisonnée"
             ariaLabel="Choisir une personne"
+          />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'MemberPicker',
+      file: 'components/MemberPicker.tsx',
+      kw: 'membre face multi rotation corvée passagers owners routine pick multiple ordinal turn order',
+      render: () => (
+        // The MULTI-select sibling of MemberSwitcher — tap several faces (chore rotation,
+        // event passengers, a pet's owners). `ordinals` shows the 1-based turn order.
+        <Demo label="Multi-pick faces — ordinals show the rotation turn order">
+          <MemberPicker
+            faces={DEMO_MEMBERS.map((m) => ({ id: m.id, name: m.displayName, colour: m.colour }))}
+            values={picks}
+            onToggle={(id) => setPicks((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))}
+            ariaLabel="Choisir des personnes"
+            ordinals
+          />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'FormFooter',
+      file: 'components/FormFooter.tsx',
+      kw: 'form footer save cancel delete enregistrer annuler supprimer commit bar edit form',
+      render: () => (
+        // The shared commit bar for every edit form: Save (primary) + Cancel, with an
+        // optional destructive Delete separated to the left. saveType='button' here (no <form>).
+        <Demo label="Save + Cancel + a separated Delete">
+          <FormFooter
+            saveLabel="Enregistrer"
+            saveType="button"
+            onSave={() => {}}
+            onCancel={() => {}}
+            onDelete={() => {}}
+            deleteLabel="Supprimer"
           />
         </Demo>
       ),

@@ -424,6 +424,28 @@
   flex-wrap: wrap;
   align-items: center;
 }
+/* Shared form commit bar (FormFooter) — one consistent footer across every edit form:
+   Save (primary) + Cancel pushed right, an optional destructive Delete separated to
+   the left (quiet + warn) so it's never a same-weight peer of Save. */
+.form-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 0.6rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+}
+.form-footer__main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto; /* Cancel + Save to the right; Delete keeps the left edge */
+}
+.form-footer__del {
+  color: var(--warn);
+}
 .operator__inline-form .input {
   width: auto;
   flex: 1;
