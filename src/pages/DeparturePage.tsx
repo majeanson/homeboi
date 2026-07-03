@@ -10,6 +10,7 @@ import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { formatDayLong, capitalize } from '../lib/format'
 import { MONTH_KEY, WEATHER_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
+import { EmptyState } from '../components/EmptyState'
 import { TodoSection } from '../components/todos/TodoSection'
 import { Act } from '../components/board/Act'
 import { AutoCard } from '../components/board/AutoCard'
@@ -115,7 +116,7 @@ export function DeparturePage() {
         <section className="departure__events">
           <h2 className="departure__h mono">{t.departure.today}</h2>
           {events.length === 0 ? (
-            <p className="departure__empty mono">{t.departure.noEvents}</p>
+            <EmptyState tone="calm">{t.departure.noEvents}</EmptyState>
           ) : (
             <ul className="departure__agenda">
               {events.map((e) => {

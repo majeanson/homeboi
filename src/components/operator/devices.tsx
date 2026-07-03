@@ -52,7 +52,13 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
           pattern="\d{6}"
           maxLength={6}
           value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+          onChange={(e) => {
+            setCode(e.target.value.replace(/\D/g, ''))
+            // Clear stale feedback as soon as a new code is typed — otherwise the
+            // « pairé ✓ » success banner lingered until the next submit.
+            if (ok) setOk(false)
+            if (err) setErr(null)
+          }}
           placeholder="000000"
           aria-label={t.pair.claimTitle}
         />

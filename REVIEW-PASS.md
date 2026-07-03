@@ -127,8 +127,8 @@ remainder), by §line:
 - **233** (Kitchen empty CTA) — recipe-book CTA added; `ToddlerCookBook` still shows a "0 recettes" dead cover.
 - **303** (Routines step-editor e2e) — ✅ **closed 2026-07-02** (`routine-builder.spec.ts`): drives add/remove/reorder cards at `/routine/new` and asserts the POST body carries the deck in the edited order (the parallel-array alignment crux). Media (clip/photo upload) still not driven — needs a mock MediaRecorder/R2 stub.
 - **424** (Cercle e2e) — `note-editor.spec` real behaviour added; ✅ **group/business/carnet CREATE now covered 2026-07-02** (`cercle-crud.spec.ts`). Still specless: ReviewChecklist apply, group DELETE/edit, drag-to-group.
-- **442** (Cercle Union-Find) — unified into one `UnionFind` class; `relationsOf`/`relationTo` still live in `Cercle.tsx`, not moved to `cercle.ts`.
-- **459** (NoteEditor nits) — orphan-blob fixed; ✅ body `aria-label` now `note ? editorEdit : editorNew` (2026-07-02), matching the root + heading. Remaining: audio-note edit still title-only, `firstLine` exported-only.
+- **442** (Cercle Union-Find) — unified into one `UnionFind` class; ✅ `relationsOf`/`relationTo` now moved to `lib/cercle.ts` (2026-07-02) so the page stays a view (`relPriority` dropped its now-internal `export`).
+- **459** (NoteEditor nits) — orphan-blob fixed; ✅ body `aria-label` now `note ? editorEdit : editorNew` (2026-07-02). **Correction:** `firstLine` is NOT exported-only — it's used in `SearchPage.tsx:560` (the original claim was inaccurate). Remaining: audio-note edit still title-only.
 - **509** (guest rate-limit/revoke) — `MAX_PENDING=200` cap added; ✅ **per-token REVOKE shipped 2026-07-02** (migration 0098 `guests` row + `resolveActor` check + `guest-links` list/revoke endpoint + « Liens actifs » UI). Remaining: the per-token submission/upload rate-limit (a still-valid link can flood within its window).
 - **518** (showcase over-share) — ✅ **mitigated 2026-07-02**: issuer no longer defaults to showcase (now `sitter`, showcase moved last + caution glyph); warning + 24 h TTL already shipped. Read-scope kept broad by design (showcase = the real Démo hub; narrowing 403s whole tabs) — a curated Démo needs per-tab hiding, tracked separately. Revoke now shipped (§509) — a leaked showcase link CAN be killed early.
 - **559 / 822 / 931** (e2e — guest / Voyage / offline-layer) — postbox + guest-scenes specs added; intake submit→review→accept, ALL Voyage, and outbox/SW/WS/idle behaviour still uncovered.
@@ -136,7 +136,7 @@ remainder), by §line:
 - **729** (createBringList silent) — ✅ **closed 2026-07-02**: `EventForm.createBringList` catch now sets `bringErr` → `StatusMessage`; « Créer la liste » disabled + a « Indisponible hors-ligne » hint when `!useOnline()`.
 - **747** (capture keys) — shared GHOSTS/HISTORY keys done; ✅ `MONTH_KEY` now in `CAPTURE_KEYS` (2026-07-02) so a captured dated event/task refreshes the month/day calendar. Remaining: event/task/meal titles still unclamped server-side.
 - **808** (Search coverage) — carnets + home-projects ingested; drawings / care_log / home_pins still not.
-- **830** (cross-cut nits) — `capitalize` unified into `lib/format.ts`; ✅ `GALLERY_KEY` centralized into `lib/queryKeys` as `DRAWINGS_KEY` + the gallery members query gained `...live` (2026-07-02). Remaining: `DeparturePage` empty still hand-rolled.
+- **830** (cross-cut nits) — ✅ **all closed 2026-07-02**: `capitalize` unified into `lib/format.ts`; `GALLERY_KEY` centralized as `DRAWINGS_KEY` + gallery members query gained `...live`; `DeparturePage` empty now uses the shared `<EmptyState>`.
 - **880 / 927** (offline/ambient) — most writes on `useWrite` + shared `Toggle`; ✅ `RoutinePlayer` now routes its three routine PATCHes through `writeWith(qc, …)` so an offline tap queues (finding 329 closed too, 2026-07-02). Still open: `AmbientScreen` re-rolls its own clock.
 
 Everything else still `[ ]` below is genuinely open. **NOTE (2026-07-02):** finding **554** (mic-denied
@@ -481,9 +481,9 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   `cercle.ts:850` (`\d{1,4}`, ≤31-day window) vs server `_lib/birthdays.ts:33` (`\d{4}`) driving
   the board. Different regex/window for one concept → drift (a 1–3-digit stored year shows on
   the cercle page but is dropped by the board). Unify.
-- [ ] **[dir] Four hand-rolled Union-Find copies** (`detectFamilyGroups`, `closedLinks`,
-  `CercleWeb`, `CercleTree`) — extract one `unionFind` helper. And `relationsOf`/`relationTo`
-  are pure but live in `Cercle.tsx:116/138` — move to `cercle.ts` for unit tests + reuse.
+- [~] **[dir] Four hand-rolled Union-Find copies** (`detectFamilyGroups`, `closedLinks`,
+  `CercleWeb`, `CercleTree`) — extract one `unionFind` helper. ✅ `relationsOf`/`relationTo`
+  moved to `lib/cercle.ts` (2026-07-02) — pure + now unit-testable. Remaining: the 4 UF copies.
 - [x] **[dir/crn] Cold non-401 fetch error reads as an empty circle/map, not an error**
   — ✅ **Fixed 2026-07-02**: added a shared `LoadError` fallback (`components/Fallback.tsx`,
   `role="alert"` + `t.common.loadFailed`) and both `Cercle.tsx` + `CercleWorldPage.tsx` now
@@ -696,8 +696,10 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
   poll flash-back), matching every destructive sibling.
 - [x] **Failed member add is silent** — ✅ **Fixed 2026-07-02**: `MembersSection.add` now
   sets an `err` state on catch and renders a `StatusMessage` (still keeps the typed name).
-- [ ] **Pairing nits:** `ClaimTablet` success banner never clears (`devices.tsx:70`) and it writes
-  via `api()` not `useWrite()` with no `useOnline()` gate/justifying comment (`:34`).
+- [~] **Pairing nits:** ✅ `ClaimTablet` success banner now clears when a new code is typed
+  (`devices.tsx`, 2026-07-02). Remaining: it writes via `api()` not `useWrite()` with no
+  `useOnline()` gate/justifying comment (`:34`) — though pairing is inherently online (it
+  needs the server round-trip immediately), so this is arguably correct-as-is.
 - [ ] **Phone settings nav** is a wrapping chip row **plus** a second wrapping `OperatorJump` row,
   with no active-tab-scroll-into-view on deep-link (`Operator.tsx:307`) — can push content far down
   at 320px. Verify against the overflow guard.
