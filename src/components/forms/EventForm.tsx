@@ -16,6 +16,7 @@ import { EditField } from '../EditField'
 import { Disclosure } from '../Disclosure'
 import { InlineIcon } from '../Icon'
 import { useCars } from '../../lib/carPrefs'
+import { useOnline } from '../../lib/online'
 import { recurOf } from '../../lib/recurLabel'
 
 // Parse the events.passengers JSON column (a member-id array) into a string[] for the
@@ -129,9 +130,11 @@ export function EventForm({
   // todo_templates list without leaving the form — the same lists « Avant de partir »
   // surfaces. The new list is named after the event (« Soccer ») and auto-selected.
   const qc = useQueryClient()
+  const online = useOnline()
   const [bringInput, setBringInput] = useState('')
   const [bringDraft, setBringDraft] = useState<string[]>([])
   const [bringBusy, setBringBusy] = useState(false)
+  const [bringErr, setBringErr] = useState(false)
   // Returns the created (or already-selected) template id, so submit() can auto-create
   // an un-saved draft and attach it — nothing typed is silently dropped. Online-only
   // (needs the new id synchronously to auto-select; useWrite would return null queued).
@@ -139,6 +142,7 @@ export function EventForm({
     const items = bringDraft.map((s) => s.trim()).filter(Boolean)
     if (!items.length || bringBusy) return bringTemplateId
     setBringBusy(true)
+    setBringErr(false)
     try {
       const res = await api<{ id: string }>('todo-templates', {
         method: 'POST',
@@ -150,7 +154,10 @@ export function EventForm({
       await qc.invalidateQueries({ queryKey: TODO_TEMPLATES_KEY })
       return res.id
     } catch {
-      /* keep the draft so nothing typed is lost */
+      // Keep the draft so nothing typed is lost, but DON'T swallow the failure — the
+      // list genuinely wasn't created (online-only), so surface it instead of leaving
+      // the operator thinking it saved.
+      setBringErr(true)
       return null
     } finally {
       setBringBusy(false)
@@ -411,9 +418,14 @@ export function EventForm({
                     </button>
                   ))}
                 </div>
-                <button type="button" className="btn" disabled={bringBusy} onClick={createBringList}>
+                <button type="button" className="btn" disabled={bringBusy || !online} onClick={createBringList}>
                   <InlineIcon name="check-bold" size={15} /> {t.operator.bringCreate}
                 </button>
+                {/* Online-only (needs the new id synchronously to attach it). Say so
+                    when offline, and surface a real failure instead of silently
+                    dropping the typed list — the draft is kept either way. */}
+                {!online && <StatusMessage tone="info">{t.offline.unavailable}</StatusMessage>}
+                {bringErr && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
               </>
             )}
           </div>
