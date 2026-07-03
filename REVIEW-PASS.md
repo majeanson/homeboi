@@ -40,10 +40,13 @@
 > 1. ✅ **Carnets e2e — DONE 2026-07-03** (`e2e/carnet-restore.spec.ts` + `carnet-scene.spec.ts`):
 >    the two specs stub the carnets tree / care-log / home-pins per-test (voyage-style, no shared
 >    mock fixtures needed) and drive archive→restore + the scene (both segments, tree→child nav,
->    history, confirm-then-DELETE). Only the **capture AI-off** e2e gap now remains (below).
-> 2. **Capture AI-off degrade + reroute e2e** (§6) — the one capture path with no spec: assert a
->    row is always inserted and an AI reroute MOVEs (never dupes) when AI is unavailable. **Now the
->    last real e2e gap (§8 / theme-4).**
+>    history, confirm-then-DELETE). Was the last real e2e gap alongside capture (below) — both now closed.
+> 2. ✅ **Capture AI-off degrade + reroute e2e — DONE 2026-07-03** (`e2e/capture-degraded.spec.ts`):
+>    per-test stubs `POST /api/capture` to return `{ degraded: true }` (AI off → note) then a real
+>    route on the forced re-file. Two specs assert (a) the degraded picker shows the 7 tiles OUTRIGHT
+>    (no « Corriger » disclosure) with the text kept, and (b) tapping a tile re-POSTs with
+>    `forceType` + `undo` = the note's rows, so the reroute MOVEs (never dupes). **The last real e2e
+>    gap (§8 / theme-4) is now closed.**
 > 3. **Routines §2 judgement calls (need Marc)** — nested-interactive parent-grid card (role=button
 >    div w/ nested buttons → non-button `<article>` + explicit peek control = changes keyboard peek);
 >    ~~dead `BOARD_KEY` invalidate on routine save~~ **dropped 2026-07-03** (`f2dcd6e` — the board
@@ -85,7 +88,8 @@
    _(Remaining nicety: `aria-controls`/panel `id` linking — deferred; panels are caller-managed.)_
 4. **e2e is screenshots-only almost everywhere.** ✅ **Mostly closed** — behavioural specs now cover
    guest/intake/postbox, Voyage, Search, idle/offline/realtime/SW, and the carnet scene + restore
-   (2026-07-03). **Only capture-degrade+reroute remains** (item 2 above). The correctness-critical
+   (2026-07-03) and capture-degrade+reroute (`capture-degraded.spec`, 2026-07-03). **The behavioural
+  e2e gaps are now closed** (item 2 above). The correctness-critical
    *logic* (recur, closure, idempotency, vcard) was already well unit-tested — it was the *flows*
    that were blind.
 5. **The media-undo-blob rule.** Undo-after-delete of a media row resurrects a row pointing at a
@@ -135,8 +139,8 @@ and two e2e specs (aisle-sort, capture-offline).
   ambient (`idle-ambient.spec`), the offline **outbox** (`offline-outbox.spec`), **realtime-WS +
   SW precache** (`realtime.spec` + `sw.spec`/`sw.config`, 2026-07-03 — §931 fully closed), and
   **carnet-restore + the carnet scene** (`carnet-restore.spec` + `carnet-scene.spec`, 7 tests,
-  2026-07-03 — per-test stubs, no shared mock fixtures needed). **Still uncovered:** capture AI-off
-  degrade+reroute (the last one). ✅ **The 3 pre-existing failures are FIXED** (2026-07-02, d80cbe5 +
+  2026-07-03 — per-test stubs, no shared mock fixtures needed), and **capture AI-off degrade+reroute**
+  (`capture-degraded.spec`, 2 tests, 2026-07-03 — the last one). ✅ **The 3 pre-existing failures are FIXED** (2026-07-02, d80cbe5 +
   288c146): `board-customize` ×2 + `meals` slot-icon were time-of-day-flaky (board lifecycle folds
   "past" mock items vs the real clock) → a surgical `page.clock.setFixedTime(BASE)` on just the two
   timed-item tests, plus a stale band-count (4→5, Mots joined the band). A new `e2e/onboarding.spec.ts`
@@ -833,9 +837,9 @@ date/time **mislabel**, and thin/half-closed e2e on the load-bearing degrade + e
   aria-label/visible label (`EventForm.tsx:224`); the time input's aria-label is `eventAllDay`
   ("Toute la journée") — wrong for a time field (`:230`). Contrast ChoreForm/HomeProjectForm,
   which wrap dates in a labelled `.recur__row`. Give the date a label + relabel the time.
-- [ ] **e2e — the load-bearing paths are uncovered/half-covered.** No test for the **AI-off →
-  degraded → manual 7-type picker** nor the **"Non, plutôt…" reroute** (the capture-never-lost
-  guarantee). The event-form e2e (`screenshots.spec.ts:150`) asserts « Trajet »/« À apporter »
+- [x] **e2e — the AI-off degrade path is now covered** (`e2e/capture-degraded.spec.ts`, 2026-07-03):
+  the **AI-off → degraded → manual 7-type picker** and the **reroute-MOVEs-not-dupes** paths (the
+  capture-never-lost guarantee) both have specs. _Still open:_ the event-form e2e (`screenshots.spec.ts:150`) asserts « Trajet »/« À apporter »
   render + types one bring item, but **never clicks « Créer la liste », never verifies auto-
   select, never submits** — so draft-discard/auto-select stay untested and `AUJOURDHUI.md:131`'s
   `[ ] Unified event form` is only half-closed (reconcile it). Also no create round-trip for
