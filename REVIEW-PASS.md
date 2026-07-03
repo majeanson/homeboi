@@ -123,10 +123,10 @@ partial**, the rest remain genuinely open. The 17 partials — what's LEFT on ea
 remainder), by §line:
 
 - **169** (Kitchen useWrite bypass) — ✅ **closed 2026-07-02**: migrated `patchGhost` (QuickAddPage), `MealSlotsSection`, `ShopSection`. Only `EmptyFridgeSheet.save` stays on `api()` — deliberate (AI-gated + needs a sync id, like `createBringList`).
-- **211** (Kitchen e2e) — cook-stepper + Vide-frigo covered; suggestion cards / shop-the-week / config-PATCH / list drag-reorder still uncovered.
+- **211** (Kitchen e2e) — cook-stepper + Vide-frigo covered; ✅ **config-PATCH now covered 2026-07-02** (`config-panels.spec.ts`: meal-slot hide → PATCH household{mealHidden}, réserve add → PATCH household{reserveLocations}). Still uncovered: suggestion cards / shop-the-week / list drag-reorder.
 - **233** (Kitchen empty CTA) — recipe-book CTA added; `ToddlerCookBook` still shows a "0 recettes" dead cover.
-- **303** (Routines step-editor e2e) — add-card + emoji palette covered (screenshot only); no remove/reorder/media/POST-alignment assertion.
-- **424** (Cercle e2e) — `note-editor.spec` real behaviour added; carnet/businesses/ReviewChecklist/group-CRUD still specless.
+- **303** (Routines step-editor e2e) — ✅ **closed 2026-07-02** (`routine-builder.spec.ts`): drives add/remove/reorder cards at `/routine/new` and asserts the POST body carries the deck in the edited order (the parallel-array alignment crux). Media (clip/photo upload) still not driven — needs a mock MediaRecorder/R2 stub.
+- **424** (Cercle e2e) — `note-editor.spec` real behaviour added; ✅ **group/business/carnet CREATE now covered 2026-07-02** (`cercle-crud.spec.ts`). Still specless: ReviewChecklist apply, group DELETE/edit, drag-to-group.
 - **442** (Cercle Union-Find) — unified into one `UnionFind` class; `relationsOf`/`relationTo` still live in `Cercle.tsx`, not moved to `cercle.ts`.
 - **459** (NoteEditor nits) — orphan-blob fixed; body `aria-label` still hardcoded `editorNew` in edit mode, audio-note edit still title-only, `firstLine` exported-only.
 - **509** (guest rate-limit/revoke) — `MAX_PENDING=200` cap added; still stateless, no revoke, no per-token upload cap.
