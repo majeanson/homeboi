@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
 import { api } from '../../lib/api'
@@ -22,7 +22,17 @@ import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 // hospital, plumber, business cards…). DELIBERATELY isolated from the people graph —
 // its own query/endpoint, never unified into contacts/members. Strictly quick reach
 // + notes + linking a rendez-vous (the EventForm "Avec" picker reads the same list).
-export function BusinessesTab({ help }: { help?: HelpMode }) {
+export function BusinessesTab({
+  help,
+  // A global-search hit deep-links here with the business id (§892): open its peek +
+  // scroll it into view, then call onFocused so the parent clears the one-shot focus.
+  focusId,
+  onFocused,
+}: {
+  help?: HelpMode
+  focusId?: string | null
+  onFocused?: () => void
+}) {
   const t = useT()
   const { lang } = useLang()
   const write = useWrite()
@@ -52,6 +62,30 @@ export function BusinessesTab({ help }: { help?: HelpMode }) {
     )
   }
 
+  // Land a search hit on the exact business: once its row is loaded, open the peek and
+  // scroll it into view. `flashId` keeps a one-time highlight pulse on the row AFTER the
+  // parent clears its one-shot focusId (a CSS animation that plays once), so the arrival
+  // reads even though focusId is consumed immediately.
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const [flashId, setFlashId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!focusId) return
+    const b = all.find((x) => x.id === focusId)
+    if (!b) return // not loaded yet (or gone) — wait for the next poll
+    openPeek(b)
+    setFlashId(focusId)
+    requestAnimationFrame(() => rowRefs.current[focusId]?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+    onFocused?.()
+    // openPeek/onFocused are stable enough for this one-shot; re-run only on a new id.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId, all])
+  // Drop the highlight after the pulse so the ring doesn't linger permanently.
+  useEffect(() => {
+    if (!flashId) return
+    const timer = setTimeout(() => setFlashId(null), 3000)
+    return () => clearTimeout(timer)
+  }, [flashId])
+
   return (
     <section className="cercle-group cercle-business">
       <HelpTitle help={help} k="business" className="cercle-section__label">
@@ -67,7 +101,11 @@ export function BusinessesTab({ help }: { help?: HelpMode }) {
           const photo = b.photoKey ? imgUrl(b.photoKey) : null
           const sub = b.category?.trim() || b.notes?.trim() || null
           return (
-            <div key={b.id} className="cercle-row">
+            <div
+              key={b.id}
+              ref={(el) => { rowRefs.current[b.id] = el }}
+              className={'cercle-row' + (flashId === b.id ? ' is-focus' : '')}
+            >
               <button type="button" className="cercle-row__open" onClick={() => openPeek(b)}>
                 <span
                   className="cercle-business__av"

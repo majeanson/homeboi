@@ -2143,3 +2143,30 @@
 .note-editor__attachdel {
   color: var(--danger, #c2563a);
 }
+
+/* A row a global-search hit deep-linked to (§892) — a brief "here it is" highlight so
+   the arrival reads even after the peek/expand. The class is dropped by a timer after
+   ~2.2s; this held state shows for reduced-motion, the pulse below for everyone else. */
+.cercle-row.is-focus,
+.cnote.is-focus {
+  outline: 2px solid var(--accent, #2a8f85);
+  outline-offset: 1px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent, #2a8f85) 12%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cercle-row.is-focus,
+  .cnote.is-focus {
+    animation: cercle-focus-pulse 1.8s var(--ease-out) 1;
+  }
+  @keyframes cercle-focus-pulse {
+    0% {
+      outline-color: var(--accent, #2a8f85);
+      background: color-mix(in srgb, var(--accent, #2a8f85) 22%, transparent);
+    }
+    100% {
+      outline-color: color-mix(in srgb, var(--accent, #2a8f85) 40%, transparent);
+      background: color-mix(in srgb, var(--accent, #2a8f85) 12%, transparent);
+    }
+  }
+}

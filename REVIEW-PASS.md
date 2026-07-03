@@ -135,7 +135,7 @@ remainder), by §line:
 - **668** (Settings error states) — ✅ **closed 2026-07-02**: `ThisWeekTogetherSection` now reads `isError` and shows `t.common.loadFailed` instead of a false empty week (only when no cached frame). Photos already guarded `isPending`.
 - **729** (createBringList silent) — ✅ **closed 2026-07-02**: `EventForm.createBringList` catch now sets `bringErr` → `StatusMessage`; « Créer la liste » disabled + a « Indisponible hors-ligne » hint when `!useOnline()`.
 - **747** (capture keys) — shared GHOSTS/HISTORY keys done; ✅ `MONTH_KEY` now in `CAPTURE_KEYS` (2026-07-02) so a captured dated event/task refreshes the month/day calendar. Remaining: event/task/meal titles still unclamped server-side.
-- **808** (Search coverage) — carnets + home-projects ingested; drawings / care_log / home_pins still not.
+- **808** (Search coverage) — ✅ **closed 2026-07-02**: `SearchPage` now also indexes `care_log` (title + note), `home_pins` (label + detail) and `drawings` (by author name — a drawing has no text of its own). Care-log/home-pins read the WHOLE household at once (no `?carnet=` → every row; `home-pins` GET gained that all-mode, mirroring `care-log`) under the bare `CARE_LOG_KEY`/`HOME_PINS_KEY`, distinct from the per-carnet caches. Care-log/pin hits deep-link to `/cercle/carnet/:id?seg=carnet`; drawings to `/drawings`. Covered by `e2e/search.spec.ts`.
 - **830** (cross-cut nits) — ✅ **all closed 2026-07-02**: `capitalize` unified into `lib/format.ts`; `GALLERY_KEY` centralized as `DRAWINGS_KEY` + gallery members query gained `...live`; `DeparturePage` empty now uses the shared `<EmptyState>`.
 - **880 / 927** (offline/ambient) — most writes on `useWrite` + shared `Toggle`; ✅ `RoutinePlayer` now routes its three routine PATCHes through `writeWith(qc, …)` so an offline tap queues (finding 329 closed too, 2026-07-02). Still open: `AmbientScreen` re-rolls its own clock.
 
@@ -864,12 +864,10 @@ absence.
 
 ### Findings — P2 (small design pass)
 
-- [ ] **Global Search does NOT reach every entity — carnets + home-projects gap.**
-  `SearchPage.tsx:135` queries recipes/people/pets/businesses/notes/routines/todos/pantry/reserve/
-  cars/events/list/fridge-notes/guide but **not `carnets`** (nor `care_log`/`home_pins`) or
-  `home_projects`/drawings. Searching a car VIN or a home-project note returns nothing. _(This is
-  the definitive answer to §3's "verify Search ingests everything": people/pets/businesses ✓,
-  carnets/home-projects ✗.)_
+- [x] **Global Search reaches every entity.** ✅ **closed 2026-07-02.** `SearchPage` was already
+  extended with carnets + home-projects; this pass adds the last three — `care_log`, `home_pins`
+  and `drawings` (see §808 above). People/pets/businesses/carnets/home-projects/care-log/home-pins/
+  drawings all ingested now.
 - [x] **Search cold-load false "aucun résultat"** — ✅ **Already fixed** (verified 2026-07-02):
   `SearchPage.tsx:265` computes `fetching = useIsFetching()` and shows `t.search.searching` until the
   queries settle (`:341-348`), only then `noResults`. This box was stale; kept for the record.
@@ -883,6 +881,9 @@ absence.
   `/voyage/:id` entry + a delete-undo-media interaction spec. **Search has no functional test**
   (only the Ask button's visibility) — nothing asserts a query surfaces rows across sections.
   Departure's one write (ActivityBring "Ajouter à cocher") is untested; Jouer is screenshot-only.
+  ✅ **Search now has a functional test** (`e2e/search.spec.ts`, 2026-07-02): asserts a query
+  surfaces rows across sections (events + the new drawings section), the care-log/home-pins sections
+  surface + link to the carnet, and the business/family-note hits deep-link to the item.
 
 ### Findings — P3 (bigger / judgement)
 
@@ -895,9 +896,11 @@ absence.
   line (« 3 résultats ») so a SR user hears the total; and `.moment-chip` now has an explicit
   44px min-height (inline-flex centred) so the four window chips keep a real tap target even
   when the height-matched hero card squeezes the row.
-- [ ] **UX nits:** business/family-note Search hits deep-link to the section **list**, not the
-  item (`SearchPage.tsx:385/499`) — user must re-find the row; Voyage twin `type="date"` inputs +
-  packing move-`<select>` unverified at 320px; trip "Bagages" doesn't reuse the shared
+- [~] **UX nits:** ✅ business/family-note Search hits now deep-link to the ITEM — the hit carries
+  `?item=<id>`; `Cercle` hands it to `BusinessesTab` (opens the peek + scrolls + a one-time pulse)
+  / `CercleNotes` (switches to the note's scope face, expands it in place, scrolls + pulse), then
+  clears the one-shot focus. Covered by `e2e/search.spec.ts`. _Remaining:_ Voyage twin `type="date"`
+  inputs + packing move-`<select>` unverified at 320px; trip "Bagages" doesn't reuse the shared
   `todo_template` bring-list (opportunity, not a bug).
 
 **Strengths to keep.** Moment `?scope=` round-trip is correct end-to-end + e2e-covered; Search
@@ -1020,5 +1023,5 @@ it first, and tick it here so the other section's pass doesn't reopen it.
 | Intake/postbox accept → cercle card / board note (name-match tint) | Share-links → cercle/Board | [x] quarantine solid, tint server-side; **tint-hijack unwarned in review** + field-bitmask not server-enforced (§4 P1/P2) |
 | Guest path allowlist honoured by every read-only projection | Share-links → Cast/Family/Handoff/Welcome | [x] projections honour it + can't write; **caveats:** `showcase` over-shares (§4 P2), `/api/live` bypasses the allowlist (§4 P3) |
 | Capture modes land in the correct section + lossless AI-degrade | ＋ Add → Board/Kitchen/Routines/cercle | [x] AI-degrade airtight (row always inserted, reroute=MOVE); every intent lands. **But offline/5xx capture is silently lost** (skips outbox + swallows errors, §6 P2) |
-| Global Search reaches every entity type | Search → all | [~] reaches people/pets/businesses/recipes/notes/list/events/routines/todos/pantry/cars ✓; **misses carnets + home-projects + drawings** (§7 P2); business/note hits land on the list not the item |
+| Global Search reaches every entity type | Search → all | [x] ✅ 2026-07-02 — reaches people/pets/businesses/recipes/notes/list/events/routines/todos/pantry/cars/carnets/home-projects/**care-log/home-pins/drawings**; business + family-note hits deep-link to the item (not the list). `e2e/search.spec.ts` covers it |
 | Read-aloud/voice config consistent | Settings ▸ Voix → Routines/Liste/Kitchen toddler | [x] verified — `VoiceSection` (per-lang voice + rate) drives the shared `useSpeak`; recorded clip overrides TTS per card; recipe has a per-recipe `lang`, routines read in global lang (asymmetry noted, acceptable) |

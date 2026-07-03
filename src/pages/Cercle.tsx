@@ -142,6 +142,11 @@ function CercleParent() {
   // The "Relier deux personnes" connector, opened (optionally seeded with one side)
   // from the ＋ chooser, a person's peek, or a family group header.
   const [connect, setConnect] = useState<{ seedAKey?: string } | null>(null)
+  // A global-search hit deep-links to a specific business / family note via
+  // ?item=<id> (§892 — land on the item, not just the section list). Captured below,
+  // stripped from the URL, and handed to the active section's tab so it opens/expands
+  // that exact row.
+  const [focusItem, setFocusItem] = useState<string | null>(null)
 
   // Contextual help (shared engine): arm the "?" then tap a button/title to learn
   // what it does in place, with a deep-link into the `cercle` guide card.
@@ -181,6 +186,17 @@ function CercleParent() {
     const next = new URLSearchParams(params)
     next.delete('connect')
     next.delete('add')
+    setParams(next, { replace: true })
+  }, [params, setParams])
+
+  // ?item=<id> (from a search hit) — remember it for the active tab, then strip it so a
+  // reload / back doesn't re-focus. The tab clears it via onFocused once it lands.
+  useEffect(() => {
+    const item = params.get('item')
+    if (!item) return
+    setFocusItem(item)
+    const next = new URLSearchParams(params)
+    next.delete('item')
     setParams(next, { replace: true })
   }, [params, setParams])
 
@@ -634,11 +650,11 @@ function CercleParent() {
           {section === 'notes' ? (
             /* The notes board owns its whole tab body — no people list, no view
                switch (Liens/Arbre are about people, not notes). */
-            <CercleNotes members={members} help={help} />
+            <CercleNotes members={members} help={help} focusId={section === 'notes' ? focusItem : null} onFocused={() => setFocusItem(null)} />
           ) : section === 'business' ? (
             /* Business — a standalone services/vendors directory, ISOLATED from the
                people graph (no view switch, no focus lens, no relationships). */
-            <BusinessesTab help={help} />
+            <BusinessesTab help={help} focusId={section === 'business' ? focusItem : null} onFocused={() => setFocusItem(null)} />
           ) : section === 'carnets' ? (
             /* Les carnets — the cared-for-things directory (houses, cars). Its own
                query/scene, never the people graph (like Business). */

@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Navigate, useParams, useNavigate } from 'react-router-dom'
+import { Navigate, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
@@ -51,7 +51,14 @@ export function CercleCarnetPage() {
   const { data: pinData } = useHomePins(id)
   const { data: hpData } = useQuery({ queryKey: HOME_PROJECTS_KEY, queryFn: () => api<{ projects: HomeProject[] }>('home-projects'), ...live })
 
-  const [seg, setSeg] = useState<Seg | null>(null)
+  // A search hit for a care-log entry / « en cas de pépin » pin deep-links with
+  // ?seg=carnet so the scene opens on « Le carnet » (where the history + pins live),
+  // not the intelligent default. Only seeds the initial segment; the toggle then owns it.
+  const [params] = useSearchParams()
+  const [seg, setSeg] = useState<Seg | null>(() => {
+    const s = params.get('seg')
+    return s === 'carnet' || s === 'surveiller' ? (s as Seg) : null
+  })
   const [editing, setEditing] = useState(false)
   const [addingChild, setAddingChild] = useState(false)
   const [addingLog, setAddingLog] = useState(false)

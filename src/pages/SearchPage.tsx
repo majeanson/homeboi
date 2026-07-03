@@ -7,8 +7,11 @@ import { useAi } from '../lib/ai'
 import { fold } from '../lib/normalize'
 import { CATS } from '../lib/cats'
 import { colourFor } from '../lib/things'
-import { CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY, CARNETS_KEY, HOME_PROJECTS_KEY } from '../lib/queryKeys'
-import { type Carnet } from '../lib/carnets'
+import { CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY, CARNETS_KEY, HOME_PROJECTS_KEY, CARE_LOG_KEY, HOME_PINS_KEY, DRAWINGS_KEY, MEMBERS_KEY } from '../lib/queryKeys'
+import { type Carnet, type CareLog, type HomePin, PIN_EMOJI } from '../lib/carnets'
+import { type GalleryDrawing } from '../lib/drawingGallery'
+import { type Member } from '../lib/members'
+import { imgUrl } from '../lib/image'
 import { type Contact, type Pet } from '../lib/cercle'
 import { type FamilyNote } from '../lib/familyNotes'
 import { firstLine, plainText } from '../lib/noteMarkdown'
@@ -161,6 +164,22 @@ export function SearchPage() {
   // to its carnet (if linked) or Réglages ▸ Corvées. Both were missing from search.
   const carnets = useQuery({ queryKey: CARNETS_KEY, queryFn: () => api<{ carnets: Carnet[] }>('carnets') }).data?.carnets ?? []
   const homeProjects = useQuery({ queryKey: HOME_PROJECTS_KEY, queryFn: () => api<{ projects: HomeProject[] }>('home-projects') }).data?.projects ?? []
+  // A carnet's SERVICE HISTORY (care_log) and its « en cas de pépin » map pins
+  // (home_pins) — both were missing from search (a water-heater invoice note or the
+  // "où est la valve d'eau" pin returned nothing). Read the WHOLE household at once
+  // (no `?carnet=` → every entry), keyed on the bare CARE_LOG_KEY / HOME_PINS_KEY so
+  // this global index never collides with the per-carnet [...KEY, id] caches the scene
+  // uses. A hit links to its carnet's « Le carnet » tab (?seg=carnet).
+  const careLog = useQuery({ queryKey: CARE_LOG_KEY, queryFn: () => api<{ entries: CareLog[] }>('care-log') }).data?.entries ?? []
+  const homePins = useQuery({ queryKey: HOME_PINS_KEY, queryFn: () => api<{ pins: HomePin[] }>('home-pins') }).data?.pins ?? []
+  // « Mes dessins » (the kept-drawing gallery) — a drawing carries no text of its own,
+  // so it's matched by its AUTHOR's name ("les dessins de Léa"); members give us the
+  // name behind each member_id. A hit links to the gallery (/drawings).
+  const drawings = useQuery({ queryKey: DRAWINGS_KEY, queryFn: () => api<{ drawings: GalleryDrawing[] }>('drawings') }).data?.drawings ?? []
+  const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') }).data?.members ?? []
+  // Name lookups for the row subtitles / drawing-author match.
+  const carnetName = useMemo(() => new Map(carnets.map((c) => [c.id, c.name])), [carnets])
+  const memberName = useMemo(() => new Map(members.map((m) => [m.id, m.display_name])), [members])
   // The board's fridge memos (#38/#14/#13) — distinct from the cercle family notes
   // above. Already in the board payload; only text notes surface (media-only carry none).
   const boardNotes = board?.notes ?? []
@@ -212,6 +231,18 @@ export function SearchPage() {
     // « Les carnets » + home projects — name/title + notes.
     const carnetHits = carnets.filter((x) => fold(`${x.name} ${x.notes ?? ''}`).includes(needle)).slice(0, CAP)
     const projectHits = homeProjects.filter((p) => fold(`${p.title} ${p.notes ?? ''}`).includes(needle)).slice(0, CAP)
+    // A carnet's service history — the entry title + its free-text note.
+    const careHits = careLog.filter((e) => fold(`${e.title} ${e.note ?? ''}`).includes(needle)).slice(0, CAP)
+    // « En cas de pépin » map pins — the label + its detail (where the valve is, how
+    // the thermostat works…).
+    const pinHits = homePins.filter((p) => fold(`${p.label} ${p.detail ?? ''}`).includes(needle)).slice(0, CAP)
+    // Kept drawings — no text of their own, so match the author's name.
+    const drawingHits = drawings
+      .filter((d) => {
+        const author = d.member_id ? memberName.get(d.member_id) : null
+        return author ? fold(author).includes(needle) : false
+      })
+      .slice(0, CAP)
     // The Guide / in-app help. Match a card on its title + one-liner + every
     // sub-point (label, detail, why) in the active language, tokens stripped to
     // the words a reader sees. A title/summary hit links to the whole card; when
@@ -240,8 +271,8 @@ export function SearchPage() {
         to: usePoint ? `/settings?tab=guide&card=${e.id}&point=${pointIdx}` : `/settings?tab=guide&card=${e.id}`,
       })
     }
-    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, events, listItems, notes, fridgeNotes, guide }
-  }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, carnets, homeProjects, board, familyNotes, boardNotes, lang])
+    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, events, listItems, notes, fridgeNotes, guide }
+  }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, carnets, homeProjects, careLog, homePins, drawings, memberName, board, familyNotes, boardNotes, lang])
 
   const total = res
     ? res.recipes.length +
@@ -254,6 +285,9 @@ export function SearchPage() {
       res.cars.length +
       res.carnets.length +
       res.projects.length +
+      res.care.length +
+      res.pins.length +
+      res.drawings.length +
       res.events.length +
       res.listItems.length +
       res.notes.length +
@@ -405,7 +439,7 @@ export function SearchPage() {
             {res!.businesses.length > 0 && (
               <Section label={t.search.businesses}>
                 {res!.businesses.map((b) => (
-                  <Link key={b.id} to="/cercle?section=business" className="search__row">
+                  <Link key={b.id} to={`/cercle?section=business&item=${b.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: b.colour ?? BUSINESS_COLOUR }}>
                       <InlineIcon name="storefront-bold" />
                     </span>
@@ -448,6 +482,54 @@ export function SearchPage() {
                     </span>
                     <span className="search__main">
                       <span className="search__title">{p.title}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.care.length > 0 && (
+              <Section label={t.search.careLog}>
+                {res!.care.map((e) => (
+                  <Link key={e.id} to={`/cercle/carnet/${e.carnetId}?seg=carnet`} className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: CATS.chore.deep }}>
+                      <InlineIcon name="receipt-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{e.title}</span>
+                      {carnetName.get(e.carnetId) && <span className="search__sub mono">{carnetName.get(e.carnetId)}</span>}
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.pins.length > 0 && (
+              <Section label={t.search.homePins}>
+                {res!.pins.map((p) => (
+                  <Link key={p.id} to={`/cercle/carnet/${p.carnetId}?seg=carnet`} className="search__row">
+                    <span className="search__pic" aria-hidden="true">{PIN_EMOJI[p.kind]}</span>
+                    <span className="search__main">
+                      <span className="search__title">{p.label}</span>
+                      {carnetName.get(p.carnetId) && <span className="search__sub mono">{carnetName.get(p.carnetId)}</span>}
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+            )}
+
+            {res!.drawings.length > 0 && (
+              <Section label={t.search.drawings}>
+                {res!.drawings.map((d) => (
+                  <Link key={d.id} to="/drawings" className="search__row">
+                    <span className="search__pic" aria-hidden="true">
+                      <img src={imgUrl(d.media_key)} alt="" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{d.member_id ? memberName.get(d.member_id) ?? t.notes.drawing : t.notes.drawing}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -555,7 +637,7 @@ export function SearchPage() {
             {res!.notes.length > 0 && (
               <Section label={t.search.notes}>
                 {res!.notes.map((n) => (
-                  <Link key={n.id} to="/cercle?section=notes" className="search__row">
+                  <Link key={n.id} to={`/cercle?section=notes&item=${n.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <InlineIcon name="file-text-bold" />
                     </span>

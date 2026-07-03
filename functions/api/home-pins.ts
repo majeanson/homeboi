@@ -35,13 +35,17 @@ interface PinRow {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const carnet = new URL(ctx.request.url).searchParams.get('carnet')
-  if (!carnet) return ok({ pins: [] })
-  const rows = await ctx.env.DB.prepare(
-    `SELECT id, carnet_id, kind, label, detail, media_key, position AS sort
-       FROM home_pins WHERE household_id = ? AND carnet_id = ? ORDER BY position, created_at`,
-  )
-    .bind(actor.householdId, carnet)
-    .all<PinRow>()
+  // No `?carnet=` → EVERY home pin for the household (mirrors care-log's global read).
+  // The per-carnet callers always pass a carnet; the carnet-less read is the global
+  // search index's — it keys its cache on the bare HOME_PINS_KEY, distinct from the
+  // per-carnet [...HOME_PINS_KEY, id] caches, so the two never collide.
+  const sql = carnet
+    ? `SELECT id, carnet_id, kind, label, detail, media_key, position AS sort
+         FROM home_pins WHERE household_id = ? AND carnet_id = ? ORDER BY position, created_at`
+    : `SELECT id, carnet_id, kind, label, detail, media_key, position AS sort
+         FROM home_pins WHERE household_id = ? ORDER BY position, created_at`
+  const stmt = ctx.env.DB.prepare(sql)
+  const rows = await (carnet ? stmt.bind(actor.householdId, carnet) : stmt.bind(actor.householdId)).all<PinRow>()
   return ok({
     pins: rows.results.map((p) => ({
       id: p.id,

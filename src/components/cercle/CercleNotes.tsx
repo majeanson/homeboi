@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
 import { formatDay } from '../../lib/format'
@@ -39,10 +39,17 @@ import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 export function CercleNotes({
   members,
   help,
+  // A global-search hit deep-links to a specific note via ?item=<id> (§892): switch the
+  // face so the note is visible, expand it, and scroll it into view — then onFocused
+  // lets the parent clear its one-shot focus.
+  focusId,
+  onFocused,
 }: {
   members: Member[]
   // Optional shared help mode (the Cercle page's) so the section header is explainable.
   help?: HelpMode
+  focusId?: string | null
+  onFocused?: () => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -99,6 +106,30 @@ export function CercleNotes({
     )
   }, [all, face, query, members])
   const shown = removal.visible(visible)
+
+  // Deep-link focus (§892): a search hit lands on ONE note. When it loads, make it
+  // visible (switch to its scope face — a self note hides under another face), expand
+  // it, scroll to it, and pulse it once. `flashId` outlives the parent's one-shot
+  // focusId so the highlight animation still plays.
+  const noteRefs = useRef<Record<string, HTMLLIElement | null>>({})
+  const [flashId, setFlashId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!focusId) return
+    const n = all.find((x) => x.id === focusId)
+    if (!n) return // not loaded yet (or gone) — wait for the next poll
+    setFace(n.member_id) // null → Maisonnée (family-wide); a member → their list
+    setExpandedId(n.id)
+    setFlashId(n.id)
+    requestAnimationFrame(() => noteRefs.current[n.id]?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+    onFocused?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId, all])
+  // Drop the highlight after the pulse so the ring doesn't linger permanently.
+  useEffect(() => {
+    if (!flashId) return
+    const timer = setTimeout(() => setFlashId(null), 3000)
+    return () => clearTimeout(timer)
+  }, [flashId])
 
   const scopeBody = useMemo(
     () => (s: NoteScope) => ({ scope: s, member_id: s === 'self' ? face : null }),
@@ -241,7 +272,12 @@ export function CercleNotes({
             const expanded = expandedId === n.id
 
             return (
-              <li key={n.id} className={'cnote' + (expanded ? ' cnote--expanded' : '')} style={css}>
+              <li
+                key={n.id}
+                ref={(el) => { noteRefs.current[n.id] = el }}
+                className={'cnote' + (expanded ? ' cnote--expanded' : '') + (flashId === n.id ? ' is-focus' : '')}
+                style={css}
+              >
                 {/* Visual notes show a tappable thumbnail; text/audio show a tint dot. */}
                 {media === 'drawing' || media === 'image' ? (
                   <ZoomableImg className="cnote__thumb" src={imgUrl(n.media_key!)} alt={title} />
