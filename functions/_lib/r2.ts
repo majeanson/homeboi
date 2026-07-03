@@ -87,3 +87,23 @@ export async function putR2Blob(bucket: R2Bucket, buf: ArrayBuffer, contentType:
   await bucket.put(key, buf, { httpMetadata: { contentType } })
   return key
 }
+
+// Duplicate an existing R2 blob under a NEW opaque `<prefix>_<id>` key, preserving its
+// content-type. Used to make a « Partager une famille » snapshot SELF-CONTAINED: a
+// shared contact's photo is copied into a share-owned blob (prefix `fs`) so the share
+// survives the source contact being deleted (which frees the original). Best-effort,
+// mirroring `deleteR2Blob`: no-ops (returns null) when R2 is unset or the source object
+// is missing, so the text-only share path still works. Pairs with `deleteR2Blob` on
+// revoke/expire to free the copy.
+export async function copyR2Blob(
+  bucket: R2Bucket | undefined,
+  srcKey: string | null | undefined,
+  prefix: string,
+): Promise<string | null> {
+  if (!bucket || !srcKey) return null
+  const src = await bucket.get(srcKey).catch(() => null)
+  if (!src) return null
+  const buf = await src.arrayBuffer()
+  const contentType = src.httpMetadata?.contentType ?? 'application/octet-stream'
+  return putR2Blob(bucket, buf, contentType, prefix)
+}

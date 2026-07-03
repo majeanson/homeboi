@@ -143,6 +143,7 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   business: { cat: 'cercle', icon: 'storefront-bold' },
   pet: { cat: 'cercle', icon: 'smiley-bold' },
   carnet: { cat: 'cercle', icon: 'book-open-bold' },
+  'family-import': { cat: 'cercle', icon: 'download-simple-bold' },
   // « Voyage » — start a trip notebook (navigate-only to /voyage/new).
   voyage: { cat: 'event', icon: 'map-pin-bold' },
   // « Laisse un mot » — a little letter for a household face (the rose 'cercle' family
@@ -170,6 +171,7 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   group: '/cercle?add=group',
   business: '/cercle?add=business',
   carnet: '/cercle?add=carnet',
+  'family-import': '/cercle/import',
   ...FORM_ROUTES,
 }
 
@@ -734,6 +736,7 @@ export function AddSheet({
       business: t.cercle.business.add,
       pet: t.cercle.pet.add,
       carnet: t.carnets.add,
+      'family-import': t.familyShare.importTitle,
       voyage: t.voyage.captureTile,
       mot: t.mots.tile,
     }

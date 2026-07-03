@@ -35,6 +35,9 @@ import { CarnetsTab } from '../components/cercle/CarnetsTab'
 import { CarnetForm } from '../components/cercle/CarnetForm'
 import { BusinessForm } from '../components/cercle/BusinessForm'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
+import { FamilyShareModal } from '../components/cercle/FamilyShareModal'
+import { familyToShare } from '../lib/cercleShare'
+import type { IntakeSubmission } from '../lib/intake'
 import { SubTabs } from '../components/SubTabs'
 import { MemberSwitcher } from '../components/MemberSwitcher'
 import { FaceSelect } from '../components/FaceSelect'
@@ -139,6 +142,9 @@ function CercleParent() {
   // entry pattern as the business modal.
   const [addingCarnet, setAddingCarnet] = useState(false)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
+  // « Partager une famille » — the materialized family to hand to another account
+  // (label + snapshot), or null when the share sheet is closed. See lib/cercleShare.
+  const [sharing, setSharing] = useState<{ label: string; payload: IntakeSubmission } | null>(null)
   // The "Relier deux personnes" connector, opened (optionally seeded with one side)
   // from the ＋ chooser, a person's peek, or a family group header.
   const [connect, setConnect] = useState<{ seedAKey?: string } | null>(null)
@@ -473,6 +479,14 @@ function CercleParent() {
     await write('cercle-groups', { method: 'DELETE', body: { id: g.id }, affectedKeys: [CERCLE_KEY] })
   }
 
+  // Materialize a family (its member person-keys) into a shareable snapshot and open
+  // the share sheet. Uses the STORED links (not the closure) so we snapshot only what
+  // was built; the recipient re-derives implied ties. No human to anchor → do nothing.
+  const openShare = (keys: Iterable<string>, label: string) => {
+    const payload = familyToShare(keys, { contacts, members, pets, links: unified.links })
+    if (payload) setSharing({ label, payload })
+  }
+
   // `groupColour` tints the initials-disc of any member WITHOUT a photo with the
   // group's colour, so a coloured family reads as one block even before everyone
   // has a face. A member's own photo always wins; their own colour falls back when
@@ -614,6 +628,9 @@ function CercleParent() {
       <Modal open={!!connect} onClose={() => setConnect(null)} title={t.cercle.connectTwo}>
         <ConnectPeople people={people} seedAKey={connect?.seedAKey} onConnected={() => setConnect(null)} />
       </Modal>
+
+      {/* « Partager une famille » — hand a family to a friend on their own account. */}
+      <FamilyShareModal open={!!sharing} family={sharing} onClose={() => setSharing(null)} />
 
       {/* Create a named group — opened from the ＋ chooser (?add=group). */}
       <Modal open={addingGroup} onClose={() => setAddingGroup(false)} title={t.cercle.addGroup}>
@@ -764,6 +781,18 @@ function CercleParent() {
                         >
                           <InlineIcon name="tree-bold" size={12} />
                         </button>
+                        {/* Hand the Maisonnée to a friend on their own account. */}
+                        {!ro && (
+                          <button
+                            type="button"
+                            className="row-actions__btn"
+                            aria-label={t.familyShare.shareFamily}
+                            title={t.familyShare.shareFamily}
+                            onClick={() => openShare(householdKeys, householdName)}
+                          >
+                            <InlineIcon name="link-bold" size={12} />
+                          </button>
+                        )}
                       </h2>
                       {help.bubbleFor('household')}
                       {help.bubbleFor('householdLinks')}
@@ -823,6 +852,18 @@ function CercleParent() {
                               >
                                 <InlineIcon name="users-three-bold" size={12} />
                               </button>
+                              {/* Share this family with a friend on their own account. */}
+                              {!ro && (
+                                <button
+                                  type="button"
+                                  className="row-actions__btn"
+                                  aria-label={t.familyShare.shareFamily}
+                                  title={t.familyShare.shareFamily}
+                                  onClick={() => openShare(g.memberKeys, g.name)}
+                                >
+                                  <InlineIcon name="link-bold" size={12} />
+                                </button>
+                              )}
                             </>
                           )}
                           <button

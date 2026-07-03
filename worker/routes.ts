@@ -31,6 +31,7 @@ import * as drawings from '../functions/api/drawings'
 import * as emptyFridge from '../functions/api/empty-fridge'
 import * as events from '../functions/api/events'
 import * as familyNotes from '../functions/api/family-notes'
+import * as familyShare from '../functions/api/family-share'
 import * as flyer from '../functions/api/flyer'
 import * as flyerImg from '../functions/api/flyer-img'
 import * as flyers from '../functions/api/flyers'
@@ -143,6 +144,7 @@ const TABLE: Record<string, RouteMod> = {
   'empty-fridge': emptyFridge,
   events,
   'family-notes': familyNotes,
+  'family-share': familyShare,
   flyer,
   'flyer-img': flyerImg,
   flyers,

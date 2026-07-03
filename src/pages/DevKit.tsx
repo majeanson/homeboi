@@ -20,8 +20,10 @@ import { ColorPicker } from '../components/ColorPicker'
 import { MemberSwitcher } from '../components/MemberSwitcher'
 import { MemberPicker } from '../components/MemberPicker'
 import { FormFooter } from '../components/FormFooter'
+import { EmojiPicker } from '../components/EmojiPicker'
 import { FaceSelect } from '../components/FaceSelect'
 import { GroupForm } from '../components/cercle/GroupForm'
+import { FamilyShareModal } from '../components/cercle/FamilyShareModal'
 import { BusinessForm } from '../components/cercle/BusinessForm'
 import { PetForm } from '../components/cercle/PetForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
@@ -440,8 +442,10 @@ export function DevKit() {
   const [miniTab, setMiniTab] = useState<'aa' | 'coll'>('aa')
   const [face, setFace] = useState<string | null>(null)
   const [picks, setPicks] = useState<string[]>([])
+  const [emoji, setEmoji] = useState('⭐')
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
+  const [familyShareOpen, setFamilyShareOpen] = useState(false)
   const [drawChoiceOpen, setDrawChoiceOpen] = useState(false)
   const [readReviewOpen, setReadReviewOpen] = useState(false)
   const [drawChoiceMode, setDrawChoiceMode] = useState<DrawEditMode | null>(null)
@@ -750,6 +754,19 @@ export function DevKit() {
     },
     {
       cat: 'Saisie',
+      name: 'EmojiPicker',
+      file: 'components/EmojiPicker.tsx',
+      kw: 'emoji picto glyph pick palette routine carnet card icon tap grid',
+      render: () => (
+        // The shared tap-to-pick emoji grid (the broad EMOJI_SET) — a routine card,
+        // a carnet, anything. Controlled: value highlighted, onPick returns the glyph.
+        <Demo label="Tap a glyph — the broad shared emoji set, scrollable">
+          <EmojiPicker value={emoji} onPick={setEmoji} ariaLabel="Choisir un emoji" />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
       name: 'FaceSelect',
       file: 'components/FaceSelect.tsx',
       kw: 'membre face visage maisonnée household pick profile chip collapsed sheet tap aujourd’hui board cercle notes mobile',
@@ -778,6 +795,35 @@ export function DevKit() {
         // the create flow and the inline edit on a group header.
         <Demo label="name + kind + colour — create / edit a Cercle group">
           <GroupForm submitLabel={t.cercle.addGroup} onSubmit={() => {}} onCancel={() => {}} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'FamilyShareModal',
+      file: 'components/cercle/FamilyShareModal.tsx',
+      kw: 'cercle famille partager lien qr share family link revoke import household',
+      render: () => (
+        // « Partager une famille » — mint a share link (+ QR) to hand a family to a
+        // friend on their own account, and revoke active shares. The recipient merges
+        // it via /cercle/import (FamilyImportPage). Reuses QrCode + Modal.
+        <Demo label="share a family to another account — link + QR + revoke list">
+          <button className="btn" onClick={() => setFamilyShareOpen(true)}>
+            {t.familyShare.shareFamily}
+          </button>
+          <FamilyShareModal
+            open={familyShareOpen}
+            onClose={() => setFamilyShareOpen(false)}
+            family={{
+              label: 'Famille Tremblay',
+              payload: {
+                self: { firstName: 'Marc', lastName: 'Tremblay', nickname: '', birthday: null, gender: 'm', email: '', phone: '', address: null, notes: '', photoKey: null },
+                household: [{ firstName: 'Léa', lastName: 'Tremblay', nickname: '', birthday: null, gender: 'f', email: '', phone: '', address: null, notes: '', photoKey: null }],
+                links: [{ aIndex: 0, bIndex: 1, type: 'spouse' }],
+                pets: [],
+              },
+            }}
+          />
         </Demo>
       ),
     },

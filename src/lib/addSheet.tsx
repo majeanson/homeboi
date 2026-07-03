@@ -74,6 +74,10 @@ export type AddSheetMode =
   // modal on /cercle via ?add=carnet. Mirrors `business`: the Carnets tab no longer
   // carries its own add button; the ＋ FAB is the single entry, like the others.
   | 'carnet'
+  // « Ajouter une famille » — the RECIPIENT side of « Partager une famille ». Navigate-only
+  // to /cercle/import (paste a share code, or land there from a shared link) to preview +
+  // merge a family a friend on their own account shared with you.
+  | 'family-import'
   // « Voyage » — start a new trip notebook. Navigate-only to /voyage/new (the create
   // form, then its scene). Operator-grade, like an event. Lets the planning rendez-vous
   // begin a trip straight from the board ＋.
@@ -114,7 +118,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // business — all navigate-only tiles (the page opens connect/group/business from a
   // ?param). Every cercle subtab (Famille/Social/Notes/Business) offers the full set,
   // so e.g. "create a business" is reachable from the ＋ on any of them.
-  cercle: ['person', 'family', 'connect', 'group', 'business', 'pet', 'carnet'],
+  cercle: ['person', 'family', 'connect', 'group', 'business', 'pet', 'carnet', 'family-import'],
 }
 
 // The operator-grade forms a kiosk that isn't signed in never sees as ＋ tiles.

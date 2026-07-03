@@ -58,6 +58,15 @@ describe('sanitizeIntake', () => {
     expect(out!.household.length).toBeLessThanOrEqual(12)
   })
 
+  it('honours a higher cap override (a family share of a big family)', () => {
+    const household = Array.from({ length: 50 }, (_, i) => ({ firstName: `K${i}` }))
+    // Default caps still clip to 12…
+    expect(sanitizeIntake({ self: { firstName: 'A' }, household })!.household.length).toBe(12)
+    // …but an explicit higher ceiling keeps them all.
+    const out = sanitizeIntake({ self: { firstName: 'A' }, household }, undefined, { maxHousehold: 59 })
+    expect(out!.household.length).toBe(50)
+  })
+
   it('accepts a valid staged photo key, rejects junk', () => {
     expect(sanitizeIntake({ self: { firstName: 'A', photoKey: 'ik_abc123' } })!.self.photoKey).toBe('ik_abc123')
     // path traversal / spaces / over-length → null (no photo)

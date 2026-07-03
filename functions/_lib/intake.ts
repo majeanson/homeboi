@@ -86,10 +86,22 @@ export function decodeIntakeScope(f: number | null | undefined): IntakeScope {
 
 // Generous-but-bounded caps. Names short, notes a paragraph; a household of a dozen
 // and a few dozen ties is plenty. Bounding counts + field lengths bounds total size.
+// These are the INTAKE defaults (a relative's own form); a caller with a bigger,
+// trusted payload (an operator sharing a whole extended family — see
+// functions/api/family-share.ts) can raise the count caps via `caps` below. The
+// per-FIELD length caps (CAP) always apply — total size stays bounded either way.
 const MAX_HOUSEHOLD = 12
 const MAX_PETS = 12
 const CAP = { name: 80, email: 200, phone: 60, addr: 120, notes: 1000, species: 60 }
 const MAX_LINKS = 60
+
+// Optional overrides for the COUNT caps (not the field-length caps). Absent → the
+// intake defaults above. A share of a large family passes higher ceilings.
+export interface SanitizeCaps {
+  maxHousehold?: number
+  maxPets?: number
+  maxLinks?: number
+}
 
 function str(v: unknown, max: number): string {
   return typeof v === 'string' ? v.trim().slice(0, max) : ''
@@ -185,7 +197,10 @@ function applyScope(s: IntakeSubmission, scope: IntakeScope): IntakeSubmission {
 // self). Drops malformed household/pet entries + out-of-range / unknown-type links
 // rather than failing the whole submission. When `scope` is passed (the link's
 // field bitmask, from the signed token), out-of-scope sections are dropped too.
-export function sanitizeIntake(raw: unknown, scope?: IntakeScope): IntakeSubmission | null {
+export function sanitizeIntake(raw: unknown, scope?: IntakeScope, caps: SanitizeCaps = {}): IntakeSubmission | null {
+  const maxHousehold = caps.maxHousehold ?? MAX_HOUSEHOLD
+  const maxPets = caps.maxPets ?? MAX_PETS
+  const maxLinks = caps.maxLinks ?? MAX_LINKS
   if (typeof raw !== 'object' || raw === null) return null
   const r = raw as Record<string, unknown>
 
@@ -193,13 +208,13 @@ export function sanitizeIntake(raw: unknown, scope?: IntakeScope): IntakeSubmiss
   if (!self) return null
 
   const household = (Array.isArray(r.household) ? r.household : [])
-    .slice(0, MAX_HOUSEHOLD)
+    .slice(0, maxHousehold)
     .map(person)
     .filter((p): p is IntakePersonInput => p !== null)
 
   const count = 1 + household.length // self + household
   const links = (Array.isArray(r.links) ? r.links : [])
-    .slice(0, MAX_LINKS)
+    .slice(0, maxLinks)
     .map((l): IntakeLinkInput | null => {
       if (typeof l !== 'object' || l === null) return null
       const o = l as Record<string, unknown>
@@ -214,7 +229,7 @@ export function sanitizeIntake(raw: unknown, scope?: IntakeScope): IntakeSubmiss
     .filter((l): l is IntakeLinkInput => l !== null)
 
   const pets = (Array.isArray(r.pets) ? r.pets : [])
-    .slice(0, MAX_PETS)
+    .slice(0, maxPets)
     .map((p) => pet(p, count))
     .filter((p): p is IntakePetInput => p !== null)
 

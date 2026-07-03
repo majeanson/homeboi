@@ -23,6 +23,9 @@ const CercleFamilyPage = lazy(() => import('./pages/CercleFamilyPage').then((m) 
 const CerclePetPage = lazy(() => import('./pages/CerclePetPage').then((m) => ({ default: m.CerclePetPage })))
 const CercleCarnetPage = lazy(() => import('./pages/CercleCarnetPage').then((m) => ({ default: m.CercleCarnetPage })))
 const CercleWorldPage = lazy(() => import('./pages/CercleWorldPage').then((m) => ({ default: m.CercleWorldPage })))
+// « Ajouter une famille » — the recipient side of « Partager une famille »: a shared
+// family link (/cercle/import?s=<id>) lands here to preview + merge into your cercle.
+const FamilyImportPage = lazy(() => import('./pages/FamilyImportPage').then((m) => ({ default: m.FamilyImportPage })))
 const JouerPage = lazy(() => import('./pages/JouerPage').then((m) => ({ default: m.JouerPage })))
 const Liste = lazy(() => import('./pages/Liste').then((m) => ({ default: m.Liste })))
 const Pair = lazy(() => import('./pages/Pair').then((m) => ({ default: m.Pair })))
@@ -150,6 +153,8 @@ export function AppRoutes() {
         <Route path="/cercle/carnet/:id" element={<CercleCarnetPage />} />
         {/* « Notre monde » — the big-picture overview map (full-screen scene). */}
         <Route path="/cercle/monde" element={<CercleWorldPage />} />
+        {/* « Ajouter une famille » — a shared-family link lands here (?s=<id>). */}
+        <Route path="/cercle/import" element={<FamilyImportPage />} />
         {/* « Jouer » — the toddler play space (full-screen scene). */}
         <Route path="/jouer" element={<JouerPage />} />
         <Route path="/event/new" element={<EventFormPage />} />

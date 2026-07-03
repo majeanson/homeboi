@@ -879,6 +879,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Partager une famille', en: 'Share a family' },
+        detail: {
+          fr: 'Sur une carte « famille » (ta Maisonnée ou un groupe famille), l’icône de lien crée un lien de partage — envoie-le, ou fais-le scanner, à un proche qui a son propre Babillard. En l’ouvrant, il voit qui est dans la famille (avec les liens, les animaux et les photos), choisit qui ajouter à SON cercle, et confirme. C’est une copie : rien n’est partagé en direct, et chacun garde sa propre version. Pour recevoir : le ＋ ▸ « Ajouter une famille » (ou le lien reçu). Un lien expire de lui-même après 30 jours, et tu peux le retirer avant depuis « Familles partagées ».',
+          en: 'On a “family” card (your Household or a family group), the link icon creates a share link — send it, or have it scanned, to a relative who has their own Babillard. Opening it, they see who’s in the family (with the relationships, pets and photos), pick who to add to THEIR circle, and confirm. It’s a copy: nothing is shared live, and each side keeps its own version. To receive one: ＋ ▸ “Add a family” (or the link you were sent). A link expires on its own after 30 days, and you can remove it earlier from “Shared families”.',
+        },
+        why: {
+          fr: 'Donner la moitié de la famille au reste de la famille — sans que chacun la retape.',
+          en: 'Hand half the family to the other half — without everyone re-typing it.',
+        },
+      },
+      {
         label: { fr: 'Trois vues : Liste, Liens, Arbre', en: 'Three views: List, Links, Tree' },
         detail: {
           fr: 'Bascule en haut du cercle : Liste (le répertoire, regroupé par famille), Liens (touche un visage, ses liens s’affichent autour — touche un autre pour recentrer) et Arbre (les générations, les couples côte à côte). Sous la bascule, la rangée de visages te laisse choisir une personne : tout se relit alors de SON point de vue (la fiche de chacun affiche son lien avec elle — « Fille », « Cousin »…), et la vue Liens se centre sur elle. Reviens à « Maisonnée » pour la vue normale. Dans l’onglet Social, Liens et Arbre montrent plutôt TOUT le réseau d’un coup, pas une seule personne : Liens dessine chaque cercle d’amis dans sa propre bulle, et Arbre les réunit tous en un seul nuage relié. Pince ou utilise + / − pour zoomer.',

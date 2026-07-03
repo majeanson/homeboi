@@ -2170,3 +2170,49 @@
     }
   }
 }
+
+/* « Partager une famille » — the sender share sheet (FamilyShareModal) + the
+   recipient import preview (FamilyImportPage). Calm spacing over the shared .btn /
+   .input / .qrcode primitives; append-only (the @import order IS the cascade). */
+.cercle-share,
+.cercle-share-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+.cercle-share__link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  align-items: flex-start;
+}
+.cercle-share__link .input {
+  width: 100%;
+}
+.cercle-share__list {
+  margin-top: var(--space-4, 16px);
+}
+.cercle-share__title {
+  font-size: 0.95rem;
+  margin: 0 0 var(--space-2, 8px);
+}
+.cercle-share__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
+}
+.cercle-share-preview__from {
+  color: var(--muted, #6b7280);
+}
+.cercle-share-preview__label {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* Family-import merge progress bar (FamilyImportPage) — full-width, accent-tinted. */
+.cercle-import__bar {
+  width: 100%;
+  height: 10px;
+  accent-color: var(--accent, #2a8f85);
+}
