@@ -81,17 +81,17 @@ function RoutinesParent() {
         iconColor={CATS.routine.deep}
         background={CATS.routine.wash}
         card="routines"
+        // The in-place help "?" tucks into the header cluster (beside search +
+        // avatar) rather than stranding on its own row above the flat card grid.
+        action={
+          help.available && routines.length > 0 ? (
+            <HelpToggle active={help.active} onToggle={help.toggle} />
+          ) : undefined
+        }
       />
 
       <SectionIntro card="routines" />
 
-      {/* The overview is a flat grid with no control group to sit the "?" beside,
-          so the toggle gets its own quiet right-aligned row (same as La liste). */}
-      {help.available && routines.length > 0 && (
-        <div className="hub-helprow">
-          <HelpToggle active={help.active} onToggle={help.toggle} />
-        </div>
-      )}
       {help.hint && routines.length > 0 && <HelpHint />}
       {help.bubble}
 

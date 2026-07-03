@@ -211,13 +211,6 @@
 .help-pick {
   border-radius: 10px;
 }
-/* A bare right-aligned home for a section's "?" toggle, for hub tabs whose header
-   has no control group to sit it beside (La liste). */
-.hub-helprow {
-  display: flex;
-  justify-content: flex-end;
-  margin: -4px 0 8px;
-}
 .sheet h3 {
   font-family: var(--display);
   font-weight: 800;

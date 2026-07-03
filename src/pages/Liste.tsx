@@ -450,17 +450,13 @@ export function Liste() {
         iconColor="var(--sky-deep)"
         background="var(--sky-wash)"
         card="liste"
+        // The in-place help "?" tucks into the header cluster (beside search +
+        // avatar) rather than stranding on its own row above a flat list.
+        action={help.available ? <HelpToggle active={help.active} onToggle={help.toggle} /> : undefined}
       />
 
       <SectionIntro card="liste" />
 
-      {/* La liste's header has no control group to sit the "?" beside (it's one
-          flat list), so the toggle gets its own quiet right-aligned row. */}
-      {help.available && (
-        <div className="hub-helprow">
-          <HelpToggle active={help.active} onToggle={help.toggle} />
-        </div>
-      )}
       {help.hint && <HelpHint />}
 
       {/* Add a line right here — type it or speak it. The direct path; the ＋
@@ -486,15 +482,16 @@ export function Liste() {
       />
       </div>
 
-      {/* The two frequent "fill the list" moves earn real, prominent one-tap
-          shortcuts here — not tucked away behind the ＋ Add sheet: searching the
-          week's flyers for an aubaine ("Parcourir les circulaires") and reopening
-          past/predicted items to restock ("Ajout rapide"). They split the row 50/50
-          (glyph + short label each); full text stays on the aria-label/title. */}
+      {/* The two frequent "fill the list" moves stay as visible one-tap shortcuts
+          — not tucked behind the ＋ Add sheet: searching the week's flyers for an
+          aubaine ("Parcourir les circulaires") and reopening past/predicted items
+          to restock ("Ajout rapide"). Kept compact (btn--sm) so they read as quick
+          shortcuts beneath the primary Add field rather than competing with it;
+          still split 50/50 (glyph + short label each), full text on aria-label. */}
       <div className="list-actions list-actions--split">
         <button
           type="button"
-          className="btn btn--primary help-pick"
+          className="btn btn--sm btn--primary help-pick"
           aria-label={t.shop.browse}
           title={t.shop.browse}
           onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
@@ -503,7 +500,7 @@ export function Liste() {
         </button>
         <button
           type="button"
-          className="btn btn--primary help-pick"
+          className="btn btn--sm btn--primary help-pick"
           aria-label={t.list.quickAdd}
           title={t.list.quickAdd}
           onClick={help.pick('quick', () => nav('/liste/quick'))}

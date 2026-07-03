@@ -7,10 +7,12 @@ import { Icon, type IconName } from './Icon'
 
 // The shared header for the four themed hub tabs (Board/Kitchen/Routines/Liste):
 // a big title on the left, the section's identity disc top-right. The disc is
-// also the Guide deep-link in tutorial mode (see SectionAvatar) — there is no
-// separate "?" any more. An optional `subtitle` sits as a quiet line under the
-// title (the board uses it for today's date). One component so the four headers
-// can't drift apart.
+// also the Guide deep-link in tutorial mode (see SectionAvatar). An optional
+// `subtitle` sits as a quiet line under the title (the board uses it for today's
+// date), and an optional `action` (e.g. the in-place help-mode "?" toggle) tucks
+// into the top-right cluster beside the search + avatar, so a flat-list tab like
+// La liste / Routines doesn't strand it on its own row. One component so the four
+// headers can't drift apart.
 export function HubHead({
   title,
   subtitle,
@@ -18,6 +20,7 @@ export function HubHead({
   iconColor,
   background,
   card,
+  action,
 }: {
   title: ReactNode
   subtitle?: ReactNode
@@ -26,6 +29,9 @@ export function HubHead({
   background: string
   // A GUIDE entry id (lib/guideContent.ts) — the card the disc links to.
   card: string
+  // Optional trailing control in the header cluster (sits before the identity
+  // disc so the disc keeps its far-right corner anchor). E.g. a <HelpToggle/>.
+  action?: ReactNode
 }) {
   const t = useT()
   const { audience } = useAudience()
@@ -45,6 +51,7 @@ export function HubHead({
             <Icon name="magnifying-glass-bold" size={20} />
           </Link>
         )}
+        {action}
         <SectionAvatar icon={icon} iconColor={iconColor} background={background} card={card} />
       </div>
     </div>
