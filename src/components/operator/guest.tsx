@@ -49,13 +49,16 @@ type KindHintKey =
   | 'kindFamilyHint'
   | 'kindIntakeHint'
   | 'kindPostboxHint'
+// Curated, least-privilege kinds lead; `showcase` (the read-EVERYTHING Démo link) sits
+// LAST and is no longer the default — an operator must consciously pick it (and see its
+// warning) rather than accidentally mint a full-household public link (REVIEW-PASS §518).
 const KINDS: { kind: GuestKind; path: string; labelKey: KindLabelKey; hintKey: KindHintKey }[] = [
-  { kind: 'showcase', path: '/board', labelKey: 'kindShowcase', hintKey: 'kindShowcaseHint' },
   { kind: 'sitter', path: '/handoff', labelKey: 'kindSitter', hintKey: 'kindSitterHint' },
   { kind: 'welcome', path: '/welcome', labelKey: 'kindWelcome', hintKey: 'kindWelcomeHint' },
   { kind: 'family', path: '/family', labelKey: 'kindFamily', hintKey: 'kindFamilyHint' },
   { kind: 'intake', path: '/intake', labelKey: 'kindIntake', hintKey: 'kindIntakeHint' },
   { kind: 'postbox', path: '/courrier', labelKey: 'kindPostbox', hintKey: 'kindPostboxHint' },
+  { kind: 'showcase', path: '/board', labelKey: 'kindShowcase', hintKey: 'kindShowcaseHint' },
 ]
 
 // Per-kind duration menu (mirrors the server clamp in _lib/shareModes). showcase can
@@ -118,8 +121,10 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   // The two ways to share, as sub-tabs ("one job at a time"): a link for someone's
   // PHONE (the typed read-only kinds), or a face cast to the living-room TV.
   const [subTab, setSubTab] = useState<'phone' | 'salon'>('phone')
-  const [kind, setKind] = useState<GuestKind>('showcase')
-  const [ttl, setTtl] = useState(DEFAULT_TTL.showcase)
+  // Default to the safe curated « babysitter » link, NOT the read-everything Démo —
+  // so the pre-selected option can't leak the whole household (REVIEW-PASS §518).
+  const [kind, setKind] = useState<GuestKind>('sitter')
+  const [ttl, setTtl] = useState(DEFAULT_TTL.sitter)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
@@ -240,8 +245,13 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           </select>
         </label>
         <p className="operator__hint mono">{t.guest[KINDS.find((k) => k.kind === kind)!.hintKey]}</p>
-        {/* showcase is the read-EVERYTHING Démo link — warn before it's shared publicly. */}
-        {kind === 'showcase' && <StatusMessage tone="info">{t.guest.kindShowcaseWarn}</StatusMessage>}
+        {/* showcase is the read-EVERYTHING Démo link — warn before it's shared publicly.
+            A caution glyph (not the neutral info clock) so it reads as "careful". */}
+        {kind === 'showcase' && (
+          <StatusMessage tone="info" icon="warning-bold">
+            {t.guest.kindShowcaseWarn}
+          </StatusMessage>
+        )}
 
         {/* Per-person intake: pick WHO the form is for, or leave blank for an open
             "add yourself" link the whole family can use. */}

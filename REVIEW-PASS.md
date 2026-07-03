@@ -130,7 +130,7 @@ remainder), by §line:
 - **442** (Cercle Union-Find) — unified into one `UnionFind` class; `relationsOf`/`relationTo` still live in `Cercle.tsx`, not moved to `cercle.ts`.
 - **459** (NoteEditor nits) — orphan-blob fixed; body `aria-label` still hardcoded `editorNew` in edit mode, audio-note edit still title-only, `firstLine` exported-only.
 - **509** (guest rate-limit/revoke) — `MAX_PENDING=200` cap added; still stateless, no revoke, no per-token upload cap.
-- **518** (showcase over-share) — issuer warning + 24 h TTL cap shipped; still the DEFAULT kind + still a broad denylist, not a curated subset.
+- **518** (showcase over-share) — ✅ **mitigated 2026-07-02**: issuer no longer defaults to showcase (now `sitter`, showcase moved last + caution glyph); warning + 24 h TTL already shipped. Read-scope kept broad by design (showcase = the real Démo hub; narrowing 403s whole tabs) — a curated Démo needs per-tab hiding, tracked separately. Revoke still open (§509).
 - **559 / 822 / 931** (e2e — guest / Voyage / offline-layer) — postbox + guest-scenes specs added; intake submit→review→accept, ALL Voyage, and outbox/SW/WS/idle behaviour still uncovered.
 - **668** (Settings error states) — ✅ **closed 2026-07-02**: `ThisWeekTogetherSection` now reads `isError` and shows `t.common.loadFailed` instead of a false empty week (only when no cached frame). Photos already guarded `isPending`.
 - **729** (createBringList silent) — ✅ **closed 2026-07-02**: `EventForm.createBringList` catch now sets `bringErr` → `StatusMessage`; « Créer la liste » disabled + a « Indisponible hors-ligne » hint when `!useOnline()`.
@@ -560,13 +560,15 @@ default kind. These deserve priority in the implement phase.
 
 ### Findings — P2 (SECURITY + design)
 
-- [ ] **🔒 `showcase` over-shares, is the DEFAULT kind, long-lived, unrevocable.**
-  `guestScope.ts:13` gives showcase read of **everything** except `home-pins`/`care-log` — an
-  ad-hoc 2-path denylist that still exposes full `cercle` (relatives' phones/addresses/
-  birthdays), all `photos`, `notes`, `trips`, `carnets`, `members` (real family PII). It's
-  pre-selected in the issuer (`guest.tsx:121`), offers 7-day TTL, no revoke. Footgun: an
-  operator pastes a "Démo" link publicly and leaks the household. **Fix:** narrow showcase to a
-  curated subset, and/or don't default to it + cap its TTL + inline warning.
+- [~] **🔒 `showcase` over-shares, is the DEFAULT kind, long-lived, unrevocable.**
+  ✅ **Mitigated 2026-07-02 via the finding's sanctioned "don't default + cap TTL + warn"
+  branch:** the issuer no longer pre-selects showcase — it defaults to the least-privilege
+  « babysitter » (`sitter`) kind, and showcase is moved LAST in the picker so it's a
+  conscious choice; its warning gained a caution glyph; the 24 h default TTL + inline warning
+  were already shipped. **Deliberately NOT narrowing the read-scope:** showcase renders the
+  real read-only hub (that IS the Démo), so an allowlist would 403 whole tabs (Le cercle,
+  photos) into `LoadError` — a curated Démo needs per-tab hiding for the showcase surface, a
+  larger UX change tracked separately. Remaining: token **revoke** (shared with §509).
 - [x] **🔒 Tint-hijack / impersonation by exact-name match is unwarned in review.**
   `postbox.ts:99` tints an accepted note to a member when `sender_name` == a member's
   `display_name` (case-insensitive) and stamps `— <name>`; a sender can type an existing
