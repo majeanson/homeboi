@@ -23,7 +23,7 @@ import { useCars } from '../lib/carPrefs'
 import { useRecipes, useBoardData, usePantry } from '../lib/queryHooks'
 import { recipeImg } from '../lib/recipes'
 import { GUIDE } from '../lib/guideContent'
-import { stripTokens } from '../lib/richText'
+import { stripTokens, highlight } from '../lib/richText'
 import { pictoFor } from '../lib/picto'
 import { localDayStart } from '../lib/localDay'
 import { type EventRow } from '../components/board/types'
@@ -185,6 +185,11 @@ export function SearchPage() {
   const boardNotes = board?.notes ?? []
 
   const needle = fold(q.trim())
+  // Mark the typed words inside each result row (same calm <mark class="hl"> as
+  // the Guide search — lib/richText highlight(), accent-insensitive). No-op on a
+  // row field the needle didn't touch (a recipe found via its ingredients keeps a
+  // plain title).
+  const hl = (s: string) => highlight(s, q.trim())
   const res = useMemo(() => {
     if (!needle) return null
     const recipes = recipesData
@@ -393,8 +398,8 @@ export function SearchPage() {
                       {recipeImg(r.image) ? <img src={recipeImg(r.image)!} alt="" /> : pictoFor(r.title, '🍳')}
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{r.title}</span>
-                      {(r.tags ?? []).length > 0 && <span className="search__sub mono">{r.tags.join(' · ')}</span>}
+                      <span className="search__title">{hl(r.title)}</span>
+                      {(r.tags ?? []).length > 0 && <span className="search__sub mono">{hl(r.tags.join(' · '))}</span>}
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -410,8 +415,8 @@ export function SearchPage() {
                       <Avatar kind={c.photoKey ? 'photo' : null} photo={c.photoKey} colour={CATS.cercle.deep} name={c.firstName} size={34} />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{[c.firstName, c.lastName].filter(Boolean).join(' ') || c.nickname}</span>
-                      {c.nickname && <span className="search__sub mono">« {c.nickname} »</span>}
+                      <span className="search__title">{hl([c.firstName, c.lastName].filter(Boolean).join(' ') || c.nickname || '')}</span>
+                      {c.nickname && <span className="search__sub mono">« {hl(c.nickname)} »</span>}
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -427,8 +432,8 @@ export function SearchPage() {
                       <Avatar kind={p.photoKey ? 'photo' : null} photo={p.photoKey} colour={colourFor('pet', p.colour)} name={p.name} size={34} />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{p.name}</span>
-                      {(p.species || p.breed) && <span className="search__sub mono">{[p.species, p.breed].filter(Boolean).join(' · ')}</span>}
+                      <span className="search__title">{hl(p.name)}</span>
+                      {(p.species || p.breed) && <span className="search__sub mono">{hl([p.species, p.breed].filter(Boolean).join(' · '))}</span>}
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -444,8 +449,8 @@ export function SearchPage() {
                       <InlineIcon name="storefront-bold" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{b.name}</span>
-                      {b.category && <span className="search__sub mono">{b.category}</span>}
+                      <span className="search__title">{hl(b.name)}</span>
+                      {b.category && <span className="search__sub mono">{hl(b.category)}</span>}
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -461,7 +466,7 @@ export function SearchPage() {
                       <InlineIcon name="book-open-bold" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{x.name}</span>
+                      <span className="search__title">{hl(x.name)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -481,7 +486,7 @@ export function SearchPage() {
                       <InlineIcon name="calendar-blank-bold" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{p.title}</span>
+                      <span className="search__title">{hl(p.title)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -497,7 +502,7 @@ export function SearchPage() {
                       <InlineIcon name="receipt-bold" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{e.title}</span>
+                      <span className="search__title">{hl(e.title)}</span>
                       {carnetName.get(e.carnetId) && <span className="search__sub mono">{carnetName.get(e.carnetId)}</span>}
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
@@ -512,7 +517,7 @@ export function SearchPage() {
                   <Link key={p.id} to={`/cercle/carnet/${p.carnetId}?seg=carnet`} className="search__row">
                     <span className="search__pic" aria-hidden="true">{PIN_EMOJI[p.kind]}</span>
                     <span className="search__main">
-                      <span className="search__title">{p.label}</span>
+                      <span className="search__title">{hl(p.label)}</span>
                       {carnetName.get(p.carnetId) && <span className="search__sub mono">{carnetName.get(p.carnetId)}</span>}
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
@@ -529,7 +534,7 @@ export function SearchPage() {
                       <img src={imgUrl(d.media_key)} alt="" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{d.member_id ? memberName.get(d.member_id) ?? t.notes.drawing : t.notes.drawing}</span>
+                      <span className="search__title">{hl(d.member_id ? memberName.get(d.member_id) ?? t.notes.drawing : t.notes.drawing)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -545,7 +550,7 @@ export function SearchPage() {
                       <InlineIcon name={e.birthday ? 'cake-bold' : 'calendar-blank-bold'} />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{e.title}</span>
+                      <span className="search__title">{hl(e.title)}</span>
                       <span className="search__sub mono">{new Date(e.start_at * 1000).toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
@@ -562,7 +567,7 @@ export function SearchPage() {
                       <InlineIcon name="smiley-bold" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{r.name}</span>
+                      <span className="search__title">{hl(r.name)}</span>
                       {r.memberName && <span className="search__sub mono">{r.memberName}</span>}
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
@@ -579,7 +584,7 @@ export function SearchPage() {
                       <InlineIcon name="check-square-bold" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{td.title}</span>
+                      <span className="search__title">{hl(td.title)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -593,7 +598,7 @@ export function SearchPage() {
                   <Link key={li.id} to={`/liste/item/${li.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">{pictoFor(li.text, '🛒')}</span>
                     <span className="search__main">
-                      <span className="search__title">{li.text}</span>
+                      <span className="search__title">{hl(li.text)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -609,7 +614,7 @@ export function SearchPage() {
                       <InlineIcon name={it.reserve ? 'cloud-snow-bold' : 'carrot-bold'} />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{it.item}</span>
+                      <span className="search__title">{hl(it.item)}</span>
                       <span className="search__sub mono">{it.reserve ? t.kitchen.reserve : t.kitchen.tabPantry}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
@@ -626,7 +631,7 @@ export function SearchPage() {
                       <InlineIcon name="car-bold" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{c.name}</span>
+                      <span className="search__title">{hl(c.name)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -642,7 +647,7 @@ export function SearchPage() {
                       <InlineIcon name="file-text-bold" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{n.title.trim() || firstLine(n.text) || t.cercle.familyNotes.untitled}</span>
+                      <span className="search__title">{hl(n.title.trim() || firstLine(n.text) || t.cercle.familyNotes.untitled)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -658,7 +663,7 @@ export function SearchPage() {
                       <InlineIcon name="push-pin-bold" />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{n.text}</span>
+                      <span className="search__title">{hl(n.text)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
@@ -674,8 +679,8 @@ export function SearchPage() {
                       <InlineIcon name={g.icon} />
                     </span>
                     <span className="search__main">
-                      <span className="search__title">{g.title}</span>
-                      {g.sub && <span className="search__sub mono">{g.sub}</span>}
+                      <span className="search__title">{hl(g.title)}</span>
+                      {g.sub && <span className="search__sub mono">{hl(g.sub)}</span>}
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
