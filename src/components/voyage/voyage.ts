@@ -2,7 +2,15 @@ import { createContext, useContext } from 'react'
 import { useQuery, type QueryKey } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
-import { TRIPS_KEY, TRIP_NOTES_KEY, TRIP_PACKING_KEY } from '../../lib/queryKeys'
+import { isSharedTripRealtimeConnected } from '../../lib/realtime'
+import {
+  TRIPS_KEY,
+  TRIP_NOTES_KEY,
+  TRIP_PACKING_KEY,
+  SHARED_TRIPS_KEY,
+  SHARED_TRIP_NOTES_KEY,
+  SHARED_TRIP_PACKING_KEY,
+} from '../../lib/queryKeys'
 import type { IconName } from '../Icon'
 
 // « Voyage » shared types + read hooks + the category taxonomy. One place so the
@@ -123,6 +131,156 @@ export function useTripPacking(tripId: string | undefined) {
     enabled: !!tripId,
     ...live,
   })
+}
+
+// ---- « Voyage partagé » — the cross-household shared trip ---------------------
+//
+// A shared trip lives in the capability-scoped shared_trips store (migration 0101),
+// NOT a household's trips. The SAME voyage components render it through the VoyageApi
+// context above pointed at the 'shared-trip-*' endpoints; these hooks + types feed
+// SharedVoyagePage / SharedPackingList / the board card the way useTrips feeds the
+// household ones. Attribution is a HOUSEHOLD (a membership), never a member id.
+
+// A live membership on a shared trip — a pseudo-face for attribution (household name +
+// colour, no photo). Mirrors the `members` array the shared-trip handler shapes.
+// (Not exported: consumed only via SharedTrip.members, so no external import needs it.)
+interface SharedTripMember {
+  household_id: string
+  label: string
+  colour: string
+  role: string // 'owner' | 'member'
+}
+
+// One shared trip as shaped by functions/api/shared-trip.ts (SharedTripRow + members +
+// myRole). Same field set as Trip minus per-member scoping, plus the membership roster.
+export interface SharedTrip {
+  id: string
+  owner_household_id: string
+  title: string
+  destination: string | null
+  start_at: number | null
+  end_at: number | null
+  media_kind: string | null
+  media_key: string | null
+  colour: string
+  notes: string | null
+  invite_nonce: string
+  position: number
+  created_at: number
+  updated_at: number | null
+  members: SharedTripMember[]
+  myRole: string // this household's role on the trip
+}
+
+// A shared_trip_notes row (functions/api/shared-trip-notes.ts). Same shape as TripNote
+// minus member scoping: attribution is author_household_id + a free-text author_label.
+export interface SharedTripNote {
+  id: string
+  shared_trip_id: string
+  category: TripCategory
+  label: string | null
+  text: string
+  media_kind: 'audio' | 'drawing' | 'image' | null
+  media_key: string | null
+  scene_key: string | null
+  author_household_id: string | null
+  author_label: string | null
+  date: number | null
+  position: number
+  created_at: number
+  updated_at: number | null
+}
+
+// A shared_trip_packing row (functions/api/shared-trip-packing.ts). Scoped by HOUSEHOLD,
+// not member: household_id is whose bag / who may edit; bag_label NULL = the shared bag.
+export interface SharedPackingItem {
+  id: string
+  shared_trip_id: string
+  household_id: string
+  bag_label: string | null
+  text: string
+  packed_at: number | null
+  position: number
+  created_at: number
+}
+
+// Poll config for a shared-trip query. Mirrors `live` (src/lib/query.ts) but keyed off
+// the PAGE-scoped st: socket (isSharedTripRealtimeConnected(id)), NOT the household
+// socket: when THIS trip's push is live, polling drops to a slow safety heartbeat;
+// when it's down, polling owns freshness and runs fast. `meta.live` tags it so the
+// wake-refetch + the drop catch-up refetch (realtime.ts) include it.
+const SHARED_ACTIVE_POLL_MS = 10_000 // no push → fast poll owns freshness
+const SHARED_RT_POLL_MS = 60_000 // push live → slow safety heartbeat (push owns instant)
+function sharedLive(sharedTripId: string) {
+  return {
+    refetchInterval: () => (isSharedTripRealtimeConnected(sharedTripId) ? SHARED_RT_POLL_MS : SHARED_ACTIVE_POLL_MS),
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+    meta: { live: true },
+  } as const
+}
+
+// The list of shared trips this household is a live member of (board card + discovery).
+export function useSharedTrips() {
+  return useQuery({
+    queryKey: SHARED_TRIPS_KEY,
+    queryFn: () => api<{ trips: SharedTrip[] }>('shared-trip'),
+    ...live,
+  })
+}
+
+// ONE shared trip by id (the single GET → 404/403 cleanly for a non-member, unlike
+// filtering the list). Also returns myHouseholdId so the page can tell OWN vs other
+// households' packing bags apart. Keyed under the SHARED_TRIPS_KEY prefix so a
+// meta PATCH invalidating ['shared-trips'] refreshes both the list and this single.
+export function useSharedTrip(id: string | undefined) {
+  return useQuery({
+    queryKey: [...SHARED_TRIPS_KEY, id],
+    queryFn: () => api<{ trip: SharedTrip; myHouseholdId: string }>(`shared-trip?id=${id}`),
+    enabled: !!id,
+    ...sharedLive(id ?? ''),
+  })
+}
+
+export function useSharedTripNotes(id: string | undefined) {
+  return useQuery({
+    queryKey: [...SHARED_TRIP_NOTES_KEY, id],
+    queryFn: () => api<{ notes: SharedTripNote[] }>(`shared-trip-notes?tripId=${id}`),
+    enabled: !!id,
+    ...sharedLive(id ?? ''),
+  })
+}
+
+export function useSharedTripPacking(id: string | undefined) {
+  return useQuery({
+    queryKey: [...SHARED_TRIP_PACKING_KEY, id],
+    queryFn: () => api<{ items: SharedPackingItem[] }>(`shared-trip-packing?tripId=${id}`),
+    enabled: !!id,
+    ...sharedLive(id ?? ''),
+  })
+}
+
+// Adapt a shared note to the existing TripNote shape so VoyageInfos / VoyageItinerary /
+// VoyageDocuments / TripNoteCard render it UNCHANGED. member_id is mapped from
+// author_household_id: the page passes household pseudo-faces (id = household_id), so a
+// note's attribution resolves to the AUTHORING household's name/colour — the same
+// `who={memberName(n.member_id)}` path the household trip uses. Pure (unit-tested).
+export function sharedNoteToTripNote(n: SharedTripNote): TripNote {
+  return {
+    id: n.id,
+    trip_id: n.shared_trip_id,
+    category: n.category,
+    label: n.label,
+    text: n.text,
+    media_kind: n.media_kind,
+    media_key: n.media_key,
+    scene_key: n.scene_key,
+    member_id: n.author_household_id,
+    date: n.date,
+    position: n.position,
+    created_at: n.created_at,
+    updated_at: n.updated_at,
+  }
 }
 
 // The inclusive list of local-midnight day starts a trip spans (for the itinerary

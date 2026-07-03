@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tripDays, tripCategoryIcon, TRIP_CATEGORIES } from './voyage'
+import { tripDays, tripCategoryIcon, TRIP_CATEGORIES, sharedNoteToTripNote, type SharedTripNote } from './voyage'
 import { localDayStart, addLocalDays } from '../../lib/localDay'
 
 // tripDays drives the Itinéraire tab (one section per day) AND the calendar band
@@ -39,6 +39,54 @@ describe('tripDays', () => {
     const a = localDayStart(new Date('2026-03-07T12:00:00'))
     const b = addLocalDays(a, 3) // crosses the spring-forward
     expect(tripDays(a, b)).toHaveLength(4)
+  })
+})
+
+// The adapter lets the household voyage components render a shared trip's notes
+// unchanged: author_household_id becomes member_id, so `who={memberName(n.member_id)}`
+// resolves to the authoring household's pseudo-face (id = household_id).
+describe('sharedNoteToTripNote', () => {
+  const base: SharedTripNote = {
+    id: 'n1',
+    shared_trip_id: 'st1',
+    category: 'activity',
+    label: 'Musée',
+    text: 'Visite du musée',
+    media_kind: null,
+    media_key: null,
+    scene_key: null,
+    author_household_id: 'hh-A',
+    author_label: 'Chez Marc',
+    date: 1_700_000_000,
+    position: 2,
+    created_at: 1_699_000_000,
+    updated_at: null,
+  }
+
+  it('maps author_household_id onto member_id (attribution via household faces)', () => {
+    const out = sharedNoteToTripNote(base)
+    expect(out.member_id).toBe('hh-A')
+    expect(out.trip_id).toBe('st1')
+    expect(out.category).toBe('activity')
+    expect(out.text).toBe('Visite du musée')
+    expect(out.date).toBe(1_700_000_000)
+    // no author_* fields leak into the TripNote shape
+    expect('author_household_id' in out).toBe(false)
+    expect('shared_trip_id' in out).toBe(false)
+  })
+
+  it('carries media fields through and tolerates a null author', () => {
+    const drawing = sharedNoteToTripNote({
+      ...base,
+      author_household_id: null,
+      media_kind: 'drawing',
+      media_key: 'st_abc.png',
+      scene_key: 'ss_abc.json',
+    })
+    expect(drawing.member_id).toBeNull()
+    expect(drawing.media_kind).toBe('drawing')
+    expect(drawing.media_key).toBe('st_abc.png')
+    expect(drawing.scene_key).toBe('ss_abc.json')
   })
 })
 

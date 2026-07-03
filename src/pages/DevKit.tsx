@@ -33,6 +33,9 @@ import { MotComposer } from '../components/mots/MotComposer'
 import { ScheduleFields, todayDateStr } from '../components/mots/ScheduleFields'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
 import { TripNoteCard } from '../components/voyage/TripNoteCard'
+import { SharedPackingList } from '../components/voyage/SharedPackingList'
+import { VoyageShareModal } from '../components/voyage/VoyageShareModal'
+import type { SharedTrip, SharedPackingItem } from '../components/voyage/voyage'
 import { CercleConstellation } from '../components/cercle/CercleConstellation'
 import { personKey } from '../lib/cercle'
 import { SeekGame } from '../components/jouer/SeekGame'
@@ -201,6 +204,36 @@ const DEMO_WORLD: World = {
 const DEMO_MEMBERS: Member[] = [
   { id: 'm1', displayName: 'Camille', avatarKind: 'color', avatarRef: '#C45E86', colour: '#C45E86', isChild: false, email: null, phone: null, birthday: null, notes: null, gender: 'f' },
   { id: 'm2', displayName: 'Léa', avatarKind: 'color', avatarRef: '#6C8EBF', colour: '#6C8EBF', isChild: true, email: null, phone: null, birthday: null, notes: null, gender: 'f' },
+]
+
+// « Voyage partagé » stand-ins — one shared trip with two member households, and a
+// packing list mixing this household's bags (editable) with another's (read-only).
+const DEMO_MY_HOUSEHOLD = 'hh-me'
+const DEMO_SHARED_TRIP: SharedTrip = {
+  id: 'st-demo',
+  owner_household_id: DEMO_MY_HOUSEHOLD,
+  title: 'Chalet au lac',
+  destination: 'Mont-Tremblant',
+  start_at: null,
+  end_at: null,
+  media_kind: null,
+  media_key: null,
+  colour: '#88a36f',
+  notes: null,
+  invite_nonce: 'demo',
+  position: 0,
+  created_at: 0,
+  updated_at: null,
+  members: [
+    { household_id: DEMO_MY_HOUSEHOLD, label: 'Chez nous', colour: '#88a36f', role: 'owner' },
+    { household_id: 'hh-other', label: 'Chez Papi', colour: '#C45E86', role: 'member' },
+  ],
+  myRole: 'owner',
+}
+const DEMO_SHARED_PACKING: SharedPackingItem[] = [
+  { id: 'p1', shared_trip_id: 'st-demo', household_id: DEMO_MY_HOUSEHOLD, bag_label: null, text: 'Crème solaire', packed_at: null, position: 0, created_at: 0 },
+  { id: 'p2', shared_trip_id: 'st-demo', household_id: DEMO_MY_HOUSEHOLD, bag_label: 'Léa', text: 'Toutou', packed_at: null, position: 1, created_at: 0 },
+  { id: 'p3', shared_trip_id: 'st-demo', household_id: 'hh-other', bag_label: null, text: 'Jeux de société', packed_at: null, position: 0, created_at: 0 },
 ]
 
 // One labelled specimen inside an entry.
@@ -446,6 +479,7 @@ export function DevKit() {
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
   const [familyShareOpen, setFamilyShareOpen] = useState(false)
+  const [voyageShareOpen, setVoyageShareOpen] = useState(false)
   const [drawChoiceOpen, setDrawChoiceOpen] = useState(false)
   const [readReviewOpen, setReadReviewOpen] = useState(false)
   const [drawChoiceMode, setDrawChoiceMode] = useState<DrawEditMode | null>(null)
@@ -910,6 +944,43 @@ export function DevKit() {
             who="Les enfants"
             onSave={() => {}}
             onDelete={() => {}}
+          />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Voyage',
+      name: 'SharedPackingList',
+      file: 'components/voyage/SharedPackingList.tsx',
+      kw: 'voyage partagé shared trip packing bagages valise household maisonnée read-only bag',
+      render: () => (
+        // « Voyage partagé » → Bagages — per-HOUSEHOLD bags (not per member). This
+        // household's section is editable (add / check / rename+move); other households
+        // show read-only. Reuses CheckRow + EditField + Avatar + useDeferredRemoval.
+        <Demo label="per-household bags — own editable, others read-only">
+          <SharedPackingList trip={DEMO_SHARED_TRIP} items={DEMO_SHARED_PACKING} myHouseholdId={DEMO_MY_HOUSEHOLD} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Voyage',
+      name: 'VoyageShareModal',
+      file: 'components/voyage/VoyageShareModal.tsx',
+      kw: 'voyage partagé shared trip invite link qr member household owner leave dissolve reset lien',
+      render: () => (
+        // « Voyage partagé » → « Inviter » — mint an invite link (+ QR), list member
+        // households + roles, and the membership lifecycle (reset link / leave / dissolve).
+        // Mirrors FamilyShareModal; reuses Modal + QrCode + Avatar + useConfirm.
+        <Demo label="invite a household — link + QR + roster + leave/dissolve">
+          <button className="btn" onClick={() => setVoyageShareOpen(true)}>
+            {t.sharedVoyage.invite}
+          </button>
+          <VoyageShareModal
+            open={voyageShareOpen}
+            onClose={() => setVoyageShareOpen(false)}
+            trip={DEMO_SHARED_TRIP}
+            myHouseholdId={DEMO_MY_HOUSEHOLD}
+            onGone={() => setVoyageShareOpen(false)}
           />
         </Demo>
       ),

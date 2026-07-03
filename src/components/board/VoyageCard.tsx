@@ -1,24 +1,33 @@
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { daysUntilLocal, todayLocalDay } from '../../lib/localDay'
-import { useTrips, VOYAGE_ICON } from '../voyage/voyage'
+import { useTrips, useSharedTrips, VOYAGE_ICON } from '../voyage/voyage'
+import { Chip } from '../Chip'
 import { BoardCard } from './BoardCard'
 
 // The board « Prochain voyage » glance — the next upcoming (or in-progress) trip, the
-// calm heads-up a calendar dot can't give. Reads the SAME /api/trips model as the
-// trip scene (shared key). Renders NOTHING when no trip is upcoming, so a household
-// with nothing planned never sees this card (calm — no counts, no streak, just the
-// next trip). Each row taps into its trip notebook.
+// calm heads-up a calendar dot can't give. Reads BOTH the private /api/trips model and
+// the cross-household /api/shared-trip store (shared key), merged + sorted together so
+// a promoted trip keeps its place in the card. Renders NOTHING when nothing's upcoming,
+// so a household with nothing planned never sees this card (calm — no counts, no streak,
+// just the next trip). Each row taps into its trip notebook (a shared row → the shared
+// scene, with a « Partagé » tag).
 export function VoyageCard() {
   const t = useT()
   const { data } = useTrips()
+  const { data: sharedData } = useSharedTrips()
   const today = todayLocalDay()
-  // Upcoming or under way: a dated trip whose last day is today or later. Soonest first.
-  const trips = (data?.trips ?? [])
+
+  // Upcoming or under way: a dated trip whose last day is today or later. Private and
+  // shared trips carry the same date/title fields, so they merge into one sorted run.
+  const rows = [
+    ...(data?.trips ?? []).map((tr) => ({ ...tr, shared: false })),
+    ...(sharedData?.trips ?? []).map((tr) => ({ ...tr, shared: true })),
+  ]
     .filter((tr) => tr.end_at != null && tr.start_at != null && tr.end_at >= today)
     .sort((a, b) => (a.start_at ?? 0) - (b.start_at ?? 0))
     .slice(0, 3)
-  if (trips.length === 0) return null
+  if (rows.length === 0) return null
 
   const whenLabel = (start: number, end: number): string => {
     if (start <= today && end >= today) return t.voyage.ongoing
@@ -29,10 +38,17 @@ export function VoyageCard() {
   return (
     <BoardCard className="voyage-card" icon={VOYAGE_ICON} label={t.voyage.nextTrip}>
       <ul className="voyage-card__list">
-        {trips.map((tr) => (
+        {rows.map((tr) => (
           <li key={tr.id} className="voyage-card__row">
-            <Link to={`/voyage/${tr.id}`} className="voyage-card__open">
-              <span className="voyage-card__name">{tr.title}</span>
+            <Link to={tr.shared ? `/voyage/partage/${tr.id}` : `/voyage/${tr.id}`} className="voyage-card__open">
+              <span className="voyage-card__name">
+                {tr.title}
+                {tr.shared && (
+                  <Chip icon="users-three-bold" className="voyage-card__shared">
+                    {t.sharedVoyage.badge}
+                  </Chip>
+                )}
+              </span>
               <span className="voyage-card__when mono">
                 {tr.destination ? `${tr.destination} · ` : ''}
                 {whenLabel(tr.start_at as number, tr.end_at as number)}

@@ -1700,6 +1700,14 @@ export const GUIDE: GuideEntry[] = [
         },
         why: { fr: 'À l’aéroport ou à l’hôtel, ta réservation s’ouvre sans dépendre du wifi.', en: 'At the airport or hotel, your reservation opens without depending on wifi.' },
       },
+      {
+        label: { fr: 'Partager en direct avec d’autres maisonnées', en: 'Share it live with other households' },
+        detail: {
+          fr: 'Touche « Partager en direct » pour ouvrir le voyage à d’autres familles (jusqu’à 6) qui ont leur propre Babillard. Chacune reçoit un lien d’invitation ; vous modifiez ensuite l’itinéraire, les infos et les documents ensemble, en direct. Les bagages restent par maisonnée : tu vois les valises des autres, mais tu ne modifies que les tiennes. Chaque maisonnée peut quitter le voyage (en gardant une copie si elle veut) ; le propriétaire peut réinitialiser le lien ou dissoudre le voyage.',
+          en: 'Tap “Share live” to open the trip to other families (up to 6) who have their own Babillard. Each gets an invite link; you then edit the itinerary, info and documents together, live. Packing stays per household: you see the others’ bags but only edit your own. Any household can leave (keeping a copy if it wants); the owner can reset the link or dissolve the trip.',
+        },
+        why: { fr: 'Un voyage à plusieurs familles se planifie à un seul endroit, sans se renvoyer des captures d’écran.', en: 'A multi-family trip gets planned in one place, without trading screenshots back and forth.' },
+      },
     ],
   },
   {

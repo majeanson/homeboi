@@ -10,7 +10,7 @@ import { isGuest } from '../lib/device'
 import { formatDayLong, capitalize as cap } from '../lib/format'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useTabParam } from '../lib/tabParam'
-import { MEMBERS_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
+import { MEMBERS_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY, SHARED_TRIPS_KEY } from '../lib/queryKeys'
 import { useConfirm } from '../lib/confirm'
 import type { Member } from '../lib/members'
 import { PairPrompt } from '../components/Fallback'
@@ -55,6 +55,9 @@ const dateInputToSec = (ymd: string): number | null =>
 function VoyageInner() {
   const t = useT()
   const { lang } = useLang()
+  const nav = useNavigate()
+  const write = useWrite()
+  const confirm = useConfirm()
   const close = useSceneClose('/board')
   useEscapeKey(close)
   const { id } = useParams()
@@ -106,6 +109,26 @@ function VoyageInner() {
   const notes = notesQ.data?.notes ?? []
   const packing = packingQ.data?.items ?? []
 
+  // « Partager en direct » — promote this private trip into the cross-household shared
+  // store (« Voyage partagé »). A MOVE, not a copy: the private trip soft-deletes and
+  // its blobs re-key to the share, so the confirm copy spells out that it's not undoable
+  // and drops off the calendar while shared. → the new shared scene.
+  async function shareLive() {
+    if (!(await confirm({ message: t.sharedVoyage.promoteConfirm, tone: 'danger', confirmLabel: t.sharedVoyage.promote })))
+      return
+    try {
+      const res = await write<{ id?: string }>('shared-trip', {
+        method: 'POST',
+        body: { fromTripId: trip!.id },
+        affectedKeys: [TRIPS_KEY, SHARED_TRIPS_KEY, BOARD_KEY, MONTH_KEY],
+      })
+      const newId = res && !res.queued ? res.data?.id : undefined
+      if (newId) nav(`/voyage/partage/${newId}`)
+    } catch {
+      /* server rejected — invalidate already refetched; the trip stays private */
+    }
+  }
+
   return (
     <div className="scene" aria-label={trip.title}>
       <SceneHead
@@ -137,9 +160,12 @@ function VoyageInner() {
         {vue === 'documents' && <VoyageDocuments trip={trip} notes={notes} />}
 
         {!isGuest() && (
-          <div className="voyage__foot">
+          <div className="voyage__foot voyage-share__foot">
             <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(true)}>
               <Icon name="pencil-simple-bold" size={15} /> {t.voyage.editTrip}
+            </button>
+            <button type="button" className="btn btn--ghost mono" onClick={() => void shareLive()}>
+              <Icon name="users-three-bold" size={15} /> {t.sharedVoyage.shareLive}
             </button>
           </div>
         )}

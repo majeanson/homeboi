@@ -162,6 +162,51 @@
   border-top: 1px solid var(--line);
 }
 
+/* — « Voyage partagé » — the shared trip scene — */
+/* Footer with the edit + invite/share actions side by side (wraps on a phone). */
+.voyage-share__foot {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* Per-household bag section header: a colour disc + the household label. */
+.shared-packing__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 6px;
+}
+.shared-packing__head .ln {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line);
+}
+.shared-packing__you {
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+}
+/* The invite modal's owner/member action row. */
+.voyage-share__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 12px;
+}
+.voyage-share__keep {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+/* The « Partagé » tag on a board card row — a small inline pill after the name. */
+.voyage-card__shared {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 /* — the board « Prochain voyage » card — */
 .voyage-card__list {
   list-style: none;

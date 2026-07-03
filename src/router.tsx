@@ -72,6 +72,9 @@ const VoiturePage = lazy(() => import('./pages/VoiturePage').then((m) => ({ defa
 // « Voyage » — the trip notebook (Carnet de voyage): a full-screen scene with the
 // Itinéraire / Infos / Bagages / Documents sub-tabs. Standalone (no hub chrome).
 const VoyagePage = lazy(() => import('./pages/VoyagePage').then((m) => ({ default: m.VoyagePage })))
+// « Voyage partagé » — the cross-household shared trip scene + its invite-link landing.
+const SharedVoyagePage = lazy(() => import('./pages/SharedVoyagePage').then((m) => ({ default: m.SharedVoyagePage })))
+const SharedVoyageJoinPage = lazy(() => import('./pages/SharedVoyageJoinPage').then((m) => ({ default: m.SharedVoyageJoinPage })))
 // « Diffuser au salon » — the living-room TV board: the real board, read-only +
 // scaled, shown on a TV via Chromecast. Standalone (no hub chrome).
 const CastPage = lazy(() => import('./pages/CastPage').then((m) => ({ default: m.CastPage })))
@@ -180,6 +183,11 @@ export function AppRoutes() {
         <Route path="/courrier" element={<Postbox />} />
         {/* #28 — « L'auto » week view (single-car + carpool + work schedules). */}
         <Route path="/voiture" element={<VoiturePage />} />
+        {/* « Voyage partagé » — the invite-link landing + the shared trip scene. Both
+            static/prefixed segments sit BEFORE the private `/voyage/:id` so `rejoindre`
+            and `partage` aren't captured as trip ids (the `new`-before-`:id` precedent). */}
+        <Route path="/voyage/rejoindre" element={<SharedVoyageJoinPage />} />
+        <Route path="/voyage/partage/:id" element={<SharedVoyagePage />} />
         {/* « Voyage » — the trip notebook. `new` before `:id` so it isn't an id. */}
         <Route path="/voyage/new" element={<VoyagePage />} />
         <Route path="/voyage/:id" element={<VoyagePage />} />

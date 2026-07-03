@@ -71,7 +71,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
     const gate = await requireSharedTripMember(ctx.env, actor, id)
     if (gate instanceof Response) return gate
     const members = await liveMembersFor(ctx, [gate.trip.id])
-    return ok({ trip: shapeTrip(gate.trip, members, gate.membership.role) })
+    // myHouseholdId lets the SPA tell OWN vs other households' packing bags apart
+    // (own = editable, others = read-only). The membership rows all carry household_id
+    // but none is flagged "me", so the actor's household is named explicitly here.
+    return ok({
+      trip: shapeTrip(gate.trip, members, gate.membership.role),
+      myHouseholdId: gate.membership.household_id,
+    })
   }
   // The list: every live trip this household is a live member of, soonest-upcoming first.
   const rows = await ctx.env.DB.prepare(
