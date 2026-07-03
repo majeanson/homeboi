@@ -16,6 +16,18 @@
   padding: 0.8rem 1rem;
   border-bottom: 1px solid var(--line);
 }
+/* The « Affichage » options panel — drops below the bar when its … toggle is on
+   (layout · text size · step ingredients). Same padded, bordered band as the bar so
+   it reads as an extension of it, keeping those set-once controls off the step. */
+.cook__display {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
 .cook__title {
   font-family: var(--display);
   font-weight: 700;

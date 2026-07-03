@@ -105,6 +105,9 @@ export function CookMode({
   const { audience } = useAudience()
   const isToddler = audience === 'toddler'
   const [view, setView] = useState<CookView>(() => (isToddler ? 'step' : loadCookView(recipe.id)))
+  // The layout / text-size / step-ingredient controls are set-once options — collapse
+  // them behind an « Affichage » (…) toggle so they don't crowd the step at the stove.
+  const [showDisplay, setShowDisplay] = useState(false)
   const mode: CookView = isToddler ? 'step' : view
   const modeRef = useRef(mode)
   modeRef.current = mode
@@ -414,57 +417,20 @@ export function CookMode({
       <div className="cook__bar">
         <span className="cook__title">{recipe.title}</span>
         <div className="cook__bar-tools">
-          {/* Parent-only: pick the layout (toddler is locked to the stepper) and
-              the text size. Both wrap below the title on a narrow phone. */}
+          {/* Parent-only « Affichage » toggle — opens the layout / text-size / step-
+              ingredient options in a panel below (toddler is locked to the stepper). */}
           {!isToddler && (
-            <>
-              <div className="cook__segctl" role="group" aria-label={t.recipes.cookViewLabel}>
-                {VIEW_ORDER.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    className={'cook__segbtn' + (view === v ? ' is-on' : '')}
-                    onClick={() => changeView(v)}
-                    aria-pressed={view === v}
-                    title={t.recipes.cookView[v]}
-                    aria-label={t.recipes.cookView[v]}
-                  >
-                    <Icon name={VIEW_ICON[v]} size={18} />
-                  </button>
-                ))}
-              </div>
-              <div className="cook__segctl cook__density" role="group" aria-label={t.recipes.cookDensityLabel}>
-                {DENSITY_ORDER.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    className={'cook__segbtn' + (density === d ? ' is-on' : '')}
-                    onClick={() => setCookDensity(d)}
-                    aria-pressed={density === d}
-                    title={t.recipes.cookDensity[d]}
-                    aria-label={t.recipes.cookDensity[d]}
-                  >
-                    <span className={`cook__dens-a cook__dens-a--${d}`} aria-hidden="true">
-                      A
-                    </span>
-                  </button>
-                ))}
-              </div>
-              {/* Show / hide each step's own ingredients ("what you need right now")
-                  across every view. Only offered when the recipe has both lists. */}
-              {canPairIngs && (
-                <button
-                  type="button"
-                  className={'cook__autoread' + (showStepIngs ? ' is-on' : '')}
-                  onClick={() => setShowStepIngredients(!showStepIngs)}
-                  aria-pressed={showStepIngs}
-                  title={showStepIngs ? t.recipes.stepIngsShow : t.recipes.stepIngsHide}
-                  aria-label={showStepIngs ? t.recipes.stepIngsShow : t.recipes.stepIngsHide}
-                >
-                  <Icon name="carrot-bold" size={20} />
-                </button>
-              )}
-            </>
+            <button
+              type="button"
+              className={'cook__autoread' + (showDisplay ? ' is-on' : '')}
+              onClick={() => setShowDisplay((s) => !s)}
+              aria-pressed={showDisplay}
+              aria-expanded={showDisplay}
+              title={t.recipes.cookViewLabel}
+              aria-label={t.recipes.cookViewLabel}
+            >
+              <Icon name="gear-six-bold" size={20} />
+            </button>
           )}
           {mode === 'step' && (
             <>
@@ -505,6 +471,59 @@ export function CookMode({
           </button>
         </div>
       </div>
+
+      {/* « Affichage » panel — the layout / text-size / step-ingredient options,
+          collapsed by default so the step owns the screen at the stove. */}
+      {!isToddler && showDisplay && (
+        <div className="cook__display">
+          <div className="cook__segctl" role="group" aria-label={t.recipes.cookViewLabel}>
+            {VIEW_ORDER.map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={'cook__segbtn' + (view === v ? ' is-on' : '')}
+                onClick={() => changeView(v)}
+                aria-pressed={view === v}
+                title={t.recipes.cookView[v]}
+                aria-label={t.recipes.cookView[v]}
+              >
+                <Icon name={VIEW_ICON[v]} size={18} />
+              </button>
+            ))}
+          </div>
+          <div className="cook__segctl cook__density" role="group" aria-label={t.recipes.cookDensityLabel}>
+            {DENSITY_ORDER.map((d) => (
+              <button
+                key={d}
+                type="button"
+                className={'cook__segbtn' + (density === d ? ' is-on' : '')}
+                onClick={() => setCookDensity(d)}
+                aria-pressed={density === d}
+                title={t.recipes.cookDensity[d]}
+                aria-label={t.recipes.cookDensity[d]}
+              >
+                <span className={`cook__dens-a cook__dens-a--${d}`} aria-hidden="true">
+                  A
+                </span>
+              </button>
+            ))}
+          </div>
+          {/* Show / hide each step's own ingredients ("what you need right now")
+              across every view. Only offered when the recipe has both lists. */}
+          {canPairIngs && (
+            <button
+              type="button"
+              className={'cook__autoread' + (showStepIngs ? ' is-on' : '')}
+              onClick={() => setShowStepIngredients(!showStepIngs)}
+              aria-pressed={showStepIngs}
+              title={showStepIngs ? t.recipes.stepIngsShow : t.recipes.stepIngsHide}
+              aria-label={showStepIngs ? t.recipes.stepIngsShow : t.recipes.stepIngsHide}
+            >
+              <Icon name="carrot-bold" size={20} />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* "Cuisiner ensemble" dish switcher (#43): a sub-tab row under the display +
           text-size controls that flips between the dishes — each one a full cook view
