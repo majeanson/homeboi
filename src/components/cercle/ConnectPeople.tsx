@@ -114,6 +114,7 @@ export function ConnectPeople({
         }}
         placeholder={t.cercle.connectPick}
         submitIcon={null}
+        typeaheadOnly
       />
 
       {/* "est [le/la] …" — the relationship, gendered live by person A in the preview. */}
@@ -147,6 +148,7 @@ export function ConnectPeople({
         }}
         placeholder={t.cercle.connectPick}
         submitIcon={null}
+        typeaheadOnly
       />
 
       {/* Live, gendered preview, in the same "[rel] · [other]" shape the rows use. */}

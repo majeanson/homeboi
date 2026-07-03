@@ -16,6 +16,7 @@ import { uploadMedia } from '../../lib/uploadMedia'
 import { Avatar } from '../Avatar'
 import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
+import { StatusMessage } from '../StatusMessage'
 import { Icon } from '../Icon'
 import { RowActions } from '../RowActions'
 import { OperatorSection } from './OperatorSection'
@@ -27,6 +28,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   const [name, setName] = useState('')
   const [isChild, setIsChild] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(false)
   // Default each new person to the next unused palette colour, so a household
   // fills out colour-distinct without anyone having to think about it.
   const [color, setColor] = useState(PALETTE[members.length % PALETTE.length])
@@ -35,6 +37,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   async function add() {
     if (!name.trim() || busy) return
     setBusy(true)
+    setErr(false)
     try {
       await write('members', {
         method: 'POST',
@@ -48,8 +51,10 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       setIsChild(false)
       setColor(PALETTE[(members.length + 1) % PALETTE.length])
     } catch {
-      // Keep the typed name — a double-Enter or flaky wifi shouldn't eat it
-      // (and must not create the member twice).
+      // Keep the typed name — a double-Enter or flaky wifi shouldn't eat it (and
+      // must not create the member twice) — but SURFACE the failure instead of
+      // swallowing it, so the operator knows the member wasn't added.
+      setErr(true)
     } finally {
       setBusy(false)
     }
@@ -125,6 +130,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
           </>
         }
       />
+      {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
 
       {/* The household's own animals — a calm list mirroring the member cards. Add /
           edit opens the full pet scene in Le cercle; what makes a pet "ours" is having

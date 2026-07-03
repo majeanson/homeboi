@@ -462,7 +462,7 @@ export function NoteEditor({
           suppressContentEditableWarning
           role="textbox"
           aria-multiline="true"
-          aria-label={fn.editorNew}
+          aria-label={note ? fn.editorEdit : fn.editorNew}
           data-placeholder={fn.placeholder}
           data-empty="true"
           onInput={afterInput}
