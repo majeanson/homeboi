@@ -891,9 +891,10 @@ absence.
   empty/loading (`departure__empty`/`loading mono`) instead of `EmptyState`; gallery `['drawings']`
   key is local (`drawingGallery.ts:23`) not in `queryKeys.ts`; `DrawingGalleryPage` members query
   lacks `...live` (`:40`) unlike every other consumer.
-- [~] **a11y nits:** ✅ Search results now show a `role="status"` count line (« 3 résultats »),
-  so a SR user hears the total as the search settles (2026-07-02). Remaining: MomentPeek's four
-  window chips risk sub-44px height in the height-matched hero card (`MomentPeek.tsx:35`).
+- [x] **a11y nits:** ✅ **both fixed 2026-07-02.** Search results show a `role="status"` count
+  line (« 3 résultats ») so a SR user hears the total; and `.moment-chip` now has an explicit
+  44px min-height (inline-flex centred) so the four window chips keep a real tap target even
+  when the height-matched hero card squeezes the row.
 - [ ] **UX nits:** business/family-note Search hits deep-link to the section **list**, not the
   item (`SearchPage.tsx:385/499`) — user must re-find the row; Voyage twin `type="date"` inputs +
   packing move-`<select>` unverified at 320px; trip "Bagages" doesn't reuse the shared

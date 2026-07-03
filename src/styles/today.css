@@ -614,6 +614,12 @@
 .moment-chip {
   border: 0;
   cursor: pointer;
+  /* Keep a 44px tap target even when the height-matched hero card squeezes the row
+     (REVIEW-PASS): centre the label in a min-height box rather than relying on padding. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   padding: 0.34rem 0.72rem;
   border-radius: var(--radius-pill);
   font-size: var(--text-sm);
