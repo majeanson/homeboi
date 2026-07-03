@@ -105,7 +105,11 @@ const PATH_KEYS: Record<string, string[][]> = {
   // is the wrong cache AND spams the board. Promote/dissolve/leave move rows into/out
   // of the household `trips` store, so they touch trips + board + month too.
   'shared-trip': [['shared-trips'], ['trips'], ['board'], ['month']],
-  'shared-trip-notes': [['shared-trip-notes']],
+  // A dated shared note (itinerary 'activity') shows on the writer's OWN month grid +
+  // day page (both read ['month'] via the membership-scoped read in api/month.ts), so a
+  // shared-note write must invalidate ['month'] too — else a promoted trip's itinerary
+  // edits don't refresh the calendar until the next poll.
+  'shared-trip-notes': [['shared-trip-notes'], ['month']],
   'shared-trip-packing': [['shared-trip-packing']],
   'shared-trip-join': [['shared-trips']],
   'shared-trip-leave': [['shared-trips'], ['trips'], ['board'], ['month']],

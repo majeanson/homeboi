@@ -17,6 +17,7 @@ import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { useTagColors } from '../../lib/queryHooks'
 import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
+import { Chip } from '../Chip'
 import { Act } from './Act'
 import { tripCategoryIcon, type TripCategory } from '../voyage/voyage'
 import { AutoCardView } from './AutoCard'
@@ -38,7 +39,9 @@ interface MTodo { id: string; title: string; member_id: string | null; day: numb
 // "Projets & Entretien" (home_projects) dated occurrence — chore-like on the calendar.
 interface MHome { id: string; kind: string; title: string; color: string | null; day: number }
 // « Voyage » — a multi-day trip; drawn as a BAND across its days (not a per-day dot).
-interface MTrip { id: string; title: string; colour: string; start_at: number; end_at: number }
+// `shared` = a « Voyage partagé » the household is a member of (promoted/joined): same
+// band, but the tap deep-links to /voyage/partage/:id instead of /voyage/:id.
+interface MTrip { id: string; title: string; colour: string; start_at: number; end_at: number; shared?: boolean }
 // A dated itinerary entry inside a trip — the plans the operator wrote for the day,
 // shown under the trip card on that exact day (not just the global trip band).
 interface MTripPlan { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string; day: number }
@@ -47,7 +50,7 @@ export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[];
 interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[]; home: MHome[] }
 // One day's slice of a trip band: the trip + whether this cell is its first/last
 // visible day (rounded ends + the title shows on the start).
-interface TripSpan { id: string; title: string; colour: string; isStart: boolean; isEnd: boolean; start_at: number }
+interface TripSpan { id: string; title: string; colour: string; isStart: boolean; isEnd: boolean; start_at: number; shared?: boolean }
 
 // Intl gives a lowercase French month/weekday ("juin", "lun") — calendars want it
 // capitalized.
@@ -191,7 +194,7 @@ export function MonthView({
       const last = Math.min(tr.end_at, to - DAY)
       for (let d = first; d <= last; d = addLocalDays(d, 1)) {
         const arr = m.get(d) ?? []
-        arr.push({ id: tr.id, title: tr.title, colour: tr.colour, isStart: d === tr.start_at, isEnd: d === tr.end_at, start_at: tr.start_at })
+        arr.push({ id: tr.id, title: tr.title, colour: tr.colour, isStart: d === tr.start_at, isEnd: d === tr.end_at, start_at: tr.start_at, shared: tr.shared })
         m.set(d, arr)
       }
     }
@@ -408,36 +411,43 @@ export function MonthView({
             {/* « Voyage » covering this day — atop the list, tapping into the trip,
                 followed by the dated itinerary entries written for the day (the actual
                 plans, not just the global trip band). */}
-            {selTrips.map((tr) => (
-              <div key={tr.id} className="day-plan__trip">
-                <Act
-                  cat="event"
-                  title={`${t.voyage.title} · ${tr.title}`}
-                  // « Jour N » — 1-based day-of-trip for the selected date, mirroring
-                  // DayPlanPage's tripDayNum (both dates are local-midnight; round absorbs DST).
-                  when={t.voyage.dayN(Math.round((selected - tr.start_at) / DAY) + 1)}
-                  color={tr.colour}
-                  onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
-                />
-                {selTripPlans
-                  .filter((p) => p.trip_id === tr.id)
-                  .map((p) => (
-                    <Act
-                      key={p.id}
-                      cat="event"
-                      icon={tripCategoryIcon(p.category as TripCategory)}
-                      title={p.label || p.text || t.voyage.cat[p.category as TripCategory]}
-                      who={p.label && p.text ? p.text : undefined}
-                      color={p.colour}
-                      // Deep-link to this exact day: `&jour=N` (1-based day-of-trip) lands on
-                      // that day's section inside the itinerary instead of its top.
-                      onActivate={() =>
-                        nav(`/voyage/${tr.id}?vue=itineraire&jour=${Math.round((selected - tr.start_at) / DAY) + 1}`)
-                      }
-                    />
-                  ))}
-              </div>
-            ))}
+            {selTrips.map((tr) => {
+              // « Jour N » — 1-based day-of-trip for the selected date, mirroring
+              // DayPlanPage's tripDayNum (both dates are local-midnight; round absorbs DST).
+              const jour = Math.round((selected - tr.start_at) / DAY) + 1
+              // A « Voyage partagé » (promoted/joined) taps into the shared scene; the sub-tab
+              // param (`vue`/`jour`) is read identically there (SharedVoyagePage reuses VoyageItinerary).
+              const base = tr.shared ? `/voyage/partage/${tr.id}` : `/voyage/${tr.id}`
+              return (
+                <div key={tr.id} className="day-plan__trip">
+                  <Act
+                    cat="event"
+                    title={`${t.voyage.title} · ${tr.title}`}
+                    when={t.voyage.dayN(jour)}
+                    color={tr.colour}
+                    // « Partagé » marker only here (the panel list shows text), never on the
+                    // month grid band — the band colour + title carry it there (calm).
+                    badge={tr.shared ? <Chip icon="users-three-bold">{t.sharedVoyage.badge}</Chip> : undefined}
+                    onActivate={() => nav(`${base}?vue=itineraire`)}
+                  />
+                  {selTripPlans
+                    .filter((p) => p.trip_id === tr.id)
+                    .map((p) => (
+                      <Act
+                        key={p.id}
+                        cat="event"
+                        icon={tripCategoryIcon(p.category as TripCategory)}
+                        title={p.label || p.text || t.voyage.cat[p.category as TripCategory]}
+                        who={p.label && p.text ? p.text : undefined}
+                        color={p.colour}
+                        // Deep-link to this exact day: `&jour=N` (1-based day-of-trip) lands on
+                        // that day's section inside the itinerary instead of its top.
+                        onActivate={() => nav(`${base}?vue=itineraire&jour=${jour}`)}
+                      />
+                    ))}
+                </div>
+              )
+            })}
             {/* Same order, same cards as the bento day: meals, then events, then
                 chores, then the day note — so nothing dated is represented here
                 differently than on the day view. */}

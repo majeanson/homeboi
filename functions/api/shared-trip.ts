@@ -137,7 +137,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
       "INSERT INTO shared_trip_members (id, shared_trip_id, household_id, role, label, joined_at, created_at) VALUES (?, ?, ?, 'owner', ?, ?, ?)",
     ).bind(newId(), id, actor.householdId, label, ts, ts),
   ])
-  nudgeSharedTrip(ctx, id, [['shared-trips']])
+  // A dated trip is a calendar band + a board VoyageCard, so nudge ['month']/['board']
+  // (via the membership-scoped read in api/month.ts) alongside the shared-trips list — so
+  // every member household's calendar/board refreshes live, not just its own devices.
+  nudgeSharedTrip(ctx, id, [['shared-trips'], ['trips'], ['board'], ['month']])
   return ok({ ok: true, id })
 }, 'operator')
 
@@ -274,7 +277,10 @@ async function promote(ctx: Ctx, householdId: string, fromTripId: string): Promi
     await deleteR2Blob(ctx.env.PHOTOS, n.media_key)
     await deleteR2Blob(ctx.env.PHOTOS, n.scene_key)
   }
-  nudgeSharedTrip(ctx, sharedId, [['shared-trips']])
+  // Promote MOVED a dated band into the shared store — nudge ['month']/['board'] so the
+  // now-shared trip re-surfaces on the calendar/board (membership-scoped read in
+  // api/month.ts), matching the household hook's [['shared-trip']] keys.
+  nudgeSharedTrip(ctx, sharedId, [['shared-trips'], ['trips'], ['board'], ['month']])
   return ok({ ok: true, id: sharedId })
 }
 

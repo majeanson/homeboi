@@ -105,7 +105,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
       nowSec(),
     )
     .run()
-  nudgeSharedTrip(ctx, gate.trip.id, [['shared-trip-notes']])
+  // ['month'] rides along: a dated itinerary note shows on every member household's
+  // month grid + day page (membership-scoped read in api/month.ts), so the calendar
+  // must refresh live, not just the shared scene's own note list.
+  nudgeSharedTrip(ctx, gate.trip.id, [['shared-trip-notes'], ['month']])
   return ok({ ok: true, id })
 }, 'operator')
 
@@ -159,7 +162,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   await ctx.env.DB.prepare(`UPDATE shared_trip_notes SET ${sets.join(', ')} WHERE id = ?`)
     .bind(...vals)
     .run()
-  nudgeSharedTrip(ctx, gate.trip.id, [['shared-trip-notes']])
+  nudgeSharedTrip(ctx, gate.trip.id, [['shared-trip-notes'], ['month']])
   return ok({ ok: true })
 }, 'operator')
 
@@ -180,6 +183,6 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   await ctx.env.DB.prepare('UPDATE shared_trip_notes SET deleted_at = ? WHERE id = ?')
     .bind(nowSec(), id)
     .run()
-  nudgeSharedTrip(ctx, gate.trip.id, [['shared-trip-notes']])
+  nudgeSharedTrip(ctx, gate.trip.id, [['shared-trip-notes'], ['month']])
   return ok({ ok: true })
 }, 'operator')

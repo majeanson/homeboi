@@ -31,7 +31,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes, tripsRes, tripPlansRes] = await Promise.all([
+  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes, tripsRes, tripPlansRes, sharedTripsRes, sharedPlansRes] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
@@ -122,6 +122,29 @@ export const onRequestGet = authed(async (ctx, actor) => {
       // composer). Other categories are atemporal (date NULL) and excluded above, but
       // pinning it keeps the calendar's title fallback (t.voyage.cat[category]) total.
       "SELECT tn.id, tn.trip_id, tn.category, tn.label, tn.text, tn.media_kind, tn.date, tr.colour AS colour FROM trip_notes tn JOIN trips tr ON tr.id = tn.trip_id AND tr.deleted_at IS NULL WHERE tn.household_id = ? AND tn.deleted_at IS NULL AND tn.category = 'activity' AND tn.date IS NOT NULL AND tn.date >= ? AND tn.date < ? ORDER BY tn.date, tn.position, tn.created_at",
+    )
+      .bind(hh, from - DAY, to + DAY)
+      .all<{ id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; date: number; colour: string }>(),
+    // « Voyage partagé » (shared trips, migration 0101) — ADDITIVE, never modifies the
+    // household `trips` query above. Promoting a private trip MOVES it into the
+    // capability-scoped shared store, so it would otherwise DROP OFF this household's
+    // calendar band. A shared trip lives in NEITHER household, so it's authorized by a
+    // live membership, not a household_id filter: JOIN shared_trip_members on the actor's
+    // household (revoked_at IS NULL = a live grant). Same date-range overlap + dated-only
+    // rules as the household trip query, so the band renders identically; the `shared`
+    // flag (added client-side below) only re-targets the tap to /voyage/partage/:id.
+    ctx.env.DB.prepare(
+      'SELECT st.id, st.title, st.colour, st.start_at, st.end_at FROM shared_trips st JOIN shared_trip_members m ON m.shared_trip_id = st.id AND m.household_id = ? AND m.revoked_at IS NULL WHERE st.deleted_at IS NULL AND st.start_at IS NOT NULL AND st.end_at IS NOT NULL AND st.start_at < ? AND st.end_at >= ?',
+    )
+      .bind(hh, to, from)
+      .all<{ id: string; title: string; colour: string; start_at: number; end_at: number }>(),
+    // Shared-trip DATED itinerary notes — the shared twin of the trip_notes read above.
+    // shared_trip_notes carries no household_id (attribution is author_household_id, a soft
+    // ref); visibility is authorized by the membership JOIN, same as the trip band. Category
+    // 'activity' + non-NULL local-midnight date only (the Itinéraire composer's dated writer);
+    // ±DAY widen + re-bucket like the household plans. `st.colour` rides along for tinting.
+    ctx.env.DB.prepare(
+      "SELECT stn.id, stn.shared_trip_id AS trip_id, stn.category, stn.label, stn.text, stn.media_kind, stn.date, st.colour AS colour FROM shared_trip_notes stn JOIN shared_trips st ON st.id = stn.shared_trip_id AND st.deleted_at IS NULL JOIN shared_trip_members m ON m.shared_trip_id = st.id AND m.household_id = ? AND m.revoked_at IS NULL WHERE stn.deleted_at IS NULL AND stn.category = 'activity' AND stn.date IS NOT NULL AND stn.date >= ? AND stn.date < ? ORDER BY stn.date, stn.position, stn.created_at",
     )
       .bind(hh, from - DAY, to + DAY)
       .all<{ id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; date: number; colour: string }>(),
@@ -272,22 +295,39 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
 
   // Trips ride through as-is (the client clamps the band to the visible window).
-  const trips = tripsRes.results.map((tr) => ({
-    id: tr.id,
-    title: tr.title,
-    colour: tr.colour,
-    start_at: tr.start_at,
-    end_at: tr.end_at,
-  }))
+  // `shared?: true` re-targets the client's tap to /voyage/partage/:id (« Voyage
+  // partagé ») — the band itself renders identically (colour + title), calm.
+  const trips: { id: string; title: string; colour: string; start_at: number; end_at: number; shared?: true }[] =
+    tripsRes.results.map((tr) => ({
+      id: tr.id,
+      title: tr.title,
+      colour: tr.colour,
+      start_at: tr.start_at,
+      end_at: tr.end_at,
+    }))
+  // Additive: shared trips this household is a live member of, into the SAME array so a
+  // promoted trip stays on the calendar band (plan « Voyage partagé »). Flagged `shared`.
+  for (const tr of sharedTripsRes.results) {
+    trips.push({ id: tr.id, title: tr.title, colour: tr.colour, start_at: tr.start_at, end_at: tr.end_at, shared: true })
+  }
 
   // The trip's per-day itinerary entries, bucketed onto their local day (so they sit
   // under the trip card on that exact calendar day / day page). `colour` rides along
   // for tinting; the client groups by `trip_id` when a day has several trips.
-  const tripPlans: { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string; day: number }[] = []
+  const tripPlans: { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string; day: number; shared?: true }[] = []
   for (const n of tripPlansRes.results) {
     const day = dayOf(n.date)
     if (inRange(day))
       tripPlans.push({ id: n.id, trip_id: n.trip_id, category: n.category, label: n.label, text: n.text, media_kind: n.media_kind, colour: n.colour, day })
+  }
+  // Additive: the shared trips' dated itinerary notes, into the SAME array (their
+  // `trip_id` is the shared trip id, which the flagged `trips` row above carries — so
+  // the client groups + deep-links them under the shared band). `shared` mirrors the
+  // trip flag for symmetry (the client derives the link from the parent trip's flag).
+  for (const n of sharedPlansRes.results) {
+    const day = dayOf(n.date)
+    if (inRange(day))
+      tripPlans.push({ id: n.id, trip_id: n.trip_id, category: n.category, label: n.label, text: n.text, media_kind: n.media_kind, colour: n.colour, day, shared: true })
   }
 
   return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans })

@@ -29,7 +29,8 @@ describe('keysForPath', () => {
 
   it('maps « Voyage partagé » endpoints to their own keys; media + invite silent', () => {
     expect(keysForPath('shared-trip')).toEqual([['shared-trips'], ['trips'], ['board'], ['month']])
-    expect(keysForPath('shared-trip-notes')).toEqual([['shared-trip-notes']])
+    // A dated shared itinerary note shows on the writer's month grid + day page (['month']).
+    expect(keysForPath('shared-trip-notes')).toEqual([['shared-trip-notes'], ['month']])
     expect(keysForPath('shared-trip-packing')).toEqual([['shared-trip-packing']])
     expect(keysForPath('shared-trip-join')).toEqual([['shared-trips']])
     expect(keysForPath('shared-trip-leave')).toEqual([['shared-trips'], ['trips'], ['board'], ['month']])

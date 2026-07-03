@@ -15,6 +15,7 @@ import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } f
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
+import { Chip } from '../components/Chip'
 import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
 import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage'
@@ -56,7 +57,9 @@ interface DayItemsData {
   homeProjects?: { id: string; kind: string; title: string; color: string | null }[]
   // « Voyage » bands overlapping this day — surfaces a "Voyage — Jour N" header that
   // taps into the trip's itinerary for this exact day. null trips = older payload → [].
-  trips?: { id: string; title: string; colour: string; start_at: number; end_at: number }[]
+  // `shared` = a « Voyage partagé » (promoted/joined): same header, tap deep-links to
+  // /voyage/partage/:id instead of /voyage/:id.
+  trips?: { id: string; title: string; colour: string; start_at: number; end_at: number; shared?: boolean }[]
   // The DATED itinerary entries the operator wrote inside a trip, for THIS day — shown
   // under the trip header so the actual plans (not just "you're travelling") are here.
   // null = older payload → []. `media_kind`-only notes fall back to their category label.
@@ -444,32 +447,40 @@ function DayPlanInner() {
         {/* « Voyage » — this day sits inside a trip. A calm header that taps into the
             trip's itinerary for this exact day, followed by the actual plans entered
             for the day (the dated itinerary notes), so the right info is right here. */}
-        {dayTrips.map((tr) => (
-          <div key={tr.id} className="day-plan__trip">
-            <Act
-              cat="event"
-              title={`${t.voyage.title} · ${tr.title}`}
-              when={t.voyage.dayN(tripDayNum(tr.start_at))}
-              color={tr.colour}
-              onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire`)}
-            />
-            {dayTripPlans
-              .filter((p) => p.trip_id === tr.id)
-              .map((p) => (
-                <Act
-                  key={p.id}
-                  cat="event"
-                  icon={tripCategoryIcon(p.category as TripCategory)}
-                  title={p.label || p.text || t.voyage.cat[p.category as TripCategory]}
-                  who={p.label && p.text ? p.text : undefined}
-                  color={p.colour}
-                  // Deep-link to this exact day: `&jour=N` (1-based day-of-trip) lands on
-                  // that day's section inside the itinerary instead of its top.
-                  onActivate={() => nav(`/voyage/${tr.id}?vue=itineraire&jour=${tripDayNum(tr.start_at)}`)}
-                />
-              ))}
-          </div>
-        ))}
+        {dayTrips.map((tr) => {
+          const jour = tripDayNum(tr.start_at)
+          // A « Voyage partagé » (promoted/joined) taps into the shared scene; the sub-tab
+          // param (`vue`/`jour`) is read identically there (SharedVoyagePage reuses VoyageItinerary).
+          const base = tr.shared ? `/voyage/partage/${tr.id}` : `/voyage/${tr.id}`
+          return (
+            <div key={tr.id} className="day-plan__trip">
+              <Act
+                cat="event"
+                title={`${t.voyage.title} · ${tr.title}`}
+                when={t.voyage.dayN(jour)}
+                color={tr.colour}
+                // « Partagé » marker on the header (a text surface) — calm.
+                badge={tr.shared ? <Chip icon="users-three-bold">{t.sharedVoyage.badge}</Chip> : undefined}
+                onActivate={() => nav(`${base}?vue=itineraire`)}
+              />
+              {dayTripPlans
+                .filter((p) => p.trip_id === tr.id)
+                .map((p) => (
+                  <Act
+                    key={p.id}
+                    cat="event"
+                    icon={tripCategoryIcon(p.category as TripCategory)}
+                    title={p.label || p.text || t.voyage.cat[p.category as TripCategory]}
+                    who={p.label && p.text ? p.text : undefined}
+                    color={p.colour}
+                    // Deep-link to this exact day: `&jour=N` (1-based day-of-trip) lands on
+                    // that day's section inside the itinerary instead of its top.
+                    onActivate={() => nav(`${base}?vue=itineraire&jour=${jour}`)}
+                  />
+                ))}
+            </div>
+          )
+        })}
 
         <DayEditor
           date={date}
