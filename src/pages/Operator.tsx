@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
@@ -34,8 +34,7 @@ import { IdleDebugSection } from '../components/operator/idleDebug'
 import { BuildInfoSection } from '../components/operator/buildInfo'
 import { MicSelfTest } from '../components/operator/micTest'
 import { GuideSection } from '../components/operator/guide'
-import { SectionGuide } from '../components/operator/sectionGuide'
-import { OperatorJump } from '../components/operator/OperatorJump'
+import { SubTabs } from '../components/SubTabs'
 import { useHelpMode } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
@@ -64,22 +63,24 @@ const SECTIONS = [
   { id: 'ai', key: 'secSystem' as const }, //          cette semaine + recap + AI + diagnostics
 ]
 
-// Retired tab id → the merged tab that now hosts it, so a deep link to an old
-// section (/settings?tab=routines) still opens the right tab. The valid-tab set
-// passed to useTabParam includes these keys; resolveTab() folds them to the host.
-const TAB_ALIAS: Record<string, string> = {
-  cercle: 'household',
-  guest: 'devices',
-  auto: 'agenda',
-  routines: 'chores',
-  todos: 'chores',
-  meals: 'recipes',
-  reserve: 'recipes',
-  ghost: 'shopping',
-  calm: 'display',
-  photos: 'display',
-  week: 'ai',
-  'ai-log': 'ai',
+// Retired tab id → the tab (and the within-tab sub-section) that now hosts it, so
+// a deep link to an old section (/settings?tab=routines) still opens the right tab
+// AND selects the right sub-tab (Corvées ▸ Routines). The valid-tab set passed to
+// useTabParam includes these keys; the folding below maps an alias to its host tab,
+// and its `sub` becomes the sub-tab fallback when the URL carries no explicit ?sub.
+const TAB_ALIAS: Record<string, { tab: string; sub: string }> = {
+  cercle: { tab: 'household', sub: 'cercle' },
+  guest: { tab: 'devices', sub: 'guest' },
+  auto: { tab: 'agenda', sub: 'cars' },
+  routines: { tab: 'chores', sub: 'routines' },
+  todos: { tab: 'chores', sub: 'todos' },
+  meals: { tab: 'recipes', sub: 'meals' },
+  reserve: { tab: 'recipes', sub: 'reserve' },
+  ghost: { tab: 'shopping', sub: 'ghost' },
+  calm: { tab: 'display', sub: 'calm' },
+  photos: { tab: 'display', sub: 'photos' },
+  week: { tab: 'ai', sub: 'thisweek' },
+  'ai-log': { tab: 'ai', sub: 'ailog' },
 }
 // Operator hub. Reached two ways: the signed-in operator (phone/laptop, full
 // access) OR a parent-mode kiosk (a paired wall tablet — device token, no cookie),
@@ -156,7 +157,7 @@ export function Operator() {
   // resolveTab folds an alias to its host (and a host that's hidden on this device —
   // e.g. ?tab=guest on a kiosk — back to the default tab).
   const [rawTab, setTab] = useTabParam('tab', sectionIds[0], [...sectionIds, ...Object.keys(TAB_ALIAS)])
-  const aliased = TAB_ALIAS[rawTab] ?? rawTab
+  const aliased = TAB_ALIAS[rawTab]?.tab ?? rawTab
   const tab = sectionIds.includes(aliased) ? aliased : sectionIds[0]
   const operatorHelp = useHelpMode(OPERATOR_HELP, (k: string) => {
     const labels: Record<string, string> = {

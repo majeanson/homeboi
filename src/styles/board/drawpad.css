@@ -518,3 +518,46 @@
   flex: none;
 }
 
+/* Toddler sticker board (#toddler sticker mode) — a roomy, WRAPPING picture board that
+   replaces the parent's cramped sideways-scroll bar, so a pre-reader sees every sticker
+   at once and taps the big picture they want. Its own row under the toolbar, capped +
+   vertically scrollable so it never eats the whole canvas. Appended last so it wins the
+   cascade over the nowrap compaction + the generic .drawpad--kid sizes above. */
+.drawpad__stickertray {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.6rem 0.7rem;
+  border-top: 1px solid var(--line);
+  background: var(--paper-deep, var(--card));
+  max-height: 42vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.drawpad__packs--tray,
+.drawpad__stickerset--tray {
+  display: flex;
+  flex-wrap: wrap; /* every sticker visible — no hidden off-screen scroll */
+  gap: 0.5rem;
+}
+/* Big picture pack-tabs, a touch smaller than the stickers so the row of categories
+   reads as secondary to the pictures themselves. */
+.drawpad__stickertray .drawpad__pack {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.75rem;
+}
+/* Chunky, toddler-thumb sticker tiles. */
+.drawpad__stickertray .drawpad__sticker {
+  width: 3.5rem;
+  height: 3.5rem;
+  font-size: 2.1rem;
+  border: 2px solid var(--line);
+  border-radius: 0.85rem;
+  background: var(--card);
+}
+.drawpad__stickertray .drawpad__sticker.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent);
+}
+

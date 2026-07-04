@@ -1688,7 +1688,10 @@ export function DrawPad({
         </div>
       </div>
 
-      {/* Row 2 — context for the active tool (scrolls sideways). */}
+      {/* Row 2 — context for the active tool (scrolls sideways). Skipped for a toddler
+          in sticker mode: the roomy picture board below replaces the cramped scroll bar
+          (whose off-screen stickers a pre-reader never discovers). */}
+      {!(toddler && mode === 'sticker') && (
       <div className="drawpad__bar drawpad__bar--ctx">
         {mode === 'text' ? (
           <input className="input drawpad__text" value={text} onChange={(e) => setText(e.target.value)} placeholder={t.memo.textPlaceholder} aria-label={t.memo.drawText} maxLength={24} />
@@ -1735,6 +1738,27 @@ export function DrawPad({
           </>
         )}
       </div>
+      )}
+
+      {/* Toddler sticker board — a roomy WRAPPING picture board (not the parent's cramped
+          sideways-scroll bar): a pre-reader sees every sticker at once and taps the big
+          picture they want, then taps the canvas to stamp it. Its own row under the
+          toolbar, like the template picker. Big picture pack-tabs group the choices;
+          parents keep the compact in-bar packs+set above. */}
+      {toddler && mode === 'sticker' && (
+        <div className="drawpad__stickertray" role="group" aria-label={t.memo.drawSticker}>
+          <div className="drawpad__packs drawpad__packs--tray">
+            {PACKS.map((p, i) => (
+              <button key={p.key} type="button" className={'drawpad__pack' + (pack === i ? ' is-on' : '')} onClick={() => { setPack(i); setSticker(PACKS[i].items[0]) }} aria-label={t.memo.packs[p.key as keyof typeof t.memo.packs]} aria-pressed={pack === i}>{p.icon}</button>
+            ))}
+          </div>
+          <div className="drawpad__stickerset drawpad__stickerset--tray" role="group">
+            {PACKS[pack].items.map((e) => (
+              <button key={e} type="button" className={'drawpad__sticker' + (sticker === e ? ' is-on' : '')} onClick={() => setSticker(e)} aria-label={e} aria-pressed={sticker === e}>{e}</button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Row 3 — template picker, collapsed by default to keep the surface wide. */}
       {tplOpen && (
