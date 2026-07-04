@@ -12,6 +12,8 @@ import {
   normalizeImage,
   htmlToText,
   refineSteps,
+  healTruncatedSteps,
+  MAX_STEP_LEN,
   stripStepPrefix,
   sentenceChunks,
   parseYield,
@@ -99,6 +101,51 @@ describe('refineSteps', () => {
     for (const s of steps) expect(s.length).toBeLessThanOrEqual(500)
     // Nothing got cut mid-sentence: every chunk ends with punctuation.
     for (const s of steps) expect(/[.!?]$/.test(s)).toBe(true)
+  })
+})
+
+describe('healTruncatedSteps', () => {
+  // The real regression: a step chopped at exactly 200 chars (the old save cap),
+  // its full text preserved in the original snapshot. Mirrors the "Crêpes minces".
+  const full =
+    'Pour chaque crêpe, verser environ 45 ml (3 c. à soupe) de pâte au centre de la poêle. En faisant pivoter la poêle, tenter de répandre la pâte également pour recouvrir tout le fond. Lorsque le rebord se décolle facilement et commence à dorer, c’est le temps de retourner la crêpe. Poursuivre la cuisson 10 secondes puis retirer de la poêle.'
+  const chopped = full.slice(0, 200)
+
+  it('restores a 200-char truncated step from the original snapshot', () => {
+    expect(healTruncatedSteps([chopped], [full])).toEqual([full])
+  })
+  it('heals only the truncated step, leaving complete ones untouched', () => {
+    const other = 'Chauffer une poêle antiadhésive à feu moyen.'
+    expect(healTruncatedSteps([other, chopped], [other, full])).toEqual([other, full])
+  })
+  it('is idempotent — a second pass changes nothing', () => {
+    const once = healTruncatedSteps([chopped], [full])
+    expect(healTruncatedSteps(once, [full])).toEqual(once)
+  })
+  it('never touches a step the cook shortened by hand (not a prefix of the original)', () => {
+    const edited = 'Répandre la pâte pour couvrir tout le fond de la poêle, puis dorer les deux côtés à feu moyen sans jamais brûler le beurre, en surveillant de très près la coloration et en ajustant le feu au besoin'
+    expect(edited.length).toBeGreaterThan(180)
+    expect(healTruncatedSteps([edited], [full])).toEqual([edited])
+  })
+  it('leaves a complete short step alone even if it prefixes an original', () => {
+    expect(healTruncatedSteps(['Mélanger.'], ['Mélanger. Ajouter le sel.'])).toEqual(['Mélanger.'])
+  })
+  it('consumes originals left-to-right so shared-prefix steps each heal to their own', () => {
+    const shared =
+      'Battre les oeufs avec le sucre jusqu’à ce que le mélange blanchisse et double de volume, environ trois minutes au batteur électrique en raclant bien les parois du bol à mi-parcours pour une texture parfaitement uniforme '
+    const a = shared + 'puis réserver au frais.'
+    const b = shared + 'puis incorporer la farine tamisée.'
+    const prefix = shared.slice(0, 195) // within the shared lead, chopped mid-word → prefixes BOTH
+    expect(healTruncatedSteps([prefix, prefix], [a, b])).toEqual([a, b])
+  })
+  it('no-ops when there is no original to heal from', () => {
+    expect(healTruncatedSteps([chopped], undefined)).toEqual([chopped])
+    expect(healTruncatedSteps([chopped], [])).toEqual([chopped])
+  })
+  it('MAX_STEP_LEN is 1000 and does not chop a long real step', () => {
+    expect(MAX_STEP_LEN).toBe(1000)
+    const long = 'A'.repeat(700) + '.'
+    expect(refineSteps([long])[0].length).toBe(701)
   })
 })
 

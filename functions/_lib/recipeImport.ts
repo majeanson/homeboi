@@ -163,6 +163,13 @@ function asStringList(value: unknown, max: number): string[] {
 // Step refinement — the format-aware core shared by every import path
 // ---------------------------------------------------------------------------
 
+// The hard per-step character cap. Steps are chunked at sentence boundaries
+// first (sentenceChunks), so this only bites a run-on step with no sentence
+// break — but it must be generous, or a long method line loses its tail. It's
+// the SAME cap the storage layer uses (functions/api/recipes.ts) so a step that
+// survives the import survives the save byte-for-byte.
+export const MAX_STEP_LEN = 1000
+
 // Strip a leading list marker the source format carried: a bullet/dash, an
 // "Étape 3" / "Step 2" label, or a bare "1." / "2)" number. The UI numbers
 // steps itself, so a kept prefix would read "1. 1. Faire bouillir…".
@@ -252,7 +259,7 @@ export function refineSteps(raw: string[], max = 30): string[] {
     // A "## Section" marker is structure, not an instruction — it passes
     // through whole: never split, never stripped, never deduped against steps.
     if (isSectionHeading(cleaned)) {
-      out.push(cleaned.slice(0, 500))
+      out.push(cleaned.slice(0, MAX_STEP_LEN))
       continue
     }
     for (const piece of splitPacked(cleaned)) {
@@ -260,7 +267,7 @@ export function refineSteps(raw: string[], max = 30): string[] {
       if (!isStepText(stripped)) continue
       for (const chunk of sentenceChunks(stripped)) {
         if (out.length >= max) break
-        const final = chunk.slice(0, 500)
+        const final = chunk.slice(0, MAX_STEP_LEN)
         const key = final.toLowerCase()
         if (seen.has(key)) continue
         seen.add(key)
@@ -269,6 +276,40 @@ export function refineSteps(raw: string[], max = 30): string[] {
     }
   }
   return out
+}
+
+// Repair steps stored under the OLD 200-char save cap (before the cap was raised
+// to MAX_STEP_LEN). Such a step is a truncation — a verbatim PREFIX of its full
+// text, chopped mid-word — while the full text survives untouched in the recipe's
+// `original` snapshot. For each step that looks truncated (long, and not ending on
+// a sentence boundary) and is a prefix of a strictly-longer original step, swap in
+// the original. Pure, order-preserving, and idempotent: a healed step ends on a
+// real boundary (or is no longer a prefix-of-longer), so a second pass is a no-op.
+//
+// Deliberately conservative — a step the cook shortened by hand won't be a prefix
+// of the imported original (they diverge), so it's never clobbered. Originals are
+// consumed left-to-right so two steps sharing a prefix each heal to their own.
+export function healTruncatedSteps(steps: string[], originalSteps: string[] | undefined | null): string[] {
+  if (!originalSteps?.length) return steps
+  const norm = (s: string) => s.trim().toLowerCase()
+  const used = new Set<number>()
+  return steps.map((step) => {
+    const s = step.trim()
+    // A complete step ends on terminal punctuation; a truncation was cut mid-word.
+    // Guard on length too so a genuinely short unfinished line is never touched —
+    // real victims of the 200 cap are ~200 chars.
+    if (s.length < 180 || /[.!?…»"”)]$/.test(s) || isSectionHeading(s)) return step
+    const ns = norm(s)
+    for (let j = 0; j < originalSteps.length; j++) {
+      if (used.has(j)) continue
+      const o = originalSteps[j].trim()
+      if (o.length > s.length && norm(o).startsWith(ns)) {
+        used.add(j)
+        return o
+      }
+    }
+    return step
+  })
 }
 
 // recipeInstructions is the messy one: a plain string (newline-separated), an
@@ -327,11 +368,11 @@ export function normalizeInstructions(value: unknown, max = 30): string[] {
     for (const step of refineSteps([c.text], max)) {
       if (out.length >= max) break
       if (useSections && c.section && c.section !== lastSection) {
-        out.push(makeSectionHeading(c.section).slice(0, 500))
+        out.push(makeSectionHeading(c.section).slice(0, MAX_STEP_LEN))
         lastSection = c.section
         if (out.length >= max) break
       }
-      const final = step.slice(0, 500)
+      const final = step.slice(0, MAX_STEP_LEN)
       if (!out.includes(final)) out.push(final)
     }
   }

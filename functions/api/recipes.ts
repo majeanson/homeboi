@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { deleteR2Blob } from '../_lib/r2'
 import { newId, nowSec } from '../_lib/ids'
 import { isValidR2Key } from '../_lib/validate'
+import { MAX_STEP_LEN, healTruncatedSteps } from '../_lib/recipeImport'
 
 // Recipe book CRUD (the "consultation + meal-planning helper" layer). A recipe is
 // a household card: title + ingredient lines + prep steps (both string[] stored
@@ -93,8 +94,11 @@ const cleanUnit = (v: unknown): string | null => (isStr(v) ? v.trim().slice(0, 2
 const cleanLang = (v: unknown): string | null => (v === 'fr' || v === 'en' ? v : null)
 
 // Trim, drop blanks, cap length + count so a runaway paste can't bloat a row.
-// Ingredients fit in 200 chars; STEPS need more (a real instruction sentence
-// group runs longer) — silently chopping them at 200 was mangling imports.
+// Ingredients fit in 200 chars; STEPS need much more (a real instruction sentence
+// group runs long) — silently chopping them at 200 mangled imports, then 500 was
+// still too tight for a dense run-on step, so steps get MAX_STEP_LEN (1000). The
+// step cap is the SAME constant the importer uses, so a step that survives the
+// import survives the save unchanged.
 function cleanList(v: unknown, max = 40, maxLen = 200): string[] {
   if (!Array.isArray(v)) return []
   return v
@@ -103,7 +107,7 @@ function cleanList(v: unknown, max = 40, maxLen = 200): string[] {
     .map((s) => s.slice(0, maxLen))
     .slice(0, max)
 }
-const cleanSteps = (v: unknown): string[] => cleanList(v, 40, 500)
+const cleanSteps = (v: unknown): string[] => cleanList(v, 40, MAX_STEP_LEN)
 
 // Per-step photos (feature #17 B, migration 0041): a PARALLEL array to steps,
 // stepImages[i] is the R2 key for step i, or '' when that step has no photo. We
@@ -183,7 +187,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .bind(actor.householdId)
     .all<RecipeRow>()
   const recipes = (results ?? []).map((r) => {
-    const steps = parseJsonArray<string>(r.steps_json, isStr)
+    const original = parseOriginal(r.original_json)
+    // Self-heal: a step chopped by the OLD 200-char save cap is restored from the
+    // full text preserved in the `original` snapshot (see healTruncatedSteps). This
+    // fixes every legacy recipe on load — no destructive backfill — and once the
+    // cook re-saves, the full step persists. Step count is unchanged, so the
+    // parallel stepImages array below still lines up.
+    const steps = healTruncatedSteps(parseJsonArray<string>(r.steps_json, isStr), original?.steps)
     return {
       id: r.id,
       title: r.title,
@@ -198,7 +208,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       source: r.source,
       image: r.image,
       tags: parseJsonArray<string>(r.tags_json, isStr),
-      original: parseOriginal(r.original_json),
+      original,
       // Parallel per-step photo keys, '' = none (feature #17 B).
       stepImages: normalizeStepImages(r.steps_images_json, steps.length),
       // Reading language for read-aloud (#TTS): 'fr' | 'en' | null = follow UI.
