@@ -181,7 +181,9 @@ test.describe('settings tabs', () => {
   test('every sub-tab selects and shows its panel', async ({ page }) => {
     await APP('/settings')(page)
     await settle(page, '.operator__tabs')
-    const tabs = page.getByRole('tab')
+    // Scope to the settings tab strip: each tab's panel now carries its own SubTabs
+    // (role=tab) row, so an unscoped getByRole('tab') would also count the sub-tabs.
+    const tabs = page.locator('.operator__tabs').getByRole('tab')
     const n = await tabs.count()
     // 9 task-oriented tabs (down from 21 thin ones): Guide (first/default), La
     // maisonnée, Accès & appareils, Agenda & auto, Corvées & routines, La cuisine,
@@ -244,11 +246,10 @@ test.describe('toggles', () => {
   })
 
   test('calm toggle flips and persists the opt-out', async ({ page }) => {
-    await APP('/settings')(page)
+    // Calm mode lives under « Le babillard » now, as its own sub-section — deep-link
+    // straight to it (?tab=display&sub=calm) so only the calm panel renders.
+    await APP('/settings?tab=display&sub=calm')(page)
     await settle(page, '.operator__tabs')
-    // Calm mode lives under « Le babillard » now (with display/layout/ambient/…), so
-    // scope to the calm section — the panel has several aria-pressed toggles.
-    await page.getByRole('tab', { name: 'Le babillard' }).click()
     const btn = page.locator('.operator__section', { hasText: 'Mode calme' }).locator('button[aria-pressed]')
     await expect(btn).toHaveAttribute('aria-pressed', 'true')
     await btn.click()
@@ -322,9 +323,10 @@ test.describe('settings forms', () => {
   })
 
   test('add a kid routine', async ({ page }) => {
-    // Routines live under « Corvées & routines » now, below the chores section — so
-    // scope the add to the routines section (the first .operator__add is the chore's).
-    await page.getByRole('tab', { name: 'Corvées & routines' }).click()
+    // Routines live under « Corvées & routines » now, as their own sub-section —
+    // deep-link to it (?tab=chores&sub=routines) so the routines panel renders.
+    await APP('/settings?tab=chores&sub=routines')(page)
+    await settle(page, '.operator__tabs')
     await page.locator('.operator__section', { hasText: 'Routines (mode enfant)' }).locator('.operator__add').click()
     await page.waitForURL(/\/routine\/new/)
     const form = page.locator('.scene .operator__routine-form')
@@ -342,15 +344,17 @@ test.describe('settings forms', () => {
   })
 
   test('add a ghost-list staple', async ({ page }) => {
-    // Ghost tracking lives under « Magasinage » now — scope to its section.
-    await page.getByRole('tab', { name: 'Magasinage' }).click()
+    // Ghost tracking is its own sub-section under « Magasinage » — deep-link to it.
+    await APP('/settings?tab=shopping&sub=ghost')(page)
+    await settle(page, '.operator__tabs')
     const form = page.locator('.operator__section', { hasText: 'Liste fantôme' }).locator('form.operator__inline-form')
     await form.locator('input.input').first().fill('Savon à vaisselle')
     await expectApi(page, 'PATCH', 'ghost', () => form.locator('button[type="submit"]').click())
   })
 
   test('a frequent buy is offered for tracking — one deliberate tap tracks it', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Magasinage' }).click()
+    await APP('/settings?tab=shopping&sub=ghost')(page)
+    await settle(page, '.operator__tabs')
     // Tracking is conscious: candidates sit apart from the tracked rows, and
     // nothing enters the set until this tap.
     const chip = page.locator('.ghost-admin__candidate-chips .chip').first()
@@ -359,7 +363,9 @@ test.describe('settings forms', () => {
   })
 
   test('rename a bought-item history entry to a generic name (merge)', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Magasinage' }).click()
+    // The grocery-history list is its own sub-section under « Magasinage ».
+    await APP('/settings?tab=shopping&sub=history')(page)
+    await settle(page, '.operator__tabs')
     // "Yogourt grec" is in the grocery history → rename it to the generic "Yogourt"
     // so quick-add folds it in and suggests the generic item.
     await page.locator('.ghost-admin__row', { hasText: 'Yogourt grec' }).getByRole('button', { name: 'Renommer' }).click()
@@ -374,7 +380,8 @@ test.describe('settings forms', () => {
   })
 
   test('remove a bought-item history entry so quick-add stops suggesting it', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Magasinage' }).click()
+    await APP('/settings?tab=shopping&sub=history')(page)
+    await settle(page, '.operator__tabs')
     const [req] = await Promise.all([
       // « Retirer » holds the DELETE behind the undo toast now (deferred removal),
       // so it fires on commit after the 15 s hold (toast.tsx DEFAULT_UNDO_MS) — the
@@ -393,8 +400,9 @@ test.describe('settings forms', () => {
   })
 
   test('generate the weekly recap', async ({ page }) => {
-    // « Cette semaine » + its AI recap now live under the « IA & système » tab.
-    await page.getByRole('tab', { name: 'IA & système' }).click()
+    // The AI recap is its own sub-section under « IA & système ».
+    await APP('/settings?tab=ai&sub=recap')(page)
+    await settle(page, '.operator__tabs')
     await expectApi(page, 'GET', 'recap', () => page.getByRole('button', { name: 'Générer le bilan' }).click())
     await expect(page.locator('.operator__panel')).toContainText('Belle semaine')
   })

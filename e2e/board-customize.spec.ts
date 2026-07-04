@@ -49,9 +49,10 @@ test.describe('board layout customization', () => {
   // done once in the test (addInitScript persists across page.goto), so this only
   // navigates + opens the tab — re-seeding would stack duplicate route handlers.
   async function openLayout(page: Page) {
-    await page.goto('/settings')
+    // « Disposition du babillard » is its own sub-section under « Le babillard » —
+    // deep-link to it (?tab=display&sub=layout) so the layout panel renders.
+    await page.goto('/settings?tab=display&sub=layout')
     await page.locator('.operator__tabs').waitFor({ state: 'visible', timeout: 15_000 })
-    await page.getByRole('tab', { name: 'Le babillard' }).click()
     // Two lists now (the fixed band + the reorderable grid) — wait for the first.
     await page.locator('.board-layout').first().waitFor({ state: 'visible' })
   }

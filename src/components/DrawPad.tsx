@@ -72,7 +72,16 @@ function cleanTraceWord(raw: string | undefined | null): string {
   const words = folded.replace(/[^A-Za-z0-9 '-]/g, ' ').split(/\s+/).filter(Boolean)
   return words.slice(0, 2).join(' ').slice(0, 18)
 }
-type TemplateKind = 'none' | 'lines' | 'trace' | 'dots' | 'coloring'
+type TemplateKind = 'none' | 'lines' | 'trace' | 'dots' | 'coloring' | 'sticker'
+// Guide "zoom" — how big the traceable is, from a modest word-sized guide up to one
+// that fills the page. A toddler traces a big shape far more easily than a tiny one;
+// default 'l' so the guide lands large out of the box (bump smaller only for long words).
+const GUIDE_SIZES = [
+  { key: 's', scale: 0.7, dot: 9 },
+  { key: 'm', scale: 1, dot: 13 },
+  { key: 'l', scale: 1.6, dot: 20 },
+  { key: 'xl', scale: 2.4, dot: 30 },
+] as const
 // #37 — the coloring-page library a toddler picks a faint outline from, then
 // traces/colours over. The first six draw via shapePath (also the user shape
 // tool); the rest are coloring-only pictures drawn by drawColoring (independent
@@ -119,7 +128,8 @@ type Redo =
 // (flatten): the layers above are merged into one frozen image so a fill can't
 // re-flood and new strokes land cleanly on top. It rides under the (now empty or
 // fresh) vector layers, exactly like an `initial` base image but stored in-scene.
-type Scene = { v: 1; strokes: Stroke[]; stamps: Stamp[]; pixels: [string, string][]; shapes: Shape[]; fills?: Fill[]; base?: string; template: { kind: TemplateKind; ch: string; shape: ColoringShape } }
+type TemplateState = { kind: TemplateKind; ch: string; shape: ColoringShape; scale?: number }
+type Scene = { v: 1; strokes: Stroke[]; stamps: Stamp[]; pixels: [string, string][]; shapes: Shape[]; fills?: Fill[]; base?: string; template: TemplateState }
 const SCENE_MAX = 1_500_000 // chars — skip persisting an unusually heavy scene
 // A full in-memory snapshot of every layer, used to make whole-canvas ops (Aplatir,
 // Effacer) undoable: undo restores `before`, redo restores `after`. The base is the
@@ -161,13 +171,14 @@ function tplDots(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const g = 32
   for (let y = g; y < h; y += g) for (let x = g; x < w; x += g) { ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI * 2); ctx.fill() }
 }
-function tplTrace(ctx: CanvasRenderingContext2D, w: number, h: number, text: string) {
+function tplTrace(ctx: CanvasRenderingContext2D, w: number, h: number, text: string, scale = 1) {
   tplLines(ctx, w, h)
   // SINGLE-LINE (monoline) glyphs from lib/traceFont — one thin dashed centreline
   // per pen-stroke, not the bold double-walled outline of a serif font. Each row
   // sits on a ruled line; a long name/word wraps to the next line. Letters big but
-  // sized so a row fits the width.
-  const band = Math.max(64, h / 8)
+  // sized so a row fits the width. `scale` grows the band (glyph height + spacing) so
+  // a toddler can trace a page-filling letter; capped so a single big row still fits.
+  const band = Math.min(Math.max(64, (h / 8) * scale), h * 0.55)
   const cap = band * 0.62
   const margin = band * 0.3
   const maxW = (w - 2 * margin) / cap // available width in cap-height units
@@ -260,9 +271,24 @@ function drawColoring(ctx: CanvasRenderingContext2D, shape: ColoringShape, cx: n
     poly([[cx, cy - r * 0.65], [cx, cy + r * 0.2], [cx + r * 0.55, cy + r * 0.2]])
   }
 }
-function tplColoring(ctx: CanvasRenderingContext2D, w: number, h: number, shape: ColoringShape) {
+function tplColoring(ctx: CanvasRenderingContext2D, w: number, h: number, shape: ColoringShape, scale = 1) {
   ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(40,40,40,0.30)'; ctx.lineJoin = 'round'; ctx.lineCap = 'round'
-  drawColoring(ctx, shape, w / 2, h / 2, Math.min(w, h) * 0.34); ctx.restore()
+  // `scale` grows the outline radius, clamped so the biggest guide still fits the page.
+  const r = Math.min(w, h) * Math.min(0.34 * scale, 0.46)
+  drawColoring(ctx, shape, w / 2, h / 2, r); ctx.restore()
+}
+// A big, faint emoji to trace over — the sticker equivalent of the letter/shape guides.
+// Filled at low alpha so a child follows its outline, then lifts it out on "Aplatir".
+function tplSticker(ctx: CanvasRenderingContext2D, w: number, h: number, emoji: string, scale = 1) {
+  if (!emoji) return
+  ctx.save()
+  ctx.globalAlpha = 0.22
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  const size = Math.min(w, h) * Math.min(0.5 * scale, 0.85)
+  ctx.font = `${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`
+  ctx.fillText(emoji, w / 2, h / 2)
+  ctx.restore()
 }
 function drawShape(ctx: CanvasRenderingContext2D, s: Shape) {
   ctx.save()
@@ -513,7 +539,7 @@ export function DrawPad({
   const symmetryRef = useRef<boolean>(false)
   const fillRef = useRef<boolean>(false)
   const shapeTypeRef = useRef<ShapeType>('rect')
-  const tplRef = useRef<{ kind: TemplateKind; ch: string; shape: ColoringShape }>({ kind: 'none', ch: 'Aa', shape: 'star' })
+  const tplRef = useRef<TemplateState>({ kind: 'none', ch: 'Aa', shape: 'star', scale: 1 })
   const dragRef = useRef<{ active: boolean; changes: PixelChange[]; last: string | null }>({ active: false, changes: [], last: null })
   const shapeDragRef = useRef<{ active: boolean; x0: number; y0: number } | null>(null)
   // The one pointer that owns the in-progress gesture — a second finger on a
@@ -556,7 +582,11 @@ export function DrawPad({
   const [tpl, setTpl] = useState<TemplateKind>('none')
   const [tplOpen, setTplOpen] = useState(false)
   const [traceCh, setTraceCh] = useState('Aa')
+  const [traceSticker, setTraceSticker] = useState('🐱') // the emoji for the 'sticker' trace guide
   const [shape, setShape] = useState<ColoringShape>('star')
+  // Guide "zoom" — how big the traceable renders (see GUIDE_SIZES). Default large so a
+  // toddler traces a page-filling shape, not a tiny one.
+  const [guideScale, setGuideScale] = useState(1.6)
   const [hasPhoto, setHasPhoto] = useState(false) // a user watermark photo is loaded
   const [photoAlpha, setPhotoAlpha] = useState(0.4)
   const [busy, setBusy] = useState(false)
@@ -599,10 +629,12 @@ export function DrawPad({
   useEffect(() => void (shapeTypeRef.current = shapeType), [shapeType])
   useEffect(() => void (zoomLockRef.current = zoomLock), [zoomLock])
   useEffect(() => {
-    tplRef.current = { kind: tpl, ch: traceCh, shape }
+    // For the 'sticker' guide, `ch` carries the chosen emoji; every other kind uses the
+    // trace char. `scale` is the shared guide zoom.
+    tplRef.current = { kind: tpl, ch: tpl === 'sticker' ? traceSticker : traceCh, shape, scale: guideScale }
     render()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tpl, traceCh, shape])
+  }, [tpl, traceCh, traceSticker, shape, guideScale])
   // #14b — the watermark fade slider repaints the base photo at the new alpha.
   // Only touch the alpha ref when a watermark/calque photo is actually loaded:
   // photoAlpha's state default (0.4) is the slider's resting value, NOT the opacity
@@ -698,7 +730,7 @@ export function DrawPad({
     bctx.fillStyle = PAPER; bctx.fillRect(0, 0, W, H)
     bctx.setTransform(r, 0, 0, r, 0, 0) // content → device, no viewport
     drawBase(bctx, w, h)
-    if (tplRef.current.kind === 'coloring') tplColoring(bctx, w, h, tplRef.current.shape) // intended boundary
+    if (tplRef.current.kind === 'coloring') tplColoring(bctx, w, h, tplRef.current.shape, tplRef.current.scale ?? 1) // intended boundary
     drawContent(bctx)
     let ref: Uint8ClampedArray
     try { ref = bctx.getImageData(0, 0, W, H).data } catch { fillLayerRef.current = null; return } // tainted base
@@ -737,8 +769,9 @@ export function DrawPad({
     if (!skipTemplate) {
       if (tp.kind === 'lines') tplLines(ctx, w, h)
       else if (tp.kind === 'dots') tplDots(ctx, w, h)
-      else if (tp.kind === 'trace') tplTrace(ctx, w, h, tp.ch)
-      else if (tp.kind === 'coloring') tplColoring(ctx, w, h, tp.shape)
+      else if (tp.kind === 'trace') tplTrace(ctx, w, h, tp.ch, tp.scale ?? 1)
+      else if (tp.kind === 'coloring') tplColoring(ctx, w, h, tp.shape, tp.scale ?? 1)
+      else if (tp.kind === 'sticker') tplSticker(ctx, w, h, tp.ch, tp.scale ?? 1)
     }
     drawBase(ctx, w, h)
     ctx.restore()
@@ -1306,7 +1339,15 @@ export function DrawPad({
       pixelsRef.current = new Map(Array.isArray(s.pixels) ? s.pixels : [])
       // normStroke tolerates the old signature_pad PointGroup shape (back-compat).
       strokesRef.current = (Array.isArray(s.strokes) ? s.strokes : []).map(normStroke).filter((x): x is Stroke => !!x)
-      if (s.template?.kind) { setTpl(s.template.kind); setTraceCh(s.template.ch || 'Aa'); setShape(s.template.shape || 'star'); tplRef.current = s.template }
+      if (s.template?.kind) {
+        setTpl(s.template.kind)
+        setShape(s.template.shape || 'star')
+        setGuideScale(s.template.scale ?? 1)
+        // `ch` holds the emoji for a sticker guide, the trace char otherwise.
+        if (s.template.kind === 'sticker') setTraceSticker(s.template.ch || '🐱')
+        else setTraceCh(s.template.ch || 'Aa')
+        tplRef.current = { ...s.template, scale: s.template.scale ?? 1 }
+      }
       // A flattened (baked) base, if any, loads as the opaque bottom layer.
       if (typeof s.base === 'string' && s.base.startsWith('data:')) {
         const bi = new Image()
@@ -1636,6 +1677,7 @@ export function DrawPad({
     { key: 'trace', label: t.memo.tplTrace },
     { key: 'dots', label: t.memo.tplDots },
     { key: 'coloring', label: t.memo.tplColoring },
+    { key: 'sticker', label: t.memo.tplSticker },
   ]
 
   // Portal to <body>: the pad is `position: fixed; inset: 0`, but a launcher like the
@@ -1792,6 +1834,34 @@ export function DrawPad({
             <div className="drawpad__tracepick" role="group" aria-label={t.memo.tplColoring}>
               {COLORING.map((sh) => (
                 <button key={sh} type="button" className={'chip' + (shape === sh ? ' is-on' : '')} onClick={() => setShape(sh)} aria-pressed={shape === sh}>{t.memo.shapes[sh]}</button>
+              ))}
+            </div>
+          )}
+          {/* Trace-a-sticker — pick a big faint emoji to trace over. Big picture pack-tabs
+              + chunky sticker tiles, same wrapping board as the toddler stamp picker. */}
+          {tpl === 'sticker' && (
+            <div className="drawpad__tracepick drawpad__stickerpick" role="group" aria-label={t.memo.tplSticker}>
+              <div className="drawpad__packs drawpad__packs--tray">
+                {PACKS.map((p, i) => (
+                  <button key={p.key} type="button" className={'drawpad__pack' + (pack === i ? ' is-on' : '')} onClick={() => setPack(i)} aria-label={t.memo.packs[p.key as keyof typeof t.memo.packs]} aria-pressed={pack === i}>{p.icon}</button>
+                ))}
+              </div>
+              <div className="drawpad__stickerset drawpad__stickerset--tray">
+                {PACKS[pack].items.map((e) => (
+                  <button key={e} type="button" className={'drawpad__sticker' + (traceSticker === e ? ' is-on' : '')} onClick={() => setTraceSticker(e)} aria-label={e} aria-pressed={traceSticker === e}>{e}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Guide "zoom" — small → page-filling, so a toddler traces a big shape easily.
+              Shared by the letter, colour-in and sticker guides. Growing dots = growing
+              guide (mirrors the brush-size dots). */}
+          {(tpl === 'trace' || tpl === 'coloring' || tpl === 'sticker') && (
+            <div className="drawpad__guidesize" role="group" aria-label={t.memo.guideSize}>
+              {GUIDE_SIZES.map((gs) => (
+                <button key={gs.key} type="button" className={'drawpad__size' + (guideScale === gs.scale ? ' is-on' : '')} onClick={() => setGuideScale(gs.scale)} aria-label={t.memo.guideSize} aria-pressed={guideScale === gs.scale}>
+                  <span className="drawpad__dot" style={{ width: gs.dot, height: gs.dot }} />
+                </button>
               ))}
             </div>
           )}

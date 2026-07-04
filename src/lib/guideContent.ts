@@ -1635,8 +1635,7 @@ export const GUIDE: GuideEntry[] = [
       },
     ],
     // The "À compléter" templates now live under Réglages ▸ Corvées & routines; this
-    // tab id powers the "go there" link from the main Guide (the consolidated
-    // set-chores card is what SectionGuide shows inline on that tab).
+    // tab id powers the "go there" link from the main Guide into that tab.
     tab: 'chores',
   },
   {
@@ -1730,8 +1729,7 @@ export const GUIDE: GuideEntry[] = [
       },
     ],
     // Powers a "go there" link from the main Guide to Réglages ▸ Corvées & routines
-    // (where the Projets / Entretien sub-tabs live). The consolidated set-chores card
-    // is what SectionGuide shows inline on that tab.
+    // (where the Projets / Entretien sub-tabs live).
     tab: 'chores',
   },
   {

@@ -14,13 +14,16 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  // Réglages ▸ Cuisine (tab 'recipes') stacks tags / pills / measures / meal-slots /
-  // réserve. Deep-link straight to it.
-  await page.goto('/settings?tab=recipes')
 })
 
+// Réglages ▸ Cuisine (tab 'recipes') shows one sub-section at a time behind a SubTabs
+// row (tags / pills / measures / meal-slots / réserve). Deep-link straight to the sub
+// (?tab=recipes&sub=<key>) so only that section renders in the panel, and scope
+// assertions to the tabpanel (#operator-panel).
+
 test('hiding a meal slot patches household with the hidden slot', async ({ page }) => {
-  const section = page.locator('#sec-meals')
+  await page.goto('/settings?tab=recipes&sub=meals')
+  const section = page.locator('#operator-panel')
   await expect(section).toBeVisible()
   // Every slot starts « Affiché » (no mealHidden in the fixture). Toggling the first
   // one off saves the whole household setting — a whole-array PATCH via useWrite.
@@ -36,7 +39,8 @@ test('hiding a meal slot patches household with the hidden slot', async ({ page 
 })
 
 test('adding a réserve location patches household with the new list', async ({ page }) => {
-  const section = page.locator('#sec-reserve')
+  await page.goto('/settings?tab=recipes&sub=reserve')
+  const section = page.locator('#operator-panel')
   await expect(section).toBeVisible()
   await section.getByLabel('Ajouter un emplacement…').fill('Congélateur du sous-sol')
   const [req] = await Promise.all([

@@ -161,13 +161,23 @@
    becomes a sticky vertical sidebar beside the panel (min-width override below). */
 .operator__tabs {
   display: flex;
-  flex-wrap: wrap;
+  /* Phone: keep the 9 tabs on ONE line that scrolls sideways rather than wrapping to
+     2–3 rows that shove the panel down (the "even the tab is huge" complaint). Same
+     graceful-overflow idiom as .subtabs / .rail; a no-op when they all fit. The wide
+     query below flips this to a vertical sidebar. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox — keep the pill row clean */
+  -webkit-overflow-scrolling: touch;
   gap: 0.3rem;
-  margin: 1rem 0 1.5rem;
-  padding: 0.55rem 0.6rem;
+  margin: 0.75rem 0 1.1rem;
+  padding: 0.4rem 0.5rem;
   background: var(--paper-deep);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
+}
+.operator__tabs::-webkit-scrollbar {
+  display: none; /* WebKit/Blink — no scrollbar rail under the row */
 }
 .operator__tab {
   border: 0;
@@ -179,6 +189,9 @@
   cursor: pointer;
   font: inherit;
   text-align: left;
+  /* Never shrink/wrap a label — that's what makes the row scroll, not squish. */
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 .operator__tab.is-active {
   background: var(--accent);

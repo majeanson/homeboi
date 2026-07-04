@@ -561,3 +561,42 @@
   box-shadow: 0 0 0 3px var(--accent);
 }
 
+/* Trace-a-sticker picker (in the template bar): a WRAPPING board — packs row + sticker
+   row — not the horizontal scroller .drawpad__tracepick otherwise is, so a pre-reader
+   sees every choice. Chunky tiles; vertical scroll if it ever runs tall. */
+.drawpad__stickerpick.drawpad__tracepick {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  overflow-x: visible;
+  max-height: 38vh;
+  overflow-y: auto;
+}
+.drawpad__stickerpick .drawpad__pack {
+  width: 2.7rem;
+  height: 2.7rem;
+  font-size: 1.6rem;
+}
+.drawpad__stickerpick .drawpad__sticker {
+  width: 3.1rem;
+  height: 3.1rem;
+  font-size: 1.9rem;
+  border: 2px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--card);
+}
+.drawpad__stickerpick .drawpad__sticker.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+/* Guide-size row (letter / colour-in / sticker zoom) — its own full-width line of
+   growing dots, mirroring the brush-size picker's visual language. */
+.drawpad__guidesize {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1 1 100%;
+  padding-top: 0.15rem;
+}
+

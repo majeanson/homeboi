@@ -62,7 +62,8 @@ test('the operator reviews a pending intake and accepts it into the cercle', asy
     return route.fallback()
   })
 
-  await page.goto('/settings?tab=devices')
+  // IntakeReview lives in the guest sub-section (« Invités ») of « Accès & appareils ».
+  await page.goto('/settings?tab=devices&sub=guest')
   // IntakeReview surfaces the quarantined submission by the sender's name.
   await expect(page.getByText(/Mamie/).first()).toBeVisible()
   await page.getByRole('button', { name: 'Réviser' }).click()

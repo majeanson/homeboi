@@ -15,9 +15,8 @@ import { EmptyState } from '../EmptyState'
 // One documentation card (native <details>, so it stays accessible and calm):
 // an icon, a title, the one-line "what", then every point as its own nested
 // collapsible. Presentational — the Guide tab (below) drives search/deep-link
-// state, and SectionGuide reuses this very card inline in each Réglages tab so
-// each section now carries its own how-it-works (showGoTo off — you're already
-// on the tab it would point to).
+// state. (`showGoTo` can be turned off to render a card without its "go there"
+// link when it already sits on the surface it would point to.)
 export function GuideCard({
   entry,
   open,
@@ -238,6 +237,16 @@ const resolveGuideCard = (card: string | null, point: number | null): { id: stri
   return { id: card, point }
 }
 
+// Open a collapsed <details> jump target (a group/theme block) before scrolling to
+// it, so a feature-map tile / ?theme deep-link reveals the block instead of landing
+// on a closed summary. A no-op target id is ignored.
+function openAndScrollTo(id: string) {
+  const el = document.getElementById(id)
+  if (!el) return
+  if (el instanceof HTMLDetailsElement) el.open = true
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 // Réglages ▸ Guide — the whole how-it-works manual in one place. Each concept is
 // a collapsible card (native <details>, so it stays accessible and calm), and
 // inside it every point is *itself* a collapsible: a clickable title that opens
@@ -291,14 +300,25 @@ export function GuideSection() {
     setParams(next, { replace: true })
   }, [params, setParams])
   useEffect(() => {
-    if (openId && targetRef.current) targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (openId && targetRef.current) {
+      // The manual now lands as a table of contents — its groups/themes are
+      // collapsed <details>. A deep-linked card lives inside one, so open every
+      // <details> ancestor (the theme + its group) before scrolling, or the target
+      // would be display:none and the scroll would land on empty space.
+      let node: HTMLElement | null = targetRef.current
+      while (node) {
+        if (node instanceof HTMLDetailsElement) node.open = true
+        node = node.parentElement
+      }
+      targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   }, [openId])
   // A feature-map tile elsewhere (the Board WelcomeCard) deep-links to a whole
   // THEME via ?theme=<key>; scroll to that block and consume the param.
   useEffect(() => {
     const theme = params.get('theme')
     if (!theme) return
-    document.getElementById(`guide-th-${theme}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    openAndScrollTo(`guide-th-${theme}`)
     const next = new URLSearchParams(params)
     next.delete('theme')
     setParams(next, { replace: true })
@@ -353,10 +373,9 @@ export function GuideSection() {
       onResetOnboarding={resetOnboarding}
     />
   )
-  // Scroll a feature-map tile's target block into view (anchored by id below).
-  const jumpTo = (key: string) => {
-    document.getElementById(`guide-th-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  // Scroll a feature-map tile's target block into view (anchored by id below). The
+  // groups/themes are collapsed <details> at rest, so open the target before scrolling.
+  const jumpTo = (key: string) => openAndScrollTo(`guide-th-${key}`)
 
   return (
     <OperatorSection title={t.operator.guideTitle} className="guide">
@@ -376,9 +395,6 @@ export function GuideSection() {
         <>
           <h3 className="guide__group-title">{t.operator.guideMap}</h3>
           <FeatureMap onSelect={jumpTo} label={t.operator.guideMap} />
-          {/* Manage the first-run demo data (onboarding Phase 1): clear the examples
-              or load them onto an empty household. Mirrors the board banner. */}
-          <SampleDataControls />
         </>
       )}
 
@@ -416,14 +432,13 @@ export function GuideSection() {
       )}
 
       {/* The real groups — six sections, the cross-cutting concepts, then the
-          per-tab "settings" cards. Titles only (no blurb): each card's own
-          one-line "what" carries the explanation, so the landing stays
-          card-focused, not prose-heavy. The settings cards ALSO live inline in
-          their own Réglages tab (see SectionGuide) — but they're listed here too
-          so the Guide is the whole manual in one place AND so a contextual "?"
-          deep-link into a settings card (?card=set-display&point=…) actually
-          resolves, opens and highlights here, instead of falling through to the
-          top of the Guide. Each settings card keeps its "go there" link. */}
+          per-tab "settings" cards. Each group is a collapsed <details> (a table of
+          contents), so the landing is a scannable list of headers, not a wall of
+          cards. The per-tab "settings" cards are the manual for each Réglages tab; a
+          contextual "?" deep-link into one (?card=set-display&point=…) resolves,
+          opens its group + the card, and highlights here (see the openId effect,
+          which opens every <details> ancestor). Each settings card keeps its "go
+          there" link into the live tab. */}
       {!ranked && GUIDE_GROUPS.filter((g) => g.id !== 'start').map((group) => {
         const entries = GUIDE.filter((e) => e.group === group.id)
         if (entries.length === 0) return null
@@ -446,7 +461,10 @@ export function GuideSection() {
             <div key={group.id} className="guide__group">
               <h3 className="guide__group-title">{group.label[lang]}</h3>
               {themed.map(({ th, cards }) => (
-                <div
+                // Collapsed by default — a theme is a table-of-contents row you open,
+                // not a wall of cards poured out at once (a feature-map tile / deep-link
+                // opens it via openAndScrollTo). <details>, so it stays accessible + calm.
+                <details
                   key={th.key}
                   id={`guide-th-${th.key}`}
                   className="guide__theme"
@@ -460,12 +478,15 @@ export function GuideSection() {
                     } as CSSProperties
                   }
                 >
-                  <h4 className="guide__theme-title">
+                  <summary className="guide__theme-title">
+                    <span className="guide__group-caret" aria-hidden="true">
+                      <Icon name="caret-down-bold" size={16} />
+                    </span>
                     <Icon name={th.icon} size={18} color={SECTION_TINT[th.section].ink} />
                     {th.label[lang]}
-                  </h4>
+                  </summary>
                   <div className="guide__cards">{cards.map(renderCard)}</div>
-                </div>
+                </details>
               ))}
               {rest.length > 0 && <div className="guide__cards">{rest.map(renderCard)}</div>}
             </div>
@@ -477,13 +498,25 @@ export function GuideSection() {
         // jump targets (guide-th-sections / guide-th-settings).
         const ordered =
           group.id === 'settings' ? [...entries].sort((a, b) => settingsRank(a.id) - settingsRank(b.id)) : entries
+        // Collapsed by default so the Guide lands as a table of contents, not the whole
+        // manual poured out. A feature-map tile / deep-link opens it (openAndScrollTo).
         return (
-          <div key={group.id} id={`guide-th-${group.id}`} className="guide__group">
-            <h3 className="guide__group-title">{group.label[lang]}</h3>
+          <details key={group.id} id={`guide-th-${group.id}`} className="guide__group">
+            <summary className="guide__group-title">
+              <span className="guide__group-caret" aria-hidden="true">
+                <Icon name="caret-down-bold" size={16} />
+              </span>
+              {group.label[lang]}
+            </summary>
             <div className="guide__cards">{ordered.map(renderCard)}</div>
-          </div>
+          </details>
         )
       })}
+
+      {/* Manage the first-run demo data (onboarding Phase 1): clear the examples or
+          load them onto an empty household. Mirrors the board banner. Kept at the
+          very bottom — operator maintenance, not part of the manual you read. */}
+      {!q && <SampleDataControls />}
     </OperatorSection>
   )
 }

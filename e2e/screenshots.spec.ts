@@ -134,7 +134,8 @@ test('board layout panel toggle hides a card', async ({ page }) => {
   await page.setViewportSize({ width: 430, height: 1400 })
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto('/settings?tab=display')
+  // « Disposition du babillard » is the layout sub-section of « Le babillard ».
+  await page.goto('/settings?tab=display&sub=layout')
   await page.locator('.board-layout').first().waitFor({ timeout: 15000 })
   // Hide « À faire » (the unified to-do card) via its show/hide toggle.
   const row = page.locator('.board-layout__row', { hasText: 'À faire' }).first()

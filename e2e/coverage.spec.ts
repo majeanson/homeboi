@@ -186,8 +186,8 @@ test('settings-recur-weekly', async ({ page }) => {
 // which navigates to the /routine/new scene (Réglages no longer carries a blank
 // add form).
 test('settings-deck-palette', async ({ page }) => {
-  await boot(page, '/settings')
-  await page.getByRole('tab', { name: 'Corvées & routines' }).click() // routines
+  // Routines are their own sub-section under « Corvées & routines » — deep-link to it.
+  await boot(page, '/settings?tab=chores&sub=routines')
   await page.getByRole('button', { name: 'Créer une routine' }).click() // → /routine/new scene
   await page.locator('.deck__add').waitFor({ state: 'visible' })
   await page.locator('.deck__add').click() // add a blank card

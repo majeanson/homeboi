@@ -319,6 +319,8 @@ export const FR = {
     tplTrace: 'Lettre',
     tplDots: 'Quadrillé',
     tplColoring: 'Colorier',
+    tplSticker: 'Collant à tracer',
+    guideSize: 'Grosseur du modèle',
     traceWords: 'Mots à tracer',
     packs: {
       faces: 'Frimousses',
@@ -2837,6 +2839,8 @@ export const EN: typeof FR = {
     tplTrace: 'Tracing',
     tplDots: 'Dots',
     tplColoring: 'Colour-in',
+    tplSticker: 'Sticker to trace',
+    guideSize: 'Guide size',
     traceWords: 'Words to trace',
     packs: {
       faces: 'Faces',

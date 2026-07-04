@@ -42,7 +42,9 @@ test('the Réglages header tag toggles AI on/off and the change persists', async
   await withAiState(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
 
-  await page.goto('/settings?tab=ai')
+  // ?sub=ai selects the AI on/off sub-section within the « IA & système » tab (the
+  // tab now shows one sub-section at a time behind a SubTabs row).
+  await page.goto('/settings?tab=ai&sub=ai')
   // The IA settings section renders.
   await expect(page.getByRole('heading', { name: 'Intelligence artificielle' })).toBeVisible({ timeout: 15_000 })
 
@@ -77,7 +79,9 @@ test('disabling AI hides the search "Ask the AI" affordance', async ({ page }) =
   await expect(page.locator('.search__ask')).toBeVisible({ timeout: 15_000 })
 
   // Disable AI from settings.
-  await page.goto('/settings?tab=ai')
+  // ?sub=ai selects the AI on/off sub-section within the « IA & système » tab (the
+  // tab now shows one sub-section at a time behind a SubTabs row).
+  await page.goto('/settings?tab=ai&sub=ai')
   const tag = page.locator('.operator__meta button.tag--btn')
   await expect(tag).toContainText('active')
   await Promise.all([

@@ -102,6 +102,35 @@
   color: var(--ink-soft, var(--ink));
   margin: 0 0 0.5rem;
 }
+/* The manual lands as a table of contents: each group + concept-theme is a collapsed
+   <details>, its heading the clickable summary. Drop the native marker and give the
+   summary a calm rotating caret (matching the guide cards), so the whole thing reads
+   as an openable list, not a wall of cards. */
+details.guide__group > summary.guide__group-title,
+details.guide__theme > summary.guide__theme-title {
+  cursor: pointer;
+  list-style: none;
+}
+details.guide__group > summary.guide__group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+details.guide__group > summary::-webkit-details-marker,
+details.guide__theme > summary::-webkit-details-marker {
+  display: none;
+}
+.guide__group-caret {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-soft);
+  transition: transform 0.18s ease;
+}
+details[open] > summary > .guide__group-caret {
+  transform: rotate(180deg);
+  color: var(--accent, var(--ink));
+}
 .guide__cards {
   display: flex;
   flex-direction: column;

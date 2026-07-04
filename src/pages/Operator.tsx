@@ -193,52 +193,87 @@ export function Operator() {
     return labels[k] ?? k
   }, tab)
 
-  // Within-tab jump chips for the fat tabs (3+ stacked sections). Labels reuse each
-  // section's own title key so a chip matches the heading it lands on. ai's last chip
-  // (the AI error log) is conditional on AI being on, mirroring its render below.
-  const jumpNav: Record<string, { id: string; label: string }[]> = {
+  // Each Réglages tab holds its sub-sections in a SubTabs pill row ("one job at a
+  // time") instead of stacking every panel in one long scroll — so a tab shows ONE
+  // section at a time (the .subtabs family La cuisine + Le cercle already use). The
+  // `key` is the ?sub= deep-link id (also the TAB_ALIAS sub targets); the `label`
+  // reuses each section's own title key so the pill matches the heading it opens.
+  // ai's error log is conditional on AI being on. The Guide tab is a single body, so
+  // it isn't listed here (rendered directly below).
+  const subSections: Record<string, { key: string; label: string; node: ReactNode }[]> = {
+    household: [
+      { key: 'members', label: t.operator.members, node: <MembersSection members={members} onChange={load} /> },
+      { key: 'cercle', label: t.operator.cercleGroupsTitle, node: <CercleGroupsSection help={operatorHelp} /> },
+    ],
+    devices: [
+      {
+        key: 'tablets',
+        label: t.operator.devices,
+        node: (
+          <>
+            <ClaimTablet onClaimed={load} />
+            <DevicesSection devices={devices} onChange={load} />
+          </>
+        ),
+      },
+      { key: 'guest', label: t.guest.title, node: <GuestSection help={operatorHelp} /> },
+    ],
     agenda: [
-      { id: 'sec-events', label: t.operator.events },
-      { id: 'sec-cars', label: t.operator.carsTitle },
-      { id: 'sec-schedule', label: t.operator.schedTitle },
+      { key: 'events', label: t.operator.events, node: <EventsSection events={events} members={members} onChange={load} /> },
+      { key: 'cars', label: t.operator.carsTitle, node: <CarsSection help={operatorHelp} /> },
+      { key: 'schedule', label: t.operator.schedTitle, node: <ScheduleSection help={operatorHelp} /> },
     ],
     chores: [
-      { id: 'sec-chores', label: t.operator.chores },
-      { id: 'sec-routines', label: t.operator.routines },
-      { id: 'sec-todos', label: t.todos.templatesTitle },
+      { key: 'chores', label: t.operator.chores, node: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} /> },
+      { key: 'routines', label: t.operator.routines, node: <RoutinesSection routines={routines} onChange={load} /> },
+      { key: 'todos', label: t.todos.templatesTitle, node: <TodoTemplatesSection help={operatorHelp} /> },
     ],
     recipes: [
-      { id: 'sec-tags', label: t.operator.tagsTitle },
-      { id: 'sec-pills', label: t.operator.pillsTitle },
-      { id: 'sec-measure', label: t.operator.measureColorsTitle },
-      { id: 'sec-meals', label: t.operator.mealColors },
-      { id: 'sec-reserve', label: t.operator.reserveTitle },
+      { key: 'tags', label: t.operator.tagsTitle, node: <RecipeTagsSection help={operatorHelp} /> },
+      { key: 'pills', label: t.operator.pillsTitle, node: <RecipePillsSection help={operatorHelp} /> },
+      { key: 'measure', label: t.operator.measureColorsTitle, node: <MeasureColorsSection help={operatorHelp} /> },
+      { key: 'meals', label: t.operator.mealColors, node: <MealSlotsSection help={operatorHelp} /> },
+      { key: 'reserve', label: t.operator.reserveTitle, node: <ReserveLocationsSection help={operatorHelp} /> },
     ],
     shopping: [
-      { id: 'sec-shop', label: t.operator.shopping },
-      { id: 'sec-aisles', label: t.operator.aisleOrder },
-      { id: 'sec-stores', label: t.operator.storeFilter },
-      { id: 'sec-history', label: t.operator.history },
-      { id: 'sec-ghost', label: t.operator.ghost },
+      { key: 'shop', label: t.operator.shopping, node: <ShopSection help={operatorHelp} /> },
+      { key: 'aisles', label: t.operator.aisleOrder, node: <AisleOrderSection /> },
+      { key: 'stores', label: t.operator.storeFilter, node: <StoreFilterSection help={operatorHelp} /> },
+      { key: 'history', label: t.operator.history, node: <HistorySection help={operatorHelp} /> },
+      { key: 'ghost', label: t.operator.ghost, node: <GhostSection help={operatorHelp} /> },
     ],
     display: [
-      { id: 'sec-display', label: t.operator.display },
-      { id: 'sec-layout', label: t.operator.boardLayout },
-      { id: 'sec-ambient', label: t.operator.ambientTitle },
-      { id: 'sec-photos', label: t.operator.photos },
-      { id: 'sec-voice', label: t.operator.voiceTitle },
-      { id: 'sec-calm', label: t.operator.calmTitle },
+      { key: 'display', label: t.operator.display, node: <DisplaySection help={operatorHelp} /> },
+      { key: 'layout', label: t.operator.boardLayout, node: <BoardLayoutSection help={operatorHelp} /> },
+      { key: 'ambient', label: t.operator.ambientTitle, node: <AmbientSettingsSection help={operatorHelp} /> },
+      { key: 'photos', label: t.operator.photos, node: <PhotosSection help={operatorHelp} /> },
+      { key: 'voice', label: t.operator.voiceTitle, node: <VoiceSection help={operatorHelp} /> },
+      { key: 'calm', label: t.operator.calmTitle, node: <CalmSection help={operatorHelp} /> },
     ],
     ai: [
-      { id: 'sec-thisweek', label: t.operator.thisWeekTitle },
-      { id: 'sec-recap', label: t.operator.recapTitle },
-      { id: 'sec-ai', label: t.operator.aiTitle },
-      { id: 'sec-build', label: t.operator.buildTitle },
-      { id: 'sec-idle', label: t.operator.debugIdleTitle },
-      { id: 'sec-mic', label: t.operator.micTestTitle },
-      ...(aiEnabled ? [{ id: 'sec-ailog', label: t.operator.aiLogTitle }] : []),
+      { key: 'thisweek', label: t.operator.thisWeekTitle, node: <ThisWeekTogetherSection help={operatorHelp} /> },
+      { key: 'recap', label: t.operator.recapTitle, node: <RecapSection help={operatorHelp} /> },
+      { key: 'ai', label: t.operator.aiTitle, node: <AiSection help={operatorHelp} /> },
+      { key: 'build', label: t.operator.buildTitle, node: <BuildInfoSection /> },
+      { key: 'idle', label: t.operator.debugIdleTitle, node: <IdleDebugSection help={operatorHelp} /> },
+      { key: 'mic', label: t.operator.micTestTitle, node: <MicSelfTest help={operatorHelp} /> },
+      // The AI error log is an AI feature — only offered when AI is switched on.
+      ...(aiEnabled ? [{ key: 'ailog', label: t.operator.aiLogTitle, node: <AiErrorLogSection help={operatorHelp} /> }] : []),
     ],
   }
+
+  // The current tab's sub-sections + which one is open, held in the URL (?sub=<key>)
+  // so a sub-tab survives a refresh / return-from-scene and composes with ?tab=. The
+  // sub fallback comes from a retired-tab alias when the URL used one and named no
+  // explicit ?sub (so /settings?tab=routines opens Corvées ▸ Routines), else the tab's
+  // first sub. useTabParam folds an out-of-set ?sub (e.g. left over from another tab)
+  // to that fallback, so switching tabs always lands on a valid sub.
+  const subs = subSections[tab] ?? null
+  const subKeys = subs ? subs.map((s) => s.key) : []
+  const aliasSub = TAB_ALIAS[rawTab]?.sub
+  const subFallback = aliasSub && subKeys.includes(aliasSub) ? aliasSub : subKeys[0] ?? ''
+  const [sub, setSub] = useTabParam('sub', subFallback, subKeys)
+  const activeSub = subs?.find((s) => s.key === sub) ?? subs?.[0]
 
   if (loading || !canEnter) return <p className="loading mono">{t.common.loading}</p>
 
@@ -345,163 +380,22 @@ export function Operator() {
         </nav>
 
         <div className="operator__panel" role="tabpanel" id="operator-panel" aria-labelledby={`op-tab-${tab}`} tabIndex={0}>
-        {/* Each tab carries its own how-it-works inline (the per-tab cards that
-            used to live only under Guide). The Guide tab documents itself. */}
-        {tab !== 'guide' && <SectionGuide tab={tab} />}
-
-        {/* Quiet within-tab jump chips for the fat tabs (3+ stacked sections). */}
-        {jumpNav[tab] && <OperatorJump items={jumpNav[tab]} ariaLabel={t.operator.jumpAria} />}
-
-        {/* « La maisonnée » — your people: members + the cercle (family/friends)
-            groups. Operator-only (the whole tab is dropped for a kiosk). */}
-        {tab === 'household' && (
-          <>
-            <MembersSection members={members} onChange={load} />
-            <CercleGroupsSection help={operatorHelp} />
-          </>
-        )}
-
-        {/* « Accès & appareils » — tablets + guest links. Whole tab is operator-only
-            (dropped from `sections` for a kiosk). */}
-        {tab === 'devices' && (
-          <>
-            <ClaimTablet onClaimed={load} />
-            <DevicesSection devices={devices} onChange={load} />
-            <GuestSection help={operatorHelp} />
-          </>
-        )}
-
-        {/* « Agenda & auto » — the calendar and the family car/work windows. */}
-        {tab === 'agenda' && (
-          <>
-            <div id="sec-events" className="operator__anchor">
-              <EventsSection events={events} members={members} onChange={load} />
-            </div>
-            <div id="sec-cars" className="operator__anchor">
-              <CarsSection help={operatorHelp} />
-            </div>
-            <div id="sec-schedule" className="operator__anchor">
-              <ScheduleSection help={operatorHelp} />
-            </div>
-          </>
-        )}
-
-        {/* « Corvées & routines » — the recurring tasks + checklists. */}
-        {tab === 'chores' && (
-          <>
-            <div id="sec-chores" className="operator__anchor">
-              <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} />
-            </div>
-            <div id="sec-routines" className="operator__anchor">
-              <RoutinesSection routines={routines} onChange={load} />
-            </div>
-            <div id="sec-todos" className="operator__anchor">
-              <TodoTemplatesSection help={operatorHelp} />
-            </div>
-          </>
-        )}
-
-        {/* « La cuisine » — recipes, the measure pills (a recipe feature, moved here
-            from Affichage), meal slots, and la réserve. */}
-        {tab === 'recipes' && (
-          <>
-            <div id="sec-tags" className="operator__anchor">
-              <RecipeTagsSection help={operatorHelp} />
-            </div>
-            <div id="sec-pills" className="operator__anchor">
-              <RecipePillsSection help={operatorHelp} />
-            </div>
-            <div id="sec-measure" className="operator__anchor">
-              <MeasureColorsSection help={operatorHelp} />
-            </div>
-            <div id="sec-meals" className="operator__anchor">
-              <MealSlotsSection help={operatorHelp} />
-            </div>
-            <div id="sec-reserve" className="operator__anchor">
-              <ReserveLocationsSection help={operatorHelp} />
-            </div>
-          </>
-        )}
-
-        {/* « Magasinage » — the list config, aisles, stores, history + ghost. */}
-        {tab === 'shopping' && (
-          <>
-            <div id="sec-shop" className="operator__anchor">
-              <ShopSection help={operatorHelp} />
-            </div>
-            <div id="sec-aisles" className="operator__anchor">
-              <AisleOrderSection />
-            </div>
-            <div id="sec-stores" className="operator__anchor">
-              <StoreFilterSection help={operatorHelp} />
-            </div>
-            <div id="sec-history" className="operator__anchor">
-              <HistorySection help={operatorHelp} />
-            </div>
-            <div id="sec-ghost" className="operator__anchor">
-              <GhostSection help={operatorHelp} />
-            </div>
-          </>
-        )}
-
-        {/* « Le babillard » — how this screen looks & behaves: display, board card
-            layout, screensaver, the photo wall (moved here), voice, and calm mode. */}
-        {tab === 'display' && (
-          <>
-            <div id="sec-display" className="operator__anchor">
-              <DisplaySection help={operatorHelp} />
-            </div>
-            <div id="sec-layout" className="operator__anchor">
-              <BoardLayoutSection help={operatorHelp} />
-            </div>
-            <div id="sec-ambient" className="operator__anchor">
-              <AmbientSettingsSection help={operatorHelp} />
-            </div>
-            <div id="sec-photos" className="operator__anchor">
-              <PhotosSection help={operatorHelp} />
-            </div>
-            <div id="sec-voice" className="operator__anchor">
-              <VoiceSection help={operatorHelp} />
-            </div>
-            <div id="sec-calm" className="operator__anchor">
-              <CalmSection help={operatorHelp} />
-            </div>
-          </>
-        )}
-
-        {/* « IA & système » — the weekly together-recap (AI-written) leads, then the
-            AI on/off + settings, then the diagnostics. */}
-        {tab === 'ai' && (
-          <>
-            <div id="sec-thisweek" className="operator__anchor">
-              <ThisWeekTogetherSection help={operatorHelp} />
-            </div>
-            <div id="sec-recap" className="operator__anchor">
-              <RecapSection help={operatorHelp} />
-            </div>
-            <div id="sec-ai" className="operator__anchor">
-              <AiSection help={operatorHelp} />
-            </div>
-            <div id="sec-build" className="operator__anchor">
-              <BuildInfoSection />
-            </div>
-            <div id="sec-idle" className="operator__anchor">
-              <IdleDebugSection help={operatorHelp} />
-            </div>
-            <div id="sec-mic" className="operator__anchor">
-              <MicSelfTest help={operatorHelp} />
-            </div>
-            {/* The AI error log is an AI feature — hide it when AI is switched off
-                (the mic test + idle debug above aren't AI, so they stay). */}
-            {aiEnabled && (
-              <div id="sec-ailog" className="operator__anchor">
-                <AiErrorLogSection help={operatorHelp} />
-              </div>
-            )}
-          </>
-        )}
-
-        {tab === 'guide' && <GuideSection />}
+          {/* The Guide is one long body of its own; every other tab shows its
+              sub-sections one at a time behind a SubTabs pill row, so a tab is never
+              a 5–7 section scroll. The active sub-section's node renders below. */}
+          {tab === 'guide' ? (
+            <GuideSection />
+          ) : subs ? (
+            <>
+              <SubTabs
+                options={subs.map((s) => ({ key: s.key, label: s.label }))}
+                value={activeSub?.key ?? subs[0].key}
+                onSelect={setSub}
+                ariaLabel={t.operator.jumpAria}
+              />
+              {activeSub?.node}
+            </>
+          ) : null}
         </div>
       </div>
     </main>

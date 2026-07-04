@@ -322,9 +322,6 @@
   gap: 8px;
   margin-bottom: 1.25rem;
 }
-.operator__anchor {
-  scroll-margin-top: 16px;
-}
 .operator__display {
   display: flex;
   flex-direction: column;
