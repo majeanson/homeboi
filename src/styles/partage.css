@@ -4,16 +4,25 @@
    (the @import order in styles.css IS the cascade — never reorder). */
 
 .partage {
+  /* A PUBLIC page shown to anyone — pin the stable light "day" palette so it looks
+     the same for every visitor AND can't wash out: without this, the background sat
+     on a hardcoded cream while the text inherited the app's --ink, which the viewer's
+     dusk/night daypart drifts light → light-on-cream. Re-anchoring the tokens here
+     keeps background + ink + chrome in one legible family regardless of theme/daypart. */
+  --paper: #fbf3e4;
+  --card: #fffcf5;
+  --ink: #2c2722;
+  --ink-soft: #6b6258;
+  --line: #eadfce;
   min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg, #faf7f2);
+  background: var(--paper);
+  color: var(--ink);
 }
 .partage__top {
   display: flex;
   align-items: center;
   padding: var(--space-3, 12px) var(--space-4, 16px);
-  border-bottom: 1px solid var(--line, #eadfce);
+  border-bottom: 1px solid var(--line);
 }
 .partage__brand {
   display: inline-flex;
@@ -24,16 +33,17 @@
   text-decoration: none;
 }
 .partage__body {
-  width: 100%;
+  /* Block-centred (margin-inline:auto) — NOT a flex item, whose default min-width:auto
+     would let wide content defeat max-width and shove the column off-centre. */
   max-width: 640px;
-  margin: 0 auto;
+  margin-inline: auto;
   padding: var(--space-4, 16px);
   display: flex;
   flex-direction: column;
   gap: var(--space-4, 16px);
 }
 .partage__from {
-  color: var(--muted, #6b7280);
+  color: var(--ink-soft);
   margin: 0;
 }
 .partage__teaser {
@@ -58,7 +68,7 @@
 }
 .partage__lead {
   margin: 0;
-  color: var(--muted, #6b7280);
+  color: var(--ink-soft);
 }
 
 /* Read-only recipe render. */
@@ -80,7 +90,7 @@
 }
 .shared-recipe__meta {
   margin: 0;
-  color: var(--muted, #6b7280);
+  color: var(--ink-soft);
 }
 .shared-recipe__tags {
   display: flex;
@@ -125,7 +135,7 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: var(--accent-wash, #e6f2f0);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--accent, #2a8f85);
   font-weight: 700;
 }
@@ -162,7 +172,7 @@
 }
 .shared-routine__tod {
   margin: 0;
-  color: var(--muted, #6b7280);
+  color: var(--ink-soft);
 }
 .shared-routine__cards {
   display: grid;
@@ -182,7 +192,7 @@
   display: grid;
   place-items: center;
   border-radius: var(--radius, 14px);
-  background: var(--card, #fff);
+  background: var(--card);
   border: 1px solid var(--line, #eadfce);
   overflow: hidden;
 }
