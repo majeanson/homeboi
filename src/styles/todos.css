@@ -22,14 +22,16 @@
 .todo-group + .todo-group {
   margin-top: 0.5rem;
 }
-/* A named section ("a list with sections") is now a collapsed-by-default
-   <Disclosure>; its title + open count ride the disclosure summary, and the rows
-   sit in the disclosure body. Indent that body a touch so the list reads as nested
-   under its heading. */
-.disclosure.todo-group > .disclosure__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+/* Group header — a small, calm label separating a run of todos: a named section
+   ("a list with sections"), or the board glance's "En tout temps" / "Aujourd'hui"
+   scope split (which replaced a per-row pill). On the read surface every group is
+   always visible (no collapse) — the expand/collapse lives in the Réglages editor. */
+.todo-grouphead {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
   padding-left: 0.15rem;
 }
 
@@ -70,22 +72,6 @@
 .todo-row.done .title {
   text-decoration: line-through;
   color: var(--ink-faint);
-}
-/* Scope marker (board glance only, when the list mixes standing + today-pinned
-   todos): a small pill distinguishing "En tout temps" from "Aujourd'hui" so a
-   today-only row reads as its own item, not a twin of a global one. */
-.todo-row__scope {
-  flex: none;
-  font-size: 0.66rem;
-  padding: 0.1rem 0.45rem;
-  align-self: center;
-}
-.todo-row__scope--today {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-.todo-row.done .todo-row__scope {
-  opacity: 0.6;
 }
 .todo-row__by {
   flex: none;

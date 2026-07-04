@@ -27,7 +27,6 @@ import { Icon, type IconName } from '../Icon'
 import { EditField } from '../EditField'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { RowActions } from '../RowActions'
-import { Disclosure } from '../Disclosure'
 
 interface FaceMember {
   id: string
@@ -98,10 +97,10 @@ export function TodoSection({
   const faceOf = (id: string | null) => (id ? members.find((m) => m.id === id) : undefined)
   // The board glance (scope null) is the ONE place that mixes standing globals
   // (day null) with today-pinned todos (day = today) — and they render identically,
-  // which reads as "the same todo in two places". When BOTH kinds are present, tag
-  // each row with its scope ("En tout temps" / "Aujourd'hui") so it's clear a
-  // today-pinned one (e.g. created from a day's meal plan) is its own ephemeral row,
-  // not a twin of a global. Homogeneous lists + day pages stay unmarked (no noise).
+  // which reads as "the same todo in two places". When BOTH kinds are present, split
+  // them into two headed groups ("En tout temps" / "Aujourd'hui") so a today-pinned
+  // one (e.g. created from a day's meal plan) reads as its own ephemeral row, not a
+  // twin of a global. Homogeneous lists + day pages stay headerless (no noise).
   const showScope = scope === null && all.some((td) => td.day == null) && all.some((td) => td.day != null)
 
   // — add (board glance → global; day page → that day) —
@@ -256,11 +255,6 @@ export function TodoSection({
             {todo.title}
           </span>
         </button>
-        {showScope && (
-          <span className={'tag todo-row__scope' + (todo.day != null ? ' todo-row__scope--today' : '')}>
-            {todo.day != null ? t.todos.scopeToday : t.todos.scopeGlobal}
-          </span>
-        )}
         {faceOf(todo.member_id) && (
           <span
             className="todo-row__by"
@@ -296,25 +290,48 @@ export function TodoSection({
         <EmptyState tone="calm">{t.todos.empty}</EmptyState>
       ) : (
         <div className="todo-rows">
-          {groups.map((g, gi) =>
-            // A named section (from a composed checklist) collapses to its title +
-            // open count so a 5–10 item list doesn't fill the glance — tap to expand.
-            // Loose items (manual / global adds) have no header, so they stay inline.
-            g.section ? (
-              <Disclosure
-                key={gi}
-                className="todo-group"
-                label={g.section}
-                count={g.todos.filter((todo) => !isChecked(todo)).length}
-              >
-                {g.todos.map(renderRow)}
-              </Disclosure>
-            ) : (
-              <div key={gi} className="todo-group">
-                {g.todos.map(renderRow)}
-              </div>
-            ),
-          )}
+          {groups.flatMap((g, gi) => {
+            // A named section (from a composed checklist) rides an always-visible
+            // header + all its rows — NOT a collapse. On the board glance we want
+            // every todo listed at once; the expand/collapse belongs to the Réglages
+            // template editor (configuring), not the read surface.
+            if (g.section) {
+              return [
+                <div key={gi} className="todo-group">
+                  <div className="todo-grouphead">{g.section}</div>
+                  {g.todos.map(renderRow)}
+                </div>,
+              ]
+            }
+            // A loose run. The board glance is the ONE place that mixes standing
+            // globals with today-pinned todos; when both are present, split them into
+            // two headed groups ("En tout temps" / "Aujourd'hui") rather than tagging
+            // each row — a per-row pill ate a phone row's width. Homogeneous lists +
+            // day pages stay headerless.
+            if (!showScope) {
+              return [
+                <div key={gi} className="todo-group">
+                  {g.todos.map(renderRow)}
+                </div>,
+              ]
+            }
+            const globals = g.todos.filter((td) => td.day == null)
+            const todays = g.todos.filter((td) => td.day != null)
+            return [
+              globals.length > 0 && (
+                <div key={`${gi}-g`} className="todo-group">
+                  <div className="todo-grouphead">{t.todos.scopeGlobal}</div>
+                  {globals.map(renderRow)}
+                </div>
+              ),
+              todays.length > 0 && (
+                <div key={`${gi}-t`} className="todo-group">
+                  <div className="todo-grouphead">{t.todos.scopeToday}</div>
+                  {todays.map(renderRow)}
+                </div>
+              ),
+            ].filter(Boolean)
+          })}
         </div>
       )}
 
