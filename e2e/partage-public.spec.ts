@@ -30,6 +30,29 @@ const RECIPE_SHARE = {
   },
 }
 
+const EVENT_SHARE = {
+  kind: 'event',
+  label: 'BBQ chez nous',
+  sourceName: 'Maison Tremblay',
+  expiresAt: null,
+  payload: { title: 'BBQ chez nous', startAt: 1_749_400_000, allDay: false, whoLabel: 'Les Tremblay' },
+}
+
+const ROUTINE_SHARE = {
+  kind: 'routine',
+  label: 'Dodo',
+  sourceName: 'Maison Tremblay',
+  expiresAt: null,
+  payload: {
+    name: 'Routine du dodo',
+    timeOfDay: 'evening',
+    cards: [
+      { icon: '🦷', label: 'Brosse les dents', photoKey: '' },
+      { icon: '📖', label: 'Une histoire', photoKey: '' },
+    ],
+  },
+}
+
 const json = (body: unknown) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
 const notFound = { status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Ce partage n’existe plus.' }) }
 
@@ -86,4 +109,60 @@ test('signed-in: « Ajouter à mon livre » copies the recipe (POST /api/recipes
     page.getByRole('button', { name: 'Ajouter à mon livre' }).click(),
   ])
   expect(req.postDataJSON()).toMatchObject({ title: 'Spaghetti maison', tags: ['rapide'] })
+})
+
+test('signed-out: a shared event renders its card + the join CTA', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page, { signedIn: false })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.route('**/api/share-public**', (route: Route) => route.fulfill(json(EVENT_SHARE)))
+
+  await page.goto('/partage/ev1')
+  await expect(page.locator('.partage__title')).toHaveText('BBQ chez nous')
+  await expect(page.getByText('Les Tremblay')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Découvrir Babillard' })).toBeVisible()
+})
+
+test('signed-in: a shared event « Ajouter à mon agenda » POSTs /api/events → /board', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.routeWebSocket(/\/api\/live/, () => {})
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.route('**/api/share-public**', (route: Route) => route.fulfill(json(EVENT_SHARE)))
+  await page.route('**/api/events', (route: Route) =>
+    route.fulfill(route.request().method() === 'POST' ? json({ id: 'ev9', title: 'BBQ chez nous' }) : json({ events: [] })),
+  )
+
+  await page.goto('/partage/ev1')
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/events', { timeout: 20_000 }),
+    page.waitForURL(/\/board/),
+    page.getByRole('button', { name: 'Ajouter à mon agenda' }).click(),
+  ])
+  expect(req.postDataJSON()).toMatchObject({ title: 'BBQ chez nous' })
+})
+
+test('signed-in: a shared routine renders its deck, then imports for a picked child (POST /api/routines)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.routeWebSocket(/\/api\/live/, () => {})
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.route('**/api/share-public**', (route: Route) => route.fulfill(json(ROUTINE_SHARE)))
+  await page.route('**/api/routines', (route: Route) =>
+    route.fulfill(route.request().method() === 'POST' ? json({ ids: ['r9'] }) : json({ routines: [] })),
+  )
+
+  await page.goto('/partage/rt1')
+  // The deck renders (name + a card label).
+  await expect(page.locator('.shared-routine__title')).toHaveText('Routine du dodo')
+  await expect(page.getByText('Brosse les dents')).toBeVisible()
+
+  // Pick a child, then import → POST /api/routines with that member.
+  await page.locator('.partage__foot select').selectOption('m3')
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/routines', { timeout: 20_000 }),
+    page.waitForURL(/\/routines/),
+    page.getByRole('button', { name: 'Ajouter à mes routines' }).click(),
+  ])
+  expect(req.postDataJSON()).toMatchObject({ name: 'Routine du dodo', memberIds: ['m3'] })
 })

@@ -1,8 +1,11 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
 import { EmptyState } from '../components/EmptyState'
 import { useAudience } from '../lib/audience'
+import { useAuth } from '../lib/auth'
+import { EntityShareModal } from '../components/EntityShareModal'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildRoutine } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
@@ -55,6 +58,9 @@ function RoutinesParent() {
   // Tap a routine to peek it (child, steps) with "Ouvrir la routine" to edit —
   // the same shared entity-detail sheet the board uses.
   const detail = useEntityDetail()
+  // « Partager » a routine as a public /partage link (operator-only — a server write).
+  const { signedIn } = useAuth()
+  const [sharingRoutine, setSharingRoutine] = useState<{ id: string; name: string } | null>(null)
   // Contextual "?" help mode (shared hook): arm it in the header, then tap a
   // routine to learn what tapping does + the moment badge, in place. The overview
   // is one flat grid, so its single help target is the card itself.
@@ -127,7 +133,15 @@ function RoutinesParent() {
             // so a card with a parent-set picture shows the picture, not the emoji —
             // the same rule this grid follows just above (feature #17 C).
             const stepPictos = r.cards.map((c, i) => ({ emoji: c.icon, photoKey: r.cardsPhoto?.[i] }))
-            const openR = () => detail.open(buildRoutine(r, { t, lang, members: [] }, { todLabel, steps: stepPictos }))
+            const openR = () =>
+              detail.open(
+                buildRoutine(r, { t, lang, members: [] }, {
+                  todLabel,
+                  steps: stepPictos,
+                  // « Partager » — operator only (minting is a server write).
+                  onShare: signedIn ? () => setSharingRoutine({ id: r.id, name: r.name }) : undefined,
+                }),
+              )
             // In help mode, a tap EXPLAINS the card (one shared 'card' target) via
             // the bubble at the top, instead of opening the peek.
             const onCard = help.pick('card', openR)
@@ -242,6 +256,14 @@ function RoutinesParent() {
           picker (new routine + this list of existing ones, each tappable to edit),
           so the old "Modifier dans les réglages" link would just be a second door
           to the same place — removed. */}
+      {sharingRoutine && (
+        <EntityShareModal
+          open
+          onClose={() => setSharingRoutine(null)}
+          title={`${t.shareLink.action} · ${sharingRoutine.name}`}
+          body={{ kind: 'routine', routineId: sharingRoutine.id }}
+        />
+      )}
     </main>
   )
 }

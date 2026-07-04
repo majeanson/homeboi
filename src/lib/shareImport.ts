@@ -1,7 +1,7 @@
 import { api } from './api'
 import { imgUrl } from './image'
 import { uploadMedia } from './uploadMedia'
-import type { RecipeSharePayload } from './share'
+import type { RecipeSharePayload, EventSharePayload, RoutineSharePayload } from './share'
 
 // Copy a shared snapshot into the SIGNED-IN visitor's own account (the « Ajouter à mon
 // livre » path on the public /partage page). Media in a share points at share-owned R2
@@ -53,4 +53,22 @@ export async function importRecipeShare(p: RecipeSharePayload): Promise<string> 
     },
   })
   return id
+}
+
+// Add a shared event to my agenda. No media to copy; a one-shot create.
+export async function importEventShare(p: EventSharePayload): Promise<void> {
+  await api('events', { method: 'POST', body: { title: p.title, startAt: p.startAt, allDay: p.allDay } })
+}
+
+// Add a shared routine to my routines, assigned to the picked members. Re-hosts each
+// card photo under my account (best-effort); narration was never shared.
+export async function importRoutineShare(p: RoutineSharePayload, memberIds: string[]): Promise<void> {
+  const cardsPhoto = await Promise.all(
+    p.cards.map((c) => (c.photoKey ? copySharedImage('routine-card-photo', c.photoKey) : Promise.resolve(''))),
+  )
+  const cards = p.cards.map((c) => (c.seconds ? { icon: c.icon, label: c.label, seconds: c.seconds } : { icon: c.icon, label: c.label }))
+  await api('routines', {
+    method: 'POST',
+    body: { memberIds, name: p.name, cards, cardsPhoto, timeOfDay: p.timeOfDay ?? undefined },
+  })
 }

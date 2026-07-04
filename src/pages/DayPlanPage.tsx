@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { isGuest } from '../lib/device'
+import { useAuth } from '../lib/auth'
+import { EntityShareModal } from '../components/EntityShareModal'
 import { useLang, useT } from '../i18n'
 import { live } from '../lib/query'
 import { useProfile } from '../lib/profile'
@@ -410,6 +412,9 @@ function DayPlanInner() {
   // section's row-taps open edit forms and the ＋ buttons add — hide all of that, so
   // the events/chores read as plain Act cards.
   const ro = isGuest()
+  // « Partager » a single event as a public /partage link (operator-only — a server write).
+  const { signedIn } = useAuth()
+  const [sharingEvent, setSharingEvent] = useState<{ id: string; title: string } | null>(null)
   const suppers = mealsFor(date, 'supper')
   const title = capitalize(formatDayLong(date, lang))
 
@@ -580,18 +585,16 @@ function DayPlanInner() {
                   soon={e.birthday || e.work ? undefined : eventSoon(e.id, e.at)}
                   onActivate={e.work ? () => nav('/voiture') : ro || e.birthday ? undefined : () => openEventEdit(e.id)}
                 />
-                {!e.work && !!navigator.share && (
+                {/* « Partager » one event → a public /partage link (real page, not a text
+                    paste). Operator-only + real events only (not a derived birthday or a
+                    work/car row). */}
+                {!e.work && !e.birthday && signedIn && (
                   <button
                     type="button"
                     className="btn btn--ghost mono day-plan__act-share"
-                    onClick={() => {
-                      const when = e.all_day
-                        ? capitalize(formatDayLong(date, lang))
-                        : `${capitalize(formatDayLong(date, lang))} · ${formatTime(e.at, lang)}`
-                      void navigator.share({ title: e.title, text: `${e.title}\n${when}` })
-                    }}
-                    aria-label={t.guest.share}
-                    title={t.guest.share}
+                    onClick={() => setSharingEvent({ id: e.id, title: e.title })}
+                    aria-label={t.shareLink.action}
+                    title={t.shareLink.action}
                   >
                     <Icon name="arrow-up-right-bold" size={16} />
                   </button>
@@ -630,6 +633,14 @@ function DayPlanInner() {
             </>
           )}
         </section>
+        {sharingEvent && (
+          <EntityShareModal
+            open
+            onClose={() => setSharingEvent(null)}
+            title={`${t.shareLink.action} · ${sharingEvent.title}`}
+            body={{ kind: 'event', eventId: sharingEvent.id }}
+          />
+        )}
       </div>
     </div>
   )

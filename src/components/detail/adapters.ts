@@ -55,7 +55,7 @@ const isHeading = (line: string) => line.trim().startsWith('##')
 const preview = (lines: string[] | undefined, n: number) => (lines ?? []).filter((l) => !isHeading(l) && l.trim()).slice(0, n)
 
 // — Agenda event —
-export function buildEvent(e: EventRow, ctx: DetailCtx): DetailModel {
+export function buildEvent(e: EventRow, ctx: DetailCtx, opts?: { onShare?: () => void }): DetailModel {
   const { t, lang, members } = ctx
   const day = localDayStart(new Date(e.start_at * 1000))
   // A DERIVED birthday (not a stored event): a cake peek that routes to the person
@@ -95,7 +95,12 @@ export function buildEvent(e: EventRow, ctx: DetailCtx): DetailModel {
     accent: bizColour ?? colorOf(members, e.member_id) ?? CATS.event.color,
     when: e.all_day ? t.board.allDay : `${formatDay(e.start_at, lang)} · ${formatTime(e.start_at, lang)}`,
     who,
-    actions: [{ key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${day}` }],
+    actions: [
+      { key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${day}` },
+      // « Partager » — a public link with just the title + when + who-label (no member
+      // ids leak). Opt-gated on operator at the call site (minting is a server write).
+      ...(opts?.onShare ? [{ key: 'share', label: t.shareLink.action, icon: 'arrow-up-right-bold' as const, run: opts.onShare }] : []),
+    ],
   }
 }
 
@@ -575,7 +580,7 @@ interface RoutineLike {
 export function buildRoutine(
   r: RoutineLike,
   ctx: DetailCtx,
-  opts?: { todLabel?: string | null; steps?: { emoji?: string; photoKey?: string }[] },
+  opts?: { todLabel?: string | null; steps?: { emoji?: string; photoKey?: string }[]; onShare?: () => void },
 ): DetailModel {
   const { t } = ctx
   // Keep a step only when it has something to show (a photo or an emoji), then
@@ -597,11 +602,15 @@ export function buildRoutine(
     // "Faire la routine" (the run player, now available on every surface) is the
     // primary action when there are steps to run; editing drops to secondary. An
     // empty shell (no steps) shows only "Modifier" — nothing to run into.
-    actions: items.length
-      ? [
-          { key: 'run', label: t.detail.runRoutine, icon: 'play-bold', primary: true, href: `/routine/${r.id}/run` },
-          { key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold', href: `/routine/${r.id}` },
-        ]
-      : [{ key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold', primary: true, href: `/routine/${r.id}` }],
+    actions: [
+      ...(items.length
+        ? [
+            { key: 'run', label: t.detail.runRoutine, icon: 'play-bold' as const, primary: true, href: `/routine/${r.id}/run` },
+            { key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold' as const, href: `/routine/${r.id}` },
+          ]
+        : [{ key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold' as const, primary: true, href: `/routine/${r.id}` }]),
+      // « Partager » — a public link with the deck (icons/labels/photos), no narration.
+      ...(opts?.onShare ? [{ key: 'share', label: t.shareLink.action, icon: 'arrow-up-right-bold' as const, run: opts.onShare }] : []),
+    ],
   }
 }
