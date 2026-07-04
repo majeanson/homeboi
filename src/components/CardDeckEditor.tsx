@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { type DeckCard } from '../lib/routineTemplates'
 import { EmojiPicker } from './EmojiPicker'
+import { Modal } from './Modal'
 import { useT } from '../i18n'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { useOnline } from '../lib/online'
@@ -193,22 +194,29 @@ export function CardDeckEditor({
                 />
               )}
             </div>
-          {paletteFor === i && (
-            <EmojiPicker
-              value={card.icon}
-              onPick={(e) => {
-                update(i, { icon: e })
-                setPaletteFor(null)
-              }}
-              ariaLabel={t.operator.emojiPick}
-            />
-          )}
         </div>
       ))}
       <button type="button" className="btn btn--ghost mono deck__add" onClick={add}>
         <InlineIcon name="plus-bold" /> {t.operator.addCard}
       </button>
       <DragGhost ghost={dnd.ghost} />
+      {/* Tapping a card's glyph opens the shared searchable picker on a roomy Modal
+          (the same treatment as CarnetForm's EmojiField) rather than an inline strip
+          cramped under the card row. `paletteFor` is the card index (0 is valid, so
+          guard on !== null). */}
+      <Modal open={paletteFor !== null} onClose={() => setPaletteFor(null)} title={t.operator.emojiPick}>
+        {paletteFor !== null && (
+          <EmojiPicker
+            value={cards[paletteFor]?.icon}
+            onPick={(e) => {
+              update(paletteFor, { icon: e })
+              setPaletteFor(null)
+            }}
+            ariaLabel={t.operator.emojiPick}
+            className="emoji-picker--tall"
+          />
+        )}
+      </Modal>
     </div>
   )
 }
