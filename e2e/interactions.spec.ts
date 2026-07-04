@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Request } from '@playwright/test'
-import { mockApi, seedState, type Audience, type Lang } from './mocks'
+import { mockApi, seedState, ensureMealsOpen, type Audience, type Lang } from './mocks'
 
 // Interaction coverage: navigation, tabs, toggles, forms, and clicks across
 // every surface. Complements screenshots.spec.ts (which only shoots static
@@ -246,9 +246,9 @@ test.describe('toggles', () => {
   })
 
   test('calm toggle flips and persists the opt-out', async ({ page }) => {
-    // Calm mode lives under « Le babillard » now, as its own sub-section — deep-link
-    // straight to it (?tab=display&sub=calm) so only the calm panel renders.
-    await APP('/settings?tab=display&sub=calm')(page)
+    // Calm mode lives under « IA & système » now, as its own sub-section — deep-link
+    // straight to it (?tab=ai&sub=calm) so only the calm panel renders.
+    await APP('/settings?tab=ai&sub=calm')(page)
     await settle(page, '.operator__tabs')
     const btn = page.locator('.operator__section', { hasText: 'Mode calme' }).locator('button[aria-pressed]')
     await expect(btn).toHaveAttribute('aria-pressed', 'true')
@@ -400,8 +400,8 @@ test.describe('settings forms', () => {
   })
 
   test('generate the weekly recap', async ({ page }) => {
-    // The AI recap is its own sub-section under « IA & système ».
-    await APP('/settings?tab=ai&sub=recap')(page)
+    // The AI recap now sits with the week glance under one « La semaine » pill.
+    await APP('/settings?tab=ai&sub=thisweek')(page)
     await settle(page, '.operator__tabs')
     await expectApi(page, 'GET', 'recap', () => page.getByRole('button', { name: 'Générer le bilan' }).click())
     await expect(page.locator('.operator__panel')).toContainText('Belle semaine')
@@ -596,6 +596,8 @@ test.describe('kitchen', () => {
     // default so "Mettre" just saves the meal (one less step).
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.scene')
+    // The meal planner lives in « Les repas » at the bottom now — ensure it's open.
+    await ensureMealsOpen(sheet)
     await sheet.locator('[data-dnd-zone="supper"] .kitchen__slot-add').click()
     // The supper title editor is an EntityCombobox (reuses .edit-field styling but
     // is NOT a form — Enter commits the free text → beginSetMeal).
@@ -616,6 +618,8 @@ test.describe('kitchen', () => {
   test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.scene')
+    // The meal planner lives in « Les repas » at the bottom now — ensure it's open.
+    await ensureMealsOpen(sheet)
     // The day editor exposes the chronological side slots: déjeuner / dîner /
     // collation, each with its own "＋ Ajouter" (the per-slot editing the grid
     // delegates here). (NOTE: the seeded "Crêpes" meal can't be asserted — the

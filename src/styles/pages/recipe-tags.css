@@ -8,21 +8,25 @@
   font-size: 0.82rem;
   color: var(--ink-soft);
 }
-.tag-admin__pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+.tag-admin__list {
   margin-bottom: 0.6rem;
 }
-.tag-admin__list {
-  margin-bottom: 0;
+/* One tag = one row: [⠿ grip] [chip name] [count / "Proposée"] [🖌] [✏️ 🗑️], with
+   the colour picker wrapping to its own full-width line below when open. The li
+   inherits flex + wrap + centre + gap from .operator__list li. */
+.tag-admin__grip {
+  flex: 0 0 auto;
+}
+.tag-admin__row-wrap.is-dragging {
+  opacity: 0.45;
 }
 .tag-admin__row {
+  /* Take the slack beside the grip; keep the row's own controls on one line (the
+     count's margin-right:auto pins ✏️/🗑️ right — nowrap avoids a lonely 2nd line). */
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
-  /* Stay one row: the count's margin-right:auto already pins ✏️/🗑️ to the right,
-     so wrapping only ever dropped the pair to a lonely second line for longer tag
-     names. nowrap keeps every used-tag row identical. */
   flex-wrap: nowrap;
   gap: 0.5rem;
 }
@@ -50,56 +54,7 @@
   min-width: 8rem;
 }
 
-/* Preset pill = tag name (tap to recolour) + an × to drop it, tinted by the tag's
-   colour. The chip styling lives on the wrapper; the two buttons are bare so the
-   tint shows through. */
-.tag-admin__pill {
-  padding: 0;
-  gap: 0;
-  overflow: hidden;
-}
-.tag-admin__pill.is-editing {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-/* Drag handle to reorder the pills — the order drives the recipe book's tag chips
-   and the #11 collection sections. Dimmed while its own pill is being dragged. */
-.tag-admin__pill-grip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 38px;
-  padding: 0 0.05rem 0 0.5rem;
-}
-.tag-admin__pill.is-dragging {
-  opacity: 0.45;
-}
-.tag-admin__pill-name,
-.tag-admin__pill-x {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  min-height: 38px;
-  display: inline-flex;
-  align-items: center;
-}
-.tag-admin__pill-name {
-  padding: 0 0.4rem;
-}
-.tag-admin__pill-x {
-  padding: 0 0.6rem 0 0.4rem;
-  opacity: 0.7;
-}
-.tag-admin__pill-x:active {
-  opacity: 1;
-}
-/* Used-tag row gains a paint button before ✏️/🗑️; the colour picker drops below. */
-.tag-admin__row-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+/* The row gains a paint button before ✏️/🗑️; the colour picker drops below. */
 .tag-admin__color-btn {
   border: 1px solid var(--line);
   background: transparent;
@@ -118,6 +73,8 @@
   color: var(--accent);
 }
 .tag-admin__coloredit {
+  /* Drop to its own full-width line below the row (it's a flex child of the li). */
+  flex: 1 1 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

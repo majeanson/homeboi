@@ -259,6 +259,17 @@
 .day-plan__wx .tomorrow-wx {
   margin-bottom: 0;
 }
+/* Day page: the day's free-text note pulled up as a HEADLINE under the date, so the
+   day itself leads (it used to sit under the meals). A little breathing room below it
+   before the agenda begins. */
+.day-plan__note {
+  margin-bottom: 10px;
+}
+/* Day page: the meal planner, demoted below the agenda in a collapsed disclosure. A
+   touch of top margin sets it apart from the sections above. */
+.day-plan__meals {
+  margin-top: 14px;
+}
 /* Day page: the events/chores agenda sections below the meal planner. */
 .day-plan__sections {
   margin-top: 18px;

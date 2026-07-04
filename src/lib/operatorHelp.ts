@@ -104,24 +104,8 @@ export const OPERATOR_HELP = {
     card: 'set-recipes',
     point: 1,
     body: {
-      fr: `Les étiquettes de tes recettes : renomme-les partout d'un coup ou retire-les de toutes les recettes en même temps.`,
-      en: `Your recipe tags: rename them everywhere at once, or remove them from every recipe at once.`,
-    },
-  },
-  tagPills: {
-    card: 'set-recipes',
-    point: 0,
-    body: {
-      fr: `Les pastilles proposées dans le formulaire de recette. Glisse ⠿ pour les réordonner — cet ordre décide aussi de l'ordre des collections.`,
-      en: `The pills offered in the recipe form. Drag ⠿ to reorder — that order also sets your collections.`,
-    },
-  },
-  tagUsed: {
-    card: 'set-recipes',
-    point: 1,
-    body: {
-      fr: `Les étiquettes déjà données à au moins une recette. Renomme-les partout d'un coup ou retire-les.`,
-      en: `Tags already assigned to at least one recipe. Rename them everywhere at once or remove them.`,
+      fr: `Toutes tes étiquettes de recettes dans une seule liste. Glisse ⠿ pour les réordonner — cet ordre décide aussi de l'ordre des collections. « Proposée » = offerte dans le formulaire mais pas encore sur une recette. Renomme ou retire une étiquette partout d'un coup, et donne-lui une couleur.`,
+      en: `All your recipe tags in one list. Drag ⠿ to reorder — that order also sets your collections. "Suggested" = offered in the form but not on any recipe yet. Rename or remove a tag everywhere at once, and give it a colour.`,
     },
   },
   shop: {
@@ -202,14 +186,6 @@ export const OPERATOR_HELP = {
     body: {
       fr: `Le journal de maintenance : ce qui a brisé et quand. Efface-le une fois lu — pas un compteur, juste un carnet d'entretien.`,
       en: `The maintenance log: what broke and when. Clear it once read — not a counter, just a maintenance log.`,
-    },
-  },
-  idleDebug: {
-    card: 'set-ailog',
-    point: 0,
-    body: {
-      fr: `Raccourcit le délai d'inactivité du kiosque pour tester l'économiseur d'écran et le retour à « Maisonnée » sans attendre 3 minutes.`,
-      en: `Shortens the kiosk idle delay to test the screensaver and return to "Household" without waiting 3 minutes.`,
     },
   },
   guest: {

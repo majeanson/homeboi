@@ -319,7 +319,10 @@
 
 /* ── Disclosure (collapsed-by-default expand/toggle) ────────────────────────
    A calm summary row that hides a space-hungry group (suggestion chips, asides)
-   until tapped, so nothing populates the surface unasked. */
+   until tapped, so nothing populates the surface unasked. The summary reads as a
+   DEFINED, tappable pill (soft surface + hairline border + a caret in its own disc)
+   so it never disappears into the page — the old borderless faint-text version was
+   easy to miss / not obviously interactive. Still calm: content-width, no loud fill. */
 .disclosure {
   margin-top: 0.5rem;
   /* Own its own row: in a flex-wrap form (the cercle forms) a content-width block
@@ -329,22 +332,48 @@
 .disclosure__summary {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.1rem;
-  border: 0;
-  background: none;
-  color: var(--ink-faint);
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem 0.4rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--ink-soft);
   font: inherit;
   font-size: var(--text-sm);
+  font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 .disclosure__summary:hover,
 .disclosure__summary:focus-visible {
   color: var(--ink);
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  box-shadow: var(--shadow-sm);
 }
+/* Open: the summary is now the header of a revealed group — hold the emphasized
+   look so it clearly pairs with the body below it. */
+.disclosure--open .disclosure__summary {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+/* The caret sits in its own soft disc — a recognizable "there's more here" cue that
+   flips when open. */
 .disclosure__caret {
-  display: inline-flex;
-  transition: transform 0.15s ease;
+  display: inline-grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink-soft);
+  transition: transform 0.18s ease, background 0.15s ease, color 0.15s ease;
+}
+.disclosure__summary:hover .disclosure__caret,
+.disclosure__summary:focus-visible .disclosure__caret,
+.disclosure--open .disclosure__caret {
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+  color: var(--ink);
 }
 .disclosure--open .disclosure__caret {
   transform: rotate(180deg);
@@ -352,17 +381,17 @@
 .disclosure__count {
   display: inline-grid;
   place-items: center;
-  min-width: 1.2rem;
-  height: 1.2rem;
-  padding: 0 0.3rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.32rem;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+  color: var(--ink);
   font-size: 0.72rem;
   font-weight: 700;
 }
 .disclosure__body {
-  margin-top: 0.4rem;
+  margin-top: 0.5rem;
 }
 
 /* --- Focus-visible ring (a11y) — same treatment as core.css's tappables ---- */

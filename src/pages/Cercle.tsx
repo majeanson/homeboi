@@ -416,8 +416,14 @@ function CercleParent() {
 
   const openPerson = (p: Person) => {
     const relations = relationsOf(p.key, links, byKey, lang)
-    // Seed a brand-new family with THIS person, so a family can grow out of anyone.
-    const buildFamilyHref = `/cercle/family/new?seed=${encodeURIComponent(p.key)}`
+    // If this person is already in a BUILT (named) famille group, "build their family"
+    // resumes THAT group — opening it with the whole family in place — instead of
+    // spawning a duplicate. Otherwise seed a brand-new family from this one person, so a
+    // family can still grow out of anyone.
+    const existingFamily = allNamedGroups.find((g) => g.kind === 'family' && g.memberKeys.has(p.key))
+    const buildFamilyHref = existingFamily
+      ? `/cercle/family/${existingFamily.id}`
+      : `/cercle/family/new?seed=${encodeURIComponent(p.key)}`
     // Tappable group chips: every named group + whether this person is in it. Toggle
     // adds/removes membership inline (POST/DELETE the pivot), scoped to this person.
     const groupToggle = namedGroups.length

@@ -16,13 +16,16 @@ import { addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { PairPrompt } from '../components/Fallback'
-import { Icon } from '../components/Icon'
+import { Icon, InlineIcon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
+import { Fil } from '../components/board/Fil'
+import { Disclosure } from '../components/Disclosure'
+import { EditField } from '../components/EditField'
 import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage'
 import { DetailProvider, useEntityDetail } from '../components/detail/DetailProvider'
 import { buildMeal } from '../components/detail/adapters'
-import { isMealSlot } from '../lib/mealSlots'
+import { isMealSlot, SIDE_SLOTS } from '../lib/mealSlots'
 import { TodoSection } from '../components/todos/TodoSection'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
@@ -415,7 +418,42 @@ function DayPlanInner() {
   const { signedIn } = useAuth()
   const [sharingEvent, setSharingEvent] = useState<{ id: string; title: string } | null>(null)
   const suppers = mealsFor(date, 'supper')
+  const dayNote = noteFor(date)
   const title = capitalize(formatDayLong(date, lang))
+  const dayMealCount = SIDE_SLOTS.reduce((n, s) => n + mealsFor(date, s).length, suppers.length)
+
+  // « Le fil du jour » — the day read as a SHAPE (a soft time axis + a « maintenant »
+  // marker), reusing the board's ribbon. Same threshold as the board: only when the
+  // day has ≥2 timed things is a timeline worth drawing. Timed = an event with a clock
+  // (work windows included via `until`); all-day/birthday rows aren't on the ribbon.
+  const filTimed = dayEvents.filter((e) => !e.all_day && !e.birthday)
+  const filShown = filTimed.length >= 2
+  // One event row, shared by the ribbon (its `node`) and the Rendez-vous bucket, so
+  // both render identically. The « Partager » affordance stays a bucket-only control.
+  const eventActNode = (e: DayItemsData['events'][number]) => (
+    <Act
+      cat={e.work ? 'work' : e.birthday ? 'birthday' : 'event'}
+      title={e.work ? e.title || t.auto.work : e.title}
+      when={
+        e.work
+          ? t.auto.range(formatTime(e.at, lang), e.end != null ? formatTime(e.end, lang) : '')
+          : e.birthday
+            ? e.age != null
+              ? t.cercle.turnsN(e.age)
+              : t.board.birthday
+            : e.all_day
+              ? t.board.allDay
+              : formatTime(e.at, lang)
+      }
+      who={e.work ? memberName(e.member_id) || undefined : e.business_name ?? e.contact_name ?? memberName(e.member_id) ?? undefined}
+      color={e.work ? e.color ?? undefined : e.business_colour ?? undefined}
+      soon={e.birthday || e.work ? undefined : eventSoon(e.id, e.at)}
+      onActivate={e.work ? () => nav('/voiture') : ro || e.birthday ? undefined : () => openEventEdit(e.id)}
+    />
+  )
+  // When the ribbon is on it OWNS the timed events (board's "steal" idiom) — the
+  // Rendez-vous bucket then lists only the all-day/birthday rows + the add button.
+  const bucketEvents = filShown ? dayEvents.filter((e) => e.all_day || e.birthday) : dayEvents
 
   return (
     <div className="scene" aria-label={title}>
@@ -448,6 +486,65 @@ function DayPlanInner() {
             )}
           </div>
         )}
+
+        {/* The day's free-text note as its HEADLINE — "what's today about", pulled up
+            under the date so the day itself leads (it used to sit under the meals).
+            The page owns this state; DayEditor hides its own note copy (hideNote). */}
+        <div className="day-plan__note">
+          {ro ? (
+            // Guest: the note reads as plain text (or nothing) — no edit affordance.
+            dayNote ? (
+              <span className="kitchen__note-chip" aria-disabled="true">
+                <span aria-hidden="true"><Icon name="pencil-simple-bold" size={16} /></span>
+                <span className="kitchen__note-text">{dayNote.text}</span>
+              </span>
+            ) : null
+          ) : editNote === date ? (
+            <EditField
+              value={noteText}
+              onChange={setNoteText}
+              onSubmit={(v) => saveNote(date, v)}
+              submitLabel={t.kitchen.setMeal}
+              autoFocus
+              placeholder={t.kitchen.notePlaceholder}
+              ariaLabel={t.kitchen.note}
+            >
+              {dayNote && (
+                <button
+                  type="button"
+                  className="btn btn--ghost mono kitchen__clear-meal"
+                  onClick={() => clearNote(date)}
+                >
+                  <InlineIcon name="trash-bold" /> {t.kitchen.clearNote}
+                </button>
+              )}
+            </EditField>
+          ) : dayNote ? (
+            <button
+              type="button"
+              className="kitchen__note-chip"
+              onClick={() => {
+                setEditNote(date)
+                setNoteText(dayNote.text)
+              }}
+            >
+              <span aria-hidden="true"><Icon name="pencil-simple-bold" size={16} /></span>
+              <span className="kitchen__note-text">{dayNote.text}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="kitchen__note-add mono"
+              onClick={() => {
+                setEditNote(date)
+                setNoteText('')
+              }}
+            >
+              <InlineIcon name="plus-bold" /> {t.kitchen.note}
+            </button>
+          )}
+        </div>
+
         {/* « Voyage » — this day sits inside a trip. A calm header that taps into the
             trip's itinerary for this exact day, followed by the actual plans entered
             for the day (the dated itinerary notes), so the right info is right here. */}
@@ -492,41 +589,75 @@ function DayPlanInner() {
           )
         })}
 
-        <DayEditor
-          date={date}
-          recipes={recipes}
-          lowItems={lowItems}
-          listItems={listItems}
-          suppers={suppers}
-          mealsFor={mealsFor}
-          note={noteFor(date)}
-          recipeFor={recipeForMeal}
-          memberName={memberName}
-          onOpenRecipe={(r, m) =>
-            detail.open(
-              buildMeal(m, { t, lang, members: [], tagColors }, { recipe: r, slotLabel: isMealSlot(m.slot) ? t.kitchen.slots[m.slot] : undefined }),
-            )
-          }
-          mealErr={mealErr}
-          plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
-          picker={{ pickWithStaples, setPickWithStaples, planRecipe }}
-          leftovers={{
-            pool: leftoversQ.data?.leftovers ?? [],
-            plan: planLeftoverOnDay,
-          }}
-          slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
-          noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
-          actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
-        />
-
-        {/* The day's agenda + chores — so the calendar's day page plans everything,
-            not just meals. Add + edit are inline (the shared EventForm/ChoreForm,
-            date pre-filled). Editing a recurring row edits the whole series. */}
+        {/* The day itself leads — its agenda (schedule + chores + to-dos), with meals
+            demoted below. Add + edit are inline (the shared EventForm/ChoreForm, date
+            pre-filled). Editing a recurring row edits the whole series. */}
         <section className="day-plan__sections">
-          {/* À compléter for THIS day — per-day check-off todos (migration 0046),
-              with inline add/edit, check-in-place and one-tap departure templates. */}
-          <TodoSection day={date} title={t.todos.title} members={formMembers} bento={false} />
+          {/* « Le fil du jour » — the day's shape as a time ribbon, the hero on a busy
+              day (≥2 timed events). When on, it OWNS the timed events (the Rendez-vous
+              bucket below then lists only the all-day rows). */}
+          {filShown && (
+            <>
+              <div className="sec-label">
+                <b>{t.board.fil}</b>
+                <span className="ln" />
+              </div>
+              <Fil
+                timed={filTimed.map((e) => ({ id: e.id, start_at: e.at, until: e.work ? e.end : undefined, node: eventActNode(e) }))}
+                untimed={[]}
+                anytimeLabel={t.board.anytime}
+                nowLabel={t.board.now}
+                freeLabel={t.board.free}
+                lang={lang}
+              />
+            </>
+          )}
 
+          {/* Rendez-vous — the day's schedule leads the agenda. */}
+          <div className="sec-label">
+            <b>{t.monthView.legendEvents}</b>
+            <span className="ln" />
+          </div>
+          {!filShown && dayEvents.length === 0 && !eventForm ? (
+            <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
+          ) : (
+            bucketEvents.map((e) => (
+              <div key={e.id} className="day-plan__act-row">
+                {eventActNode(e)}
+                {/* « Partager » one event → a public /partage link (real page, not a text
+                    paste). Operator-only + real events only (not a derived birthday or a
+                    work/car row). */}
+                {!e.work && !e.birthday && signedIn && (
+                  <button
+                    type="button"
+                    className="btn btn--ghost mono day-plan__act-share"
+                    onClick={() => setSharingEvent({ id: e.id, title: e.title })}
+                    aria-label={t.shareLink.action}
+                    title={t.shareLink.action}
+                  >
+                    <Icon name="arrow-up-right-bold" size={16} />
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+          {!ro &&
+            (eventForm ? (
+              <EventForm
+                key={eventForm.value?.id ?? 'new-event'}
+                members={formMembers}
+                value={eventForm.value}
+                initialDate={eventForm.value ? undefined : date}
+                onSaved={afterEventSave}
+                onCancel={() => setEventForm(null)}
+              />
+            ) : (
+              <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setEventForm({})}>
+                <Icon name="plus-bold" size={16} /> {t.operator.addEvent}
+              </button>
+            ))}
+
+          {/* Corvées */}
           <div className="sec-label">
             <b>{t.board.chores}</b>
             <span className="ln" />
@@ -562,66 +693,9 @@ function DayPlanInner() {
               </button>
             ))}
 
-          <div className="sec-label">
-            <b>{t.monthView.legendEvents}</b>
-            <span className="ln" />
-          </div>
-          {dayEvents.length === 0 && !eventForm ? (
-            <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
-          ) : (
-            dayEvents.map((e) => (
-              <div key={e.id} className="day-plan__act-row">
-                <Act
-                  cat={e.work ? 'work' : e.birthday ? 'birthday' : 'event'}
-                  title={e.work ? e.title || t.auto.work : e.title}
-                  when={
-                    e.work
-                      ? t.auto.range(formatTime(e.at, lang), e.end != null ? formatTime(e.end, lang) : '')
-                      : e.birthday
-                        ? e.age != null
-                          ? t.cercle.turnsN(e.age)
-                          : t.board.birthday
-                        : e.all_day
-                          ? t.board.allDay
-                          : formatTime(e.at, lang)
-                  }
-                  who={e.work ? memberName(e.member_id) || undefined : e.business_name ?? e.contact_name ?? memberName(e.member_id) ?? undefined}
-                  color={e.work ? e.color ?? undefined : e.business_colour ?? undefined}
-                  soon={e.birthday || e.work ? undefined : eventSoon(e.id, e.at)}
-                  onActivate={e.work ? () => nav('/voiture') : ro || e.birthday ? undefined : () => openEventEdit(e.id)}
-                />
-                {/* « Partager » one event → a public /partage link (real page, not a text
-                    paste). Operator-only + real events only (not a derived birthday or a
-                    work/car row). */}
-                {!e.work && !e.birthday && signedIn && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost mono day-plan__act-share"
-                    onClick={() => setSharingEvent({ id: e.id, title: e.title })}
-                    aria-label={t.shareLink.action}
-                    title={t.shareLink.action}
-                  >
-                    <Icon name="arrow-up-right-bold" size={16} />
-                  </button>
-                )}
-              </div>
-            ))
-          )}
-          {!ro &&
-            (eventForm ? (
-              <EventForm
-                key={eventForm.value?.id ?? 'new-event'}
-                members={formMembers}
-                value={eventForm.value}
-                initialDate={eventForm.value ? undefined : date}
-                onSaved={afterEventSave}
-                onCancel={() => setEventForm(null)}
-              />
-            ) : (
-              <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setEventForm({})}>
-                <Icon name="plus-bold" size={16} /> {t.operator.addEvent}
-              </button>
-            ))}
+          {/* À compléter for THIS day — per-day check-off todos (migration 0046),
+              with inline add/edit, check-in-place and one-tap departure templates. */}
+          <TodoSection day={date} title={t.todos.title} members={formMembers} bento={false} />
 
           {/* Projets & Entretien landing on this day — read-only (managed in
               Réglages ▸ Corvées); shown only when there's something, to keep the
@@ -638,6 +712,50 @@ function DayPlanInner() {
             </>
           )}
         </section>
+
+        {/* Les repas — the meal planner, demoted below the day. It OPENS itself when
+            the day already has meals planned (you came to see/adjust them), and stays
+            collapsed on an empty day so the agenda still leads. The note is rendered as
+            the day's headline above, so DayEditor hides its own copy.
+            `key` on the load state: Disclosure latches `defaultOpen` at mount, so on a
+            cold load (empty cache) it would mount collapsed before meals arrive and
+            never open. Re-mounting once when the meals query resolves lets the correct
+            default apply; `meals.data` only goes falsy→truthy once, so no later churn. */}
+        <Disclosure
+          key={meals.data ? 'meals-loaded' : 'meals-loading'}
+          label={t.kitchen.mealsHeading}
+          count={dayMealCount}
+          defaultOpen={dayMealCount > 0}
+          className="day-plan__meals"
+        >
+          <DayEditor
+            date={date}
+            recipes={recipes}
+            lowItems={lowItems}
+            listItems={listItems}
+            suppers={suppers}
+            mealsFor={mealsFor}
+            note={dayNote}
+            recipeFor={recipeForMeal}
+            memberName={memberName}
+            onOpenRecipe={(r, m) =>
+              detail.open(
+                buildMeal(m, { t, lang, members: [], tagColors }, { recipe: r, slotLabel: isMealSlot(m.slot) ? t.kitchen.slots[m.slot] : undefined }),
+              )
+            }
+            mealErr={mealErr}
+            plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
+            picker={{ pickWithStaples, setPickWithStaples, planRecipe }}
+            leftovers={{
+              pool: leftoversQ.data?.leftovers ?? [],
+              plan: planLeftoverOnDay,
+            }}
+            slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
+            noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
+            actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
+            hideNote
+          />
+        </Disclosure>
         {sharingEvent && (
           <EntityShareModal
             open

@@ -569,6 +569,37 @@ describe('proposeAllFamilyLinks (one button: group completion + transitive bridg
     )
     expect(tie(props, 'c1', 'c2')).toBe('cousin')
   })
+
+  it("bridges a conjoint·e's niece onto you (spouse's DERIVED aunt/uncle crosses the marriage)", () => {
+    // marc is spouse of camille; camille is a sibling of aliss's parent → camille is
+    // aliss's aunt (DERIVED, not stored). The blood-only closure never crosses the
+    // marriage, so the by-marriage bridge is the only pass that links marc ↔ aliss.
+    const props = proposeAllFamilyLinks(
+      ppl('marc', 'camille', 'par', 'aliss'),
+      [link('marc', 'camille', 'spouse'), link('camille', 'par', 'sibling'), link('par', 'aliss', 'parent')],
+      [],
+    )
+    // aunt/uncle ↔ niece/nephew is one rung; orientation follows the id sort.
+    expect(['aunt_uncle', 'niece_nephew']).toContain(tie(props, 'marc', 'aliss'))
+    const p = props.find((pp) => [pp.aKey, pp.bKey].sort().join() === [k('marc'), k('aliss')].sort().join())
+    expect(p?.reason).toBeDefined() // carries the "spouse's family" why
+  })
+
+  it('leaves an explicit stored tie alone rather than re-proposing a by-marriage rung', () => {
+    // Same shape, but marc↔aliss is ALREADY an explicit friend tie — the bridge must not
+    // override it (proposePair's "an explicit tie always wins").
+    const props = proposeAllFamilyLinks(
+      ppl('marc', 'camille', 'par', 'aliss'),
+      [
+        link('marc', 'camille', 'spouse'),
+        link('camille', 'par', 'sibling'),
+        link('par', 'aliss', 'parent'),
+        link('marc', 'aliss', 'friend'),
+      ],
+      [],
+    )
+    expect(tie(props, 'marc', 'aliss')).toBeUndefined()
+  })
 })
 
 // ---- Pet ownership + household-family reach (the « Famille vs Social » rule) -----

@@ -244,6 +244,14 @@
   .cercle-section__label {
     grid-column: 1 / -1;
   }
+  /* In the directory tabs (carnets/business) only the rows are grid cells; the
+     intro hint, help bubble, empty state and archive disclosure must span both
+     columns — otherwise the hint takes column 1 and pushes the first card into
+     column 2, offsetting the whole grid. */
+  .cercle-carnets > :not(.cercle-row),
+  .cercle-business > :not(.cercle-row) {
+    grid-column: 1 / -1;
+  }
 }
 
 /* ── Toddler faces view ───────────────────────────────────────────────── */

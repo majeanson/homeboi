@@ -45,6 +45,7 @@ export function DayEditor({
   slotEdit,
   noteEdit,
   actions,
+  hideNote = false,
 }: {
   date: number
   recipes: Recipe[]
@@ -103,6 +104,10 @@ export function DayEditor({
     // Drag a meal to another slot (same day) — slot passed, date kept.
     rescheduleMeal: (id: string, toDate: number, slot?: string) => void
   }
+  // Suppress the day-note section — the day-plan page renders the note as a headline
+  // at the top instead, so it shouldn't repeat it here. Default false keeps the note
+  // for other hosts (VoiturePage).
+  hideNote?: boolean
 }) {
   const t = useT()
   const mealPrefs = useMealPrefs()
@@ -335,7 +340,9 @@ export function DayEditor({
         )}
       </section>
 
-      {/* ── The day's free-text note — last, after the meals ── */}
+      {/* ── The day's free-text note — last, after the meals. Suppressed when the
+          host renders it elsewhere (the day-plan page lifts it to a headline). ── */}
+      {!hideNote && (
       <section className="day-mng__sec">
         <p className="day-mng__sec-head mono">
           <Icon name="pencil-simple-bold" size={16} color="var(--ink-soft)" /> {t.kitchen.note}
@@ -393,6 +400,7 @@ export function DayEditor({
           </button>
         )}
       </section>
+      )}
 
       {/* Wipe the whole day's meals at once — only when there's something. Sits
           last, reads red: a deliberate, destructive clear, not a quiet control. */}

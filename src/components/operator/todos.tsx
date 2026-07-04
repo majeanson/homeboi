@@ -21,6 +21,7 @@ import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
+import { Modal } from '../Modal'
 import { OperatorSection } from './OperatorSection'
 
 // Réglages ▸ À compléter. Reusable check-off checklists ("Avant de partir", "Chez
@@ -47,6 +48,8 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
   // Inline item edit: which (template, index) is open + its draft text.
   const [editItem, setEditItem] = useState<{ id: string; idx: number } | null>(null)
   const [editText, setEditText] = useState('')
+  // "Voir la liste finale" — which template's read-only preview modal is open.
+  const [previewId, setPreviewId] = useState<string | null>(null)
 
   const saveItems = (tpl: TodoTemplate, items: TemplateItem[]) =>
     void write('todo-templates', {
@@ -193,12 +196,20 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
                             setEditItem({ id: tpl.id, idx })
                             setEditText(it.label)
                           }}
-                          aria-label={t.common.edit}
+                          aria-label={`${t.common.edit} — ${it.label}`}
                         >
                           {it.label}
                         </button>
                         {reorder}
-                        <RowActions onDelete={() => removeItem(tpl, idx)} deleteLabel={`${t.common.delete} — ${it.label}`} />
+                        <RowActions
+                          onEdit={() => {
+                            setEditItem({ id: tpl.id, idx })
+                            setEditText(it.label)
+                          }}
+                          onDelete={() => removeItem(tpl, idx)}
+                          editLabel={`${t.common.edit} — ${it.label}`}
+                          deleteLabel={`${t.common.delete} — ${it.label}`}
+                        />
                       </li>
                     )
                   })}
@@ -209,8 +220,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
                     value={newItem[tpl.id] ?? ''}
                     onChange={(v) => setNewItem((m) => ({ ...m, [tpl.id]: v }))}
                     onSubmit={() => addItem(tpl)}
-                    submitLabel={t.todos.addItem}
-                    submitLeadingIcon="plus-bold"
+                    submitIcon="plus-bold"
                     placeholder={t.todos.addItem}
                     ariaLabel={t.todos.addItem}
                   />
@@ -234,6 +244,16 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
                     </select>
                   )}
                 </div>
+
+                {/* "Voir la liste finale" — a read-only preview of the flattened,
+                    sectioned result (how it lands when added), mirroring the
+                    « Avant de partir » departure view. Only worth showing once the
+                    list has content. */}
+                {tpl.items.length > 0 && (
+                  <button type="button" className="btn btn--sm todo-tpl__preview" onClick={() => setPreviewId(tpl.id)}>
+                    <Icon name="check-square-bold" size={16} /> {t.todos.previewFinal}
+                  </button>
+                )}
               </li>
             )
           })}
@@ -251,7 +271,50 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
           ariaLabel={t.todos.templateName}
         />
       </div>
+
+      {previewId && (
+        <TemplatePreview templates={templates} id={previewId} onClose={() => setPreviewId(null)} />
+      )}
     </OperatorSection>
+  )
+}
+
+// Read-only "how it will look once added" preview — the flattened, sectioned result
+// (expandSectioned mirrors the server's instantiation) rendered like the real « À
+// compléter » list: hollow check discs + section headers. A composed list shows its
+// one section header; a plain list is a headless run.
+function TemplatePreview({ templates, id, onClose }: { templates: TodoTemplate[]; id: string; onClose: () => void }) {
+  const t = useT()
+  const tpl = templates.find((x) => x.id === id)
+  const rows = tpl ? expandSectioned(templates, id) : []
+  // Collapse consecutive same-section rows into groups so each header prints once.
+  const groups: { section: string | null; labels: string[] }[] = []
+  for (const r of rows) {
+    const last = groups[groups.length - 1]
+    if (last && last.section === r.section) last.labels.push(r.label)
+    else groups.push({ section: r.section, labels: [r.label] })
+  }
+  return (
+    <Modal open onClose={onClose} title={tpl?.title} className="todo-preview-modal">
+      <p className="todo-preview__hint">{t.todos.previewHint}</p>
+      {rows.length === 0 ? (
+        <EmptyState tone="calm">{t.todos.empty}</EmptyState>
+      ) : (
+        <div className="todo-preview">
+          {groups.map((g, gi) => (
+            <div key={gi} className="todo-preview__group">
+              {g.section && <div className="todo-preview__section mono">{g.section}</div>}
+              {g.labels.map((label, i) => (
+                <div key={i} className="todo-preview__row">
+                  <span className="todo-preview__check" aria-hidden="true" />
+                  <span className="todo-preview__label">{label}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </Modal>
   )
 }
 

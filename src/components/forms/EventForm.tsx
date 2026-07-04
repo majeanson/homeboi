@@ -239,20 +239,30 @@ export function EventForm({
         placeholder={t.operator.eventWhat}
         ariaLabel={t.operator.eventWhat}
       />
-      <input
-        className="input"
-        type="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-        aria-label={t.operator.eventDateLabel}
-      />
-      <input
-        className="input"
-        type="time"
-        value={time}
-        onChange={(e) => setTime(e.target.value)}
-        aria-label={t.operator.eventTimeLabel}
-      />
+      {/* Native date/time inputs can't take a `placeholder`, and iOS's own faint
+          "jj/mm/aaaa" / "--:--" hint is invisible on light themes — an empty box
+          reads as unlabelled. Give each a visible label via the same `.recur__row`
+          pattern the Répéter / Afficher dès rows below already use (Marc, 2026-07-04). */}
+      <label className="recur__row mono">
+        <span>{t.operator.eventDateLabel}</span>
+        <input
+          className="input"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          aria-label={t.operator.eventDateLabel}
+        />
+      </label>
+      <label className="recur__row mono">
+        <span>{t.operator.eventTimeLabel}</span>
+        <input
+          className="input"
+          type="time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          aria-label={t.operator.eventTimeLabel}
+        />
+      </label>
       <div className="operator__rotation mono">
         {members.map((m) => (
           <button

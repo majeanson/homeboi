@@ -1,11 +1,13 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { mockApi, seedState, ensureMealsOpen } from './mocks'
 
 // La cuisine meal-planning UX: the ＋ "Planifier un repas" is a day picker that
 // opens that day's editor SCENE (/kitchen/day/:date — one editor, two entry
-// points); the editor lists slots chronologically (déjeuner → dîner → collation →
-// souper, note last); and the recipe builder fills the screen (no stale-keyboard
-// dead space).
+// points). The day scene now LEADS with the day's agenda; the meal planner is
+// demoted into a collapsed « Les repas » disclosure at the bottom and lists slots
+// chronologically (déjeuner → dîner → collation → souper). The day note is the
+// scene's headline now, not a slot section. The recipe builder fills the screen
+// (no stale-keyboard dead space).
 
 async function boot(page: Page) {
   await page.setViewportSize({ width: 390, height: 844 })
@@ -37,10 +39,13 @@ test('＋ Planifier un repas → day picker → opens that day’s editor scene'
   // The day's full editor is a full-screen .scene route now (was a bottom sheet),
   // so the URL carries the day and the scene holds the day sections.
   await expect(page).toHaveURL(/\/kitchen\/day\/\d+/)
+  // The meal planner sits in a « Les repas » disclosure at the bottom now (the day's
+  // agenda leads). It auto-opens when the day has meals; ensure it's open regardless.
+  await ensureMealsOpen(page)
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 10_000 })
 })
 
-test('day editor lists slots chronologically, note last', async ({ page }) => {
+test('day editor lists slots chronologically (note is the headline)', async ({ page }) => {
   await boot(page)
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
@@ -48,11 +53,15 @@ test('day editor lists slots chronologically, note last', async ({ page }) => {
   // icon-only now, named "Gérer · <date>") → navigates to the day scene.
   await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
   await expect(page).toHaveURL(/\/kitchen\/day\/\d+/)
+  // Slots live inside the « Les repas » disclosure — ensure it's open first.
+  await ensureMealsOpen(page)
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 10_000 })
 
   const heads = await page.locator('.day-mng__sec-head').allInnerTexts()
   const order = heads.map((h) => h.trim())
-  expect(order).toEqual(['Déjeuner', 'Dîner', 'Collation', 'Souper', 'Note du jour'])
+  // The note is the day's HEADLINE at the top now, no longer a slot section — the
+  // planner lists only the four meal slots, chronologically.
+  expect(order).toEqual(['Déjeuner', 'Dîner', 'Collation', 'Souper'])
 
   // The add affordance shares the slot's header line (not a row of its own).
   await expect(page.locator('.day-mng__sec-head-row .kitchen__slot-add').first()).toBeVisible()

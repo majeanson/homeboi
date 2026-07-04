@@ -1,4 +1,14 @@
-import type { Page } from '@playwright/test'
+import type { Page, Locator } from '@playwright/test'
+
+// The day-plan scene demotes its meal planner into a « Les repas » disclosure that
+// auto-opens when the day already has meals and stays collapsed on an empty day.
+// Specs that drive the slot controls call this to ensure it's open regardless of the
+// seeded day's meal count — click only when it's currently collapsed. `scope` is the
+// Page or the `.scene` locator.
+export async function ensureMealsOpen(scope: Page | Locator): Promise<void> {
+  const summary = scope.locator('.day-plan__meals .disclosure__summary')
+  if ((await summary.getAttribute('aria-expanded')) !== 'true') await summary.click()
+}
 
 // Deterministic API stubs so screenshots render populated, calm surfaces with
 // no backend. Shapes mirror the page-level interfaces (Board.tsx, Kitchen.tsx,

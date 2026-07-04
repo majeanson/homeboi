@@ -121,6 +121,15 @@
   margin-bottom: 0.7rem;
   background: var(--surface);
 }
+/* This card is an <li> inside `.operator__list`, whose generic rule turns every li
+   into a horizontal `flex-wrap:wrap` row — which spread the head to the left and
+   floated the items list off to the right (the awkward "everything scattered" look).
+   Force the card back to a full-width vertical stack: head, items, adders, preview
+   each on their own line. (Specificity `.operator__list li.todo-tpl` beats the
+   generic `.operator__list li`.) */
+.operator__list li.todo-tpl {
+  display: block;
+}
 .todo-tpl__head {
   display: flex;
   align-items: center;
@@ -143,10 +152,19 @@
   flex-direction: column;
   gap: 0.35rem;
 }
-.todo-tpl__item {
+/* Scoped under `.operator__list` so it out-specifies the generic `.operator__list
+   li` (these item rows are nested <li> inside the card, so that rule reaches them
+   too — it sets gap:0.6rem + flex-wrap:wrap, which we don't want here). */
+.operator__list li.todo-tpl__item {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  flex-wrap: nowrap;
+  gap: 0.2rem;
+  min-height: 40px;
+  padding: 0.1rem 0.15rem 0.1rem 0.5rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
 .todo-tpl__item-name {
   flex: 1 1 auto;
@@ -154,18 +172,25 @@
   border: none;
   background: none;
   text-align: left;
-  padding: 0.2rem 0;
-  cursor: pointer;
+  padding: 0.3rem 0;
+  cursor: text;
   font: inherit;
   color: var(--ink);
+  /* Long item text wraps inside its column instead of shoving the ↑/↓/🗑 controls
+     off the right edge on a narrow phone. */
+  overflow-wrap: anywhere;
 }
 .todo-tpl__new {
   margin-top: 0.3rem;
 }
 
-/* A reference to another list, shown as a chip in the editor item list. */
-.todo-tpl__item--ref {
+/* A reference to another list, shown as a chip in the editor item list. The blue
+   chip is its own surface, so drop the row's border/background (no box-in-a-box). */
+.operator__list li.todo-tpl__item--ref {
   align-items: center;
+  border: none;
+  background: none;
+  padding-left: 0.15rem;
 }
 .todo-tpl__ref {
   flex: 1 1 auto;
@@ -194,6 +219,56 @@
 }
 .todo-tpl__include {
   max-width: 100%;
+}
+/* « Voir la liste finale » — a full-width, quiet CTA under the adders. */
+.todo-tpl__preview {
+  margin-top: 0.55rem;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Read-only preview modal — how the list lands once added (mirrors the departure
+   « Avant de partir » look: hollow check discs + section headers). */
+.todo-preview-modal {
+  max-width: 24rem;
+}
+.todo-preview__hint {
+  margin: 0 0 0.75rem;
+  color: var(--ink-faint);
+  font-size: var(--text-sm);
+}
+.todo-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.todo-preview__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.todo-preview__section {
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.todo-preview__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.todo-preview__check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+}
+.todo-preview__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ── Quick-add (＋ sheet) todo form ─────────────────────────────────────────── */

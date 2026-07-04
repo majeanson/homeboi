@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { RECIPES_KEY, RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions, tagColor } from '../../lib/recipes'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { useConfirm } from '../../lib/confirm'
 import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost } from '../../lib/dnd'
-import { Icon, InlineIcon } from '../Icon'
+import { Icon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
 import { DragPill } from '../DragPill'
 import { EditField } from '../EditField'
@@ -22,12 +22,15 @@ import { OperatorSection } from './OperatorSection'
 const chipTint = (hex: string | undefined): React.CSSProperties | undefined =>
   hex ? { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) } : undefined
 
-// Réglages → Recettes: the household tag layer. Two strips:
-//   · the preset pills offered in the recipe form (chips, editable in place)
-//   · every tag in use, with a count — rename or remove it on ALL recipes at
-//     once, so cleaning up "Végé / végé / vege" never means opening each card.
-// Each tag also carries an optional colour (migration 0037), picked here and shown
-// on the chip everywhere the tag renders (recipe view, search pills, the form).
+// Réglages → Recettes: the household tag layer, as ONE ordered list. Every tag —
+// a saved preset offered in the recipe form AND every tag already on a recipe —
+// sits on a single row, so a tag that's both no longer shows up twice. Per row:
+//   · drag ⠿ to reorder (this order drives the recipe form's pills AND the #11
+//     collection sections)
+//   · a count if it's on recipes, else "Proposée" — a spare preset not used yet
+//   · recolour, rename (on ALL recipes at once), remove.
+// Each tag carries an optional colour (migration 0037), shown on the chip
+// everywhere the tag renders (recipe view, search pills, the form).
 export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
@@ -39,21 +42,18 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   const presets = tagsQ.data?.presets ?? []
   const used = tagsQ.data?.used ?? []
   const colors = tagsQ.data?.colors ?? {}
-  // The ORDER strip folds in every tag in use, not just saved presets — so the
+  // The one list folds in every tag in use, not just saved presets — so the
   // operator can drag ANY tag into place and that order drives the recipe book's
   // chips AND the #11 collection sections (RecipesTab reads this order). A tag in
   // use that's dragged once becomes a saved preset (offered in the form too).
   const effective = tagOptions(presets, used.map((u) => u.tag), t.recipes.tagPresets)
-  // In-use tags can't be removed from the ORDER with the chip ✕ (they'd just
-  // reappear, since they're still on recipes) — they're deleted from the "in use"
-  // list below, which strips them off every recipe. The ✕ stays for spare presets.
-  const usedKeys = new Set(used.map((u) => u.tag.toLowerCase()))
+  // How many recipes carry each tag (case-insensitive), for the per-row count.
+  const countFor = new Map(used.map((u) => [u.tag.toLowerCase(), u.count]))
 
   const [pillInput, setPillInput] = useState('')
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameTo, setRenameTo] = useState('')
-  // Which tag's colour picker is open. Location-qualified ("preset:x" / "used:x")
-  // so a tag that's both a preset and in use opens only where you clicked.
+  // Which tag's colour picker is open (keyed by lowercased tag).
   const [coloring, setColoring] = useState<string | null>(null)
 
   const invalidate = () => {
@@ -101,7 +101,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
 
   const setColor = (tag: string, color: string | null) => patch.mutate({ setColor: { tag, color } })
 
-  // The PALETTE dot row + a "no colour" clear, reused under both strips.
+  // The PALETTE dot row + a "no colour" clear, dropped under a row when open.
   const colorEditor = (tag: string) => {
     const cur = tagColor(colors, tag)
     return (
@@ -118,59 +118,91 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
 
   return (
     <OperatorSection title={t.operator.tagsTitle} help={help} helpKey="recipeTags">
-      <HelpTitle as="h3" className="operator__sub" help={help} k="tagPills">{t.operator.tagPills}</HelpTitle>
-      {help?.bubbleFor('tagPills')}
-      <div className="tag-admin__pills">
-        {effective.map((tg, i) => {
-          const key = `preset:${tg.toLowerCase()}`
-          const open = coloring === key
-          if (ro) {
+      {effective.length === 0 ? (
+        // Guard the cold load: don't flash the empty state before the query settles.
+        tagsQ.isPending ? null : <EmptyState>{t.operator.tagNoneUsed}</EmptyState>
+      ) : (
+        <ul className="operator__list tag-admin__list">
+          {effective.map((tg, i) => {
+            const key = tg.toLowerCase()
+            const count = countFor.get(key)
+            const inUse = count != null
+            const open = coloring === key
             return (
-              <span key={tg} className="chip tag-admin__pill" style={chipTint(tagColor(colors, tg))}>
-                {tg}
-              </span>
-            )
-          }
-          return (
-            <DragPill
-              key={tg}
-              as="span"
-              dnd={dnd}
-              index={i}
-              label={tg}
-              className={'chip tag-admin__pill' + (open ? ' is-editing' : '')}
-              gripClassName="tag-admin__pill-grip"
-              style={chipTint(tagColor(colors, tg))}
-            >
-              <button
-                type="button"
-                className="tag-admin__pill-name"
-                onClick={() => setColoring(open ? null : key)}
-                aria-label={t.operator.tagColorPick(tg)}
-                aria-expanded={open}
+              <DragPill
+                key={tg}
+                as="li"
+                dnd={dnd}
+                index={i}
+                label={tg}
+                className="tag-admin__row-wrap"
+                gripClassName="tag-admin__grip"
+                showGrip={!ro}
               >
-                {tg}
-              </button>
-              {!usedKeys.has(tg.toLowerCase()) && (
-                <button
-                  type="button"
-                  className="tag-admin__pill-x"
-                  onClick={() => savePills(effective.filter((x) => x !== tg))}
-                  aria-label={`${t.operator.tagRemove} — ${tg}`}
-                >
-                  <InlineIcon name="x-bold" size={12} />
-                </button>
-              )}
-            </DragPill>
-          )
-        })}
-      </div>
-      {!ro &&
-        coloring?.startsWith('preset:') &&
-        (() => {
-          const tg = effective.find((x) => `preset:${x.toLowerCase()}` === coloring)
-          return tg ? colorEditor(tg) : null
-        })()}
+                <div className="tag-admin__row">
+                  {!ro && renaming === tg ? (
+                    <EditField
+                      value={renameTo}
+                      onChange={setRenameTo}
+                      onSubmit={() => commitRename(tg)}
+                      onCancel={() => setRenaming(null)}
+                      maxLength={24}
+                      autoFocus
+                      submitIcon="check-bold"
+                      ariaLabel={`${t.operator.tagRename} — ${tg}`}
+                      className="tag-admin__rename"
+                    />
+                  ) : (
+                    <>
+                      <span className="chip tag-admin__name" style={chipTint(tagColor(colors, tg))}>
+                        {tg}
+                      </span>
+                      {/* A count if the tag is on recipes, else "Proposée" — it's a
+                          spare preset offered in the form but not used yet. */}
+                      <span className="tag-admin__count mono">
+                        {inUse ? t.operator.tagOnN(count) : t.operator.tagUnusedHint}
+                      </span>
+                      {!ro && (
+                        <button
+                          type="button"
+                          className={`tag-admin__color-btn${open ? ' is-on' : ''}`}
+                          onClick={() => setColoring(open ? null : key)}
+                          aria-label={t.operator.tagColorPick(tg)}
+                          aria-expanded={open}
+                        >
+                          <Icon name="paint-brush-bold" size={16} />
+                        </button>
+                      )}
+                      {!ro && (
+                        <RowActions
+                          editLabel={t.operator.tagRename}
+                          deleteLabel={t.operator.tagRemove}
+                          onEdit={() => {
+                            setRenaming(tg)
+                            setRenameTo(tg)
+                          }}
+                          onDelete={async () => {
+                            // A tag in use → strips it from EVERY recipe: heavy, so a
+                            // deliberate confirm. A spare preset (not on any recipe) →
+                            // just drop it from the offered list, no confirm needed.
+                            if (inUse) {
+                              if (await confirm({ message: t.operator.tagRemoveConfirm(tg), confirmLabel: t.operator.tagRemove, tone: 'danger' }))
+                                patch.mutate({ remove: tg })
+                            } else {
+                              savePills(effective.filter((x) => x !== tg))
+                            }
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+                {!ro && open && colorEditor(tg)}
+              </DragPill>
+            )
+          })}
+        </ul>
+      )}
       {!ro && (
         <EditField
           value={pillInput}
@@ -181,72 +213,6 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
           maxLength={24}
           submitIcon="plus-bold"
         />
-      )}
-
-      <HelpTitle as="h3" className="operator__sub" help={help} k="tagUsed">{t.operator.tagUsed}</HelpTitle>
-      {help?.bubbleFor('tagUsed')}
-      {used.length === 0 ? (
-        // Guard the cold load: don't flash "no tags in use" before the query settles.
-        tagsQ.isPending ? null : <EmptyState>{t.operator.tagNoneUsed}</EmptyState>
-      ) : (
-        <ul className="operator__list tag-admin__list">
-          {used.map(({ tag, count }) => {
-            const key = `used:${tag.toLowerCase()}`
-            const open = coloring === key
-            return (
-              <li key={tag.toLowerCase()} className="tag-admin__row-wrap">
-                <div className="tag-admin__row">
-                  {!ro && renaming === tag ? (
-                    <EditField
-                      value={renameTo}
-                      onChange={setRenameTo}
-                      onSubmit={() => commitRename(tag)}
-                      onCancel={() => setRenaming(null)}
-                      maxLength={24}
-                      autoFocus
-                      submitIcon="check-bold"
-                      ariaLabel={`${t.operator.tagRename} — ${tag}`}
-                      className="tag-admin__rename"
-                    />
-                  ) : (
-                    <>
-                      <span className="chip tag-admin__name" style={chipTint(tagColor(colors, tag))}>
-                        {tag}
-                      </span>
-                      <span className="tag-admin__count mono">{t.operator.tagOnN(count)}</span>
-                      {!ro && (
-                        <button
-                          type="button"
-                          className={`tag-admin__color-btn${open ? ' is-on' : ''}`}
-                          onClick={() => setColoring(open ? null : key)}
-                          aria-label={t.operator.tagColorPick(tag)}
-                          aria-expanded={open}
-                        >
-                          <Icon name="paint-brush-bold" size={16} />
-                        </button>
-                      )}
-                      <RowActions
-                        editLabel={t.operator.tagRename}
-                        deleteLabel={t.operator.tagRemove}
-                        onEdit={() => {
-                          setRenaming(tag)
-                          setRenameTo(tag)
-                        }}
-                        onDelete={async () => {
-                          // Removing a tag strips it from EVERY recipe — heavy, so a
-                          // deliberate confirm (the in-app dialog, not platform confirm).
-                          if (await confirm({ message: t.operator.tagRemoveConfirm(tag), confirmLabel: t.operator.tagRemove, tone: 'danger' }))
-                            patch.mutate({ remove: tag })
-                        }}
-                      />
-                    </>
-                  )}
-                </div>
-                {!ro && open && colorEditor(tag)}
-              </li>
-            )
-          })}
-        </ul>
       )}
       <DragGhost ghost={dnd.ghost} />
     </OperatorSection>

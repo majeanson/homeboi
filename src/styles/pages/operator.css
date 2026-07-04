@@ -146,8 +146,7 @@
    (Ghost/store rows keep the generic wrap on purpose — they carry several
    controls that SHOULD stack on a narrow phone.) */
 .operator__list li.operator__chore-row,
-.operator__list li.operator__routine-row,
-.operator__list li.tag-admin__row {
+.operator__list li.operator__routine-row {
   flex-wrap: nowrap;
 }
 /* A chore row carries an inline schedule editor that drops under it when open. */

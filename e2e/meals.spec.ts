@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import { mockApi, seedState, BASE, ensureMealsOpen } from './mocks'
 
 // N meals per slot + time ordering + the food slot icons. Frontend-only against
 // mocked /api/* (the mock returns {ok:true} for writes, so we assert the request
@@ -37,6 +37,11 @@ async function openManage(page: Page) {
   await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
   const sheet = page.locator('.scene')
   await expect(sheet).toBeVisible()
+  // The meal planner lives in a « Les repas » disclosure now — it auto-opens on a day
+  // that already has meals and stays collapsed on an empty one. Ensure it's open
+  // either way so the slot rows/controls are actionable.
+  await ensureMealsOpen(sheet)
+  await expect(sheet.locator('.day-mng__sec').first()).toBeVisible()
   return sheet
 }
 

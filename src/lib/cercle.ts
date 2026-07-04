@@ -1674,6 +1674,10 @@ export function proposeFamilyLinks(
 // from the family's existing links.
 const DEDUCED_KIN: Bi = { fr: 'Déduit des liens de la famille', en: 'Deduced from family ties' }
 
+// The checklist "why" for a by-marriage niece/nephew (see proposeSpouseKinLinks): the
+// tie reaches you through your conjoint·e, not by blood.
+const SPOUSE_KIN: Bi = { fr: 'Famille de votre conjoint·e', en: "Your spouse's family" }
+
 // Complete EVERY intertwined family, not just one named group: walk the whole connected
 // family web — two families joined by a marriage/in-law land in ONE component — and
 // propose every tie the hierarchy can type precisely (cousins, grandparent spans,
@@ -1707,6 +1711,65 @@ function proposeWebLinks(people: Person[], storedLinks: ContactLink[]): FamilyLi
   return out
 }
 
+// A niece/nephew by MARRIAGE. In everyday Québécois usage your conjoint·e's blood niece
+// IS your nièce — but the blood-only closure deliberately won't cross a marriage
+// (spouse/partner are out of CLOSURE_TYPES), so « Compléter les familles » never used to
+// surface it. Bridge it HERE as an opt-in suggestion: for each spouse/partner, share
+// the people they are an aunt/uncle OF onto you. ONLY that direction — a conjoint·e's
+// aunt/uncle is belle-famille (in-law), not "ma tante", so it isn't bridged. Built on
+// the CLOSED graph so a spouse's DERIVED aunt/uncle (aunt = a sibling of a parent)
+// bridges too, not only an explicitly-stored one. proposePair still applies the usual
+// guards (an explicit stored tie wins; a generic `relative` gets lifted to the precise
+// rung). Pure.
+function proposeSpouseKinLinks(people: Person[], storedLinks: ContactLink[]): FamilyLinkProposal[] {
+  const present = new Set(people.map((p) => p.key))
+  const closed = closedLinks(people, storedLinks)
+  const stored = storedPairMap(storedLinks)
+
+  // Adjacency over the CLOSED graph, from each person's perspective:
+  // adj[X].get('aunt_uncle') = the people X is an aunt/uncle OF.
+  const adj = new Map<string, Map<RelationshipType, string[]>>()
+  const push = (from: string, t: RelationshipType, to: string) => {
+    let m = adj.get(from)
+    if (!m) adj.set(from, (m = new Map()))
+    let arr = m.get(t)
+    if (!arr) m.set(t, (arr = []))
+    arr.push(to)
+  }
+  for (const l of closed) {
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    push(aKey, l.type, bKey)
+    push(bKey, l.reverseType, aKey)
+  }
+  const nbr = (key: string, t: RelationshipType) => adj.get(key)?.get(t) ?? []
+
+  const out: FamilyLinkProposal[] = []
+  const seen = new Set<string>()
+  // Propose "me is `meType` of other" via the shared reconciler (canonical a < b).
+  const bridge = (me: string, other: string, meType: RelationshipType) => {
+    if (me === other || !present.has(me) || !present.has(other)) return
+    const pk = unorderedPair(me, other)
+    if (seen.has(pk)) return
+    seen.add(pk)
+    const a = me < other ? me : other
+    const b = me < other ? other : me
+    const type = a === me ? meType : RELATIONSHIP_INVERSES[meType]
+    proposePair(a, b, new Map([[pk, { aKey: a, bKey: b, type }]]), stored, false, SPOUSE_KIN, out)
+  }
+
+  for (const p of people) {
+    const me = p.key
+    for (const s of [...nbr(me, 'spouse'), ...nbr(me, 'partner')]) {
+      // spouse's niece/nephew → my niece/nephew (I become their aunt/uncle). ONE
+      // direction only: a conjoint·e's niece reads as "ma nièce", but a conjoint·e's
+      // aunt/uncle is belle-famille (in-law), not "ma tante" — so we don't bridge that.
+      for (const x of nbr(s, 'aunt_uncle')) bridge(me, x, 'aunt_uncle')
+    }
+  }
+  return out
+}
+
 // The one-button "does it all" proposer: every link worth offering across the WHOLE
 // circle, in one review checklist. It merges, in precedence order:
 //   • group completion (`proposeFamilyLinks`) — make each named famille group 100%
@@ -1714,6 +1777,8 @@ function proposeWebLinks(people: Person[], storedLinks: ContactLink[]): FamilyLi
 //   • transitive cross-family bridges (`inferLinks`) — co-parents → spouse, a shared
 //     parent → sibling, a spouse's parents → in-law: the deductions that join TWO
 //     families through a single junction link, each carrying its own human `reason`;
+//   • by-marriage niece/nephew (`proposeSpouseKinLinks`) — a conjoint·e's blood
+//     niece/nephew becomes yours, which the blood-only closure omits;
 //   • the whole intertwined WEB (`proposeWebLinks`) — every precise rung the hierarchy
 //     can type across the ENTIRE connected family (cousins, grandparent spans,
 //     aunt/uncle…), spanning group boundaries, so completing works family-wide and not
@@ -1750,6 +1815,9 @@ export function proposeAllFamilyLinks(
       reason: s.reason,
     })),
   )
+  // Niece/nephew by marriage (a conjoint·e's blood kin) — the closure won't cross the
+  // marriage, so bridge it here, ahead of the generic web pass.
+  const spouseKin = take(proposeSpouseKinLinks(people, storedLinks))
   const fromWeb = take(proposeWebLinks(people, storedLinks))
-  return [...fromGroups, ...transitive, ...fromWeb]
+  return [...fromGroups, ...transitive, ...spouseKin, ...fromWeb]
 }

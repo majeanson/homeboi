@@ -30,7 +30,6 @@ import { TodoTemplatesSection } from '../components/operator/todos'
 import { CercleGroupsSection } from '../components/operator/cercle'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
 import { AiSection } from '../components/operator/ai'
-import { IdleDebugSection } from '../components/operator/idleDebug'
 import { BuildInfoSection } from '../components/operator/buildInfo'
 import { MicSelfTest } from '../components/operator/micTest'
 import { GuideSection } from '../components/operator/guide'
@@ -59,8 +58,8 @@ const SECTIONS = [
   { id: 'chores', key: 'secTasks' as const }, //       chores + routines + à-compléter
   { id: 'recipes', key: 'secKitchen' as const }, //    recipes + measure pills + meals + réserve
   { id: 'shopping', key: 'secShopping' as const }, //  list config + aisles + stores + history + ghost
-  { id: 'display', key: 'secBoard' as const }, //      display + layout + ambient + photos + voice + calm
-  { id: 'ai', key: 'secSystem' as const }, //          cette semaine + recap + AI + diagnostics
+  { id: 'display', key: 'secBoard' as const }, //      display + layout + ambient + photos
+  { id: 'ai', key: 'secSystem' as const }, //          la semaine (glance+recap) + AI + voix + calme + diagnostics
 ]
 
 // Retired tab id → the tab (and the within-tab sub-section) that now hosts it, so
@@ -77,10 +76,10 @@ const TAB_ALIAS: Record<string, { tab: string; sub: string }> = {
   meals: { tab: 'recipes', sub: 'meals' },
   reserve: { tab: 'recipes', sub: 'reserve' },
   ghost: { tab: 'shopping', sub: 'ghost' },
-  calm: { tab: 'display', sub: 'calm' },
+  calm: { tab: 'ai', sub: 'calm' },
   photos: { tab: 'display', sub: 'photos' },
   week: { tab: 'ai', sub: 'thisweek' },
-  'ai-log': { tab: 'ai', sub: 'ailog' },
+  'ai-log': { tab: 'ai', sub: 'system' },
 }
 // Operator hub. Reached two ways: the signed-in operator (phone/laptop, full
 // access) OR a parent-mode kiosk (a paired wall tablet — device token, no cookie),
@@ -172,8 +171,6 @@ export function Operator() {
       mealSlots: t.operator.mealColors,
       todoTemplates: t.todos.templatesTitle,
       recipeTags: t.operator.tagsTitle,
-      tagPills: t.operator.tagPills,
-      tagUsed: t.operator.tagUsed,
       shop: t.operator.shopping,
       storeFilter: t.operator.storeFilter,
       history: t.operator.history,
@@ -185,7 +182,6 @@ export function Operator() {
       aiTest: t.operator.aiTestTitle,
       aiLog: t.operator.aiLogTitle,
       ai: t.operator.aiTitle,
-      idleDebug: t.operator.debugIdleTitle,
       guest: t.guest.title,
       choreLedger: t.operator.ledgerTitle,
       cercleGroups: t.operator.cercleGroupsTitle,
@@ -247,18 +243,36 @@ export function Operator() {
       { key: 'layout', label: t.operator.boardLayout, node: <BoardLayoutSection help={operatorHelp} /> },
       { key: 'ambient', label: t.operator.ambientTitle, node: <AmbientSettingsSection help={operatorHelp} /> },
       { key: 'photos', label: t.operator.photos, node: <PhotosSection help={operatorHelp} /> },
-      { key: 'voice', label: t.operator.voiceTitle, node: <VoiceSection help={operatorHelp} /> },
-      { key: 'calm', label: t.operator.calmTitle, node: <CalmSection help={operatorHelp} /> },
     ],
     ai: [
-      { key: 'thisweek', label: t.operator.thisWeekTitle, node: <ThisWeekTogetherSection help={operatorHelp} /> },
-      { key: 'recap', label: t.operator.recapTitle, node: <RecapSection help={operatorHelp} /> },
+      // « La semaine » — the calm week glance + the AI weekly recap, one pill.
+      {
+        key: 'thisweek',
+        label: t.operator.weekTabTitle,
+        node: (
+          <>
+            <ThisWeekTogetherSection help={operatorHelp} />
+            <RecapSection help={operatorHelp} />
+          </>
+        ),
+      },
       { key: 'ai', label: t.operator.aiTitle, node: <AiSection help={operatorHelp} /> },
-      { key: 'build', label: t.operator.buildTitle, node: <BuildInfoSection /> },
-      { key: 'idle', label: t.operator.debugIdleTitle, node: <IdleDebugSection help={operatorHelp} /> },
-      { key: 'mic', label: t.operator.micTestTitle, node: <MicSelfTest help={operatorHelp} /> },
-      // The AI error log is an AI feature — only offered when AI is switched on.
-      ...(aiEnabled ? [{ key: 'ailog', label: t.operator.aiLogTitle, node: <AiErrorLogSection help={operatorHelp} /> }] : []),
+      // Read-aloud voice + calm mode — system-wide behaviours, moved here from « Le babillard ».
+      { key: 'voice', label: t.operator.voiceTitle, node: <VoiceSection help={operatorHelp} /> },
+      { key: 'calm', label: t.operator.calmTitle, node: <CalmSection help={operatorHelp} /> },
+      // « Version & diagnostics » — build info + mic self-test + (when AI is on) the
+      // error log, grouped as one pill. (The « Mode inactif » idle-debug tool was removed.)
+      {
+        key: 'system',
+        label: t.operator.sysTabTitle,
+        node: (
+          <>
+            <BuildInfoSection />
+            <MicSelfTest help={operatorHelp} />
+            {aiEnabled && <AiErrorLogSection help={operatorHelp} />}
+          </>
+        ),
+      },
     ],
   }
 
