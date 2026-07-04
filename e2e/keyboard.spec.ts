@@ -144,9 +144,8 @@ for (const d of DEVICES) {
   test(`kb ${d.name}: recipe sheet`, async ({ page }) => {
     await open(page, '/kitchen')
     await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
-    // Card → detail peek → its primary action opens the recipe view route.
+    // Card → straight to the recipe view route (the detail peek was removed).
     await page.locator('.recipe-card').first().click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la recette' }).click()
     await page.locator('.recipe-modal').waitFor({ state: 'visible' })
     await openKeyboard(page, d.kb)
     await page.screenshot({ path: png('recipe-sheet'), fullPage: false })

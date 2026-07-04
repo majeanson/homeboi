@@ -440,11 +440,8 @@ test.describe('add sheet', () => {
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    // The board chooser keeps the everyday tiles up front and tucks the low-frequency
-    // long tail (voyage, the two day-planner shortcuts, départ, mot) behind a "Plus…"
-    // disclosure — expand it to reach "Planifier aujourd'hui".
-    await page.locator('.sheet .disclosure__summary', { hasText: 'Plus' }).click()
-    // "Planifier aujourd'hui" navigates to that day's planner scene.
+    // The board chooser shows every tile at once now (no "Plus…" overflow), so
+    // "Planifier aujourd'hui" is directly present and navigates to that day's planner.
     await expect(page.locator('.cat-pick', { hasText: 'Planifier aujourd’hui' })).toBeVisible()
     await Promise.all([
       page.waitForURL(/\/kitchen\/day\/\d+/),
@@ -663,9 +660,8 @@ test.describe('recipes', () => {
   })
 
   test('the servings scaler rescales ingredient quantities', async ({ page }) => {
-    // A card opens the detail peek; its primary action opens the recipe view route.
+    // A card opens the recipe view route directly (the detail peek was removed).
     await page.locator('.recipe-card', { hasText: 'Spaghetti' }).first().click() // 4 servings, 400 g pâtes
-    await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la recette' }).click()
     const modal = page.locator('.recipe-modal')
     await expect(modal.locator('.recipe-view__ings')).toContainText('400 g')
     await modal.locator('[aria-label="Plus de portions"]').click() // 4 → 5 servings
@@ -673,8 +669,7 @@ test.describe('recipes', () => {
   })
 
   test('a recipe pushes its ingredients to the list and opens cook mode', async ({ page }) => {
-    await page.locator('.recipe-card').first().click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la recette' }).click()
+    await page.locator('.recipe-card').first().click() // → recipe view directly (peek removed)
     const modal = page.locator('.recipe-modal')
     // "Ajouter à la liste" now opens an ingredient PICKER (e40f990) with nothing
     // pre-selected; pick all, then confirm — that's what posts recipe-to-list.

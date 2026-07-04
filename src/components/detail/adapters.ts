@@ -423,50 +423,10 @@ export function buildDay(
   }
 }
 
-// — A recipe from the book.
-// `onShop` adds "Ajouter à la liste" — opens the "which ingredients?" picker so you
-// add just the ones you're missing (not the whole list). —
-export function buildRecipe(
-  r: Recipe,
-  ctx: DetailCtx,
-  opts?: { onShop?: () => void; onMakeRoutine?: () => void; onShare?: () => void },
-): DetailModel {
-  const { t } = ctx
-  const total = recipeTotalMin(r)
-  const blocks: DetailBlock[] = []
-  if (r.tags?.length) blocks.push(tagChips(r.tags, ctx))
-  const ing = preview(r.ingredients, 6)
-  if (ing.length) blocks.push({ kind: 'list', label: t.detail.ingredients, items: ing })
-  // The recipe-card peek is the browse path: its one primary action opens the full
-  // recipe view, where Cuisiner lives (with the batch scaler that scales cook mode).
-  // "Cuisiner" is deliberately NOT repeated here — it stays on the planned-MEAL peek
-  // (buildMeal), the time-to-cook shortcut from the board, so cooking isn't a doubled
-  // decision on the browse path (peek → open recipe → Cuisiner again).
-  const actions: DetailAction[] = [
-    { key: 'open', label: t.detail.openRecipe, icon: 'book-open-bold', primary: true, href: `/kitchen/recipe/${r.id}` },
-  ]
-  if (opts?.onShop)
-    actions.push({ key: 'shop', label: t.detail.shopRecipe, icon: 'shopping-bag-bold', run: opts.onShop })
-  // Parent-only: turn this recipe into a toddler picture routine (#19). The Kitchen
-  // gates it on the parent audience, so it never appears in the toddler recipe book.
-  if (opts?.onMakeRoutine)
-    actions.push({ key: 'routine', label: t.detail.makeRoutine, icon: 'baby-bold', run: opts.onMakeRoutine })
-  // « Partager » — mint a public /partage link (opts-gated on operator + parent at the
-  // call site, since minting is a server write). Same opt-in shape as onShop/onExport.
-  if (opts?.onShare)
-    actions.push({ key: 'share', label: t.shareLink.action, icon: 'arrow-up-right-bold', run: opts.onShare })
-  return {
-    kind: 'recipe',
-    title: r.title,
-    icon: 'book-open-bold',
-    accent: CATS.meal.color,
-    photo: recipeImg(r.image),
-    whoLabel: total ? `${total} min` : undefined,
-    loveRecipeId: r.id,
-    blocks,
-    actions,
-  }
-}
+// NOTE: the recipe-card browse peek (`buildRecipe`) was removed — tapping a recipe
+// now opens the full recipe view (/kitchen/recipe/:id) directly, where every action
+// it carried (Ajouter à la liste, En routine pour enfant, Partager) lives. The
+// planned-MEAL peek (buildMeal, above) is the only recipe-adjacent peek left.
 
 // — A person in « Le cercle ». Informative peek: the face, the birthday (with a
 // calm countdown), notes, tags, and the relationship lines the caller resolved

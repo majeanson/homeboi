@@ -104,7 +104,11 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // optional « Trajet » (car + passengers) / « À apporter » (bring-list) / recurrence,
   // so we no longer split it into three tiles. `ride`/`activity` stay as deep-links
   // (FORM_ROUTES, e.g. the L'auto card's quick "+ trajet") but aren't board ＋ tiles.
-  board: ['capture', 'event', 'chores-pick', 'todo', 'routine', 'mot', 'voyage', 'plan-today', 'plan-tomorrow', 'departure'],
+  // No `routine` tile here on purpose: routines have their OWN hub section (its ＋
+  // creates + manages them), so offering "add a routine" from the board too was a
+  // redundant second door. Add routines from Routines; the board ＋ stays the
+  // glance-surface quick-adds that have no section of their own.
+  board: ['capture', 'event', 'chores-pick', 'todo', 'mot', 'voyage', 'plan-today', 'plan-tomorrow', 'departure'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`

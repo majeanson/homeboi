@@ -16,9 +16,9 @@ import { createContext, useContext } from 'react'
 export type KitchenAction = 'shop' | 'ai' | 'book' | 'useup' | 'emptyFridge'
 
 export interface KitchenActionFlags {
-  // The kitchen "Repas" (meals) sub-tab is showing AND we're the parent view.
-  // The tiles only make sense there — that's where their results land. Else the
-  // Add sheet hides them.
+  // We're the parent view of La cuisine (any sub-tab). The tiles show across every
+  // kitchen sub-tab; firing one jumps to Repas, where its result lands. Toddler
+  // view / other sections clear this and the Add sheet hides the whole group.
   active: boolean
   canShop: boolean // ≥1 planned meal maps to a recipe worth gathering
   canAiSuggest: boolean // AI is reachable (else the tile disables)

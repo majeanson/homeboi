@@ -208,13 +208,19 @@
   gap: 0.6rem;
   margin: 0;
 }
-/* Standing vs Today — a tidy two-button group with room above/below. */
+/* Anytime / Today / A date — a tidy button group with room above/below. Wraps on a
+   narrow phone rather than squishing the labels; each button keeps a sane min width. */
 .addsheet__scope {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 .addsheet__scope .btn {
-  flex: 1 1 0;
+  flex: 1 1 6rem;
+}
+/* The revealed native date picker for the "A date" scope. */
+.addsheet__scope-date {
+  width: 100%;
 }
 .addsheet__todo-templates {
   border-top: 1px solid var(--line);

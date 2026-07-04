@@ -154,10 +154,9 @@ test('scene-add-chore', async ({ page }) => {
 })
 
 test('scene-add-routine', async ({ page }) => {
-  await boot(page, '/board')
-  await page.locator('.add-fab').click()
-  // Target by text (a todo tile was inserted before routine, shifting indices).
-  await page.locator('.cat-pick', { hasText: 'Routines' }).click() // Routine tile → /routine/new scene
+  // The board ＋ no longer carries a routine tile (routines have their own hub
+  // section), so capture the add-routine scene by its route directly.
+  await boot(page, '/routine/new')
   await page.locator('.scene .operator__routine-form').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'scene-add-routine-phone', false)
@@ -246,10 +245,10 @@ test('kitchen-shop-week', async ({ page }) => {
 // the Recettes sub-tab; the base recipe modal is already in sheets.spec.
 async function openRecipe(page: Page) {
   await page.locator('.subtabs__opt').nth(2).click() // Recettes
-  // A recipe card now opens the detail peek; its primary action navigates to the
-  // recipe view route (/kitchen/recipe/:id) where the .recipe-modal lives.
+  // A recipe card now navigates STRAIGHT to the recipe view route
+  // (/kitchen/recipe/:id) where the .recipe-modal lives — the old detail peek
+  // (with its "Ouvrir la recette" button) was removed.
   await page.locator('.recipe-card').first().click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Ouvrir la recette' }).click()
   await page.locator('.recipe-modal').waitFor({ state: 'visible' })
 }
 

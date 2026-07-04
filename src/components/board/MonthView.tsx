@@ -270,18 +270,23 @@ export function MonthView({
         <button type="button" className="monthv__nav" onClick={() => setOffset((o) => o + 1)} aria-label={t.monthView.next}>
           <Icon name="caret-right-bold" size={20} />
         </button>
-        {!atToday && (
-          <button
-            type="button"
-            className="monthv__today"
-            onClick={() => {
-              setOffset(0)
-              setSelected(todayDay)
-            }}
-          >
-            {t.monthView.today}
-          </button>
-        )}
+        {/* « Aujourd'hui » — ALWAYS mounted, only hidden when already on today. Mounting
+            it on demand shrank the flex:1 title and shifted the prev/next buttons, so a
+            rapid multi-tap to skip several months missed after the first tap. Reserving
+            its slot keeps the nav buttons fixed under the finger. */}
+        <button
+          type="button"
+          className={'monthv__today' + (atToday ? ' is-hidden' : '')}
+          disabled={atToday}
+          aria-hidden={atToday}
+          tabIndex={atToday ? -1 : undefined}
+          onClick={() => {
+            setOffset(0)
+            setSelected(todayDay)
+          }}
+        >
+          {t.monthView.today}
+        </button>
       </div>
 
       <div className="monthv__grid" role="grid" aria-label={title}>
@@ -391,16 +396,28 @@ export function MonthView({
       <div className="monthv__day">
         <div className="monthv__day-h">
           <b>{cap(formatDayLong(selected, lang))}</b>
-          {/* « Voir ce moment » — open that date in « Moments » (its recap + handoff
-              list + a place to act on the day). The calendar's one way into a specific
-              day; deep-links via ?scope=date&date= so Moments lands on it. */}
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm mono monthv__open-day"
-            onClick={() => nav(momentHref(selected))}
-          >
-            {t.monthView.openMoment} <Icon name="caret-right-bold" size={14} />
-          </button>
+          <div className="monthv__day-actions">
+            {/* « Planifier cette journée » — into the full day editor (/kitchen/day/:date)
+                to add/modify that day's meals + rendez-vous + corvées + note. The action
+                surface next to « Voir ce moment »'s calm read. */}
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm mono monthv__open-day"
+              onClick={() => nav(`/kitchen/day/${selected}`)}
+            >
+              {t.detail.openDay} <Icon name="caret-right-bold" size={14} />
+            </button>
+            {/* « Voir ce moment » — open that date in « Moments » (its recap + handoff
+                list + a place to act on the day). The calendar's one way into a specific
+                day; deep-links via ?scope=date&date= so Moments lands on it. */}
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm mono monthv__open-day"
+              onClick={() => nav(momentHref(selected))}
+            >
+              {t.monthView.openMoment} <Icon name="caret-right-bold" size={14} />
+            </button>
+          </div>
         </div>
         {/* « L'auto » for the SELECTED day — its status + rides follow the picked date
             (today shows the live status; another date summarizes that day's windows). */}

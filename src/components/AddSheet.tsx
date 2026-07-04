@@ -7,7 +7,7 @@ import { useAi } from '../lib/ai'
 import { useWrite } from '../lib/write'
 import { useRecordUndo } from '../lib/toast'
 import { useAuth } from '../lib/auth'
-import { todayLocalDay, addLocalDays } from '../lib/localDay'
+import { todayLocalDay, addLocalDays, localDayStart } from '../lib/localDay'
 import { useReserveLocations } from '../lib/reservePrefs'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { useOnline } from '../lib/online'
@@ -184,13 +184,6 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
 // the chores-pick sub-choice) deliberately get NO chevron.
 const navigatesAway = (m: AddSheetMode) => !!NAV_TARGET[m] || m === 'plan-today' || m === 'plan-tomorrow'
 
-// The board chooser's low-frequency long tail — collapsed behind a calm "Plus…"
-// <Disclosure> so the everyday tiles (event · Corvées · todo · routine) lead and
-// the sheet isn't a 9-tile wall. Only the board carries these five modes, so
-// filtering any other section's chooser by this set is a no-op (empty overflow →
-// no disclosure). Every tile stays reachable once expanded.
-const BOARD_MORE = new Set<AddSheetMode>(['voyage', 'plan-today', 'plan-tomorrow', 'departure', 'mot'])
-
 // The board ＋ « Corvées » sub-choice (rendered for mode === 'chores-pick'): a
 // chore vs the two home-project kinds. Each navigates to its full-screen form
 // scene. Labels resolve from t.operator.home at render (locale-aware).
@@ -251,10 +244,10 @@ export function AddSheet({
   // AI on/off (binding present AND household hasn't switched it off). When off, the
   // "AI ideas" tile is hidden outright — capture still works (it degrades to a note).
   const { enabled: aiEnabled } = useAi()
-  // The kitchen week's three actions (shop the week / AI ideas / ideas from the
-  // book), registered by the Kitchen page. They show as icon tiles here only on
-  // the kitchen Repas tab; tapping one closes the sheet and runs the flow, whose
-  // result lands on the week grid behind us. (Replaces the old floating rail.)
+  // The kitchen week's actions (shop the week / AI ideas / ideas from the book /
+  // use-up / vide-frigo), registered by the Kitchen page. They show as icon tiles
+  // here on any parent kitchen sub-tab; tapping one closes the sheet, jumps to the
+  // Repas tab and runs the flow, whose result lands on the week grid behind us.
   const kitchenActions = useKitchenActions()
 
   // Per-action gating, same semantics the old signedIn-only chooser had: the
@@ -290,7 +283,19 @@ export function AddSheet({
     const panel = panelRef.current
     if (!panel) return
     const id = requestAnimationFrame(() => {
-      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      // Scroll ONLY within the bottom sheet, never the page behind it. A plain
+      // `scrollIntoView` walks every scroll ancestor including the document — on a
+      // tall desktop board that smooth-scrolls the whole page when the sheet opens
+      // (the "laggy scroll up"). Scope to the `.sheet` and only move when the panel
+      // is actually clipped out of its view (the -12 matches its scroll-margin).
+      const sheet = panel.closest('.sheet') as HTMLElement | null
+      if (sheet) {
+        const p = panel.getBoundingClientRect()
+        const s = sheet.getBoundingClientRect()
+        if (p.top < s.top || p.bottom > s.bottom) {
+          sheet.scrollTo({ top: sheet.scrollTop + (p.top - s.top) - 12, behavior: 'smooth' })
+        }
+      }
       panel.focus({ preventScroll: true })
     })
     return () => cancelAnimationFrame(id)
@@ -319,12 +324,34 @@ export function AddSheet({
   const [listText, setListText] = useState('')
   const listVoice = useVoiceInput(setListText)
 
-  // — todo (board) — a quick "À compléter" item. Standing by default (day null);
-  // the "Aujourd'hui" toggle pins it to today instead. Its own state + mic so a
-  // board draft never lands as a todo by accident.
+  // — todo (board) — a quick "À compléter" item. Standing by default (`global`, day
+  // null); "Aujourd'hui" pins it to today, "Une date" to any chosen calendar day. Its
+  // own state + mic so a board draft never lands as a todo by accident.
   const [todoText, setTodoText] = useState('')
   const todoVoice = useVoiceInput(setTodoText)
-  const [todoToday, setTodoToday] = useState(false)
+  const [todoScope, setTodoScope] = useState<'global' | 'today' | 'date'>('global')
+  // The chosen day for the "Une date" scope, as a native <input type="date"> string
+  // (local YYYY-MM-DD); '' until a date is picked (submit stays disabled meanwhile).
+  const [todoDate, setTodoDate] = useState('')
+  // Resolve the scope to the `day` value the API stores (local-midnight unix s, or
+  // null for a standing global). "Une date" parses the picker string at local noon
+  // then snaps to household-tz midnight (DST-safe, same as the meal/month grids); an
+  // unset/invalid date falls back to null so a half-filled form never mis-files a day.
+  const todoDaySec = (): number | null => {
+    if (todoScope === 'today') return todayLocalDay()
+    if (todoScope === 'date') {
+      const [y, m, d] = todoDate.split('-').map(Number)
+      if (!y || !m || !d) return null
+      return localDayStart(new Date(y, m - 1, d, 12))
+    }
+    return null
+  }
+  // The picker's floor: no back-dating a todo to a day already gone.
+  const todoDateMin = (() => {
+    const now = new Date()
+    const p = (n: number) => String(n).padStart(2, '0')
+    return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`
+  })()
   // Quick-add can also drop in a whole departure CHECKLIST (a template), not just a
   // single line — the same instantiate the board/day chips use, honouring the scope
   // toggle. Fetched only while the todo form is open.
@@ -457,13 +484,10 @@ export function AddSheet({
   // redundant capture tile drops out of the grid. A single-mode or kiosk-fallback
   // sheet (tiles.length === 1) keeps capture in its panel exactly as before.
   const captureAtTop = tiles.length > 1 && tiles.includes('capture')
+  // Every action a section offers shows at once in ONE responsive grid — no "Plus…"
+  // expand/collapse to hunt through (Marc's ask). The `.cat-grid` reflows to fit
+  // however many tiles a section carries (auto-fill), so 2 or 9 both look even.
   const gridTiles = captureAtTop ? tiles.filter((m) => m !== 'capture') : tiles
-  // IA: split the chooser into the everyday tiles (always shown) and the board's
-  // long tail (collapsed behind "Plus…"). BOARD_MORE only matches board modes, so
-  // every other section keeps its full grid (overflow comes back empty → no
-  // disclosure). Every tile stays reachable once the disclosure is expanded.
-  const primaryTiles = gridTiles.filter((m) => !BOARD_MORE.has(m))
-  const overflowTiles = gridTiles.filter((m) => BOARD_MORE.has(m))
 
   async function autoPick() {
     if (autoBusy) return
@@ -593,23 +617,26 @@ export function AddSheet({
     }
   }
 
-  // Add an "À compléter" todo (board ＋). Standing (day null) unless "Aujourd'hui"
-  // is picked → today's local-midnight day. Offline-safe write; the board glance +
-  // any open todo view refetch via TODOS_KEY (prefix-matches day-scoped reads), and
-  // MONTH_KEY so a today-pinned add shows on the calendar/day page. (Not BOARD_KEY:
-  // the board payload's `todos` slice is the loose-chore "À faire", not these.)
+  // Add an "À compléter" todo (board ＋). Standing (day null), pinned to today, or to
+  // a chosen date — see todoDaySec(). Offline-safe write; the board glance + any open
+  // todo view refetch via TODOS_KEY (prefix-matches day-scoped reads), and MONTH_KEY
+  // so a dated add shows on the calendar/day page. (Not BOARD_KEY: the board payload's
+  // `todos` slice is the loose-chore "À faire", not these.)
   async function submitTodo(text?: string) {
     const value = (text ?? todoText).trim()
     if (!value || busy) return
+    // "Une date" with no date picked yet — nothing to file against.
+    if (todoScope === 'date' && todoDaySec() == null) return
     setBusy(true)
     try {
       await write('todos', {
         method: 'POST',
-        body: { title: value, day: todoToday ? todayLocalDay() : null },
+        body: { title: value, day: todoDaySec() },
         affectedKeys: [TODOS_KEY, MONTH_KEY],
       })
       setTodoText('')
-      setTodoToday(false)
+      setTodoScope('global')
+      setTodoDate('')
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
@@ -619,17 +646,19 @@ export function AddSheet({
   }
 
   // Instantiate a whole checklist from the quick-add sheet — a composed list lands
-  // as one sectioned batch (see functions/api/todos.ts). Honours the scope toggle.
+  // as one sectioned batch (see functions/api/todos.ts). Honours the scope choice.
   async function quickAddTemplate(templateId: string) {
     if (busy) return
+    if (todoScope === 'date' && todoDaySec() == null) return
     setBusy(true)
     try {
       await write('todos', {
         method: 'POST',
-        body: { templateId, day: todoToday ? todayLocalDay() : null },
+        body: { templateId, day: todoDaySec() },
         affectedKeys: [TODOS_KEY, MONTH_KEY],
       })
-      setTodoToday(false)
+      setTodoScope('global')
+      setTodoDate('')
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
@@ -905,32 +934,20 @@ export function AddSheet({
             quick note is one type-and-Add away (the tile for it is dropped below). */}
         {captureAtTop && <div className="addsheet__lead">{captureForm}</div>}
 
-        {/* The section's chooser — only when there's a real choice to make.
-            The recipe tile is navigate-only: the recipe builder is a full
-            overlay that lives on the kitchen page, not in this sheet. Liste's
-            auto-pick tile drops out when the list is empty (nothing to price).
-            On the board the capture tile is hoisted out (captureAtTop) — the rest
-            stay here as explicit overrides. The everyday tiles show up front; the
-            board's long tail collapses into "Plus…" below (primary/overflow). */}
-        {tiles.length > 1 && primaryTiles.length > 0 && (
-          <div className={'cat-grid' + (primaryTiles.length === 3 ? ' cat-grid--3' : '')}>
-            {primaryTiles.map(renderTile)}
-          </div>
+        {/* The section's chooser — ONE grid with every action the section offers,
+            shown at once (no "Plus…" overflow). The recipe tile is navigate-only:
+            the recipe builder is a full overlay that lives on the kitchen page, not
+            in this sheet. Liste's auto-pick tile drops out when the list is empty
+            (nothing to price). On the board the capture tile is hoisted out
+            (captureAtTop) — the rest stay here as explicit overrides. The grid
+            reflows (auto-fill) so any tile count stays even. */}
+        {tiles.length > 1 && gridTiles.length > 0 && (
+          <div className="cat-grid">{gridTiles.map(renderTile)}</div>
         )}
 
-        {/* Board long tail — voyage / plan today / plan tomorrow / départ / laisse
-            un mot. Collapsed by default (NFR-CALM-1: nothing fills the sheet unasked);
-            every tile is reachable once expanded. Non-board sections never populate
-            this, so the disclosure simply doesn't render for them. */}
-        {overflowTiles.length > 0 && (
-          <Disclosure label={t.capture.more} className="addsheet__more">
-            <div className="cat-grid">{overflowTiles.map(renderTile)}</div>
-          </Disclosure>
-        )}
-
-        {/* The kitchen week's actions — only on the Repas tab, where their result
-            (the shop chips / the suggestion card) shows on the grid behind the
-            sheet. Tapping a tile closes the sheet and runs the flow. */}
+        {/* The kitchen week's actions (shop the week / AI ideas / book ideas /
+            use-up / vide-frigo) — offered on every parent kitchen sub-tab now.
+            Firing one jumps to Repas (where its result renders) behind the sheet. */}
         {!noKitchenActions(kitchenActions.flags) && (
           <div className="sheet__group">
             <p className="sheet__group-label mono">{t.kitchen.week}</p>
@@ -984,26 +1001,48 @@ export function AddSheet({
 
         {mode === 'todo' && (
           <div className="addsheet__todo">
-            {/* Standing (default) vs just today — applies to BOTH the typed line and
-                a checklist dropped in below. */}
+            {/* Standing (default) vs today vs a chosen date — applies to BOTH the typed
+                line and a checklist dropped in below. */}
             <div className="addsheet__scope" role="group" aria-label={t.todos.title}>
               <button
                 type="button"
-                className={'btn btn--sm' + (!todoToday ? ' btn--primary' : '')}
-                aria-pressed={!todoToday}
-                onClick={() => setTodoToday(false)}
+                className={'btn btn--sm' + (todoScope === 'global' ? ' btn--primary' : '')}
+                aria-pressed={todoScope === 'global'}
+                onClick={() => setTodoScope('global')}
               >
                 {t.todos.scopeGlobal}
               </button>
               <button
                 type="button"
-                className={'btn btn--sm' + (todoToday ? ' btn--primary' : '')}
-                aria-pressed={todoToday}
-                onClick={() => setTodoToday(true)}
+                className={'btn btn--sm' + (todoScope === 'today' ? ' btn--primary' : '')}
+                aria-pressed={todoScope === 'today'}
+                onClick={() => setTodoScope('today')}
               >
                 {t.todos.scopeToday}
               </button>
+              <button
+                type="button"
+                className={'btn btn--sm' + (todoScope === 'date' ? ' btn--primary' : '')}
+                aria-pressed={todoScope === 'date'}
+                onClick={() => {
+                  // Seed the picker to today so the input is never blank/invalid.
+                  if (!todoDate) setTodoDate(todoDateMin)
+                  setTodoScope('date')
+                }}
+              >
+                {t.todos.scopeDate}
+              </button>
             </div>
+            {todoScope === 'date' && (
+              <input
+                className="input addsheet__scope-date"
+                type="date"
+                value={todoDate}
+                min={todoDateMin}
+                onChange={(e) => setTodoDate(e.target.value)}
+                aria-label={t.todos.scopeDate}
+              />
+            )}
             <EntityCombobox<TodoTemplate>
               value={todoText}
               onChange={setTodoText}

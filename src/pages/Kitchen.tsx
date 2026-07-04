@@ -13,16 +13,13 @@ import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { useAi } from '../lib/ai'
-import { withoutHeadings } from '../lib/recipeSections'
 import { live } from '../lib/query'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays, todayLocalDay } from '../lib/localDay'
-import { type Recipe } from '../lib/recipes'
-import { useRecipeToRoutine } from '../lib/recipeToRoutine'
-import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers, useTagColors } from '../lib/queryHooks'
+import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { ReserveSection } from '../components/kitchen/ReserveSection'
@@ -39,10 +36,7 @@ import { canEmptyFridge } from '../lib/emptyFridge'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { reschedule } from '../components/kitchen/mealMutations'
 import { useEntityDetail } from '../components/detail/DetailProvider'
-import { buildRecipe, buildDay } from '../components/detail/adapters'
-import { RecipeListPicker } from '../components/RecipeListPicker'
-import { RecipeShareModal } from '../components/RecipeShareModal'
-import { useAuth } from '../lib/auth'
+import { buildDay } from '../components/detail/adapters'
 import { SIDE_SLOTS, SLOT_ICON_NAME, SLOT_TIME_ORDER } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { tintInk, faint, hairline } from '../lib/colors'
@@ -78,23 +72,12 @@ export function Kitchen() {
   // hidden slot can always be planned from a day's pencil.
   const mealPrefs = useMealPrefs()
   const nav = useNavigate()
-  // Tapping a recipe in the book opens the shared entity-detail peek (photo, tags,
-  // time, hearts) with "Ouvrir la recette" to go deeper — same peek the board uses.
+  // The day-glance peek (buildDay) still uses the shared entity-detail sheet.
+  // Tapping a recipe card, though, goes STRAIGHT to the full recipe view
+  // (/kitchen/recipe/:id) — no intermediate peek — since every action the peek
+  // offered (Ajouter à la liste, En routine pour enfant, Partager) now lives on
+  // that view. See RecipesTab's onView below.
   const detail = useEntityDetail()
-  // "Ajouter à la liste" from the recipe peek opens the same "which ingredients?"
-  // checklist the recipe sheet uses — you rarely need EVERY ingredient (most are
-  // staples), so you tick the few you're missing instead of dumping them all.
-  const [shopFor, setShopFor] = useState<Recipe | null>(null)
-  // « Partager » a recipe from its peek — operator-only (minting is a server write).
-  const { signedIn } = useAuth()
-  const [sharingRecipe, setSharingRecipe] = useState<Recipe | null>(null)
-  const shopRecipe = (r: Recipe) => {
-    if (!withoutHeadings(r.ingredients ?? []).length) return
-    setShopFor(r)
-  }
-  // Recipe → toddler picture routine (#19): each step becomes a read-aloud card,
-  // step photos copied to independent card photos. Parent-only (gated at onView).
-  const makeRoutine = useRecipeToRoutine()
   // #43 — "Cuisiner ensemble" (cook 2+ of today's dishes at once) now lives inside
   // the ＋ "Cuisiner" picker (AddSheet), beside the single-dish choices — not as a
   // standalone button up here.
@@ -110,7 +93,6 @@ export function Kitchen() {
   const useSoonQ = useQuery({ queryKey: USE_SOON_KEY, queryFn: () => api<{ soon: LowRow[] }>('use-soon'), ...live })
   const reserveQ = useQuery({ queryKey: RESERVE_KEY, queryFn: () => api<ReserveData>('reserve'), ...live })
   const recipesQ = useRecipes()
-  const tagColors = useTagColors()
   const ideasQ = useQuery({ queryKey: MEAL_IDEAS_KEY, queryFn: () => api<MealIdeasData>('meal-ideas'), ...live })
   const leftoversQ = useLeftovers()
   // Shares the ['board'] cache with the Board/Liste pages — read only for the
@@ -277,7 +259,11 @@ export function Kitchen() {
   // availability up to it. Only while the Repas tab is the parent view — that's
   // where each action's result (the shop chips / the suggestion card) appears.
   const { register: registerKitchen } = useKitchenActions()
-  const kitchenActionsActive = kitTab === 'meals' && audience === 'parent'
+  // The ＋ week-actions are offered on EVERY parent kitchen sub-tab, not just Repas —
+  // "all the section's actions, whatever sub-tab you're on". Their results still land
+  // on the Repas grid, so a handler fired from Garde-manger/Recettes first switches
+  // to Repas (see the wrapped handlers below), then scrolls the result into view.
+  const kitchenActionsActive = audience === 'parent'
   // Push the current week-action availability up to the shell's ＋ Add sheet.
   // IDEMPOTENT by design: it only ever registers the CURRENT state (active
   // handlers + flags, or cleared when inactive), and HubLayout bails when the flag
@@ -291,21 +277,28 @@ export function Kitchen() {
     registerKitchen(
       kitchenActionsActive
         ? {
-            // Wrap each flow so it ALSO scrolls its result into view — the sheet
-            // closes over the page, and the answer otherwise lands above the fold.
+            // Wrap each flow so it ALSO (a) jumps to the Repas sub-tab — where the
+            // result renders, since the action can now fire from any sub-tab — and
+            // (b) scrolls that result into view (the sheet closes over the page and
+            // the answer otherwise lands above the fold). setKitTab is a no-op when
+            // Repas is already showing.
             shop: () => {
+              setKitTab('meals')
               beginShopWeek()
               requestScroll()
             },
             ai: () => {
+              setKitTab('meals')
               suggest.suggestAi()
               requestScroll()
             },
             book: () => {
+              setKitTab('meals')
               suggest.suggestFromRecipes()
               requestScroll()
             },
             useup: () => {
+              setKitTab('meals')
               suggest.suggestUseUp()
               requestScroll()
             },
@@ -339,6 +332,7 @@ export function Kitchen() {
     suggest.suggestAi,
     suggest.suggestFromRecipes,
     suggest.suggestUseUp,
+    setKitTab,
     registerKitchen,
   ])
   // Clear the shell's kitchen actions once, when La cuisine unmounts — so leaving
@@ -755,34 +749,14 @@ export function Kitchen() {
             soonItems={soonItems}
             listItems={listItems}
             lastServed={lastServedById}
-            onView={(r) =>
-              detail.open(
-                buildRecipe(
-                  r,
-                  { t, lang, members: [], tagColors },
-                  {
-                    // Only offer "Ajouter à la liste" when the recipe has buyable
-                    // (non-heading) ingredients — otherwise the peek action was a dead
-                    // tap (shopRecipe silently no-op'd). undefined → the action hides.
-                    onShop: withoutHeadings(r.ingredients ?? []).length ? () => shopRecipe(r) : undefined,
-                    // Parent-only: a recipe can become a toddler picture routine (#19).
-                    onMakeRoutine: audience === 'parent' ? () => makeRoutine(r) : undefined,
-                    // « Partager » — operator + parent lens only (minting is a write).
-                    onShare: signedIn && audience === 'parent' ? () => setSharingRecipe(r) : undefined,
-                  },
-                ),
-              )
-            }
+            // Tapping a recipe card skips the old detail peek and opens the full
+            // recipe view directly — every action the peek carried (Ajouter à la
+            // liste, En routine pour enfant, Partager) now lives on that view.
+            onView={(r) => nav(`/kitchen/recipe/${r.id}`)}
             help={tabHelp}
           />
         )}
       </main>
-      {/* "Ajouter à la liste" from a recipe peek → pick which ingredients (not all). */}
-      {shopFor && <RecipeListPicker recipe={shopFor} onClose={() => setShopFor(null)} />}
-      {/* « Partager » from a recipe peek → mint a public /partage link. */}
-      {sharingRecipe && (
-        <RecipeShareModal recipe={sharingRecipe} open onClose={() => setSharingRecipe(null)} />
-      )}
       {/* « Vide-frigo » (#5) — the two-step ideas→recipes sheet, opened from the ＋ tile. */}
       <EmptyFridgeSheet
         open={fridgeOpen}

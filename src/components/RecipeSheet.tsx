@@ -10,6 +10,7 @@ import { useAudience } from '../lib/audience'
 import { wash, tintInk, edge } from '../lib/colors'
 import { formatDuration } from '../lib/duration'
 import { scaleIngredients } from '../lib/scale'
+import { useRecipeToRoutine } from '../lib/recipeToRoutine'
 import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/recipeSteps'
 import { groupSections, withoutHeadings } from '../lib/recipeSections'
 import { ingredientName } from '../lib/ingredient'
@@ -51,6 +52,10 @@ export function RecipeSheet({
   const confirm = useConfirm()
   const write = useWrite()
   const { audience } = useAudience()
+  // Recipe → toddler picture routine (#19): each step becomes a read-aloud card.
+  // Moved here from the recipe peek (now skipped) so the browse path keeps the
+  // action; parent-only, gated below with the other write controls (`!ro`).
+  const makeRoutine = useRecipeToRoutine()
   // Read-only: the recipe stays fully readable + cookable (reads), but the write
   // actions — add-to-list, plan-a-supper, edit, delete, share — are hidden. True for
   // a guest AND for the toddler lens: a pre-reader who cooks from KidKitchen and taps
@@ -493,6 +498,14 @@ export function RecipeSheet({
               aria-expanded={!!listPrompt}
             >
               {added ? t.recipes.addedToList : t.recipes.addToList}
+            </button>
+          )}
+          {/* « En routine pour enfant » — turn the recipe into a toddler picture
+              routine (#19). Parent-only (the toddler lens + guests are `ro`), so the
+              one-way door stays closed. */}
+          {!ro && recipe.steps.length > 0 && (
+            <button type="button" className="btn btn--ghost mono" onClick={() => makeRoutine(recipe)}>
+              <InlineIcon name="baby-bold" /> {t.detail.makeRoutine}
             </button>
           )}
           {/* « Partager » — mint a real /partage/<id> link (photo + ingredients + steps)

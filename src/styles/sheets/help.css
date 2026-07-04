@@ -246,9 +246,14 @@
 }
 /* Four modes in a balanced 2×2 (was 3+1, which stranded the fourth on its own
    row) — and the wider cards are easier to tap. */
+/* The ＋ sheet's action tiles. auto-fill + a min track width makes the grid reflow
+   to the tile count and the sheet width on its own — 2 tiles or 9, phone or tablet,
+   it stays an even grid with no stranded/stretched last tile and no manual column
+   count per section. Tiles are ~min 100px; a narrow phone lands 3 across, a wider
+   sheet more. (Overrides like .cat-grid--3 can still pin an exact count.) */
 .cat-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 10px;
   margin: 6px 0 18px;
 }
@@ -297,20 +302,10 @@
   border-color: var(--marigold);
   background: var(--marigold-wash);
 }
-/* The kitchen's contextual chooser has three actions — one even row, so the
-   2×2 default doesn't strand the third tile alone (same trap the comment above
-   describes for the old 3+1). */
+/* Pin an exact 3-up row where a chooser wants it (e.g. the cook-mode meal picker),
+   overriding the auto-fill default above. */
 .cat-grid--3 {
   grid-template-columns: repeat(3, 1fr);
-}
-/* The board chooser's "Plus…" overflow (the collapsed long tail). Its inner tile
-   grid already carries the chooser's own bottom spacing, so trim the disclosure
-   body's extra top gap and give the whole block a little breathing room below. */
-.addsheet__more {
-  margin-bottom: 10px;
-}
-.addsheet__more .cat-grid {
-  margin-top: 6px;
 }
 /* A labelled subgroup of tiles inside the sheet (the kitchen week's actions —
    shop the week / AI ideas / book ideas — sit apart from the add chooser). The

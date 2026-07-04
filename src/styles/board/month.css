@@ -49,6 +49,12 @@
   font-size: var(--text-sm);
   cursor: pointer;
 }
+/* Kept in flow so its slot never shifts the prev/next buttons during a rapid
+   multi-tap; just hidden + inert when already on today. */
+.monthv__today.is-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
 .monthv__grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -209,7 +215,17 @@
   justify-content: space-between;
   gap: 8px;
 }
-/* "Planifier cette journée →" — the calendar's link into the full day page. */
+/* The day-panel header's two entries — « Planifier cette journée » (edit) +
+   « Voir ce moment » (read). Grouped on the right; wrap under each other on a narrow
+   phone rather than squeezing the date. */
+.monthv__day-actions {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+/* "Planifier cette journée →" / "Voir ce moment →" — the calendar's links out of a day. */
 .monthv__open-day {
   flex: none;
   display: inline-flex;
@@ -300,9 +316,18 @@
     height: 5px;
   }
 }
+/* Desktop / wall tablet: on a wide surface the 7 columns are broad, so a square
+   (aspect-ratio 1/1) cell grew ~250px tall and the six-week grid ran far past the
+   fold — you had to scroll to reach the day panel. Size the cells off the VIEWPORT
+   instead: budget ~80vh for the whole calendar (nav + weekday row + six weeks) so all
+   six rows AND the detail panel below sit on one screen. Height is set only on the day
+   cells (not the weekday header), so those rows share the budget while the header stays
+   compact; clamp keeps cells tap-friendly on a short window and sane on a tall one. */
 @media (min-width: 900px) {
   .monthv__cell {
-    min-height: 72px;
+    aspect-ratio: auto;
+    min-height: 0;
+    height: clamp(64px, calc((80vh - 8rem) / 6), 200px);
   }
   .monthv__num {
     font-size: 1.05rem;

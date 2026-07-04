@@ -2453,9 +2453,10 @@ export const FR = {
     removed: (s: string) => `« ${s} » retiré`,
     clearedN: (n: number) => `${n} effacé${n > 1 ? 's' : ''}`,
     fromTemplate: (s: string) => `Liste « ${s} » ajoutée`,
-    // Portée choisie dans la feuille ＋ : standing (en tout temps) ou aujourd’hui.
+    // Portée choisie dans la feuille ＋ : standing (en tout temps), aujourd’hui, ou une date précise.
     scopeGlobal: 'En tout temps',
     scopeToday: 'Aujourd’hui',
+    scopeDate: 'Une date',
     // Réglages ▸ À compléter (modèles de listes).
     templatesTitle: 'Listes à compléter',
     templatesHint:
@@ -4902,6 +4903,7 @@ export const EN: typeof FR = {
     fromTemplate: (s: string) => `"${s}" list added`,
     scopeGlobal: 'Anytime',
     scopeToday: 'Today',
+    scopeDate: 'A date',
     templatesTitle: 'Checklists',
     templatesHint:
       'Prep reusable lists (e.g. "Before leaving", "At grandpa\'s") and drop them in with one tap when things get hectic. A list can even include others — they become sections.',

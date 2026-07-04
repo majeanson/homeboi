@@ -580,6 +580,21 @@ textarea.input {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+/* Native date/time inputs (and selects) paint their placeholder text + picker
+   chrome from `color-scheme`, NOT our `color`. Without it iOS assumes a light
+   scheme and renders an EMPTY `type=date`/`type=time`'s placeholder ("jj/mm/aaaa",
+   "--:--") in a dark grey that's invisible on the app's dark themes — the field
+   just reads as an empty box (Marc, 2026-07-03). Bind the scheme to the active
+   theme so the native placeholder + picker flip light↔dark with the palette.
+   Scoped to `.input` (not :root) so no app surface gets a native repaint. */
+.input {
+  color-scheme: light;
+}
+:root[data-theme='night'] .input,
+:root[data-theme='twilight'] .input,
+:root[data-theme='deep-twilight'] .input {
+  color-scheme: dark;
+}
 .tag {
   font-family: var(--mono);
   font-size: 0.72rem;
