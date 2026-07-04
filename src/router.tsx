@@ -75,6 +75,9 @@ const VoyagePage = lazy(() => import('./pages/VoyagePage').then((m) => ({ defaul
 // « Voyage partagé » — the cross-household shared trip scene + its invite-link landing.
 const SharedVoyagePage = lazy(() => import('./pages/SharedVoyagePage').then((m) => ({ default: m.SharedVoyagePage })))
 const SharedVoyageJoinPage = lazy(() => import('./pages/SharedVoyageJoinPage').then((m) => ({ default: m.SharedVoyageJoinPage })))
+// « Partager » — the PUBLIC share page (a recipe/event/routine/family shared by link).
+// Viewable with NO account; standalone (no hub chrome). Auth is server-side per usual.
+const PartagePage = lazy(() => import('./pages/PartagePage').then((m) => ({ default: m.PartagePage })))
 // « Diffuser au salon » — the living-room TV board: the real board, read-only +
 // scaled, shown on a TV via Chromecast. Standalone (no hub chrome).
 const CastPage = lazy(() => import('./pages/CastPage').then((m) => ({ default: m.CastPage })))
@@ -197,6 +200,8 @@ export function AppRoutes() {
             + handoff checklist. ?scope= deep-links a preset (the dusk board card uses it). */}
         <Route path="/moment" element={<MomentScene />} />
         <Route path="/share" element={<SharePage />} />
+        {/* « Partager » — the public share page (no account needed; the id is the cap). */}
+        <Route path="/partage/:id" element={<PartagePage />} />
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />

@@ -2189,6 +2189,12 @@
 .cercle-share__link .input {
   width: 100%;
 }
+/* Copy + « Partager via… » sit side by side under the link (the generic ShareModal). */
+.cercle-share__linkbtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+}
 .cercle-share__list {
   margin-top: var(--space-4, 16px);
 }

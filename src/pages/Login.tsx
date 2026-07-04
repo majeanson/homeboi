@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
 import { StatusMessage } from '../components/StatusMessage'
 import { useT } from '../i18n'
@@ -10,6 +10,7 @@ import { useSurface } from '../lib/surface'
 export function Login() {
   const t = useT()
   const nav = useNavigate()
+  const [params] = useSearchParams()
   const { refresh } = useAuth()
   const { setSurface } = useSurface()
   const [email, setEmail] = useState('')
@@ -27,7 +28,11 @@ export function Login() {
       // Signing in is the personal-device path — land on the mobile home (the
       // glance + quick capture board), not the settings panel.
       setSurface('mobile')
-      nav('/board')
+      // Honour a same-origin ?next= (e.g. a /partage/<id> share the visitor came from
+      // wanting to import) — but ONLY an internal path, never an absolute/protocol URL,
+      // so the redirect can't be turned into an open-redirect off-site.
+      const next = params.get('next')
+      nav(next && next.startsWith('/') && !next.startsWith('//') ? next : '/board')
     } catch {
       setError(true)
     } finally {

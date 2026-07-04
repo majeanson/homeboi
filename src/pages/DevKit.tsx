@@ -24,6 +24,7 @@ import { EmojiPicker } from '../components/EmojiPicker'
 import { FaceSelect } from '../components/FaceSelect'
 import { GroupForm } from '../components/cercle/GroupForm'
 import { FamilyShareModal } from '../components/cercle/FamilyShareModal'
+import { ShareModal } from '../components/ShareModal'
 import { BusinessForm } from '../components/cercle/BusinessForm'
 import { PetForm } from '../components/cercle/PetForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
@@ -480,6 +481,7 @@ export function DevKit() {
   const [modalOpen, setModalOpen] = useState(false)
   const [familyShareOpen, setFamilyShareOpen] = useState(false)
   const [voyageShareOpen, setVoyageShareOpen] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
   const [drawChoiceOpen, setDrawChoiceOpen] = useState(false)
   const [readReviewOpen, setReadReviewOpen] = useState(false)
   const [drawChoiceMode, setDrawChoiceMode] = useState<DrawEditMode | null>(null)
@@ -829,6 +831,30 @@ export function DevKit() {
         // the create flow and the inline edit on a group header.
         <Demo label="name + kind + colour — create / edit a Cercle group">
           <GroupForm submitLabel={t.cercle.addGroup} onSubmit={() => {}} onCancel={() => {}} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'ShareModal',
+      file: 'components/ShareModal.tsx',
+      kw: 'partager share link lien qr copy revoke snapshot recipe recette generic sheet',
+      render: () => (
+        // The generic share sheet: Modal + copy-flip + « Partager via… » + QR. onCreate
+        // mints the link (here a stub); the family/voyage/recipe sheets wrap it. Below
+        // the link block, children hold a roster or a revoke ledger.
+        <Demo label="generic share sheet — mint a link, copy, QR (onCreate is a stub here)">
+          <button className="btn" onClick={() => setShareModalOpen(true)}>
+            {t.shareLink.action}
+          </button>
+          <ShareModal
+            open={shareModalOpen}
+            onClose={() => setShareModalOpen(false)}
+            title={`${t.shareLink.action} · Macaroni chinois`}
+            intro={t.shareLink.recipeIntro}
+            linkHint={t.shareLink.linkHint}
+            onCreate={async () => ({ url: `${location.origin}/partage/DEMOshareId` })}
+          />
         </Demo>
       ),
     },

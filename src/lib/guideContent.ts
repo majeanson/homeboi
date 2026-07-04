@@ -1510,6 +1510,51 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    id: 'share',
+    icon: 'arrow-up-right-bold',
+    group: 'concepts',
+    title: { fr: 'Partager (recettes, familles…)', en: 'Sharing (recipes, families…)' },
+    what: {
+      fr: 'Envoie une recette, un rendez-vous ou une famille par un vrai lien : une belle page que n’importe qui peut ouvrir — même sans Babillard.',
+      en: 'Send a recipe, an event, or a family as a real link: a proper page anyone can open — even without Babillard.',
+    },
+    points: [
+      {
+        label: { fr: 'Une page, pas un copier-coller', en: 'A page, not a paste' },
+        detail: {
+          fr: 'Sur une recette, touche « Partager » : on crée un lien vers une page avec la photo, les ingrédients et les étapes.',
+          en: 'On a recipe, tap “Share”: it creates a link to a page with the photo, ingredients, and steps.',
+        },
+        why: {
+          fr: 'Un lien qui s’ouvre proprement partout vaut mieux qu’un texte illisible.',
+          en: 'A link that opens cleanly everywhere beats an unreadable text blob.',
+        },
+      },
+      {
+        label: { fr: 'Ceux qui ont Babillard l’ajoutent', en: 'Babillard users add it' },
+        detail: {
+          fr: 'Un ami connecté à Babillard voit un bouton « Ajouter à mon livre » ; les autres découvrent Babillard.',
+          en: 'A friend signed into Babillard sees an “Add to my book” button; everyone else discovers Babillard.',
+        },
+        why: {
+          fr: 'La copie arrive intacte dans leur compte, sans re-taper.',
+          en: 'The copy lands intact in their account, no re-typing.',
+        },
+      },
+      {
+        label: { fr: 'Tu gardes la main', en: 'You stay in control' },
+        detail: {
+          fr: 'Un lien est une copie unique qui expire de lui-même ; retire-le quand tu veux dans Réglages ▸ Partage.',
+          en: 'A link is a one-time copy that expires on its own; remove it anytime in Settings ▸ Sharing.',
+        },
+        why: {
+          fr: 'Rien n’est partagé « en direct » — la copie ne change plus après l’envoi.',
+          en: 'Nothing is shared “live” — the copy doesn’t change after you send it.',
+        },
+      },
+    ],
+  },
+  {
     id: 'todos',
     icon: 'check-bold',
     group: 'concepts',

@@ -2243,6 +2243,49 @@ export const FR = {
     mergeInto: (name: string) => `Fusionner avec ${name}`,
     createNew: 'Créer une nouvelle fiche',
   },
+  // « Partager » — le partage générique (recette / rendez-vous / routine) : la feuille
+  // ShareModal + la page publique /partage que même un non-utilisateur peut voir.
+  // (Nommé `shareLink` car `share` est déjà la cible de partage PWA /share.)
+  shareLink: {
+    action: 'Partager',
+    createLink: 'Créer le lien',
+    creating: 'Création…',
+    copyLink: 'Copier le lien',
+    copied: 'Copié !',
+    scanHint: 'Ou fais-le scanner :',
+    shareVia: 'Partager via…',
+    linkHint: 'Le lien expire de lui-même après un an. Tu peux le retirer quand tu veux.',
+    recipeIntro:
+      'Crée un vrai lien vers cette recette. N’importe qui peut la voir; ceux qui ont Babillard peuvent l’ajouter à leur livre.',
+    kinds: { recipe: 'Recette', event: 'Rendez-vous', routine: 'Routine', family: 'Famille' },
+    // « Mes partages » — Réglages ▸ Partage : la liste à retirer.
+    myShares: 'Mes partages',
+    mySharesHint: 'Tes liens de partage actifs. Retire-en un quand tu veux — le lien cesse alors de fonctionner.',
+    noShares: 'Aucun partage actif.',
+    revoke: 'Retirer',
+    revokeConfirm: 'Retirer ce partage ? Le lien cessera de fonctionner.',
+    expiresOn: (date: string) => `Expire le ${date}`,
+    sharedBy: (name: string) => `Partagé par ${name}`,
+    // La page publique /partage.
+    joinTitle: 'Fait avec Babillard',
+    joinLead: 'Babillard, c’est le babillard familial calme pour la maison. Crée le tien, c’est gratuit.',
+    joinCta: 'Découvrir Babillard',
+    alreadyAccount: 'J’ai déjà un compte',
+    addToBook: 'Ajouter à mon livre',
+    addToAgenda: 'Ajouter à mon agenda',
+    addRoutine: 'Ajouter à mes routines',
+    adding: 'Ajout…',
+    added: 'Ajouté !',
+    openInApp: 'Ouvrir dans Babillard',
+    notFound: 'Ce partage n’existe plus ou a expiré.',
+    // Rendu de la recette sur la page publique.
+    ingredients: 'Ingrédients',
+    steps: 'Préparation',
+    notes: 'Notes',
+    // Aperçu famille (la charge utile PII reste réservée aux comptes connectés).
+    familyTeaser: (people: number, pets: number) =>
+      `${people} ${people === 1 ? 'personne' : 'personnes'}${pets > 0 ? ` · ${pets} 🐾` : ''}`,
+  },
   // « Voyage partagé » — UN voyage modifié en direct par jusqu’à 6 maisonnées.
   sharedVoyage: {
     badge: 'Partagé',
@@ -4660,6 +4703,42 @@ export const EN: typeof FR = {
     addSelected: (n: number) => `Add selection (${n})`,
     mergeInto: (name: string) => `Merge with ${name}`,
     createNew: 'Create a new card',
+  },
+  shareLink: {
+    action: 'Share',
+    createLink: 'Create the link',
+    creating: 'Creating…',
+    copyLink: 'Copy link',
+    copied: 'Copied!',
+    scanHint: 'Or have it scanned:',
+    shareVia: 'Share via…',
+    linkHint: 'The link expires on its own after a year. You can remove it anytime.',
+    recipeIntro:
+      'Create a real link to this recipe. Anyone can view it; people who have Babillard can add it to their book.',
+    kinds: { recipe: 'Recipe', event: 'Event', routine: 'Routine', family: 'Family' },
+    myShares: 'My shares',
+    mySharesHint: 'Your active share links. Remove one anytime — the link then stops working.',
+    noShares: 'No active shares.',
+    revoke: 'Remove',
+    revokeConfirm: 'Remove this share? The link will stop working.',
+    expiresOn: (date: string) => `Expires ${date}`,
+    sharedBy: (name: string) => `Shared by ${name}`,
+    joinTitle: 'Made with Babillard',
+    joinLead: 'Babillard is the calm family board for the home. Make your own — it’s free.',
+    joinCta: 'Discover Babillard',
+    alreadyAccount: 'I already have an account',
+    addToBook: 'Add to my book',
+    addToAgenda: 'Add to my agenda',
+    addRoutine: 'Add to my routines',
+    adding: 'Adding…',
+    added: 'Added!',
+    openInApp: 'Open in Babillard',
+    notFound: 'This share no longer exists or has expired.',
+    ingredients: 'Ingredients',
+    steps: 'Steps',
+    notes: 'Notes',
+    familyTeaser: (people: number, pets: number) =>
+      `${people} ${people === 1 ? 'person' : 'people'}${pets > 0 ? ` · ${pets} 🐾` : ''}`,
   },
   sharedVoyage: {
     badge: 'Shared',

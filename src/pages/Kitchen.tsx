@@ -41,6 +41,8 @@ import { reschedule } from '../components/kitchen/mealMutations'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildRecipe, buildDay } from '../components/detail/adapters'
 import { RecipeListPicker } from '../components/RecipeListPicker'
+import { RecipeShareModal } from '../components/RecipeShareModal'
+import { useAuth } from '../lib/auth'
 import { SIDE_SLOTS, SLOT_ICON_NAME, SLOT_TIME_ORDER } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { tintInk, faint, hairline } from '../lib/colors'
@@ -83,6 +85,9 @@ export function Kitchen() {
   // checklist the recipe sheet uses — you rarely need EVERY ingredient (most are
   // staples), so you tick the few you're missing instead of dumping them all.
   const [shopFor, setShopFor] = useState<Recipe | null>(null)
+  // « Partager » a recipe from its peek — operator-only (minting is a server write).
+  const { signedIn } = useAuth()
+  const [sharingRecipe, setSharingRecipe] = useState<Recipe | null>(null)
   const shopRecipe = (r: Recipe) => {
     if (!withoutHeadings(r.ingredients ?? []).length) return
     setShopFor(r)
@@ -762,6 +767,8 @@ export function Kitchen() {
                     onShop: withoutHeadings(r.ingredients ?? []).length ? () => shopRecipe(r) : undefined,
                     // Parent-only: a recipe can become a toddler picture routine (#19).
                     onMakeRoutine: audience === 'parent' ? () => makeRoutine(r) : undefined,
+                    // « Partager » — operator + parent lens only (minting is a write).
+                    onShare: signedIn && audience === 'parent' ? () => setSharingRecipe(r) : undefined,
                   },
                 ),
               )
@@ -772,6 +779,10 @@ export function Kitchen() {
       </main>
       {/* "Ajouter à la liste" from a recipe peek → pick which ingredients (not all). */}
       {shopFor && <RecipeListPicker recipe={shopFor} onClose={() => setShopFor(null)} />}
+      {/* « Partager » from a recipe peek → mint a public /partage link. */}
+      {sharingRecipe && (
+        <RecipeShareModal recipe={sharingRecipe} open onClose={() => setSharingRecipe(null)} />
+      )}
       {/* « Vide-frigo » (#5) — the two-step ideas→recipes sheet, opened from the ＋ tile. */}
       <EmptyFridgeSheet
         open={fridgeOpen}

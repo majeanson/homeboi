@@ -21,7 +21,8 @@ import { IngredientLine } from './IngredientLine'
 import { MealPlanPicker } from './kitchen/MealPlanPicker'
 import { useModal } from '../lib/useModal'
 import { useConfirm } from '../lib/confirm'
-import { shareRecipe } from '../lib/shareRecipe'
+import { useAuth } from '../lib/auth'
+import { RecipeShareModal } from './RecipeShareModal'
 import { SceneHead } from './SceneHead'
 
 // Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method,
@@ -56,9 +57,14 @@ export function RecipeSheet({
   // ✕ lands back on this sheet, and the toddler one-way-door must never expose the
   // parent's edit/delete/plan/share controls (NFR-KID: no escape hatch to admin).
   const ro = isGuest() || audience === 'toddler'
+  // A share link is minted by a server write (operator-only), so the « Partager » button
+  // shows only for the signed-in operator — not a guest, a kiosk device, or the toddler
+  // lens. (The old plain-text Web-Share was client-only; the real link needs an account.)
+  const { signedIn } = useAuth()
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onClose)
   const [added, setAdded] = useState(false)
+  const [sharing, setSharing] = useState(false)
   // "Add to list" opens a checklist (you rarely need EVERY ingredient — most are
   // staples you already have). null = closed; each row is a buyable name you tick
   // to add. Starts all-unticked, so it's "pick the few I'm missing", not "untick
@@ -489,23 +495,11 @@ export function RecipeSheet({
               {added ? t.recipes.addedToList : t.recipes.addToList}
             </button>
           )}
-          {/* Share the recipe as plain text via the platform sheet — a read action,
-              so it's available to guests too. The one home for sharing (moved off
-              the cook-mode bar). Hidden where Web Share is unavailable, and hidden for
-              the toddler lens (the OS share sheet is a chrome escape a pre-reader
-              shouldn't land in — the one-way door stays closed). */}
-          {typeof navigator !== 'undefined' && !!navigator.share && audience !== 'toddler' && (
-            <button
-              type="button"
-              className="btn btn--ghost mono"
-              onClick={() =>
-                shareRecipe(recipe, {
-                  ingredients: t.recipes.ingredients,
-                  steps: t.recipes.steps,
-                  notes: t.recipes.notes,
-                })
-              }
-            >
+          {/* « Partager » — mint a real /partage/<id> link (photo + ingredients + steps)
+              anyone can open, not an ugly text paste. A server write, so operator-only
+              (hidden for guests/kiosk/toddler — the one-way door stays closed). */}
+          {signedIn && audience !== 'toddler' && (
+            <button type="button" className="btn btn--ghost mono" onClick={() => setSharing(true)}>
               <InlineIcon name="arrow-up-right-bold" /> {t.recipes.shareRecipe}
             </button>
           )}
@@ -521,6 +515,7 @@ export function RecipeSheet({
           )}
         </div>
       </div>
+      {signedIn && <RecipeShareModal recipe={recipe} open={sharing} onClose={() => setSharing(false)} />}
     </div>
   )
 }

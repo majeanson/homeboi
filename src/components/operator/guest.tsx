@@ -8,7 +8,10 @@ import { IntakeReview } from './IntakeReview'
 import { PostboxReview } from './PostboxReview'
 import { api } from '../../lib/api'
 import { isGuest, type GuestKind } from '../../lib/device'
-import { CERCLE_KEY } from '../../lib/queryKeys'
+import { CERCLE_KEY, SHARES_KEY } from '../../lib/queryKeys'
+import { useConfirm } from '../../lib/confirm'
+import { useShares, revokeShare, type ShareKind } from '../../lib/share'
+import type { IconName } from '../Icon'
 import {
   unifyCircle,
   type Contact,
@@ -372,6 +375,9 @@ export function GuestSection({ help }: { help?: HelpMode }) {
         {/* Every still-live link you've minted, each with a « Révoquer » so a leaked
             or over-shared one can be killed before its TTL (§509). Hidden when empty. */}
         {subTab === 'phone' && <ActiveLinksList />}
+        {/* « Mes partages » — the snapshot shares (recette/rendez-vous/routine/famille)
+            handed out via a /partage link, each revocable. Hidden when empty (calm). */}
+        {subTab === 'phone' && <MySharesList />}
       </OperatorSection>
 
       {/* The two "things people sent us" buckets — both hidden until one arrives, so
@@ -383,6 +389,71 @@ export function GuestSection({ help }: { help?: HelpMode }) {
         </>
       )}
     </>
+  )
+}
+
+// « Mes partages » — the snapshot shares this household handed out via a /partage link
+// (recipe/event/routine/family, migration 0102). One row each with « Retirer » (DELETE
+// /api/share → the link dies + its media copies are freed). Hidden when empty (calm),
+// mirroring ActiveLinksList. Distinct from the guest-link ledger above: those are typed
+// read-only sessions into THIS household; these are one-time COPIES sent OUT.
+const SHARE_KIND_ICON: Record<ShareKind, IconName> = {
+  recipe: 'book-open-bold',
+  event: 'calendar-blank-bold',
+  routine: 'baby-bold',
+  family: 'user-bold',
+}
+
+function MySharesList() {
+  const t = useT()
+  const { lang } = useLang()
+  const qc = useQueryClient()
+  const confirm = useConfirm()
+  const { data } = useShares()
+  const shares = data?.shares ?? []
+  const [busyId, setBusyId] = useState<string | null>(null)
+  if (shares.length === 0) return null
+  const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
+
+  async function revoke(id: string) {
+    if (!(await confirm({ message: t.shareLink.revokeConfirm, confirmLabel: t.shareLink.revoke, tone: 'danger' }))) return
+    setBusyId(id)
+    try {
+      await revokeShare(id)
+      await qc.invalidateQueries({ queryKey: SHARES_KEY })
+    } catch {
+      /* the refetch reconciles — leave the row */
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  return (
+    <div className="operator__guest-links">
+      <h4 className="mono">{t.shareLink.myShares}</h4>
+      <p className="operator__hint mono">{t.shareLink.mySharesHint}</p>
+      <ul className="operator__list meal-slots">
+        {shares.map((s) => (
+          <li key={s.id} className="meal-slots__row">
+            <span className="meal-slots__name">
+              <InlineIcon name={SHARE_KIND_ICON[s.kind]} />{' '}
+              <strong>{s.label || t.shareLink.kinds[s.kind]}</strong>
+              {s.expiresAt != null && (
+                <span className="mono meal-slots__label">
+                  {' · '}
+                  {t.shareLink.expiresOn(
+                    new Date(s.expiresAt * 1000).toLocaleDateString(loc, { day: 'numeric', month: 'short' }),
+                  )}
+                </span>
+              )}
+            </span>
+            <button type="button" className="btn btn--ghost mono" disabled={busyId === s.id} onClick={() => void revoke(s.id)}>
+              <InlineIcon name="x-bold" /> {t.shareLink.revoke}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

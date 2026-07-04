@@ -98,6 +98,12 @@ export const TRIP_PACKING_KEY = ['trip-packing']
 export const SHARED_TRIPS_KEY = ['shared-trips']
 export const SHARED_TRIP_NOTES_KEY = ['shared-trip-notes']
 export const SHARED_TRIP_PACKING_KEY = ['shared-trip-packing']
+// « Partager » — the sender's snapshot-share ledger (/api/share → « Mes partages »).
+// Read by the generic ShareModal (to reflect a fresh mint) AND Réglages ▸ Partage
+// (the revoke list), so the key is shared — creating/revoking a share invalidates it
+// and both surfaces agree. (Family shares still also read ['family-shares'] via the
+// legacy family-share route until wave 4 folds it onto this key.)
+export const SHARES_KEY = ['shares']
 // Household members (/api/members): the roster read across the board, capture,
 // forms, and Réglages — shared so a member edit invalidates one key everywhere.
 export const MEMBERS_KEY = ['members']

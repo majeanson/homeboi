@@ -409,7 +409,11 @@ export function buildDay(
 // — A recipe from the book.
 // `onShop` adds "Ajouter à la liste" — opens the "which ingredients?" picker so you
 // add just the ones you're missing (not the whole list). —
-export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => void; onMakeRoutine?: () => void }): DetailModel {
+export function buildRecipe(
+  r: Recipe,
+  ctx: DetailCtx,
+  opts?: { onShop?: () => void; onMakeRoutine?: () => void; onShare?: () => void },
+): DetailModel {
   const { t } = ctx
   const total = recipeTotalMin(r)
   const blocks: DetailBlock[] = []
@@ -430,6 +434,10 @@ export function buildRecipe(r: Recipe, ctx: DetailCtx, opts?: { onShop?: () => v
   // gates it on the parent audience, so it never appears in the toddler recipe book.
   if (opts?.onMakeRoutine)
     actions.push({ key: 'routine', label: t.detail.makeRoutine, icon: 'baby-bold', run: opts.onMakeRoutine })
+  // « Partager » — mint a public /partage link (opts-gated on operator + parent at the
+  // call site, since minting is a server write). Same opt-in shape as onShop/onExport.
+  if (opts?.onShare)
+    actions.push({ key: 'share', label: t.shareLink.action, icon: 'arrow-up-right-bold', run: opts.onShare })
   return {
     kind: 'recipe',
     title: r.title,
