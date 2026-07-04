@@ -1,4 +1,5 @@
 import { useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useModal } from '../lib/useModal'
 import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 import { useT } from '../i18n'
@@ -41,7 +42,13 @@ export function Sheet({
   useModal(ref, onClose, { open })
   useSwipeToDismiss(ref, onClose, { open })
 
-  return (
+  // Portal to <body>. The sheet is `position: fixed`, but a transformed ancestor
+  // (e.g. AddSheet's own `.sheet.show` with `transform: translateY(0)`) becomes the
+  // containing block for fixed descendants — so a Sheet nested inside another Sheet
+  // (FaceSelect's "À qui" picker inside AddSheet) was positioned relative to the outer
+  // box and its hide-transform slid it *within* that scrollable box instead of
+  // off-screen, leaving the picker stuck open. Portaling escapes any such ancestor.
+  return createPortal(
     <>
       <div className={'scrim' + (open ? ' show' : '')} onClick={onClose} aria-hidden="true" />
       <div
@@ -59,6 +66,7 @@ export function Sheet({
         )}
         {children}
       </div>
-    </>
+    </>,
+    document.body,
   )
 }
