@@ -17,7 +17,6 @@ import {
   type TemplatesData,
   todosKey,
   todosPath,
-  groupBySection,
   isChecked,
   checkedIds,
 } from '../../lib/todos'
@@ -89,9 +88,23 @@ export function TodoSection({
   const [editText, setEditText] = useState('')
 
   const all = removal.visible(data?.todos ?? [])
-  // Grouped into sections (a composed list instantiates "as a list with sections");
-  // a plain list / manual adds are one headless run.
-  const groups = groupBySection(all)
+  // De-fragment into buckets: every loose item (manual / global / today add) in
+  // ONE `loose` run, and each named section (a composed checklist instantiates "as
+  // a list with sections") merged by title into `sectionGroups`. We bucket across
+  // the WHOLE list rather than per contiguous run so a named section sitting
+  // between two batches of loose items can't split them into two "En tout temps"
+  // headers (or the same section into two headers). Section order = first-seen.
+  const loose: Todo[] = []
+  const sectionMap = new Map<string, Todo[]>()
+  for (const td of all) {
+    if (td.section == null) loose.push(td)
+    else {
+      const arr = sectionMap.get(td.section)
+      if (arr) arr.push(td)
+      else sectionMap.set(td.section, [td])
+    }
+  }
+  const sectionGroups = [...sectionMap.entries()]
   const openCount = all.filter((todo) => !isChecked(todo)).length
   const checked = checkedIds(all)
   const faceOf = (id: string | null) => (id ? members.find((m) => m.id === id) : undefined)
@@ -290,48 +303,43 @@ export function TodoSection({
         <EmptyState tone="calm">{t.todos.empty}</EmptyState>
       ) : (
         <div className="todo-rows">
-          {groups.flatMap((g, gi) => {
-            // A named section (from a composed checklist) rides an always-visible
-            // header + all its rows — NOT a collapse. On the board glance we want
-            // every todo listed at once; the expand/collapse belongs to the Réglages
-            // template editor (configuring), not the read surface.
-            if (g.section) {
-              return [
-                <div key={gi} className="todo-group">
-                  <div className="todo-grouphead">{g.section}</div>
-                  {g.todos.map(renderRow)}
-                </div>,
-              ]
-            }
-            // A loose run. The board glance is the ONE place that mixes standing
-            // globals with today-pinned todos; when both are present, split them into
-            // two headed groups ("En tout temps" / "Aujourd'hui") rather than tagging
-            // each row — a per-row pill ate a phone row's width. Homogeneous lists +
-            // day pages stay headerless.
-            if (!showScope) {
-              return [
-                <div key={gi} className="todo-group">
-                  {g.todos.map(renderRow)}
-                </div>,
-              ]
-            }
-            const globals = g.todos.filter((td) => td.day == null)
-            const todays = g.todos.filter((td) => td.day != null)
-            return [
-              globals.length > 0 && (
-                <div key={`${gi}-g`} className="todo-group">
-                  <div className="todo-grouphead">{t.todos.scopeGlobal}</div>
-                  {globals.map(renderRow)}
-                </div>
-              ),
-              todays.length > 0 && (
-                <div key={`${gi}-t`} className="todo-group">
-                  <div className="todo-grouphead">{t.todos.scopeToday}</div>
-                  {todays.map(renderRow)}
-                </div>
-              ),
-            ].filter(Boolean)
-          })}
+          {/* Loose items first. The board glance is the ONE place that mixes standing
+              globals with today-pinned todos; when both are present, split them into
+              two headed groups ("En tout temps" / "Aujourd'hui") rather than tagging
+              each row (a per-row pill ate a phone row's width). Homogeneous lists +
+              day pages stay headerless. Each batch is the WHOLE loose set, so there's
+              exactly one header per scope — never a duplicate. */}
+          {loose.length > 0 &&
+            (showScope
+              ? (
+                  <>
+                    {loose.some((td) => td.day == null) && (
+                      <div className="todo-group">
+                        <div className="todo-grouphead">{t.todos.scopeGlobal}</div>
+                        {loose.filter((td) => td.day == null).map(renderRow)}
+                      </div>
+                    )}
+                    {loose.some((td) => td.day != null) && (
+                      <div className="todo-group">
+                        <div className="todo-grouphead">{t.todos.scopeToday}</div>
+                        {loose.filter((td) => td.day != null).map(renderRow)}
+                      </div>
+                    )}
+                  </>
+                )
+              : (
+                  <div className="todo-group">{loose.map(renderRow)}</div>
+                ))}
+          {/* Then the named-section checklists (e.g. "Avant de partir"), each under
+              its own always-visible header — NOT a collapse. On the read surface we
+              want every todo listed at once; the expand/collapse belongs to the
+              Réglages template editor (configuring). */}
+          {sectionGroups.map(([section, rows]) => (
+            <div key={`sec-${section}`} className="todo-group">
+              <div className="todo-grouphead">{section}</div>
+              {rows.map(renderRow)}
+            </div>
+          ))}
         </div>
       )}
 
