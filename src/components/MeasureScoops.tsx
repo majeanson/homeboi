@@ -1,15 +1,16 @@
 import { useLang, useT } from '../i18n'
 import { useSpeak } from '../lib/speak'
 import { type Measure, spokenMeasure } from '../lib/measure'
-import { measureColor, isToolColor } from '../lib/measureColors'
+import { measureColor, measureScoops } from '../lib/measureColors'
 import { useMeasureColors } from '../lib/measurePrefs'
 
-// "Scoops" — a measure drawn as physical fills of its colour-coded tool: one
-// solid circle per WHOLE scoop, plus a part-filled circle for a fraction. So "2
-// c. à soupe" is two green circles ("fill this spoon twice"), "1½ tasse" is one
-// full + one half circle. A pre-reader can count + colour-match without reading a
-// number, and a parent gets an at-a-glance amount. Tinted to the household's own
-// spoons (lib/measurePrefs); tap to hear the amount on-device.
+// "Scoops" — a measure drawn as physical fills of its colour-coded tools: one
+// circle per scoop, EACH tinted to the very tool you'd grab. So "2 c. à soupe" is
+// two green 1-tbsp circles ("fill this spoon twice"), "1½ tasse" is one teal 1-cup
+// + one steel-blue ½-cup circle. A pre-reader can count + colour-match without
+// reading a number, and a parent gets an at-a-glance amount. Colours come from the
+// household's own spoons/cups (lib/measurePrefs); the decomposition lives in
+// measureScoops(); tap to hear the amount on-device.
 //
 // Additive, like the pills: a line with no scoopable measure renders nothing here.
 // Past a sane count we stop drawing dots and show "×N" so a "12 tasses" can't
@@ -21,48 +22,34 @@ export function MeasureScoops({ measure, size = 'sm' }: { measure: Measure; size
   const { lang } = useLang()
   const speak = useSpeak()
   const ov = useMeasureColors()
-  const color = measureColor(measure, ov) ?? 'var(--ink-soft)'
 
   const whole = Math.floor(measure.value + 1e-9)
-  const frac = measure.value - whole
-  const hasPart = frac > 0.05
-  const pct = Math.round(frac * 100)
   const overflow = whole > CIRCLE_MAX
-  // A pure fraction that IS its own colour-coded tool (¼ tasse, ½ c. à thé…) is one
-  // FULL scoop of that tool — you fill it completely — so draw a full circle, not a
-  // part-filled one. The colour already says which fraction it is. Only an odd amount
-  // with no dedicated tool (e.g. 1½ cup → fallback tint) keeps the part-fill.
-  const fracIsWholeTool = whole === 0 && hasPart && isToolColor(measure, ov)
 
-  const dot = (key: string, part?: boolean) => (
-    <span
-      key={key}
-      className={'scoop' + (part ? ' scoop--part' : '')}
-      style={
-        part
-          ? ({ '--c': color, '--fill': `${pct}%` } as React.CSSProperties)
-          : { background: color }
-      }
-      aria-hidden="true"
-    />
-  )
+  const dot = (key: string, color: string, fill: number) =>
+    fill >= 1 ? (
+      <span key={key} className="scoop" style={{ background: color }} aria-hidden="true" />
+    ) : (
+      <span
+        key={key}
+        className="scoop scoop--part"
+        style={{ '--c': color, '--fill': `${Math.round(fill * 100)}%` } as React.CSSProperties}
+        aria-hidden="true"
+      />
+    )
 
   const circles: React.ReactNode[] = []
   if (overflow) {
-    circles.push(dot('one'))
+    // A "20 tasses" can't carpet the row — one base-tool circle + "×N".
+    const color = measureColor(measure, ov) ?? 'var(--ink-soft)'
+    circles.push(dot('one', color, 1))
     circles.push(
       <span key="x" className="scoop__count mono" style={{ color }}>
         ×{whole}
       </span>,
     )
-  } else if (fracIsWholeTool) {
-    // ¼ tasse, ½ c. à thé… — one full circle of that tool's colour.
-    circles.push(dot('tool'))
   } else {
-    for (let i = 0; i < whole; i++) circles.push(dot(`w${i}`))
-    if (hasPart) circles.push(dot('part', true))
-    // A bare fraction with no dedicated tool still needs at least one drawn circle.
-    if (circles.length === 0) circles.push(dot('part', true))
+    measureScoops(measure, ov).forEach((s, i) => circles.push(dot(`s${i}`, s.color, s.fill)))
   }
 
   return (

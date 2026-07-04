@@ -129,14 +129,78 @@ export function formatQty(v: number): string {
   return String(Math.round(v * 100) / 100).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')
 }
 
+// ---- Promote a heavy scaled amount to a bigger tool ----------------------- //
+// A doubled recipe can produce "8 c. à soupe" or "5⅓ c. à soupe" — technically
+// correct but nobody scoops eight tablespoons. When the amount lands cleanly on a
+// bigger measuring tool ("½ tasse", "¼ tasse") we render THAT instead, using
+// conventional kitchen equivalences (1 tbsp = 3 tsp, 1 cup = 16 tbsp = 48 tsp) —
+// NOT the approximate ml table, which never snaps clean (250 ÷ 15 = 16.67). Only
+// promotes when the result lands on a REAL tool fraction of the bigger unit AND is
+// at least a quarter of it (so "1 c. à soupe" never becomes "1/16 tasse"), so a
+// non-scoopable amount (6 tbsp = ⅜ cup, no tool) is left alone.
+type PUnit = 'tsp' | 'tbsp' | 'cup'
+const TSP_EQ: Record<PUnit, number> = { tsp: 1, tbsp: 3, cup: 48 }
+// Sub-1 amounts that correspond to a real measuring tool, per unit (whole numbers
+// always qualify). No ⅜/⅝ cup tool, no ¼ tbsp tool → those never trigger a promote.
+const TOOL_FRACS: Record<PUnit, number[]> = {
+  tsp: [1 / 2, 1 / 4, 1 / 8],
+  tbsp: [1 / 2],
+  cup: [3 / 4, 2 / 3, 1 / 2, 1 / 3, 1 / 4, 1 / 8],
+}
+// Bigger tools to promote TO, largest first.
+const PROMOTE_TO: ('tbsp' | 'cup')[] = ['cup', 'tbsp']
+// The unit word to print for a promoted amount: [singular, plural] per language.
+const PROMOTE_WORD: Record<'fr' | 'en', Record<'tbsp' | 'cup', [string, string]>> = {
+  fr: { tbsp: ['c. à soupe', 'c. à soupe'], cup: ['tasse', 'tasses'] },
+  en: { tbsp: ['tbsp', 'tbsp'], cup: ['cup', 'cups'] },
+}
+
+// Classify a matched unit token into a scoopable tool + language, or null for a
+// metric/imperial unit (ml, g, oz…) that has no bigger measuring tool to promote to.
+function classifyUnit(tok: string): { unit: PUnit; lang: 'fr' | 'en' } | null {
+  const t = tok.toLowerCase()
+  if (/tasse|cups?/.test(t)) return { unit: 'cup', lang: /cups?/.test(t) ? 'en' : 'fr' }
+  if (/soupe|table|tbsp|tbs|c[àa]s/.test(t)) return { unit: 'tbsp', lang: /tbsp|tbs|tablespoon/.test(t) ? 'en' : 'fr' }
+  if (/th[ée]|caf[ée]|tsp|teaspoon|c[àa][tc]|(?:à|a)\.?\s*[tc]\b/.test(t)) return { unit: 'tsp', lang: /tsp|teaspoon/.test(t) ? 'en' : 'fr' }
+  return null
+}
+
+// Whether an amount lands on a whole number or a real tool fraction of `unit`.
+function snapsToTool(amount: number, unit: PUnit): boolean {
+  if (!isFinite(amount) || amount <= 0) return false
+  const frac = amount - Math.floor(amount + 1e-9)
+  if (frac < 0.04) return true
+  return TOOL_FRACS[unit].some((v) => Math.abs(frac - v) < 0.04)
+}
+
+// The bigger-tool rendering for an already-scaled amount + its original unit token,
+// or null to keep the original unit. E.g. (8, "c. à soupe") → "½ tasse".
+function preferredMeasure(value: number, unitTok: string): string | null {
+  const cls = classifyUnit(unitTok)
+  if (!cls) return null
+  const tspEq = value * TSP_EQ[cls.unit]
+  for (const target of PROMOTE_TO) {
+    if (TSP_EQ[target] <= TSP_EQ[cls.unit]) continue // only ever promote UP
+    const amount = tspEq / TSP_EQ[target]
+    if (amount < 0.25) continue // don't shatter a small amount into a big tool
+    if (!snapsToTool(amount, target)) continue
+    const [sing, plural] = PROMOTE_WORD[cls.lang][target]
+    return `${formatQty(amount)} ${amount >= 2 ? plural : sing}`
+  }
+  return null
+}
+
 // Render one scaled measurement (qty + unit). A clean result reads as the scaled
-// amount ("2 c. à soupe"); an un-scoopable one falls back to the "times" form
-// ("2½× ⅓ tasse") so the cook multiplies the original tool instead of chasing a
-// decimal. `factor` drives the fallback multiplier text.
+// amount ("2 c. à soupe") — promoted to a bigger tool when it's heavy ("½ tasse");
+// an un-scoopable one falls back to the "times" form ("2½× ⅓ tasse") so the cook
+// multiplies the original tool instead of chasing a decimal. `factor` drives the
+// fallback multiplier text.
 function renderMeasure(qtyTok: string, sep: string, unitTok: string, factor: number): string | null {
   const v = valueOf(qtyTok)
   if (!isFinite(v)) return null
   const scaled = v * factor
+  const promoted = preferredMeasure(scaled, unitTok)
+  if (promoted) return promoted
   if (snapsClean(scaled)) return `${formatQty(scaled)}${sep}${unitTok}`
   return `${formatQty(factor)}× ${qtyTok}${sep}${unitTok}`
 }

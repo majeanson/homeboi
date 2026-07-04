@@ -100,6 +100,24 @@ describe('scaleLine', () => {
     // ⅓ tasse × 2.5 = 0.833 — no tidy fraction to scoop → "2 ½× ⅓ tasse".
     expect(scaleLine('⅓ tasse de sucre', 2.5)).toBe('2 ½× ⅓ tasse de sucre')
   })
+
+  // A heavy scaled amount promotes to a bigger tool nobody-scoops-8-tablespoons.
+  it('promotes doubled tablespoons to a clean cup fraction', () => {
+    expect(scaleLine('4 c. à soupe de beurre', 2)).toBe('½ tasse de beurre') // 8 tbsp = ½ cup
+    expect(scaleLine('2 c. à soupe de sucre', 2)).toBe('¼ tasse de sucre') // 4 tbsp = ¼ cup
+    expect(scaleLine('8 tbsp butter', 2)).toBe('1 cup butter') // 16 tbsp = 1 cup
+  })
+  it('promotes teaspoons to a tablespoon when they land clean', () => {
+    expect(scaleLine('1 c. à thé de sel', 3)).toBe('1 c. à soupe de sel') // 3 tsp = 1 tbsp
+  })
+  it('leaves an amount with no clean bigger tool alone', () => {
+    expect(scaleLine('1 c. à thé de sel', 2)).toBe('2 c. à thé de sel') // 2 tsp — no clean promote
+    expect(scaleLine('3 c. à soupe de cacao', 2)).toBe('6 c. à soupe de cacao') // 6 tbsp = ⅜ cup, no tool
+  })
+  it('never promotes a metric unit (no bigger measuring tool)', () => {
+    expect(scaleLine('250 ml de lait', 2)).toBe('500 ml de lait')
+    expect(scaleLine('200 g de farine', 2)).toBe('400 g de farine')
+  })
 })
 
 describe('scaleIngredients', () => {

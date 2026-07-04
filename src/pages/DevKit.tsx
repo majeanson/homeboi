@@ -1820,10 +1820,13 @@ export function DevKit() {
       kw: 'mesure scoop ronds cercles cuillère tasse spoon circles fill toddler couleurs measurePrefs',
       render: () => (
         <>
-          <Demo label="whole scoops — one coloured circle each (« remplis cette cuillère N fois »)">
+          <Demo label="whole scoops — one circle each, in the BASE tool's colour (« remplis cette cuillère N fois »)">
             <span style={{ fontSize: '1.3rem' }}>
               {findMeasures('2 c. à soupe').map((m, i) => (
                 <MeasureScoops key={i} measure={m} size="lg" />
+              ))}
+              {findMeasures('2 c. à thé').map((m, i) => (
+                <MeasureScoops key={`t${i}`} measure={m} size="lg" />
               ))}
             </span>
           </Demo>
