@@ -22,6 +22,7 @@ import { useBoardData, useTagColors } from '../../lib/queryHooks'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildEvent, buildMeal, type DetailCtx } from '../detail/adapters'
+import { useEventPeekActions } from '../detail/EventPeekActions'
 import { isGuest } from '../../lib/device'
 import type { EventRow } from './types'
 import type { DetailModel } from '../../lib/detail'
@@ -148,6 +149,8 @@ export function MomentsView({
   const recipeFor = useRecipeForMeal()
   const tagColors = useTagColors()
   const detailCtx: DetailCtx = { t, lang, members: formMembers, recipeFor, tagColors }
+  // Modify / Delete / Share on an event peek (gating + modals owned by the hook).
+  const eventActions = useEventPeekActions()
 
   // « Avant de partir » — open the same calm "before you go" SCREEN the board's
   // quick-add ＋ tile opens (/board/departure): the household's real « À compléter »
@@ -193,7 +196,7 @@ export function MomentsView({
       age: e.age ?? null,
       gift_ideas: null,
     }
-    detail.open(buildEvent(row, detailCtx))
+    detail.open(buildEvent(row, detailCtx, eventActions.optsFor({ id: row.id, title: row.title, birthday: row.birthday })))
   }
   const openChore = (title: string, color: string | null, day: number, who?: string | null) => {
     const model: DetailModel = {
@@ -353,6 +356,7 @@ export function MomentsView({
           </Section>
         ))
       )}
+      {eventActions.node}
     </div>
   )
 }

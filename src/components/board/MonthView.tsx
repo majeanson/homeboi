@@ -24,6 +24,7 @@ import { AutoCardView } from './AutoCard'
 import { DayNote } from './DayNote'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildEvent, buildChore, buildMeal, type DetailCtx } from '../detail/adapters'
+import { useEventPeekActions } from '../detail/EventPeekActions'
 import { colorOf, nameOf, type Dict, type Member } from './types'
 
 const DAY = 86400
@@ -119,6 +120,8 @@ export function MonthView({
   // each onOpen maps them onto the shared builders (components/detail/adapters).
   const detail = useEntityDetail()
   const detailCtx: DetailCtx = { t, lang, members, recipeFor: useRecipeForMeal(), tagColors: useTagColors() }
+  // Modify / Delete / Share on an event peek (gating + modals owned by the hook).
+  const eventActions = useEventPeekActions()
   // — chore `who` is a NAME on the month payload; recover its id for the face. —
   const choreWhoId = (who: string | null) => (who ? members.find((m) => m.display_name === who)?.id ?? null : null)
   // Which month is shown, as an offset (in months) from the real current one.
@@ -490,6 +493,7 @@ export function MonthView({
                       buildEvent(
                         { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, contact_name: e.contact_name, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, birthday: e.birthday, age: e.age },
                         detailCtx,
+                        eventActions.optsFor({ id: e.id, title: e.title, birthday: e.birthday }),
                       ),
                     )
                   }
@@ -540,6 +544,7 @@ export function MonthView({
           </>
         )}
       </div>
+      {eventActions.node}
     </div>
   )
 }

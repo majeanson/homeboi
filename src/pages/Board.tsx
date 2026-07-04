@@ -21,8 +21,7 @@ import { useMealPrefs } from '../lib/mealPrefs'
 import { useNextMeal } from '../lib/nextMeal'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
-import { useAuth } from '../lib/auth'
-import { EntityShareModal } from '../components/EntityShareModal'
+import { useEventPeekActions } from '../components/detail/EventPeekActions'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { ProfilePicker } from '../components/ProfilePicker'
@@ -119,8 +118,8 @@ export function Board() {
   const ro = isGuest()
   const { lang } = useLang()
   const { audience } = useAudience()
-  const { signedIn } = useAuth()
-  const [sharingEvent, setSharingEvent] = useState<{ id: string; title: string } | null>(null)
+  // Modify / Delete / Share for an event peek — gating + both modals owned by the hook.
+  const eventActions = useEventPeekActions()
   const { surface } = useSurface()
   // Pick-your-face: who's on this phone — greets them + marks their day.
   const { memberId: profileId, setMemberId } = useProfile()
@@ -590,10 +589,6 @@ export function Board() {
   // What the adapters (components/detail/adapters) need to resolve faces + copy.
   // recipeFor lets a tapped meal show its recipe photo + ingredient glance.
   const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [], recipeFor, tagColors }
-  // « Partager » an event from its peek → a public /partage link. Operator + parent only
-  // (minting is a server write); never a derived birthday (no event row behind it).
-  const shareEventOpt = (e: EventRow) =>
-    signedIn && audience === 'parent' && !e.birthday ? { onShare: () => setSharingEvent({ id: e.id, title: e.title }) } : undefined
   const tomorrowDay = addLocalDays(todayDay, 1)
   // Whether a meal slot's time has passed → the shared rule (lib/itemLife), so a meal
   // crosses out on the SAME clock as a rendez-vous (souper is the headline → never past).
@@ -621,7 +616,7 @@ export function Board() {
       // treatment meals get) — all-day events + birthdays have no time, so never strike.
       // For a future day (Demain / À venir) start_at is ahead of now, so this is false.
       past={isPastSec(e.all_day ? null : e.start_at, nowMs)}
-      onOpen={() => detail.open(buildEvent(e, detailCtx, shareEventOpt(e)))}
+      onOpen={() => detail.open(buildEvent(e, detailCtx, eventActions.optsFor(e)))}
     />
   )
   // A L'auto work/job window on « Le fil du jour » — a static info row (no peek; work
@@ -1128,7 +1123,7 @@ export function Board() {
               <button
                 type="button"
                 className="board-nextup"
-                onClick={() => detail.open(buildEvent(nextUpToday, detailCtx, shareEventOpt(nextUpToday)))}
+                onClick={() => detail.open(buildEvent(nextUpToday, detailCtx, eventActions.optsFor(nextUpToday)))}
                 aria-label={`${t.boardView.nextUp} · ${formatTime(nextUpToday.start_at, lang)} · ${nextUpToday.title}`}
               >
                 <span className="board-nextup__kicker mono">
@@ -1318,7 +1313,7 @@ export function Board() {
                   // the chore rows below — date · time, then withRel's "· dans X j".
                   when={withRel(`${formatDayMaybeYear(e.start_at, lang)} · ${eventWhen(e)}`, e.start_at)}
                   soon={e.soon}
-                  onOpen={() => detail.open(buildEvent(e, detailCtx, shareEventOpt(e)))}
+                  onOpen={() => detail.open(buildEvent(e, detailCtx, eventActions.optsFor(e)))}
                 />
               ))}
               {/* Recurring chores coming up later this week, with their day. */}
@@ -1350,14 +1345,7 @@ export function Board() {
 
       {stale && <p className="board__synced mono">{t.board.offline}</p>}
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}
-      {sharingEvent && (
-        <EntityShareModal
-          open
-          onClose={() => setSharingEvent(null)}
-          title={`${t.shareLink.action} · ${sharingEvent.title}`}
-          body={{ kind: 'event', eventId: sharingEvent.id }}
-        />
-      )}
+      {eventActions.node}
     </main>
   )
 }

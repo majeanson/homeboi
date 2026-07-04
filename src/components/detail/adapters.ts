@@ -55,7 +55,11 @@ const isHeading = (line: string) => line.trim().startsWith('##')
 const preview = (lines: string[] | undefined, n: number) => (lines ?? []).filter((l) => !isHeading(l) && l.trim()).slice(0, n)
 
 // — Agenda event —
-export function buildEvent(e: EventRow, ctx: DetailCtx, opts?: { onShare?: () => void }): DetailModel {
+export function buildEvent(
+  e: EventRow,
+  ctx: DetailCtx,
+  opts?: { onShare?: () => void; onEdit?: () => void; onDelete?: () => void },
+): DetailModel {
   const { t, lang, members } = ctx
   const day = localDayStart(new Date(e.start_at * 1000))
   // A DERIVED birthday (not a stored event): a cake peek that routes to the person
@@ -95,11 +99,19 @@ export function buildEvent(e: EventRow, ctx: DetailCtx, opts?: { onShare?: () =>
     accent: bizColour ?? colorOf(members, e.member_id) ?? CATS.event.color,
     when: e.all_day ? t.board.allDay : `${formatDay(e.start_at, lang)} · ${formatTime(e.start_at, lang)}`,
     who,
+    // Basic peek actions: see the day, Modify (the primary — opens the event form),
+    // Share, Delete (danger). Modify/Delete/Share are opt-gated at the call site so a
+    // guest/toddler peek stays read-only. Exactly one primary (edit when present).
     actions: [
       { key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${day}` },
-      // « Partager » — a public link with just the title + when + who-label (no member
-      // ids leak). Opt-gated on operator at the call site (minting is a server write).
+      ...(opts?.onEdit
+        ? [{ key: 'edit', label: t.common.edit, icon: 'pencil-simple-bold' as const, primary: true, run: opts.onEdit }]
+        : []),
+      // « Partager » — a public link with just the title + when + who-label (no member ids leak).
       ...(opts?.onShare ? [{ key: 'share', label: t.shareLink.action, icon: 'arrow-up-right-bold' as const, run: opts.onShare }] : []),
+      ...(opts?.onDelete
+        ? [{ key: 'delete', label: t.common.delete, icon: 'trash-bold' as const, tone: 'danger' as const, run: opts.onDelete }]
+        : []),
     ],
   }
 }
