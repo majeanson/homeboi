@@ -87,6 +87,22 @@ for (const d of DEVICES) {
     })
   }
 
+  // --- Board: the inline « À compléter » add combobox, near the BOTTOM of the feed
+  // (not a sheet). This is the field the user hit: a combobox opening its dropdown
+  // on focus + the .kb-open padding settling raced the one-shot scroll, so it
+  // "sometimes" stayed buried. viewportVars now re-pins across the settle window. ---
+  test(`kb ${d.name}: board todo add`, async ({ page }) => {
+    await open(page, '/board')
+    const add = page.getByPlaceholder('Ajouter à compléter…').first()
+    await add.scrollIntoViewIfNeeded()
+    await add.focus()
+    await openKeyboard(page, d.kb)
+    // Let the re-pin retries (120/280/480ms) settle, as they do on a device.
+    await page.waitForTimeout(600)
+    await page.screenshot({ path: png('board-todo-add'), fullPage: false })
+    await expectAbove(add, VISIBLE, 'board À compléter add')
+  })
+
   // --- Settings: add-a-person form (inline, not a sheet) ---
   test(`kb ${d.name}: settings add-person`, async ({ page }) => {
     // Guide is the default settings tab now; deep-link to La maisonnée for the form.

@@ -67,13 +67,29 @@ export function trackVisualViewport(): void {
   // 'center' would land mid-screen / behind the keyboard. scroll-margin-top
   // (core.css) leaves a little breathing gap above it. iOS' own scroll-into-view
   // is unreliable inside our fixed sheets/overlays, so we drive it ourselves.
-  const pinFocused = () => {
+  const pinOnce = (behavior: ScrollBehavior) => {
     if (kbInset <= KB_THRESHOLD) return
     const el = document.activeElement
     if (!isEditable(el) || !el.isConnected) return
     const action = actionBelow(el)
-    if (action) action.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-    else el.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    if (action) action.scrollIntoView({ block: 'nearest', behavior })
+    else el.scrollIntoView({ block: 'start', behavior })
+  }
+
+  // Pin NOW, then RE-pin a few times as the keyboard slide-in, a combobox dropdown
+  // opening on focus, and the `.kb-open` trailing padding all settle over ~½s.
+  // Any one of them can move the field AFTER a single scroll — which is exactly
+  // why it "sometimes worked": a lone shot raced the layout, and the combobox's
+  // blur/refocus churn kept resetting the one debounced attempt. The retries are
+  // idempotent (a no-op once the field already sits above the keyboard) and never
+  // blur, so there's no keyboard flicker; bounded to the settle window so a user's
+  // later manual scroll while typing isn't fought.
+  let pinTimers: ReturnType<typeof setTimeout>[] = []
+  const pinFocused = () => {
+    pinTimers.forEach(clearTimeout)
+    pinTimers = []
+    pinOnce('smooth')
+    for (const ms of [120, 280, 480]) pinTimers.push(setTimeout(() => pinOnce('auto'), ms))
   }
 
   const apply = () => {
@@ -118,14 +134,15 @@ export function trackVisualViewport(): void {
   vv.addEventListener('resize', schedule)
   vv.addEventListener('scroll', schedule)
 
-  // Tapping a field while the keyboard is ALREADY up (moving between fields)
-  // gets no viewport resize, so the rising-edge pin above won't fire — handle it
-  // here. The short delay lets focus settle / any layout shift land first.
-  let scrollTimer: ReturnType<typeof setTimeout>
+  // Tapping a field re-pins it — whether the keyboard is still arriving (the
+  // rising edge above also fires) or ALREADY up (moving between fields, which gets
+  // no viewport resize, so the rising edge won't fire). pinFocused self-schedules
+  // its own settle retries, so focus churn (e.g. the combobox's blur/refocus
+  // dance) just resets a cheap idempotent schedule instead of cancelling the one
+  // chance to scroll.
   document.addEventListener('focusin', (e) => {
     if (!isEditable(e.target)) return
-    clearTimeout(scrollTimer)
-    scrollTimer = setTimeout(pinFocused, 300)
+    pinFocused()
   })
 
   // A field blurring usually means the keyboard is closing. Some browsers don't
