@@ -156,6 +156,11 @@ Same class defined twice (cascade-order-dependent, fragile):
   - **`.kid`** — the ONE true redundancy. pages.css's bare `.kid{min-height:100vh; display:flex; flex-direction:
     column}` was **fully inert** (kid.css imports later → its `min-height:100%` won; the other two props identical).
     **Removed** (provably zero-visual-change), comment added pointing to kid.css as canonical. typecheck + build green.
+- [ ] 🟢 **`.cercle-share*` is now the GENERIC share-sheet family** (cercle.css) — the family/voyage/recipe/event/routine
+  share sheets all render through the shared **`ShareModal`** over these classes (`.cercle-share`, `.cercle-share__link`,
+  `.cercle-share__linkbtns`, `.cercle-share__list/__row/__title`). The `cercle-` prefix is now a misnomer; a rename to a
+  neutral `.share-*` family is a pure class-rename refactor (touch every share modal + cercle.css) — **deferred, not
+  urgent** (zero behaviour), recorded here so the next CSS pass renames instead of re-auditing.
 
 ### CSS-3 🟢 `pages.css` is a 3.7k-line kitchen sink (423 classes, 19% of all CSS)
 - [x] ✅ **DONE 2026-06-26.** Split `pages.css` (3709 lines) into **eleven contiguous per-topic slices** under

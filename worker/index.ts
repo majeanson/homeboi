@@ -17,6 +17,8 @@ import { verifyCsrf, currentGuest, issueDeviceToken } from '../functions/_lib/au
 import { forbidden, serverError, notFound } from '../functions/_lib/json'
 import { resolveActor } from '../functions/_lib/household'
 import { resolveTvCode } from '../functions/_lib/tvLink'
+import { readLiveShare } from '../functions/_lib/shareStore'
+import { shareOgMeta } from '../functions/_lib/shareOg'
 import { matchRoute, guestKindAllows, type RouteMod } from './routes'
 
 // Re-export the Durable Object class so the Workers runtime can find it (a DO
@@ -53,6 +55,64 @@ const methodNotAllowed = () =>
     status: 405,
     headers: { 'content-type': 'application/json; charset=utf-8' },
   })
+
+// Escape a string for an HTML attribute value (the appended og/twitter tags go in as raw
+// HTML; setInnerContent/setAttribute below are escaped by HTMLRewriter itself).
+const escAttr = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+// Inject per-share Open Graph tags into the SPA shell for a /partage/<id> link, so it
+// unfurls nicely in messaging apps. Returns null (→ caller serves the plain shell) for an
+// unknown/dead share, a non-HTML asset, or any error — this is a best-effort enhancement
+// that must never break the page. The DB read is the same capability-by-id trust model as
+// the public share reader (readLiveShare returns null for revoked/expired).
+async function injectShareOg(
+  env: WorkerEnv,
+  request: Request,
+  origin: string,
+  id: string,
+): Promise<Response | null> {
+  try {
+    const share = await readLiveShare(env, id)
+    if (!share) return null
+    const meta = shareOgMeta(share.kind, share.label, share.payload, origin, id)
+    if (!meta) return null
+    const shell = await env.ASSETS.fetch(request)
+    if (!(shell.headers.get('content-type') ?? '').includes('text/html')) return null
+    const shareUrl = `${origin}/partage/${id}`
+    const ogTags =
+      `<meta property="og:title" content="${escAttr(meta.title)}">` +
+      `<meta property="og:description" content="${escAttr(meta.description)}">` +
+      `<meta property="og:type" content="website">` +
+      `<meta property="og:site_name" content="Babillard">` +
+      `<meta property="og:url" content="${escAttr(shareUrl)}">` +
+      `<meta property="og:locale" content="fr_CA">` +
+      `<meta name="twitter:card" content="${meta.image ? 'summary_large_image' : 'summary'}">` +
+      (meta.image
+        ? `<meta property="og:image" content="${escAttr(meta.image)}">` +
+          `<meta name="twitter:image" content="${escAttr(meta.image)}">`
+        : '')
+    return new HTMLRewriter()
+      .on('title', {
+        element(el) {
+          el.setInnerContent(meta.title)
+        },
+      })
+      .on('meta[name="description"]', {
+        element(el) {
+          el.setAttribute('content', meta.description)
+        },
+      })
+      .on('head', {
+        element(el) {
+          el.append(ogTags, { html: true })
+        },
+      })
+      .transform(shell)
+  } catch {
+    return null
+  }
+}
 
 export default {
   // Param types come from `satisfies ExportedHandler<WorkerEnv>` below — the
@@ -106,6 +166,18 @@ export default {
       dest.searchParams.set('display', token)
       dest.searchParams.set('hh', tv.householdId)
       return Response.redirect(dest.toString(), 302)
+    }
+
+    // « Partager » link-preview (#share): a GET for /partage/<id> is the SPA shell, but
+    // a crawler (Messages / Messenger / WhatsApp) reads only the initial HTML — so inject
+    // per-share Open Graph tags before serving it, else the link unfurls as a generic
+    // « Babillard ». Fail-open: an unknown/dead share or any error → the untouched shell.
+    if (request.method === 'GET' && path.startsWith('partage/')) {
+      const id = path.slice('partage/'.length).replace(/\/+$/, '')
+      if (id && !id.includes('/')) {
+        const injected = await injectShareOg(env, request, url.origin, id)
+        if (injected) return injected
+      }
     }
 
     // Everything that isn't an API call is the SPA. The assets binding serves a

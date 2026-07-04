@@ -19,6 +19,15 @@
     <meta name="theme-color" content="#FBF3E4" />
     <meta name="description" content="Babillard — un planificateur familial calme pour une tablette murale." />
     <title>Babillard</title>
+    <!-- Baseline Open Graph / Twitter card, so ANY link unfurls sensibly. A shared
+         /partage/<id> link gets these REPLACED per-share at the edge (worker/index.ts
+         injectShareOg) with the recipe/event/routine title + photo. -->
+    <meta property="og:title" content="Babillard" />
+    <meta property="og:description" content="Le babillard familial calme pour la maison." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Babillard" />
+    <meta property="og:locale" content="fr_CA" />
+    <meta name="twitter:card" content="summary" />
     <!-- PWA: installable on the wall tablet / iPad (Partager ▸ Sur l'écran
          d'accueil) — standalone chrome, sun icon (Pip marigold on cream, see
          scripts/make-icons.mjs), offline app shell via /sw.js (registered in
