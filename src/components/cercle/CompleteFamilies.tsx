@@ -16,15 +16,16 @@ import {
 } from '../../lib/cercle'
 
 // « Compléter les familles » — ONE button that deduces every family link worth making
-// across the whole circle, then lets you tick which to keep (the same approve-then-apply
-// ReviewChecklist as the .vcf import). It proposes both:
-//   • the precise rungs that complete each named famille group (siblings via a shared
-//     parent, grandparent chains, cousins…) + a generic « membre de la famille » tie
-//     where no rung is knowable, AND
-//   • the cross-family bridges the existing links already imply (`proposeAllFamilyLinks`
-//     folds in inferLinks: co-parents → spouse, shared parent → sibling, a spouse's
-//     parents → in-law) — so connecting ONE member to another family surfaces all the
-//     in-law/sibling ties between them, no named group required.
+// across the whole intertwined family, then lets you tick which to keep (the same
+// approve-then-apply ReviewChecklist as the .vcf import). `proposeAllFamilyLinks` merges:
+//   • the precise rungs that complete each named famille group + a generic « membre de
+//     la famille » tie where no rung is knowable;
+//   • the cross-family bridges the existing links imply (inferLinks: co-parents →
+//     spouse, shared parent → sibling, a spouse's parents → in-law) — so connecting ONE
+//     member to another family surfaces the in-law/sibling ties, no named group needed;
+//   • every precise rung across the ENTIRE connected web (cousins, grandparent spans,
+//     aunt/uncle…), spanning named-group boundaries — so a family that grew by marrying
+//     into another completes family-wide, not one group at a time.
 // Nothing to propose yet → a calm hint nudges "link a few people first, then complete
 // here" instead of an empty void.
 export function CompleteFamilies({

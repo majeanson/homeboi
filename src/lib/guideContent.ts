@@ -24,6 +24,25 @@ import type { IconName } from '../components/Icon'
 
 export type Bi = { fr: string; en: string }
 
+// ── Section colours ─────────────────────────────────────────────────────────
+// The six hub tabs each own ONE colour — the nav discs (HubLayout `TABS`), the
+// CATS families and every tab's HubHead already agree on it. The Guide mirrors
+// that SAME mapping so its feature-map tiles and themed concept blocks wear the
+// colour of the section they belong to (« Cuisine & épicerie » is La cuisine's
+// terracotta, « Se déplacer » is Le cercle's turquoise, …) rather than a flat
+// marigold. Both values are theme-aware CSS vars so they follow day↔night; `ink`
+// tints a glyph / accent, `wash` a pale fill. Keep in sync with HubLayout `TABS`.
+export type SectionKey = 'board' | 'kitchen' | 'routines' | 'cercle' | 'liste' | 'settings'
+export type Tint = { ink: string; wash: string }
+export const SECTION_TINT: Record<SectionKey, Tint> = {
+  board: { ink: 'var(--marigold-deep)', wash: 'var(--marigold-wash)' }, // Le babillard
+  kitchen: { ink: 'var(--terracotta-deep)', wash: 'var(--terracotta-wash)' }, // La cuisine
+  routines: { ink: 'var(--berry-deep)', wash: 'var(--berry-wash)' }, // Routines
+  cercle: { ink: 'var(--teal-deep)', wash: 'var(--teal-wash)' }, // Le cercle
+  liste: { ink: 'var(--sky-deep)', wash: 'var(--sky-wash)' }, // La liste
+  settings: { ink: 'var(--sage-deep)', wash: 'var(--sage-wash)' }, // Réglages
+}
+
 type GuidePoint = {
   label: Bi
   // `detail` = WHAT it does / how to use it. `why` = WHY it exists / why you'd
@@ -109,13 +128,16 @@ export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] =
 // launcher now, not just a Guide-scroller). `ids` must list every `group:'concepts'`
 // card in the theme — an id in no theme is invisible to the jump-grid (a bug we
 // closed for home-projects/cast-tv). New concept card ⇒ add its id to a theme here.
-export type ConceptTheme = { key: string; icon: IconName; label: Bi; ids: string[]; route: string }
+// `section` = which of the six hub tabs this theme belongs to; the Guide colours
+// the theme's block + its feature-map tile with that section's SECTION_TINT.
+export type ConceptTheme = { key: string; icon: IconName; label: Bi; ids: string[]; route: string; section: SectionKey }
 export const CONCEPT_THEMES: ConceptTheme[] = [
   {
     key: 'everyday',
     icon: 'plus-bold',
     label: { fr: 'Au quotidien', en: 'Everyday' },
     route: '/board',
+    section: 'board',
     ids: [
       'capture',
       'type-or-choose',
@@ -135,6 +157,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     icon: 'carrot-bold',
     label: { fr: 'Cuisine & épicerie', en: 'Kitchen & groceries' },
     route: '/kitchen',
+    section: 'kitchen',
     ids: ['recipes', 'cookmode', 'leftovers', 'reserve', 'deals', 'flyers', 'cashier', 'ghost'],
   },
   {
@@ -142,6 +165,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     icon: 'device-tablet-bold',
     label: { fr: 'Appareils & affichage', en: 'Devices & display' },
     route: '/settings?tab=devices',
+    section: 'settings',
     ids: [
       'surface',
       'audience',
@@ -160,6 +184,8 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     icon: 'key-bold',
     label: { fr: 'Se déplacer', en: 'Getting around' },
     route: '/voiture',
+    // voyage / auto / carnets all live in Le cercle's world — wear its turquoise.
+    section: 'cercle',
     ids: ['voyage', 'auto', 'carnets'],
   },
   {
@@ -167,6 +193,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     icon: 'sparkle-bold',
     label: { fr: 'Intelligence & calme', en: 'AI & calm' },
     route: '/settings?tab=ai',
+    section: 'settings',
     ids: ['ai', 'a-regler', 'calm'],
   },
 ]
@@ -177,11 +204,14 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
 // `route` = where the tile opens in the LIVE app. The Guide's own map still
 // scrolls to the theme block (in-Guide); the Board WelcomeCard + the landing use
 // `route` to send you into the feature (alive now that a fresh account is seeded).
-export type FeatureMapTile = { key: string; icon: IconName; label: Bi; route: string }
+// `section` drives the tile's SECTION_TINT (icon + hover), so each tile reads in
+// its section's colour. The six-sections tile leads with the board's marigold
+// (the glance entry); the settings tile wears Réglages' sage.
+export type FeatureMapTile = { key: string; icon: IconName; label: Bi; route: string; section: SectionKey }
 export const FEATURE_MAP_TILES: FeatureMapTile[] = [
-  { key: 'sections', icon: 'sun-bold', label: { fr: 'Les six sections', en: 'The six sections' }, route: '/board' },
-  ...CONCEPT_THEMES.map((th) => ({ key: th.key, icon: th.icon, label: th.label, route: th.route })),
-  { key: 'settings', icon: 'gear-six-bold', label: { fr: 'Réglages', en: 'Settings' }, route: '/settings' },
+  { key: 'sections', icon: 'sun-bold', label: { fr: 'Les six sections', en: 'The six sections' }, route: '/board', section: 'board' },
+  ...CONCEPT_THEMES.map((th) => ({ key: th.key, icon: th.icon, label: th.label, route: th.route, section: th.section })),
+  { key: 'settings', icon: 'gear-six-bold', label: { fr: 'Réglages', en: 'Settings' }, route: '/settings', section: 'settings' },
 ]
 
 // Resolve a feature-map tile key → its live route (for callers that navigate

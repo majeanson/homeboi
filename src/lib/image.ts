@@ -76,36 +76,6 @@ export async function resizeImage(file: File, maxDim: number, quality = 0.82): P
   }
 }
 
-// Like resizeImage, but for OCR (lib/ocr.ts) it scales the long side TO `dim` —
-// UPSCALING a small photo, not only shrinking a big one. A phone screenshot or a
-// far-away shot can leave a decimal comma or a ¾ only a few pixels tall, which is
-// exactly where Tesseract drops the comma ("1,25 ml"→"125 ml") or misreads the
-// fraction; giving the glyphs more pixels (high-quality smoothing, light JPEG) reads
-// them far better. Upscale is capped at 2× so a tiny image isn't ballooned absurdly.
-export async function resizeImageForOcr(file: File, dim: number): Promise<Blob> {
-  const input = await normalizeHeic(file)
-  const src = await decodeImage(input)
-  if (!src) return input
-  const { width, height, draw, done } = src
-  try {
-    const scale = Math.min(2, dim / Math.max(width, height))
-    const w = Math.max(1, Math.round(width * scale))
-    const h = Math.max(1, Math.round(height * scale))
-    const canvas = document.createElement('canvas')
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return input
-    ctx.imageSmoothingEnabled = true
-    ctx.imageSmoothingQuality = 'high'
-    draw(ctx, w, h)
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92))
-    return blob && blob.size > 0 ? blob : input
-  } finally {
-    done()
-  }
-}
-
 type DecodedImage = {
   width: number
   height: number

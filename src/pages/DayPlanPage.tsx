@@ -17,7 +17,6 @@ import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } f
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { PairPrompt } from '../components/Fallback'
 import { Icon } from '../components/Icon'
-import { Chip } from '../components/Chip'
 import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
 import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage'
@@ -464,8 +463,14 @@ function DayPlanInner() {
                 title={`${t.voyage.title} · ${tr.title}`}
                 when={t.voyage.dayN(jour)}
                 color={tr.colour}
-                // « Partagé » marker on the header (a text surface) — calm.
-                badge={tr.shared ? <Chip icon="users-three-bold">{t.sharedVoyage.badge}</Chip> : undefined}
+                // « Partagé » — a quiet icon marker (no loud pill), calm + subtle.
+                badge={
+                  tr.shared ? (
+                    <span className="act__sharedmark" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
+                      <Icon name="users-three-bold" size={13} />
+                    </span>
+                  ) : undefined
+                }
                 onActivate={() => nav(`${base}?vue=itineraire`)}
               />
               {dayTripPlans

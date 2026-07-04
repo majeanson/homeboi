@@ -211,15 +211,22 @@
   font-size: 1rem;
   color: var(--ink);
   display: flex;
+  flex-wrap: wrap; /* actions drop to their own line rather than squeezing the date to a two-line column */
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+/* The date never wraps to a cramped column: it keeps its own line and the actions
+   wrap beneath it on a narrow phone. */
+.monthv__day-h > b {
+  flex: 1 0 auto;
+  white-space: nowrap;
 }
 /* The day-panel header's two entries — « Planifier cette journée » (edit) +
    « Voir ce moment » (read). Grouped on the right; wrap under each other on a narrow
    phone rather than squeezing the date. */
 .monthv__day-actions {
-  flex: none;
+  flex: 0 1 auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -231,6 +238,16 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+/* « Voir ce moment » carries the Moments card's berry tint (today.css .now-card--moment),
+   so the calendar's one way into a specific day reads as the same purple "moment" surface. */
+.monthv__open-moment {
+  border-color: color-mix(in srgb, var(--berry) 34%, transparent);
+  background: var(--berry-wash);
+  color: var(--berry-deep);
+}
+.monthv__open-moment:hover {
+  background: color-mix(in srgb, var(--berry) 20%, var(--card));
 }
 /* Day page: the weather glance strip above the meal planner (today/tomorrow only). */
 .day-plan__wx {

@@ -176,8 +176,10 @@ const PATH_KEYS: Record<string, string[][]> = {
   cercle: [['cercle'], ['board'], ['a-regler']],
   'cercle-links': [['cercle']],
   // Named-group membership + a contact's photo gallery both live under the cercle
-  // cache (the photos query key is prefixed ['cercle', …]), so one nudge refreshes them.
-  'cercle-groups': [['cercle']],
+  // cache (the photos query key is prefixed ['cercle', …]). A group recolour / a new
+  // member also CASCADES the family colour onto its members + pets (server-side), which
+  // shows on the board faces + the Réglages members list, so nudge ['members'] + ['board'] too.
+  'cercle-groups': [['cercle'], ['members'], ['board']],
   'cercle-photos': [['cercle']],
   // Pets are people in the circle (folded into unifyCircle) — a pet edit re-derives
   // the directory, so mirror the client's [CERCLE_KEY].

@@ -546,12 +546,6 @@ export function Kitchen() {
               </div>
             )}
           </div>
-          {/* First-run nudge: the souper headline is press-and-hold to reschedule,
-              invisible on touch. Only while learning (tabHelp.available = tutorial)
-              and only when there's a souper to drag. */}
-          {tabHelp.available && mealPrefs.isVisible('supper') && week.some((w) => mealsFor(w.date, 'supper').length > 0) && (
-            <p className="kitchen__week-hint mono">{t.kitchen.dragDayHint}</p>
-          )}
           <ul className="kitchen__week">
             {week.map(({ date }) => {
               const dow = new Date(date * 1000).getDay()

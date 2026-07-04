@@ -1044,6 +1044,19 @@
 .act__badge + .act__caret {
   margin-left: 8px;
 }
+/* « Voyage partagé » marker — a quiet icon, NOT the loud marigold pill. Strips the
+   default .act__badge fill so a shared trip reads subtly (just a small muted glyph). */
+.act__badge:has(.act__sharedmark) {
+  background: none;
+  padding: 0;
+}
+.act__sharedmark {
+  display: inline-flex;
+  align-items: center;
+  /* A small voyage-turquoise tint (Le cercle's world) — a calm "shared" hint, not the
+     loud marigold pill it replaced. */
+  color: var(--teal-deep);
+}
 
 /* Mobile: tighter padding + a smaller icon tile shrink each row further (the
    inline time · title · who layout is already the default above). */

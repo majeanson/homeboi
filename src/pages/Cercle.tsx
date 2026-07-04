@@ -15,7 +15,7 @@ import { useRecordUndo } from '../lib/toast'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { isGuest } from '../lib/device'
 import { useOpenPersonSheet } from '../lib/personSheet'
-import { CERCLE_KEY, HOUSEHOLD_KEY, BUSINESSES_KEY } from '../lib/queryKeys'
+import { CERCLE_KEY, HOUSEHOLD_KEY, BUSINESSES_KEY, MEMBERS_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { Loading, LoadError, PairPrompt } from '../components/Fallback'
 import { EmptyState } from '../components/EmptyState'
 import { HubHead } from '../components/HubHead'
@@ -386,7 +386,9 @@ function CercleParent() {
       const p = byKey.get(pkey)
       if (!g || !p || g.memberKeys.has(pkey)) return
       const body = { groupId: g.id, personId: p.id, personKind: p.kind }
-      void write('cercle-groups', { method: 'POST', body, affectedKeys: [CERCLE_KEY] }).catch(() => {})
+      // A coloured family cascades its colour onto the newly-added member/pet server-side,
+      // which shows on the board faces + members list — refresh those too.
+      void write('cercle-groups', { method: 'POST', body, affectedKeys: [CERCLE_KEY, MEMBERS_KEY, BOARD_KEY] }).catch(() => {})
       recordUndo({
         message: t.cercle.droppedInGroup(p.firstName, g.name),
         onUndo: () => {
@@ -425,7 +427,8 @@ function CercleParent() {
             void write('cercle-groups', {
               method: on ? 'POST' : 'DELETE',
               body: { groupId, personId: p.id, personKind: p.kind },
-              affectedKeys: [CERCLE_KEY],
+              // Adding to a coloured family cascades its colour onto this person → board + members.
+              affectedKeys: [CERCLE_KEY, MEMBERS_KEY, BOARD_KEY],
             }).catch(() => {})
           },
         }
@@ -469,7 +472,9 @@ function CercleParent() {
     await write('cercle-groups', {
       method: 'PATCH',
       body: { id, name: v.name, kind: v.kind, colour: v.colour },
-      affectedKeys: [CERCLE_KEY],
+      // A recolour cascades the family colour onto its members + pets server-side, so
+      // refresh the board faces + members list, not just the cercle directory.
+      affectedKeys: [CERCLE_KEY, MEMBERS_KEY, BOARD_KEY],
     })
     setEditingGroupId(null)
   }
@@ -569,24 +574,20 @@ function CercleParent() {
         ariaLabel={t.nav.cercle}
         tour="cercle-views"
         trailing={
-          <>
-            <button
-              type="button"
-              className="cercle-worldlaunch"
-              onClick={help.pick('monde', () => nav('/cercle/monde'))}
-              aria-label={t.cercle.world.open}
-              title={t.cercle.world.openHint}
-              data-tour="cercle-world"
-            >
-              <InlineIcon name="sparkle-bold" size={15} />
-              <span className="cercle-worldlaunch__label">{t.cercle.world.title}</span>
-              <InlineIcon name="arrow-up-right-bold" size={13} />
-            </button>
-            {help.available && <HelpToggle active={help.active} onToggle={help.toggle} />}
-          </>
+          <button
+            type="button"
+            className="cercle-worldlaunch"
+            onClick={help.pick('monde', () => nav('/cercle/monde'))}
+            aria-label={t.cercle.world.open}
+            title={t.cercle.world.openHint}
+            data-tour="cercle-world"
+          >
+            <InlineIcon name="sparkle-bold" size={15} />
+            <span className="cercle-worldlaunch__label">{t.cercle.world.title}</span>
+            <InlineIcon name="arrow-up-right-bold" size={13} />
+          </button>
         }
       />
-      {help.hint && <HelpHint />}
       {help.bubbleFor('list')}
       {help.bubbleFor('links')}
       {help.bubbleFor('tree')}
@@ -610,7 +611,9 @@ function CercleParent() {
         ariaLabel={t.nav.cercle}
         pick={help.pick}
         armed={help.active}
+        trailing={help.available ? <HelpToggle active={help.active} onToggle={help.toggle} /> : undefined}
       />
+      {help.hint && <HelpHint />}
       {help.bubbleFor('social')}
       {help.bubbleFor('family')}
       {help.bubbleFor('notes')}
@@ -741,13 +744,15 @@ function CercleParent() {
                 </section>
               )}
 
-              {/* « Compléter les familles » — make every named famille-kind group
-                  100% related from the hierarchy the links already imply (precise rung
-                  where known, generic kin tie otherwise), behind a review checklist.
-                  Available in BOTH tabs: it completes your families in Famille and a
-                  friend's families in Social (same tool, section-scoped groups). */}
+              {/* « Compléter les familles » — complete the WHOLE intertwined family, not
+                  just one named group: every named famille-kind group made 100% related
+                  AND every precise rung the hierarchy implies across the connected web
+                  (cousins, grandparent spans, in-laws…), behind a review checklist.
+                  Scoped to `sectionPeople` (like the tree/web views): Famille completes
+                  your family, Social a friend's — the section boundary is the family
+                  reach from the household, so the two stay distinct. */}
                 <CompleteFamilies
-                  people={people}
+                  people={sectionPeople}
                   storedLinks={unified.links}
                   groups={sectionCompleteGroups}
                   disabled={ro}

@@ -17,7 +17,6 @@ import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { useTagColors } from '../../lib/queryHooks'
 import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
-import { Chip } from '../Chip'
 import { Act } from './Act'
 import { tripCategoryIcon, type TripCategory } from '../voyage/voyage'
 import { AutoCardView } from './AutoCard'
@@ -267,13 +266,11 @@ export function MonthView({
           <Icon name="caret-left-bold" size={20} />
         </button>
         <h2 className="monthv__title">{title}</h2>
-        <button type="button" className="monthv__nav" onClick={() => setOffset((o) => o + 1)} aria-label={t.monthView.next}>
-          <Icon name="caret-right-bold" size={20} />
-        </button>
-        {/* « Aujourd'hui » — ALWAYS mounted, only hidden when already on today. Mounting
-            it on demand shrank the flex:1 title and shifted the prev/next buttons, so a
-            rapid multi-tap to skip several months missed after the first tap. Reserving
-            its slot keeps the nav buttons fixed under the finger. */}
+        {/* « Aujourd'hui » — sits INSIDE the arrows (next to the title), while prev/next
+            flank the whole row on the outer edges. ALWAYS mounted, only hidden when
+            already on today: mounting it on demand shrank the flex:1 title and shifted
+            the next button, so a rapid multi-tap to skip several months missed after the
+            first tap. Reserving its slot keeps the next button fixed under the finger. */}
         <button
           type="button"
           className={'monthv__today' + (atToday ? ' is-hidden' : '')}
@@ -286,6 +283,9 @@ export function MonthView({
           }}
         >
           {t.monthView.today}
+        </button>
+        <button type="button" className="monthv__nav" onClick={() => setOffset((o) => o + 1)} aria-label={t.monthView.next}>
+          <Icon name="caret-right-bold" size={20} />
         </button>
       </div>
 
@@ -412,7 +412,7 @@ export function MonthView({
                 day; deep-links via ?scope=date&date= so Moments lands on it. */}
             <button
               type="button"
-              className="btn btn--ghost btn--sm mono monthv__open-day"
+              className="btn btn--ghost btn--sm mono monthv__open-day monthv__open-moment"
               onClick={() => nav(momentHref(selected))}
             >
               {t.monthView.openMoment} <Icon name="caret-right-bold" size={14} />
@@ -447,7 +447,13 @@ export function MonthView({
                     color={tr.colour}
                     // « Partagé » marker only here (the panel list shows text), never on the
                     // month grid band — the band colour + title carry it there (calm).
-                    badge={tr.shared ? <Chip icon="users-three-bold">{t.sharedVoyage.badge}</Chip> : undefined}
+                    badge={
+                      tr.shared ? (
+                        <span className="act__sharedmark" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
+                          <Icon name="users-three-bold" size={13} />
+                        </span>
+                      ) : undefined
+                    }
                     onActivate={() => nav(`${base}?vue=itineraire`)}
                   />
                   {selTripPlans

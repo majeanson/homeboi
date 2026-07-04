@@ -1,4 +1,4 @@
-import { GUIDE } from '../../lib/guideContent'
+import { GUIDE, SECTION_TINT } from '../../lib/guideContent'
 import { GuideCard } from './guide'
 
 // The how-it-works for ONE Réglages tab, shown inline at the top of that tab —
@@ -17,7 +17,7 @@ export function SectionGuide({ tab }: { tab: string }) {
   return (
     <div className="guide section-guide">
       <div className="guide__cards">
-        <GuideCard entry={entry} showGoTo={false} />
+        <GuideCard entry={entry} showGoTo={false} tint={SECTION_TINT.settings.ink} />
       </div>
     </div>
   )

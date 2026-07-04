@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { useAi } from '../lib/ai'
-import { resizeImage, resizeImageForOcr, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
+import { resizeImage, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { ocrImage, mergeOcrPages, disposeOcr } from '../lib/ocr'
 import { repairImperialFromMetric } from '../lib/measure'
 import { useOcrEngine, useCloudOcrAvailable } from '../lib/ocrPref'
@@ -351,13 +351,14 @@ export function RecipeForm({
       }
 
       // On-device Tesseract — the default, AND the fallback if cloud came back empty.
-      // Transcribe each page at the higher OCR resolution (a fraction's slash lives in
-      // a few pixels). Average confidence; union shaky words.
+      // Downscale-only to OCR_MAX (the original, "okay" read): plain shrinking reads
+      // ordinary photos more faithfully than upscaling small ones, which invented
+      // blurry pixels the engine then mis-read. Average confidence; union shaky words.
       if (!texts.length) {
         let confSum = 0
         let confN = 0
         for (let i = 0; i < files.length; i++) {
-          const big = await resizeImageForOcr(files[i], OCR_MAX)
+          const big = await resizeImage(files[i], OCR_MAX)
           const res = await ocrImage(big, (p) => setReadProgress((i + p) / files.length))
           if (res.text) texts.push(res.text)
           if (res.confidence > 0) {

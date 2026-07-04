@@ -331,15 +331,6 @@
 .kitchen__day-sum-empty {
   color: var(--ink-soft);
 }
-/* First-run (tutorial) hint that the souper headline is drag-to-reschedule — the
-   gesture is invisible on touch with no hover title. Quiet caption, like the page's
-   other *Hint lines. */
-.kitchen__week-hint {
-  margin: 0.2rem 0 0;
-  font-size: var(--text-xs);
-  color: var(--ink-faint);
-}
-
 /* ── Drag-to-move (src/lib/dnd.tsx) ──────────────────────────────────────────
    Touch-friendly pointer DnD: a grip starts the drag, a ghost trails the finger,
    the hovered drop zone lights up, the source dims. Shared by the week grid

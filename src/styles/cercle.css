@@ -1067,6 +1067,10 @@
    than a 4th in-page tab; the ↗ glyph signals the context jump. */
 .cercle-worldlaunch {
   flex: 0 0 auto;
+  /* Match the height of the Liste/Liens/Arbre pill row beside it (align-self:stretch
+     fills the .subtabs-row cross size = the segmented control's outer height) so the
+     launch button reads as the same size as the tabs, not a shorter afterthought. */
+  align-self: stretch;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -1084,9 +1088,9 @@
 .cercle-worldlaunch:hover {
   background: color-mix(in srgb, var(--teal-deep, #2a8f85) 16%, transparent);
 }
-/* On a phone the view row is tight (3 segments + this + the "?"): drop the word and
-   keep the sparkle + ↗ (the button stays aria-labelled « Voir notre monde ») so the
-   row never overflows. The label returns when there's room. */
+/* On a phone the view row is tight (3 segments + this launch button): drop the word
+   and keep the sparkle + ↗ (the button stays aria-labelled « Voir notre monde ») so
+   the row never overflows. The label returns when there's room. */
 @media (max-width: 30rem) {
   .cercle-worldlaunch__label {
     display: none;

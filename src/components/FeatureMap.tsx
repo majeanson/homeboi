@@ -1,5 +1,6 @@
+import type { CSSProperties } from 'react'
 import { useLang } from '../i18n'
-import { FEATURE_MAP_TILES } from '../lib/guideContent'
+import { FEATURE_MAP_TILES, SECTION_TINT } from '../lib/guideContent'
 import { Icon } from './Icon'
 
 // A calm grid of theme tiles — "everything Babillard does" at a glance, one
@@ -12,14 +13,25 @@ export function FeatureMap({ onSelect, label }: { onSelect: (key: string) => voi
   const { lang } = useLang()
   return (
     <nav className="feature-map" aria-label={label}>
-      {FEATURE_MAP_TILES.map((tile) => (
-        <button key={tile.key} type="button" className="feature-map__tile" onClick={() => onSelect(tile.key)}>
-          <span className="feature-map__ic">
-            <Icon name={tile.icon} size={22} />
-          </span>
-          <span className="feature-map__label">{tile.label[lang]}</span>
-        </button>
-      ))}
+      {FEATURE_MAP_TILES.map((tile) => {
+        // Each tile wears the colour of the section it opens into (SECTION_TINT):
+        // the icon inks it, hover borrows the wash — so the grid reads by section.
+        const tint = SECTION_TINT[tile.section]
+        return (
+          <button
+            key={tile.key}
+            type="button"
+            className="feature-map__tile"
+            style={{ '--tile-ink': tint.ink, '--tile-wash': tint.wash } as CSSProperties}
+            onClick={() => onSelect(tile.key)}
+          >
+            <span className="feature-map__ic">
+              <Icon name={tile.icon} size={22} />
+            </span>
+            <span className="feature-map__label">{tile.label[lang]}</span>
+          </button>
+        )
+      })}
     </nav>
   )
 }

@@ -201,6 +201,15 @@
 }
 
 /* — the board « Prochain voyage » card — */
+/* Voyage wears Le cercle's turquoise: trips live in the cercle's world (guideContent).
+   A calm identity like the tinted bento tiles — a teal header disc + rule, never a loud
+   wash — so « Prochain voyage » reads as a coloured peer of the other board cards. */
+.voyage-card {
+  --sec-tint: var(--teal);
+}
+.voyage-card .sec-label .ln {
+  background: color-mix(in srgb, var(--sec-tint) 32%, var(--line));
+}
 .voyage-card__list {
   list-style: none;
   margin: 0;

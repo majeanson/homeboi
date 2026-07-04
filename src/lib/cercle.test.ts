@@ -545,6 +545,30 @@ describe('proposeAllFamilyLinks (one button: group completion + transitive bridg
     const xy = props.filter((pp) => [pp.aKey, pp.bKey].sort().join() === [k('x'), k('y')].sort().join())
     expect(xy).toHaveLength(1)
   })
+
+  it('completes a precise tie across the whole web with NO named group (grandparent span)', () => {
+    // gp → pa → ch: the closure knows gp is ch's grandparent, but the old per-group
+    // completer proposed nothing without a named group (and none of the three inferLinks
+    // bridges cover it). The web pass materializes it. Ids sort gp < pa < ch so the tie
+    // orients gp→ch = grandparent.
+    const props = proposeAllFamilyLinks(
+      ppl('a_gp', 'b_pa', 'c_ch'),
+      [link('a_gp', 'b_pa', 'parent'), link('b_pa', 'c_ch', 'parent')],
+      [],
+    )
+    expect(tie(props, 'a_gp', 'c_ch')).toBe('grandparent')
+  })
+
+  it('completes cousins across a shared-grandparent web with NO named group', () => {
+    // s1 & s2 are siblings; each has a child → the children are cousins. No named group
+    // and none of the three inferLinks bridges surface this — only the web completion does.
+    const props = proposeAllFamilyLinks(
+      ppl('s1', 's2', 'c1', 'c2'),
+      [link('s1', 's2', 'sibling'), link('s1', 'c1', 'parent'), link('s2', 'c2', 'parent')],
+      [],
+    )
+    expect(tie(props, 'c1', 'c2')).toBe('cousin')
+  })
 })
 
 // ---- Pet ownership + household-family reach (the « Famille vs Social » rule) -----

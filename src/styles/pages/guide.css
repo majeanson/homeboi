@@ -35,15 +35,20 @@
   cursor: pointer;
   font-size: var(--text-md);
 }
+/* Each tile is tinted by the SECTION it opens into (--tile-ink / --tile-wash set
+   inline from SECTION_TINT): the icon inks in the section's colour, and hover
+   borrows the section wash + ink border — so the grid reads by section at a glance
+   (« Cuisine & épicerie » in La cuisine's terracotta, etc.). */
 .feature-map__tile:hover {
-  border-color: var(--line-strong);
+  border-color: var(--tile-ink, var(--line-strong));
+  background: color-mix(in srgb, var(--tile-wash, transparent) 45%, var(--paper));
 }
 .feature-map__ic {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--marigold-deep);
+  color: var(--tile-ink, var(--marigold-deep));
 }
 .feature-map__label {
   line-height: 1.2;
@@ -79,10 +84,14 @@
   font-size: 0.9rem;
 }
 /* A themed sub-cluster inside the (large) concepts group, so it reads as a map
-   rather than a flat wall. */
+   rather than a flat wall. Each cluster wears its section's colour (--theme-ink /
+   --theme-wash set inline from SECTION_TINT): a quiet left accent spine ties the
+   block to its section, and the heading glyph is inked to match. */
 .guide__theme {
   margin: 0 0 1.25rem;
   scroll-margin-top: 0.75rem;
+  border-left: 3px solid color-mix(in srgb, var(--theme-ink, var(--line)) 55%, transparent);
+  padding-left: 0.7rem;
 }
 .guide__theme-title {
   display: flex;

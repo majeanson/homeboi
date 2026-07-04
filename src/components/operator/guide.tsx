@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type Ref } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type Ref } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
-import { GUIDE, GUIDE_GROUPS, type GuideEntry, CONCEPT_THEMES } from '../../lib/guideContent'
+import { GUIDE, GUIDE_GROUPS, type GuideEntry, CONCEPT_THEMES, SECTION_TINT, type SectionKey } from '../../lib/guideContent'
 import { renderRich, stripTokens, highlight as highlightText } from '../../lib/richText'
 import { fold } from '../../lib/normalize'
 import { useTour } from '../../lib/tour'
@@ -27,6 +27,7 @@ export function GuideCard({
   showGoTo = true,
   targetPoint,
   highlight: hl,
+  tint,
   onReplayTour,
   onResetOnboarding,
 }: {
@@ -34,6 +35,11 @@ export function GuideCard({
   open?: boolean
   isTarget?: boolean
   cardRef?: Ref<HTMLDetailsElement>
+  // The section colour (SECTION_TINT ink) this card belongs to. Applied as a local
+  // `--accent` override so the card's icon, chevron, target-ring and "go there"
+  // link all adopt the section's hue — they already read `var(--accent, …)`. Undefined
+  // (start cards, inline section guides) keeps the default marigold accent.
+  tint?: string
   pointsOpen?: boolean
   showGoTo?: boolean
   // The active search words — every fold-match in the title/what/points gets a
@@ -59,7 +65,12 @@ export function GuideCard({
     }
   }, [targetPoint])
   return (
-    <details ref={cardRef} className={`guide__card${isTarget ? ' is-target' : ''}`} open={open}>
+    <details
+      ref={cardRef}
+      className={`guide__card${isTarget ? ' is-target' : ''}`}
+      open={open}
+      style={tint ? ({ '--accent': tint } as CSSProperties) : undefined}
+    >
       <summary className="guide__summary">
         <span className="guide__icon">
           <Icon name={entry.icon} size={26} />
@@ -163,6 +174,21 @@ const conceptRank = (id: string) => {
 // The concepts group is the biggest (~24 cards) — rendered as themed sub-clusters
 // (CONCEPT_THEMES, the shared taxonomy in guideContent) instead of a flat wall.
 const conceptThemeOf = (id: string) => CONCEPT_THEMES.find((th) => th.ids.includes(id))?.key
+
+// The section colour (SECTION_TINT ink) a card should wear, so every card in the
+// Guide reads in the hue of the section it documents — "proper mapping", one
+// source (SECTION_TINT, itself mirroring the nav). A section card's id IS a
+// SectionKey (board/kitchen/…); a concept card inherits its theme's section; a
+// settings card is Réglages' sage. Start (overview) cards keep the default accent.
+const sectionTintFor = (e: GuideEntry): string | undefined => {
+  if (e.group === 'sections' && e.id in SECTION_TINT) return SECTION_TINT[e.id as SectionKey].ink
+  if (e.group === 'settings') return SECTION_TINT.settings.ink
+  if (e.group === 'concepts') {
+    const th = CONCEPT_THEMES.find((t) => t.ids.includes(e.id))
+    if (th) return SECTION_TINT[th.section].ink
+  }
+  return undefined
+}
 // The order a concept sits at *within* its theme bucket.
 const themeInnerRank = (id: string) => {
   const th = CONCEPT_THEMES.find((t) => t.ids.includes(id))
@@ -322,6 +348,7 @@ export function GuideSection() {
       open={q.length > 0 || e.id === openId}
       pointsOpen={q.length > 0}
       highlight={q.length > 0 ? q : undefined}
+      tint={sectionTintFor(e)}
       onReplayTour={start}
       onResetOnboarding={resetOnboarding}
     />
@@ -419,9 +446,22 @@ export function GuideSection() {
             <div key={group.id} className="guide__group">
               <h3 className="guide__group-title">{group.label[lang]}</h3>
               {themed.map(({ th, cards }) => (
-                <div key={th.key} id={`guide-th-${th.key}`} className="guide__theme">
+                <div
+                  key={th.key}
+                  id={`guide-th-${th.key}`}
+                  className="guide__theme"
+                  // The theme wears its section's colour: a left accent spine + a
+                  // coloured heading glyph, so « Cuisine & épicerie » reads as La
+                  // cuisine's terracotta, etc. (SECTION_TINT — one shared mapping).
+                  style={
+                    {
+                      '--theme-ink': SECTION_TINT[th.section].ink,
+                      '--theme-wash': SECTION_TINT[th.section].wash,
+                    } as CSSProperties
+                  }
+                >
                   <h4 className="guide__theme-title">
-                    <Icon name={th.icon} size={18} />
+                    <Icon name={th.icon} size={18} color={SECTION_TINT[th.section].ink} />
                     {th.label[lang]}
                   </h4>
                   <div className="guide__cards">{cards.map(renderCard)}</div>

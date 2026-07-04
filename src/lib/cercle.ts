@@ -1549,26 +1549,17 @@ export interface FamilyLinkProposal {
 
 const unorderedPair = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`)
 
-// Compute every link needed to make each « famille »-kind group fully related, using
-// the hierarchy the explicit links already give us:
-//   • a pair the link closure can type precisely (sibling/parent/grandparent/cousin…)
-//     → CREATE that exact directed tie (materialize what was only inferred);
-//   • a pair the hierarchy can't place → CREATE a generic `relative` tie;
-//   • a pair already carrying a stored `relative` the hierarchy can now sharpen
-//     → MODIFY it up to the precise rung.
-// Any pair with an explicit stored tie of another type is left ALONE (an explicit
-// relationship always wins, matching friendLinksFromGroups). Pure + deterministic;
-// the caller shows these in the approval checklist, then POSTs/PATCHes the chosen ones.
-export function proposeFamilyLinks(
+// The precise-rung map used by every family-completion proposer: for each unordered
+// pair (a < b) the family hierarchy can type EXACTLY, the directed rung to materialize.
+// It is the link CLOSURE (closedLinks, minus the generic `relative` passthrough) PLUS
+// the "children of a shared parent are siblings" derivation closedLinks won't seed on
+// its own (it needs an explicit sibling edge to propagate — the same conservatism that
+// keeps co-parents from becoming spouses). closedLinks emits each pair canonically
+// (a < b), so the stored direction/type is the one to materialize. Pure.
+function inferredFamilyMap(
   people: Person[],
   storedLinks: ContactLink[],
-  groups: ContactGroup[],
-): FamilyLinkProposal[] {
-  const present = new Set(people.map((p) => p.key))
-
-  // The full inferred family graph from the stored links, indexed by unordered pair.
-  // closedLinks emits each pair canonically (a < b), so the stored direction/type is
-  // the one to materialize.
+): Map<string, { aKey: string; bKey: string; type: RelationshipType }> {
   const closed = closedLinks(people, storedLinks)
   const inferred = new Map<string, { aKey: string; bKey: string; type: RelationshipType }>()
   for (const l of closed) {
@@ -1578,12 +1569,8 @@ export function proposeFamilyLinks(
     const pk = unorderedPair(aKey, bKey)
     if (!inferred.has(pk)) inferred.set(pk, { aKey, bKey, type: l.type })
   }
-
-  // Children of a shared parent are siblings. closedLinks won't seed that on its own
-  // (it needs an explicit sibling edge to propagate — the same conservatism that keeps
-  // co-parents from becoming spouses), but it's precisely the "missing link" this
-  // completion exists to fill, so derive co-child sibling ties from the closed parent
-  // edges. A precise rung the closure already found always wins over this.
+  // Children of a shared parent are siblings — the one derivation closedLinks omits
+  // (see above), but precisely the "missing link" completion exists to fill.
   const childrenOf = new Map<string, string[]>()
   for (const l of closed) {
     const aKey = personKey(l.personAKind, l.personAId)
@@ -1601,13 +1588,69 @@ export function proposeFamilyLinks(
         if (!inferred.has(pk)) inferred.set(pk, { aKey: sorted[i], bKey: sorted[j], type: 'sibling' })
       }
   }
+  return inferred
+}
 
-  // Every stored tie (ANY type) by unordered pair — an explicit one wins over a guess.
+// Every stored tie (ANY type) indexed by unordered pair — an explicit link always wins
+// over a guessed one. Pure.
+function storedPairMap(storedLinks: ContactLink[]): Map<string, ContactLink> {
   const stored = new Map<string, ContactLink>()
   for (const l of storedLinks) {
     const pk = unorderedPair(personKey(l.personAKind, l.personAId), personKey(l.personBKind, l.personBId))
     if (!stored.has(pk)) stored.set(pk, l)
   }
+  return stored
+}
+
+// Reconcile ONE present pair (a < b) against what's stored + what the hierarchy
+// implies, appending 0 or 1 proposal to `out`:
+//   • stored `relative` + a known rung → MODIFY it up to the precise rung (oriented to
+//     the stored row's a→b direction — PATCH keeps the endpoints and only swaps the
+//     type — so an asymmetric rung like parent/child never points backwards);
+//   • any other explicit stored tie    → leave ALONE (an explicit tie always wins);
+//   • no stored tie + a known rung      → CREATE that precise directed tie;
+//   • no stored tie + no rung           → CREATE a generic `relative` ONLY when
+//     `fillGeneric` (inside a named group), so a huge intertwined web is never sprayed
+//     with meaningless ties. `reason` rides a created/modified proposal (checklist
+//     "why"). Pure — mutates only `out`.
+function proposePair(
+  a: string,
+  b: string,
+  inferred: Map<string, { aKey: string; bKey: string; type: RelationshipType }>,
+  stored: Map<string, ContactLink>,
+  fillGeneric: boolean,
+  reason: Bi | undefined,
+  out: FamilyLinkProposal[],
+): void {
+  const pk = `${a}|${b}`
+  const have = stored.get(pk)
+  const inf = inferred.get(pk)
+  if (have) {
+    if (have.type === 'relative' && inf) {
+      const storedAKey = personKey(have.personAKind, have.personAId)
+      const storedBKey = personKey(have.personBKind, have.personBId)
+      const type = storedAKey === inf.aKey ? inf.type : RELATIONSHIP_INVERSES[inf.type]
+      out.push({ aKey: storedAKey, bKey: storedBKey, type, op: 'modify', existingId: have.id, inferred: true, reason })
+    }
+    return
+  }
+  if (inf) out.push({ aKey: inf.aKey, bKey: inf.bKey, type: inf.type, op: 'create', existingId: null, inferred: true, reason })
+  else if (fillGeneric) out.push({ aKey: a, bKey: b, type: 'relative', op: 'create', existingId: null, inferred: false, reason })
+}
+
+// Compute every link needed to make each « famille »-kind group 100% related, using the
+// hierarchy the explicit links already give us (see proposePair — a precise rung where
+// the closure can place one, a generic `relative` fallback where it can't). Pure +
+// deterministic; the caller shows these in the approval checklist, then POSTs/PATCHes
+// the chosen ones.
+export function proposeFamilyLinks(
+  people: Person[],
+  storedLinks: ContactLink[],
+  groups: ContactGroup[],
+): FamilyLinkProposal[] {
+  const present = new Set(people.map((p) => p.key))
+  const inferred = inferredFamilyMap(people, storedLinks)
+  const stored = storedPairMap(storedLinks)
 
   const out: FamilyLinkProposal[] = []
   const done = new Set<string>()
@@ -1616,45 +1659,68 @@ export function proposeFamilyLinks(
     const keys = [...g.memberKeys].filter((k) => present.has(k)).sort() // a < b already
     for (let i = 0; i < keys.length; i++) {
       for (let j = i + 1; j < keys.length; j++) {
-        const a = keys[i]
-        const b = keys[j]
-        const pk = `${a}|${b}`
+        const pk = `${keys[i]}|${keys[j]}`
         if (done.has(pk)) continue
         done.add(pk)
-        const have = stored.get(pk)
-        const inf = inferred.get(pk)
-        if (have) {
-          // Sharpen a vague stored `relative` once the hierarchy can place it; otherwise
-          // an explicit tie of any kind already covers this pair — leave it alone. Orient
-          // the rung to the STORED row's a→b direction (PATCH keeps the endpoints, only
-          // swaps the type), so an asymmetric rung (parent/child…) never points backwards.
-          if (have.type === 'relative' && inf) {
-            const storedAKey = personKey(have.personAKind, have.personAId)
-            const storedBKey = personKey(have.personBKind, have.personBId)
-            const type = storedAKey === inf.aKey ? inf.type : RELATIONSHIP_INVERSES[inf.type]
-            out.push({ aKey: storedAKey, bKey: storedBKey, type, op: 'modify', existingId: have.id, inferred: true })
-          }
-          continue
-        }
-        if (inf) out.push({ aKey: inf.aKey, bKey: inf.bKey, type: inf.type, op: 'create', existingId: null, inferred: true })
-        else out.push({ aKey: a, bKey: b, type: 'relative', op: 'create', existingId: null, inferred: false })
+        proposePair(keys[i], keys[j], inferred, stored, true, undefined, out)
       }
     }
   }
   return out
 }
 
+// A web-completed tie's checklist "why". The specific relationship label already reads
+// on the row ("Léa · Cousine de Marc"); this line just says the app deduced the tie
+// from the family's existing links.
+const DEDUCED_KIN: Bi = { fr: 'Déduit des liens de la famille', en: 'Deduced from family ties' }
+
+// Complete EVERY intertwined family, not just one named group: walk the whole connected
+// family web — two families joined by a marriage/in-law land in ONE component — and
+// propose every tie the hierarchy can type precisely (cousins, grandparent spans,
+// aunt/uncle, siblings) across the entire web, spanning named-group boundaries. It never
+// invents a generic `relative` for an unknowable pair (`fillGeneric` false): that would
+// spray meaningless ties across a huge merged clan; it materializes only what the graph
+// actually implies. Pure; deduped + merged by proposeAllFamilyLinks.
+function proposeWebLinks(people: Person[], storedLinks: ContactLink[]): FamilyLinkProposal[] {
+  const present = new Set(people.map((p) => p.key))
+  const inferred = inferredFamilyMap(people, storedLinks)
+  const stored = storedPairMap(storedLinks)
+
+  // Connected components over the FAMILY edges (spouse/in-law are family types, so the
+  // two sides of a marriage share one component).
+  const uf = new UnionFind()
+  people.forEach((p) => uf.add(p.key))
+  for (const l of storedLinks) {
+    if (!FAMILY_REL_TYPES.has(l.type)) continue
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    if (uf.has(aKey) && uf.has(bKey)) uf.union(aKey, bKey)
+  }
+
+  const out: FamilyLinkProposal[] = []
+  for (const members of uf.components().values()) {
+    const keys = members.filter((k) => present.has(k)).sort() // a < b already
+    if (keys.length < 2) continue
+    for (let i = 0; i < keys.length; i++)
+      for (let j = i + 1; j < keys.length; j++) proposePair(keys[i], keys[j], inferred, stored, false, DEDUCED_KIN, out)
+  }
+  return out
+}
+
 // The one-button "does it all" proposer: every link worth offering across the WHOLE
-// circle, in one review checklist. It merges
-//   • the group-completion proposals (`proposeFamilyLinks` — make each named famille
-//     group 100% related), AND
-//   • the transitive cross-family bridges the explicit links already imply
-//     (`inferLinks` — co-parents → spouse, a shared parent → sibling, a spouse's
-//     parents → in-law) — the deductions that connect TWO families through a single
-//     junction link, even with no named group built.
-// Deduped by unordered pair (a precise group completion wins a conflict); each
-// transitive item carries its own human `reason` for the checklist row. Pure — the
-// caller shows them for approval, then POST/PATCHes only the ticked ones.
+// circle, in one review checklist. It merges, in precedence order:
+//   • group completion (`proposeFamilyLinks`) — make each named famille group 100%
+//     related, incl. the generic `relative` fallback for an unknowable in-group pair;
+//   • transitive cross-family bridges (`inferLinks`) — co-parents → spouse, a shared
+//     parent → sibling, a spouse's parents → in-law: the deductions that join TWO
+//     families through a single junction link, each carrying its own human `reason`;
+//   • the whole intertwined WEB (`proposeWebLinks`) — every precise rung the hierarchy
+//     can type across the ENTIRE connected family (cousins, grandparent spans,
+//     aunt/uncle…), spanning group boundaries, so completing works family-wide and not
+//     one named group at a time.
+// Deduped by unordered pair — the EARLIER source wins, so a group's precise rung and a
+// bridge's specific reason both beat the web's generic one. Pure — the caller shows them
+// for approval, then POST/PATCHes only the ticked ones.
 export function proposeAllFamilyLinks(
   people: Person[],
   storedLinks: ContactLink[],
@@ -1662,8 +1728,28 @@ export function proposeAllFamilyLinks(
 ): FamilyLinkProposal[] {
   const fromGroups = proposeFamilyLinks(people, storedLinks, groups)
   const covered = new Set(fromGroups.map((p) => unorderedPair(p.aKey, p.bKey)))
-  const transitive: FamilyLinkProposal[] = inferLinks(people, storedLinks)
-    .filter((s) => !covered.has(unorderedPair(s.aKey, s.bKey)))
-    .map((s) => ({ aKey: s.aKey, bKey: s.bKey, type: s.type, op: 'create' as const, existingId: null, inferred: true, reason: s.reason }))
-  return [...fromGroups, ...transitive]
+  // Keep only proposals for a pair nothing earlier already covers (registers as it goes).
+  const take = (list: FamilyLinkProposal[]): FamilyLinkProposal[] => {
+    const kept: FamilyLinkProposal[] = []
+    for (const p of list) {
+      const pk = unorderedPair(p.aKey, p.bKey)
+      if (covered.has(pk)) continue
+      covered.add(pk)
+      kept.push(p)
+    }
+    return kept
+  }
+  const transitive = take(
+    inferLinks(people, storedLinks).map((s) => ({
+      aKey: s.aKey,
+      bKey: s.bKey,
+      type: s.type,
+      op: 'create' as const,
+      existingId: null,
+      inferred: true,
+      reason: s.reason,
+    })),
+  )
+  const fromWeb = take(proposeWebLinks(people, storedLinks))
+  return [...fromGroups, ...transitive, ...fromWeb]
 }

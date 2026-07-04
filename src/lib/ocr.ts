@@ -34,46 +34,28 @@ const EMPTY: OcrResult = { text: '', confidence: 0, lowConfidenceWords: [] }
 // null so ocrImage degrades to the AI fallback instead of throwing.
 let workerPromise: Promise<Worker | null> | null = null
 
-// The high-accuracy ("best", float LSTM) traineddata — markedly better on the small
-// dense glyphs recipes live on (decimal commas, vulgar fractions) than the default
-// integerized models, for ~the same download (best fra is even smaller). Slower per
-// scan, which is a fine trade for a recipe you keep. If this CDN/path ever fails we
-// fall back to tesseract.js's default models so OCR still works.
-const BEST_LANGPATH = 'https://tessdata.projectnaptha.com/4.0.0_best'
-
+// The DEFAULT tesseract.js traineddata (integerized, bundled) — plain and un-tuned.
+// We deliberately do NOT reach for the external "best" float models or force a DPI /
+// char-blacklist: those were layered on later to chase fractions and, in practice,
+// made the on-device read WORSE (slower, CDN-dependent, more garble on ordinary
+// photos). The faithful post-processing below (normalizeOcrText, mergeOcrPages, the
+// metric-fraction rescue) recovers the numbers without touching what the engine
+// actually saw. Cloud OCR ("Haute précision", Mistral) stays the accuracy option.
 function getWorker(onProgress?: (fraction: number) => void): Promise<Worker | null> {
   if (!workerPromise) {
     workerPromise = (async () => {
-      const { createWorker } = await import('tesseract.js')
-      const logger = (m: { status: string; progress: number }) => {
-        // Only the recognize phase carries a meaningful 0..1 for the "Lecture…"
-        // progress; download/init phases just spin.
-        if (m.status === 'recognizing text' && typeof m.progress === 'number') onProgress?.(m.progress)
-      }
-      const spawn = (langPath?: string) =>
-        createWorker(['fra', 'eng'], 1, langPath ? { langPath, logger } : { logger })
-      let worker: Worker
       try {
-        worker = await spawn(BEST_LANGPATH) // accuracy first
+        const { createWorker } = await import('tesseract.js')
+        return await createWorker(['fra', 'eng'], 1, {
+          logger: (m: { status: string; progress: number }) => {
+            // Only the recognize phase carries a meaningful 0..1 for the "Lecture…"
+            // progress; download/init phases just spin.
+            if (m.status === 'recognizing text' && typeof m.progress === 'number') onProgress?.(m.progress)
+          },
+        })
       } catch {
-        try {
-          worker = await spawn() // best models unreachable → default integerized ones
-        } catch {
-          return null // no models at all → caller degrades to the AI vision read
-        }
+        return null // no models at all → caller degrades to the AI vision read
       }
-      // Steady digit/punctuation calls (a dropped comma turns "1,25 ml" into "125 ml").
-      // NOTE: we deliberately do NOT blacklist "%" here — it seems clever (a recipe
-      // rarely prints "%", and "%" is a common misread of ¾/½/¼) but in practice it
-      // just pushes the engine to OTHER junk ("Ÿ", "A", "R"), which is harder to spot
-      // and to flag than a "%". The vulgar fraction is rescued from the metric instead
-      // (measure.ts repairImperialFromMetric), since the plain "60 ml" reads reliably.
-      try {
-        await worker.setParameters({ user_defined_dpi: '300' })
-      } catch {
-        /* a model variant may reject a param — recognition still works without it */
-      }
-      return worker
     })()
   }
   return workerPromise
