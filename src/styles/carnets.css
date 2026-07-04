@@ -211,11 +211,45 @@
   font-size: 1.05rem;
 }
 
+/* History & « en cas de pépin » entries are richer than a one-line directory row — a
+   title, a metadata line, an optional note and doc chips — so they read as little
+   cards. Three fixes over the bare shared .cercle-row (which is tuned for a contact
+   row): give the body real interior padding, TOP-align so the edit/delete pair sits
+   level with the title instead of floating in the vertical middle of a tall card, and
+   let the detail WRAP instead of truncating — "where's the water main" is the whole
+   point of the entry, a « …trappe a… » ellipsis defeats it. */
+.carnet-logrow,
+.carnet-pinrow {
+  align-items: flex-start;
+}
+.carnet-logrow .cercle-row__main,
+.carnet-pinrow .cercle-row__main {
+  /* Grow to fill the row so the actions stay pinned right even once the detail wraps
+     (a wrapping sub no longer stretches the row on its own). */
+  flex: 1 1 auto;
+  gap: 0.2rem;
+  padding: 0.6rem 0.15rem 0.6rem 0.75rem;
+}
+/* The shared sub truncates to one line (right for a contact); here it must breathe. */
+.carnet-logrow .cercle-row__sub,
+.carnet-pinrow .cercle-row__sub {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.4;
+}
+/* Actions level with the title row, with a hair of right gutter. */
+.carnet-logrow .row-actions,
+.carnet-pinrow .row-actions {
+  margin: 0.4rem 0.35rem 0 0;
+}
+
 /* History rows */
 .carnet-logrow__note {
   display: block;
   opacity: 0.75;
   margin-top: 0.15rem;
+  line-height: 1.4;
 }
 .carnet-docs {
   display: flex;

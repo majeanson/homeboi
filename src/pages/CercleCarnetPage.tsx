@@ -411,7 +411,9 @@ export function CercleCarnetPage() {
                     <div key={p.id} className="cercle-row carnet-pinrow">
                       <span className="cercle-row__main">
                         <span className="cercle-row__name">{PIN_EMOJI[p.kind]} {p.label}</span>
-                        {p.detail && <span className="cercle-row__sub mono">{p.detail}</span>}
+                        {/* Free-text prose ("au sous-sol, derrière la trappe…") — plain,
+                            not mono: mono here read like a code dump and truncated. */}
+                        {p.detail && <span className="cercle-row__sub">{p.detail}</span>}
                         <CarnetDocs keys={p.mediaKey ? [p.mediaKey] : []} />
                       </span>
                       {!ro && <RowActions onEdit={() => setEditPin(p)} onDelete={() => removePin(p)} />}

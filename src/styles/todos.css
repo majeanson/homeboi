@@ -208,16 +208,11 @@
   gap: 0.6rem;
   margin: 0;
 }
-/* Anytime / Today / A date — a tidy button group with room above/below. Wraps on a
-   narrow phone rather than squishing the labels; each button keeps a sane min width. */
-.addsheet__scope {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.addsheet__scope .btn {
-  flex: 1 1 6rem;
-}
+/* Anytime / Today / A date — a tidy button group with room above/below. Layout comes
+   from the shared <Cluster fill> primitive (.cluster / .cluster--fill in core.css):
+   the buttons grow to share the row but WRAP to a second line on a narrow phone
+   instead of bleeding off the right — the old `flex: 1 1 6rem` here was the overflow
+   trap (a fixed basis kept all three on one line). Don't re-add a fixed flex-basis. */
 /* The revealed native date picker for the "A date" scope. */
 .addsheet__scope-date {
   width: 100%;

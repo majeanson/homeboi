@@ -210,29 +210,49 @@
   color: var(--ink-soft);
   white-space: nowrap;
 }
-/* Shared tap-to-pick emoji grid (EmojiPicker). The set is broad, so cap the height
-   and scroll — never a wall of glyphs that pushes the rest of the form off-screen. */
+/* Shared tap-to-pick emoji control (EmojiPicker / EmojiField). A search box on top
+   filters the broad set (type « eau », « outil »…); the grid caps its height and
+   scrolls so it never pushes the rest of the form off-screen. */
+.emoji-picker-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 6px;
+}
+.emoji-picker__search {
+  width: 100%;
+}
+.emoji-picker__empty {
+  margin: 0;
+  padding: 1.2rem 0.5rem;
+  text-align: center;
+  color: var(--ink-soft);
+}
 .emoji-picker {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
   gap: 6px;
   padding: 10px;
-  margin-top: 6px;
-  max-height: 11rem;
+  max-height: 13rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--paper-deep);
   border-radius: var(--radius-md);
 }
+/* Roomier grid when the picker opens in its own dialog (EmojiField) — use the height
+   a Modal affords instead of the tight inline cap. */
+.emoji-picker--tall {
+  max-height: min(58vh, 26rem);
+}
 .emoji-picker__opt {
-  font-size: 22px;
+  font-size: 24px;
   aspect-ratio: 1;
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 11px;
+  border-radius: 12px;
   background: var(--card);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -242,6 +262,48 @@
 }
 .emoji-picker__opt:active {
   transform: scale(0.92);
+}
+
+/* EmojiField — the compact trigger that opens the picker on a bigger surface. Reads
+   as a tappable chip: the current glyph (or a dimmed fallback) + a quiet hint, so a
+   person taps the emoji itself to change it. */
+.emoji-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.3rem 0.85rem 0.3rem 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  min-height: var(--touch-target);
+}
+.emoji-field:active {
+  transform: scale(0.97);
+}
+.emoji-field__glyph {
+  width: 2.3rem;
+  height: 2.3rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.55rem;
+  line-height: 1;
+  border-radius: 50%;
+  background: var(--paper-deep);
+}
+.emoji-field--empty .emoji-field__glyph {
+  opacity: 0.5;
+}
+.emoji-field__hint {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.emoji-field__clear {
+  margin-top: 0.6rem;
+  width: 100%;
 }
 .operator__chore-form,
 .operator__routine-form {

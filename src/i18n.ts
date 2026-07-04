@@ -2421,7 +2421,7 @@ export const FR = {
     byStore: 'Par magasin',
     share: 'Partager',
   },
-  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', delete: 'Supprimer', confirmTitle: 'Confirmer', deleteConfirm: 'Supprimer ?', saveFailed: 'Pas enregistré — réessaie.', loadFailed: 'Impossible de charger — réessaie.', close: 'Fermer', zoomIn: 'Agrandir', zoomOut: 'Réduire', zoomReset: 'Réinitialiser le zoom' },
+  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', delete: 'Supprimer', confirmTitle: 'Confirmer', deleteConfirm: 'Supprimer ?', saveFailed: 'Pas enregistré — réessaie.', loadFailed: 'Impossible de charger — réessaie.', close: 'Fermer', zoomIn: 'Agrandir', zoomOut: 'Réduire', zoomReset: 'Réinitialiser le zoom', emojiChoose: 'Choisir un emoji', emojiChange: 'Changer', emojiSearch: 'Chercher un emoji… (ex. « eau », « outil »)', emojiNone: 'Aucun emoji', emojiClear: 'Retirer l’emoji', emojiNoResult: 'Aucun emoji trouvé.' },
   share: {
     title: 'Ajouter à Babillard',
     lead: 'Partagé depuis une autre app. Ajuste le texte au besoin, puis ajoute — l’app le classe (rendez-vous, liste, repas, note).',
@@ -4870,7 +4870,7 @@ export const EN: typeof FR = {
     byStore: 'By store',
     share: 'Share',
   },
-  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this?', saveFailed: 'Not saved — try again.', loadFailed: "Couldn't load — try again.", close: 'Close', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom' },
+  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this?', saveFailed: 'Not saved — try again.', loadFailed: "Couldn't load — try again.", close: 'Close', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom', emojiChoose: 'Pick an emoji', emojiChange: 'Change', emojiSearch: 'Search an emoji… (e.g. “water”, “tool”)', emojiNone: 'No emoji', emojiClear: 'Remove emoji', emojiNoResult: 'No emoji found.' },
   share: {
     title: 'Add to Babillard',
     lead: 'Shared from another app. Tweak the text if needed, then add — the app sorts it (event, list, meal, note).',

@@ -65,6 +65,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Empty / status / chip / section header | **`EmptyState`/`StatusMessage`/`Chip`+`ChipGroup`/`SectionHeader`** | same-named files in `components/` |
 | Collapse a secondary group (calm) | **`Disclosure`** / `useSingleOpen` | `components/Disclosure.tsx` |
 | In-page segmented sub-tabs ("one job at a time") | **`SubTabs`** (the `.subtabs` family) | `components/SubTabs.tsx` (help-mode aware; used by La cuisine + Le cercle) |
+| A horizontal row of buttons / chips / controls | **`Cluster`** (wraps) / **`Rail`** (scrolls one line) — never a hand-rolled flex row | `components/Layout.tsx` (`.cluster`/`.rail` in `core.css`; see [Horizontal overflow](#horizontal-overflow)) |
 | A dialog / bottom sheet | **`Modal`** + `useModal` / `useSwipeToDismiss` | `components/Modal.tsx`, `lib/useModal.ts` |
 | A Réglages section wrapper | **`OperatorSection`** | `components/operator/OperatorSection.tsx` |
 | Hub-tab / scene header | **`HubHead`** / **`SceneHead`** | `components/HubHead.tsx`, `components/SceneHead.tsx` |
@@ -377,6 +378,33 @@ Comments cite `bmad/` tags: **`NFR-*`** (non-functional, e.g. `NFR-CALM-1`,
 
 ---
 
+## Horizontal overflow
+
+New UI that bleeds off the right edge on a narrow phone is a **recurring** bug here.
+The cause is almost always a hand-rolled `display:flex` row of buttons/chips, and the
+reason it ships unnoticed is that `#root`, `.hub__body`, and `.sheet` all set
+`overflow-x:hidden` — so a too-wide row is **clipped (hidden), not fixed**, and a
+`scrollWidth`-based check reads it as 0. Prevent it structurally:
+
+- **Use a row primitive, never a bespoke flex row.** `<Cluster>` (wraps to a second
+  line) for order-independent rows; `<Rail>` (scrolls one line) for sequences that must
+  stay inline. `components/Layout.tsx`; classes `.cluster`/`.rail` in `core.css`; live
+  in `/dev/kit` ▸ Fondations ▸ *Cluster · Rail*. `<Cluster fill>` = "grow to share the
+  row but still wrap when narrow."
+- **A fixed `flex-basis` is the trap.** `flex: 1 1 6rem` on three buttons keeps them on
+  one line and overflows instead of wrapping, because a basis *smaller than the item's
+  content* under-reports the width so wrap never triggers. Basis `auto` (what
+  `.cluster--fill` uses) tracks the content and wraps honestly. If you catch yourself
+  writing `flex: 1 1 <rem>`, reach for `Cluster`/`Rail` instead.
+- **Never add `overflow-x:hidden` to *mask* a wide row** — that hides the bug from the
+  eye and the guard both. The container clips are there to stop page-panning, not to
+  paper over content that's too wide.
+- **The guard is a per-child bounds check, not `scrollWidth`.**
+  `e2e/add-sheet-overflow.spec.ts` measures each visible descendant's right edge vs the
+  sheet's right edge (which sees through the clip) and exercises the sheet in several
+  states. When you add a new sheet/overlay row, extend that spec (or the phone-width
+  sweep in `e2e/screenshots.spec.ts` / `e2e/layout-overflow.spec.ts`) to open it.
+
 ## Conventions & gotchas
 
 - **Reuse before you create** (standing rule). Read the existing section + check
@@ -385,6 +413,8 @@ Comments cite `bmad/` tags: **`NFR-*`** (non-functional, e.g. `NFR-CALM-1`,
   copy that we then have to refactor back. See [Build by reuse](#build-by-reuse--read-before-you-write-start-here).
 - **Every UI change must be mobile-friendly**, every time (standing rule).
 - **Every UI change must be tablet-friendly, especially for Toddler mode**, every time (standing rule).
+- **No horizontal overflow** — any row of controls uses `Cluster`/`Rail`, not a
+  hand-rolled flex row (standing rule). See [Horizontal overflow](#horizontal-overflow).
 - **Push straight to `main`** — no PR branches; CI (typecheck/test/build) is the
   only gate, fix forward if it goes red (standing rule). If a branch ever is used,
   delete it (local + remote) after it merges.

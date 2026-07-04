@@ -121,6 +121,17 @@ export function HubLayout() {
   const section = loc.pathname.split('/')[1] || 'board'
   const sectionModes = SECTION_MODES[section] ?? SECTION_MODES.board
 
+  // Land every section at its top: switching tabs (or the ＋ that navigates into a
+  // section) must start you at the beginning of the new section, not wherever the
+  // previous one happened to be scrolled to. `.hub__body` is the only scroller
+  // (the document itself never scrolls — see hub.css), so reset it on each section
+  // change. Keyed on `section` (the first path segment), not the full pathname, so
+  // a sub-tab flip or a ?tab= change within the same section leaves the scroll be.
+  const bodyRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0 })
+  }, [section])
+
   // A PAIRED device getting 401s means its token was revoked (re-paired, device
   // removed in Réglages, DB reset) — latch a recovery screen at the shell level.
   // Crucially this survives the kid lock: before this, a locked kiosk whose
@@ -359,7 +370,7 @@ export function HubLayout() {
         )}
       </nav>
 
-      <div className="hub__body">
+      <div className="hub__body" ref={bodyRef}>
         <OfflineBanner />
         {guest && (
           <p className="board__empty mono" role="status" style={{ textAlign: 'center', opacity: 0.8 }}>

@@ -20,7 +20,7 @@ import { ColorPicker } from '../components/ColorPicker'
 import { MemberSwitcher } from '../components/MemberSwitcher'
 import { MemberPicker } from '../components/MemberPicker'
 import { FormFooter } from '../components/FormFooter'
-import { EmojiPicker } from '../components/EmojiPicker'
+import { EmojiPicker, EmojiField } from '../components/EmojiPicker'
 import { FaceSelect } from '../components/FaceSelect'
 import { GroupForm } from '../components/cercle/GroupForm'
 import { FamilyShareModal } from '../components/cercle/FamilyShareModal'
@@ -67,6 +67,7 @@ import { Disclosure } from '../components/Disclosure'
 import { Toggle } from '../components/Toggle'
 import { FeatureMap } from '../components/FeatureMap'
 import { SubTabs } from '../components/SubTabs'
+import { Cluster, Rail } from '../components/Layout'
 import { SectionHeader } from '../components/SectionHeader'
 import { SectionAvatar } from '../components/SectionAvatar'
 import { HubHead } from '../components/HubHead'
@@ -792,13 +793,19 @@ export function DevKit() {
       cat: 'Saisie',
       name: 'EmojiPicker',
       file: 'components/EmojiPicker.tsx',
-      kw: 'emoji picto glyph pick palette routine carnet card icon tap grid',
+      kw: 'emoji picto glyph pick palette routine carnet card icon tap grid search recherche champ field',
       render: () => (
-        // The shared tap-to-pick emoji grid (the broad EMOJI_SET) — a routine card,
-        // a carnet, anything. Controlled: value highlighted, onPick returns the glyph.
-        <Demo label="Tap a glyph — the broad shared emoji set, scrollable">
-          <EmojiPicker value={emoji} onPick={setEmoji} ariaLabel="Choisir un emoji" />
-        </Demo>
+        // The shared tap-to-pick emoji control — a routine card, a carnet, anything.
+        // Controlled: value highlighted, onPick returns the glyph. Search filters by
+        // keyword (« eau », « outil »). EmojiField is the compact tap-to-open trigger.
+        <>
+          <Demo label="EmojiField — tap the glyph to open the searchable picker (big surface)">
+            <EmojiField value={emoji} onPick={setEmoji} ariaLabel="Choisir un emoji" fallback="📦" />
+          </Demo>
+          <Demo label="EmojiPicker inline — search + broad shared set, scrollable">
+            <EmojiPicker value={emoji} onPick={setEmoji} ariaLabel="Choisir un emoji" />
+          </Demo>
+        </>
       ),
     },
     {
@@ -1161,6 +1168,47 @@ export function DevKit() {
                 Inerte
               </button>
             </div>
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Fondations',
+      name: 'Cluster · Rail',
+      file: 'components/Layout.tsx',
+      kw: 'cluster rail row rangée flex wrap scroll overflow débordement boutons layout disposition',
+      render: () => (
+        <>
+          <Demo label="Cluster — wrap-safe button row (drops to a second line, never off the right)">
+            <Cluster>
+              {['Défaut', 'Petit', 'Fantôme', 'Encore'].map((k) => (
+                <button key={k} className="btn btn--sm">
+                  {k}
+                </button>
+              ))}
+            </Cluster>
+          </Demo>
+          <Demo label="Cluster fill — buttons grow to share the row, then WRAP (the todo scope row)">
+            <Cluster fill>
+              <button className="btn btn--sm btn--primary">En tout temps</button>
+              <button className="btn btn--sm">Aujourd’hui</button>
+              <button className="btn btn--sm">Une date</button>
+            </Cluster>
+          </Demo>
+          <Demo label="Cluster between — pushed to the ends">
+            <Cluster justify="between">
+              <span className="mono">Titre</span>
+              <button className="btn btn--sm">Action</button>
+            </Cluster>
+          </Demo>
+          <Demo label="Rail — one line that SCROLLS sideways on overflow (never squishes)">
+            <Rail>
+              {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((k) => (
+                <button key={k} className="btn btn--sm" style={{ whiteSpace: 'nowrap' }}>
+                  {k}
+                </button>
+              ))}
+            </Rail>
           </Demo>
         </>
       ),

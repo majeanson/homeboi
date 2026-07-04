@@ -19,7 +19,7 @@ import { ColorPicker } from '../ColorPicker'
 import { StatusMessage } from '../StatusMessage'
 import { FormFooter } from '../FormFooter'
 import { Disclosure } from '../Disclosure'
-import { EmojiPicker } from '../EmojiPicker'
+import { EmojiField } from '../EmojiPicker'
 import { Icon } from '../Icon'
 
 // Add / edit ONE carnet's identity (a house, a car, a water heater, a room). A child
@@ -162,11 +162,11 @@ export function CarnetForm({
         </label>
       )}
 
-      {/* Tap-to-pick from the shared broad EmojiPicker instead of typing an emoji;
-          empty selection → the kind's default disc glyph (KIND_EMOJI). */}
-      <div className="cf__field">
+      {/* Tap the glyph to open the searchable EmojiPicker on a roomy sheet (EmojiField);
+          empty selection → the kind's default disc glyph (KIND_EMOJI) shown as fallback. */}
+      <div className="cf__field cf__field--row">
         <label className="cf__label">{c.emoji}</label>
-        <EmojiPicker value={emoji} onPick={setEmoji} ariaLabel={c.emoji} />
+        <EmojiField value={emoji} onPick={setEmoji} ariaLabel={c.emoji} fallback={KIND_EMOJI[kind]} />
       </div>
 
       <ColorPicker value={colour} onChange={setColour} label={c.colour} />

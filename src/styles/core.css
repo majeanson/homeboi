@@ -1220,6 +1220,66 @@ textarea.input {
   background: var(--accent);
   color: var(--accent-ink);
 }
+
+/* --- Row primitives: Cluster & Rail --------------------------------------- */
+/* The two sanctioned ways to lay out a horizontal row of things (buttons, chips,
+   controls) so it NEVER bleeds off the right edge on a narrow phone. Reach for one
+   of these before hand-rolling a flex row — a bespoke row with a fixed `flex-basis`
+   is the #1 source of x-overflow here, because a basis smaller than the item's
+   content makes flexbox keep everything on one line and overflow instead of wrapping.
+   See <Cluster> / <Rail> in components/Layout.tsx and the /dev/kit gallery.
+
+   Choose by intent:
+   • CLUSTER — the item order doesn't matter and the row MAY wrap to more lines when
+     it doesn't fit (action bars, chip/tag rows, filter buttons). The default.
+   • RAIL — the items form one continuous sequence that must stay on a single line
+     (a segmented control, a timeline, a filmstrip); when it can't fit, it SCROLLS
+     sideways rather than wrapping. Same idea as .subtabs. */
+
+/* CLUSTER — wrap-safe flex row. Children shrink to their content and drop to the
+   next line when they run out of room. min-width:0 on every child so a long word /
+   flex item can shrink past its content-min instead of forcing the row wider. */
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cluster-gap, 0.5rem);
+  min-width: 0;
+}
+.cluster > * {
+  min-width: 0;
+}
+/* Grow each child to share the row evenly, still wrapping when they can't fit.
+   `flex: 1 1 auto` — basis AUTO (tracks the content) is what keeps wrapping honest;
+   a fixed basis (e.g. `1 1 6rem`) is the trap that overflows instead of wrapping. */
+.cluster--fill > * {
+  flex: 1 1 auto;
+}
+.cluster--between {
+  justify-content: space-between;
+}
+.cluster--end {
+  justify-content: flex-end;
+}
+
+/* RAIL — one-line row that scrolls sideways on overflow instead of clipping the last
+   item (generalises the .subtabs behaviour). Children keep their size and stay in a
+   row; the momentum scroll is touch-friendly and the scrollbar is hidden for calm. */
+.rail {
+  display: flex;
+  align-items: center;
+  gap: var(--cluster-gap, 0.5rem);
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -webkit-overflow-scrolling: touch;
+}
+.rail::-webkit-scrollbar {
+  display: none; /* WebKit/Blink */
+}
+.rail > * {
+  flex: 0 0 auto; /* never shrink — that's what makes it scroll, not squish */
+}
+
 .kitchen__day-empty {
   font-size: var(--text-md);
   opacity: 0.7;

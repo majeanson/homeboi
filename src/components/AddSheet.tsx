@@ -37,6 +37,7 @@ import { mealOptions } from './kitchen/comboOptions'
 import { ADD_HELP } from '../lib/addHelp'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { Sheet } from './Sheet'
+import { Cluster } from './Layout'
 import { Disclosure } from './Disclosure'
 
 // Pip's "Add" bottom-sheet — CONTEXTUAL now. HubLayout hands in the current
@@ -751,7 +752,10 @@ export function AddSheet({
       book: t.recipes.bookMake,
       meal: t.kitchen.planMeal,
       leftovers: t.kitchen.leftovers,
-      pantry: t.kitchen.lowAdd,
+      // The tile names its destination section ("Ce qui s'achève" / "Running low")
+      // so it reads as "flag something that's running low", not a vague "add a food".
+      // The in-sheet input keeps the action-phrased `lowAdd` placeholder.
+      pantry: t.kitchen.low,
       reserve: t.kitchen.reserve,
       'list-item': t.list.addTitle,
       'quick-add': t.list.quickAdd,
@@ -877,6 +881,7 @@ export function AddSheet({
       key={m}
       type="button"
       className={'cat-pick' + (mode === m ? ' sel' : '')}
+      data-mode={m}
       disabled={!help.active && m === 'auto-pick' && autoBusy}
       onClick={help.pick(m, () => {
         if (m === 'auto-pick') {
@@ -1003,7 +1008,7 @@ export function AddSheet({
           <div className="addsheet__todo">
             {/* Standing (default) vs today vs a chosen date — applies to BOTH the typed
                 line and a checklist dropped in below. */}
-            <div className="addsheet__scope" role="group" aria-label={t.todos.title}>
+            <Cluster fill className="addsheet__scope" role="group" aria-label={t.todos.title}>
               <button
                 type="button"
                 className={'btn btn--sm' + (todoScope === 'global' ? ' btn--primary' : '')}
@@ -1032,7 +1037,7 @@ export function AddSheet({
               >
                 {t.todos.scopeDate}
               </button>
-            </div>
+            </Cluster>
             {todoScope === 'date' && (
               <input
                 className="input addsheet__scope-date"
