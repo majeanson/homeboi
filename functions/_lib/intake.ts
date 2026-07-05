@@ -12,7 +12,8 @@
 // Used only to reject junk tie strings — the operator still reviews every link.
 const RELATIONSHIP_TYPES = new Set([
   'parent', 'child', 'sibling', 'spouse', 'partner',
-  'grandparent', 'grandchild', 'aunt_uncle', 'niece_nephew', 'cousin', 'in_law',
+  'grandparent', 'grandchild', 'aunt_uncle', 'niece_nephew', 'cousin',
+  'parent_in_law', 'child_in_law', 'sibling_in_law', 'in_law',
   'step_family', 'relative', 'owner', 'pet',
   'best_friend', 'friend', 'colleague', 'neighbor', 'other',
 ])

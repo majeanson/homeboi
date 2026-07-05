@@ -308,7 +308,10 @@ export type RelationshipType =
   | 'aunt_uncle'
   | 'niece_nephew'
   | 'cousin'
-  | 'in_law'
+  | 'parent_in_law' // spouse's parent (belle-mère / beau-père); inverse: child_in_law
+  | 'child_in_law' // child's spouse (belle-fille / beau-fils); inverse: parent_in_law
+  | 'sibling_in_law' // spouse's sibling or sibling's spouse (belle-sœur / beau-frère); self-inverse
+  | 'in_law' // generic catch-all belle-famille (a spouse's cousin, etc.) when no precise in-law rung fits
   | 'step_family'
   | 'relative' // generic "same family" kin tie — no precise rung known (used by « Compléter les familles »)
   | 'owner' // a human who OWNS a pet (inverse: 'pet') — binds the animal into the family group, but is NOT a closure rung (a pet never becomes a grandparent)
@@ -349,9 +352,12 @@ const RELATIONSHIP_CONFIG: Record<RelationshipType, RelationshipConfig> = {
   aunt_uncle: { label: { fr: 'Oncle / tante', en: 'Aunt / uncle' }, group: 'extended', groupOrder: 2, color: '#8A6BA8' },
   niece_nephew: { label: { fr: 'Neveu / nièce', en: 'Niece / nephew' }, group: 'extended', groupOrder: 3, color: '#9E84B8' },
   cousin: { label: { fr: 'Cousin·e', en: 'Cousin' }, group: 'extended', groupOrder: 4, color: '#7E6BB0' },
-  in_law: { label: { fr: 'Belle-famille', en: 'In-law' }, group: 'extended', groupOrder: 5, color: '#5E8C8C' },
-  step_family: { label: { fr: 'Famille recomposée', en: 'Step-family' }, group: 'extended', groupOrder: 6, color: '#5AA08C' },
-  relative: { label: { fr: 'Membre de la famille', en: 'Family member' }, group: 'extended', groupOrder: 7, color: '#6E8FA0' },
+  sibling_in_law: { label: { fr: 'Beau-frère / belle-sœur', en: 'Sibling-in-law' }, group: 'extended', groupOrder: 5, color: '#4F9A93' },
+  parent_in_law: { label: { fr: 'Beau-père / belle-mère', en: 'Parent-in-law' }, group: 'extended', groupOrder: 6, color: '#52968C' },
+  child_in_law: { label: { fr: 'Beau-fils / belle-fille', en: 'Child-in-law' }, group: 'extended', groupOrder: 7, color: '#6AA595' },
+  in_law: { label: { fr: 'Belle-famille', en: 'In-law' }, group: 'extended', groupOrder: 8, color: '#5E8C8C' },
+  step_family: { label: { fr: 'Famille recomposée', en: 'Step-family' }, group: 'extended', groupOrder: 9, color: '#5AA08C' },
+  relative: { label: { fr: 'Membre de la famille', en: 'Family member' }, group: 'extended', groupOrder: 10, color: '#6E8FA0' },
   owner: { label: { fr: 'Propriétaire', en: 'Owner' }, group: 'animal', groupOrder: 0, color: '#C7873F' },
   pet: { label: { fr: 'Animal', en: 'Pet' }, group: 'animal', groupOrder: 1, color: '#C7873F' },
   best_friend: { label: { fr: 'Meilleur·e ami·e', en: 'Best friend' }, group: 'social', groupOrder: 0, color: '#4F8A4A' },
@@ -376,6 +382,9 @@ export const RELATIONSHIP_INVERSES: Record<RelationshipType, RelationshipType> =
   aunt_uncle: 'niece_nephew',
   niece_nephew: 'aunt_uncle',
   cousin: 'cousin',
+  parent_in_law: 'child_in_law',
+  child_in_law: 'parent_in_law',
+  sibling_in_law: 'sibling_in_law',
   in_law: 'in_law',
   step_family: 'step_family',
   relative: 'relative',
@@ -402,6 +411,7 @@ export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | nul
       parent: 'Mère', child: 'Fille', sibling: 'Sœur', spouse: 'Conjointe',
       partner: 'Partenaire', grandparent: 'Grand-mère', grandchild: 'Petite-fille',
       aunt_uncle: 'Tante', niece_nephew: 'Nièce', in_law: 'Belle-famille',
+      sibling_in_law: 'Belle-sœur', parent_in_law: 'Belle-mère', child_in_law: 'Belle-fille',
       step_family: 'Famille recomposée', best_friend: 'Meilleure amie', friend: 'Amie',
       colleague: 'Collègue', neighbor: 'Voisine', cousin: 'Cousine',
     }
@@ -409,6 +419,7 @@ export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | nul
       parent: 'Mother', child: 'Daughter', sibling: 'Sister', spouse: 'Wife',
       partner: 'Partner', grandparent: 'Grandmother', grandchild: 'Granddaughter',
       aunt_uncle: 'Aunt', niece_nephew: 'Niece', in_law: 'In-law', step_family: 'Step-family',
+      sibling_in_law: 'Sister-in-law', parent_in_law: 'Mother-in-law', child_in_law: 'Daughter-in-law',
       best_friend: 'Best friend', friend: 'Friend', colleague: 'Colleague', neighbor: 'Neighbour', cousin: 'Cousin',
     }
     const map = lang === 'fr' ? FEM_FR : FEM_EN
@@ -419,6 +430,7 @@ export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | nul
       parent: 'Père', child: 'Fils', sibling: 'Frère', spouse: 'Conjoint',
       partner: 'Partenaire', grandparent: 'Grand-père', grandchild: 'Petit-fils',
       aunt_uncle: 'Oncle', niece_nephew: 'Neveu', in_law: 'Belle-famille',
+      sibling_in_law: 'Beau-frère', parent_in_law: 'Beau-père', child_in_law: 'Beau-fils',
       step_family: 'Famille recomposée', best_friend: 'Meilleur ami', friend: 'Ami',
       colleague: 'Collègue', neighbor: 'Voisin', cousin: 'Cousin',
     }
@@ -426,6 +438,7 @@ export function genderedRelLabel(type: RelationshipType, gender: 'm' | 'f' | nul
       parent: 'Father', child: 'Son', sibling: 'Brother', spouse: 'Husband',
       partner: 'Partner', grandparent: 'Grandfather', grandchild: 'Grandson',
       aunt_uncle: 'Uncle', niece_nephew: 'Nephew', in_law: 'In-law', step_family: 'Step-family',
+      sibling_in_law: 'Brother-in-law', parent_in_law: 'Father-in-law', child_in_law: 'Son-in-law',
       best_friend: 'Best friend', friend: 'Friend', colleague: 'Colleague', neighbor: 'Neighbour', cousin: 'Cousin',
     }
     const map = lang === 'fr' ? MASC_FR : MASC_EN
@@ -531,6 +544,9 @@ const FAMILY_REL_TYPES = new Set<RelationshipType>([
   'aunt_uncle',
   'niece_nephew',
   'cousin',
+  'parent_in_law',
+  'child_in_law',
+  'sibling_in_law',
   'in_law',
   'step_family',
   'relative', // generic kin — binds a family + appears in the Arbre (same-generation)
@@ -725,6 +741,9 @@ const GEN_DELTA: Partial<Record<RelationshipType, number>> = {
   spouse: 0,
   partner: 0,
   cousin: 0,
+  parent_in_law: 1, // spouse's parent sits a generation above (like a parent)
+  child_in_law: -1, // child's spouse sits a generation below
+  sibling_in_law: 0,
   in_law: 0,
   step_family: 0,
   relative: 0, // generic kin: no rung known → place beside its known relatives, same band
@@ -1346,10 +1365,10 @@ export function inferLinks(people: Person[], links: ContactLink[]): InferredLink
       }
     }
 
-    // Rule 3: spouse's parents → in-laws
+    // Rule 3: spouse's parents → parent-in-law (belle-mère / beau-père)
     for (const spouse of [...neighbors(key, 'spouse'), ...neighbors(key, 'partner')]) {
       for (const spouseParent of neighbors(spouse, 'child')) {
-        suggest(key, spouseParent, 'in_law', { fr: "Parent du conjoint·e", en: "Spouse's parent" })
+        suggest(key, spouseParent, 'parent_in_law', { fr: 'Parent du conjoint·e', en: "Spouse's parent" })
       }
     }
   }
@@ -1386,6 +1405,9 @@ const REL_PRIORITY: Record<RelationshipType, number> = {
   aunt_uncle: 4,
   niece_nephew: 4,
   cousin: 5,
+  parent_in_law: 6,
+  child_in_law: 6,
+  sibling_in_law: 6,
   in_law: 6,
   step_family: 6,
   relative: 6,

@@ -533,10 +533,10 @@ describe('proposeAllFamilyLinks (one button: group completion + transitive bridg
     expect(tie(props, 'a', 'b')).toBe('spouse')
   })
 
-  it("deduces an in-law from a spouse's parent across families", () => {
-    // a is spouse of b; d is b's parent → d is a's in-law.
+  it("deduces a parent-in-law from a spouse's parent across families", () => {
+    // a is spouse of b; d is b's parent → d is a's parent-in-law (belle-mère / beau-père).
     const props = proposeAllFamilyLinks(ppl('a', 'b', 'd'), [link('a', 'b', 'spouse'), link('d', 'b', 'parent')], [])
-    expect(tie(props, 'a', 'd')).toBe('in_law')
+    expect(tie(props, 'a', 'd')).toBe('parent_in_law')
   })
 
   it('dedups: a pair the group already completes is not also added as a transitive guess', () => {
