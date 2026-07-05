@@ -337,8 +337,7 @@ startDaypartDrift()
 // Cold-reboot offline (NFR-OFFLINE-1): restore the last query-cache snapshot
 // BEFORE first paint so a kiosk rebooted without network shows the last-known
 // board/lists/recipes, then keep snapshotting. A 401 anywhere wipes it, so a
-// revoked device leaves no household data behind. The await is a quick IndexedDB
-// read (and a no-op when absent), so first paint isn't meaningfully delayed.
+// revoked device leaves no household data behind.
 // A 401 also drops any queued offline writes — a revoked device's writes would
 // never land. startOutbox replays anything left from a previous session.
 onAuthLost(() => {
@@ -349,16 +348,45 @@ onAuthLost(() => {
   // re-sending a dead token forever.
   clearGuestToken()
 })
-void (async () => {
-  await restorePersistedCache(queryClient)
-  startPersistingCache(queryClient)
-  startOutbox(queryClient)
-  // Realtime: only when the DO is deployed + the flag is on (see above). Fail-safe
-  // either way — polling owns freshness regardless of whether the socket opens.
-  if (REALTIME_ENABLED) connectRealtime(queryClient)
+
+function mount() {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <Root />
     </StrictMode>,
   )
+}
+
+void (async () => {
+  // Restore the snapshot before paint WHEN WE CAN — but never let it keep the app
+  // off the screen. On iOS a fresh-launch IndexedDB open can hang indefinitely
+  // (a WebKit bug, worse offline where nothing nudges it), and awaiting it here
+  // unconditionally left the installed PWA on a black screen with no network
+  // (NFR-OFFLINE-1). So cap the wait and mount no matter what: a healthy device
+  // restores in ~a frame and paints with data; a stuck one paints the shell after
+  // the cap and the snapshot hydrates late into the already-mounted queries (they
+  // re-render when it lands). restorePersistedCache never rejects (it swallows its
+  // own errors), but the `.catch` keeps a stray rejection from ever escaping and,
+  // with the try/catch, guarantees we fall through to mount().
+  try {
+    await Promise.race([
+      restorePersistedCache(queryClient).catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ])
+  } catch {
+    /* a broken/blocked IndexedDB must never gate first paint */
+  }
+  // Mount FIRST — nothing below can now prevent the app from appearing.
+  mount()
+  // Post-mount wiring: each is fire-and-forget and independently guarded so one
+  // throwing can't unwind a boot that has already put the app on screen.
+  try {
+    startPersistingCache(queryClient)
+    startOutbox(queryClient)
+    // Realtime: only when the DO is deployed + the flag is on (see above). Fail-safe
+    // either way — polling owns freshness regardless of whether the socket opens.
+    if (REALTIME_ENABLED) connectRealtime(queryClient)
+  } catch {
+    /* the app is already mounted; background wiring is best-effort */
+  }
 })()

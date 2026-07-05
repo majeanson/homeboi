@@ -56,7 +56,17 @@ const CACHE = 'babillard-${version}'
 const PRECACHE = ${JSON.stringify(precache, null, 1)}
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()))
+  // Cache each shell entry INDEPENDENTLY (allSettled), not atomically (addAll):
+  // addAll rejects the whole batch if any one URL 404s or fails, which on a first
+  // install would leave NOTHING cached — including the JS bundle — so the tablet
+  // never boots offline (NFR-OFFLINE-1). With allSettled a single renamed/missing
+  // public asset can't take the shell down with it; '/' and the hashed bundles
+  // (which always exist for this build) still precache.
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => Promise.allSettled(PRECACHE.map((u) => c.add(u))))
+      .then(() => self.skipWaiting()),
+  )
 })
 
 self.addEventListener('activate', (e) => {

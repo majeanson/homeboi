@@ -22,13 +22,24 @@ export interface OutboxEntry {
 
 function idb(): Promise<IDBDatabase | null> {
   return new Promise((resolve) => {
+    // Settle once. On iOS/WebKit a fresh-launch open can hang with no callback, or
+    // fire `onblocked` and stall — resolve either way so replay is never wedged
+    // (mirrors the guard in persist.ts).
+    let settled = false
+    const done = (db: IDBDatabase | null) => {
+      if (settled) return
+      settled = true
+      resolve(db)
+    }
     try {
       const req = indexedDB.open(DB, 1)
       req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: 'id' })
-      req.onsuccess = () => resolve(req.result)
-      req.onerror = () => resolve(null)
+      req.onsuccess = () => done(req.result)
+      req.onerror = () => done(null)
+      req.onblocked = () => done(null)
+      setTimeout(() => done(null), 3000)
     } catch {
-      resolve(null)
+      done(null)
     }
   })
 }

@@ -21,13 +21,24 @@ interface Snapshot {
 
 function idb(): Promise<IDBDatabase | null> {
   return new Promise((resolve) => {
+    // Settle exactly once. On iOS/WebKit a fresh-launch open can hang with NO
+    // callback ever firing, or fire `onblocked` and stall — either way we must
+    // resolve so a caller (and, before paint, the whole app) is never wedged.
+    let settled = false
+    const done = (db: IDBDatabase | null) => {
+      if (settled) return
+      settled = true
+      resolve(db)
+    }
     try {
       const req = indexedDB.open(DB, 1)
       req.onupgradeneeded = () => req.result.createObjectStore(STORE)
-      req.onsuccess = () => resolve(req.result)
-      req.onerror = () => resolve(null)
+      req.onsuccess = () => done(req.result)
+      req.onerror = () => done(null)
+      req.onblocked = () => done(null)
+      setTimeout(() => done(null), 3000)
     } catch {
-      resolve(null)
+      done(null)
     }
   })
 }

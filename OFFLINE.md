@@ -14,6 +14,35 @@ or anything online/offline-aware.
 | **Data (write)** | Writes made offline are queued in IndexedDB and **replayed on reconnect**, deduped server-side by an idempotency key so a replay never double-applies. | `src/lib/outbox.ts` + `src/lib/write.ts` (client), `functions/_lib/idempotency.ts` + `0039_idempotency.sql` (server) |
 | **Awareness** | A calm "Hors ligne" banner with a "Données du …" freshness stamp + pending-write count; online-only controls disable themselves. | `src/lib/online.ts`, `src/components/OfflineBanner.tsx` |
 
+## Boot must never block on IndexedDB (NFR-OFFLINE-1)
+
+The single hardest offline rule: **the app must mount even when storage is broken.**
+A reported bug had an installed iOS PWA open offline to an all-black screen — the
+shell HTML + theme loaded (the service worker served them), but React never mounted,
+leaving an empty `#root` over the dark shell. Cause: the boot in `src/main.tsx`
+`await`ed `restorePersistedCache()` (an IndexedDB read) *before* `createRoot().render()`,
+and on iOS a fresh-launch `indexedDB.open()` can **hang with no `success`/`error`/
+`blocked` event ever firing** (a WebKit bug, worse offline where nothing nudges it) —
+so `render()` never ran.
+
+Rules that keep it fixed:
+
+- **`main.tsx` caps the pre-paint restore** (`Promise.race` vs a ~1.5s timeout) and
+  mounts regardless. A healthy device restores in ~a frame and paints with data; a
+  stuck one paints the shell after the cap and the snapshot hydrates *late* into the
+  already-mounted queries (they re-render when it lands). Restore is best-effort — it
+  must never gate first paint.
+- **Every `indexedDB.open()` self-bounds** (`persist.ts`, `outbox.ts`): settle once on
+  `success`/`error`/**`onblocked`** and a ~3s timeout, so a hung/blocked open resolves
+  `null` instead of leaving a dangling promise. `open()` throwing (private mode) is
+  caught → `null`. A `null` db degrades to "no persistence," never a hang.
+- **The service worker precaches entries independently** (`Promise.allSettled` +
+  `cache.add`, not atomic `addAll`): one renamed/missing public asset can't abort the
+  whole shell precache and leave the JS bundle uncached on a first install.
+
+Covered by `e2e/offline-boot.spec.ts` (hung open + unavailable open → app still mounts)
+and `e2e/sw.spec.ts` (shell reboots offline).
+
 ## The write path (outbox)
 
 `useWrite()` (`src/lib/write.ts`) is the offline-aware replacement for the old
