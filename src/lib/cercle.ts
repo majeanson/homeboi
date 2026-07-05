@@ -1306,7 +1306,9 @@ export interface InferredLink {
 // mutates. Three rules:
 //   1. Two people both parents of the same child → suggest spouse/partner
 //   2. People sharing a parent → suggest sibling
-//   3. Spouse's parents → suggest in-law
+//   3. The specific in-law rungs a marriage implies (inLawRungMap): a spouse's parent
+//      → parent-in-law, a spouse's sibling / sibling's spouse → sibling-in-law, a
+//      child's spouse → child-in-law
 // Returns only suggestions not already present. The caller shows them as
 // dismissable chips (they're never auto-applied).
 export function inferLinks(people: Person[], links: ContactLink[]): InferredLink[] {
@@ -1365,13 +1367,13 @@ export function inferLinks(people: Person[], links: ContactLink[]): InferredLink
       }
     }
 
-    // Rule 3: spouse's parents → parent-in-law (belle-mère / beau-père)
-    for (const spouse of [...neighbors(key, 'spouse'), ...neighbors(key, 'partner')]) {
-      for (const spouseParent of neighbors(spouse, 'child')) {
-        suggest(key, spouseParent, 'parent_in_law', { fr: 'Parent du conjoint·e', en: "Spouse's parent" })
-      }
-    }
   }
+
+  // Rule 3: the in-law rungs a marriage/partnership implies — a spouse's parent
+  // (parent-in-law), a spouse's sibling or a sibling's spouse (sibling-in-law), a child's
+  // spouse (child-in-law). Typed + oriented by inLawRungMap over the CLOSED graph; `suggest`
+  // skips any pair already linked and dedups, so this only surfaces NEW ties.
+  for (const r of inLawRungMap(people, links).values()) suggest(r.aKey, r.bKey, r.type, r.reason)
 
   return [...suggestions.values()]
 }
@@ -1613,6 +1615,65 @@ function inferredFamilyMap(
   return inferred
 }
 
+// The three SPECIFIC in-law rungs a marriage/partnership implies, typed off the CLOSED
+// graph (so a spouse's DERIVED sibling/parent counts, not just an explicitly-stored one):
+//   • a spouse's parent  → that parent is your parent_in_law (belle-mère / beau-père)
+//   • a spouse's sibling → your sibling_in_law (belle-sœur / beau-frère)
+//   • a sibling's spouse → your sibling_in_law
+// child_in_law needs no own rule — it's parent_in_law's inverse (your child's spouse ↔ you
+// are their parent-in-law), captured when we process that spouse as `me`. One entry per
+// unordered pair, oriented canonically (smaller key = A) as "A is `type` of B", each with
+// its own human "why". Pure — powers BOTH the create suggestions (inferLinks) and the
+// « Belle-famille » → precise-rung upgrade (proposeInLawUpgrades).
+type InLawRung = { aKey: string; bKey: string; type: RelationshipType; reason: Bi }
+const IN_LAW_PARENT: Bi = { fr: 'Parent du conjoint·e', en: "Spouse's parent" }
+const IN_LAW_SIBLING: Bi = { fr: 'Par alliance (conjoint·e)', en: 'By marriage' }
+
+function inLawRungMap(people: Person[], storedLinks: ContactLink[]): Map<string, InLawRung> {
+  const present = new Set(people.map((p) => p.key))
+  const closed = closedLinks(people, storedLinks)
+  const adj = new Map<string, Map<RelationshipType, string[]>>()
+  const push = (from: string, t: RelationshipType, to: string) => {
+    let m = adj.get(from)
+    if (!m) adj.set(from, (m = new Map()))
+    let arr = m.get(t)
+    if (!arr) m.set(t, (arr = []))
+    arr.push(to)
+  }
+  for (const l of closed) {
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    push(aKey, l.type, bKey)
+    push(bKey, l.reverseType, aKey)
+  }
+  const nbr = (key: string, t: RelationshipType) => adj.get(key)?.get(t) ?? []
+  const spousesOf = (key: string) => [...nbr(key, 'spouse'), ...nbr(key, 'partner')]
+
+  const out = new Map<string, InLawRung>()
+  const set = (aKey: string, bKey: string, type: RelationshipType, reason: Bi) => {
+    if (aKey === bKey || !present.has(aKey) || !present.has(bKey)) return
+    const pk = unorderedPair(aKey, bKey)
+    if (out.has(pk)) return
+    const [a, b, ty] = aKey < bKey ? [aKey, bKey, type] : [bKey, aKey, RELATIONSHIP_INVERSES[type]]
+    out.set(pk, { aKey: a, bKey: b, type: ty, reason })
+  }
+
+  for (const p of people) {
+    const me = p.key
+    for (const s of spousesOf(me)) {
+      // s's parents are my parent-in-law (belle-mère / beau-père). nbr(s,'child') = the
+      // people s is a child OF = s's parents. The inverse (my parent is s's child-in-law)
+      // is emitted when that parent's own spouse is processed as `me`.
+      for (const parent of nbr(s, 'child')) set(parent, me, 'parent_in_law', IN_LAW_PARENT)
+      // s's siblings are my sibling-in-law.
+      for (const sib of nbr(s, 'sibling')) set(me, sib, 'sibling_in_law', IN_LAW_SIBLING)
+    }
+    // my sibling's spouse is my sibling-in-law.
+    for (const sib of nbr(me, 'sibling')) for (const sp of spousesOf(sib)) set(me, sp, 'sibling_in_law', IN_LAW_SIBLING)
+  }
+  return out
+}
+
 // Every stored tie (ANY type) indexed by unordered pair — an explicit link always wins
 // over a guessed one. Pure.
 function storedPairMap(storedLinks: ContactLink[]): Map<string, ContactLink> {
@@ -1792,8 +1853,31 @@ function proposeSpouseKinLinks(people: Person[], storedLinks: ContactLink[]): Fa
   return out
 }
 
+// Upgrade a stored GENERIC « Belle-famille » (`in_law`) to the SPECIFIC gendered rung the
+// graph now implies (belle-mère / beau-frère / belle-fille…) — the same approve-then-PATCH
+// path that lifts a generic `relative` to a blood rung, but for in-laws. Only stored generic
+// `in_law` rows are touched; an explicit specific in-law the operator set is left alone. The
+// PATCH keeps the row's endpoints, so the type is oriented to the stored a→b direction. Pure.
+const IN_LAW_PRECISE: Bi = { fr: 'Belle-famille précisée', en: 'In-law made specific' }
+function proposeInLawUpgrades(people: Person[], storedLinks: ContactLink[]): FamilyLinkProposal[] {
+  const map = inLawRungMap(people, storedLinks)
+  const out: FamilyLinkProposal[] = []
+  for (const l of storedLinks) {
+    if (l.type !== 'in_law') continue
+    const aKey = personKey(l.personAKind, l.personAId)
+    const bKey = personKey(l.personBKind, l.personBId)
+    const rung = map.get(unorderedPair(aKey, bKey))
+    if (!rung) continue
+    const type = aKey === rung.aKey ? rung.type : RELATIONSHIP_INVERSES[rung.type]
+    out.push({ aKey, bKey, type, op: 'modify', existingId: l.id, inferred: true, reason: IN_LAW_PRECISE })
+  }
+  return out
+}
+
 // The one-button "does it all" proposer: every link worth offering across the WHOLE
 // circle, in one review checklist. It merges, in precedence order:
+//   • Belle-famille upgrades (`proposeInLawUpgrades`) — lift a stored generic `in_law`
+//     to its precise gendered rung (belle-mère / beau-frère…) where the graph types one;
 //   • group completion (`proposeFamilyLinks`) — make each named famille group 100%
 //     related, incl. the generic `relative` fallback for an unknowable in-group pair;
 //   • transitive cross-family bridges (`inferLinks`) — co-parents → spouse, a shared
@@ -1813,8 +1897,9 @@ export function proposeAllFamilyLinks(
   storedLinks: ContactLink[],
   groups: ContactGroup[],
 ): FamilyLinkProposal[] {
+  const upgrades = proposeInLawUpgrades(people, storedLinks)
   const fromGroups = proposeFamilyLinks(people, storedLinks, groups)
-  const covered = new Set(fromGroups.map((p) => unorderedPair(p.aKey, p.bKey)))
+  const covered = new Set([...upgrades, ...fromGroups].map((p) => unorderedPair(p.aKey, p.bKey)))
   // Keep only proposals for a pair nothing earlier already covers (registers as it goes).
   const take = (list: FamilyLinkProposal[]): FamilyLinkProposal[] => {
     const kept: FamilyLinkProposal[] = []
@@ -1841,5 +1926,5 @@ export function proposeAllFamilyLinks(
   // marriage, so bridge it here, ahead of the generic web pass.
   const spouseKin = take(proposeSpouseKinLinks(people, storedLinks))
   const fromWeb = take(proposeWebLinks(people, storedLinks))
-  return [...fromGroups, ...transitive, ...spouseKin, ...fromWeb]
+  return [...upgrades, ...fromGroups, ...transitive, ...spouseKin, ...fromWeb]
 }

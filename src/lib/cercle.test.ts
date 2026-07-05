@@ -533,10 +533,42 @@ describe('proposeAllFamilyLinks (one button: group completion + transitive bridg
     expect(tie(props, 'a', 'b')).toBe('spouse')
   })
 
-  it("deduces a parent-in-law from a spouse's parent across families", () => {
-    // a is spouse of b; d is b's parent → d is a's parent-in-law (belle-mère / beau-père).
+  it("deduces an in-law rung from a spouse's parent, oriented correctly", () => {
+    // a is spouse of b; d is b's parent → d is a's parent-in-law, so (oriented a < d) a is
+    // d's CHILD-in-law (belle-fille / beau-fils). The rung must not read backwards.
     const props = proposeAllFamilyLinks(ppl('a', 'b', 'd'), [link('a', 'b', 'spouse'), link('d', 'b', 'parent')], [])
-    expect(tie(props, 'a', 'd')).toBe('parent_in_law')
+    const p = props.find((pp) => [pp.aKey, pp.bKey].sort().join() === [k('a'), k('d')].sort().join())
+    expect(p).toMatchObject({ op: 'create', aKey: k('a'), bKey: k('d'), type: 'child_in_law' })
+  })
+
+  it("deduces a sibling-in-law from a spouse's sibling", () => {
+    // a is spouse of b; b is sibling of c → c is a's sibling-in-law (belle-sœur / beau-frère).
+    const props = proposeAllFamilyLinks(ppl('a', 'b', 'c'), [link('a', 'b', 'spouse'), link('b', 'c', 'sibling')], [])
+    expect(tie(props, 'a', 'c')).toBe('sibling_in_law')
+  })
+
+  it("deduces a sibling-in-law from a sibling's spouse", () => {
+    // a is sibling of b; b is spouse of c → c is a's sibling-in-law.
+    const props = proposeAllFamilyLinks(ppl('a', 'b', 'c'), [link('a', 'b', 'sibling'), link('b', 'c', 'spouse')], [])
+    expect(tie(props, 'a', 'c')).toBe('sibling_in_law')
+  })
+
+  it('upgrades a stored generic « Belle-famille » to the precise in-law rung', () => {
+    // a spouse b; d is b's parent; a & d ALREADY linked generically as in_law → the completer
+    // offers a MODIFY that lifts « Belle-famille » to the specific rung (a is d's child-in-law).
+    const props = proposeAllFamilyLinks(
+      ppl('a', 'b', 'd'),
+      [link('a', 'b', 'spouse'), link('d', 'b', 'parent'), link('a', 'd', 'in_law')],
+      [],
+    )
+    const p = props.find((pp) => [pp.aKey, pp.bKey].sort().join() === [k('a'), k('d')].sort().join())
+    expect(p).toMatchObject({ op: 'modify', existingId: 'a-d', type: 'child_in_law' })
+  })
+
+  it('leaves a stored generic « Belle-famille » alone when no precise rung is derivable', () => {
+    // a & b are in_law with nothing else connecting them → no specific rung to infer, no upgrade.
+    const props = proposeAllFamilyLinks(ppl('a', 'b'), [link('a', 'b', 'in_law')], [])
+    expect(props).toHaveLength(0)
   })
 
   it('dedups: a pair the group already completes is not also added as a transitive guess', () => {
