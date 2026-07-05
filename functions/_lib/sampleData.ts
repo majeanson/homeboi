@@ -12,6 +12,7 @@
 // so the board is alive whenever the account is created.
 import type { Env } from './env'
 import { newId, nowSec, localDayStart, addLocalDays, localTimeOnDay } from './ids'
+import { freeMemberMediaBlobs, memberRefStatements } from './members'
 
 // The exact set of tables « clear » sweeps, in FK-safe DELETE order: a child (any
 // row that references another seeded row) is deleted BEFORE its parent, because D1
@@ -54,13 +55,29 @@ export async function countSampleData(env: Env, householdId: string): Promise<nu
 
 // Remove every seeded row for a household in one atomic batch. Hard delete — demo
 // data should vanish, not leave tombstones — and media-free by construction, so no
-// deleteR2Blob walk is needed.
+// deleteR2Blob walk is needed for the sample rows themselves.
+//
+// The catch: a curious operator can wire a REAL row onto a sample face while
+// exploring (assign a real event to sample "Léa", leave her a mot, ❤ a recipe as
+// her). That non-sample row still FK-references the sample member, so a bare
+// `DELETE FROM members WHERE is_sample = 1` is rejected and the whole clear fails —
+// "there's no way to delete the examples." So first detach/delete EVERY reference
+// (sample or not) to each sample member, reusing the exact same cleanup as a normal
+// member delete, then run the sweep in the same batch.
 export async function clearSampleData(env: Env, householdId: string): Promise<void> {
-  await env.DB.batch(
-    SAMPLE_TABLES.map((tbl) =>
+  const { results: sampleMembers } = await env.DB.prepare(
+    'SELECT id FROM members WHERE household_id = ? AND is_sample = 1',
+  )
+    .bind(householdId)
+    .all<{ id: string }>()
+  // mot blobs a real row may have left on a sample face (best-effort; R2 may be unset).
+  for (const mm of sampleMembers) await freeMemberMediaBlobs(env, householdId, mm.id)
+  await env.DB.batch([
+    ...sampleMembers.flatMap((mm) => memberRefStatements(env, householdId, mm.id)),
+    ...SAMPLE_TABLES.map((tbl) =>
       env.DB.prepare(`DELETE FROM ${tbl} WHERE household_id = ? AND is_sample = 1`).bind(householdId),
     ),
-  )
+  ])
 }
 
 // Seed the demo family. Idempotent: no-ops if this household already has sample

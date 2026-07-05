@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
 import { deleteR2Blob } from '../_lib/r2'
+import { freeMemberMediaBlobs, memberRefStatements } from '../_lib/members'
 
 // Household members. Read is open to the kiosk (the board needs faces +
 // "pick your face" attribution); create/edit/delete is operator-only. `colour`
@@ -160,41 +161,24 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  // Five tables FK-reference members(id), so D1 blocks the delete while any
-  // still point here. We resolve them in one ordered transaction: the member's
-  // routines (and their runs) are theirs alone, so they're deleted; the nullable
-  // references (an event's assignee, a chore's last-doer, a meal's cook, a task
-  // helper) are detached with SET NULL so the event/chore/meal itself survives,
-  // now unassigned. The member is removed last, once nothing references it.
+  // Many tables FK-reference members(id), so D1 blocks the delete while any still
+  // point here. `memberRefStatements` (_lib/members) is the single authoritative
+  // detach list — the member's own rows (routines/hearts/schedule/mots) are
+  // deleted, nullable references (event assignee, meal cook, note tint, cercle
+  // contact link, …) are SET NULL so the host row survives unassigned, and
+  // polymorphic cercle edges are cleared. The member is removed last, once nothing
+  // references it. (Before this was maintained by hand, a seeded « mot » on a
+  // member — e.g. sample "Léa" — blocked her delete outright.)
   const id = body.id
   const hh = actor.householdId
-  // Best-effort: drop the member's photo blob from R2 so it doesn't orphan.
+  // Best-effort: drop the member's photo blob + any mot blobs so they don't orphan.
   const m = await ctx.env.DB.prepare('SELECT avatar_kind, avatar_ref FROM members WHERE id = ? AND household_id = ?')
     .bind(id, hh)
     .first<{ avatar_kind: string; avatar_ref: string }>()
   if (m?.avatar_kind === 'photo') await deleteR2Blob(ctx.env.PHOTOS, m.avatar_ref)
+  await freeMemberMediaBlobs(ctx.env, hh, id)
   await ctx.env.DB.batch([
-    ctx.env.DB.prepare(
-      'DELETE FROM routine_runs WHERE routine_id IN (SELECT id FROM routines WHERE member_id = ? AND household_id = ?)',
-    ).bind(id, hh),
-    ctx.env.DB.prepare('DELETE FROM routines WHERE member_id = ? AND household_id = ?').bind(id, hh),
-    ctx.env.DB.prepare('UPDATE events SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
-    ctx.env.DB.prepare('UPDATE tasks SET last_done_by = NULL WHERE last_done_by = ? AND household_id = ?').bind(id, hh),
-    ctx.env.DB.prepare('UPDATE meals SET cook_member_id = NULL WHERE cook_member_id = ? AND household_id = ?').bind(id, hh),
-    ctx.env.DB.prepare(
-      'UPDATE task_participants SET member_id = NULL WHERE member_id = ? AND task_id IN (SELECT id FROM tasks WHERE household_id = ?)',
-    ).bind(id, hh),
-    // « Le cercle » edges that point at this member (as a person, kind='member')
-    // — drop them so a removed face leaves no dangling relationship (mirrors the
-    // contact cascade in cercle.ts). Stored without an FK (polymorphic), so it's
-    // our job to clean up.
-    ctx.env.DB.prepare(
-      "DELETE FROM contact_links WHERE household_id = ? AND ((person_a_id = ? AND person_a_kind = 'member') OR (person_b_id = ? AND person_b_kind = 'member'))",
-    ).bind(hh, id, id),
-    // Named group memberships for this member (polymorphic, no FK).
-    ctx.env.DB.prepare(
-      "DELETE FROM contact_group_members WHERE person_kind = 'member' AND person_id = ?",
-    ).bind(id),
+    ...memberRefStatements(ctx.env, hh, id),
     ctx.env.DB.prepare('DELETE FROM members WHERE id = ? AND household_id = ?').bind(id, hh),
   ])
   return ok({ ok: true })

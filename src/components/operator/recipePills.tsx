@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
@@ -35,6 +35,49 @@ import { OperatorSection } from './OperatorSection'
 // ingredient count, servings, a tag, favourite, photo). Saved whole via setPills.
 const CRITERION_FIELDS: CriterionField[] = [...NUM_FIELDS, 'tag', 'favorite', 'photo']
 const MINUTE_FIELDS = new Set(['totalMin', 'prepMin', 'cookMin'])
+
+// A whole-number field that keeps a local draft string so it can be transiently
+// empty or half-typed. A number-coerced controlled input snaps back to 0 the
+// instant it empties (`Number('') || 0`), forcing a backspace-first dance when
+// you just want to retype the value. We commit a clamped number on blur and sync
+// the draft down when the parent value changes.
+function NumField({
+  value,
+  onChange,
+  min = 0,
+  className,
+  ariaLabel,
+}: {
+  value: number
+  onChange: (n: number) => void
+  min?: number
+  className?: string
+  ariaLabel?: string
+}) {
+  const [draft, setDraft] = useState(String(value))
+  useEffect(() => setDraft(String(value)), [value])
+  return (
+    <input
+      className={className}
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={draft}
+      aria-label={ariaLabel}
+      onFocus={(e) => e.target.select()}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, '')
+        setDraft(digits)
+        if (digits) onChange(Math.max(min, Math.round(Number(digits))))
+      }}
+      onBlur={() => {
+        const n = Math.max(min, Math.round(Number(draft) || min))
+        setDraft(String(n))
+        onChange(n)
+      }}
+    />
+  )
+}
 
 export function RecipePillsSection({ help }: { help?: HelpMode }) {
   const t = useT()
@@ -220,13 +263,12 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
                       <option value="lte">≤</option>
                       <option value="gte">≥</option>
                     </select>
-                    <input
+                    <NumField
                       className="input pill-admin__num"
-                      type="number"
                       min={0}
                       value={c.n}
-                      onChange={(e) => setRule(i, { ...c, n: Math.max(0, Math.round(Number(e.target.value) || 0)) })}
-                      aria-label={t.operator.pillRuleValue}
+                      onChange={(n) => setRule(i, { ...c, n })}
+                      ariaLabel={t.operator.pillRuleValue}
                     />
                     {MINUTE_FIELDS.has(c.field) && <span className="pill-admin__unit mono">min</span>}
                   </>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useT } from '../i18n'
 import { Chip } from './Chip'
 
@@ -13,6 +14,15 @@ export interface RecurValue {
 export function RecurPicker({ value, onChange }: { value: RecurValue | null; onChange: (v: RecurValue | null) => void }) {
   const t = useT()
   const freq = value?.freq ?? 'none'
+
+  // Keep a local draft of the interval field so it can be transiently empty or
+  // half-typed ("" while retyping "1" → "31"). A number-coerced controlled input
+  // snaps back to 1 the instant it empties, forcing a backspace-first dance. We
+  // clamp to the real value only on blur; sync down when the parent value changes.
+  const [draft, setDraft] = useState(String(value?.interval ?? 1))
+  useEffect(() => {
+    if (value) setDraft(String(value.interval))
+  }, [value?.interval])
 
   function setFreq(f: string) {
     if (f === 'none') return onChange(null)
@@ -44,11 +54,24 @@ export function RecurPicker({ value, onChange }: { value: RecurValue | null; onC
           <span>{t.recur.every}</span>
           <input
             className="input recur__interval"
-            type="number"
-            min={1}
-            max={52}
-            value={value.interval}
-            onChange={(e) => onChange({ ...value, interval: Math.max(1, Math.min(52, Number(e.target.value) || 1)) })}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={draft}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, '')
+              setDraft(digits)
+              // Commit whenever it parses to a valid in-range number; leave the
+              // clamp for blur so a transient "" or "0" doesn't fight the typist.
+              const n = Number(digits)
+              if (digits && n >= 1 && n <= 52) onChange({ ...value, interval: n })
+            }}
+            onBlur={() => {
+              const n = Math.max(1, Math.min(52, Number(draft) || 1))
+              setDraft(String(n))
+              onChange({ ...value, interval: n })
+            }}
           />
           <span>{t.recur.unit[value.freq]}</span>
         </label>
